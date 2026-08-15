@@ -1,0 +1,6 @@
+
+# coverage artifacts
+coverage.out
+
+# build output
+/bin/

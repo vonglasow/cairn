@@ -1,0 +1,34 @@
+# gremlins — mutation testing configuration.
+#
+# Coverage says a line ran; mutation says a test would have noticed if it were
+# wrong. Run it with `make mutation`.
+#
+# The threshold is not here. It lives in the Makefile, next to the loop that
+# applies it package by package, because docs/checks.md puts a check's logic in
+# one place and one place only. A copy of it in this file would be a second
+# truth that nothing keeps in step.
+
+unleash:
+  # Without this, gremlins derives its per-mutant timeout from the baseline test
+  # run — and on packages that finish in milliseconds the derived budget is so
+  # tight that EVERY mutant is reported as timed out, which reads as a 0% score
+  # on a perfectly tested package. Measured on internal/cli: 0.00% with 5 of 5
+  # mutants timed out at the default coefficient, 100.00% with all 5 killed at
+  # 10. Lower this and the gate starts lying.
+  timeout-coefficient: 10
+
+  # Mutators. The defaults are kept; the ones off by default stay off because
+  # they produce a lot of equivalent mutants (a mutant that cannot change
+  # observable behaviour, so no test can ever kill it) and would drag the score
+  # down without pointing at a single weak test.
+  arithmetic-base: true
+  conditionals-boundary: true
+  conditionals-negation: true
+  increment-decrement: true
+  invert-negatives: true
+  invert-assignments: false
+  invert-bitwise: false
+  invert-bwassign: false
+  invert-logical: false
+  invert-loopctrl: false
+  remove-self-assignments: false

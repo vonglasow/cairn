@@ -1,0 +1,103 @@
+version: "2"
+
+# cairn — lint configuration.
+#
+# prek runs this at every commit, so anything enabled here blocks one.
+#
+# The bias: this repo's comments are its documentation. The module is named
+# `cairn` with no domain path, so pkg.go.dev can never host it, and everything
+# lives under internal/, so no one imports it either. That leaves the comments
+# in the source as the only documentation of intent — which is why the rules
+# below are about comments existing and reading like sentences, not about
+# stylistic noise.
+
+linters:
+  default: standard
+  enable:
+    # Exported symbols carry a comment, and it starts with the symbol's name.
+    - revive
+    # Comments end with a period, so a truncated sentence is visible.
+    - godot
+    # Wraps sentinel errors properly: `errors.Is` rather than `==`, and `%w`
+    # rather than `%v`. Enabled from the start because it is cheap now and
+    # expensive later — a codebase that has already compared errors with == in
+    # forty places does not turn this on.
+    - errorlint
+    # Enforces the layering described in docs/architecture.md. Without it the
+    # layering is a wish: a command could reach the database directly and
+    # nothing would notice until the second surface needed the same rule.
+    - depguard
+
+  settings:
+    depguard:
+      rules:
+        # The entities know nobody. This one is an allow-list, not a deny-list,
+        # because a deny-list only forbids what someone thought to name — and
+        # `database/sql` finding its way into an entity is precisely the import
+        # nobody would have thought to name. Everything absent here is refused,
+        # so widening this list is a decision somebody makes on purpose.
+        domain:
+          files: ["**/internal/domain/**"]
+          allow:
+            - errors
+            - fmt
+            - strings
+            - time
+
+        # The store is called by the engine and speaks in entities. It is the
+        # only package that knows a database exists.
+        store:
+          files: ["**/internal/store/**"]
+          deny:
+            - pkg: cairn/internal/engine
+              desc: the store is called by the engine, it never calls it
+            - pkg: cairn/internal/cli
+              desc: the store must not know how anything is displayed
+            - pkg: github.com/spf13/cobra
+              desc: the store is not a surface
+            - pkg: github.com/charmbracelet/fang
+              desc: the store is not a surface
+
+        # The engine is called by surfaces; it never calls them, and it never
+        # opens a database itself — that is the whole reason the store exists.
+        engine:
+          files: ["**/internal/engine/**"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: the engine is called by surfaces, it never calls them
+            - pkg: database/sql
+              desc: the engine asks the store, it does not reach a database
+            - pkg: github.com/spf13/cobra
+              desc: the engine is not a surface
+
+        # A surface asks the engine. Reaching the store directly would put a
+        # rule the engine owns into a second place, where it drifts.
+        cli:
+          files: ["**/internal/cli/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: database/sql
+              desc: a surface never opens a database
+
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+    godot:
+      # Only declaration comments, not every inline `// like this one`.
+      scope: declarations
+
+  exclusions:
+    rules:
+      # Tests document themselves by their names and their failure messages;
+      # requiring a doc comment on every helper there is noise.
+      - path: _test\.go
+        linters:
+          - revive
+          - godot
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

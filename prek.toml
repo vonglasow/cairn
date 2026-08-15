@@ -1,0 +1,57 @@
+# Configuration for `prek` (https://prek.j178.dev), a fast pre-commit runner.
+# Ported from .pre-commit-config.yaml. Install with: prek install -t pre-commit -t commit-msg
+#:schema https://www.schemastore.org/prek.json
+
+# Standard file hygiene hooks (prek's built-in reimplementations).
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-yaml" },
+    { id = "check-added-large-files" },
+]
+
+# Static analysis / SAST.
+[[repos]]
+repo = "https://github.com/semgrep/pre-commit"
+rev = "v1.149.0"
+hooks = [
+    { id = "semgrep", args = ["--config", "auto", "--error", "--skip-unknown-extensions"] },
+]
+
+# Go vulnerability scan (uses the locally installed govulncheck).
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, types = ["go"] },
+    # Coverage floor. Cheap, and it catches the commit that adds a package
+    # nobody tested at all — which mutation alone would not, having no mutants
+    # to judge there.
+    { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, types = ["go"] },
+    # Mutation: breaks each line on purpose and checks a test turns red.
+    # Coverage only says a line ran. This is the slow hook — tens of seconds per
+    # package — and it is here on purpose: a surviving mutant found at commit
+    # time costs one test, found six months later it costs a rewrite.
+    { id = "mutation", name = "mutation (gremlins)", entry = "make mutation", language = "system", pass_filenames = false, types = ["go"] },
+]
+
+# Go formatting, imports, and lint/test.
+[[repos]]
+repo = "https://github.com/dnephin/pre-commit-golang"
+rev = "v0.5.1"
+hooks = [
+    { id = "go-fmt" },
+    { id = "go-imports" },
+    { id = "no-go-testing" },
+    { id = "golangci-lint" },
+    { id = "go-unit-tests" },
+]
+
+# Conventional-commit message linting (runs on commit-msg).
+[[repos]]
+repo = "https://github.com/alessandrojcm/commitlint-pre-commit-hook"
+rev = "v9.22.0"
+hooks = [
+    { id = "commitlint", stages = ["commit-msg"], additional_dependencies = ["@commitlint/config-conventional"] },
+]
