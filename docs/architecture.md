@@ -20,14 +20,23 @@ input or output belongs in the engine.
 | `internal/store` | keeping them, and handing them back | `domain` |
 | `internal/engine` | the operations | `domain`, `store` |
 | `internal/cli` | parsing and printing | `domain`, `engine` |
-| `cmd/cairn` | opens the store, builds the engine, hands it to the commands | everything |
+| `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 
 `domain` imports nothing of ours. An entity that knew how it was displayed
 would drag a terminal into every test that touches it, and an entity that knew
 how it was written to disk would drag a database in.
 
-`cmd/cairn` is the only place allowed to know every layer, because someone has
-to wire them together. It stays a handful of lines.
+`cmd/cairn` stays one line. Everything put there is out of reach of the tests
+forever — the suite calls `cli.Main`, never the binary — so each line added
+there is a line the coverage floor pays for and nothing can check.
+
+**The store is opened where it is needed, not at startup.** A command that has
+no use for it never opens it, which is why `cairn --version` creates no file
+and why the default place stays untouched until something is actually written.
+One invocation opens one connection and closes it on the way out, so nothing
+survives between two runs of the command — which is what makes "a task added by
+one command is found by the next" a claim about the disk rather than about a
+cache.
 
 ## The store is spoken to through an interface the engine owns
 

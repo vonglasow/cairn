@@ -10,12 +10,16 @@
 
 unleash:
   # Without this, gremlins derives its per-mutant timeout from the baseline test
-  # run — and on packages that finish in milliseconds the derived budget is so
-  # tight that EVERY mutant is reported as timed out, which reads as a 0% score
-  # on a perfectly tested package. Measured on internal/cli: 0.00% with 5 of 5
-  # mutants timed out at the default coefficient, 100.00% with all 5 killed at
-  # 10. Lower this and the gate starts lying.
-  timeout-coefficient: 10
+  # run — and the budget has to cover recompiling the package inside a copy of
+  # the module, not just running the tests. Too tight and mutants come back
+  # TIMED OUT, which counts as neither killed nor survived: the run then reports
+  # 100% efficacy having judged almost nothing.
+  #
+  # Measured on internal/cli, 30 mutants: coefficient 10 judged 5 and timed out
+  # 25 while still printing 100%; coefficient 30 judged all 30. Raised to 30,
+  # with room to spare. The mcover threshold in the Makefile is what makes a
+  # future timeout fail loudly instead of passing quietly.
+  timeout-coefficient: 30
 
   # Mutators. The defaults are kept; the ones off by default stay off because
   # they produce a lot of equivalent mutants (a mutant that cannot change

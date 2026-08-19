@@ -1,0 +1,338 @@
+package store
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"cairn/internal/domain"
+)
+
+// open gives a store on a fresh file, closed when the test ends.
+func open(t *testing.T) *Store {
+	t.Helper()
+	s, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return s
+}
+
+// keep adds a task titled title, failing the test if it cannot.
+func keep(t *testing.T, s *Store, title string) domain.Task {
+	t.Helper()
+	task, err := domain.NewTask(title)
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	kept, err := s.Keep(task)
+	if err != nil {
+		t.Fatalf("Keep: %v", err)
+	}
+	return kept
+}
+
+func TestStore_handsBackTheTaskItKept(t *testing.T) {
+	s := open(t)
+	kept := keep(t, s, "Write the spec")
+
+	got, err := s.Find(kept.Number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if got.Title != "Write the spec" {
+		t.Errorf("Title = %q, want the one it was given", got.Title)
+	}
+	if got.State != domain.Backlog || got.Priority != domain.Normal {
+		t.Errorf("got %q/%q, want backlog/normal", got.State, got.Priority)
+	}
+}
+
+func TestStore_numbersTheFirstTaskOne(t *testing.T) {
+	s := open(t)
+	if got := keep(t, s, "Write the spec").Number; got != 1 {
+		t.Errorf("Number = %d, want 1", got)
+	}
+}
+
+func TestStore_givesTheNextNumberToTheNextTask(t *testing.T) {
+	s := open(t)
+	keep(t, s, "First")
+	if got := keep(t, s, "Second").Number; got != 2 {
+		t.Errorf("Number = %d, want 2", got)
+	}
+}
+
+func TestStore_neverHandsOutANumberFreedByADeletion(t *testing.T) {
+	s := open(t)
+	keep(t, s, "First")
+	second := keep(t, s, "Second")
+	if err := s.Delete(second.Number); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if got := keep(t, s, "Third").Number; got != 3 {
+		t.Errorf("Number = %d, want 3: a freed number is not handed out again", got)
+	}
+}
+
+func TestStore_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
+	s := open(t)
+	keep(t, s, "First")
+	keep(t, s, "Second")
+
+	all, err := s.All()
+	if err != nil {
+		t.Fatalf("All: %v", err)
+	}
+	if len(all) != 2 || all[0].Title != "First" || all[1].Title != "Second" {
+		t.Errorf("All = %v, want First then Second", all)
+	}
+}
+
+func TestStore_saysThereIsNoSuchTask(t *testing.T) {
+	s := open(t)
+	if _, err := s.Find(99); err == nil {
+		t.Error("Find(99) should fail: there is no such task")
+	}
+}
+
+func TestStore_keepsTextExactlyAsItWasGiven(t *testing.T) {
+	s := open(t)
+	for _, title := range []string{"Écrire la spéc — enfin !", "🧗 climb", "90% done, right?", strings.Repeat("a", 5000)} {
+		kept := keep(t, s, title)
+		got, err := s.Find(kept.Number)
+		if err != nil {
+			t.Fatalf("Find: %v", err)
+		}
+		if got.Title != title {
+			t.Errorf("Title round-trip lost data: got %q", got.Title)
+		}
+	}
+}
+
+func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
+	s := open(t)
+	task, err := domain.NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	task.Description = "the one"
+	task.State = domain.Todo
+	task.Priority = domain.High
+	task.Labels = []string{"spec", "team"}
+	if task.Deadline, err = domain.ParseDeadline("2026-09-01"); err != nil {
+		t.Fatalf("ParseDeadline: %v", err)
+	}
+	if task.Estimate, err = domain.ParseEstimate("90m"); err != nil {
+		t.Fatalf("ParseEstimate: %v", err)
+	}
+
+	kept, err := s.Keep(task)
+	if err != nil {
+		t.Fatalf("Keep: %v", err)
+	}
+	got, err := s.Find(kept.Number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if got.Description != "the one" || got.State != domain.Todo || got.Priority != domain.High {
+		t.Errorf("got %+v, want the attributes it was given", got)
+	}
+	if len(got.Labels) != 2 || got.Labels[0] != "spec" || got.Labels[1] != "team" {
+		t.Errorf("Labels = %v, want [spec team]", got.Labels)
+	}
+	if domain.FormatDay(got.Deadline) != "2026-09-01" {
+		t.Errorf("Deadline = %v, want 2026-09-01", got.Deadline)
+	}
+	if domain.FormatDuration(got.Estimate) != "1h30m" {
+		t.Errorf("Estimate = %v, want 1h30m", got.Estimate)
+	}
+}
+
+func TestStore_replacesTheLabelsWhenATaskIsUpdated(t *testing.T) {
+	s := open(t)
+	task := keep(t, s, "Write the spec")
+	task.Labels = []string{"spec", "draft"}
+	if err := s.Update(task); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	task.Labels = []string{"team"}
+	if err := s.Update(task); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	got, err := s.Find(task.Number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if len(got.Labels) != 1 || got.Labels[0] != "team" {
+		t.Errorf("Labels = %v, want only [team]: what is given replaces what was there", got.Labels)
+	}
+}
+
+func TestStore_saysWhenThereIsNothingToUpdate(t *testing.T) {
+	s := open(t)
+	task, _ := domain.NewTask("Nope")
+	task.Number = 99
+	if err := s.Update(task); err == nil {
+		t.Error("Update on a task that does not exist should fail")
+	}
+}
+
+func TestStore_saysWhenThereIsNothingToDelete(t *testing.T) {
+	s := open(t)
+	if err := s.Delete(99); err == nil {
+		t.Error("Delete on a task that does not exist should fail")
+	}
+}
+
+func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
+	s := open(t)
+	keep(t, s, "First")
+	second := keep(t, s, "Second")
+	keep(t, s, "Third")
+	if err := s.Delete(second.Number); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+
+	all, err := s.All()
+	if err != nil {
+		t.Fatalf("All: %v", err)
+	}
+	if len(all) != 2 || all[0].Title != "First" || all[1].Title != "Third" {
+		t.Errorf("All = %v, want First and Third", all)
+	}
+}
+
+func TestOpen_createsTheFolderItNeeds(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "deep", "down", "cairn.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	_ = s.Close()
+}
+
+func TestOpen_reportsSomethingThatIsNotACairnStore(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if err := os.WriteFile(path, []byte("this is not a database"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if _, err := Open(path); err == nil {
+		t.Error("Open should refuse a file that is not a cairn store")
+	}
+}
+
+func TestOpen_reportsAPlaceItCannotWriteTo(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	// A file where a directory must go: the folder cannot be created.
+	if _, err := Open(filepath.Join(path, "nested", "cairn.db")); err == nil {
+		t.Error("Open should report a place it cannot create")
+	}
+}
+
+// closed gives a store whose database is shut, so that every call has to report
+// a failure it cannot do anything about. Error paths are behaviour too, and a
+// store made only of happy paths is a store nobody has tested.
+func closed(t *testing.T) *Store {
+	t.Helper()
+	s := open(t)
+	if err := s.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	return s
+}
+
+func TestStore_reportsAStoreItCanNoLongerReach(t *testing.T) {
+	s := closed(t)
+	task, _ := domain.NewTask("Write the spec")
+	task.Number = 1
+
+	if _, err := s.Keep(task); err == nil {
+		t.Error("Keep on a closed store should fail")
+	}
+	if err := s.Update(task); err == nil {
+		t.Error("Update on a closed store should fail")
+	}
+	if err := s.Delete(1); err == nil {
+		t.Error("Delete on a closed store should fail")
+	}
+	if _, err := s.Find(1); err == nil {
+		t.Error("Find on a closed store should fail")
+	}
+	if _, err := s.All(); err == nil {
+		t.Error("All on a closed store should fail")
+	}
+}
+
+func TestStore_reportsLabelsItCannotRead(t *testing.T) {
+	s := open(t)
+	kept := keep(t, s, "Write the spec")
+	if _, err := s.db.Exec(`DROP TABLE labels`); err != nil {
+		t.Fatalf("dropping labels: %v", err)
+	}
+
+	if _, err := s.Find(kept.Number); err == nil {
+		t.Error("Find should report labels it cannot read")
+	}
+	if _, err := s.All(); err == nil {
+		t.Error("All should report labels it cannot read")
+	}
+}
+
+func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
+	s := open(t)
+	task, _ := domain.NewTask("Write the spec")
+	// The domain deduplicates; the store is handed whatever it is handed, and
+	// two identical labels break the key that makes them a set.
+	task.Labels = []string{"spec", "spec"}
+
+	if _, err := s.Keep(task); err == nil {
+		t.Error("Keep should report labels it cannot record")
+	}
+}
+
+func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
+	s := open(t)
+	task := keep(t, s, "Write the spec")
+	task.Labels = []string{"spec", "spec"}
+
+	if err := s.Update(task); err == nil {
+		t.Error("Update should report labels it cannot record")
+	}
+}
+
+func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
+	s := open(t)
+	kept := keep(t, s, "Write the spec")
+	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, kept.Number); err != nil {
+		t.Fatalf("writing a bad deadline: %v", err)
+	}
+
+	if _, err := s.Find(kept.Number); err == nil {
+		t.Error("Find should report a deadline it cannot make sense of")
+	}
+	if _, err := s.All(); err == nil {
+		t.Error("All should report a deadline it cannot make sense of")
+	}
+}
+
+func TestStore_reportsLabelsItCannotClear(t *testing.T) {
+	s := open(t)
+	task := keep(t, s, "Write the spec")
+	if _, err := s.db.Exec(`DROP TABLE labels`); err != nil {
+		t.Fatalf("dropping labels: %v", err)
+	}
+
+	if err := s.Update(task); err == nil {
+		t.Error("Update should report labels it cannot clear")
+	}
+	if err := s.Delete(task.Number); err == nil {
+		t.Error("Delete should report labels it cannot clear")
+	}
+}

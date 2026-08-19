@@ -9,19 +9,12 @@ import (
 	"io"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
-)
-
-// The codes cairn returns to the shell. Two, because two is what it can tell
-// apart today: it worked, or it did not. Finer codes get added when a scenario
-// asks a caller to distinguish something finer.
-const (
-	exitOK    = 0
-	exitError = 1
 )
 
 // Build stamps, injected by the linker (see the Makefile). They stay vars, not
@@ -146,6 +139,11 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 	root.SetVersionTemplate(b.String())
+	// Asked for on any command, so `task add --json` and `task list --json` read
+	// the same way. Declared on the root because the answer's shape is a
+	// property of the whole conversation, not of one subcommand.
+	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
+	root.AddCommand(newTaskCmd())
 	return root
 }
 
@@ -161,10 +159,22 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	root.SetErr(stderr)
 	root.SetArgs(args)
 
+	// Asked for JSON, the whole answer goes to standard output as JSON, whether
+	// it worked or not — a machine reads one stream, and a refusal it cannot
+	// parse is a refusal it cannot act on. Read from the arguments rather than
+	// from the parsed flags, because a command that failed to parse never got
+	// as far as its flags.
+	asMachine := slices.Contains(args, "--"+jsonFlag)
+
 	// fang writes the error itself, to the command's error stream, and returns
 	// it so the caller can still decide what to exit with.
-	if err := fang.Execute(ctx, root); err != nil {
-		return exitError
-	}
-	return exitOK
+	err := fang.Execute(ctx, root, fang.WithErrorHandler(
+		func(w io.Writer, styles fang.Styles, err error) {
+			if asMachine {
+				_ = writeRefusal(stdout, err)
+				return
+			}
+			fang.DefaultErrorHandler(w, styles, err)
+		}))
+	return codeFor(err)
 }

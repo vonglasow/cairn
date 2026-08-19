@@ -163,9 +163,9 @@ func TestMain_reportsSuccessAsZero(t *testing.T) {
 	}
 }
 
-func TestMain_reportsFailureAsOne(t *testing.T) {
-	if got := run(t, "nope").code; got != exitError {
-		t.Errorf("exit code = %d, want %d for a command that failed", got, exitError)
+func TestMain_reportsACommandItDidNotUnderstand(t *testing.T) {
+	if got := run(t, "nope").code; got != exitUsage {
+		t.Errorf("exit code = %d, want %d for a command it could not make sense of", got, exitUsage)
 	}
 }
 

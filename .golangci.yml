@@ -41,8 +41,13 @@ linters:
           allow:
             - errors
             - fmt
+            - slices
             - strings
             - time
+            # Only reachable from _test.go: the `no-go-testing` hook refuses
+            # `testing` anywhere else, so allowing it here cannot leak into
+            # production code.
+            - testing
 
         # The store is called by the engine and speaks in entities. It is the
         # only package that knows a database exists.
