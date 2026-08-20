@@ -74,3 +74,61 @@ func TestNothing_marksAnAbsentValue(t *testing.T) {
 		t.Errorf("orNothing = %q, want it untouched", got)
 	}
 }
+
+// listed builds a task with a number, a title and a parent, for the listing
+// tests below.
+func listed(number int, title string, parent int) domain.Task {
+	return domain.Task{Number: number, Title: title, Parent: parent}
+}
+
+func TestTree_indentsWhatHangsUnderATask(t *testing.T) {
+	got := tree([]domain.Task{
+		listed(1, "Ship it", domain.NoParent),
+		listed(2, "Write the tests", 1),
+	})
+	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("got %d lines, want 2:\n%s", len(lines), got)
+	}
+	if strings.HasPrefix(lines[0], " ") {
+		t.Errorf("a task hanging under nothing should not be indented: %q", lines[0])
+	}
+	if !strings.HasPrefix(lines[1], " ") {
+		t.Errorf("a sub-task should be indented: %q", lines[1])
+	}
+}
+
+func TestTree_putsEverythingHangingUnderATaskRightAfterIt(t *testing.T) {
+	got := tree([]domain.Task{
+		listed(1, "Ship it", domain.NoParent),
+		listed(2, "Write the tests", 1),
+		listed(3, "Something else", domain.NoParent),
+	})
+	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("got %d lines, want 3:\n%s", len(lines), got)
+	}
+	if !strings.Contains(lines[1], "Write the tests") {
+		t.Errorf("the sub-task should follow its parent, got %q", lines[1])
+	}
+	if strings.HasPrefix(lines[2], " ") {
+		t.Errorf("a task hanging under nothing should not be indented: %q", lines[2])
+	}
+}
+
+func TestTree_keepsSeveralSubTasksInTheirOrder(t *testing.T) {
+	got := tree([]domain.Task{
+		listed(1, "Ship it", domain.NoParent),
+		listed(2, "Write the tests", 1),
+		listed(3, "Write the docs", 1),
+	})
+	if at2, at3 := strings.Index(got, "#2"), strings.Index(got, "#3"); at2 > at3 {
+		t.Errorf("sub-tasks should keep their order:\n%s", got)
+	}
+}
+
+func TestTree_writesNothingForNoTasks(t *testing.T) {
+	if got := tree(nil); got != "" {
+		t.Errorf("tree(nil) = %q, want nothing", got)
+	}
+}

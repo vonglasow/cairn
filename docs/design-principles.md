@@ -92,7 +92,7 @@ Every piece of information has one home. A value that is derived is derived,
 never stored a second time; a rule lives in one place and everything else
 calls it.
 
-Two copies of a truth become two truths, and nothing says which one is right.
+Two backups of a truth become two truths, and nothing says which one is right.
 
 ## Law of Demeter
 

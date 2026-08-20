@@ -59,7 +59,7 @@ func wantErr(t *testing.T, args ...string) {
 // runAcceptance runs the scenarios carrying tag from the named feature file,
 // and fails t on any of them.
 //
-// Every feature wires itself here rather than copying the suite: one
+// Every feature wires itself here rather than backing up the suite: one
 // definition, one place to fix. A feature adds its own initializer — steps live
 // in the package that observes them — and nothing else.
 func runAcceptance(t *testing.T, feature string, init func(*godog.ScenarioContext), tag string) {
@@ -81,6 +81,13 @@ func runAcceptance(t *testing.T, feature string, init func(*godog.ScenarioContex
 	if suite.Run() != 0 {
 		t.Fatalf("acceptance %s failed", tag)
 	}
+}
+
+// storeFor gives a path to a store of this test's own, somewhere nothing else
+// will look.
+func storeFor(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(t.TempDir(), "cairn.db")
 }
 
 // stampFor sets a linker-injected variable for the length of the test.

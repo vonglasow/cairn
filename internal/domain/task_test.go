@@ -98,4 +98,7 @@ func TestNewTask_carriesNothingElse(t *testing.T) {
 	if got.Number != 0 {
 		t.Errorf("Number = %d, want none: numbering is the store's business", got.Number)
 	}
+	if got.Parent != NoParent {
+		t.Errorf("Parent = %d, want none: a task hangs under nothing unless told to", got.Parent)
+	}
 }

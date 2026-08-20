@@ -22,34 +22,24 @@ import (
 // ErrNoSuchTask is returned when a number refers to no task.
 var ErrNoSuchTask = errors.New("there is no such task")
 
-// schema is created on every open. Numbers come from AUTOINCREMENT, which
-// never hands out a rowid it has already used — so a number freed by a
-// deletion stays freed, which is what the scenarios ask for.
-const schema = `
-CREATE TABLE IF NOT EXISTS tasks (
-	number      INTEGER PRIMARY KEY AUTOINCREMENT,
-	title       TEXT    NOT NULL,
-	description TEXT    NOT NULL DEFAULT '',
-	state       TEXT    NOT NULL,
-	priority    TEXT    NOT NULL,
-	deadline    TEXT    NOT NULL DEFAULT '',
-	estimate    INTEGER NOT NULL DEFAULT 0,
-	time_spent  INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE IF NOT EXISTS labels (
-	task_number INTEGER NOT NULL REFERENCES tasks(number) ON DELETE CASCADE,
-	label       TEXT    NOT NULL,
-	PRIMARY KEY (task_number, label)
-);`
-
 // Store is a collection of tasks kept on disk.
 type Store struct {
-	db *sql.DB
+	db   *sql.DB
+	path string
 }
 
-// Open opens the store at path, creating the folder and the file if they are
+// Open opens a store that has to be up to date, and says so when it is not.
+// Changing somebody's data as a side effect of listing their tasks is not this
+// command's business — see OpenBehind for the ones whose business it is.
+func Open(path string) (*Store, error) { return open(path, true) }
+
+// OpenBehind opens a store whatever shape it is in, for the commands whose
+// whole job is to change that shape.
+func OpenBehind(path string) (*Store, error) { return open(path, false) }
+
+// open opens the store at path, creating the folder and the file if they are
 // not there yet. A file that is not a cairn store is reported, never replaced.
-func Open(path string) (*Store, error) {
+func open(path string, mustBeCurrent bool) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("making room for the store: %w", err)
 	}
@@ -57,11 +47,15 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening the store: %w", err)
 	}
-	if _, err := db.Exec(schema); err != nil {
+	s := &Store{db: db, path: path}
+	if err := s.settle(mustBeCurrent); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("reading the store at %s: %w", path, err)
+		// The path goes last, never first: fang capitalises the opening letter of
+		// a message, and a path that came back as /Var/Folders/… is a path
+		// nobody can paste back into a shell.
+		return nil, fmt.Errorf("%w — store: %s", err, path)
 	}
-	return &Store{db: db}, nil
+	return s, nil
 }
 
 // Close releases the store. One invocation opens it once and closes it once,
@@ -73,9 +67,9 @@ func (s *Store) Close() error {
 // Keep records a task and hands it back carrying the number it was given.
 func (s *Store) Keep(t domain.Task) (domain.Task, error) {
 	res, err := s.db.Exec(
-		`INSERT INTO tasks (title, description, state, priority, deadline, estimate, time_spent)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		t.Title, t.Description, string(t.State), string(t.Priority),
+		`INSERT INTO tasks (parent, title, description, state, priority, deadline, estimate, time_spent)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.Parent, t.Title, t.Description, string(t.State), string(t.Priority),
 		domain.FormatDay(t.Deadline), int64(t.Estimate), int64(t.TimeSpent))
 	if err != nil {
 		return domain.Task{}, fmt.Errorf("keeping the task: %w", err)
@@ -95,9 +89,9 @@ func (s *Store) Keep(t domain.Task) (domain.Task, error) {
 // those that were there: a task carries a set, so one left out is one removed.
 func (s *Store) Update(t domain.Task) error {
 	res, err := s.db.Exec(
-		`UPDATE tasks SET title = ?, description = ?, state = ?, priority = ?,
+		`UPDATE tasks SET parent = ?, title = ?, description = ?, state = ?, priority = ?,
 		 deadline = ?, estimate = ?, time_spent = ? WHERE number = ?`,
-		t.Title, t.Description, string(t.State), string(t.Priority),
+		t.Parent, t.Title, t.Description, string(t.State), string(t.Priority),
 		domain.FormatDay(t.Deadline), int64(t.Estimate), int64(t.TimeSpent), t.Number)
 	if err != nil {
 		return fmt.Errorf("changing the task: %w", err)
@@ -137,7 +131,7 @@ func (s *Store) Delete(number int) error {
 // Find hands back the task carrying number, and says so when there is none.
 func (s *Store) Find(number int) (domain.Task, error) {
 	row := s.db.QueryRow(
-		`SELECT number, title, description, state, priority, deadline, estimate, time_spent
+		`SELECT number, parent, title, description, state, priority, deadline, estimate, time_spent
 		 FROM tasks WHERE number = ?`, number)
 	t, err := scanTask(row)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -155,7 +149,7 @@ func (s *Store) Find(number int) (domain.Task, error) {
 // All hands back every task, in the order they were added.
 func (s *Store) All() ([]domain.Task, error) {
 	rows, err := s.db.Query(
-		`SELECT number, title, description, state, priority, deadline, estimate, time_spent
+		`SELECT number, parent, title, description, state, priority, deadline, estimate, time_spent
 		 FROM tasks ORDER BY number`)
 	if err != nil {
 		return nil, fmt.Errorf("reading the store: %w", err)
@@ -179,6 +173,34 @@ func (s *Store) All() ([]domain.Task, error) {
 	return tasks, nil
 }
 
+// Under hands back the tasks hanging directly under a task, in the order they
+// were added.
+func (s *Store) Under(number int) ([]domain.Task, error) {
+	rows, err := s.db.Query(
+		`SELECT number, parent, title, description, state, priority, deadline, estimate, time_spent
+		 FROM tasks WHERE parent = ? ORDER BY number`, number)
+	if err != nil {
+		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	tasks := []domain.Task{}
+	for rows.Next() {
+		t, err := scanTask(rows)
+		if err != nil {
+			return nil, fmt.Errorf("reading a sub-task: %w", err)
+		}
+		if t.Labels, err = s.labelsOf(t.Number); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
+	}
+	return tasks, nil
+}
+
 // scanner is what both a single row and a row of a result set can do. Declared
 // here so Find and All share one reading of a task.
 type scanner interface {
@@ -193,7 +215,7 @@ func scanTask(row scanner) (domain.Task, error) {
 		deadline        string
 		estimate, spent int64
 	)
-	if err := row.Scan(&t.Number, &t.Title, &t.Description, &state, &priority,
+	if err := row.Scan(&t.Number, &t.Parent, &t.Title, &t.Description, &state, &priority,
 		&deadline, &estimate, &spent); err != nil {
 		return domain.Task{}, err
 	}

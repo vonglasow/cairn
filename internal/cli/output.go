@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -18,6 +19,7 @@ const jsonFlag = "json"
 // entity that knew its wire format would drag a protocol into every test.
 type taskJSON struct {
 	Number      int      `json:"number"`
+	Parent      int      `json:"parent"`
 	Title       string   `json:"title"`
 	State       string   `json:"state"`
 	Priority    string   `json:"priority"`
@@ -34,7 +36,7 @@ func forWire(t domain.Task) taskJSON {
 		labels = []string{}
 	}
 	return taskJSON{
-		Number: t.Number, Title: t.Title,
+		Number: t.Number, Parent: t.Parent, Title: t.Title,
 		State: string(t.State), Priority: string(t.Priority),
 		Description: t.Description, Labels: labels,
 		Deadline:  domain.FormatDay(t.Deadline),
@@ -71,12 +73,7 @@ func writeList(cmd *cobra.Command, tasks []domain.Task) error {
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), "there is no task")
 		return err
 	}
-	var out strings.Builder
-	for _, t := range tasks {
-		out.WriteString(line(t))
-		out.WriteString("\n")
-	}
-	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
+	_, err := fmt.Fprint(cmd.OutOrStdout(), tree(tasks))
 	return err
 }
 
@@ -86,6 +83,170 @@ func writeDeleted(cmd *cobra.Command, n int) error {
 		return writeJSON(cmd, map[string]any{"deleted": n})
 	}
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "task %d was deleted\n", n)
+	return err
+}
+
+// backupJSON is how a backup crosses to a machine.
+type backupJSON struct {
+	Number int    `json:"number"`
+	Made   string `json:"made"`
+	Holds  int    `json:"holds,omitempty"`
+}
+
+// changeJSON is how a change to the store crosses to a machine.
+type changeJSON struct {
+	Number  int    `json:"number"`
+	Name    string `json:"name"`
+	Applied bool   `json:"applied"`
+	Made    string `json:"made,omitempty"`
+}
+
+// madeAt writes a moment the way a person reads one.
+func madeAt(t time.Time) string { return t.Local().Format("2006-01-02 15:04") }
+
+// writeBackup answers with one backup. holds is written only when it was counted:
+// making a backup does not open it, and a zero nobody measured would read as an
+// empty store.
+func writeBackup(cmd *cobra.Command, one domain.Backup, holds int) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, backupJSON{Number: one.Number, Made: madeAt(one.Made), Holds: holds})
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "#%d  made %s  holds %d task(s)\n",
+		one.Number, madeAt(one.Made), holds)
+	return err
+}
+
+// writeBackups answers with every backup, saying so when there is none.
+func writeBackups(cmd *cobra.Command, all []domain.Backup) error {
+	if wantsJSON(cmd) {
+		wire := make([]backupJSON, 0, len(all))
+		for _, one := range all {
+			wire = append(wire, backupJSON{Number: one.Number, Made: madeAt(one.Made)})
+		}
+		return writeJSON(cmd, wire)
+	}
+	if len(all) == 0 {
+		_, err := fmt.Fprintln(cmd.OutOrStdout(), "there is no backup")
+		return err
+	}
+	var out strings.Builder
+	for _, one := range all {
+		_, _ = fmt.Fprintf(&out, "#%d  made %s\n", one.Number, madeAt(one.Made))
+	}
+	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
+	return err
+}
+
+// writeChanges answers with every change, applied or waiting. Both are listed:
+// a list that only showed what was done could not tell you what to apply.
+func writeChanges(cmd *cobra.Command, changes []domain.Migration, held int) error {
+	if wantsJSON(cmd) {
+		wire := make([]changeJSON, 0, len(changes))
+		for _, c := range changes {
+			wire = append(wire, changeJSON{
+				Number: c.Number, Name: c.Name, Applied: c.Applied, Made: appliedAt(c),
+			})
+		}
+		return writeJSON(cmd, wire)
+	}
+	waiting := 0
+	var out strings.Builder
+	for _, c := range changes {
+		if !c.Applied {
+			waiting++
+		}
+		_, _ = fmt.Fprintf(&out, "#%d  %s  %s\n", c.Number, state(c), c.Name)
+	}
+	_, _ = fmt.Fprintf(&out, "\nthe store holds %d task(s), %d change(s) waiting\n", held, waiting)
+	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
+	return err
+}
+
+// state is how a change reads in a listing.
+func state(c domain.Migration) string {
+	if c.Applied {
+		return "applied " + madeAt(c.Made)
+	}
+	return "waiting          "
+}
+
+// appliedAt is when a change was made, and nothing when it has not been.
+func appliedAt(c domain.Migration) string {
+	if !c.Applied {
+		return ""
+	}
+	return madeAt(c.Made)
+}
+
+// writeChange answers with one change: what it is, what it does, and what
+// undoing it does. The SQL is shown because that is what somebody wants to read
+// before letting a tool touch their data.
+func writeChange(cmd *cobra.Command, c domain.Migration) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{
+			"number": c.Number, "name": c.Name, "applied": c.Applied,
+			"made": appliedAt(c), "does": c.Does, "undoes": c.Undoes, "loses": c.Loses,
+		})
+	}
+	var out strings.Builder
+	_, _ = fmt.Fprintf(&out, "#%d  %s  %s\n\n", c.Number, state(c), c.Name)
+	_, _ = fmt.Fprintf(&out, "what it does\n%s\n\n", orNothing(strings.TrimSpace(c.Does)))
+	_, _ = fmt.Fprintf(&out, "what undoing it does\n%s\n\n", orNothing(strings.TrimSpace(c.Undoes)))
+	_, _ = fmt.Fprintf(&out, "what undoing it loses\n%s\n", orNothing(c.Loses))
+	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
+	return err
+}
+
+// writeDone confirms an act on something numbered — a backup deleted, a backup put
+// back. Answering in the form the caller asked for is the whole point of the
+// flag: a script that gets a sentence where it expected a document has no way
+// to tell success from anything else.
+func writeDone(cmd *cobra.Command, what string, number int) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{what: number})
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "backup %d was %s\n", number, what)
+	return err
+}
+
+// writeRolledBack names the change a rollback unmade, and what that cost. The
+// cost is said here rather than left to be worked out from the SQL: somebody
+// who rolls back to try something is exactly somebody who has not read the
+// schema, and the backup set aside is only useful to whoever knows to reach for
+// it.
+func writeRolledBack(cmd *cobra.Command, one domain.Migration) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{"rolled_back": one.Name, "lost": one.Loses})
+	}
+	var out strings.Builder
+	_, _ = fmt.Fprintf(&out, "rolled back %q\n", one.Name)
+	if one.Loses != "" {
+		_, _ = fmt.Fprintf(&out, "lost: %s — `cairn backup restore --yes` puts it back\n", one.Loses)
+	}
+	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
+	return err
+}
+
+// writeNothingWaiting says that there was nothing to apply — which is an
+// answer, not a refusal, so it goes to standard output like any other.
+func writeNothingWaiting(cmd *cobra.Command) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{"applied": []string{}})
+	}
+	_, err := fmt.Fprintln(cmd.OutOrStdout(), "there is nothing waiting to be applied")
+	return err
+}
+
+// writeApplied names what a change command just made.
+func writeApplied(cmd *cobra.Command, made []string) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{"applied": made})
+	}
+	var out strings.Builder
+	for _, name := range made {
+		_, _ = fmt.Fprintf(&out, "applied %q\n", name)
+	}
+	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
 	return err
 }
 

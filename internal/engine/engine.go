@@ -29,6 +29,13 @@ var ErrLabelSignAtCreation = errors.New("a label is added or taken away only whe
 // answers with has to live.
 var ErrNoSuchTask = store.ErrNoSuchTask
 
+// The reasons a task cannot hang where it was asked to, or be deleted.
+var (
+	ErrParentIsSelf    = errors.New("a task cannot hang under itself")
+	ErrParentIsSubTask = errors.New("a sub-task cannot carry sub-tasks")
+	ErrCarriesSubTasks = errors.New("the task carries sub-tasks")
+)
+
 // tasks is what the engine needs from whatever keeps its tasks. Declared here,
 // by the consumer, so the rules stay testable and a second backing can arrive
 // without the engine noticing.
@@ -38,12 +45,14 @@ type tasks interface {
 	Delete(int) error
 	Find(int) (domain.Task, error)
 	All() ([]domain.Task, error)
+	Under(int) ([]domain.Task, error)
 	Close() error
 }
 
 // Engine carries out the operations. Every change of state goes through it.
 type Engine struct {
 	tasks tasks
+	store *store.Store
 }
 
 // Changes are the attributes an operation was given. A nil field was not
@@ -57,21 +66,42 @@ type Changes struct {
 	Labels      *[]string
 	Deadline    *string
 	Estimate    *string
+	Parent      *int
 }
 
 // named says whether anything at all was given to change.
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
-		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil
+		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
+		c.Estimate != nil || c.Parent != nil
 }
 
-// Open opens the store at path and builds the engine over it.
-func Open(path string) (*Engine, error) {
-	kept, err := store.Open(path)
+// Open opens a store that has to be up to date, and refuses one that is not:
+// a command about tasks does not change the shape of the store on the way past.
+func Open(path string) (*Engine, error) { return openWith(path, store.Open) }
+
+// OpenBehind opens a store whatever shape it is in, for the commands whose job
+// is to change that shape.
+func OpenBehind(path string) (*Engine, error) { return openWith(path, store.OpenBehind) }
+
+// openWith builds the engine over whichever way the store was opened.
+func openWith(path string, open func(string) (*store.Store, error)) (*Engine, error) {
+	kept, err := open(path)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: %w", path, ErrStore, err)
+		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept}, nil
+	return &Engine{tasks: kept, store: kept}, nil
+}
+
+// storeProblem marks an error as being about the store itself rather than about
+// the request. An error that already says which kind of problem it is passes
+// through untouched: wrapping "the store is behind" in "the store cannot be
+// read" would say two things, one of them false.
+func storeProblem(err error) error {
+	if errors.Is(err, ErrStoreBehind) || errors.Is(err, ErrNewerStore) {
+		return err
+	}
+	return fmt.Errorf("%w: %w", ErrStore, err)
 }
 
 // Close releases the store.
@@ -88,6 +118,9 @@ func (e *Engine) Add(title string, c Changes) (domain.Task, error) {
 	if task, err = apply(task, c, creating); err != nil {
 		return domain.Task{}, err
 	}
+	if err := e.canHang(task); err != nil {
+		return domain.Task{}, err
+	}
 	return e.tasks.Keep(task)
 }
 
@@ -101,9 +134,43 @@ func (e *Engine) Show(number int) (domain.Task, error) {
 	return e.tasks.Find(number)
 }
 
-// Delete removes the task carrying number.
+// Delete removes the task carrying number, refusing while something still
+// hangs under it: what depends on the task would go with it, and a deletion
+// that takes more than the number typed is a deletion nobody asked for.
 func (e *Engine) Delete(number int) error {
+	hanging, err := e.tasks.Under(number)
+	if err != nil {
+		return err
+	}
+	if len(hanging) > 0 {
+		return fmt.Errorf("task %d: %w", number, ErrCarriesSubTasks)
+	}
 	return e.tasks.Delete(number)
+}
+
+// Under hands back what hangs directly under a task.
+func (e *Engine) Under(number int) ([]domain.Task, error) {
+	return e.tasks.Under(number)
+}
+
+// canHang says whether a task may hang where it was told to. A parent has to
+// exist, cannot be the task itself, and cannot already hang under something —
+// what hangs under a task is never something with more hanging under it.
+func (e *Engine) canHang(task domain.Task) error {
+	if task.Parent == domain.NoParent {
+		return nil
+	}
+	if task.Parent == task.Number {
+		return fmt.Errorf("task %d: %w", task.Number, ErrParentIsSelf)
+	}
+	parent, err := e.tasks.Find(task.Parent)
+	if err != nil {
+		return err
+	}
+	if parent.Parent != domain.NoParent {
+		return fmt.Errorf("task %d: %w", parent.Number, ErrParentIsSubTask)
+	}
+	return nil
 }
 
 // Edit changes what was named on a task and leaves the rest alone.
@@ -116,6 +183,9 @@ func (e *Engine) Edit(number int, c Changes) (domain.Task, error) {
 		return domain.Task{}, err
 	}
 	if task, err = apply(task, c, changing); err != nil {
+		return domain.Task{}, err
+	}
+	if err := e.canHang(task); err != nil {
 		return domain.Task{}, err
 	}
 	if err := e.tasks.Update(task); err != nil {
@@ -179,6 +249,9 @@ func apply(task domain.Task, c Changes, atCreation bool) (domain.Task, error) {
 			return domain.Task{}, err
 		}
 		task.Deadline = deadline
+	}
+	if c.Parent != nil {
+		task.Parent = *c.Parent
 	}
 	if c.Estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.Estimate)

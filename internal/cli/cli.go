@@ -143,7 +143,7 @@ func NewRootCmd() *cobra.Command {
 	// the same way. Declared on the root because the answer's shape is a
 	// property of the whole conversation, not of one subcommand.
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
-	root.AddCommand(newTaskCmd())
+	root.AddCommand(newTaskCmd(), newBackupCmd(), newMigrationCmd())
 	return root
 }
 

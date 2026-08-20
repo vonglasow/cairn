@@ -213,6 +213,34 @@ Feature: Tasks
       When I run `cairn task list`
       Then task 1 is listed before task 2
 
+    @task-list-under
+    Scenario: a sub-task is listed under the task it hangs from
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task list`
+      Then it lists 2 tasks
+      And task 2 is listed under task 1
+
+    @task-list-under-several
+    Scenario: everything hanging under a task is listed under it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I added a task titled "Write the docs" with the parent "1"
+      When I run `cairn task list`
+      Then it lists 3 tasks
+      And task 2 is listed under task 1
+      And task 3 is listed under task 1
+
+    @task-list-under-then-next
+    Scenario: a task hanging under nothing follows the whole of the one before it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I added a task titled "Something else"
+      When I run `cairn task list`
+      Then task 2 is listed before task 3
+      And task 2 is listed under task 1
+      And task 3 hangs under nothing in the listing
+
   Rule: A task can be read back by its number
 
     @task-show
@@ -501,6 +529,119 @@ Feature: Tasks
       And I deleted task 2
       When I run `cairn task add "Third"`
       Then it numbers the task 3
+
+  Rule: A task can hang under another one
+
+    A task given a parent becomes one of its sub-tasks, and stays a task in
+    every other way: its own number, its own priority, its own labels, changed
+    and read back like any other. Only one level — a sub-task cannot itself
+    carry sub-tasks, so what hangs under a task is never something with more
+    hanging under it.
+
+    A task carrying sub-tasks is not deleted while they are there. What depends
+    on it would go with it, and a deletion that takes more than the number
+    typed is a deletion nobody asked for.
+
+    @task-parent-none
+    Scenario: a task hangs under nothing unless it is told to
+      When I run `cairn task add "Ship it"`
+      Then the task has no parent
+
+    @task-parent-add
+    Scenario: a task can be added under another
+      Given I added a task titled "Ship it"
+      When I run `cairn task add "Write the tests" --parent 1`
+      Then the task carries the parent "1"
+
+    @task-parent-edit
+    Scenario: a task can be hung under another after the fact
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests"
+      When I run `cairn task edit 2 --parent 1`
+      Then the task carries the parent "1"
+
+    @task-parent-cleared
+    Scenario: a parent given empty sets the task free
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task edit 2 --parent ""`
+      Then the task has no parent
+
+    @task-parent-unknown
+    Scenario: hanging a task under one that does not exist is refused
+      Given I added a task titled "Ship it"
+      When I run `cairn task add "Write the tests" --parent 99`
+      Then it fails
+      And it says there is no such task
+
+    @task-parent-itself
+    Scenario: a task cannot hang under itself
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --parent 1`
+      Then it fails
+      And it says a task cannot hang under itself
+
+    @task-parent-not-a-number
+    Scenario: a parent that is not a number says so
+      Given I added a task titled "Ship it"
+      When I run `cairn task add "Write the tests" --parent spec`
+      Then it fails
+      And it says a task number is expected
+
+    @task-parent-depth
+    Scenario: a sub-task cannot carry sub-tasks
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task add "Write the first one" --parent 2`
+      Then it fails
+      And it says a sub-task cannot carry sub-tasks
+
+    @task-parent-shown
+    Scenario: showing a task names what hangs under it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task show 1`
+      Then it lists task 2 titled "Write the tests"
+
+    @task-parent-listed
+    Scenario: a sub-task is listed in its own right
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task list`
+      Then it lists 2 tasks
+
+    @task-parent-delete-refused
+    Scenario: a task carrying sub-tasks is not deleted
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task delete 1 --yes`
+      Then it fails
+      And it says the task carries sub-tasks
+      And `cairn task show 1` still reports a task titled "Ship it"
+
+    @task-parent-delete-freed
+    Scenario: once nothing hangs under it, the task can be deleted
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I deleted task 2
+      When I run `cairn task delete 1 --yes`
+      Then it succeeds
+
+    @task-parent-survives
+    Scenario: the link outlives the command that made it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And cairn has exited
+      When I run `cairn task show 2`
+      Then the task carries the parent "1"
+
+    @task-parent-json
+    Scenario: the link can be read by a machine
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task show 2 --json`
+      Then it writes JSON to standard output
+      And it carries the parent 1
 
   Rule: A task outlives the command that created it
 

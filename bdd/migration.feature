@@ -1,0 +1,190 @@
+Feature: Changes to the shape of the store
+  What a task can carry grows over time, so the shape of the store has to grow
+  with it. A store already on disk knows nothing of the latest addition, and
+  changing it on the way past — while listing tasks, say — would rewrite
+  somebody's data as a side effect. So cairn says what is missing and waits to
+  be told, sets a backup aside before it touches anything, and can put back what
+  it changed.
+
+  Background:
+    Given a store of my own, somewhere that is not the default place
+    And nothing in it yet
+
+  Rule: A store behind the cairn that opens it is not touched
+
+    @store-behind-refused
+    Scenario: a command on a store in need of a change says what to run
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn task list`
+      Then it exits with code 3
+      And it says the store is behind
+      And it says to run `cairn migration apply`
+
+    @store-behind-untouched
+    Scenario: refusing changes nothing about the store
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I ran a command that was refused
+      When I run `cairn migration list`
+      Then it says 1 change is waiting
+
+
+
+  Rule: A change is applied when it is asked for
+
+    @migration-apply
+    Scenario: applying what is waiting brings the store up to date
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And it names the change it applied
+      And `cairn task list` lists 1 task
+
+    @migration-apply-one
+    Scenario: a single change can be named
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn migration apply 2`
+      Then it succeeds
+      And it names the change it applied
+
+    @migration-apply-keeps
+    Scenario: what the store held is still there afterwards
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn migration apply`
+      Then `cairn task list` lists task 1 titled "Write the spec"
+
+    @migration-apply-backups
+    Scenario: a backup is set aside before anything is applied
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn migration apply`
+      Then `cairn backup list` lists 1 backup
+
+    @migration-apply-nothing
+    Scenario: applying when nothing is waiting says so
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And it says there is nothing waiting
+
+    @migration-apply-nothing-json
+    Scenario: having nothing to apply is answered the way it was asked
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration apply --json`
+      Then it writes JSON to standard output
+
+    @migration-apply-unknown
+    Scenario: applying a change that does not exist says so
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration apply 99`
+      Then it fails
+      And it says there is no such change
+
+    @migration-apply-new-store
+    Scenario: a store made today needs nothing applied to it
+      When I run `cairn task add "Write the spec"`
+      Then it succeeds
+      And it writes nothing to standard error
+
+
+
+  Rule: What a change will do can be read before it is made
+
+    @migration-show
+    Scenario: a change says what it does, and how it is undone
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration show 2`
+      Then it succeeds
+      And it names the change
+      And it shows what the change does
+      And it shows what undoing it does
+
+    @migration-show-loses
+    Scenario: a change says what rolling it back would lose
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration show 2`
+      Then it succeeds
+      And it says what rolling the change back loses
+
+    @migration-show-unknown
+    Scenario: showing a change that does not exist says so
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration show 99`
+      Then it fails
+      And it says there is no such change
+
+
+
+  Rule: What was done to a store can be read back
+
+    @migration-list
+    Scenario: the store says what has been done to it, and when
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration list`
+      Then it succeeds
+      And it names every change made to the store
+      And it says when each was made
+
+    @migration-list-waiting
+    Scenario: what has not been applied is listed too, and marked
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn migration list`
+      Then it succeeds
+      And it says 1 change is waiting
+
+    @migration-list-json
+    Scenario: what was done can be read by a machine
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration list --json`
+      Then it writes JSON to standard output
+
+
+
+  Rule: The last change applied can be rolled back
+
+    @migration-rollback
+    Scenario: rolling back puts the store back the way it was
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I applied what was waiting
+      When I run `cairn migration rollback --yes`
+      Then it succeeds
+      And it names the change it undid
+
+    @migration-rollback-says-what-it-lost
+    Scenario: rolling back names what it dropped on the way
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I applied what was waiting
+      When I run `cairn migration rollback --yes`
+      Then it succeeds
+      And it says what rolling the change back loses
+      And it says a backup can put it back
+
+    @migration-rollback-keeps-what-fits
+    Scenario: rolling back keeps what the older shape can still hold
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I applied what was waiting
+      And I added a task titled "Ship it"
+      When I run `cairn migration rollback --yes`
+      Then it succeeds
+      And `cairn migration list` says the store holds 2 tasks
+
+    @migration-rollback-backups-first
+    Scenario: a backup is set aside before anything is rolled back
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I applied what was waiting
+      And I deleted every backup
+      When I run `cairn migration rollback --yes`
+      Then `cairn backup list` lists 1 backup
+
+    @migration-rollback-json
+    Scenario: rolling back can be read by a machine
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration rollback --yes --json`
+      Then it writes JSON to standard output
+      And it names the change it rolled back
+
+    @migration-rollback-unconfirmed
+    Scenario: rolling back without confirming refuses
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I applied what was waiting
+      When I run `cairn migration rollback`
+      Then it fails
+      And it says how to confirm

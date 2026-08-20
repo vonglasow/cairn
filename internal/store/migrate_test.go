@@ -1,0 +1,280 @@
+package store
+
+import (
+	"database/sql"
+	"errors"
+	"path/filepath"
+	"testing"
+)
+
+// olderStore writes a store the way cairn wrote them before it knew about
+// sub-tasks: the first shape, and no record of what has been applied.
+func olderStore(t *testing.T, title string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if _, err := db.Exec(migrations[0].up); err != nil {
+		t.Fatalf("writing the older shape: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO tasks (title, state, priority) VALUES (?, 'backlog', 'normal')`, title); err != nil {
+		t.Fatalf("writing a task: %v", err)
+	}
+	return path
+}
+
+func TestOpen_refusesAStoreBehindThisCairn(t *testing.T) {
+	_, err := Open(olderStore(t, "Write the spec"))
+	if !errors.Is(err, ErrStoreBehind) {
+		t.Errorf("err = %v, want ErrStoreBehind: opening must not change the shape", err)
+	}
+}
+
+func TestOpenBehind_opensAStoreWhateverShapeItIsIn(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	waiting, err := s.Waiting()
+	if err != nil {
+		t.Fatalf("Waiting: %v", err)
+	}
+	if len(waiting) != 1 {
+		t.Errorf("%d changes waiting, want 1", len(waiting))
+	}
+}
+
+func TestOpen_makesAStoreThatHeldNothingAtAll(t *testing.T) {
+	s, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	waiting, err := s.Waiting()
+	if err != nil {
+		t.Fatalf("Waiting: %v", err)
+	}
+	if len(waiting) != 0 {
+		t.Errorf("%d changes waiting, want none: a store made today is made current", len(waiting))
+	}
+}
+
+func TestOpen_refusesAStoreFromANewerCairn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if _, err := s.db.Exec(
+		`INSERT INTO migrations (name, applied_at) VALUES ('never heard of', '2099-01-01')`); err != nil {
+		t.Fatalf("writing a change from the future: %v", err)
+	}
+	_ = s.Close()
+
+	if _, err := Open(path); !errors.Is(err, ErrNewerStore) {
+		t.Errorf("err = %v, want ErrNewerStore", err)
+	}
+}
+
+func TestMigrations_namesEveryChangeAndItsState(t *testing.T) {
+	s := openStore(t)
+	all, err := s.Migrations()
+	if err != nil {
+		t.Fatalf("Migrations: %v", err)
+	}
+	if len(all) != len(migrations) {
+		t.Fatalf("%d changes, want %d", len(all), len(migrations))
+	}
+	for i, change := range all {
+		if change.Number != i+1 || change.Name == "" || change.Does == "" {
+			t.Errorf("change %d is incomplete: %+v", i, change)
+		}
+		if !change.Applied || change.Made.IsZero() {
+			t.Errorf("change %d should be applied and dated: %+v", i, change)
+		}
+	}
+}
+
+func TestApply_makesOneChange(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	name, err := s.Apply(2)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+	if name != migrations[1].name {
+		t.Errorf("applied %q, want %q", name, migrations[1].name)
+	}
+	waiting, err := s.Waiting()
+	if err != nil {
+		t.Fatalf("Waiting: %v", err)
+	}
+	if len(waiting) != 0 {
+		t.Errorf("%d changes still waiting, want none", len(waiting))
+	}
+}
+
+func TestApply_refusesAChangeThatDoesNotExist(t *testing.T) {
+	s := openStore(t)
+	for _, number := range []int{0, 99} {
+		if _, err := s.Apply(number); !errors.Is(err, ErrNoSuchChange) {
+			t.Errorf("Apply(%d) err = %v, want ErrNoSuchChange", number, err)
+		}
+	}
+}
+
+func TestApply_refusesAChangeAlreadyApplied(t *testing.T) {
+	if _, err := openStore(t).Apply(1); !errors.Is(err, ErrNothingWaiting) {
+		t.Errorf("err = %v, want ErrNothingWaiting", err)
+	}
+}
+
+func TestApplyAll_makesEverythingWaiting(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	made, err := s.ApplyAll()
+	if err != nil {
+		t.Fatalf("ApplyAll: %v", err)
+	}
+	if len(made) != 1 {
+		t.Errorf("applied %v, want the one change waiting", made)
+	}
+}
+
+func TestApplyAll_saysWhenNothingIsWaiting(t *testing.T) {
+	if _, err := openStore(t).ApplyAll(); !errors.Is(err, ErrNothingWaiting) {
+		t.Errorf("err = %v, want ErrNothingWaiting", err)
+	}
+}
+
+func TestApplyAll_keepsWhatAnOlderStoreHeld(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	if _, err := s.ApplyAll(); err != nil {
+		t.Fatalf("ApplyAll: %v", err)
+	}
+	all, err := s.All()
+	if err != nil {
+		t.Fatalf("All: %v", err)
+	}
+	if len(all) != 1 || all[0].Title != "Write the spec" {
+		t.Errorf("All = %v, want what the older store held", all)
+	}
+}
+
+func TestRollBack_unmakesTheLastChangeApplied(t *testing.T) {
+	s := openStore(t)
+	one, err := s.RollBack()
+	if err != nil {
+		t.Fatalf("RollBack: %v", err)
+	}
+	last := migrations[len(migrations)-1]
+	if one.Name != last.name {
+		t.Errorf("rolled back %q, want the last change", one.Name)
+	}
+	if one.Loses != last.loses {
+		t.Errorf("Loses = %q, want %q: a rollback has to be able to say what it cost", one.Loses, last.loses)
+	}
+}
+
+func TestMigrations_saysWhatUndoingEachOneLoses(t *testing.T) {
+	all, err := openStore(t).Migrations()
+	if err != nil {
+		t.Fatalf("Migrations: %v", err)
+	}
+	for i, one := range all {
+		if one.Loses != migrations[i].loses {
+			t.Errorf("change %d: Loses = %q, want %q", one.Number, one.Loses, migrations[i].loses)
+		}
+	}
+	// The shape a store starts with cannot be rolled back, so it costs nothing.
+	if all[0].Loses != "" {
+		t.Errorf("the first shape should lose nothing, got %q", all[0].Loses)
+	}
+}
+
+func TestRollBack_keepsWhatTheOlderShapeCanStillHold(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "Write the spec")
+	keep(t, s, "Ship it")
+
+	if _, err := s.RollBack(); err != nil {
+		t.Fatalf("RollBack: %v", err)
+	}
+	held, err := s.TasksHeld()
+	if err != nil {
+		t.Fatalf("TasksHeld: %v", err)
+	}
+	if held != 2 {
+		t.Errorf("%d tasks left, want 2: rolling back changes the shape, not the work", held)
+	}
+}
+
+func TestRollBack_refusesTheShapeAStoreStartsWith(t *testing.T) {
+	s := openStore(t)
+	for range migrations[1:] {
+		if _, err := s.RollBack(); err != nil {
+			t.Fatalf("RollBack: %v", err)
+		}
+	}
+	if _, err := s.RollBack(); !errors.Is(err, ErrNothingToRollBack) {
+		t.Errorf("err = %v, want ErrNothingToRollBack", err)
+	}
+}
+
+func TestTasksHeld_countsWhatAStoreHolds(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "Write the spec")
+	held, err := s.TasksHeld()
+	if err != nil {
+		t.Fatalf("TasksHeld: %v", err)
+	}
+	if held != 1 {
+		t.Errorf("TasksHeld = %d, want 1", held)
+	}
+}
+
+func TestTasksHeld_reportsAStoreItCannotRead(t *testing.T) {
+	if _, err := closed(t).TasksHeld(); err == nil {
+		t.Error("TasksHeld on a closed store should fail")
+	}
+}
+
+func TestMigrations_reportsAStoreItCannotRead(t *testing.T) {
+	s := closed(t)
+	if _, err := s.Migrations(); err == nil {
+		t.Error("Migrations on a closed store should fail")
+	}
+	if _, err := s.Waiting(); err == nil {
+		t.Error("Waiting on a closed store should fail")
+	}
+	if _, err := s.Apply(2); err == nil {
+		t.Error("Apply on a closed store should fail")
+	}
+	if _, err := s.ApplyAll(); err == nil {
+		t.Error("ApplyAll on a closed store should fail")
+	}
+	if _, err := s.RollBack(); err == nil {
+		t.Error("RollBack on a closed store should fail")
+	}
+}

@@ -47,7 +47,7 @@ Conventions:
 - **The suite is defined once per package.** `runAcceptance` in
   `internal/cli/cli_test.go` takes the feature file, the initializer and the
   tag. A new feature adds a `*_bdd_test.go` holding its world, its steps and
-  its tests — never a second copy of the suite. It is an unexported test
+  its tests — never a second backup of the suite. It is an unexported test
   helper, so a second surface cannot call it; lifting it out is the day that
   surface exists, not before (see `docs/architecture.md`).
 - **A scenario cleans up after itself, not after the test.** Anything a step

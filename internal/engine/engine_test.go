@@ -309,3 +309,125 @@ func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 		t.Error("Edit should refuse to both replace and change the labels")
 	}
 }
+
+func TestEngine_hangsATaskUnderAnother(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+
+	got, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if got.Parent != under.Number {
+		t.Errorf("Parent = %d, want %d", got.Parent, under.Number)
+	}
+}
+
+func TestEngine_setsATaskFreeWhenTheParentIsCleared(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	got, err := e.Edit(hung.Number, Changes{Parent: of(domain.NoParent)})
+	if err != nil {
+		t.Fatalf("Edit: %v", err)
+	}
+	if got.Parent != domain.NoParent {
+		t.Errorf("Parent = %d, want none", got.Parent)
+	}
+}
+
+func TestEngine_refusesAParentThatDoesNotExist(t *testing.T) {
+	if _, err := openEngine(t).Add("Write the tests", Changes{Parent: of(99)}); !errors.Is(err, ErrNoSuchTask) {
+		t.Errorf("err = %v, want ErrNoSuchTask", err)
+	}
+}
+
+func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
+	e := openEngine(t)
+	alone := add(t, e, "Ship it")
+	if _, err := e.Edit(alone.Number, Changes{Parent: of(alone.Number)}); !errors.Is(err, ErrParentIsSelf) {
+		t.Errorf("err = %v, want ErrParentIsSelf", err)
+	}
+}
+
+func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	if _, err := e.Add("Write the first one", Changes{Parent: of(hung.Number)}); !errors.Is(err, ErrParentIsSubTask) {
+		t.Errorf("err = %v, want ErrParentIsSubTask", err)
+	}
+}
+
+func TestEngine_refusesToDeleteATaskCarryingSubTasks(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+	if _, err := e.Add("Write the tests", Changes{Parent: of(under.Number)}); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	if err := e.Delete(under.Number); !errors.Is(err, ErrCarriesSubTasks) {
+		t.Errorf("err = %v, want ErrCarriesSubTasks", err)
+	}
+}
+
+func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if err := e.Delete(hung.Number); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+
+	if err := e.Delete(under.Number); err != nil {
+		t.Errorf("Delete: %v, want it to go now that nothing hangs under it", err)
+	}
+}
+
+func TestEngine_namesWhatHangsUnderATask(t *testing.T) {
+	e := openEngine(t)
+	under := add(t, e, "Ship it")
+	if _, err := e.Add("Write the tests", Changes{Parent: of(under.Number)}); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	got, err := e.Under(under.Number)
+	if err != nil {
+		t.Fatalf("Under: %v", err)
+	}
+	if len(got) != 1 || got[0].Title != "Write the tests" {
+		t.Errorf("Under = %v, want the one sub-task", got)
+	}
+}
+
+func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
+	e, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	kept, err := e.Add("Ship it", Changes{})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	if _, err := e.Under(kept.Number); err == nil {
+		t.Error("Under on a closed store should fail")
+	}
+	if err := e.Delete(kept.Number); err == nil {
+		t.Error("Delete on a closed store should fail")
+	}
+}

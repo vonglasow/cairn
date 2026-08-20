@@ -15,11 +15,17 @@ import (
 // matching a message that will be reworded one day.
 var ErrTitleRequired = errors.New("a task needs a title")
 
+// NoParent is the number a task carries when it hangs under nothing. Zero is
+// safe to mean "none" because the store never hands out zero: numbering starts
+// at one.
+const NoParent = 0
+
 // Task is the unit of work. It carries a title, and a number to refer to it by
 // afterwards. Everything else is optional and has a stated default: a task
 // starts in the backlog, at normal priority, carrying nothing else.
 type Task struct {
 	Number      int
+	Parent      int
 	Title       string
 	Description string
 	State       State

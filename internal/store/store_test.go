@@ -9,8 +9,8 @@ import (
 	"cairn/internal/domain"
 )
 
-// open gives a store on a fresh file, closed when the test ends.
-func open(t *testing.T) *Store {
+// openStore gives a store on a fresh file, closed when the test ends.
+func openStore(t *testing.T) *Store {
 	t.Helper()
 	s, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
 	if err != nil {
@@ -35,7 +35,7 @@ func keep(t *testing.T, s *Store, title string) domain.Task {
 }
 
 func TestStore_handsBackTheTaskItKept(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
 
 	got, err := s.Find(kept.Number)
@@ -51,14 +51,14 @@ func TestStore_handsBackTheTaskItKept(t *testing.T) {
 }
 
 func TestStore_numbersTheFirstTaskOne(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	if got := keep(t, s, "Write the spec").Number; got != 1 {
 		t.Errorf("Number = %d, want 1", got)
 	}
 }
 
 func TestStore_givesTheNextNumberToTheNextTask(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	keep(t, s, "First")
 	if got := keep(t, s, "Second").Number; got != 2 {
 		t.Errorf("Number = %d, want 2", got)
@@ -66,7 +66,7 @@ func TestStore_givesTheNextNumberToTheNextTask(t *testing.T) {
 }
 
 func TestStore_neverHandsOutANumberFreedByADeletion(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
 	if err := s.Delete(second.Number); err != nil {
@@ -78,7 +78,7 @@ func TestStore_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 }
 
 func TestStore_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	keep(t, s, "First")
 	keep(t, s, "Second")
 
@@ -92,14 +92,14 @@ func TestStore_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 }
 
 func TestStore_saysThereIsNoSuchTask(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	if _, err := s.Find(99); err == nil {
 		t.Error("Find(99) should fail: there is no such task")
 	}
 }
 
 func TestStore_keepsTextExactlyAsItWasGiven(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	for _, title := range []string{"Écrire la spéc — enfin !", "🧗 climb", "90% done, right?", strings.Repeat("a", 5000)} {
 		kept := keep(t, s, title)
 		got, err := s.Find(kept.Number)
@@ -113,7 +113,7 @@ func TestStore_keepsTextExactlyAsItWasGiven(t *testing.T) {
 }
 
 func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task, err := domain.NewTask("Write the spec")
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
@@ -152,7 +152,7 @@ func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 }
 
 func TestStore_replacesTheLabelsWhenATaskIsUpdated(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task := keep(t, s, "Write the spec")
 	task.Labels = []string{"spec", "draft"}
 	if err := s.Update(task); err != nil {
@@ -173,7 +173,7 @@ func TestStore_replacesTheLabelsWhenATaskIsUpdated(t *testing.T) {
 }
 
 func TestStore_saysWhenThereIsNothingToUpdate(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task, _ := domain.NewTask("Nope")
 	task.Number = 99
 	if err := s.Update(task); err == nil {
@@ -182,14 +182,14 @@ func TestStore_saysWhenThereIsNothingToUpdate(t *testing.T) {
 }
 
 func TestStore_saysWhenThereIsNothingToDelete(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	if err := s.Delete(99); err == nil {
 		t.Error("Delete on a task that does not exist should fail")
 	}
 }
 
 func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
 	keep(t, s, "Third")
@@ -241,7 +241,7 @@ func TestOpen_reportsAPlaceItCannotWriteTo(t *testing.T) {
 // store made only of happy paths is a store nobody has tested.
 func closed(t *testing.T) *Store {
 	t.Helper()
-	s := open(t)
+	s := openStore(t)
 	if err := s.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
@@ -271,7 +271,7 @@ func TestStore_reportsAStoreItCanNoLongerReach(t *testing.T) {
 }
 
 func TestStore_reportsLabelsItCannotRead(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
 	if _, err := s.db.Exec(`DROP TABLE labels`); err != nil {
 		t.Fatalf("dropping labels: %v", err)
@@ -286,7 +286,7 @@ func TestStore_reportsLabelsItCannotRead(t *testing.T) {
 }
 
 func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task, _ := domain.NewTask("Write the spec")
 	// The domain deduplicates; the store is handed whatever it is handed, and
 	// two identical labels break the key that makes them a set.
@@ -298,7 +298,7 @@ func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
 }
 
 func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task := keep(t, s, "Write the spec")
 	task.Labels = []string{"spec", "spec"}
 
@@ -308,7 +308,7 @@ func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
 }
 
 func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
 	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, kept.Number); err != nil {
 		t.Fatalf("writing a bad deadline: %v", err)
@@ -323,7 +323,7 @@ func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
 }
 
 func TestStore_reportsLabelsItCannotClear(t *testing.T) {
-	s := open(t)
+	s := openStore(t)
 	task := keep(t, s, "Write the spec")
 	if _, err := s.db.Exec(`DROP TABLE labels`); err != nil {
 		t.Fatalf("dropping labels: %v", err)
@@ -334,5 +334,62 @@ func TestStore_reportsLabelsItCannotClear(t *testing.T) {
 	}
 	if err := s.Delete(task.Number); err == nil {
 		t.Error("Delete should report labels it cannot clear")
+	}
+}
+
+func TestStore_handsBackTheParentItWasGiven(t *testing.T) {
+	s := openStore(t)
+	under := keep(t, s, "Ship it")
+	task, _ := domain.NewTask("Write the tests")
+	task.Parent = under.Number
+
+	kept, err := s.Keep(task)
+	if err != nil {
+		t.Fatalf("Keep: %v", err)
+	}
+	got, err := s.Find(kept.Number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if got.Parent != under.Number {
+		t.Errorf("Parent = %d, want %d", got.Parent, under.Number)
+	}
+}
+
+func TestStore_namesWhatHangsUnderATask(t *testing.T) {
+	s := openStore(t)
+	under := keep(t, s, "Ship it")
+	task, _ := domain.NewTask("Write the tests")
+	task.Parent = under.Number
+	if _, err := s.Keep(task); err != nil {
+		t.Fatalf("Keep: %v", err)
+	}
+	keep(t, s, "Unrelated")
+
+	children, err := s.Under(under.Number)
+	if err != nil {
+		t.Fatalf("Under: %v", err)
+	}
+	if len(children) != 1 || children[0].Title != "Write the tests" {
+		t.Errorf("Under = %v, want only the sub-task", children)
+	}
+}
+
+func TestStore_saysNothingHangsUnderALoneTask(t *testing.T) {
+	s := openStore(t)
+	lone := keep(t, s, "Ship it")
+	children, err := s.Under(lone.Number)
+	if err != nil {
+		t.Fatalf("Under: %v", err)
+	}
+	if len(children) != 0 {
+		t.Errorf("Under = %v, want none", children)
+	}
+}
+
+func TestStore_reportsSubTasksItCannotRead(t *testing.T) {
+	s := closed(t)
+	if _, err := s.Under(1); err == nil {
+		t.Error("Under on a closed store should fail")
 	}
 }

@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -27,6 +26,7 @@ type attributes struct {
 	labels      []string
 	deadline    string
 	estimate    string
+	parent      string
 }
 
 // bind declares the attribute flags on a command. title is only offered where
@@ -41,12 +41,13 @@ func (a *attributes) bind(cmd *cobra.Command, withTitle bool) {
 	cmd.Flags().StringArrayVar(&a.labels, "label", nil, "a label it carries")
 	cmd.Flags().StringVar(&a.deadline, "deadline", "", "the day it is due")
 	cmd.Flags().StringVar(&a.estimate, "estimate", "", "how long it should take")
+	cmd.Flags().StringVar(&a.parent, "parent", "", "the number of the task it hangs under")
 }
 
 // changes turns the flags a user actually typed into changes. A flag left
 // alone is a change nobody asked for, which is why this reads Changed rather
 // than the values themselves.
-func (a *attributes) changes(cmd *cobra.Command) engine.Changes {
+func (a *attributes) changes(cmd *cobra.Command) (engine.Changes, error) {
 	var c engine.Changes
 	if cmd.Flags().Changed("title") {
 		c.Title = &a.title
@@ -69,18 +70,37 @@ func (a *attributes) changes(cmd *cobra.Command) engine.Changes {
 	if cmd.Flags().Changed("estimate") {
 		c.Estimate = &a.estimate
 	}
-	return c
+	if cmd.Flags().Changed("parent") {
+		// Empty is how a task is set free, so it is read here rather than sent
+		// on as a number nobody could tell apart from "hang under task zero".
+		under := domain.NoParent
+		if a.parent != "" {
+			var err error
+			if under, err = number(a.parent); err != nil {
+				return engine.Changes{}, err
+			}
+		}
+		c.Parent = &under
+	}
+	return c, nil
 }
 
 // openEngine opens the store where the environment says it lives. It is called
 // by the commands that need it and by no one else, so `cairn --version` never
 // creates a file.
-func openEngine() (*engine.Engine, error) {
-	path, err := engine.StoreAddress(os.LookupEnv, os.UserHomeDir)
+func openEngine(_ *cobra.Command) (*engine.Engine, error) {
+	path, err := storePath()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", engine.ErrStore, err)
+		return nil, err
 	}
-	return engine.Open(path)
+	eng, err := engine.Open(path)
+	if errors.Is(err, engine.ErrStoreBehind) {
+		// The store knows it is behind; only a surface knows what somebody has
+		// to type about it, so the instruction is added here rather than buried
+		// in a package that has never heard of a command line.
+		return nil, fmt.Errorf("%w — run `cairn migration apply`", err)
+	}
+	return eng, err
 }
 
 // exactly says how many arguments a command takes, and says how to use it when
@@ -138,13 +158,17 @@ func newAddCmd() *cobra.Command {
 		Short: "Add a task",
 		Args:  exactly(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eng, err := openEngine()
+			eng, err := openEngine(cmd)
 			if err != nil {
 				return err
 			}
 			defer func() { _ = eng.Close() }()
 
-			task, err := eng.Add(args[0], attrs.changes(cmd))
+			asked, err := attrs.changes(cmd)
+			if err != nil {
+				return err
+			}
+			task, err := eng.Add(args[0], asked)
 			if err != nil {
 				return withTypedTitle(err, args[0])
 			}
@@ -161,7 +185,7 @@ func newListCmd() *cobra.Command {
 		Short: "List every task",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			eng, err := openEngine()
+			eng, err := openEngine(cmd)
 			if err != nil {
 				return err
 			}
@@ -186,7 +210,7 @@ func newShowCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			eng, err := openEngine()
+			eng, err := openEngine(cmd)
 			if err != nil {
 				return err
 			}
@@ -196,7 +220,11 @@ func newShowCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return write(cmd, task, card(task))
+			hanging, err := eng.Under(n)
+			if err != nil {
+				return err
+			}
+			return write(cmd, task, card(task)+under(hanging))
 		},
 	}
 }
@@ -212,13 +240,17 @@ func newEditCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			eng, err := openEngine()
+			eng, err := openEngine(cmd)
 			if err != nil {
 				return err
 			}
 			defer func() { _ = eng.Close() }()
 
-			task, err := eng.Edit(n, attrs.changes(cmd))
+			asked, err := attrs.changes(cmd)
+			if err != nil {
+				return err
+			}
+			task, err := eng.Edit(n, asked)
 			if err != nil {
 				return editReason(err, cmd)
 			}
@@ -243,7 +275,7 @@ func newDeleteCmd() *cobra.Command {
 			if !confirmed {
 				return fmt.Errorf("%w: add --yes to confirm", errNotConfirmed)
 			}
-			eng, err := openEngine()
+			eng, err := openEngine(cmd)
 			if err != nil {
 				return err
 			}
