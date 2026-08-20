@@ -59,6 +59,34 @@ Two things follow, and both are enforced:
   compute it slightly differently. So `cli` cannot import `store`, nor
   `database/sql` — it asks the engine, which is the whole point of the engine.
 
+## The shape of the store changes, and never on its own
+
+What a task can carry grows, so the shape of the store has to grow with it. Two
+rules hold that in place, and both are about who decides.
+
+**Nothing changes the shape unless it was asked to.** A store missing a change
+this cairn knows is reported and left alone — `store.Open` refuses it, and only
+the commands whose job is to change the shape use `store.OpenBehind`. Migrating
+on the way past would mean `cairn task list` rewriting somebody's database as a
+side effect of listing their tasks.
+
+**Every change carries its own undoing.** A migration holds the SQL that makes
+it and the SQL that unmakes it, and both are printable — `migration show` exists
+so a person can read what a tool is about to do before letting it. The first
+shape is the floor: it has no undoing, because unmaking it would mean throwing
+the store away, which is what deleting the file is for.
+
+## The backups are reachable without the store
+
+`store.Vault` opens no database. That is not an oversight: a backup is most needed
+exactly when the store cannot be opened — because it is corrupt, or because it
+comes from a cairn that knows more. Needing a working store to reach the backups
+would put them out of reach on the one day they matter.
+
+The same reason keeps `domain.Backup` and `domain.Migration` in `domain`: a
+surface has to name a backup and a change without being allowed to know how either
+is made.
+
 ## Half of this is enforced
 
 `depguard`, inside `golangci-lint`, holds the **direction** of dependencies:
