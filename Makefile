@@ -55,10 +55,9 @@ cover-check: coverage.out
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%.
 ##
-## Two thresholds, not one. Efficacy counts killed against killed-plus-survived,
-## so a mutant that timed out or that no test reaches is counted in neither and
-## silently improves the score. Mutant coverage counts judged mutants against
-## every mutant produced, which is what turns those into a failure.
+## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
+## they are passed as flags. That is measured, not assumed — see the comment
+## there before moving them back.
 mutation:
 	@command -v $(GREMLINS) >/dev/null || { \
 		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
@@ -67,7 +66,7 @@ mutation:
 	@for pkg in $$(go list ./... | sed "s|^cairn|.|"); do \
 		ls $$pkg/*_test.go >/dev/null 2>&1 || continue; \
 		echo "→ $$pkg"; \
-		$(GREMLINS) unleash --threshold-efficacy 100 --threshold-mcover 100 $$pkg || exit 1; \
+		$(GREMLINS) unleash $$pkg || exit 1; \
 	done
 
 ## clean: remove build and coverage artifacts

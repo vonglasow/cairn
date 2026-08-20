@@ -60,7 +60,14 @@ mutants to judge, so mutation would pass it in silence. Coverage sees it drop.
 ## Thresholds
 
 - Statement coverage: at least **90%** (`COVERAGE_MIN` in the Makefile).
-- Mutation efficacy: **100%**.
+- Mutation efficacy: **100%** — of the mutants gremlins judged, all died.
+- Mutant coverage: **100%** — it judged every mutant it made. Without this
+  second one, code no test reaches produces mutants counted in neither column,
+  and a run reports success having looked at nothing.
+
+Both live in `.gremlins.yaml`, because gremlins ignores them when they are
+passed as flags — measured, not assumed. Both read `99.99`, because the tool
+fails on *less than or equal*, so a `100` would refuse a perfect run.
 
 **A threshold is never lowered to get a commit through.** If a mutant survives,
 look at the mutant. When it is genuinely equivalent — a mutation that cannot

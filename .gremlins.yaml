@@ -3,10 +3,12 @@
 # Coverage says a line ran; mutation says a test would have noticed if it were
 # wrong. Run it with `make mutation`.
 #
-# The threshold is not here. It lives in the Makefile, next to the loop that
-# applies it package by package, because docs/checks.md puts a check's logic in
-# one place and one place only. A copy of it in this file would be a second
-# truth that nothing keeps in step.
+# The thresholds are here and not in the Makefile, for a measured reason:
+# gremlins v0.6.0 silently ignores --threshold-efficacy and --threshold-mcover
+# passed on the command line. Verified: `--threshold-efficacy 101` against a
+# package scoring 100% exits 0, while the same threshold in this file exits 10.
+# A gate that cannot fail is not a gate, and this project ran without one until
+# the day it was tested.
 
 unleash:
   # Without this, gremlins derives its per-mutant timeout from the baseline test
@@ -20,6 +22,21 @@ unleash:
   # with room to spare. The mcover threshold in the Makefile is what makes a
   # future timeout fail loudly instead of passing quietly.
   timeout-coefficient: 30
+
+  # 99.99, not 100, and this is not a lowered threshold. gremlins fails when the
+  # score is **less than or equal to** the value here (report.go:236), so a 100
+  # would refuse a perfect run. 99.99 is how "nothing less than 100%" is spelled
+  # in this tool.
+  #
+  # efficacy         — of the mutants it judged, how many died. A test that
+  #                    would not have noticed the bug leaves one alive.
+  # mutant-coverage  — of all the mutants it made, how many it judged at all.
+  #                    Without this one, code no test reaches produces mutants
+  #                    counted nowhere, and the run reports success having
+  #                    looked at nothing.
+  threshold:
+    efficacy: 99.99
+    mutant-coverage: 99.99
 
   # Mutators. The defaults are kept; the ones off by default stay off because
   # they produce a lot of equivalent mutants (a mutant that cannot change
