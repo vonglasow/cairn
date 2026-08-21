@@ -13,7 +13,7 @@ import (
 // list, and a reader that trusted the field would break on the first task
 // nobody labelled.
 func TestForWire_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
-	encoded, err := json.Marshal(forWire(spec(t)))
+	encoded, err := json.Marshal(forWire(spec(t), domain.Progress{}))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -26,7 +26,7 @@ func TestForWire_writesTheLabelsATaskCarries(t *testing.T) {
 	task := spec(t)
 	task.Labels = []string{"spec", "team"}
 
-	encoded, err := json.Marshal(forWire(task))
+	encoded, err := json.Marshal(forWire(task, domain.Progress{}))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestForWire_writesEveryAttributeAsText(t *testing.T) {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
 
-	wire := forWire(task)
+	wire := forWire(task, domain.Progress{})
 	if wire.Deadline != "2026-09-01" {
 		t.Errorf("Deadline = %q, want 2026-09-01", wire.Deadline)
 	}

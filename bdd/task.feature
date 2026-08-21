@@ -695,6 +695,63 @@ Feature: Tasks
       Then it writes JSON to standard output
       And it carries the parent 1
 
+  Rule: A task says how many of its sub-tasks are done
+
+    A task counts what hangs under it, never itself: a task with two sub-tasks
+    of which one is done is one of two, not one of three. Nobody reads it the
+    other way round.
+
+    @task-progress
+    Scenario: a task says how many of its sub-tasks are done
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task edit 2 --state done`
+      And I run `cairn task show 1`
+      Then it says 1 of 2 sub-tasks are done
+
+    @task-progress-of-nothing
+    Scenario: a task with nothing under it counts nothing
+      Given I added a task titled "Ship it"
+      When I run `cairn task show 1`
+      Then it does not say how much is done
+
+    @task-progress-percent
+    Scenario: how much of a task is done is also given as a share
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I added a task titled "Ship the thing" with the parent "1"
+      When I run `cairn task edit 2 --state done`
+      And I run `cairn task show 1`
+      Then it says the task is 33% done
+
+    @task-json-progress
+    Scenario: how many sub-tasks are done can be read by a machine
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task edit 2 --state done`
+      And I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it carries 1 of 2 sub-tasks done
+      And it carries the share 50
+
+    @task-json-progress-of-nothing
+    Scenario: a task with nothing under it carries no progress
+      Given I added a task titled "Ship it"
+      When I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it carries no progress
+
+    @task-json-progress-is-the-key
+    Scenario: the progress read back is the key, never the word
+      Given I added a task titled "Report on progress" with the description "no progress yet"
+      When I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it carries no progress
+      And it carries the title "Report on progress"
+
   Rule: A task outlives the command that created it
 
     @task-survives

@@ -26,6 +26,7 @@ var refusals = []error{
 	domain.ErrLabelRequired,
 	domain.ErrLabelsBothWays,
 	domain.ErrNotAState,
+	domain.ErrNotAnObjectiveState,
 	domain.ErrNotAPriority,
 	domain.ErrNotADay,
 	domain.ErrNotADuration,
@@ -36,6 +37,9 @@ var refusals = []error{
 	engine.ErrParentIsSelf,
 	engine.ErrParentIsSubTask,
 	engine.ErrCarriesSubTasks,
+	engine.ErrNoSuchObjective,
+	engine.ErrSubTaskServesNoObjective,
+	engine.ErrObjectiveCarriesTasks,
 	engine.ErrNoSuchBackup,
 	engine.ErrNoBackup,
 	engine.ErrNoSuchChange,
@@ -43,6 +47,7 @@ var refusals = []error{
 	engine.ErrAlreadyApplied,
 	engine.ErrNothingToRollBack,
 	errNotConfirmed,
+	errObjectiveNotConfirmed,
 }
 
 // codeFor says which kind of answer an error is.

@@ -6,6 +6,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -13,7 +14,12 @@ import (
 // ErrTitleRequired is returned when a title carries no text at all. It is a
 // sentinel so a surface can recognise it with errors.Is rather than by
 // matching a message that will be reworded one day.
-var ErrTitleRequired = errors.New("a task needs a title")
+//
+// It carries no subject of its own: what needs a title is named by whoever
+// wraps it, so "a task needs a title" and "an objective needs a title" are one
+// rule with two wordings rather than two sentinels a surface has to know both
+// of.
+var ErrTitleRequired = errors.New("needs a title")
 
 // NoParent is the number a task carries when it hangs under nothing. Zero is
 // safe to mean "none" because the store never hands out zero: numbering starts
@@ -26,6 +32,7 @@ const NoParent = 0
 type Task struct {
 	Number      int
 	Parent      int
+	Objective   int
 	Title       string
 	Description string
 	State       State
@@ -41,7 +48,7 @@ type Task struct {
 func NewTask(title string) (Task, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return Task{}, ErrTitleRequired
+		return Task{}, fmt.Errorf("a task %w", ErrTitleRequired)
 	}
 	return Task{Title: title, State: Backlog, Priority: Normal}, nil
 }

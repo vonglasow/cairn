@@ -18,19 +18,73 @@ const jsonFlag = "json"
 // so they are written here once rather than derived from the entity — an
 // entity that knew its wire format would drag a protocol into every test.
 type taskJSON struct {
-	Number      int      `json:"number"`
-	Parent      int      `json:"parent"`
-	Title       string   `json:"title"`
-	State       string   `json:"state"`
-	Priority    string   `json:"priority"`
-	Description string   `json:"description"`
-	Labels      []string `json:"labels"`
-	Deadline    string   `json:"deadline"`
-	Estimate    string   `json:"estimate"`
-	TimeSpent   string   `json:"time_spent"`
+	Number      int           `json:"number"`
+	Parent      int           `json:"parent"`
+	Title       string        `json:"title"`
+	State       string        `json:"state"`
+	Priority    string        `json:"priority"`
+	Description string        `json:"description"`
+	Labels      []string      `json:"labels"`
+	Deadline    string        `json:"deadline"`
+	Estimate    string        `json:"estimate"`
+	TimeSpent   string        `json:"time_spent"`
+	Objective   int           `json:"objective"`
+	Progress    *progressJSON `json:"progress"`
 }
 
-func forWire(t domain.Task) taskJSON {
+// progressJSON is how far along something is, for a machine. It is a pointer
+// on the way out and null when nothing is under it: zeroes would say none of
+// the work is done, where the truth is that there is no work.
+//
+// The share is published rather than left to be divided, so a client and a
+// person reading the same objective never disagree about the rounding.
+type progressJSON struct {
+	Tasks    *tallyJSON `json:"tasks,omitempty"`
+	SubTasks *tallyJSON `json:"sub_tasks,omitempty"`
+	Percent  int        `json:"percent"`
+}
+
+// tallyJSON is how many of one kind of thing there are, and how many are done.
+type tallyJSON struct {
+	Total int `json:"total"`
+	Done  int `json:"done"`
+}
+
+// forWireProgress turns a progress into what crosses, or nil when there is
+// nothing under it. A tally of nothing is left out entirely rather than
+// written as zeroes: a task has no tasks under it, and saying "0 of 0 tasks"
+// invents a kind of thing it cannot have.
+func forWireProgress(p domain.Progress) *progressJSON {
+	if !p.Any() {
+		return nil
+	}
+	out := progressJSON{Percent: p.Percent()}
+	if p.Tasks.Total > 0 {
+		out.Tasks = &tallyJSON{Total: p.Tasks.Total, Done: p.Tasks.Done}
+	}
+	if p.SubTasks.Total > 0 {
+		out.SubTasks = &tallyJSON{Total: p.SubTasks.Total, Done: p.SubTasks.Done}
+	}
+	return &out
+}
+
+// objectiveJSON is how an objective crosses to a machine. tasks holds what was
+// put directly under it, which is why it can hold three numbers while progress
+// counts seven things: the sub-tasks under those tasks are counted, not listed.
+type objectiveJSON struct {
+	Number      int           `json:"number"`
+	Title       string        `json:"title"`
+	State       string        `json:"state"`
+	Priority    string        `json:"priority"`
+	Description string        `json:"description"`
+	Labels      []string      `json:"labels"`
+	Deadline    string        `json:"deadline"`
+	Estimate    string        `json:"estimate"`
+	Tasks       []int         `json:"tasks"`
+	Progress    *progressJSON `json:"progress"`
+}
+
+func forWire(t domain.Task, p domain.Progress) taskJSON {
 	labels := t.Labels
 	if labels == nil {
 		labels = []string{}
@@ -42,6 +96,28 @@ func forWire(t domain.Task) taskJSON {
 		Deadline:  domain.FormatDay(t.Deadline),
 		Estimate:  domain.FormatDuration(t.Estimate),
 		TimeSpent: domain.FormatDuration(t.TimeSpent),
+		Objective: t.Objective,
+		Progress:  forWireProgress(p),
+	}
+}
+
+// forWireObjective turns an objective into what crosses.
+func forWireObjective(o domain.Objective, under []domain.Task, p domain.Progress) objectiveJSON {
+	labels := o.Labels
+	if labels == nil {
+		labels = []string{}
+	}
+	numbers := make([]int, 0, len(under))
+	for _, t := range under {
+		numbers = append(numbers, t.Number)
+	}
+	return objectiveJSON{
+		Number: o.Number, Title: o.Title, State: string(o.State),
+		Priority: string(o.Priority), Description: o.Description, Labels: labels,
+		Deadline: domain.FormatDay(o.Deadline),
+		Estimate: domain.FormatDuration(o.Estimate),
+		Tasks:    numbers,
+		Progress: forWireProgress(p),
 	}
 }
 
@@ -52,9 +128,9 @@ func wantsJSON(cmd *cobra.Command) bool {
 }
 
 // write answers with one task, as text or as JSON.
-func write(cmd *cobra.Command, task domain.Task, text string) error {
+func write(cmd *cobra.Command, task domain.Task, p domain.Progress, text string) error {
 	if wantsJSON(cmd) {
-		return writeJSON(cmd, forWire(task))
+		return writeJSON(cmd, forWire(task, p))
 	}
 	_, err := fmt.Fprint(cmd.OutOrStdout(), text)
 	return err
@@ -65,7 +141,7 @@ func writeList(cmd *cobra.Command, tasks []domain.Task) error {
 	if wantsJSON(cmd) {
 		wire := make([]taskJSON, 0, len(tasks))
 		for _, t := range tasks {
-			wire = append(wire, forWire(t))
+			wire = append(wire, forWire(t, domain.Progress{}))
 		}
 		return writeJSON(cmd, wire)
 	}
@@ -83,6 +159,43 @@ func writeDeleted(cmd *cobra.Command, n int) error {
 		return writeJSON(cmd, map[string]any{"deleted": n})
 	}
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "task %d was deleted\n", n)
+	return err
+}
+
+// writeObjective answers with one objective, as text or as JSON.
+func writeObjective(cmd *cobra.Command, o domain.Objective, under []domain.Task, p domain.Progress, text string) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, forWireObjective(o, under, p))
+	}
+	_, err := fmt.Fprint(cmd.OutOrStdout(), text)
+	return err
+}
+
+// writeObjectives answers with every objective, saying so when there is none.
+// No progress is worked out here: a listing that counted every task under
+// every objective would ask the store once per task to print one line each.
+func writeObjectives(cmd *cobra.Command, all []domain.Objective) error {
+	if wantsJSON(cmd) {
+		wire := make([]objectiveJSON, 0, len(all))
+		for _, o := range all {
+			wire = append(wire, forWireObjective(o, nil, domain.Progress{}))
+		}
+		return writeJSON(cmd, wire)
+	}
+	if len(all) == 0 {
+		_, err := fmt.Fprintln(cmd.OutOrStdout(), "there is no objective")
+		return err
+	}
+	_, err := fmt.Fprint(cmd.OutOrStdout(), objectiveList(all))
+	return err
+}
+
+// writeObjectiveDeleted confirms an objective was removed.
+func writeObjectiveDeleted(cmd *cobra.Command, n int) error {
+	if wantsJSON(cmd) {
+		return writeJSON(cmd, map[string]any{"deleted": n})
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "objective %d was deleted\n", n)
 	return err
 }
 

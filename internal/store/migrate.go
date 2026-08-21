@@ -84,6 +84,30 @@ CREATE TABLE IF NOT EXISTS labels (
 		down:  `ALTER TABLE tasks DROP COLUMN parent`,
 		loses: "which task each sub-task hangs under",
 	},
+	{
+		name: "objectives, and the tasks that serve them",
+		up: `
+CREATE TABLE IF NOT EXISTS objectives (
+	number      INTEGER PRIMARY KEY AUTOINCREMENT,
+	title       TEXT    NOT NULL,
+	description TEXT    NOT NULL DEFAULT '',
+	state       TEXT    NOT NULL,
+	priority    TEXT    NOT NULL,
+	deadline    TEXT    NOT NULL DEFAULT '',
+	estimate    INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS objective_labels (
+	objective_number INTEGER NOT NULL REFERENCES objectives(number) ON DELETE CASCADE,
+	label            TEXT    NOT NULL,
+	PRIMARY KEY (objective_number, label)
+);
+ALTER TABLE tasks ADD COLUMN objective INTEGER NOT NULL DEFAULT 0;`,
+		down: `
+DROP TABLE IF EXISTS objective_labels;
+DROP TABLE IF EXISTS objectives;
+ALTER TABLE tasks DROP COLUMN objective;`,
+		loses: "every objective, and which one each task serves",
+	},
 }
 
 // ledger is where the store records what has been done to it.

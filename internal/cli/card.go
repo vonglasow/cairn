@@ -15,7 +15,7 @@ const absent = "—"
 // card renders a task in full, empty attributes included. Rendering lives here
 // and only here: the day a second surface shows a task, it asks for this
 // rather than inventing a layout of its own.
-func card(t domain.Task) string {
+func card(t domain.Task, p domain.Progress) string {
 	var out strings.Builder
 	_, _ = fmt.Fprintf(&out, "#%d  %s\n\n", t.Number, t.Title)
 
@@ -29,6 +29,8 @@ func card(t domain.Task) string {
 		{"estimate", domain.FormatDuration(t.Estimate)},
 		{"time spent", domain.FormatDuration(t.TimeSpent)},
 		{"parent", parentOf(t)},
+		{"objective", servesOf(t)},
+		{"progress", progressLine(p, "task")},
 	} {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\n", field.key, orNothing(field.value))
 	}
@@ -43,6 +45,86 @@ func parentOf(t domain.Task) string {
 		return ""
 	}
 	return fmt.Sprintf("%d", t.Parent)
+}
+
+// servesOf writes the number of the objective a task serves, or nothing when
+// it serves none.
+func servesOf(t domain.Task) string {
+	if t.Objective == domain.NoObjective {
+		return ""
+	}
+	return fmt.Sprintf("%d", t.Objective)
+}
+
+// progressLine says how far along something is, and says nothing at all when
+// nothing is under it. Zero of zero is not "none of it done": there is no work
+// to be done, and a share of nothing would read as a standstill.
+//
+// Tasks and sub-tasks are named apart because they are counted apart, while
+// the share is over both — three tasks and four sub-tasks is never seven
+// tasks, but all seven have to happen.
+func progressLine(p domain.Progress, what string) string {
+	if !p.Any() {
+		return ""
+	}
+	var counts []string
+	if p.Tasks.Total > 0 {
+		counts = append(counts, fmt.Sprintf("%d of %d tasks", p.Tasks.Done, p.Tasks.Total))
+	}
+	if p.SubTasks.Total > 0 {
+		counts = append(counts, fmt.Sprintf("%d of %d sub-tasks", p.SubTasks.Done, p.SubTasks.Total))
+	}
+	return fmt.Sprintf("%s are done — the %s is %d%% done",
+		strings.Join(counts, " and "), what, p.Percent())
+}
+
+// objectiveCard renders an objective in full. It is not a task's card with
+// fields removed: an objective has no column, no parent and no time spent, and
+// a shared renderer would have to be told which half to leave out every time.
+func objectiveCard(o domain.Objective, p domain.Progress) string {
+	var out strings.Builder
+	_, _ = fmt.Fprintf(&out, "#%d  %s\n\n", o.Number, o.Title)
+
+	tw := tabwriter.NewWriter(&out, 0, 2, 2, ' ', 0)
+	for _, field := range []struct{ key, value string }{
+		{"state", string(o.State)},
+		{"priority", string(o.Priority)},
+		{"description", o.Description},
+		{"labels", strings.Join(o.Labels, ", ")},
+		{"deadline", domain.FormatDay(o.Deadline)},
+		{"estimate", domain.FormatDuration(o.Estimate)},
+		{"progress", progressLine(p, "objective")},
+	} {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", field.key, orNothing(field.value))
+	}
+	_ = tw.Flush()
+	return out.String()
+}
+
+// serving renders the tasks put under an objective, and says so when there are
+// none — an objective with an empty heading would read as one whose tasks
+// failed to load.
+func serving(tasks []domain.Task) string {
+	if len(tasks) == 0 {
+		return "\nnothing is under it\n"
+	}
+	var out strings.Builder
+	out.WriteString("\ntasks\n")
+	for _, t := range tasks {
+		_, _ = fmt.Fprintf(&out, "  %s\n", line(t))
+	}
+	return out.String()
+}
+
+// objectiveList renders every objective as one row each. No tree: what is
+// under an objective is shown by `objective show`, and a listing that unfolded
+// every task would stop being a listing of objectives.
+func objectiveList(all []domain.Objective) string {
+	var out strings.Builder
+	for _, o := range all {
+		_, _ = fmt.Fprintf(&out, "#%d  %s\n", o.Number, o.Title)
+	}
+	return out.String()
 }
 
 // under renders what hangs beneath a task, and nothing at all when nothing

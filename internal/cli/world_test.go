@@ -121,6 +121,32 @@ func wantContains(where, what, label string) error {
 	return nil
 }
 
+// progress reads the progress out of the JSON a command printed.
+func (w *world) progress() (map[string]any, error) {
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(w.out.stdout), &doc); err != nil {
+		return nil, err
+	}
+	progress, ok := doc["progress"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("no progress in %s", w.out.stdout)
+	}
+	return progress, nil
+}
+
+// tally reads one of the two counts out of the progress.
+func (w *world) tally(key string) (map[string]any, error) {
+	progress, err := w.progress()
+	if err != nil {
+		return nil, err
+	}
+	tally, ok := progress[key].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("no %s in %v", key, progress)
+	}
+	return tally, nil
+}
+
 // newWorld builds the state one scenario works against.
 func newWorld(t *testing.T) *world { return &world{t: t} }
 
@@ -565,6 +591,78 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			}
 			if len(docs) != n {
 				return fmt.Errorf("%d tasks, want %d", len(docs), n)
+			}
+			return nil
+		})
+
+		// --- how far along something is -------------------------------------------
+		//
+		// Shared by tasks and objectives: both are asked the same question and
+		// answer it in the same words, so one vocabulary serves both features.
+
+		sc.Step(`^it says (\d+) of (\d+) (tasks|sub-tasks) are done$`,
+			func(done, total int, kind string) error {
+				return wantContains(w.out.stdout,
+					fmt.Sprintf("%d of %d %s are done", done, total, kind), "the answer")
+			})
+
+		sc.Step(`^it says (\d+) of (\d+) tasks and (\d+) of (\d+) sub-tasks are done$`,
+			func(tasksDone, tasksTotal, subDone, subTotal int) error {
+				return wantContains(w.out.stdout,
+					fmt.Sprintf("%d of %d tasks and %d of %d sub-tasks are done",
+						tasksDone, tasksTotal, subDone, subTotal), "the answer")
+			})
+
+		sc.Step(`^it says the (task|objective) is (\d+)% done$`, func(what string, share int) error {
+			return wantContains(w.out.stdout, fmt.Sprintf("the %s is %d%% done", what, share), "the answer")
+		})
+
+		// Looked for by shape rather than by the word "done", which a state of
+		// its own puts on the card: `state done` would match either way.
+		sc.Step(`^it does not say how much is done$`, func() error {
+			if strings.Contains(w.out.stdout, "% done") {
+				return fmt.Errorf("the answer works out a share it has nothing to work out:\n%s", w.out.stdout)
+			}
+			return nil
+		})
+
+		sc.Step(`^it carries (\d+) of (\d+) (tasks|sub-tasks) done$`,
+			func(done, total int, kind string) error {
+				key := map[string]string{"tasks": "tasks", "sub-tasks": "sub_tasks"}[kind]
+				tally, err := w.tally(key)
+				if err != nil {
+					return err
+				}
+				if tally["total"] != float64(total) || tally["done"] != float64(done) {
+					return fmt.Errorf("%s = %v, want %d of %d", key, tally, done, total)
+				}
+				return nil
+			})
+
+		sc.Step(`^it carries the share (\d+)$`, func(want int) error {
+			progress, err := w.progress()
+			if err != nil {
+				return err
+			}
+			if progress["percent"] != float64(want) {
+				return fmt.Errorf("percent = %v, want %d", progress["percent"], want)
+			}
+			return nil
+		})
+
+		// The key has to be there and be null. A document missing it answers the
+		// same to a caller reading doc["progress"], right up to the day the
+		// caller starts checking whether the field exists at all.
+		sc.Step(`^it carries no progress$`, func() error {
+			var doc map[string]any
+			if err := json.Unmarshal([]byte(w.out.stdout), &doc); err != nil {
+				return err
+			}
+			if _, present := doc["progress"]; !present {
+				return fmt.Errorf("no progress key at all in %s", w.out.stdout)
+			}
+			if doc["progress"] != nil {
+				return fmt.Errorf("progress = %v, want null", doc["progress"])
 			}
 			return nil
 		})

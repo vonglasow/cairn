@@ -18,14 +18,14 @@ func spec(t *testing.T) domain.Task {
 }
 
 func TestCard_leadsWithTheNumberAndTheTitle(t *testing.T) {
-	got := card(spec(t))
+	got := card(spec(t), domain.Progress{})
 	if first := strings.SplitN(got, "\n", 2)[0]; !strings.Contains(first, "1") || !strings.Contains(first, "Write the spec") {
 		t.Errorf("first line = %q, want the number and the title", first)
 	}
 }
 
 func TestCard_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
-	got := card(spec(t))
+	got := card(spec(t), domain.Progress{})
 	for _, key := range []string{"state", "priority", "description", "labels", "deadline", "estimate", "time spent"} {
 		if !strings.Contains(got, key) {
 			t.Errorf("card is missing %q:\n%s", key, got)
@@ -34,7 +34,7 @@ func TestCard_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
 }
 
 func TestCard_showsTheDefaultsATaskStartsWith(t *testing.T) {
-	got := card(spec(t))
+	got := card(spec(t), domain.Progress{})
 	if !strings.Contains(got, "backlog") || !strings.Contains(got, "normal") {
 		t.Errorf("card should show backlog and normal:\n%s", got)
 	}
@@ -52,7 +52,7 @@ func TestCard_showsWhatTheTaskCarries(t *testing.T) {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
 
-	got := card(task)
+	got := card(task, domain.Progress{})
 	for _, want := range []string{"the one", "spec, team", "2026-09-01", "1h30m"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("card is missing %q:\n%s", want, got)

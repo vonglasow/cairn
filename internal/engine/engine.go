@@ -51,8 +51,9 @@ type tasks interface {
 
 // Engine carries out the operations. Every change of state goes through it.
 type Engine struct {
-	tasks tasks
-	store *store.Store
+	tasks      tasks
+	objectives objectives
+	store      *store.Store
 }
 
 // Changes are the attributes an operation was given. A nil field was not
@@ -68,13 +69,14 @@ type Changes struct {
 	Estimate    *string
 	Spent       *string
 	Parent      *int
+	Objective   *int
 }
 
 // named says whether anything at all was given to change.
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
-		c.Estimate != nil || c.Spent != nil || c.Parent != nil
+		c.Estimate != nil || c.Spent != nil || c.Parent != nil || c.Objective != nil
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not:
@@ -91,7 +93,7 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept, store: kept}, nil
+	return &Engine{tasks: kept, objectives: kept, store: kept}, nil
 }
 
 // storeProblem marks an error as being about the store itself rather than about
@@ -120,6 +122,9 @@ func (e *Engine) Add(title string, c Changes) (domain.Task, error) {
 		return domain.Task{}, err
 	}
 	if err := e.canHang(task); err != nil {
+		return domain.Task{}, err
+	}
+	if err := e.canServe(task); err != nil {
 		return domain.Task{}, err
 	}
 	return e.tasks.Keep(task)
@@ -161,6 +166,9 @@ func (e *Engine) canHang(task domain.Task) error {
 	if task.Parent == domain.NoParent {
 		return nil
 	}
+	if task.Objective != domain.NoObjective {
+		return ErrSubTaskServesNoObjective
+	}
 	if task.Parent == task.Number {
 		return fmt.Errorf("task %d: %w", task.Number, ErrParentIsSelf)
 	}
@@ -189,6 +197,9 @@ func (e *Engine) Edit(number int, c Changes) (domain.Task, error) {
 	if err := e.canHang(task); err != nil {
 		return domain.Task{}, err
 	}
+	if err := e.canServe(task); err != nil {
+		return domain.Task{}, err
+	}
 	if err := e.tasks.Update(task); err != nil {
 		return domain.Task{}, err
 	}
@@ -202,6 +213,24 @@ const (
 	creating = true
 	changing = false
 )
+
+// changedLabels works out the set that a change leaves behind. A sign says how
+// an existing set moves, and there is no set to move at creation, so one given
+// there is refused rather than read as a label named "+urgent".
+//
+// Shared by tasks and objectives: both carry a set and both move it the same
+// way, and this is the one part of applying a change that is more than a call
+// to a parser.
+func changedLabels(given, current []string, atCreation bool) ([]string, error) {
+	change, err := domain.ParseLabelChange(given)
+	if err != nil {
+		return nil, err
+	}
+	if atCreation && change.Adjusts() {
+		return nil, ErrLabelSignAtCreation
+	}
+	return change.Apply(current)
+}
 
 // apply lays the changes over a task, refusing any value it cannot make sense
 // of. A field that was not named is left exactly as it was.
@@ -231,14 +260,7 @@ func apply(task domain.Task, c Changes, atCreation bool) (domain.Task, error) {
 		task.Priority = priority
 	}
 	if c.Labels != nil {
-		change, err := domain.ParseLabelChange(*c.Labels)
-		if err != nil {
-			return domain.Task{}, err
-		}
-		if atCreation && change.Adjusts() {
-			return domain.Task{}, ErrLabelSignAtCreation
-		}
-		labels, err := change.Apply(task.Labels)
+		labels, err := changedLabels(*c.Labels, task.Labels, atCreation)
 		if err != nil {
 			return domain.Task{}, err
 		}
@@ -260,6 +282,9 @@ func apply(task domain.Task, c Changes, atCreation bool) (domain.Task, error) {
 	}
 	if c.Parent != nil {
 		task.Parent = *c.Parent
+	}
+	if c.Objective != nil {
+		task.Objective = *c.Objective
 	}
 	if c.Estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.Estimate)

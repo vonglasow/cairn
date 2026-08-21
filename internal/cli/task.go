@@ -28,6 +28,7 @@ type attributes struct {
 	estimate    string
 	spent       string
 	parent      string
+	objective   string
 }
 
 // bind declares the attribute flags on a command. title is only offered where
@@ -44,6 +45,7 @@ func (a *attributes) bind(cmd *cobra.Command, withTitle bool) {
 	cmd.Flags().StringVar(&a.estimate, "estimate", "", "how long it should take")
 	cmd.Flags().StringVar(&a.spent, "spent", "", "the time already spent on it; +30m adds, -15m takes off")
 	cmd.Flags().StringVar(&a.parent, "parent", "", "the number of the task it hangs under")
+	cmd.Flags().StringVar(&a.objective, "objective", "", "the number of the objective it serves")
 }
 
 // changes turns the flags a user actually typed into changes. A flag left
@@ -86,6 +88,18 @@ func (a *attributes) changes(cmd *cobra.Command) (engine.Changes, error) {
 			}
 		}
 		c.Parent = &under
+	}
+	if cmd.Flags().Changed("objective") {
+		// Empty is how a task is set loose, read here for the same reason as
+		// the parent: "serves objective zero" is not a thing anyone can mean.
+		serves := domain.NoObjective
+		if a.objective != "" {
+			var err error
+			if serves, err = objectiveNumber(a.objective); err != nil {
+				return engine.Changes{}, err
+			}
+		}
+		c.Objective = &serves
 	}
 	return c, nil
 }
@@ -177,7 +191,9 @@ func newAddCmd() *cobra.Command {
 			if err != nil {
 				return withTypedTitle(err, args[0])
 			}
-			return write(cmd, task, card(task))
+			// Nothing hangs under a task that has just been created, so the
+			// progress is asked of nobody rather than of the store.
+			return write(cmd, task, domain.Progress{}, card(task, domain.Progress{}))
 		},
 	}
 	attrs.bind(cmd, false)
@@ -229,7 +245,11 @@ func newShowCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return write(cmd, task, card(task)+under(hanging))
+			p, err := eng.TaskProgress(n)
+			if err != nil {
+				return err
+			}
+			return write(cmd, task, p, card(task, p)+under(hanging))
 		},
 	}
 }
@@ -259,7 +279,11 @@ func newEditCmd() *cobra.Command {
 			if err != nil {
 				return editReason(err, cmd)
 			}
-			return write(cmd, task, card(task))
+			p, err := eng.TaskProgress(n)
+			if err != nil {
+				return err
+			}
+			return write(cmd, task, p, card(task, p))
 		},
 	}
 	attrs.bind(cmd, true)

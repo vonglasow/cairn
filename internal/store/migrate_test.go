@@ -281,3 +281,83 @@ func TestMigrations_reportsAStoreItCannotRead(t *testing.T) {
 		t.Error("RollBack on a closed store should fail")
 	}
 }
+
+// holdsTable answers whether the store's shape has a table by that name.
+func holdsTable(t *testing.T, s *Store, name string) bool {
+	t.Helper()
+	var found string
+	err := s.db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, name,
+	).Scan(&found)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	if err != nil {
+		t.Fatalf("looking for table %q: %v", name, err)
+	}
+	return true
+}
+
+// holdsColumn answers whether a table carries a column by that name.
+func holdsColumn(t *testing.T, s *Store, table, column string) bool {
+	t.Helper()
+	rows, err := s.db.Query(`SELECT name FROM pragma_table_info(?)`, table)
+	if err != nil {
+		t.Fatalf("reading the shape of %q: %v", table, err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			t.Fatalf("reading a column of %q: %v", table, err)
+		}
+		if name == column {
+			return true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("reading the shape of %q: %v", table, err)
+	}
+	return false
+}
+
+func TestMigrate_makesRoomForObjectives(t *testing.T) {
+	s := openStore(t)
+	for _, table := range []string{"objectives", "objective_labels"} {
+		if !holdsTable(t, s, table) {
+			t.Errorf("no %q table: an objective has nowhere to be kept", table)
+		}
+	}
+	if !holdsColumn(t, s, "tasks", "objective") {
+		t.Error("tasks carry no objective: nothing records what a task serves")
+	}
+}
+
+func TestMigrate_rollingBackTakesTheRoomAway(t *testing.T) {
+	s := openStore(t)
+	if _, err := s.RollBack(); err != nil {
+		t.Fatalf("RollBack: %v", err)
+	}
+	for _, table := range []string{"objectives", "objective_labels"} {
+		if holdsTable(t, s, table) {
+			t.Errorf("%q survived the rollback: a change that cannot be undone is not one", table)
+		}
+	}
+	if holdsColumn(t, s, "tasks", "objective") {
+		t.Error("tasks still carry an objective after the rollback")
+	}
+}
+
+// The boundary is derived, never written: Apply(2) used to be the last change
+// and exercised it by accident. A third migration ended that, and the mutant
+// turning `number > len(all)` into `>=` survived in the gap.
+func TestChange_knowsExactlyWhereTheNumbersStop(t *testing.T) {
+	s := openStore(t)
+	last := len(migrations)
+	if _, err := s.Change(last); err != nil {
+		t.Errorf("Change(%d): %v: the last change is still a change", last, err)
+	}
+	if _, err := s.Change(last + 1); !errors.Is(err, ErrNoSuchChange) {
+		t.Errorf("Change(%d) err = %v, want ErrNoSuchChange", last+1, err)
+	}
+}
