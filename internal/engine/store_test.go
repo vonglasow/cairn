@@ -221,7 +221,14 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 	}
 	defer func() { _ = e.Close() }()
 
-	name, err := e.Apply(path, 2)
+	waiting, err := e.Waiting()
+	if err != nil {
+		t.Fatalf("Waiting: %v", err)
+	}
+	if len(waiting) != 1 {
+		t.Fatalf("%d changes waiting, want 1", len(waiting))
+	}
+	name, err := e.Apply(path, waiting[0].Number)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}

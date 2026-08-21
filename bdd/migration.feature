@@ -42,7 +42,7 @@ Feature: Changes to the shape of the store
     @migration-apply-one
     Scenario: a single change can be named
       Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn migration apply 2`
+      When I apply the change that is waiting, by its number
       Then it succeeds
       And it names the change it applied
 
@@ -70,6 +70,13 @@ Feature: Changes to the shape of the store
       Given I added a task titled "Write the spec"
       When I run `cairn migration apply --json`
       Then it writes JSON to standard output
+
+    @migration-apply-already
+    Scenario: applying a change that is already applied says so
+      Given I added a task titled "Write the spec"
+      When I run `cairn migration apply 1`
+      Then it fails
+      And it says the change is already applied
 
     @migration-apply-unknown
     Scenario: applying a change that does not exist says so
@@ -154,7 +161,7 @@ Feature: Changes to the shape of the store
       And I applied what was waiting
       When I run `cairn migration rollback --yes`
       Then it succeeds
-      And it says what rolling the change back loses
+      And it says what it lost
       And it says a backup can put it back
 
     @migration-rollback-keeps-what-fits
@@ -179,7 +186,7 @@ Feature: Changes to the shape of the store
       Given I added a task titled "Write the spec"
       When I run `cairn migration rollback --yes --json`
       Then it writes JSON to standard output
-      And it names the change it rolled back
+      And it carries the change it rolled back
 
     @migration-rollback-unconfirmed
     Scenario: rolling back without confirming refuses

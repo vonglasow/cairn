@@ -41,6 +41,16 @@ func (w *world) forgetBackups() error {
 	return nil
 }
 
+// numberOfRow reads the number a listing row leads with.
+func numberOfRow(row string) (int, bool) {
+	fields := strings.Fields(row)
+	if len(fields) == 0 || !strings.HasPrefix(fields[0], "#") {
+		return 0, false
+	}
+	number, err := strconv.Atoi(strings.TrimPrefix(fields[0], "#"))
+	return number, err == nil
+}
+
 // backupsListed counts the backups in whatever the last command printed.
 func backupsListed(out string) int {
 	return strings.Count(out, "#")
@@ -52,6 +62,29 @@ func backupsListed(out string) int {
 // scenario about backups needs a store older than this cairn to backup.
 func (w *world) registerStore(sc *godog.ScenarioContext) {
 	sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.olderStore)
+
+	// The number is read from the store, never written here: a scenario that
+	// spelled out "apply 2" would be describing how many migrations cairn has
+	// rather than what applying one does, and the next migration would break it.
+	sc.Step(`^I apply the change that is waiting, by its number$`, func() error {
+		before := w.out
+		w.run(`cairn migration list`)
+		listing := w.out.stdout
+		w.out = before
+
+		for _, row := range strings.Split(listing, "\n") {
+			if !strings.Contains(row, "waiting") {
+				continue
+			}
+			number, ok := numberOfRow(row)
+			if !ok {
+				return fmt.Errorf("cannot read a number from %q", row)
+			}
+			w.run(fmt.Sprintf(`cairn migration apply %d`, number))
+			return nil
+		}
+		return fmt.Errorf("nothing is waiting:\n%s", listing)
+	})
 
 	sc.Step(`^I applied what was waiting$`, func() error {
 		return w.seed(`cairn migration apply`)
@@ -66,8 +99,11 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	// The shape of the answer, not a word from it: "there is nothing waiting to
+	// be applied" contains "applied", so a step looking for that word alone
+	// passes on a command that applied nothing.
 	sc.Step(`^it names the change it applied$`, func() error {
-		return wantContains(w.out.stdout, "applied", "the answer")
+		return wantContains(w.out.stdout, `applied "`, "the answer")
 	})
 
 	sc.Step(`^it says what rolling the change back loses$`, func() error {
@@ -78,8 +114,37 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return wantContains(w.out.stdout, "cairn backup restore", "the answer")
 	})
 
+	// Named by shape too, and for a sharper reason: a rollback unmakes whichever
+	// change happens to be last. Asserting its wording here would freeze how
+	// many migrations cairn has, and the next one would turn this red for a
+	// reason that has nothing to do with rolling back.
 	sc.Step(`^it names the change it rolled back$`, func() error {
-		return wantContains(w.out.stdout, "a task can hang under another", "the answer")
+		return wantContains(w.out.stdout, `rolled back "`, "the answer")
+	})
+
+	// A machine reads a field, not a sentence. Checked separately from the text
+	// form so neither can quietly satisfy the other's assertion.
+	sc.Step(`^it carries the change it rolled back$`, func() error {
+		var doc map[string]any
+		if err := json.Unmarshal([]byte(w.out.stdout), &doc); err != nil {
+			return fmt.Errorf("stdout is not JSON (%w):\n%s", err, w.out.stdout)
+		}
+		if named, ok := doc["rolled_back"].(string); !ok || named == "" {
+			return fmt.Errorf("no change named in %s", w.out.stdout)
+		}
+		return nil
+	})
+
+	sc.Step(`^it says what it lost$`, func() error {
+		lost := "lost: "
+		at := strings.Index(flatten(w.out.stdout), lost)
+		if at < 0 {
+			return fmt.Errorf("the answer does not say what it lost:\n%s", w.out.stdout)
+		}
+		if strings.TrimSpace(flatten(w.out.stdout)[at+len(lost):]) == "" {
+			return fmt.Errorf("the answer says it lost nothing in particular:\n%s", w.out.stdout)
+		}
+		return nil
 	})
 
 	sc.Step(`^it carries the number (\d+)$`, func(n int) error {
@@ -198,12 +263,13 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^it names the change it undid$`, func() error {
-		return wantContains(w.out.stdout, "a task can hang under another", "the answer")
+		return wantContains(w.out.stdout, `rolled back "`, "the answer")
 	})
 
 	for step, want := range map[string]string{
 		`^it says there is no such change$`:          "there is no such change",
 		`^it says there is nothing waiting$`:         "nothing waiting",
+		`^it says the change is already applied$`:    "already applied",
 		`^it says the store is behind$`:              "the store is behind",
 		`^it says there is no backup$`:               "there is no backup",
 		`^it says there is no such backup$`:          "there is no such backup",

@@ -18,6 +18,7 @@ var (
 	ErrStoreBehind       = store.ErrStoreBehind
 	ErrNoSuchChange      = store.ErrNoSuchChange
 	ErrNothingWaiting    = store.ErrNothingWaiting
+	ErrAlreadyApplied    = store.ErrAlreadyApplied
 	ErrNothingToRollBack = store.ErrNothingToRollBack
 )
 

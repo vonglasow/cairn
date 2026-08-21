@@ -46,8 +46,8 @@ func TestOpenBehind_opensAStoreWhateverShapeItIsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
-	if len(waiting) != 1 {
-		t.Errorf("%d changes waiting, want 1", len(waiting))
+	if want := len(migrations) - 1; len(waiting) != want {
+		t.Errorf("%d changes waiting, want %d", len(waiting), want)
 	}
 }
 
@@ -110,6 +110,9 @@ func TestApply_makesOneChange(t *testing.T) {
 	}
 	defer func() { _ = s.Close() }()
 
+	// The number is derived, not written: this test is about applying one
+	// change and leaving the rest alone, which is a claim that has to keep
+	// holding when a third migration is added.
 	name, err := s.Apply(2)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
@@ -121,8 +124,8 @@ func TestApply_makesOneChange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
-	if len(waiting) != 0 {
-		t.Errorf("%d changes still waiting, want none", len(waiting))
+	if want := len(migrations) - 2; len(waiting) != want {
+		t.Errorf("%d changes still waiting, want %d", len(waiting), want)
 	}
 }
 
@@ -136,8 +139,8 @@ func TestApply_refusesAChangeThatDoesNotExist(t *testing.T) {
 }
 
 func TestApply_refusesAChangeAlreadyApplied(t *testing.T) {
-	if _, err := openStore(t).Apply(1); !errors.Is(err, ErrNothingWaiting) {
-		t.Errorf("err = %v, want ErrNothingWaiting", err)
+	if _, err := openStore(t).Apply(1); !errors.Is(err, ErrAlreadyApplied) {
+		t.Errorf("err = %v, want ErrAlreadyApplied", err)
 	}
 }
 
@@ -152,8 +155,8 @@ func TestApplyAll_makesEverythingWaiting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ApplyAll: %v", err)
 	}
-	if len(made) != 1 {
-		t.Errorf("applied %v, want the one change waiting", made)
+	if want := len(migrations) - 1; len(made) != want {
+		t.Errorf("applied %v, want the %d waiting", made, want)
 	}
 }
 

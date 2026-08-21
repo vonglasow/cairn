@@ -40,6 +40,7 @@ var refusals = []error{
 	engine.ErrNoBackup,
 	engine.ErrNoSuchChange,
 	engine.ErrNothingWaiting,
+	engine.ErrAlreadyApplied,
 	engine.ErrNothingToRollBack,
 	errNotConfirmed,
 }

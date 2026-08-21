@@ -22,8 +22,16 @@ var (
 	// ErrNoSuchChange: a number that names no change.
 	ErrNoSuchChange = errors.New("there is no such change")
 
-	// ErrNothingWaiting: everything this cairn knows is already applied.
+	// ErrNothingWaiting: everything this cairn knows is already applied. That is
+	// an answer, not a refusal — `migration apply` on a store already up to date
+	// has done what was asked of it.
 	ErrNothingWaiting = errors.New("there is nothing waiting to be applied")
+
+	// ErrAlreadyApplied: a change named by number that the store already has.
+	// Kept apart from ErrNothingWaiting because it is a refusal: somebody asked
+	// for a particular change and did not get it, and answering "nothing is
+	// waiting" would be false the moment another one is.
+	ErrAlreadyApplied = errors.New("the change is already applied")
 
 	// ErrNothingToRollBack: only the shape a store starts with is left, and
 	// that one is not a change on top of something else — undoing it would mean
@@ -259,7 +267,7 @@ func (s *Store) Apply(number int) (string, error) {
 		return "", err
 	}
 	if one.Applied {
-		return "", fmt.Errorf("change %d: %w", number, ErrNothingWaiting)
+		return "", fmt.Errorf("change %d: %w", number, ErrAlreadyApplied)
 	}
 	return one.Name, s.make(migrations[number-1])
 }
