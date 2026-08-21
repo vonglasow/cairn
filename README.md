@@ -22,6 +22,7 @@ cairn task delete 1 --yes
 | `--label` | one per flag: `--label spec --label team`. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. The two forms cannot be mixed |
 | `--deadline` | a day: `2026-09-01` |
 | `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m` |
+| `--spent` | the time already spent. Given plainly it sets the tally, `+30m` adds to it, `-15m` takes off, and taking off more than was there leaves nothing |
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 
 Given empty, an option clears what was there. A task carrying sub-tasks is not
@@ -80,6 +81,9 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task edit 1 --state current
 ./bin/cairn task edit 1 --label +urgent
 ./bin/cairn task edit 1 --label -spec
+./bin/cairn task edit 1 --spent 2h
+./bin/cairn task edit 1 --spent +30m
+./bin/cairn task edit 1 --spent -15m
 ./bin/cairn task edit 1 --desc ""
 ./bin/cairn task show 1
 ./bin/cairn backup add

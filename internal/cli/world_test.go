@@ -176,11 +176,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.seed(fmt.Sprintf(`cairn task add "%s"`, title))
 		})
 
-		sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|priority|state|parent) "([^"]*)"$`,
+		sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|priority|state|parent|time spent) "([^"]*)"$`,
 			func(title, attribute, value string) error {
 				flag := map[string]string{
 					"description": "--desc", "deadline": "--deadline",
 					"priority": "--priority", "state": "--state", "parent": "--parent",
+					"time spent": "--spent",
 				}[attribute]
 				return w.seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flag, value))
 			})
@@ -330,12 +331,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return wantContains(w.heading(), "#"+strconv.Itoa(n), "the heading")
 		})
 
-		sc.Step(`^the task carries the (description|deadline|estimate|priority|column|parent) "([^"]*)"$`,
+		sc.Step(`^the task carries the (description|deadline|estimate|priority|column|parent|time spent) "([^"]*)"$`,
 			func(attribute, want string) error {
 				key := map[string]string{
 					"description": "description", "deadline": "deadline",
 					"estimate": "estimate", "priority": "priority",
-					"column": "state", "parent": "parent",
+					"column": "state", "parent": "parent", "time spent": "time spent",
 				}[attribute]
 				if got := w.field(key); got != want {
 					return fmt.Errorf("%s = %q, want %q", key, got, want)

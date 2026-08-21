@@ -431,3 +431,54 @@ func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
 		t.Error("Delete on a closed store should fail")
 	}
 }
+
+func TestEngine_writesDownTheTimeSpent(t *testing.T) {
+	e := openEngine(t)
+	kept := add(t, e, "Write the spec")
+
+	got, err := e.Edit(kept.Number, Changes{Spent: of("2h")})
+	if err != nil {
+		t.Fatalf("Edit: %v", err)
+	}
+	if domain.FormatDuration(got.TimeSpent) != "2h" {
+		t.Errorf("TimeSpent = %v, want 2h", got.TimeSpent)
+	}
+}
+
+func TestEngine_addsToTheTimeAlreadySpent(t *testing.T) {
+	e := openEngine(t)
+	kept, err := e.Add("Write the spec", Changes{Spent: of("2h")})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	got, err := e.Edit(kept.Number, Changes{Spent: of("+30m")})
+	if err != nil {
+		t.Fatalf("Edit: %v", err)
+	}
+	if domain.FormatDuration(got.TimeSpent) != "2h30m" {
+		t.Errorf("TimeSpent = %v, want 2h30m", got.TimeSpent)
+	}
+}
+
+func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
+	e := openEngine(t)
+	kept, err := e.Add("Write the spec", Changes{Spent: of("2h")})
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	got, err := e.Edit(kept.Number, Changes{Spent: of("-3h")})
+	if err != nil {
+		t.Fatalf("Edit: %v", err)
+	}
+	if got.TimeSpent != 0 {
+		t.Errorf("TimeSpent = %v, want none", got.TimeSpent)
+	}
+}
+
+func TestEngine_refusesATimeItCannotMakeSenseOf(t *testing.T) {
+	if _, err := openEngine(t).Add("Write the spec", Changes{Spent: of("+ages")}); err == nil {
+		t.Error("Add with a time it cannot read should fail")
+	}
+}

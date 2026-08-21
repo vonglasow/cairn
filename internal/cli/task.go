@@ -26,6 +26,7 @@ type attributes struct {
 	labels      []string
 	deadline    string
 	estimate    string
+	spent       string
 	parent      string
 }
 
@@ -41,6 +42,7 @@ func (a *attributes) bind(cmd *cobra.Command, withTitle bool) {
 	cmd.Flags().StringArrayVar(&a.labels, "label", nil, "a label it carries")
 	cmd.Flags().StringVar(&a.deadline, "deadline", "", "the day it is due")
 	cmd.Flags().StringVar(&a.estimate, "estimate", "", "how long it should take")
+	cmd.Flags().StringVar(&a.spent, "spent", "", "the time already spent on it; +30m adds, -15m takes off")
 	cmd.Flags().StringVar(&a.parent, "parent", "", "the number of the task it hangs under")
 }
 
@@ -69,6 +71,9 @@ func (a *attributes) changes(cmd *cobra.Command) (engine.Changes, error) {
 	}
 	if cmd.Flags().Changed("estimate") {
 		c.Estimate = &a.estimate
+	}
+	if cmd.Flags().Changed("spent") {
+		c.Spent = &a.spent
 	}
 	if cmd.Flags().Changed("parent") {
 		// Empty is how a task is set free, so it is read here rather than sent

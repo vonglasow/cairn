@@ -66,6 +66,7 @@ type Changes struct {
 	Labels      *[]string
 	Deadline    *string
 	Estimate    *string
+	Spent       *string
 	Parent      *int
 }
 
@@ -73,7 +74,7 @@ type Changes struct {
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
-		c.Estimate != nil || c.Parent != nil
+		c.Estimate != nil || c.Spent != nil || c.Parent != nil
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not:
@@ -249,6 +250,13 @@ func apply(task domain.Task, c Changes, atCreation bool) (domain.Task, error) {
 			return domain.Task{}, err
 		}
 		task.Deadline = deadline
+	}
+	if c.Spent != nil {
+		spent, err := domain.ParseSpent(*c.Spent)
+		if err != nil {
+			return domain.Task{}, err
+		}
+		task.TimeSpent = spent.Apply(task.TimeSpent)
 	}
 	if c.Parent != nil {
 		task.Parent = *c.Parent

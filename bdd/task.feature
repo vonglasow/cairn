@@ -530,6 +530,58 @@ Feature: Tasks
       When I run `cairn task add "Third"`
       Then it numbers the task 3
 
+  Rule: Time spent on a task can be written down
+
+    A task carries the time already spent on it, and that time accumulates.
+    Given plainly it says what the total becomes; with a leading + or - it
+    moves what is there, the way a label joins or leaves a set. That is why a
+    minus is a value here and a refusal on --estimate: an estimate is a guess
+    about the whole, time spent is a tally that grows.
+
+    @task-spent-written
+    Scenario: time spent can be written down
+      Given I added a task titled "Write the spec"
+      When I run `cairn task edit 1 --spent 2h`
+      Then the task carries the time spent "2h"
+
+    @task-spent-added
+    Scenario: time given with a plus is added to what is there
+      Given I added a task titled "Write the spec" with the time spent "2h"
+      When I run `cairn task edit 1 --spent +30m`
+      Then the task carries the time spent "2h30m"
+
+    @task-spent-taken-off
+    Scenario: time given with a minus is taken off what is there
+      Given I added a task titled "Write the spec" with the time spent "2h"
+      When I run `cairn task edit 1 --spent -15m`
+      Then the task carries the time spent "1h45m"
+
+    @task-spent-taken-below-zero
+    Scenario: taking off more than was there leaves nothing, not less
+      Given I added a task titled "Write the spec" with the time spent "2h"
+      When I run `cairn task edit 1 --spent -3h`
+      Then the task has no time spent
+
+    @task-spent-cleared
+    Scenario: time spent given empty is cleared
+      Given I added a task titled "Write the spec" with the time spent "2h"
+      When I run `cairn task edit 1 --spent ""`
+      Then the task has no time spent
+
+    @task-spent-refused
+    Scenario Outline: a time it cannot make sense of is refused
+      Given I added a task titled "Write the spec"
+      When I run `cairn task edit 1 --spent <value>`
+      Then it fails
+      And it says what it expects instead
+
+      Examples: nothing is guessed
+        | value | what is wrong           |
+        | ages  | not a duration          |
+        | +ages | not a duration to add   |
+        | -ages | not a duration to take  |
+        | +     | a sign with no duration |
+
   Rule: A task can hang under another one
 
     A task given a parent becomes one of its sub-tasks, and stays a task in
