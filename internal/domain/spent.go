@@ -51,6 +51,9 @@ func ParseSpent(given string) (SpentChange, error) {
 	if err != nil {
 		return SpentChange{}, fmt.Errorf("%q: %w", given, ErrNotADuration)
 	}
+	if by%time.Second != 0 {
+		return SpentChange{}, fmt.Errorf("%q: %w", given, ErrFinerThanASecond)
+	}
 	if sign == parts {
 		by = -by
 	}

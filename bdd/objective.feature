@@ -15,6 +15,18 @@ Feature: Objectives
       Then it succeeds
       And it numbers the objective 1
 
+    @objective-title-one-line
+    Scenario Outline: a title is one line
+      Given a title with a <character> in it
+      When I add an objective with it
+      Then it fails
+      And it says a title is one line
+
+      Examples: what a card and a listing cannot show
+        | character  |
+        | line break |
+        | tab        |
+
     @objective-title-empty
     Scenario: an empty title is no title
       When I run `cairn objective add ""`
@@ -235,6 +247,12 @@ Feature: Objectives
       Then it fails
       And it says an objective needs a title
 
+    @objective-label-list
+    Scenario: several labels can be given in one flag
+      When I run `cairn objective add "Ship cairn 1.0" --label "perso,spec"`
+      Then the objective carries exactly 2 labels
+      And the objective carries the label "perso"
+
     @objective-label-add
     Scenario: a label given with a plus joins the others
       Given I added an objective titled "Ship cairn 1.0" with the labels "perso" and "spec"
@@ -277,7 +295,7 @@ Feature: Objectives
     Scenario Outline: an attribute it cannot make sense of is refused
       When I run `cairn objective add "Ship cairn 1.0" <flag> <value>`
       Then it fails
-      And it says what it expects instead
+      And it says what it expects instead of "<value>"
 
       Examples: nothing is guessed
         | flag       | value   | what is wrong                      |
@@ -286,6 +304,7 @@ Feature: Objectives
         | --deadline | soon    | not a date                         |
         | --estimate | ages    | not a duration                     |
         | --estimate | -30m    | a negative duration                |
+        | --estimate | 500ms   | shorter than a second              |
 
     @objective-priorities
     Scenario Outline: every priority an objective can carry

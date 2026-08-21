@@ -15,12 +15,13 @@ const dayLayout = "2006-01-02"
 // The reasons an attribute can be refused. Sentinels, so a surface recognises
 // them with errors.Is rather than by matching a message.
 var (
-	ErrLabelRequired  = errors.New("a label needs a name")
-	ErrNotAState      = errors.New("not one of the columns")
-	ErrNotAPriority   = errors.New("not one of the priorities")
-	ErrNotADay        = errors.New("not a date")
-	ErrNotADuration   = errors.New("not a duration")
-	ErrNegativeAmount = errors.New("a duration cannot run backwards")
+	ErrLabelRequired    = errors.New("a label needs a name")
+	ErrNotAState        = errors.New("not one of the columns")
+	ErrNotAPriority     = errors.New("not one of the priorities")
+	ErrNotADay          = errors.New("not a date")
+	ErrNotADuration     = errors.New("not a duration")
+	ErrNegativeAmount   = errors.New("a duration cannot run backwards")
+	ErrFinerThanASecond = errors.New("a duration is kept to the second, not finer")
 )
 
 // State is the column a task sits in. There are four, and nothing else is one.
@@ -73,6 +74,7 @@ func ParsePriority(name string) (Priority, error) {
 // duplicate, alphabetical order. An empty string is how a caller says "none";
 // a string of spaces is a label somebody meant to name and did not.
 func ParseLabels(given []string) ([]string, error) {
+	given = listed(given)
 	kept := make([]string, 0, len(given))
 	for _, label := range given {
 		if label == "" {
@@ -113,6 +115,13 @@ func ParseEstimate(amount string) (time.Duration, error) {
 	}
 	if parsed < 0 {
 		return 0, fmt.Errorf("%q: %w", amount, ErrNegativeAmount)
+	}
+	// A duration is written back to the second and no finer, so anything with
+	// a remainder cannot come back as it was given. Taking it and dropping the
+	// remainder would be worse than refusing: 500ms was accepted, stored, and
+	// read back as no estimate at all.
+	if parsed%time.Second != 0 {
+		return 0, fmt.Errorf("%q: %w", amount, ErrFinerThanASecond)
 	}
 	return parsed, nil
 }

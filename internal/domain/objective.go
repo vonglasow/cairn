@@ -57,6 +57,9 @@ func NewObjective(title string) (Objective, error) {
 	if title == "" {
 		return Objective{}, fmt.Errorf("an objective %w", ErrTitleRequired)
 	}
+	if err := oneLine(title); err != nil {
+		return Objective{}, err
+	}
 	return Objective{Title: title, State: Active, Priority: Normal}, nil
 }
 

@@ -17,6 +17,27 @@ const (
 	parts = '-'
 )
 
+// listed splits what was given on commas, so `--label "spec,team"` names two
+// labels and not one. It runs before anything else looks at a label, which is
+// what makes each piece count as a --label of its own: a signed piece beside a
+// plain one then falls foul of the rule that was already there, rather than
+// needing a rule of its own.
+//
+// An empty place — a doubled comma, a trailing one — is dropped rather than
+// refused, the same way an empty --label already is.
+func listed(given []string) []string {
+	pieces := make([]string, 0, len(given))
+	for _, one := range given {
+		for _, piece := range strings.Split(one, ",") {
+			if strings.TrimSpace(piece) == "" && piece != one {
+				continue
+			}
+			pieces = append(pieces, piece)
+		}
+	}
+	return pieces
+}
+
 // LabelChange is what a caller asked to happen to a task's labels: either what
 // the set becomes, or what joins and leaves it.
 type LabelChange struct {
@@ -36,6 +57,7 @@ func (c LabelChange) Adjusts() bool { return c.adjusts }
 // is refused rather than resolved.
 func ParseLabelChange(given []string) (LabelChange, error) {
 	var change LabelChange
+	given = listed(given)
 	plain := make([]string, 0, len(given))
 
 	for _, label := range given {

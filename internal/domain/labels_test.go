@@ -104,3 +104,46 @@ func TestLabelChange_clearsTheSetWhenGivenNothing(t *testing.T) {
 		t.Errorf("got %v, want none", got)
 	}
 }
+
+// A list in one flag. Splitting comes first, and each piece then counts as a
+// --label of its own — which is why a signed piece beside a plain one falls
+// foul of the rule that was already there, rather than needing one of its own.
+func TestParseLabels_splitsOnCommas(t *testing.T) {
+	got, err := ParseLabels([]string{"spec,team"})
+	if err != nil {
+		t.Fatalf("ParseLabels: %v", err)
+	}
+	if len(got) != 2 || got[0] != "spec" || got[1] != "team" {
+		t.Errorf("got %v, want [spec team]", got)
+	}
+}
+
+func TestParseLabels_ignoresEmptyPlacesInAList(t *testing.T) {
+	got, err := ParseLabels([]string{"spec,,team,"})
+	if err != nil {
+		t.Fatalf("ParseLabels: %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("got %v, want two labels", got)
+	}
+}
+
+func TestParseLabelChange_splitsOnCommas(t *testing.T) {
+	change, err := ParseLabelChange([]string{"+urgent,+draft"})
+	if err != nil {
+		t.Fatalf("ParseLabelChange: %v", err)
+	}
+	got, err := change.Apply([]string{"spec", "team"})
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+	if len(got) != 4 {
+		t.Errorf("got %v, want four labels", got)
+	}
+}
+
+func TestParseLabelChange_refusesAListThatMixesTheTwoForms(t *testing.T) {
+	if _, err := ParseLabelChange([]string{"+urgent,spec"}); !errors.Is(err, ErrLabelsBothWays) {
+		t.Errorf("err = %v, want ErrLabelsBothWays", err)
+	}
+}

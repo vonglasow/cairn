@@ -102,3 +102,32 @@ func TestNewTask_carriesNothingElse(t *testing.T) {
 		t.Errorf("Parent = %d, want none: a task hangs under nothing unless told to", got.Parent)
 	}
 }
+
+// A title is one line. A line break turns one row of a listing into two, the
+// second carrying no number and belonging to nothing; a tab walks through the
+// tabwriter that lines a card up and shifts columns it has no business in.
+// Cleaning it up quietly would mean cairn keeping a title other than the one
+// that was typed, which is the thing it refuses to do everywhere else.
+func TestNewTask_refusesATitleThatIsNotOneLine(t *testing.T) {
+	for _, title := range []string{"two\nlines", "a\ttab", "carriage\rreturn", "bell\a", "\aleading",
+		"line\u2028separator", "para\u2029separator"} {
+		if _, err := NewTask(title); !errors.Is(err, ErrTitleNotOneLine) {
+			t.Errorf("NewTask(%q) err = %v, want ErrTitleNotOneLine", title, err)
+		}
+	}
+}
+
+func TestNewObjective_refusesATitleThatIsNotOneLine(t *testing.T) {
+	if _, err := NewObjective("two\nlines"); !errors.Is(err, ErrTitleNotOneLine) {
+		t.Errorf("err = %v, want ErrTitleNotOneLine", err)
+	}
+}
+
+// The spaces inside a title are still spaces: only control characters go.
+func TestNewTask_keepsAnOrdinaryTitle(t *testing.T) {
+	for _, title := range []string{"Write  the spec", "café — 100%", "🎯 ship it"} {
+		if _, err := NewTask(title); err != nil {
+			t.Errorf("NewTask(%q): %v", title, err)
+		}
+	}
+}

@@ -14,6 +14,11 @@ every time. Not worked around, not deferred.
 
 **Scenario, then test, then code.** Never the reverse.
 
+**Nothing is committed until the definition of done is met.** Walk
+[docs/definition-of-done.md](docs/definition-of-done.md) before every commit.
+A box you cannot tick is not a box you skip: say which one, say why, and ask
+before committing.
+
 **Every change of state goes through `internal/engine`.** A surface parses,
 calls it, and prints — it decides nothing.
 
@@ -22,6 +27,7 @@ calls it, and prints — it decides nothing.
 | doing this | read |
 |---|---|
 | starting any piece of work, writing a scenario, committing | [docs/workflow.md](docs/workflow.md) |
+| about to commit, or wondering whether something is finished | [docs/definition-of-done.md](docs/definition-of-done.md) |
 | adding a package, a command, anything that changes state | [docs/architecture.md](docs/architecture.md) |
 | writing code | [docs/design-principles.md](docs/design-principles.md) |
 | adding a tool, changing a threshold, unblocking a hook | [docs/checks.md](docs/checks.md) |

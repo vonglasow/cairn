@@ -193,6 +193,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 
+		sc.Step(`^a title with a (line break|tab) in it$`, func(what string) error {
+			w.long = "two" + map[string]string{"line break": "\n", "tab": "\t"}[what] + "lines"
+			return nil
+		})
+
 		sc.Step(`^I add(?:ed)? a task with it$`, func() error {
 			w.run(fmt.Sprintf(`cairn task add "%s"`, w.long))
 			return nil
@@ -294,6 +299,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		// --- what it said -------------------------------------------------------
 
 		for step, want := range map[string]string{
+			`^it says a title is one line$`:                                      "a title is one line",
 			`^it says a task needs a title$`:                                     "a task needs a title",
 			`^it says a label needs a name$`:                                     "a label needs a name",
 			`^it says there is no such task$`:                                    "there is no such task",
@@ -324,11 +330,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return fmt.Errorf("it does not say how to use it:\n%s", said)
 		})
 
-		sc.Step(`^it says what it expects instead$`, func() error {
+		// Quoting what was turned down is the whole of "nothing is guessed": a
+		// refusal that does not name the value leaves somebody who passed three
+		// flags with no idea which one cairn could not read.
+		sc.Step(`^it says what it expects instead of "([^"]*)"$`, func(value string) error {
 			if w.out.stderr == "" {
 				return fmt.Errorf("stderr is empty, want what it expects instead")
 			}
-			return nil
+			return wantContains(w.out.stderr, value, "the reason")
 		})
 
 		sc.Step(`^it shows the title I typed$`, func() error {

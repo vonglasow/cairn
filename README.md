@@ -7,6 +7,7 @@ desktop boards come later, once the engine stands on its own.
 cairn task add "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
 cairn task edit 1 --title "Write the other spec" --desc "" --state current --priority critical --deadline 2026-09-15 --estimate 2h
 cairn task edit 1 --label +urgent --label -spec
+cairn task add "Read the spec" --label spec,team
 cairn task add "Write the tests" --parent 1
 cairn task add "Write the docs" --objective 1
 cairn task list      # sub-tasks are listed under the task they hang from
@@ -20,14 +21,14 @@ cairn task delete 1 --yes
 | `--desc` | any text |
 | `--state` | `backlog` `todo` `current` `done` — a new task starts in `backlog` |
 | `--priority` | `low` `normal` `high` `critical` — a new task carries `normal` |
-| `--label` | one per flag: `--label spec --label team`. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. The two forms cannot be mixed |
+| `--label` | one per flag or several at once: `--label spec --label team` and `--label spec,team` are the same thing. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. Each piece of a list counts on its own, so the two forms cannot be mixed there either |
 | `--deadline` | a day: `2026-09-01` |
-| `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m` |
-| `--spent` | the time already spent. Given plainly it sets the tally, `+30m` adds to it, `-15m` takes off, and taking off more than was there leaves nothing |
+| `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m`. Kept to the second, so anything finer is refused rather than rounded away |
+| `--spent` | the time already spent. Given plainly it sets the tally, `+30m` adds to it, `-15m` takes off, and taking off more than was there leaves nothing. Kept to the second, like `--estimate` |
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 | `--objective` | the number of the objective this task serves. Given empty, it sets the task loose. A sub-task never carries one |
 
-Given empty, an option clears what was there. A task carrying sub-tasks is not
+A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. A task carrying sub-tasks is not
 deleted while they are there. Add `--json` to any command to be answered as a
 machine — including when it refuses.
 
@@ -116,6 +117,8 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task edit 1 --state current
 ./bin/cairn task edit 1 --label +urgent
 ./bin/cairn task edit 1 --label -spec
+./bin/cairn task edit 1 --label "+draft,+wip"
+./bin/cairn task add "Liste en un flag" --label a,b,c
 ./bin/cairn task edit 1 --spent 2h
 ./bin/cairn task edit 1 --spent +30m
 ./bin/cairn task edit 1 --spent -15m
@@ -164,6 +167,8 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task add "y" --priority urgent
 ./bin/cairn task show spec
 ./bin/cairn task add "x" --colour red
+./bin/cairn task add "y" --estimate 500ms
+./bin/cairn task edit 1 --label "+urgent,spec"
 ./bin/cairn task add
 ./bin/cairn task addd "z"
 ```

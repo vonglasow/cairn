@@ -61,6 +61,18 @@ Feature: Tasks
       When I run `cairn task add -- "--not-a-flag"`
       Then it reports a task titled "--not-a-flag"
 
+    @task-title-one-line
+    Scenario Outline: a title is one line
+      Given a title with a <character> in it
+      When I add a task with it
+      Then it fails
+      And it says a title is one line
+
+      Examples: what a card and a listing cannot show
+        | character  |
+        | line break |
+        | tab        |
+
     @task-title-long
     Scenario: a long title is not truncated
       Given a title of 5000 characters
@@ -134,12 +146,13 @@ Feature: Tasks
         | --label    | spec       | label       | spec       |
         | --deadline | 2026-09-01 | deadline    | 2026-09-01 |
         | --estimate | 90m        | estimate    | 1h30m      |
+        | --estimate | 30s        | estimate    | 30s        |
 
     @task-attribute-refused
     Scenario Outline: an attribute it cannot make sense of is refused
       When I run `cairn task add "Write the spec" <flag> <value>`
       Then it fails
-      And it says what it expects instead
+      And it says what it expects instead of "<value>"
 
       Examples: nothing is guessed
         | flag       | value      | what is wrong             |
@@ -149,6 +162,8 @@ Feature: Tasks
         | --deadline | 2026-13-45 | a date that cannot exist  |
         | --estimate | ages       | not a duration            |
         | --estimate | -30m       | a negative duration       |
+        | --estimate | 500ms      | shorter than a second     |
+        | --spent    | 500ms      | shorter than a second     |
 
     @task-label-blank
     Scenario: a label with no name is refused
@@ -310,13 +325,14 @@ Feature: Tasks
         | --label    | spec       | label       | spec       |
         | --deadline | 2026-09-01 | deadline    | 2026-09-01 |
         | --estimate | 90m        | estimate    | 1h30m      |
+        | --estimate | 30s        | estimate    | 30s        |
 
     @task-edit-attribute-refused
     Scenario Outline: what was refused at creation is refused at edit
       Given I added a task titled "Write the spec"
       When I run `cairn task edit 1 <flag> <value>`
       Then it fails
-      And it says what it expects instead
+      And it says what it expects instead of "<value>"
 
       Examples: the rules do not soften after the fact
         | flag       | value   | what is wrong             |
@@ -419,6 +435,30 @@ Feature: Tasks
     one with a leading - is taken away, and the rest is left alone. The two
     cannot be mixed: one says what the set becomes, the other says how it
     changes, and a command that did both would have to guess which won.
+
+    @task-label-list
+    Scenario: several labels can be given in one flag
+      When I run `cairn task add "Write the spec" --label "spec,team"`
+      Then the task carries exactly 2 labels
+      And the task carries the labels "spec" and "team"
+
+    @task-label-list-signed
+    Scenario: a list joins the others when it is signed
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label "+urgent,+draft"`
+      Then the task carries exactly 4 labels
+
+    @task-label-list-mixed
+    Scenario: a list cannot mix the two forms either
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label "+urgent,spec"`
+      Then it fails
+      And it says the labels are either replaced or changed, not both
+
+    @task-label-list-gaps
+    Scenario: an empty place in a list is not a label
+      When I run `cairn task add "Write the spec" --label "spec,,team,"`
+      Then the task carries exactly 2 labels
 
     @task-label-add
     Scenario: a label given with a plus joins the others
@@ -573,7 +613,7 @@ Feature: Tasks
       Given I added a task titled "Write the spec"
       When I run `cairn task edit 1 --spent <value>`
       Then it fails
-      And it says what it expects instead
+      And it says what it expects instead of "<value>"
 
       Examples: nothing is guessed
         | value | what is wrong           |

@@ -47,6 +47,11 @@ func (w *world) wantLabel(want string) error {
 func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	// --- the common context ---------------------------------------------------
 
+	sc.Step(`^I add(?:ed)? an objective with it$`, func() error {
+		w.run(fmt.Sprintf(`cairn objective add "%s"`, w.long))
+		return nil
+	})
+
 	sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
 		return w.seed(fmt.Sprintf(`cairn objective add "%s"`, title))
 	})

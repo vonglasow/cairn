@@ -23,6 +23,7 @@ const (
 // kind of answer and gets a different code.
 var refusals = []error{
 	domain.ErrTitleRequired,
+	domain.ErrTitleNotOneLine,
 	domain.ErrLabelRequired,
 	domain.ErrLabelsBothWays,
 	domain.ErrNotAState,
@@ -31,6 +32,7 @@ var refusals = []error{
 	domain.ErrNotADay,
 	domain.ErrNotADuration,
 	domain.ErrNegativeAmount,
+	domain.ErrFinerThanASecond,
 	engine.ErrNoSuchTask,
 	engine.ErrNothingToChange,
 	engine.ErrLabelSignAtCreation,

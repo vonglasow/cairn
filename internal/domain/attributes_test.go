@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -185,5 +187,32 @@ func TestFormatDay_writesTheDayItWasGiven(t *testing.T) {
 func TestFormatDay_writesNothingWhenThereIsNoDeadline(t *testing.T) {
 	if got := FormatDay(time.Time{}); got != "" {
 		t.Errorf("FormatDay(zero) = %q, want nothing", got)
+	}
+}
+
+// cairn writes a duration down to the second and no finer, so anything that
+// is not a whole number of seconds cannot be read back as it was given.
+// Refusing it is the only answer that does not lose it in silence: 500ms was
+// accepted, stored, and came back as nothing at all.
+func TestParseEstimate_refusesWhatItCannotWriteBack(t *testing.T) {
+	for _, amount := range []string{"500ms", "1m30s500ms", "1ns", "1500ms"} {
+		if _, err := ParseEstimate(amount); !errors.Is(err, ErrFinerThanASecond) {
+			t.Errorf("ParseEstimate(%q) err = %v, want ErrFinerThanASecond", amount, err)
+		}
+	}
+}
+
+func TestParseEstimate_keepsWholeSeconds(t *testing.T) {
+	for _, amount := range []string{"30s", "1m30s", "90m", "1.5h", "0s"} {
+		if _, err := ParseEstimate(amount); err != nil {
+			t.Errorf("ParseEstimate(%q): %v", amount, err)
+		}
+	}
+}
+
+func TestParseEstimate_saysWhatItWasGiven(t *testing.T) {
+	_, err := ParseEstimate("500ms")
+	if got := err.Error(); !strings.Contains(got, `"500ms"`) {
+		t.Errorf("err = %q, want it to quote what it was given", got)
 	}
 }

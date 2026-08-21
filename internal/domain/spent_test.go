@@ -98,3 +98,22 @@ func TestSpent_refusesASignedDurationAfterASign(t *testing.T) {
 		}
 	}
 }
+
+// The same rule as an estimate: a tally cairn cannot write back is a tally it
+// does not take. It holds for a sign too — +500m5ms moves the tally by an
+// amount that would come back changed.
+func TestParseSpent_refusesWhatItCannotWriteBack(t *testing.T) {
+	for _, amount := range []string{"500ms", "+500ms", "-500ms", "1m30s500ms"} {
+		if _, err := ParseSpent(amount); !errors.Is(err, ErrFinerThanASecond) {
+			t.Errorf("ParseSpent(%q) err = %v, want ErrFinerThanASecond", amount, err)
+		}
+	}
+}
+
+func TestParseSpent_keepsWholeSeconds(t *testing.T) {
+	for _, amount := range []string{"30s", "+1m", "-2h", "90m"} {
+		if _, err := ParseSpent(amount); err != nil {
+			t.Errorf("ParseSpent(%q): %v", amount, err)
+		}
+	}
+}

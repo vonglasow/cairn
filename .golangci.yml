@@ -44,6 +44,11 @@ linters:
             - slices
             - strings
             - time
+            # What makes a rune a control character, and what makes it a line
+            # separator, are facts about text — the same kind of fact `strings`
+            # already carries here. Widened on purpose so a title can refuse to
+            # be more than one line.
+            - unicode
             # Only reachable from _test.go: the `no-go-testing` hook refuses
             # `testing` anywhere else, so allowing it here cannot leak into
             # production code.
