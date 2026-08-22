@@ -28,6 +28,34 @@ type Store struct {
 	path string
 }
 
+// heldFor is how long a command waits for a store somebody else is writing to
+// before giving up. SQLite refuses a busy file straight away unless it is told
+// otherwise, and straight away is wrong here: the work was accepted, and
+// dropping it because another command held the file for a millisecond loses it
+// without a word.
+//
+// Five seconds is far longer than any write cairn makes and far shorter than
+// somebody's patience — long enough for a queue to clear, short enough that a
+// truly stuck file is still reported.
+const heldFor = "5000"
+
+// shared turns a path into one more than one cairn can hold at once.
+//
+// The wait alone is not enough, and that is measured rather than assumed: with
+// the default journal a reader blocks a writer, so six mixed operations left
+// the writers waiting out all five seconds and losing five of them. In WAL a
+// reader and a writer hold the file together, and the same six take fifty
+// milliseconds.
+//
+// WAL keeps recent writes in a file beside the store. Nothing is lost by it
+// here because a command opens the store in its RunE and closes it on the way
+// out, and closing checkpoints — so between two commands there is only ever
+// the one file, which is what `backup add` copies. A surface that holds the
+// store open, as a server would, has to checkpoint before a backup is taken.
+func shared(path string) string {
+	return "file:" + path + "?_pragma=busy_timeout(" + heldFor + ")&_pragma=journal_mode(WAL)"
+}
+
 // Open opens a store that has to be up to date, and says so when it is not.
 // Changing somebody's data as a side effect of listing their tasks is not this
 // command's business — see OpenBehind for the ones whose business it is.
@@ -43,7 +71,7 @@ func open(path string, mustBeCurrent bool) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("making room for the store: %w", err)
 	}
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", shared(path))
 	if err != nil {
 		return nil, fmt.Errorf("opening the store: %w", err)
 	}

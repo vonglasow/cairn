@@ -89,6 +89,9 @@ objectives existed says it holds none, rather than refusing to be read at all.
 
 ## Where your tasks live
 
+More than one cairn can hold the store at once — a second terminal, a loop, a
+server later on. A command waits its turn rather than dropping the work.
+
 `~/.cairn/cairn.db`, on every system, with the backups beside it in
 `~/.cairn/backups/`. Set `CAIRN_STORE` to put it elsewhere.
 

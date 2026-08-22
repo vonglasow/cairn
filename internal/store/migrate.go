@@ -121,8 +121,19 @@ CREATE TABLE IF NOT EXISTS migrations (
 // creates the shape when the file holds nothing at all, and otherwise reports
 // what the store is missing without touching it.
 func (s *Store) settle(mustBeCurrent bool) error {
-	if _, err := s.db.Exec(ledger); err != nil {
+	// Looked for, not laid down. Opening a store reads its shape; `migration
+	// apply` is what changes it. count(*) always answers, so there is one way
+	// for this to fail rather than two.
+	var kept int
+	if err := s.db.QueryRow(
+		`SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'migrations'`,
+	).Scan(&kept); err != nil {
 		return fmt.Errorf("reading what was done to the store: %w", err)
+	}
+	if kept == 0 {
+		if _, err := s.db.Exec(ledger); err != nil {
+			return fmt.Errorf("making room to record what is done to the store: %w", err)
+		}
 	}
 	empty, err := s.isEmpty()
 	if err != nil {

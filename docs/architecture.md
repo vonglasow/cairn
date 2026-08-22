@@ -38,6 +38,28 @@ survives between two runs of the command — which is what makes "a task added b
 one command is found by the next" a claim about the disk rather than about a
 cache.
 
+## More than one cairn at a time
+
+One person, one machine, and still two cairns at once: a second terminal, a
+shell loop, a server answering while the terminal is in use. They share a file,
+so the store is opened in WAL with a wait of five seconds.
+
+Both are measured, not precautionary. Without the wait, four processes writing
+together lost fourteen writes out of twenty. With the wait but without WAL, six
+mixed reads and writes spent the whole five seconds and still lost five of
+them: in the default journal a reader blocks a writer, so writers starve. In
+WAL the same six take fifty milliseconds.
+
+WAL keeps recent writes beside the store, which matters for `backup add`
+because it copies the file. Nothing is lost today: a command opens the store in
+its RunE and closes it on the way out, and closing checkpoints — so between two
+commands there is only ever one file. A surface that holds the store open, as a
+server would, has to checkpoint before a backup is taken.
+
+**Opening reads the shape, it never lays it down.** `migration apply` is what
+changes a store; opening one only looks. The ledger is the single exception,
+created when it is missing because nothing can be recorded without it.
+
 ## The store is spoken to through an interface the engine owns
 
 `internal/store` is where SQLite lives, and it is the only place that knows
@@ -78,14 +100,14 @@ the store away, which is what deleting the file is for.
 
 ## The backups are reachable without the store
 
-`store.Vault` opens no database. That is not an oversight: a backup is most needed
-exactly when the store cannot be opened — because it is corrupt, or because it
-comes from a cairn that knows more. Needing a working store to reach the backups
-would put them out of reach on the one day they matter.
+`store.Vault` opens no database. That is not an oversight: a backup is most
+needed exactly when the store cannot be opened — because it is corrupt, or
+because it comes from a cairn that knows more. Needing a working store to reach
+the backups would put them out of reach on the one day they matter.
 
 The same reason keeps `domain.Backup` and `domain.Migration` in `domain`: a
-surface has to name a backup and a change without being allowed to know how either
-is made.
+surface has to name a backup and a change without being allowed to know how
+either is made.
 
 ## Half of this is enforced
 

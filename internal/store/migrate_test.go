@@ -4,6 +4,7 @@ import (
 	"cairn/internal/domain"
 	"database/sql"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -387,5 +388,56 @@ func TestHeld_reportsAStoreItCannotRead(t *testing.T) {
 	}
 	if _, err := s.Held(); err == nil {
 		t.Error("Held on a closed store returned no error")
+	}
+}
+
+// Opening a store must not write to it. Every command opened the store, and
+// every open ran `CREATE TABLE IF NOT EXISTS migrations` — DDL, replayed for
+// nothing on a store that already had it. Reading is reading: the shape is
+// looked at, and `migration apply` is what changes it.
+//
+// A read-only file is the one test that cannot be fooled: anything settle
+// writes fails outright, whatever locks or timestamps say.
+func TestOpen_writesNothingToAStoreThatAlreadyHasItsShape(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	made, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	keep(t, made, "Write the spec")
+	if err := made.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if err := os.Chmod(path, 0o444); err != nil {
+		t.Fatalf("Chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+
+	read, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open on a read-only store: %v", err)
+	}
+	defer func() { _ = read.Close() }()
+	held, err := read.All()
+	if err != nil {
+		t.Fatalf("All on a read-only store: %v", err)
+	}
+	if len(held) != 1 {
+		t.Errorf("%d tasks, want the one that was there", len(held))
+	}
+}
+
+// A store that has never been written cannot be made on a file nobody may
+// write to. It is reported rather than half-opened: the ledger is the first
+// thing a new store needs, and without it nothing else can be recorded.
+func TestOpen_reportsAStoreItCannotCreateTheLedgerIn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if err := os.WriteFile(path, nil, 0o444); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+
+	if _, err := Open(path); err == nil {
+		t.Error("Open on a read-only empty file returned no error")
 	}
 }

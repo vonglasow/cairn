@@ -175,7 +175,7 @@ func (v *Vault) HoldsStore() (domain.Held, error) {
 // table is looked for rather than the error swallowed, so a real failure to
 // read one still comes back as a failure.
 func heldIn(path string) (domain.Held, error) {
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", shared(path))
 	if err != nil {
 		return domain.Held{}, err
 	}
