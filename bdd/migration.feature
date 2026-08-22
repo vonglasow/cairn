@@ -155,6 +155,15 @@ Feature: Changes to the shape of the store
       Then it succeeds
       And it names the change it undid
 
+    @migration-holds-after-rollback
+    Scenario: the store still says what it holds once rolled back
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec"
+      And I rolled the last change back
+      When I run `cairn migration list`
+      Then it succeeds
+      And `cairn migration list` says the store holds 1 task and 0 objectives
+
     @migration-rollback-says-what-it-lost
     Scenario: rolling back names what it dropped on the way
       Given a store from an older cairn, holding a task titled "Write the spec"
@@ -171,7 +180,7 @@ Feature: Changes to the shape of the store
       And I added a task titled "Ship it"
       When I run `cairn migration rollback --yes`
       Then it succeeds
-      And `cairn migration list` says the store holds 2 tasks
+      And `cairn migration list` says the store holds 2 tasks and 0 objectives
 
     @migration-rollback-backups-first
     Scenario: a backup is set aside before anything is rolled back

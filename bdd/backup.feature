@@ -30,8 +30,30 @@ Feature: Backups of the store
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
       When I run `cairn backup add`
-      Then it says the backup holds 2 tasks
-      And `cairn backup show 1` says the backup holds 2 tasks
+      Then it says the backup holds 2 tasks and 0 objectives
+      And `cairn backup show 1` says the backup holds 2 tasks and 0 objectives
+
+    @backup-holds-objectives-too
+    Scenario: a backup counts the objectives it holds
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec"
+      When I run `cairn backup add`
+      Then it says the backup holds 1 task and 1 objective
+
+    @backup-holds-an-older-shape
+    Scenario: a backup of a store one change behind holds no objectives
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn backup add`
+      Then it says the backup holds 1 task and 0 objectives
+
+    @backup-holds-json
+    Scenario: what a backup holds can be read by a machine
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec"
+      And I made a backup of the store
+      When I run `cairn backup show 1 --json`
+      Then it writes JSON to standard output
+      And it carries 1 task and 1 objective held
 
     @backup-add-not-a-store
     Scenario: backing up what is not a cairn store is refused
@@ -46,7 +68,7 @@ Feature: Backups of the store
       Given I added a task titled "Write the spec"
       And I made a backup of the store
       When I run `cairn backup show 1`
-      Then it says the backup holds 1 task
+      Then it says the backup holds 1 task and 0 objectives
 
 
 
@@ -77,7 +99,7 @@ Feature: Backups of the store
       When I run `cairn backup show 1`
       Then it succeeds
       And it says when the backup was made
-      And it says the backup holds 1 task
+      And it says the backup holds 1 task and 0 objectives
 
     @backup-show-unknown
     Scenario: showing a backup that does not exist says so

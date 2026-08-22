@@ -203,6 +203,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 
+		// Shared rather than kept with the objectives: a backup counts what it
+		// holds of both, so its scenarios have to be able to put an objective
+		// in the store.
+		sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
+			return w.seed(fmt.Sprintf(`cairn objective add "%s"`, title))
+		})
+
 		sc.Step(`^I added a task titled "([^"]*)"$`, func(title string) error {
 			return w.seed(fmt.Sprintf(`cairn task add "%s"`, title))
 		})

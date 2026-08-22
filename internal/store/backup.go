@@ -148,10 +148,10 @@ func (v *Vault) Restore(number int) error {
 
 // Holds counts what a backup holds, without bringing it up to date: a backup is
 // read as it was written, never changed by being looked at.
-func (v *Vault) Holds(one domain.Backup) (int, error) {
-	held, err := tasksIn(one.Path)
+func (v *Vault) Holds(one domain.Backup) (domain.Held, error) {
+	held, err := heldIn(one.Path)
 	if err != nil {
-		return 0, fmt.Errorf("reading backup %d: %w", one.Number, err)
+		return domain.Held{}, fmt.Errorf("reading backup %d: %w", one.Number, err)
 	}
 	return held, nil
 }
@@ -159,28 +159,57 @@ func (v *Vault) Holds(one domain.Backup) (int, error) {
 // HoldsStore counts what the store holds, read as it lies. A store one change
 // behind still answers this: the columns differ, the table does not — which is
 // why a backup of an older store can still say how much it took.
-func (v *Vault) HoldsStore() (int, error) {
-	held, err := tasksIn(v.store)
+func (v *Vault) HoldsStore() (domain.Held, error) {
+	held, err := heldIn(v.store)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %w — store: %s", ErrNotAStore, err, v.store)
+		return domain.Held{}, fmt.Errorf("%w: %w — store: %s", ErrNotAStore, err, v.store)
 	}
 	return held, nil
 }
 
-// tasksIn counts the tasks in a file, opening it as it lies — no shape brought
-// up to date, no version checked. Looking at something must not change it.
-func tasksIn(path string) (int, error) {
+// heldIn counts what a file holds, opening it as it lies — no shape brought up
+// to date, no version checked. Looking at something must not change it.
+//
+// A backup taken before objectives existed has no table to count, and that is
+// not a damaged backup: it is an older shape, and it holds no objectives. The
+// table is looked for rather than the error swallowed, so a real failure to
+// read one still comes back as a failure.
+func heldIn(path string) (domain.Held, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return 0, err
+		return domain.Held{}, err
 	}
 	defer func() { _ = db.Close() }()
 
-	var held int
-	if err := db.QueryRow(`SELECT count(*) FROM tasks`).Scan(&held); err != nil {
-		return 0, err
+	return heldOn(db)
+}
+
+// heldOn counts what one open database holds. Shared by a backup read as it
+// lies and by the store itself, because both can be one change behind: a
+// backup taken before objectives existed has no table to count, and neither
+// does a store somebody has just rolled back. That is not damage, it is an
+// older shape holding no objectives.
+//
+// The table is looked for rather than the error swallowed, so a real failure
+// to read one still comes back as a failure.
+func heldOn(db *sql.DB) (domain.Held, error) {
+	var held domain.Held
+
+	// Both counts at once. SQLite compiles the whole statement, so a store
+	// one change behind fails it outright rather than answering half of it.
+	if err := db.QueryRow(
+		`SELECT (SELECT count(*) FROM tasks), (SELECT count(*) FROM objectives)`,
+	).Scan(&held.Tasks, &held.Objectives); err == nil {
+		return held, nil
 	}
-	return held, nil
+
+	// The older shape, then: tasks and no objectives. Asked rather than
+	// assumed — if the file is unreadable for any other reason, this fails
+	// too, and the failure is what comes back.
+	if err := db.QueryRow(`SELECT count(*) FROM tasks`).Scan(&held.Tasks); err != nil {
+		return domain.Held{}, err
+	}
+	return domain.Held{Tasks: held.Tasks}, nil
 }
 
 // pathOf is where the backup carrying number lives.

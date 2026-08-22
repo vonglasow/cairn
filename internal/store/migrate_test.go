@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cairn/internal/domain"
 	"database/sql"
 	"errors"
 	"path/filepath"
@@ -224,11 +225,11 @@ func TestRollBack_keepsWhatTheOlderShapeCanStillHold(t *testing.T) {
 	if _, err := s.RollBack(); err != nil {
 		t.Fatalf("RollBack: %v", err)
 	}
-	held, err := s.TasksHeld()
+	held, err := s.Held()
 	if err != nil {
-		t.Fatalf("TasksHeld: %v", err)
+		t.Fatalf("Held: %v", err)
 	}
-	if held != 2 {
+	if held.Tasks != 2 {
 		t.Errorf("%d tasks left, want 2: rolling back changes the shape, not the work", held)
 	}
 }
@@ -242,24 +243,6 @@ func TestRollBack_refusesTheShapeAStoreStartsWith(t *testing.T) {
 	}
 	if _, err := s.RollBack(); !errors.Is(err, ErrNothingToRollBack) {
 		t.Errorf("err = %v, want ErrNothingToRollBack", err)
-	}
-}
-
-func TestTasksHeld_countsWhatAStoreHolds(t *testing.T) {
-	s := openStore(t)
-	keep(t, s, "Write the spec")
-	held, err := s.TasksHeld()
-	if err != nil {
-		t.Fatalf("TasksHeld: %v", err)
-	}
-	if held != 1 {
-		t.Errorf("TasksHeld = %d, want 1", held)
-	}
-}
-
-func TestTasksHeld_reportsAStoreItCannotRead(t *testing.T) {
-	if _, err := closed(t).TasksHeld(); err == nil {
-		t.Error("TasksHeld on a closed store should fail")
 	}
 }
 
@@ -359,5 +342,50 @@ func TestChange_knowsExactlyWhereTheNumbersStop(t *testing.T) {
 	}
 	if _, err := s.Change(last + 1); !errors.Is(err, ErrNoSuchChange) {
 		t.Errorf("Change(%d) err = %v, want ErrNoSuchChange", last+1, err)
+	}
+}
+
+// A backup that named its tasks and stayed quiet about its objectives would
+// let somebody restore over a store full of planning, believing they were
+// risking two tasks.
+func TestHeld_countsObjectivesApartFromTasks(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "Write the spec")
+	keep(t, s, "Ship it")
+	for _, title := range []string{"Ship cairn 1.0", "Learn Go", "Redo the site"} {
+		o, err := domain.NewObjective(title)
+		if err != nil {
+			t.Fatalf("NewObjective: %v", err)
+		}
+		if _, err := s.KeepObjective(o); err != nil {
+			t.Fatalf("KeepObjective: %v", err)
+		}
+	}
+	held, err := s.Held()
+	if err != nil {
+		t.Fatalf("Held: %v", err)
+	}
+	if held.Tasks != 2 || held.Objectives != 3 {
+		t.Errorf("Held = %+v, want 2 tasks and 3 objectives", held)
+	}
+}
+
+func TestHeld_countsNothingInAnEmptyStore(t *testing.T) {
+	held, err := openStore(t).Held()
+	if err != nil {
+		t.Fatalf("Held: %v", err)
+	}
+	if held.Tasks != 0 || held.Objectives != 0 {
+		t.Errorf("Held = %+v, want nothing", held)
+	}
+}
+
+func TestHeld_reportsAStoreItCannotRead(t *testing.T) {
+	s := openStore(t)
+	if err := s.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if _, err := s.Held(); err == nil {
+		t.Error("Held on a closed store returned no error")
 	}
 }

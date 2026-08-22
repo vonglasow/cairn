@@ -56,10 +56,10 @@ func (c *Backups) Delete(number int) error { return c.vault.Delete(number) }
 func (c *Backups) Restore(number int) error { return c.vault.Restore(number) }
 
 // HoldsStore counts what the store holds, read as it lies.
-func (c *Backups) HoldsStore() (int, error) { return c.vault.HoldsStore() }
+func (c *Backups) HoldsStore() (domain.Held, error) { return c.vault.HoldsStore() }
 
 // Holds counts what a backup holds, without changing it.
-func (c *Backups) Holds(one domain.Backup) (int, error) { return c.vault.Holds(one) }
+func (c *Backups) Holds(one domain.Backup) (domain.Held, error) { return c.vault.Holds(one) }
 
 // Migrations hands back every change this cairn knows, applied or not.
 func (e *Engine) Migrations() ([]domain.Migration, error) { return e.store.Migrations() }
@@ -70,8 +70,8 @@ func (e *Engine) Change(number int) (domain.Migration, error) { return e.store.C
 // Waiting hands back the changes the store has not had yet.
 func (e *Engine) Waiting() ([]domain.Migration, error) { return e.store.Waiting() }
 
-// TasksHeld counts what the store holds.
-func (e *Engine) TasksHeld() (int, error) { return e.store.TasksHeld() }
+// Held counts what the store holds, tasks and objectives apart.
+func (e *Engine) Held() (domain.Held, error) { return e.store.Held() }
 
 // Apply makes one change, after setting a backup aside: changing the shape of a
 // store is not something to discover afterwards.

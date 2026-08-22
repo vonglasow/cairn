@@ -356,11 +356,12 @@ func (s *Store) RollBack() (domain.Migration, error) {
 	return domain.Migration{}, ErrNothingToRollBack
 }
 
-// TasksHeld counts what a store holds, without reading any of it.
-func (s *Store) TasksHeld() (int, error) {
-	var held int
-	if err := s.db.QueryRow(`SELECT count(*) FROM tasks`).Scan(&held); err != nil {
-		return 0, fmt.Errorf("counting what the store holds: %w", err)
+// Held counts what a store holds, tasks and objectives apart, without
+// reading any of it.
+func (s *Store) Held() (domain.Held, error) {
+	held, err := heldOn(s.db)
+	if err != nil {
+		return domain.Held{}, fmt.Errorf("counting what the store holds: %w", err)
 	}
 	return held, nil
 }

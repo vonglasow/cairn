@@ -121,7 +121,7 @@ func TestVault_saysWhatABackupHolds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Holds: %v", err)
 	}
-	if holds != 2 {
+	if holds.Tasks != 2 {
 		t.Errorf("Holds = %d, want 2", holds)
 	}
 }
@@ -229,7 +229,7 @@ func TestVault_countsWhatTheStoreHolds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("HoldsStore: %v", err)
 	}
-	if held != 2 {
+	if held.Tasks != 2 {
 		t.Errorf("HoldsStore = %d, want 2", held)
 	}
 }

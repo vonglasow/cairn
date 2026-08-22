@@ -52,10 +52,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
-		return w.seed(fmt.Sprintf(`cairn objective add "%s"`, title))
-	})
-
 	sc.Step(`^I added an objective titled "([^"]*)" with the (description|deadline|priority|state|estimate) "([^"]*)"$`,
 		func(title, attribute, value string) error {
 			flag := map[string]string{

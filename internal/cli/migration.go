@@ -44,7 +44,7 @@ func newMigrationListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			held, err := eng.TasksHeld()
+			held, err := eng.Held()
 			if err != nil {
 				return err
 			}

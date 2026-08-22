@@ -86,6 +86,10 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return fmt.Errorf("nothing is waiting:\n%s", listing)
 	})
 
+	sc.Step(`^I rolled the last change back$`, func() error {
+		return w.seed(`cairn migration rollback --yes`)
+	})
+
 	sc.Step(`^I applied what was waiting$`, func() error {
 		return w.seed(`cairn migration apply`)
 	})
@@ -226,19 +230,45 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return wantContains(w.out.stdout, "there is no backup", "the answer")
 	})
 
-	sc.Step("^`([^`]*)` says the store holds (\\d+) tasks?$", func(line string, n int) error {
-		w.run(line)
-		return wantContains(w.out.stdout, fmt.Sprintf("holds %d task", n), "the answer")
-	})
+	// Both counts in one step: a backup that named its tasks and stayed quiet
+	// about its objectives is exactly the answer this is here to catch.
+	held := func(tasks, objectives int) string {
+		return fmt.Sprintf("holds %d task(s) and %d objective(s)", tasks, objectives)
+	}
 
-	sc.Step(`^it says the backup holds (\d+) tasks?$`, func(n int) error {
-		return wantContains(w.out.stdout, fmt.Sprintf("holds %d task", n), "the answer")
-	})
+	sc.Step(`^it says the backup holds (\d+) tasks? and (\d+) objectives?$`,
+		func(tasks, objectives int) error {
+			return wantContains(w.out.stdout, held(tasks, objectives), "the answer")
+		})
 
-	sc.Step("^`([^`]*)` says the backup holds (\\d+) tasks?$", func(line string, n int) error {
-		w.run(line)
-		return wantContains(w.out.stdout, fmt.Sprintf("holds %d task", n), "the answer")
-	})
+	sc.Step("^`([^`]*)` says the backup holds (\\d+) tasks? and (\\d+) objectives?$",
+		func(line string, tasks, objectives int) error {
+			w.run(line)
+			return wantContains(w.out.stdout, held(tasks, objectives), "the answer")
+		})
+
+	sc.Step("^`([^`]*)` says the store holds (\\d+) tasks? and (\\d+) objectives?$",
+		func(line string, tasks, objectives int) error {
+			w.run(line)
+			return wantContains(w.out.stdout, held(tasks, objectives), "the answer")
+		})
+
+	sc.Step(`^it carries (\d+) tasks? and (\d+) objectives? held$`,
+		func(tasks, objectives int) error {
+			var doc map[string]any
+			if err := json.Unmarshal([]byte(w.out.stdout), &doc); err != nil {
+				return err
+			}
+			holds, ok := doc["holds"].(map[string]any)
+			if !ok {
+				return fmt.Errorf("holds = %v, want the two counts", doc["holds"])
+			}
+			if holds["tasks"] != float64(tasks) || holds["objectives"] != float64(objectives) {
+				return fmt.Errorf("holds = %v, want %d task(s) and %d objective(s)",
+					holds, tasks, objectives)
+			}
+			return nil
+		})
 
 	sc.Step(`^it says when the backup was made$`, func() error {
 		return wantContains(w.out.stdout, "made ", "the answer")

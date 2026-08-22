@@ -65,7 +65,7 @@ func TestBackups_makesListsAndFindsABackup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Holds: %v", err)
 	}
-	if held != 1 {
+	if held.Tasks != 1 {
 		t.Errorf("Holds = %d, want 1", held)
 	}
 }
@@ -158,12 +158,12 @@ func TestEngine_saysNothingIsWaitingOnAStoreItJustMade(t *testing.T) {
 func TestEngine_countsWhatTheStoreHolds(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
-	held, err := e.TasksHeld()
+	held, err := e.Held()
 	if err != nil {
-		t.Fatalf("TasksHeld: %v", err)
+		t.Fatalf("Held: %v", err)
 	}
-	if held != 1 {
-		t.Errorf("TasksHeld = %d, want 1", held)
+	if held.Tasks != 1 {
+		t.Errorf("Held = %+v, want 1 task", held)
 	}
 }
 

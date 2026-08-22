@@ -201,9 +201,17 @@ func writeObjectiveDeleted(cmd *cobra.Command, n int) error {
 
 // backupJSON is how a backup crosses to a machine.
 type backupJSON struct {
-	Number int    `json:"number"`
-	Made   string `json:"made"`
-	Holds  int    `json:"holds,omitempty"`
+	Number int       `json:"number"`
+	Made   string    `json:"made"`
+	Holds  *heldJSON `json:"holds,omitempty"`
+}
+
+// heldJSON is what a store or a backup contains. An object rather than one
+// number, because tasks and objectives are counted apart: a single total would
+// hide which of the two somebody is about to overwrite.
+type heldJSON struct {
+	Tasks      int `json:"tasks"`
+	Objectives int `json:"objectives"`
 }
 
 // changeJSON is how a change to the store crosses to a machine.
@@ -220,13 +228,23 @@ func madeAt(t time.Time) string { return t.Local().Format("2006-01-02 15:04") }
 // writeBackup answers with one backup. holds is written only when it was counted:
 // making a backup does not open it, and a zero nobody measured would read as an
 // empty store.
-func writeBackup(cmd *cobra.Command, one domain.Backup, holds int) error {
+func writeBackup(cmd *cobra.Command, one domain.Backup, holds domain.Held) error {
 	if wantsJSON(cmd) {
-		return writeJSON(cmd, backupJSON{Number: one.Number, Made: madeAt(one.Made), Holds: holds})
+		return writeJSON(cmd, backupJSON{
+			Number: one.Number, Made: madeAt(one.Made),
+			Holds: &heldJSON{Tasks: holds.Tasks, Objectives: holds.Objectives},
+		})
 	}
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "#%d  made %s  holds %d task(s)\n",
-		one.Number, madeAt(one.Made), holds)
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "#%d  made %s  %s\n",
+		one.Number, madeAt(one.Made), heldReads(holds))
 	return err
+}
+
+// heldReads writes both counts. The zero is written rather than left out: this
+// is an inventory, and a line missing at zero reads as a kind of thing the
+// backup could not have held at all.
+func heldReads(held domain.Held) string {
+	return fmt.Sprintf("holds %d task(s) and %d objective(s)", held.Tasks, held.Objectives)
 }
 
 // writeBackups answers with every backup, saying so when there is none.
@@ -252,7 +270,7 @@ func writeBackups(cmd *cobra.Command, all []domain.Backup) error {
 
 // writeChanges answers with every change, applied or waiting. Both are listed:
 // a list that only showed what was done could not tell you what to apply.
-func writeChanges(cmd *cobra.Command, changes []domain.Migration, held int) error {
+func writeChanges(cmd *cobra.Command, changes []domain.Migration, held domain.Held) error {
 	if wantsJSON(cmd) {
 		wire := make([]changeJSON, 0, len(changes))
 		for _, c := range changes {
@@ -270,7 +288,7 @@ func writeChanges(cmd *cobra.Command, changes []domain.Migration, held int) erro
 		}
 		_, _ = fmt.Fprintf(&out, "#%d  %s  %s\n", c.Number, state(c), c.Name)
 	}
-	_, _ = fmt.Fprintf(&out, "\nthe store holds %d task(s), %d change(s) waiting\n", held, waiting)
+	_, _ = fmt.Fprintf(&out, "\nthe store %s, %d change(s) waiting\n", heldReads(held), waiting)
 	_, err := fmt.Fprint(cmd.OutOrStdout(), out.String())
 	return err
 }

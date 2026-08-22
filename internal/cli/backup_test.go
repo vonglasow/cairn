@@ -83,8 +83,12 @@ func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
 	if err := json.Unmarshal([]byte(shown), &one); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, shown)
 	}
-	if one["holds"] != float64(1) {
-		t.Errorf("holds = %v, want 1", one["holds"])
+	holds, ok := one["holds"].(map[string]any)
+	if !ok {
+		t.Fatalf("holds = %v, want the two counts", one["holds"])
+	}
+	if holds["tasks"] != float64(1) || holds["objectives"] != float64(0) {
+		t.Errorf("holds = %v, want 1 task and no objective", holds)
 	}
 }
 

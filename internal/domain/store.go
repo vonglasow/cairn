@@ -2,6 +2,15 @@ package domain
 
 import "time"
 
+// Held is what a store, or a backup of one, contains. Tasks and objectives are
+// counted apart for the same reason they are everywhere else: they are not the
+// same thing, and one total would hide which of the two somebody is about to
+// overwrite.
+type Held struct {
+	Tasks      int
+	Objectives int
+}
+
 // Backup is a backup of the store, kept beside it and referred to by its number.
 // It lives here rather than beside the code that writes it, because a surface
 // has to name one without being allowed to know how a store is made.

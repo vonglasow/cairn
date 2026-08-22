@@ -68,6 +68,7 @@ through it. An objective with tasks under it is not deleted.
 cairn backup add                 # backup the store as it stands
 cairn backup list                # every backup, with its number and date
 cairn backup show 2              # when it was made, and what it holds
+                                 # `holds 4 task(s) and 2 objective(s)`
 cairn backup delete 2 --yes
 cairn backup restore 2 --yes     # put one back; without a number, the most recent
 
@@ -82,6 +83,9 @@ When cairn knows a change a store on disk does not, it says so and stops —
 shape of your store changes unless you asked for it. `apply` and `rollback` set
 a backup aside first, and so does `backup restore` before replacing anything, so
 picking the wrong one costs a command rather than the work it overwrote.
+
+A backup is read in the shape it was written, never today's: one taken before
+objectives existed says it holds none, rather than refusing to be read at all.
 
 ## Where your tasks live
 
