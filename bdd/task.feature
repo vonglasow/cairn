@@ -278,6 +278,12 @@ Feature: Tasks
       When I run `cairn task show 1`
       Then the task is in the "todo" column
 
+    @task-number-negative
+    Scenario: a number that starts with a minus is still a number
+      When I run `cairn task show -1`
+      Then it fails
+      And it says a task number is expected
+
     @task-show-unknown
     Scenario: showing a task that does not exist says so
       When I run `cairn task show 99`
@@ -776,6 +782,7 @@ Feature: Tasks
       Then it writes JSON to standard output
       And it carries 1 of 2 sub-tasks done
       And it carries the share 50
+      And it carries no count of tasks
 
     @task-json-progress-of-nothing
     Scenario: a task with nothing under it carries no progress

@@ -1,6 +1,8 @@
 package store
 
 import (
+	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -391,5 +393,58 @@ func TestStore_reportsSubTasksItCannotRead(t *testing.T) {
 	s := closed(t)
 	if _, err := s.Under(1); err == nil {
 		t.Error("Under on a closed store should fail")
+	}
+}
+
+// Unusable answers for the store being out of reach, not for anything SQLite
+// happens to complain about. Both halves matter: an error from another package
+// is not it, and neither is a SQLite error of another kind.
+func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	made, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if err := made.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	// Locked down before the connection is opened: SQLite keeps the descriptor
+	// it was given, so a file made read-only afterwards is still written to.
+	if err := os.Chmod(path, 0o444); err != nil {
+		t.Fatalf("Chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+
+	db, err := sql.Open("sqlite", shared(path))
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	_, refused := db.Exec(`INSERT INTO tasks (parent, objective, title, description,
+		state, priority, deadline, estimate, time_spent)
+		VALUES (0, 0, 'x', '', 'backlog', 'normal', '', 0, 0)`)
+	if refused == nil {
+		t.Fatal("writing to a read-only store was expected to fail")
+	}
+	if !Unusable(refused) {
+		t.Errorf("Unusable(%v) = false, want true", refused)
+	}
+	if !Unusable(fmt.Errorf("keeping the task: %w", refused)) {
+		t.Error("Unusable does not see through a wrapped error")
+	}
+
+	// A SQLite error, and not the one: asking for a table that is not there.
+	var n int
+	other := db.QueryRow(`SELECT count(*) FROM nowhere`).Scan(&n)
+	if other == nil {
+		t.Fatal("the query was expected to fail")
+	}
+	if Unusable(other) {
+		t.Errorf("Unusable(%v) = true, want false: that is a request, not the store", other)
+	}
+	if Unusable(nil) || Unusable(ErrNoSuchTask) {
+		t.Error("Unusable says yes to something that is not a store problem")
 	}
 }

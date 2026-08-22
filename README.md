@@ -87,6 +87,18 @@ picking the wrong one costs a command rather than the work it overwrote.
 A backup is read in the shape it was written, never today's: one taken before
 objectives existed says it holds none, rather than refusing to be read at all.
 
+## What cairn answers a script
+
+| code | what it means |
+|---|---|
+| `0` | it worked |
+| `1` | understood, and refused — a title that is empty, a state that is not one |
+| `2` | not understood at all — a flag that does not exist, a number that is not one |
+| `3` | the store could not be used — unreadable, out of date, or nothing may write to it |
+
+Code 3 is the one worth branching on: nothing was wrong with the command, so
+the same command may well work once the store is reachable again.
+
 ## Where your tasks live
 
 More than one cairn can hold the store at once — a second terminal, a loop, a

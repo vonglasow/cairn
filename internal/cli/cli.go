@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"slices"
@@ -117,6 +118,7 @@ func orElse(v, fallback string) string {
 
 // NewRootCmd builds the whole command tree. It takes no globals so a test can
 // run the real CLI in-process, against its own state.
+// NewRootCmd builds the command tree cairn answers with.
 func NewRootCmd() *cobra.Command {
 	b := Build()
 	root := &cobra.Command{
@@ -139,12 +141,36 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 	root.SetVersionTemplate(b.String())
+	// `task show -1` is somebody naming a number, not misusing a flag. Cobra
+	// reads the leading minus as a shorthand and answers "unknown shorthand
+	// flag: '1' in -1", which sends a person looking through flags they never
+	// typed. Said plainly instead, and left as a usage error either way: the
+	// number does not exist, whichever way it was meant.
+	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		if typed, ok := negativeNumber(err); ok {
+			return fmt.Errorf("%q: a task number is expected", typed)
+		}
+		return err
+	})
 	// Asked for on any command, so `task add --json` and `task list --json` read
 	// the same way. Declared on the root because the answer's shape is a
 	// property of the whole conversation, not of one subcommand.
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
 	root.AddCommand(newTaskCmd(), newObjectiveCmd(), newBackupCmd(), newMigrationCmd())
 	return root
+}
+
+// numberLikeFlag matches cobra's complaint about a shorthand that is really a
+// negative number: "unknown shorthand flag: '1' in -12".
+var numberLikeFlag = regexp.MustCompile(`unknown shorthand flag: '\d' in (-\d+)`)
+
+// negativeNumber pulls what somebody actually typed out of that complaint.
+func negativeNumber(err error) (string, bool) {
+	found := numberLikeFlag.FindStringSubmatch(err.Error())
+	if found == nil {
+		return "", false
+	}
+	return found[1], true
 }
 
 // Main runs the command line and returns the code the process should exit with.

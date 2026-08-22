@@ -63,6 +63,12 @@ func codeFor(err error) int {
 			return exitStore
 		}
 	}
+	// Out of reach rather than misunderstood: a file nothing may write to is
+	// not a request to correct. Asked rather than compared, because it is an
+	// error the driver raised and not a sentinel of ours.
+	if engine.StoreUnusable(err) {
+		return exitStore
+	}
 	for _, refusal := range refusals {
 		if errors.Is(err, refusal) {
 			return exitRefused

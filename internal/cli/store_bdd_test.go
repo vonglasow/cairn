@@ -7,10 +7,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 
 	"github.com/cucumber/godog"
+
+	"cairn/internal/engine"
 )
 
 func initStore(t *testing.T) func(*godog.ScenarioContext) {
@@ -56,6 +59,26 @@ func atOnce(lines [][]string) (int, string) {
 
 // registerAtOnce declares the steps only this feature uses.
 func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
+	sc.Step(`^the store cannot be written to$`, func() error {
+		if err := os.Chmod(w.storePath, 0o444); err != nil {
+			return err
+		}
+		w.restores = append(w.restores, func() { _ = os.Chmod(w.storePath, 0o600) })
+		return nil
+	})
+
+	// No CAIRN_STORE and no HOME: a cron entry, a container, a service unit
+	// with a bare environment. cairn has nowhere to put the default store and
+	// has to say so rather than guess a path.
+	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
+		w.setenv(engine.StoreVariable, "")
+		w.setenv("HOME", "")
+		if err := os.Unsetenv(engine.StoreVariable); err != nil {
+			return err
+		}
+		return os.Unsetenv("HOME")
+	})
+
 	sc.Step(`^(\d+) commands add a task at the same time$`, func(n int) error {
 		lines := make([][]string, 0, n)
 		for i := 1; i <= n; i++ {

@@ -22,6 +22,12 @@ var (
 	ErrNothingToRollBack = store.ErrNothingToRollBack
 )
 
+// StoreUnusable says whether an error is the store being out of reach rather
+// than the request being wrong. Re-exported the same way the sentinels above
+// are: the store is the only package that may recognise it, and a surface has
+// to be able to ask without ever hearing of SQLite.
+var StoreUnusable = store.Unusable
+
 // Backups is the set of backups kept beside a store.
 //
 // It is reached without opening the store on purpose: a backup is most needed

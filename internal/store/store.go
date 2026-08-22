@@ -14,7 +14,8 @@ import (
 	// The pure-Go SQLite driver. Registered for its side effect, as database/sql
 	// drivers are. Pure Go on purpose: cgo would forfeit cross-compilation for
 	// the surfaces that come later.
-	_ "modernc.org/sqlite"
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 
 	"cairn/internal/domain"
 )
@@ -26,6 +27,17 @@ var ErrNoSuchTask = errors.New("there is no such task")
 type Store struct {
 	db   *sql.DB
 	path string
+}
+
+// Unusable says whether an error is the store itself being out of reach
+// rather than a request cairn could not make sense of — a file nothing may
+// write to, most often. Answered here because this is the only package
+// allowed to know what SQLite returns, and asked by the surface that has to
+// choose an exit code: a script fixes its arguments on one and looks at the
+// machine on the other.
+func Unusable(err error) bool {
+	var problem *sqlite.Error
+	return errors.As(err, &problem) && problem.Code() == sqlite3.SQLITE_READONLY
 }
 
 // heldFor is how long a command waits for a store somebody else is writing to

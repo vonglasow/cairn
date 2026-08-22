@@ -666,6 +666,19 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 
+		// A task has sub-tasks under it and nothing else, so a count of tasks
+		// would name a kind of thing it cannot hold — zeroes included.
+		sc.Step(`^it carries no count of tasks$`, func() error {
+			progress, err := w.progress()
+			if err != nil {
+				return err
+			}
+			if _, present := progress["tasks"]; present {
+				return fmt.Errorf("progress = %v, want no count of tasks", progress)
+			}
+			return nil
+		})
+
 		// The key has to be there and be null. A document missing it answers the
 		// same to a caller reading doc["progress"], right up to the day the
 		// caller starts checking whether the field exists at all.
