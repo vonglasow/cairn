@@ -29,6 +29,9 @@ hooks = [
     # nobody tested at all — which mutation alone would not, having no mutants
     # to judge there.
     { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, types = ["go"] },
+    # The binary must not be made of the test harness. Cheap, and it is what
+    # replaced `no-go-testing` for `cairn/test` — see the target's comment.
+    { id = "harness-check", name = "the binary does not reach the harness", entry = "make harness-check", language = "system", pass_filenames = false, types = ["go"] },
     # Mutation: breaks each line on purpose and checks a test turns red.
     # Coverage only says a line ran. This is the slow hook — tens of seconds per
     # package — and it is here on purpose: a surviving mutant found at commit
@@ -43,7 +46,9 @@ rev = "v0.5.1"
 hooks = [
     { id = "go-fmt" },
     { id = "go-imports" },
-    { id = "no-go-testing" },
+    # `cairn/test` imports testing outside a _test.go file, deliberately and
+    # with nowhere else to go. `make harness-check` is what guards it instead.
+    { id = "no-go-testing", exclude = "^test/" },
     { id = "golangci-lint" },
     { id = "go-unit-tests" },
 ]

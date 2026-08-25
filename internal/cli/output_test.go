@@ -6,7 +6,21 @@ import (
 	"testing"
 
 	"cairn/internal/domain"
+	"cairn/internal/task"
 )
+
+// spec builds a numbered task with a title, for the tests below.
+func spec(t *testing.T) task.Task {
+	t.Helper()
+	built, err := task.NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	var a task.AsTold
+	built.Tell(&a)
+	a.Numbered(1)
+	return a.Task()
+}
 
 // A machine reading the answer has to loop over the labels. A task carrying
 // none must therefore hand back an empty list, never a null: null is not a
@@ -23,10 +37,15 @@ func TestForWire_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 }
 
 func TestForWire_writesTheLabelsATaskCarries(t *testing.T) {
-	task := spec(t)
-	task.Labels = []string{"spec", "team"}
+	built := spec(t)
+	var a task.AsTold
+	built.Tell(&a)
+	a.Labelled("spec")
+	a.Labelled("team")
+	a.LabelsTold()
+	built = a.Task()
 
-	encoded, err := json.Marshal(forWire(task, domain.Progress{}))
+	encoded, err := json.Marshal(forWire(built, domain.Progress{}))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -36,16 +55,22 @@ func TestForWire_writesTheLabelsATaskCarries(t *testing.T) {
 }
 
 func TestForWire_writesEveryAttributeAsText(t *testing.T) {
-	task := spec(t)
-	var err error
-	if task.Deadline, err = domain.ParseDeadline("2026-09-01"); err != nil {
+	built := spec(t)
+	deadline, err := domain.ParseDeadline("2026-09-01")
+	if err != nil {
 		t.Fatalf("ParseDeadline: %v", err)
 	}
-	if task.Estimate, err = domain.ParseEstimate("90m"); err != nil {
+	estimate, err := domain.ParseEstimate("90m")
+	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
+	var a task.AsTold
+	built.Tell(&a)
+	a.Due(deadline)
+	a.Estimated(estimate)
+	built = a.Task()
 
-	wire := forWire(task, domain.Progress{})
+	wire := forWire(built, domain.Progress{})
 	if wire.Deadline != "2026-09-01" {
 		t.Errorf("Deadline = %q, want 2026-09-01", wire.Deadline)
 	}

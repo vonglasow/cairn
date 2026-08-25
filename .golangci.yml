@@ -54,6 +54,101 @@ linters:
             # production code.
             - testing
 
+        # Which build this is knows nobody, for the same reason an entity does:
+        # both surfaces have to answer the question, and an identity owned by one
+        # of them is an identity the other borrows. An allow-list, like domain.
+        build:
+          files: ["**/internal/build/**"]
+          allow:
+            - fmt
+            - runtime
+            - runtime/debug
+            - strings
+            - text/tabwriter
+            # Only reachable from _test.go: the harness guard refuses testing in
+            # anything the binary is made of.
+            - testing
+
+        # The task holds the task: what it carries, and the rules that keep it
+        # valid. It reaches domain, for the attributes a task carries and the
+        # title rule it shares with an objective, and nothing else — a task
+        # that knew how it is stored or displayed would drag a database or a
+        # terminal into every test that touches it, the same reason domain
+        # itself knows nobody. A deny-list, like store and engine, because what
+        # it must never reach is a short, named list rather than everything
+        # unnamed.
+        task:
+          files: ["**/internal/task/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: a task knows nothing of how it is stored
+            - pkg: cairn/internal/engine
+              desc: a task knows nothing of the operations run on it
+            - pkg: cairn/internal/cli
+              desc: a task knows nothing of how it is displayed
+            - pkg: cairn/internal/mcp
+              desc: a task knows nothing of how it is displayed
+            - pkg: database/sql
+              desc: a task that knew how it is stored would drag a database into every test that touches it
+            - pkg: github.com/spf13/cobra
+              desc: a task is not a surface
+            - pkg: github.com/charmbracelet/fang
+              desc: a task is not a surface
+
+        # The objective holds the objective: what it carries, and the rules
+        # that keep it valid. It reaches domain, for the attributes an
+        # objective carries and the title rule it shares with a task, and
+        # nothing else — not even cairn/internal/task: an objective that knew
+        # of the task would close the circle task's own rule keeps open, and
+        # what it needs from a task (TasksServing) is store's and engine's to
+        # ask for, not its own. A deny-list, like task, because what it must
+        # never reach is a short, named list rather than everything unnamed.
+        objective:
+          files: ["**/internal/objective/**"]
+          deny:
+            - pkg: cairn/internal/task
+              desc: an objective knows nothing of a task; store and engine are what ties the two together
+            - pkg: cairn/internal/store
+              desc: an objective knows nothing of how it is stored
+            - pkg: cairn/internal/engine
+              desc: an objective knows nothing of the operations run on it
+            - pkg: cairn/internal/cli
+              desc: an objective knows nothing of how it is displayed
+            - pkg: cairn/internal/mcp
+              desc: an objective knows nothing of how it is displayed
+            - pkg: database/sql
+              desc: an objective that knew how it is stored would drag a database into every test that touches it
+            - pkg: github.com/spf13/cobra
+              desc: an objective is not a surface
+            - pkg: github.com/charmbracelet/fang
+              desc: an objective is not a surface
+
+        # The migration holds the change: what it does to the shape of the
+        # store, what undoes it, and what undoing it costs. It reaches domain,
+        # for what a store holds and for writing a moment the way a person
+        # reads one, and nothing else — a change that knew how it is stored
+        # or displayed would drag a database or a terminal into every test
+        # that touches it, the same reason task and objective know neither.
+        # A deny-list, like task and objective, because what it must never
+        # reach is a short, named list rather than everything unnamed.
+        migration:
+          files: ["**/internal/migration/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: a change knows nothing of how it is stored; the store executes its SQL, it does not own the change
+            - pkg: cairn/internal/engine
+              desc: a change knows nothing of the operations run on it
+            - pkg: cairn/internal/cli
+              desc: a change knows nothing of how it is displayed
+            - pkg: cairn/internal/mcp
+              desc: a change knows nothing of how it is displayed
+            - pkg: database/sql
+              desc: a change that knew how it is stored would drag a database into every test that touches it
+            - pkg: github.com/spf13/cobra
+              desc: a change is not a surface
+            - pkg: github.com/charmbracelet/fang
+              desc: a change is not a surface
+
         # The store is called by the engine and speaks in entities. It is the
         # only package that knows a database exists.
         store:
@@ -62,6 +157,8 @@ linters:
             - pkg: cairn/internal/engine
               desc: the store is called by the engine, it never calls it
             - pkg: cairn/internal/cli
+              desc: the store must not know how anything is displayed
+            - pkg: cairn/internal/mcp
               desc: the store must not know how anything is displayed
             - pkg: github.com/spf13/cobra
               desc: the store is not a surface
@@ -75,16 +172,53 @@ linters:
           deny:
             - pkg: cairn/internal/cli
               desc: the engine is called by surfaces, it never calls them
+            - pkg: cairn/internal/mcp
+              desc: the engine is called by surfaces, it never calls them
             - pkg: database/sql
               desc: the engine asks the store, it does not reach a database
             - pkg: github.com/spf13/cobra
               desc: the engine is not a surface
+
+        # The harness is handed a way to run a command and never learns who
+        # answers. Importing a surface would close a cycle, since that surface's
+        # own scenarios import the harness — and it would also let a step assert
+        # against the layer below the one it observes.
+        test:
+          files: ["**/test/**"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: the harness is handed a runner, it never reaches a surface
+            - pkg: cairn/internal/mcp
+              desc: the harness is handed a runner, it never reaches a surface
+            - pkg: cairn/internal/store
+              desc: a scenario asks the engine, never the store
+            - pkg: database/sql
+              desc: a scenario never opens a database
 
         # A surface asks the engine. Reaching the store directly would put a
         # rule the engine owns into a second place, where it drifts.
         cli:
           files: ["**/internal/cli/**"]
           deny:
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: database/sql
+              desc: a surface never opens a database
+
+        # The other surface, held to the same rules, plus one of its own: it may
+        # not read the command line. `cli` builds the server, so the arrow runs
+        # that way and only that way — a server reaching back would be reading
+        # another surface's private state to work out what it is.
+        #
+        # Its scenarios are carved out because they are in `package mcp_test` and
+        # do drive the command line: an agent's claim that "what was done at the
+        # terminal is there on the next call" can only be checked by a step that
+        # reaches the terminal.
+        mcp:
+          files: ["**/internal/mcp/**", "!**/internal/mcp/*_test.go"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: the command line builds the server, the server never reads it
             - pkg: cairn/internal/store
               desc: a surface changes state through the engine, never behind it
             - pkg: database/sql

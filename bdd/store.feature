@@ -17,6 +17,17 @@ Feature: The store
     of. It is a moment to wait through, and waiting is what a command does,
     because the alternative is work that was accepted and never written.
 
+    Making one is the same moment as holding one. A file that does not exist
+    yet is made by whoever gets there first, and the others wait for it
+    exactly as they wait for a write — measured, because they did not:
+    switching a fresh file to the journal cairn needs takes a lock the
+    ordinary wait does not cover.
+
+    @store-busy-being-made
+    Scenario: commands making the store at the same time all land
+      When 4 commands add a task at the same time
+      Then `cairn task list` lists 4 tasks
+
     @store-busy-waits
     Scenario: commands writing at the same time all land
       Given I added a task titled "Write the spec"

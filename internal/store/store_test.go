@@ -6,9 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
+	"cairn/internal/task"
 )
 
 // openStore gives a store on a fresh file, closed when the test ends.
@@ -23,38 +27,137 @@ func openStore(t *testing.T) *Store {
 }
 
 // keep adds a task titled title, failing the test if it cannot.
-func keep(t *testing.T, s *Store, title string) domain.Task {
+func keep(t *testing.T, s *Store, title string) task.Task {
 	t.Helper()
-	task, err := domain.NewTask(title)
+	built, err := task.NewTask(title)
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	kept, err := s.Keep(task)
+	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
 	return kept
 }
 
+// changed hands back a task carrying whatever mutate tells it on top of what
+// it already tells: a local way to build the fixtures this file needs beyond
+// what task.NewTask starts with, without a second way to build a task —
+// AsTold is told every fact the task already carries first, so mutate only
+// has to name what is different.
+func changed(built task.Task, mutate func(a *task.AsTold)) task.Task {
+	a := &task.AsTold{}
+	built.Tell(a)
+	mutate(a)
+	return a.Task()
+}
+
+// taskFacts is a task's membrane for what a test needs to read back off it.
+// It never builds a task, only reads what Tell says, which is what keeps it
+// from being a second way to make one.
+type taskFacts struct {
+	number, parent, objective int
+	title, description        string
+	state                     domain.State
+	priority                  domain.Priority
+	labels                    []string
+	deadline                  time.Time
+	estimate, timeSpent       time.Duration
+}
+
+func (f *taskFacts) Numbered(n int)            { f.number = n }
+func (f *taskFacts) Titled(s string)           { f.title = s }
+func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
+func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
+func (f *taskFacts) Described(s string)        { f.description = s }
+func (f *taskFacts) NotDescribed()             { f.description = "" }
+func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
+func (f *taskFacts) NotLabelled()              { f.labels = nil }
+func (f *taskFacts) LabelsTold()               {}
+func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
+func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
+func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }
+func (f *taskFacts) NotEstimated()             { f.estimate = 0 }
+func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
+func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
+func (f *taskFacts) Under(n int)               { f.parent = n }
+func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
+func (f *taskFacts) Serves(n int)              { f.objective = n }
+func (f *taskFacts) ServesNothing()            { f.objective = task.NoObjective }
+
+// factsOf reads back what a test needs from a task.
+func factsOf(t task.Task) taskFacts {
+	var f taskFacts
+	t.Tell(&f)
+	return f
+}
+
+// changedObjective hands back an objective carrying whatever mutate tells it
+// on top of what it already tells: a local way to build the fixtures this
+// file needs beyond what objective.NewObjective starts with, without a second
+// way to build an objective — AsTold is told every fact the objective already
+// carries first, so mutate only has to name what is different.
+func changedObjective(built objective.Objective, mutate func(a *objective.AsTold)) objective.Objective {
+	a := &objective.AsTold{}
+	built.Tell(a)
+	mutate(a)
+	return a.Objective()
+}
+
+// objectiveFacts is an objective's membrane for what a test needs to read
+// back off it. It never builds an objective, only reads what Tell says, which
+// is what keeps it from being a second way to make one.
+type objectiveFacts struct {
+	number             int
+	title, description string
+	state              objective.State
+	priority           domain.Priority
+	labels             []string
+	deadline           time.Time
+	estimate           time.Duration
+}
+
+func (f *objectiveFacts) Numbered(n int)             { f.number = n }
+func (f *objectiveFacts) Titled(s string)            { f.title = s }
+func (f *objectiveFacts) Standing(s objective.State) { f.state = s }
+func (f *objectiveFacts) Carries(p domain.Priority)  { f.priority = p }
+func (f *objectiveFacts) Described(s string)         { f.description = s }
+func (f *objectiveFacts) NotDescribed()              { f.description = "" }
+func (f *objectiveFacts) Labelled(l string)          { f.labels = append(f.labels, l) }
+func (f *objectiveFacts) NotLabelled()               { f.labels = nil }
+func (f *objectiveFacts) LabelsTold()                {}
+func (f *objectiveFacts) Due(t time.Time)            { f.deadline = t }
+func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} }
+func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
+func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
+
+// factsOfObjective reads back what a test needs from an objective.
+func factsOfObjective(o objective.Objective) objectiveFacts {
+	var f objectiveFacts
+	o.Tell(&f)
+	return f
+}
+
 func TestStore_handsBackTheTaskItKept(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
 
-	got, err := s.Find(kept.Number)
+	got, err := s.Find(factsOf(kept).number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if got.Title != "Write the spec" {
-		t.Errorf("Title = %q, want the one it was given", got.Title)
+	facts := factsOf(got)
+	if facts.title != "Write the spec" {
+		t.Errorf("Title = %q, want the one it was given", facts.title)
 	}
-	if got.State != domain.Backlog || got.Priority != domain.Normal {
-		t.Errorf("got %q/%q, want backlog/normal", got.State, got.Priority)
+	if facts.state != domain.Backlog || facts.priority != domain.Normal {
+		t.Errorf("got %q/%q, want backlog/normal", facts.state, facts.priority)
 	}
 }
 
 func TestStore_numbersTheFirstTaskOne(t *testing.T) {
 	s := openStore(t)
-	if got := keep(t, s, "Write the spec").Number; got != 1 {
+	if got := factsOf(keep(t, s, "Write the spec")).number; got != 1 {
 		t.Errorf("Number = %d, want 1", got)
 	}
 }
@@ -62,7 +165,7 @@ func TestStore_numbersTheFirstTaskOne(t *testing.T) {
 func TestStore_givesTheNextNumberToTheNextTask(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "First")
-	if got := keep(t, s, "Second").Number; got != 2 {
+	if got := factsOf(keep(t, s, "Second")).number; got != 2 {
 		t.Errorf("Number = %d, want 2", got)
 	}
 }
@@ -71,10 +174,10 @@ func TestStore_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
-	if err := s.Delete(second.Number); err != nil {
+	if err := s.Delete(factsOf(second).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got := keep(t, s, "Third").Number; got != 3 {
+	if got := factsOf(keep(t, s, "Third")).number; got != 3 {
 		t.Errorf("Number = %d, want 3: a freed number is not handed out again", got)
 	}
 }
@@ -88,7 +191,7 @@ func TestStore_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 2 || all[0].Title != "First" || all[1].Title != "Second" {
+	if len(all) != 2 || factsOf(all[0]).title != "First" || factsOf(all[1]).title != "Second" {
 		t.Errorf("All = %v, want First then Second", all)
 	}
 }
@@ -104,81 +207,132 @@ func TestStore_keepsTextExactlyAsItWasGiven(t *testing.T) {
 	s := openStore(t)
 	for _, title := range []string{"Écrire la spéc — enfin !", "🧗 climb", "90% done, right?", strings.Repeat("a", 5000)} {
 		kept := keep(t, s, title)
-		got, err := s.Find(kept.Number)
+		got, err := s.Find(factsOf(kept).number)
 		if err != nil {
 			t.Fatalf("Find: %v", err)
 		}
-		if got.Title != title {
-			t.Errorf("Title round-trip lost data: got %q", got.Title)
+		if facts := factsOf(got); facts.title != title {
+			t.Errorf("Title round-trip lost data: got %q", facts.title)
 		}
 	}
 }
 
 func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 	s := openStore(t)
-	task, err := domain.NewTask("Write the spec")
+	built, err := task.NewTask("Write the spec")
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	task.Description = "the one"
-	task.State = domain.Todo
-	task.Priority = domain.High
-	task.Labels = []string{"spec", "team"}
-	if task.Deadline, err = domain.ParseDeadline("2026-09-01"); err != nil {
+	deadline, err := domain.ParseDeadline("2026-09-01")
+	if err != nil {
 		t.Fatalf("ParseDeadline: %v", err)
 	}
-	if task.Estimate, err = domain.ParseEstimate("90m"); err != nil {
+	estimate, err := domain.ParseEstimate("90m")
+	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
+	built = changed(built, func(a *task.AsTold) {
+		a.Described("the one")
+		a.InColumn(domain.Todo)
+		a.Carries(domain.High)
+		a.Labelled("spec")
+		a.Labelled("team")
+		a.LabelsTold()
+		a.Due(deadline)
+		a.Estimated(estimate)
+	})
 
-	kept, err := s.Keep(task)
+	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	got, err := s.Find(kept.Number)
+	got, err := s.Find(factsOf(kept).number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if got.Description != "the one" || got.State != domain.Todo || got.Priority != domain.High {
-		t.Errorf("got %+v, want the attributes it was given", got)
+	facts := factsOf(got)
+	if facts.description != "the one" || facts.state != domain.Todo || facts.priority != domain.High {
+		t.Errorf("got %+v, want the attributes it was given", facts)
 	}
-	if len(got.Labels) != 2 || got.Labels[0] != "spec" || got.Labels[1] != "team" {
-		t.Errorf("Labels = %v, want [spec team]", got.Labels)
+	if len(facts.labels) != 2 || facts.labels[0] != "spec" || facts.labels[1] != "team" {
+		t.Errorf("Labels = %v, want [spec team]", facts.labels)
 	}
-	if domain.FormatDay(got.Deadline) != "2026-09-01" {
-		t.Errorf("Deadline = %v, want 2026-09-01", got.Deadline)
+	if domain.FormatDay(facts.deadline) != "2026-09-01" {
+		t.Errorf("Deadline = %v, want 2026-09-01", facts.deadline)
 	}
-	if domain.FormatDuration(got.Estimate) != "1h30m" {
-		t.Errorf("Estimate = %v, want 1h30m", got.Estimate)
+	if domain.FormatDuration(facts.estimate) != "1h30m" {
+		t.Errorf("Estimate = %v, want 1h30m", facts.estimate)
+	}
+}
+
+// TestStore_roundTripsTheTimeSpent checks that time spent comes back as it
+// was given, whether that is a real amount or none at all: the two read
+// differently off a row, and a store that read them the same way would still
+// pass every other test here.
+func TestStore_roundTripsTheTimeSpent(t *testing.T) {
+	s := openStore(t)
+	built, err := task.NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	built = changed(built, func(a *task.AsTold) { a.Spent(30 * time.Minute) })
+
+	kept, err := s.Keep(built)
+	if err != nil {
+		t.Fatalf("Keep: %v", err)
+	}
+	got, err := s.Find(factsOf(kept).number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if facts := factsOf(got); facts.timeSpent != 30*time.Minute {
+		t.Errorf("TimeSpent = %v, want 30m", facts.timeSpent)
+	}
+
+	bare := keep(t, s, "Bare")
+	got, err = s.Find(factsOf(bare).number)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	if facts := factsOf(got); facts.timeSpent != 0 {
+		t.Errorf("TimeSpent = %v, want none", facts.timeSpent)
 	}
 }
 
 func TestStore_replacesTheLabelsWhenATaskIsUpdated(t *testing.T) {
 	s := openStore(t)
-	task := keep(t, s, "Write the spec")
-	task.Labels = []string{"spec", "draft"}
-	if err := s.Update(task); err != nil {
+	built := keep(t, s, "Write the spec")
+	built = changed(built, func(a *task.AsTold) {
+		a.Labelled("spec")
+		a.Labelled("draft")
+		a.LabelsTold()
+	})
+	if err := s.Update(built); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	task.Labels = []string{"team"}
-	if err := s.Update(task); err != nil {
+	built = changed(built, func(a *task.AsTold) {
+		a.NotLabelled()
+		a.Labelled("team")
+		a.LabelsTold()
+	})
+	if err := s.Update(built); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
 
-	got, err := s.Find(task.Number)
+	got, err := s.Find(factsOf(built).number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if len(got.Labels) != 1 || got.Labels[0] != "team" {
-		t.Errorf("Labels = %v, want only [team]: what is given replaces what was there", got.Labels)
+	if facts := factsOf(got); len(facts.labels) != 1 || facts.labels[0] != "team" {
+		t.Errorf("Labels = %v, want only [team]: what is given replaces what was there", facts.labels)
 	}
 }
 
 func TestStore_saysWhenThereIsNothingToUpdate(t *testing.T) {
 	s := openStore(t)
-	task, _ := domain.NewTask("Nope")
-	task.Number = 99
-	if err := s.Update(task); err == nil {
+	built, _ := task.NewTask("Nope")
+	built = renumbered(built, 99)
+	if err := s.Update(built); err == nil {
 		t.Error("Update on a task that does not exist should fail")
 	}
 }
@@ -195,7 +349,7 @@ func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
 	keep(t, s, "Third")
-	if err := s.Delete(second.Number); err != nil {
+	if err := s.Delete(factsOf(second).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 
@@ -203,7 +357,7 @@ func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 2 || all[0].Title != "First" || all[1].Title != "Third" {
+	if len(all) != 2 || factsOf(all[0]).title != "First" || factsOf(all[1]).title != "Third" {
 		t.Errorf("All = %v, want First and Third", all)
 	}
 }
@@ -252,13 +406,13 @@ func closed(t *testing.T) *Store {
 
 func TestStore_reportsAStoreItCanNoLongerReach(t *testing.T) {
 	s := closed(t)
-	task, _ := domain.NewTask("Write the spec")
-	task.Number = 1
+	built, _ := task.NewTask("Write the spec")
+	built = renumbered(built, 1)
 
-	if _, err := s.Keep(task); err == nil {
+	if _, err := s.Keep(built); err == nil {
 		t.Error("Keep on a closed store should fail")
 	}
-	if err := s.Update(task); err == nil {
+	if err := s.Update(built); err == nil {
 		t.Error("Update on a closed store should fail")
 	}
 	if err := s.Delete(1); err == nil {
@@ -279,7 +433,7 @@ func TestStore_reportsLabelsItCannotRead(t *testing.T) {
 		t.Fatalf("dropping labels: %v", err)
 	}
 
-	if _, err := s.Find(kept.Number); err == nil {
+	if _, err := s.Find(factsOf(kept).number); err == nil {
 		t.Error("Find should report labels it cannot read")
 	}
 	if _, err := s.All(); err == nil {
@@ -289,22 +443,30 @@ func TestStore_reportsLabelsItCannotRead(t *testing.T) {
 
 func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
 	s := openStore(t)
-	task, _ := domain.NewTask("Write the spec")
+	built, _ := task.NewTask("Write the spec")
 	// The domain deduplicates; the store is handed whatever it is handed, and
 	// two identical labels break the key that makes them a set.
-	task.Labels = []string{"spec", "spec"}
+	built = changed(built, func(a *task.AsTold) {
+		a.Labelled("spec")
+		a.Labelled("spec")
+		a.LabelsTold()
+	})
 
-	if _, err := s.Keep(task); err == nil {
+	if _, err := s.Keep(built); err == nil {
 		t.Error("Keep should report labels it cannot record")
 	}
 }
 
 func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
 	s := openStore(t)
-	task := keep(t, s, "Write the spec")
-	task.Labels = []string{"spec", "spec"}
+	built := keep(t, s, "Write the spec")
+	built = changed(built, func(a *task.AsTold) {
+		a.Labelled("spec")
+		a.Labelled("spec")
+		a.LabelsTold()
+	})
 
-	if err := s.Update(task); err == nil {
+	if err := s.Update(built); err == nil {
 		t.Error("Update should report labels it cannot record")
 	}
 }
@@ -312,11 +474,11 @@ func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
 func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
-	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, kept.Number); err != nil {
+	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, factsOf(kept).number); err != nil {
 		t.Fatalf("writing a bad deadline: %v", err)
 	}
 
-	if _, err := s.Find(kept.Number); err == nil {
+	if _, err := s.Find(factsOf(kept).number); err == nil {
 		t.Error("Find should report a deadline it cannot make sense of")
 	}
 	if _, err := s.All(); err == nil {
@@ -326,15 +488,15 @@ func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
 
 func TestStore_reportsLabelsItCannotClear(t *testing.T) {
 	s := openStore(t)
-	task := keep(t, s, "Write the spec")
+	built := keep(t, s, "Write the spec")
 	if _, err := s.db.Exec(`DROP TABLE labels`); err != nil {
 		t.Fatalf("dropping labels: %v", err)
 	}
 
-	if err := s.Update(task); err == nil {
+	if err := s.Update(built); err == nil {
 		t.Error("Update should report labels it cannot clear")
 	}
-	if err := s.Delete(task.Number); err == nil {
+	if err := s.Delete(factsOf(built).number); err == nil {
 		t.Error("Delete should report labels it cannot clear")
 	}
 }
@@ -342,37 +504,37 @@ func TestStore_reportsLabelsItCannotClear(t *testing.T) {
 func TestStore_handsBackTheParentItWasGiven(t *testing.T) {
 	s := openStore(t)
 	under := keep(t, s, "Ship it")
-	task, _ := domain.NewTask("Write the tests")
-	task.Parent = under.Number
+	built, _ := task.NewTask("Write the tests")
+	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).number) })
 
-	kept, err := s.Keep(task)
+	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	got, err := s.Find(kept.Number)
+	got, err := s.Find(factsOf(kept).number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if got.Parent != under.Number {
-		t.Errorf("Parent = %d, want %d", got.Parent, under.Number)
+	if facts := factsOf(got); facts.parent != factsOf(under).number {
+		t.Errorf("Parent = %d, want %d", facts.parent, factsOf(under).number)
 	}
 }
 
 func TestStore_namesWhatHangsUnderATask(t *testing.T) {
 	s := openStore(t)
 	under := keep(t, s, "Ship it")
-	task, _ := domain.NewTask("Write the tests")
-	task.Parent = under.Number
-	if _, err := s.Keep(task); err != nil {
+	built, _ := task.NewTask("Write the tests")
+	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).number) })
+	if _, err := s.Keep(built); err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
 	keep(t, s, "Unrelated")
 
-	children, err := s.Under(under.Number)
+	children, err := s.Under(factsOf(under).number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
-	if len(children) != 1 || children[0].Title != "Write the tests" {
+	if len(children) != 1 || factsOf(children[0]).title != "Write the tests" {
 		t.Errorf("Under = %v, want only the sub-task", children)
 	}
 }
@@ -380,7 +542,7 @@ func TestStore_namesWhatHangsUnderATask(t *testing.T) {
 func TestStore_saysNothingHangsUnderALoneTask(t *testing.T) {
 	s := openStore(t)
 	lone := keep(t, s, "Ship it")
-	children, err := s.Under(lone.Number)
+	children, err := s.Under(factsOf(lone).number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
@@ -446,5 +608,124 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	}
 	if Unusable(nil) || Unusable(ErrNoSuchTask) {
 		t.Error("Unusable says yes to something that is not a store problem")
+	}
+}
+
+// Making a store is the same moment as holding one, and the ordinary wait does
+// not cover it: switching a fresh file to WAL takes a lock busy_timeout knows
+// nothing about. Measured before this was handled, four commands making a store
+// together left two of them refused. Nothing was lost — the loser said so and
+// exited — but the Rule this store keeps says a command waits its turn.
+func TestOpen_waitsForAStoreSomebodyElseIsMaking(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "made-at-once", "cairn.db")
+
+	const together = 4
+	var wg sync.WaitGroup
+	failed := make(chan error, together)
+	for range together {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s, err := Open(path)
+			if err != nil {
+				failed <- err
+				return
+			}
+			_ = s.Close()
+		}()
+	}
+	wg.Wait()
+	close(failed)
+
+	for err := range failed {
+		t.Errorf("one of the %d refused to wait: %v", together, err)
+	}
+}
+
+func TestBeingHeld_readsEveryShapeOfBeingHeld(t *testing.T) {
+	for code, held := range map[int]bool{
+		5:   true,  // SQLITE_BUSY, a plain lock
+		261: true,  // SQLITE_BUSY_RECOVERY
+		517: true,  // SQLITE_BUSY_SNAPSHOT, measured while a store was being made
+		773: true,  // SQLITE_BUSY_TIMEOUT
+		8:   false, // SQLITE_READONLY, which is the store and not somebody else
+		1:   false, // SQLITE_ERROR
+		0:   false, // nothing went wrong
+		6:   false, // SQLITE_LOCKED, which is this connection and not another
+	} {
+		if got := beingHeld(code); got != held {
+			t.Errorf("beingHeld(%d) = %v, want %v", code, got, held)
+		}
+	}
+}
+
+// The inner look is what stops two commands both making the store, and it only
+// happens when one of them loses — which is a matter of timing, so the losing
+// side is asked for directly here rather than waited for. Called on a store
+// already made, laying the shape down must decline to and say so.
+func TestLayDownTheShape_declinesWhenSomebodyElseAlreadyMadeIt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	if err := s.layDownTheShapeWhenOpeningFindsNothing(); err != nil {
+		t.Fatalf("laying the shape down on a made store: %v", err)
+	}
+	if held, err := s.Held(); err != nil || held.Tasks != 0 {
+		t.Errorf("held = %v (%v), want a store still holding nothing and no second shape laid on it", held, err)
+	}
+}
+
+// The wait Go does and the wait SQLite is given are the same wait, and nothing
+// else pins it: how long a timeout lasts is not something a scenario can see.
+// So it is said here, on both sides, from the one number.
+func TestHeldFor_isTheSameWaitBothWaysRound(t *testing.T) {
+	if got := waitedOut(); got != 5*time.Second {
+		t.Errorf("waitedOut() = %v, want 5s", got)
+	}
+	if got := shared("/somewhere/cairn.db"); !strings.Contains(got, "busy_timeout(5000)") {
+		t.Errorf("the store is opened as %q, want it to give SQLite the same 5s", got)
+	}
+}
+
+// Laying the shape down can fail, and then the opening has to say so rather
+// than carry on reading a store that was never made.
+//
+// Provoked rather than waited for. A view named tasks leaves the store looking
+// empty — the shape is read as missing because no table of that name is there —
+// and the first change steps around it, because a table is only created when
+// one is missing. The second cannot: a view is not something a column can be
+// added to.
+//
+// The reason is asserted and not merely the failure, because carrying on would
+// fail too, only later and for another reason: the store would be reported as
+// behind. Which of the two comes back is the whole difference between saying
+// what went wrong and saying something went wrong.
+func TestOpen_reportsAShapeItCouldNotLayDown(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+
+	db, err := sql.Open("sqlite", shared(path))
+	if err != nil {
+		t.Fatalf("opening the file: %v", err)
+	}
+	if _, err := db.Exec(ledger); err != nil {
+		t.Fatalf("making the ledger: %v", err)
+	}
+	if _, err := db.Exec(`CREATE VIEW tasks AS SELECT 1 AS number`); err != nil {
+		t.Fatalf("putting something in the way: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("closing: %v", err)
+	}
+
+	_, err = Open(path)
+	if err == nil {
+		t.Fatal("Open said nothing, want it to report a shape it could not lay down")
+	}
+	if !strings.Contains(err.Error(), "applying") {
+		t.Errorf("Open said %q, want it to name the change it could not apply", err)
 	}
 }

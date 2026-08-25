@@ -90,3 +90,44 @@ func TestTally_addsUpAcrossBoth(t *testing.T) {
 		t.Errorf("Done() = %d, want 3", got)
 	}
 }
+
+// Nothing under it reads as null, not as zeroes: a task with nothing under it
+// is not "0% done", there is simply no work to report a share of.
+func TestOfProgress_isNilWhenNothingIsUnder(t *testing.T) {
+	if got := OfProgress(Progress{}); got != nil {
+		t.Errorf("OfProgress(Progress{}) = %+v, want nil", got)
+	}
+}
+
+// A count of sub-tasks with none under it is left out entirely, the same way
+// a count of tasks is: saying "0 of 0" invents a kind of thing it cannot have.
+func TestOfProgress_omitsATallyWithNothingInIt(t *testing.T) {
+	got := OfProgress(Progress{Tasks: Tally{Total: 2, Done: 2}})
+	if got == nil {
+		t.Fatalf("OfProgress = nil, want a shape")
+	}
+	if got.SubTasks != nil {
+		t.Errorf("SubTasks = %+v, want nil: no sub-task is under it", got.SubTasks)
+	}
+	if got.Tasks == nil || *got.Tasks != (Tally{Total: 2, Done: 2}) {
+		t.Errorf("Tasks = %+v, want {2 2}", got.Tasks)
+	}
+}
+
+// A task fills SubTasks alone, and the share it carries covers only that —
+// this pins the shape a script reads for exactly that case.
+func TestOfProgress_carriesTheTallyAndTheShare(t *testing.T) {
+	got := OfProgress(Progress{SubTasks: Tally{Total: 4, Done: 1}})
+	if got == nil {
+		t.Fatalf("OfProgress = nil, want a shape")
+	}
+	if got.Tasks != nil {
+		t.Errorf("Tasks = %+v, want nil: no task is under it", got.Tasks)
+	}
+	if got.SubTasks == nil || *got.SubTasks != (Tally{Total: 4, Done: 1}) {
+		t.Errorf("SubTasks = %+v, want {4 1}", got.SubTasks)
+	}
+	if got.Percent != 25 {
+		t.Errorf("Percent = %d, want 25", got.Percent)
+	}
+}

@@ -15,21 +15,40 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+
+	"cairn/internal/build"
+	"cairn/test"
 )
 
-// versionWorld carries what one scenario needs between its steps.
+// versionWorld carries what one scenario needs between its steps, the three
+// stamps included: no test is linked, so what a scenario can choose is not what
+// the linker wrote but how this surface reads it.
 type versionWorld struct {
 	t        *testing.T
-	out      result
+	out      test.Result
+	version  string
+	commit   string
+	built    string
 	restores []func()
 }
 
-// stamp sets a linker-injected variable for the length of the scenario.
-func (w *versionWorld) stamp(target *string, value string) {
-	prev := *target
-	w.restores = append(w.restores, func() { *target = prev })
-	*target = value
+// newVersionWorld builds the state one scenario works against, and puts the
+// surface's way of reading its build back when the scenario ends.
+func newVersionWorld(t *testing.T) *versionWorld {
+	w := &versionWorld{t: t}
+	previous := stamps
+	w.restores = append(w.restores, func() { stamps = previous })
+	stamps = w.reading
+	return w
 }
+
+// reading is what the surface answers while this scenario runs.
+func (w *versionWorld) reading() build.Info {
+	return build.Stamped(w.version, w.commit, w.built)
+}
+
+// stamp decides what the binary claims to be for the length of the scenario.
+func (w *versionWorld) stamp(target *string, value string) { *target = value }
 
 // endScenario puts back every stamp the scenario set, most recent first.
 //
@@ -45,7 +64,7 @@ func (w *versionWorld) endScenario() {
 
 // line returns the value printed for key, or "" when the key is absent.
 func (w *versionWorld) line(key string) string {
-	for _, l := range strings.Split(w.out.stdout, "\n") {
+	for _, l := range strings.Split(w.out.Stdout, "\n") {
 		if rest, ok := strings.CutPrefix(l, key); ok {
 			return strings.TrimSpace(rest)
 		}
@@ -55,7 +74,7 @@ func (w *versionWorld) line(key string) string {
 
 func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
-		w := &versionWorld{t: t}
+		w := newVersionWorld(t)
 
 		sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
 			w.endScenario()
@@ -63,31 +82,31 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^a binary built with no version stamps$`, func() error {
-			w.stamp(&version, "")
-			w.stamp(&commit, "")
-			w.stamp(&built, "")
+			w.stamp(&w.version, "")
+			w.stamp(&w.commit, "")
+			w.stamp(&w.built, "")
 			return nil
 		})
 
 		sc.Step(`^a binary stamped with version "([^"]*)"$`, func(v string) error {
-			w.stamp(&version, v)
+			w.stamp(&w.version, v)
 			return nil
 		})
 
 		sc.Step(`^stamped with commit "([^"]*)"$`, func(v string) error {
-			w.stamp(&commit, v)
+			w.stamp(&w.commit, v)
 			return nil
 		})
 
 		sc.Step(`^stamped with build time "([^"]*)"$`, func(v string) error {
-			w.stamp(&built, v)
+			w.stamp(&w.built, v)
 			return nil
 		})
 
 		sc.Step("^I run `cairn --version`$", func() error {
 			w.out = run(w.t, "--version")
-			if w.out.code != exitOK {
-				return fmt.Errorf("exit %d (stderr: %s)", w.out.code, w.out.stderr)
+			if w.out.Code != exitOK {
+				return fmt.Errorf("exit %d (stderr: %s)", w.out.Code, w.out.Stderr)
 			}
 			return nil
 		})
@@ -96,7 +115,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		// inside godog wrecks its subtest bookkeeping and surfaces as an
 		// unreadable "test executed panic(nil) or runtime.Goexit".
 		sc.Step(`^it reports the version as "([^"]*)"$`, func(want string) error {
-			first := strings.SplitN(w.out.stdout, "\n", 2)[0]
+			first := strings.SplitN(w.out.Stdout, "\n", 2)[0]
 			if got := strings.TrimSpace(first); got != "cairn "+want {
 				return fmt.Errorf("first line = %q, want %q", got, "cairn "+want)
 			}
@@ -135,19 +154,26 @@ func wantLine(w *versionWorld, key, want string) error {
 	return nil
 }
 
-// The stamps are package-level variables, so a scenario that sets one has to
-// put it back before the next scenario starts — not at the end of the Go test
-// that happened to run it. Every scenario in version.feature currently sets
-// every stamp it reads, which is what keeps the leak invisible; the first
-// Scenario Outline whose examples don't will start on the previous one's
-// leftovers. This test watches the restoring itself, since no scenario can.
-func TestVersionWorld_putsAStampBackWhenTheScenarioEnds(t *testing.T) {
-	stampFor(t, &version, "what the scenario found")
-	w := &versionWorld{t: t}
-	w.stamp(&version, "what the scenario set")
+// How the surface reads its build is a package-level variable, so a scenario
+// that replaces it has to put it back before the next scenario starts — not at
+// the end of the Go test that happened to run it. Every scenario in
+// version.feature currently sets every stamp it reads, which is what keeps the
+// leak invisible; the first Scenario Outline whose examples don't will start on
+// the previous one's leftovers. This test watches the restoring itself, since no
+// scenario can.
+func TestVersionWorld_putsTheBuildBackWhenTheScenarioEnds(t *testing.T) {
+	found := stamps
+	t.Cleanup(func() { stamps = found })
+
+	w := newVersionWorld(t)
+	w.stamp(&w.version, "what the scenario set")
+	if got := stamps().Version; got != "what the scenario set" {
+		t.Fatalf("version = %q during the scenario", got)
+	}
+
 	w.endScenario()
-	if version != "what the scenario found" {
-		t.Errorf("version = %q, want it put back for the next scenario", version)
+	if got := stamps().Version; got != found().Version {
+		t.Errorf("version = %q, want %q put back for the next scenario", got, found().Version)
 	}
 }
 

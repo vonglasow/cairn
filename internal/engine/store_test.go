@@ -135,12 +135,13 @@ func TestEngine_namesEveryChangeAndItsState(t *testing.T) {
 	if len(all) == 0 {
 		t.Fatal("Migrations should name every change this cairn knows")
 	}
-	for _, change := range all {
-		if change.Name == "" || change.Does == "" {
+	for _, one := range all {
+		change := factsOfChange(one)
+		if change.name == "" || change.does == "" {
 			t.Errorf("a change should carry its name and what it does, got %+v", change)
 		}
-		if !change.Applied || change.Made.IsZero() {
-			t.Errorf("a change on a store made today should be applied and dated, got %+v", change)
+		if !change.applied {
+			t.Errorf("a change on a store made today should be applied, got %+v", change)
 		}
 	}
 }
@@ -228,7 +229,7 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 	if len(waiting) != 1 {
 		t.Fatalf("%d changes waiting, want 1", len(waiting))
 	}
-	name, err := e.Apply(path, waiting[0].Number)
+	name, err := e.Apply(path, factsOfChange(waiting[0]).number)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}

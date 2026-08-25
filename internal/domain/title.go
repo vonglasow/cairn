@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 	"unicode"
 )
 
@@ -37,9 +36,11 @@ func breaksALine(r rune) bool {
 	return unicode.IsControl(r) || r == '\u2028' || r == '\u2029'
 }
 
-// oneLine says whether a title is text and nothing else. It is shared by a
-// task and an objective, which are shown the same way and break the same way.
-func oneLine(title string) error {
+// OneLine says whether a title is text and nothing else. It is shared by a
+// task and an objective, which are shown the same way and break the same way
+// — exported because a task, built outside this package, still has to be
+// held to the same rule.
+func OneLine(title string) error {
 	// ContainsFunc rather than IndexFunc >= 0: the index is not wanted, and a
 	// comparison on it is a boundary no test can be written against once the
 	// first character is covered.
@@ -49,37 +50,19 @@ func oneLine(title string) error {
 	return nil
 }
 
-// NoParent is the number a task carries when it hangs under nothing. Zero is
-// safe to mean "none" because the store never hands out zero: numbering starts
-// at one.
-const NoParent = 0
+// Absent is what an attribute a thing does not carry looks like. A blank would
+// read as a value nobody typed rather than as an absence.
+//
+// It sits here beside FormatDay and FormatDuration, and for the same reason:
+// what an absence looks like is a fact about a carried attribute, not about the
+// thing carrying it. A task and an objective both show one, and neither may
+// import the other, so this is the only place both can read it from.
+const Absent = "—"
 
-// Task is the unit of work. It carries a title, and a number to refer to it by
-// afterwards. Everything else is optional and has a stated default: a task
-// starts in the backlog, at normal priority, carrying nothing else.
-type Task struct {
-	Number      int
-	Parent      int
-	Objective   int
-	Title       string
-	Description string
-	State       State
-	Priority    Priority
-	Labels      []string
-	Deadline    time.Time
-	Estimate    time.Duration
-	TimeSpent   time.Duration
-}
-
-// NewTask builds a task from a title, refusing one that carries no text.
-// What surrounds the title is not part of it; what sits inside it is.
-func NewTask(title string) (Task, error) {
-	title = strings.TrimSpace(title)
-	if title == "" {
-		return Task{}, fmt.Errorf("a task %w", ErrTitleRequired)
+// OrNothing is a value as it is shown, or Absent when there is none.
+func OrNothing(value string) string {
+	if value == "" {
+		return Absent
 	}
-	if err := oneLine(title); err != nil {
-		return Task{}, err
-	}
-	return Task{Title: title, State: Backlog, Priority: Normal}, nil
+	return value
 }

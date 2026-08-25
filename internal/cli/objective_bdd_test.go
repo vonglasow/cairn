@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+
+	"cairn/test"
 )
 
 func initObjective(t *testing.T) func(*godog.ScenarioContext) {
@@ -48,7 +50,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	// --- the common context ---------------------------------------------------
 
 	sc.Step(`^I add(?:ed)? an objective with it$`, func() error {
-		w.run(fmt.Sprintf(`cairn objective add "%s"`, w.long))
+		w.Run(fmt.Sprintf(`cairn objective add "%s"`, w.long))
 		return nil
 	})
 
@@ -58,17 +60,17 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 				"description": "--desc", "deadline": "--deadline",
 				"priority": "--priority", "state": "--state", "estimate": "--estimate",
 			}[attribute]
-			return w.seed(fmt.Sprintf(`cairn objective add "%s" %s "%s"`, title, flag, value))
+			return w.Seed(fmt.Sprintf(`cairn objective add "%s" %s "%s"`, title, flag, value))
 		})
 
 	sc.Step(`^I added an objective titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
 		func(title, first, second string) error {
-			return w.seed(fmt.Sprintf(`cairn objective add "%s" --label "%s" --label "%s"`, title, first, second))
+			return w.Seed(fmt.Sprintf(`cairn objective add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the objective "([^"]*)"$`,
 		func(title, objective string) error {
-			return w.seed(fmt.Sprintf(`cairn task add "%s" --objective "%s"`, title, objective))
+			return w.Seed(fmt.Sprintf(`cairn task add "%s" --objective "%s"`, title, objective))
 		})
 
 	// Written as one step rather than three hundred lines of Given. The share
@@ -77,11 +79,11 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	sc.Step(`^I added (\d+) tasks under it, of which (\d+) (?:is|are) done$`,
 		func(total, done int) error {
 			for i := 1; i <= total; i++ {
-				if err := w.seed(fmt.Sprintf(`cairn task add "Task %d" --objective 1`, i)); err != nil {
+				if err := w.Seed(fmt.Sprintf(`cairn task add "Task %d" --objective 1`, i)); err != nil {
 					return err
 				}
 				if i <= done {
-					if err := w.seed(fmt.Sprintf(`cairn task edit %d --state done`, i)); err != nil {
+					if err := w.Seed(fmt.Sprintf(`cairn task edit %d --state done`, i)); err != nil {
 						return err
 					}
 				}
@@ -92,54 +94,54 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	// --- what it answered -----------------------------------------------------
 
 	sc.Step(`^it reports an objective titled "([^"]*)"$`, func(title string) error {
-		return wantContains(w.heading(), title, "the answer")
+		return test.WantContains(w.heading(), title, "the answer")
 	})
 
 	sc.Step(`^it numbers the objective (\d+)$`, func(n int) error {
-		return wantContains(w.heading(), fmt.Sprintf("#%d", n), "the answer")
+		return test.WantContains(w.heading(), fmt.Sprintf("#%d", n), "the answer")
 	})
 
 	sc.Step(`^it lists (\d+) objectives?$`, func(n int) error {
-		return countsTasks(w.out.stdout, n)
+		return test.CountsTasks(w.Out.Stdout, n)
 	})
 
 	sc.Step(`^it lists objective (\d+) titled "([^"]*)"$`, func(n int, title string) error {
-		return listsTask(w.out.stdout, n, title)
+		return test.ListsTask(w.Out.Stdout, n, title)
 	})
 
 	sc.Step("^`([^`]*)` says there is no objective$", func(line string) error {
-		w.run(line)
-		return wantContains(w.out.stdout, "there is no objective", "the answer")
+		w.Run(line)
+		return test.WantContains(w.Out.Stdout, "there is no objective", "the answer")
 	})
 
 	sc.Step("^`([^`]*)` still reports an objective titled \"([^\"]*)\"$", func(line, title string) error {
-		w.run(line)
-		return wantContains(w.heading(), title, "the answer")
+		w.Run(line)
+		return test.WantContains(w.heading(), title, "the answer")
 	})
 
 	sc.Step("^`([^`]*)` still carries the objective \"([^\"]*)\"$", func(line, want string) error {
-		w.run(line)
+		w.Run(line)
 		return w.wantField("objective", want)
 	})
 
 	sc.Step("^`([^`]*)` says nothing is under it$", func(line string) error {
-		w.run(line)
-		return wantContains(w.out.stdout, "nothing is under it", "the answer")
+		w.Run(line)
+		return test.WantContains(w.Out.Stdout, "nothing is under it", "the answer")
 	})
 
 	sc.Step(`^it says nothing is under it$`, func() error {
-		return wantContains(w.out.stdout, "nothing is under it", "the answer")
+		return test.WantContains(w.Out.Stdout, "nothing is under it", "the answer")
 	})
 
 	// The task appears indented under the objective's own heading, the way a
 	// sub-task appears under its parent — same shape, so it reads the same.
 	sc.Step(`^task (\d+) is shown under objective (\d+)$`, func(task, objective int) error {
-		if err := wantContains(w.heading(), fmt.Sprintf("#%d", objective), "the heading"); err != nil {
+		if err := test.WantContains(w.heading(), fmt.Sprintf("#%d", objective), "the heading"); err != nil {
 			return err
 		}
-		_, block, found := strings.Cut(w.out.stdout, "\ntasks\n")
+		_, block, found := strings.Cut(w.Out.Stdout, "\ntasks\n")
 		if !found {
-			return fmt.Errorf("nothing is shown under the objective:\n%s", w.out.stdout)
+			return fmt.Errorf("nothing is shown under the objective:\n%s", w.Out.Stdout)
 		}
 		want := fmt.Sprintf("#%d ", task)
 		for _, row := range strings.Split(block, "\n") {
@@ -208,7 +210,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it carries (\d+) objectives?$`, func(n int) error {
 		var docs []map[string]any
-		if err := json.Unmarshal([]byte(w.out.stdout), &docs); err != nil {
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &docs); err != nil {
 			return err
 		}
 		if len(docs) != n {
@@ -219,7 +221,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it carries the tasks under it$`, func() error {
 		var doc map[string]any
-		if err := json.Unmarshal([]byte(w.out.stdout), &doc); err != nil {
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
 			return err
 		}
 		under, ok := doc["tasks"].([]any)
@@ -240,6 +242,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		`^it says the objective carries tasks$`:     "the objective carries tasks",
 		`^it says an objective number is expected$`: "an objective number is expected",
 	} {
-		sc.Step(step, func() error { return wantContains(w.out.stderr, said, "the reason") })
+		sc.Step(step, func() error { return test.WantContains(w.Out.Stderr, said, "the reason") })
 	}
 }

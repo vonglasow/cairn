@@ -1,11 +1,13 @@
 package store
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/migration"
 )
 
 // What can be wrong with the shape of a store.
@@ -39,77 +41,6 @@ var (
 	ErrNothingToRollBack = errors.New("there is nothing left to roll back")
 )
 
-// migration is one step in the shape of the store. Each carries how to make it
-// and how to unmake it, because a shape that cannot be undone is a shape you
-// can only ever move away from.
-type migration struct {
-	name string
-	up   string
-	down string
-	// loses is what rolling this one back drops, in the words of somebody who
-	// has the tasks rather than the schema. Empty when nothing is lost. Writing
-	// it is the point: a migration whose author cannot say what undoing it
-	// costs has not finished being thought about.
-	loses string
-}
-
-// migrations, oldest first. Appending one here is what a store then has to be
-// told to apply; the name is what gets recorded, so it is written for somebody
-// reading `cairn migration list` a year from now.
-var migrations = []migration{
-	{
-		name: "the shape a store starts with",
-		up: `
-CREATE TABLE IF NOT EXISTS tasks (
-	number      INTEGER PRIMARY KEY AUTOINCREMENT,
-	title       TEXT    NOT NULL,
-	description TEXT    NOT NULL DEFAULT '',
-	state       TEXT    NOT NULL,
-	priority    TEXT    NOT NULL,
-	deadline    TEXT    NOT NULL DEFAULT '',
-	estimate    INTEGER NOT NULL DEFAULT 0,
-	time_spent  INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE IF NOT EXISTS labels (
-	task_number INTEGER NOT NULL REFERENCES tasks(number) ON DELETE CASCADE,
-	label       TEXT    NOT NULL,
-	PRIMARY KEY (task_number, label)
-);`,
-		// Left empty on purpose: this one is the floor, see ErrNothingToRollBack.
-		down: "",
-	},
-	{
-		name:  "a task can hang under another",
-		up:    `ALTER TABLE tasks ADD COLUMN parent INTEGER NOT NULL DEFAULT 0`,
-		down:  `ALTER TABLE tasks DROP COLUMN parent`,
-		loses: "which task each sub-task hangs under",
-	},
-	{
-		name: "objectives, and the tasks that serve them",
-		up: `
-CREATE TABLE IF NOT EXISTS objectives (
-	number      INTEGER PRIMARY KEY AUTOINCREMENT,
-	title       TEXT    NOT NULL,
-	description TEXT    NOT NULL DEFAULT '',
-	state       TEXT    NOT NULL,
-	priority    TEXT    NOT NULL,
-	deadline    TEXT    NOT NULL DEFAULT '',
-	estimate    INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE IF NOT EXISTS objective_labels (
-	objective_number INTEGER NOT NULL REFERENCES objectives(number) ON DELETE CASCADE,
-	label            TEXT    NOT NULL,
-	PRIMARY KEY (objective_number, label)
-);
-ALTER TABLE tasks ADD COLUMN objective INTEGER NOT NULL DEFAULT 0;`,
-		down: `
-DROP TABLE IF EXISTS objective_labels;
-DROP TABLE IF EXISTS objectives;
-ALTER TABLE tasks DROP COLUMN objective;`,
-		loses: "every objective, and which one each task serves",
-	},
-}
-
 // ledger is where the store records what has been done to it.
 const ledger = `
 CREATE TABLE IF NOT EXISTS migrations (
@@ -117,13 +48,79 @@ CREATE TABLE IF NOT EXISTS migrations (
 	applied_at TEXT NOT NULL
 );`
 
-// settle prepares a freshly opened store: it makes sure the ledger is there,
-// creates the shape when the file holds nothing at all, and otherwise reports
-// what the store is missing without touching it.
+// changeFacts pulls a change's raw content out through Tell, in the shape
+// this file needs it: the SQL to run, the name to record, and whether the
+// ledger already has it. Nothing here reaches into a change's fields, and a
+// change knows nothing of the store that reads it this way.
+type changeFacts struct {
+	number                    int
+	name, does, undoes, loses string
+	applied                   bool
+	made                      time.Time
+}
+
+func (f *changeFacts) Numbered(n int)  { f.number = n }
+func (f *changeFacts) Named(s string)  { f.name = s }
+func (f *changeFacts) Does(s string)   { f.does = s }
+func (f *changeFacts) Undoes(s string) { f.undoes = s }
+func (f *changeFacts) NotUndoable()    { f.undoes = "" }
+func (f *changeFacts) Loses(s string)  { f.loses = s }
+func (f *changeFacts) NothingLost()    { f.loses = "" }
+func (f *changeFacts) Applied(t time.Time) {
+	f.applied = true
+	f.made = t
+}
+func (f *changeFacts) NotApplied() { f.applied = false }
+
+// factsOfChange reads back what this file needs from a change, without
+// reaching into fields that stopped being exported.
+func factsOfChange(m migration.Migration) changeFacts {
+	var f changeFacts
+	m.Tell(&f)
+	return f
+}
+
+// settle prepares a freshly opened store, in the order a store needs it:
+// first the ledger, without which nothing can be recorded, then whichever of
+// the remaining steps its shape calls for.
+//
+// Opening a store is meant to read its shape, never lay it down — see "the
+// shape of the store changes, and never on its own" in
+// docs/architecture.md — and three of the steps below are the stated
+// exceptions to that. Each is named for what it does, and says right above
+// itself why it writes during what everywhere else is a mere opening.
 func (s *Store) settle(mustBeCurrent bool) error {
-	// Looked for, not laid down. Opening a store reads its shape; `migration
-	// apply` is what changes it. count(*) always answers, so there is one way
-	// for this to fail rather than two.
+	if err := s.makeTheLedgerWhenOpeningFindsNone(); err != nil {
+		return err
+	}
+	empty, err := s.isEmpty()
+	if err != nil {
+		return err
+	}
+	if empty {
+		// Whether it was this opening that made the store or somebody else's,
+		// what is on disk afterwards is a store like any other — so it is read
+		// like any other, and there is nothing to return early for.
+		if err := s.layDownTheShapeWhenOpeningFindsNothing(); err != nil {
+			return err
+		}
+	}
+	if err := s.adoptTheUnrecordedShapeWhileOpening(); err != nil {
+		return err
+	}
+	if err := s.refuseAnUnknownChange(); err != nil {
+		return err
+	}
+	if !mustBeCurrent {
+		return nil
+	}
+	return s.refuseIfBehind()
+}
+
+// makeTheLedgerWhenOpeningFindsNone writes during a mere opening: without a
+// ledger nothing that follows can record what has been done to the store,
+// and a store opened for the first time has no other moment to be given one.
+func (s *Store) makeTheLedgerWhenOpeningFindsNone() error {
 	var kept int
 	if err := s.db.QueryRow(
 		`SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'migrations'`,
@@ -135,26 +132,112 @@ func (s *Store) settle(mustBeCurrent bool) error {
 			return fmt.Errorf("making room to record what is done to the store: %w", err)
 		}
 	}
-	empty, err := s.isEmpty()
+	return nil
+}
+
+// isEmpty says whether the file holds nothing of ours at all.
+func (s *Store) isEmpty() (bool, error) { return isEmptyOn(s.db) }
+
+func isEmptyOn(on runs) (bool, error) {
+	var count int
+	if err := on.QueryRow(
+		`SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name IN ('tasks', 'labels')`).
+		Scan(&count); err != nil {
+		return false, fmt.Errorf("looking at the shape of the store: %w", err)
+	}
+	if count > 0 {
+		return false, nil
+	}
+	applied, err := appliedNamesOn(on)
+	if err != nil {
+		return false, err
+	}
+	return len(applied) == 0, nil
+}
+
+// layDownTheShapeWhenOpeningFindsNothing writes during a mere opening:
+// making a store is not changing one — a file that held nothing a moment ago
+// has nothing to lose and nobody to warn, so it is created at the shape this
+// cairn knows rather than left for `migration apply` to catch up on later.
+// layDownTheShapeWhenOpeningFindsNothing writes, during a mere opening, and
+// that is said out loud in its name because it is the exception: making a store
+// is not changing one. A file that held nothing a moment ago has nothing to
+// lose and nobody to warn.
+//
+// It is one act, not one per change. Measured: laying the shape down change by
+// change let another command open in the middle, read a ledger with one of the
+// three recorded, and report the store as behind — which it was not, it was
+// being made. A store half made is a store nobody may see.
+func (s *Store) layDownTheShapeWhenOpeningFindsNothing() error {
+	making, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("making the store: %w", err)
+	}
+	defer func() { _ = making.Rollback() }()
+
+	// Looked at again, from inside. Emptiness was read before the transaction
+	// began, and between those two moments somebody else may have made the whole
+	// store — measured: two commands both found it empty, both applied the first
+	// change, and the second was refused by the ledger's own uniqueness. Whoever
+	// arrives second is not making anything; it reads what is there like any
+	// other opening.
+	empty, err := isEmptyOn(making)
 	if err != nil {
 		return err
 	}
-	if empty {
-		// Making a store is not changing one. A file that held nothing a moment
-		// ago has nothing to lose and nobody to warn, so it is created at the
-		// shape this cairn knows.
-		_, err := s.applyAll()
-		return err
-	}
-	if err := s.adoptUnrecorded(); err != nil {
-		return err
-	}
-	if err := s.refuseUnknown(); err != nil {
-		return err
-	}
-	if !mustBeCurrent {
+	if !empty {
 		return nil
 	}
+
+	for _, one := range migration.Known {
+		if err := s.makeOn(making, one); err != nil {
+			return err
+		}
+	}
+	if err := making.Commit(); err != nil {
+		return fmt.Errorf("making the store: %w", err)
+	}
+	return nil
+}
+
+// adoptTheUnrecordedShapeWhileOpening writes during a mere opening: a store
+// written before cairn kept a ledger holds the first shape with no record of
+// it, and reading that silence as "nothing applied yet" would have the next
+// step try to lay a shape down that is already there.
+func (s *Store) adoptTheUnrecordedShapeWhileOpening() error {
+	applied, err := s.appliedNames()
+	if err != nil {
+		return err
+	}
+	if len(applied) > 0 {
+		return nil
+	}
+	return s.record(factsOfChange(migration.Known[0]).name)
+}
+
+// refuseAnUnknownChange stops on a store carrying a change this cairn does
+// not know. It only reads the store; it changes nothing.
+func (s *Store) refuseAnUnknownChange() error {
+	applied, err := s.appliedNames()
+	if err != nil {
+		return err
+	}
+	known := make(map[string]bool, len(migration.Known))
+	for _, raw := range migration.Known {
+		known[factsOfChange(raw).name] = true
+	}
+	for name := range applied {
+		if !known[name] {
+			return fmt.Errorf("%w: it carries %d change(s) including %q, this cairn knows %d",
+				ErrNewerStore, len(applied), name, len(migration.Known))
+		}
+	}
+	return nil
+}
+
+// refuseIfBehind says whether the store is missing a change this cairn
+// knows. It only reads the store; it changes nothing.
+func (s *Store) refuseIfBehind() error {
 	waiting, err := s.Waiting()
 	if err != nil {
 		return err
@@ -165,59 +248,11 @@ func (s *Store) settle(mustBeCurrent bool) error {
 	return nil
 }
 
-// isEmpty says whether the file holds nothing of ours at all.
-func (s *Store) isEmpty() (bool, error) {
-	var count int
-	if err := s.db.QueryRow(
-		`SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name IN ('tasks', 'labels')`).
-		Scan(&count); err != nil {
-		return false, fmt.Errorf("looking at the shape of the store: %w", err)
-	}
-	if count > 0 {
-		return false, nil
-	}
-	applied, err := s.appliedNames()
-	if err != nil {
-		return false, err
-	}
-	return len(applied) == 0, nil
-}
-
-// adoptUnrecorded records the first shape for a store written before cairn kept
-// a ledger. Reading it as untouched would have it apply a shape already there.
-func (s *Store) adoptUnrecorded() error {
-	applied, err := s.appliedNames()
-	if err != nil {
-		return err
-	}
-	if len(applied) > 0 {
-		return nil
-	}
-	return s.record(migrations[0].name)
-}
-
-// refuseUnknown stops on a store carrying a change this cairn does not know.
-func (s *Store) refuseUnknown() error {
-	applied, err := s.appliedNames()
-	if err != nil {
-		return err
-	}
-	known := make(map[string]bool, len(migrations))
-	for _, m := range migrations {
-		known[m.name] = true
-	}
-	for name := range applied {
-		if !known[name] {
-			return fmt.Errorf("%w: it carries %d change(s) including %q, this cairn knows %d",
-				ErrNewerStore, len(applied), name, len(migrations))
-		}
-	}
-	return nil
-}
-
 // appliedNames reads what the store says has been done to it.
-func (s *Store) appliedNames() (map[string]time.Time, error) {
-	rows, err := s.db.Query(`SELECT name, applied_at FROM migrations`)
+func (s *Store) appliedNames() (map[string]time.Time, error) { return appliedNamesOn(s.db) }
+
+func appliedNamesOn(on runs) (map[string]time.Time, error) {
+	rows, err := on.Query(`SELECT name, applied_at FROM migrations`)
 	if err != nil {
 		return nil, fmt.Errorf("reading what was done to the store: %w", err)
 	}
@@ -239,8 +274,10 @@ func (s *Store) appliedNames() (map[string]time.Time, error) {
 }
 
 // record notes that a change has been made, and when.
-func (s *Store) record(name string) error {
-	if _, err := s.db.Exec(
+func (s *Store) record(name string) error { return recordOn(s.db, name) }
+
+func recordOn(on runs, name string) error {
+	if _, err := on.Exec(
 		`INSERT INTO migrations (name, applied_at) VALUES (?, ?)`,
 		name, time.Now().UTC().Format(time.RFC3339)); err != nil {
 		return fmt.Errorf("recording %q: %w", name, err)
@@ -250,31 +287,47 @@ func (s *Store) record(name string) error {
 
 // Migrations hands back every change this cairn knows, in order, saying which
 // have been applied and when.
-func (s *Store) Migrations() ([]domain.Migration, error) {
+func (s *Store) Migrations() ([]migration.Migration, error) {
 	applied, err := s.appliedNames()
 	if err != nil {
 		return nil, err
 	}
-	all := make([]domain.Migration, 0, len(migrations))
-	for i, m := range migrations {
-		made, done := applied[m.name]
-		all = append(all, domain.Migration{
-			Number: i + 1, Name: m.name, Does: m.up, Undoes: m.down, Loses: m.loses,
-			Applied: done, Made: made,
-		})
+	all := make([]migration.Migration, 0, len(migration.Known))
+	for i, raw := range migration.Known {
+		facts := factsOfChange(raw)
+		var a migration.AsTold
+		a.Numbered(i + 1)
+		a.Named(facts.name)
+		a.Does(facts.does)
+		if facts.undoes == "" {
+			a.NotUndoable()
+		} else {
+			a.Undoes(facts.undoes)
+		}
+		if facts.loses == "" {
+			a.NothingLost()
+		} else {
+			a.Loses(facts.loses)
+		}
+		if made, done := applied[facts.name]; done {
+			a.Applied(made)
+		} else {
+			a.NotApplied()
+		}
+		all = append(all, a.Migration())
 	}
 	return all, nil
 }
 
 // Waiting hands back the changes this cairn knows and the store has not.
-func (s *Store) Waiting() ([]domain.Migration, error) {
+func (s *Store) Waiting() ([]migration.Migration, error) {
 	all, err := s.Migrations()
 	if err != nil {
 		return nil, err
 	}
-	waiting := []domain.Migration{}
+	waiting := []migration.Migration{}
 	for _, m := range all {
-		if !m.Applied {
+		if !factsOfChange(m).applied {
 			waiting = append(waiting, m)
 		}
 	}
@@ -284,13 +337,13 @@ func (s *Store) Waiting() ([]domain.Migration, error) {
 // Change hands back one change by its number, and says so when there is none.
 // The numbering is the store's business, so the question "is there a change 4"
 // is answered here and nowhere else.
-func (s *Store) Change(number int) (domain.Migration, error) {
+func (s *Store) Change(number int) (migration.Migration, error) {
 	all, err := s.Migrations()
 	if err != nil {
-		return domain.Migration{}, err
+		return migration.Migration{}, err
 	}
 	if number < 1 || number > len(all) {
-		return domain.Migration{}, fmt.Errorf("change %d: %w", number, ErrNoSuchChange)
+		return migration.Migration{}, fmt.Errorf("change %d: %w", number, ErrNoSuchChange)
 	}
 	return all[number-1], nil
 }
@@ -301,10 +354,11 @@ func (s *Store) Apply(number int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if one.Applied {
+	facts := factsOfChange(one)
+	if facts.applied {
 		return "", fmt.Errorf("change %d: %w", number, ErrAlreadyApplied)
 	}
-	return one.Name, s.make(migrations[number-1])
+	return facts.name, s.make(migration.Known[number-1])
 }
 
 // ApplyAll makes every change the store is missing, oldest first.
@@ -327,44 +381,61 @@ func (s *Store) applyAll() ([]string, error) {
 	}
 	made := []string{}
 	for _, one := range waiting {
-		if err := s.make(migrations[one.Number-1]); err != nil {
+		facts := factsOfChange(one)
+		if err := s.make(migration.Known[facts.number-1]); err != nil {
 			return nil, err
 		}
-		made = append(made, one.Name)
+		made = append(made, facts.name)
 	}
 	return made, nil
 }
 
 // make runs one change and writes it down.
-func (s *Store) make(m migration) error {
-	if _, err := s.db.Exec(m.up); err != nil {
-		return fmt.Errorf("applying %q: %w", m.name, err)
+func (s *Store) make(raw migration.Migration) error { return s.makeOn(s.db, raw) }
+
+// makeOn applies a change against whatever it is given to run on: the store
+// itself when a change is applied on its own, or the one transaction that makes
+// a store when the whole shape goes down at once.
+func (s *Store) makeOn(on runs, raw migration.Migration) error {
+	facts := factsOfChange(raw)
+	if _, err := on.Exec(facts.does); err != nil {
+		return fmt.Errorf("applying %q: %w", facts.name, err)
 	}
-	return s.record(m.name)
+	return recordOn(on, facts.name)
+}
+
+// runs is what a change is applied against, and read from. The store and a
+// transaction both answer it, which is what lets one act be one act — and what
+// lets the act check, from inside itself, that it is still the one making the
+// store.
+type runs interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
 }
 
 // RollBack unmakes the last change applied, keeping the work the older shape
 // can still hold. It hands back the change it unmade, so a surface can say what
 // that cost. It refuses to unmake the shape a store starts with.
-func (s *Store) RollBack() (domain.Migration, error) {
+func (s *Store) RollBack() (migration.Migration, error) {
 	all, err := s.Migrations()
 	if err != nil {
-		return domain.Migration{}, err
+		return migration.Migration{}, err
 	}
 	for i := len(all) - 1; i >= 1; i-- {
-		if !all[i].Applied {
+		if !factsOfChange(all[i]).applied {
 			continue
 		}
-		m := migrations[i]
-		if _, err := s.db.Exec(m.down); err != nil {
-			return domain.Migration{}, fmt.Errorf("rolling back %q: %w", m.name, err)
+		raw := factsOfChange(migration.Known[i])
+		if _, err := s.db.Exec(raw.undoes); err != nil {
+			return migration.Migration{}, fmt.Errorf("rolling back %q: %w", raw.name, err)
 		}
-		if _, err := s.db.Exec(`DELETE FROM migrations WHERE name = ?`, m.name); err != nil {
-			return domain.Migration{}, fmt.Errorf("forgetting %q: %w", m.name, err)
+		if _, err := s.db.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
+			return migration.Migration{}, fmt.Errorf("forgetting %q: %w", raw.name, err)
 		}
 		return all[i], nil
 	}
-	return domain.Migration{}, ErrNothingToRollBack
+	return migration.Migration{}, ErrNothingToRollBack
 }
 
 // Held counts what a store holds, tasks and objectives apart, without

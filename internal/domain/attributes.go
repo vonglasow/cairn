@@ -27,6 +27,10 @@ var (
 // State is the column a task sits in. There are four, and nothing else is one.
 type State string
 
+// States holds the four columns, in the order they are declared above. It is
+// what ParseState consults, so the two cannot say different things.
+var States = []State{Backlog, Todo, Current, Done}
+
 // The four columns. A task with no column stated starts in the backlog.
 const (
 	Backlog State = "backlog"
@@ -37,6 +41,10 @@ const (
 
 // Priority is what a task carries. There are four, and nothing else is one.
 type Priority string
+
+// Priorities holds the four priorities, in the order they are declared above.
+// It is what ParsePriority consults, so the two cannot say different things.
+var Priorities = []Priority{Low, Normal, High, Critical}
 
 // The four priorities. A task with no priority stated carries normal.
 const (
@@ -49,11 +57,11 @@ const (
 // ParseState reads a column name. Nothing given returns the backlog, which is
 // where a task starts and where clearing the column puts it back.
 func ParseState(name string) (State, error) {
-	switch State(name) {
-	case Backlog, Todo, Current, Done:
-		return State(name), nil
-	case "":
+	if name == "" {
 		return Backlog, nil
+	}
+	if slices.Contains(States, State(name)) {
+		return State(name), nil
 	}
 	return "", fmt.Errorf("%q: %w", name, ErrNotAState)
 }
@@ -61,11 +69,11 @@ func ParseState(name string) (State, error) {
 // ParsePriority reads a priority name. Nothing given returns normal, which is
 // what a task carries by default and what clearing it returns to.
 func ParsePriority(name string) (Priority, error) {
-	switch Priority(name) {
-	case Low, Normal, High, Critical:
-		return Priority(name), nil
-	case "":
+	if name == "" {
 		return Normal, nil
+	}
+	if slices.Contains(Priorities, Priority(name)) {
+		return Priority(name), nil
 	}
 	return "", fmt.Errorf("%q: %w", name, ErrNotAPriority)
 }

@@ -2,10 +2,49 @@ package domain
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 )
+
+// The list and the parser are two places that could say different things
+// about what a column is; this proves they cannot. Every name ParseState
+// accepts has to be in States, and States cannot hold a name ParseState
+// refuses.
+func TestStates_areExactlyWhatParseStateAccepts(t *testing.T) {
+	for _, name := range []string{"backlog", "todo", "current", "done"} {
+		if !slices.Contains(States, State(name)) {
+			t.Errorf("States is missing %q, though ParseState accepts it", name)
+		}
+	}
+	for _, s := range States {
+		if _, err := ParseState(string(s)); err != nil {
+			t.Errorf("ParseState(%q): %v, want every entry of States accepted", s, err)
+		}
+	}
+	if slices.Contains(States, State("someday")) {
+		t.Error("States should not hold someday: ParseState refuses it")
+	}
+}
+
+// Same proof as above, for priorities: the list and the parser cannot say
+// different things about what a priority is.
+func TestPriorities_areExactlyWhatParsePriorityAccepts(t *testing.T) {
+	for _, name := range []string{"low", "normal", "high", "critical"} {
+		if !slices.Contains(Priorities, Priority(name)) {
+			t.Errorf("Priorities is missing %q, though ParsePriority accepts it", name)
+		}
+	}
+	for _, p := range Priorities {
+		if _, err := ParsePriority(string(p)); err != nil {
+			t.Errorf("ParsePriority(%q): %v, want every entry of Priorities accepted", p, err)
+		}
+	}
+	if slices.Contains(Priorities, Priority("urgent")) {
+		t.Error("Priorities should not hold urgent: ParsePriority refuses it")
+	}
+}
 
 func TestParseState_acceptsTheFourColumns(t *testing.T) {
 	for _, name := range []string{"backlog", "todo", "current", "done"} {

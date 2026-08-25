@@ -1,14 +1,25 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Held is what a store, or a backup of one, contains. Tasks and objectives are
 // counted apart for the same reason they are everywhere else: they are not the
 // same thing, and one total would hide which of the two somebody is about to
-// overwrite.
+// overwrite. The tags are the wire as much as the fields are: a machine reads
+// this shape directly, on its own or nested under a BackupShape.
 type Held struct {
-	Tasks      int
-	Objectives int
+	Tasks      int `json:"tasks"`
+	Objectives int `json:"objectives"`
+}
+
+// HeldText writes what is held the way a person reads it. The zero is written
+// rather than left out: this is an inventory, and a line missing at zero reads
+// as a kind of thing that could not have been held at all.
+func HeldText(h Held) string {
+	return fmt.Sprintf("holds %d task(s) and %d objective(s)", h.Tasks, h.Objectives)
 }
 
 // Backup is a backup of the store, kept beside it and referred to by its number.
@@ -20,18 +31,27 @@ type Backup struct {
 	Path   string
 }
 
-// Migration is one step in the shape of the store: what it does, how it is
-// undone, what undoing it costs, and whether it has been applied yet. It
-// carries its SQL so somebody can read what a tool is about to do to their data
-// before letting it, and Loses says in plain words what the older shape cannot
-// hold — the SQL says `DROP COLUMN parent`, which is only the same thing to
-// somebody who already knows the schema.
-type Migration struct {
-	Number  int
-	Name    string
-	Does    string
-	Undoes  string
-	Loses   string
-	Applied bool
-	Made    time.Time
+// FormatMoment writes a moment the way a person reads one: local time, to the
+// minute. A backup and a change to the store are both dated with it, so the
+// format lives here once rather than in each place that reads one.
+func FormatMoment(t time.Time) string {
+	return t.Local().Format("2006-01-02 15:04")
+}
+
+// BackupShape is how a backup crosses to a machine.
+type BackupShape struct {
+	Number int    `json:"number"`
+	Made   string `json:"made"`
+	Holds  *Held  `json:"holds,omitempty"`
+}
+
+// OfBackup turns a backup into what crosses, holding what it held when that
+// was counted, and nothing when it was not: making a backup does not open it,
+// and a zero nobody measured would read as an empty store.
+func OfBackup(b Backup, held *Held) BackupShape {
+	out := BackupShape{Number: b.Number, Made: FormatMoment(b.Made)}
+	if held != nil {
+		out.Holds = &Held{Tasks: held.Tasks, Objectives: held.Objectives}
+	}
+	return out
 }

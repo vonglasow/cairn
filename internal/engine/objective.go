@@ -1,11 +1,12 @@
 package engine
 
 import (
-	"errors"
-	"fmt"
+	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
 	"cairn/internal/store"
+	"cairn/internal/task"
 )
 
 // ErrNoSuchObjective is the name the engine answers with when an objective is
@@ -14,15 +15,17 @@ import (
 var ErrNoSuchObjective = store.ErrNoSuchObjective
 
 // ErrSubTaskServesNoObjective is one rule seen from three sides: a task never
-// carries a parent and an objective at the same time. A sub-task lives with
-// the task it hangs under, counts towards that task's objective through it,
-// and is never given one of its own — an objective it served alone would be
-// one its parent might have nothing to do with.
-var ErrSubTaskServesNoObjective = errors.New("a sub-task serves no objective")
+// carries a parent and an objective at the same time. Re-exported from
+// domain, which is where a task's own rules live: a surface asks the engine
+// and may not import domain, so the name it recognises has to live here too.
+var ErrSubTaskServesNoObjective = task.ErrSubTaskServesNoObjective
 
 // ErrObjectiveCarriesTasks is why an objective with work under it is not
 // deleted: the tasks would be left pointing at a number nothing carries.
-var ErrObjectiveCarriesTasks = errors.New("the objective carries tasks")
+// Re-exported from domain, which is where an objective's own rules live: a
+// surface asks the engine and may not import domain, so the name it
+// recognises has to live here too.
+var ErrObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
 
 // objectives is what the engine needs from whatever keeps its objectives.
 // Declared here, by the consumer, for the same reason tasks is.
@@ -30,12 +33,12 @@ var ErrObjectiveCarriesTasks = errors.New("the objective carries tasks")
 // want one day is a promise nothing checks, and the store already offers the
 // rest — each arrives here with the operation that needs it.
 type objectives interface {
-	KeepObjective(domain.Objective) (domain.Objective, error)
-	FindObjective(int) (domain.Objective, error)
-	AllObjectives() ([]domain.Objective, error)
-	UpdateObjective(domain.Objective) error
+	KeepObjective(objective.Objective) (objective.Objective, error)
+	FindObjective(int) (objective.Objective, error)
+	AllObjectives() ([]objective.Objective, error)
+	UpdateObjective(objective.Objective) error
 	DeleteObjective(int) error
-	TasksServing(int) ([]domain.Task, error)
+	TasksServing(int) ([]task.Task, error)
 }
 
 // ObjectiveChanges are the attributes an operation was given for an objective.
@@ -62,41 +65,41 @@ func (c ObjectiveChanges) named() bool {
 }
 
 // AddObjective records an objective under the title given.
-func (e *Engine) AddObjective(title string, c ObjectiveChanges) (domain.Objective, error) {
-	o, err := domain.NewObjective(title)
+func (e *Engine) AddObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
+	o, err := objective.NewObjective(title)
 	if err != nil {
-		return domain.Objective{}, err
+		return objective.Objective{}, err
 	}
 	if o, err = applyObjective(o, c, creating); err != nil {
-		return domain.Objective{}, err
+		return objective.Objective{}, err
 	}
 	return e.objectives.KeepObjective(o)
 }
 
 // ListObjectives hands back every objective, in the order they were added.
-func (e *Engine) ListObjectives() ([]domain.Objective, error) {
+func (e *Engine) ListObjectives() ([]objective.Objective, error) {
 	return e.objectives.AllObjectives()
 }
 
 // ShowObjective hands back the objective carrying number.
-func (e *Engine) ShowObjective(number int) (domain.Objective, error) {
+func (e *Engine) ShowObjective(number int) (objective.Objective, error) {
 	return e.objectives.FindObjective(number)
 }
 
 // EditObjective changes what was named and leaves the rest alone.
-func (e *Engine) EditObjective(number int, c ObjectiveChanges) (domain.Objective, error) {
+func (e *Engine) EditObjective(number int, c ObjectiveChanges) (objective.Objective, error) {
 	if !c.named() {
-		return domain.Objective{}, ErrNothingToChange
+		return objective.Objective{}, ErrNothingToChange
 	}
 	o, err := e.objectives.FindObjective(number)
 	if err != nil {
-		return domain.Objective{}, err
+		return objective.Objective{}, err
 	}
 	if o, err = applyObjective(o, c, changing); err != nil {
-		return domain.Objective{}, err
+		return objective.Objective{}, err
 	}
 	if err := e.objectives.UpdateObjective(o); err != nil {
-		return domain.Objective{}, err
+		return objective.Objective{}, err
 	}
 	return o, nil
 }
@@ -109,10 +112,46 @@ func (e *Engine) DeleteObjective(number int) error {
 	if err != nil {
 		return err
 	}
-	if len(serving) > 0 {
-		return fmt.Errorf("objective %d: %w", number, ErrObjectiveCarriesTasks)
+	if err := objective.MayDelete(number, len(serving)); err != nil {
+		return err
 	}
 	return e.objectives.DeleteObjective(number)
+}
+
+// objectiveFacts is an objective's membrane for what the engine, or a test on
+// it, has to read back off it — everything else is a rule the objective
+// already owns, or a fact only a builder writing a new objective needs told
+// to it.
+type objectiveFacts struct {
+	number             int
+	title, description string
+	state              objective.State
+	priority           domain.Priority
+	labels             []string
+	deadline           time.Time
+	estimate           time.Duration
+}
+
+func (f *objectiveFacts) Numbered(n int)             { f.number = n }
+func (f *objectiveFacts) Titled(s string)            { f.title = s }
+func (f *objectiveFacts) Standing(s objective.State) { f.state = s }
+func (f *objectiveFacts) Carries(p domain.Priority)  { f.priority = p }
+func (f *objectiveFacts) Described(s string)         { f.description = s }
+func (f *objectiveFacts) NotDescribed()              { f.description = "" }
+func (f *objectiveFacts) Labelled(l string)          { f.labels = append(f.labels, l) }
+func (f *objectiveFacts) NotLabelled()               { f.labels = nil }
+func (f *objectiveFacts) LabelsTold()                {}
+func (f *objectiveFacts) Due(t time.Time)            { f.deadline = t }
+func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} }
+func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
+func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
+
+// factsOfObjective reads back what the engine needs from an objective,
+// without reaching into fields that stopped being exported.
+func factsOfObjective(o objective.Objective) objectiveFacts {
+	var f objectiveFacts
+	o.Tell(&f)
+	return f
 }
 
 // applyObjective lays the changes over an objective, refusing any value it
@@ -121,69 +160,78 @@ func (e *Engine) DeleteObjective(number int) error {
 // It reads like apply for a task, and stays written out rather than shared:
 // every line here is a call to a parser both already use, and the one piece
 // with logic of its own — the labels — is changedLabels.
-func applyObjective(o domain.Objective, c ObjectiveChanges, atCreation bool) (domain.Objective, error) {
+func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) (objective.Objective, error) {
+	current := factsOfObjective(o)
+	a := &objective.AsTold{}
+	o.Tell(a)
+
 	if c.Title != nil {
-		retitled, err := domain.NewObjective(*c.Title)
+		retitled, err := objective.NewObjective(*c.Title)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.Title = retitled.Title
+		a.Titled(factsOfObjective(retitled).title)
 	}
 	if c.Description != nil {
-		o.Description = *c.Description
+		a.Described(*c.Description)
 	}
 	if c.State != nil {
-		state, err := domain.ParseObjectiveState(*c.State)
+		state, err := objective.ParseObjectiveState(*c.State)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.State = state
+		a.Standing(state)
 	}
 	if c.Priority != nil {
 		priority, err := domain.ParsePriority(*c.Priority)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.Priority = priority
+		a.Carries(priority)
 	}
 	if c.Labels != nil {
-		labels, err := changedLabels(*c.Labels, o.Labels, atCreation)
+		labels, err := changedLabels(*c.Labels, current.labels, atCreation)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.Labels = labels
+		a.NotLabelled()
+		for _, label := range labels {
+			a.Labelled(label)
+		}
+		a.LabelsTold()
 	}
 	if c.Deadline != nil {
 		deadline, err := domain.ParseDeadline(*c.Deadline)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.Deadline = deadline
+		a.Due(deadline)
 	}
 	if c.Estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.Estimate)
 		if err != nil {
-			return domain.Objective{}, err
+			return objective.Objective{}, err
 		}
-		o.Estimate = estimate
+		a.Estimated(estimate)
 	}
-	return o, nil
+	return a.Objective(), nil
 }
 
 // canServe says whether a task may serve the objective it was told to. The
 // objective has to exist, and the task has to be one in its own right: what
 // hangs under a task never serves an objective directly.
-func (e *Engine) canServe(task domain.Task) error {
-	if task.Objective == domain.NoObjective {
+func (e *Engine) canServe(t task.Task) error {
+	served := factsOf(t).objective
+	if served == task.NoObjective {
 		return nil
 	}
-	if task.Parent != domain.NoParent {
+	if err := t.MayServeAnObjective(); err != nil {
 		// No number in front: at creation there is none yet, and "task 0" reads
 		// as a task somebody could go and look at. On an edit the number was
 		// just typed, so repeating it adds nothing either.
-		return ErrSubTaskServesNoObjective
+		return err
 	}
-	if _, err := e.objectives.FindObjective(task.Objective); err != nil {
+	if _, err := e.objectives.FindObjective(served); err != nil {
 		return err
 	}
 	return nil
@@ -192,7 +240,7 @@ func (e *Engine) canServe(task domain.Task) error {
 // TasksUnder hands back the tasks put directly under an objective. Sub-tasks
 // are not among them: they are counted towards the objective, never listed as
 // serving it.
-func (e *Engine) TasksUnder(number int) ([]domain.Task, error) {
+func (e *Engine) TasksUnder(number int) ([]task.Task, error) {
 	return e.objectives.TasksServing(number)
 }
 
@@ -208,9 +256,9 @@ func (e *Engine) ObjectiveProgress(number int) (domain.Progress, error) {
 		return domain.Progress{}, err
 	}
 	var p domain.Progress
-	for _, task := range serving {
-		p.Tasks = counted(p.Tasks, task)
-		under, err := e.tasks.Under(task.Number)
+	for _, t := range serving {
+		p.Tasks = counted(p.Tasks, t)
+		under, err := e.tasks.Under(factsOf(t).number)
 		if err != nil {
 			return domain.Progress{}, err
 		}
@@ -236,11 +284,175 @@ func (e *Engine) TaskProgress(number int) (domain.Progress, error) {
 	return p, nil
 }
 
-// counted adds one task to a tally.
-func counted(t domain.Tally, task domain.Task) domain.Tally {
-	t.Total++
-	if task.State == domain.Done {
-		t.Done++
+// counted adds one task to a tally by telling it every fact it carries and
+// keeping only what a tally needs: the column it sits in.
+func counted(tally domain.Tally, t task.Task) domain.Tally {
+	c := task.NewCounter(tally)
+	t.Tell(c)
+	return c.Tally()
+}
+
+// objectiveAttributes are the seven attributes an objective carries, minus
+// title, which is taken as a positional argument where it can be given at
+// all.
+//
+// It is not taskAttributes with fields left out: an objective has no column
+// to sit in the way a task does, nothing to hang under and no time spent on
+// it, and a shared set would offer three flags that could only ever be
+// refused.
+var objectiveAttributes = []Argument{
+	{Name: "desc", Kind: Text, Means: "what the objective is about"},
+	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Means: "where the objective stands"},
+	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Means: "the priority it carries"},
+	{Name: "label", Kind: List, Means: "a label it carries"},
+	{Name: "deadline", Kind: Day, Means: "the day it is due"},
+	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
+}
+
+// objectiveChanges turns what was named in in into the changes
+// AddObjective and EditObjective take.
+func objectiveChanges(in Input) ObjectiveChanges {
+	var c ObjectiveChanges
+	c.Description = in.Change("desc")
+	c.State = in.Change("state")
+	c.Priority = in.Change("priority")
+	c.Labels = in.Changed("label")
+	c.Deadline = in.Change("deadline")
+	c.Estimate = in.Change("estimate")
+	return c
+}
+
+// readObjective asks for everything one objective is shown with. Three calls
+// that always travel together, so ObjectiveShow and ObjectiveEdit cannot each
+// remember a different two of them.
+func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain.Progress, error) {
+	o, err := eng.ShowObjective(n)
+	if err != nil {
+		return objective.Objective{}, nil, domain.Progress{}, err
 	}
-	return t
+	under, err := eng.TasksUnder(n)
+	if err != nil {
+		return objective.Objective{}, nil, domain.Progress{}, err
+	}
+	p, err := eng.ObjectiveProgress(n)
+	if err != nil {
+		return objective.Objective{}, nil, domain.Progress{}, err
+	}
+	return o, under, p, nil
+}
+
+// ObjectiveAdd records a new objective.
+var ObjectiveAdd = Operation{
+	Thing: "objective",
+	Verb:  "add",
+	Short: "Add an objective",
+	Does:  "Add an objective, carrying whatever of its attributes were given.",
+	Level: Write,
+	Needs: AStore,
+	Takes: append([]Argument{
+		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
+	}, objectiveAttributes...),
+	Run: func(on On, in Input) (Answer, error) {
+		title := ""
+		if given := in.Change("title"); given != nil {
+			title = *given
+		}
+		o, err := on.Engine.AddObjective(title, objectiveChanges(in))
+		if err != nil {
+			return Answer{}, withTypedTitle(err, title)
+		}
+		// Nothing hangs under an objective that has just been created, so the
+		// progress is asked of nobody rather than of the store.
+		return Answer{Objective: &o, Progress: domain.Progress{}}, nil
+	},
+}
+
+// ObjectiveList names every objective.
+var ObjectiveList = Operation{
+	Thing: "objective",
+	Verb:  "list",
+	Short: "List every objective",
+	Does:  "List every objective.",
+	Level: Read,
+	Needs: AStore,
+	Run: func(on On, _ Input) (Answer, error) {
+		all, err := on.Engine.ListObjectives()
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Objectives: all}, nil
+	},
+}
+
+// ObjectiveShow says what an objective carries, what hangs under it and how
+// far along it is.
+var ObjectiveShow = Operation{
+	Thing: "objective",
+	Verb:  "show",
+	Short: "Show what an objective carries, and how far along it is",
+	Does:  "Show what an objective carries, what tasks serve it and how far along it is.",
+	Level: Read,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		o, under, p, err := readObjective(on.Engine, n)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Objective: &o, Under: under, Progress: p}, nil
+	},
+}
+
+// ObjectiveEdit changes what an objective carries.
+var ObjectiveEdit = Operation{
+	Thing: "objective",
+	Verb:  "edit",
+	Short: "Change what an objective carries",
+	Does:  "Change what an objective carries.",
+	Level: Write,
+	Needs: AStore,
+	Takes: append([]Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
+		{Name: "title", Kind: Text, Means: "what the objective is called"},
+	}, objectiveAttributes...),
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		changes := objectiveChanges(in)
+		changes.Title = in.Change("title")
+		if _, err := on.Engine.EditObjective(n, changes); err != nil {
+			title := ""
+			if changes.Title != nil {
+				title = *changes.Title
+			}
+			return Answer{}, withTypedTitle(editReason(err), title)
+		}
+		o, under, p, err := readObjective(on.Engine, n)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Objective: &o, Under: under, Progress: p}, nil
+	},
+}
+
+// ObjectiveDelete removes an objective.
+var ObjectiveDelete = Operation{
+	Thing: "objective",
+	Verb:  "delete",
+	Short: "Delete an objective",
+	Does:  "Delete an objective.",
+	Level: Full,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		if err := on.Engine.DeleteObjective(n); err != nil {
+			return Answer{}, err
+		}
+		return Answer{Deleted: &n}, nil
+	},
 }

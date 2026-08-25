@@ -1,10 +1,11 @@
 package domain
 
 // Tally is how many of one kind of thing there are, and how many of those are
-// done.
+// done. The tags are the wire as much as the fields are: a machine reads one
+// nested under a ProgressShape.
 type Tally struct {
-	Total int
-	Done  int
+	Total int `json:"total"`
+	Done  int `json:"done"`
 }
 
 // Progress is how far along something is. Tasks and sub-tasks are counted
@@ -51,4 +52,34 @@ func (p Progress) Percent() int {
 	// Rounded away from zero, so 12.5 is 13 rather than 12.
 	share := (done*200 + total) / (total * 2)
 	return min(max(share, 1), 99)
+}
+
+// ProgressShape is how far along something is, for a machine. It is a
+// pointer on the way out and null when nothing is under it: zeroes would say
+// none of the work is done, where the truth is that there is no work.
+//
+// The share is published rather than left to be divided, so a client and a
+// person reading the same objective never disagree about the rounding.
+type ProgressShape struct {
+	Tasks    *Tally `json:"tasks,omitempty"`
+	SubTasks *Tally `json:"sub_tasks,omitempty"`
+	Percent  int    `json:"percent"`
+}
+
+// OfProgress turns a progress into what crosses, or nil when there is nothing
+// under it. A tally of nothing is left out entirely rather than written as
+// zeroes: a task has no tasks under it, and saying "0 of 0 tasks" invents a
+// kind of thing it cannot have.
+func OfProgress(p Progress) *ProgressShape {
+	if !p.Any() {
+		return nil
+	}
+	out := ProgressShape{Percent: p.Percent()}
+	if p.Tasks.Total > 0 {
+		out.Tasks = &Tally{Total: p.Tasks.Total, Done: p.Tasks.Done}
+	}
+	if p.SubTasks.Total > 0 {
+		out.SubTasks = &Tally{Total: p.SubTasks.Total, Done: p.SubTasks.Done}
+	}
+	return &out
 }

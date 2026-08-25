@@ -87,6 +87,47 @@ picking the wrong one costs a command rather than the work it overwrote.
 A backup is read in the shape it was written, never today's: one taken before
 objectives existed says it holds none, rather than refusing to be read at all.
 
+## Answering an agent
+
+```sh
+cairn mcp serve                  # speak MCP over standard input and output
+cairn mcp serve --access read    # look, and never write
+cairn mcp serve --access full    # also what loses work
+```
+
+A client starts it as a child process of its own — no port is opened, ever. What
+an agent may reach is settled when the server starts, not per call: `read` looks,
+`write` also adds and changes and is the default, `full` also does what loses
+work. An access it cannot make sense of is refused, naming the three it expected.
+
+```json
+{
+  "cairn": {
+    "command": "cairn",
+    "args": ["mcp", "serve", "--access", "full"],
+    "env": { "CAIRN_STORE": "/Users/…/.cairn/cairn.db" }
+  }
+}
+```
+
+**One tool per command, under the name the command has.** `task_add`,
+`objective_show`, `migration_rollback` — the same grammar as the terminal, so
+anybody who knows one knows the other. The list is never written down anywhere:
+both surfaces are built from one description, so a command added tomorrow is a
+tool the same day.
+
+Each tool also says what calling it would cost, so a client can ask a person
+first: the eight that only look are marked read-only, the five that can lose
+work already done are marked as such, and every one of them says it reaches
+nothing outside cairn.
+
+**An agent and a script are told the same thing.** A tool answers twice over:
+the card a person would have read at the terminal, and the very shape `--json`
+prints. A refusal comes back as an answer too — an empty title, a state that is
+not one, a store this cairn cannot use — with the reason in it, so an agent can
+read it and correct itself. Only a tool the access level left out fails as a
+call, because an absence ends the matter where a refusal invites another try.
+
 ## What cairn answers a script
 
 | code | what it means |
@@ -102,7 +143,9 @@ the same command may well work once the store is reachable again.
 ## Where your tasks live
 
 More than one cairn can hold the store at once — a second terminal, a loop, a
-server later on. A command waits its turn rather than dropping the work.
+server answering an agent. A command waits its turn rather than dropping the
+work, and the server is only a command asked more often: it opens the store for
+each call and closes it on the way out, like every other.
 
 `~/.cairn/cairn.db`, on every system, with the backups beside it in
 `~/.cairn/backups/`. Set `CAIRN_STORE` to put it elsewhere.

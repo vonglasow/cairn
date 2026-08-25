@@ -22,8 +22,9 @@ func TestCommands_reportAStoreTheyCannotEvenLocate(t *testing.T) {
 		{"migration", "show", "1"},
 		{"migration", "rollback", "--yes"},
 		{"task", "list"},
+		{"mcp", "serve"},
 	} {
-		if got := run(t, args...).code; got != exitStore {
+		if got := run(t, args...).Code; got != exitStore {
 			t.Errorf("%v: exit %d, want %d when the store cannot even be located", args, got, exitStore)
 		}
 	}
@@ -32,11 +33,11 @@ func TestCommands_reportAStoreTheyCannotEvenLocate(t *testing.T) {
 func TestBackupGroup_needsACommand(t *testing.T) {
 	for _, group := range []string{"backup", "migration"} {
 		r := run(t, group)
-		if r.code == exitOK {
+		if r.Code == exitOK {
 			t.Errorf("%s on its own should fail", group)
 		}
-		if !strings.Contains(strings.ToLower(r.stderr), "usage") {
-			t.Errorf("%s should say how it is used, got %q", group, r.stderr)
+		if !strings.Contains(strings.ToLower(r.Stderr), "usage") {
+			t.Errorf("%s should say how it is used, got %q", group, r.Stderr)
 		}
 	}
 }
@@ -48,7 +49,7 @@ func TestBackupCommands_refuseAnArgumentThatIsNotANumber(t *testing.T) {
 		{"backup", "delete", "spec", "--yes"},
 		{"backup", "restore", "spec", "--yes"},
 	} {
-		if got := run(t, args...).code; got != exitUsage {
+		if got := run(t, args...).Code; got != exitUsage {
 			t.Errorf("%v: exit %d, want %d", args, got, exitUsage)
 		}
 	}
@@ -59,7 +60,7 @@ func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
 
-	out := mustRun(t, "backup", "list", "--json").stdout
+	out := mustRun(t, "backup", "list", "--json").Stdout
 	var listed []map[string]any
 	if err := json.Unmarshal([]byte(out), &listed); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, out)
@@ -73,13 +74,13 @@ func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 
-	made := mustRun(t, "backup", "add", "--json").stdout
+	made := mustRun(t, "backup", "add", "--json").Stdout
 	var one map[string]any
 	if err := json.Unmarshal([]byte(made), &one); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, made)
 	}
 
-	shown := mustRun(t, "backup", "show", "1", "--json").stdout
+	shown := mustRun(t, "backup", "show", "1", "--json").Stdout
 	if err := json.Unmarshal([]byte(shown), &one); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, shown)
 	}
@@ -105,7 +106,7 @@ func TestBackupRestore_saysWhichBackupItPutBack(t *testing.T) {
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
 
-	out := mustRun(t, "backup", "restore", "1", "--yes").stdout
+	out := mustRun(t, "backup", "restore", "1", "--yes").Stdout
 	if !strings.Contains(out, "backup 1") {
 		t.Errorf("stdout = %q, want it to name the backup it put back", out)
 	}
@@ -116,7 +117,7 @@ func TestBackupDelete_saysWhichBackupItDeleted(t *testing.T) {
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
 
-	out := mustRun(t, "backup", "delete", "1", "--yes").stdout
+	out := mustRun(t, "backup", "delete", "1", "--yes").Stdout
 	if !strings.Contains(out, "backup 1") {
 		t.Errorf("stdout = %q, want it to name the backup it deleted", out)
 	}
@@ -126,7 +127,7 @@ func TestBackupAdd_namesTheBackupItMade(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 
-	out := mustRun(t, "backup", "add").stdout
+	out := mustRun(t, "backup", "add").Stdout
 	if !strings.Contains(out, "#1") {
 		t.Errorf("stdout = %q, want it to name the backup it made", out)
 	}

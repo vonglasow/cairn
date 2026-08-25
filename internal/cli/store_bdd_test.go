@@ -8,10 +8,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/cucumber/godog"
+
+	"cairn/test"
 
 	"cairn/internal/engine"
 )
@@ -44,7 +47,7 @@ func atOnce(lines [][]string) (int, string) {
 		go func(args []string) {
 			defer wg.Done()
 			var out, errs bytes.Buffer
-			code := Main(context.Background(), args, &out, &errs)
+			code := Main(context.Background(), args, strings.NewReader(""), &out, &errs)
 			mu.Lock()
 			defer mu.Unlock()
 			if code > worst {
@@ -60,10 +63,10 @@ func atOnce(lines [][]string) (int, string) {
 // registerAtOnce declares the steps only this feature uses.
 func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	sc.Step(`^the store cannot be written to$`, func() error {
-		if err := os.Chmod(w.storePath, 0o444); err != nil {
+		if err := os.Chmod(w.StorePath, 0o444); err != nil {
 			return err
 		}
-		w.restores = append(w.restores, func() { _ = os.Chmod(w.storePath, 0o600) })
+		w.OnEnd(func() { _ = os.Chmod(w.StorePath, 0o600) })
 		return nil
 	})
 
@@ -71,8 +74,8 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	// with a bare environment. cairn has nowhere to put the default store and
 	// has to say so rather than guess a path.
 	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
-		w.setenv(engine.StoreVariable, "")
-		w.setenv("HOME", "")
+		w.Setenv(engine.StoreVariable, "")
+		w.Setenv("HOME", "")
 		if err := os.Unsetenv(engine.StoreVariable); err != nil {
 			return err
 		}
@@ -88,7 +91,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		if code != exitOK {
 			return fmt.Errorf("one of them exited %d: %s", code, said)
 		}
-		w.out = result{code: exitOK}
+		w.Out = test.Result{Code: exitOK}
 		return nil
 	})
 
@@ -107,7 +110,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		if code != exitOK {
 			return fmt.Errorf("one of them exited %d: %s", code, said)
 		}
-		w.out = result{code: exitOK}
+		w.Out = test.Result{Code: exitOK}
 		return nil
 	})
 }

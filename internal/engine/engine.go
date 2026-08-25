@@ -3,9 +3,11 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/store"
+	"cairn/internal/task"
 )
 
 // ErrNothingToChange is returned when an edit names nothing to change. Doing
@@ -30,22 +32,25 @@ var ErrLabelSignAtCreation = errors.New("a label is added or taken away only whe
 var ErrNoSuchTask = store.ErrNoSuchTask
 
 // The reasons a task cannot hang where it was asked to, or be deleted.
+// Re-exported from domain, which is where a task's own rules live: a surface
+// asks the engine and may not import domain, so the name it recognises has to
+// live here too.
 var (
-	ErrParentIsSelf    = errors.New("a task cannot hang under itself")
-	ErrParentIsSubTask = errors.New("a sub-task cannot carry sub-tasks")
-	ErrCarriesSubTasks = errors.New("the task carries sub-tasks")
+	ErrParentIsSelf    = task.ErrParentIsSelf
+	ErrParentIsSubTask = task.ErrParentIsSubTask
+	ErrCarriesSubTasks = task.ErrCarriesSubTasks
 )
 
 // tasks is what the engine needs from whatever keeps its tasks. Declared here,
 // by the consumer, so the rules stay testable and a second backing can arrive
 // without the engine noticing.
 type tasks interface {
-	Keep(domain.Task) (domain.Task, error)
-	Update(domain.Task) error
+	Keep(task.Task) (task.Task, error)
+	Update(task.Task) error
 	Delete(int) error
-	Find(int) (domain.Task, error)
-	All() ([]domain.Task, error)
-	Under(int) ([]domain.Task, error)
+	Find(int) (task.Task, error)
+	All() ([]task.Task, error)
+	Under(int) ([]task.Task, error)
 	Close() error
 }
 
@@ -113,30 +118,30 @@ func (e *Engine) Close() error {
 }
 
 // Add records a new task carrying what it was given, and nothing else.
-func (e *Engine) Add(title string, c Changes) (domain.Task, error) {
-	task, err := domain.NewTask(title)
+func (e *Engine) Add(title string, c Changes) (task.Task, error) {
+	t, err := task.NewTask(title)
 	if err != nil {
-		return domain.Task{}, err
+		return task.Task{}, err
 	}
-	if task, err = apply(task, c, creating); err != nil {
-		return domain.Task{}, err
+	if t, err = apply(t, c, creating); err != nil {
+		return task.Task{}, err
 	}
-	if err := e.canHang(task); err != nil {
-		return domain.Task{}, err
+	if err := e.canHang(t); err != nil {
+		return task.Task{}, err
 	}
-	if err := e.canServe(task); err != nil {
-		return domain.Task{}, err
+	if err := e.canServe(t); err != nil {
+		return task.Task{}, err
 	}
-	return e.tasks.Keep(task)
+	return e.tasks.Keep(t)
 }
 
 // List hands back every task, in the order they were added.
-func (e *Engine) List() ([]domain.Task, error) {
+func (e *Engine) List() ([]task.Task, error) {
 	return e.tasks.All()
 }
 
 // Show hands back the task carrying number.
-func (e *Engine) Show(number int) (domain.Task, error) {
+func (e *Engine) Show(number int) (task.Task, error) {
 	return e.tasks.Find(number)
 }
 
@@ -148,62 +153,60 @@ func (e *Engine) Delete(number int) error {
 	if err != nil {
 		return err
 	}
-	if len(hanging) > 0 {
-		return fmt.Errorf("task %d: %w", number, ErrCarriesSubTasks)
+	if err := task.MayDelete(number, hanging); err != nil {
+		return err
 	}
 	return e.tasks.Delete(number)
 }
 
 // Under hands back what hangs directly under a task.
-func (e *Engine) Under(number int) ([]domain.Task, error) {
+func (e *Engine) Under(number int) ([]task.Task, error) {
 	return e.tasks.Under(number)
 }
 
 // canHang says whether a task may hang where it was told to. A parent has to
 // exist, cannot be the task itself, and cannot already hang under something —
 // what hangs under a task is never something with more hanging under it.
-func (e *Engine) canHang(task domain.Task) error {
-	if task.Parent == domain.NoParent {
+func (e *Engine) canHang(t task.Task) error {
+	parent := factsOf(t).parent
+	if parent == task.NoParent {
 		return nil
 	}
-	if task.Objective != domain.NoObjective {
-		return ErrSubTaskServesNoObjective
+	if err := t.MayServeAnObjective(); err != nil {
+		return err
 	}
-	if task.Parent == task.Number {
-		return fmt.Errorf("task %d: %w", task.Number, ErrParentIsSelf)
+	if err := t.MayHangUnderItsParent(); err != nil {
+		return err
 	}
-	parent, err := e.tasks.Find(task.Parent)
+	found, err := e.tasks.Find(parent)
 	if err != nil {
 		return err
 	}
-	if parent.Parent != domain.NoParent {
-		return fmt.Errorf("task %d: %w", parent.Number, ErrParentIsSubTask)
-	}
-	return nil
+	return found.MayCarrySubTasks()
 }
 
 // Edit changes what was named on a task and leaves the rest alone.
-func (e *Engine) Edit(number int, c Changes) (domain.Task, error) {
+func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
-		return domain.Task{}, ErrNothingToChange
+		return task.Task{}, ErrNothingToChange
 	}
-	task, err := e.tasks.Find(number)
+	t, err := e.tasks.Find(number)
 	if err != nil {
-		return domain.Task{}, err
+		return task.Task{}, err
 	}
-	if task, err = apply(task, c, changing); err != nil {
-		return domain.Task{}, err
+	if t, err = apply(t, c, changing); err != nil {
+		return task.Task{}, err
 	}
-	if err := e.canHang(task); err != nil {
-		return domain.Task{}, err
+	if err := e.canHang(t); err != nil {
+		return task.Task{}, err
 	}
-	if err := e.canServe(task); err != nil {
-		return domain.Task{}, err
+	if err := e.canServe(t); err != nil {
+		return task.Task{}, err
 	}
-	if err := e.tasks.Update(task); err != nil {
-		return domain.Task{}, err
+	if err := e.tasks.Update(t); err != nil {
+		return task.Task{}, err
 	}
-	return task, nil
+	return t, nil
 }
 
 // Whether a task is being created or changed. Labels are the only attribute
@@ -232,66 +235,115 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 	return change.Apply(current)
 }
 
+// taskFacts is a task's membrane for what the engine, or a test on it, has to
+// read back off it — everything else is a rule the task already owns, or a
+// fact only a builder writing a new task needs told to it.
+type taskFacts struct {
+	number, parent, objective int
+	title, description        string
+	state                     domain.State
+	priority                  domain.Priority
+	labels                    []string
+	deadline                  time.Time
+	estimate, timeSpent       time.Duration
+}
+
+func (f *taskFacts) Numbered(n int)            { f.number = n }
+func (f *taskFacts) Titled(s string)           { f.title = s }
+func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
+func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
+func (f *taskFacts) Described(s string)        { f.description = s }
+func (f *taskFacts) NotDescribed()             { f.description = "" }
+func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
+func (f *taskFacts) NotLabelled()              { f.labels = nil }
+func (f *taskFacts) LabelsTold()               {}
+func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
+func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
+func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }
+func (f *taskFacts) NotEstimated()             { f.estimate = 0 }
+func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
+func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
+func (f *taskFacts) Under(n int)               { f.parent = n }
+func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
+func (f *taskFacts) Serves(n int)              { f.objective = n }
+func (f *taskFacts) ServesNothing()            { f.objective = task.NoObjective }
+
+// factsOf reads back what the engine needs from a task, without reaching
+// into fields that stopped being exported.
+func factsOf(t task.Task) taskFacts {
+	var f taskFacts
+	t.Tell(&f)
+	return f
+}
+
 // apply lays the changes over a task, refusing any value it cannot make sense
 // of. A field that was not named is left exactly as it was.
-func apply(task domain.Task, c Changes, atCreation bool) (domain.Task, error) {
+func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
+	current := factsOf(t)
+	a := &task.AsTold{}
+	t.Tell(a)
+
 	if c.Title != nil {
-		retitled, err := domain.NewTask(*c.Title)
+		retitled, err := task.NewTask(*c.Title)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.Title = retitled.Title
+		a.Titled(factsOf(retitled).title)
 	}
 	if c.Description != nil {
-		task.Description = *c.Description
+		a.Described(*c.Description)
 	}
 	if c.State != nil {
 		state, err := domain.ParseState(*c.State)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.State = state
+		a.InColumn(state)
 	}
 	if c.Priority != nil {
 		priority, err := domain.ParsePriority(*c.Priority)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.Priority = priority
+		a.Carries(priority)
 	}
 	if c.Labels != nil {
-		labels, err := changedLabels(*c.Labels, task.Labels, atCreation)
+		labels, err := changedLabels(*c.Labels, current.labels, atCreation)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.Labels = labels
+		a.NotLabelled()
+		for _, label := range labels {
+			a.Labelled(label)
+		}
+		a.LabelsTold()
 	}
 	if c.Deadline != nil {
 		deadline, err := domain.ParseDeadline(*c.Deadline)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.Deadline = deadline
+		a.Due(deadline)
 	}
 	if c.Spent != nil {
 		spent, err := domain.ParseSpent(*c.Spent)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.TimeSpent = spent.Apply(task.TimeSpent)
+		a.Spent(spent.Apply(current.timeSpent))
 	}
 	if c.Parent != nil {
-		task.Parent = *c.Parent
+		a.Under(*c.Parent)
 	}
 	if c.Objective != nil {
-		task.Objective = *c.Objective
+		a.Serves(*c.Objective)
 	}
 	if c.Estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.Estimate)
 		if err != nil {
-			return domain.Task{}, err
+			return task.Task{}, err
 		}
-		task.Estimate = estimate
+		a.Estimated(estimate)
 	}
-	return task, nil
+	return a.Task(), nil
 }

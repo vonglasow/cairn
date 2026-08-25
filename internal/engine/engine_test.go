@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"cairn/internal/domain"
+	"cairn/internal/task"
 )
 
 func openEngine(t *testing.T) *Engine {
@@ -18,19 +19,19 @@ func openEngine(t *testing.T) *Engine {
 	return e
 }
 
-func add(t *testing.T, e *Engine, title string) domain.Task {
+func add(t *testing.T, e *Engine, title string) task.Task {
 	t.Helper()
-	task, err := e.Add(title, Changes{})
+	added, err := e.Add(title, Changes{})
 	if err != nil {
 		t.Fatalf("Add(%q): %v", title, err)
 	}
-	return task
+	return added
 }
 
 func of[T any](v T) *T { return &v }
 
 func TestEngine_numbersTheFirstTaskOne(t *testing.T) {
-	if got := add(t, openEngine(t), "Write the spec").Number; got != 1 {
+	if got := factsOf(add(t, openEngine(t), "Write the spec")).number; got != 1 {
 		t.Errorf("Number = %d, want 1", got)
 	}
 }
@@ -38,7 +39,7 @@ func TestEngine_numbersTheFirstTaskOne(t *testing.T) {
 func TestEngine_givesTheNextNumberToTheNextTask(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
-	if got := add(t, e, "Second").Number; got != 2 {
+	if got := factsOf(add(t, e, "Second")).number; got != 2 {
 		t.Errorf("Number = %d, want 2", got)
 	}
 }
@@ -50,7 +51,7 @@ func TestEngine_refusesATaskWithNoTitle(t *testing.T) {
 }
 
 func TestEngine_carriesTheAttributesItWasGiven(t *testing.T) {
-	got, err := openEngine(t).Add("Write the spec", Changes{
+	added, err := openEngine(t).Add("Write the spec", Changes{
 		Description: of("the one"),
 		State:       of("todo"),
 		Priority:    of("high"),
@@ -61,17 +62,18 @@ func TestEngine_carriesTheAttributesItWasGiven(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if got.Description != "the one" || got.State != domain.Todo || got.Priority != domain.High {
+	got := factsOf(added)
+	if got.description != "the one" || got.state != domain.Todo || got.priority != domain.High {
 		t.Errorf("got %+v, want the attributes it was given", got)
 	}
-	if len(got.Labels) != 2 || got.Labels[0] != "spec" || got.Labels[1] != "team" {
-		t.Errorf("Labels = %v, want [spec team]: lower case, sorted", got.Labels)
+	if len(got.labels) != 2 || got.labels[0] != "spec" || got.labels[1] != "team" {
+		t.Errorf("Labels = %v, want [spec team]: lower case, sorted", got.labels)
 	}
-	if domain.FormatDay(got.Deadline) != "2026-09-01" {
-		t.Errorf("Deadline = %v", got.Deadline)
+	if domain.FormatDay(got.deadline) != "2026-09-01" {
+		t.Errorf("Deadline = %v", got.deadline)
 	}
-	if domain.FormatDuration(got.Estimate) != "1h30m" {
-		t.Errorf("Estimate = %v, want 1h30m", got.Estimate)
+	if domain.FormatDuration(got.estimate) != "1h30m" {
+		t.Errorf("Estimate = %v, want 1h30m", got.estimate)
 	}
 }
 
@@ -98,7 +100,7 @@ func TestEngine_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if len(got) != 2 || got[0].Title != "First" || got[1].Title != "Second" {
+	if len(got) != 2 || factsOf(got[0]).title != "First" || factsOf(got[1]).title != "Second" {
 		t.Errorf("List = %v", got)
 	}
 }
@@ -107,12 +109,12 @@ func TestEngine_showsATaskByItsNumber(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.Show(kept.Number)
+	got, err := e.Show(factsOf(kept).number)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
 	}
-	if got.Title != "Write the spec" {
-		t.Errorf("Title = %q", got.Title)
+	if facts := factsOf(got); facts.title != "Write the spec" {
+		t.Errorf("Title = %q", facts.title)
 	}
 }
 
@@ -129,18 +131,19 @@ func TestEngine_changesOnlyWhatWasNamed(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{Priority: of("high")})
+	added, err := e.Edit(factsOf(kept).number, Changes{Priority: of("high")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if got.Priority != domain.High {
-		t.Errorf("Priority = %q, want high", got.Priority)
+	got := factsOf(added)
+	if got.priority != domain.High {
+		t.Errorf("Priority = %q, want high", got.priority)
 	}
-	if got.Description != "the one" {
-		t.Errorf("Description = %q, want it left alone", got.Description)
+	if got.description != "the one" {
+		t.Errorf("Description = %q, want it left alone", got.description)
 	}
-	if got.Title != "Write the spec" {
-		t.Errorf("Title = %q, want it left alone", got.Title)
+	if got.title != "Write the spec" {
+		t.Errorf("Title = %q, want it left alone", got.title)
 	}
 }
 
@@ -154,30 +157,31 @@ func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{
+	added, err := e.Edit(factsOf(kept).number, Changes{
 		Deadline: of(""), Priority: of(""), State: of(""), Labels: of([]string{""}),
 	})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if !got.Deadline.IsZero() {
-		t.Errorf("Deadline = %v, want it cleared", got.Deadline)
+	got := factsOf(added)
+	if !got.deadline.IsZero() {
+		t.Errorf("Deadline = %v, want it cleared", got.deadline)
 	}
-	if got.Priority != domain.Normal {
-		t.Errorf("Priority = %q, want normal", got.Priority)
+	if got.priority != domain.Normal {
+		t.Errorf("Priority = %q, want normal", got.priority)
 	}
-	if got.State != domain.Backlog {
-		t.Errorf("State = %q, want the backlog", got.State)
+	if got.state != domain.Backlog {
+		t.Errorf("State = %q, want the backlog", got.state)
 	}
-	if len(got.Labels) != 0 {
-		t.Errorf("Labels = %v, want none", got.Labels)
+	if len(got.labels) != 0 {
+		t.Errorf("Labels = %v, want none", got.labels)
 	}
 }
 
 func TestEngine_refusesToEmptyATitle(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(kept.Number, Changes{Title: of("")}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := e.Edit(factsOf(kept).number, Changes{Title: of("")}); !errors.Is(err, domain.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
@@ -185,7 +189,7 @@ func TestEngine_refusesToEmptyATitle(t *testing.T) {
 func TestEngine_saysWhenNothingWasNamedToChange(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(kept.Number, Changes{}); !errors.Is(err, ErrNothingToChange) {
+	if _, err := e.Edit(factsOf(kept).number, Changes{}); !errors.Is(err, ErrNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -195,22 +199,22 @@ func TestEngine_doesNotRenumberATaskItChanges(t *testing.T) {
 	add(t, e, "First")
 	second := add(t, e, "Second")
 
-	got, err := e.Edit(second.Number, Changes{Title: of("Second, revised")})
+	got, err := e.Edit(factsOf(second).number, Changes{Title: of("Second, revised")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if got.Number != second.Number {
-		t.Errorf("Number = %d, want %d", got.Number, second.Number)
+	if factsOf(got).number != factsOf(second).number {
+		t.Errorf("Number = %d, want %d", factsOf(got).number, factsOf(second).number)
 	}
 }
 
 func TestEngine_deletesATask(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if err := e.Delete(kept.Number); err != nil {
+	if err := e.Delete(factsOf(kept).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := e.Show(kept.Number); err == nil {
+	if _, err := e.Show(factsOf(kept).number); err == nil {
 		t.Error("the task should be gone")
 	}
 }
@@ -225,10 +229,10 @@ func TestEngine_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
 	second := add(t, e, "Second")
-	if err := e.Delete(second.Number); err != nil {
+	if err := e.Delete(factsOf(second).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got := add(t, e, "Third").Number; got != 3 {
+	if got := factsOf(add(t, e, "Third")).number; got != 3 {
 		t.Errorf("Number = %d, want 3", got)
 	}
 }
@@ -258,7 +262,7 @@ func TestEngine_reportsAStoreItCanNoLongerReach(t *testing.T) {
 	if _, err := e.List(); err == nil {
 		t.Error("List on a closed store should fail")
 	}
-	if _, err := e.Edit(kept.Number, Changes{Title: of("Nope")}); err == nil {
+	if _, err := e.Edit(factsOf(kept).number, Changes{Title: of("Nope")}); err == nil {
 		t.Error("Edit on a closed store should fail")
 	}
 }
@@ -270,12 +274,12 @@ func TestEngine_addsALabelToTheOnesAlreadyThere(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{Labels: of([]string{"+urgent"})})
+	got, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if len(got.Labels) != 3 {
-		t.Errorf("Labels = %v, want three", got.Labels)
+	if labels := factsOf(got).labels; len(labels) != 3 {
+		t.Errorf("Labels = %v, want three", labels)
 	}
 }
 
@@ -286,12 +290,12 @@ func TestEngine_takesALabelAwayFromTheOnesAlreadyThere(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{Labels: of([]string{"-spec"})})
+	got, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"-spec"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if len(got.Labels) != 1 || got.Labels[0] != "team" {
-		t.Errorf("Labels = %v, want [team]", got.Labels)
+	if labels := factsOf(got).labels; len(labels) != 1 || labels[0] != "team" {
+		t.Errorf("Labels = %v, want [team]", labels)
 	}
 }
 
@@ -305,7 +309,7 @@ func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
 func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(kept.Number, Changes{Labels: of([]string{"+urgent", "draft"})}); err == nil {
+	if _, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent", "draft"})}); err == nil {
 		t.Error("Edit should refuse to both replace and change the labels")
 	}
 }
@@ -314,29 +318,29 @@ func TestEngine_hangsATaskUnderAnother(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
 
-	got, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	got, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if got.Parent != under.Number {
-		t.Errorf("Parent = %d, want %d", got.Parent, under.Number)
+	if facts := factsOf(got); facts.parent != factsOf(under).number {
+		t.Errorf("Parent = %d, want %d", facts.parent, factsOf(under).number)
 	}
 }
 
 func TestEngine_setsATaskFreeWhenTheParentIsCleared(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(hung.Number, Changes{Parent: of(domain.NoParent)})
+	got, err := e.Edit(factsOf(hung).number, Changes{Parent: of(task.NoParent)})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if got.Parent != domain.NoParent {
-		t.Errorf("Parent = %d, want none", got.Parent)
+	if facts := factsOf(got); facts.parent != task.NoParent {
+		t.Errorf("Parent = %d, want none", facts.parent)
 	}
 }
 
@@ -349,7 +353,7 @@ func TestEngine_refusesAParentThatDoesNotExist(t *testing.T) {
 func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
 	e := openEngine(t)
 	alone := add(t, e, "Ship it")
-	if _, err := e.Edit(alone.Number, Changes{Parent: of(alone.Number)}); !errors.Is(err, ErrParentIsSelf) {
+	if _, err := e.Edit(factsOf(alone).number, Changes{Parent: of(factsOf(alone).number)}); !errors.Is(err, ErrParentIsSelf) {
 		t.Errorf("err = %v, want ErrParentIsSelf", err)
 	}
 }
@@ -357,12 +361,12 @@ func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
 func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	if _, err := e.Add("Write the first one", Changes{Parent: of(hung.Number)}); !errors.Is(err, ErrParentIsSubTask) {
+	if _, err := e.Add("Write the first one", Changes{Parent: of(factsOf(hung).number)}); !errors.Is(err, ErrParentIsSubTask) {
 		t.Errorf("err = %v, want ErrParentIsSubTask", err)
 	}
 }
@@ -370,11 +374,11 @@ func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
 func TestEngine_refusesToDeleteATaskCarryingSubTasks(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	if _, err := e.Add("Write the tests", Changes{Parent: of(under.Number)}); err != nil {
+	if _, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	if err := e.Delete(under.Number); !errors.Is(err, ErrCarriesSubTasks) {
+	if err := e.Delete(factsOf(under).number); !errors.Is(err, ErrCarriesSubTasks) {
 		t.Errorf("err = %v, want ErrCarriesSubTasks", err)
 	}
 }
@@ -382,15 +386,15 @@ func TestEngine_refusesToDeleteATaskCarryingSubTasks(t *testing.T) {
 func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(under.Number)})
+	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if err := e.Delete(hung.Number); err != nil {
+	if err := e.Delete(factsOf(hung).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 
-	if err := e.Delete(under.Number); err != nil {
+	if err := e.Delete(factsOf(under).number); err != nil {
 		t.Errorf("Delete: %v, want it to go now that nothing hangs under it", err)
 	}
 }
@@ -398,15 +402,15 @@ func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
 func TestEngine_namesWhatHangsUnderATask(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	if _, err := e.Add("Write the tests", Changes{Parent: of(under.Number)}); err != nil {
+	if _, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Under(under.Number)
+	got, err := e.Under(factsOf(under).number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
-	if len(got) != 1 || got[0].Title != "Write the tests" {
+	if len(got) != 1 || factsOf(got[0]).title != "Write the tests" {
 		t.Errorf("Under = %v, want the one sub-task", got)
 	}
 }
@@ -424,10 +428,10 @@ func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	if _, err := e.Under(kept.Number); err == nil {
+	if _, err := e.Under(factsOf(kept).number); err == nil {
 		t.Error("Under on a closed store should fail")
 	}
-	if err := e.Delete(kept.Number); err == nil {
+	if err := e.Delete(factsOf(kept).number); err == nil {
 		t.Error("Delete on a closed store should fail")
 	}
 }
@@ -436,12 +440,12 @@ func TestEngine_writesDownTheTimeSpent(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.Edit(kept.Number, Changes{Spent: of("2h")})
+	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("2h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if domain.FormatDuration(got.TimeSpent) != "2h" {
-		t.Errorf("TimeSpent = %v, want 2h", got.TimeSpent)
+	if domain.FormatDuration(factsOf(got).timeSpent) != "2h" {
+		t.Errorf("TimeSpent = %v, want 2h", factsOf(got).timeSpent)
 	}
 }
 
@@ -452,12 +456,12 @@ func TestEngine_addsToTheTimeAlreadySpent(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{Spent: of("+30m")})
+	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("+30m")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if domain.FormatDuration(got.TimeSpent) != "2h30m" {
-		t.Errorf("TimeSpent = %v, want 2h30m", got.TimeSpent)
+	if domain.FormatDuration(factsOf(got).timeSpent) != "2h30m" {
+		t.Errorf("TimeSpent = %v, want 2h30m", factsOf(got).timeSpent)
 	}
 }
 
@@ -468,12 +472,12 @@ func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(kept.Number, Changes{Spent: of("-3h")})
+	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("-3h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if got.TimeSpent != 0 {
-		t.Errorf("TimeSpent = %v, want none", got.TimeSpent)
+	if facts := factsOf(got); facts.timeSpent != 0 {
+		t.Errorf("TimeSpent = %v, want none", facts.timeSpent)
 	}
 }
 

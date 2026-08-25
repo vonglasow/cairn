@@ -1,0 +1,269 @@
+package engine
+
+// This file describes what cairn can be asked to do, once, so both surfaces
+// are built from the same description rather than each carrying its own copy
+// of the nineteen things a caller can ask for.
+
+import (
+	"errors"
+	"fmt"
+	"strconv"
+
+	"cairn/internal/domain"
+	"cairn/internal/migration"
+	"cairn/internal/objective"
+	"cairn/internal/task"
+)
+
+// Level is how far an agent may reach. It also settles what a client is told a
+// call would cost: Read is read-only, Full loses work, Write is neither.
+type Level int
+
+const (
+	_ Level = iota // the zero value: never a level.
+	// Read is level one: listing and showing, nothing that changes anything.
+	Read
+	// Write is level two: also adding and changing, and what sets a backup
+	// aside first.
+	Write
+	// Full is level three: also what loses work already done.
+	Full
+)
+
+// Needs says which way the store has to be opened.
+type Needs int
+
+const (
+	_ Needs = iota // the zero value: never a way of opening the store.
+	// AStore refuses a store behind this cairn: a request about what it holds
+	// does not change its shape on the way past.
+	AStore
+	// AStoreBehind opens the store whatever shape it is in, for the operations
+	// whose job is to change that shape.
+	AStoreBehind
+	// NoStore opens nothing at all, for what is reachable without the store —
+	// a backup is most needed exactly when the store cannot be opened.
+	NoStore
+)
+
+// Kind is what sort of value an argument carries. It exists so a surface can
+// say so: a schema names a number, a flag takes a string either way.
+type Kind int
+
+const (
+	_ Kind = iota // the zero value: never a kind.
+	// Text is a plain string.
+	Text
+	// Number is a whole number.
+	Number
+	// Day is a calendar day.
+	Day
+	// Duration is a length of time.
+	Duration
+	// List is more than one string.
+	List
+)
+
+// Argument describes one thing an operation takes, once, so a surface can
+// build a flag or a schema field from it without knowing the other's shape.
+type Argument struct {
+	// Name is how the argument is named, as a flag and as a JSON field.
+	Name string
+	// Kind is what sort of value it carries.
+	Kind Kind
+	// Positional says it is taken as an argument rather than a flag.
+	Positional bool
+	// Required says it must be named for the operation to make sense.
+	Required bool
+	// OneOf is the values it accepts, when there is a closed set.
+	OneOf []string
+	// Means is one sentence: cobra's flag help and the schema's description.
+	Means string
+	// Of is what a Kind: Number argument names, written the way the refusal
+	// has to read it: "a task", "an objective".
+	Of string
+}
+
+// Input is what a caller handed over, one entry per Argument.Name that was
+// actually named.
+//
+// Not naming something and naming it as nothing are two different requests,
+// and only one of them changes anything: a key absent was never named, a key
+// present holding nothing was named as nothing, which is how a field is
+// emptied. That is why these are maps and why the values are plain — a
+// pointer would offer a second way to say "nothing", and nineteen operations
+// would each have to decide what the difference meant.
+//
+// Given carries every kind but List; Listed carries the arguments declared
+// with Kind List.
+type Input struct {
+	Given  map[string]string
+	Listed map[string][]string
+}
+
+// Named reports whether the caller named this argument at all. A Run body asks
+// before reading, since what was never named is not a request to empty it.
+func (in Input) Named(name string) bool {
+	if _, named := in.Given[name]; named {
+		return true
+	}
+	_, named := in.Listed[name]
+	return named
+}
+
+// Change answers what to hand Changes for a name: nothing when it was
+// not named, and what it was named as otherwise. The three states the engine
+// models are worked out here, once, rather than in each of the nineteen.
+func (in Input) Change(name string) *string {
+	given, named := in.Given[name]
+	if !named {
+		return nil
+	}
+	return &given
+}
+
+// Changed answers what to hand Changes for a list of strings, on the
+// same three states as Change.
+func (in Input) Changed(name string) *[]string {
+	listed, named := in.Listed[name]
+	if !named {
+		return nil
+	}
+	return &listed
+}
+
+// Whole answers the number that was named for a Kind: Number argument, and
+// whether it was named at all. It cannot fail because Do calls Check first,
+// which refuses anything that would not parse before Run ever sees it.
+func (in Input) Whole(name string) (int, bool) {
+	given, named := in.Given[name]
+	if !named {
+		return 0, false
+	}
+	n, _ := strconv.Atoi(given)
+	return n, true
+}
+
+// Operation is one of the nineteen things cairn can be asked to do, described
+// once so both surfaces are built from it.
+type Operation struct {
+	// Thing is what the operation is about — "task", "backup".
+	Thing string
+	// Verb is what it does to it — "add", "list".
+	Verb string
+	// Short is cobra's Short.
+	Short string
+	// Does is one or two sentences: cobra's Long and the tool's description.
+	Does string
+	// Level is how far an agent may reach to call it.
+	Level Level
+	// Needs says which way the store has to be opened for it.
+	Needs Needs
+	// Takes is what it accepts.
+	Takes []Argument
+	// Run carries out the operation against whatever it was given to work on.
+	Run func(On, Input) (Answer, error)
+}
+
+// Check refuses what Run could not read anyway: every Argument of Kind:
+// Number that was named must read as a whole number, empty excepted since
+// that is how such an argument is cleared. Checked before the store is
+// opened, so a refusal never touches the disk.
+func (o Operation) Check(in Input) error {
+	for _, arg := range o.Takes {
+		if arg.Kind != Number {
+			continue
+		}
+		given, named := in.Given[arg.Name]
+		if !named || given == "" {
+			continue
+		}
+		if _, err := strconv.Atoi(given); err != nil {
+			return fmt.Errorf("%q: %s number is expected", given, arg.Of)
+		}
+	}
+	return nil
+}
+
+// On is what an operation was given to work on. All three come from the same
+// place, so they travel together rather than as three parameters nobody can
+// keep in the right order.
+type On struct {
+	// Engine is open on the store, or nil when the operation asked for none.
+	Engine *Engine
+	// Backups are what is kept beside the store, reachable whether or not the
+	// store itself could be opened.
+	Backups *Backups
+	// Path is where the store is. The operations that change its shape set a
+	// backup aside first, and that is what they need it for.
+	Path string
+}
+
+// Answer is what an operation answered. Every operation fills the two or
+// three fields that are its own and leaves the rest alone, so both surfaces
+// read one shape rather than sorting fourteen.
+//
+// Deleted and PutBack are numbers rather than entities because what they name
+// is gone, or is a whole store just replaced: there is nothing left to hand
+// back but which one it was.
+//
+// RolledBack is its own field rather than sharing Change: a change shown in
+// full and a change just undone both carry a *migration.Migration, but they
+// are not the same document — a rollback names what was undone and what it
+// cost, where a change shown in full carries its SQL. Keeping them apart here
+// is what lets Of tell the two cases apart by which field is set, rather than
+// a surface guessing from which operation was called.
+type Answer struct {
+	Task       *task.Task
+	Tasks      []task.Task
+	Under      []task.Task
+	Objective  *objective.Objective
+	Objectives []objective.Objective
+	Backup     *domain.Backup
+	Backups    []domain.Backup
+	Change     *migration.Migration
+	Changes    []migration.Migration
+	RolledBack *migration.Migration
+	Progress   domain.Progress
+	Holds      *domain.Held
+	Deleted    *int
+	PutBack    *int
+	Applied    []string
+}
+
+// Do runs an operation: it opens the store the way op.Needs says to, hands
+// Run an engine open on it — or none, when nothing was asked for — and closes
+// what it opened on the way out, whatever Run does.
+func Do(op Operation, path string, in Input) (Answer, error) {
+	if err := op.Check(in); err != nil {
+		return Answer{}, err
+	}
+	switch op.Needs {
+	case AStoreBehind:
+		return doWith(OpenBehind, op, path, in)
+	case AStore:
+		return doWith(Open, op, path, in)
+	default:
+		return op.Run(On{Backups: BackupsAt(path), Path: path}, in)
+	}
+}
+
+// doWith opens the store the way open does, hands Run an engine open on it,
+// and closes it on the way out — whatever Run does or fails on.
+func doWith(
+	open func(string) (*Engine, error),
+	op Operation, path string, in Input,
+) (Answer, error) {
+	eng, err := open(path)
+	if err != nil {
+		if errors.Is(err, ErrStoreBehind) {
+			// The store knows it is behind; only a surface knows what
+			// somebody has to type about it, which is why it is added here
+			// rather than left for whoever calls Do to work out on their own.
+			return Answer{}, fmt.Errorf("%w — run `cairn migration apply`", err)
+		}
+		return Answer{}, err
+	}
+	defer func() { _ = eng.Close() }()
+	return op.Run(On{Engine: eng, Backups: BackupsAt(path), Path: path}, in)
+}

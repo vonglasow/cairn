@@ -31,6 +31,7 @@ calls it, and prints — it decides nothing.
 | adding a package, a command, anything that changes state | [docs/architecture.md](docs/architecture.md) |
 | writing code | [docs/design-principles.md](docs/design-principles.md) |
 | adding a tool, changing a threshold, unblocking a hook | [docs/checks.md](docs/checks.md) |
+| touching the MCP server, or adding a command an agent will see | [docs/mcp.md](docs/mcp.md) |
 
 Those files carry the detail. This one carries what holds regardless of the
 task, because a rule that has to be looked up is a rule that gets skipped.

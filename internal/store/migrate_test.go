@@ -1,12 +1,14 @@
 package store
 
 import (
-	"cairn/internal/domain"
 	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"cairn/internal/migration"
+	"cairn/internal/objective"
 )
 
 // olderStore writes a store the way cairn wrote them before it knew about
@@ -20,7 +22,7 @@ func olderStore(t *testing.T, title string) string {
 	}
 	defer func() { _ = db.Close() }()
 
-	if _, err := db.Exec(migrations[0].up); err != nil {
+	if _, err := db.Exec(factsOfChange(migration.Known[0]).does); err != nil {
 		t.Fatalf("writing the older shape: %v", err)
 	}
 	if _, err := db.Exec(
@@ -48,7 +50,7 @@ func TestOpenBehind_opensAStoreWhateverShapeItIsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
-	if want := len(migrations) - 1; len(waiting) != want {
+	if want := len(migration.Known) - 1; len(waiting) != want {
 		t.Errorf("%d changes waiting, want %d", len(waiting), want)
 	}
 }
@@ -92,15 +94,19 @@ func TestMigrations_namesEveryChangeAndItsState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Migrations: %v", err)
 	}
-	if len(all) != len(migrations) {
-		t.Fatalf("%d changes, want %d", len(all), len(migrations))
+	if len(all) != len(migration.Known) {
+		t.Fatalf("%d changes, want %d", len(all), len(migration.Known))
 	}
 	for i, change := range all {
-		if change.Number != i+1 || change.Name == "" || change.Does == "" {
-			t.Errorf("change %d is incomplete: %+v", i, change)
+		f := factsOfChange(change)
+		if f.number != i+1 || f.name == "" || f.does == "" {
+			t.Errorf("change %d is incomplete: %+v", i, f)
 		}
-		if !change.Applied || change.Made.IsZero() {
-			t.Errorf("change %d should be applied and dated: %+v", i, change)
+		if !f.applied || f.made.IsZero() {
+			t.Errorf("change %d should be applied and dated: %+v", i, f)
+		}
+		if want := factsOfChange(migration.Known[i]).undoes; f.undoes != want {
+			t.Errorf("change %d: Undoes = %q, want %q", i+1, f.undoes, want)
 		}
 	}
 }
@@ -119,14 +125,14 @@ func TestApply_makesOneChange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
-	if name != migrations[1].name {
-		t.Errorf("applied %q, want %q", name, migrations[1].name)
+	if want := factsOfChange(migration.Known[1]).name; name != want {
+		t.Errorf("applied %q, want %q", name, want)
 	}
 	waiting, err := s.Waiting()
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
-	if want := len(migrations) - 2; len(waiting) != want {
+	if want := len(migration.Known) - 2; len(waiting) != want {
 		t.Errorf("%d changes still waiting, want %d", len(waiting), want)
 	}
 }
@@ -157,7 +163,7 @@ func TestApplyAll_makesEverythingWaiting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ApplyAll: %v", err)
 	}
-	if want := len(migrations) - 1; len(made) != want {
+	if want := len(migration.Known) - 1; len(made) != want {
 		t.Errorf("applied %v, want the %d waiting", made, want)
 	}
 }
@@ -182,7 +188,7 @@ func TestApplyAll_keepsWhatAnOlderStoreHeld(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 1 || all[0].Title != "Write the spec" {
+	if len(all) != 1 || factsOf(all[0]).title != "Write the spec" {
 		t.Errorf("All = %v, want what the older store held", all)
 	}
 }
@@ -193,12 +199,13 @@ func TestRollBack_unmakesTheLastChangeApplied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RollBack: %v", err)
 	}
-	last := migrations[len(migrations)-1]
-	if one.Name != last.name {
-		t.Errorf("rolled back %q, want the last change", one.Name)
+	last := factsOfChange(migration.Known[len(migration.Known)-1])
+	got := factsOfChange(one)
+	if got.name != last.name {
+		t.Errorf("rolled back %q, want the last change", got.name)
 	}
-	if one.Loses != last.loses {
-		t.Errorf("Loses = %q, want %q: a rollback has to be able to say what it cost", one.Loses, last.loses)
+	if got.loses != last.loses {
+		t.Errorf("Loses = %q, want %q: a rollback has to be able to say what it cost", got.loses, last.loses)
 	}
 }
 
@@ -208,13 +215,14 @@ func TestMigrations_saysWhatUndoingEachOneLoses(t *testing.T) {
 		t.Fatalf("Migrations: %v", err)
 	}
 	for i, one := range all {
-		if one.Loses != migrations[i].loses {
-			t.Errorf("change %d: Loses = %q, want %q", one.Number, one.Loses, migrations[i].loses)
+		got, want := factsOfChange(one).loses, factsOfChange(migration.Known[i]).loses
+		if got != want {
+			t.Errorf("change %d: Loses = %q, want %q", i+1, got, want)
 		}
 	}
 	// The shape a store starts with cannot be rolled back, so it costs nothing.
-	if all[0].Loses != "" {
-		t.Errorf("the first shape should lose nothing, got %q", all[0].Loses)
+	if got := factsOfChange(all[0]).loses; got != "" {
+		t.Errorf("the first shape should lose nothing, got %q", got)
 	}
 }
 
@@ -237,7 +245,7 @@ func TestRollBack_keepsWhatTheOlderShapeCanStillHold(t *testing.T) {
 
 func TestRollBack_refusesTheShapeAStoreStartsWith(t *testing.T) {
 	s := openStore(t)
-	for range migrations[1:] {
+	for range migration.Known[1:] {
 		if _, err := s.RollBack(); err != nil {
 			t.Fatalf("RollBack: %v", err)
 		}
@@ -337,7 +345,7 @@ func TestMigrate_rollingBackTakesTheRoomAway(t *testing.T) {
 // turning `number > len(all)` into `>=` survived in the gap.
 func TestChange_knowsExactlyWhereTheNumbersStop(t *testing.T) {
 	s := openStore(t)
-	last := len(migrations)
+	last := len(migration.Known)
 	if _, err := s.Change(last); err != nil {
 		t.Errorf("Change(%d): %v: the last change is still a change", last, err)
 	}
@@ -354,7 +362,7 @@ func TestHeld_countsObjectivesApartFromTasks(t *testing.T) {
 	keep(t, s, "Write the spec")
 	keep(t, s, "Ship it")
 	for _, title := range []string{"Ship cairn 1.0", "Learn Go", "Redo the site"} {
-		o, err := domain.NewObjective(title)
+		o, err := objective.NewObjective(title)
 		if err != nil {
 			t.Fatalf("NewObjective: %v", err)
 		}

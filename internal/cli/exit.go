@@ -5,6 +5,8 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/mcp"
+	"cairn/internal/objective"
 )
 
 // The codes cairn returns to the shell. They answer one question: what kind of
@@ -27,7 +29,7 @@ var refusals = []error{
 	domain.ErrLabelRequired,
 	domain.ErrLabelsBothWays,
 	domain.ErrNotAState,
-	domain.ErrNotAnObjectiveState,
+	objective.ErrNotAnObjectiveState,
 	domain.ErrNotAPriority,
 	domain.ErrNotADay,
 	domain.ErrNotADuration,
@@ -49,7 +51,7 @@ var refusals = []error{
 	engine.ErrAlreadyApplied,
 	engine.ErrNothingToRollBack,
 	errNotConfirmed,
-	errObjectiveNotConfirmed,
+	mcp.ErrNotAnAccess,
 }
 
 // codeFor says which kind of answer an error is.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cairn/internal/domain"
+	"cairn/internal/migration"
 	"cairn/internal/store"
 )
 
@@ -68,13 +69,13 @@ func (c *Backups) HoldsStore() (domain.Held, error) { return c.vault.HoldsStore(
 func (c *Backups) Holds(one domain.Backup) (domain.Held, error) { return c.vault.Holds(one) }
 
 // Migrations hands back every change this cairn knows, applied or not.
-func (e *Engine) Migrations() ([]domain.Migration, error) { return e.store.Migrations() }
+func (e *Engine) Migrations() ([]migration.Migration, error) { return e.store.Migrations() }
 
 // Change hands back one change by its number.
-func (e *Engine) Change(number int) (domain.Migration, error) { return e.store.Change(number) }
+func (e *Engine) Change(number int) (migration.Migration, error) { return e.store.Change(number) }
 
 // Waiting hands back the changes the store has not had yet.
-func (e *Engine) Waiting() ([]domain.Migration, error) { return e.store.Waiting() }
+func (e *Engine) Waiting() ([]migration.Migration, error) { return e.store.Waiting() }
 
 // Held counts what the store holds, tasks and objectives apart.
 func (e *Engine) Held() (domain.Held, error) { return e.store.Held() }
@@ -99,9 +100,9 @@ func (e *Engine) ApplyAll(path string) ([]string, error) {
 // RollBack unmakes the last change applied, after setting a backup aside: rolling
 // back drops what the older shape cannot hold, and that is worth being able to
 // take back.
-func (e *Engine) RollBack(path string) (domain.Migration, error) {
+func (e *Engine) RollBack(path string) (migration.Migration, error) {
 	if err := e.backupFirst(path); err != nil {
-		return domain.Migration{}, err
+		return migration.Migration{}, err
 	}
 	return e.store.RollBack()
 }

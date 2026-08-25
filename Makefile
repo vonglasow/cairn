@@ -4,7 +4,7 @@ BIN     ?= bin/cairn
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse HEAD 2>/dev/null || echo none)
 BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-PKG      = cairn/internal/cli
+PKG      = cairn/internal/build
 # go install puts tools in GOPATH/bin, which is not always on PATH.
 GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins")
 # Minimum statement coverage. Raise it deliberately; never lower it to get a
@@ -12,7 +12,7 @@ GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins"
 COVERAGE_MIN ?= 90
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run cover cover-check mutation clean
+.PHONY: build run cover cover-check harness-check mutation clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -50,6 +50,21 @@ cover-check: coverage.out
 	awk -v t="$$total" -v m="$(COVERAGE_MIN)" 'BEGIN { \
 		if (t + 0 < m + 0) { printf "✗ coverage %s%% is below the %s%% floor\n", t, m; exit 1 } \
 		printf "✓ coverage %s%% ≥ %s%%\n", t, m }'
+
+## harness-check: fail if the binary reaches the test harness
+## `cairn/test` imports `testing` outside a _test.go file on purpose, because Go
+## compiles a package's test files only for that package and two of them need
+## the same world. So the guard is not "nothing imports testing" — it is the
+## narrower thing that worry was always about: nothing the binary is made of
+## reaches the harness. Finding it is the failure, which is why the grep is
+## inverted.
+harness-check:
+	@if go list -deps ./cmd/cairn | grep -q '^cairn/test'; then \
+		echo "✗ the binary reaches the test harness"; \
+		go list -deps ./cmd/cairn | grep '^cairn/test'; \
+		exit 1; \
+	fi
+	@echo "✓ the binary does not reach the test harness"
 
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
