@@ -153,6 +153,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		}{
 			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
 			{"a list of tasks", Answer{Tasks: []task.Task{built}}, []Task{OfTask(built, domain.Progress{})}},
+			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, []Task{OfTask(built, domain.Progress{})}},
 			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
@@ -214,6 +215,15 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	built := ta.Task()
 	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
 
+	// sub hangs under built, so a listing would indent it — a search's flat
+	// rendering must not, which is what tells the two apart.
+	var sa task.AsTold
+	built.Tell(&sa)
+	sa.Numbered(2)
+	sa.Titled("Read it first")
+	sa.Under(1)
+	sub := sa.Task()
+
 	var oa objective.AsTold
 	oa.Numbered(5)
 	oa.Titled("Ship it")
@@ -251,6 +261,12 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"a task outranks a list", Operation{}, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
 		{"an empty list of tasks says so", Operation{}, Answer{Tasks: []task.Task{}}, "there is no task\n"},
 		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built})},
+		{"a search that found nothing says so", Operation{}, Answer{Found: []task.Task{}}, "there is no task\n"},
+		{
+			"what a search found is listed flat, not as a tree",
+			Operation{}, Answer{Found: []task.Task{built, sub}},
+			task.Line(built) + "\n" + task.Line(sub) + "\n",
+		},
 		{"an objective", Operation{}, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress) + objective.Serving(nil)},
 		{"an empty list of objectives says so", Operation{}, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
 		{"a list of objectives", Operation{}, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj})},

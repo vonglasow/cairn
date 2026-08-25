@@ -74,6 +74,18 @@ func noneAtAll() cobra.PositionalArgs {
 	}
 }
 
+// atLeastOne refuses being given nothing at all, saying how the command is
+// used — for a required positional of Kind: List, which takes any number of
+// arguments but has to take at least one.
+func atLeastOne() cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return fmt.Errorf("%s needs at least one argument — usage: %s", cmd.CommandPath(), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
 // newActionGroups builds one command group per distinct Operation.Thing,
 // in the order engine.All() gives them, each carrying the verbs that belong
 // to it.
@@ -142,12 +154,17 @@ func allRequired(positionals []engine.Argument) bool {
 }
 
 // argsFor is how many positional arguments a command accepts: none, exactly
-// as many as it has, or at most one when its one positional is not required
-// — `backup restore` and `migration apply`, where a number left out means
-// "the most recent" or "everything waiting" rather than a mistake.
+// as many as it has, at least one when its one positional is a required
+// Kind: List — `task search`, which takes any number of things to look for
+// but has to be given something — or at most one when its one positional is
+// not required — `backup restore` and `migration apply`, where a number left
+// out means "the most recent" or "everything waiting" rather than a mistake.
 func argsFor(positionals []engine.Argument) cobra.PositionalArgs {
 	if len(positionals) == 0 {
 		return noneAtAll()
+	}
+	if len(positionals) == 1 && positionals[0].Kind == engine.List && positionals[0].Required {
+		return atLeastOne()
 	}
 	if allRequired(positionals) {
 		return exactly(len(positionals))
@@ -232,6 +249,10 @@ func inputFrom(
 ) engine.Input {
 	in := engine.Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	for i, p := range positionals {
+		if p.Kind == engine.List {
+			in.Listed[p.Name] = args
+			continue
+		}
 		if i < len(args) {
 			in.Given[p.Name] = args[i]
 		}

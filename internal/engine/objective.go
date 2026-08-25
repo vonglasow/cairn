@@ -437,6 +437,34 @@ var ObjectiveEdit = Operation{
 	},
 }
 
+// ObjectiveSearch names every objective carrying everything named, wherever
+// among its facts each one happens to sit.
+var ObjectiveSearch = Operation{
+	Thing: "objective",
+	Verb:  "search",
+	Short: "Look for an objective by anything it carries",
+	Does:  "List every objective carrying everything named, wherever among its facts each one sits.",
+	Level: Read,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		named := in.Changed("named")
+		all, err := on.Engine.ListObjectives()
+		if err != nil {
+			return Answer{}, err
+		}
+		found := []objective.Objective{}
+		for _, o := range all {
+			if named != nil && objective.Matching(o, *named) {
+				found = append(found, o)
+			}
+		}
+		return Answer{FoundObjectives: found}, nil
+	},
+}
+
 // ObjectiveDelete removes an objective.
 var ObjectiveDelete = Operation{
 	Thing: "objective",

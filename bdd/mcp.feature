@@ -62,6 +62,14 @@ Feature: Answering a machine over MCP
     nothing holds the file while `backup_restore` or `migration_rollback`
     swaps it underneath.
 
+    @mcp-a-backup-taken-through-it-holds-everything
+    Scenario: a backup taken through the server holds what was just added
+      Given a cairn server started with `--access full`
+      When I call `task_add` with the title "Added just now"
+      And I call `backup_add`
+      And I call `backup_restore` with the number 1
+      Then `cairn task list` lists 1 task
+
     @mcp-sees-what-the-terminal-did
     Scenario: what was done at the terminal is there on the next call
       Given a cairn server started with no access given
@@ -167,9 +175,12 @@ Feature: Answering a machine over MCP
   Rule: A tool does what the command of the same name does
 
     The same work, and the same words for it: an agent names a state the way a
-    person types it, and is turned down for the same reasons. Two things are
-    said out loud rather than left to be worked out — what a tool takes, and
-    what handing it nothing means.
+    person types it, and is turned down for the same reasons. Three things are
+    said out loud rather than left to be worked out — what a tool takes, what
+    handing it nothing means, and what handing it several things means. That
+    last one is here because it was got wrong first: a list arrived as one
+    string nobody read, so labels an agent gave were dropped without a word,
+    and nothing on either side said so.
 
     @mcp-add-a-task
     Scenario: adding a task
@@ -192,6 +203,34 @@ Feature: Answering a machine over MCP
       When I call `task_show` with the number 1
       Then it answers with the card a person would have read
       And it answers with the shape `--json` would have printed
+
+    @mcp-labels-arrive-whole
+    Scenario: labels given to a tool arrive as labels
+      Given a cairn server started with no access given
+      When I call `task_add` with the title "From the agent" and the labels "spec" and "team"
+      Then it answers with a task carrying both labels
+
+    @mcp-looks-for-what-it-was-told
+    Scenario: what a tool is told to look for arrives whole
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec"
+      Then it answers with 1 task
+
+    @mcp-what-it-needs-is-asked-for
+    Scenario: a tool asked for nothing it needs says so
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` with nothing at all
+      Then it answers that it failed
+      And the answer says what it needed
+
+    @mcp-an-argument-it-does-not-take
+    Scenario: a tool is told the name it did not recognise
+      Given a cairn server started with `--access read`
+      When I call `task_show` naming an argument it does not take
+      Then it answers that it failed
+      And the answer says which name it could not read
 
     @mcp-says-what-it-accepts
     Scenario: a tool names what it takes

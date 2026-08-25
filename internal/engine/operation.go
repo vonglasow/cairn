@@ -165,12 +165,37 @@ type Operation struct {
 	Run func(On, Input) (Answer, error)
 }
 
-// Check refuses what Run could not read anyway: every Argument of Kind:
-// Number that was named must read as a whole number, empty excepted since
-// that is how such an argument is cleared. Checked before the store is
-// opened, so a refusal never touches the disk.
+// Check refuses what Run could not read anyway, before the store is opened
+// so a refusal never touches the disk:
+//
+//   - a Required argument has to have been named. A caller that named nothing
+//     it needs is told which argument that was, rather than answered as if it
+//     had asked for nothing — an agent can correct a refusal and believes an
+//     answer;
+//   - a name that was given has to be one o.Takes lists. A typo in an
+//     argument's name is not the same request as leaving it out, and letting
+//     it through answers a question nobody asked;
+//   - every Argument of Kind: Number that was named must read as a whole
+//     number, empty excepted since that is how such an argument is cleared.
 func (o Operation) Check(in Input) error {
+	takes := map[string]bool{}
 	for _, arg := range o.Takes {
+		takes[arg.Name] = true
+	}
+	for name := range in.Given {
+		if !takes[name] {
+			return fmt.Errorf("%q: %s takes no argument by that name", name, o.Line())
+		}
+	}
+	for name := range in.Listed {
+		if !takes[name] {
+			return fmt.Errorf("%q: %s takes no argument by that name", name, o.Line())
+		}
+	}
+	for _, arg := range o.Takes {
+		if arg.Required && !in.Named(arg.Name) {
+			return fmt.Errorf("%s needs %q, and was not given one", o.Line(), arg.Name)
+		}
 		if arg.Kind != Number {
 			continue
 		}
@@ -213,22 +238,37 @@ type On struct {
 // cost, where a change shown in full carries its SQL. Keeping them apart here
 // is what lets Of tell the two cases apart by which field is set, rather than
 // a surface guessing from which operation was called.
+//
+// Found is its own field beside Tasks for the same reason: a listing renders
+// as a tree, sub-tasks nested under the task they hang from, but a found task
+// is listed flat — a found sub-task hangs under nothing in the listing, since
+// what matched is what is shown, not where it sits. Its JSON is the same
+// shape as Tasks, since a machine reading either does not care about
+// indentation.
+//
+// FoundObjectives sits beside Found for the reason Objective sits beside
+// Task: an objective is not a task, and a field that carried either would
+// make every reader ask which one it got before it could read it. Its JSON
+// is the same shape as Objectives, for the same reason Found's is the same
+// shape as Tasks.
 type Answer struct {
-	Task       *task.Task
-	Tasks      []task.Task
-	Under      []task.Task
-	Objective  *objective.Objective
-	Objectives []objective.Objective
-	Backup     *domain.Backup
-	Backups    []domain.Backup
-	Change     *migration.Migration
-	Changes    []migration.Migration
-	RolledBack *migration.Migration
-	Progress   domain.Progress
-	Holds      *domain.Held
-	Deleted    *int
-	PutBack    *int
-	Applied    []string
+	Task            *task.Task
+	Tasks           []task.Task
+	Found           []task.Task
+	Under           []task.Task
+	Objective       *objective.Objective
+	Objectives      []objective.Objective
+	FoundObjectives []objective.Objective
+	Backup          *domain.Backup
+	Backups         []domain.Backup
+	Change          *migration.Migration
+	Changes         []migration.Migration
+	RolledBack      *migration.Migration
+	Progress        domain.Progress
+	Holds           *domain.Held
+	Deleted         *int
+	PutBack         *int
+	Applied         []string
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands

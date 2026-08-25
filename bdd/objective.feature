@@ -267,6 +267,34 @@ Feature: Objectives
       Then the objective carries exactly 1 label
       And the objective carries the label "perso"
 
+  Rule: An objective is looked for by anything it carries
+
+    The same way back to a number as for a task, and for the same reason: the
+    number is what every other command asks for and the one thing nobody
+    remembers. What an objective carries is not what a task carries — no
+    parent, nothing it serves, no time spent — so what can be looked in
+    differs. The rule does not.
+
+    @objective-search-by-a-word
+    Scenario: a word from the title is the way back to a number
+      Given I added an objective titled "Ship cairn 1.0"
+      When I run `cairn objective search cairn`
+      Then it lists objective 1 titled "Ship cairn 1.0"
+
+    @objective-search-everything-named-is-found
+    Scenario: everything named has to be there, wherever it is
+      Given I added an objective titled "Ship cairn 1.0" with the priority "high"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn objective search high ship`
+      Then it lists 1 objective
+
+    @objective-search-finds-nothing
+    Scenario: looking for what is not there says so
+      Given I added an objective titled "Ship cairn 1.0"
+      When I run `cairn objective search nowhere`
+      Then it succeeds
+      And it says there is no objective
+
   Rule: An objective carries only what it was given
 
     @objective-defaults

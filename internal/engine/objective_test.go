@@ -313,6 +313,24 @@ func TestObjectiveList_listsEveryObjective(t *testing.T) {
 	}
 }
 
+func TestObjectiveSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "ship the release"}}); err != nil {
+		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	}
+	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "plan the offsite"}}); err != nil {
+		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	}
+
+	answer, err := Do(ObjectiveSearch, path, Input{Listed: map[string][]string{"named": {"release"}}})
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	if len(answer.FoundObjectives) != 1 || factsOfObjective(answer.FoundObjectives[0]).title != "ship the release" {
+		t.Fatalf("answer.FoundObjectives = %v, want one objective titled %q", answer.FoundObjectives, "ship the release")
+	}
+}
+
 func TestObjectiveShow_showsAnObjectiveItsTasksAndProgress(t *testing.T) {
 	path := storeAt(t)
 	added, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "ship the release"}})

@@ -1,8 +1,10 @@
 package build
 
 import (
+	"reflect"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"testing"
 )
 
@@ -64,5 +66,34 @@ func TestRead_readsTheRuntime(t *testing.T) {
 	}
 	if want := runtime.GOOS + "/" + runtime.GOARCH; b.Platform != want {
 		t.Errorf("Platform = %q, want %q", b.Platform, want)
+	}
+}
+
+// Nothing but this holds the rendering: `cairn --version` prints it, and that
+// scenario lives in another package, whose coverage does not count for this
+// one. The fields are walked rather than listed, because a test that names the
+// six that exist says nothing about the seventh — and it is the seventh,
+// added and not printed, that would go out in a release saying nothing.
+func TestString_printsEveryFieldABuildCarries(t *testing.T) {
+	told := Info{
+		Version:    "v1.2.3",
+		Commit:     "4c5a15f700dc",
+		Built:      "2026-08-25T09:00:00Z",
+		CommitDate: "2026-08-24T20:50:43Z",
+		Go:         "go1.26.6",
+		Platform:   "darwin/arm64",
+	}
+
+	printed := told.String()
+	fields := reflect.ValueOf(told)
+	for i := range fields.NumField() {
+		name := fields.Type().Field(i).Name
+		value := fields.Field(i).String()
+		if value == "" {
+			t.Fatalf("%s was left empty: the walk proves nothing about a field it cannot tell apart", name)
+		}
+		if !strings.Contains(printed, value) {
+			t.Errorf("%s is not in what a build prints:\n%s", name, printed)
+		}
 	}
 }

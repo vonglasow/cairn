@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"cairn/internal/domain"
+	"cairn/internal/task"
 )
 
 // Name is how an operation is named as a command or a tool: "task_add".
@@ -16,11 +17,11 @@ func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
 // Line is how an operation reads on the command line: "task add".
 func (o Operation) Line() string { return o.Thing + " " + o.Verb }
 
-// All is the nineteen things cairn can be asked to do, in a stable order.
+// All is the twenty-one things cairn can be asked to do, in a stable order.
 func All() []Operation {
 	return []Operation{
-		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete,
-		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete,
+		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
+		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 	}
@@ -151,6 +152,34 @@ var TaskDelete = Operation{
 			return Answer{}, err
 		}
 		return Answer{Deleted: &n}, nil
+	},
+}
+
+// TaskSearch names every task carrying everything named, wherever among its
+// facts each one happens to sit.
+var TaskSearch = Operation{
+	Thing: "task",
+	Verb:  "search",
+	Short: "Look for a task by anything it carries",
+	Does:  "List every task carrying everything named, wherever among its facts each one sits.",
+	Level: Read,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		named := in.Changed("named")
+		tasks, err := on.Engine.List()
+		if err != nil {
+			return Answer{}, err
+		}
+		found := []task.Task{}
+		for _, t := range tasks {
+			if named != nil && task.Matching(t, *named) {
+				found = append(found, t)
+			}
+		}
+		return Answer{Found: found}, nil
 	},
 }
 

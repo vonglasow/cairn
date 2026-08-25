@@ -105,6 +105,24 @@ func TestTaskDelete_deletesATask(t *testing.T) {
 	}
 }
 
+func TestTaskSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "Write the spec"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "Ship it"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+
+	answer, err := Do(TaskSearch, path, Input{Listed: map[string][]string{"named": {"spec"}}})
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	if len(answer.Found) != 1 || factsOf(answer.Found[0]).title != "Write the spec" {
+		t.Fatalf("answer.Found = %v, want one task titled %q", answer.Found, "Write the spec")
+	}
+}
+
 func TestTaskAdd_addsATask(t *testing.T) {
 	path := storeAt(t)
 	in := Input{Given: map[string]string{"title": "write the report"}}
@@ -118,7 +136,7 @@ func TestTaskAdd_addsATask(t *testing.T) {
 	}
 }
 
-func TestAll_hasNineteenDistinctOperations(t *testing.T) {
+func TestAll_hasTwentyOneDistinctOperations(t *testing.T) {
 	if got := TaskAdd.Name(); got != "task_add" {
 		t.Errorf("TaskAdd.Name() = %q, want %q", got, "task_add")
 	}
@@ -127,8 +145,8 @@ func TestAll_hasNineteenDistinctOperations(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 19 {
-		t.Fatalf("len(All()) = %d, want 19", len(ops))
+	if len(ops) != 21 {
+		t.Fatalf("len(All()) = %d, want 21", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

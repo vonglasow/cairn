@@ -97,11 +97,17 @@ func Of(a Answer) any {
 	if a.Tasks != nil {
 		return ofTasks(a.Tasks)
 	}
+	if a.Found != nil {
+		return ofTasks(a.Found)
+	}
 	if a.Objective != nil {
 		return OfObjective(*a.Objective, a.Under, a.Progress)
 	}
 	if a.Objectives != nil {
 		return ofObjectives(a.Objectives)
+	}
+	if a.FoundObjectives != nil {
+		return ofObjectives(a.FoundObjectives)
 	}
 	if a.Backup != nil {
 		return domain.OfBackup(*a.Backup, a.Holds)
@@ -190,11 +196,17 @@ func RenderText(op Operation, a Answer) string {
 	if a.Tasks != nil {
 		return tasksText(a.Tasks)
 	}
+	if a.Found != nil {
+		return foundText(a.Found)
+	}
 	if a.Objective != nil {
 		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
 	}
 	if a.Objectives != nil {
 		return objectivesText(a.Objectives)
+	}
+	if a.FoundObjectives != nil {
+		return objectivesText(a.FoundObjectives)
 	}
 	if a.Backup != nil {
 		return backupLine(*a.Backup, *a.Holds)
@@ -229,6 +241,21 @@ func tasksText(tasks []task.Task) string {
 		return "there is no task\n"
 	}
 	return task.Tree(tasks)
+}
+
+// foundText renders every task a search found, flat — a found sub-task hangs
+// under nothing, since what matched is what is shown rather than where it
+// sits — saying so when nothing was found.
+func foundText(tasks []task.Task) string {
+	if len(tasks) == 0 {
+		return "there is no task\n"
+	}
+	var out strings.Builder
+	for _, t := range tasks {
+		out.WriteString(task.Line(t))
+		out.WriteString("\n")
+	}
+	return out.String()
 }
 
 // linesOf renders every task as one listing line each, for objective's

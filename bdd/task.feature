@@ -304,6 +304,92 @@ Feature: Tasks
       When I run `cairn task show 1`
       Then it reports a task titled "Write the other spec"
 
+  Rule: A task is looked for by anything it carries
+
+    Every other command asks for a number, and a number is the one thing
+    nobody remembers. So the way back to one is to look for what a person does
+    remember — a word from the title, a label, the day it is due — and be told
+    which task carries it.
+
+    Looking reaches everything a task says about itself, and reads it the way a
+    person does: a duration is looked for as it is shown and not as the count
+    of nanoseconds it is kept as. A number is the one thing it does not reach,
+    because looking for "1" would answer 1, 10, 21 and everything hanging
+    under them — and asking by number is what `task show` is for.
+
+    Each thing named has to be found, and any field may be where it is found.
+    That is what lets somebody ask for every task in high carrying the word
+    spec without saying which field either belongs to. A thing with a space in
+    it is one thing: the shell hands `"the spec"` over whole.
+
+    @task-search-by-a-word
+    Scenario: a word from the title is the way back to a number
+      Given I added a task titled "Write the spec"
+      When I run `cairn task search spec`
+      Then it lists task 1 titled "Write the spec"
+
+    @task-search-ignores-case
+    Scenario: looking does not care how it was typed
+      Given I added a task titled "Write the spec"
+      When I run `cairn task search SPEC`
+      Then it lists 1 task
+
+    @task-search-reaches-every-field
+    Scenario Outline: anything a task carries is looked in
+      Given I added a task titled "Write the spec" with the <field> "<carried>"
+      When I run `cairn task search <named>`
+      Then it lists 1 task
+
+      Examples: read the way a person reads them
+        | field       | carried    | named   |
+        | description | the first  | first   |
+        | state       | current    | current |
+        | priority    | high       | high    |
+        | deadline    | 2026-09-01 | 2026-09 |
+        | time spent  | 90m        | 1h30m   |
+
+    @task-search-reaches-a-label
+    Scenario: a label is looked in like anything else
+      Given I added a task titled "Write the spec" with the labels "team" and "urgent"
+      When I run `cairn task search urgent`
+      Then it lists 1 task
+
+    @task-search-everything-named-is-found
+    Scenario: everything named has to be there, wherever it is
+      Given I added a task titled "Write the spec" with the priority "high"
+      And I added a task titled "Read the spec"
+      When I run `cairn task search high spec`
+      Then it lists task 1 titled "Write the spec"
+      And it lists 1 task
+
+    @task-search-a-thing-with-a-space
+    Scenario: a thing with a space in it is one thing
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Spec what to write"
+      When I run `cairn task search "the spec"`
+      Then it lists 1 task
+
+    @task-search-reaches-a-sub-task
+    Scenario: a sub-task is looked for like any other, and listed like one
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Read it first" with the parent "1"
+      When I run `cairn task search first`
+      Then it lists task 2 titled "Read it first"
+      And task 2 hangs under nothing in the listing
+
+    @task-search-finds-nothing
+    Scenario: looking for what is not there says so
+      Given I added a task titled "Write the spec"
+      When I run `cairn task search nowhere`
+      Then it succeeds
+      And it says there is no task
+
+    @task-search-needs-something-to-look-for
+    Scenario: looking for nothing at all is refused
+      When I run `cairn task search`
+      Then it fails
+      And it says how to use it
+
   Rule: A task can be changed
 
     Everything a task can be given when it is created can be changed

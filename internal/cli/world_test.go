@@ -228,6 +228,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "there is no task", "the answer")
 	})
 
+	sc.Step(`^it says there is no objective$`, func() error {
+		return test.WantContains(w.Out.Stdout, "there is no objective", "the answer")
+	})
+
 	sc.Step(`^it says task (\d+) was deleted$`, func(n int) error {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d was deleted", n), "the answer")
 	})

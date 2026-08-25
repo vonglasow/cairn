@@ -68,6 +68,12 @@ linters:
             # Only reachable from _test.go: the harness guard refuses testing in
             # anything the binary is made of.
             - testing
+            # The same, and widened on purpose for one thing: walking Info's
+            # fields, so that a field added and not printed turns a test red.
+            # Listing the fields by hand would prove the ones that exist and
+            # nothing about the next one, which is the one that would go out in
+            # a release saying nothing.
+            - reflect
 
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the

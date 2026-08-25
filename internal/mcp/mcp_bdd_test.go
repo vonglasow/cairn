@@ -181,8 +181,12 @@ func (w *world) iAskedItToAddATaskTitled(title string) error {
 
 // iCallTaskList calls `task_list`, keeping what it answered for the next
 // step to read.
-func (w *world) iCallTaskList() error {
-	_ = w.callTool("task_list", nil)
+// A tool asked for by name and nothing else. One step for every tool that
+// takes nothing rather than one step per tool: the name is what varies, and a
+// step per tool would be the same three lines written as many times as cairn
+// has commands.
+func (w *world) iCall(tool string) error {
+	_ = w.callTool(tool, nil)
 	return nil
 }
 
@@ -193,12 +197,38 @@ func (w *world) iCallTaskAddWithTheTitle(title string) error {
 	return nil
 }
 
+// iCallTaskAddWithTheTitleAndTheLabels calls `task_add` with title and a
+// label list carrying both labels, the way a client sends a JSON array
+// rather than the string that array would read as when joined.
+func (w *world) iCallTaskAddWithTheTitleAndTheLabels(title, first, second string) error {
+	_ = w.callTool("task_add", map[string]any{"title": title, "label": []any{first, second}})
+	return nil
+}
+
+// iCallTaskSearchLookingFor calls `task_search` with a one-element label
+// list, keeping what it answered for the next step to read.
+func (w *world) iCallTaskSearchLookingFor(term string) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{term}})
+	return nil
+}
+
+// iCallNamingAnArgumentItDoesNotTake calls tool with a name among its
+// arguments it does not recognise — the way a typo such as "numbre" for
+// "number" would arrive over the wire.
+func (w *world) iCallNamingAnArgumentItDoesNotTake(tool string) error {
+	_ = w.callTool(tool, map[string]any{"numbre": 1})
+	return nil
+}
+
 // iCallTaskShowWithTheNumber calls `task_show` with n, keeping both what it
 // answered and n itself, so a later step can ask the command line the same
 // question.
-func (w *world) iCallTaskShowWithTheNumber(n int) error {
+// The same, for every tool whose one argument is a number — a task to show, a
+// backup to put back, a change to apply. The number is kept so a later step can
+// say which one it was about.
+func (w *world) iCallWithTheNumber(tool string, n int) error {
 	w.number = n
-	_ = w.callTool("task_show", map[string]any{"number": n})
+	_ = w.callTool(tool, map[string]any{"number": n})
 	return nil
 }
 
@@ -233,16 +263,19 @@ func (w *world) itAnswersThatItFailed() error {
 }
 
 // theAnswerSays fails unless the last call's text content mentions what.
+// theAnswerSays reads a scenario's words as what they mean, not as a substring
+// to go looking for. Most of them are the reason itself and are found as
+// written; a few name a thing the reason has to carry rather than quoting it,
+// and those are translated here — otherwise a scenario's prose would dictate
+// the wording of cairn's own refusals, which is the tail wagging the dog.
 func (w *world) theAnswerSays(what string) error {
+	switch what {
+	case "what it needed":
+		what = "named"
+	case "which name it could not read":
+		what = "numbre"
+	}
 	return test.WantContains(textOf(w.result), what, "the answer")
-}
-
-// iCallTaskDeleteWithTheNumber calls `task_delete` with n, a tool a
-// read-access server never registered, so the call cannot be answered at
-// all.
-func (w *world) iCallTaskDeleteWithTheNumber(n int) error {
-	_ = w.callTool("task_delete", map[string]any{"number": n})
-	return nil
 }
 
 // theCallItselfFails fails unless reaching the tool failed before cairn ever
@@ -338,6 +371,33 @@ func (w *world) itAnswersWithTheTaskTitled(title string) error {
 	}
 	if doc["title"] != title {
 		return fmt.Errorf("title = %v, want %q", doc["title"], title)
+	}
+	return nil
+}
+
+// itAnswersWithATaskCarryingBothLabels fails unless the last call's
+// structured content names a task whose labels are exactly "spec" and "team".
+func (w *world) itAnswersWithATaskCarryingBothLabels() error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	doc, ok := w.result.StructuredContent.(map[string]any)
+	if !ok {
+		return fmt.Errorf("structured content is not a task: %#v", w.result.StructuredContent)
+	}
+	labels, ok := doc["labels"].([]any)
+	if !ok {
+		return fmt.Errorf("labels = %#v, want a list of two", doc["labels"])
+	}
+	want := map[string]bool{"spec": true, "team": true}
+	if len(labels) != len(want) {
+		return fmt.Errorf("labels = %v, want %v", labels, want)
+	}
+	for _, l := range labels {
+		s, ok := l.(string)
+		if !ok || !want[s] {
+			return fmt.Errorf("labels = %v, want %v", labels, want)
+		}
 	}
 	return nil
 }
@@ -625,9 +685,15 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^`([^`]*)` is marked as read-only$", w.toolIsMarkedAsReadOnly)
 		sc.Step("^every tool is marked as reaching nothing outside cairn$", w.everyToolIsMarkedAsReachingNothingOutsideCairn)
 		sc.Step(`^I asked it to add a task titled "([^"]*)"$`, w.iAskedItToAddATaskTitled)
-		sc.Step("^I call `task_list`$", w.iCallTaskList)
+		sc.Step("^I call `([a-z_]+)`$", w.iCall)
+		sc.Step("^I call `([a-z_]+)` with nothing at all$", w.iCall)
+		sc.Step("^I call `([a-z_]+)` naming an argument it does not take$", w.iCallNamingAnArgumentItDoesNotTake)
 		sc.Step("^I call `task_add` with the title \"([^\"]*)\"$", w.iCallTaskAddWithTheTitle)
-		sc.Step("^I call `task_show` with the number (\\d+)$", w.iCallTaskShowWithTheNumber)
+		sc.Step("^I call `task_add` with the title \"([^\"]*)\" and the labels \"([^\"]*)\" and \"([^\"]*)\"$",
+			w.iCallTaskAddWithTheTitleAndTheLabels)
+		sc.Step("^I call `task_search` looking for \"([^\"]*)\"$", w.iCallTaskSearchLookingFor)
+		sc.Step("^it answers with a task carrying both labels$", w.itAnswersWithATaskCarryingBothLabels)
+		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)
 		sc.Step(`^it answers with (\d+) tasks?$`, w.itAnswersWithNTasks)
 		sc.Step(`^it answers without an error$`, w.itAnswersWithoutAnError)
 		sc.Step(`^it answers with the task titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
@@ -642,7 +708,6 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^it is still titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
 		sc.Step(`^it answers that it failed$`, w.itAnswersThatItFailed)
 		sc.Step(`^the answer says (.+)$`, w.theAnswerSays)
-		sc.Step("^I call `task_delete` with the number (\\d+)$", w.iCallTaskDeleteWithTheNumber)
 		sc.Step(`^the call itself fails$`, w.theCallItselfFails)
 		sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`,
 			w.aStoreFromAnOlderCairnHoldingATaskTitled)
@@ -697,6 +762,10 @@ func TestAcceptance_MCP_MarksWhatItNeverReaches(t *testing.T) {
 	runAcceptance(t, "@mcp-marks-what-it-never-reaches")
 }
 
+func TestAcceptance_MCP_ABackupTakenThroughItHoldsEverything(t *testing.T) {
+	runAcceptance(t, "@mcp-a-backup-taken-through-it-holds-everything")
+}
+
 func TestAcceptance_MCP_SeesWhatTheTerminalDid(t *testing.T) {
 	runAcceptance(t, "@mcp-sees-what-the-terminal-did")
 }
@@ -715,6 +784,22 @@ func TestAcceptance_MCP_WhatItAnswers(t *testing.T) {
 
 func TestAcceptance_MCP_AnswersBothWays(t *testing.T) {
 	runAcceptance(t, "@mcp-answers-both-ways")
+}
+
+func TestAcceptance_MCP_LabelsArriveWhole(t *testing.T) {
+	runAcceptance(t, "@mcp-labels-arrive-whole")
+}
+
+func TestAcceptance_MCP_LooksForWhatItWasTold(t *testing.T) {
+	runAcceptance(t, "@mcp-looks-for-what-it-was-told")
+}
+
+func TestAcceptance_MCP_WhatItNeedsIsAskedFor(t *testing.T) {
+	runAcceptance(t, "@mcp-what-it-needs-is-asked-for")
+}
+
+func TestAcceptance_MCP_AnArgumentItDoesNotTake(t *testing.T) {
+	runAcceptance(t, "@mcp-an-argument-it-does-not-take")
 }
 
 func TestAcceptance_MCP_SaysWhatItAccepts(t *testing.T) {

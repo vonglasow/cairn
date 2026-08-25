@@ -81,6 +81,42 @@ func jsonType(kind engine.Kind) string {
 	}
 }
 
+// isList reports whether op declares name as a Kind: List argument, the one
+// case handlerFor reads into engine.Input.Listed rather than Given.
+func isList(op engine.Operation, name string) bool {
+	for _, arg := range op.Takes {
+		if arg.Name == name {
+			return arg.Kind == engine.List
+		}
+	}
+	return false
+}
+
+// asStringList turns what a Kind: List argument was handed into the strings
+// it carries. JSON null empties it, the same as any other kind; anything
+// else that is not a JSON array, or an array holding anything but a string,
+// is refused rather than guessed at — a bare string is not the one-element
+// list it might have meant, and a number among labels is not the label its
+// digits would read as.
+func asStringList(value any) ([]string, error) {
+	if value == nil {
+		return []string{}, nil
+	}
+	items, ok := value.([]any)
+	if !ok {
+		return nil, fmt.Errorf("a list is expected, got %#v", value)
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		s, ok := item.(string)
+		if !ok {
+			return nil, fmt.Errorf("a string is expected among the list, got %#v", item)
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+
 // handlerFor wires op to engine.Do as thinly as a tool can be. A refusal —
 // an empty title, a store this cairn cannot use — comes back as IsError,
 // with the reason as text; only what json.Unmarshal itself cannot read is a
@@ -101,6 +137,20 @@ func handlerFor(op engine.Operation, path string) sdk.ToolHandler {
 		}
 		in := engine.Input{Given: map[string]string{}}
 		for name, value := range given {
+			// An argument declared Kind: List belongs in Listed as the strings
+			// it was given, not joined into the one string every other kind
+			// reads as — that is the defect this handler exists to fix.
+			if isList(op, name) {
+				list, err := asStringList(value)
+				if err != nil {
+					return nil, fmt.Errorf("%q: %w", name, err)
+				}
+				if in.Listed == nil {
+					in.Listed = map[string][]string{}
+				}
+				in.Listed[name] = list
+				continue
+			}
 			// JSON null is how a field is named as nothing, which is not the
 			// same request as leaving it out: engine.Input models that as a
 			// name present and holding the empty string, never fmt.Sprint's
