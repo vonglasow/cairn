@@ -119,6 +119,10 @@ func asStringList(value any) ([]string, error) {
 	return out, nil
 }
 
+// throughTheServer is how a history names what an agent did. The same word as
+// the command that starts it, so a line nobody explained still reads.
+const throughTheServer = "mcp"
+
 // handlerFor wires op to engine.Do as thinly as a tool can be. A refusal —
 // an empty title, a store this cairn cannot use — comes back as IsError,
 // with the reason as text; only what json.Unmarshal itself cannot read is a
@@ -163,7 +167,9 @@ func handlerFor(op engine.Operation, path string) sdk.ToolHandler {
 			}
 			in.Given[name] = fmt.Sprint(value)
 		}
-		answer, err := engine.Do(op, path, in)
+		// Named as the server's doing, so a history shows what an agent
+		// changed as something the person reading it did not do themselves.
+		answer, err := engine.DoThrough(op, path, in, throughTheServer)
 		if err != nil {
 			// Something cairn understood and turned down — an empty title, a
 			// store this cairn cannot use — is an answer, not a broken tool:

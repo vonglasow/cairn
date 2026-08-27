@@ -155,6 +155,35 @@ linters:
             - pkg: github.com/charmbracelet/fang
               desc: a change is not a surface
 
+        # The act holds one thing that was done to a task: what it was, what it
+        # became, when, and through which surface. It reaches domain, for writing
+        # a moment the way a person reads one, and nothing else — not even
+        # cairn/internal/task, which is the one worth spelling out. An act names
+        # its task by number and never carries the task: a task may be gone by
+        # the time its acts are read, and an act holding one could not outlive
+        # it. Reaching for the task would undo that.
+        trace:
+          files: ["**/internal/trace/**"]
+          deny:
+            - pkg: cairn/internal/task
+              desc: an act names its task by number, never carries it, so it outlives the task it describes
+            - pkg: cairn/internal/objective
+              desc: an act is about a task; an objective has nothing to do with one
+            - pkg: cairn/internal/store
+              desc: an act knows nothing of how it is kept; the store writes it down, it does not own it
+            - pkg: cairn/internal/engine
+              desc: an act knows nothing of the operations that produced it
+            - pkg: cairn/internal/cli
+              desc: an act knows nothing of how it is displayed
+            - pkg: cairn/internal/mcp
+              desc: an act knows nothing of how it is displayed
+            - pkg: database/sql
+              desc: an act that knew how it is kept would drag a database into every test that touches it
+            - pkg: github.com/spf13/cobra
+              desc: an act is not a surface
+            - pkg: github.com/charmbracelet/fang
+              desc: an act is not a surface
+
         # The store is called by the engine and speaks in entities. It is the
         # only package that knows a database exists.
         store:

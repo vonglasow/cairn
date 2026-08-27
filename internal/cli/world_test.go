@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -96,6 +97,9 @@ func (w *world) tally(key string) (map[string]any, error) {
 // both surfaces claim is registered by the shared world.
 // flagFor is the flag an attribute is given by, named once because both the
 // step that creates a task with one and the step that edits one read it.
+// numbersIn reads every whole number a message names.
+var numbersIn = regexp.MustCompile(`\d+`)
+
 func flagFor(attribute string) string {
 	return map[string]string{
 		"title": "--title", "description": "--desc", "deadline": "--deadline",
@@ -135,6 +139,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent) "([^"]*)"$`,
 		func(title, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flagFor(attribute), value))
+		})
+
+	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
+		func(n int, first, second string) error {
+			return w.Seed(fmt.Sprintf(`cairn task edit %d --label "%s" --label "%s"`, n, first, second))
 		})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
@@ -234,6 +243,25 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return test.WantContains(w.Out.Stderr, wanted, "the reason")
 		})
 	}
+
+	// A refusal that does not quote the number leaves somebody who typed two of
+	// them with no idea which one cairn could not find, so the number is looked
+	// for among those the question actually carried.
+	//
+	// Shared rather than kept with the order: the trace refuses the same way,
+	// and a step two features claim belongs where both can reach it.
+	sc.Step(`^it shows the number it could not find$`, func() error {
+		asked := numbersIn.FindAllString(w.Line, -1)
+		if len(asked) == 0 {
+			return fmt.Errorf("the question named no number: %q", w.Line)
+		}
+		for _, number := range asked {
+			if strings.Contains(w.Out.Stderr, number) {
+				return nil
+			}
+		}
+		return fmt.Errorf("the reason quotes none of the numbers in %q:\n%s", w.Line, w.Out.Stderr)
+	})
 
 	sc.Step(`^it shows the title I typed$`, func() error {
 		return test.WantContains(w.Out.Stderr, "got ", "the reason")

@@ -10,9 +10,14 @@ GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins"
 # Minimum statement coverage. Raise it deliberately; never lower it to get a
 # commit through.
 COVERAGE_MIN ?= 90
+# What each package owes on its own, below the total. Lower than the total on
+# purpose: a package may sit honestly under the average — measured, the store
+# and the harness both do — and a floor set at the total would fail the
+# repository as it stands rather than the code being added to it.
+PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run cover cover-check harness-check mutation clean
+.PHONY: build run cover cover-check tested-check harness-check mutation clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -43,13 +48,55 @@ coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*
 cover: coverage.out
 	go tool cover -func=coverage.out
 
-## cover-check: fail if statement coverage falls below COVERAGE_MIN
+## cover-check: fail if coverage falls below the floor, in total and per package
 ## Coverage only says a line ran — see `mutation` for whether a test noticed.
+##
+## Two floors and not one, because a total dilutes: ten packages high absorb one
+## at zero until they cannot, and by then the untested package has been there a
+## while. Measured — a package added at 0% cost eight points of the total and
+## only then broke the floor.
+##
+## `cmd/` is left out, and here is why: its only function is `main`, which no
+## test can call without ending the process that runs it. What it does is
+## exercised through the scenarios of `internal/cli`, which is where the command
+## line actually lives.
 cover-check: coverage.out
-	@total=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$$NF); print $$NF}'); \
+	@failed=0; \
+	total=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$$NF); print $$NF}'); \
 	awk -v t="$$total" -v m="$(COVERAGE_MIN)" 'BEGIN { \
-		if (t + 0 < m + 0) { printf "✗ coverage %s%% is below the %s%% floor\n", t, m; exit 1 } \
-		printf "✓ coverage %s%% ≥ %s%%\n", t, m }'
+		if (t + 0 < m + 0) { printf "\xe2\x9c\x97 coverage %s%% is below the %s%% floor\n", t, m; exit 1 } \
+		printf "\xe2\x9c\x93 coverage %s%% \xe2\x89\xa5 %s%%\n", t, m }' || failed=1; \
+	awk -v m="$(PACKAGE_COVERAGE_MIN)" ' \
+		NR > 1 { \
+			split($$1, where, ":"); pkg = where[1]; sub("/[^/]*$$", "", pkg); \
+			statements[pkg] += $$2; if ($$3 > 0) reached[pkg] += $$2 } \
+		END { \
+			for (pkg in statements) { \
+				if (index(pkg, "cairn/cmd/") == 1) continue; \
+				share = 100 * reached[pkg] / statements[pkg]; \
+				if (share + 0 < m + 0) { \
+					printf "\xe2\x9c\x97 %s is at %.1f%%, below the %s%% each package owes\n", pkg, share, m; \
+					bad = 1 } } \
+			if (bad) exit 1; \
+			printf "\xe2\x9c\x93 every package is at %s%% or better\n", m }' coverage.out || failed=1; \
+	if [ $$failed -eq 1 ]; then exit 1; fi
+
+## tested-check: fail if a package has no test file at all
+## The mutation gate does the opposite: it skips a package with no test file, so
+## the newest code is the code it says least about. Measured — a package added
+## with sixty functions and no test file passed `make mutation` untouched, while
+## the coverage total absorbed it as an average. This is the gate that was
+## missing, and it is the cheapest of the three: a package either has a test
+## file or it does not.
+tested-check:
+	@missing=0; \
+	for pkg in $$(go list ./... | sed "s|^cairn|.|"); do \
+		ls $$pkg/*_test.go >/dev/null 2>&1 && continue; \
+		echo "✗ $$pkg has no test file"; \
+		missing=1; \
+	done; \
+	if [ $$missing -eq 1 ]; then exit 1; fi; \
+	echo "✓ every package has a test file"
 
 ## harness-check: fail if the binary reaches the test harness
 ## `cairn/test` imports `testing` outside a _test.go file on purpose, because Go

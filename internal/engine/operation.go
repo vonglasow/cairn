@@ -13,6 +13,7 @@ import (
 	"cairn/internal/migration"
 	"cairn/internal/objective"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // Level is how far an agent may reach. It also settles what a client is told a
@@ -277,6 +278,13 @@ type Answer struct {
 	Deleted         *int
 	PutBack         *int
 	Applied         []string
+	// Since is what was done over a period, across every task, oldest first.
+	// Its own field beside Acts for the reason Found sits beside Tasks: a
+	// history is about one task and does not name it on every line, where a
+	// period names the task each act was on.
+	Since []trace.Act
+	// Acts is what has been done to a task, oldest first.
+	Acts []trace.Act
 	// InFocus is which task is being worked on — the number when one is, zero
 	// when none is. Every listing carries it, because a listing marks it; and
 	// the operations that answer about the focus carry it alone, since "nothing
@@ -288,14 +296,29 @@ type Answer struct {
 // Run an engine open on it — or none, when nothing was asked for — and closes
 // what it opened on the way out, whatever Run does.
 func Do(op Operation, path string, in Input) (Answer, error) {
+	return DoThrough(op, path, in, ByHand)
+}
+
+// ByHand is the surface a history says nothing about: the person at the
+// terminal. Every other surface names itself, and a line shows it only when it
+// was not this one.
+const ByHand = ""
+
+// DoThrough runs an operation and says which surface asked, so what it changes
+// is written down as that surface's doing.
+//
+// Its own entry point rather than a parameter on Do: seventy callers name no
+// surface because they are the terminal, and threading an empty string through
+// all of them would say nothing seventy times.
+func DoThrough(op Operation, path string, in Input, through string) (Answer, error) {
 	if err := op.Check(in); err != nil {
 		return Answer{}, err
 	}
 	switch op.Needs {
 	case AStoreBehind:
-		return doWith(OpenBehind, op, path, in)
+		return doWith(OpenBehind, op, path, in, through)
 	case AStore:
-		return doWith(Open, op, path, in)
+		return doWith(Open, op, path, in, through)
 	default:
 		return op.Run(On{Backups: BackupsAt(path), Path: path}, in)
 	}
@@ -305,7 +328,7 @@ func Do(op Operation, path string, in Input) (Answer, error) {
 // and closes it on the way out — whatever Run does or fails on.
 func doWith(
 	open func(string) (*Engine, error),
-	op Operation, path string, in Input,
+	op Operation, path string, in Input, through string,
 ) (Answer, error) {
 	eng, err := open(path)
 	if err != nil {
@@ -318,5 +341,6 @@ func doWith(
 		return Answer{}, err
 	}
 	defer func() { _ = eng.Close() }()
+	eng.through = through
 	return op.Run(On{Engine: eng, Backups: BackupsAt(path), Path: path}, in)
 }

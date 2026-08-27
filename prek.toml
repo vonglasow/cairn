@@ -25,9 +25,17 @@ hooks = [
 repo = "local"
 hooks = [
     { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, types = ["go"] },
-    # Coverage floor. Cheap, and it catches the commit that adds a package
-    # nobody tested at all — which mutation alone would not, having no mutants
-    # to judge there.
+    # A package with no test file at all. First because it is the cheapest and
+    # the one that was missing: mutation skips such a package rather than
+    # failing on it, so the newest code was the code the gates said least about.
+    { id = "tested-check", name = "every package has a test file", entry = "make tested-check", language = "system", pass_filenames = false, types = ["go"] },
+    # Coverage floors, in total and per package.
+    #
+    # This comment used to claim the total caught a package nobody tested. It
+    # does, eventually: measured, one added at 0% cost eight points before the
+    # floor gave way, and until it did the average absorbed it. The per-package
+    # floor is what makes the claim true now, and `tested-check` above catches
+    # the worse case first.
     { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, types = ["go"] },
     # The binary must not be made of the test harness. Cheap, and it is what
     # replaced `no-go-testing` for `cairn/test` — see the target's comment.

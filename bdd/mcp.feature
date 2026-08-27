@@ -204,6 +204,13 @@ Feature: Answering a machine over MCP
       Then it answers with the card a person would have read
       And it answers with the shape `--json` would have printed
 
+    @mcp-what-an-agent-does-is-written-down-as-its-own
+    Scenario: what an agent changes says it was not the terminal
+      Given I added a task titled "Write the spec"
+      And a cairn server started with no access given
+      When I call `task_edit` with the number 1 and the priority "high"
+      Then the history of task 1 says the change came through the server
+
     @mcp-labels-arrive-whole
     Scenario: labels given to a tool arrive as labels
       Given a cairn server started with no access given

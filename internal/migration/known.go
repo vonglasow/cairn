@@ -80,4 +80,23 @@ DROP TABLE IF EXISTS focus;
 ALTER TABLE tasks DROP COLUMN position;`,
 		loses: "the order of the tasks, and which task is in focus",
 	},
+	{
+		name: "what happened to a task is written down",
+		does: `
+CREATE TABLE IF NOT EXISTS trace (
+	id          INTEGER PRIMARY KEY AUTOINCREMENT,
+	task_number INTEGER NOT NULL,
+	did         TEXT    NOT NULL,
+	field       TEXT    NOT NULL DEFAULT '',
+	was         TEXT    NOT NULL DEFAULT '',
+	became      TEXT    NOT NULL DEFAULT '',
+	through     TEXT    NOT NULL DEFAULT '',
+	at          TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS trace_by_task ON trace (task_number, id);`,
+		undoes: `
+DROP INDEX IF EXISTS trace_by_task;
+DROP TABLE IF EXISTS trace;`,
+		loses: "everything that was ever done to a task",
+	},
 }

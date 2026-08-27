@@ -79,9 +79,6 @@ func hangingUnder(card string) string {
 	return under
 }
 
-// numbersIn reads every whole number a message names.
-var numbersIn = regexp.MustCompile(`\d+`)
-
 // distinct counts how many different strings a list holds.
 func distinct(all []string) int {
 	seen := map[string]bool{}
@@ -142,22 +139,6 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 				marked, w.Out.Stdout)
 		}
 		return nil
-	})
-
-	// A refusal that does not quote the number leaves somebody who typed two of
-	// them with no idea which one cairn could not find, so the number is looked
-	// for among those the question actually carried.
-	sc.Step(`^it shows the number it could not find$`, func() error {
-		asked := numbersIn.FindAllString(w.Line, -1)
-		if len(asked) == 0 {
-			return fmt.Errorf("the question named no number: %q", w.Line)
-		}
-		for _, number := range asked {
-			if strings.Contains(w.Out.Stderr, number) {
-				return nil
-			}
-		}
-		return fmt.Errorf("the reason quotes none of the numbers in %q:\n%s", w.Line, w.Out.Stderr)
 	})
 
 	sc.Step(`^it says which column each of them is in$`, func() error {

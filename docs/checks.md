@@ -16,7 +16,8 @@ commit.
 | `golangci-lint` | does it hold up to static analysis, comments included? |
 | `no-go-testing` | does non-test code import `testing`? |
 | `go-unit-tests` | does it work? |
-| `cover-check` | did every line at least run? |
+| `tested-check` | does every package have a test file at all? |
+| `cover-check` | did every line at least run — in total, and in each package? |
 | `mutation` | would a test have noticed if a line were wrong? |
 | `commitlint` | is the message conventional? |
 
@@ -55,11 +56,44 @@ line on purpose and checks a test turns red, so a **surviving mutant is a test
 that proves nothing**.
 
 Coverage still earns its place beside it: a package nobody tested at all has no
-mutants to judge, so mutation would pass it in silence. Coverage sees it drop.
+mutants to judge, so mutation would pass it in silence.
+
+That last sentence used to end "Coverage sees it drop", and it was too kind to
+both gates. Measured, on a package added with sixty functions and no test file:
+
+- **mutation did not see it at all.** The loop skips a package with no test
+  file — `ls $pkg/*_test.go || continue` — so the newest code is the code the
+  strictest gate says least about.
+- **the coverage total absorbed it.** One package at 0% cost eight points of an
+  average of eleven, and until the floor gave way nothing said a word. It took
+  five rounds of work to surface, and it surfaced because somebody looked, not
+  because a gate spoke.
+
+So there are two more gates, and they are cheap. `tested-check` fails when a
+package has no test file, which is the case mutation is blind to. And `cover-
+check` now carries a floor **per package** beside the total, so a package at
+zero fails on its own rather than being diluted by ten that are not.
+
+A scenario is what makes this easy to get wrong, and it is worth saying why:
+coverage is measured per package, from that package's own test binary. A
+scenario in `internal/cli` that reaches the engine, the store and a notion
+proves the behaviour end to end and credits **only** `internal/cli`. The code
+it runs elsewhere is exercised without being guarded — and once the scenario is
+green there is no red left to make anybody write the unit tests. Green reads as
+done.
 
 ## Thresholds
 
-- Statement coverage: at least **90%** (`COVERAGE_MIN` in the Makefile).
+- Statement coverage, in total: at least **90%** (`COVERAGE_MIN`).
+- Statement coverage, per package: at least **85%** (`PACKAGE_COVERAGE_MIN`).
+  Lower than the total on purpose: a package may sit honestly under the
+  average — measured, the store and the harness both do — and a per-package
+  floor set at the total would fail the repository as it stands rather than the
+  code being added to it. `cmd/` is left out, because its only function is
+  `main`, which no test can call without ending the process that runs it; what
+  it does is exercised through the scenarios of `internal/cli`.
+- Every package has a test file, with no threshold to argue about: it has one
+  or it does not.
 - Mutation efficacy: **100%** — of the mutants gremlins judged, all died.
 - Mutant coverage: **100%** — it judged every mutant it made. Without this
   second one, code no test reaches produces mutants counted in neither column,
@@ -100,7 +134,8 @@ one to reach for by hand during a red-green loop.
 
 ```sh
 make cover          # coverage per function, then the total
-make cover-check    # fail below COVERAGE_MIN
+make cover-check    # fail below the total floor, or below the per-package one
+make tested-check   # fail if a package has no test file
 make mutation       # fail below 100% efficacy
 ```
 

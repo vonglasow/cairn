@@ -9,11 +9,13 @@ package engine
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/migration"
 	"cairn/internal/objective"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // Task is how a task crosses to a machine: every fact task.Shape carries,
@@ -139,10 +141,25 @@ func Of(a Answer) any {
 	if a.Holds != nil {
 		return *a.Holds
 	}
+	if a.Acts != nil {
+		return ofActs(a.Acts)
+	}
+	if a.Since != nil {
+		return ofActs(a.Since)
+	}
 	if a.InFocus != nil {
 		return ofFocus(*a.InFocus)
 	}
 	return nil
+}
+
+// ofActs turns everything done to a task into what crosses.
+func ofActs(acts []trace.Act) []trace.Shape {
+	out := make([]trace.Shape, 0, len(acts))
+	for _, one := range acts {
+		out = append(out, trace.OfAct(one))
+	}
+	return out
 }
 
 // InFocus is how "nothing is in focus" crosses to a machine. Null rather than
@@ -270,6 +287,12 @@ func RenderText(op Operation, a Answer) string {
 	}
 	if a.Applied != nil {
 		return appliedText(a.Applied)
+	}
+	if a.Acts != nil {
+		return trace.Text(a.Acts)
+	}
+	if a.Since != nil {
+		return trace.List(a.Since) + trace.Summary(trace.AddedUp(a.Since, time.Now()))
 	}
 	if a.InFocus != nil {
 		return "nothing is in focus\n"

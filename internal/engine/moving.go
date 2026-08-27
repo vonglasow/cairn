@@ -10,6 +10,7 @@ import (
 
 	"cairn/internal/store"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // The reasons a move is refused, re-exported so a surface can recognise them:
@@ -70,11 +71,32 @@ func (e *Engine) Move(number int, at Place, target int) error {
 		if err := moving.MayMoveBehind(sits); err != nil {
 			return err
 		}
-		return e.places.MoveAfter(number, target)
+		if err := e.places.MoveAfter(number, target); err != nil {
+			return err
+		}
 	case First:
-		return e.places.MoveFirst(number)
+		if err := e.places.MoveFirst(number); err != nil {
+			return err
+		}
 	default:
-		return e.places.MoveLast(number)
+		if err := e.places.MoveLast(number); err != nil {
+			return err
+		}
+	}
+	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
+}
+
+// placeNamed is how a place reads in a history. A move records where it went
+// and not what that did to the places of its sisters: nineteen lines saying a
+// number went up by one would bury the one line saying what a person did.
+func placeNamed(at Place, target int) string {
+	switch at {
+	case First:
+		return "first"
+	case Behind:
+		return fmt.Sprintf("behind task %d", target)
+	default:
+		return "last"
 	}
 }
 
@@ -87,21 +109,62 @@ func (e *Engine) Focus() (int, error) {
 
 // PutInFocus makes a task the one being worked on, releasing whichever was
 // before, and hands back the task so whoever asked sees what they are on.
+//
+// Both acts are written down, the release first: a stretch of work on the task
+// being left has to close before the next one opens, or every duration after it
+// runs on to the end of the day.
 func (e *Engine) PutInFocus(number int) (task.Task, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
 		return task.Task{}, err
 	}
+	held, err := e.places.Focus()
+	if err != nil {
+		return task.Task{}, err
+	}
+	// Already the one being worked on: nothing happens, and nothing is written
+	// down. Letting it through would close a stretch and open another on the
+	// same task at the same moment — a switch nobody made, counted among the
+	// ones they did.
+	if held == number {
+		return t, nil
+	}
 	if err := e.places.SetFocus(number); err != nil {
+		return task.Task{}, err
+	}
+	// The release says what took over, and not only that it happened. Two acts
+	// land at the same moment when the focus moves straight from one task to
+	// another, so nothing in the sequence alone tells that apart from stopping
+	// and starting again — and the difference is exactly what a cut is. It reads
+	// as information too: what interrupted you is on the line.
+	if held != store.NoFocus {
+		if err := e.record(held, trace.FocusReleased, "", "",
+			fmt.Sprintf("to task %d", number)); err != nil {
+			return task.Task{}, err
+		}
+	}
+	if err := e.record(number, trace.FocusTaken, "", "", ""); err != nil {
 		return task.Task{}, err
 	}
 	return t, nil
 }
 
 // LetGo leaves nothing in focus. Letting go of nothing is not a failure, so
-// this answers the same either way.
+// this answers the same either way — but it is not an act either, and nothing
+// is written down: a stretch closing that never opened would fault every
+// duration around it.
 func (e *Engine) LetGo() error {
-	return e.places.ClearFocus()
+	held, err := e.places.Focus()
+	if err != nil {
+		return err
+	}
+	if err := e.places.ClearFocus(); err != nil {
+		return err
+	}
+	if held == store.NoFocus {
+		return nil
+	}
+	return e.record(held, trace.FocusReleased, "", "", "")
 }
 
 // InFocus hands back the task being worked on and its number, or an empty task

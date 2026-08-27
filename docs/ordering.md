@@ -78,12 +78,12 @@ nothing looks wrong when it does, because the order still reads correctly with
 the places running 2, 5, 9.
 
 What goes wrong comes later, and there is exactly one place it shows: a move to
-the last place aims one past the tasks in the group and finds that place already
-taken, so the task does not go last. That is what the scenarios stand on — one
-per departure, each built so the expected order comes out wrong while a hole is
-there. Measured on the way in: with the gap left open, three scenarios out of
-thirty-two fail and the other twenty-nine do not, which is what says they are
-about this and nothing else.
+the last place aims one past the tasks in the group and finds that place
+already taken, so the task does not go last. That is what the scenarios stand
+on — one per departure, each built so the expected order comes out wrong while
+a hole is there. Measured on the way in: with the gap left open, three
+scenarios out of thirty-two fail and the other twenty-nine do not, which is
+what says they are about this and nothing else.
 
 A test walks every group after every act that can touch a place as well, and
 fails unless each runs 1..N. The invariant is worth asserting directly and not
@@ -124,15 +124,15 @@ words, so both are written here:
 **That a group starts at one** is held by `@ordering-moved-first` and
 `@ordering-sub-task-moved-among-its-sisters`. Turning `COALESCE(MAX, 0) + 1`
 into `COALESCE(MAX, -1) + 1` makes every group start at zero and those two turn
-red. It is caught as a side effect: neither scenario says anything about where a
-group starts, and a scenario saying it would be the same scenario written twice,
-since the only behaviour that tells zero from one is the one they already
-describe. So it is recorded here instead.
+red. It is caught as a side effect: neither scenario says anything about where
+a group starts, and a scenario saying it would be the same scenario written
+twice, since the only behaviour that tells zero from one is the one they
+already describe. So it is recorded here instead.
 
-**That a departure closes the gap** is held by the three
-`@ordering-*-leaves-no-hole` scenarios. Leaving the gap open turns exactly three
-of the thirty-odd ordering scenarios red and leaves the rest green, which is
-what says they are about this and nothing else.
+**That a departure closes the gap** is held by the three `@ordering-*-leaves-
+no-hole` scenarios. Leaving the gap open turns exactly three of the thirty-odd
+ordering scenarios red and leaves the rest green, which is what says they are
+about this and nothing else.
 
 Neither of these lives inside gremlins' reach: both are arithmetic inside a SQL
 string, which it does not read. The mutation gate says nothing about them, and
@@ -234,12 +234,10 @@ all.
 | `focus` | one row, one task number, empty when nothing is in hand |
 
 One column and one table, then, and not the two columns this design first
-carried. **When a task last changed column is not delivered.** It was settled
-as an element and it stays settled — it is the one date no other field implies
-— but nothing reads it yet, and a column written for nobody is a column whose
-first reader will find it holds whatever the last few months of edits left in
-it. It arrives with the thing that shows it, and with the scenario that says
-what it shows.
+carried. **When a task last changed column is not a column here.** It was
+settled as an element and it stays settled — it is the one date no other field
+implies — but it is not stored beside the task: it is derived from the trace,
+which records every act performed on one. See [trace.md](trace.md).
 
 `task add` places a task at the end of the backlog, `task list` and `task
 search` order by column then position, and `task edit` moves a task only when
@@ -262,9 +260,9 @@ go of it.
 
 ## Deliberately not here yet
 
-- **When a task last changed column.** The column exists in the design and not
-  in the store: nothing reads it yet, and it arrives with whatever shows it. See
-  above.
+- **When a task last changed column.** No longer a column at all. It is derived
+  from the trace, which records every act performed on a task, so the date comes
+  from the last entry that changed the column. See [trace.md](trace.md).
 - **What makes a task doable right now.** Two properties were found — being
   stoppable at any moment without leaving anything half-done, and being a short
   action followed by waiting — and the list plainly does not close. Each
@@ -276,6 +274,7 @@ go of it.
 - **The trace of where focus has been**, with durations. In git's terms this is
   the reflog to focus's `HEAD`, and git keeps them apart for the same reason:
   `HEAD` does not know where it came from, and that is what keeps it simple.
-  Two distinct notions are waiting here — the total time a task took, for a
-  timesheet, and how badly a day was cut up — and they are not measured the
-  same way.
+  Designed now, and in its own document: taking and releasing the focus are two
+  of the acts the trace records, and the two notions of time stay apart there —
+  the total, for a timesheet, typed by hand; the shape of a day, derived. See
+  [trace.md](trace.md).

@@ -136,7 +136,7 @@ func TestTaskAdd_addsATask(t *testing.T) {
 	}
 }
 
-func TestAll_hasTwentyFourDistinctOperations(t *testing.T) {
+func TestAll_hasTwentySixDistinctOperations(t *testing.T) {
 	if got := TaskAdd.Name(); got != "task_add" {
 		t.Errorf("TaskAdd.Name() = %q, want %q", got, "task_add")
 	}
@@ -145,8 +145,8 @@ func TestAll_hasTwentyFourDistinctOperations(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 24 {
-		t.Fatalf("len(All()) = %d, want 24", len(ops))
+	if len(ops) != 26 {
+		t.Fatalf("len(All()) = %d, want 26", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

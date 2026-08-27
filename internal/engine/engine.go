@@ -8,6 +8,7 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/store"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // ErrNothingToChange is returned when an edit names nothing to change. Doing
@@ -58,8 +59,13 @@ type tasks interface {
 type Engine struct {
 	tasks      tasks
 	places     places
+	history    history
 	objectives objectives
 	store      *store.Store
+	// through is the surface that asked, written into every act recorded. Empty
+	// is the terminal: a history says who acted only when it was not the person
+	// reading it.
+	through string
 }
 
 // Changes are the attributes an operation was given. A nil field was not
@@ -99,7 +105,7 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept, places: kept, objectives: kept, store: kept}, nil
+	return &Engine{tasks: kept, places: kept, history: kept, objectives: kept, store: kept}, nil
 }
 
 // storeProblem marks an error as being about the store itself rather than about
@@ -133,7 +139,14 @@ func (e *Engine) Add(title string, c Changes) (task.Task, error) {
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
-	return e.tasks.Keep(t)
+	kept, err := e.tasks.Keep(t)
+	if err != nil {
+		return task.Task{}, err
+	}
+	if err := e.recordCreated(kept); err != nil {
+		return task.Task{}, err
+	}
+	return kept, nil
 }
 
 // List hands back every task, in the order they were added.
@@ -157,7 +170,24 @@ func (e *Engine) Delete(number int) error {
 	if err := task.MayDelete(number, hanging); err != nil {
 		return err
 	}
-	return e.tasks.Delete(number)
+	// Which task was in focus is read before the deletion, since the store lets
+	// go of it on the way and there would be nothing left to ask afterwards.
+	held, err := e.places.Focus()
+	if err != nil {
+		return err
+	}
+	if err := e.tasks.Delete(number); err != nil {
+		return err
+	}
+	// A task being worked on that goes away closes its stretch: without this the
+	// last stretch of it never ends, and the time keeps running on a task that
+	// no longer exists.
+	if held == number {
+		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
+			return err
+		}
+	}
+	return e.record(number, trace.Deleted, "", "", "")
 }
 
 // Under hands back what hangs directly under a task.
@@ -191,10 +221,11 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
 		return task.Task{}, ErrNothingToChange
 	}
-	t, err := e.tasks.Find(number)
+	was, err := e.tasks.Find(number)
 	if err != nil {
 		return task.Task{}, err
 	}
+	t := was
 	if t, err = apply(t, c, changing); err != nil {
 		return task.Task{}, err
 	}
@@ -205,6 +236,16 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if err := e.tasks.Update(t); err != nil {
+		return task.Task{}, err
+	}
+	// Written down after the change and not before: an edit that was refused
+	// changed nothing, and a history that recorded it would say something
+	// happened that did not.
+	found, err := e.tasks.Find(number)
+	if err != nil {
+		return task.Task{}, err
+	}
+	if err := e.recordChanges(was, found); err != nil {
 		return task.Task{}, err
 	}
 	return t, nil

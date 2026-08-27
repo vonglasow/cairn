@@ -28,12 +28,25 @@ builds the card a person reads, one the shape a machine reads, one binds the
 SQL that keeps it, one counts what is done. Adding a fifth costs the cell
 nothing, which is the whole point.
 
+The act in `internal/trace` is a cell of the same kind, and it shows what a
+membrane buys where the shapes differ: one renders a line of a task's history,
+one a line of a period across tasks, one binds the SQL, one adds up how long
+the work ran. Four readings of the same facts, and the act knows about none of
+them.
+
+It also shows what a cell may not reach. An act names its task **by number**
+and never carries the task, which is why `internal/trace` is forbidden
+`internal/task` outright: a task may be gone by the time its acts are read, and
+an act holding one could not outlive it. That is a rule about what a notion is
+allowed to know, and it is in `.golangci.yml` where it can be enforced rather
+than remembered.
+
 An **absence is a fact that gets told**, never a silence a membrane has to
 notice. `NotDue` means there is no deadline, and a membrane that ignored it
 would render whatever it happened to start with. A set is closed the same way:
 labels are told one at a time and then `LabelsTold` says there are no more,
-because otherwise a membrane cannot place its row until it is too late. Both
-of those were found by writing them wrong first.
+because otherwise a membrane cannot place its row until it is too late. Both of
+those were found by writing them wrong first.
 
 The membrane runs the other way too. `AsTold` is told a task's facts and hands
 back the task they make — that is how the store builds one out of a row, and
@@ -57,6 +70,7 @@ all of them.
 | `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |
 | `internal/objective` | the objective, in the same five shapes | `domain` |
 | `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
+| `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
 | `internal/engine` | the operations, the calculations, and the only door to the store | `domain`, the notions, `store` |
 | `internal/cli` | parsing and choosing a rendering | everything below |
@@ -98,18 +112,19 @@ an agent without a line being written twice, and "one tool per command" is true
 by construction rather than by a test.
 
 The description sits with the engine and not with the notion it names, and that
-is deliberate: `task show`'s work is three readings — the task, what hangs under
-it, how far along it is — orchestrated. It does not talk about a task, it ties
-three answers together, and tying things together is what the engine is for.
+is deliberate: `task show`'s work is three readings — the task, what hangs
+under it, how far along it is — orchestrated. It does not talk about a task, it
+ties three answers together, and tying things together is what the engine is
+for.
 
 **The store is opened where it is needed, not at startup**, and that now lives
 in one place: the description says what it needs — a store, a store whatever
 shape it is in, or none at all — and one function opens it and closes it on the
-way out. A command that has no use for it never opens it, which is why
-`cairn --version` creates no file and why a number that is not a number is
-refused before anything is written. One invocation opens one connection, so
-nothing survives between two runs — which is what makes "a task added by one
-command is found by the next" a claim about the disk rather than about a cache.
+way out. A command that has no use for it never opens it, which is why `cairn
+--version` creates no file and why a number that is not a number is refused
+before anything is written. One invocation opens one connection, so nothing
+survives between two runs — which is what makes "a task added by one command is
+found by the next" a claim about the disk rather than about a cache.
 
 ## More than one cairn at a time
 
@@ -137,7 +152,8 @@ created when it is missing because nothing can be recorded without it.
 
 `internal/store` is where SQLite lives, and it is the only place that knows
 that. It speaks in notions: it takes a `task.Task` and gives one back. No
-`*sql.Rows` crosses its boundary, or every caller would need to know the schema.
+`*sql.Rows` crosses its boundary, or every caller would need to know the
+schema.
 
 It never reaches inside one either. A task tells the store its facts on the way
 in, and the store tells a builder a row's facts on the way out — the same
@@ -146,9 +162,10 @@ itself while still being written to disk.
 
 A second backing is a real prospect, not an imagined one — a file, a remote,
 something that is not SQLite — so the engine talks to a **storage interface it
-declares itself**, and `store` satisfies it. That is `docs/design-principles.md`
-applied as written: accept interfaces, and let the consumer define them. Go
-needs no import for that, so `store` still knows nothing of `engine`.
+declares itself**, and `store` satisfies it. That is `docs/design-
+principles.md` applied as written: accept interfaces, and let the consumer
+define them. Go needs no import for that, so `store` still knows nothing of
+`engine`.
 
 Two things follow, and both are enforced:
 
@@ -172,11 +189,11 @@ three recorded, and report a store as behind when it was only being made. A
 store half made is a store nobody may see.
 
 **A store somebody else is making is waited out**, the way one somebody else is
-holding already was. That wait is cairn's own and not SQLite's, because SQLite's
-does not cover it: switching a fresh file to the journal cairn needs takes a
-lock of its own. Both shapes of being held — a plain lock and a transaction that
-began before somebody else committed — are read as the same moment through the
-result's primary code.
+holding already was. That wait is cairn's own and not SQLite's, because
+SQLite's does not cover it: switching a fresh file to the journal cairn needs
+takes a lock of its own. Both shapes of being held — a plain lock and a
+transaction that began before somebody else committed — are read as the same
+moment through the result's primary code.
 
 **Nothing changes the shape unless it was asked to.** A store missing a change
 this cairn knows is reported and left alone — `store.Open` refuses it, and only
@@ -185,10 +202,10 @@ on the way past would mean `cairn task list` rewriting somebody's database as a
 side effect of listing their tasks.
 
 **Every change carries its own undoing.** A migration holds the SQL that makes
-it and the SQL that unmakes it, and both are printable — `migration show` exists
-so a person can read what a tool is about to do before letting it. The first
-shape is the floor: it has no undoing, because unmaking it would mean throwing
-the store away, which is what deleting the file is for.
+it and the SQL that unmakes it, and both are printable — `migration show`
+exists so a person can read what a tool is about to do before letting it. The
+first shape is the floor: it has no undoing, because unmaking it would mean
+throwing the store away, which is what deleting the file is for.
 
 ## The backups are reachable without the store
 
@@ -210,8 +227,8 @@ run is a table in the database, and it belongs with the database.
 
 ## Half of this is enforced
 
-`depguard`, inside `golangci-lint`, holds the **direction** of dependencies:
-a notion cannot import another notion, nothing below a surface can import one,
+`depguard`, inside `golangci-lint`, holds the **direction** of dependencies: a
+notion cannot import another notion, nothing below a surface can import one,
 `engine` cannot import a surface, and `cli` cannot reach the store or a
 database. There is one rule per package, and the reasons are written beside
 them in `.golangci.yml`. A violation fails the commit:

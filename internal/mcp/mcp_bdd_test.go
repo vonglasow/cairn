@@ -226,6 +226,23 @@ func (w *world) iCallNamingAnArgumentItDoesNotTake(tool string) error {
 // The same, for every tool whose one argument is a number — a task to show, a
 // backup to put back, a change to apply. The number is kept so a later step can
 // say which one it was about.
+// iCallTaskEditWithThePriority changes a task's priority through the tool, so
+// what lands in the history was done by an agent and not by the command line.
+func (w *world) iCallTaskEditWithThePriority(n int, priority string) error {
+	w.number = n
+	_ = w.callTool("task_edit", map[string]any{"number": n, "priority": priority})
+	return nil
+}
+
+// theHistorySaysItCameThroughTheServer asks the command line what happened to a
+// task and looks for the surface on the line. Asked through the command line on
+// purpose: what an agent did has to be visible to the person reading, which is
+// the whole point of recording it.
+func (w *world) theHistorySaysItCameThroughTheServer(n int) error {
+	w.Run(fmt.Sprintf("cairn trace show %d", n))
+	return test.WantContains(w.Out.Stdout, "(mcp)", "the history")
+}
+
 func (w *world) iCallWithTheNumber(tool string, n int) error {
 	w.number = n
 	_ = w.callTool(tool, map[string]any{"number": n})
@@ -702,6 +719,10 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^`task_add` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
 		sc.Step("^it says what each thing it takes is for$", w.itSaysWhatEachThingItTakesIsFor)
 		sc.Step(`^I added a task titled "([^"]*)" with the deadline "([^"]*)"$`, w.iAddedATaskTitledWithTheDeadline)
+		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
+			w.iCallTaskEditWithThePriority)
+		sc.Step("^the history of task (\\d+) says the change came through the server$",
+			w.theHistorySaysItCameThroughTheServer)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the deadline as nothing$",
 			w.iCallTaskEditWithTheNumberAndTheDeadlineAsNothing)
 		sc.Step(`^the task has no deadline$`, w.theTaskHasNoDeadline)
@@ -714,110 +735,39 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 	}
 }
 
-func TestAcceptance_MCP_NeedsAVerb(t *testing.T) {
-	runAcceptance(t, "@mcp-needs-a-verb")
+// scenariosOf reads the tag of every scenario in a feature file.
+//
+// Read rather than listed, and that is the whole point. This package used to
+// carry one Go test per tag, and a scenario added to the feature without its
+// test did not run at all — measured: the suite stayed green while the scenario
+// never executed, and it took refusing to believe an impossible pass to notice.
+// Taking the tags from the feature means a scenario added there runs, named
+// after itself, with nothing to keep in step.
+func scenariosOf(t *testing.T, feature string) []string {
+	t.Helper()
+	read, err := os.ReadFile(filepath.Join("..", "..", "bdd", feature))
+	if err != nil {
+		t.Fatalf("reading %s: %v", feature, err)
+	}
+	tags := []string{}
+	for _, line := range strings.Split(string(read), "\n") {
+		if tag := strings.TrimSpace(line); strings.HasPrefix(tag, "@") {
+			tags = append(tags, tag)
+		}
+	}
+	if len(tags) == 0 {
+		t.Fatalf("%s names no scenario", feature)
+	}
+	return tags
 }
 
-func TestAcceptance_MCP_AccessRefused(t *testing.T) {
-	runAcceptance(t, "@mcp-access-refused")
-}
-
-func TestAcceptance_MCP_ServeSpeaksTheProtocol(t *testing.T) {
-	runAcceptance(t, "@mcp-serve-speaks-the-protocol")
-}
-
-func TestAcceptance_MCP_ClientHangsUp(t *testing.T) {
-	runAcceptance(t, "@mcp-client-hangs-up")
-}
-
-func TestAcceptance_MCP_ReadOffersReading(t *testing.T) {
-	runAcceptance(t, "@mcp-read-offers-reading")
-}
-
-func TestAcceptance_MCP_WriteOffersChanging(t *testing.T) {
-	runAcceptance(t, "@mcp-write-offers-changing")
-}
-
-func TestAcceptance_MCP_FullOffersEverything(t *testing.T) {
-	runAcceptance(t, "@mcp-full-offers-everything")
-}
-
-func TestAcceptance_MCP_OffersEveryCommand(t *testing.T) {
-	runAcceptance(t, "@mcp-offers-every-command")
-}
-
-func TestAcceptance_MCP_OffersNothingOfItsOwn(t *testing.T) {
-	runAcceptance(t, "@mcp-offers-nothing-of-its-own")
-}
-
-func TestAcceptance_MCP_MarksWhatLosesWork(t *testing.T) {
-	runAcceptance(t, "@mcp-marks-what-loses-work")
-}
-
-func TestAcceptance_MCP_MarksWhatOnlyReads(t *testing.T) {
-	runAcceptance(t, "@mcp-marks-what-only-reads")
-}
-
-func TestAcceptance_MCP_MarksWhatItNeverReaches(t *testing.T) {
-	runAcceptance(t, "@mcp-marks-what-it-never-reaches")
-}
-
-func TestAcceptance_MCP_ABackupTakenThroughItHoldsEverything(t *testing.T) {
-	runAcceptance(t, "@mcp-a-backup-taken-through-it-holds-everything")
-}
-
-func TestAcceptance_MCP_SeesWhatTheTerminalDid(t *testing.T) {
-	runAcceptance(t, "@mcp-sees-what-the-terminal-did")
-}
-
-func TestAcceptance_MCP_WhatItDidIsOnDisk(t *testing.T) {
-	runAcceptance(t, "@mcp-what-it-did-is-on-disk")
-}
-
-func TestAcceptance_MCP_AddATask(t *testing.T) {
-	runAcceptance(t, "@mcp-add-a-task")
-}
-
-func TestAcceptance_MCP_WhatItAnswers(t *testing.T) {
-	runAcceptance(t, "@mcp-what-it-answers")
-}
-
-func TestAcceptance_MCP_AnswersBothWays(t *testing.T) {
-	runAcceptance(t, "@mcp-answers-both-ways")
-}
-
-func TestAcceptance_MCP_LabelsArriveWhole(t *testing.T) {
-	runAcceptance(t, "@mcp-labels-arrive-whole")
-}
-
-func TestAcceptance_MCP_LooksForWhatItWasTold(t *testing.T) {
-	runAcceptance(t, "@mcp-looks-for-what-it-was-told")
-}
-
-func TestAcceptance_MCP_WhatItNeedsIsAskedFor(t *testing.T) {
-	runAcceptance(t, "@mcp-what-it-needs-is-asked-for")
-}
-
-func TestAcceptance_MCP_AnArgumentItDoesNotTake(t *testing.T) {
-	runAcceptance(t, "@mcp-an-argument-it-does-not-take")
-}
-
-func TestAcceptance_MCP_SaysWhatItAccepts(t *testing.T) {
-	runAcceptance(t, "@mcp-says-what-it-accepts")
-}
-
-func TestAcceptance_MCP_EmptiesAField(t *testing.T) {
-	runAcceptance(t, "@mcp-empties-a-field")
-}
-
-func TestAcceptance_MCP_RefusalIsAnswered(t *testing.T) {
-	runAcceptance(t, "@mcp-refusal-is-answered")
-}
-
-func TestAcceptance_MCP_UnknownTool(t *testing.T) {
-	runAcceptance(t, "@mcp-unknown-tool")
-}
-
-func TestAcceptance_MCP_StoreBehindIsAnswered(t *testing.T) {
-	runAcceptance(t, "@mcp-store-behind-is-answered")
+// TestAcceptance_MCP runs every scenario of bdd/mcp.feature, each as a subtest
+// named after it, so a failure says which scenario failed without a Go function
+// per scenario to forget to write.
+func TestAcceptance_MCP(t *testing.T) {
+	for _, tag := range scenariosOf(t, "mcp.feature") {
+		t.Run(strings.TrimPrefix(tag, "@"), func(t *testing.T) {
+			runAcceptance(t, tag)
+		})
+	}
 }

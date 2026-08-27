@@ -91,6 +91,38 @@ A task serves an objective, or hangs under another task, never both: a sub-task
 belongs to the task above it, and is counted towards that task's objective
 through it. An objective with tasks under it is not deleted.
 
+## What happened, and how the day went
+
+```sh
+cairn trace show 3               # everything ever done to a task
+cairn trace list                 # what was done today, and what it comes to
+cairn trace list --since 2026-08-20
+```
+
+Every act on a task is written down: its creation with what it started as, every
+attribute that changed with what it went from and to, the focus taken and let
+go, a move with where it went, and its deletion. Nothing is ever rewritten, so a
+task can be read back as it stood at any past moment.
+
+Looking at a task is not an act. `list`, `show` and `search` add nothing — a
+trace records what changed, never what was read.
+
+A listing over a period ends with what can be worked out from it: how many
+stretches of work, on how many tasks, how often the work switched, and the time
+per task. A **stretch** is the focus taken until it is let go. A release that
+names another task is a cut — you were pulled onto something else; one that
+names nothing is a stop, and picking up later is a resumption.
+
+The total of the stretches is not the length of the day, and cairn does not
+pretend otherwise: nothing is in focus during a meeting, so a day has gaps, and
+cairn knows neither when it began nor when it ended. The total time on a task,
+for a timesheet, is still `--spent` and still typed by hand.
+
+A history outlives the task it describes — deleting a task would otherwise
+change your past — and an act done by an agent over MCP says so, where one done
+at the terminal says nothing. See [docs/trace.md](docs/trace.md) for why it was
+settled this way.
+
 ## Backups and versions
 
 ```sh
