@@ -41,6 +41,10 @@ type World struct {
 	// Defaults is where the default place was moved to, somewhere a step may
 	// look at.
 	Defaults string
+	// Line is the command line last handed over, kept so a step can ask what
+	// was typed — a refusal that has to quote a number back needs to know
+	// which numbers were in the question.
+	Line string
 
 	run  Runner
 	undo []func()
@@ -81,6 +85,7 @@ func (w *World) EndScenario() {
 // dropping the leading `cairn` the scenario writes for the reader's benefit.
 func (w *World) Run(line string) {
 	args := SplitArgs(line)
+	w.Line = line
 	w.Out = w.run(w.T, args[1:]...)
 }
 

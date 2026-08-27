@@ -76,6 +76,8 @@ func jsonType(kind engine.Kind) string {
 		return "integer"
 	case engine.List:
 		return "array"
+	case engine.Bool:
+		return "boolean"
 	default:
 		return "string"
 	}

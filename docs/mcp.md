@@ -131,7 +131,7 @@ that turns red here instead of going quiet in somebody's terminal.
 `task_add`, `objective_show`, `migration_rollback` — the same grammar as the
 command line, so anybody who knows one knows the other.
 
-The count is never written down. A scenario saying "nineteen tools" would
+The count is never written down. A scenario saying how many tools there are would
 freeze a number in text the process forbids rewording, and the twentieth
 command would break the contract instead of the code. The scenario says **a
 tool for every command**, and a test walks the cobra tree to prove it.

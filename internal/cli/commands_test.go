@@ -70,6 +70,9 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 			if arg.Kind == engine.List {
 				wantType = "stringArray"
 			}
+			if arg.Kind == engine.Bool {
+				wantType = "bool"
+			}
 			if got := flag.Value.Type(); got != wantType {
 				t.Errorf("%s --%s: flag type = %q, want %q", op.Line(), arg.Name, got, wantType)
 			}
@@ -86,7 +89,7 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 
 	// `cairn mcp serve` is deliberately not an action (see mcp.go: it is the
 	// same cairn answering an agent instead of a person, not one of the
-	// nineteen operations), so the mcp group is never in wanted and is never
+	// the operations), so the mcp group is never in wanted and is never
 	// walked here. Cobra's own completion and help, and fang's hidden man,
 	// are root-level commands rather than verbs under an action group, so
 	// this loop — which only walks the things engine.All() named — never

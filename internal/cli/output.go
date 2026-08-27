@@ -16,8 +16,12 @@ const jsonFlag = "json"
 
 // forWire turns a task and how far along it is into the shape a script reads.
 // It is a thin call into engine, kept here because a task's own tests pin the
-// shape through it.
-func forWire(t task.Task, p domain.Progress) engine.Task { return engine.OfTask(t, p) }
+// shape through it. Nothing is said about the focus: what this pins is the
+// shape of a task, and whether one is being worked on is the store's answer,
+// not the task's.
+func forWire(t task.Task, p domain.Progress) engine.Task {
+	return engine.OfTask(t, p, false)
+}
 
 // wantsJSON says whether the caller asked to be answered as a machine.
 func wantsJSON(cmd *cobra.Command) bool {

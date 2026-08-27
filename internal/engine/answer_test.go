@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,7 +45,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	built := a.Task()
 	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
 
-	encoded, err := json.Marshal(OfTask(built, progress))
+	encoded, err := json.Marshal(OfTask(built, progress, false))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -88,7 +89,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 
 	t.Run("a count of tasks with none under it does not carry sub-tasks too", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
+		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}, false))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -106,7 +107,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	})
 
 	t.Run("nothing under it reads as null, not as zeroes", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{}))
+		encoded, err := json.Marshal(OfTask(built, domain.Progress{}, false))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -151,9 +152,9 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			in   Answer
 			want any
 		}{
-			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
-			{"a list of tasks", Answer{Tasks: []task.Task{built}}, []Task{OfTask(built, domain.Progress{})}},
-			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, []Task{OfTask(built, domain.Progress{})}},
+			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress, false)},
+			{"a list of tasks", Answer{Tasks: []task.Task{built}}, []Task{OfTask(built, domain.Progress{}, false)}},
+			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, []Task{OfTask(built, domain.Progress{}, false)}},
 			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
@@ -260,7 +261,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}{
 		{"a task outranks a list", Operation{}, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
 		{"an empty list of tasks says so", Operation{}, Answer{Tasks: []task.Task{}}, "there is no task\n"},
-		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built})},
+		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.NothingInFocus)},
 		{"a search that found nothing says so", Operation{}, Answer{Found: []task.Task{}}, "there is no task\n"},
 		{
 			"what a search found is listed flat, not as a tree",
@@ -289,4 +290,119 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 			}
 		})
 	}
+}
+
+// What crosses about the focus. Null rather than zero when nothing is held: a
+// machine asks whether a task is being worked on, and zero is a number no task
+// carries.
+func TestOf_saysWhichTaskIsInFocus(t *testing.T) {
+	held := Of(Answer{InFocus: of(4)})
+	shape, ok := held.(InFocus)
+	if !ok {
+		t.Fatalf("Of = %T, want InFocus", held)
+	}
+	if shape.InFocus == nil || *shape.InFocus != 4 {
+		t.Errorf("in_focus = %v, want 4", shape.InFocus)
+	}
+
+	none := Of(Answer{InFocus: of(task.NothingInFocus)})
+	if got, ok := none.(InFocus); !ok || got.InFocus != nil {
+		t.Errorf("Of with nothing held = %#v, want a null in_focus", none)
+	}
+}
+
+// A listing says of each task whether it is the one being worked on, so the two
+// renderings cannot say different things: the card marks it, the JSON flags it.
+func TestOf_flagsTheTaskInFocusInAListing(t *testing.T) {
+	first := builtTask(t, 1, "First")
+	second := builtTask(t, 2, "Second")
+
+	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: of(2)}).([]Task)
+	if !ok {
+		t.Fatal("Of on a listing did not answer a list of tasks")
+	}
+	if len(crossed) != 2 {
+		t.Fatalf("%d tasks crossed, want 2", len(crossed))
+	}
+	if crossed[0].InFocus {
+		t.Error("the first task is flagged as in focus, and it is not")
+	}
+	if !crossed[1].InFocus {
+		t.Error("the second task is not flagged as in focus, and it is")
+	}
+}
+
+// An answer that says nothing about the focus flags nothing, rather than
+// flagging the task numbered zero — a listing asked for without the focus is
+// not a listing where the first task is being worked on.
+func TestOf_flagsNothingWhenAnAnswerSaysNothingAboutTheFocus(t *testing.T) {
+	crossed, ok := Of(Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).([]Task)
+	if !ok {
+		t.Fatal("Of on a listing did not answer a list of tasks")
+	}
+	if crossed[0].InFocus {
+		t.Error("a task is flagged as in focus, and nothing said one was")
+	}
+}
+
+// The single task an answer carries is flagged only when the answer says it is
+// the one in focus.
+func TestOf_flagsASingleTaskOnlyWhenItIsTheOneInFocus(t *testing.T) {
+	one := builtTask(t, 7, "The one")
+	for _, tc := range []struct {
+		what string
+		in   Answer
+		want bool
+	}{
+		{"the answer names it", Answer{Task: &one, InFocus: of(7)}, true},
+		{"the answer names another", Answer{Task: &one, InFocus: of(3)}, false},
+		{"the answer says nothing", Answer{Task: &one}, false},
+	} {
+		crossed, ok := Of(tc.in).(Task)
+		if !ok {
+			t.Fatalf("%s: Of did not answer a task", tc.what)
+		}
+		if crossed.InFocus != tc.want {
+			t.Errorf("%s: in_focus = %v, want %v", tc.what, crossed.InFocus, tc.want)
+		}
+	}
+}
+
+// Nothing in focus is an answer a person reads, not an empty one.
+func TestRenderText_saysNothingIsInFocus(t *testing.T) {
+	got := RenderText(Operation{}, Answer{InFocus: of(task.NothingInFocus)})
+	if got != "nothing is in focus\n" {
+		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
+	}
+}
+
+// A listing marks the task in focus, and a listing asked for without it marks
+// nothing — the same claim as the JSON above, on the other rendering.
+func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
+	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
+
+	marked := RenderText(Operation{}, Answer{Tasks: tasks, InFocus: of(2)})
+	if want := "Second" + task.InFocusMark; !strings.Contains(marked, want) {
+		t.Errorf("the listing does not carry %q:\n%s", want, marked)
+	}
+	if got := strings.Count(marked, task.InFocusMark); got != 1 {
+		t.Errorf("%d lines are marked, want exactly one:\n%s", got, marked)
+	}
+
+	if plain := RenderText(Operation{}, Answer{Tasks: tasks}); strings.Contains(plain, task.InFocusMark) {
+		t.Errorf("a listing asked for without the focus marks a line:\n%s", plain)
+	}
+}
+
+// builtTask builds a numbered task, for the assertions above.
+func builtTask(t *testing.T, number int, title string) task.Task {
+	t.Helper()
+	built, err := task.NewTask(title)
+	if err != nil {
+		t.Fatalf("NewTask(%q): %v", title, err)
+	}
+	a := &task.AsTold{}
+	built.Tell(a)
+	a.Numbered(number)
+	return a.Task()
 }

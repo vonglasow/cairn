@@ -2,7 +2,7 @@ package engine
 
 // This file describes what cairn can be asked to do, once, so both surfaces
 // are built from the same description rather than each carrying its own copy
-// of the nineteen things a caller can ask for.
+// of the things a caller can ask for.
 
 import (
 	"errors"
@@ -62,6 +62,9 @@ const (
 	Duration
 	// List is more than one string.
 	List
+	// Bool is named or not named, and carries nothing else. A flag on the
+	// command line, a boolean in a schema.
+	Bool
 )
 
 // Argument describes one thing an operation takes, once, so a surface can
@@ -91,7 +94,7 @@ type Argument struct {
 // and only one of them changes anything: a key absent was never named, a key
 // present holding nothing was named as nothing, which is how a field is
 // emptied. That is why these are maps and why the values are plain — a
-// pointer would offer a second way to say "nothing", and nineteen operations
+// pointer would offer a second way to say "nothing", and every operation
 // would each have to decide what the difference meant.
 //
 // Given carries every kind but List; Listed carries the arguments declared
@@ -111,9 +114,14 @@ func (in Input) Named(name string) bool {
 	return named
 }
 
+// Yes reports whether a Kind: Bool argument was named as true. Named at all is
+// not enough: a flag given as false was named, and reading it as a request
+// would turn `--first=false` into moving a task first.
+func (in Input) Yes(name string) bool { return in.Given[name] == "true" }
+
 // Change answers what to hand Changes for a name: nothing when it was
 // not named, and what it was named as otherwise. The three states the engine
-// models are worked out here, once, rather than in each of the nineteen.
+// models are worked out here, once, rather than in each operation.
 func (in Input) Change(name string) *string {
 	given, named := in.Given[name]
 	if !named {
@@ -144,7 +152,7 @@ func (in Input) Whole(name string) (int, bool) {
 	return n, true
 }
 
-// Operation is one of the nineteen things cairn can be asked to do, described
+// Operation is one of the things cairn can be asked to do, described
 // once so both surfaces are built from it.
 type Operation struct {
 	// Thing is what the operation is about — "task", "backup".
@@ -269,6 +277,11 @@ type Answer struct {
 	Deleted         *int
 	PutBack         *int
 	Applied         []string
+	// InFocus is which task is being worked on — the number when one is, zero
+	// when none is. Every listing carries it, because a listing marks it; and
+	// the operations that answer about the focus carry it alone, since "nothing
+	// is in focus" is an answer and not an absence.
+	InFocus *int
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands

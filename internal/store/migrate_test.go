@@ -325,11 +325,48 @@ func TestMigrate_makesRoomForObjectives(t *testing.T) {
 	}
 }
 
+// rollBackPast undoes changes until the named one has been undone, deriving how
+// many that is from migration.Known rather than counting by hand. Written this
+// way because it already went wrong once: a test that rolled back once was
+// asserting about whichever change happened to be last, and appending one made
+// it assert about the wrong change while still reading as though it did not.
+func rollBackPast(t *testing.T, s *Store, name string) {
+	t.Helper()
+	for i := len(migration.Known) - 1; i >= 0; i-- {
+		if _, err := s.RollBack(); err != nil {
+			t.Fatalf("RollBack: %v", err)
+		}
+		if factsOfChange(migration.Known[i]).name == name {
+			return
+		}
+	}
+	t.Fatalf("no change named %q to roll back to", name)
+}
+
+func TestMigrate_makesRoomForPlacesAndTheFocus(t *testing.T) {
+	s := openStore(t)
+	if !holdsColumn(t, s, "tasks", "position") {
+		t.Error("tasks carry no \"position\": the order has nowhere to be kept")
+	}
+	if !holdsTable(t, s, "focus") {
+		t.Error("no \"focus\" table: what is being worked on has nowhere to be kept")
+	}
+}
+
+func TestMigrate_rollingBackTakesThePlacesAway(t *testing.T) {
+	s := openStore(t)
+	rollBackPast(t, s, "a task carries a place, and one task is in focus")
+	if holdsColumn(t, s, "tasks", "position") {
+		t.Error("tasks still carry \"position\" after the rollback")
+	}
+	if holdsTable(t, s, "focus") {
+		t.Error("\"focus\" survived the rollback: a change that cannot be undone is not one")
+	}
+}
+
 func TestMigrate_rollingBackTakesTheRoomAway(t *testing.T) {
 	s := openStore(t)
-	if _, err := s.RollBack(); err != nil {
-		t.Fatalf("RollBack: %v", err)
-	}
+	rollBackPast(t, s, "objectives, and the tasks that serve them")
 	for _, table := range []string{"objectives", "objective_labels"} {
 		if holdsTable(t, s, table) {
 			t.Errorf("%q survived the rollback: a change that cannot be undone is not one", table)

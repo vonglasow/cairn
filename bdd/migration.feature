@@ -159,7 +159,7 @@ Feature: Changes to the shape of the store
     Scenario: the store still says what it holds once rolled back
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec"
-      And I rolled the last change back
+      And I rolled back the change named "objectives, and the tasks that serve them"
       When I run `cairn migration list`
       Then it succeeds
       And `cairn migration list` says the store holds 1 task and 0 objectives

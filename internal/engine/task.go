@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"cairn/internal/domain"
+	"cairn/internal/store"
 	"cairn/internal/task"
 )
 
@@ -17,10 +18,11 @@ func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
 // Line is how an operation reads on the command line: "task add".
 func (o Operation) Line() string { return o.Thing + " " + o.Verb }
 
-// All is the twenty-one things cairn can be asked to do, in a stable order.
+// All is everything cairn can be asked to do, in a stable order.
 func All() []Operation {
 	return []Operation{
 		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
+		TaskMove, TaskFocus, TaskUnfocus,
 		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
@@ -66,11 +68,7 @@ var TaskList = Operation{
 	Level: Read,
 	Needs: AStore,
 	Run: func(on On, _ Input) (Answer, error) {
-		tasks, err := on.Engine.List()
-		if err != nil {
-			return Answer{}, err
-		}
-		return Answer{Tasks: tasks}, nil
+		return listing(on)
 	},
 }
 
@@ -248,4 +246,135 @@ func taskChanges(in Input) (Changes, error) {
 		c.Objective = &serves
 	}
 	return c, nil
+}
+
+// TaskMove changes where a task sits in the order.
+var TaskMove = Operation{
+	Thing: "task",
+	Verb:  "move",
+	Short: "Move a task in the order",
+	Does:  "Move a task to another place among the ones it sits with. It never changes the column.",
+	Level: Write,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
+		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
+		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
+		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		at, target, err := placeFrom(in)
+		if err != nil {
+			return Answer{}, err
+		}
+		if err := on.Engine.Move(n, at, target); err != nil {
+			return Answer{}, err
+		}
+		// A move changes the order and nothing else, so the order is what it
+		// answers with: the card of the task moved would not show what moved.
+		return listing(on)
+	},
+}
+
+// TaskFocus says which task is being worked on, or puts one there.
+var TaskFocus = Operation{
+	Thing: "task",
+	Verb:  "focus",
+	Short: "Put a task in focus, or say which one is",
+	Does:  "Put a task in focus, or say which one is. One task is in focus at a time.",
+	Level: Write,
+	Needs: AStore,
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task being worked on"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, named := in.Whole("number")
+		if !named {
+			return whatIsInFocus(on)
+		}
+		t, err := on.Engine.PutInFocus(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		p, err := on.Engine.TaskProgress(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &t, Progress: p, InFocus: &n}, nil
+	},
+}
+
+// TaskUnfocus leaves nothing in focus.
+var TaskUnfocus = Operation{
+	Thing: "task",
+	Verb:  "unfocus",
+	Short: "Let go of the task in focus",
+	Does:  "Leave nothing in focus. Letting go of nothing is not a failure.",
+	Level: Write,
+	Needs: AStore,
+	Run: func(on On, _ Input) (Answer, error) {
+		if err := on.Engine.LetGo(); err != nil {
+			return Answer{}, err
+		}
+		nothing := store.NoFocus
+		return Answer{InFocus: &nothing}, nil
+	},
+}
+
+// placeFrom reads where a move was told to put a task. Naming nothing and
+// naming several are both refused: one is a command that asked for nothing,
+// the other a command that asked for two things, and picking either quietly
+// would move a task somewhere nobody said.
+func placeFrom(in Input) (Place, int, error) {
+	named := make([]Place, 0, 3)
+	target := 0
+	if in.Yes("first") {
+		named = append(named, First)
+	}
+	if in.Named("after") {
+		named = append(named, Behind)
+		target, _ = in.Whole("after")
+	}
+	if in.Yes("last") {
+		named = append(named, Last)
+	}
+	if len(named) == 0 {
+		return 0, 0, ErrNowhereToMove
+	}
+	if len(named) > 1 {
+		return 0, 0, ErrMoreThanOnePlace
+	}
+	return named[0], target, nil
+}
+
+// listing is what every listing answers: every task in the one order there is,
+// and which of them is in focus, since a listing marks it.
+func listing(on On) (Answer, error) {
+	tasks, err := on.Engine.List()
+	if err != nil {
+		return Answer{}, err
+	}
+	inFocus, err := on.Engine.Focus()
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Tasks: tasks, InFocus: &inFocus}, nil
+}
+
+// whatIsInFocus answers about the task being worked on, and says so plainly
+// when there is none: nothing in focus is an answer, not an absence.
+func whatIsInFocus(on On) (Answer, error) {
+	t, number, err := on.Engine.InFocus()
+	if err != nil {
+		return Answer{}, err
+	}
+	if number == store.NoFocus {
+		return Answer{InFocus: &number}, nil
+	}
+	p, err := on.Engine.TaskProgress(number)
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Task: &t, Progress: p, InFocus: &number}, nil
 }

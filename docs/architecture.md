@@ -89,7 +89,7 @@ there is a line the coverage floor pays for and nothing can check.
 A surface parses input, calls one thing, and prints the result. It decides
 nothing.
 
-Each of the nineteen things cairn can be asked to do is **described once**, in
+Each of the things cairn can be asked to do is **described once**, in
 `internal/engine`: its name, its arguments and what each accepts, the access
 level it sits at, what it needs from the store, and how to carry it out. Both
 surfaces are built from that description — the command line builds a cobra tree

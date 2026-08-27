@@ -13,6 +13,12 @@ cairn task add "Write the docs" --objective 1
 cairn task list      # sub-tasks are listed under the task they hang from
 cairn task show 1
 cairn task delete 1 --yes
+cairn task move 3 --first        # to the head of the ones it sits with
+cairn task move 3 --after 1      # directly behind another
+cairn task move 3 --last
+cairn task focus 3               # this is what I am working on
+cairn task focus                 # which one is that again?
+cairn task unfocus
 ```
 
 | option | what it takes |
@@ -31,6 +37,29 @@ cairn task delete 1 --yes
 A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. A task carrying sub-tasks is not
 deleted while they are there. Add `--json` to any command to be answered as a
 machine — including when it refuses.
+
+## The order, and what you are working on
+
+There is one list. The column gives the coarse order — `backlog`, then `todo`,
+then `current`, then `done` — and inside a column the order is the one you set.
+A new task takes the last place in its column, because arriving is not deciding,
+and a task given another column lands at the end of its new section.
+
+`task move` reorders inside a column and never changes it: changing column is an
+edit, and one act with two meanings is an act nobody can undo confidently. So
+moving a task behind one in another column is refused, and so is moving a
+sub-task behind a root task — a sub-task takes its place among its sisters,
+where its parent sits carrying the whole block.
+
+`task focus` says which single task you are working on. One at a time, so putting
+another there releases the first, and deleting it leaves nothing in focus. The
+listing marks it. It is not the head of the list and does not move anything: a
+day goes ten minutes on one task, an hour on another and ten minutes back on the
+first, and none of that is a reordering.
+
+The place itself is never shown. The order is what there is to see, and a second
+number beside the one a task already carries would only mislead. See
+[docs/ordering.md](docs/ordering.md) for why it was settled this way.
 
 ## Objectives
 

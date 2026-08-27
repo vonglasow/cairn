@@ -94,6 +94,17 @@ func (w *world) tally(key string) (map[string]any, error) {
 
 // register declares the steps only the command line's scenarios claim. What
 // both surfaces claim is registered by the shared world.
+// flagFor is the flag an attribute is given by, named once because both the
+// step that creates a task with one and the step that edits one read it.
+func flagFor(attribute string) string {
+	return map[string]string{
+		"title": "--title", "description": "--desc", "deadline": "--deadline",
+		"estimate": "--estimate",
+		"priority": "--priority", "state": "--state", "parent": "--parent",
+		"time spent": "--spent",
+	}[attribute]
+}
+
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 
@@ -121,14 +132,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.Seed(fmt.Sprintf(`cairn objective add "%s"`, title))
 	})
 
-	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|priority|state|parent|time spent) "([^"]*)"$`,
+	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent) "([^"]*)"$`,
 		func(title, attribute, value string) error {
-			flag := map[string]string{
-				"description": "--desc", "deadline": "--deadline",
-				"priority": "--priority", "state": "--state", "parent": "--parent",
-				"time spent": "--spent",
-			}[attribute]
-			return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flag, value))
+			return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flagFor(attribute), value))
 		})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
@@ -136,8 +142,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the title "([^"]*)"$`, func(n int, title string) error {
-		return w.Seed(fmt.Sprintf(`cairn task edit %d --title "%s"`, n, title))
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent) "([^"]*)"$`,
+		func(n int, attribute, value string) error {
+			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
+		})
+
+	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
+		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
 	})
 
 	sc.Step(`^I deleted task (\d+)$`, func(n int) error {
@@ -213,6 +224,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says a task cannot hang under itself$`:                          "cannot hang under itself",
 		`^it says a sub-task cannot carry sub-tasks$`:                        "sub-task cannot carry sub-tasks",
 		`^it says the task carries sub-tasks$`:                               "carries sub-tasks",
+		`^it says a task cannot be moved behind itself$`:                     "cannot be moved behind itself",
+		`^it says a task is moved inside its own column$`:                    "moved inside its own column",
+		`^it says a sub-task is moved among its sisters$`:                    "moved among its sisters",
+		`^it says where a task can be moved$`:                                "behind another",
 	} {
 		wanted := want
 		sc.Step(step, func() error {
@@ -228,6 +243,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "there is no task", "the answer")
 	})
 
+	sc.Step(`^it says nothing is in focus$`, func() error {
+		return test.WantContains(w.Out.Stdout, "nothing is in focus", "the answer")
+	})
+
 	sc.Step(`^it says there is no objective$`, func() error {
 		return test.WantContains(w.Out.Stdout, "there is no objective", "the answer")
 	})
@@ -238,7 +257,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	// --- what the task carries ----------------------------------------------
 
-	sc.Step(`^it reports a task titled "([^"]*)"$`, func(title string) error {
+	sc.Step(`^it reports (?:a|the) task titled "([^"]*)"$`, func(title string) error {
 		return test.WantContains(w.heading(), title, "the heading")
 	})
 

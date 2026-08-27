@@ -58,6 +58,69 @@ func backupsListed(out string) int {
 	return strings.Count(out, "#")
 }
 
+// change is one line of what `cairn migration list --json` answers.
+type change struct {
+	Name    string `json:"name"`
+	Applied bool   `json:"applied"`
+}
+
+// changesListed asks cairn what changes it knows and which are applied. Asked
+// through the real command rather than read out of migration.Known: what the
+// step needs to know is what this store has had done to it, which only cairn
+// can say.
+func (w *world) changesListed() ([]change, error) {
+	before := w.Out
+	w.Run(`cairn migration list --json`)
+	listed := w.Out
+	w.Out = before
+
+	if listed.Code != exitOK {
+		return nil, fmt.Errorf("listing the changes failed: exit %d (%s)", listed.Code, listed.Stderr)
+	}
+	var changes []change
+	if err := json.Unmarshal([]byte(listed.Stdout), &changes); err != nil {
+		return nil, fmt.Errorf("the changes are not JSON (%w):\n%s", err, listed.Stdout)
+	}
+	return changes, nil
+}
+
+// rollBackPast undoes changes, one at a time through the real command, until
+// the one named is no longer applied. How many that is comes from what cairn
+// itself reports, so nothing here has a number written into it.
+func (w *world) rollBackPast(name string) error {
+	changes, err := w.changesListed()
+	if err != nil {
+		return err
+	}
+	for range changes {
+		applied, err := w.isApplied(name)
+		if err != nil {
+			return err
+		}
+		if !applied {
+			return nil
+		}
+		if err := w.Seed(`cairn migration rollback --yes`); err != nil {
+			return err
+		}
+	}
+	return fmt.Errorf("the change named %q is still applied with nothing left to roll back", name)
+}
+
+// isApplied says whether the change named has been applied to this store.
+func (w *world) isApplied(name string) (bool, error) {
+	changes, err := w.changesListed()
+	if err != nil {
+		return false, err
+	}
+	for _, one := range changes {
+		if one.Name == name {
+			return one.Applied, nil
+		}
+	}
+	return false, fmt.Errorf("cairn knows no change named %q", name)
+}
+
 // registerStore declares the steps about the store itself — its backups and
 // its shape. Both bdd/backup.feature and bdd/migration.feature draw on them:
 // a scenario about applying a change checks the backup it set aside, and a
@@ -90,6 +153,14 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 
 	sc.Step(`^I rolled the last change back$`, func() error {
 		return w.Seed(`cairn migration rollback --yes`)
+	})
+
+	// Named rather than counted, and that is not decoration. A scenario whose
+	// counts depend on which change was undone cannot say "the last one": what
+	// that means changes the day a change is appended, and this scenario spent
+	// a while asserting about the wrong one for exactly that reason.
+	sc.Step(`^I rolled back the change named "([^"]*)"$`, func(name string) error {
+		return w.rollBackPast(name)
 	})
 
 	sc.Step(`^I applied what was waiting$`, func() error {

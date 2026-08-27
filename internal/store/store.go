@@ -172,6 +172,35 @@ func (s *Store) Close() error {
 // one of them and forgotten in the others comes back as a zero nobody notices.
 const taskColumns = `number, parent, objective, title, description, state, priority, deadline, estimate, time_spent`
 
+// taskOrder is how every listing reads a task's place: the column first, in the
+// order the columns are read, then the place set by hand inside it.
+//
+// The number breaks a tie, so a store whose tasks predate the places still
+// comes back in one settled order rather than whichever the engine happened to
+// return. A column this cairn does not know sorts last: an unknown column is
+// not the next thing to do.
+//
+// Written out rather than built from domain.States, and that is a trade made
+// with both gates in view. Built, it could not be a constant — and a query
+// assembled from a function call cannot be told from one assembled from user
+// input, which is a warning worth keeping rather than silencing. Constant, the
+// two can drift, so a test compares this to what domain.States says: derived by
+// a test instead of by construction, which fails loudly rather than quietly.
+const taskOrder = `ORDER BY CASE state
+	WHEN 'backlog' THEN 0
+	WHEN 'todo'    THEN 1
+	WHEN 'current' THEN 2
+	WHEN 'done'    THEN 3
+	ELSE 4 END, position, number`
+
+// lastPlaceAmong is the place a task takes when it arrives in a column: one
+// past the last of the tasks it will sit with. Its sisters are the tasks in
+// the same column under the same parent, which is what makes a sub-task rank
+// among its sisters and a root task among the root tasks of its column.
+const lastPlaceAmong = `
+	(SELECT COALESCE(MAX(sisters.position), 0) + 1 FROM tasks AS sisters
+	 WHERE sisters.state = ? AND sisters.parent = ?)`
+
 // boundTask holds a task's facts in the shape SQL will bind: strings and
 // integers, nothing a driver has to guess at. A task tells them here rather
 // than handing over its fields directly, which is what lets Keep and Update
@@ -227,10 +256,11 @@ func renumbered(t task.Task, number int) task.Task {
 func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
 	res, err := s.db.Exec(
-		`INSERT INTO tasks (parent, objective, title, description, state, priority, deadline, estimate, time_spent)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO tasks (parent, objective, title, description, state, priority,
+		 deadline, estimate, time_spent, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
 		b.parent, b.objective, b.title, b.description, b.state, b.priority,
-		b.deadline, b.estimate, b.spent)
+		b.deadline, b.estimate, b.spent, b.state, b.parent)
 	if err != nil {
 		return task.Task{}, fmt.Errorf("keeping the task: %w", err)
 	}
@@ -246,23 +276,45 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 
 // Update replaces what the store holds for a task. The labels given replace
 // those that were there: a task carries a set, so one left out is one removed.
+//
+// A task changes place only when it leaves the tasks it sat with — a different
+// column, or a different parent. Editing a title or a priority moves nothing.
 func (s *Store) Update(t task.Task) error {
 	b := bind(t)
-	res, err := s.db.Exec(
+	wasIn, wasUnder, held, err := s.whereItSits(b.number)
+	if err != nil {
+		return err
+	}
+
+	place, leaving := held, wasIn != b.state || wasUnder != b.parent
+	if leaving {
+		among, err := s.countSisters(b.state, b.parent)
+		if err != nil {
+			return err
+		}
+		// The task still carries its old group at this point, so it is not
+		// among the ones just counted: one past them is the last place there.
+		place = among + 1
+	}
+
+	if _, err := s.db.Exec(
 		`UPDATE tasks SET parent = ?, objective = ?, title = ?, description = ?, state = ?,
-		 priority = ?, deadline = ?, estimate = ?, time_spent = ? WHERE number = ?`,
+		 priority = ?, deadline = ?, estimate = ?, time_spent = ?, position = ?
+		 WHERE number = ?`,
 		b.parent, b.objective, b.title, b.description, b.state, b.priority,
-		b.deadline, b.estimate, b.spent, b.number)
-	if err != nil {
+		b.deadline, b.estimate, b.spent, place, b.number); err != nil {
 		return fmt.Errorf("changing the task: %w", err)
 	}
-	changed, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("changing the task: %w", err)
+
+	// The group it left closes up behind it. Without this the places there stop
+	// running 1..N — the order still reads correctly, so nothing looks wrong,
+	// and every departure leaves one more hole than the last.
+	if leaving {
+		if err := s.closeTheGapLeftIn(wasIn, wasUnder, held); err != nil {
+			return err
+		}
 	}
-	if changed == 0 {
-		return fmt.Errorf("task %d: %w", b.number, ErrNoSuchTask)
-	}
+
 	if err := s.clearLabels(taskLabels, b.number); err != nil {
 		return err
 	}
@@ -271,18 +323,29 @@ func (s *Store) Update(t task.Task) error {
 
 // Delete removes a task, and says so when there was none to remove.
 func (s *Store) Delete(number int) error {
-	res, err := s.db.Exec(`DELETE FROM tasks WHERE number = ?`, number)
+	// Where it sat is read before it goes, since the group it leaves has to
+	// close up behind it: a task removed from the middle would otherwise leave
+	// the places there running 1, 3, 4.
+	wasIn, wasUnder, held, err := s.whereItSits(number)
 	if err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`DELETE FROM tasks WHERE number = ?`, number); err != nil {
 		return fmt.Errorf("deleting the task: %w", err)
 	}
-	changed, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("deleting the task: %w", err)
+	if err := s.closeTheGapLeftIn(wasIn, wasUnder, held); err != nil {
+		return err
 	}
-	if changed == 0 {
-		return fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
+	// What referred to the task goes with it, and it goes by hand. The schema
+	// declares ON DELETE CASCADE and ON DELETE SET NULL, and neither fires:
+	// SQLite leaves foreign keys off unless a connection turns them on, and
+	// this one does not. Measured, after believing otherwise — the labels
+	// disappearing on a delete looked like the cascade working and was this
+	// call all along.
+	if err := s.clearLabels(taskLabels, number); err != nil {
+		return err
 	}
-	return s.clearLabels(taskLabels, number)
+	return s.releaseFocusOn(number)
 }
 
 // Find hands back the task carrying number, and says so when there is none.
@@ -299,10 +362,11 @@ func (s *Store) Find(number int) (task.Task, error) {
 	return t, nil
 }
 
-// All hands back every task, in the order they were added.
+// All hands back every task in the one order there is: the column first,
+// then the place set by hand inside it.
 func (s *Store) All() ([]task.Task, error) {
 	rows, err := s.db.Query(
-		`SELECT ` + taskColumns + ` FROM tasks ORDER BY number`)
+		`SELECT ` + taskColumns + ` FROM tasks ` + taskOrder)
 	if err != nil {
 		return nil, fmt.Errorf("reading the store: %w", err)
 	}
@@ -322,11 +386,11 @@ func (s *Store) All() ([]task.Task, error) {
 	return tasks, nil
 }
 
-// Under hands back the tasks hanging directly under a task, in the order they
-// were added.
+// Under hands back the tasks hanging directly under a task, each in the place
+// it takes among its sisters.
 func (s *Store) Under(number int) ([]task.Task, error) {
 	rows, err := s.db.Query(
-		`SELECT `+taskColumns+` FROM tasks WHERE parent = ? ORDER BY number`, number)
+		`SELECT `+taskColumns+` FROM tasks WHERE parent = ? `+taskOrder, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
 	}

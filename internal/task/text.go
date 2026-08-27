@@ -116,10 +116,26 @@ func Under(tasks []Task) string {
 // reads when someone greps for it.
 const nest = "    "
 
-// Tree renders a listing with each sub-task under the task it hangs from.
-// Everything keeps its own number, so a line found here can be acted on
-// directly — the indentation says where it belongs, not what it is.
-func Tree(tasks []Task) string {
+// InFocusMark is what sets apart the task being worked on. Written out rather
+// than drawn: a listing is read left to right and grepped afterwards, and a
+// glyph is neither searchable nor sure to render.
+//
+// Exported because a scenario asserts it: a step looking for a string of its
+// own would pass the day this one changed.
+const InFocusMark = "  (in focus)"
+
+// NothingInFocus is the number to hand Tree when no task is being worked on.
+// Zero is safe to mean none because the store never hands out zero.
+const NothingInFocus = 0
+
+// Tree renders a listing with each sub-task under the task it hangs from, and
+// marks the one task being worked on. Everything keeps its own number, so a
+// line found here can be acted on directly — the indentation says where it
+// belongs, not what it is.
+//
+// The place a task holds is never shown. The order is what there is to see,
+// and a second number beside one a task already carries would only mislead.
+func Tree(tasks []Task, inFocus int) string {
 	hanging := map[int][]Task{}
 	for _, t := range tasks {
 		if r := rowOf(t); r.parent != NoParent {
@@ -133,15 +149,24 @@ func Tree(tasks []Task) string {
 		if r.parent != NoParent {
 			continue
 		}
-		out.WriteString(Line(t))
+		out.WriteString(marked(t, inFocus))
 		out.WriteString("\n")
 		for _, under := range hanging[r.number] {
 			out.WriteString(nest)
-			out.WriteString(Line(under))
+			out.WriteString(marked(under, inFocus))
 			out.WriteString("\n")
 		}
 	}
 	return out.String()
+}
+
+// marked renders one line of a listing, saying so when this is the task being
+// worked on. One task is in focus at a time, so at most one line carries it.
+func marked(t Task, inFocus int) string {
+	if rowOf(t).number == inFocus {
+		return Line(t) + InFocusMark
+	}
+	return Line(t)
 }
 
 // listingRow is a task's membrane for one row of a listing: it is told every

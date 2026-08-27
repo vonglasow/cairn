@@ -32,6 +32,7 @@ calls it, and prints — it decides nothing.
 | writing code | [docs/design-principles.md](docs/design-principles.md) |
 | adding a tool, changing a threshold, unblocking a hook | [docs/checks.md](docs/checks.md) |
 | touching the MCP server, or adding a command an agent will see | [docs/mcp.md](docs/mcp.md) |
+| touching the order of tasks, a task's place, or the focus | [docs/ordering.md](docs/ordering.md) |
 
 Those files carry the detail. This one carries what holds regardless of the
 task, because a rule that has to be looked up is a rule that gets skipped.

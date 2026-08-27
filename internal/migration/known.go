@@ -60,4 +60,24 @@ DROP TABLE IF EXISTS objectives;
 ALTER TABLE tasks DROP COLUMN objective;`,
 		loses: "every objective, and which one each task serves",
 	},
+	{
+		name: "a task carries a place, and one task is in focus",
+		does: `
+ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
+UPDATE tasks SET position = (
+	SELECT COUNT(*) FROM tasks AS earlier
+	WHERE earlier.state = tasks.state
+	  AND earlier.parent = tasks.parent
+	  AND earlier.number <= tasks.number
+);
+CREATE TABLE IF NOT EXISTS focus (
+	id          INTEGER PRIMARY KEY CHECK (id = 1),
+	task_number INTEGER REFERENCES tasks(number) ON DELETE SET NULL
+);
+INSERT OR IGNORE INTO focus (id, task_number) VALUES (1, NULL);`,
+		undoes: `
+DROP TABLE IF EXISTS focus;
+ALTER TABLE tasks DROP COLUMN position;`,
+		loses: "the order of the tasks, and which task is in focus",
+	},
 }

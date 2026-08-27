@@ -57,6 +57,7 @@ type tasks interface {
 // Engine carries out the operations. Every change of state goes through it.
 type Engine struct {
 	tasks      tasks
+	places     places
 	objectives objectives
 	store      *store.Store
 }
@@ -98,7 +99,7 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept, objectives: kept, store: kept}, nil
+	return &Engine{tasks: kept, places: kept, objectives: kept, store: kept}, nil
 }
 
 // storeProblem marks an error as being about the store itself rather than about

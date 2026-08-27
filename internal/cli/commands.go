@@ -1,7 +1,7 @@
 package cli
 
 // The command tree is built once, from engine.All(), rather than declared by
-// hand for each of the nineteen things cairn can be asked to do: one group per
+// hand for each of the things cairn can be asked to do: one group per
 // distinct Operation.Thing, in the order All() gives them, one verb under it
 // per Operation. A surface here parses, calls engine.Do, and prints — it
 // decides nothing.
@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -195,6 +196,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 	positionals := positionalsOf(op)
 	given := map[string]*string{}
 	listed := map[string]*[]string{}
+	asked := map[string]*bool{}
 	var confirmed bool
 
 	cmd := &cobra.Command{
@@ -213,7 +215,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			answer, err := engine.Do(op, path, inputFrom(cmd, positionals, args, given, listed))
+			answer, err := engine.Do(op, path, inputFrom(cmd, positionals, args, given, listed, asked))
 			if err != nil {
 				return err
 			}
@@ -226,6 +228,16 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			var v []string
 			listed[arg.Name] = &v
 			cmd.Flags().StringArrayVar(&v, arg.Name, nil, arg.Means)
+			continue
+		}
+		// A Kind: Bool argument is a flag that carries nothing, so it is
+		// declared as one rather than as a string somebody has to type "true"
+		// into. What reaches the engine is still a string, since Input speaks
+		// one language for every kind.
+		if arg.Kind == engine.Bool {
+			var v bool
+			asked[arg.Name] = &v
+			cmd.Flags().BoolVar(&v, arg.Name, false, arg.Means)
 			continue
 		}
 		var v string
@@ -245,7 +257,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 // engine.Input tells "not named" from "named as nothing" apart.
 func inputFrom(
 	cmd *cobra.Command, positionals []engine.Argument, args []string,
-	given map[string]*string, listed map[string]*[]string,
+	given map[string]*string, listed map[string]*[]string, asked map[string]*bool,
 ) engine.Input {
 	in := engine.Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	for i, p := range positionals {
@@ -260,6 +272,11 @@ func inputFrom(
 	for name, v := range given {
 		if cmd.Flags().Changed(name) {
 			in.Given[name] = *v
+		}
+	}
+	for name, v := range asked {
+		if cmd.Flags().Changed(name) {
+			in.Given[name] = strconv.FormatBool(*v)
 		}
 	}
 	for name, v := range listed {
