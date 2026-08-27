@@ -4,9 +4,9 @@ Read this before touching `internal/mcp`, or before adding a command that an
 agent will see.
 
 The scenarios are in [bdd/mcp.feature](../bdd/mcp.feature); this file carries
-the reasons behind them, because a scenario says what happens and not why it was
-chosen that way. They are being built one rule at a time, and what a rule cost
-is written down here as it lands.
+the reasons behind them, because a scenario says what happens and not why it
+was chosen that way. They are being built one rule at a time, and what a rule
+cost is written down here as it lands.
 
 ## It is a surface, and it decides nothing
 
@@ -48,11 +48,11 @@ One flag, three levels, `write` by default:
 | `write` | also adding, changing, `backup_add`, `migration_apply` |
 | `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `migration_rollback` |
 
-The line between `write` and `full` is not "destructive" in the technical
-sense — it is **what can lose work already done**. Adding a backup loses
-nothing, so it sits in `write`; rolling a migration back drops what that
-migration carried, so it sits in `full`. `migration_apply` is in `write` for
-the same reason: it changes the shape but sets a backup aside first.
+The line between `write` and `full` is not "destructive" in the technical sense
+— it is **what can lose work already done**. Adding a backup loses nothing, so
+it sits in `write`; rolling a migration back drops what that migration carried,
+so it sits in `full`. `migration_apply` is in `write` for the same reason: it
+changes the shape but sets a backup aside first.
 
 **A tool above the level is not exposed at all**, rather than exposed and
 refused. A refusal invites another attempt, and an agent that has been told no
@@ -105,22 +105,22 @@ Three things follow, and each would otherwise be a problem of its own:
 ## A client that hangs up is not a failure
 
 Measured on the built binary, and it was not obvious: a client that greets the
-server and closes its end in the same breath used to make `cairn mcp serve` exit
-2 with `Server is closing: EOF`, and the greeting went unanswered. An empty
-standard input already exited 0, and so did a client that greeted, waited, then
-closed. Only the request still in flight failed.
+server and closes its end in the same breath used to make `cairn mcp serve`
+exit 2 with `Server is closing: EOF`, and the greeting went unanswered. An
+empty standard input already exited 0, and so did a client that greeted,
+waited, then closed. Only the request still in flight failed.
 
 Half of that is ours and half is not, and the scenario says only the half that
 is. A client owns the process it started and ends it by closing the pipe, so
-ending is not failing — that part is now true. Making the greeting be *answered*
-before the server stops is not: the SDK tears the session down on EOF and drops
-what is in flight, and holding EOF back would mean guessing when the server is
-done. It costs nothing real, since the asker has gone by then.
+ending is not failing — that part is now true. Making the greeting be
+*answered* before the server stops is not: the SDK tears the session down on
+EOF and drops what is in flight, and holding EOF back would mean guessing when
+the server is done. It costs nothing real, since the asker has gone by then.
 
 Recognising it costs one number. The SDK's own sentinel lives in its
 `internal/jsonrpc2`, which nothing outside may name; the public handle is the
-`jsonrpc.Error` alias and its code, `-32004`, which the SDK exports no name for.
-So cairn writes the number, in a statement rather than a constant — Go
+`jsonrpc.Error` alias and its code, `-32004`, which the SDK exports no name
+for. So cairn writes the number, in a statement rather than a constant — Go
 instruments statements, so a constant would put the one thing this depends on
 outside anything a test can be seen exercising, and the mutation gate would
 report it unjudged rather than proven. A test pins it: if the SDK changes it,
@@ -131,13 +131,52 @@ that turns red here instead of going quiet in somebody's terminal.
 `task_add`, `objective_show`, `migration_rollback` — the same grammar as the
 command line, so anybody who knows one knows the other.
 
-The count is never written down. A scenario saying how many tools there are would
-freeze a number in text the process forbids rewording, and the twentieth
+The count is never written down. A scenario saying how many tools there are
+would freeze a number in text the process forbids rewording, and the twentieth
 command would break the contract instead of the code. The scenario says **a
 tool for every command**, and a test walks the cobra tree to prove it.
 
 `cairn mcp serve` is a command and not a tool. It is how the server is started,
 not something the server can be asked to do, and a scenario keeps it out.
+
+## Each tool says what shape its answer takes
+
+A tool describes its arguments and used to say nothing about its answer, so a
+client had to guess. That is not a small gap: `task_list` answers a JSON array,
+and a client holding to the pre-SEP-2106 rule — where `structuredContent` had
+to be an object — refuses it. The array is not the defect. **The silence was.**
+
+Worth writing down, because the first diagnosis was the other one: the SDK's
+own type says `structuredContent` "may marshal to any valid JSON value (object,
+array, or primitive) conforming to the tool's OutputSchema", per SEP-2106. So
+an array is legal, and a client that refuses one is applying a rule the
+protocol has since relaxed. Declaring the schema is what ends the argument:
+there is now a contract to hold the answer to instead of a convention to
+assume.
+
+**The shape is read off the Go type, never written out.** An operation declares
+what it answers — `Answers{[]Task{}}` — and the schema is inferred from that
+type. The same struct that crosses the wire is the one the description is taken
+from, so the two cannot drift: change the struct and the schema changes with
+it.
+
+**An operation may answer more than one shape, and says so.** `task_focus`
+hands back the task being worked on, or says nothing is in focus — two
+genuinely different answers. Its schema is "any one of these". Naming one would
+describe half the tool, and picking the likelier one would be a guess dressed
+as a contract.
+
+**A refusal is not an answer of that shape.** It comes back as `IsError` with
+the reason as text and carries nothing for a machine, so nothing measures it
+against a schema it was never meant to satisfy. Measured, then frozen in a
+scenario: without it, every refusal would read as a violation.
+
+And the declaration bought something that was not the point of it. `Of` works
+out which shape to build by looking at which field of an `Answer` was filled —
+knowable only after the operation has run, and until now comparable to nothing.
+A test now runs eighteen operations and checks that what `Of` builds is what
+the operation said it answers. The description and the behaviour check each
+other.
 
 ## Why the SDK, written down
 
@@ -145,18 +184,17 @@ not something the server can be asked to do, and a scenario keeps it out.
 
 `modelcontextprotocol/go-sdk` v1.7.0 carries the protocol and derives each
 tool's JSON schema from its Go argument type. Writing it by hand was measured
-at 250–350 lines against 35 with the SDK, and the schema would then be a
-second thing to keep in step with the signature.
+at 250–350 lines against 35 with the SDK, and the schema would then be a second
+thing to keep in step with the signature.
 
 It brings seven transitive dependencies it actually reaches —
 `github.com/google/jsonschema-go`, `golang.org/x/oauth2`,
 `github.com/segmentio/asm`, `github.com/segmentio/encoding`,
-`github.com/yosida95/uritemplate/v3`, `golang.org/x/sync`,
-`golang.org/x/time` — most of them for the HTTP transport a stdio server
-never calls. That was the argument against, and it does not hold: Go links
-only what is reachable, and `govulncheck` runs over the lot at every commit.
-The argument that does hold is the project's own: look for it first, and do
-not write twice what exists once.
+`github.com/yosida95/uritemplate/v3`, `golang.org/x/sync`, `golang.org/x/time`
+— most of them for the HTTP transport a stdio server never calls. That was the
+argument against, and it does not hold: Go links only what is reachable, and
+`govulncheck` runs over the lot at every commit. The argument that does hold is
+the project's own: look for it first, and do not write twice what exists once.
 
 ## The test harness has to be shared, and how
 
@@ -196,13 +234,14 @@ profile at 0%, and a harness of that size took the repository from 91.8% to
 86.0% — below the floor. It only falls outside the mutation loop, which skips
 packages with no test file.
 
-So `test/` is tested like anything else, and that shaped it. Each shared step is
-a named method on `World`, not a closure inside `Register`; a closure can only
-be reached through godog, and a step that quietly stopped asserting would have
-surfaced as somebody else's scenario passing for the wrong reason. `Register` is
-then pure wiring and holds no judgement. What stayed out is the one thing that
-cannot be reached without a real godog run: `test.Suite` describes the run, and
-each surface keeps the four lines that fail its own test when it does not pass.
+So `test/` is tested like anything else, and that shaped it. Each shared step
+is a named method on `World`, not a closure inside `Register`; a closure can
+only be reached through godog, and a step that quietly stopped asserting would
+have surfaced as somebody else's scenario passing for the wrong reason.
+`Register` is then pure wiring and holds no judgement. What stayed out is the
+one thing that cannot be reached without a real godog run: `test.Suite`
+describes the run, and each surface keeps the four lines that fail its own test
+when it does not pass.
 
 `no-go-testing` is told to leave `test/` alone, since it does import `testing`
 on purpose.

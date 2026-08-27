@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/cucumber/godog"
+	"github.com/google/jsonschema-go/jsonschema"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/cli"
@@ -66,6 +67,9 @@ type world struct {
 	// told apart from one that answered nothing.
 	result  *sdk.CallToolResult
 	callErr error
+	// calledTool is the tool the last call named, so a step can ask what shape
+	// that tool said its answer would take without being told twice.
+	calledTool string
 	// number is the argument the last `task_show` call was made with, kept so
 	// a later step can ask the command line the same question.
 	number int
@@ -168,6 +172,7 @@ func (w *world) callTool(name string, args map[string]any) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	w.calledTool = name
 	w.result, w.callErr = w.session.CallTool(ctx, &sdk.CallToolParams{Name: name, Arguments: args})
 	return w.callErr
 }
@@ -228,6 +233,157 @@ func (w *world) iCallNamingAnArgumentItDoesNotTake(tool string) error {
 // say which one it was about.
 // iCallTaskEditWithThePriority changes a task's priority through the tool, so
 // what lands in the history was done by an agent and not by the command line.
+// schemaOf reads the shape a tool says its answer takes.
+func (w *world) schemaOf(name string) (map[string]any, error) {
+	for _, t := range w.tools {
+		if t.Name != name {
+			continue
+		}
+		if t.OutputSchema == nil {
+			return nil, fmt.Errorf("%s says nothing about the shape of its answer", name)
+		}
+		var m map[string]any
+		if err := remarshalTo(t.OutputSchema, &m); err != nil {
+			return nil, fmt.Errorf("%s: its shape cannot be read: %w", name, err)
+		}
+		return m, nil
+	}
+	return nil, fmt.Errorf("no tool named %s was offered", name)
+}
+
+// remarshalTo moves a value through JSON, which is how a schema declared as a
+// Go value is read back as the document a client receives.
+func remarshalTo(from any, into any) error {
+	raw, err := json.Marshal(from)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(raw, into)
+}
+
+// everyToolDescribesItsAnswer fails unless every tool offered says what shape
+// its answer takes. Every one, because a client cannot guess for the one that
+// stays silent.
+func (w *world) everyToolDescribesItsAnswer() error {
+	silent := []string{}
+	for _, t := range w.tools {
+		if _, err := w.schemaOf(t.Name); err != nil {
+			silent = append(silent, t.Name)
+		}
+	}
+	if len(silent) > 0 {
+		return fmt.Errorf("%d of %d tools say nothing about their answer: %v",
+			len(silent), len(w.tools), silent)
+	}
+	return nil
+}
+
+// allows says whether a shape admits the named JSON type. A schema names one
+// type or several: a Go slice can be nil, so its shape honestly says "a list or
+// nothing", and reading only the single-name case would call that a failure.
+func allows(shape map[string]any, want string) bool {
+	switch named := shape["type"].(type) {
+	case string:
+		return named == want
+	case []any:
+		for _, one := range named {
+			if one == want {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// saysItAnswersAList fails unless the named tool says its answer is a list.
+func (w *world) saysItAnswersAList(name string) error {
+	shape, err := w.schemaOf(name)
+	if err != nil {
+		return err
+	}
+	if !allows(shape, "array") {
+		return fmt.Errorf("%s says its answer is %v, want a list", name, shape["type"])
+	}
+	return nil
+}
+
+// saysItAnswersOneThing fails unless the named tool says its answer is a single
+// thing rather than a list of them.
+func (w *world) saysItAnswersOneThing(name string) error {
+	shape, err := w.schemaOf(name)
+	if err != nil {
+		return err
+	}
+	if !allows(shape, "object") {
+		return fmt.Errorf("%s says its answer is %v, want one thing", name, shape["type"])
+	}
+	if allows(shape, "array") {
+		return fmt.Errorf("%s says its answer may be a list, and it answers one thing", name)
+	}
+	return nil
+}
+
+// theAnswerHoldsToItsShape measures what a tool answered against the shape it
+// said it would take.
+//
+// The shape does the judging, rather than a step reading it field by field: a
+// step that checked the shape by hand would be a second reading of it, and the
+// two would eventually disagree.
+func (w *world) theAnswerHoldsToItsShape() error {
+	if w.result == nil {
+		return fmt.Errorf("nothing came back to measure")
+	}
+	if w.result.StructuredContent == nil {
+		return fmt.Errorf("the answer carries nothing for a machine")
+	}
+	name := w.calledTool
+	// Asked for here rather than left to a step before it: what this measures is
+	// the answer against the description, and a scenario about the answer should
+	// not have to remember to ask for the descriptions first.
+	if len(w.tools) == 0 {
+		if err := w.iAskItWhatItCanDo(); err != nil {
+			return err
+		}
+	}
+	var declared *jsonschema.Schema
+	for _, t := range w.tools {
+		if t.Name == name {
+			if err := remarshalTo(t.OutputSchema, &declared); err != nil {
+				return fmt.Errorf("%s: its shape cannot be read: %w", name, err)
+			}
+		}
+	}
+	if declared == nil {
+		return fmt.Errorf("%s says nothing about the shape of its answer", name)
+	}
+	resolved, err := declared.Resolve(nil)
+	if err != nil {
+		return fmt.Errorf("%s: its shape is not a usable schema: %w", name, err)
+	}
+	var crossed any
+	if err := remarshalTo(w.result.StructuredContent, &crossed); err != nil {
+		return err
+	}
+	if err := resolved.Validate(crossed); err != nil {
+		return fmt.Errorf("%s answered something its own shape refuses: %w", name, err)
+	}
+	return nil
+}
+
+// itCarriesNothingToMeasure fails unless a refusal came back with nothing for a
+// machine: a refusal is not an answer of the shape a tool describes, and
+// measuring it against one would make every refusal look like a violation.
+func (w *world) itCarriesNothingToMeasure() error {
+	if w.result == nil {
+		return fmt.Errorf("nothing came back")
+	}
+	if w.result.StructuredContent != nil {
+		return fmt.Errorf("a refusal carries %v for a machine to measure",
+			w.result.StructuredContent)
+	}
+	return nil
+}
+
 func (w *world) iCallTaskEditWithThePriority(n int, priority string) error {
 	w.number = n
 	_ = w.callTool("task_edit", map[string]any{"number": n, "priority": priority})
@@ -694,6 +850,11 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^a cairn server started with `--access (read|write|full)`$", w.aCairnServerStartedWithAccess)
 		sc.Step("^a cairn server started with no access given$", w.aCairnServerStartedWithNoAccessGiven)
 		sc.Step("^I ask it what it can do$", w.iAskItWhatItCanDo)
+		sc.Step("^every tool describes the shape of its answer$", w.everyToolDescribesItsAnswer)
+		sc.Step("^`([a-z_]+)` says it answers a list$", w.saysItAnswersAList)
+		sc.Step("^`([a-z_]+)` says it answers one thing$", w.saysItAnswersOneThing)
+		sc.Step("^its answer holds to the shape the tool described$", w.theAnswerHoldsToItsShape)
+		sc.Step("^it carries nothing for a machine to measure$", w.itCarriesNothingToMeasure)
 		sc.Step("^it offers `([^`]*)`$", w.itOffers)
 		sc.Step("^it does not offer `([^`]*)`$", w.itDoesNotOffer)
 		sc.Step("^it offers a tool for every command cairn has$", w.itOffersAToolForEveryCommand)

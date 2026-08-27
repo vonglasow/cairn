@@ -7,17 +7,19 @@ package engine
 // shape is their job.
 
 import (
+	"cairn/internal/migration"
 	"errors"
 )
 
 // MigrationList names every change to the store, applied or waiting.
 var MigrationList = Operation{
-	Thing: "migration",
-	Verb:  "list",
-	Short: "Name every change to the store, applied or waiting",
-	Does:  "Name every change to the store, applied or waiting.",
-	Level: Read,
-	Needs: AStoreBehind,
+	Thing:   "migration",
+	Verb:    "list",
+	Short:   "Name every change to the store, applied or waiting",
+	Does:    "Name every change to the store, applied or waiting.",
+	Level:   Read,
+	Needs:   AStoreBehind,
+	Answers: Answers{[]migration.Shape{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Engine.Migrations()
 		if err != nil {
@@ -33,12 +35,13 @@ var MigrationList = Operation{
 
 // MigrationShow says what a change does, and what undoing it does.
 var MigrationShow = Operation{
-	Thing: "migration",
-	Verb:  "show",
-	Short: "Say what a change does, and what undoing it does",
-	Does:  "Say what a change does, and what undoing it does.",
-	Level: Read,
-	Needs: AStoreBehind,
+	Thing:   "migration",
+	Verb:    "show",
+	Short:   "Say what a change does, and what undoing it does",
+	Does:    "Say what a change does, and what undoing it does.",
+	Level:   Read,
+	Needs:   AStoreBehind,
+	Answers: Answers{migration.Shape{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a migration", Means: "the number of the change"},
 	},
@@ -54,12 +57,13 @@ var MigrationShow = Operation{
 
 // MigrationApply makes the changes the store is missing, or one of them.
 var MigrationApply = Operation{
-	Thing: "migration",
-	Verb:  "apply",
-	Short: "Make the changes the store is missing, or one of them",
-	Does:  "Make the changes the store is missing, or one of them.",
-	Level: Write,
-	Needs: AStoreBehind,
+	Thing:   "migration",
+	Verb:    "apply",
+	Short:   "Make the changes the store is missing, or one of them",
+	Does:    "Make the changes the store is missing, or one of them.",
+	Level:   Write,
+	Needs:   AStoreBehind,
+	Answers: Answers{Applied{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a migration", Means: "the number of the change"},
 	},
@@ -85,12 +89,13 @@ var MigrationApply = Operation{
 
 // MigrationRollback unmakes the last change applied to the store.
 var MigrationRollback = Operation{
-	Thing: "migration",
-	Verb:  "rollback",
-	Short: "Unmake the last change applied to the store",
-	Does:  "Unmake the last change applied to the store.",
-	Level: Full,
-	Needs: AStoreBehind,
+	Thing:   "migration",
+	Verb:    "rollback",
+	Short:   "Unmake the last change applied to the store",
+	Does:    "Unmake the last change applied to the store.",
+	Level:   Full,
+	Needs:   AStoreBehind,
+	Answers: Answers{migration.RolledBack{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		rolled, err := on.Engine.RollBack(on.Path)
 		if err != nil {

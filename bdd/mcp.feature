@@ -211,6 +211,34 @@ Feature: Answering a machine over MCP
       When I call `task_edit` with the number 1 and the priority "high"
       Then the history of task 1 says the change came through the server
 
+    @mcp-says-what-it-answers
+    Scenario: every tool says what shape its answer takes
+      Given a cairn server started with no access given
+      When I ask it what it can do
+      Then every tool describes the shape of its answer
+
+    @mcp-says-whether-it-answers-one-thing-or-many
+    Scenario: a tool that lists says so, and one that shows says so
+      Given a cairn server started with no access given
+      When I ask it what it can do
+      Then `task_list` says it answers a list
+      And `task_show` says it answers one thing
+
+    @mcp-what-it-answers-has-the-shape-it-said
+    Scenario: what a tool answers is measured against what it said
+      Given I added a task titled "Write the spec"
+      And a cairn server started with no access given
+      When I call `task_list`
+      Then its answer holds to the shape the tool described
+
+    @mcp-a-refusal-is-not-measured-against-that-shape
+    Scenario: a refusal is not an answer of that shape
+      Given I added a task titled "Write the spec"
+      And a cairn server started with no access given
+      When I call `task_show` with the number 99
+      Then it answers that it failed
+      And it carries nothing for a machine to measure
+
     @mcp-labels-arrive-whole
     Scenario: labels given to a tool arrive as labels
       Given a cairn server started with no access given

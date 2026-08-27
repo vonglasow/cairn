@@ -11,6 +11,7 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/store"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // Name is how an operation is named as a command or a tool: "task_add".
@@ -33,12 +34,13 @@ func All() []Operation {
 
 // TaskAdd records a new task.
 var TaskAdd = Operation{
-	Thing: "task",
-	Verb:  "add",
-	Short: "Add a task",
-	Does:  "Add a task, carrying whatever of its attributes were given.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "add",
+	Short:   "Add a task",
+	Does:    "Add a task, carrying whatever of its attributes were given.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{Task{}},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
 	}, taskAttributes...),
@@ -63,12 +65,13 @@ var TaskAdd = Operation{
 
 // TaskList names every task.
 var TaskList = Operation{
-	Thing: "task",
-	Verb:  "list",
-	Short: "List every task",
-	Does:  "List every task.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "list",
+	Short:   "List every task",
+	Does:    "List every task.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]Task{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		return listing(on)
 	},
@@ -77,12 +80,13 @@ var TaskList = Operation{
 // TaskShow says what a task carries, what hangs under it and how far along it
 // is.
 var TaskShow = Operation{
-	Thing: "task",
-	Verb:  "show",
-	Short: "Show what a task carries",
-	Does:  "Show what a task carries, what hangs under it and how far along it is.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "show",
+	Short:   "Show what a task carries",
+	Does:    "Show what a task carries, what hangs under it and how far along it is.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{Task{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -106,12 +110,13 @@ var TaskShow = Operation{
 
 // TaskEdit changes what a task carries.
 var TaskEdit = Operation{
-	Thing: "task",
-	Verb:  "edit",
-	Short: "Change what a task carries",
-	Does:  "Change what a task carries.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "edit",
+	Short:   "Change what a task carries",
+	Does:    "Change what a task carries.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{Task{}},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
@@ -137,12 +142,13 @@ var TaskEdit = Operation{
 
 // TaskDelete removes a task.
 var TaskDelete = Operation{
-	Thing: "task",
-	Verb:  "delete",
-	Short: "Delete a task",
-	Does:  "Delete a task.",
-	Level: Full,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "delete",
+	Short:   "Delete a task",
+	Does:    "Delete a task.",
+	Level:   Full,
+	Needs:   AStore,
+	Answers: Answers{Deleted{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -158,12 +164,13 @@ var TaskDelete = Operation{
 // TaskSearch names every task carrying everything named, wherever among its
 // facts each one happens to sit.
 var TaskSearch = Operation{
-	Thing: "task",
-	Verb:  "search",
-	Short: "Look for a task by anything it carries",
-	Does:  "List every task carrying everything named, wherever among its facts each one sits.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "search",
+	Short:   "Look for a task by anything it carries",
+	Does:    "List every task carrying everything named, wherever among its facts each one sits.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]Task{}},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},
@@ -252,12 +259,13 @@ func taskChanges(in Input) (Changes, error) {
 
 // TaskMove changes where a task sits in the order.
 var TaskMove = Operation{
-	Thing: "task",
-	Verb:  "move",
-	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with. It never changes the column.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "move",
+	Short:   "Move a task in the order",
+	Does:    "Move a task to another place among the ones it sits with. It never changes the column.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{[]Task{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
@@ -281,12 +289,13 @@ var TaskMove = Operation{
 
 // TaskFocus says which task is being worked on, or puts one there.
 var TaskFocus = Operation{
-	Thing: "task",
-	Verb:  "focus",
-	Short: "Put a task in focus, or say which one is",
-	Does:  "Put a task in focus, or say which one is. One task is in focus at a time.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "focus",
+	Short:   "Put a task in focus, or say which one is",
+	Does:    "Put a task in focus, or say which one is. One task is in focus at a time.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{Task{}, InFocus{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task being worked on"},
 	},
@@ -309,12 +318,13 @@ var TaskFocus = Operation{
 
 // TaskUnfocus leaves nothing in focus.
 var TaskUnfocus = Operation{
-	Thing: "task",
-	Verb:  "unfocus",
-	Short: "Let go of the task in focus",
-	Does:  "Leave nothing in focus. Letting go of nothing is not a failure.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "task",
+	Verb:    "unfocus",
+	Short:   "Let go of the task in focus",
+	Does:    "Leave nothing in focus. Letting go of nothing is not a failure.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{InFocus{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		if err := on.Engine.LetGo(); err != nil {
 			return Answer{}, err
@@ -383,12 +393,13 @@ func whatIsInFocus(on On) (Answer, error) {
 
 // TraceShow says what has been done to a task.
 var TraceShow = Operation{
-	Thing: "trace",
-	Verb:  "show",
-	Short: "Show what has been done to a task",
-	Does:  "Show everything done to a task, oldest first, with what each change went from and to.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "trace",
+	Verb:    "show",
+	Short:   "Show what has been done to a task",
+	Does:    "Show everything done to a task, oldest first, with what each change went from and to.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]trace.Shape{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -404,12 +415,13 @@ var TraceShow = Operation{
 
 // TraceList says what was done over a period, and what that comes to.
 var TraceList = Operation{
-	Thing: "trace",
-	Verb:  "list",
-	Short: "List what was done over a period",
-	Does:  "List what was done from a day onward, today when none is given, and what it comes to.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "trace",
+	Verb:    "list",
+	Short:   "List what was done over a period",
+	Does:    "List what was done from a day onward, today when none is given, and what it comes to.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]trace.Shape{}},
 	Takes: []Argument{
 		{Name: "since", Kind: Day, Means: "the first day to look at; today when left out"},
 	},

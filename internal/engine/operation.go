@@ -88,6 +88,19 @@ type Argument struct {
 	Of string
 }
 
+// Answers is what an operation answers, as one value per shape it can take.
+//
+// Declared rather than inferred, because nothing else knows it: Of works out
+// which shape to build by looking at which field of an Answer was filled, and
+// that is only knowable once the operation has run. A surface describing itself
+// has to say beforehand.
+//
+// More than one entry when an operation genuinely answers more than one thing —
+// `task focus` hands back the task being worked on, or says nothing is. A
+// schema then says either of those, which is the truth rather than a guess at
+// which is more likely.
+type Answers []any
+
 // Input is what a caller handed over, one entry per Argument.Name that was
 // actually named.
 //
@@ -172,6 +185,9 @@ type Operation struct {
 	Takes []Argument
 	// Run carries out the operation against whatever it was given to work on.
 	Run func(On, Input) (Answer, error)
+	// Answers is what this operation hands back, one entry per shape. A surface
+	// that describes itself to a machine says so before anything runs.
+	Answers Answers
 }
 
 // Check refuses what Run could not read anyway, before the store is opened

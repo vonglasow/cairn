@@ -8,7 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/engine"
@@ -34,15 +36,46 @@ func toolFor(op engine.Operation) *sdk.Tool {
 	destructive := op.Level == engine.Full
 	openWorld := false
 	return &sdk.Tool{
-		Name:        op.Name(),
-		Description: op.Does,
-		InputSchema: schemaFor(op),
+		Name:         op.Name(),
+		Description:  op.Does,
+		InputSchema:  schemaFor(op),
+		OutputSchema: answerSchemaFor(op),
 		Annotations: &sdk.ToolAnnotations{
 			ReadOnlyHint:    op.Level == engine.Read,
 			DestructiveHint: &destructive,
 			OpenWorldHint:   &openWorld,
 		},
 	}
+}
+
+// answerSchemaFor describes the shape an operation's answer takes, from what
+// the operation declared it answers.
+//
+// Derived from the Go type rather than written out, so the description and the
+// thing described cannot drift: the same struct that crosses the wire is the one
+// the schema is read off. An operation that declares several shapes gets "any
+// one of these", which is the truth — `task focus` hands back a task or says
+// nothing is in focus, and picking one would describe half of it.
+//
+// A shape that cannot be read off its type is a programming mistake rather than
+// something a caller did, so it comes back as no schema at all: a tool that
+// cannot describe itself is better than a server that will not start.
+func answerSchemaFor(op engine.Operation) any {
+	if len(op.Answers) == 0 {
+		return nil
+	}
+	shapes := make([]*jsonschema.Schema, 0, len(op.Answers))
+	for _, answered := range op.Answers {
+		shape, err := jsonschema.ForType(reflect.TypeOf(answered), nil)
+		if err != nil {
+			return nil
+		}
+		shapes = append(shapes, shape)
+	}
+	if len(shapes) == 1 {
+		return shapes[0]
+	}
+	return &jsonschema.Schema{AnyOf: shapes}
 }
 
 // schemaFor is the JSON schema op's arguments make: each argument's name, its

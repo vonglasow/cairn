@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
+
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/domain"
@@ -193,5 +195,74 @@ func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	}
 	if labels := task.OfTask(*shown.Task).Labels; len(labels) != 0 {
 		t.Fatalf("labels = %v, want none", labels)
+	}
+}
+
+// The shape a tool says its answer takes, from what the operation declared.
+func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
+	one := answerSchemaFor(engine.Operation{Answers: engine.Answers{engine.Deleted{}}})
+	shape, ok := one.(*jsonschema.Schema)
+	if !ok {
+		t.Fatalf("one shape gave %T, want a schema", one)
+	}
+	if shape.Type != "object" {
+		t.Errorf("Deleted{} reads as %q, want an object", shape.Type)
+	}
+	if shape.AnyOf != nil {
+		t.Error("one shape is wrapped in an either-of, and there is nothing to choose between")
+	}
+	if _, described := shape.Properties["deleted"]; !described {
+		t.Errorf("the shape does not name the field it carries: %v", shape.Properties)
+	}
+}
+
+// Several shapes become "any one of these", which is the truth: naming one of
+// them would describe half the tool.
+func TestAnswerSchemaFor_saysEitherWhenAnOperationAnswersEither(t *testing.T) {
+	either := answerSchemaFor(engine.Operation{
+		Answers: engine.Answers{engine.Task{}, engine.InFocus{}},
+	})
+	shape, ok := either.(*jsonschema.Schema)
+	if !ok {
+		t.Fatalf("two shapes gave %T, want a schema", either)
+	}
+	if len(shape.AnyOf) != 2 {
+		t.Errorf("it offers %d shapes, want 2", len(shape.AnyOf))
+	}
+}
+
+// An operation that declares nothing describes nothing, rather than describing
+// something empty a client would try to hold its answer to.
+func TestAnswerSchemaFor_describesNothingWhenNothingWasDeclared(t *testing.T) {
+	if got := answerSchemaFor(engine.Operation{}); got != nil {
+		t.Errorf("answerSchemaFor = %v, want nothing described", got)
+	}
+}
+
+// Every tool offered carries the shape of its answer. Asserted here as well as
+// in the scenarios: a scenario runs the server, and this runs the description on
+// its own, so a tool that stopped describing itself fails in the package that
+// builds it.
+func TestToolFor_everyToolCarriesTheShapeOfItsAnswer(t *testing.T) {
+	silent := []string{}
+	for _, op := range engine.All() {
+		if toolFor(op).OutputSchema == nil {
+			silent = append(silent, op.Name())
+		}
+	}
+	if len(silent) > 0 {
+		t.Errorf("%d tools carry no shape: %v", len(silent), silent)
+	}
+}
+
+// A shape that cannot be read off its type describes nothing rather than
+// stopping the server: a tool nobody can describe is better than a server that
+// will not start, and it is a programming mistake rather than something a caller
+// did.
+func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
+	if got := answerSchemaFor(engine.Operation{
+		Answers: engine.Answers{make(chan int)},
+	}); got != nil {
+		t.Errorf("answerSchemaFor on a shape no schema can describe = %v, want nothing", got)
 	}
 }

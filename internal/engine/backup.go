@@ -21,12 +21,13 @@ func resolveBackup(vault *Backups, in Input) (domain.Backup, error) {
 
 // BackupAdd backs up the store as it stands.
 var BackupAdd = Operation{
-	Thing: "backup",
-	Verb:  "add",
-	Short: "Back up the store as it stands",
-	Does:  "Back up the store as it stands.",
-	Level: Write,
-	Needs: NoStore,
+	Thing:   "backup",
+	Verb:    "add",
+	Short:   "Back up the store as it stands",
+	Does:    "Back up the store as it stands.",
+	Level:   Write,
+	Needs:   NoStore,
+	Answers: Answers{domain.BackupShape{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		// Counted before backing up, not after: what is announced is what was
 		// taken.
@@ -44,12 +45,13 @@ var BackupAdd = Operation{
 
 // BackupList names every backup.
 var BackupList = Operation{
-	Thing: "backup",
-	Verb:  "list",
-	Short: "List every backup",
-	Does:  "List every backup.",
-	Level: Read,
-	Needs: NoStore,
+	Thing:   "backup",
+	Verb:    "list",
+	Short:   "List every backup",
+	Does:    "List every backup.",
+	Level:   Read,
+	Needs:   NoStore,
+	Answers: Answers{[]domain.BackupShape{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Backups.All()
 		if err != nil {
@@ -67,12 +69,13 @@ var BackupList = Operation{
 
 // BackupShow says when a backup was made and what it holds.
 var BackupShow = Operation{
-	Thing: "backup",
-	Verb:  "show",
-	Short: "Say when a backup was made and what it holds",
-	Does:  "Say when a backup was made and what it holds.",
-	Level: Read,
-	Needs: NoStore,
+	Thing:   "backup",
+	Verb:    "show",
+	Short:   "Say when a backup was made and what it holds",
+	Does:    "Say when a backup was made and what it holds.",
+	Level:   Read,
+	Needs:   NoStore,
+	Answers: Answers{domain.BackupShape{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
@@ -92,12 +95,13 @@ var BackupShow = Operation{
 
 // BackupDelete removes a backup.
 var BackupDelete = Operation{
-	Thing: "backup",
-	Verb:  "delete",
-	Short: "Delete a backup",
-	Does:  "Delete a backup.",
-	Level: Full,
-	Needs: NoStore,
+	Thing:   "backup",
+	Verb:    "delete",
+	Short:   "Delete a backup",
+	Does:    "Delete a backup.",
+	Level:   Full,
+	Needs:   NoStore,
+	Answers: Answers{Deleted{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
@@ -112,12 +116,13 @@ var BackupDelete = Operation{
 
 // BackupRestore puts a backup back, the most recent one unless told otherwise.
 var BackupRestore = Operation{
-	Thing: "backup",
-	Verb:  "restore",
-	Short: "Put a backup back, the most recent one unless told otherwise",
-	Does:  "Put a backup back, the most recent one unless told otherwise.",
-	Level: Full,
-	Needs: NoStore,
+	Thing:   "backup",
+	Verb:    "restore",
+	Short:   "Put a backup back, the most recent one unless told otherwise",
+	Does:    "Put a backup back, the most recent one unless told otherwise.",
+	Level:   Full,
+	Needs:   NoStore,
+	Answers: Answers{PutBack{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},
 	},

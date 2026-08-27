@@ -1,9 +1,15 @@
 package engine
 
 import (
+	"cairn/internal/domain"
+	"cairn/internal/migration"
+	"cairn/internal/objective"
+	"cairn/internal/task"
+	"cairn/internal/trace"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -213,5 +219,82 @@ func TestInput_tellsNotNamedFromNamedAsNothing(t *testing.T) {
 	}
 	if got := in.Changed("label"); got == nil || len(*got) != 0 {
 		t.Errorf(`Changed("label") = %v, want an empty set: it was named as nothing`, got)
+	}
+}
+
+// Every operation says what it answers, because a surface that describes itself
+// to a machine has to say it before anything runs — and nothing else knows it.
+func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
+	silent := []string{}
+	for _, op := range All() {
+		if len(op.Answers) == 0 {
+			silent = append(silent, op.Name())
+		}
+	}
+	if len(silent) > 0 {
+		t.Errorf("%d operations say nothing about their answer: %v", len(silent), silent)
+	}
+}
+
+// What an operation declares it answers is what Of actually builds from what it
+// answered. This is the check the declaration bought: Of works out the shape by
+// looking at which field of an Answer was filled, and until now nothing could
+// compare that to anything.
+func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
+	for _, tc := range []struct {
+		op       Operation
+		answered Answer
+	}{
+		{TaskShow, Answer{Task: of(task.Task{})}},
+		{TaskList, Answer{Tasks: []task.Task{}}},
+		{TaskSearch, Answer{Found: []task.Task{}}},
+		{TaskMove, Answer{Tasks: []task.Task{}}},
+		{TaskDelete, Answer{Deleted: of(1)}},
+		{TaskUnfocus, Answer{InFocus: of(0)}},
+		{TraceShow, Answer{Acts: []trace.Act{}}},
+		{TraceList, Answer{Since: []trace.Act{}}},
+		{ObjectiveShow, Answer{Objective: of(objective.Objective{})}},
+		{ObjectiveList, Answer{Objectives: []objective.Objective{}}},
+		{ObjectiveSearch, Answer{FoundObjectives: []objective.Objective{}}},
+		{BackupShow, Answer{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
+		{BackupList, Answer{Backups: []domain.Backup{}}},
+		{BackupRestore, Answer{PutBack: of(1)}},
+		{MigrationShow, Answer{Change: of(migration.Migration{})}},
+		{MigrationList, Answer{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
+		{MigrationApply, Answer{Applied: []string{}}},
+		{MigrationRollback, Answer{RolledBack: of(migration.Migration{})}},
+	} {
+		built := reflect.TypeOf(Of(tc.answered))
+		want := make([]string, 0, len(tc.op.Answers))
+		found := false
+		for _, declared := range tc.op.Answers {
+			if reflect.TypeOf(declared) == built {
+				found = true
+			}
+			want = append(want, reflect.TypeOf(declared).String())
+		}
+		if !found {
+			t.Errorf("%s builds a %s, and says it answers %v", tc.op.Name(), built, want)
+		}
+	}
+}
+
+// The two shapes of task_focus are both real: it hands back the task being
+// worked on, or says nothing is. A declaration naming one of them would
+// describe half the tool.
+func TestAnswers_taskFocusSaysBothOfItsShapes(t *testing.T) {
+	held := reflect.TypeOf(Of(Answer{Task: of(task.Task{}), InFocus: of(1)}))
+	none := reflect.TypeOf(Of(Answer{InFocus: of(0)}))
+	if held == none {
+		t.Fatal("the two answers of task_focus have the same shape, so there is nothing to declare twice")
+	}
+	declared := map[reflect.Type]bool{}
+	for _, one := range TaskFocus.Answers {
+		declared[reflect.TypeOf(one)] = true
+	}
+	for _, want := range []reflect.Type{held, none} {
+		if !declared[want] {
+			t.Errorf("task_focus can answer a %s and does not say so", want)
+		}
 	}
 }

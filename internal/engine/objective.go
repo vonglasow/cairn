@@ -343,12 +343,13 @@ func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain
 
 // ObjectiveAdd records a new objective.
 var ObjectiveAdd = Operation{
-	Thing: "objective",
-	Verb:  "add",
-	Short: "Add an objective",
-	Does:  "Add an objective, carrying whatever of its attributes were given.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "add",
+	Short:   "Add an objective",
+	Does:    "Add an objective, carrying whatever of its attributes were given.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{Objective{}},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
 	}, objectiveAttributes...),
@@ -369,12 +370,13 @@ var ObjectiveAdd = Operation{
 
 // ObjectiveList names every objective.
 var ObjectiveList = Operation{
-	Thing: "objective",
-	Verb:  "list",
-	Short: "List every objective",
-	Does:  "List every objective.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "list",
+	Short:   "List every objective",
+	Does:    "List every objective.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]Objective{}},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Engine.ListObjectives()
 		if err != nil {
@@ -387,12 +389,13 @@ var ObjectiveList = Operation{
 // ObjectiveShow says what an objective carries, what hangs under it and how
 // far along it is.
 var ObjectiveShow = Operation{
-	Thing: "objective",
-	Verb:  "show",
-	Short: "Show what an objective carries, and how far along it is",
-	Does:  "Show what an objective carries, what tasks serve it and how far along it is.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "show",
+	Short:   "Show what an objective carries, and how far along it is",
+	Does:    "Show what an objective carries, what tasks serve it and how far along it is.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{Objective{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},
@@ -408,12 +411,13 @@ var ObjectiveShow = Operation{
 
 // ObjectiveEdit changes what an objective carries.
 var ObjectiveEdit = Operation{
-	Thing: "objective",
-	Verb:  "edit",
-	Short: "Change what an objective carries",
-	Does:  "Change what an objective carries.",
-	Level: Write,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "edit",
+	Short:   "Change what an objective carries",
+	Does:    "Change what an objective carries.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Answers{Objective{}},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
@@ -440,12 +444,13 @@ var ObjectiveEdit = Operation{
 // ObjectiveSearch names every objective carrying everything named, wherever
 // among its facts each one happens to sit.
 var ObjectiveSearch = Operation{
-	Thing: "objective",
-	Verb:  "search",
-	Short: "Look for an objective by anything it carries",
-	Does:  "List every objective carrying everything named, wherever among its facts each one sits.",
-	Level: Read,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "search",
+	Short:   "Look for an objective by anything it carries",
+	Does:    "List every objective carrying everything named, wherever among its facts each one sits.",
+	Level:   Read,
+	Needs:   AStore,
+	Answers: Answers{[]Objective{}},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},
@@ -467,12 +472,13 @@ var ObjectiveSearch = Operation{
 
 // ObjectiveDelete removes an objective.
 var ObjectiveDelete = Operation{
-	Thing: "objective",
-	Verb:  "delete",
-	Short: "Delete an objective",
-	Does:  "Delete an objective.",
-	Level: Full,
-	Needs: AStore,
+	Thing:   "objective",
+	Verb:    "delete",
+	Short:   "Delete an objective",
+	Does:    "Delete an objective.",
+	Level:   Full,
+	Needs:   AStore,
+	Answers: Answers{Deleted{}},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},
