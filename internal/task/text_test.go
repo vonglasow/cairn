@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
 )
@@ -204,5 +205,42 @@ func TestTree_marksNothingWhenNothingIsInFocus(t *testing.T) {
 	got := Tree([]Task{listed(1, "Ship it", NoParent)}, NothingInFocus)
 	if strings.Contains(got, InFocusMark) {
 		t.Errorf("nothing is in focus, yet a line is marked:\n%s", got)
+	}
+}
+
+// A card carrying what most tasks do not: a time already spent on it, a parent
+// it hangs under, an objective it serves. Each is a line of the card and each
+// has a membrane method of its own, reached only by a task that carries it.
+func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
+	built, err := NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	var a AsTold
+	built.Tell(&a)
+	a.Numbered(2)
+	a.Spent(90 * time.Minute)
+	a.Under(1)
+	a.Serves(3)
+
+	got := Text(a.Task(), domain.Progress{})
+	for _, want := range []string{"time spent", "1h30m", "parent", "objective"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the card does not carry %q:\n%s", want, got)
+		}
+	}
+}
+
+// The two rules that say where a task may hang answer nothing when it may. The
+// refusing side is asserted elsewhere; this is the side that says yes, and a
+// rule that only ever refuses in a test is a rule nobody has seen allow.
+func TestTheHangingRules_answerNothingWhenTheTaskMayHang(t *testing.T) {
+	root := listed(1, "Ship it", NoParent)
+	if err := root.MayCarrySubTasks(); err != nil {
+		t.Errorf("a root task may carry sub-tasks, and it said %v", err)
+	}
+	under := listed(2, "Write the tests", 1)
+	if err := under.MayHangUnderItsParent(); err != nil {
+		t.Errorf("a task may hang under another, and it said %v", err)
 	}
 }

@@ -2,6 +2,7 @@ package task
 
 import (
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
 )
@@ -157,5 +158,26 @@ func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	})
 	if Matching(got, []string{"team"}) {
 		t.Error("Matching = true, want false: nothing carries \"team\"")
+	}
+}
+
+// An estimate is looked in like anything else a task carries: it is written the
+// way a person reads one before it is compared, so "1h30m" is what a search has
+// to match rather than a count of seconds.
+func TestMatching_looksInTheEstimate(t *testing.T) {
+	built, err := NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	var a AsTold
+	built.Tell(&a)
+	a.Estimated(90 * time.Minute)
+	carrying := a.Task()
+
+	if !Matching(carrying, []string{"1h30m"}) {
+		t.Error("a task with an estimate of 1h30m is not found by it")
+	}
+	if Matching(carrying, []string{"5400"}) {
+		t.Error("a task is found by the seconds of its estimate, which nobody types")
 	}
 }

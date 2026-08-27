@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
@@ -243,5 +244,51 @@ func TestVault_refusesToCountWhatIsNotAStore(t *testing.T) {
 	}
 	if _, err := NewVault(path).HoldsStore(); !errors.Is(err, ErrNotAStore) {
 		t.Errorf("err = %v, want ErrNotAStore", err)
+	}
+}
+
+// A backup made by an older cairn has tasks and no objectives table at all, and
+// what it holds is still readable: the second question is asked rather than
+// assumed, so the older shape answers with the count it has.
+func TestHeldOn_readsTheOlderShapeThatHasNoObjectives(t *testing.T) {
+	older := filepath.Join(t.TempDir(), "older.db")
+	db, err := sql.Open("sqlite", older)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(
+		`CREATE TABLE tasks (number INTEGER PRIMARY KEY); INSERT INTO tasks VALUES (1), (2)`); err != nil {
+		t.Fatalf("laying down the older shape: %v", err)
+	}
+
+	held, err := heldOn(db)
+	if err != nil {
+		t.Fatalf("heldOn: %v", err)
+	}
+	if held.Tasks != 2 || held.Objectives != 0 {
+		t.Errorf("it holds %+v, want 2 tasks and no objectives", held)
+	}
+}
+
+// A file in the backup folder that is not one of ours is not one of ours,
+// whichever way its name is wrong: nothing is guessed from a name.
+func TestNumberOf_takesNoNameButOurs(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		number int
+		ours   bool
+	}{
+		{"cairn-0004.db", 4, true},
+		{"notes.txt", 0, false},
+		{"cairn-0004.sqlite", 0, false},
+		{"cairn-four.db", 0, false},
+		{"cairn-.db", 0, false},
+	} {
+		number, ours := numberOf(tc.name)
+		if ours != tc.ours || number != tc.number {
+			t.Errorf("numberOf(%q) = %d, %v — want %d, %v",
+				tc.name, number, ours, tc.number, tc.ours)
+		}
 	}
 }

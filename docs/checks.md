@@ -110,6 +110,49 @@ code so the mutant does not exist, rather than arguing for it. The commit
 truncation in `internal/cli` is there for exactly that reason: slicing on a
 `min` has no branch to mutate, where `if len > n` had an untestable boundary.
 
+## What the last few per cent are, and why they stay there
+
+Coverage sits in the mid-nineties and will not reach a hundred. That is not a
+backlog, so what the remainder is made of is written down here — otherwise the
+question comes back, and the honest answer takes an afternoon to rediscover.
+
+Counted on the statements no test ever runs:
+
+| | | |
+|---|---|---|
+| ~three quarters | the inside of an `if err != nil` — a `return fmt.Errorf(…)` after a call that does not fail in a test | **left there** |
+| a handful | structurally unreachable | **cannot** |
+| the rest | code called from another package and never from its own | **closed as it is found** |
+
+**The error interiors stay.** Reaching them means making SQLite fail in the
+middle of a statement, which needs a fault-injecting driver or a fake store —
+and the store is tested against real SQLite on purpose. Nor would it buy
+anything: **mutation already guards every one of those conditions.** Negating
+`err != nil` returns an error where there is none, the happy path breaks, and
+the mutant dies. The branch is unexercised and the condition is proven, which
+is the distinction coverage cannot draw and mutation can.
+
+**What cannot be reached.** `main` cannot be called from a test without ending
+the process that runs it, which is why `cmd/` sits outside the per-package
+floor. `test/World.Register` and its scenario hook are reachable only through a
+real godog run, and the harness cannot drive one — see [mcp.md](mcp.md).
+Building the MCP server inside its command's body would block on standard
+input. A `json.Marshal` of a struct that cannot fail has an error branch that
+cannot be taken.
+
+**And a trap worth naming.** `go tool cover -func` lists **every membrane
+method at 0.0%** — `func (c *Counter) Due(time.Time) {}` and eighty others.
+They hold **zero statements between them**: they cannot be covered and they
+change no percentage. A notion tells one fact per method and most membranes
+ignore most facts, so the list is long, alarming, and empty. Read the statement
+counts, not the function list.
+
+**What does get closed** is the one class that is a real gap: code a package
+does not test because somebody else calls it. Coverage is per package, so a
+scenario in `internal/cli` that reaches the engine, the store and a notion
+credits only `internal/cli`. That is how a package once sat at 0% with sixty
+functions in it while every suite was green.
+
 ## Adding a check
 
 **Every check belongs in `prek.toml`.** Adding a tool that verifies anything
