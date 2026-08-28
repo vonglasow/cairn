@@ -211,7 +211,7 @@ var taskAttributes = []Argument{
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 	{Name: "spent", Kind: Duration, Means: "the time already spent on it; +30m adds, -15m takes off"},
 	{Name: "parent", Kind: Number, Of: "a task", Means: "the number of the task it hangs under"},
-	{Name: "objective", Kind: Number, Of: "an objective", Means: "the number of the objective it serves"},
+	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; +4 adds one, -1 takes one away"},
 }
 
 // oneOf turns a closed set of typed values into the strings Argument.OneOf
@@ -261,11 +261,10 @@ func taskChanges(in Input) (Changes, error) {
 		under, _ := in.Whole("parent")
 		c.Parent = &under
 	}
-	if in.Named("objective") {
-		// Empty is how a task is set loose, for the same reason as the parent.
-		serves, _ := in.Whole("objective")
-		c.Objective = &serves
-	}
+	// A set now, so it is read the way the labels and the blockers are rather
+	// than as a single number: naming nothing sets the task loose, which the
+	// grammar already handles without a case of its own.
+	c.Objective = in.Changed("objective")
 	return c, nil
 }
 

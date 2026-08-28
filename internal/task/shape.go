@@ -25,14 +25,15 @@ type Shape struct {
 	Deadline    string   `json:"deadline"`
 	Estimate    string   `json:"estimate"`
 	TimeSpent   string   `json:"time_spent"`
-	Objective   int      `json:"objective"`
+	Objectives  []int    `json:"objectives"`
 }
 
 // shapeMembrane is a task's membrane for the shape a machine reads: it is
 // told every fact and keeps it in the form Shape needs, ready to be read off
 // once telling is done.
 type shapeMembrane struct {
-	number, parent, objective           int
+	number, parent                      int
+	objectives                          []int
 	title, state, priority, description string
 	labels                              []string
 	blockers                            []int
@@ -70,8 +71,13 @@ func (m *shapeMembrane) Spent(d time.Duration)     { m.timeSpent = domain.Format
 func (m *shapeMembrane) NothingSpent()             {}
 func (m *shapeMembrane) Under(n int)               { m.parent = n }
 func (m *shapeMembrane) UnderNothing()             {}
-func (m *shapeMembrane) Serves(n int)              { m.objective = n }
+func (m *shapeMembrane) Serves(n int)              { m.objectives = append(m.objectives, n) }
 func (m *shapeMembrane) ServesNothing()            {}
+func (m *shapeMembrane) ObjectivesTold() {
+	if m.objectives == nil {
+		m.objectives = []int{}
+	}
+}
 
 // OfTask turns a task into the shape a machine reads.
 func OfTask(t Task) Shape {
@@ -82,9 +88,9 @@ func OfTask(t Task) Shape {
 		State: m.state, Priority: m.priority,
 		Description: m.description, Labels: m.labels,
 		BlockedBy: m.blockers, Because: m.because,
-		Deadline:  m.deadline,
-		Estimate:  m.estimate,
-		TimeSpent: m.timeSpent,
-		Objective: m.objective,
+		Deadline:   m.deadline,
+		Estimate:   m.estimate,
+		TimeSpent:  m.timeSpent,
+		Objectives: m.objectives,
 	}
 }

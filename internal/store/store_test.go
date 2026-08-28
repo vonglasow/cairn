@@ -56,15 +56,16 @@ func changed(built task.Task, mutate func(a *task.AsTold)) task.Task {
 // It never builds a task, only reads what Tell says, which is what keeps it
 // from being a second way to make one.
 type taskFacts struct {
-	number, parent, objective int
-	title, description        string
-	state                     domain.State
-	priority                  domain.Priority
-	labels                    []string
-	blockers                  []int
-	because                   string
-	deadline                  time.Time
-	estimate, timeSpent       time.Duration
+	number, parent      int
+	title, description  string
+	state               domain.State
+	priority            domain.Priority
+	labels              []string
+	blockers            []int
+	objectives          []int
+	because             string
+	deadline            time.Time
+	estimate, timeSpent time.Duration
 }
 
 func (f *taskFacts) Numbered(n int)            { f.number = n }
@@ -89,8 +90,9 @@ func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
 func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
 func (f *taskFacts) Under(n int)               { f.parent = n }
 func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
-func (f *taskFacts) Serves(n int)              { f.objective = n }
-func (f *taskFacts) ServesNothing()            { f.objective = task.NoObjective }
+func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objectives, n) }
+func (f *taskFacts) ServesNothing()            { f.objectives = nil }
+func (f *taskFacts) ObjectivesTold()           {}
 
 // factsOf reads back what a test needs from a task.
 func factsOf(t task.Task) taskFacts {
@@ -591,9 +593,9 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	_, refused := db.Exec(`INSERT INTO tasks (parent, objective, title, description,
+	_, refused := db.Exec(`INSERT INTO tasks (parent, title, description,
 		state, priority, deadline, estimate, time_spent)
-		VALUES (0, 0, 'x', '', 'backlog', 'normal', '', 0, 0)`)
+		VALUES (0, 'x', '', 'backlog', 'normal', '', 0, 0)`)
 	if refused == nil {
 		t.Fatal("writing to a read-only store was expected to fail")
 	}

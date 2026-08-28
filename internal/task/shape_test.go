@@ -29,6 +29,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Numbered(1)
 	a.Under(2)
 	a.Serves(3)
+	a.ObjectivesTold()
 	a.Titled("Write the spec")
 	a.Described("in full")
 	a.InColumn(domain.Todo)
@@ -56,9 +57,9 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 
 	want := map[string]any{
-		"number":      float64(1),
-		"parent":      float64(2),
-		"objective":   float64(3),
+		"number": float64(1),
+		"parent": float64(2),
+
 		"title":       "Write the spec",
 		"description": "in full",
 		"state":       string(domain.Todo),
@@ -75,6 +76,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	labels, ok := doc["labels"].([]any)
 	if !ok || len(labels) != 2 || labels[0] != "spec" || labels[1] != "team" {
 		t.Errorf("labels = %v, want [spec team]", doc["labels"])
+	}
+	objectives, ok := doc["objectives"].([]any)
+	if !ok || len(objectives) != 1 || objectives[0] != float64(3) {
+		t.Errorf("objectives = %v, want [3]", doc["objectives"])
 	}
 	blockers, ok := doc["blocked_by"].([]any)
 	if !ok || len(blockers) != 2 || blockers[0] != float64(4) || blockers[1] != float64(5) {
@@ -97,7 +102,7 @@ func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	for _, want := range []string{`"labels":[]`, `"blocked_by":[]`} {
+	for _, want := range []string{`"labels":[]`, `"blocked_by":[]`, `"objectives":[]`} {
 		if got := string(encoded); !strings.Contains(got, want) {
 			t.Errorf("%s should be there, got %s", want, got)
 		}

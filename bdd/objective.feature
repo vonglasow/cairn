@@ -76,6 +76,91 @@ Feature: Objectives
       Then the task has no objective
       And `cairn objective show 1` says nothing is under it
 
+  Rule: A task can serve more than one objective
+
+    A piece of work serves what it serves. Made to serve one, a task that
+    advanced two had to pick, and the objective it did not name then counted it
+    as nothing — so how far along that objective was read low, and the fix was
+    to remember what cairn had not been told.
+
+    Named the way labels and blockers are: a plain number says what the set
+    becomes, +4 adds, -1 takes away, and nothing named sets the task loose.
+
+    @objective-task-serves-two
+    Scenario: a task can be given two objectives at once
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn task add "Write the spec" --objective 1 --objective 2`
+      Then it succeeds
+      And `cairn task show 1` says it serves objectives 1 and 2
+
+    @objective-task-serves-one-more
+    Scenario: another objective can be added without naming the first
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objective "1"
+      When I run `cairn task edit 1 --objective +2`
+      Then `cairn task show 1` says it serves objectives 1 and 2
+
+    @objective-task-serves-one-less
+    Scenario: one objective can be taken away without naming the other
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      When I run `cairn task edit 1 --objective -1`
+      Then `cairn task show 1` says it serves objective 2 alone
+
+    @objective-task-serves-these-instead
+    Scenario: a plain number says what the set becomes, not what joins it
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      When I run `cairn task edit 1 --objective 2`
+      Then `cairn task show 1` says it serves objective 2 alone
+
+    @objective-task-serves-it-once
+    Scenario: the same objective named twice is served once
+      Given I added an objective titled "Ship cairn 1.0"
+      When I run `cairn task add "Write the spec" --objective 1 --objective 1`
+      Then `cairn task show 1` says it serves objective 1 alone
+
+    @objective-counts-a-task-it-shares
+    Scenario: an objective counts a task that also serves another
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      When I run `cairn objective show 1`
+      Then it says 1 task is under it
+      And `cairn objective show 2` says 1 task is under it
+
+    @objective-progress-counts-a-shared-task-on-both-sides
+    Scenario: work done on a shared task advances both objectives
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective show 1`
+      Then it says the objective is 100% done
+      And `cairn objective show 2` says the objective is 100% done
+
+    @objective-task-detached-from-one-stays-under-the-other
+    Scenario: taking one away leaves the other holding it
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      When I run `cairn task edit 1 --objective -1`
+      Then `cairn objective show 1` says nothing is under it
+      And `cairn objective show 2` says 1 task is under it
+
+    @objective-task-json-carries-every-objective
+    Scenario: what a task serves crosses to a machine as a list
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "1" and "2"
+      When I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it says the task serves objectives 1 and 2
+
   Rule: A sub-task never serves an objective
 
     A sub-task lives with the task it hangs under, and nowhere else. It counts
@@ -223,6 +308,49 @@ Feature: Objectives
         | cairn objective show spec                        |
         | cairn objective edit spec --title "Nope"         |
         | cairn objective delete spec --yes                |
+
+    @objective-one-of-several-unknown
+    Scenario: one objective that does not exist turns down the whole set
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      When I run `cairn task edit 1 --objective +99`
+      Then it fails
+      And it says there is no such objective
+      And `cairn task show 1` says it serves objective 1 alone
+
+    @objective-taken-away-that-was-never-there
+    Scenario: taking away one it never served changes nothing
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      When I run `cairn task edit 1 --objective -99`
+      Then it succeeds
+      And `cairn task show 1` says it serves objective 1 alone
+
+    @objective-both-ways-at-once-refused
+    Scenario: naming what the set becomes and how it moves at once is refused
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec"
+      When I run `cairn task edit 1 --objective 1 --objective +2`
+      Then it fails
+      And it says the objectives are either replaced or changed, not both
+
+    @objective-sign-at-creation-refused
+    Scenario: a sign says how a set moves, and a new task has none
+      Given I added an objective titled "Ship cairn 1.0"
+      When I run `cairn task add "Write the spec" --objective +1`
+      Then it fails
+      And it says an objective is added or taken away only when changing a task
+
+    @objective-sub-task-refused-two-at-once
+    Scenario: a sub-task cannot be given two objectives either
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 2 --objective 1 --objective 2`
+      Then it fails
+      And it says a sub-task serves no objective
 
   Rule: An objective can be listed, read back and changed
 

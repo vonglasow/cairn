@@ -65,6 +65,7 @@ func (l *looking) Under(int)                 {}
 func (l *looking) UnderNothing()             {}
 func (l *looking) Serves(int)                {}
 func (l *looking) ServesNothing()            {}
+func (l *looking) ObjectivesTold()           {}
 
 // all reports whether every named thing was found.
 func (l *looking) all() bool {

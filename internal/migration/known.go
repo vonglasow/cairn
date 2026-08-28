@@ -115,4 +115,23 @@ DROP TABLE IF EXISTS blockers;
 ALTER TABLE tasks DROP COLUMN because;`,
 		loses: "what blocks each task",
 	},
+	{
+		name: "a task can serve more than one objective",
+		does: `
+CREATE TABLE IF NOT EXISTS task_objectives (
+	task_number      INTEGER NOT NULL,
+	objective_number INTEGER NOT NULL,
+	PRIMARY KEY (task_number, objective_number)
+);
+INSERT OR IGNORE INTO task_objectives (task_number, objective_number)
+	SELECT number, objective FROM tasks WHERE objective <> 0;
+ALTER TABLE tasks DROP COLUMN objective;`,
+		undoes: `
+ALTER TABLE tasks ADD COLUMN objective INTEGER NOT NULL DEFAULT 0;
+UPDATE tasks SET objective = COALESCE((
+	SELECT MIN(objective_number) FROM task_objectives
+	WHERE task_objectives.task_number = tasks.number), 0);
+DROP TABLE IF EXISTS task_objectives;`,
+		loses: "every objective a task served beyond the first",
+	},
 }

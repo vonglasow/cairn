@@ -6,6 +6,7 @@ package engine
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"cairn/internal/store"
@@ -58,8 +59,17 @@ func keeping(in Input, taken []Argument) (*store.Narrowing, error) {
 	if priority, named := in.Given["priority"]; named {
 		kept.Carrying(priority)
 	}
-	if serving, named := in.Whole("objective"); named {
-		kept.Serving(serving)
+	// Named one at a time and kept one at a time: a task serves a set, so
+	// naming two objectives keeps what serves both — the same as naming two
+	// labels, and for the same reason.
+	if serving := in.Changed("objective"); serving != nil {
+		for _, one := range *serving {
+			number, err := strconv.Atoi(strings.TrimSpace(one))
+			if err != nil || number <= 0 {
+				return nil, fmt.Errorf("%q: %w", one, ErrObjectiveRequired)
+			}
+			kept.Serving(number)
+		}
 	}
 	if labels := in.Changed("label"); labels != nil {
 		kept.Labelled(*labels)

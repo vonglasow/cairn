@@ -137,6 +137,7 @@ func TestNarrowed_keepsWhatServesTheObjectiveNamed(t *testing.T) {
 	s := openStore(t)
 	serving, err := s.Keep(changed(mustBuild(t, "Write the spec"), func(a *task.AsTold) {
 		a.Serves(1)
+		a.ObjectivesTold()
 	}))
 	if err != nil {
 		t.Fatalf("Keep: %v", err)

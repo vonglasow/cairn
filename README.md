@@ -12,6 +12,8 @@ cairn task edit 5 --blocker -3   # the last thing out of its way puts it in todo
 cairn task add "Read the spec" --label spec,team
 cairn task add "Write the tests" --parent 1
 cairn task add "Write the docs" --objective 1
+cairn task add "Write the spec" --objective 1 --objective 2   # it serves both
+cairn task edit 1 --objective +3   # one more, without naming the others
 cairn task list      # sub-tasks are listed under the task they hang from
 cairn task list --state todo --priority high   # only what carries all of it
 cairn task list --label team --label urgent    # both labels, not either
@@ -41,7 +43,7 @@ cairn task unfocus
 | `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m`. Kept to the second, so anything finer is refused rather than rounded away |
 | `--spent` | the time already spent. Given plainly it sets the tally, `+30m` adds to it, `-15m` takes off, and taking off more than was there leaves nothing. Kept to the second, like `--estimate` |
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
-| `--objective` | the number of the objective this task serves. Given empty, it sets the task loose. A sub-task never carries one |
+| `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
 
 A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. A task carrying sub-tasks is not
 deleted while they are there. Add `--json` to any command to be answered as a
@@ -110,9 +112,13 @@ The share is never rounded to `100%` while something is left, nor to `0%` once
 something is done. `task show` says the same thing about a task's sub-tasks.
 Nothing under it, nothing said.
 
-A task serves an objective, or hangs under another task, never both: a sub-task
-belongs to the task above it, and is counted towards that task's objective
-through it. An objective with tasks under it is not deleted.
+A task serves as many objectives as it actually serves, or hangs under another
+task, never both: a sub-task belongs to the task above it, and is counted
+towards that task's objectives through it. A task serving two counts in both,
+which is the point — made to serve one, work that advanced two had to pick, and
+the objective it did not name then read low. An objective with tasks under it is
+not deleted. See [docs/objectives.md](docs/objectives.md) for what serving
+several cost and bought.
 
 ## What happened, and how the day went
 

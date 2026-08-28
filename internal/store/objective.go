@@ -247,8 +247,7 @@ func (s *Store) TasksServing(number int) ([]task.Task, error) {
 	if number == task.NoObjective {
 		return []task.Task{}, nil
 	}
-	rows, err := s.db.Query(
-		`SELECT `+taskColumns+` FROM tasks WHERE objective = ? ORDER BY number`, number)
+	rows, err := s.db.Query(`SELECT `+taskColumns+` `+servingOne+taskOrder, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what serves objective %d: %w", number, err)
 	}

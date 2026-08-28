@@ -47,6 +47,7 @@ func (r *told) Under(n int)           { r.said = append(r.said, fmt.Sprintf("Und
 func (r *told) UnderNothing()         { r.said = append(r.said, "UnderNothing()") }
 func (r *told) Serves(n int)          { r.said = append(r.said, fmt.Sprintf("Serves(%d)", n)) }
 func (r *told) ServesNothing()        { r.said = append(r.said, "ServesNothing()") }
+func (r *told) ObjectivesTold()       { r.said = append(r.said, "ObjectivesTold()") }
 
 // TestTell_saysEveryFactATaskCarries checks that Tell says every fact a task
 // carries, in the card's order, and says the absence of a fact rather than
@@ -58,7 +59,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 	}
 
 	full := Task{
-		number: 3, parent: 1, objective: 2, title: "Write the spec",
+		number: 3, parent: 1, objectives: []int{2}, title: "Write the spec",
 		description: "Say what it does", state: domain.Current, priority: domain.High,
 		labels: []string{"backend", "urgent"}, blockers: []int{4, 5},
 		because: "the client's answer", deadline: deadline,
@@ -74,7 +75,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 		`BlockedBy(4)`, `BlockedBy(5)`, `BlockersTold()`,
 		`Because("the client's answer")`,
 		fmt.Sprintf("Due(%s)", deadline), fmt.Sprintf("Estimated(%s)", 90*time.Minute),
-		fmt.Sprintf("Spent(%s)", 30*time.Minute), `Under(1)`, `Serves(2)`,
+		fmt.Sprintf("Spent(%s)", 30*time.Minute), `Under(1)`, `Serves(2)`, `ObjectivesTold()`,
 	}
 	if len(got.said) != len(want) {
 		t.Fatalf("said = %v, want %v", got.said, want)
@@ -97,7 +98,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 		`Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
 		`NotBlocked()`, `BlockersTold()`, `NotBecause()`,
 		`NotDue()`, `NotEstimated()`, `NothingSpent()`, `UnderNothing()`,
-		`ServesNothing()`,
+		`ServesNothing()`, `ObjectivesTold()`,
 	}
 	if len(got.said) != len(wantBare) {
 		t.Fatalf("said = %v, want %v", got.said, wantBare)
@@ -220,8 +221,8 @@ func TestNewTask_servesNoObjectiveUnlessItIsTold(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	if got.objective != NoObjective {
-		t.Errorf("Objective = %d, want none", got.objective)
+	if len(got.objectives) != 0 {
+		t.Errorf("Objectives = %v, want none", got.objectives)
 	}
 }
 
@@ -259,8 +260,8 @@ func TestTask_refusesToServeAnObjectiveWhileHangingUnderAParent(t *testing.T) {
 		task Task
 		want error
 	}{
-		{"a parent and an objective at once", Task{number: 2, parent: 1, objective: 3}, ErrSubTaskServesNoObjective},
-		{"an objective alone", Task{number: 2, objective: 3}, nil},
+		{"a parent and an objective at once", Task{number: 2, parent: 1, objectives: []int{3}}, ErrSubTaskServesNoObjective},
+		{"an objective alone", Task{number: 2, objectives: []int{3}}, nil},
 		{"a parent alone", Task{number: 2, parent: 1}, nil},
 	} {
 		if err := c.task.MayServeAnObjective(); !errors.Is(err, c.want) {

@@ -29,70 +29,12 @@ var (
 // now, and work waiting on somebody else is not.
 var blockedColumns = []domain.State{domain.Todo, domain.Current}
 
-// changedBlockers reads what a caller said about what blocks a task and hands
-// back the set it ends up with.
-//
-// The same grammar as the labels, and deliberately: `--blocker 3` says what the
-// set becomes, `--blocker +3` adds to it, `--blocker -3` takes away. Somebody
-// who knows one knows the other, and domain.SplitSign is the one place either
-// meaning is decided.
+// changedBlockers reads what a caller said about what blocks a task. The
+// grammar and the reading are changedNumbers'; only the words it refuses with
+// belong here, because they have to name what the caller was naming.
 func changedBlockers(given []string, current []int, atCreation bool) ([]int, error) {
-	var added, removed, becomes []int
-	adjusts := false
-	for _, one := range listedBlockers(given) {
-		sign, rest := domain.SplitSign(one)
-		number, err := strconv.Atoi(strings.TrimSpace(rest))
-		if err != nil || number <= 0 {
-			return nil, fmt.Errorf("%q: %w", one, ErrBlockerRequired)
-		}
-		switch sign {
-		case '+':
-			adjusts = true
-			added = append(added, number)
-		case '-':
-			adjusts = true
-			removed = append(removed, number)
-		default:
-			becomes = append(becomes, number)
-		}
-	}
-	if adjusts && len(becomes) > 0 {
-		return nil, ErrBlockersBothWays
-	}
-	if adjusts && atCreation {
-		return nil, ErrBlockerSignAtBirth
-	}
-	if !adjusts {
-		return settled(becomes), nil
-	}
-	kept := make([]int, 0, len(current)+len(added))
-	for _, one := range current {
-		if !slices.Contains(removed, one) {
-			kept = append(kept, one)
-		}
-	}
-	return settled(append(kept, added...)), nil
-}
-
-// listedBlockers drops what was named as nothing. A caller clearing the set
-// says `--blocker ""`, which names no blocker rather than one called nothing.
-func listedBlockers(given []string) []string {
-	kept := make([]string, 0, len(given))
-	for _, one := range given {
-		for _, part := range strings.Split(one, ",") {
-			if strings.TrimSpace(part) != "" {
-				kept = append(kept, strings.TrimSpace(part))
-			}
-		}
-	}
-	return kept
-}
-
-// settled puts a set of blockers in the one order there is, with nothing twice:
-// a task blocked by the same thing named twice is blocked by it once.
-func settled(blockers []int) []int {
-	slices.Sort(blockers)
-	return slices.Compact(blockers)
+	return changedNumbers(given, current, atCreation,
+		ErrBlockerRequired, ErrBlockersBothWays, ErrBlockerSignAtBirth)
 }
 
 // mayBlock refuses a set of blockers that could never come unstuck.

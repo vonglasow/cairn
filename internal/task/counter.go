@@ -98,5 +98,8 @@ func (c *Counter) Serves(int) {}
 // ServesNothing is heard and ignored, the same way Serves is.
 func (c *Counter) ServesNothing() {}
 
+// ObjectivesTold is heard and ignored: a tally never waited on the objectives.
+func (c *Counter) ObjectivesTold() {}
+
 // Tally hands back the tally the counter has kept so far.
 func (c *Counter) Tally() domain.Tally { return c.tally }

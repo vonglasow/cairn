@@ -39,7 +39,7 @@ read and a trace you can rebuild from, and rebuilding is what was asked for.
 Twelve of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
 beside them, its deadline, its estimate, the time spent on it, its parent, the
-objective it serves. Five are not about a field: **created**, **moved**,
+objectives it serves. Five are not about a field: **created**, **moved**,
 **focus taken**, **focus released**, **deleted**.
 
 The number grows when a task gains an attribute, and nothing has to be written

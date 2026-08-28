@@ -116,7 +116,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 
 	sc.Step("^`([^`]*)` still carries the objective \"([^\"]*)\"$", func(line, want string) error {
 		w.Run(line)
-		return w.wantField("objective", want)
+		return w.wantField("objectives", served(want))
 	})
 
 	sc.Step("^`([^`]*)` says nothing is under it$", func(line string) error {
@@ -127,6 +127,26 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	sc.Step(`^it says nothing is under it$`, func() error {
 		return test.WantContains(w.Out.Stdout, "nothing is under it", "the answer")
 	})
+
+	// How many tasks an objective is holding, counted off its card. Counted
+	// rather than looked for as a number: the card lists them, and a count
+	// written on it would be a second thing to keep true.
+	sc.Step(`^it says (\d+) tasks? (?:is|are) under it$`, func(n int) error {
+		return countedUnder(w.Out.Stdout, n)
+	})
+
+	sc.Step("^`([^`]*)` says (\\d+) tasks? (?:is|are) under it$",
+		func(line string, n int) error {
+			w.Run(line)
+			return countedUnder(w.Out.Stdout, n)
+		})
+
+	sc.Step("^`([^`]*)` says the objective is (\\d+)% done$",
+		func(line string, share int) error {
+			w.Run(line)
+			return test.WantContains(w.Out.Stdout,
+				fmt.Sprintf("the objective is %d%% done", share), "the answer")
+		})
 
 	// The task appears indented under the objective's own heading, the way a
 	// sub-task appears under its parent — same shape, so it reads the same.
@@ -190,13 +210,16 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	// A task serves a set, so the card lays out "objectives". These two steps
+	// keep the wording the frozen scenarios use: what changed is where the
+	// answer is read, not what is being asserted.
 	sc.Step(`^the task carries the objective "([^"]*)"$`, func(want string) error {
-		return w.wantField("objective", want)
+		return w.wantField("objectives", served(want))
 	})
 
 	sc.Step(`^the task has no objective$`, func() error {
-		if got := w.field("objective"); got != "" {
-			return fmt.Errorf("objective = %q, want none", got)
+		if got := w.field("objectives"); got != "" {
+			return fmt.Errorf("objectives = %q, want none", got)
 		}
 		return nil
 	})
@@ -213,6 +236,23 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+
+	// What a task serves crosses as a list, named "objectives". Read out of the
+	// JSON rather than off the card: the two readings come from one engine, and
+	// a step that checked the card twice would prove the wire nothing.
+	sc.Step(`^it says the task serves objectives (\d+) and (\d+)$`,
+		func(first, second int) error {
+			var card struct {
+				Objectives []int `json:"objectives"`
+			}
+			if err := json.Unmarshal([]byte(w.Out.Stdout), &card); err != nil {
+				return fmt.Errorf("the card is not JSON (%w):\n%s", err, w.Out.Stdout)
+			}
+			if len(card.Objectives) != 2 || card.Objectives[0] != first || card.Objectives[1] != second {
+				return fmt.Errorf("objectives = %v, want [%d %d]", card.Objectives, first, second)
+			}
+			return nil
+		})
 
 	sc.Step(`^it carries the tasks under it$`, func() error {
 		var doc map[string]any
@@ -239,4 +279,49 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	} {
 		sc.Step(step, func() error { return test.WantContains(w.Out.Stderr, said, "the reason") })
 	}
+}
+
+// served writes an objective number the way a card writes it, so a step can
+// compare what it asked for against what was laid out.
+func served(number string) string {
+	return "#" + number
+}
+
+// servesExactly runs a command line and fails unless the card names exactly
+// these objectives. Exactly, and not merely among them: a set that quietly
+// kept one nobody asked for would read the same as one that did not.
+func (w *world) servesExactly(line string, numbers ...int) error {
+	w.Run(line)
+	if w.Out.Code != exitOK {
+		return fmt.Errorf("%s failed: exit %d (%s)", line, w.Out.Code, w.Out.Stderr)
+	}
+	want := make([]string, 0, len(numbers))
+	for _, one := range numbers {
+		want = append(want, served(fmt.Sprint(one)))
+	}
+	if got := w.field("objectives"); got != strings.Join(want, ", ") {
+		return fmt.Errorf("it serves %q, want %q", got, strings.Join(want, ", "))
+	}
+	return nil
+}
+
+// countedUnder counts the tasks an objective's card lists under it.
+func countedUnder(card string, want int) error {
+	_, block, found := strings.Cut(card, "\ntasks\n")
+	if !found {
+		if want == 0 {
+			return nil
+		}
+		return fmt.Errorf("nothing is under it, want %d:\n%s", want, card)
+	}
+	count := 0
+	for _, row := range strings.Split(block, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(row), "#") {
+			count++
+		}
+	}
+	if count != want {
+		return fmt.Errorf("%d tasks are under it, want %d:\n%s", count, want, card)
+	}
+	return nil
 }

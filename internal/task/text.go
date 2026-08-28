@@ -18,11 +18,12 @@ type row struct{ key, value string }
 // Labels are collected as they arrive and only laid down once LabelsTold says
 // there are no more.
 type textMembrane struct {
-	number   int
-	title    string
-	rows     []row
-	labels   []string
-	blockers []string
+	number     int
+	title      string
+	rows       []row
+	labels     []string
+	blockers   []string
+	objectives []string
 }
 
 func (c *textMembrane) Numbered(n int)  { c.number = n }
@@ -74,10 +75,16 @@ func (c *textMembrane) Spent(d time.Duration) {
 func (c *textMembrane) NothingSpent() { c.rows = append(c.rows, row{"time spent", ""}) }
 func (c *textMembrane) Under(n int)   { c.rows = append(c.rows, row{"parent", fmt.Sprintf("%d", n)}) }
 func (c *textMembrane) UnderNothing() { c.rows = append(c.rows, row{"parent", ""}) }
+
+// A task serves a set, so the card lays out one row naming all of them, each
+// written the way a task is written everywhere else.
 func (c *textMembrane) Serves(n int) {
-	c.rows = append(c.rows, row{"objective", fmt.Sprintf("%d", n)})
+	c.objectives = append(c.objectives, fmt.Sprintf("#%d", n))
 }
-func (c *textMembrane) ServesNothing() { c.rows = append(c.rows, row{"objective", ""}) }
+func (c *textMembrane) ServesNothing() {}
+func (c *textMembrane) ObjectivesTold() {
+	c.rows = append(c.rows, row{"objectives", strings.Join(c.objectives, ", ")})
+}
 
 // Text renders a task in full, empty attributes included, the way a person
 // reads it. Rendering lives here and only here: the day a second surface
@@ -265,6 +272,7 @@ func (r *listingRow) Under(n int)             { r.parent = n }
 func (r *listingRow) UnderNothing()           { r.parent = NoParent }
 func (r *listingRow) Serves(int)              {}
 func (r *listingRow) ServesNothing()          {}
+func (r *listingRow) ObjectivesTold()         {}
 
 // rowOf reads back what a listing row needs from a task, without reaching
 // into fields that stopped being exported.

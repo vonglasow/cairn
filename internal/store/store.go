@@ -170,7 +170,7 @@ func (s *Store) Close() error {
 // taskColumns is the reading order every query below hands to scanTask,
 // written once so Find, All and Under cannot drift apart. A column added to
 // one of them and forgotten in the others comes back as a zero nobody notices.
-const taskColumns = `number, parent, objective, title, description, state, priority, because, deadline, estimate, time_spent`
+const taskColumns = `number, parent, title, description, state, priority, because, deadline, estimate, time_spent`
 
 // taskOrder is how every listing reads a task's place: the column first, in the
 // order the columns are read, then the place set by hand inside it.
@@ -209,12 +209,13 @@ const lastPlaceAmong = `
 // than handing over its fields directly, which is what lets Keep and Update
 // stay correct the day those fields stop being exported.
 type boundTask struct {
-	number, parent, objective int
+	number, parent int
 	title, description,
 	state, priority,
 	deadline string
 	labels          []string
 	blockers        []int
+	objectives      []int
 	because         string
 	estimate, spent int64
 }
@@ -241,8 +242,9 @@ func (b *boundTask) Spent(d time.Duration)     { b.spent = int64(d) }
 func (b *boundTask) NothingSpent()             { b.spent = 0 }
 func (b *boundTask) Under(n int)               { b.parent = n }
 func (b *boundTask) UnderNothing()             { b.parent = task.NoParent }
-func (b *boundTask) Serves(n int)              { b.objective = n }
-func (b *boundTask) ServesNothing()            { b.objective = task.NoObjective }
+func (b *boundTask) Serves(n int)              { b.objectives = append(b.objectives, n) }
+func (b *boundTask) ServesNothing()            { b.objectives = nil }
+func (b *boundTask) ObjectivesTold()           {}
 
 // bind tells a task's facts to a fresh boundTask, ready for the parameters an
 // INSERT or an UPDATE needs.
@@ -266,10 +268,10 @@ func renumbered(t task.Task, number int) task.Task {
 func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
 	res, err := s.db.Exec(
-		`INSERT INTO tasks (parent, objective, title, description, state, priority,
+		`INSERT INTO tasks (parent, title, description, state, priority,
 		 because, deadline, estimate, time_spent, position)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
-		b.parent, b.objective, b.title, b.description, b.state, b.priority,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
+		b.parent, b.title, b.description, b.state, b.priority,
 		b.because, b.deadline, b.estimate, b.spent, b.state, b.parent)
 	if err != nil {
 		return task.Task{}, fmt.Errorf("keeping the task: %w", err)
@@ -282,6 +284,9 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if err := s.keepBlockersOn(int(number), b.blockers); err != nil {
+		return task.Task{}, err
+	}
+	if err := s.keepServedBy(int(number), b.objectives); err != nil {
 		return task.Task{}, err
 	}
 	return renumbered(t, int(number)), nil
@@ -311,10 +316,10 @@ func (s *Store) Update(t task.Task) error {
 	}
 
 	if _, err := s.db.Exec(
-		`UPDATE tasks SET parent = ?, objective = ?, title = ?, description = ?, state = ?,
+		`UPDATE tasks SET parent = ?, title = ?, description = ?, state = ?,
 		 priority = ?, because = ?, deadline = ?, estimate = ?, time_spent = ?, position = ?
 		 WHERE number = ?`,
-		b.parent, b.objective, b.title, b.description, b.state, b.priority,
+		b.parent, b.title, b.description, b.state, b.priority,
 		b.because, b.deadline, b.estimate, b.spent, place, b.number); err != nil {
 		return fmt.Errorf("changing the task: %w", err)
 	}
@@ -334,7 +339,10 @@ func (s *Store) Update(t task.Task) error {
 	if err := s.keepLabels(taskLabels, b.number, b.labels); err != nil {
 		return err
 	}
-	return s.keepBlockersOn(b.number, b.blockers)
+	if err := s.keepBlockersOn(b.number, b.blockers); err != nil {
+		return err
+	}
+	return s.keepServedBy(b.number, b.objectives)
 }
 
 // Delete removes a task, and says so when there was none to remove.
@@ -365,6 +373,10 @@ func (s *Store) Delete(number int) error {
 	// blocks anything nor is blocked by anything.
 	if err := s.releaseBlockersOn(number); err != nil {
 		return err
+	}
+	// What it served goes with it too, for the same reason.
+	if _, err := s.db.Exec(clearServing, number); err != nil {
+		return fmt.Errorf("releasing what task %d served: %w", number, err)
 	}
 	return s.releaseFocusOn(number)
 }
@@ -428,13 +440,13 @@ type scanner interface {
 // working the day those fields stop being exported.
 func (s *Store) scanTask(row scanner) (task.Task, error) {
 	var (
-		number, parent, objective int
-		title, description        string
-		state, priority           string
-		because, deadline         string
-		estimate, spent           int64
+		number, parent     int
+		title, description string
+		state, priority    string
+		because, deadline  string
+		estimate, spent    int64
 	)
-	if err := row.Scan(&number, &parent, &objective, &title, &description, &state, &priority,
+	if err := row.Scan(&number, &parent, &title, &description, &state, &priority,
 		&because, &deadline, &estimate, &spent); err != nil {
 		return task.Task{}, err
 	}
@@ -447,6 +459,10 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		return task.Task{}, err
 	}
 	blockers, err := s.blockersOn(number)
+	if err != nil {
+		return task.Task{}, err
+	}
+	objectives, err := s.objectivesServedBy(number)
 	if err != nil {
 		return task.Task{}, err
 	}
@@ -502,11 +518,14 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 	} else {
 		a.Under(parent)
 	}
-	if objective == task.NoObjective {
+	if len(objectives) == 0 {
 		a.ServesNothing()
 	} else {
-		a.Serves(objective)
+		for _, objective := range objectives {
+			a.Serves(objective)
+		}
 	}
+	a.ObjectivesTold()
 	return a.Task(), nil
 }
 

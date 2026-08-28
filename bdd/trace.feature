@@ -106,6 +106,15 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it says the because went from "—" to "the client's answer"
 
+    @trace-the-objectives-served
+    Scenario: what a task serves is written down like anything else it carries
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I edited task 1 with the objective "+2"
+      When I run `cairn trace show 1`
+      Then it says the objectives went from "#1" to "#1, #2"
+
     @trace-the-column-cairn-put-it-back-in
     Scenario: the return to todo is not a silent move
       Given I added a task titled "Write the spec"

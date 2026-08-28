@@ -265,7 +265,7 @@ func TestKeep_holdsTheObjectiveATaskServes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number) })
+	built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number); a.ObjectivesTold() })
 	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
@@ -274,8 +274,8 @@ func TestKeep_holdsTheObjectiveATaskServes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(found); facts.objective != factsOfObjective(o).number {
-		t.Errorf("Objective = %d, want %d", facts.objective, factsOfObjective(o).number)
+	if facts := factsOf(found); len(facts.objectives) != 1 || facts.objectives[0] != factsOfObjective(o).number {
+		t.Errorf("Objectives = %v, want just %d", facts.objectives, factsOfObjective(o).number)
 	}
 }
 
@@ -284,7 +284,7 @@ func TestUpdate_changesTheObjectiveATaskServes(t *testing.T) {
 	o := keepObjective(t, s, "Ship cairn 1.0")
 	built := keep(t, s, "Write the spec")
 
-	built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number) })
+	built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number); a.ObjectivesTold() })
 	if err := s.Update(built); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -292,11 +292,11 @@ func TestUpdate_changesTheObjectiveATaskServes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(found); facts.objective != factsOfObjective(o).number {
-		t.Errorf("Objective = %d, want %d", facts.objective, factsOfObjective(o).number)
+	if facts := factsOf(found); len(facts.objectives) != 1 || facts.objectives[0] != factsOfObjective(o).number {
+		t.Errorf("Objectives = %v, want just %d", facts.objectives, factsOfObjective(o).number)
 	}
 
-	found = changed(found, func(a *task.AsTold) { a.ServesNothing() })
+	found = changed(found, func(a *task.AsTold) { a.ServesNothing(); a.ObjectivesTold() })
 	if err := s.Update(found); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -304,8 +304,8 @@ func TestUpdate_changesTheObjectiveATaskServes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(loose); facts.objective != task.NoObjective {
-		t.Errorf("Objective = %d, want none", facts.objective)
+	if facts := factsOf(loose); len(facts.objectives) != 0 {
+		t.Errorf("Objectives = %v, want none", facts.objectives)
 	}
 }
 
@@ -316,7 +316,7 @@ func TestAllAndUnder_readTheObjectiveTaskstoo(t *testing.T) {
 	s := openStore(t)
 	o := keepObjective(t, s, "Ship cairn 1.0")
 	parent := keep(t, s, "Ship it")
-	parent = changed(parent, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number) })
+	parent = changed(parent, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number); a.ObjectivesTold() })
 	if err := s.Update(parent); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -330,14 +330,14 @@ func TestAllAndUnder_readTheObjectiveTaskstoo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if facts := factsOf(all[0]); facts.objective != factsOfObjective(o).number {
-		t.Errorf("All: Objective = %d, want %d", facts.objective, factsOfObjective(o).number)
+	if facts := factsOf(all[0]); len(facts.objectives) != 1 || facts.objectives[0] != factsOfObjective(o).number {
+		t.Errorf("All: Objectives = %v, want just %d", facts.objectives, factsOfObjective(o).number)
 	}
 	under, err := s.Under(factsOf(parent).number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
-	if len(under) != 1 || factsOf(under[0]).objective != task.NoObjective {
+	if len(under) != 1 || len(factsOf(under[0]).objectives) != 0 {
 		t.Errorf("Under: %+v, want one sub-task serving no objective", under)
 	}
 }
@@ -349,13 +349,13 @@ func TestTasksServing_handsBackWhatWasPutUnderTheObjective(t *testing.T) {
 
 	for _, title := range []string{"Write the spec", "Ship it"} {
 		built := keep(t, s, title)
-		built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number) })
+		built = changed(built, func(a *task.AsTold) { a.Serves(factsOfObjective(o).number); a.ObjectivesTold() })
 		if err := s.Update(built); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 	}
 	elsewhere := keep(t, s, "Read the book")
-	elsewhere = changed(elsewhere, func(a *task.AsTold) { a.Serves(factsOfObjective(other).number) })
+	elsewhere = changed(elsewhere, func(a *task.AsTold) { a.Serves(factsOfObjective(other).number); a.ObjectivesTold() })
 	if err := s.Update(elsewhere); err != nil {
 		t.Fatalf("Update: %v", err)
 	}

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,18 +26,18 @@ func TestEngine_putsATaskUnderAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 
-	added, err := e.Add("Write the spec", Changes{Objective: of(factsOfObjective(o).number)})
+	added, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if factsOf(added).objective != factsOfObjective(o).number {
-		t.Errorf("Objective = %d, want %d", factsOf(added).objective, factsOfObjective(o).number)
+	if got := factsOf(added).objectives; len(got) != 1 || got[0] != factsOfObjective(o).number {
+		t.Errorf("Objectives = %v, want just %d", got, factsOfObjective(o).number)
 	}
 }
 
 func TestEngine_refusesAnObjectiveThatDoesNotExist(t *testing.T) {
 	e := openEngine(t)
-	if _, err := e.Add("Write the spec", Changes{Objective: of(99)}); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := e.Add("Write the spec", Changes{Objective: serves(99)}); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -44,16 +45,16 @@ func TestEngine_refusesAnObjectiveThatDoesNotExist(t *testing.T) {
 func TestEngine_setsATaskLooseFromItsObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	added, err := e.Add("Write the spec", Changes{Objective: of(factsOfObjective(o).number)})
+	added, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	loose, err := e.Edit(factsOf(added).number, Changes{Objective: of(task.NoObjective)})
+	loose, err := e.Edit(factsOf(added).number, Changes{Objective: serves()})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if factsOf(loose).objective != task.NoObjective {
-		t.Errorf("Objective = %d, want none", factsOf(loose).objective)
+	if got := factsOf(loose).objectives; len(got) != 0 {
+		t.Errorf("Objectives = %v, want none", got)
 	}
 }
 
@@ -68,7 +69,7 @@ func TestEngine_refusesAnObjectiveOnASubTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	_, err = e.Edit(factsOf(child).number, Changes{Objective: of(factsOfObjective(o).number)})
+	_, err = e.Edit(factsOf(child).number, Changes{Objective: serves(factsOfObjective(o).number)})
 	if !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("err = %v, want ErrSubTaskServesNoObjective", err)
 	}
@@ -81,7 +82,7 @@ func TestEngine_refusesAParentAndAnObjectiveAtOnce(t *testing.T) {
 
 	_, err := e.Add("Write the spec", Changes{
 		Parent:    of(factsOf(parent).number),
-		Objective: of(factsOfObjective(o).number),
+		Objective: serves(factsOfObjective(o).number),
 	})
 	if !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("err = %v, want ErrSubTaskServesNoObjective", err)
@@ -92,7 +93,7 @@ func TestEngine_refusesAParentOnATaskServingAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
-	servingTask, err := e.Add("Write the spec", Changes{Objective: of(factsOfObjective(o).number)})
+	servingTask, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -105,7 +106,8 @@ func TestEngine_refusesAParentOnATaskServingAnObjective(t *testing.T) {
 		t.Fatalf("Show: %v", err)
 	}
 	stillFacts := factsOf(still)
-	if stillFacts.objective != factsOfObjective(o).number || stillFacts.parent != task.NoParent {
+	if len(stillFacts.objectives) != 1 || stillFacts.objectives[0] != factsOfObjective(o).number ||
+		stillFacts.parent != task.NoParent {
 		t.Errorf("%+v changed despite the refusal", stillFacts)
 	}
 }
@@ -115,19 +117,19 @@ func TestEngine_lettingGoOfTheObjectiveMakesRoomForAParent(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
-	servingTask, err := e.Add("Write the spec", Changes{Objective: of(factsOfObjective(o).number)})
+	servingTask, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	moved, err := e.Edit(factsOf(servingTask).number, Changes{
-		Objective: of(task.NoObjective),
+		Objective: serves(),
 		Parent:    of(factsOf(parent).number),
 	})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
 	movedFacts := factsOf(moved)
-	if movedFacts.parent != factsOf(parent).number || movedFacts.objective != task.NoObjective {
+	if movedFacts.parent != factsOf(parent).number || len(movedFacts.objectives) != 0 {
 		t.Errorf("%+v, want it hanging under %d and serving nothing", movedFacts, factsOf(parent).number)
 	}
 }
@@ -162,7 +164,7 @@ func done(t *testing.T, e *Engine, number int) {
 // serving adds a task under an objective, failing the test if it cannot.
 func serving(t *testing.T, e *Engine, title string, objectiveNumber int) task.Task {
 	t.Helper()
-	added, err := e.Add(title, Changes{Objective: of(objectiveNumber)})
+	added, err := e.Add(title, Changes{Objective: serves(objectiveNumber)})
 	if err != nil {
 		t.Fatalf("Add(%q): %v", title, err)
 	}
@@ -338,7 +340,7 @@ func TestObjectiveShow_showsAnObjectiveItsTasksAndProgress(t *testing.T) {
 		t.Fatalf("Do(ObjectiveAdd): %v", err)
 	}
 	number := strconv.Itoa(factsOfObjective(*added.Objective).number)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task", "objective": number}}); err != nil {
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
 		t.Fatalf("Do(TaskAdd): %v", err)
 	}
 
@@ -364,7 +366,7 @@ func TestObjectiveEdit_editsAnObjectiveAndRereads(t *testing.T) {
 		t.Fatalf("Do(ObjectiveAdd): %v", err)
 	}
 	number := strconv.Itoa(factsOfObjective(*added.Objective).number)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task", "objective": number}}); err != nil {
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
 		t.Fatalf("Do(TaskAdd): %v", err)
 	}
 
@@ -420,4 +422,14 @@ func TestObjectiveAdd_addsAnObjective(t *testing.T) {
 	if answer.Objective == nil || factsOfObjective(*answer.Objective).title != "ship the release" {
 		t.Fatalf("answer.Objective = %v, want one titled %q", answer.Objective, "ship the release")
 	}
+}
+
+// serves is Changes.Objective for a single objective, which is what most of
+// these tests name. A task serves a set, so even one is given as one.
+func serves(numbers ...int) *[]string {
+	named := make([]string, 0, len(numbers))
+	for _, one := range numbers {
+		named = append(named, fmt.Sprint(one))
+	}
+	return &named
 }

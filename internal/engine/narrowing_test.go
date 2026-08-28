@@ -111,9 +111,10 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 
 	// An objective nothing serves has no closed set to fall outside of, so it
 	// is answered with nothing rather than refused: a filter says what is
-	// wanted, and whether it exists is a question about objectives.
+	// wanted, and whether it exists is a question about objectives. What it is
+	// still held to is being a number at all, which the next case asks.
 	answer, err := TaskList.Run(On{Engine: e}, Input{
-		Given: map[string]string{"objective": "9"},
+		Listed: map[string][]string{"objective": {"9"}},
 	})
 	if err != nil {
 		t.Fatalf("an objective nobody added was refused: %v", err)
@@ -132,5 +133,25 @@ func TestObjectiveList_isHeldToTheObjectiveStates(t *testing.T) {
 		Given: map[string]string{"state": "todo"},
 	}); err == nil {
 		t.Error("an objective listing accepted a column a task sits in")
+	}
+}
+
+// A filter naming an objective that could not number anything is refused. There
+// is no closed set of objectives to fall outside of, but there is a shape:
+// "soon" is not a number, and zero is a number nothing is ever given.
+//
+// Zero matters more than it looks. Refused, it says so; accepted, it would
+// narrow to the tasks serving objective zero — of which there are never any —
+// and answer "there is no task", which reads as an objective nobody is working
+// towards rather than as a filter nobody could satisfy.
+func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "Write the spec")
+	for _, named := range []string{"soon", "0", "-1"} {
+		if _, err := TaskList.Run(On{Engine: e}, Input{
+			Listed: map[string][]string{"objective": {named}},
+		}); err == nil {
+			t.Errorf("%q was accepted as an objective to narrow by", named)
+		}
 	}
 }

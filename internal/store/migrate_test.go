@@ -320,8 +320,10 @@ func TestMigrate_makesRoomForObjectives(t *testing.T) {
 			t.Errorf("no %q table: an objective has nowhere to be kept", table)
 		}
 	}
-	if !holdsColumn(t, s, "tasks", "objective") {
-		t.Error("tasks carry no objective: nothing records what a task serves")
+	// A task serves a set, so what it serves lives in a table of its own rather
+	// than in a column on the task.
+	if !holdsTable(t, s, "task_objectives") {
+		t.Error("no task_objectives table: nothing records what a task serves")
 	}
 }
 

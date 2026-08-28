@@ -17,9 +17,10 @@ import (
 // sorted once already on the way into the store. Running it through
 // ParseLabels a second time here would be the same rule kept in two places.
 type AsTold struct {
-	task     Task
-	labels   []string
-	blockers []int
+	task       Task
+	labels     []string
+	blockers   []int
+	objectives []int
 }
 
 // Numbered is told the task's number.
@@ -90,11 +91,17 @@ func (a *AsTold) Under(n int) { a.task.parent = n }
 // UnderNothing is told the task hangs under nothing.
 func (a *AsTold) UnderNothing() { a.task.parent = NoParent }
 
-// Serves is told the objective the task serves.
-func (a *AsTold) Serves(n int) { a.task.objective = n }
+// Serves adds an objective the task serves. Gathered and set on
+// ObjectivesTold, the way labels and blockers are: a task serves what it
+// serves, and told one at a time it cannot know the set is complete until it is
+// said so.
+func (a *AsTold) Serves(n int) { a.objectives = append(a.objectives, n) }
 
 // ServesNothing is told the task serves no objective.
-func (a *AsTold) ServesNothing() { a.task.objective = NoObjective }
+func (a *AsTold) ServesNothing() { a.objectives = nil }
+
+// ObjectivesTold closes the set, the way LabelsTold and BlockersTold do.
+func (a *AsTold) ObjectivesTold() { a.task.objectives = a.objectives }
 
 // Task hands back the task AsTold was told to build.
 func (a *AsTold) Task() Task { return a.task }

@@ -53,6 +53,7 @@ func (f *taskFacts) Under(int)               {}
 func (f *taskFacts) UnderNothing()           {}
 func (f *taskFacts) Serves(int)              {}
 func (f *taskFacts) ServesNothing()          {}
+func (f *taskFacts) ObjectivesTold()         {}
 
 // factsOf reads back what a test needs from a task.
 func factsOf(t task.Task) taskFacts {

@@ -41,7 +41,7 @@ var theAttributes = []struct {
 	{"estimate", func(f taskFacts) string { return spanOrNothing(f.estimate) }},
 	{"time spent", func(f taskFacts) string { return spanOrNothing(f.timeSpent) }},
 	{"parent", func(f taskFacts) string { return numberOrNothing(f.parent) }},
-	{"objective", func(f taskFacts) string { return numberOrNothing(f.objective) }},
+	{"objectives", func(f taskFacts) string { return numbersOrNothing(f.objectives) }},
 }
 
 // History hands back everything done to a task, oldest first, and refuses a

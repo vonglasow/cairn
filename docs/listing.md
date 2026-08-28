@@ -43,7 +43,7 @@ exactly one way to ask each question. It is just a different one.
 | column / where it stands | ✓ | |
 | priority | ✓ | |
 | label | ✓ | |
-| objective served | ✓ | |
+| objectives served | ✓ | |
 | number | | |
 
 The line falls between **a closed set or something numbered** and **free text**.
@@ -107,7 +107,13 @@ states rather than to a task's columns.
 An objective nobody added is a different case: `--objective 9` succeeds and
 answers nothing. There is no closed set to fall outside of, and whether an
 objective exists is a question about objectives that reading tasks does not
-ask.
+ask. What it is still held to is being a number at all: `--objective 0` is
+refused, because zero numbers nothing and answering "there is no task" would
+read as an objective nobody is working towards rather than a filter nobody
+could satisfy.
+
+A task serves a set, so naming two keeps what serves **both**, the way two
+labels do.
 
 ## Where the narrowing happens
 

@@ -58,7 +58,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	want := map[string]any{
 		"number":      float64(1),
 		"parent":      float64(2),
-		"objective":   float64(3),
 		"title":       "Write the spec",
 		"description": "in full",
 		"state":       string(domain.Todo),

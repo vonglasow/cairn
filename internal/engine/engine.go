@@ -85,7 +85,7 @@ type Changes struct {
 	Estimate    *string
 	Spent       *string
 	Parent      *int
-	Objective   *int
+	Objective   *[]string
 }
 
 // named says whether anything at all was given to change.
@@ -331,15 +331,16 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 // read back off it — everything else is a rule the task already owns, or a
 // fact only a builder writing a new task needs told to it.
 type taskFacts struct {
-	number, parent, objective int
-	title, description        string
-	state                     domain.State
-	priority                  domain.Priority
-	labels                    []string
-	blockers                  []int
-	because                   string
-	deadline                  time.Time
-	estimate, timeSpent       time.Duration
+	number, parent      int
+	title, description  string
+	state               domain.State
+	priority            domain.Priority
+	labels              []string
+	blockers            []int
+	objectives          []int
+	because             string
+	deadline            time.Time
+	estimate, timeSpent time.Duration
 }
 
 func (f *taskFacts) Numbered(n int)            { f.number = n }
@@ -364,8 +365,9 @@ func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
 func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
 func (f *taskFacts) Under(n int)               { f.parent = n }
 func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
-func (f *taskFacts) Serves(n int)              { f.objective = n }
-func (f *taskFacts) ServesNothing()            { f.objective = task.NoObjective }
+func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objectives, n) }
+func (f *taskFacts) ServesNothing()            { f.objectives = nil }
+func (f *taskFacts) ObjectivesTold()           {}
 
 // factsOf reads back what the engine needs from a task, without reaching
 // into fields that stopped being exported.
@@ -449,7 +451,16 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		a.Under(*c.Parent)
 	}
 	if c.Objective != nil {
-		a.Serves(*c.Objective)
+		served, err := changedNumbers(*c.Objective, current.objectives, atCreation, ErrObjectiveRequired,
+			ErrObjectivesBothWays, ErrObjectiveSignAtBirth)
+		if err != nil {
+			return task.Task{}, err
+		}
+		a.ServesNothing()
+		for _, one := range served {
+			a.Serves(one)
+		}
+		a.ObjectivesTold()
 	}
 	if c.Estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.Estimate)

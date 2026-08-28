@@ -180,12 +180,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d --label "%s" --label "%s"`, n, first, second))
 		})
 
+	sc.Step(`^I added a task titled "([^"]*)" with the objectives "([^"]*)" and "([^"]*)"$`,
+		func(title, first, second string) error {
+			return w.Seed(fmt.Sprintf(`cairn task add "%s" --objective "%s" --objective "%s"`,
+				title, first, second))
+		})
+
 	sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
 		func(title, first, second string) error {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because) "([^"]*)"$`,
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because|objective) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
@@ -253,27 +259,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	// --- what it said -------------------------------------------------------
 
 	for step, want := range map[string]string{
-		`^it says a title is one line$`:                                      "a title is one line",
-		`^it says a task needs a title$`:                                     "a task needs a title",
-		`^it says a label needs a name$`:                                     "a label needs a name",
-		`^it says there is no such task$`:                                    "there is no such task",
-		`^it says a task number is expected$`:                                "a task number is expected",
-		`^it says how to confirm$`:                                           "--yes",
-		`^it says the flag is unknown$`:                                      "unknown flag",
-		`^it says the store cannot be read$`:                                 "the store cannot be read",
-		`^it says what it can change$`:                                       "--title",
-		`^it says the labels are either replaced or changed, not both$`:      "either replaced or changed",
-		`^it says a label is added or taken away only when changing a task$`: "only when changing a task",
-		`^it says a task cannot hang under itself$`:                          "cannot hang under itself",
-		`^it says a task cannot block itself$`:                               "cannot block itself",
-		`^it says what is in the way and how to take it away$`:               "--blocker -",
-		`^it says nothing would ever be able to start$`:                      "nothing would ever be able to start",
-		`^it says a sub-task cannot carry sub-tasks$`:                        "sub-task cannot carry sub-tasks",
-		`^it says the task carries sub-tasks$`:                               "carries sub-tasks",
-		`^it says a task cannot be moved behind itself$`:                     "cannot be moved behind itself",
-		`^it says a task is moved inside its own column$`:                    "moved inside its own column",
-		`^it says a sub-task is moved among its sisters$`:                    "moved among its sisters",
-		`^it says where a task can be moved$`:                                "behind another",
+		`^it says a title is one line$`:                                           "a title is one line",
+		`^it says a task needs a title$`:                                          "a task needs a title",
+		`^it says a label needs a name$`:                                          "a label needs a name",
+		`^it says there is no such task$`:                                         "there is no such task",
+		`^it says a task number is expected$`:                                     "a task number is expected",
+		`^it says how to confirm$`:                                                "--yes",
+		`^it says the flag is unknown$`:                                           "unknown flag",
+		`^it says the store cannot be read$`:                                      "the store cannot be read",
+		`^it says what it can change$`:                                            "--title",
+		`^it says the labels are either replaced or changed, not both$`:           "either replaced or changed",
+		`^it says a label is added or taken away only when changing a task$`:      "only when changing a task",
+		`^it says a task cannot hang under itself$`:                               "cannot hang under itself",
+		`^it says a task cannot block itself$`:                                    "cannot block itself",
+		`^it says the objectives are either replaced or changed, not both$`:       "either replaced or changed",
+		`^it says an objective is added or taken away only when changing a task$`: "only when changing a task",
+		`^it says what is in the way and how to take it away$`:                    "--blocker -",
+		`^it says nothing would ever be able to start$`:                           "nothing would ever be able to start",
+		`^it says a sub-task cannot carry sub-tasks$`:                             "sub-task cannot carry sub-tasks",
+		`^it says the task carries sub-tasks$`:                                    "carries sub-tasks",
+		`^it says a task cannot be moved behind itself$`:                          "cannot be moved behind itself",
+		`^it says a task is moved inside its own column$`:                         "moved inside its own column",
+		`^it says a sub-task is moved among its sisters$`:                         "moved among its sisters",
+		`^it says where a task can be moved$`:                                     "behind another",
 	} {
 		wanted := want
 		sc.Step(step, func() error {
@@ -389,6 +397,19 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step("^`([^`]*)` says \"([^\"]*)\" blocks it$", func(line, words string) error {
 		return w.blocksIt(line, words)
 	})
+
+	// What a task serves, shared rather than kept with the objectives: the
+	// migration that carries an attachment over has to be able to read it back,
+	// and so does anything else that changes what a task carries.
+	sc.Step("^`([^`]*)` says it serves objectives (\\d+) and (\\d+)$",
+		func(line string, first, second int) error {
+			return w.servesExactly(line, first, second)
+		})
+
+	sc.Step("^`([^`]*)` says it serves objective (\\d+) alone$",
+		func(line string, only int) error {
+			return w.servesExactly(line, only)
+		})
 
 	sc.Step(`^the task is in the "([^"]*)" column$`, func(want string) error {
 		if got := w.field("state"); got != want {

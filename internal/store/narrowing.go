@@ -35,11 +35,14 @@ func (n *Narrowing) Carrying(priority string) {
 	n.keep(`priority = ?`, priority)
 }
 
-// Serving keeps what serves one objective. An objective nothing serves keeps
-// nothing rather than failing: a filter says what is wanted, and whether it
-// exists is a question about objectives that reading tasks does not ask.
+// Serving keeps what serves one objective, among however many others it also
+// serves. An objective nothing serves keeps nothing rather than failing: a
+// filter says what is wanted, and whether it exists is a question about
+// objectives that reading tasks does not ask.
 func (n *Narrowing) Serving(objective int) {
-	n.keep(`objective = ?`, objective)
+	n.keep(`EXISTS (SELECT 1 FROM task_objectives
+		WHERE task_objectives.task_number = tasks.number
+		  AND task_objectives.objective_number = ?)`, objective)
 }
 
 // Labelled keeps what carries every label named. Every one and not any: naming

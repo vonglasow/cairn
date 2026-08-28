@@ -85,7 +85,7 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	e := openEngine(t)
 	served := addObjective(t, e, "Ship cairn 1.0")
-	under, err := e.Add("Write the spec", Changes{Objective: of(factsOfObjective(served).number)})
+	under, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(served).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}

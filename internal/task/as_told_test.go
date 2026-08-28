@@ -17,7 +17,7 @@ func TestAsTold_buildsATaskFromEveryFactItIsTold(t *testing.T) {
 	}
 
 	want := Task{
-		number: 3, parent: 1, objective: 2, title: "Write the spec",
+		number: 3, parent: 1, objectives: []int{2}, title: "Write the spec",
 		description: "Say what it does", state: domain.Current, priority: domain.High,
 		labels: []string{"backend", "urgent"}, deadline: deadline,
 		estimate: 90 * time.Minute, timeSpent: 30 * time.Minute,
@@ -33,8 +33,8 @@ func TestAsTold_buildsATaskFromEveryFactItIsTold(t *testing.T) {
 	if got.parent != want.parent {
 		t.Errorf("Parent = %d, want %d", got.parent, want.parent)
 	}
-	if got.objective != want.objective {
-		t.Errorf("Objective = %d, want %d", got.objective, want.objective)
+	if len(got.objectives) != len(want.objectives) || got.objectives[0] != want.objectives[0] {
+		t.Errorf("Objectives = %v, want %v", got.objectives, want.objectives)
 	}
 	if got.title != want.title {
 		t.Errorf("Title = %q, want %q", got.title, want.title)
@@ -117,12 +117,16 @@ func TestAsTold_underNothingMeansNoParent(t *testing.T) {
 	}
 }
 
-func TestAsTold_servesNothingMeansNoObjective(t *testing.T) {
+// ServesNothing empties the set, the way NotLabelled and NotBlocked do — and
+// like them it is heard before the set is closed, so what was gathered before
+// it goes with it.
+func TestAsTold_servesNothingEmptiesTheSet(t *testing.T) {
 	a := &AsTold{}
 	a.Serves(2)
 	a.ServesNothing()
-	if got := a.Task().objective; got != NoObjective {
-		t.Errorf("Objective = %d, want NoObjective", got)
+	a.ObjectivesTold()
+	if got := a.Task().objectives; len(got) != 0 {
+		t.Errorf("Objectives = %v, want none", got)
 	}
 }
 

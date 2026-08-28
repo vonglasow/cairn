@@ -18,9 +18,14 @@ import (
 // at one.
 const NoParent = 0
 
-// NoObjective is the number a task carries when it serves none. Zero is safe
-// to mean "none" because the store never hands out zero: numbering starts at
-// one, the same way NoParent works.
+// NoObjective is the number nothing serves. Zero is safe to mean "none"
+// because the store never hands out zero: numbering starts at one, the same way
+// NoParent works.
+//
+// A task carries a set of objectives rather than one, so it is no longer the
+// value a task holds when it serves nothing — an empty set is. What it still
+// answers is "is this a real objective number", which is what a caller naming
+// one has to be held to.
 const NoObjective = 0
 
 // ErrParentIsSubTask is returned when a task is asked to hang under one that
@@ -49,7 +54,7 @@ var ErrSubTaskServesNoObjective = errors.New("a sub-task serves no objective")
 type Task struct {
 	number      int
 	parent      int
-	objective   int
+	objectives  []int
 	title       string
 	description string
 	state       domain.State
@@ -90,6 +95,7 @@ type Told interface {
 	UnderNothing()
 	Serves(int)
 	ServesNothing()
+	ObjectivesTold()
 }
 
 // Tell says every fact this task carries to the given membrane, absence
@@ -145,11 +151,14 @@ func (t Task) Tell(to Told) {
 	} else {
 		to.Under(t.parent)
 	}
-	if t.objective == NoObjective {
+	if len(t.objectives) == 0 {
 		to.ServesNothing()
 	} else {
-		to.Serves(t.objective)
+		for _, objective := range t.objectives {
+			to.Serves(objective)
+		}
 	}
+	to.ObjectivesTold()
 }
 
 // MayCarrySubTasks says whether a task may have another hang under it. Only
@@ -167,7 +176,7 @@ func (t Task) MayCarrySubTasks() error {
 // its parent's objective by way of that parent and is never given one of its
 // own.
 func (t Task) MayServeAnObjective() error {
-	if t.parent != NoParent && t.objective != NoObjective {
+	if t.parent != NoParent && len(t.objectives) > 0 {
 		return ErrSubTaskServesNoObjective
 	}
 	return nil

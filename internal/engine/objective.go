@@ -224,12 +224,16 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 	return a.Objective(), nil
 }
 
-// canServe says whether a task may serve the objective it was told to. The
-// objective has to exist, and the task has to be one in its own right: what
-// hangs under a task never serves an objective directly.
+// canServe says whether a task may serve the objectives it was told to. Every
+// one has to exist, and the task has to be one in its own right: what hangs
+// under a task never serves an objective directly.
+//
+// One that does not exist turns down the whole set, and the task keeps what it
+// had. Attaching the ones that do and dropping the rest would write a set
+// nobody asked for, and say nothing about the one that went missing.
 func (e *Engine) canServe(t task.Task) error {
-	served := factsOf(t).objective
-	if served == task.NoObjective {
+	served := factsOf(t).objectives
+	if len(served) == 0 {
 		return nil
 	}
 	if err := t.MayServeAnObjective(); err != nil {
@@ -238,8 +242,10 @@ func (e *Engine) canServe(t task.Task) error {
 		// just typed, so repeating it adds nothing either.
 		return err
 	}
-	if _, err := e.objectives.FindObjective(served); err != nil {
-		return err
+	for _, one := range served {
+		if _, err := e.objectives.FindObjective(one); err != nil {
+			return err
+		}
 	}
 	return nil
 }

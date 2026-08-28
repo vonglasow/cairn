@@ -206,3 +206,22 @@ Feature: Changes to the shape of the store
       When I run `cairn migration rollback`
       Then it fails
       And it says how to confirm
+
+    @migration-carries-what-a-task-already-served
+    Scenario: the objective a task already served is not lost on the way
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I rolled back the change named "a task can serve more than one objective"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn task show 1` says it serves objective 1 alone
+
+    @migration-rolling-back-keeps-the-smallest-objective
+    Scenario: rolled back, a task keeps the first objective it served
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objectives "2" and "1"
+      And I rolled back the change named "a task can serve more than one objective"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn task show 1` says it serves objective 1 alone
