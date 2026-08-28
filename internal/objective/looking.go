@@ -17,6 +17,10 @@ type looking struct {
 	found map[string]bool
 }
 
+// Where it stands, the priority and a label are heard and dropped: a listing
+// narrows by those, and looking for them too would be a second way to ask one
+// question. The task side says the same, at greater length.
+
 // consider marks every named thing still missing that sits inside text. An
 // empty name can never be marked found, since an absent fact contributes
 // nothing — nothing named as nothing is a thing looking for it should answer.
@@ -34,11 +38,11 @@ func (l *looking) consider(text string) {
 
 func (l *looking) Numbered(int)              {}
 func (l *looking) Titled(s string)           { l.consider(s) }
-func (l *looking) Standing(s State)          { l.consider(string(s)) }
-func (l *looking) Carries(p domain.Priority) { l.consider(string(p)) }
+func (l *looking) Standing(State)            {}
+func (l *looking) Carries(domain.Priority)   {}
 func (l *looking) Described(s string)        { l.consider(s) }
 func (l *looking) NotDescribed()             {}
-func (l *looking) Labelled(s string)         { l.consider(s) }
+func (l *looking) Labelled(string)           {}
 func (l *looking) NotLabelled()              {}
 func (l *looking) LabelsTold()               {}
 func (l *looking) Due(t time.Time)           { l.consider(domain.FormatDay(t)) }

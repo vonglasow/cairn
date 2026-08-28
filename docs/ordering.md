@@ -55,12 +55,14 @@ what is in flight, then what is history*.
 
 So a list is never four lists.
 
-Asking for one column on its own was weighed and left out. `task search`
-already answers close to it — searching every field, the column included — and
-it is not exact: measured, `search todo` returns a task sitting in the backlog
-whose title happens to contain the word. In a search that is acceptable; a
-column filter would have been exact, and it was not worth a second way of
-asking. Nothing in this design rests on it.
+Asking for one column on its own was weighed and left out here, then added
+later: `task list --state todo`. The reasoning that left it out was that
+`task search` already answered close to it, searching every field including the
+column. That was measured and true — `search todo` returns a task sitting in
+the backlog whose title happens to contain the word — and it was the wrong
+conclusion, because it made an inexact answer the only way to ask. Looking gave
+up the column instead, so there is still one way to ask. See
+[listing.md](listing.md). Nothing in this design rests on either.
 
 ## A position is counted within its column
 

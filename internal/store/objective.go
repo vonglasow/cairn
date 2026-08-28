@@ -22,6 +22,7 @@ var objectiveLabels = labelStore{
 	insert:  `INSERT INTO objective_labels (objective_number, label) VALUES (?, ?)`,
 	byOwner: `SELECT label FROM objective_labels WHERE objective_number = ? ORDER BY label`,
 	clear:   `DELETE FROM objective_labels WHERE objective_number = ?`,
+	carrier: `EXISTS (SELECT 1 FROM objective_labels WHERE objective_number = objectives.number AND label = ?)`,
 }
 
 // objectiveColumns is the reading order every query below hands to
@@ -155,7 +156,15 @@ func (s *Store) FindObjective(number int) (objective.Objective, error) {
 
 // AllObjectives hands back every objective, in the order they were added.
 func (s *Store) AllObjectives() ([]objective.Objective, error) {
-	rows, err := s.db.Query(`SELECT ` + objectiveColumns + ` FROM objectives ORDER BY number`)
+	return s.NarrowedObjectives(&Narrowing{})
+}
+
+// NarrowedObjectives hands back the objectives a narrowing keeps, in the order
+// they were added.
+func (s *Store) NarrowedObjectives(narrowing *Narrowing) ([]objective.Objective, error) {
+	where, args := narrowing.where(objectiveLabels)
+	rows, err := s.db.Query(
+		`SELECT `+objectiveColumns+` FROM objectives`+where+` ORDER BY number`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the objectives: %w", err)
 	}

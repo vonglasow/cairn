@@ -51,6 +51,7 @@ type tasks interface {
 	Delete(int) error
 	Find(int) (task.Task, error)
 	All() ([]task.Task, error)
+	Narrowed(*store.Narrowing) ([]task.Task, error)
 	Under(int) ([]task.Task, error)
 	Close() error
 }
@@ -152,6 +153,12 @@ func (e *Engine) Add(title string, c Changes) (task.Task, error) {
 // List hands back every task, in the order they were added.
 func (e *Engine) List() ([]task.Task, error) {
 	return e.tasks.All()
+}
+
+// Narrowed hands back the tasks a narrowing keeps. Told nothing, it keeps
+// everything, so this is List with something to say.
+func (e *Engine) Narrowed(kept *store.Narrowing) ([]task.Task, error) {
+	return e.tasks.Narrowed(kept)
 }
 
 // Show hands back the task carrying number.

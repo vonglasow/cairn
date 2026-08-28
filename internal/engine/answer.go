@@ -162,8 +162,8 @@ func Of(a Answer) any {
 	if a.Tasks != nil {
 		return ofTasks(a.Tasks, a.InFocus)
 	}
-	if a.Found != nil {
-		return ofTasks(a.Found, a.InFocus)
+	if a.Matched != nil {
+		return ofTasks(a.Matched, a.InFocus)
 	}
 	if a.Objective != nil {
 		return OfObjective(*a.Objective, a.Under, a.Progress)
@@ -171,8 +171,8 @@ func Of(a Answer) any {
 	if a.Objectives != nil {
 		return Objectives{Objectives: ofObjectives(a.Objectives)}
 	}
-	if a.FoundObjectives != nil {
-		return Objectives{Objectives: ofObjectives(a.FoundObjectives)}
+	if a.MatchedObjectives != nil {
+		return Objectives{Objectives: ofObjectives(a.MatchedObjectives)}
 	}
 	if a.Backup != nil {
 		return domain.OfBackup(*a.Backup, a.Holds)
@@ -317,8 +317,8 @@ func RenderText(op Operation, a Answer) string {
 	if a.Tasks != nil {
 		return tasksText(a.Tasks, a.InFocus)
 	}
-	if a.Found != nil {
-		return foundText(a.Found)
+	if a.Matched != nil {
+		return foundText(a.Matched)
 	}
 	if a.Objective != nil {
 		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
@@ -326,8 +326,8 @@ func RenderText(op Operation, a Answer) string {
 	if a.Objectives != nil {
 		return objectivesText(a.Objectives)
 	}
-	if a.FoundObjectives != nil {
-		return objectivesText(a.FoundObjectives)
+	if a.MatchedObjectives != nil {
+		return objectivesText(a.MatchedObjectives)
 	}
 	if a.Backup != nil {
 		return backupLine(*a.Backup, *a.Holds)

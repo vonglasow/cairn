@@ -247,7 +247,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 	}{
 		{TaskShow, Answer{Task: of(task.Task{})}},
 		{TaskList, Answer{Tasks: []task.Task{}}},
-		{TaskSearch, Answer{Found: []task.Task{}}},
+		{TaskSearch, Answer{Matched: []task.Task{}}},
 		{TaskMove, Answer{Tasks: []task.Task{}}},
 		{TaskDelete, Answer{Deleted: of(1)}},
 		{TaskFocus, Answer{Task: of(task.Task{}), InFocus: of(1)}},
@@ -256,7 +256,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		{TraceList, Answer{Since: []trace.Act{}}},
 		{ObjectiveShow, Answer{Objective: of(objective.Objective{})}},
 		{ObjectiveList, Answer{Objectives: []objective.Objective{}}},
-		{ObjectiveSearch, Answer{FoundObjectives: []objective.Objective{}}},
+		{ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{}}},
 		{BackupShow, Answer{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
 		{BackupList, Answer{Backups: []domain.Backup{}}},
 		{BackupRestore, Answer{PutBack: of(1)}},

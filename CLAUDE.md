@@ -33,6 +33,7 @@ calls it, and prints — it decides nothing.
 | adding a tool, changing a threshold, unblocking a hook | [docs/checks.md](docs/checks.md) |
 | touching the MCP server, or adding a command an agent will see | [docs/mcp.md](docs/mcp.md) |
 | touching the order of tasks, a task's place, or the focus | [docs/ordering.md](docs/ordering.md) |
+| narrowing a listing, or changing what a search reaches | [docs/listing.md](docs/listing.md) |
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |
 
 Those files carry the detail. This one carries what holds regardless of the

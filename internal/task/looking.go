@@ -14,6 +14,14 @@ import (
 // shapes: what a task is numbered, hangs under or serves never contributes,
 // because looking for "1" is not what tells a task apart from the one
 // hanging under it.
+//
+// It hears the column, the priority and a label and says nothing to any of
+// them. Those come from closed sets, and a listing narrows by them — looking
+// for them here too would be a second way to ask one question, and the worse
+// of the two: it answered every task whose description merely contained the
+// word "high". Heard and dropped rather than left out of the membrane, because
+// a task tells everything it carries and a membrane that refused to be told
+// would stop being one.
 type looking struct {
 	found map[string]bool
 }
@@ -35,11 +43,11 @@ func (l *looking) consider(text string) {
 
 func (l *looking) Numbered(int)              {}
 func (l *looking) Titled(s string)           { l.consider(s) }
-func (l *looking) InColumn(s domain.State)   { l.consider(string(s)) }
-func (l *looking) Carries(p domain.Priority) { l.consider(string(p)) }
+func (l *looking) InColumn(domain.State)     {}
+func (l *looking) Carries(domain.Priority)   {}
 func (l *looking) Described(s string)        { l.consider(s) }
 func (l *looking) NotDescribed()             {}
-func (l *looking) Labelled(s string)         { l.consider(s) }
+func (l *looking) Labelled(string)           {}
 func (l *looking) NotLabelled()              {}
 func (l *looking) LabelsTold()               {}
 func (l *looking) Due(t time.Time)           { l.consider(domain.FormatDay(t)) }

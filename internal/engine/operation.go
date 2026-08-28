@@ -267,38 +267,42 @@ type On struct {
 // is what lets Of tell the two cases apart by which field is set, rather than
 // a surface guessing from which operation was called.
 //
-// Found is its own field beside Tasks for the same reason: a listing renders
-// as a tree, sub-tasks nested under the task they hang from, but a found task
-// is listed flat — a found sub-task hangs under nothing in the listing, since
-// what matched is what is shown, not where it sits. Its JSON is the same
+// Matched is its own field beside Tasks for the same reason: a listing renders
+// as a tree, sub-tasks nested under the task they hang from, but what matched
+// what was asked is listed flat — a sub-task that matched hangs under nothing,
+// since what matched is what is shown, not where it sits. Its JSON is the same
 // shape as Tasks, since a machine reading either does not care about
 // indentation.
 //
-// FoundObjectives sits beside Found for the reason Objective sits beside
+// Matched and not Found, because two questions land in it: what a search found,
+// and what a narrowed listing kept. Both are "these matched, and where each
+// sits is not what was asked", which is one notion and so one field.
+//
+// MatchedObjectives sits beside Matched for the reason Objective sits beside
 // Task: an objective is not a task, and a field that carried either would
 // make every reader ask which one it got before it could read it. Its JSON
-// is the same shape as Objectives, for the same reason Found's is the same
+// is the same shape as Objectives, for the same reason Matched's is the same
 // shape as Tasks.
 type Answer struct {
-	Task            *task.Task
-	Tasks           []task.Task
-	Found           []task.Task
-	Under           []task.Task
-	Objective       *objective.Objective
-	Objectives      []objective.Objective
-	FoundObjectives []objective.Objective
-	Backup          *domain.Backup
-	Backups         []domain.Backup
-	Change          *migration.Migration
-	Changes         []migration.Migration
-	RolledBack      *migration.Migration
-	Progress        domain.Progress
-	Holds           *domain.Held
-	Deleted         *int
-	PutBack         *int
-	Applied         []string
+	Task              *task.Task
+	Tasks             []task.Task
+	Matched           []task.Task
+	Under             []task.Task
+	Objective         *objective.Objective
+	Objectives        []objective.Objective
+	MatchedObjectives []objective.Objective
+	Backup            *domain.Backup
+	Backups           []domain.Backup
+	Change            *migration.Migration
+	Changes           []migration.Migration
+	RolledBack        *migration.Migration
+	Progress          domain.Progress
+	Holds             *domain.Held
+	Deleted           *int
+	PutBack           *int
+	Applied           []string
 	// Since is what was done over a period, across every task, oldest first.
-	// Its own field beside Acts for the reason Found sits beside Tasks: a
+	// Its own field beside Acts for the reason Matched sits beside Tasks: a
 	// history is about one task and does not name it on every line, where a
 	// period names the task each act was on.
 	Since []trace.Act

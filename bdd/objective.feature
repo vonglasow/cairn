@@ -267,6 +267,28 @@ Feature: Objectives
       Then the objective carries exactly 1 label
       And the objective carries the label "perso"
 
+  Rule: A listing of objectives can be narrowed the same way
+
+    The same reason as for tasks, and the same names. What it narrows by is what
+    an objective carries: where it stands, the priority, a label. Not the
+    objective it serves, since nothing puts an objective under another.
+
+    @objective-list-narrowed-by-state
+    Scenario: only the objectives standing where I asked
+      Given I added an objective titled "Ship cairn 1.0" with the state "on-hold"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn objective list --state on-hold`
+      Then it lists 1 objective
+      And it lists objective 1 titled "Ship cairn 1.0"
+
+    @objective-list-narrowed-by-a-label
+    Scenario: only the objectives carrying one label
+      Given I added an objective titled "Ship cairn 1.0" with the labels "team" and "urgent"
+      And I added an objective titled "Ship the docs" with the labels "team" and "later"
+      When I run `cairn objective list --label urgent`
+      Then it lists 1 objective
+      And it lists objective 1 titled "Ship cairn 1.0"
+
   Rule: An objective is looked for by anything it carries
 
     The same way back to a number as for a task, and for the same reason: the
@@ -283,10 +305,17 @@ Feature: Objectives
 
     @objective-search-everything-named-is-found
     Scenario: everything named has to be there, wherever it is
-      Given I added an objective titled "Ship cairn 1.0" with the priority "high"
+      Given I added an objective titled "Ship cairn 1.0" with the description "the first"
       And I added an objective titled "Ship the docs"
-      When I run `cairn objective search high ship`
+      When I run `cairn objective search first ship`
       Then it lists 1 objective
+
+    @objective-search-does-not-reach-the-priority
+    Scenario: a priority is narrowed by, not looked for
+      Given I added an objective titled "Ship cairn 1.0" with the priority "high"
+      When I run `cairn objective search high`
+      Then it succeeds
+      And it says there is no objective
 
     @objective-search-finds-nothing
     Scenario: looking for what is not there says so

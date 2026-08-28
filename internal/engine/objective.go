@@ -36,6 +36,7 @@ type objectives interface {
 	KeepObjective(objective.Objective) (objective.Objective, error)
 	FindObjective(int) (objective.Objective, error)
 	AllObjectives() ([]objective.Objective, error)
+	NarrowedObjectives(*store.Narrowing) ([]objective.Objective, error)
 	UpdateObjective(objective.Objective) error
 	DeleteObjective(int) error
 	TasksServing(int) ([]task.Task, error)
@@ -79,6 +80,12 @@ func (e *Engine) AddObjective(title string, c ObjectiveChanges) (objective.Objec
 // ListObjectives hands back every objective, in the order they were added.
 func (e *Engine) ListObjectives() ([]objective.Objective, error) {
 	return e.objectives.AllObjectives()
+}
+
+// NarrowedObjectives hands back the objectives a narrowing keeps. Told nothing,
+// it keeps everything, so this is ListObjectives with something to say.
+func (e *Engine) NarrowedObjectives(kept *store.Narrowing) ([]objective.Objective, error) {
+	return e.objectives.NarrowedObjectives(kept)
 }
 
 // ShowObjective hands back the objective carrying number.
@@ -368,23 +375,44 @@ var ObjectiveAdd = Operation{
 	},
 }
 
-// ObjectiveList names every objective.
+// ObjectiveList names every objective, or only the ones carrying what was
+// named.
 var ObjectiveList = Operation{
 	Thing:   "objective",
 	Verb:    "list",
-	Short:   "List every objective",
-	Does:    "List every objective.",
+	Short:   "List objectives, all of them or only some",
+	Does:    "List every objective, or only the ones carrying everything named. An objective has to carry all of it, not one of it.",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Objectives{},
-	Run: func(on On, _ Input) (Answer, error) {
-		all, err := on.Engine.ListObjectives()
+	Takes:   objectiveNarrowing,
+	Run: func(on On, in Input) (Answer, error) {
+		kept, err := keeping(in, objectiveNarrowing)
 		if err != nil {
 			return Answer{}, err
+		}
+		all, err := on.Engine.NarrowedObjectives(kept)
+		if err != nil {
+			return Answer{}, err
+		}
+		// A narrowed listing is answered flat, the same way a narrowed listing
+		// of tasks is. Nothing hangs under an objective in a listing, so the
+		// two read alike either way — but the fields are kept apart so a reader
+		// of the answer can still tell which question was asked.
+		if kept.Narrows() {
+			return Answer{MatchedObjectives: all}, nil
 		}
 		return Answer{Objectives: all}, nil
 	},
 }
+
+// objectiveNarrowing are the facts a listing of objectives can be kept down to.
+// Not what it serves, since nothing puts an objective under another.
+var objectiveNarrowing = narrowedBy(objectiveAttributes, map[string]string{
+	"state":    "keep only the objectives standing here",
+	"priority": "keep only the objectives carrying this priority",
+	"label":    "keep only the objectives carrying this label; named twice, only those carrying both",
+})
 
 // ObjectiveShow says what an objective carries, what hangs under it and how
 // far along it is.
@@ -466,7 +494,7 @@ var ObjectiveSearch = Operation{
 				found = append(found, o)
 			}
 		}
-		return Answer{FoundObjectives: found}, nil
+		return Answer{MatchedObjectives: found}, nil
 	},
 }
 

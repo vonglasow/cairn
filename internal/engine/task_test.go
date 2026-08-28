@@ -118,8 +118,8 @@ func TestTaskSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if len(answer.Found) != 1 || factsOf(answer.Found[0]).title != "Write the spec" {
-		t.Fatalf("answer.Found = %v, want one task titled %q", answer.Found, "Write the spec")
+	if len(answer.Matched) != 1 || factsOf(answer.Matched[0]).title != "Write the spec" {
+		t.Fatalf("answer.Matched = %v, want one task titled %q", answer.Matched, "Write the spec")
 	}
 }
 

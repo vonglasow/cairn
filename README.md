@@ -11,6 +11,11 @@ cairn task add "Read the spec" --label spec,team
 cairn task add "Write the tests" --parent 1
 cairn task add "Write the docs" --objective 1
 cairn task list      # sub-tasks are listed under the task they hang from
+cairn task list --state todo --priority high   # only what carries all of it
+cairn task list --label team --label urgent    # both labels, not either
+cairn task list --objective 1                  # only what serves it
+cairn task search spec    # looks in the title, description, deadline, estimate,
+                          # time spent — not in what --state and friends narrow by
 cairn task show 1
 cairn task delete 1 --yes
 cairn task move 3 --first        # to the head of the ones it sits with
@@ -66,10 +71,17 @@ number beside the one a task already carries would only mislead. See
 ```sh
 cairn objective add "Ship cairn 1.0" --priority high --deadline 2026-12-31
 cairn objective list
+cairn objective list --state on-hold --label urgent   # only what carries all of it
 cairn objective show 1           # what it carries, what is under it, how far along
 cairn objective edit 1 --state reached --label +done
 cairn objective delete 1 --yes
 ```
+
+A listing narrows by what comes from a closed set — the column, the priority, a
+label, the objective served — and a search looks in what you typed yourself: the
+title, the description, the deadline, the estimate, the time spent. Neither
+reaches what the other does, so each question has one way of being asked. See
+[docs/listing.md](docs/listing.md) for what that boundary cost and bought.
 
 An objective takes the same options as a task, minus the ones that mean nothing
 to it: no `--state` column, no `--parent`, no `--spent`. Its `--state` is one of

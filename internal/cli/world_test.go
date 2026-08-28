@@ -138,7 +138,7 @@ func flagFor(attribute string) string {
 		"title": "--title", "description": "--desc", "deadline": "--deadline",
 		"estimate": "--estimate",
 		"priority": "--priority", "state": "--state", "parent": "--parent",
-		"time spent": "--spent",
+		"time spent": "--spent", "objective": "--objective",
 	}[attribute]
 }
 
@@ -169,7 +169,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.Seed(fmt.Sprintf(`cairn objective add "%s"`, title))
 	})
 
-	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent) "([^"]*)"$`,
+	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent|objective) "([^"]*)"$`,
 		func(title, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flagFor(attribute), value))
 		})
@@ -566,6 +566,20 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		if got, want := fmt.Sprint(held), fmt.Sprint(n); got != want {
 			return fmt.Errorf("it says %s is in focus, want %s", got, want)
+		}
+		return nil
+	})
+
+	// The flag belongs to the task, so a listing the task is not in has nothing
+	// to say about it — narrowing past the task in focus says none rather than
+	// naming a task the answer does not carry.
+	sc.Step(`^it says no task in it is in focus$`, func() error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		if held := envelope["in_focus"]; held != nil {
+			return fmt.Errorf("it says %v is in focus, and the answer does not carry it", held)
 		}
 		return nil
 	})

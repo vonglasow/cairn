@@ -51,28 +51,27 @@ func TestMatching_reachesTheDescription(t *testing.T) {
 	}
 }
 
-func TestMatching_reachesTheState(t *testing.T) {
-	got := carrying(t, func(a *AsTold) { a.InColumn(domain.Current) })
-	if !Matching(got, []string{"current"}) {
-		t.Error("Matching = false, want true: the column carries \"current\"")
-	}
-}
-
-func TestMatching_reachesThePriority(t *testing.T) {
-	got := carrying(t, func(a *AsTold) { a.Carries(domain.High) })
-	if !Matching(got, []string{"high"}) {
-		t.Error("Matching = false, want true: the priority carries \"high\"")
-	}
-}
-
-func TestMatching_reachesALabel(t *testing.T) {
-	got := carrying(t, func(a *AsTold) {
-		a.Labelled("team")
-		a.Labelled("urgent")
-		a.LabelsTold()
-	})
-	if !Matching(got, []string{"urgent"}) {
-		t.Error("Matching = false, want true: a label carries \"urgent\"")
+// The column, the priority and a label are what a listing narrows by, so
+// looking does not reach them. It used to, and answered every task whose
+// description merely contained the word — one question asked two ways, and the
+// worse of the two.
+func TestMatching_doesNotReachWhatAListingNarrowsBy(t *testing.T) {
+	for _, tc := range []struct {
+		what   string
+		told   func(*AsTold)
+		looked string
+	}{
+		{"the column", func(a *AsTold) { a.InColumn(domain.Current) }, "current"},
+		{"the priority", func(a *AsTold) { a.Carries(domain.High) }, "high"},
+		{"a label", func(a *AsTold) {
+			a.Labelled("team")
+			a.Labelled("urgent")
+			a.LabelsTold()
+		}, "urgent"},
+	} {
+		if Matching(carrying(t, tc.told), []string{tc.looked}) {
+			t.Errorf("looking for %q reached %s, and a listing is what narrows by it", tc.looked, tc.what)
+		}
 	}
 }
 
@@ -104,11 +103,11 @@ func TestMatching_reachesADurationTheWayItIsShown(t *testing.T) {
 }
 
 func TestMatching_everyNamedThingHasToBeFound(t *testing.T) {
-	got := carrying(t, func(a *AsTold) { a.Carries(domain.High) })
-	if !Matching(got, []string{"high", "spec"}) {
-		t.Error("Matching = false, want true: both \"high\" and \"spec\" are carried")
+	got := carrying(t, func(a *AsTold) { a.Described("the first") })
+	if !Matching(got, []string{"first", "spec"}) {
+		t.Error("Matching = false, want true: both \"first\" and \"spec\" are carried")
 	}
-	if Matching(got, []string{"high", "nowhere"}) {
+	if Matching(got, []string{"first", "nowhere"}) {
 		t.Error("Matching = true, want false: \"nowhere\" is not carried")
 	}
 }

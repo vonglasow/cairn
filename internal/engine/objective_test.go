@@ -326,8 +326,8 @@ func TestObjectiveSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if len(answer.FoundObjectives) != 1 || factsOfObjective(answer.FoundObjectives[0]).title != "ship the release" {
-		t.Fatalf("answer.FoundObjectives = %v, want one objective titled %q", answer.FoundObjectives, "ship the release")
+	if len(answer.MatchedObjectives) != 1 || factsOfObjective(answer.MatchedObjectives[0]).title != "ship the release" {
+		t.Fatalf("answer.MatchedObjectives = %v, want one objective titled %q", answer.MatchedObjectives, "ship the release")
 	}
 }
 

@@ -68,11 +68,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn objective add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I added a task titled "([^"]*)" with the objective "([^"]*)"$`,
-		func(title, objective string) error {
-			return w.Seed(fmt.Sprintf(`cairn task add "%s" --objective "%s"`, title, objective))
-		})
-
 	// Written as one step rather than three hundred lines of Given. The share
 	// only bites at a scale nobody types out, and a scenario nobody can read is
 	// a scenario nobody checks.

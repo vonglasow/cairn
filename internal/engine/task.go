@@ -62,19 +62,28 @@ var TaskAdd = Operation{
 	},
 }
 
-// TaskList names every task.
+// TaskList names every task, or only the ones carrying what was named.
 var TaskList = Operation{
 	Thing:   "task",
 	Verb:    "list",
-	Short:   "List every task",
-	Does:    "List every task.",
+	Short:   "List tasks, all of them or only some",
+	Does:    "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it.",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Run: func(on On, _ Input) (Answer, error) {
-		return listing(on)
-	},
+	Takes:   taskNarrowing,
+	Run:     listing,
 }
+
+// taskNarrowing are the facts a listing of tasks can be kept down to. The four
+// that come from closed sets or from something numbered: what a person typed
+// themselves is what `task search` looks in.
+var taskNarrowing = narrowedBy(taskAttributes, map[string]string{
+	"state":     "keep only the tasks sitting in this column",
+	"priority":  "keep only the tasks carrying this priority",
+	"label":     "keep only the tasks carrying this label; named twice, only those carrying both",
+	"objective": "keep only the tasks serving this objective",
+})
 
 // TaskShow says what a task carries, what hangs under it and how far along it
 // is.
@@ -185,7 +194,7 @@ var TaskSearch = Operation{
 				found = append(found, t)
 			}
 		}
-		return Answer{Found: found}, nil
+		return Answer{Matched: found}, nil
 	},
 }
 
@@ -282,7 +291,12 @@ var TaskMove = Operation{
 		}
 		// A move changes the order and nothing else, so the order is what it
 		// answers with: the card of the task moved would not show what moved.
-		return listing(on)
+		//
+		// Answered as a listing nobody narrowed, and told so with an empty
+		// Input rather than handed the move's own: what a move was given says
+		// where to put a task, and reading it as facts to keep by would narrow
+		// the answer by whatever a later argument happened to be called.
+		return listing(on, Input{})
 	},
 }
 
@@ -361,8 +375,12 @@ func placeFrom(in Input) (Place, int, error) {
 
 // listing is what every listing answers: every task in the one order there is,
 // and which of them is in focus, since a listing marks it.
-func listing(on On) (Answer, error) {
-	tasks, err := on.Engine.List()
+func listing(on On, in Input) (Answer, error) {
+	kept, err := keeping(in, taskNarrowing)
+	if err != nil {
+		return Answer{}, err
+	}
+	tasks, err := on.Engine.Narrowed(kept)
 	if err != nil {
 		return Answer{}, err
 	}
@@ -370,7 +388,14 @@ func listing(on On) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	return Answer{Tasks: tasks, InFocus: &inFocus}, nil
+	held := heldAmong(tasks, inFocus)
+	// A narrowed listing is answered flat: what matched is what is shown, and
+	// where each task sits is not what was asked. Which field carries them is
+	// how Of and RenderText tell the two apart.
+	if kept.Narrows() {
+		return Answer{Matched: tasks, InFocus: held}, nil
+	}
+	return Answer{Tasks: tasks, InFocus: held}, nil
 }
 
 // whatIsInFocus answers about the task being worked on, and says so plainly

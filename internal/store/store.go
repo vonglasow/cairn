@@ -364,26 +364,11 @@ func (s *Store) Find(number int) (task.Task, error) {
 
 // All hands back every task in the one order there is: the column first,
 // then the place set by hand inside it.
+//
+// A read told to keep nothing is a read of everything, so this is Narrowed
+// with nothing named rather than a second loop over the same rows.
 func (s *Store) All() ([]task.Task, error) {
-	rows, err := s.db.Query(
-		`SELECT ` + taskColumns + ` FROM tasks ` + taskOrder)
-	if err != nil {
-		return nil, fmt.Errorf("reading the store: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	tasks := []task.Task{}
-	for rows.Next() {
-		t, err := s.scanTask(rows)
-		if err != nil {
-			return nil, fmt.Errorf("reading a task: %w", err)
-		}
-		tasks = append(tasks, t)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("reading the store: %w", err)
-	}
-	return tasks, nil
+	return s.Narrowed(&Narrowing{})
 }
 
 // Under hands back the tasks hanging directly under a task, each in the place
@@ -492,12 +477,13 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 // SQL is a habit that reads as harmless until the day the name comes from
 // somewhere else. Three literals cost nothing and cannot be turned into an
 // injection by a later edit.
-type labelStore struct{ insert, byOwner, clear string }
+type labelStore struct{ insert, byOwner, clear, carrier string }
 
 var taskLabels = labelStore{
 	insert:  `INSERT INTO labels (task_number, label) VALUES (?, ?)`,
 	byOwner: `SELECT label FROM labels WHERE task_number = ? ORDER BY label`,
 	clear:   `DELETE FROM labels WHERE task_number = ?`,
+	carrier: `EXISTS (SELECT 1 FROM labels WHERE task_number = tasks.number AND label = ?)`,
 }
 
 // keepLabels records the labels one thing carries.

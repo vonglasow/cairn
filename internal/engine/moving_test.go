@@ -255,7 +255,7 @@ func TestListing_carriesTheOrderAndWhatIsInFocus(t *testing.T) {
 	if _, err := e.PutInFocus(second); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
-	answer, err := listing(On{Engine: e})
+	answer, err := listing(On{Engine: e}, Input{})
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}

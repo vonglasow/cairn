@@ -154,7 +154,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		}{
 			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
 			{"a list of tasks", Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
-			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
+			{"what a search found, the same shape as a list of tasks", Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
 			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
@@ -262,10 +262,10 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"a task outranks a list", Operation{}, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
 		{"an empty list of tasks says so", Operation{}, Answer{Tasks: []task.Task{}}, "there is no task\n"},
 		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.NothingInFocus)},
-		{"a search that found nothing says so", Operation{}, Answer{Found: []task.Task{}}, "there is no task\n"},
+		{"a search that found nothing says so", Operation{}, Answer{Matched: []task.Task{}}, "there is no task\n"},
 		{
 			"what a search found is listed flat, not as a tree",
-			Operation{}, Answer{Found: []task.Task{built, sub}},
+			Operation{}, Answer{Matched: []task.Task{built, sub}},
 			task.Line(built) + "\n" + task.Line(sub) + "\n",
 		},
 		{"an objective", Operation{}, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress) + objective.Serving(nil)},

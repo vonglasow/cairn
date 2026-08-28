@@ -256,6 +256,125 @@ Feature: Tasks
       And task 2 is listed under task 1
       And task 3 hangs under nothing in the listing
 
+  Rule: A listing can be narrowed to what is wanted
+
+    A list of everything stops being readable once there is a lot of it, and
+    stops being usable to an agent, which pays for every line it is handed. So
+    a listing takes the facts a task carries from a closed set — the column it
+    sits in, the priority it carries, a label, the objective it serves — and
+    answers only the tasks carrying them.
+
+    They are named the way they are named everywhere else. A filter that spelled
+    a fact differently from the command that sets it would be a second
+    vocabulary for the same thing.
+
+    @task-list-narrowed-by-state
+    Scenario: only the tasks in one column
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it"
+      When I run `cairn task list --state todo`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-by-priority
+    Scenario: only the tasks carrying one priority
+      Given I added a task titled "Write the spec" with the priority "high"
+      And I added a task titled "Ship it"
+      When I run `cairn task list --priority high`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-by-a-label
+    Scenario: only the tasks carrying one label
+      Given I added a task titled "Write the spec" with the labels "team" and "urgent"
+      And I added a task titled "Ship it" with the labels "team" and "later"
+      When I run `cairn task list --label urgent`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-is-flat
+    Scenario: a narrowed listing answers what matched, not where it sits
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I edited task 2 with the state "todo"
+      When I run `cairn task list --state todo`
+      Then it lists 1 task
+      And it lists task 2 titled "Write the tests"
+      And task 2 hangs under nothing in the listing
+
+    @task-list-narrowed-keeps-the-parent-out
+    Scenario: a parent that does not carry it is not brought along
+      Given I added a task titled "Ship it" with the state "todo"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task list --state todo`
+      Then it lists 1 task
+      And it lists task 1 titled "Ship it"
+
+    @task-list-narrowed-by-a-column-that-is-not-one
+    Scenario: narrowing by something no task can be in is refused
+      Given I added a task titled "Write the spec"
+      When I run `cairn task list --state nowhere`
+      Then it fails
+      And it says what it expects instead of "nowhere"
+
+    @task-list-narrowed-by-an-objective-nobody-added
+    Scenario: narrowing by an objective that is not there is answered, not refused
+      Given I added a task titled "Write the spec"
+      When I run `cairn task list --objective 9`
+      Then it succeeds
+      And it says there is no task
+
+    @task-list-narrowed-still-says-the-focus
+    Scenario: a task in focus that matched is shown as in focus
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      When I run `cairn task list --state todo --json`
+      Then it carries 1 task
+      And it says task 1 is the one in focus
+
+    @task-list-narrowed-past-the-focus-says-none
+    Scenario: a focus narrowed out of the answer is not spoken for
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it"
+      And I put task 2 in focus
+      When I run `cairn task list --state todo --json`
+      Then it carries 1 task
+      And it says no task in it is in focus
+
+    @task-list-narrowed-by-two-things
+    Scenario: everything named has to hold
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I edited task 1 with the priority "high"
+      And I added a task titled "Ship it" with the state "todo"
+      When I run `cairn task list --state todo --priority high`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-by-two-labels
+    Scenario: a task named twice over carries both labels
+      Given I added a task titled "Write the spec" with the labels "team" and "urgent"
+      And I added a task titled "Ship it" with the labels "team" and "later"
+      When I run `cairn task list --label team --label urgent`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-to-nothing
+    Scenario: nothing carrying it is said, not answered as everything
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I run `cairn task list --state done`
+      Then it succeeds
+      And it says there is no task
+
+    @task-list-narrowed-by-the-objective-served
+    Scenario: only the tasks serving one objective
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Ship it"
+      When I run `cairn task list --objective 1`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
   Rule: A task can be read back by its number
 
     @task-show
@@ -304,23 +423,32 @@ Feature: Tasks
       When I run `cairn task show 1`
       Then it reports a task titled "Write the other spec"
 
-  Rule: A task is looked for by anything it carries
+  Rule: A task is looked for by what somebody remembers of it
 
     Every other command asks for a number, and a number is the one thing
     nobody remembers. So the way back to one is to look for what a person does
-    remember — a word from the title, a label, the day it is due — and be told
-    which task carries it.
+    remember — a word from the title, the day it is due — and be told which
+    task carries it.
 
-    Looking reaches everything a task says about itself, and reads it the way a
+    Looking reaches what a task says in its own words, and reads it the way a
     person does: a duration is looked for as it is shown and not as the count
-    of nanoseconds it is kept as. A number is the one thing it does not reach,
-    because looking for "1" would answer 1, 10, 21 and everything hanging
-    under them — and asking by number is what `task show` is for.
+    of nanoseconds it is kept as. So the title, the description, the deadline,
+    the estimate and the time spent.
 
-    Each thing named has to be found, and any field may be where it is found.
-    That is what lets somebody ask for every task in high carrying the word
-    spec without saying which field either belongs to. A thing with a space in
-    it is one thing: the shell hands `"the spec"` over whole.
+    It reaches neither the column, the priority nor a label, though it used to.
+    Those come from closed sets, and a listing narrows by them — so looking for
+    them too would be a second way to ask one question, and a worse one: `search
+    high` answered every task whose description merely contained the word. What
+    a listing filters, looking leaves alone; what somebody typed themselves,
+    looking searches. Nothing is lost and the false answer is gone.
+
+    A number it does not reach either, because looking for "1" would answer 1,
+    10, 21 and everything hanging under them — and asking by number is what
+    `task show` is for.
+
+    Each thing named has to be found, and any field it still reaches may be
+    where it is found. A thing with a space in it is one thing: the shell hands
+    `"the spec"` over whole.
 
     @task-search-by-a-word
     Scenario: a word from the title is the way back to a number
@@ -343,22 +471,35 @@ Feature: Tasks
       Examples: read the way a person reads them
         | field       | carried    | named   |
         | description | the first  | first   |
-        | state       | current    | current |
-        | priority    | high       | high    |
         | deadline    | 2026-09-01 | 2026-09 |
         | time spent  | 90m        | 1h30m   |
 
-    @task-search-reaches-a-label
-    Scenario: a label is looked in like anything else
+    @task-search-does-not-reach-the-column
+    Scenario: a column is narrowed by, not looked for
+      Given I added a task titled "Write the spec" with the state "current"
+      When I run `cairn task search current`
+      Then it succeeds
+      And it says there is no task
+
+    @task-search-does-not-reach-the-priority
+    Scenario: a priority is narrowed by, not looked for
+      Given I added a task titled "Write the spec" with the priority "high"
+      When I run `cairn task search high`
+      Then it succeeds
+      And it says there is no task
+
+    @task-search-does-not-reach-a-label
+    Scenario: a label is narrowed by, not looked for
       Given I added a task titled "Write the spec" with the labels "team" and "urgent"
       When I run `cairn task search urgent`
-      Then it lists 1 task
+      Then it succeeds
+      And it says there is no task
 
     @task-search-everything-named-is-found
     Scenario: everything named has to be there, wherever it is
-      Given I added a task titled "Write the spec" with the priority "high"
+      Given I added a task titled "Write the spec" with the description "the first"
       And I added a task titled "Read the spec"
-      When I run `cairn task search high spec`
+      When I run `cairn task search first spec`
       Then it lists task 1 titled "Write the spec"
       And it lists 1 task
 
