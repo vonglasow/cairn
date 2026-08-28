@@ -77,6 +77,31 @@ Bringing the parent along was weighed and left out. A parent that does not
 carry what was asked for is not part of the answer, and showing it to hold its
 child would put a task in a listing of tasks that do not match it.
 
+### The order of a flat listing is the tree's, flattened
+
+A narrowed listing comes back in the store's one order: the column first, then
+the position, then the number. The position is counted **within a column and
+under one parent**, so a sub-task and its aunt both hold position 1 — and
+flattened, they interleave:
+
+```
+$ cairn task list --state todo
+#1  Write the spec
+#3  Write the tests      # a sub-task of #1, position 1 under it
+#2  Ship it              # position 2 among the root tasks
+```
+
+Read as a tree that is exact; read flat it looks shuffled. Measured, put to the
+user, and **accepted as it is** rather than sorted by number: the alternative
+would give a narrowed listing an order of its own, so the same tasks would come
+back in two different orders depending on whether a filter was named. One order
+that reads oddly beats two that disagree.
+
+If it ever stops being acceptable, the fix is not sorting the answer: it is
+`docs/ordering.md`'s question of whether a position should be counted across a
+whole column rather than within a parent — which is a change to the order
+itself, not to how a listing is printed.
+
 This is the same rendering `task search` already used, and it is the same field
 of `Answer` that carries it. The field was called `Found` and is now called
 `Matched`: what a search found and what a narrowing kept are one notion — these
