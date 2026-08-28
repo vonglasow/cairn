@@ -200,7 +200,7 @@ func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 
 // The shape a tool says its answer takes, from what the operation declared.
 func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
-	one := answerSchemaFor(engine.Operation{Answers: engine.Answers{engine.Deleted{}}})
+	one := answerSchemaFor(engine.Operation{Answers: engine.Deleted{}})
 	shape, ok := one.(*jsonschema.Schema)
 	if !ok {
 		t.Fatalf("one shape gave %T, want a schema", one)
@@ -216,18 +216,23 @@ func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
 	}
 }
 
-// Several shapes become "any one of these", which is the truth: naming one of
-// them would describe half the tool.
-func TestAnswerSchemaFor_saysEitherWhenAnOperationAnswersEither(t *testing.T) {
-	either := answerSchemaFor(engine.Operation{
-		Answers: engine.Answers{engine.Task{}, engine.InFocus{}},
-	})
-	shape, ok := either.(*jsonschema.Schema)
+// A listing describes an object naming what it carries, and the fields it
+// knows besides its rows. Pinned here and not only in the scenario: this is the
+// shape a client validates against, and the scenario reads the description
+// through a running server while this reads it off the type.
+func TestAnswerSchemaFor_namesWhatAListingCarriesBesidesItsRows(t *testing.T) {
+	listing := answerSchemaFor(engine.Operation{Answers: engine.Tasks{}})
+	shape, ok := listing.(*jsonschema.Schema)
 	if !ok {
-		t.Fatalf("two shapes gave %T, want a schema", either)
+		t.Fatalf("a listing gave %T, want a schema", listing)
 	}
-	if len(shape.AnyOf) != 2 {
-		t.Errorf("it offers %d shapes, want 2", len(shape.AnyOf))
+	if shape.Type != "object" {
+		t.Errorf("a listing reads as %q, want an object", shape.Type)
+	}
+	for _, named := range []string{"tasks", "in_focus"} {
+		if _, described := shape.Properties[named]; !described {
+			t.Errorf("the shape does not name %q: %v", named, shape.Properties)
+		}
 	}
 }
 
@@ -261,7 +266,7 @@ func TestToolFor_everyToolCarriesTheShapeOfItsAnswer(t *testing.T) {
 // did.
 func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
 	if got := answerSchemaFor(engine.Operation{
-		Answers: engine.Answers{make(chan int)},
+		Answers: make(chan int),
 	}); got != nil {
 		t.Errorf("answerSchemaFor on a shape no schema can describe = %v, want nothing", got)
 	}

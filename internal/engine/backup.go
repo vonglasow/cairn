@@ -27,7 +27,7 @@ var BackupAdd = Operation{
 	Does:    "Back up the store as it stands.",
 	Level:   Write,
 	Needs:   NoStore,
-	Answers: Answers{domain.BackupShape{}},
+	Answers: domain.BackupShape{},
 	Run: func(on On, _ Input) (Answer, error) {
 		// Counted before backing up, not after: what is announced is what was
 		// taken.
@@ -51,7 +51,7 @@ var BackupList = Operation{
 	Does:    "List every backup.",
 	Level:   Read,
 	Needs:   NoStore,
-	Answers: Answers{[]domain.BackupShape{}},
+	Answers: Kept{},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Backups.All()
 		if err != nil {
@@ -75,7 +75,7 @@ var BackupShow = Operation{
 	Does:    "Say when a backup was made and what it holds.",
 	Level:   Read,
 	Needs:   NoStore,
-	Answers: Answers{domain.BackupShape{}},
+	Answers: domain.BackupShape{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
@@ -101,7 +101,7 @@ var BackupDelete = Operation{
 	Does:    "Delete a backup.",
 	Level:   Full,
 	Needs:   NoStore,
-	Answers: Answers{Deleted{}},
+	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
@@ -122,7 +122,7 @@ var BackupRestore = Operation{
 	Does:    "Put a backup back, the most recent one unless told otherwise.",
 	Level:   Full,
 	Needs:   NoStore,
-	Answers: Answers{PutBack{}},
+	Answers: PutBack{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},
 	},

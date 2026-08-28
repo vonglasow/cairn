@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -95,6 +96,38 @@ func (w *world) tally(key string) (map[string]any, error) {
 
 // register declares the steps only the command line's scenarios claim. What
 // both surfaces claim is registered by the shared world.
+// listedUnder reads the rows of a listing out of the envelope it crosses in.
+//
+// A listing answers an object naming what it carries, not a bare list, so a step
+// asking how many tasks came back asks the envelope for its tasks. Written once
+// because five listings cross this way and a second reading of the same envelope
+// is a second thing to keep right.
+func listedUnder(out, key string) ([]map[string]any, map[string]any, error) {
+	var envelope map[string]any
+	if err := json.Unmarshal([]byte(out), &envelope); err != nil {
+		return nil, nil, fmt.Errorf("the answer is not one object (%w):\n%s", err, out)
+	}
+	raw, carried := envelope[key]
+	if !carried {
+		named := make([]string, 0, len(envelope))
+		for k := range envelope {
+			named = append(named, k)
+		}
+		sort.Strings(named)
+		return nil, envelope, fmt.Errorf("the answer carries %v, and not %q", named, key)
+	}
+	items, list := raw.([]any)
+	if !list && raw != nil {
+		return nil, envelope, fmt.Errorf("%q is not a list but a %T", key, raw)
+	}
+	rows := make([]map[string]any, 0, len(items))
+	for _, one := range items {
+		row, _ := one.(map[string]any)
+		rows = append(rows, row)
+	}
+	return rows, envelope, nil
+}
+
 // flagFor is the flag an attribute is given by, named once because both the
 // step that creates a task with one and the step that edits one read it.
 // numbersIn reads every whole number a message names.
@@ -519,13 +552,44 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it carries (\d+) tasks?$`, func(n int) error {
-		var docs []map[string]any
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &docs); err != nil {
+	// The focus is said once, at the top of a listing, and nowhere else. Both
+	// halves matter: said twice, the two can disagree, and a reader has to
+	// decide which to believe.
+	sc.Step(`^it says task (\d+) is the one in focus$`, func(n int) error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
 			return err
 		}
-		if len(docs) != n {
-			return fmt.Errorf("%d tasks, want %d", len(docs), n)
+		held, said := envelope["in_focus"]
+		if !said {
+			return fmt.Errorf("the listing says nothing about the focus")
+		}
+		if got, want := fmt.Sprint(held), fmt.Sprint(n); got != want {
+			return fmt.Errorf("it says %s is in focus, want %s", got, want)
+		}
+		return nil
+	})
+
+	sc.Step(`^no task in it carries that on its own$`, func() error {
+		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if _, carried := row["in_focus"]; carried {
+				return fmt.Errorf("task %v carries the focus on its own line too", row["number"])
+			}
+		}
+		return nil
+	})
+
+	sc.Step(`^it carries (\d+) tasks?$`, func(n int) error {
+		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		if len(rows) != n {
+			return fmt.Errorf("%d tasks, want %d", len(rows), n)
 		}
 		return nil
 	})

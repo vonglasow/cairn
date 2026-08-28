@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -278,47 +279,54 @@ func (w *world) everyToolDescribesItsAnswer() error {
 	return nil
 }
 
-// allows says whether a shape admits the named JSON type. A schema names one
-// type or several: a Go slice can be nil, so its shape honestly says "a list or
-// nothing", and reading only the single-name case would call that a failure.
-func allows(shape map[string]any, want string) bool {
-	switch named := shape["type"].(type) {
-	case string:
-		return named == want
-	case []any:
-		for _, one := range named {
-			if one == want {
-				return true
-			}
+// everyToolAnswersAnObject fails unless every tool says its answer is an
+// object, at the top of its shape.
+//
+// That is not cairn's own rule and it is not the SDK's — the SDK says a schema
+// may describe any JSON value. It is what a client enforces, and a client that
+// rejects one tool's shape rejects the whole list and offers none of them.
+// Measured, at the cost of a regression: ten tools describing a list took the
+// server from twenty-six tools to zero, and nothing in this suite noticed,
+// because every check here asks cairn about cairn. This one asks what a client
+// will accept.
+func (w *world) everyToolAnswersAnObject() error {
+	refused := []string{}
+	for _, t := range w.tools {
+		shape, err := w.schemaOf(t.Name)
+		if err != nil {
+			return err
+		}
+		if shape["type"] != "object" {
+			refused = append(refused, fmt.Sprintf("%s says %v", t.Name, shape["type"]))
 		}
 	}
-	return false
-}
-
-// saysItAnswersAList fails unless the named tool says its answer is a list.
-func (w *world) saysItAnswersAList(name string) error {
-	shape, err := w.schemaOf(name)
-	if err != nil {
-		return err
-	}
-	if !allows(shape, "array") {
-		return fmt.Errorf("%s says its answer is %v, want a list", name, shape["type"])
+	if len(refused) > 0 {
+		return fmt.Errorf("%d of %d tools describe something a client will refuse: %v",
+			len(refused), len(w.tools), refused)
 	}
 	return nil
 }
 
-// saysItAnswersOneThing fails unless the named tool says its answer is a single
-// thing rather than a list of them.
-func (w *world) saysItAnswersOneThing(name string) error {
+// saysItsAnswerCarries fails unless the named tool's shape names the given
+// field. What a tool answers is an object, so what it carries is a property of
+// it — and naming one is how a scenario says which object it is without
+// spelling out every field.
+func (w *world) saysItsAnswerCarries(name, field string) error {
 	shape, err := w.schemaOf(name)
 	if err != nil {
 		return err
 	}
-	if !allows(shape, "object") {
-		return fmt.Errorf("%s says its answer is %v, want one thing", name, shape["type"])
+	properties, ok := shape["properties"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("%s names no fields at all: %v", name, shape)
 	}
-	if allows(shape, "array") {
-		return fmt.Errorf("%s says its answer may be a list, and it answers one thing", name)
+	if _, carried := properties[field]; !carried {
+		named := make([]string, 0, len(properties))
+		for k := range properties {
+			named = append(named, k)
+		}
+		sort.Strings(named)
+		return fmt.Errorf("%s carries %v, and not %q", name, named, field)
 	}
 	return nil
 }
@@ -514,14 +522,29 @@ func (w *world) itAnswersWithNTasks(n int) error {
 	if w.callErr != nil {
 		return fmt.Errorf("the call failed: %w", w.callErr)
 	}
-	tasks, ok := w.result.StructuredContent.([]any)
-	if !ok {
-		return fmt.Errorf("structured content is not a list of tasks: %#v", w.result.StructuredContent)
+	tasks, err := carriedUnder(w.result.StructuredContent, "tasks")
+	if err != nil {
+		return err
 	}
 	if len(tasks) != n {
 		return fmt.Errorf("%d tasks, want %d", len(tasks), n)
 	}
 	return nil
+}
+
+// carriedUnder reads the rows of a listing out of the object naming them. A
+// listing crosses as an object rather than a bare list, so nothing reads the
+// structured content of one as a list any more.
+func carriedUnder(content any, named string) ([]any, error) {
+	listing, ok := content.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("structured content is not a listing: %#v", content)
+	}
+	rows, ok := listing[named].([]any)
+	if !ok {
+		return nil, fmt.Errorf("the listing carries no %q: %#v", named, listing)
+	}
+	return rows, nil
 }
 
 // itAnswersWithoutAnError fails unless the last call reported nothing wrong.
@@ -851,8 +874,9 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^a cairn server started with no access given$", w.aCairnServerStartedWithNoAccessGiven)
 		sc.Step("^I ask it what it can do$", w.iAskItWhatItCanDo)
 		sc.Step("^every tool describes the shape of its answer$", w.everyToolDescribesItsAnswer)
-		sc.Step("^`([a-z_]+)` says it answers a list$", w.saysItAnswersAList)
-		sc.Step("^`([a-z_]+)` says it answers one thing$", w.saysItAnswersOneThing)
+		sc.Step("^every tool says it answers one object$", w.everyToolAnswersAnObject)
+		sc.Step("^`([a-z_]+)` says its answer carries the ([a-z]+)$", w.saysItsAnswerCarries)
+		sc.Step("^`([a-z_]+)` says its answer carries a ([a-z]+)$", w.saysItsAnswerCarries)
 		sc.Step("^its answer holds to the shape the tool described$", w.theAnswerHoldsToItsShape)
 		sc.Step("^it carries nothing for a machine to measure$", w.itCarriesNothingToMeasure)
 		sc.Step("^it offers `([^`]*)`$", w.itOffers)

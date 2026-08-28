@@ -61,12 +61,14 @@ func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
 	mustRun(t, "backup", "add")
 
 	out := mustRun(t, "backup", "list", "--json").Stdout
-	var listed []map[string]any
-	if err := json.Unmarshal([]byte(out), &listed); err != nil {
+	var listing struct {
+		Backups []map[string]any `json:"backups"`
+	}
+	if err := json.Unmarshal([]byte(out), &listing); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, out)
 	}
-	if len(listed) != 1 || listed[0]["number"] != float64(1) {
-		t.Errorf("listed = %v, want the one backup", listed)
+	if len(listing.Backups) != 1 || listing.Backups[0]["number"] != float64(1) {
+		t.Errorf("listed = %v, want the one backup", listing.Backups)
 	}
 }
 

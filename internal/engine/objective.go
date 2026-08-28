@@ -349,7 +349,7 @@ var ObjectiveAdd = Operation{
 	Does:    "Add an objective, carrying whatever of its attributes were given.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{Objective{}},
+	Answers: Objective{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
 	}, objectiveAttributes...),
@@ -376,7 +376,7 @@ var ObjectiveList = Operation{
 	Does:    "List every objective.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]Objective{}},
+	Answers: Objectives{},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Engine.ListObjectives()
 		if err != nil {
@@ -395,7 +395,7 @@ var ObjectiveShow = Operation{
 	Does:    "Show what an objective carries, what tasks serve it and how far along it is.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{Objective{}},
+	Answers: Objective{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},
@@ -417,7 +417,7 @@ var ObjectiveEdit = Operation{
 	Does:    "Change what an objective carries.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{Objective{}},
+	Answers: Objective{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
@@ -450,7 +450,7 @@ var ObjectiveSearch = Operation{
 	Does:    "List every objective carrying everything named, wherever among its facts each one sits.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]Objective{}},
+	Answers: Objectives{},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},
@@ -478,7 +478,7 @@ var ObjectiveDelete = Operation{
 	Does:    "Delete an objective.",
 	Level:   Full,
 	Needs:   AStore,
-	Answers: Answers{Deleted{}},
+	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},

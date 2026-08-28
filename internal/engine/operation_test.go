@@ -227,7 +227,7 @@ func TestInput_tellsNotNamedFromNamedAsNothing(t *testing.T) {
 func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
 	silent := []string{}
 	for _, op := range All() {
-		if len(op.Answers) == 0 {
+		if op.Answers == nil {
 			silent = append(silent, op.Name())
 		}
 	}
@@ -250,6 +250,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		{TaskSearch, Answer{Found: []task.Task{}}},
 		{TaskMove, Answer{Tasks: []task.Task{}}},
 		{TaskDelete, Answer{Deleted: of(1)}},
+		{TaskFocus, Answer{Task: of(task.Task{}), InFocus: of(1)}},
 		{TaskUnfocus, Answer{InFocus: of(0)}},
 		{TraceShow, Answer{Acts: []trace.Act{}}},
 		{TraceList, Answer{Since: []trace.Act{}}},
@@ -265,36 +266,39 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		{MigrationRollback, Answer{RolledBack: of(migration.Migration{})}},
 	} {
 		built := reflect.TypeOf(Of(tc.answered))
-		want := make([]string, 0, len(tc.op.Answers))
-		found := false
-		for _, declared := range tc.op.Answers {
-			if reflect.TypeOf(declared) == built {
-				found = true
-			}
-			want = append(want, reflect.TypeOf(declared).String())
-		}
-		if !found {
-			t.Errorf("%s builds a %s, and says it answers %v", tc.op.Name(), built, want)
+		if declared := reflect.TypeOf(tc.op.Answers); declared != built {
+			t.Errorf("%s builds a %s, and says it answers a %s", tc.op.Name(), built, declared)
 		}
 	}
 }
 
-// The two shapes of task_focus are both real: it hands back the task being
-// worked on, or says nothing is. A declaration naming one of them would
-// describe half the tool.
-func TestAnswers_taskFocusSaysBothOfItsShapes(t *testing.T) {
+// task_focus answers the same shape whether or not a task is being worked on.
+// It used to answer two, and a description could then only say "either of
+// these" — which a client has to resolve at runtime, and at least one refuses
+// outright. So the shape holds and the fields empty out.
+func TestAnswers_taskFocusAnswersOneShapeHeldOrNot(t *testing.T) {
 	held := reflect.TypeOf(Of(Answer{Task: of(task.Task{}), InFocus: of(1)}))
 	none := reflect.TypeOf(Of(Answer{InFocus: of(0)}))
-	if held == none {
-		t.Fatal("the two answers of task_focus have the same shape, so there is nothing to declare twice")
+	if held != none {
+		t.Fatalf("task_focus answers a %s when one is held and a %s when none is", held, none)
 	}
-	declared := map[reflect.Type]bool{}
-	for _, one := range TaskFocus.Answers {
-		declared[reflect.TypeOf(one)] = true
+	if declared := reflect.TypeOf(TaskFocus.Answers); declared != held {
+		t.Errorf("task_focus answers a %s and says it answers a %s", held, declared)
 	}
-	for _, want := range []reflect.Type{held, none} {
-		if !declared[want] {
-			t.Errorf("task_focus can answer a %s and does not say so", want)
+}
+
+// Every listing answers an object naming what it carries, never a bare list. A
+// client refuses a description that is not of an object, and one refused tool
+// costs the whole list — so this is asserted over every operation there is,
+// rather than over the ones that happen to have been thought of.
+func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
+	bare := []string{}
+	for _, op := range All() {
+		if reflect.TypeOf(op.Answers).Kind() != reflect.Struct {
+			bare = append(bare, op.Name()+" answers a "+reflect.TypeOf(op.Answers).String())
 		}
+	}
+	if len(bare) > 0 {
+		t.Errorf("%d operations do not answer an object: %v", len(bare), bare)
 	}
 }

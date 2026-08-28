@@ -42,13 +42,13 @@ func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 		{"a task's history", Answer{Acts: []trace.Act{anAct(1, trace.Created)}}},
 		{"a period", Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
 	} {
-		crossed, ok := Of(tc.in).([]trace.Shape)
+		crossed, ok := Of(tc.in).(Acts)
 		if !ok {
-			t.Errorf("%s: Of = %T, want a list of acts", tc.what, Of(tc.in))
+			t.Errorf("%s: Of = %T, want a listing of acts", tc.what, Of(tc.in))
 			continue
 		}
-		if len(crossed) != 1 || crossed[0].Task != 1 {
-			t.Errorf("%s: crossed %+v, want one act on task 1", tc.what, crossed)
+		if len(crossed.Acts) != 1 || crossed.Acts[0].Task != 1 {
+			t.Errorf("%s: crossed %+v, want one act on task 1", tc.what, crossed.Acts)
 		}
 	}
 }
@@ -68,12 +68,12 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 	e := openEngine(t)
 	found := []objective.Objective{addObjective(t, e, "Ship cairn 1.0")}
 
-	crossed, ok := Of(Answer{FoundObjectives: found}).([]Objective)
+	crossed, ok := Of(Answer{FoundObjectives: found}).(Objectives)
 	if !ok {
-		t.Fatalf("Of = %T, want a list of objectives", Of(Answer{FoundObjectives: found}))
+		t.Fatalf("Of = %T, want a listing of objectives", Of(Answer{FoundObjectives: found}))
 	}
-	if len(crossed) != 1 || crossed[0].Title != "Ship cairn 1.0" {
-		t.Errorf("crossed %+v, want the objective that was found", crossed)
+	if len(crossed.Objectives) != 1 || crossed.Objectives[0].Title != "Ship cairn 1.0" {
+		t.Errorf("crossed %+v, want the objective that was found", crossed.Objectives)
 	}
 	if text := RenderText(ObjectiveSearch, Answer{FoundObjectives: found}); !strings.Contains(text, "Ship cairn 1.0") {
 		t.Errorf("the listing does not carry it:\n%s", text)

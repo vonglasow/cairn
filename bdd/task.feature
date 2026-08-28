@@ -1051,6 +1051,16 @@ Feature: Tasks
       Then it writes JSON to standard output
       And it carries 1 task
 
+    @task-json-list-says-the-focus-once
+    Scenario: a listing says which task is in focus, once
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 2 in focus
+      When I run `cairn task list --json`
+      Then it carries 2 tasks
+      And it says task 2 is the one in focus
+      And no task in it carries that on its own
+
     @task-json-show
     Scenario: showing can be read by a machine
       Given I added a task titled "Write the spec"

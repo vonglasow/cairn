@@ -18,21 +18,74 @@ import (
 	"cairn/internal/trace"
 )
 
-// Task is how a task crosses to a machine: every fact task.Shape carries,
-// plus how far along it is and whether it is the one being worked on. Neither
-// sits in task.Shape itself. Progress belongs to task and objective alike and
-// so to neither; the focus is a fact of the store rather than of the task —
-// Answer is the one place that reaches both.
+// Task is how a task crosses to a machine: every fact task.Shape carries, plus
+// how far along it is. Progress sits here rather than in task.Shape itself:
+// task and objective share the notion and it belongs to neither.
+//
+// Which task is being worked on is not here. It is a fact of the store, not of
+// a task, and a listing says it once at the top rather than once per row — said
+// on every row, the rows can disagree and a reader has to pick one to believe.
+// It also makes the two renderings agree: the card a person reads has never
+// shown it either, only the listing marks it.
 type Task struct {
 	task.Shape
 	Progress *domain.ProgressShape `json:"progress"`
-	InFocus  bool                  `json:"in_focus"`
 }
 
-// OfTask turns a task, how far along it is and whether it is being worked on
-// into what crosses to a machine.
-func OfTask(t task.Task, p domain.Progress, inFocus bool) Task {
-	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p), InFocus: inFocus}
+// OfTask turns a task and how far along it is into what crosses to a machine.
+func OfTask(t task.Task, p domain.Progress) Task {
+	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p)}
+}
+
+// Tasks is how a listing of tasks crosses: an object naming what it carries,
+// never a bare list. So is every other listing below, for three reasons, and
+// only the first is somebody else's rule. A client refuses a schema that does
+// not describe an object, and one refused tool costs the whole list. A bare
+// list can never gain a sibling field, so what a listing knows besides its rows
+// — which task is in focus, what the store holds — had nowhere to go and was
+// either repeated on every row or dropped. And a reader of the JSON can tell
+// one listing from another without inspecting a row.
+type Tasks struct {
+	Tasks []Task `json:"tasks"`
+	// InFocus is which task is being worked on, said once. Null when none is.
+	InFocus *int `json:"in_focus"`
+}
+
+// Objectives is how a listing of objectives crosses.
+type Objectives struct {
+	Objectives []Objective `json:"objectives"`
+}
+
+// Kept is how a listing of backups crosses — named for what is kept beside the
+// store, since Backups already names the way to reach them.
+type Kept struct {
+	Backups []domain.BackupShape `json:"backups"`
+}
+
+// Ledger is how a listing of changes to the shape of the store crosses, with
+// what the store holds — which the text has always said and the JSON used to
+// lose, having nowhere to put it.
+//
+// Named for the ledger a store keeps beside its shape, and not Changes: that
+// name is taken by the attributes an edit was given, and one word for two
+// notions is one place for a reader to be wrong.
+type Ledger struct {
+	Changes []migration.Shape `json:"changes"`
+	Holds   *domain.Held      `json:"holds"`
+}
+
+// Acts is how what was done to a task, or over a period, crosses.
+type Acts struct {
+	Acts []trace.Shape `json:"acts"`
+}
+
+// Focus is how the task being worked on crosses, or the fact that none is. One
+// shape either way rather than two: a tool that answers either of two things
+// can be described only as "either", and a client that will not read an either
+// reads nothing at all.
+type Focus struct {
+	Task    *Task `json:"task"`
+	InFocus *int  `json:"in_focus"`
 }
 
 // Objective is how an objective crosses to a machine. Tasks holds what was
@@ -96,8 +149,15 @@ type Refusal struct {
 // conditions outside any covered block, so a mutation of one of them reports
 // as unreachable and the gate cannot judge it.
 func Of(a Answer) any {
+	// A task alongside the focus is the focus being told, and nothing else
+	// tells it that way: a card asked for by number says nothing about the
+	// focus, and a listing carries its rows too. Checked first, because the
+	// plain-task branch below would otherwise swallow it.
+	if a.Task != nil && a.InFocus != nil {
+		return ofFocus(*a.Task, a.Progress, *a.InFocus)
+	}
 	if a.Task != nil {
-		return OfTask(*a.Task, a.Progress, isInFocus(a, *a.Task))
+		return OfTask(*a.Task, a.Progress)
 	}
 	if a.Tasks != nil {
 		return ofTasks(a.Tasks, a.InFocus)
@@ -109,22 +169,22 @@ func Of(a Answer) any {
 		return OfObjective(*a.Objective, a.Under, a.Progress)
 	}
 	if a.Objectives != nil {
-		return ofObjectives(a.Objectives)
+		return Objectives{Objectives: ofObjectives(a.Objectives)}
 	}
 	if a.FoundObjectives != nil {
-		return ofObjectives(a.FoundObjectives)
+		return Objectives{Objectives: ofObjectives(a.FoundObjectives)}
 	}
 	if a.Backup != nil {
 		return domain.OfBackup(*a.Backup, a.Holds)
 	}
 	if a.Backups != nil {
-		return ofBackups(a.Backups)
+		return Kept{Backups: ofBackups(a.Backups)}
 	}
 	if a.Change != nil {
 		return migration.OfMigration(*a.Change)
 	}
 	if a.Changes != nil {
-		return ofChanges(a.Changes)
+		return Ledger{Changes: ofChanges(a.Changes), Holds: a.Holds}
 	}
 	if a.RolledBack != nil {
 		return migration.OfRolledBack(*a.RolledBack)
@@ -142,13 +202,13 @@ func Of(a Answer) any {
 		return *a.Holds
 	}
 	if a.Acts != nil {
-		return ofActs(a.Acts)
+		return Acts{Acts: ofActs(a.Acts)}
 	}
 	if a.Since != nil {
-		return ofActs(a.Since)
+		return Acts{Acts: ofActs(a.Since)}
 	}
 	if a.InFocus != nil {
-		return ofFocus(*a.InFocus)
+		return nothingInFocus(*a.InFocus)
 	}
 	return nil
 }
@@ -162,48 +222,53 @@ func ofActs(acts []trace.Act) []trace.Shape {
 	return out
 }
 
-// InFocus is how "nothing is in focus" crosses to a machine. Null rather than
-// zero: a machine reading this asks whether a task is being worked on, and
-// zero is a number no task carries.
-type InFocus struct {
-	InFocus *int `json:"in_focus"`
+// ofFocus turns the task being worked on into what crosses. Both fields are
+// filled: the number is what a machine tests, the task is what it would
+// otherwise have to ask for straight after.
+func ofFocus(t task.Task, p domain.Progress, number int) Focus {
+	held := OfTask(t, p)
+	return Focus{Task: &held, InFocus: heldOrNothing(&number)}
 }
 
-// ofFocus turns which task is in focus into what crosses, nothing held
-// answering null.
-func ofFocus(number int) InFocus {
-	if number == task.NothingInFocus {
-		return InFocus{}
-	}
-	return InFocus{InFocus: &number}
+// nothingInFocus turns "no task is being worked on" into what crosses — the
+// same shape as ofFocus with both fields empty, so a machine reads one field
+// of one shape whether or not anything is held. Null rather than zero: zero is
+// a number no task carries, and a machine testing for it would have to know
+// that.
+func nothingInFocus(number int) Focus {
+	return Focus{InFocus: heldOrNothing(&number)}
 }
 
-// isInFocus says whether the single task an answer carries is the one being
-// worked on. An answer that says nothing about the focus says no rather than
-// asking the store, since it was not asked about it.
-func isInFocus(a Answer, t task.Task) bool {
-	return a.InFocus != nil && *a.InFocus == task.OfTask(t).Number
-}
-
-// ofTasks turns every task into what crosses, with no progress counted per
-// item: a listing that counted what hangs under each task would ask for it
+// ofTasks turns a listing of tasks into what crosses, with no progress counted
+// per item: a listing that counted what hangs under each task would ask for it
 // once per task to answer one line each.
-func ofTasks(tasks []task.Task, inFocus *int) []Task {
-	held := heldOr(inFocus)
+func ofTasks(tasks []task.Task, inFocus *int) Tasks {
 	out := make([]Task, 0, len(tasks))
 	for _, t := range tasks {
-		out = append(out, OfTask(t, domain.Progress{}, task.OfTask(t).Number == held))
+		out = append(out, OfTask(t, domain.Progress{}))
 	}
-	return out
+	return Tasks{Tasks: out, InFocus: heldOrNothing(inFocus)}
 }
 
-// heldOr reads which task an answer says is in focus, answering none when the
-// answer said nothing about it.
+// heldOr reads which task an answer says is in focus as a number, answering
+// none when the answer said nothing about it. What a person reads wants a
+// number, since it marks a row by comparing it.
 func heldOr(inFocus *int) int {
 	if inFocus == nil {
 		return task.NothingInFocus
 	}
 	return *inFocus
+}
+
+// heldOrNothing reads the same thing for a machine, which wants the absence
+// told rather than spelled zero: null when none is held or when the answer
+// said nothing about it — a listing that was not asked does not get to claim
+// none.
+func heldOrNothing(inFocus *int) *int {
+	if heldOr(inFocus) == task.NothingInFocus {
+		return nil
+	}
+	return inFocus
 }
 
 // ofObjectives turns every objective into what crosses, with nothing counted

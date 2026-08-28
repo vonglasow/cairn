@@ -217,12 +217,18 @@ Feature: Answering a machine over MCP
       When I ask it what it can do
       Then every tool describes the shape of its answer
 
-    @mcp-says-whether-it-answers-one-thing-or-many
-    Scenario: a tool that lists says so, and one that shows says so
+    @mcp-every-tool-answers-an-object
+    Scenario: every tool answers something a machine reads as one thing
       Given a cairn server started with no access given
       When I ask it what it can do
-      Then `task_list` says it answers a list
-      And `task_show` says it answers one thing
+      Then every tool says it answers one object
+
+    @mcp-says-what-one-thing-it-answers
+    Scenario: a tool says which fields its one answer carries
+      Given a cairn server started with no access given
+      When I ask it what it can do
+      Then `task_list` says its answer carries the tasks
+      And `task_show` says its answer carries a title
 
     @mcp-what-it-answers-has-the-shape-it-said
     Scenario: what a tool answers is measured against what it said

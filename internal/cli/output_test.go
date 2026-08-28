@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 	"cairn/internal/task"
 )
 
@@ -27,7 +28,7 @@ func spec(t *testing.T) task.Task {
 // list, and a reader that trusted the field would break on the first task
 // nobody labelled.
 func TestForWire_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
-	encoded, err := json.Marshal(forWire(spec(t), domain.Progress{}))
+	encoded, err := json.Marshal(engine.OfTask(spec(t), domain.Progress{}))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -45,7 +46,7 @@ func TestForWire_writesTheLabelsATaskCarries(t *testing.T) {
 	a.LabelsTold()
 	built = a.Task()
 
-	encoded, err := json.Marshal(forWire(built, domain.Progress{}))
+	encoded, err := json.Marshal(engine.OfTask(built, domain.Progress{}))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -70,7 +71,7 @@ func TestForWire_writesEveryAttributeAsText(t *testing.T) {
 	a.Estimated(estimate)
 	built = a.Task()
 
-	wire := forWire(built, domain.Progress{})
+	wire := engine.OfTask(built, domain.Progress{})
 	if wire.Deadline != "2026-09-01" {
 		t.Errorf("Deadline = %q, want 2026-09-01", wire.Deadline)
 	}

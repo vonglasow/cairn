@@ -19,7 +19,7 @@ var MigrationList = Operation{
 	Does:    "Name every change to the store, applied or waiting.",
 	Level:   Read,
 	Needs:   AStoreBehind,
-	Answers: Answers{[]migration.Shape{}},
+	Answers: Ledger{},
 	Run: func(on On, _ Input) (Answer, error) {
 		all, err := on.Engine.Migrations()
 		if err != nil {
@@ -41,7 +41,7 @@ var MigrationShow = Operation{
 	Does:    "Say what a change does, and what undoing it does.",
 	Level:   Read,
 	Needs:   AStoreBehind,
-	Answers: Answers{migration.Shape{}},
+	Answers: migration.Shape{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a migration", Means: "the number of the change"},
 	},
@@ -63,7 +63,7 @@ var MigrationApply = Operation{
 	Does:    "Make the changes the store is missing, or one of them.",
 	Level:   Write,
 	Needs:   AStoreBehind,
-	Answers: Answers{Applied{}},
+	Answers: Applied{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a migration", Means: "the number of the change"},
 	},
@@ -95,7 +95,7 @@ var MigrationRollback = Operation{
 	Does:    "Unmake the last change applied to the store.",
 	Level:   Full,
 	Needs:   AStoreBehind,
-	Answers: Answers{migration.RolledBack{}},
+	Answers: migration.RolledBack{},
 	Run: func(on On, _ Input) (Answer, error) {
 		rolled, err := on.Engine.RollBack(on.Path)
 		if err != nil {

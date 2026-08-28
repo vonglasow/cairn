@@ -53,29 +53,26 @@ func toolFor(op engine.Operation) *sdk.Tool {
 //
 // Derived from the Go type rather than written out, so the description and the
 // thing described cannot drift: the same struct that crosses the wire is the one
-// the schema is read off. An operation that declares several shapes gets "any
-// one of these", which is the truth — `task focus` hands back a task or says
-// nothing is in focus, and picking one would describe half of it.
+// the schema is read off.
+//
+// Every answer is one object, so every schema describes one object. That is not
+// a convenience — a client validating what comes back needs somewhere to put it,
+// and one that will not read "either of these" reads none of the tools at all,
+// since a single tool it refuses costs the whole list. Nothing here enforces
+// that: it is enforced where it is decided, in what each operation declares.
 //
 // A shape that cannot be read off its type is a programming mistake rather than
 // something a caller did, so it comes back as no schema at all: a tool that
 // cannot describe itself is better than a server that will not start.
 func answerSchemaFor(op engine.Operation) any {
-	if len(op.Answers) == 0 {
+	if op.Answers == nil {
 		return nil
 	}
-	shapes := make([]*jsonschema.Schema, 0, len(op.Answers))
-	for _, answered := range op.Answers {
-		shape, err := jsonschema.ForType(reflect.TypeOf(answered), nil)
-		if err != nil {
-			return nil
-		}
-		shapes = append(shapes, shape)
+	shape, err := jsonschema.ForType(reflect.TypeOf(op.Answers), nil)
+	if err != nil {
+		return nil
 	}
-	if len(shapes) == 1 {
-		return shapes[0]
-	}
-	return &jsonschema.Schema{AnyOf: shapes}
+	return shape
 }
 
 // schemaFor is the JSON schema op's arguments make: each argument's name, its

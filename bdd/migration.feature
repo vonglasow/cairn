@@ -142,6 +142,8 @@ Feature: Changes to the shape of the store
       Given I added a task titled "Write the spec"
       When I run `cairn migration list --json`
       Then it writes JSON to standard output
+      And it carries every change
+      And it says the store holds 1 task and 0 objectives
 
 
 

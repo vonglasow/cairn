@@ -209,12 +209,12 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	// --- machine-readable answers ---------------------------------------------
 
 	sc.Step(`^it carries (\d+) objectives?$`, func(n int) error {
-		var docs []map[string]any
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &docs); err != nil {
+		rows, _, err := listedUnder(w.Out.Stdout, "objectives")
+		if err != nil {
 			return err
 		}
-		if len(docs) != n {
-			return fmt.Errorf("%d objectives, want %d", len(docs), n)
+		if len(rows) != n {
+			return fmt.Errorf("%d objectives, want %d", len(rows), n)
 		}
 		return nil
 	})

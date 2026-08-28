@@ -139,32 +139,60 @@ tool for every command**, and a test walks the cobra tree to prove it.
 `cairn mcp serve` is a command and not a tool. It is how the server is started,
 not something the server can be asked to do, and a scenario keeps it out.
 
-## Each tool says what shape its answer takes
+## Each tool says what shape its answer takes, and that shape is an object
 
 A tool describes its arguments and used to say nothing about its answer, so a
-client had to guess. That is not a small gap: `task_list` answers a JSON array,
-and a client holding to the pre-SEP-2106 rule — where `structuredContent` had
-to be an object — refuses it. The array is not the defect. **The silence was.**
+client had to guess. Declaring the shape closed that. But the first attempt at
+declaring it made things strictly worse, and the reason is worth keeping.
 
-Worth writing down, because the first diagnosis was the other one: the SDK's
-own type says `structuredContent` "may marshal to any valid JSON value (object,
-array, or primitive) conforming to the tool's OutputSchema", per SEP-2106. So
-an array is legal, and a client that refuses one is applying a rule the
-protocol has since relaxed. Declaring the schema is what ends the argument:
-there is now a contract to hold the answer to instead of a convention to
-assume.
+**What was wrong, and how it was found.** The declaration was read off the Go
+type, and several operations answered a bare list — `[]Task`, `[]trace.Shape`.
+Their schemas therefore said `"type": ["null", "array"]`. `task_focus` answered
+two shapes, so its schema said `anyOf`. All of that is legal: the SDK's own type
+says `structuredContent` "may marshal to any valid JSON value (object, array,
+or primitive) conforming to the tool's OutputSchema", per SEP-2106. Legal and
+unusable — the client on the other end validates every `outputSchema` as an
+object, refuses the ten that were not, and **a single refused tool costs the
+whole list**. Before declaring, that client fetched the tools with a complaint.
+After declaring, it fetched none. Measured on the real client, not reasoned
+about.
+
+Two mistakes, and only one of them is technical. Declaring a schema was right;
+declaring it without asking the one client that was going to read it was not.
+And no gate could catch it, because every gate here tests cairn against cairn.
+A scenario now states the client's constraint outright — *every tool says it
+answers one object* — so the requirement lives in the same place as everything
+else that must hold.
+
+**Every answer is one object naming what it carries.** A listing of tasks is
+`{"tasks": [...], "in_focus": 2}`, not `[...]`. Three reasons, and only the
+first is somebody else's rule:
+
+- a client refuses a description that is not of an object;
+- a bare list can never gain a sibling field, so what a listing knows besides
+  its rows had nowhere to go — the focus was repeated on every row, and what
+  the store holds was dropped from `migration_list` entirely though the text
+  had always said it;
+- a reader can tell one listing from another without inspecting a row.
+
+**The focus is said once, at the top.** Every task in a listing used to carry
+`in_focus`, which is a fact of the store restated once per row. Restated, the
+rows can disagree, and a reader has to pick one to believe. It also puts the
+two renderings back in step: the card a person reads has never shown the focus,
+only the listing marks it.
+
+**An operation answers one shape, not a set of them.** `task_focus` used to
+answer two — the task being worked on, or nothing in focus — and its schema
+said "either". A description that says "either" is one the reader has to
+resolve at runtime, which is the thing that broke. So the operation was changed
+rather than the description: it answers `{"task": …, "in_focus": …}` either
+way, with the fields it cannot fill left empty. A machine reads one field of
+one shape whether or not anything is held.
 
 **The shape is read off the Go type, never written out.** An operation declares
-what it answers — `Answers{[]Task{}}` — and the schema is inferred from that
+what it answers — `Answers: Tasks{}` — and the schema is inferred from that
 type. The same struct that crosses the wire is the one the description is taken
-from, so the two cannot drift: change the struct and the schema changes with
-it.
-
-**An operation may answer more than one shape, and says so.** `task_focus`
-hands back the task being worked on, or says nothing is in focus — two
-genuinely different answers. Its schema is "any one of these". Naming one would
-describe half the tool, and picking the likelier one would be a guess dressed
-as a contract.
+from, so the two cannot drift: change the struct and the schema changes with it.
 
 **A refusal is not an answer of that shape.** It comes back as `IsError` with
 the reason as text and carries nothing for a machine, so nothing measures it
@@ -174,7 +202,7 @@ scenario: without it, every refusal would read as a violation.
 And the declaration bought something that was not the point of it. `Of` works
 out which shape to build by looking at which field of an `Answer` was filled —
 knowable only after the operation has run, and until now comparable to nothing.
-A test now runs eighteen operations and checks that what `Of` builds is what
+A test now runs nineteen operations and checks that what `Of` builds is what
 the operation said it answers. The description and the behaviour check each
 other.
 

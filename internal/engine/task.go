@@ -11,7 +11,6 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/store"
 	"cairn/internal/task"
-	"cairn/internal/trace"
 )
 
 // Name is how an operation is named as a command or a tool: "task_add".
@@ -40,7 +39,7 @@ var TaskAdd = Operation{
 	Does:    "Add a task, carrying whatever of its attributes were given.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{Task{}},
+	Answers: Task{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
 	}, taskAttributes...),
@@ -71,7 +70,7 @@ var TaskList = Operation{
 	Does:    "List every task.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]Task{}},
+	Answers: Tasks{},
 	Run: func(on On, _ Input) (Answer, error) {
 		return listing(on)
 	},
@@ -86,7 +85,7 @@ var TaskShow = Operation{
 	Does:    "Show what a task carries, what hangs under it and how far along it is.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{Task{}},
+	Answers: Task{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -116,7 +115,7 @@ var TaskEdit = Operation{
 	Does:    "Change what a task carries.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{Task{}},
+	Answers: Task{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
@@ -148,7 +147,7 @@ var TaskDelete = Operation{
 	Does:    "Delete a task.",
 	Level:   Full,
 	Needs:   AStore,
-	Answers: Answers{Deleted{}},
+	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -170,7 +169,7 @@ var TaskSearch = Operation{
 	Does:    "List every task carrying everything named, wherever among its facts each one sits.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]Task{}},
+	Answers: Tasks{},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},
@@ -265,7 +264,7 @@ var TaskMove = Operation{
 	Does:    "Move a task to another place among the ones it sits with. It never changes the column.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{[]Task{}},
+	Answers: Tasks{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
@@ -295,7 +294,7 @@ var TaskFocus = Operation{
 	Does:    "Put a task in focus, or say which one is. One task is in focus at a time.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{Task{}, InFocus{}},
+	Answers: Focus{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task being worked on"},
 	},
@@ -324,7 +323,7 @@ var TaskUnfocus = Operation{
 	Does:    "Leave nothing in focus. Letting go of nothing is not a failure.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Answers{InFocus{}},
+	Answers: Focus{},
 	Run: func(on On, _ Input) (Answer, error) {
 		if err := on.Engine.LetGo(); err != nil {
 			return Answer{}, err
@@ -399,7 +398,7 @@ var TraceShow = Operation{
 	Does:    "Show everything done to a task, oldest first, with what each change went from and to.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]trace.Shape{}},
+	Answers: Acts{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -421,7 +420,7 @@ var TraceList = Operation{
 	Does:    "List what was done from a day onward, today when none is given, and what it comes to.",
 	Level:   Read,
 	Needs:   AStore,
-	Answers: Answers{[]trace.Shape{}},
+	Answers: Acts{},
 	Takes: []Argument{
 		{Name: "since", Kind: Day, Means: "the first day to look at; today when left out"},
 	},

@@ -14,6 +14,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/migration"
 	"cairn/test"
 )
 
@@ -77,11 +78,13 @@ func (w *world) changesListed() ([]change, error) {
 	if listed.Code != exitOK {
 		return nil, fmt.Errorf("listing the changes failed: exit %d (%s)", listed.Code, listed.Stderr)
 	}
-	var changes []change
-	if err := json.Unmarshal([]byte(listed.Stdout), &changes); err != nil {
+	var listing struct {
+		Changes []change `json:"changes"`
+	}
+	if err := json.Unmarshal([]byte(listed.Stdout), &listing); err != nil {
 		return nil, fmt.Errorf("the changes are not JSON (%w):\n%s", err, listed.Stdout)
 	}
-	return changes, nil
+	return listing.Changes, nil
 }
 
 // rollBackPast undoes changes, one at a time through the real command, until
@@ -318,6 +321,37 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		func(line string, tasks, objectives int) error {
 			w.Run(line)
 			return test.WantContains(w.Out.Stdout, held(tasks, objectives), "the answer")
+		})
+
+	sc.Step(`^it carries every change$`, func() error {
+		rows, _, err := listedUnder(w.Out.Stdout, "changes")
+		if err != nil {
+			return err
+		}
+		if len(rows) != len(migration.Known) {
+			return fmt.Errorf("%d changes, want the %d cairn knows", len(rows), len(migration.Known))
+		}
+		return nil
+	})
+
+	// What the store holds is said in the text and used to be lost in the JSON:
+	// a bare list had nowhere to put it. The envelope has.
+	sc.Step(`^it says the store holds (\d+) tasks? and (\d+) objectives?$`,
+		func(tasks, objectives int) error {
+			_, envelope, err := listedUnder(w.Out.Stdout, "changes")
+			if err != nil {
+				return err
+			}
+			holds, said := envelope["holds"].(map[string]any)
+			if !said {
+				return fmt.Errorf("the answer says nothing about what the store holds")
+			}
+			for what, want := range map[string]int{"tasks": tasks, "objectives": objectives} {
+				if got := fmt.Sprint(holds[what]); got != fmt.Sprint(want) {
+					return fmt.Errorf("it holds %s %s, want %d", got, what, want)
+				}
+			}
+			return nil
 		})
 
 	sc.Step("^`([^`]*)` says the store holds (\\d+) tasks? and (\\d+) objectives?$",

@@ -45,7 +45,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	built := a.Task()
 	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
 
-	encoded, err := json.Marshal(OfTask(built, progress, false))
+	encoded, err := json.Marshal(OfTask(built, progress))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 
 	t.Run("a count of tasks with none under it does not carry sub-tasks too", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}, false))
+		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -107,7 +107,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	})
 
 	t.Run("nothing under it reads as null, not as zeroes", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{}, false))
+		encoded, err := json.Marshal(OfTask(built, domain.Progress{}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -152,9 +152,9 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			in   Answer
 			want any
 		}{
-			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress, false)},
-			{"a list of tasks", Answer{Tasks: []task.Task{built}}, []Task{OfTask(built, domain.Progress{}, false)}},
-			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, []Task{OfTask(built, domain.Progress{}, false)}},
+			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
+			{"a list of tasks", Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
+			{"what a search found, the same shape as a list of tasks", Answer{Found: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
 			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
@@ -163,11 +163,11 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 				Tasks:    []int{},
 				Progress: &domain.ProgressShape{SubTasks: &domain.Tally{Total: 4, Done: 1}, Percent: 25},
 			}},
-			{"a list of objectives", Answer{Objectives: []objective.Objective{obj}}, []Objective{OfObjective(obj, nil, domain.Progress{})}},
+			{"a list of objectives", Answer{Objectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
 			{"a backup with what it holds", Answer{Backup: &backup, Holds: &held}, domain.OfBackup(backup, &held)},
-			{"a list of backups", Answer{Backups: []domain.Backup{backup}}, []domain.BackupShape{domain.OfBackup(backup, nil)}},
+			{"a list of backups", Answer{Backups: []domain.Backup{backup}}, Kept{Backups: []domain.BackupShape{domain.OfBackup(backup, nil)}}},
 			{"a change", Answer{Change: &change}, migration.OfMigration(change)},
-			{"a list of changes", Answer{Changes: []migration.Migration{change}}, []migration.Shape{migration.OfMigration(change)}},
+			{"a list of changes", Answer{Changes: []migration.Migration{change}}, Ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
 			{"a rollback names what it undid, not a change in full", Answer{RolledBack: &change}, migration.OfRolledBack(change)},
 			{"a number deleted", Answer{Deleted: &one}, Deleted{Deleted: one}},
 			{"a number put back", Answer{PutBack: &putBack}, PutBack{PutBack: putBack}},
@@ -292,79 +292,74 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}
 }
 
-// What crosses about the focus. Null rather than zero when nothing is held: a
-// machine asks whether a task is being worked on, and zero is a number no task
-// carries.
-func TestOf_saysWhichTaskIsInFocus(t *testing.T) {
-	held := Of(Answer{InFocus: of(4)})
-	shape, ok := held.(InFocus)
+// What crosses about the focus: the task being worked on and its number, in one
+// shape.
+func TestOf_saysWhichTaskIsInFocusAndHandsItOver(t *testing.T) {
+	one := builtTask(t, 7, "The one")
+	held, ok := Of(Answer{Task: &one, InFocus: of(7)}).(Focus)
 	if !ok {
-		t.Fatalf("Of = %T, want InFocus", held)
+		t.Fatalf("Of on the focus = %T, want Focus", Of(Answer{Task: &one, InFocus: of(7)}))
 	}
-	if shape.InFocus == nil || *shape.InFocus != 4 {
-		t.Errorf("in_focus = %v, want 4", shape.InFocus)
+	if held.InFocus == nil || *held.InFocus != 7 {
+		t.Errorf("in_focus = %v, want 7", held.InFocus)
 	}
-
-	none := Of(Answer{InFocus: of(task.NothingInFocus)})
-	if got, ok := none.(InFocus); !ok || got.InFocus != nil {
-		t.Errorf("Of with nothing held = %#v, want a null in_focus", none)
+	if held.Task == nil || held.Task.Number != 7 {
+		t.Errorf("the task handed over = %v, want task 7", held.Task)
 	}
 }
 
-// A listing says of each task whether it is the one being worked on, so the two
-// renderings cannot say different things: the card marks it, the JSON flags it.
-func TestOf_flagsTheTaskInFocusInAListing(t *testing.T) {
+// Nothing in focus is the same shape with both fields empty, so a machine reads
+// one field of one shape either way. Null rather than zero: zero is a number no
+// task carries, and a machine testing for it would have to know that.
+func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
+	none, ok := Of(Answer{InFocus: of(task.NothingInFocus)}).(Focus)
+	if !ok {
+		t.Fatalf("Of with nothing held = %T, want Focus", Of(Answer{InFocus: of(task.NothingInFocus)}))
+	}
+	if none.InFocus != nil {
+		t.Errorf("in_focus = %v, want null", none.InFocus)
+	}
+	if none.Task != nil {
+		t.Errorf("a task crossed with nothing in focus: %v", none.Task)
+	}
+}
+
+// A listing says which task is in focus once, at the top. Said on every row the
+// rows can disagree, and a reader has to pick one to believe.
+func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
 
-	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: of(2)}).([]Task)
+	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: of(2)}).(Tasks)
 	if !ok {
-		t.Fatal("Of on a listing did not answer a list of tasks")
+		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
-	if len(crossed) != 2 {
-		t.Fatalf("%d tasks crossed, want 2", len(crossed))
+	if len(crossed.Tasks) != 2 {
+		t.Fatalf("%d tasks crossed, want 2", len(crossed.Tasks))
 	}
-	if crossed[0].InFocus {
-		t.Error("the first task is flagged as in focus, and it is not")
-	}
-	if !crossed[1].InFocus {
-		t.Error("the second task is not flagged as in focus, and it is")
+	if crossed.InFocus == nil || *crossed.InFocus != 2 {
+		t.Errorf("in_focus = %v, want 2", crossed.InFocus)
 	}
 }
 
-// An answer that says nothing about the focus flags nothing, rather than
-// flagging the task numbered zero — a listing asked for without the focus is
-// not a listing where the first task is being worked on.
-func TestOf_flagsNothingWhenAnAnswerSaysNothingAboutTheFocus(t *testing.T) {
-	crossed, ok := Of(Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).([]Task)
+// A listing asked for without the focus says none, rather than saying the task
+// numbered zero is being worked on.
+func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
+	crossed, ok := Of(Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).(Tasks)
 	if !ok {
-		t.Fatal("Of on a listing did not answer a list of tasks")
+		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
-	if crossed[0].InFocus {
-		t.Error("a task is flagged as in focus, and nothing said one was")
+	if crossed.InFocus != nil {
+		t.Errorf("in_focus = %v, want null", crossed.InFocus)
 	}
 }
 
-// The single task an answer carries is flagged only when the answer says it is
-// the one in focus.
-func TestOf_flagsASingleTaskOnlyWhenItIsTheOneInFocus(t *testing.T) {
+// A card asked for by number is a task and nothing else: it was not asked about
+// the focus, so it does not answer about it.
+func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 	one := builtTask(t, 7, "The one")
-	for _, tc := range []struct {
-		what string
-		in   Answer
-		want bool
-	}{
-		{"the answer names it", Answer{Task: &one, InFocus: of(7)}, true},
-		{"the answer names another", Answer{Task: &one, InFocus: of(3)}, false},
-		{"the answer says nothing", Answer{Task: &one}, false},
-	} {
-		crossed, ok := Of(tc.in).(Task)
-		if !ok {
-			t.Fatalf("%s: Of did not answer a task", tc.what)
-		}
-		if crossed.InFocus != tc.want {
-			t.Errorf("%s: in_focus = %v, want %v", tc.what, crossed.InFocus, tc.want)
-		}
+	if _, ok := Of(Answer{Task: &one}).(Task); !ok {
+		t.Errorf("Of on a card = %T, want Task", Of(Answer{Task: &one}))
 	}
 }
 
