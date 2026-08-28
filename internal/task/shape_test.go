@@ -39,6 +39,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Due(deadline)
 	a.Estimated(estimate)
 	a.Spent(spent)
+	a.BlockedBy(4)
+	a.BlockedBy(5)
+	a.BlockersTold()
+	a.Because("the client's answer")
 	built := a.Task()
 
 	encoded, err := json.Marshal(task.OfTask(built))
@@ -72,6 +76,13 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	if !ok || len(labels) != 2 || labels[0] != "spec" || labels[1] != "team" {
 		t.Errorf("labels = %v, want [spec team]", doc["labels"])
 	}
+	blockers, ok := doc["blocked_by"].([]any)
+	if !ok || len(blockers) != 2 || blockers[0] != float64(4) || blockers[1] != float64(5) {
+		t.Errorf("blocked_by = %v, want [4 5]", doc["blocked_by"])
+	}
+	if doc["because"] != "the client's answer" {
+		t.Errorf("because = %v, want the words it was given", doc["because"])
+	}
 }
 
 // TestOfTask_writesAnEmptyListRatherThanNothingAtAll pins that a task
@@ -86,7 +97,9 @@ func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	if got := string(encoded); !strings.Contains(got, `"labels":[]`) {
-		t.Errorf("labels should be an empty list, got %s", got)
+	for _, want := range []string{`"labels":[]`, `"blocked_by":[]`} {
+		if got := string(encoded); !strings.Contains(got, want) {
+			t.Errorf("%s should be there, got %s", want, got)
+		}
 	}
 }

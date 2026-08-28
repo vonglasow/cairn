@@ -315,10 +315,10 @@ func RenderText(op Operation, a Answer) string {
 		return task.Text(*a.Task, a.Progress) + task.Under(a.Under)
 	}
 	if a.Tasks != nil {
-		return tasksText(a.Tasks, a.InFocus)
+		return tasksText(a.Tasks, a)
 	}
 	if a.Matched != nil {
-		return foundText(a.Matched)
+		return foundText(a.Matched, a)
 	}
 	if a.Objective != nil {
 		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
@@ -366,26 +366,28 @@ func RenderText(op Operation, a Answer) string {
 }
 
 // tasksText renders every task, saying so when there is none.
-func tasksText(tasks []task.Task, inFocus *int) string {
+func tasksText(tasks []task.Task, a Answer) string {
 	if len(tasks) == 0 {
 		return "there is no task\n"
 	}
-	return task.Tree(tasks, heldOr(inFocus))
+	return task.Tree(tasks, marksOf(a))
 }
 
-// foundText renders every task a search found, flat — a found sub-task hangs
-// under nothing, since what matched is what is shown rather than where it
-// sits — saying so when nothing was found.
-func foundText(tasks []task.Task) string {
+// foundText renders every task that matched, flat — a sub-task that matched
+// hangs under nothing, since what matched is what is shown rather than where it
+// sits — saying so when nothing matched.
+func foundText(tasks []task.Task, a Answer) string {
 	if len(tasks) == 0 {
 		return "there is no task\n"
 	}
-	var out strings.Builder
-	for _, t := range tasks {
-		out.WriteString(task.Line(t))
-		out.WriteString("\n")
-	}
-	return out.String()
+	return task.Lines(tasks, marksOf(a))
+}
+
+// marksOf reads what a listing has to say about its own rows. Both marks come
+// from the store rather than from any task, so both are carried on the answer
+// and neither is asked of a task.
+func marksOf(a Answer) task.Marks {
+	return task.Marks{InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks}
 }
 
 // linesOf renders every task as one listing line each, for objective's

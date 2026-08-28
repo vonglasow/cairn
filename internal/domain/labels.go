@@ -97,11 +97,25 @@ func ParseLabelChange(given []string) (LabelChange, error) {
 
 // split takes the sign off a label, if it carries one.
 func split(label string) (rune, string) {
-	first := rune(label[0])
-	if first == joins || first == parts {
-		return first, label[1:]
+	return SplitSign(label)
+}
+
+// SplitSign takes the leading + or - off a value, if it carries one, and hands
+// back the sign and the rest. Zero for the sign means the value carried none.
+//
+// Exported because more than one kind of set is changed this way — labels are
+// named by word and blockers by number, and both are given, added to or taken
+// from with the same two signs. The grammar is written here once so the two
+// cannot come to disagree about what "+" means.
+func SplitSign(value string) (rune, string) {
+	if value == "" {
+		return 0, value
 	}
-	return 0, label
+	first := rune(value[0])
+	if first == joins || first == parts {
+		return first, value[1:]
+	}
+	return 0, value
 }
 
 // Apply lays the change over the labels a task carries and hands back the set

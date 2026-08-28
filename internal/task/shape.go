@@ -20,6 +20,8 @@ type Shape struct {
 	Priority    string   `json:"priority"`
 	Description string   `json:"description"`
 	Labels      []string `json:"labels"`
+	BlockedBy   []int    `json:"blocked_by"`
+	Because     string   `json:"because"`
 	Deadline    string   `json:"deadline"`
 	Estimate    string   `json:"estimate"`
 	TimeSpent   string   `json:"time_spent"`
@@ -33,6 +35,8 @@ type shapeMembrane struct {
 	number, parent, objective           int
 	title, state, priority, description string
 	labels                              []string
+	blockers                            []int
+	because                             string
 	deadline, estimate, timeSpent       string
 }
 
@@ -49,6 +53,15 @@ func (m *shapeMembrane) LabelsTold() {
 		m.labels = []string{}
 	}
 }
+func (m *shapeMembrane) BlockedBy(n int) { m.blockers = append(m.blockers, n) }
+func (m *shapeMembrane) NotBlocked()     {}
+func (m *shapeMembrane) BlockersTold() {
+	if m.blockers == nil {
+		m.blockers = []int{}
+	}
+}
+func (m *shapeMembrane) Because(s string)          { m.because = s }
+func (m *shapeMembrane) NotBecause()               {}
 func (m *shapeMembrane) Due(t time.Time)           { m.deadline = domain.FormatDay(t) }
 func (m *shapeMembrane) NotDue()                   {}
 func (m *shapeMembrane) Estimated(d time.Duration) { m.estimate = domain.FormatDuration(d) }
@@ -68,6 +81,7 @@ func OfTask(t Task) Shape {
 		Number: m.number, Parent: m.parent, Title: m.title,
 		State: m.state, Priority: m.priority,
 		Description: m.description, Labels: m.labels,
+		BlockedBy: m.blockers, Because: m.because,
 		Deadline:  m.deadline,
 		Estimate:  m.estimate,
 		TimeSpent: m.timeSpent,

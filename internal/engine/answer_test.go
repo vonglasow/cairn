@@ -261,7 +261,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}{
 		{"a task outranks a list", Operation{}, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
 		{"an empty list of tasks says so", Operation{}, Answer{Tasks: []task.Task{}}, "there is no task\n"},
-		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.NothingInFocus)},
+		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.Marks{})},
 		{"a search that found nothing says so", Operation{}, Answer{Matched: []task.Task{}}, "there is no task\n"},
 		{
 			"what a search found is listed flat, not as a tree",

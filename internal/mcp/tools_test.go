@@ -38,6 +38,11 @@ func (f *taskFacts) NotDescribed()           {}
 func (f *taskFacts) Labelled(string)         {}
 func (f *taskFacts) NotLabelled()            {}
 func (f *taskFacts) LabelsTold()             {}
+func (f *taskFacts) BlockedBy(int)           {}
+func (f *taskFacts) NotBlocked()             {}
+func (f *taskFacts) BlockersTold()           {}
+func (f *taskFacts) Because(string)          {}
+func (f *taskFacts) NotBecause()             {}
 func (f *taskFacts) Due(time.Time)           {}
 func (f *taskFacts) NotDue()                 {}
 func (f *taskFacts) Estimated(time.Duration) {}

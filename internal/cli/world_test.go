@@ -138,7 +138,8 @@ func flagFor(attribute string) string {
 		"title": "--title", "description": "--desc", "deadline": "--deadline",
 		"estimate": "--estimate",
 		"priority": "--priority", "state": "--state", "parent": "--parent",
-		"time spent": "--spent", "objective": "--objective",
+		"time spent": "--spent", "objective": "--objective", "blocker": "--blocker",
+		"because": "--because",
 	}[attribute]
 }
 
@@ -184,7 +185,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent) "([^"]*)"$`,
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
@@ -264,6 +265,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says the labels are either replaced or changed, not both$`:      "either replaced or changed",
 		`^it says a label is added or taken away only when changing a task$`: "only when changing a task",
 		`^it says a task cannot hang under itself$`:                          "cannot hang under itself",
+		`^it says a task cannot block itself$`:                               "cannot block itself",
+		`^it says what is in the way and how to take it away$`:               "--blocker -",
+		`^it says nothing would ever be able to start$`:                      "nothing would ever be able to start",
 		`^it says a sub-task cannot carry sub-tasks$`:                        "sub-task cannot carry sub-tasks",
 		`^it says the task carries sub-tasks$`:                               "carries sub-tasks",
 		`^it says a task cannot be moved behind itself$`:                     "cannot be moved behind itself",
@@ -373,6 +377,17 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return fmt.Errorf("%d labels (%q), want %d", got, labels, n)
 		}
 		return nil
+	})
+
+	// What blocks a task, read off the card a person reads rather than out of
+	// the store: what is asserted is that the card answers "why is this
+	// stopped?", and a store the card never showed would answer nothing.
+	sc.Step("^`([^`]*)` says task (\\d+) blocks it$", func(line string, n int) error {
+		return w.blocksIt(line, fmt.Sprintf("#%d", n))
+	})
+
+	sc.Step("^`([^`]*)` says \"([^\"]*)\" blocks it$", func(line, words string) error {
+		return w.blocksIt(line, words)
 	})
 
 	sc.Step(`^the task is in the "([^"]*)" column$`, func(want string) error {
@@ -703,4 +718,25 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+}
+
+// blocksIt runs a command line and fails unless the card it answered names
+// what is said to block the task, under the heading that says so.
+//
+// The heading is looked for as well as the thing: a title that happened to
+// contain "#3" would otherwise pass for a blocker, and what is being asserted
+// is that the card says this is what stops the task.
+func (w *world) blocksIt(line, blocker string) error {
+	w.Run(line)
+	if w.Out.Code != exitOK {
+		return fmt.Errorf("%s failed: exit %d (%s)", line, w.Out.Code, w.Out.Stderr)
+	}
+	blocking := w.field("blocked by")
+	if blocking == "" {
+		return fmt.Errorf("the card says nothing blocks it:\n%s", w.Out.Stdout)
+	}
+	if !strings.Contains(blocking, blocker) {
+		return fmt.Errorf("what blocks it is %q, and does not name %q", blocking, blocker)
+	}
+	return nil
 }

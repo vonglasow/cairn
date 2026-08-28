@@ -61,6 +61,8 @@ type taskFacts struct {
 	state                     domain.State
 	priority                  domain.Priority
 	labels                    []string
+	blockers                  []int
+	because                   string
 	deadline                  time.Time
 	estimate, timeSpent       time.Duration
 }
@@ -74,6 +76,11 @@ func (f *taskFacts) NotDescribed()             { f.description = "" }
 func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
 func (f *taskFacts) NotLabelled()              { f.labels = nil }
 func (f *taskFacts) LabelsTold()               {}
+func (f *taskFacts) BlockedBy(n int)           { f.blockers = append(f.blockers, n) }
+func (f *taskFacts) NotBlocked()               { f.blockers = nil }
+func (f *taskFacts) BlockersTold()             {}
+func (f *taskFacts) Because(s string)          { f.because = s }
+func (f *taskFacts) NotBecause()               { f.because = "" }
 func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
 func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
 func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }

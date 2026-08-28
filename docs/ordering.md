@@ -40,14 +40,24 @@ were given no power to write.
 
 ## There is one list, and the column is its coarse order
 
-A task sits in one of four columns, and the columns are read in this order:
+A task sits in one of seven columns, and the columns are read in this order:
 
 | | |
 |---|---|
 | `backlog` | first, because this is the part not yet decided — the work of prioritising |
 | `todo` | next, because this is the order in which to do them |
 | `current` | next, because this is what is already under way |
+| `blocked` | next: under way without you, and waiting on somebody who needs chasing |
+| `watching` | next: handed over, and needing checking rather than chasing |
+| `paused` | next, because it waits on nothing but your own decision to pick it up |
 | `done` | last, because it is done |
+
+The first three are what you can act on and the last is history; the three in
+between all mean "not moving", and they are three words rather than one because
+what gets them moving again differs. `blocked` needs a nudge to somebody else,
+`watching` needs a look, `paused` needs you to choose. Collapsed into one
+column, the list would be shorter and "what do I do about this?" would have no
+answer in it.
 
 That is a reading order, not a doing order, and the distinction matters: the
 list is read top to bottom as *what needs deciding, then what is decided, then

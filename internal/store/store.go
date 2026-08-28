@@ -170,7 +170,7 @@ func (s *Store) Close() error {
 // taskColumns is the reading order every query below hands to scanTask,
 // written once so Find, All and Under cannot drift apart. A column added to
 // one of them and forgotten in the others comes back as a zero nobody notices.
-const taskColumns = `number, parent, objective, title, description, state, priority, deadline, estimate, time_spent`
+const taskColumns = `number, parent, objective, title, description, state, priority, because, deadline, estimate, time_spent`
 
 // taskOrder is how every listing reads a task's place: the column first, in the
 // order the columns are read, then the place set by hand inside it.
@@ -187,11 +187,14 @@ const taskColumns = `number, parent, objective, title, description, state, prior
 // two can drift, so a test compares this to what domain.States says: derived by
 // a test instead of by construction, which fails loudly rather than quietly.
 const taskOrder = `ORDER BY CASE state
-	WHEN 'backlog' THEN 0
-	WHEN 'todo'    THEN 1
-	WHEN 'current' THEN 2
-	WHEN 'done'    THEN 3
-	ELSE 4 END, position, number`
+	WHEN 'backlog'  THEN 0
+	WHEN 'todo'     THEN 1
+	WHEN 'current'  THEN 2
+	WHEN 'blocked'  THEN 3
+	WHEN 'watching' THEN 4
+	WHEN 'paused'   THEN 5
+	WHEN 'done'     THEN 6
+	ELSE 7 END, position, number`
 
 // lastPlaceAmong is the place a task takes when it arrives in a column: one
 // past the last of the tasks it will sit with. Its sisters are the tasks in
@@ -211,6 +214,8 @@ type boundTask struct {
 	state, priority,
 	deadline string
 	labels          []string
+	blockers        []int
+	because         string
 	estimate, spent int64
 }
 
@@ -223,6 +228,11 @@ func (b *boundTask) NotDescribed()             { b.description = "" }
 func (b *boundTask) Labelled(s string)         { b.labels = append(b.labels, s) }
 func (b *boundTask) NotLabelled()              { b.labels = nil }
 func (b *boundTask) LabelsTold()               {}
+func (b *boundTask) BlockedBy(n int)           { b.blockers = append(b.blockers, n) }
+func (b *boundTask) NotBlocked()               { b.blockers = nil }
+func (b *boundTask) BlockersTold()             {}
+func (b *boundTask) Because(s string)          { b.because = s }
+func (b *boundTask) NotBecause()               { b.because = "" }
 func (b *boundTask) Due(t time.Time)           { b.deadline = domain.FormatDay(t) }
 func (b *boundTask) NotDue()                   { b.deadline = "" }
 func (b *boundTask) Estimated(d time.Duration) { b.estimate = int64(d) }
@@ -257,10 +267,10 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
 	res, err := s.db.Exec(
 		`INSERT INTO tasks (parent, objective, title, description, state, priority,
-		 deadline, estimate, time_spent, position)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
+		 because, deadline, estimate, time_spent, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
 		b.parent, b.objective, b.title, b.description, b.state, b.priority,
-		b.deadline, b.estimate, b.spent, b.state, b.parent)
+		b.because, b.deadline, b.estimate, b.spent, b.state, b.parent)
 	if err != nil {
 		return task.Task{}, fmt.Errorf("keeping the task: %w", err)
 	}
@@ -269,6 +279,9 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 		return task.Task{}, fmt.Errorf("numbering the task: %w", err)
 	}
 	if err := s.keepLabels(taskLabels, int(number), b.labels); err != nil {
+		return task.Task{}, err
+	}
+	if err := s.keepBlockersOn(int(number), b.blockers); err != nil {
 		return task.Task{}, err
 	}
 	return renumbered(t, int(number)), nil
@@ -299,10 +312,10 @@ func (s *Store) Update(t task.Task) error {
 
 	if _, err := s.db.Exec(
 		`UPDATE tasks SET parent = ?, objective = ?, title = ?, description = ?, state = ?,
-		 priority = ?, deadline = ?, estimate = ?, time_spent = ?, position = ?
+		 priority = ?, because = ?, deadline = ?, estimate = ?, time_spent = ?, position = ?
 		 WHERE number = ?`,
 		b.parent, b.objective, b.title, b.description, b.state, b.priority,
-		b.deadline, b.estimate, b.spent, place, b.number); err != nil {
+		b.because, b.deadline, b.estimate, b.spent, place, b.number); err != nil {
 		return fmt.Errorf("changing the task: %w", err)
 	}
 
@@ -318,7 +331,10 @@ func (s *Store) Update(t task.Task) error {
 	if err := s.clearLabels(taskLabels, b.number); err != nil {
 		return err
 	}
-	return s.keepLabels(taskLabels, b.number, b.labels)
+	if err := s.keepLabels(taskLabels, b.number, b.labels); err != nil {
+		return err
+	}
+	return s.keepBlockersOn(b.number, b.blockers)
 }
 
 // Delete removes a task, and says so when there was none to remove.
@@ -343,6 +359,11 @@ func (s *Store) Delete(number int) error {
 	// disappearing on a delete looked like the cascade working and was this
 	// call all along.
 	if err := s.clearLabels(taskLabels, number); err != nil {
+		return err
+	}
+	// Both sides of every blocking link, since a task that is gone neither
+	// blocks anything nor is blocked by anything.
+	if err := s.releaseBlockersOn(number); err != nil {
 		return err
 	}
 	return s.releaseFocusOn(number)
@@ -410,11 +431,11 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		number, parent, objective int
 		title, description        string
 		state, priority           string
-		deadline                  string
+		because, deadline         string
 		estimate, spent           int64
 	)
 	if err := row.Scan(&number, &parent, &objective, &title, &description, &state, &priority,
-		&deadline, &estimate, &spent); err != nil {
+		&because, &deadline, &estimate, &spent); err != nil {
 		return task.Task{}, err
 	}
 	day, err := domain.ParseDeadline(deadline)
@@ -422,6 +443,10 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		return task.Task{}, err
 	}
 	labels, err := s.labelsOf(taskLabels, number)
+	if err != nil {
+		return task.Task{}, err
+	}
+	blockers, err := s.blockersOn(number)
 	if err != nil {
 		return task.Task{}, err
 	}
@@ -444,6 +469,19 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		}
 	}
 	a.LabelsTold()
+	if len(blockers) == 0 {
+		a.NotBlocked()
+	} else {
+		for _, blocker := range blockers {
+			a.BlockedBy(blocker)
+		}
+	}
+	a.BlockersTold()
+	if because == "" {
+		a.NotBecause()
+	} else {
+		a.Because(because)
+	}
 	if day.IsZero() {
 		a.NotDue()
 	} else {

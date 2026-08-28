@@ -50,6 +50,11 @@ func (l *looking) NotDescribed()             {}
 func (l *looking) Labelled(string)           {}
 func (l *looking) NotLabelled()              {}
 func (l *looking) LabelsTold()               {}
+func (l *looking) BlockedBy(int)             {}
+func (l *looking) NotBlocked()               {}
+func (l *looking) BlockersTold()             {}
+func (l *looking) Because(s string)          { l.consider(s) }
+func (l *looking) NotBecause()               {}
 func (l *looking) Due(t time.Time)           { l.consider(domain.FormatDay(t)) }
 func (l *looking) NotDue()                   {}
 func (l *looking) Estimated(d time.Duration) { l.consider(domain.FormatDuration(d)) }

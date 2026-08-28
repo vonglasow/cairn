@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -17,10 +18,11 @@ type row struct{ key, value string }
 // Labels are collected as they arrive and only laid down once LabelsTold says
 // there are no more.
 type textMembrane struct {
-	number int
-	title  string
-	rows   []row
-	labels []string
+	number   int
+	title    string
+	rows     []row
+	labels   []string
+	blockers []string
 }
 
 func (c *textMembrane) Numbered(n int)  { c.number = n }
@@ -38,6 +40,26 @@ func (c *textMembrane) NotLabelled()       {}
 func (c *textMembrane) LabelsTold() {
 	c.rows = append(c.rows, row{"labels", strings.Join(c.labels, ", ")})
 }
+
+// A blocker and the words beside it are one row: what blocks this. A number is
+// written as a task is written everywhere else, so a reader can take it
+// straight to `task show`.
+func (c *textMembrane) BlockedBy(n int) { c.blockers = append(c.blockers, fmt.Sprintf("#%d", n)) }
+func (c *textMembrane) NotBlocked()     {}
+func (c *textMembrane) BlockersTold()   {}
+func (c *textMembrane) Because(s string) {
+	c.blockers = append(c.blockers, s)
+	c.blocking()
+}
+func (c *textMembrane) NotBecause() { c.blocking() }
+
+// blocking closes the row, once both kinds of blocker have been told. Written
+// on the last of them rather than on BlockersTold, because the words come
+// after the numbers and a row closed early would leave them out.
+func (c *textMembrane) blocking() {
+	c.rows = append(c.rows, row{"blocked by", strings.Join(c.blockers, ", ")})
+}
+
 func (c *textMembrane) Due(t time.Time) {
 	c.rows = append(c.rows, row{"deadline", domain.FormatDay(t)})
 }
@@ -124,18 +146,42 @@ const nest = "    "
 // own would pass the day this one changed.
 const InFocusMark = "  (in focus)"
 
+// NothingBlocksMark is what sets apart a blocked task whose every named blocker
+// is done — the one thing a listing says about blocking, because it is the one
+// thing that needs acting on. What blocks a task is on its card; that nothing
+// does any more is what you would otherwise have to go looking for.
+//
+// Written out and exported for the reasons InFocusMark is.
+const NothingBlocksMark = "  (nothing blocks it)"
+
 // NothingInFocus is the number to hand Tree when no task is being worked on.
 // Zero is safe to mean none because the store never hands out zero.
 const NothingInFocus = 0
 
+// Marks are what a listing says about a task that the task does not carry
+// itself: which one is being worked on, and which ones are waiting on nothing
+// any more. Both are facts of the store rather than of any task, which is why
+// neither is told by a task's own membrane.
+//
+// One parameter rather than two, and a struct rather than a pair, because a
+// listing has gained a mark twice now and will again: a shape that grows a
+// field costs nothing, where a signature that grows a parameter costs every
+// caller.
+type Marks struct {
+	// InFocus is the task being worked on, or NothingInFocus.
+	InFocus int
+	// NothingBlocks are the blocked tasks whose every named blocker is done.
+	NothingBlocks []int
+}
+
 // Tree renders a listing with each sub-task under the task it hangs from, and
-// marks the one task being worked on. Everything keeps its own number, so a
-// line found here can be acted on directly — the indentation says where it
-// belongs, not what it is.
+// marks what a listing marks. Everything keeps its own number, so a line found
+// here can be acted on directly — the indentation says where it belongs, not
+// what it is.
 //
 // The place a task holds is never shown. The order is what there is to see,
 // and a second number beside one a task already carries would only mislead.
-func Tree(tasks []Task, inFocus int) string {
+func Tree(tasks []Task, marks Marks) string {
 	hanging := map[int][]Task{}
 	for _, t := range tasks {
 		if r := rowOf(t); r.parent != NoParent {
@@ -149,24 +195,42 @@ func Tree(tasks []Task, inFocus int) string {
 		if r.parent != NoParent {
 			continue
 		}
-		out.WriteString(marked(t, inFocus))
+		out.WriteString(marked(t, marks))
 		out.WriteString("\n")
 		for _, under := range hanging[r.number] {
 			out.WriteString(nest)
-			out.WriteString(marked(under, inFocus))
+			out.WriteString(marked(under, marks))
 			out.WriteString("\n")
 		}
 	}
 	return out.String()
 }
 
-// marked renders one line of a listing, saying so when this is the task being
-// worked on. One task is in focus at a time, so at most one line carries it.
-func marked(t Task, inFocus int) string {
-	if rowOf(t).number == inFocus {
-		return Line(t) + InFocusMark
+// Lines renders a listing flat, one task per line, marking what a listing
+// marks. Where each task sits is not shown, because a listing rendered this way
+// was not asked about it.
+func Lines(tasks []Task, marks Marks) string {
+	var out strings.Builder
+	for _, t := range tasks {
+		out.WriteString(marked(t, marks))
+		out.WriteString("\n")
 	}
-	return Line(t)
+	return out.String()
+}
+
+// marked renders one line of a listing with whatever the listing says about it.
+// One task is in focus at a time, so at most one line carries that; any number
+// of tasks can be waiting on nothing.
+func marked(t Task, marks Marks) string {
+	line := Line(t)
+	number := rowOf(t).number
+	if number == marks.InFocus {
+		line += InFocusMark
+	}
+	if slices.Contains(marks.NothingBlocks, number) {
+		line += NothingBlocksMark
+	}
+	return line
 }
 
 // listingRow is a task's membrane for one row of a listing: it is told every
@@ -186,6 +250,11 @@ func (r *listingRow) NotDescribed()           {}
 func (r *listingRow) Labelled(string)         {}
 func (r *listingRow) NotLabelled()            {}
 func (r *listingRow) LabelsTold()             {}
+func (r *listingRow) BlockedBy(int)           {}
+func (r *listingRow) NotBlocked()             {}
+func (r *listingRow) BlockersTold()           {}
+func (r *listingRow) Because(string)          {}
+func (r *listingRow) NotBecause()             {}
 func (r *listingRow) Due(time.Time)           {}
 func (r *listingRow) NotDue()                 {}
 func (r *listingRow) Estimated(time.Duration) {}

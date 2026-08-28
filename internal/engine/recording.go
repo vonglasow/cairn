@@ -22,7 +22,7 @@ type history interface {
 	ActsSince(time.Time) ([]trace.Act, error)
 }
 
-// theAttributes are the ten a task carries, in the order a card lays them out,
+// theAttributes are the twelve a task carries, in the order a card lays them out,
 // paired with how to read each off a task. Named once: recording a change and
 // recording what a task started as both walk this list, and two lists would
 // drift the day an attribute is added.
@@ -35,6 +35,8 @@ var theAttributes = []struct {
 	{"column", func(f taskFacts) string { return string(f.state) }},
 	{"priority", func(f taskFacts) string { return string(f.priority) }},
 	{"labels", func(f taskFacts) string { return strings.Join(f.labels, ", ") }},
+	{"blockers", func(f taskFacts) string { return numbersOrNothing(f.blockers) }},
+	{"because", func(f taskFacts) string { return f.because }},
 	{"deadline", func(f taskFacts) string { return dayOrNothing(f.deadline) }},
 	{"estimate", func(f taskFacts) string { return spanOrNothing(f.estimate) }},
 	{"time spent", func(f taskFacts) string { return spanOrNothing(f.timeSpent) }},
@@ -147,4 +149,18 @@ func numberOrNothing(number int) string {
 		return ""
 	}
 	return fmt.Sprint(number)
+}
+
+// numbersOrNothing reads a set of task numbers the way a card writes them, and
+// nothing at all when the set is empty — so a history says a blocker went from
+// nothing to #1 rather than from an empty string to one.
+func numbersOrNothing(numbers []int) string {
+	if len(numbers) == 0 {
+		return ""
+	}
+	written := make([]string, 0, len(numbers))
+	for _, one := range numbers {
+		written = append(written, fmt.Sprintf("#%d", one))
+	}
+	return strings.Join(written, ", ")
 }

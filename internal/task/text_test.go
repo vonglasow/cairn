@@ -115,7 +115,7 @@ func TestTree_indentsWhatHangsUnderATask(t *testing.T) {
 	got := Tree([]Task{
 		listed(1, "Ship it", NoParent),
 		listed(2, "Write the tests", 1),
-	}, NothingInFocus)
+	}, Marks{})
 	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
 	if len(lines) != 2 {
 		t.Fatalf("got %d lines, want 2:\n%s", len(lines), got)
@@ -133,7 +133,7 @@ func TestTree_putsEverythingHangingUnderATaskRightAfterIt(t *testing.T) {
 		listed(1, "Ship it", NoParent),
 		listed(2, "Write the tests", 1),
 		listed(3, "Something else", NoParent),
-	}, NothingInFocus)
+	}, Marks{})
 	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
 	if len(lines) != 3 {
 		t.Fatalf("got %d lines, want 3:\n%s", len(lines), got)
@@ -151,15 +151,15 @@ func TestTree_keepsSeveralSubTasksInTheirOrder(t *testing.T) {
 		listed(1, "Ship it", NoParent),
 		listed(2, "Write the tests", 1),
 		listed(3, "Write the docs", 1),
-	}, NothingInFocus)
+	}, Marks{})
 	if at2, at3 := strings.Index(got, "#2"), strings.Index(got, "#3"); at2 > at3 {
 		t.Errorf("sub-tasks should keep their order:\n%s", got)
 	}
 }
 
 func TestTree_writesNothingForNoTasks(t *testing.T) {
-	if got := Tree(nil, NothingInFocus); got != "" {
-		t.Errorf("Tree(nil, NothingInFocus) = %q, want nothing", got)
+	if got := Tree(nil, Marks{}); got != "" {
+		t.Errorf("Tree(nil, Marks{}) = %q, want nothing", got)
 	}
 }
 
@@ -185,7 +185,7 @@ func TestTree_marksOnlyTheTaskInFocus(t *testing.T) {
 		listed(3, "Something else", NoParent),
 	}
 	for _, inFocus := range []int{1, 2, 3} {
-		got := Tree(tasks, inFocus)
+		got := Tree(tasks, Marks{InFocus: inFocus})
 		if marks := strings.Count(got, InFocusMark); marks != 1 {
 			t.Errorf("with %d in focus, %d lines are marked, want exactly one:\n%s",
 				inFocus, marks, got)
@@ -202,7 +202,7 @@ func TestTree_marksOnlyTheTaskInFocus(t *testing.T) {
 }
 
 func TestTree_marksNothingWhenNothingIsInFocus(t *testing.T) {
-	got := Tree([]Task{listed(1, "Ship it", NoParent)}, NothingInFocus)
+	got := Tree([]Task{listed(1, "Ship it", NoParent)}, Marks{})
 	if strings.Contains(got, InFocusMark) {
 		t.Errorf("nothing is in focus, yet a line is marked:\n%s", got)
 	}

@@ -198,13 +198,15 @@ var TaskSearch = Operation{
 	},
 }
 
-// taskAttributes are the ten attributes a task carries, minus title, which is
+// taskAttributes are the twelve attributes a task carries, minus title, which is
 // taken as a positional argument where it can be given at all.
 var taskAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the task is about"},
 	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Means: "the column it sits in"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries"},
+	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; +3 adds one, -3 takes one away"},
+	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 	{Name: "spent", Kind: Duration, Means: "the time already spent on it; +30m adds, -15m takes off"},
@@ -247,6 +249,8 @@ func taskChanges(in Input) (Changes, error) {
 	c.State = in.Change("state")
 	c.Priority = in.Change("priority")
 	c.Labels = in.Changed("label")
+	c.Blocker = in.Changed("blocker")
+	c.Because = in.Change("because")
 	c.Deadline = in.Change("deadline")
 	c.Estimate = in.Change("estimate")
 	c.Spent = in.Change("spent")
@@ -389,13 +393,17 @@ func listing(on On, in Input) (Answer, error) {
 		return Answer{}, err
 	}
 	held := heldAmong(tasks, inFocus)
+	free, err := on.Engine.NothingBlocks()
+	if err != nil {
+		return Answer{}, err
+	}
 	// A narrowed listing is answered flat: what matched is what is shown, and
 	// where each task sits is not what was asked. Which field carries them is
 	// how Of and RenderText tell the two apart.
 	if kept.Narrows() {
-		return Answer{Matched: tasks, InFocus: held}, nil
+		return Answer{Matched: tasks, InFocus: held, NothingBlocks: free}, nil
 	}
-	return Answer{Tasks: tasks, InFocus: held}, nil
+	return Answer{Tasks: tasks, InFocus: held, NothingBlocks: free}, nil
 }
 
 // whatIsInFocus answers about the task being worked on, and says so plainly

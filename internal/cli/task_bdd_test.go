@@ -11,7 +11,9 @@ import (
 
 func initTask(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
-		newWorld(t).register(sc)
+		w := newWorld(t)
+		w.register(sc)
+		w.registerBlocking(sc)
 	}
 }
 

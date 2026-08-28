@@ -3,10 +3,10 @@ Feature: Tasks
   it by afterwards. Everything else — a description, a priority, a column,
   labels, a deadline, an estimate — is optional and has a stated default.
 
-  A task sits in one of four columns — backlog, todo, current, done — and
-  carries one of four priorities — low, normal, high, critical. Nothing else is
-  a column, nothing else is a priority. A new task starts in the backlog at
-  normal priority.
+  A task sits in one of seven columns — backlog, todo, current, blocked,
+  watching, paused, done — and carries one of four priorities — low, normal,
+  high, critical. Nothing else is a column, nothing else is a priority. A new
+  task starts in the backlog at normal priority.
 
   Labels are a set. They are kept in lower case, so Spec and spec are one and
   the same. A task never carries the same one twice, and they always come back
@@ -474,6 +474,13 @@ Feature: Tasks
         | deadline    | 2026-09-01 | 2026-09 |
         | time spent  | 90m        | 1h30m   |
 
+    @task-search-reaches-the-words-that-block
+    Scenario: what somebody typed is looked in, blockers included
+      Given I added a task titled "Ship it"
+      And I edited task 1 with the because "the client's answer"
+      When I run `cairn task search client`
+      Then it lists 1 task
+
     @task-search-does-not-reach-the-column
     Scenario: a column is narrowed by, not looked for
       Given I added a task titled "Write the spec" with the state "current"
@@ -752,6 +759,264 @@ Feature: Tasks
       Then it fails
       And it says a label is added or taken away only when changing a task
 
+  Rule: A task can say what blocks it
+
+    A task stops for one of two reasons: another task, or something that is not
+    in cairn at all. The first has a number, so it is named by one. The second
+    has none, so it is named in words. Both land in the same place — what blocks
+    this — and the card shows them together.
+
+    Two flags rather than one, because a single flag taking either would have to
+    guess whether "3" is task 3 or the word "3", and nothing here guesses.
+
+    A blocker can sit on a task in any column: it may block part of the work and
+    not the rest. When it blocks the whole thing, the column is what says so —
+    and splitting the part that is stopped into a sub-task of its own is the
+    better move, which cairn suggests nowhere and refuses never.
+
+    @task-blocker-named
+    Scenario: a task can say which task blocks it
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I run `cairn task edit 2 --state blocked --blocker 1`
+      Then it succeeds
+      And `cairn task show 2` says task 1 blocks it
+
+    @task-blocker-in-words
+    Scenario: what is not in cairn is named in words
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --state blocked --because "the client's answer"`
+      Then it succeeds
+      And `cairn task show 1` says "the client's answer" blocks it
+
+    @task-blocker-several
+    Scenario: more than one thing can be in the way
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      When I run `cairn task edit 3 --state blocked --blocker 1 --blocker 2 --because "the client's answer"`
+      Then `cairn task show 3` says task 1 blocks it
+      And `cairn task show 3` says task 2 blocks it
+      And `cairn task show 3` says "the client's answer" blocks it
+
+    @task-blocker-a-sub-task
+    Scenario: a sub-task blocks like anything else
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I added a task titled "Announce it"
+      When I run `cairn task edit 3 --state blocked --blocker 2`
+      Then `cairn task show 3` says task 2 blocks it
+
+    @task-blocker-itself
+    Scenario: a task cannot be what is blocking it
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --blocker 1`
+      Then it fails
+      And it says a task cannot block itself
+
+    @task-blocker-a-cycle
+    Scenario: two tasks cannot each be waiting on the other
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn task edit 1 --blocker 2`
+      Then it fails
+      And it says nothing would ever be able to start
+
+    @task-blocker-a-longer-cycle
+    Scenario: a cycle is refused however long the way round
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "2"
+      When I run `cairn task edit 1 --blocker 3`
+      Then it fails
+      And it says nothing would ever be able to start
+
+    @task-blocker-a-task-nobody-added
+    Scenario: a blocker has to be a task that exists
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --blocker 9`
+      Then it fails
+      And it says there is no such task
+
+    @task-blocker-on-a-task-that-is-not-blocked
+    Scenario: a blocker is a note until the column says otherwise
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it" with the state "todo"
+      When I run `cairn task edit 2 --blocker 1`
+      Then it succeeds
+      And the task is in the "todo" column
+      And `cairn task show 2` says task 1 blocks it
+
+  Rule: A blocked task is not picked back up by accident
+
+    A task in the blocked column with something recorded against it cannot be
+    put back in todo or current. Not a confirmation — a refusal: those two
+    columns say the work is yours to do, and a task still waiting on somebody
+    else is not.
+
+    Taking the last thing away is what puts it back in todo, because that is
+    the one moment somebody said out loud that nothing is in the way. Taking one
+    of two away changes nothing: something is still in the way.
+
+    The other columns stay reachable. Deciding a blocked task is done, or
+    putting it back in the backlog, or pausing it, or handing it over to watch
+    are all things you can say about work that is waiting — only claiming it is
+    yours to do now is refused.
+
+    @task-blocked-cannot-go-back-to-work
+    Scenario Outline: a task still blocked cannot be claimed as yours to do
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 2 --state <column>`
+      Then it fails
+      And it says what is in the way and how to take it away
+
+      Examples: the two columns that claim the work is yours
+        | column  |
+        | todo    |
+        | current |
+
+    @task-blocked-can-go-anywhere-else
+    Scenario Outline: work that is waiting can still be filed
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 2 --state <column>`
+      Then it succeeds
+      And the task is in the "<column>" column
+
+      Examples: nothing here claims the work is yours
+        | column   |
+        | done     |
+        | backlog  |
+        | paused   |
+        | watching |
+
+    @task-blocked-with-nothing-recorded-is-free
+    Scenario: a task blocked by nothing named has nothing to take away
+      Given I added a task titled "Ship it" with the state "blocked"
+      When I run `cairn task edit 1 --state current`
+      Then it succeeds
+      And the task is in the "current" column
+
+    @task-unblocked-comes-back-to-todo
+    Scenario: taking the last thing away puts it back in todo
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 2 --blocker -1`
+      Then it succeeds
+      And the task is in the "todo" column
+
+    @task-still-blocked-stays-blocked
+    Scenario: taking one of two away leaves it where it is
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the blocker "1"
+      And I edited task 3 with the state "blocked"
+      When I run `cairn task edit 3 --blocker +2 --blocker -1`
+      Then it succeeds
+      And the task is in the "blocked" column
+
+  Rule: A blocked task says when nothing is in its way any more
+
+    A blocker going done does not move the task that was waiting on it. Cairn
+    proposes, it does not decide — and a column changed by nobody is a change
+    the trace cannot attribute. Nothing ever leaves the blocked column on its
+    own: taking the last thing away is what does that, and that is somebody
+    saying so.
+
+    But it says so, because otherwise a blocked task waits forever on somebody
+    remembering to look. The listing marks a blocked task whose every named
+    blocker is done: that mark is what says it is your turn.
+
+    Only when blockers were named and all of them are done. A task blocked by
+    words has words cairn cannot check — "the client's answer" is either in or
+    out, and cairn has no way to know which — and a task blocked by nothing
+    named is blocked by something cairn was never told about. Neither gets the
+    mark, because in both cases claiming nothing is in the way would be a guess.
+
+    @task-blocked-nothing-in-the-way
+    Scenario: every task blocking it is done, and the listing says so
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 1 --state done`
+      And I run `cairn task list`
+      Then it marks "Ship it" as having nothing in its way
+
+    @task-blocked-stays-where-it-is
+    Scenario: the mark is a reminder, not a move
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 1 --state done`
+      And I run `cairn task show 2`
+      Then the task is in the "blocked" column
+
+    @task-blocked-one-still-open
+    Scenario: one of two still open is still in the way
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the blocker "1"
+      And I edited task 3 with the blocker "+2"
+      And I edited task 3 with the state "blocked"
+      When I run `cairn task edit 1 --state done`
+      And I run `cairn task list`
+      Then it marks nothing as having nothing in its way
+
+    @task-blocked-by-words-is-never-cleared
+    Scenario Outline: words cairn cannot check keep it in the way
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the because "the client's answer"
+      And I edited task 2 with the blocker "<also>"
+      And I edited task 2 with the state "blocked"
+      When I run `cairn task edit 1 --state done`
+      And I run `cairn task list`
+      Then it marks nothing as having nothing in its way
+
+      Examples: cairn has no way to know whether the client answered
+        | also |
+        | 1    |
+        |      |
+
+    @task-blocked-by-nothing-named
+    Scenario: nothing named is not nothing in the way
+      Given I added a task titled "Ship it" with the state "blocked"
+      When I run `cairn task list`
+      Then it marks nothing as having nothing in its way
+
+    @task-blocker-read-by-a-machine
+    Scenario: what blocks a task crosses to a machine
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the because "the client's answer"
+      When I run `cairn task show 2 --json`
+      Then it writes JSON to standard output
+      And it says task 1 blocks it and "the client's answer" does too
+
+    @task-blocker-goes-with-the-task-deleted
+    Scenario: deleting what blocked it takes the link away
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn task delete 1 --yes`
+      And I run `cairn task show 2`
+      Then it says nothing blocks it
+
   Rule: A task can be deleted
 
     @task-delete
@@ -982,6 +1247,22 @@ Feature: Tasks
       When I run `cairn task edit 2 --state done`
       And I run `cairn task show 1`
       Then it says 1 of 2 sub-tasks are done
+
+    @task-progress-counts-only-done
+    Scenario Outline: a sub-task stopped is not a sub-task done
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I edited task 2 with the state "done"
+      And I edited task 3 with the state "<stopped>"
+      When I run `cairn task show 1`
+      Then it says 1 of 2 sub-tasks are done
+
+      Examples: stopped is not finished
+        | stopped  |
+        | blocked  |
+        | paused   |
+        | watching |
 
     @task-progress-of-nothing
     Scenario: a task with nothing under it counts nothing

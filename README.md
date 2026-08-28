@@ -7,6 +7,8 @@ desktop boards come later, once the engine stands on its own.
 cairn task add "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
 cairn task edit 1 --title "Write the other spec" --desc "" --state current --priority critical --deadline 2026-09-15 --estimate 2h
 cairn task edit 1 --label +urgent --label -spec
+cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"
+cairn task edit 5 --blocker -3   # the last thing out of its way puts it in todo
 cairn task add "Read the spec" --label spec,team
 cairn task add "Write the tests" --parent 1
 cairn task add "Write the docs" --objective 1
@@ -30,7 +32,9 @@ cairn task unfocus
 |---|---|
 | `--title` | on `edit` only; `add` takes the title as its argument |
 | `--desc` | any text |
-| `--state` | `backlog` `todo` `current` `done` — a new task starts in `backlog` |
+| `--state` | `backlog` `todo` `current` `blocked` `watching` `paused` `done` — a new task starts in `backlog` |
+| `--blocker` | the number of a task in its way; `+3` adds one, `-3` takes one away |
+| `--because` | what is in its way and is not a task cairn holds |
 | `--priority` | `low` `normal` `high` `critical` — a new task carries `normal` |
 | `--label` | one per flag or several at once: `--label spec --label team` and `--label spec,team` are the same thing. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. Each piece of a list counts on its own, so the two forms cannot be mixed there either |
 | `--deadline` | a day: `2026-09-01` |
@@ -76,6 +80,13 @@ cairn objective show 1           # what it carries, what is under it, how far al
 cairn objective edit 1 --state reached --label +done
 cairn objective delete 1 --yes
 ```
+
+Three of the seven columns mean the work is stopped: `blocked` waits on somebody
+else, `watching` on somebody you handed it to, `paused` on your own decision. A
+blocked task can say what is in its way — another task, or words for something
+cairn does not hold — and nothing leaves that column on its own: taking the last
+thing away is what puts it back in `todo`. See
+[docs/blocking.md](docs/blocking.md).
 
 A listing narrows by what comes from a closed set — the column, the priority, a
 label, the objective served — and a search looks in what you typed yourself: the

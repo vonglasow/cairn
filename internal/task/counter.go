@@ -52,6 +52,22 @@ func (c *Counter) NotLabelled() {}
 // LabelsTold is heard and ignored: a tally never waited on the labels.
 func (c *Counter) LabelsTold() {}
 
+// BlockedBy is heard and ignored: a task waiting on something is still a task
+// to be counted, and only the column says whether it is done.
+func (c *Counter) BlockedBy(int) {}
+
+// NotBlocked is heard and ignored, the same way BlockedBy is.
+func (c *Counter) NotBlocked() {}
+
+// BlockersTold is heard and ignored: a tally never waited on the blockers.
+func (c *Counter) BlockersTold() {}
+
+// Because is heard and ignored: why a task is stopped changes no tally.
+func (c *Counter) Because(string) {}
+
+// NotBecause is heard and ignored, the same way Because is.
+func (c *Counter) NotBecause() {}
+
 // Due is heard and ignored: a tally does not care when a task is due.
 func (c *Counter) Due(time.Time) {}
 

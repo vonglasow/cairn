@@ -55,6 +55,8 @@ type Task struct {
 	state       domain.State
 	priority    domain.Priority
 	labels      []string
+	blockers    []int
+	because     string
 	deadline    time.Time
 	estimate    time.Duration
 	timeSpent   time.Duration
@@ -73,6 +75,11 @@ type Told interface {
 	Labelled(string)
 	NotLabelled()
 	LabelsTold()
+	BlockedBy(int)
+	NotBlocked()
+	BlockersTold()
+	Because(string)
+	NotBecause()
 	Due(time.Time)
 	NotDue()
 	Estimated(time.Duration)
@@ -105,6 +112,19 @@ func (t Task) Tell(to Told) {
 		}
 	}
 	to.LabelsTold()
+	if len(t.blockers) == 0 {
+		to.NotBlocked()
+	} else {
+		for _, blocker := range t.blockers {
+			to.BlockedBy(blocker)
+		}
+	}
+	to.BlockersTold()
+	if t.because == "" {
+		to.NotBecause()
+	} else {
+		to.Because(t.because)
+	}
 	if t.deadline.IsZero() {
 		to.NotDue()
 	} else {

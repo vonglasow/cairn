@@ -99,4 +99,20 @@ DROP INDEX IF EXISTS trace_by_task;
 DROP TABLE IF EXISTS trace;`,
 		loses: "everything that was ever done to a task",
 	},
+	{
+		name: "a task says what blocks it",
+		does: `
+ALTER TABLE tasks ADD COLUMN because TEXT NOT NULL DEFAULT '';
+CREATE TABLE IF NOT EXISTS blockers (
+	task_number    INTEGER NOT NULL,
+	blocker_number INTEGER NOT NULL,
+	PRIMARY KEY (task_number, blocker_number)
+);
+CREATE INDEX IF NOT EXISTS blockers_by_blocker ON blockers (blocker_number);`,
+		undoes: `
+DROP INDEX IF EXISTS blockers_by_blocker;
+DROP TABLE IF EXISTS blockers;
+ALTER TABLE tasks DROP COLUMN because;`,
+		loses: "what blocks each task",
+	},
 }

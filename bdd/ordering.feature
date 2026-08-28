@@ -1,8 +1,10 @@
 Feature: Ordering
   A task carries a place, and the place is what says which one to do next.
 
-  A list is one list. The column gives the coarse order — backlog, then todo,
-  then current, then done — and within a column the order is the one you set.
+  A list is one list. The column gives the coarse order — what you can act on
+  first (backlog, todo, current), then what is under way without you, ordered by
+  what it asks of you (blocked, watching), then what you stopped on purpose
+  (paused), then done — and within a column the order is the one you set.
 
   A sub-task takes its place among its sisters and not among the root tasks:
   where its parent sits carries the whole block, and the sub-task's own column
@@ -53,11 +55,14 @@ Feature: Ordering
     @ordering-columns-in-reading-order
     Scenario: the columns come back in the order they are read
       Given I added a task titled "Finished" with the state "done"
+      And I added a task titled "Put off" with the state "paused"
+      And I added a task titled "Delegated" with the state "watching"
+      And I added a task titled "Waiting on somebody" with the state "blocked"
       And I added a task titled "Under way" with the state "current"
       And I added a task titled "Chosen" with the state "todo"
       And I added a task titled "Waiting"
       When I run `cairn task list`
-      Then it lists the tasks in the order "Waiting", "Chosen", "Under way", "Finished"
+      Then it lists the tasks in the order "Waiting", "Chosen", "Under way", "Waiting on somebody", "Delegated", "Put off", "Finished"
 
     @ordering-columns-do-not-interleave
     Scenario: tasks added in turn come back grouped by column

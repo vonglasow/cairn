@@ -34,13 +34,18 @@ So every entry carries the field, the value before, the value after, and the
 moment. The two extra columns are the whole difference between a trace you can
 read and a trace you can rebuild from, and rebuilding is what was asked for.
 
-## Fifteen acts, and reading is not one of them
+## Seventeen acts, and reading is not one of them
 
-Ten of them are the attributes a task carries, one act each: its title, its
-description, its column, its priority, its labels, its deadline, its estimate,
-the time spent on it, its parent, the objective it serves. Five are not about a
-field: **created**, **moved**, **focus taken**, **focus released**,
-**deleted**.
+Twelve of them are the attributes a task carries, one act each: its title, its
+description, its column, its priority, its labels, what blocks it, the words
+beside them, its deadline, its estimate, the time spent on it, its parent, the
+objective it serves. Five are not about a field: **created**, **moved**,
+**focus taken**, **focus released**, **deleted**.
+
+The number grows when a task gains an attribute, and nothing has to be written
+here for it to: `theAttributes` in `internal/engine/recording.go` is one list,
+walked both by the recording of a creation and by the recording of a change, so
+an attribute added there is traced by both.
 
 `list`, `show` and `search` are absent on purpose. A trace records what
 changed, not what was looked at — traced, consulting a listing would fill the
@@ -58,7 +63,7 @@ written down, and a replay then depends on nothing from that era.
 values were laid out as `title=…, column=…` pairs, and measured: a title
 carrying a comma splits into a pair and a word, so `Écrire la spéc, enfin`
 cannot be read back apart. Nor is there a separator that would save it — a
-description accepts tabs and newlines both. Any one field holding ten values
+description accepts tabs and newlines both. Any one field holding twelve values
 needs a format invented for it and a parser to match, and the two disagree
 eventually.
 

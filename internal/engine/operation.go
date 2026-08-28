@@ -313,6 +313,11 @@ type Answer struct {
 	// the operations that answer about the focus carry it alone, since "nothing
 	// is in focus" is an answer and not an absence.
 	InFocus *int
+	// NothingBlocks are the tasks a listing marks as waiting on nothing any
+	// more. A fact of the store rather than of a task — knowing it means
+	// reading the state of every task that blocks a row, which a narrowed
+	// listing does not carry and a task cannot see at all.
+	NothingBlocks []int
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands

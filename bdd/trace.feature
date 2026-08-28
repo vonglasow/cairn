@@ -71,6 +71,51 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released", "deleted"
 
+  Rule: What blocks a task is written down like anything else it carries
+
+    A blocker and the words beside it are attributes, so they are traced as
+    attributes: what they were, what they became, when, and through what. No new
+    kind of act — the one that says an attribute changed already says it.
+
+    The column going back to todo when the last thing is taken away is traced
+    too, and that matters more than it looks. It is a change cairn made rather
+    than one anybody typed, so without it the history would show a task in todo
+    with nothing saying how it got there.
+
+    @trace-a-blocker-added
+    Scenario: naming what blocks a task is written down
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn trace show 2`
+      Then it says the blockers went from "—" to "#1"
+
+    @trace-a-blocker-taken-away
+    Scenario: taking a blocker away is written down too
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the blocker "-1"
+      When I run `cairn trace show 2`
+      Then it says the blockers went from "#1" to "—"
+
+    @trace-the-words-that-block
+    Scenario: what is not in cairn is written down in the words it was given
+      Given I added a task titled "Ship it"
+      And I edited task 1 with the because "the client's answer"
+      When I run `cairn trace show 1`
+      Then it says the because went from "—" to "the client's answer"
+
+    @trace-the-column-cairn-put-it-back-in
+    Scenario: the return to todo is not a silent move
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      And I edited task 2 with the blocker "-1"
+      When I run `cairn trace show 2`
+      Then it lists the acts in the order "created", "blockers", "column", "blockers", "column"
+
   Rule: What changed nothing is not written down
 
     @trace-focus-again-on-the-same-task-changes-nothing

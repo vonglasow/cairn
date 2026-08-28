@@ -30,6 +30,11 @@ func (r *told) NotDescribed()      { r.said = append(r.said, "NotDescribed()") }
 func (r *told) Labelled(s string)  { r.said = append(r.said, fmt.Sprintf("Labelled(%q)", s)) }
 func (r *told) NotLabelled()       { r.said = append(r.said, "NotLabelled()") }
 func (r *told) LabelsTold()        { r.said = append(r.said, "LabelsTold()") }
+func (r *told) BlockedBy(n int)    { r.said = append(r.said, fmt.Sprintf("BlockedBy(%d)", n)) }
+func (r *told) NotBlocked()        { r.said = append(r.said, "NotBlocked()") }
+func (r *told) BlockersTold()      { r.said = append(r.said, "BlockersTold()") }
+func (r *told) Because(s string)   { r.said = append(r.said, fmt.Sprintf("Because(%q)", s)) }
+func (r *told) NotBecause()        { r.said = append(r.said, "NotBecause()") }
 func (r *told) Due(t time.Time)    { r.said = append(r.said, fmt.Sprintf("Due(%s)", t)) }
 func (r *told) NotDue()            { r.said = append(r.said, "NotDue()") }
 func (r *told) Estimated(d time.Duration) {
@@ -55,7 +60,8 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 	full := Task{
 		number: 3, parent: 1, objective: 2, title: "Write the spec",
 		description: "Say what it does", state: domain.Current, priority: domain.High,
-		labels: []string{"backend", "urgent"}, deadline: deadline,
+		labels: []string{"backend", "urgent"}, blockers: []int{4, 5},
+		because: "the client's answer", deadline: deadline,
 		estimate: 90 * time.Minute, timeSpent: 30 * time.Minute,
 	}
 	got := &told{}
@@ -65,6 +71,8 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 		`Numbered(3)`, `Titled("Write the spec")`, `InColumn("current")`,
 		`Carries("high")`, `Described("Say what it does")`,
 		`Labelled("backend")`, `Labelled("urgent")`, `LabelsTold()`,
+		`BlockedBy(4)`, `BlockedBy(5)`, `BlockersTold()`,
+		`Because("the client's answer")`,
 		fmt.Sprintf("Due(%s)", deadline), fmt.Sprintf("Estimated(%s)", 90*time.Minute),
 		fmt.Sprintf("Spent(%s)", 30*time.Minute), `Under(1)`, `Serves(2)`,
 	}
@@ -87,6 +95,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 	wantBare := []string{
 		`Numbered(0)`, `Titled("Write the spec")`, `InColumn("backlog")`,
 		`Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
+		`NotBlocked()`, `BlockersTold()`, `NotBecause()`,
 		`NotDue()`, `NotEstimated()`, `NothingSpent()`, `UnderNothing()`,
 		`ServesNothing()`,
 	}

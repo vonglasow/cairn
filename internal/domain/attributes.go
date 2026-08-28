@@ -24,19 +24,35 @@ var (
 	ErrFinerThanASecond = errors.New("a duration is kept to the second, not finer")
 )
 
-// State is the column a task sits in. There are four, and nothing else is one.
+// State is the column a task sits in. There are seven, and nothing else is one.
 type State string
 
-// States holds the four columns, in the order they are declared above. It is
-// what ParseState consults, so the two cannot say different things.
-var States = []State{Backlog, Todo, Current, Done}
+// States holds the columns in the order they are read, which is the order they
+// are declared in below. It is what ParseState consults, so the two cannot say
+// different things.
+//
+// The order is a reading order and it is the whole reason this is a slice and
+// not a set: what you can act on comes first, then what is under way without
+// you, then what you stopped on purpose, then what is history. See
+// docs/ordering.md.
+var States = []State{Backlog, Todo, Current, Blocked, Watching, Paused, Done}
 
-// The four columns. A task with no column stated starts in the backlog.
+// The columns. A task with no column stated starts in the backlog.
+//
+// Blocked, Watching and Paused all mean "not moving", and they are three words
+// rather than one because what unblocks them differs: a blocked task waits on
+// somebody else and needs chasing, a watched one was handed over and needs
+// checking, a paused one waits on nothing but your own decision to pick it up.
+// One word for the three would have made the list shorter and the answer to
+// "what do I do about this?" unknowable.
 const (
-	Backlog State = "backlog"
-	Todo    State = "todo"
-	Current State = "current"
-	Done    State = "done"
+	Backlog  State = "backlog"
+	Todo     State = "todo"
+	Current  State = "current"
+	Blocked  State = "blocked"
+	Watching State = "watching"
+	Paused   State = "paused"
+	Done     State = "done"
 )
 
 // Priority is what a task carries. There are four, and nothing else is one.

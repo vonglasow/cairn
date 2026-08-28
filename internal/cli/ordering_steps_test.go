@@ -88,7 +88,7 @@ func distinct(all []string) int {
 	return len(seen)
 }
 
-// columnsNamed reads which of the four columns a message names.
+// columnsNamed reads which of the columns a message names.
 func columnsNamed(said string) []string {
 	named := []string{}
 	for _, state := range domain.States {

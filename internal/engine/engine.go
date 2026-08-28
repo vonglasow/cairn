@@ -52,6 +52,7 @@ type tasks interface {
 	Find(int) (task.Task, error)
 	All() ([]task.Task, error)
 	Narrowed(*store.Narrowing) ([]task.Task, error)
+	NothingBlocks() ([]int, error)
 	Under(int) ([]task.Task, error)
 	Close() error
 }
@@ -78,6 +79,8 @@ type Changes struct {
 	State       *string
 	Priority    *string
 	Labels      *[]string
+	Blocker     *[]string
+	Because     *string
 	Deadline    *string
 	Estimate    *string
 	Spent       *string
@@ -89,7 +92,8 @@ type Changes struct {
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
-		c.Estimate != nil || c.Spent != nil || c.Parent != nil || c.Objective != nil
+		c.Estimate != nil || c.Spent != nil || c.Parent != nil || c.Objective != nil ||
+		c.Blocker != nil || c.Because != nil
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not:
@@ -242,6 +246,12 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
+	if err := e.canBeBlocked(t); err != nil {
+		return task.Task{}, err
+	}
+	if err := mayLeave(factsOf(was), factsOf(t)); err != nil {
+		return task.Task{}, err
+	}
 	if err := e.tasks.Update(t); err != nil {
 		return task.Task{}, err
 	}
@@ -255,7 +265,40 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if err := e.recordChanges(was, found); err != nil {
 		return task.Task{}, err
 	}
-	return t, nil
+	return e.freeIfNothingBlocksIt(was, found)
+}
+
+// freeIfNothingBlocksIt puts a task back in todo when the change just made took
+// the last thing out of its way, and hands back the task as it ends up.
+//
+// A change of its own rather than part of the one asked for, and written down
+// after it. Two reasons, and the second is why it is worth the second write:
+// nobody asked for this column, so folding it into their change would put their
+// name on cairn's decision. And a history reads top to bottom as a sentence —
+// the blocker taken away, then the column that followed from it — which the one
+// pass could not give, since it lays attributes out in the order a card does and
+// a card shows the column first.
+func (e *Engine) freeIfNothingBlocksIt(was, found task.Task) (task.Task, error) {
+	freed, put := freedFrom(factsOf(was), factsOf(found))
+	if !put {
+		return found, nil
+	}
+	into := string(freed)
+	free, err := apply(found, Changes{State: &into}, changing)
+	if err != nil {
+		return task.Task{}, err
+	}
+	if err := e.tasks.Update(free); err != nil {
+		return task.Task{}, err
+	}
+	after, err := e.tasks.Find(factsOf(found).number)
+	if err != nil {
+		return task.Task{}, err
+	}
+	if err := e.recordChanges(found, after); err != nil {
+		return task.Task{}, err
+	}
+	return after, nil
 }
 
 // Whether a task is being created or changed. Labels are the only attribute
@@ -293,6 +336,8 @@ type taskFacts struct {
 	state                     domain.State
 	priority                  domain.Priority
 	labels                    []string
+	blockers                  []int
+	because                   string
 	deadline                  time.Time
 	estimate, timeSpent       time.Duration
 }
@@ -306,6 +351,11 @@ func (f *taskFacts) NotDescribed()             { f.description = "" }
 func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
 func (f *taskFacts) NotLabelled()              { f.labels = nil }
 func (f *taskFacts) LabelsTold()               {}
+func (f *taskFacts) BlockedBy(n int)           { f.blockers = append(f.blockers, n) }
+func (f *taskFacts) NotBlocked()               { f.blockers = nil }
+func (f *taskFacts) BlockersTold()             {}
+func (f *taskFacts) Because(s string)          { f.because = s }
+func (f *taskFacts) NotBecause()               { f.because = "" }
 func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
 func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
 func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }
@@ -366,6 +416,20 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 			a.Labelled(label)
 		}
 		a.LabelsTold()
+	}
+	if c.Blocker != nil {
+		blockers, err := changedBlockers(*c.Blocker, current.blockers, atCreation)
+		if err != nil {
+			return task.Task{}, err
+		}
+		a.NotBlocked()
+		for _, blocker := range blockers {
+			a.BlockedBy(blocker)
+		}
+		a.BlockersTold()
+	}
+	if c.Because != nil {
+		a.Because(*c.Because)
 	}
 	if c.Deadline != nil {
 		deadline, err := domain.ParseDeadline(*c.Deadline)

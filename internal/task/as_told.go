@@ -17,8 +17,9 @@ import (
 // sorted once already on the way into the store. Running it through
 // ParseLabels a second time here would be the same rule kept in two places.
 type AsTold struct {
-	task   Task
-	labels []string
+	task     Task
+	labels   []string
+	blockers []int
 }
 
 // Numbered is told the task's number.
@@ -47,6 +48,23 @@ func (a *AsTold) NotLabelled() { a.labels = nil }
 
 // LabelsTold is told there are no more labels coming, and closes the set.
 func (a *AsTold) LabelsTold() { a.task.labels = a.labels }
+
+// BlockedBy adds a task to what is in this one's way. Gathered and set on
+// BlockersTold, the way labels are: a set is told one member at a time, and the
+// task cannot know it is complete until it is said so.
+func (a *AsTold) BlockedBy(n int) { a.blockers = append(a.blockers, n) }
+
+// NotBlocked says nothing is in its way.
+func (a *AsTold) NotBlocked() { a.blockers = nil }
+
+// BlockersTold closes the set.
+func (a *AsTold) BlockersTold() { a.task.blockers = a.blockers }
+
+// Because names in words what is in its way and is not a task cairn holds.
+func (a *AsTold) Because(s string) { a.task.because = s }
+
+// NotBecause says nothing outside cairn was named.
+func (a *AsTold) NotBecause() { a.task.because = "" }
 
 // Due is told the task's deadline.
 func (a *AsTold) Due(t time.Time) { a.task.deadline = t }
