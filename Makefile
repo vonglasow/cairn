@@ -17,7 +17,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run cover cover-check tested-check harness-check mutation clean
+.PHONY: build run red cover cover-check tested-check harness-check mutation clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -30,6 +30,13 @@ build:
 ## run: run cairn with ARGS, e.g. `make run ARGS="task add 'write the spec'"`
 run:
 	go run -ldflags "$(LDFLAGS)" ./cmd/cairn $(ARGS)
+
+## red: run PKG's tests, and record the failure so production code may be written
+## Nothing else mints the receipt that .claude/hooks/red-first.sh looks for, and
+## nothing mints one from a suite that passed. What it attests is not that a
+## test exists — coverage already says that — but that its failure was seen.
+red:
+	@.claude/hooks/red.sh "$(PKG)" "$(RUN)"
 
 # The profile is a real artifact, so both `cover` and `cover-check` read it
 # instead of each running the suite themselves. It is rebuilt whenever a Go

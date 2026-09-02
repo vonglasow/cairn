@@ -12,7 +12,11 @@ every time. Not worked around, not deferred.
 
 **Nothing exists twice.** Before writing anything, look for it first.
 
-**Scenario, then test, then code.** Never the reverse.
+**Scenario, then test, then code.** Never the reverse. A write to a
+production `.go` file under `internal/` is refused until `make red
+PKG=./<package>` has recorded a failing test in that package — the rule is
+no longer only written down, see
+[.claude/hooks/red-first.sh](.claude/hooks/red-first.sh).
 
 **Nothing is committed until the definition of done is met.** Walk
 [docs/definition-of-done.md](docs/definition-of-done.md) before every commit.

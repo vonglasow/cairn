@@ -4,3 +4,9 @@ coverage.out
 
 # build output
 /bin/
+
+# red receipts: proof a test failed, not history worth keeping
+/.claude/red/
+
+# personal overrides, not the team's
+/.claude/settings.local.json
