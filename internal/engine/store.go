@@ -80,6 +80,11 @@ func (e *Engine) Waiting() ([]migration.Migration, error) { return e.store.Waiti
 // Held counts what the store holds, tasks and objectives apart.
 func (e *Engine) Held() (domain.Held, error) { return e.store.Held() }
 
+// Version says whether the store has moved since it was last asked. It is
+// passed straight through: a surface that stays open needs it, and the engine
+// has nothing to add to a number it does not interpret.
+func (e *Engine) Version() (int64, error) { return e.store.Version() }
+
 // Apply makes one change, after setting a backup aside: changing the shape of a
 // store is not something to discover afterwards.
 func (e *Engine) Apply(path string, number int) (string, error) {

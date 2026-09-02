@@ -1,0 +1,40 @@
+  TASKS   objectives                                                                        DETAIL
+
+ 4   Write the spec                                                                      todo  high
+ ⚑ spec   due 2026-09-03 · 2d
+
+ ╭───────────────────────────────────────────────────────╮ ╭──────────────────────────────────────╮
+ │ DESCRIPTION                                           │ │ HISTORY                              │
+ │ The client wants two columns, not three.              │ │ 2026-09-02 03:30  changed  priority… │
+ ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 04:30  changed  priority… │
+ ╭───────────────────────────────────────────────────────╮ │ 2026-09-02 05:30  changed  priority… │
+ │ SUB-TASKS   1/2                                       │ │ 2026-09-02 06:30  changed  priority… │
+ │ ✓ 11  Draft the columns                          done │ │ 2026-09-02 07:30  changed  priority… │
+ │ · 12  Get the client's nod                       todo │ │ 2026-09-02 08:30  changed  priority… │
+ ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 09:30  changed  priority… │
+                                                           │ 2026-09-02 10:30  changed  priority… │
+                                                           │ 2026-09-02 11:30  changed  priority… │
+                                                           │ 2026-09-02 12:30  changed  priority… │
+                                                           │ 2026-09-02 13:30  changed  priority… │
+                                                           │ 2026-09-02 14:30  changed  priority… │
+                                                           │ 2026-09-02 15:30  changed  priority… │
+                                                           │ 2026-09-02 16:30  changed  priority… │
+                                                           │ 2026-09-02 17:30  changed  priority… │
+                                                           │ 2026-09-02 18:30  changed  priority… │
+                                                           │ 2026-09-02 19:30  changed  priority… │
+                                                           │ 2026-09-02 20:30  changed  priority… │
+                                                           │ 2026-09-02 21:30  changed  priority… │
+                                                           │ 2026-09-02 22:30  changed  priority… │
+                                                           │ 2026-09-02 23:30  changed  priority… │
+                                                           │ 2026-09-03 00:30  changed  priority… │
+                                                           │ 2026-09-03 01:30  changed  priority… │
+                                                           │ 2026-09-03 02:30  changed  priority… │
+                                                           │ 2026-09-03 03:30  changed  priority… │
+                                                           │ 2026-09-03 04:30  changed  priority… │
+                                                           │ 2026-09-03 05:30  changed  priority… │
+                                                           │ 2026-09-03 06:30  changed  priority… │
+                                                           │ 2026-09-03 07:30  changed  priority… │
+                                                           │ 2026-09-03 08:30  changed  priority… │
+                                                           ╰──────────────────────────────────────╯
+
+ hjkl ←↓↑→ navigate   e edit   f focus   ? help   esc back

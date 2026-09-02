@@ -1,0 +1,30 @@
+  TASKS   objectives                                              HELP
+
+ ╭───────────────────────────────╮ ╭───────────────────────────────╮
+ │ KEYS                          │ │ LEGEND                        │
+ │                               │ │                               │
+ │ NORMAL — the cursor on a      │ │ PRIORITY — the left edge of a │
+ │ column                        │ │ card                          │
+ │   hjkl ←↓↑→   columns, and    │ │   ▌ low                       │
+ │ the band                      │ │   ▌ normal                    │
+ │   i           insert mode     │ │   ▌ high                      │
+ │   a           add a task      │ │   ▌ critical                  │
+ │   /           search          │ │                               │
+ │   ⇥           next tab        │ │ STALLED — the top right of a  │
+ │   :           command         │ │ card                          │
+ │                               │ │   ⊘  blocked   waiting on     │
+ │ INSERT — the cursor on a task │ │ somebody else                 │
+ │   hjkl ←↓↑→   tasks, and the  │ │   ◉  watching  handed over,   │
+ │ band                          │ │ needs a look                  │
+ │   gg / G      first / last in │ │   ‖  paused    waiting on     │
+ │ the column                    │ │ your decision                 │
+ │   ⇧hjkl       move it:        │ │                               │
+ │ sideways changes column, up   │ │ OBJECTIVES                    │
+ │ and down change place         │ │   ▶  active    being worked   │
+ │   ⏎           the detail      │ │ towards                       │
+ │   e           the form        │ │   ‖  on-hold   not for now    │
+ │   f           take or let go  │ │   ✓  reached   done with      │
+ │ the focus                     │ │   ✕  dropped   given up       │
+ │   d           delete          │ │                               │
+
+ ↓↑ read on   esc close

@@ -177,6 +177,31 @@ picking the wrong one costs a command rather than the work it overwrote.
 A backup is read in the shape it was written, never today's: one taken before
 objectives existed says it holds none, rather than refusing to be read at all.
 
+## The board
+
+```sh
+cairn board                      # open it
+cairn board --icons unicode      # without a Nerd Font installed
+```
+
+The same cairn on a screen that stays open. Four columns — backlog, todo,
+current, done — with a band underneath for the three states that mean the work
+is not moving: blocked, watching, paused. A second tab for the objectives, and
+each of them opens the same board holding only what serves it.
+
+It reads like vim. `hjkl` and the arrows only ever navigate; `i` takes hold of a
+task and `⇧hjkl` moves it, its state following wherever it lands. `a` adds, `e`
+opens the form, `⏎` opens the detail, `/` narrows the board in place, `:` takes
+the commands the command line takes, and `?` answers in every mode. `:q` leaves.
+
+It stays true while it is open: something added at another terminal, or by an
+agent over MCP, turns up on its own — and your cursor stays on the task it was
+holding rather than on the place that task used to be.
+
+It needs sixty columns. Below that it says so, rather than drawing something
+nobody can read. [docs/tui.md](docs/tui.md) says why every part of it is the
+way it is.
+
 ## Answering an agent
 
 ```sh

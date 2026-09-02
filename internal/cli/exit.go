@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 
+	"cairn/internal/board"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/mcp"
@@ -52,6 +53,7 @@ var refusals = []error{
 	engine.ErrNothingToRollBack,
 	errNotConfirmed,
 	mcp.ErrNotAnAccess,
+	board.ErrNotASet,
 }
 
 // codeFor says which kind of answer an error is.

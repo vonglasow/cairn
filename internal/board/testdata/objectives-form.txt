@@ -1,0 +1,22 @@
+  tasks   OBJECTIVES                                                                          EDIT
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ 1   Ship the desktop board                                                        active  high │
+ │                                                                                                │
+ │ ┃ title                                          labels                                        │
+ │ ┃ > Ship the desktop board                       > product                                     │
+ │                                                                                                │
+ │   description                                    deadline                                      │
+ │                                                  > 2026-10-16                                  │
+ │                                                                                                │
+ │                                                  estimate                                      │
+ │                                                  >                                             │
+ │   standing                                                                                     │
+ │   active                                           save     cancel                             │
+ │                                                                                                │
+ │   priority                                                                                     │
+ │   high                                                                                         │
+ │                                                                                                │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↓↑ field   ←→ change   ⏎ next   ? help   esc cancel

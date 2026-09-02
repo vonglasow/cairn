@@ -1,0 +1,40 @@
+  TASKS   objectives                                                                          HELP
+
+ ╭─────────────────────────────────────────────╮ ╭─────────────────────────────────────────────╮
+ │ KEYS                                        │ │ LEGEND                                      │
+ │                                             │ │                                             │
+ │ NORMAL — the cursor on a column             │ │ PRIORITY — the left edge of a card          │
+ │   hjkl ←↓↑→   columns, and the band         │ │   ▌ low                                     │
+ │   i           insert mode                   │ │   ▌ normal                                  │
+ │   a           add a task                    │ │   ▌ high                                    │
+ │   /           search                        │ │   ▌ critical                                │
+ │   ⇥           next tab                      │ │                                             │
+ │   :           command                       │ │ STALLED — the top right of a card           │
+ │                                             │ │   ⊘  blocked   waiting on somebody else     │
+ │ INSERT — the cursor on a task               │ │   ◉  watching  handed over, needs a look    │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ‖  paused    waiting on your decision     │
+ │   gg / G      first / last in the column    │ │                                             │
+ │   ⇧hjkl       move it: sideways changes     │ │ OBJECTIVES                                  │
+ │ column, up and down change place            │ │   ▶  active    being worked towards         │
+ │   ⏎           the detail                    │ │   ‖  on-hold   not for now                  │
+ │   e           the form                      │ │   ✓  reached   done with                    │
+ │   f           take or let go the focus      │ │   ✕  dropped   given up                     │
+ │   d           delete                        │ │                                             │
+ │   esc         back to normal                │ │ ON A CARD                                   │
+ │                                             │ │   ≡            a description exists         │
+ │ EVERYWHERE                                  │ │   ▪            sub-tasks done / total       │
+ │   ?           help                          │ │   ⚑            a label                      │
+ ╰─────────────────────────────────────────────╯ │   ↳            what is in the way           │
+                                                 │   2d          a deadline close by           │
+                                                 │   −3d         one that has passed           │
+                                                 │   ╔═╗         the task in focus             │
+                                                 ╰─────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+ ↓↑ read on   esc close

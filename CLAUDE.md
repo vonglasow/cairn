@@ -37,6 +37,7 @@ calls it, and prints — it decides nothing.
 | touching what stops a task, or what starts it again | [docs/blocking.md](docs/blocking.md) |
 | touching what a task serves, or how an objective is counted | [docs/objectives.md](docs/objectives.md) |
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |
+| touching the board — its shape, its keys, its modes — or anything a person sees on screen | [docs/tui.md](docs/tui.md) |
 
 Those files carry the detail. This one carries what holds regardless of the
 task, because a rule that has to be looked up is a rule that gets skipped.

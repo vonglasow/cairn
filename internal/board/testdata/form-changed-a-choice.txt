@@ -1,0 +1,28 @@
+  TASKS   objectives                                                                          EDIT
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ 4   Write the spec                                                               current  high │
+ │                                                                                                │
+ │   title                                          because                                       │
+ │   > Write the spec                               >                                             │
+ │                                                                                                │
+ │   description                                    deadline                                      │
+ │   The client wants two columns, not three.       > 2026-09-03                                  │
+ │                                                                                                │
+ │                                                  estimate                                      │
+ │                                                  >                                             │
+ │ ┃ column                                                                                       │
+ │ ┃ ← current →                                    time spent                                    │
+ │                                                  >                                             │
+ │   priority                                                                                     │
+ │   high                                           parent                                        │
+ │                                                  >                                             │
+ │   labels                                                                                       │
+ │   > spec                                         objectives                                    │
+ │                                                  >                                             │
+ │   blockers                                                                                     │
+ │   >                                                save     cancel                             │
+ │                                                                                                │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↓↑ field   ←→ change   ⏎ next   ? help   esc cancel

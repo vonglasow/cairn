@@ -63,6 +63,7 @@ func NewRootCmd() *cobra.Command {
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
 	root.AddCommand(newActionGroups()...)
 	root.AddCommand(newMCPCmd())
+	root.AddCommand(newBoardCmd())
 	return root
 }
 

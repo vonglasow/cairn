@@ -1,0 +1,2 @@
+ cairn needs a bigger window.
+ 60 by 26 at least. This one is 47 by 20.

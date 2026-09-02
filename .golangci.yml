@@ -240,6 +240,23 @@ linters:
             - pkg: database/sql
               desc: a surface never opens a database
 
+        # The third surface. Same rule as the other two — it asks the engine and
+        # never the store — plus the one mcp has: the command line builds the
+        # board, so the board never reads the command line back.
+        board:
+          files: ["**/internal/board/**"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: the command line opens the board, the board never reads it
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: cairn/internal/mcp
+              desc: two surfaces do not reach each other
+            - pkg: database/sql
+              desc: a surface never opens a database
+            - pkg: github.com/spf13/cobra
+              desc: the board is opened by a command, it does not parse one
+
         # The other surface, held to the same rules, plus one of its own: it may
         # not read the command line. `cli` builds the server, so the arrow runs
         # that way and only that way — a server reaching back would be reading

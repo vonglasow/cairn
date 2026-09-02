@@ -1,0 +1,28 @@
+  TASKS   objectives                                                                        DETAIL
+
+ 8   Client's answer                                                            ⊘ blocked  critical
+ ↳ 4
+
+ ╭───────────────────────────────────────────────────────╮ ╭──────────────────────────────────────╮
+ │ DESCRIPTION                                           │ │ HISTORY                              │
+ │ the one that is in the way                            │ │ 2026-09-02 15:30  changed  priority… │
+ ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 16:30  changed  priority… │
+ ╭───────────────────────────────────────────────────────╮ │ 2026-09-02 17:30  changed  priority… │
+ │ SERVES                                                │ │ 2026-09-02 18:30  changed  priority… │
+ │ ▶ 1  Ship the desktop board                      7/12 │ │ 2026-09-02 19:30  changed  priority… │
+ ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 20:30  changed  priority… │
+                                                           │ 2026-09-02 21:30  changed  priority… │
+                                                           │ 2026-09-02 22:30  changed  priority… │
+                                                           │ 2026-09-02 23:30  changed  priority… │
+                                                           │ 2026-09-03 00:30  changed  priority… │
+                                                           │ 2026-09-03 01:30  changed  priority… │
+                                                           │ 2026-09-03 02:30  changed  priority… │
+                                                           │ 2026-09-03 03:30  changed  priority… │
+                                                           │ 2026-09-03 04:30  changed  priority… │
+                                                           │ 2026-09-03 05:30  changed  priority… │
+                                                           │ 2026-09-03 06:30  changed  priority… │
+                                                           │ 2026-09-03 07:30  changed  priority… │
+                                                           │ 2026-09-03 08:30  changed  priority… │
+                                                           ╰──────────────────────────────────────╯
+
+ hjkl ←↓↑→ navigate   e edit   f focus   ? help   esc back
