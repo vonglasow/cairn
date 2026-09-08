@@ -9,6 +9,7 @@ import (
 	"charm.land/huh/v2"
 
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
 
@@ -17,8 +18,8 @@ import (
 // database, so a hundred of these run in the time one real store takes to open.
 
 type fake struct {
-	cards []Card
-	goals []Goal
+	cards []reading.Card
+	goals []reading.Goal
 	focus int
 	acts  []trace.Act
 
@@ -89,7 +90,7 @@ func (f *fake) Version() (int64, error) { return f.version, f.fail }
 // person starts rather than at an empty screen.
 func standing(f *fake) Board {
 	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40)
-	b.snap = Snapshot{Cards: f.cards, Goals: f.goals, Focus: f.focus, Version: f.version}
+	b.snap = reading.Snapshot{Cards: f.cards, Goals: f.goals, Focus: f.focus, Version: f.version}
 	return b
 }
 
@@ -145,7 +146,7 @@ func settleForm(b Board) Board {
 // cannot look at.
 func pump(b Board, cmd tea.Cmd) Board {
 	for depth := 0; cmd != nil && depth < 16; depth++ {
-		msg, answered := quickly(cmd)
+		msg, answered := ran(b, cmd)
 		if !answered || msg == nil {
 			return b
 		}
@@ -167,9 +168,31 @@ func pump(b Board, cmd tea.Cmd) Board {
 	return b
 }
 
-// pumpOne runs a single command and hands the board what it produced.
+// ran carries out one command, and how it does so turns on who has the window.
+//
+// The form's own commands are raced against a deadline, because a cursor blink
+// is among them and a blink is a timer nobody can wait out. Everything else is
+// simply called: those are the board's own commands, they write to the store
+// and read it back, and racing one is how a scenario comes to pass nine times
+// in ten — measured, once in ten runs of `prek run --all-files` under the load
+// of ten suites at once.
+//
+// The board's state is read each time round rather than once at the start,
+// because the press that saves a form is a press the form has already handed
+// the window back on.
+func ran(b Board, cmd tea.Cmd) (tea.Msg, bool) {
+	if b.screen == OnForm {
+		return quickly(cmd)
+	}
+	msg := cmd()
+	return msg, msg != nil
+}
+
+// pumpOne runs a single command and hands the board what it produced. Through
+// ran, like the rest: a batch is where the board's own work and the form's
+// arrive together, so the same rule has to hold inside one.
 func pumpOne(b Board, cmd tea.Cmd) (Board, tea.Cmd) {
-	msg, answered := quickly(cmd)
+	msg, answered := ran(b, cmd)
 	if !answered || msg == nil {
 		return b, nil
 	}
@@ -178,6 +201,29 @@ func pumpOne(b Board, cmd tea.Cmd) (Board, tea.Cmd) {
 }
 
 // quickly runs a command and answers what it produced, or says it never did.
+//
+// The deadline is here for one kind of command only: a timer. A cursor blink
+// and the board's own two-second beat both sleep, and a suite that waited for
+// them would take minutes instead of seconds. Everything else answers as fast
+// as the store does.
+//
+// It was five milliseconds and that was wrong. Measured: one run in ten of
+// `prek run --all-files` failed the scenario "pushing a task down puts it one
+// place lower", because ten copies of the suite run at once there and a write
+// plus a re-read against real SQLite crossed five milliseconds — so the refresh
+// was thrown away and the board answered from its old reading. Nine runs in ten
+// passed, which is exactly what a deadline set at the cost of the work looks
+// like.
+//
+// Raising it was the wrong answer, and it is written down so nobody tries
+// again: a quarter of a second made the suite twelve times slower, because it
+// then waited out every blink it exists to drop. Deferring the ones that did
+// not answer cost eleven seconds for the same reason.
+//
+// What was actually wrong is that commands with nothing to do with the form
+// came through here at all. See ran, above.
+const patience = 5 * time.Millisecond
+
 func quickly(cmd tea.Cmd) (tea.Msg, bool) {
 	if cmd == nil {
 		return nil, false
@@ -187,7 +233,7 @@ func quickly(cmd tea.Cmd) (tea.Msg, bool) {
 	select {
 	case msg := <-answered:
 		return msg, true
-	case <-time.After(5 * time.Millisecond):
+	case <-time.After(patience):
 		return nil, false
 	}
 }

@@ -240,6 +240,38 @@ linters:
             - pkg: database/sql
               desc: a surface never opens a database
 
+        # What every board reads, and no board draws. `reading` turns the two
+        # listings into cards and goals, says which fields a form asks about and
+        # which engine argument each fills, and deals the cards into columns —
+        # answers a terminal and a window share, because they differ in how a
+        # box is drawn and not in what goes in it.
+        #
+        # So it is held to something stricter than a surface: it may not reach a
+        # drawing library at all. That is the line that keeps it shareable, and
+        # the day somebody measures a width in cells here is the day the second
+        # surface has to undo it.
+        reading:
+          files: ["**/internal/reading/**"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: what a board reads knows of no surface
+            - pkg: cairn/internal/mcp
+              desc: what a board reads knows of no surface
+            - pkg: cairn/internal/board
+              desc: the board reads through this, not the other way round
+            - pkg: cairn/internal/store
+              desc: state changes through the engine, never behind it
+            - pkg: database/sql
+              desc: nothing here opens a database
+            - pkg: charm.land/lipgloss/v2
+              desc: this says what a card carries, never how it is drawn
+            - pkg: charm.land/bubbletea/v2
+              desc: this holds no event loop and no screen
+            - pkg: charm.land/huh/v2
+              desc: this says which fields a form asks about, not what it looks like
+            - pkg: github.com/spf13/cobra
+              desc: nothing here parses a command line
+
         # The third surface. Same rule as the other two — it asks the engine and
         # never the store — plus the one mcp has: the command line builds the
         # board, so the board never reads the command line back.

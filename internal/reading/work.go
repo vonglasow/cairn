@@ -1,4 +1,4 @@
-package board
+package reading
 
 import (
 	"strconv"
@@ -116,10 +116,10 @@ func Look(w Work) (Snapshot, error) {
 	return found, nil
 }
 
-// numbered is what every operation about one task or one objective is given.
+// Numbered is what every operation about one task or one objective is given.
 // Its own function because it is written five times otherwise, and a map built
 // by hand five times is a map spelt wrong once.
-func numbered(n int) engine.Input {
+func Numbered(n int) engine.Input {
 	return engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}}
 }
 
@@ -134,7 +134,7 @@ func cardOf(w Work, t task.Task, held int) (Card, error) {
 	if err != nil {
 		return Card{}, err
 	}
-	shown, err := w.Ask(engine.TaskShow, numbered(told.Number))
+	shown, err := w.Ask(engine.TaskShow, Numbered(told.Number))
 	along := shown.Progress
 	if err != nil {
 		return Card{}, err
@@ -167,7 +167,7 @@ func goalOf(w Work, o objective.Objective) (Goal, error) {
 	if err != nil {
 		return Goal{}, err
 	}
-	shown, err := w.Ask(engine.ObjectiveShow, numbered(told.Number))
+	shown, err := w.Ask(engine.ObjectiveShow, Numbered(told.Number))
 	along := shown.Progress
 	if err != nil {
 		return Goal{}, err

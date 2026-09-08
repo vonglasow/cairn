@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 )
 
 // The board asks the engine through the operation the engine describes, not
 // through a method it named itself. This is the test that says so.
 func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "current"}}
 	b := hit(standing(f), "l", "l", "i")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -46,11 +47,11 @@ func asks(t *testing.T, f *fake, keys []string, press string) asked {
 }
 
 func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
-	two := []Card{{Number: 1, Title: "One", State: "todo"}, {Number: 2, Title: "Two", State: "todo"}}
+	two := []reading.Card{{Number: 1, Title: "One", State: "todo"}, {Number: 2, Title: "Two", State: "todo"}}
 	for _, c := range []struct {
 		what   string
-		cards  []Card
-		goals  []Goal
+		cards  []reading.Card
+		goals  []reading.Goal
 		keys   []string
 		press  string
 		thing  string
@@ -61,7 +62,7 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 		{what: "deleting a task", cards: two[:1], keys: []string{"l", "i"}, press: "d", thing: "task", verb: "delete", number: "1"},
 		{what: "pushing a task down", cards: two, keys: []string{"l", "i"}, press: "shift+j", thing: "task", verb: "move", number: "1"},
 		{
-			what: "deleting an objective", goals: []Goal{{Number: 3, Title: "Ship"}},
+			what: "deleting an objective", goals: []reading.Goal{{Number: 3, Title: "Ship"}},
 			keys: []string{"tab"}, press: "d", thing: "objective", verb: "delete", number: "3",
 		},
 	} {
@@ -83,7 +84,7 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 // ask `task unfocus`, not `task focus` with nothing in it.
 func TestLettingTheFocusGoAsksTaskUnfocus(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
 	f.focus = 1
 	got := asks(t, f, []string{"l", "i"}, "f")
 	if got.op.Thing != "task" || got.op.Verb != "unfocus" {
@@ -95,7 +96,7 @@ func TestLettingTheFocusGoAsksTaskUnfocus(t *testing.T) {
 // declaration of which argument it fills. These two say so: the engine's word
 // is what travels, and the screen's word never does.
 func TestAskedFromNamesEveryFieldByItsEngineArgument(t *testing.T) {
-	form := asking(taskFields(Card{
+	form := asking(reading.TaskFields(reading.Card{
 		Title:       "One",
 		Description: "why it matters",
 		State:       "todo",
@@ -123,33 +124,9 @@ func TestAskedFromNamesEveryFieldByItsEngineArgument(t *testing.T) {
 // A number nobody can read is not named at all, rather than sent for the
 // engine to refuse: one unreadable field would otherwise lose the whole form.
 func TestAParentThatIsNotANumberIsNotNamed(t *testing.T) {
-	form := asking([]Field{{Name: "parent", Arg: "parent", Value: "nine"}}, 80, 6, plainSkin)
+	form := asking([]reading.Field{{Name: "parent", Arg: "parent", Value: "nine"}}, 80, 6, plainSkin)
 	if in := askedFrom(form, engine.TaskEdit); in.Named("parent") {
 		t.Fatal("a parent nobody can read was passed to the engine anyway")
-	}
-}
-
-// Reading is asked for the same way as writing, and the focus arrives with the
-// listing that marks it rather than through a question of its own.
-func TestLookAsksTheTwoListingsAndTakesTheFocusFromThem(t *testing.T) {
-	f := newFake()
-	f.focus = 7
-
-	found, err := Look(f)
-	if err != nil {
-		t.Fatalf("Look: %v", err)
-	}
-	if len(f.asked) != 2 {
-		t.Fatalf("Look asked for %d operations, want 2", len(f.asked))
-	}
-	if f.asked[0].op.Thing != "task" || f.asked[0].op.Verb != "list" {
-		t.Errorf("first asked %q %q, want task list", f.asked[0].op.Thing, f.asked[0].op.Verb)
-	}
-	if f.asked[1].op.Thing != "objective" || f.asked[1].op.Verb != "list" {
-		t.Errorf("second asked %q %q, want objective list", f.asked[1].op.Thing, f.asked[1].op.Verb)
-	}
-	if found.Focus != 7 {
-		t.Errorf("Focus = %d, want 7 read off the listing", found.Focus)
 	}
 }
 

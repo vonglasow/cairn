@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/reading"
 	"strings"
 	"testing"
 	"time"
@@ -14,19 +15,6 @@ func on(day string) time.Time {
 		panic(err)
 	}
 	return parsed
-}
-
-func TestStopped(t *testing.T) {
-	for _, state := range []string{"blocked", "watching", "paused"} {
-		if !Stopped(state) {
-			t.Fatalf("%q means not moving, and was not read that way", state)
-		}
-	}
-	for _, state := range []string{"backlog", "todo", "current", "done", ""} {
-		if Stopped(state) {
-			t.Fatalf("%q was read as not moving", state)
-		}
-	}
 }
 
 func TestStoppedGlyph(t *testing.T) {
@@ -43,55 +31,20 @@ func TestStoppedGlyph(t *testing.T) {
 	}
 }
 
-func TestDeadline(t *testing.T) {
-	for _, c := range []struct {
-		name       string
-		due        time.Time
-		text       string
-		show, late bool
-	}{
-		{"none at all", time.Time{}, "", false, false},
-		{"today", on("2026-09-01"), "0d", true, false},
-		{"in two days", on("2026-09-03"), "2d", true, false},
-		{"at the edge of soon", on("2026-09-08"), "7d", true, false},
-		{"one day past soon", on("2026-09-09"), "", false, false},
-		{"gone by three days", on("2026-08-29"), "−3d", true, true},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			text, show, late := Deadline(c.due, today)
-			if text != c.text || show != c.show || late != c.late {
-				t.Fatalf("Deadline = %q %v %v, want %q %v %v", text, show, late, c.text, c.show, c.late)
-			}
-		})
-	}
-}
-
-func TestDeadlineIgnoresTheTimeOfDay(t *testing.T) {
-	// The answer to "how many days" must not depend on what o'clock it is when
-	// the board is opened.
-	morning := time.Date(2026, 9, 1, 0, 1, 0, 0, time.UTC)
-	evening := time.Date(2026, 9, 1, 23, 59, 0, 0, time.UTC)
-	first, _, _ := Deadline(on("2026-09-03"), morning)
-	second, _, _ := Deadline(on("2026-09-03"), evening)
-	if first != second {
-		t.Fatalf("the same deadline read %q in the morning and %q at night", first, second)
-	}
-}
-
 func TestMarks(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	if got := marks(Card{}, g); got != "" {
+	if got := marks(reading.Card{}, g); got != "" {
 		t.Fatalf("a card carrying nothing is marked %q", got)
 	}
-	if got := marks(Card{Described: true}, g); got != g.Described {
+	if got := marks(reading.Card{Described: true}, g); got != g.Described {
 		t.Fatalf("a described card is marked %q", got)
 	}
-	if got := marks(Card{State: "blocked"}, g); got != g.Blocked {
+	if got := marks(reading.Card{State: "blocked"}, g); got != g.Blocked {
 		t.Fatalf("a blocked card is marked %q", got)
 	}
 	// The state anchors the right-hand end, so the eye finds it in the same
 	// place whether or not there is a description beside it.
-	both := marks(Card{Described: true, State: "paused"}, g)
+	both := marks(reading.Card{Described: true, State: "paused"}, g)
 	if !strings.HasSuffix(both, g.Paused) {
 		t.Fatalf("the state is not last: %q", both)
 	}
@@ -102,7 +55,7 @@ func TestMarks(t *testing.T) {
 
 func TestFactsInAColumn(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	c := Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
+	c := reading.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 40)
 	for _, want := range []string{"2d", g.SubTasks + "3/5", g.Label + " spec"} {
 		if !strings.Contains(got, want) {
@@ -113,7 +66,7 @@ func TestFactsInAColumn(t *testing.T) {
 
 func TestFactsDropWhatWillNotFit(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	c := Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
+	c := reading.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 10)
 	if strings.Contains(got, "spec") {
 		t.Fatalf("the label survived a row too narrow for it: %q", got)
@@ -125,28 +78,28 @@ func TestFactsDropWhatWillNotFit(t *testing.T) {
 
 func TestFactsInTheBand(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	blocked := facts(Card{State: "blocked", Blockers: []int{12, 13}}, g, plainSkin, today, 40)
+	blocked := facts(reading.Card{State: "blocked", Blockers: []int{12, 13}}, g, plainSkin, today, 40)
 	if blocked != g.InTheWay+" 12 13" {
 		t.Fatalf("a blocked card says %q", blocked)
 	}
-	because := facts(Card{State: "watching", Because: "she confirms"}, g, plainSkin, today, 40)
+	because := facts(reading.Card{State: "watching", Because: "she confirms"}, g, plainSkin, today, 40)
 	if because != g.InTheWay+" she confirms" {
 		t.Fatalf("a watched card says %q", because)
 	}
-	nothing := facts(Card{State: "paused"}, g, plainSkin, today, 40)
+	nothing := facts(reading.Card{State: "paused"}, g, plainSkin, today, 40)
 	if nothing != "" {
 		t.Fatalf("a paused card with nothing in its way says %q", nothing)
 	}
 	// A stalled card says what is in the way instead of when it is due: in the
 	// band that is the only question being asked.
-	both := facts(Card{State: "blocked", Blockers: []int{1}, Deadline: on("2026-09-02")}, g, plainSkin, today, 40)
+	both := facts(reading.Card{State: "blocked", Blockers: []int{1}, Deadline: on("2026-09-02")}, g, plainSkin, today, 40)
 	if strings.Contains(both, "1d") {
 		t.Fatalf("a stalled card mentioned its deadline: %q", both)
 	}
 }
 
 func TestCardRowsAreFour(t *testing.T) {
-	rows := Card{Number: 14, Title: "Write the spec"}.Rows(GlyphsFor(Unicode), plainSkin, today, 20)
+	rows := Rows(reading.Card{Number: 14, Title: "Write the spec"}, GlyphsFor(Unicode), plainSkin, today, 20)
 	if len(rows) != 4 {
 		t.Fatalf("a card has %d rows, want 4", len(rows))
 	}
@@ -160,7 +113,7 @@ func TestCardRowsAreFour(t *testing.T) {
 
 func TestCardIsAlwaysSixRows(t *testing.T) {
 	l := LayoutFor(100, 40)
-	for _, c := range []Card{
+	for _, c := range []reading.Card{
 		{Number: 1, Title: "Short"},
 		{Number: 2, Title: "A title long enough to run over two whole lines and then some", Described: true, SubDone: 1, SubTotal: 2, Labels: []string{"a", "b"}, Deadline: on("2026-09-02")},
 		{Number: 3, Title: "In focus", InFocus: true},
@@ -175,8 +128,8 @@ func TestCardIsAlwaysSixRows(t *testing.T) {
 func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
 	l := LayoutFor(100, 40)
 	b := standing(newFake()).with(plainSkin)
-	plainCard := b.card(Card{Number: 1, Title: "One"}, l)
-	held := b.card(Card{Number: 1, Title: "One", InFocus: true}, l)
+	plainCard := b.card(reading.Card{Number: 1, Title: "One"}, l)
+	held := b.card(reading.Card{Number: 1, Title: "One", InFocus: true}, l)
 	if !strings.Contains(held, "╔") {
 		t.Fatalf("the task in focus is not drawn with a double border:\n%s", held)
 	}
@@ -187,9 +140,9 @@ func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
 
 func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
 	l := LayoutFor(100, 40)
-	c := Card{Number: 1, Title: "One", State: "todo"}
+	c := reading.Card{Number: 1, Title: "One", State: "todo"}
 	f := newFake()
-	f.cards = []Card{c}
+	f.cards = []reading.Card{c}
 	held := hit(standing(f), "l", "i").with(plainSkin)
 	if held.card(c, l) == standing(f).with(plainSkin).card(c, l) {
 		t.Fatal("the card under the cursor is drawn exactly like the others")

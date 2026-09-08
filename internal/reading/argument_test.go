@@ -1,4 +1,4 @@
-package board
+package reading
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ func TestEveryTaskFieldNamesAnArgumentTaskEditTakes(t *testing.T) {
 	for _, a := range engine.TaskEdit.Takes {
 		takes[a.Name] = true
 	}
-	fields := taskFields(Card{})
+	fields := TaskFields(Card{})
 	if len(fields) == 0 {
 		t.Fatal("taskFields is empty")
 	}
@@ -36,7 +36,7 @@ func TestEveryGoalFieldNamesAnArgumentObjectiveEditTakes(t *testing.T) {
 	for _, a := range engine.ObjectiveEdit.Takes {
 		takes[a.Name] = true
 	}
-	fields := goalFields(Goal{})
+	fields := GoalFields(Goal{})
 	if len(fields) == 0 {
 		t.Fatal("goalFields is empty")
 	}

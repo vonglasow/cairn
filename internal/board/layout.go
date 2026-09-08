@@ -1,5 +1,7 @@
 package board
 
+import "cairn/internal/reading"
+
 // How wide and how tall everything is, worked out from the window the terminal
 // reports and worked out again every time it changes. Nothing about a size is
 // written into a card or a column — a board that carried its own sizes would be
@@ -69,11 +71,11 @@ type Layout struct {
 
 // LayoutFor works out every size at a given window.
 func LayoutFor(width, height int) Layout {
-	column := (width - margin - (Columns - 1)) / Columns
+	column := (width - margin - (reading.Columns - 1)) / reading.Columns
 	return Layout{
 		Column:   column,
 		Interior: column - frame,
-		Band:     column*(Columns-1) + (Columns - 2),
+		Band:     column*(reading.Columns-1) + (reading.Columns - 2),
 		Top:      topRows(height),
 		Rows:     bandRows(height),
 	}

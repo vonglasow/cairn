@@ -10,6 +10,7 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 )
 
 // The two screens that take the whole window without taking a form with them:
@@ -172,7 +173,7 @@ func (b Board) drawDetail() string {
 
 // detailLeft is what stacks down the left of the detail: what was written about
 // the task, and what hangs under it.
-func (b Board) detailLeft(c Card, width int) []string {
+func (b Board) detailLeft(c reading.Card, width int) []string {
 	var out []string
 	if c.Description != "" {
 		out = append(out, b.named("DESCRIPTION", b.skin.Bright.Render(c.Description), width))
@@ -192,10 +193,10 @@ func (b Board) detailLeft(c Card, width int) []string {
 }
 
 // detailBand is the short facts, on two rows above the panels.
-func (b Board) detailBand(c Card) string {
+func (b Board) detailBand(c reading.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
-	if Stopped(c.State) {
+	if reading.Stopped(c.State) {
 		state = lipgloss.NewStyle().Foreground(b.skin.palette.Stopped(c.State)).
 			Render(StoppedGlyph(c.State, b.glyphs) + " " + c.State)
 	}
@@ -205,7 +206,7 @@ func (b Board) detailBand(c Card) string {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
 	if day := domain.FormatDay(c.Deadline); day != "" {
-		text, _, late := Deadline(c.Deadline, b.now())
+		text, _, late := reading.Deadline(c.Deadline, b.now())
 		style := b.skin.Bright
 		if late {
 			style = b.skin.Late
@@ -229,7 +230,7 @@ func (b Board) detailBand(c Card) string {
 }
 
 // subTasks is what hangs under a task, each with where it stands.
-func (b Board) subTasks(c Card, width int) []string {
+func (b Board) subTasks(c reading.Card, width int) []string {
 	var out []string
 	for _, other := range b.snap.Cards {
 		if other.Parent != c.Number {
@@ -246,7 +247,7 @@ func (b Board) subTasks(c Card, width int) []string {
 }
 
 // serves is the objectives a task counts towards.
-func (b Board) serves(c Card, width int) string {
+func (b Board) serves(c reading.Card, width int) string {
 	var out []string
 	for _, number := range c.Objectives {
 		for _, g := range b.snap.Goals {
@@ -269,7 +270,7 @@ func (b Board) serves(c Card, width int) string {
 // `:trace show 14` prints the same history the way the command line prints it,
 // and neither is the other's shortcut.
 func (b Board) history(number, width, rows int) []string {
-	shown, err := b.work.Ask(engine.TraceShow, numbered(number))
+	shown, err := b.work.Ask(engine.TraceShow, reading.Numbered(number))
 	if err != nil {
 		return []string{b.skin.Wrong.Render(err.Error())}
 	}

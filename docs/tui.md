@@ -658,6 +658,12 @@ of its own. It reads `PRAGMA data_version` — the store noticing that another
 connection wrote — and nobody asks cairn to do that, so it has no verb and
 should not get one. `cairn version` already means the version of the binary.
 
+**What the board reads lives in `internal/reading`, not here.** The two
+listings turned into cards and goals, the deal into columns, which fields a
+form asks about — none of that is about a terminal, so none of it is in this
+package. What stayed is everything that measures in cells and everything that
+draws. See [architecture.md](architecture.md).
+
 **A field says which argument it fills.** `Field` carries both `Name`, what a
 person reads beside the box, and `Arg`, what the engine calls the same thing:
 

@@ -17,6 +17,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 )
 
 // stood is the day every scenario is run on, so a deadline reads the same
@@ -84,7 +85,7 @@ func (w *world) open() {
 // refresh hands the board a fresh reading, the way its own beat would once it
 // noticed the store had moved.
 func (w *world) refresh() {
-	found, err := Look(w.held)
+	found, err := reading.Look(w.held)
 	if err != nil {
 		w.t.Fatalf("looking: %v", err)
 	}
@@ -125,10 +126,31 @@ func (w *world) settle(cmd tea.Cmd) {
 }
 
 // press sends one key and settles whatever it set off.
+//
+// A press that has nothing to do with the form is settled rather than raced
+// against a deadline, and this is the whole difference between a scenario that
+// holds and one that holds nine times in ten. Measured: `⇧J` writes to a real
+// store and reads the board back, and under the load of ten suites at once
+// that crossed the five milliseconds pump allows — so the refresh was thrown
+// away and the board answered from its old reading, exactly once in ten runs
+// of `prek run --all-files`.
+//
+// What decides is where the board ends up, not where it was. The press that
+// saves a form is a press the form no longer has the window for, and its
+// command is the write — judging by the state beforehand would have raced
+// exactly the one press that must not be raced.
+//
+// While the form does have the window, the deadline stays: it is the form that
+// asks for a cursor blink, and a blink is a timer nobody can wait out.
 func (w *world) press(name string) {
 	was := w.b.screen
 	model, cmd := w.b.Update(keyPress(name))
-	w.b = pump(model.(Board), cmd)
+	w.b = model.(Board)
+	if w.b.screen == OnForm {
+		w.b = pump(w.b, cmd)
+	} else {
+		w.settle(cmd)
+	}
 	if was != OnForm && w.b.screen == OnForm {
 		w.b = settleForm(w.b)
 	}

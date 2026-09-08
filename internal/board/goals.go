@@ -1,9 +1,7 @@
 package board
 
 import (
-	"cmp"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -11,16 +9,13 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"cairn/internal/domain"
+	"cairn/internal/reading"
 )
 
 // An objective, drawn. The same six rows as a task, because a person who has
 // learnt one card has learnt both — and one thing a task has not got: how far
 // along it is, counted from the columns of everything that serves it. That
 // count is the headline, since it is the only fact an objective owns.
-
-// standings are the four an objective can be in, in the order the list keeps
-// them: what is being worked towards first, what was finished with last.
-var standings = []string{"active", "on-hold", "reached", "dropped"}
 
 // StandingGlyph answers the mark an objective's state is drawn with.
 func StandingGlyph(state string, g Glyphs) string {
@@ -38,42 +33,6 @@ func StandingGlyph(state string, g Glyphs) string {
 	}
 }
 
-// standingAt answers where a state stands in the order. Anything unrecognised
-// sorts last rather than first: a word nobody planned for should not push what
-// is being worked on off the top of the screen.
-func standingAt(state string) int {
-	for i, s := range standings {
-		if s == state {
-			return i
-		}
-	}
-	return len(standings)
-}
-
-// Sorted puts the objectives in the order the list draws them. There are no
-// headings, so this order is the only thing saying what is live and what is
-// over — and inside one standing the numbers keep their own order, which is
-// the order they were made in.
-func Sorted(goals []Goal) []Goal {
-	out := make([]Goal, len(goals))
-	copy(out, goals)
-	slices.SortStableFunc(out, func(a, b Goal) int {
-		if by := cmp.Compare(standingAt(a.State), standingAt(b.State)); by != 0 {
-			return by
-		}
-		return cmp.Compare(a.Number, b.Number)
-	})
-	return out
-}
-
-// reaches says whether a search reaches an objective, looking where somebody
-// typed something and nowhere else.
-func reaches(g Goal, query string) bool {
-	query = strings.ToLower(query)
-	return strings.Contains(strings.ToLower(g.Title), query) ||
-		strings.Contains(strings.ToLower(g.Description), query)
-}
-
 // progress draws how far along an objective is, in colour.
 func (b Board) progress(done, total, width int) string {
 	plain := Bar(done, total, width)
@@ -83,7 +42,7 @@ func (b Board) progress(done, total, width int) string {
 }
 
 // goalFacts is the bar, the count, and whatever else the width allows, dressed.
-func (b Board) goalFacts(g Goal, width int) string {
+func (b Board) goalFacts(g reading.Goal, width int) string {
 	room := min(barWidth, width)
 	told := []string{}
 	dressed := []string{}
@@ -127,7 +86,7 @@ func Bar(done, total, width int) string {
 const barWidth = 28
 
 // goalRows is the four lines an objective's card carries, dressed.
-func (b Board) goalRows(g Goal, width int) []string {
+func (b Board) goalRows(g reading.Goal, width int) []string {
 	var rows []string
 	mark := goalMarks(g, b.glyphs)
 	if glyph := StandingGlyph(g.State, b.glyphs); glyph != "" {
@@ -142,7 +101,7 @@ func (b Board) goalRows(g Goal, width int) []string {
 }
 
 // goalMarks is the right-hand end of an objective's first row.
-func goalMarks(g Goal, gl Glyphs) string {
+func goalMarks(g reading.Goal, gl Glyphs) string {
 	var found []string
 	if g.Described {
 		found = append(found, gl.Described)
@@ -154,7 +113,7 @@ func goalMarks(g Goal, gl Glyphs) string {
 }
 
 // factsRow is the bar, the count, and whatever else the width allows.
-func (g Goal) factsRow(gl Glyphs, width int) string {
+func factsRow(g reading.Goal, gl Glyphs, width int) string {
 	bar := Bar(g.Done, g.Total, min(barWidth, width))
 	told := []string{}
 	if g.Total > 0 {

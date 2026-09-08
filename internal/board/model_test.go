@@ -10,13 +10,13 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
-	"cairn/internal/objective"
+	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
 
 func twoTasks() *fake {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "First", State: "todo"},
 		{Number: 2, Title: "Second", State: "todo"},
 		{Number: 3, Title: "Waiting", State: "blocked"},
@@ -150,7 +150,7 @@ func TestWalkingAcrossToAnEmptyColumnLetsGo(t *testing.T) {
 
 func TestWalkingAcrossKeepsHoldWhereThereIsSomething(t *testing.T) {
 	f := twoTasks()
-	f.cards = append(f.cards, Card{Number: 4, Title: "Over there", State: "current"})
+	f.cards = append(f.cards, reading.Card{Number: 4, Title: "Over there", State: "current"})
 	b := hit(standing(f), "l", "i", "l")
 	if b.Where().Task != 4 {
 		t.Fatalf("the cursor holds %d, want 4", b.Where().Task)
@@ -201,7 +201,7 @@ func TestSteppingUpAndDownAColumn(t *testing.T) {
 
 func TestTheOtherTab(t *testing.T) {
 	f := twoTasks()
-	f.goals = []Goal{{Number: 7, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 7, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab")
 	if b.Where().Goal != 7 {
 		t.Fatalf("the cursor landed on objective %d, want 7", b.Where().Goal)
@@ -239,7 +239,7 @@ func TestHelpOpensAndClosesFromAnywhere(t *testing.T) {
 
 func TestHelpIsContextual(t *testing.T) {
 	f := twoTasks()
-	f.goals = []Goal{{Number: 1, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 	onTasks := bare(hit(standing(f), "?").Draw())
 	onGoals := bare(hit(standing(f), "tab", "?").Draw())
 	if !strings.Contains(onTasks, "INSERT") {
@@ -310,7 +310,7 @@ func TestPushingRightOutOfTheBandDoesNothing(t *testing.T) {
 
 func TestPushingPastTheLastColumnDoesNothing(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "Done", State: "done"}}
+	f.cards = []reading.Card{{Number: 1, Title: "Done", State: "done"}}
 	b := hit(standing(f), "l", "l", "l", "i", "shift+l")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing past the last column wrote %v", f.edited)
@@ -372,7 +372,7 @@ func TestNothingIsReadWhileTheStoreHasNotMoved(t *testing.T) {
 func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i")
-	fewer := Snapshot{Cards: []Card{{Number: 2, Title: "Second", State: "todo"}}}
+	fewer := reading.Snapshot{Cards: []reading.Card{{Number: 2, Title: "Second", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 2 {
 		t.Fatalf("the cursor fell to %d, want 2", after.Where().Task)
@@ -382,7 +382,7 @@ func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "j")
-	fewer := Snapshot{Cards: []Card{{Number: 1, Title: "First", State: "todo"}}}
+	fewer := reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "First", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 1 {
 		t.Fatalf("the cursor fell to %d, want 1", after.Where().Task)
@@ -392,7 +392,7 @@ func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 func TestTheCursorLetsGoWhenTheColumnEmpties(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i")
-	after := b.took(Looked{Snapshot: Snapshot{}})
+	after := b.took(Looked{Snapshot: reading.Snapshot{}})
 	if after.Where().Mode != Normal || after.Where().Task != 0 {
 		t.Fatalf("the cursor still holds %d in mode %v", after.Where().Task, after.Where().Mode)
 	}
@@ -408,7 +408,7 @@ func TestTheDetailOfATaskThatWentAway(t *testing.T) {
 
 func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "Parent", State: "todo", SubDone: 1, SubTotal: 2, Labels: []string{"spec"}, Estimate: "3h", Spent: "1h", Deadline: on("2026-09-02")},
 		{Number: 2, Title: "Child", State: "done", Parent: 1},
 	}
@@ -462,14 +462,6 @@ func TestTheViewCarriesTheScreenAndTakesTheWholeTerminal(t *testing.T) {
 func TestInitAsksForAReadingAndABeat(t *testing.T) {
 	if standing(twoTasks()).Init() == nil {
 		t.Fatal("a board opened without asking for anything")
-	}
-}
-
-func TestLookPassesOnWhatItCannotRead(t *testing.T) {
-	f := newFake()
-	f.fail = errNope
-	if _, err := Look(f); err == nil {
-		t.Fatal("a store that refused was read as an empty one")
 	}
 }
 
@@ -535,27 +527,9 @@ func TestNumberReadsAFieldBack(t *testing.T) {
 	}
 }
 
-func TestMaybe(t *testing.T) {
-	if got := maybe(0); got != "" {
-		t.Fatalf("no parent is written %q", got)
-	}
-	if got := maybe(7); got != "7" {
-		t.Fatalf("a parent is written %q", got)
-	}
-}
-
-func TestWordsNeverAnswerNothingAtAll(t *testing.T) {
-	if got := words("  "); got == nil || len(got) != 0 {
-		t.Fatalf("an empty field became %v, and a nil would mean nobody said anything", got)
-	}
-	if got := words("a  b"); len(got) != 2 {
-		t.Fatalf("two words became %v", got)
-	}
-}
-
 func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "todo", Description: "about the spec"},
 		{Number: 2, Title: "Two", State: "todo", Because: "the client"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -575,7 +549,7 @@ func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 // emptied. Read off the operation rather than listed here, so an argument added
 // to the engine and forgotten on the form fails this test.
 func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
-	form := asking(taskFields(Card{
+	form := asking(reading.TaskFields(reading.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
 		Estimate: "3h", Spent: "1h", Parent: 4, Objectives: []int{5},
@@ -600,28 +574,16 @@ func TestValueOfAFieldThatIsNotThere(t *testing.T) {
 	}
 }
 
-func TestGoalFieldsAreFewerAndSayNothingOfBlockers(t *testing.T) {
-	fields := goalFields(Goal{Title: "One", State: "active"})
-	for _, f := range fields {
-		if f.Name == "blockers" || f.Name == "parent" {
-			t.Fatalf("an objective was given a field it has not got: %q", f.Name)
-		}
-	}
-	if len(fields) >= len(taskFields(Card{})) {
-		t.Fatal("an objective's form is not shorter than a task's")
-	}
-}
-
 func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
 	// The board declares what it needs; this is what says the engine gives it.
 	// Without it, a method renamed in the engine would only be found by opening
 	// the board by hand.
-	var _ Work = (*engine.Engine)(nil)
+	var _ reading.Work = (*engine.Engine)(nil)
 }
 
 func TestRemovingAnObjective(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab")
 	if _, cmd := b.pressed("d"); cmd != nil {
 		cmd()
@@ -641,7 +603,7 @@ func TestRemovingNoObjectiveAtAll(t *testing.T) {
 
 func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
 	b := hit(standing(f), "tab")
 	_, cmd := b.pressed("d")
@@ -652,7 +614,7 @@ func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 
 func TestSearchingTheObjectives(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{
+	f.goals = []reading.Goal{
 		{Number: 1, Title: "Ship the desktop board", State: "active"},
 		{Number: 2, Title: "Cut the onboarding time", State: "active"},
 	}
@@ -693,7 +655,7 @@ func TestAStateThatRefusesIsSaid(t *testing.T) {
 
 func TestASaveThatRefusesIsSaid(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "First", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "First", State: "todo"}}
 	f.failOp = errRefuse
 	if b := finish(hit(standing(f), "l", "i", "e"), true); b.err == nil {
 		t.Fatal("a save that could not be written was passed over")
@@ -705,7 +667,7 @@ func TestASaveThatRefusesIsSaid(t *testing.T) {
 
 func TestAnObjectiveSaveThatRefusesIsSaid(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
 	if b := finish(hit(standing(f), "tab", "e"), true); b.err == nil {
 		t.Fatal("an objective that could not be saved was passed over")
@@ -717,7 +679,7 @@ func TestAnObjectiveSaveThatRefusesIsSaid(t *testing.T) {
 
 func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "backlog"},
 		{Number: 2, Title: "Four", State: "done"},
 	}
@@ -732,7 +694,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 	// And with a task in every column, the same walk in insert reaches the last
 	// one and stops there rather than walking off the end.
 	full := newFake()
-	full.cards = []Card{
+	full.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "backlog"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "current"},
@@ -750,7 +712,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 
 func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 5, Title: "First", State: "todo"},
 		{Number: 3, Title: "Second", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
@@ -758,7 +720,7 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 	// The list is not in order of number, so a cursor that fell to the next
 	// number would land somewhere else entirely.
 	b := hit(standing(f), "l", "i", "j")
-	fewer := Snapshot{Cards: []Card{
+	fewer := reading.Snapshot{Cards: []reading.Card{
 		{Number: 5, Title: "First", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
 	}}
@@ -779,7 +741,7 @@ func TestSteppingWithATaskThatIsNotInTheColumn(t *testing.T) {
 	// somewhere different: with two, stepping on from either lands nowhere and
 	// the two cannot be told apart.
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -793,7 +755,7 @@ func TestSteppingWithATaskThatIsNotInTheColumn(t *testing.T) {
 
 func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "current"}}
 	// current is the third column: left is todo, right is done. A push that
 	// went the other way, or one column too far, would land somewhere else.
 	left := hit(standing(f), "l", "l", "i")
@@ -814,7 +776,7 @@ func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 
 func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
 	b := hit(standing(f), "l", "i")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -826,7 +788,7 @@ func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 
 func TestPushingRightReachesTheLastColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "current"}}
 	b := hit(standing(f), "l", "l", "i")
 	if _, cmd := b.pressed("shift+l"); cmd != nil {
 		cmd()
@@ -850,7 +812,7 @@ func TestTheCursorReachesTheFirstColumnAndTheLast(t *testing.T) {
 
 func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
 	b := standing(twoTasks())
-	card := Card{Number: 1}
+	card := reading.Card{Number: 1}
 	if b.chosen(card) {
 		t.Fatal("a card was picked out while the cursor was on a column")
 	}
@@ -858,14 +820,14 @@ func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
 	if !b.chosen(card) {
 		t.Fatal("the card the cursor holds was not picked out")
 	}
-	if b.chosen(Card{Number: 2}) {
+	if b.chosen(reading.Card{Number: 2}) {
 		t.Fatal("a card the cursor does not hold was picked out")
 	}
 }
 
 func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{
+	f.goals = []reading.Goal{
 		{Number: 1, Title: "One", State: "active"},
 		{Number: 2, Title: "Two", State: "active"},
 	}
@@ -933,7 +895,7 @@ func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
 
 func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, State: "blocked", Title: "A"},
 		{Number: 2, State: "watching", Title: "B"},
 		{Number: 3, State: "paused", Title: "C"},
@@ -945,36 +907,10 @@ func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
 	}
 }
 
-func TestAGoalIsToldItHasADescription(t *testing.T) {
-	f := newFake()
-	built, err := objective.NewObjective("Ship it")
-	if err != nil {
-		t.Fatalf("building an objective: %v", err)
-	}
-	plainGoal, err := goalOf(f, built)
-	if err != nil {
-		t.Fatalf("reading it: %v", err)
-	}
-	if plainGoal.Described {
-		t.Fatal("an objective with nothing written about it was said to have a description")
-	}
-
-	var told objective.AsTold
-	built.Tell(&told)
-	told.Described("why it matters")
-	described, err := goalOf(f, told.Objective())
-	if err != nil {
-		t.Fatalf("reading it: %v", err)
-	}
-	if !described.Described {
-		t.Fatal("an objective with something written about it was said to have none")
-	}
-}
-
 func manyGoals() *fake {
 	f := newFake()
 	for i := 1; i <= 9; i++ {
-		f.goals = append(f.goals, Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
+		f.goals = append(f.goals, reading.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
 	}
 	return f
 }
@@ -1042,7 +978,7 @@ func TestTheObjectivesListScrollsToTheCursor(t *testing.T) {
 func TestAColumnScrollsToTheCursor(t *testing.T) {
 	f := newFake()
 	for i := 1; i <= 12; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
 	b := hit(standing(f), "l", "i")
 	if b.offsets[1] != 0 {
@@ -1068,9 +1004,9 @@ func TestAColumnScrollsToTheCursor(t *testing.T) {
 
 func TestTheBandScrollsToTheCursor(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 32; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked"})
 	}
 	b := hit(standing(f), "l", "i", "j")
 	if !b.Where().InBand {
@@ -1086,9 +1022,9 @@ func TestTheBandScrollsToTheCursor(t *testing.T) {
 
 func TestTheCursorFollowsInsideAnObjective(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 1, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 	for i := 1; i <= 8; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Objectives: []int{1}})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Objectives: []int{1}})
 	}
 	b := hit(standing(f), "tab", "enter", "l", "i")
 	for range 7 {
@@ -1104,8 +1040,8 @@ func TestTheCursorFollowsInsideAnObjective(t *testing.T) {
 
 func TestLeavingAnObjectiveGoesBackToTheList(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo", Objectives: []int{3}}}
+	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo", Objectives: []int{3}}}
 	b := hit(standing(f), "tab", "enter")
 	if b.inside != 3 {
 		t.Fatalf("opening the objective left inside at %d", b.inside)
@@ -1130,11 +1066,11 @@ func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
 	// measures the row.
 	skin := SkinOf(Default)
 	g := GlyphsFor(Unicode)
-	todo := Card{Number: 1, Title: "One", State: "todo"}.Rows(g, skin, today, 20)
+	todo := Rows(reading.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, 20)
 	if got, want := todo[0], Spread(skin.Faint.Render("1"), "", 20); got != want {
 		t.Fatalf("a card in a column has %q on its first row, want %q", got, want)
 	}
-	stalled := Card{Number: 1, Title: "One", State: "blocked"}.Rows(g, skin, today, 20)
+	stalled := Rows(reading.Card{Number: 1, Title: "One", State: "blocked"}, g, skin, today, 20)
 	if stalled[0] == todo[0] {
 		t.Fatal("a stalled card is marked exactly like one in a column")
 	}
@@ -1143,8 +1079,8 @@ func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
 func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
 	b := standing(newFake())
 	b.skin = SkinOf(Default)
-	known := b.goalRows(Goal{Number: 1, Title: "One", State: "active"}, 40)
-	unknown := b.goalRows(Goal{Number: 1, Title: "One", State: "invented"}, 40)
+	known := b.goalRows(reading.Goal{Number: 1, Title: "One", State: "active"}, 40)
+	unknown := b.goalRows(reading.Goal{Number: 1, Title: "One", State: "invented"}, 40)
 	if known[0] == unknown[0] {
 		t.Fatal("a standing nobody planned for is marked like one that is known")
 	}
@@ -1173,7 +1109,7 @@ func TestThePopupMarksTheOneItIsOn(t *testing.T) {
 
 func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{
+	f.goals = []reading.Goal{
 		{Number: 1, Title: "One", State: "active"},
 		{Number: 2, Title: "Two", State: "active"},
 	}
@@ -1195,7 +1131,7 @@ func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 
 func TestWalkingAlongTheBandsFirstRow(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Blocked one", State: "blocked"},
 		{Number: 3, Title: "Blocked two", State: "blocked"},
@@ -1228,7 +1164,7 @@ func TestAWindowOfOneRowStillDrawsARow(t *testing.T) {
 func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 	f := newFake()
 	for i := 1; i <= 3; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "One", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "One", State: "blocked"})
 	}
 	b := standing(f)
 	// Three cards is exactly one row of three. A fourth row of nothing would be
@@ -1236,7 +1172,7 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != CardHeight {
 		t.Fatalf("three cards across drew %d rows, want %d", got, CardHeight)
 	}
-	f.cards = append(f.cards, Card{Number: 4, Title: "Four", State: "blocked"})
+	f.cards = append(f.cards, reading.Card{Number: 4, Title: "Four", State: "blocked"})
 	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != 2*CardHeight {
 		t.Fatalf("four cards across drew %d rows, want two rows of cards", got)
 	}
@@ -1244,7 +1180,7 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 
 func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -1272,10 +1208,10 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
-	if got := b.goalFacts(Goal{Number: 1}, 60); strings.Contains(got, "0/0") {
+	if got := b.goalFacts(reading.Goal{Number: 1}, 60); strings.Contains(got, "0/0") {
 		t.Fatalf("an objective nothing serves claimed a count: %q", got)
 	}
-	if got := b.goalFacts(Goal{Number: 1, Done: 0, Total: 3}, 60); !strings.Contains(got, "0/3") {
+	if got := b.goalFacts(reading.Goal{Number: 1, Done: 0, Total: 3}, 60); !strings.Contains(got, "0/3") {
 		t.Fatalf("an objective nothing is done on lost its count: %q", got)
 	}
 }
@@ -1283,7 +1219,7 @@ func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
 func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
-	g := Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
+	g := reading.Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
 	// "1/2  ⚑ ab" is nine columns, and what is left for it is the width less
 	// the bar and the two spaces beside it.
 	const room = barWidth + 2 + 9
@@ -1297,7 +1233,7 @@ func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 
 func TestAnObjectiveCardIsAsWideAsItIsGiven(t *testing.T) {
 	b := standing(newFake())
-	drawn := b.goalCard(Goal{Number: 1, Title: "One"}, 40)
+	drawn := b.goalCard(reading.Goal{Number: 1, Title: "One"}, 40)
 	for _, row := range strings.Split(strings.TrimRight(bare(drawn), "\n"), "\n") {
 		if got := len([]rune(row)); got != 40+frame {
 			t.Fatalf("a card given 40 drew a row %d wide, want %d", got, 40+frame)
@@ -1322,9 +1258,9 @@ func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
 	// Three cards to a row, so the seventh is in the third row. A band that
 	// counted rows any other way would scroll to the wrong place.
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 32; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Down twice from the first card is two rows down, which is the seventh
 	// card: three to a row.
@@ -1340,7 +1276,7 @@ func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
 
 func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 40 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -1358,7 +1294,7 @@ func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 
 func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -1395,7 +1331,7 @@ func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 
 func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -1417,7 +1353,7 @@ func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 
 func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{
+	f.cards = []reading.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -1462,9 +1398,9 @@ func TestAMoveThatRefusesIsSaid(t *testing.T) {
 
 func TestTheBandIsWalkedAsAGrid(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 27; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Seven stalled cards, three to a row: 20 21 22 / 23 24 25 / 26.
 	b := hit(standing(f), "l", "i", "j")
@@ -1499,9 +1435,9 @@ func TestTheBandIsWalkedAsAGrid(t *testing.T) {
 
 func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 24; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Four stalled: 20 21 22 / 23. Down from 22 has no card under it.
 	b := hit(standing(f), "l", "i", "j", "l", "l")
@@ -1518,7 +1454,7 @@ func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
 
 func TestEscapeClosesTheForm(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
 	b := hit(standing(f), "l", "i", "e")
 	if b.screen != OnForm {
 		t.Fatal("the form did not open")
@@ -1534,7 +1470,7 @@ func TestEscapeClosesTheForm(t *testing.T) {
 
 func TestEscapeClosesAnObjectivesForm(t *testing.T) {
 	f := newFake()
-	f.goals = []Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab", "e")
 	if b.screen != OnForm {
 		t.Fatal("the objective's form did not open")
@@ -1567,7 +1503,7 @@ func TestTheHelpCanBeReadPastTheBottomOfTheWindow(t *testing.T) {
 
 func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 	f := newFake()
-	f.cards = []Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
+	f.cards = []reading.Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
 	b := hit(standing(f), "l", "j", "i", "e").with(plainSkin)
 	head := b.formHead()
 	for _, want := range []string{"7", "Write the spec", "blocked", "critical"} {
@@ -1580,7 +1516,7 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 		t.Fatalf("a new task's head reads %q", got)
 	}
 	goals := newFake()
-	goals.goals = []Goal{{Number: 2, Title: "Ship it", State: "on-hold", Priority: "low"}}
+	goals.goals = []reading.Goal{{Number: 2, Title: "Ship it", State: "on-hold", Priority: "low"}}
 	objective := hit(standing(goals), "tab", "e").with(plainSkin)
 	if got := objective.formHead(); !strings.Contains(got, "on-hold") {
 		t.Fatalf("an objective's head reads %q", got)
@@ -1589,9 +1525,9 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 
 func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 26; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Six stalled: 20 21 22 / 23 24 25. Left from the head of the second row is
 	// the end of the first, and walking there would move the cursor up a row
@@ -1614,7 +1550,7 @@ func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 func aColumnOf(n int) *fake {
 	f := newFake()
 	for i := 1; i <= n; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
 	return f
 }
@@ -1622,9 +1558,9 @@ func aColumnOf(n int) *fake {
 func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 	f := aColumnOf(4)
 	f.cards = append(f.cards,
-		Card{Number: 11, Title: "Also one", State: "current"},
-		Card{Number: 12, Title: "Also two", State: "current"},
-		Card{Number: 13, Title: "Also three", State: "current"},
+		reading.Card{Number: 11, Title: "Also one", State: "current"},
+		reading.Card{Number: 12, Title: "Also two", State: "current"},
+		reading.Card{Number: 13, Title: "Also three", State: "current"},
 	)
 	b := hit(standing(f), "l", "i", "j", "j")
 	if b.Where().Task != 3 {
@@ -1642,7 +1578,7 @@ func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 
 func TestWalkingIntoAShorterColumnStopsAtItsEnd(t *testing.T) {
 	f := aColumnOf(5)
-	f.cards = append(f.cards, Card{Number: 11, Title: "Only one", State: "current"})
+	f.cards = append(f.cards, reading.Card{Number: 11, Title: "Only one", State: "current"})
 	b := hit(standing(f), "l", "i", "j", "j", "j", "j")
 	if b.Where().Task != 5 {
 		t.Fatalf("the cursor is on %d, want the fifth", b.Where().Task)
@@ -1686,9 +1622,9 @@ func TestOneGOnItsOwnDoesNothingAndIsForgotten(t *testing.T) {
 
 func TestGoesToTheEndsOfTheBandToo(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 26; i++ {
-		f.cards = append(f.cards, Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	b := hit(standing(f), "l", "i", "j", "shift+g")
 	if b.Where().Task != 25 {

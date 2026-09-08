@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"cairn/internal/reading"
 	"cairn/internal/task"
 )
 
@@ -31,7 +32,7 @@ func (w *world) bandNamed(name string) error {
 }
 
 func (w *world) bandCarries(want int) error {
-	_, band := Deal(w.cards())
+	_, band := reading.Deal(w.cards())
 	if len(band) != want {
 		return fmt.Errorf("the band carries %d tasks, not %d", len(band), want)
 	}
@@ -39,7 +40,7 @@ func (w *world) bandCarries(want int) error {
 }
 
 func (w *world) columnCarries(column, title string) error {
-	found, ok := At(w.columns(), lower(column))
+	found, ok := reading.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}
@@ -56,16 +57,16 @@ func lower(name string) string { return strings.ToLower(name) }
 
 // cards is what the board is drawing, read back through the same reading the
 // board itself draws from.
-func (w *world) cards() []Card {
-	found, err := Look(w.held)
+func (w *world) cards() []reading.Card {
+	found, err := reading.Look(w.held)
 	if err != nil {
 		w.t.Fatalf("looking: %v", err)
 	}
 	return found.Cards
 }
 
-func (w *world) columns() []Column {
-	all, _ := Deal(w.cards())
+func (w *world) columns() []reading.Column {
+	all, _ := reading.Deal(w.cards())
 	return all
 }
 
@@ -97,7 +98,7 @@ func (w *world) modeIs(name string) error {
 func (w *world) tabIs(name string) error { return w.mustSay(name) }
 
 func (w *world) cursorOnColumn(name string) error {
-	if got := StateAt(w.b.Where().Column); got != lower(name) {
+	if got := reading.StateAt(w.b.Where().Column); got != lower(name) {
 		return fmt.Errorf("the cursor is on %q, not on %q", got, lower(name))
 	}
 	return nil
@@ -202,14 +203,14 @@ func (w *world) cardDescribed(number int) error {
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {
 		if c.Number == number {
-			return check(c.Rows(GlyphsFor(Unicode), PlainSkin(), stood, LayoutFor(w.width, w.high).Interior))
+			return check(Rows(c, GlyphsFor(Unicode), PlainSkin(), stood, LayoutFor(w.width, w.high).Interior))
 		}
 	}
 	return fmt.Errorf("there is no task %d", number)
 }
 
 func (w *world) goalCardSays(number int, text string) error {
-	found, err := Look(w.held)
+	found, err := reading.Look(w.held)
 	if err != nil {
 		return err
 	}
@@ -249,7 +250,7 @@ func (w *world) boardDoesNotSay(text string) error {
 }
 
 func (w *world) columnReads(column, list string) error {
-	found, ok := At(w.columns(), lower(column))
+	found, ok := reading.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}

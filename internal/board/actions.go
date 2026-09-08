@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 )
 
 // What a key changes, and how. Every one of these goes back through the same
@@ -34,7 +35,7 @@ func (b Board) setState(state string) tea.Cmd {
 		if _, err := b.work.Ask(engine.TaskEdit, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -62,7 +63,7 @@ func (b Board) moving(where map[string]string) tea.Cmd {
 		if _, err := b.work.Ask(engine.TaskMove, engine.Input{Given: given}); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -107,7 +108,7 @@ func (b Board) toggleFocus() tea.Cmd {
 		if _, err := b.work.Ask(op, engine.Input{Given: given}); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -120,7 +121,7 @@ func (b Board) remove() tea.Cmd {
 		if _, err := b.work.Ask(engine.TaskDelete, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -136,7 +137,7 @@ func (b Board) removeGoal() tea.Cmd {
 		if _, err := b.work.Ask(engine.ObjectiveDelete, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -168,15 +169,15 @@ func (b Board) firstGoal() int {
 }
 
 // goals is every objective the board is drawing, in the order it draws them.
-func (b Board) goals() []Goal {
-	var kept []Goal
+func (b Board) goals() []reading.Goal {
+	var kept []reading.Goal
 	for _, g := range b.snap.Goals {
-		if b.query != "" && !reaches(g, b.query) {
+		if b.query != "" && !reading.Reaches(g, b.query) {
 			continue
 		}
 		kept = append(kept, g)
 	}
-	return Sorted(kept)
+	return reading.Sorted(kept)
 }
 
 // openObjective opens the board of the objective the cursor is on: the same

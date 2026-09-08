@@ -1,6 +1,10 @@
 package board
 
-import tea "charm.land/bubbletea/v2"
+import (
+	"cairn/internal/reading"
+
+	tea "charm.land/bubbletea/v2"
+)
 
 // Where the cursor is, and what moves it. In normal it stands on a column; in
 // insert it holds a task. The two are different enough that the same key means
@@ -9,7 +13,7 @@ import tea "charm.land/bubbletea/v2"
 // lastColumn is the rightmost, done. A function rather than a constant, so the
 // gate can judge the arithmetic: a package-level constant sits outside every
 // covered block, and a wrong one would go out unjudged.
-func lastColumn() int { return Columns - 1 }
+func lastColumn() int { return reading.Columns - 1 }
 
 // underTheBand says whether the stalled band lies beneath a column. It does
 // not lie under the backlog, which runs the whole height instead.
@@ -117,7 +121,7 @@ func (b Board) stepTo(way string) Board {
 }
 
 // wide is how many cards the band puts in a row.
-func wide() int { return Columns - 1 }
+func wide() int { return reading.Columns - 1 }
 
 // stepInBand walks the band as what it is drawn as: a grid. Down goes down a
 // row and right goes along one, because a key that pointed down and moved the
@@ -233,7 +237,7 @@ func (b Board) follow() Board {
 	if b.inBand {
 		// The band lays its cards out three across, so what scrolls is the row
 		// a card is in and not the card itself.
-		b.bandAt = Scrolled(b.bandAt, at/(Columns-1), l.Rows)
+		b.bandAt = Scrolled(b.bandAt, at/(reading.Columns-1), l.Rows)
 		return b
 	}
 	top := l.Top
@@ -317,7 +321,7 @@ func (b Board) toEdge(which func(int) int) Board {
 }
 
 // at answers where in a list the cursor's task sits, or that it is not in it.
-func (b Board) at(here []Card) int {
+func (b Board) at(here []reading.Card) int {
 	for i, c := range here {
 		if c.Number == b.task {
 			return i
@@ -327,13 +331,13 @@ func (b Board) at(here []Card) int {
 }
 
 // held answers the card the cursor is holding.
-func (b Board) held() (Card, bool) {
+func (b Board) held() (reading.Card, bool) {
 	for _, c := range b.cards() {
 		if c.Number == b.task {
 			return c, true
 		}
 	}
-	return Card{}, false
+	return reading.Card{}, false
 }
 
 // push moves the task itself. Sideways it changes column, and the state follows
@@ -381,7 +385,7 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 // column it was pushed down from.
 func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
-		return b.land(StateAt(b.cameFrom), b.cameFrom, false)
+		return b.land(reading.StateAt(b.cameFrom), b.cameFrom, false)
 	}
 	here := b.here()
 	at := b.at(here)
@@ -402,7 +406,7 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 		if way == goRight {
 			return b, nil
 		}
-		return b.land(StateAt(0), 0, false)
+		return b.land(reading.StateAt(0), 0, false)
 	}
 	to := b.column - 1
 	if way == goRight {
@@ -411,7 +415,7 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	if to < 0 || to > lastColumn() {
 		return b, nil
 	}
-	return b.land(StateAt(to), to, false)
+	return b.land(reading.StateAt(to), to, false)
 }
 
 // land writes the new state and puts the cursor where the task went.

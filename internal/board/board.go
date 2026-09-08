@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/reading"
 	"strings"
 	"time"
 
@@ -56,7 +57,7 @@ const (
 
 // Looked carries a fresh reading of the work.
 type Looked struct {
-	Snapshot Snapshot
+	Snapshot reading.Snapshot
 	Err      error
 }
 
@@ -65,13 +66,13 @@ type Beat time.Time
 
 // Board is the whole screen.
 type Board struct {
-	work   Work
+	work   reading.Work
 	glyphs Glyphs
 	skin   Skin
 	clock  func() time.Time
 
 	width, height int
-	snap          Snapshot
+	snap          reading.Snapshot
 
 	tab    Tab
 	mode   Mode
@@ -117,7 +118,7 @@ type Board struct {
 	// How far each column, the band and the objectives are scrolled, in rows.
 	// Kept here rather than inside a viewport so that a board stays a value: a
 	// viewport is built at drawing time, from these, and thrown away.
-	offsets [Columns]int
+	offsets [reading.Columns]int
 	bandAt  int
 	goalAt  int
 	helpAt  int
@@ -126,7 +127,7 @@ type Board struct {
 }
 
 // New opens a board over the work, at a given size.
-func New(w Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
+func New(w reading.Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
 	return Board{
 		work:   w,
 		glyphs: glyphs,
@@ -147,7 +148,7 @@ func (b Board) Init() tea.Cmd {
 // slow.
 func (b Board) look() tea.Cmd {
 	return func() tea.Msg {
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -215,7 +216,7 @@ func (b Board) wonder() tea.Cmd {
 		if version == b.snap.Version {
 			return nil
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -266,8 +267,8 @@ func (b Board) standingAt(place int) int {
 
 // cards is every task the board is drawing, narrowed by whatever search is in
 // force and by whichever objective is open.
-func (b Board) cards() []Card {
-	var kept []Card
+func (b Board) cards() []reading.Card {
+	var kept []reading.Card
 	for _, c := range b.snap.Cards {
 		if b.inside != 0 && !serves(c, b.inside) {
 			continue
@@ -282,7 +283,7 @@ func (b Board) cards() []Card {
 
 // serves says whether a task counts towards an objective in its own right. A
 // sub-task never does: it counts through the task it hangs under.
-func serves(c Card, number int) bool {
+func serves(c reading.Card, number int) bool {
 	for _, n := range c.Objectives {
 		if n == number {
 			return true
@@ -295,7 +296,7 @@ func serves(c Card, number int) bool {
 // something — the title, the description, and the words written about what is
 // in the way — and nowhere else, for the reason a listing gives: a closed set
 // is narrowed by, free text is looked in.
-func matches(c Card, query string) bool {
+func matches(c reading.Card, query string) bool {
 	query = strings.ToLower(query)
 	for _, field := range []string{c.Title, c.Description, c.Because} {
 		if strings.Contains(strings.ToLower(field), query) {
@@ -306,8 +307,8 @@ func matches(c Card, query string) bool {
 }
 
 // here is the cards the cursor is standing over: a column's, or the band's.
-func (b Board) here() []Card {
-	all, band := Deal(b.cards())
+func (b Board) here() []reading.Card {
+	all, band := reading.Deal(b.cards())
 	if b.inBand {
 		return band
 	}

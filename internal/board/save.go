@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
+	"cairn/internal/reading"
 )
 
 // Saving is the only moment the form touches anything. What it hands over is
@@ -30,7 +31,7 @@ func (b Board) saveTask(form Form) tea.Cmd {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -73,7 +74,7 @@ func askedFrom(form Form, op engine.Operation) engine.Input {
 	for _, field := range form.fields {
 		switch kinds[field.Arg] {
 		case engine.List:
-			in.Listed[field.Arg] = words(field.Value)
+			in.Listed[field.Arg] = reading.Words(field.Value)
 		case engine.Number:
 			// A number nobody can read is not a change anybody asked for. Empty
 			// is not that: it reads as zero, which is how such a field is
@@ -111,18 +112,7 @@ func (b Board) saveGoal(form Form) tea.Cmd {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := Look(b.work)
+		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
-}
-
-// words splits what was typed into a field the way a shell would have split
-// it: on spaces, and nothing cleverer. A form is not a place to invent a
-// syntax.
-func words(s string) []string {
-	found := strings.Fields(s)
-	if found == nil {
-		return []string{}
-	}
-	return found
 }

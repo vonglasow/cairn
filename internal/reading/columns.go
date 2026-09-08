@@ -1,6 +1,4 @@
-package board
-
-import "strconv"
+package reading
 
 // Where every card goes. Four columns for the states work passes through, and
 // one band underneath for the three that mean it is not passing through
@@ -22,6 +20,13 @@ var columns = []struct{ state, name string }{
 	{"current", "CURRENT"},
 	{"done", "DONE"},
 }
+
+// Columns is how many columns stand side by side: backlog, todo, current,
+// done. The band underneath is not one of them — it lies across the last
+// three.
+//
+// Read off the list rather than written again, so the two cannot disagree.
+const Columns = 4
 
 // Band is the name the three stopped states share. Not "waiting", because one
 // of the three is called watching and two seven-letter words that contain one
@@ -83,6 +88,3 @@ func StateAt(i int) string {
 	}
 	return columns[i].state
 }
-
-// count writes a number the way a header carries it.
-func count(n int) string { return strconv.Itoa(n) }

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/reading"
 	"strings"
 	"testing"
 )
@@ -17,51 +18,6 @@ func TestStandingGlyph(t *testing.T) {
 		if got := StandingGlyph(state, g); got != want {
 			t.Fatalf("%q is marked %q, want %q", state, got, want)
 		}
-	}
-}
-
-func TestSorted(t *testing.T) {
-	got := Sorted([]Goal{
-		{Number: 4, State: "dropped"},
-		{Number: 3, State: "reached"},
-		{Number: 2, State: "on-hold"},
-		{Number: 1, State: "active"},
-		{Number: 5, State: "active"},
-		{Number: 6, State: "invented"},
-	})
-	want := []int{1, 5, 2, 3, 4, 6}
-	for i, n := range want {
-		if got[i].Number != n {
-			t.Fatalf("sorted to %v, want %v", numbersOf(got), want)
-		}
-	}
-}
-
-func numbersOf(goals []Goal) []int {
-	out := make([]int, 0, len(goals))
-	for _, g := range goals {
-		out = append(out, g.Number)
-	}
-	return out
-}
-
-func TestSortedLeavesWhatItWasGivenAlone(t *testing.T) {
-	given := []Goal{{Number: 2, State: "reached"}, {Number: 1, State: "active"}}
-	Sorted(given)
-	if given[0].Number != 2 {
-		t.Fatal("sorting changed the list it was handed")
-	}
-}
-
-func TestReaches(t *testing.T) {
-	g := Goal{Title: "Ship the desktop board", Description: "before the winter"}
-	for _, query := range []string{"desktop", "DESKTOP", "winter"} {
-		if !reaches(g, query) {
-			t.Fatalf("%q did not reach it", query)
-		}
-	}
-	if reaches(g, "spec") {
-		t.Fatal("a word that is nowhere in it reached it")
 	}
 }
 
@@ -86,7 +42,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestGoalRows(t *testing.T) {
-	g := Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Described: true, State: "active", Labels: []string{"product"}}
+	g := reading.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Described: true, State: "active", Labels: []string{"product"}}
 	rows := standing(newFake()).with(plainSkin).goalRows(g, 60)
 	if len(rows) != 4 {
 		t.Fatalf("an objective's card has %d rows, want 4", len(rows))
@@ -103,21 +59,21 @@ func TestGoalRows(t *testing.T) {
 }
 
 func TestGoalWithNothingUnderItSaysNoCount(t *testing.T) {
-	rows := standing(newFake()).with(plainSkin).goalRows(Goal{Number: 1, Title: "Nothing yet"}, 60)
+	rows := standing(newFake()).with(plainSkin).goalRows(reading.Goal{Number: 1, Title: "Nothing yet"}, 60)
 	if strings.Contains(rows[3], "0/0") {
 		t.Fatalf("an objective nothing serves claimed a count: %q", rows[3])
 	}
 }
 
 func TestGoalIsAlwaysSixRows(t *testing.T) {
-	drawn := standing(newFake()).goalCard(Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}, 60)
+	drawn := standing(newFake()).goalCard(reading.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}, 60)
 	if got := len(strings.Split(drawn, "\n")); got != CardHeight {
 		t.Fatalf("an objective drew %d rows, want %d:\n%s", got, CardHeight, drawn)
 	}
 }
 
 func TestTheGoalUnderTheCursorIsDrawnApart(t *testing.T) {
-	g := Goal{Number: 1, Title: "One"}
+	g := reading.Goal{Number: 1, Title: "One"}
 	b := standing(newFake())
 	b.goal = 1
 	elsewhere := standing(newFake())
@@ -141,21 +97,21 @@ func TestTheFactsRowKeepsWhatFitsBesideTheBar(t *testing.T) {
 	// The bar takes its width out of the row, and what is left decides how many
 	// facts follow it. A budget two columns out drops a label or keeps one that
 	// should have gone.
-	g := Goal{Number: 1, Title: "One", Done: 1, Total: 2, Labels: []string{"ab"}}
+	g := reading.Goal{Number: 1, Title: "One", Done: 1, Total: 2, Labels: []string{"ab"}}
 	gl := GlyphsFor(Unicode)
 	// "1/2  ⚑ ab" is nine columns of facts, and what is left for them is the
 	// width less the bar and the two spaces beside it.
 	const room = barWidth + 2 + 9
-	if got := g.factsRow(gl, room); !strings.Contains(got, "⚑ ab") {
+	if got := factsRow(g, gl, room); !strings.Contains(got, "⚑ ab") {
 		t.Fatalf("a row with room for the label reads %q", got)
 	}
-	if got := g.factsRow(gl, room-1); strings.Contains(got, "⚑ ab") {
+	if got := factsRow(g, gl, room-1); strings.Contains(got, "⚑ ab") {
 		t.Fatalf("a row one column too narrow kept the label: %q", got)
 	}
 }
 
 func TestAGoalWithNothingBesideItsBar(t *testing.T) {
-	if got := (Goal{Number: 1}).factsRow(GlyphsFor(Unicode), 40); strings.Contains(got, "  ") {
+	if got := factsRow(reading.Goal{Number: 1}, GlyphsFor(Unicode), 40); strings.Contains(got, "  ") {
 		t.Fatalf("a bar with nothing beside it trailed something: %q", got)
 	}
 }

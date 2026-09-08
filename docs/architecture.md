@@ -73,10 +73,27 @@ all of them.
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
 | `internal/engine` | the operations, the calculations, and the only door to the store | `domain`, the notions, `store` |
+| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, how the cards deal into columns | `domain`, the notions, `engine` |
 | `internal/cli` | parsing and choosing a rendering | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
+| `internal/board` | the board on a terminal | everything below but `cli` and `mcp` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `test` | the acceptance world the surfaces share | `engine` |
+
+**`reading` is not a surface, and that is why it exists.** Two boards draw the
+same work — one in a terminal, one in a window — and they differ in how a box
+is drawn, not in what goes in it. That a task with nothing written about it
+carries no description mark, that a deadline four days out reads `4d`, that the
+three stopped states go under the last three columns, that a form's `labels`
+box fills the engine's `label` argument: none of it is about cells or pixels,
+and all of it would otherwise be written twice.
+
+So `reading` is held to something stricter than a surface. `depguard` denies it
+lipgloss, bubbletea, huh and cobra outright — not because they would break it,
+but because reaching for one is the moment it stopped being shareable. It was
+lifted out of `internal/board` the day the second board was specified and not
+before: a package made for one consumer is a boundary guessed rather than
+measured.
 
 **A label is not a notion.** Neither is a priority, nor a column, nor a
 deadline. None of them has an identity: you cannot list one, show one or delete

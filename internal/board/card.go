@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/reading"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,16 +18,8 @@ import (
 // months out is a fact about a task and not information on a board: it will be
 // there tomorrow, and it will be there in ninety days, and saying so on every
 // card every day buys nothing.
-const soon = 7
-
 // titleLines is how many rows of a card the title gets.
 const titleLines = 2
-
-// Stopped says whether a state is one of the three that mean "not moving", and
-// therefore whether the task belongs in the band rather than in a column.
-func Stopped(state string) bool {
-	return state == "blocked" || state == "watching" || state == "paused"
-}
 
 // StoppedGlyph answers the mark one of the three stopped states is drawn with.
 func StoppedGlyph(state string, g Glyphs) string {
@@ -42,37 +35,13 @@ func StoppedGlyph(state string, g Glyphs) string {
 	}
 }
 
-// Deadline says how a day is written on a card, and whether it is written at
-// all. Two answers rather than one string: a day that has passed is drawn in a
-// different colour, and a colour is not something a string can carry.
-func Deadline(due, now time.Time) (text string, show, late bool) {
-	if due.IsZero() {
-		return "", false, false
-	}
-	days := int(due.Sub(startOfDay(now)).Hours() / 24)
-	if days < 0 {
-		return fmt.Sprintf("−%dd", -days), true, true
-	}
-	if days > soon {
-		return "", false, false
-	}
-	return fmt.Sprintf("%dd", days), true, false
-}
-
-// startOfDay throws away the time of day. A deadline is a day, so the answer to
-// "how many days" must not depend on what o'clock it is when the board is
-// opened.
-func startOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
 // marks is the right-hand end of a card's first row: whether there is a
 // description, and, in the band, which kind of stopped this is.
 //
 // The order is fixed and the state is last, so the eye finds it in the same
 // place on every card in the band rather than one column further along
 // whenever a task happens to carry a description.
-func marks(c Card, g Glyphs) string {
+func marks(c reading.Card, g Glyphs) string {
 	var found []string
 	if c.Described {
 		found = append(found, g.Described)
@@ -91,12 +60,12 @@ func marks(c Card, g Glyphs) string {
 // the row is full has to be decided on what is drawn and not on the escape
 // codes around it — so the widths are measured first and the colour put on
 // afterwards, one fact at a time.
-func facts(c Card, g Glyphs, s Skin, now time.Time, width int) string {
-	if Stopped(c.State) {
+func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
+	if reading.Stopped(c.State) {
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
-	if text, show, late := Deadline(c.Deadline, now); show {
+	if text, show, late := reading.Deadline(c.Deadline, now); show {
 		told = append(told, text)
 		if late {
 			dressed = append(dressed, s.Late.Render(text))
@@ -136,7 +105,7 @@ func dress(kept string, told, dressed []string) string {
 
 // inTheWay says what is stopping a task: the tasks it waits on, or the words
 // somebody wrote when it waits on something cairn does not hold.
-func inTheWay(c Card, g Glyphs) string {
+func inTheWay(c reading.Card, g Glyphs) string {
 	if len(c.Blockers) > 0 {
 		numbers := make([]string, 0, len(c.Blockers))
 		for _, blocker := range c.Blockers {
@@ -153,7 +122,7 @@ func inTheWay(c Card, g Glyphs) string {
 // Rows is the four lines a card carries, before anything is drawn around them.
 // Separated from the frame so a test can read what a card says without reading
 // what it is boxed in.
-func (c Card) Rows(g Glyphs, s Skin, now time.Time, width int) []string {
+func Rows(c reading.Card, g Glyphs, s Skin, now time.Time, width int) []string {
 	var rows []string
 	number := s.Faint.Render(strconv.Itoa(c.Number))
 	mark := marks(c, g)

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/reading"
 	"strconv"
 	"strings"
 
@@ -8,8 +9,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
-
-	"cairn/internal/domain"
 )
 
 // The form. One form adds and one form edits, and it is the same one: two forms
@@ -25,22 +24,6 @@ import (
 // than discovering: inside a field being typed into, a letter is a letter.
 // `hjkl` navigate everywhere else; in a title they spell.
 
-// Field is one line of the form. A field with choices is picked from a list; a
-// field without is typed into.
-type Field struct {
-	// Name is what a person reads beside the box: "labels", "time spent".
-	Name string
-	// Arg is what the engine calls the same thing: "label", "spent". Both are
-	// kept because neither is wrong — a repeatable flag reads singular on a
-	// command line, and a box holding all of them reads plural on a screen.
-	// Saying it here is what stops a translation table existing somewhere else.
-	Arg string
-	// Value is what the box starts with.
-	Value   string
-	Choices []string
-	Long    bool
-}
-
 // Form is what is on screen while the form is open.
 type Form struct {
 	Adding       bool
@@ -50,77 +33,7 @@ type Form struct {
 	asked  *huh.Form
 	held   map[string]*string
 	keep   *bool
-	fields []Field
-}
-
-// taskFields is every field of a task, in the order the form lays them out:
-// what it is called first, and the two that are read far more often than they
-// are written last.
-func taskFields(c Card) []Field {
-	return []Field{
-		{Name: "title", Arg: "title", Value: c.Title},
-		{Name: "description", Arg: "desc", Value: c.Description, Long: true},
-		{Name: "column", Arg: "state", Value: c.State, Choices: states()},
-		{Name: "priority", Arg: "priority", Value: c.Priority, Choices: priorities()},
-		{Name: "labels", Arg: "label", Value: strings.Join(c.Labels, " ")},
-		{Name: "blockers", Arg: "blocker", Value: numbers(c.Blockers)},
-		{Name: "because", Arg: "because", Value: c.Because},
-		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(c.Deadline)},
-		{Name: "estimate", Arg: "estimate", Value: c.Estimate},
-		{Name: "time spent", Arg: "spent", Value: c.Spent},
-		{Name: "parent", Arg: "parent", Value: maybe(c.Parent)},
-		{Name: "objectives", Arg: "objective", Value: numbers(c.Objectives)},
-	}
-}
-
-// goalFields is every field of an objective. Fewer, and none of them about what
-// is in the way: an objective is not blocked, the work under it is.
-func goalFields(g Goal) []Field {
-	return []Field{
-		{Name: "title", Arg: "title", Value: g.Title},
-		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
-		{Name: "standing", Arg: "state", Value: g.State, Choices: standings},
-		{Name: "priority", Arg: "priority", Value: g.Priority, Choices: priorities()},
-		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
-		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(g.Deadline)},
-		{Name: "estimate", Arg: "estimate", Value: g.Estimate},
-	}
-}
-
-// states and priorities are the closed sets a field is picked from, read off
-// the domain rather than listed again here.
-func states() []string {
-	out := make([]string, 0, len(domain.States))
-	for _, s := range domain.States {
-		out = append(out, string(s))
-	}
-	return out
-}
-
-func priorities() []string {
-	out := make([]string, 0, len(domain.Priorities))
-	for _, p := range domain.Priorities {
-		out = append(out, string(p))
-	}
-	return out
-}
-
-// numbers writes a list of task or objective numbers the way the form takes
-// them back.
-func numbers(all []int) string {
-	out := make([]string, 0, len(all))
-	for _, n := range all {
-		out = append(out, strconv.Itoa(n))
-	}
-	return strings.Join(out, " ")
-}
-
-// maybe writes a number, or nothing when there is none.
-func maybe(n int) string {
-	if n == 0 {
-		return ""
-	}
-	return strconv.Itoa(n)
+	fields []reading.Field
 }
 
 // asking builds the form over a set of fields. Every value is held behind a
@@ -130,7 +43,7 @@ func maybe(n int) string {
 // The fields are dealt into two columns rather than stacked into one long
 // list. A task is a dozen small facts, and a dozen small facts in a single
 // column is a scroll rather than a shape.
-func asking(fields []Field, width, height int, skin Skin) Form {
+func asking(fields []reading.Field, width, height int, skin Skin) Form {
 	held := make(map[string]*string, len(fields))
 	// Save is what the last question is answered with unless somebody says
 	// otherwise: a form is opened to change something, so keeping the change is
@@ -193,7 +106,7 @@ func walkedByArrows() *huh.KeyMap {
 
 // oneField builds the one kind of field this one is: a list for a closed set, a
 // box for prose, a line for everything else.
-func oneField(field Field, into *string) huh.Field {
+func oneField(field reading.Field, into *string) huh.Field {
 	if len(field.Choices) > 0 {
 		// Picked in place rather than out of a list that unrolls: seven columns
 		// and four priorities are a value to cycle, not a page to read.
@@ -244,16 +157,16 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 // again would be asking something the board already knows.
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		b.form = asking(goalFields(Goal{State: "active", Priority: "normal"}), b.formWidth(), b.formHeight(), b.skin)
+		b.form = asking(reading.GoalFields(reading.Goal{State: "active", Priority: "normal"}), b.formWidth(), b.formHeight(), b.skin)
 		b.form.Adding, b.form.ForObjective = true, true
 		b.screen = OnForm
 		return b.started()
 	}
-	start := Card{State: StateAt(b.column), Priority: "normal"}
+	start := reading.Card{State: reading.StateAt(b.column), Priority: "normal"}
 	if b.inBand {
 		start.State = kinds[0]
 	}
-	b.form = asking(taskFields(start), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(reading.TaskFields(start), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -266,7 +179,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 			if g.Number != b.goal {
 				continue
 			}
-			b.form = asking(goalFields(g), b.formWidth(), b.formHeight(), b.skin)
+			b.form = asking(reading.GoalFields(g), b.formWidth(), b.formHeight(), b.skin)
 			b.form.Number, b.form.ForObjective = g.Number, true
 			b.screen = OnForm
 			return b.started()
@@ -277,7 +190,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(taskFields(held), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(reading.TaskFields(held), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()
