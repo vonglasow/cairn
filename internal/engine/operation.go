@@ -370,5 +370,6 @@ func doWith(
 	}
 	defer func() { _ = eng.Close() }()
 	eng.through = through
-	return op.Run(On{Engine: eng, Backups: BackupsAt(path), Path: path}, in)
+	// Check already ran above, so this takes the door that does not repeat it.
+	return eng.run(op, in)
 }

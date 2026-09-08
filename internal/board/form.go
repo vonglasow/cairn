@@ -28,7 +28,14 @@ import (
 // Field is one line of the form. A field with choices is picked from a list; a
 // field without is typed into.
 type Field struct {
-	Name    string
+	// Name is what a person reads beside the box: "labels", "time spent".
+	Name string
+	// Arg is what the engine calls the same thing: "label", "spent". Both are
+	// kept because neither is wrong — a repeatable flag reads singular on a
+	// command line, and a box holding all of them reads plural on a screen.
+	// Saying it here is what stops a translation table existing somewhere else.
+	Arg string
+	// Value is what the box starts with.
 	Value   string
 	Choices []string
 	Long    bool
@@ -51,18 +58,18 @@ type Form struct {
 // are written last.
 func taskFields(c Card) []Field {
 	return []Field{
-		{Name: "title", Value: c.Title},
-		{Name: "description", Value: c.Description, Long: true},
-		{Name: "column", Value: c.State, Choices: states()},
-		{Name: "priority", Value: c.Priority, Choices: priorities()},
-		{Name: "labels", Value: strings.Join(c.Labels, " ")},
-		{Name: "blockers", Value: numbers(c.Blockers)},
-		{Name: "because", Value: c.Because},
-		{Name: "deadline", Value: domain.FormatDay(c.Deadline)},
-		{Name: "estimate", Value: c.Estimate},
-		{Name: "time spent", Value: c.Spent},
-		{Name: "parent", Value: maybe(c.Parent)},
-		{Name: "objectives", Value: numbers(c.Objectives)},
+		{Name: "title", Arg: "title", Value: c.Title},
+		{Name: "description", Arg: "desc", Value: c.Description, Long: true},
+		{Name: "column", Arg: "state", Value: c.State, Choices: states()},
+		{Name: "priority", Arg: "priority", Value: c.Priority, Choices: priorities()},
+		{Name: "labels", Arg: "label", Value: strings.Join(c.Labels, " ")},
+		{Name: "blockers", Arg: "blocker", Value: numbers(c.Blockers)},
+		{Name: "because", Arg: "because", Value: c.Because},
+		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(c.Deadline)},
+		{Name: "estimate", Arg: "estimate", Value: c.Estimate},
+		{Name: "time spent", Arg: "spent", Value: c.Spent},
+		{Name: "parent", Arg: "parent", Value: maybe(c.Parent)},
+		{Name: "objectives", Arg: "objective", Value: numbers(c.Objectives)},
 	}
 }
 
@@ -70,13 +77,13 @@ func taskFields(c Card) []Field {
 // is in the way: an objective is not blocked, the work under it is.
 func goalFields(g Goal) []Field {
 	return []Field{
-		{Name: "title", Value: g.Title},
-		{Name: "description", Value: g.Description, Long: true},
-		{Name: "standing", Value: g.State, Choices: standings},
-		{Name: "priority", Value: g.Priority, Choices: priorities()},
-		{Name: "labels", Value: strings.Join(g.Labels, " ")},
-		{Name: "deadline", Value: domain.FormatDay(g.Deadline)},
-		{Name: "estimate", Value: g.Estimate},
+		{Name: "title", Arg: "title", Value: g.Title},
+		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
+		{Name: "standing", Arg: "state", Value: g.State, Choices: standings},
+		{Name: "priority", Arg: "priority", Value: g.Priority, Choices: priorities()},
+		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
+		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(g.Deadline)},
+		{Name: "estimate", Arg: "estimate", Value: g.Estimate},
 	}
 }
 

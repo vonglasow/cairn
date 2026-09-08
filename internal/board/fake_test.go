@@ -2,15 +2,13 @@ package board
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/objective"
-	"cairn/internal/task"
 	"cairn/internal/trace"
 )
 
@@ -31,6 +29,12 @@ type fake struct {
 	fail   error
 	failOp error
 
+	// asked is every operation the board asked for, in order, with what it
+	// gave. The fields below are the same thing read the way a test wants it:
+	// Ask decodes an Input into them, so an argument named wrong arrives as an
+	// absence and the assertion that wanted it fails.
+	asked []asked
+
 	edited      map[int]engine.Changes
 	added       []string
 	deleted     []int
@@ -40,6 +44,12 @@ type fake struct {
 	letGo       int
 	addedGoal   []string
 	editedGoal  map[int]engine.ObjectiveChanges
+}
+
+// asked is one thing the board asked the engine to do.
+type asked struct {
+	op engine.Operation
+	in engine.Input
 }
 
 func newFake() *fake {
@@ -63,72 +73,16 @@ func (f *fake) failing() error {
 // The board reads through Look, which speaks in tasks and objectives. A fake
 // answers with none of those and is read through the same door instead: what a
 // test wants to set is what a card carries, not how a task is built.
-func (f *fake) List() ([]task.Task, error) { return nil, f.fail }
-
-func (f *fake) ListObjectives() ([]objective.Objective, error) { return nil, f.fail }
-
-func (f *fake) Focus() (int, error) { return f.focus, f.fail }
-
-func (f *fake) TaskProgress(int) (domain.Progress, error) { return domain.Progress{}, nil }
-
-func (f *fake) ObjectiveProgress(int) (domain.Progress, error) { return domain.Progress{}, nil }
-
-func (f *fake) History(int) ([]trace.Act, error) { return f.acts, f.fail }
-
-func (f *fake) Add(title string, c engine.Changes) (task.Task, error) {
-	f.added = append(f.added, title)
-	f.edited[0] = c
-	return task.Task{}, f.failing()
-}
-
-func (f *fake) Edit(number int, c engine.Changes) (task.Task, error) {
-	f.edited[number] = c
-	return task.Task{}, f.failing()
-}
-
-func (f *fake) AddObjective(title string, c engine.ObjectiveChanges) (objective.Objective, error) {
-	f.addedGoal = append(f.addedGoal, title)
-	f.editedGoal[0] = c
-	return objective.Objective{}, f.failing()
-}
-
-func (f *fake) EditObjective(number int, c engine.ObjectiveChanges) (objective.Objective, error) {
-	f.editedGoal[number] = c
-	return objective.Objective{}, f.failing()
-}
-
-func (f *fake) Delete(number int) error {
-	f.deleted = append(f.deleted, number)
-	return f.failing()
-}
-
-func (f *fake) DeleteObjective(number int) error {
-	f.deletedGoal = append(f.deletedGoal, number)
-	return f.failing()
-}
-
-// placed is one change of place the board asked for.
+// placed is one move, read back the way a test wants to read it: which task,
+// to which of the three places, and behind what when that is the place.
 type placed struct {
 	number int
 	at     engine.Place
 	target int
 }
 
-func (f *fake) Move(number int, at engine.Place, target int) error {
-	f.moved = append(f.moved, placed{number, at, target})
-	return f.failing()
-}
-
-func (f *fake) PutInFocus(number int) (task.Task, error) {
-	f.tookHold = append(f.tookHold, number)
-	return task.Task{}, f.failing()
-}
-
-func (f *fake) LetGo() error {
-	f.letGo++
-	return f.failing()
-}
-
+// Version is the one thing the board asks for that is not an operation: it is
+// the store noticing another connection's write, which nobody asks cairn to do.
 func (f *fake) Version() (int64, error) { return f.version, f.fail }
 
 // standing builds a board already holding a reading, so a test starts where a
@@ -271,4 +225,84 @@ func anAct(did, became string) trace.Act {
 func (b Board) with(skin Skin) Board {
 	b.skin = skin
 	return b
+}
+
+// Ask is the one door the board goes through. It writes down the operation and
+// what came with it, then decodes the input into the fields the assertions read.
+func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	f.asked = append(f.asked, asked{op: op, in: in})
+	// A store that cannot be read at all refuses everything; a store that
+	// refuses what it was asked to change still answers a listing. Which is
+	// the whole point of keeping the two apart: a gesture that fails and then
+	// reads the board back has to leave the failure visible, and it could not
+	// if the read failed too.
+	refusal := f.fail
+	if op.Level != engine.Read {
+		refusal = f.failing()
+	}
+	if refusal != nil {
+		return engine.Answer{}, refusal
+	}
+	number, _ := strconv.Atoi(in.Given["number"])
+	switch op.Thing + " " + op.Verb {
+	case "task edit":
+		f.edited[number] = changesAsked(in)
+	case "task move":
+		f.moved = append(f.moved, placedBy(number, in))
+	case "task focus":
+		f.tookHold = append(f.tookHold, number)
+	case "task unfocus":
+		f.letGo++
+	case "task delete":
+		f.deleted = append(f.deleted, number)
+	case "objective delete":
+		f.deletedGoal = append(f.deletedGoal, number)
+	case "task add":
+		f.added = append(f.added, in.Given["title"])
+	case "objective add":
+		f.addedGoal = append(f.addedGoal, in.Given["title"])
+	case "objective edit":
+		f.editedGoal[number] = goalChangesAsked(in)
+	case "task list":
+		// A listing marks the focus, so this is where the board learns it.
+		return engine.Answer{InFocus: &f.focus}, nil
+	case "trace show":
+		return engine.Answer{Acts: f.acts}, nil
+	}
+	return engine.Answer{}, nil
+}
+
+// placedBy reads back which of `task move`'s three places was named.
+func placedBy(number int, in engine.Input) placed {
+	switch {
+	case in.Named("first"):
+		return placed{number: number, at: engine.First}
+	case in.Named("last"):
+		return placed{number: number, at: engine.Last}
+	default:
+		target, _ := strconv.Atoi(in.Given["after"])
+		return placed{number: number, at: engine.Behind, target: target}
+	}
+}
+
+// goalChangesAsked is changesAsked for an objective, which carries fewer
+// things and none of them about what is in the way.
+func goalChangesAsked(in engine.Input) engine.ObjectiveChanges {
+	var c engine.ObjectiveChanges
+	if v, ok := in.Given["state"]; ok {
+		c.State = &v
+	}
+	return c
+}
+
+// changesAsked reads an Input the way the engine's own operation reads it, so
+// what a test asserts is what the store would have been told. An argument the
+// board named wrong lands in none of these, and the assertion that wanted it
+// sees an absence.
+func changesAsked(in engine.Input) engine.Changes {
+	var c engine.Changes
+	if v, ok := in.Given["state"]; ok {
+		c.State = &v
+	}
+	return c
 }

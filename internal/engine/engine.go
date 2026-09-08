@@ -68,6 +68,10 @@ type Engine struct {
 	// is the terminal: a history says who acted only when it was not the person
 	// reading it.
 	through string
+	// path is where the store was opened. Kept because an operation is handed
+	// what sits beside the store as well as the store itself, and a surface
+	// that stays open runs operations long after whoever opened it has gone.
+	path string
 }
 
 // Changes are the attributes an operation was given. A nil field was not
@@ -110,7 +114,7 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept, places: kept, history: kept, objectives: kept, store: kept}, nil
+	return &Engine{tasks: kept, places: kept, history: kept, objectives: kept, store: kept, path: path}, nil
 }
 
 // storeProblem marks an error as being about the store itself rather than about

@@ -1,13 +1,13 @@
 package board
 
 import (
+	"strconv"
 	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
 	"cairn/internal/task"
-	"cairn/internal/trace"
 )
 
 // Work is what the board needs from whatever holds the work. Declared here, by
@@ -18,21 +18,12 @@ import (
 // line calls. A key pressed here and a command typed there reach the engine by
 // the same door, or one of them would be a second place where a rule is kept.
 type Work interface {
-	List() ([]task.Task, error)
-	ListObjectives() ([]objective.Objective, error)
-	Focus() (int, error)
-	TaskProgress(int) (domain.Progress, error)
-	ObjectiveProgress(int) (domain.Progress, error)
-	History(int) ([]trace.Act, error)
-	Add(string, engine.Changes) (task.Task, error)
-	Edit(int, engine.Changes) (task.Task, error)
-	AddObjective(string, engine.ObjectiveChanges) (objective.Objective, error)
-	EditObjective(int, engine.ObjectiveChanges) (objective.Objective, error)
-	Delete(int) error
-	DeleteObjective(int) error
-	Move(int, engine.Place, int) error
-	PutInFocus(int) (task.Task, error)
-	LetGo() error
+	// Ask carries out one of the operations the engine describes. The board
+	// names no operation of its own: an operation added to the engine reaches
+	// this surface the way it reaches the command line and the agent, without
+	// a line written here.
+	Ask(engine.Operation, engine.Input) (engine.Answer, error)
+
 	Version() (int64, error)
 }
 
@@ -88,15 +79,11 @@ type Snapshot struct {
 // draw anything at all: half a board would be a board that lies about what is
 // there.
 func Look(w Work) (Snapshot, error) {
-	tasks, err := w.List()
+	listed, err := w.Ask(engine.TaskList, engine.Input{})
 	if err != nil {
 		return Snapshot{}, err
 	}
-	goals, err := w.ListObjectives()
-	if err != nil {
-		return Snapshot{}, err
-	}
-	held, err := w.Focus()
+	goals, err := w.Ask(engine.ObjectiveList, engine.Input{})
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -104,15 +91,22 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
+	// The focus comes with the listing that marks it rather than through a
+	// question of its own: every listing carries it, and asking twice could
+	// answer twice differently.
+	held := 0
+	if listed.InFocus != nil {
+		held = *listed.InFocus
+	}
 	found := Snapshot{Focus: held, Version: version}
-	for _, t := range tasks {
+	for _, t := range listed.Tasks {
 		card, err := cardOf(w, t, held)
 		if err != nil {
 			return Snapshot{}, err
 		}
 		found.Cards = append(found.Cards, card)
 	}
-	for _, o := range goals {
+	for _, o := range goals.Objectives {
 		goal, err := goalOf(w, o)
 		if err != nil {
 			return Snapshot{}, err
@@ -120,6 +114,13 @@ func Look(w Work) (Snapshot, error) {
 		found.Goals = append(found.Goals, goal)
 	}
 	return found, nil
+}
+
+// numbered is what every operation about one task or one objective is given.
+// Its own function because it is written five times otherwise, and a map built
+// by hand five times is a map spelt wrong once.
+func numbered(n int) engine.Input {
+	return engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}}
 }
 
 // cardOf turns one task into what a card draws.
@@ -133,7 +134,8 @@ func cardOf(w Work, t task.Task, held int) (Card, error) {
 	if err != nil {
 		return Card{}, err
 	}
-	along, err := w.TaskProgress(told.Number)
+	shown, err := w.Ask(engine.TaskShow, numbered(told.Number))
+	along := shown.Progress
 	if err != nil {
 		return Card{}, err
 	}
@@ -165,7 +167,8 @@ func goalOf(w Work, o objective.Objective) (Goal, error) {
 	if err != nil {
 		return Goal{}, err
 	}
-	along, err := w.ObjectiveProgress(told.Number)
+	shown, err := w.Ask(engine.ObjectiveShow, numbered(told.Number))
+	along := shown.Progress
 	if err != nil {
 		return Goal{}, err
 	}

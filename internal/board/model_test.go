@@ -570,33 +570,27 @@ func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 	}
 }
 
-func TestChangesFromNamesEveryField(t *testing.T) {
+// Every argument the operation takes has to be named, empty ones included: a
+// form is the whole of a task, so a field left blank is a field somebody
+// emptied. Read off the operation rather than listed here, so an argument added
+// to the engine and forgotten on the form fails this test.
+func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
 	form := asking(taskFields(Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
 		Estimate: "3h", Spent: "1h", Parent: 4, Objectives: []int{5},
 		Deadline: on("2026-09-02"), Description: "why",
 	}), 80, 20, plainSkin)
-	c := changesFrom(form)
-	for name, got := range map[string]any{
-		"state": c.State, "priority": c.Priority, "description": c.Description,
-		"because": c.Because, "deadline": c.Deadline, "estimate": c.Estimate,
-		"spent": c.Spent, "labels": c.Labels, "blocker": c.Blocker,
-		"objective": c.Objective, "parent": c.Parent,
-	} {
-		if got == nil {
-			t.Fatalf("%s was not named, so emptying it would do nothing", name)
+	form.Number = 1
+
+	_, in := (Board{}).saving(form, engine.TaskAdd, engine.TaskEdit)
+	for _, argument := range engine.TaskEdit.Takes {
+		if !in.Named(argument.Name) {
+			t.Errorf("%s was not named, so emptying it would do nothing", argument.Name)
 		}
 	}
-	if *c.State != "todo" || *c.Priority != "high" || *c.Parent != 4 {
-		t.Fatalf("a field was read back wrong: %+v", c)
-	}
-}
-
-func TestAParentThatIsNotANumberIsNotNamed(t *testing.T) {
-	form := asking([]Field{{Name: "parent", Value: "nine"}}, 80, 6, plainSkin)
-	if c := changesFrom(form); c.Parent != nil {
-		t.Fatal("a parent nobody can read was passed to the engine anyway")
+	if in.Given["state"] != "todo" || in.Given["priority"] != "high" || in.Given["parent"] != "4" {
+		t.Fatalf("a field was read back wrong: %+v", in.Given)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 // The two screens that take the whole window without taking a form with them:
@@ -268,12 +269,12 @@ func (b Board) serves(c Card, width int) string {
 // `:trace show 14` prints the same history the way the command line prints it,
 // and neither is the other's shortcut.
 func (b Board) history(number, width, rows int) []string {
-	acts, err := b.work.History(number)
+	shown, err := b.work.Ask(engine.TraceShow, numbered(number))
 	if err != nil {
 		return []string{b.skin.Wrong.Render(err.Error())}
 	}
-	drawn := make([]string, 0, len(acts))
-	for _, act := range acts {
+	drawn := make([]string, 0, len(shown.Acts))
+	for _, act := range shown.Acts {
 		drawn = append(drawn, Clip(b.line(act), width))
 	}
 	if rows < 1 {

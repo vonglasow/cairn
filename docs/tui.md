@@ -630,6 +630,54 @@ no bar.
 The board draws in English, like the command line and the MCP server. Nothing a
 person reads on screen is in another language.
 
+## How it reaches the engine
+
+The board asks for the operations `internal/engine` describes, through one door:
+
+```go
+type Work interface {
+	Ask(engine.Operation, engine.Input) (engine.Answer, error)
+	Version() (int64, error)
+}
+```
+
+It named sixteen engine methods to begin with, and that was wrong for one
+reason: the command line and the MCP server name none. Both are *built* from
+`engine.All()`, so a verb added to the engine reaches them without a line
+written in either — and the board was the one surface it would not reach.
+`*engine.Engine` satisfies the two methods above as it stands, so nothing
+adapts anything.
+
+`Ask` is a second door beside `Do`, not a replacement. `Do` opens the store,
+runs one operation and closes it, which is right for a surface that lives for
+one invocation. A board on screen cannot pay an open and a close on every
+keystroke and does not have to: it is holding the engine already.
+
+**`Version` is the one thing that is not an operation**, and it stays a method
+of its own. It reads `PRAGMA data_version` — the store noticing that another
+connection wrote — and nobody asks cairn to do that, so it has no verb and
+should not get one. `cairn version` already means the version of the binary.
+
+**A field says which argument it fills.** `Field` carries both `Name`, what a
+person reads beside the box, and `Arg`, what the engine calls the same thing:
+
+```go
+{Name: "labels", Arg: "label", ...}
+{Name: "time spent", Arg: "spent", ...}
+```
+
+Neither is wrong. A repeatable flag reads singular on a command line
+(`--label api --label urgent`); a box holding all of them reads plural on a
+screen. Saying it on the field is what stops a translation table existing
+somewhere else — and `askedFrom` then builds the whole request by walking the
+form and reading each argument's `Kind` off the operation, so a field added to
+the form, or an argument added to the engine, arrives with no line written for
+it.
+
+What the board still decides for itself: a number nobody can read is **not
+named** rather than sent for the engine to refuse, because one unreadable field
+would otherwise lose the whole form.
+
 ## Deliberately not there yet
 
 - **`task move`** — `first`, `after`, `last`. Reordering inside a column has no

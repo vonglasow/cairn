@@ -117,6 +117,14 @@ under it, how far along it is — orchestrated. It does not talk about a task, i
 ties three answers together, and tying things together is what the engine is
 for.
 
+A surface that stays on screen goes through `Engine.Ask` rather than
+`engine.Do`. Same description, same refusals, one difference: `Do` opens the
+store, runs the operation and closes it, and `Ask` runs it against an engine
+somebody is already holding. A board redrawing every two seconds would
+otherwise open a connection per keystroke to no purpose, and the engine keeps
+the path it was opened on so an operation reaching for what sits beside the
+store is still handed somewhere to look.
+
 **The store is opened where it is needed, not at startup**, and that now lives
 in one place: the description says what it needs — a store, a store whatever
 shape it is in, or none at all — and one function opens it and closes it on the

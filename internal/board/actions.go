@@ -8,6 +8,8 @@
 package board
 
 import (
+	"strconv"
+
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
@@ -25,7 +27,11 @@ var kinds = []string{"blocked", "watching", "paused"}
 func (b Board) setState(state string) tea.Cmd {
 	number := b.task
 	return func() tea.Msg {
-		if _, err := b.work.Edit(number, engine.Changes{State: &state}); err != nil {
+		asked := engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(number),
+			"state":  state,
+		}}
+		if _, err := b.work.Ask(engine.TaskEdit, asked); err != nil {
 			return Looked{Err: err}
 		}
 		found, err := Look(b.work)
@@ -35,21 +41,25 @@ func (b Board) setState(state string) tea.Cmd {
 
 // moveBehind puts the task straight after another among the ones it sits with.
 func (b Board) moveBehind(target int) tea.Cmd {
-	return b.moving(engine.Behind, target)
+	return b.moving(map[string]string{"after": strconv.Itoa(target)})
 }
 
 // moveFirst puts it at the head of them.
 func (b Board) moveFirst() tea.Cmd {
-	return b.moving(engine.First, 0)
+	return b.moving(map[string]string{"first": "true"})
 }
 
 // moving asks the engine to change a task's place. It never changes the
 // column: that is an edit, and one act with two meanings is an act nobody can
 // undo confidently — the engine says so, and this respects it.
-func (b Board) moving(at engine.Place, target int) tea.Cmd {
+func (b Board) moving(where map[string]string) tea.Cmd {
 	number := b.task
 	return func() tea.Msg {
-		if err := b.work.Move(number, at, target); err != nil {
+		given := map[string]string{"number": strconv.Itoa(number)}
+		for name, value := range where {
+			given[name] = value
+		}
+		if _, err := b.work.Ask(engine.TaskMove, engine.Input{Given: given}); err != nil {
 			return Looked{Err: err}
 		}
 		found, err := Look(b.work)
@@ -90,13 +100,11 @@ func (b Board) toggleFocus() tea.Cmd {
 	number := b.task
 	held := b.snap.Focus
 	return func() tea.Msg {
-		var err error
-		if held == number {
-			err = b.work.LetGo()
-		} else {
-			_, err = b.work.PutInFocus(number)
+		op, given := engine.TaskUnfocus, map[string]string{}
+		if held != number {
+			op, given = engine.TaskFocus, map[string]string{"number": strconv.Itoa(number)}
 		}
-		if err != nil {
+		if _, err := b.work.Ask(op, engine.Input{Given: given}); err != nil {
 			return Looked{Err: err}
 		}
 		found, err := Look(b.work)
@@ -108,7 +116,8 @@ func (b Board) toggleFocus() tea.Cmd {
 func (b Board) remove() tea.Cmd {
 	number := b.task
 	return func() tea.Msg {
-		if err := b.work.Delete(number); err != nil {
+		asked := engine.Input{Given: map[string]string{"number": strconv.Itoa(number)}}
+		if _, err := b.work.Ask(engine.TaskDelete, asked); err != nil {
 			return Looked{Err: err}
 		}
 		found, err := Look(b.work)
@@ -123,7 +132,8 @@ func (b Board) removeGoal() tea.Cmd {
 		return nil
 	}
 	return func() tea.Msg {
-		if err := b.work.DeleteObjective(number); err != nil {
+		asked := engine.Input{Given: map[string]string{"number": strconv.Itoa(number)}}
+		if _, err := b.work.Ask(engine.ObjectiveDelete, asked); err != nil {
 			return Looked{Err: err}
 		}
 		found, err := Look(b.work)
