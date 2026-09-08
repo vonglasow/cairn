@@ -42,12 +42,29 @@ case $tool in
     ;;
   Bash)
     command=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
-    # A command that only reads is none of our business. `cat internal/x.go`
-    # goes through; `cat > internal/x.go` does not.
-    if ! printf '%s' "$command" | grep -Eq '>|\btee\b|\bsed +-i\b|\bperl +-[a-z]*i\b|\btruncate\b|\bdd\b.*\bof=|\b(python3?|ruby|node|osascript)\b'; then
-      exit 0
-    fi
-    targets=$(printf '%s' "$command" | grep -oE '[A-Za-z0-9_./-]+\.go' || true)
+    # What is looked for is the *target* of a write, not the presence of a
+    # chevron. Measured: matching any `>` refused a plain grep, because `2>&1`
+    # carries one and names no file at all — and it refused this very script's
+    # own repair, because the repair mentioned a path in a comment.
+    #
+    # A command that only reads is none of our business either: reading a
+    # production file goes through, redirecting into one does not.
+    targets=$(
+      {
+        # `> path` and `>> path`. `2>&1` sends one stream to another and stops
+        # at the ampersand, so it yields nothing here.
+        printf '%s' "$command" |
+          grep -oE '>>?[[:space:]]*[^&[:space:];|)]+' |
+          sed -E 's/^>>?[[:space:]]*//'
+        # The tools that write in place name their target among the arguments,
+        # so for those the whole command is read for paths. This is the clause
+        # that stays a guess: a path a script builds at runtime is invisible.
+        if printf '%s' "$command" |
+          grep -Eq '\btee\b|\bsed +-i\b|\bperl +-[a-z]*i\b|\btruncate\b|\b(python3?|ruby|node|osascript)\b'; then
+          printf '%s' "$command" | grep -oE '[A-Za-z0-9_./-]+[.]go'
+        fi
+      } | grep -E '[.]go$' || true
+    )
     ;;
   *)
     exit 0
