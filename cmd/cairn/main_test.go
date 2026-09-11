@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -19,6 +20,20 @@ func TestBinary_handsItsExitCodeToTheShell(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "cairn")
 	if out, err := exec.Command("go", "build", "-o", binary, ".").CombinedOutput(); err != nil {
 		t.Fatalf("building the binary: %v\n%s", err, out)
+	}
+
+	// The subprocess inherits os.Environ() below, which still carries this
+	// machine's real HOME. Left alone, the binary it starts would read
+	// <real HOME>/.config/cairn/config.toml — a file this test has no
+	// business touching, and whose shape it does not control. home is a
+	// fresh directory this run owns, spliced into the environment the
+	// subprocess actually sees.
+	home := t.TempDir()
+	env := []string{"HOME=" + home}
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "HOME=") {
+			env = append(env, kv)
+		}
 	}
 
 	for _, tc := range []struct {
@@ -40,7 +55,7 @@ func TestBinary_handsItsExitCodeToTheShell(t *testing.T) {
 		// comes from outside the test.
 		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 		cmd := exec.Command(binary, tc.args...)
-		cmd.Env = append(os.Environ(), "CAIRN_STORE="+filepath.Join(t.TempDir(), "cairn.db"))
+		cmd.Env = append(env, "CAIRN_STORE="+filepath.Join(t.TempDir(), "cairn.db"))
 		_ = cmd.Run()
 		if got := cmd.ProcessState.ExitCode(); got != tc.want {
 			t.Errorf("%s: exit code = %d, want %d", tc.name, got, tc.want)

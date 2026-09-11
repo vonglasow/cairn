@@ -16,7 +16,7 @@ import (
 
 	"cairn/test"
 
-	"cairn/internal/engine"
+	"cairn/internal/config"
 )
 
 func initStore(t *testing.T) func(*godog.ScenarioContext) {
@@ -74,9 +74,9 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	// with a bare environment. cairn has nowhere to put the default store and
 	// has to say so rather than guess a path.
 	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
-		w.Setenv(engine.StoreVariable, "")
+		w.Setenv(config.StoreVariable, "")
 		w.Setenv("HOME", "")
-		if err := os.Unsetenv(engine.StoreVariable); err != nil {
+		if err := os.Unsetenv(config.StoreVariable); err != nil {
 			return err
 		}
 		return os.Unsetenv("HOME")

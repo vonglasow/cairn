@@ -28,6 +28,7 @@ func All() []Operation {
 		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		TraceShow, TraceList,
+		ConfigShow,
 	}
 }
 

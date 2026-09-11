@@ -20,8 +20,8 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/config"
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -513,7 +513,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		// The whole folder, not just cairn.db: SQLite leaves -wal and -shm
 		// beside it, and a check that missed them would pass on a store that
 		// was very much written to.
-		left, err := os.ReadDir(filepath.Join(w.Defaults, engine.DefaultFolder))
+		left, err := os.ReadDir(filepath.Join(w.Defaults, config.DefaultFolder))
 		if err != nil {
 			return nil // the folder was never created, which is the point
 		}

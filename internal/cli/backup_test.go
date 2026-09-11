@@ -43,6 +43,7 @@ func TestBackupGroup_needsACommand(t *testing.T) {
 }
 
 func TestBackupCommands_refuseAnArgumentThatIsNotANumber(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	for _, args := range [][]string{
 		{"backup", "show", "spec"},
@@ -56,6 +57,7 @@ func TestBackupCommands_refuseAnArgumentThatIsNotANumber(t *testing.T) {
 }
 
 func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
@@ -73,6 +75,7 @@ func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
 }
 
 func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 
@@ -96,6 +99,7 @@ func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
 }
 
 func TestBackupDelete_answersAMachineAsAMachine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
@@ -104,6 +108,7 @@ func TestBackupDelete_answersAMachineAsAMachine(t *testing.T) {
 }
 
 func TestBackupRestore_saysWhichBackupItPutBack(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
@@ -115,6 +120,7 @@ func TestBackupRestore_saysWhichBackupItPutBack(t *testing.T) {
 }
 
 func TestBackupDelete_saysWhichBackupItDeleted(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 	mustRun(t, "backup", "add")
@@ -126,6 +132,7 @@ func TestBackupDelete_saysWhichBackupItDeleted(t *testing.T) {
 }
 
 func TestBackupAdd_namesTheBackupItMade(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "add", "Write the spec")
 

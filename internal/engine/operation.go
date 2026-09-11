@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/migration"
 	"cairn/internal/objective"
@@ -43,8 +44,16 @@ const (
 	// whose job is to change that shape.
 	AStoreBehind
 	// NoStore opens nothing at all, for what is reachable without the store —
-	// a backup is most needed exactly when the store cannot be opened.
+	// a backup is most needed exactly when the store cannot be opened. It
+	// still asks for the path the store would live at, since that is where
+	// a backup finds itself.
 	NoStore
+	// AConfiguration opens no store and has no use for its path either: it
+	// asks for a tolerant reading of the configuration instead, config show
+	// alone. Kept apart from NoStore because the two answer different
+	// questions — NoStore says "no store, but still the path"; this says
+	// "no store, and no path — a configuration in its place".
+	AConfiguration
 )
 
 // Kind is what sort of value an argument carries. It exists so a surface can
@@ -250,6 +259,11 @@ type On struct {
 	// Path is where the store is. The operations that change its shape set a
 	// backup aside first, and that is what they need it for.
 	Path string
+	// Reading is what a configuration read found, for `config show` alone —
+	// the surface fills it, since reading the file is the surface's to do;
+	// the engine only ever reads it back through Tell. Empty for every other
+	// operation, which has no use for it.
+	Reading config.Reading
 }
 
 // Answer is what an operation answered. Every operation fills the two or
@@ -318,6 +332,9 @@ type Answer struct {
 	// reading the state of every task that blocks a row, which a narrowed
 	// listing does not carry and a task cannot see at all.
 	NothingBlocks []int
+	// Config is what `config show` answers: the file read and its two
+	// emplacements, each with what named it.
+	Config *Config
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands

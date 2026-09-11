@@ -43,6 +43,7 @@ func TestBoard_takesNoArguments(t *testing.T) {
 func TestBoard_opensOverTheStore(t *testing.T) {
 	was := openBoard
 	t.Cleanup(func() { openBoard = was })
+	t.Setenv("HOME", t.TempDir())
 
 	var opened tea.Model
 	openBoard = func(_ *cobra.Command, model tea.Model) error {
@@ -63,6 +64,7 @@ func TestBoard_opensOverTheStore(t *testing.T) {
 func TestBoard_saysWhatWentWrongWhileItWasOpen(t *testing.T) {
 	was := openBoard
 	t.Cleanup(func() { openBoard = was })
+	t.Setenv("HOME", t.TempDir())
 
 	openBoard = func(*cobra.Command, tea.Model) error {
 		return errors.New("the terminal went away")
@@ -86,6 +88,7 @@ func TestBoard_refusesAStoreItCannotOpen(t *testing.T) {
 		t.Fatal("the board was opened over a store that could not be")
 		return nil
 	}
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", t.TempDir())
 	if r := run(t, "board"); r.Code == exitOK {
 		t.Fatalf("board over a directory exited %d", r.Code)

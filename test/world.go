@@ -24,7 +24,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/engine"
+	"cairn/internal/config"
 )
 
 // World carries what one scenario needs between its steps.
@@ -95,7 +95,16 @@ func (w *World) Run(line string) {
 //
 // What the precondition answered is put back afterwards: a scenario asserts
 // against the command under test, not against the one that set it up.
+//
+// The configuration is set aside for the length of the call: a scenario
+// posing a configuration cairn refuses is testing that refusal, not asking
+// whether seeding survives it, and `defer` — not OnEnd — puts it back before
+// the next step runs, in time for that step to find the broken file it
+// asked for.
 func (w *World) Seed(line string) error {
+	restore := w.setAsideConfig()
+	defer restore()
+
 	before := w.Out
 	w.Run(line)
 	if w.Out.Code != ok {
@@ -104,6 +113,48 @@ func (w *World) Seed(line string) error {
 		return fmt.Errorf("precondition %q failed: exit %d (%s)", line, got.Code, got.Stderr)
 	}
 	w.Out = before
+	return nil
+}
+
+// ConfigPath is where the configuration cairn reads sits, for this
+// scenario's home — the one place a precondition needs to know it, so it is
+// spelled here rather than a second time wherever else asks.
+func (w *World) ConfigPath() string {
+	if w.Defaults == "" {
+		return ""
+	}
+	return filepath.Join(w.Defaults, ".config", "cairn", "config.toml")
+}
+
+// setAsideConfig moves the configuration out of the way for the length of a
+// precondition, and hands back what puts it right again. Renaming it away
+// and back — rather than reading it, deleting it and writing it again —
+// carries the file's mode along for free, and puts it back whatever now
+// sits at that path, a fresh file the precondition posed or a file some
+// other contract chmod'd to nothing.
+//
+// It is a no-op wherever no file sits at that path yet: Rename reports that
+// on its own, and there is nothing to set aside or put back.
+func (w *World) setAsideConfig() func() {
+	path := w.ConfigPath()
+	if path == "" {
+		return func() {}
+	}
+	aside := path + ".seed-aside"
+	if err := os.Rename(path, aside); err != nil {
+		return func() {}
+	}
+	return func() {
+		_ = os.Rename(aside, path)
+	}
+}
+
+// AHomeOfMyOwn points HOME at a fresh directory this run owns, and nothing
+// else — no store pointed at, so a scenario about where a place falls when
+// nothing else names it is left free to say so.
+func (w *World) AHomeOfMyOwn() error {
+	w.Defaults = w.T.TempDir()
+	w.Setenv("HOME", w.Defaults)
 	return nil
 }
 
@@ -116,7 +167,7 @@ func (w *World) AStoreOfMyOwn() error {
 	// may look at. Pointing it at the store's own folder would make the two the
 	// same place and empty the scenario of its meaning.
 	w.Defaults = w.T.TempDir()
-	w.Setenv(engine.StoreVariable, w.StorePath)
+	w.Setenv(config.StoreVariable, w.StorePath)
 	w.Setenv("HOME", w.Defaults)
 	return nil
 }
@@ -193,6 +244,7 @@ func (w *World) LineListsTasks(line string, n int) error {
 func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.After(w.afterScenario)
 
+	sc.Step(`^a home of my own, made for this run$`, w.AHomeOfMyOwn)
 	sc.Step(`^a store of my own, somewhere that is not the default place$`, w.AStoreOfMyOwn)
 	sc.Step(`^nothing in it yet$`, w.NothingInItYet)
 	sc.Step(`^I added a task titled "([^"]*)"$`, w.IAddedATaskTitled)

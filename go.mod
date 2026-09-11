@@ -13,6 +13,7 @@ require (
 	github.com/cucumber/godog v0.16.0
 	github.com/google/jsonschema-go v0.4.3
 	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/spf13/cobra v1.10.2
 	modernc.org/sqlite v1.56.0
 )

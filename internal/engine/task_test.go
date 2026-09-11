@@ -145,8 +145,8 @@ func TestAll_hasTwentySixDistinctOperations(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 26 {
-		t.Fatalf("len(All()) = %d, want 26", len(ops))
+	if len(ops) != 27 {
+		t.Fatalf("len(All()) = %d, want 27", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

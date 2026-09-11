@@ -7,11 +7,36 @@ package cli
 // is that check.
 
 import (
-	"cairn/internal/engine"
+	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"cairn/internal/config"
+	"cairn/internal/engine"
 )
+
+// TestConfigShow_isNotStoppedByAStoreItCannotResolve checks that `config show`
+// is not turned away by the same refusal that stops every other command when
+// the store cannot be resolved at all — no home, no CAIRN_STORE, nowhere for
+// the default store to live. That refusal exists for the 22 operations that
+// go on to open a store; `config show` opens none, and is exactly what
+// somebody reaches for once everything else refuses.
+func TestConfigShow_isNotStoppedByAStoreItCannotResolve(t *testing.T) {
+	t.Setenv("HOME", "")
+	if err := os.Unsetenv("HOME"); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(config.StoreVariable, "")
+	if err := os.Unsetenv(config.StoreVariable); err != nil {
+		t.Fatal(err)
+	}
+
+	r := run(t, "config", "show")
+	if r.Code != exitOK {
+		t.Fatalf("config show exit = %d, want %d (%s)", r.Code, exitOK, r.Stderr)
+	}
+}
 
 func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 	root := NewRootCmd()

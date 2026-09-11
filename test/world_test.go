@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"cairn/internal/config"
 )
 
 // answering builds a world whose surface always answers the same thing, and
@@ -211,6 +213,67 @@ func TestItSaysWhatItExpectsInsteadOf_wantsTheValueQuotedBack(t *testing.T) {
 	w.Out = Result{Stdout: `"sideways" is not an access`}
 	if err := w.ItSaysWhatItExpectsInsteadOf("sideways"); err == nil {
 		t.Error("ItSaysWhatItExpectsInsteadOf = nil: a reason on standard output is a reason nobody piping the answer will read")
+	}
+}
+
+func TestAHomeOfMyOwn_doesNotPointAtAStore(t *testing.T) {
+	t.Setenv(config.StoreVariable, "a store nothing here should touch")
+	w, _ := answering(t, Result{})
+	if err := w.AHomeOfMyOwn(); err != nil {
+		t.Fatalf("AHomeOfMyOwn = %v", err)
+	}
+	if w.Defaults == "" || os.Getenv("HOME") != w.Defaults {
+		t.Fatalf("HOME = %q, Defaults = %q, want HOME pointed at a fresh Defaults", os.Getenv("HOME"), w.Defaults)
+	}
+	if got := os.Getenv(config.StoreVariable); got != "a store nothing here should touch" {
+		t.Errorf("%s = %q, want it left untouched — a home of my own names no store", config.StoreVariable, got)
+	}
+}
+
+func TestConfigPath_composesUnderTheHomeOrIsEmptyWithoutOne(t *testing.T) {
+	w, _ := answering(t, Result{})
+	if got := w.ConfigPath(); got != "" {
+		t.Errorf("ConfigPath = %q, want empty with no home posed", got)
+	}
+	w.Defaults = t.TempDir()
+	if want, got := filepath.Join(w.Defaults, ".config", "cairn", "config.toml"), w.ConfigPath(); got != want {
+		t.Errorf("ConfigPath = %q, want %q", got, want)
+	}
+}
+
+func TestSetAsideConfig_movesAFileAsideAndBackModeIncluded(t *testing.T) {
+	w, _ := answering(t, Result{})
+	w.Defaults = t.TempDir()
+	path := w.ConfigPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const mode = 0o640
+	if err := os.WriteFile(path, []byte("a configuration"), mode); err != nil {
+		t.Fatal(err)
+	}
+	restore := w.setAsideConfig()
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("the configuration is still there, want it set aside")
+	}
+	restore()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat(%s) = %v, want the configuration put back", path, err)
+	}
+	if info.Mode().Perm() != mode {
+		t.Errorf("mode = %o, want %o carried along with the file", info.Mode().Perm(), mode)
+	}
+}
+
+func TestSetAsideConfig_isANoOpWhenNothingIsThere(t *testing.T) {
+	w, _ := answering(t, Result{})
+	w.Defaults = t.TempDir()
+	path := w.ConfigPath()
+	restore := w.setAsideConfig()
+	restore()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("Stat(%s) = %v, want nothing created where there was nothing", path, err)
 	}
 }
 

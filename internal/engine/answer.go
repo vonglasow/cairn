@@ -149,6 +149,12 @@ type Refusal struct {
 // conditions outside any covered block, so a mutation of one of them reports
 // as unreachable and the gate cannot judge it.
 func Of(a Answer) any {
+	// Config is its own answer, sharing no field with any other operation's —
+	// checked first for that reason alone, not because it could be mistaken
+	// for one of the branches below.
+	if a.Config != nil {
+		return *a.Config
+	}
 	// A task alongside the focus is the focus being told, and nothing else
 	// tells it that way: a card asked for by number says nothing about the
 	// focus, and a listing carries its rows too. Checked first, because the

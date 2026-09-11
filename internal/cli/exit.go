@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"cairn/internal/board"
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/mcp"
@@ -54,6 +55,9 @@ var refusals = []error{
 	errNotConfirmed,
 	mcp.ErrNotAnAccess,
 	board.ErrNotASet,
+	config.ErrNotTOML,
+	config.ErrUnknownKey,
+	config.ErrNotAbsolute,
 }
 
 // codeFor says which kind of answer an error is.

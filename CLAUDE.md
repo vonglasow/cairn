@@ -40,6 +40,8 @@ calls it, and prints — it decides nothing.
 | narrowing a listing, or changing what a search reaches | [docs/listing.md](docs/listing.md) |
 | touching what stops a task, or what starts it again | [docs/blocking.md](docs/blocking.md) |
 | touching what a task serves, or how an objective is counted | [docs/objectives.md](docs/objectives.md) |
+| touching what showing a task says about its outside context, or where that context is looked for | [docs/context.md](docs/context.md) |
+| adding a key to the configuration, or changing how a place is addressed | [docs/config.md](docs/config.md) |
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |
 | touching the board — its shape, its keys, its modes — or anything a person sees on screen | [docs/tui.md](docs/tui.md) |
 

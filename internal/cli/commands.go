@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"cairn/internal/config"
 	"cairn/internal/engine"
 )
 
@@ -38,17 +39,66 @@ var groupShort = map[string]string{
 	"objective": "Add, list, read, change and delete objectives",
 	"backup":    "Make, list, read and put back backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
+	"config":    "Show which places cairn uses, and where it got them",
 }
 
-// storePath is where the store lives, according to the environment and the
-// default place. Read by every command that needs it, and by no other: a
-// group and `cairn --version` must never create a file just by being run.
+// storePath is where the store lives, according to the environment, the
+// configuration file, and the default place under the home directory, in
+// that order. Read by every command that needs it, and by no other: a group
+// and `cairn --version` must never create a file just by being run.
+//
+// The home directory is asked for unconditionally, but only required when
+// the environment does not already answer: CAIRN_STORE set with no home to
+// find — a cron entry, a container — still has to work, so a failed
+// os.UserHomeDir is not itself a refusal.
 func storePath() (string, error) {
-	path, err := engine.StoreAddress(os.LookupEnv, os.UserHomeDir)
+	home, err := os.UserHomeDir()
 	if err != nil {
+		if said, ok := os.LookupEnv(config.StoreVariable); !ok || said == "" {
+			return "", fmt.Errorf("%w: %w", engine.ErrStore, err)
+		}
+	}
+	places, err := config.Read(home, os.LookupEnv)
+	if err != nil {
+		// Only what the person wrote is theirs to fix: everything else about
+		// reading the file — permissions, a missing directory, whatever a
+		// driver might raise — stays folded into engine.ErrStore, the same
+		// answer an unusable store gives everywhere else.
+		for _, kind := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
+			if errors.Is(err, kind) {
+				return "", err
+			}
+		}
 		return "", fmt.Errorf("%w: %w", engine.ErrStore, err)
 	}
-	return path, nil
+	return places.Store(), nil
+}
+
+// runReading runs an operation that reads a tolerant configuration instead of
+// opening a store — config show today — so it stays reachable exactly when a
+// broken store would otherwise turn every command away before it ran.
+//
+// engine.Do never fills On.Reading: nothing it opens needs to, since only this
+// one operation reads it. So this calls op.Run directly, after op.Check — the
+// same refusal engine.Do would have given a caller that named an argument
+// wrong — rather than going through engine.Do just to hand it a path and
+// backups this operation has no use for.
+//
+// The home comes from os.UserHomeDir(), the same as storePath(). A failed
+// UserHomeDir is not a refusal here either: config.NewReading tolerates an
+// empty home as it tolerates a missing file, so the command answers with
+// what a best-effort reading found rather than joining every other command
+// in refusing.
+func runReading(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	if err := op.Check(in); err != nil {
+		return engine.Answer{}, err
+	}
+	home, _ := os.UserHomeDir()
+	reading, err := config.NewReading(home, os.LookupEnv)
+	if err != nil {
+		return engine.Answer{}, err
+	}
+	return op.Run(engine.On{Reading: reading}, in)
 }
 
 // exactly says how many arguments a command takes, and says how to use it
@@ -211,11 +261,25 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			if op.Level == engine.Full && !confirmed {
 				return fmt.Errorf("%s %w", op.Thing, errNotConfirmed)
 			}
+			in := inputFrom(cmd, positionals, args, given, listed, asked)
+			// Needs: AConfiguration reads a tolerant configuration instead of
+			// a store — it has to stay reachable exactly when storePath()
+			// would refuse, since that is when it is needed. The five backup
+			// verbs carry Needs: NoStore instead: they still locate backups
+			// beside where the store would be, so they keep going through
+			// storePath() like every operation that opens one.
+			if op.Needs == engine.AConfiguration {
+				answer, err := runReading(op, in)
+				if err != nil {
+					return err
+				}
+				return write(cmd, op, answer)
+			}
 			path, err := storePath()
 			if err != nil {
 				return err
 			}
-			answer, err := engine.Do(op, path, inputFrom(cmd, positionals, args, given, listed, asked))
+			answer, err := engine.Do(op, path, in)
 			if err != nil {
 				return err
 			}

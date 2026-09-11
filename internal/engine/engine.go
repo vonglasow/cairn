@@ -1,3 +1,6 @@
+// Package engine holds the operations. A surface parses input, calls one thing
+// here, and prints what comes back — it decides nothing. The engine is also the
+// only caller of the store, whatever the store is made of.
 package engine
 
 import (

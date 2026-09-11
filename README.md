@@ -265,6 +265,23 @@ each call and closes it on the way out, like every other.
 `~/.cairn/cairn.db`, on every system, with the backups beside it in
 `~/.cairn/backups/`. Set `CAIRN_STORE` to put it elsewhere.
 
+A file says it too, if you would rather not carry a variable around:
+`~/.config/cairn/config.toml`, the same path on every system, with two keys —
+`store` for the tasks and `notes` for what you write beside them. A name cairn
+does not know is refused rather than passed over, and a place that is not
+absolute is refused naming itself. The environment still wins over the file: it
+replaces the answer rather than queueing behind it, and writes nothing down.
+
+```sh
+cairn config show                # which places cairn will use, and what named each
+```
+
+It answers with the file it read and, for each place, whether the file, the
+environment or nothing named it. It is the one command that reports a
+configuration it cannot make sense of instead of refusing — you reach for it
+precisely when something is not where you expected, so it tells you what is
+wrong and warns that everything else will refuse until you fix it.
+
 ## Build
 
 ```sh
