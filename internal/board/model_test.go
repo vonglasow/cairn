@@ -515,18 +515,6 @@ func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
 	}
 }
 
-func TestNumberReadsAFieldBack(t *testing.T) {
-	for in, want := range map[string]int{"": 0, "3": 3, " 4 ": 4} {
-		got, ok := number(in)
-		if !ok || got != want {
-			t.Fatalf("%q read back as %d %v, want %d", in, got, ok, want)
-		}
-	}
-	if _, ok := number("nine"); ok {
-		t.Fatal("a word was read as a number")
-	}
-}
-
 func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 	f := newFake()
 	f.cards = []reading.Card{

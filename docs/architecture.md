@@ -73,7 +73,7 @@ all of them.
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
 | `internal/engine` | the operations, the calculations, and the only door to the store | `domain`, the notions, `store` |
-| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, how the cards deal into columns | `domain`, the notions, `engine` |
+| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, what a saved form asks the engine for, how the cards deal into columns | `domain`, the notions, `engine` |
 | `internal/cli` | parsing and choosing a rendering | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/board` | the board on a terminal | everything below but `cli` and `mcp` |

@@ -3,7 +3,6 @@ package board
 import (
 	"testing"
 
-	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
 
@@ -89,44 +88,6 @@ func TestLettingTheFocusGoAsksTaskUnfocus(t *testing.T) {
 	got := asks(t, f, []string{"l", "i"}, "f")
 	if got.op.Thing != "task" || got.op.Verb != "unfocus" {
 		t.Errorf("asked %q %q, want task unfocus", got.op.Thing, got.op.Verb)
-	}
-}
-
-// A form is turned into what the engine takes by reading each field's own
-// declaration of which argument it fills. These two say so: the engine's word
-// is what travels, and the screen's word never does.
-func TestAskedFromNamesEveryFieldByItsEngineArgument(t *testing.T) {
-	form := asking(reading.TaskFields(reading.Card{
-		Title:       "One",
-		Description: "why it matters",
-		State:       "todo",
-		Priority:    "high",
-		Labels:      []string{"api", "urgent"},
-	}), 80, 20, plainSkin)
-
-	in := askedFrom(form, engine.TaskEdit)
-	if in.Given["desc"] != "why it matters" {
-		t.Errorf("desc = %q, want the description", in.Given["desc"])
-	}
-	if in.Given["state"] != "todo" {
-		t.Errorf("state = %q, want todo", in.Given["state"])
-	}
-	if got := in.Listed["label"]; len(got) != 2 || got[0] != "api" || got[1] != "urgent" {
-		t.Errorf("label = %v, want the two labels, listed", got)
-	}
-	for _, screen := range []string{"description", "labels", "column", "time spent"} {
-		if _, named := in.Given[screen]; named {
-			t.Errorf("%q travelled: that is the screen's word, not the engine's", screen)
-		}
-	}
-}
-
-// A number nobody can read is not named at all, rather than sent for the
-// engine to refuse: one unreadable field would otherwise lose the whole form.
-func TestAParentThatIsNotANumberIsNotNamed(t *testing.T) {
-	form := asking([]reading.Field{{Name: "parent", Arg: "parent", Value: "nine"}}, 80, 6, plainSkin)
-	if in := askedFrom(form, engine.TaskEdit); in.Named("parent") {
-		t.Fatal("a parent nobody can read was passed to the engine anyway")
 	}
 }
 

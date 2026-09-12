@@ -675,7 +675,7 @@ person reads beside the box, and `Arg`, what the engine calls the same thing:
 Neither is wrong. A repeatable flag reads singular on a command line
 (`--label api --label urgent`); a box holding all of them reads plural on a
 screen. Saying it on the field is what stops a translation table existing
-somewhere else — and `askedFrom` then builds the whole request by walking the
+somewhere else — and `reading.Asked` then builds the whole request by walking the
 form and reading each argument's `Kind` off the operation, so a field added to
 the form, or an argument added to the engine, arrives with no line written for
 it.
