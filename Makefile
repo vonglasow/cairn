@@ -35,8 +35,15 @@ run:
 ## Nothing else mints the receipt that .claude/hooks/red-first.sh looks for, and
 ## nothing mints one from a suite that passed. What it attests is not that a
 ## test exists — coverage already says that — but that its failure was seen.
+##
+## MOVING is the one way past a suite that passes, and it is for code leaving a
+## package: there is no absent behaviour to write a test for, so there is no
+## failure to see. It demands a sentence, keeps it in the receipt, and marks the
+## receipt as a move — so a write let through this way stays legible afterwards.
+##
+##   make red PKG=./internal/board MOVING="askedFrom moves to internal/reading"
 red:
-	@.claude/hooks/red.sh "$(PKG)" "$(RUN)"
+	@.claude/hooks/red.sh "$(PKG)" "$(RUN)" "$(MOVING)"
 
 # The profile is a real artifact, so both `cover` and `cover-check` read it
 # instead of each running the suite themselves. It is rebuilt whenever a Go

@@ -13,9 +13,11 @@ set -uo pipefail
 
 package=${1:-}
 only=${2:-}
+moving=${3:-}
 
 if [ -z "$package" ]; then
   echo "usage: make red PKG=./internal/board [RUN=TestSomething]" >&2
+  echo "       make red PKG=./internal/board MOVING=\"what moves, and where to\"" >&2
   exit 2
 fi
 
@@ -26,6 +28,26 @@ mkdir -p "$receipts"
 where=${package#./}
 where=${where#cairn/}
 receipt="$receipts/${where//\//_}.json"
+
+# Code that moves out of a package has no absent behaviour to write a test for,
+# and a suite that still passes mints nothing — so without this, the gate
+# refuses the one kind of change it has nothing to say about.
+#
+# It is a door and not a hole: it demands a sentence saying what moves and
+# where to, that sentence is kept in the receipt beside the timestamp, and the
+# receipt says `moving` rather than naming a failing test. Anybody reading the
+# receipts can see which writes were let through this way and judge them.
+if [ -n "$moving" ]; then
+  jq -n \
+    --arg package "$where" \
+    --arg moving "$moving" \
+    --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{package: $package, moving: $moving, at: $at}' > "$receipt"
+  printf '\xe2\x86\xb3 moving, recorded for %s: %s\n' "$where" "$moving"
+  echo "  No test was run and none was owed: nothing new is being asked for."
+  echo "  What is owed is that the suite still passes when the move is done."
+  exit 0
+fi
 
 echo "→ go test ${only:+-run $only }$package"
 if [ -n "$only" ]; then
