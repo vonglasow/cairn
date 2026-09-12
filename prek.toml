@@ -58,7 +58,13 @@ hooks = [
     # with nowhere else to go. `make harness-check` is what guards it instead.
     { id = "no-go-testing", exclude = "^test/" },
     { id = "golangci-lint" },
-    { id = "go-unit-tests" },
+    # The script runs `go test ./...` and never looks at the files it is
+    # handed, so letting prek hand it any at all makes it run the whole suite
+    # once per batch — ten times over, in parallel, for one answer. Measured:
+    # that contention is what made `internal/cli` take 27 seconds instead of
+    # 7, and what let a five-millisecond deadline in the board's harness drop
+    # a real answer, one run in ten.
+    { id = "go-unit-tests", pass_filenames = false },
 ]
 
 # Conventional-commit message linting (runs on commit-msg).
