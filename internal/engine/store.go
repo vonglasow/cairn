@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 
 	"cairn/internal/domain"
@@ -118,4 +119,19 @@ func (e *Engine) backupFirst(path string) error {
 		return fmt.Errorf("setting a backup aside before changing the store: %w", err)
 	}
 	return nil
+}
+
+// Told adds what somebody has to type about a store that cannot be used as it
+// stands. Anything else passes through untouched: an error nobody can act on
+// is not improved by being handed a command to run.
+//
+// Written once and not at each door into the store. Three of them open one —
+// an operation, the terminal board, the window — and only the first said it,
+// so the two boards left somebody to go and find out what to type. Three
+// copies of a sentence is how two of them come to disagree.
+func Told(err error) error {
+	if errors.Is(err, ErrStoreBehind) {
+		return fmt.Errorf("%w — run `cairn migration apply`", err)
+	}
+	return err
 }

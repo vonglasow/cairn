@@ -44,7 +44,11 @@ func newBoardCmd() *cobra.Command {
 			}
 			held, err := engine.Open(path)
 			if err != nil {
-				return err
+				// Told, because this command holds the store itself rather
+				// than asking through an operation: without it a store behind
+				// this cairn says so and leaves somebody to find out what to
+				// type about it.
+				return engine.Told(err)
 			}
 			defer func() { _ = held.Close() }()
 			// The size is asked for by bubbletea the moment the program starts,

@@ -20,6 +20,19 @@ Feature: Changes to the shape of the store
       And it says the store is behind
       And it says to run `cairn migration apply`
 
+    @store-behind-refused-by-a-surface-that-holds-the-store
+    Scenario Outline: the boards say what to run too
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn <command>`
+      Then it exits with code 3
+      And it says the store is behind
+      And it says to run `cairn migration apply`
+
+      Examples:
+        | command |
+        | board   |
+        | gui     |
+
     @store-behind-untouched
     Scenario: refusing changes nothing about the store
       Given a store from an older cairn, holding a task titled "Write the spec"

@@ -5,7 +5,6 @@ package engine
 // of the things a caller can ask for.
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -377,13 +376,7 @@ func doWith(
 ) (Answer, error) {
 	eng, err := open(path)
 	if err != nil {
-		if errors.Is(err, ErrStoreBehind) {
-			// The store knows it is behind; only a surface knows what
-			// somebody has to type about it, which is why it is added here
-			// rather than left for whoever calls Do to work out on their own.
-			return Answer{}, fmt.Errorf("%w — run `cairn migration apply`", err)
-		}
-		return Answer{}, err
+		return Answer{}, Told(err)
 	}
 	defer func() { _ = eng.Close() }()
 	eng.through = through

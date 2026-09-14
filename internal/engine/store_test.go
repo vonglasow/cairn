@@ -2,8 +2,10 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -261,5 +263,35 @@ func TestEngine_reportsAPlaceItCannotBackupBeforeChanging(t *testing.T) {
 	}
 	if _, err := e.Apply(nowhere, 2); err == nil {
 		t.Error("Apply should report a backup it could not make")
+	}
+}
+
+// A store that cannot be used as it stands is told what to type about it.
+// Written once here and not at each door into the store: three of them open
+// one, and the two boards used to leave somebody to go and find out.
+func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
+	behind := fmt.Errorf("%w by 1 change(s)", ErrStoreBehind)
+	got := Told(behind)
+	if !errors.Is(got, ErrStoreBehind) {
+		t.Errorf("Told lost what the error was about: %v", got)
+	}
+	if !strings.Contains(got.Error(), "cairn migration apply") {
+		t.Errorf("Told = %q, and says nothing about what to run", got)
+	}
+}
+
+// Anything else passes through untouched: an error nobody can act on is not
+// improved by being handed a command to run.
+func TestTold_leavesEveryOtherErrorAlone(t *testing.T) {
+	// The message, and not errors.Is: what is being asked is that nothing was
+	// added, and errors.Is would say yes to an error that had been wrapped —
+	// which is the very thing this is watching for.
+	for _, err := range []error{ErrNewerStore, ErrNotAStore, errors.New("something else")} {
+		if got := Told(err); got.Error() != err.Error() {
+			t.Errorf("Told(%v) = %v, want it left alone", err, got)
+		}
+	}
+	if got := Told(nil); got != nil {
+		t.Errorf("Told(nil) = %v, want nothing", got)
 	}
 }
