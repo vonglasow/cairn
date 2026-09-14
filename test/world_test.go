@@ -2,10 +2,13 @@ package test
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
 )
@@ -287,5 +290,53 @@ func TestLineListsTasks_runsTheLineAndCounts(t *testing.T) {
 	}
 	if err := w.LineListsTasks("cairn task list", 3); err == nil {
 		t.Error("LineListsTasks = nil for a count that does not match")
+	}
+}
+
+// Register is pure wiring and afterScenario is the hook that puts the world
+// back. Neither can be reached except through godog, so this runs godog — over
+// a feature written here rather than one cairn ships, because what is being
+// checked is the wiring and not any scenario.
+//
+// Without it the two go out unjudged: a step left unwired would show up as a
+// scenario passing for the wrong reason, in whichever surface happened to run
+// it, which is the very thing the rest of this file exists to prevent.
+func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
+	w, asked := answering(t, Result{Code: 0, Stdout: "#1  Write the spec\n"})
+	// The world is set aside before the run and put back after, so that what
+	// the scenario does to the environment is undone by the hook under test
+	// rather than by the cleanup answering registers.
+	here, had := os.LookupEnv(config.StoreVariable)
+
+	suite := godog.TestSuite{
+		ScenarioInitializer: w.Register,
+		Options: &godog.Options{
+			Format: "pretty",
+			Output: io.Discard,
+			Strict: true,
+			FeatureContents: []godog.Feature{{
+				Name: "the vocabulary every surface shares",
+				Contents: []byte(`Feature: the vocabulary every surface shares
+  Scenario: the shared steps are wired and the world is put back
+    Given a store of my own, somewhere that is not the default place
+    And nothing in it yet
+    And I added a task titled "Write the spec"
+    When I run ` + "`cairn task list`" + `
+    Then it succeeds
+    And ` + "`cairn task list`" + ` lists 1 task
+`),
+			}},
+		},
+	}
+	if code := suite.Run(); code != 0 {
+		t.Fatalf("the shared steps ran to %d, want 0 — something is not wired", code)
+	}
+	if len(*asked) == 0 {
+		t.Error("nothing reached the surface: the steps were wired to nothing")
+	}
+	// afterScenario ran, so the store the scenario pointed cairn at is gone.
+	if now, still := os.LookupEnv(config.StoreVariable); still != had || now != here {
+		t.Errorf("the store variable is %q (set: %v), and it was %q (set: %v) before",
+			now, still, here, had)
 	}
 }
