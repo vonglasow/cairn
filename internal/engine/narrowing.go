@@ -98,11 +98,12 @@ func accepted(in Input, argument Argument) error {
 // nothing to say about it. Said anyway, a caller would read a number it cannot
 // find among the tasks it was handed — and an unnarrowed listing carries every
 // task, so nothing changes there.
-func heldAmong(tasks []task.Task, inFocus int) *int {
+func heldAmong(tasks []task.Task, inFocus []int) []int {
+	kept := make([]int, 0, len(inFocus))
 	for _, one := range tasks {
-		if task.OfTask(one).Number == inFocus {
-			return &inFocus
+		if number := task.OfTask(one).Number; slices.Contains(inFocus, number) {
+			kept = append(kept, number)
 		}
 	}
-	return nil
+	return kept
 }

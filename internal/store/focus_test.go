@@ -1,71 +1,123 @@
 package store
 
-// What the focus is worth is asked of the store: put a task there, read it
-// back, and check that putting another there releases the first.
+// What the focus is worth is asked of the store: take up tasks, read them
+// back, let go of one and of all of them.
 
 import (
+	"slices"
 	"testing"
-
-	"cairn/internal/task"
 )
 
-// inFocus reads back which task is being worked on, failing the test if the
+// inFocus reads back which tasks are being worked on, failing the test if the
 // store cannot say.
-func inFocus(t *testing.T, s *Store) int {
+func inFocus(t *testing.T, s *Store) []int {
 	t.Helper()
-	number, err := s.Focus()
+	held, err := s.Focus()
 	if err != nil {
 		t.Fatalf("Focus: %v", err)
 	}
-	return number
+	return held
 }
 
 func TestFocus_isNothingToBeginWith(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "The only one")
-	if got := inFocus(t, s); got != NoFocus {
-		t.Errorf("Focus = %d, want %d on a store nobody has worked in", got, NoFocus)
+	if got := inFocus(t, s); len(got) != 0 {
+		t.Errorf("Focus = %v, want nothing on a store nobody has worked in", got)
 	}
 }
 
-func TestSetFocus_makesATaskTheOneBeingWorkedOn(t *testing.T) {
+func TestAddFocus_takesUpATask(t *testing.T) {
 	s := openStore(t)
-	only := keep(t, s, "The only one")
-	if err := s.SetFocus(factsOf(only).number); err != nil {
-		t.Fatalf("SetFocus: %v", err)
+	only := factsOf(keep(t, s, "The only one")).number
+	if err := s.AddFocus(only); err != nil {
+		t.Fatalf("AddFocus: %v", err)
 	}
-	if got, want := inFocus(t, s), factsOf(only).number; got != want {
-		t.Errorf("Focus = %d, want %d", got, want)
+	if got := inFocus(t, s); !slices.Equal(got, []int{only}) {
+		t.Errorf("Focus = %v, want %v", got, []int{only})
 	}
 }
 
-// One row holds the focus, so there is at most one task in it. Asserted rather
-// than assumed: this is the whole reason it is kept in a row of its own.
-func TestSetFocus_releasesTheOneBefore(t *testing.T) {
+// Several at once, in the order they were taken up. The order matters: it is
+// what a listing reads back, and the first thing taken up is the first thing
+// somebody started on.
+func TestAddFocus_holdsSeveralInTheOrderTheyWereTakenUp(t *testing.T) {
 	s := openStore(t)
-	first := keep(t, s, "First")
-	second := keep(t, s, "Second")
-	for _, one := range []task.Task{first, second} {
-		if err := s.SetFocus(factsOf(one).number); err != nil {
-			t.Fatalf("SetFocus: %v", err)
+	first := factsOf(keep(t, s, "First")).number
+	second := factsOf(keep(t, s, "Second")).number
+	third := factsOf(keep(t, s, "Third")).number
+
+	for _, n := range []int{third, first, second} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatalf("AddFocus(%d): %v", n, err)
 		}
 	}
-	if got, want := inFocus(t, s), factsOf(second).number; got != want {
-		t.Errorf("Focus = %d, want %d — the one before was not released", got, want)
+	if got, want := inFocus(t, s), []int{third, first, second}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v", got, want)
+	}
+}
+
+// Taking up what is already held is not a change: it is held once, and it
+// keeps the place in the order it already had.
+func TestAddFocus_twiceHoldsATaskOnce(t *testing.T) {
+	s := openStore(t)
+	first := factsOf(keep(t, s, "First")).number
+	second := factsOf(keep(t, s, "Second")).number
+	for _, n := range []int{first, second, first} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatalf("AddFocus(%d): %v", n, err)
+		}
+	}
+	if got, want := inFocus(t, s), []int{first, second}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v", got, want)
+	}
+}
+
+func TestDropFocus_letsGoOfOneAndLeavesTheRest(t *testing.T) {
+	s := openStore(t)
+	first := factsOf(keep(t, s, "First")).number
+	second := factsOf(keep(t, s, "Second")).number
+	for _, n := range []int{first, second} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatalf("AddFocus(%d): %v", n, err)
+		}
+	}
+	if err := s.DropFocus(first); err != nil {
+		t.Fatalf("DropFocus: %v", err)
+	}
+	if got, want := inFocus(t, s), []int{second}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v", got, want)
+	}
+}
+
+// Letting go of a task that was never taken up is not a failure: the state
+// asked for already holds.
+func TestDropFocus_onATaskThatWasNotHeldIsNotAFailure(t *testing.T) {
+	s := openStore(t)
+	only := factsOf(keep(t, s, "The only one")).number
+	if err := s.AddFocus(only); err != nil {
+		t.Fatalf("AddFocus: %v", err)
+	}
+	if err := s.DropFocus(99); err != nil {
+		t.Errorf("DropFocus on a task that was not held = %v, want nothing wrong", err)
+	}
+	if got, want := inFocus(t, s), []int{only}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v", got, want)
 	}
 }
 
 func TestClearFocus_leavesNothingInFocus(t *testing.T) {
 	s := openStore(t)
-	only := keep(t, s, "The only one")
-	if err := s.SetFocus(factsOf(only).number); err != nil {
-		t.Fatalf("SetFocus: %v", err)
+	for _, title := range []string{"First", "Second"} {
+		if err := s.AddFocus(factsOf(keep(t, s, title)).number); err != nil {
+			t.Fatalf("AddFocus: %v", err)
+		}
 	}
 	if err := s.ClearFocus(); err != nil {
 		t.Fatalf("ClearFocus: %v", err)
 	}
-	if got := inFocus(t, s); got != NoFocus {
-		t.Errorf("Focus = %d, want %d once let go", got, NoFocus)
+	if got := inFocus(t, s); len(got) != 0 {
+		t.Errorf("Focus = %v, want nothing once let go", got)
 	}
 }
 
@@ -77,49 +129,30 @@ func TestClearFocus_onNothingIsNotAFailure(t *testing.T) {
 	}
 }
 
-// The task in focus may be deleted, and the focus goes with it. It goes by hand:
-// the schema's ON DELETE SET NULL never fires, since foreign keys are off.
+// A task in focus may be deleted, and it leaves the focus with it while the
+// others stay. It goes by hand: the schema's reference never fires, since
+// foreign keys are off.
 func TestDelete_letsGoOfTheTaskItRemoved(t *testing.T) {
 	s := openStore(t)
-	first := keep(t, s, "First")
-	second := keep(t, s, "Second")
-	if err := s.SetFocus(factsOf(second).number); err != nil {
-		t.Fatalf("SetFocus: %v", err)
+	first := factsOf(keep(t, s, "First")).number
+	second := factsOf(keep(t, s, "Second")).number
+	for _, n := range []int{first, second} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatalf("AddFocus(%d): %v", n, err)
+		}
 	}
-	if err := s.Delete(factsOf(second).number); err != nil {
+	if err := s.Delete(second); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got := inFocus(t, s); got != NoFocus {
-		t.Errorf("Focus = %d, want %d once the task was deleted", got, NoFocus)
+	if got, want := inFocus(t, s), []int{first}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v once the task was deleted", got, want)
 	}
 	// And deleting some other task leaves the focus alone.
-	if err := s.SetFocus(factsOf(first).number); err != nil {
-		t.Fatalf("SetFocus: %v", err)
-	}
-	other := keep(t, s, "Another")
-	if err := s.Delete(factsOf(other).number); err != nil {
+	other := factsOf(keep(t, s, "Another")).number
+	if err := s.Delete(other); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got, want := inFocus(t, s), factsOf(first).number; got != want {
-		t.Errorf("Focus = %d, want %d — deleting another task released it", got, want)
-	}
-}
-
-// A store that has somehow lost its one row still answers, and can still be
-// told what is in focus: no row and a row holding nothing say the same thing.
-func TestFocus_answersNothingWhenTheRowIsGone(t *testing.T) {
-	s := openStore(t)
-	only := keep(t, s, "The only one")
-	if _, err := s.db.Exec(`DELETE FROM focus`); err != nil {
-		t.Fatalf("emptying the focus table: %v", err)
-	}
-	if got := inFocus(t, s); got != NoFocus {
-		t.Errorf("Focus = %d, want %d with no row at all", got, NoFocus)
-	}
-	if err := s.SetFocus(factsOf(only).number); err != nil {
-		t.Fatalf("SetFocus with no row: %v", err)
-	}
-	if got, want := inFocus(t, s), factsOf(only).number; got != want {
-		t.Errorf("Focus = %d, want %d — the row was not made", got, want)
+	if got, want := inFocus(t, s), []int{first}; !slices.Equal(got, want) {
+		t.Errorf("Focus = %v, want %v — deleting another task released it", got, want)
 	}
 }

@@ -12,9 +12,13 @@ import (
 	"time"
 )
 
-// A stretch is one run of work on one task: a focus taken, closed by the focus
-// being let go or by another task taking it. There is no other definition
-// available, and every duration rests on this one.
+// A stretch is one run of work on one task: a focus taken, closed by that task
+// being let go. There is no other definition available, and every duration
+// rests on this one.
+//
+// Stretches overlap. Several tasks are worked on at once — one per agent
+// session — so taking up a second does not close the first, and a day's
+// stretches can add up to more than the day.
 type stretch struct {
 	task  int
 	from  time.Time
@@ -35,29 +39,39 @@ type Work struct {
 // end runs to now: it is work being done, not work that never happened.
 func AddedUp(acts []Act, now time.Time) Work {
 	var w Work
-	open := -1
+	// Which stretch is open on each task. Several are open at once, so it is a
+	// stretch per task and not one at a time — kept as an index into the
+	// stretches so the order they were taken up in survives.
+	open := map[int]int{}
 	for _, a := range acts {
 		var f fact
 		a.Tell(&f)
 		switch f.did {
 		case FocusTaken:
-			w.stretches = append(w.stretches, stretch{task: f.task, from: f.at})
-			open = len(w.stretches) - 1
-		case FocusReleased:
-			if open >= 0 {
-				w.stretches[open].until = f.at
-				open = -1
+			if _, already := open[f.task]; already {
+				// Taking up what is already held is not a change, and the
+				// engine does not write it down. Ignored here as well, so a
+				// history written before that rule still adds up.
+				continue
 			}
-			// A release that names what took over is a cut: the work went
-			// straight to another task. One that names nothing is a stop, and
-			// picking up again afterwards is a resumption, not a cut.
-			if f.became != "" {
+			// Work taken up while other work is already under way is attention
+			// moving. Taken up with nothing else open it is a start.
+			if len(open) > 0 {
 				w.switches++
+			}
+			w.stretches = append(w.stretches, stretch{task: f.task, from: f.at})
+			open[f.task] = len(w.stretches) - 1
+		case FocusReleased:
+			if at, was := open[f.task]; was {
+				w.stretches[at].until = f.at
+				delete(open, f.task)
 			}
 		}
 	}
-	if open >= 0 {
-		w.stretches[open].until = now
+	// Whatever is still held runs to now: it is work being done, not work that
+	// never happened.
+	for _, at := range open {
+		w.stretches[at].until = now
 	}
 	return w
 }

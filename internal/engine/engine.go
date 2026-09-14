@@ -6,6 +6,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"cairn/internal/domain"
@@ -200,7 +201,7 @@ func (e *Engine) Delete(number int) error {
 	// A task being worked on that goes away closes its stretch: without this the
 	// last stretch of it never ends, and the time keeps running on a task that
 	// no longer exists.
-	if held == number {
+	if slices.Contains(held, number) {
 		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
 			return err
 		}

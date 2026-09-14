@@ -17,7 +17,7 @@ type fake struct {
 	asked   []asked
 	tasks   []task.Task
 	goals   []objective.Objective
-	focus   int
+	focus   []int
 	version int64
 	// fail refuses everything; refuse refuses one operation by name, which is
 	// what a test needs to reach the path that gives up halfway through a

@@ -16,7 +16,7 @@ import (
 
 type fake struct {
 	tasks []task.Task
-	focus int
+	focus []int
 
 	version int64
 	// fail is a store that cannot be read at all; failOp is one that reads

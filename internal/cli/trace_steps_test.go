@@ -69,6 +69,10 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return w.Seed(`cairn task unfocus`)
 	})
 
+	sc.Step(`^I let task (\d+) go$`, func(n int) error {
+		return w.Seed(fmt.Sprintf(`cairn task unfocus %d`, n))
+	})
+
 	sc.Step(`^I moved task (\d+) to the (first|last) place$`, func(n int, where string) error {
 		return w.Seed(fmt.Sprintf(`cairn task move %d --%s`, n, where))
 	})

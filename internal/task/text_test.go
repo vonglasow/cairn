@@ -176,16 +176,17 @@ func TestUnder_listsWhatHangsUnderATask(t *testing.T) {
 	}
 }
 
-// Tree marks the task being worked on, and marks nothing else. The second half
-// is what carries the rule: one line marked proves nothing if every line is.
-func TestTree_marksOnlyTheTaskInFocus(t *testing.T) {
+// Tree marks the tasks being worked on, and marks nothing else. The second
+// half is what carries the rule: one line marked proves nothing if every line
+// is.
+func TestTree_marksTheTasksInFocus(t *testing.T) {
 	tasks := []Task{
 		listed(1, "Ship it", NoParent),
 		listed(2, "Write the tests", 1),
 		listed(3, "Something else", NoParent),
 	}
 	for _, inFocus := range []int{1, 2, 3} {
-		got := Tree(tasks, Marks{InFocus: inFocus})
+		got := Tree(tasks, Marks{InFocus: []int{inFocus}})
 		if marks := strings.Count(got, InFocusMark); marks != 1 {
 			t.Errorf("with %d in focus, %d lines are marked, want exactly one:\n%s",
 				inFocus, marks, got)
@@ -197,6 +198,25 @@ func TestTree_marksOnlyTheTaskInFocus(t *testing.T) {
 			if want := "#" + strconv.Itoa(inFocus); !strings.Contains(line, want) {
 				t.Errorf("with %d in focus, %q is the marked line", inFocus, line)
 			}
+		}
+	}
+}
+
+// Several tasks in focus are all marked, and a task that is not in focus is
+// not — several can be under way at once, one per agent session.
+func TestTree_marksEveryTaskInFocus(t *testing.T) {
+	tasks := []Task{
+		listed(1, "Ship it", NoParent),
+		listed(2, "Write the tests", 1),
+		listed(3, "Something else", NoParent),
+	}
+	got := Tree(tasks, Marks{InFocus: []int{1, 3}})
+	if marks := strings.Count(got, InFocusMark); marks != 2 {
+		t.Errorf("with two in focus, %d lines are marked, want two:\n%s", marks, got)
+	}
+	for _, line := range strings.Split(got, "\n") {
+		if strings.Contains(line, "Write the tests") && strings.Contains(line, InFocusMark) {
+			t.Errorf("a task that is not in focus is marked: %q", line)
 		}
 	}
 }

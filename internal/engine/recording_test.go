@@ -244,10 +244,14 @@ func TestMove_isWrittenDownWithWhereItWent(t *testing.T) {
 	}
 }
 
-// Taking the focus writes it down, and taking it from another task writes the
-// release on that other task, naming what took over. Without the naming a cut
-// cannot be told from a stop, and every duration after it is wrong.
-func TestPutInFocus_writesTheTakeAndTheReleaseItCaused(t *testing.T) {
+// Taking a task up writes it down, and leaves whatever else is being worked on
+// alone.
+//
+// It used to release the one before and name what took over, so that a cut
+// could be told from a stop. Nothing is cut any more: several tasks are worked
+// on at once, one per agent session, and their stretches overlap on purpose.
+// What closes a stretch is letting go of that task, and nothing else.
+func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	e := openEngine(t)
 	first := factsOf(add(t, e, "First")).number
 	second := factsOf(add(t, e, "Second")).number
@@ -262,21 +266,32 @@ func TestPutInFocus_writesTheTakeAndTheReleaseItCaused(t *testing.T) {
 	}
 
 	onFirst := actsOf(t, e, first)[bornFirst:]
-	if len(onFirst) != 2 {
-		t.Fatalf("%d acts on the task left behind, want a take and a release", len(onFirst))
+	if len(onFirst) != 1 {
+		t.Fatalf("%d acts on the task taken up first, want only its take", len(onFirst))
 	}
 	if did, _, _, _ := didOf(onFirst[0]); did != trace.FocusTaken {
-		t.Errorf("the first act is %q, want %q", did, trace.FocusTaken)
+		t.Errorf("the act is %q, want %q", did, trace.FocusTaken)
 	}
-	did, _, _, became := didOf(onFirst[1])
+	// And letting it go writes the release, which is what closes its stretch.
+	if err := e.LetGoOf(first); err != nil {
+		t.Fatalf("LetGoOf: %v", err)
+	}
+	released := actsOf(t, e, first)[bornFirst:]
+	if len(released) != 2 {
+		t.Fatalf("%d acts once it was let go, want a take and a release", len(released))
+	}
+	// The release names nothing: nothing took over. It used to name the task
+	// that had, so a cut could be told from a stop — and with several held at
+	// once there is no cut to tell.
+	did, _, _, became := didOf(released[1])
 	if did != trace.FocusReleased {
 		t.Errorf("the second act is %q, want %q", did, trace.FocusReleased)
 	}
-	if !strings.Contains(became, "task "+strconv.Itoa(second)) {
-		t.Errorf("the release says %q, want it to name the task that took over", became)
+	if became != "" {
+		t.Errorf("the release says %q took over, and nothing did", became)
 	}
 	if written := actsOf(t, e, second)[bornSecond:]; len(written) != 1 {
-		t.Errorf("%d acts on the task taking over, want just the take", len(written))
+		t.Errorf("%d acts on the task taken up second, want just its take", len(written))
 	}
 }
 

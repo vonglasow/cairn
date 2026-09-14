@@ -134,4 +134,24 @@ UPDATE tasks SET objective = COALESCE((
 DROP TABLE IF EXISTS task_objectives;`,
 		loses: "every objective a task served beyond the first",
 	},
+	{
+		name: "more than one task can be in focus",
+		does: `
+CREATE TABLE IF NOT EXISTS focused (
+	id          INTEGER PRIMARY KEY AUTOINCREMENT,
+	task_number INTEGER NOT NULL UNIQUE
+);
+INSERT OR IGNORE INTO focused (task_number)
+	SELECT task_number FROM focus WHERE task_number IS NOT NULL;
+DROP TABLE IF EXISTS focus;`,
+		undoes: `
+CREATE TABLE IF NOT EXISTS focus (
+	id          INTEGER PRIMARY KEY CHECK (id = 1),
+	task_number INTEGER REFERENCES tasks(number) ON DELETE SET NULL
+);
+INSERT OR IGNORE INTO focus (id, task_number)
+	VALUES (1, (SELECT task_number FROM focused ORDER BY id LIMIT 1));
+DROP TABLE IF EXISTS focused;`,
+		loses: "every task in focus beyond the first one taken",
+	},
 }

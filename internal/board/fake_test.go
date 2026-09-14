@@ -20,7 +20,7 @@ import (
 type fake struct {
 	cards []reading.Card
 	goals []reading.Goal
-	focus int
+	focus []int
 	acts  []trace.Act
 
 	version int64

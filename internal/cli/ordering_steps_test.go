@@ -121,24 +121,25 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 			return listedInOrder(rowsOf(hangingUnder(w.Out.Stdout), true), list)
 		})
 
-	sc.Step(`^it marks "([^"]*)" as the task in focus$`, func(title string) error {
+	marked := func(title string) error {
 		for _, line := range strings.Split(w.Out.Stdout, "\n") {
 			if strings.Contains(line, title) && strings.Contains(line, task.InFocusMark) {
 				return nil
 			}
 		}
-		return fmt.Errorf("%q is not marked as the task in focus:\n%s", title, w.Out.Stdout)
-	})
+		return fmt.Errorf("%q is not marked as in focus:\n%s", title, w.Out.Stdout)
+	}
+	sc.Step(`^it marks "([^"]*)" as the task in focus$`, marked)
+	sc.Step(`^it marks "([^"]*)" as a task in focus$`, marked)
 
-	// This is the step that makes the single holder observable. Showing one
-	// task marked proves nothing on its own: the answer would read the same
-	// with every task marked.
+	// This is the step that makes the count observable. Showing one task
+	// marked proves nothing on its own: the answer would read the same with
+	// every task marked.
 	sc.Step(`^it marks nothing else$`, func() error {
-		if marked := strings.Count(w.Out.Stdout, task.InFocusMark); marked != 1 {
-			return fmt.Errorf("%d lines are marked as in focus, want exactly one:\n%s",
-				marked, w.Out.Stdout)
-		}
-		return nil
+		return marksExactly(w.Out.Stdout, 1)
+	})
+	sc.Step(`^it marks (\d+) tasks? in focus$`, func(n int) error {
+		return marksExactly(w.Out.Stdout, n)
 	})
 
 	sc.Step(`^it says which column each of them is in$`, func() error {
@@ -156,4 +157,14 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+}
+
+// marksExactly says whether an answer marks the number of tasks in focus it
+// was meant to. Counted rather than looked for: an answer that marked every
+// line would satisfy any number of "this one is marked" on its own.
+func marksExactly(out string, want int) error {
+	if got := strings.Count(out, task.InFocusMark); got != want {
+		return fmt.Errorf("%d lines are marked as in focus, want %d:\n%s", got, want, out)
+	}
+	return nil
 }

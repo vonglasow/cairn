@@ -350,8 +350,40 @@ func TestMigrate_makesRoomForPlacesAndTheFocus(t *testing.T) {
 	if !holdsColumn(t, s, "tasks", "position") {
 		t.Error("tasks carry no \"position\": the order has nowhere to be kept")
 	}
+	// "focused" and not "focus": the one row that held one task became a row
+	// per task, so that several can be worked on at once.
+	if !holdsTable(t, s, "focused") {
+		t.Error("no \"focused\" table: what is being worked on has nowhere to be kept")
+	}
+	if holdsTable(t, s, "focus") {
+		t.Error("the old one-row \"focus\" table is still there beside the new one")
+	}
+}
+
+// Rolling back the change that made room for several keeps the first task
+// taken up, which is the most a single row can hold.
+func TestMigrate_rollingBackTheManyFocusKeepsTheFirst(t *testing.T) {
+	s := openStore(t)
+	first := factsOf(keep(t, s, "First")).number
+	second := factsOf(keep(t, s, "Second")).number
+	for _, n := range []int{first, second} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatalf("AddFocus(%d): %v", n, err)
+		}
+	}
+	rollBackPast(t, s, "more than one task can be in focus")
+	if holdsTable(t, s, "focused") {
+		t.Error("\"focused\" survived the rollback: a change that cannot be undone is not one")
+	}
 	if !holdsTable(t, s, "focus") {
-		t.Error("no \"focus\" table: what is being worked on has nowhere to be kept")
+		t.Fatal("the one-row \"focus\" table did not come back")
+	}
+	var held int
+	if err := s.db.QueryRow(`SELECT task_number FROM focus WHERE id = 1`).Scan(&held); err != nil {
+		t.Fatalf("reading the one row back: %v", err)
+	}
+	if held != first {
+		t.Errorf("the one row holds task %d, want the first taken up, %d", held, first)
 	}
 }
 
@@ -361,8 +393,10 @@ func TestMigrate_rollingBackTakesThePlacesAway(t *testing.T) {
 	if holdsColumn(t, s, "tasks", "position") {
 		t.Error("tasks still carry \"position\" after the rollback")
 	}
-	if holdsTable(t, s, "focus") {
-		t.Error("\"focus\" survived the rollback: a change that cannot be undone is not one")
+	for _, table := range []string{"focus", "focused"} {
+		if holdsTable(t, s, table) {
+			t.Errorf("%q survived the rollback: a change that cannot be undone is not one", table)
+		}
 	}
 }
 

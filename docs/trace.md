@@ -127,21 +127,29 @@ same way `cairn migration list` ends with what the store holds. Numbers, not a
 reading of them: how many stretches of work, on how many tasks, how many
 switches, and the time per task.
 
-A **stretch** is a `focus taken` closed by the `focus released` that follows.
-There is no other definition available, and it is what every duration rests on.
+A **stretch** is a `focus taken` on a task, closed by that task's own `focus
+released`. There is no other definition available, and it is what every
+duration rests on.
 
-**A release says what took over, and that was not in the first design.** Moving
-the focus straight from one task to another writes two acts at the same moment
-— a release, then a take — so nothing in the sequence alone tells that apart
-from stopping and starting again. Measured: counting a switch as "a take while
-a stretch is open" gave zero for a day of nothing but switching. So a release
-names the task that took over, and a switch is a release that names one; a
-release naming nothing is a stop, and picking up later is a resumption.
+**Stretches overlap.** Amended 2026-09-14. Several tasks are worked on at once
+— one per agent session — so taking up a second does not close the first, and a
+day's stretches can add up to more than the day. That is not a fault in the
+arithmetic: it is what working on three things at once actually costs to
+describe.
 
-That is the distinction asked for — a cut is being pulled onto something else,
-not finishing and going to a meeting — and it now rests on what was written
-down rather than on reading between the lines. It is also what a person wants
-to see: the line says what interrupted them.
+**A switch is work taken up while other work is already open.** It was read off
+the release before: moving the focus straight from one task to another wrote a
+release then a take at the same moment, so the release named what took over and
+a switch was a release that named one. Nothing takes over any more — the first
+task stays held — so what attention moving looks like is a take landing on top
+of something already open, which is what it is now counted as. Taking up the
+first thing of the day is a start, not a switch.
+
+The earlier design rejected that very rule, on a measurement: counting "a take
+while a stretch is open" gave zero for a day of nothing but switching. It gave
+zero because a take never landed on an open stretch — the release always came
+first. Now it always does land on one, and the same count says what it was
+meant to say all along.
 
 Its limit, before anything is built on it: a stretch left open overnight runs
 all night, and fourteen hours land on a task nobody touched. That is tolerable

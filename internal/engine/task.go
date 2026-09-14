@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/store"
 	"cairn/internal/task"
 )
 
@@ -308,13 +307,13 @@ var TaskMove = Operation{
 var TaskFocus = Operation{
 	Thing:   "task",
 	Verb:    "focus",
-	Short:   "Put a task in focus, or say which one is",
-	Does:    "Put a task in focus, or say which one is. One task is in focus at a time.",
+	Short:   "Put a task in focus, or say which ones are",
+	Does:    "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once.",
 	Level:   Write,
 	Needs:   AStore,
 	Answers: Focus{},
 	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task being worked on"},
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to take up, or nothing to name every task in focus"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, named := in.Whole("number")
@@ -329,7 +328,11 @@ var TaskFocus = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &t, Progress: p, InFocus: &n}, nil
+		held, err := on.Engine.Focus()
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &t, Progress: p, InFocus: &held}, nil
 	},
 }
 
@@ -337,17 +340,24 @@ var TaskFocus = Operation{
 var TaskUnfocus = Operation{
 	Thing:   "task",
 	Verb:    "unfocus",
-	Short:   "Let go of the task in focus",
-	Does:    "Leave nothing in focus. Letting go of nothing is not a failure.",
+	Short:   "Let go of a task in focus, or of them all",
+	Does:    "Let go of one task and keep the rest, or of every task in focus when no number is given. Letting go of nothing is not a failure.",
 	Level:   Write,
 	Needs:   AStore,
 	Answers: Focus{},
-	Run: func(on On, _ Input) (Answer, error) {
-		if err := on.Engine.LetGo(); err != nil {
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to let go of, or nothing to let go of them all"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, named := in.Whole("number")
+		if named {
+			if err := on.Engine.LetGoOf(n); err != nil {
+				return Answer{}, err
+			}
+		} else if err := on.Engine.LetGo(); err != nil {
 			return Answer{}, err
 		}
-		nothing := store.NoFocus
-		return Answer{InFocus: &nothing}, nil
+		return whatIsInFocus(on)
 	},
 }
 
@@ -401,26 +411,19 @@ func listing(on On, in Input) (Answer, error) {
 	// where each task sits is not what was asked. Which field carries them is
 	// how Of and RenderText tell the two apart.
 	if kept.Narrows() {
-		return Answer{Matched: tasks, InFocus: held, NothingBlocks: free}, nil
+		return Answer{Matched: tasks, InFocus: &held, NothingBlocks: free}, nil
 	}
-	return Answer{Tasks: tasks, InFocus: held, NothingBlocks: free}, nil
+	return Answer{Tasks: tasks, InFocus: &held, NothingBlocks: free}, nil
 }
 
 // whatIsInFocus answers about the task being worked on, and says so plainly
 // when there is none: nothing in focus is an answer, not an absence.
 func whatIsInFocus(on On) (Answer, error) {
-	t, number, err := on.Engine.InFocus()
+	held, numbers, err := on.Engine.InFocus()
 	if err != nil {
 		return Answer{}, err
 	}
-	if number == store.NoFocus {
-		return Answer{InFocus: &number}, nil
-	}
-	p, err := on.Engine.TaskProgress(number)
-	if err != nil {
-		return Answer{}, err
-	}
-	return Answer{Task: &t, Progress: p, InFocus: &number}, nil
+	return Answer{Held: held, InFocus: &numbers}, nil
 }
 
 // TraceShow says what has been done to a task.

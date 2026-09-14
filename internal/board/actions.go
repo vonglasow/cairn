@@ -8,6 +8,7 @@
 package board
 
 import (
+	"slices"
 	"strconv"
 
 	tea "charm.land/bubbletea/v2"
@@ -101,10 +102,15 @@ func (b Board) toggleFocus() tea.Cmd {
 	number := b.task
 	held := b.snap.Focus
 	return func() tea.Msg {
-		op, given := engine.TaskUnfocus, map[string]string{}
-		if held != number {
-			op, given = engine.TaskFocus, map[string]string{"number": strconv.Itoa(number)}
+		// Both name the task. Several can be in focus at once, so letting go
+		// of nothing in particular would let go of every one of them — which
+		// is what bare `task unfocus` is for, and not what pressing f on one
+		// card means.
+		op := engine.TaskFocus
+		if slices.Contains(held, number) {
+			op = engine.TaskUnfocus
 		}
+		given := map[string]string{"number": strconv.Itoa(number)}
 		if _, err := b.work.Ask(op, engine.Input{Given: given}); err != nil {
 			return Looked{Err: err}
 		}

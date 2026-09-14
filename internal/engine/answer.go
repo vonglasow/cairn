@@ -47,8 +47,10 @@ func OfTask(t task.Task, p domain.Progress) Task {
 // one listing from another without inspecting a row.
 type Tasks struct {
 	Tasks []Task `json:"tasks"`
-	// InFocus is which task is being worked on, said once. Null when none is.
-	InFocus *int `json:"in_focus"`
+	// InFocus is which tasks are being worked on, said once for the whole
+	// listing. Always a list, empty when none are: a machine reads the one
+	// field either way rather than testing for null first.
+	InFocus []int `json:"in_focus"`
 }
 
 // Objectives is how a listing of objectives crosses.
@@ -84,8 +86,8 @@ type Acts struct {
 // can be described only as "either", and a client that will not read an either
 // reads nothing at all.
 type Focus struct {
-	Task    *Task `json:"task"`
-	InFocus *int  `json:"in_focus"`
+	Tasks   []Task `json:"tasks"`
+	InFocus []int  `json:"in_focus"`
 }
 
 // Objective is how an objective crosses to a machine. Tasks holds what was
@@ -160,7 +162,10 @@ func Of(a Answer) any {
 	// focus, and a listing carries its rows too. Checked first, because the
 	// plain-task branch below would otherwise swallow it.
 	if a.Task != nil && a.InFocus != nil {
-		return ofFocus(*a.Task, a.Progress, *a.InFocus)
+		return ofFocus([]task.Task{*a.Task}, a.Progress, *a.InFocus)
+	}
+	if a.Held != nil && a.InFocus != nil {
+		return ofFocus(a.Held, domain.Progress{}, *a.InFocus)
 	}
 	if a.Task != nil {
 		return OfTask(*a.Task, a.Progress)
@@ -228,53 +233,65 @@ func ofActs(acts []trace.Act) []trace.Shape {
 	return out
 }
 
-// ofFocus turns the task being worked on into what crosses. Both fields are
-// filled: the number is what a machine tests, the task is what it would
+// ofFocus turns the tasks being worked on into what crosses. Both fields are
+// filled: the numbers are what a machine tests, the tasks are what it would
 // otherwise have to ask for straight after.
-func ofFocus(t task.Task, p domain.Progress, number int) Focus {
-	held := OfTask(t, p)
-	return Focus{Task: &held, InFocus: heldOrNothing(&number)}
+//
+// Progress is counted for the first and not for the rest, for the reason
+// ofTasks gives: counting what hangs under each would ask for it once per
+// task. The operation that names one task counts it; the one that names a list
+// counts none.
+func ofFocus(held []task.Task, p domain.Progress, numbers []int) Focus {
+	out := make([]Task, 0, len(held))
+	for _, t := range held {
+		out = append(out, OfTask(t, p))
+		p = domain.Progress{}
+	}
+	return Focus{Tasks: out, InFocus: listed(numbers)}
 }
 
-// nothingInFocus turns "no task is being worked on" into what crosses — the
-// same shape as ofFocus with both fields empty, so a machine reads one field
-// of one shape whether or not anything is held. Null rather than zero: zero is
-// a number no task carries, and a machine testing for it would have to know
-// that.
-func nothingInFocus(number int) Focus {
-	return Focus{InFocus: heldOrNothing(&number)}
+// nothingInFocus turns "nothing is being worked on" into what crosses — the
+// same shape as ofFocus with both lists empty, so a machine reads one field of
+// one shape whether or not anything is held.
+func nothingInFocus(numbers []int) Focus {
+	return Focus{Tasks: []Task{}, InFocus: listed(numbers)}
 }
 
 // ofTasks turns a listing of tasks into what crosses, with no progress counted
 // per item: a listing that counted what hangs under each task would ask for it
 // once per task to answer one line each.
-func ofTasks(tasks []task.Task, inFocus *int) Tasks {
+func ofTasks(tasks []task.Task, inFocus *[]int) Tasks {
 	out := make([]Task, 0, len(tasks))
 	for _, t := range tasks {
 		out = append(out, OfTask(t, domain.Progress{}))
 	}
-	return Tasks{Tasks: out, InFocus: heldOrNothing(inFocus)}
+	// Null when the answer was not asked about the focus at all, and a list —
+	// empty or not — when it was. A listing nobody asked does not get to claim
+	// that nothing is being worked on.
+	if inFocus == nil {
+		return Tasks{Tasks: out}
+	}
+	return Tasks{Tasks: out, InFocus: listed(*inFocus)}
 }
 
-// heldOr reads which task an answer says is in focus as a number, answering
-// none when the answer said nothing about it. What a person reads wants a
-// number, since it marks a row by comparing it.
-func heldOr(inFocus *int) int {
+// heldOr reads which tasks an answer says are in focus, answering none when
+// the answer said nothing about it. A listing that was not asked does not get
+// to claim that nothing is being worked on.
+func heldOr(inFocus *[]int) []int {
 	if inFocus == nil {
-		return task.NothingInFocus
+		return nil
 	}
 	return *inFocus
 }
 
-// heldOrNothing reads the same thing for a machine, which wants the absence
-// told rather than spelled zero: null when none is held or when the answer
-// said nothing about it — a listing that was not asked does not get to claim
-// none.
-func heldOrNothing(inFocus *int) *int {
-	if heldOr(inFocus) == task.NothingInFocus {
-		return nil
+// listed is a run of numbers as a machine reads it: a list either way, empty
+// rather than null when nothing is held, so a client reads one field of one
+// shape whether or not anything is being worked on.
+func listed(numbers []int) []int {
+	if numbers == nil {
+		return []int{}
 	}
-	return inFocus
+	return numbers
 }
 
 // ofObjectives turns every objective into what crosses, with nothing counted
@@ -365,10 +382,23 @@ func RenderText(op Operation, a Answer) string {
 	if a.Since != nil {
 		return trace.List(a.Since) + trace.Summary(trace.AddedUp(a.Since, time.Now()))
 	}
+	if a.Held != nil {
+		return heldText(a.Held, a)
+	}
 	if a.InFocus != nil {
 		return "nothing is in focus\n"
 	}
 	return ""
+}
+
+// heldText renders the tasks being worked on, saying so plainly when there are
+// none. Rendered as a listing rather than as one card each: several can be
+// held, and a dozen cards one after another is a page nobody reads.
+func heldText(held []task.Task, a Answer) string {
+	if len(held) == 0 {
+		return "nothing is in focus\n"
+	}
+	return task.Tree(held, marksOf(a))
 }
 
 // tasksText renders every task, saying so when there is none.

@@ -44,7 +44,7 @@ func fullBoard() *fake {
 		{Number: 1, Title: "Ship the desktop board", State: "active", Priority: "high", Described: true, Done: 7, Total: 12, Labels: []string{"product"}, Deadline: on("2026-10-16")},
 		{Number: 2, Title: "Cut the onboarding time in half", State: "on-hold", Priority: "normal", Done: 1, Total: 8},
 	}
-	f.focus = 6
+	f.focus = []int{6}
 	// A life, so the history panel has something in it, and enough of one that
 	// it has to scroll.
 	for i := range 40 {

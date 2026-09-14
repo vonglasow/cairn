@@ -321,11 +321,15 @@ type Answer struct {
 	Since []trace.Act
 	// Acts is what has been done to a task, oldest first.
 	Acts []trace.Act
-	// InFocus is which task is being worked on — the number when one is, zero
-	// when none is. Every listing carries it, because a listing marks it; and
-	// the operations that answer about the focus carry it alone, since "nothing
-	// is in focus" is an answer and not an absence.
-	InFocus *int
+	// InFocus is which tasks are being worked on. Nil says the answer is not
+	// about the focus at all; a list — empty or not — says it is. Every
+	// listing carries it, because a listing marks it; and the operations that
+	// answer about the focus carry it alone, since "nothing is in focus" is an
+	// answer and not an absence.
+	InFocus *[]int
+	// Held are the tasks being worked on, for the operation that names them
+	// rather than marking them.
+	Held []task.Task
 	// NothingBlocks are the tasks a listing marks as waiting on nothing any
 	// more. A fact of the store rather than of a task — knowing it means
 	// reading the state of every task that blocks a row, which a narrowed

@@ -6,6 +6,7 @@ package engine
 // of the store has been left out.
 
 import (
+	"slices"
 	"testing"
 
 	"cairn/internal/task"
@@ -82,15 +83,18 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
-	if narrowed.InFocus != nil {
-		t.Errorf("it says %d is in focus, and did not hand that task over", *narrowed.InFocus)
+	// None of these rows, rather than nothing at all: the listing was asked, so
+	// it answers about what it is showing. Said as a number it could not find
+	// among its own rows, a caller would be left looking for it.
+	if narrowed.InFocus == nil || len(*narrowed.InFocus) != 0 {
+		t.Errorf("it says %v is in focus, and did not hand that task over", narrowed.InFocus)
 	}
 
 	kept, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "backlog"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
-	if kept.InFocus == nil || *kept.InFocus != task.OfTask(shipIt).Number {
+	if kept.InFocus == nil || !slices.Contains(*kept.InFocus, task.OfTask(shipIt).Number) {
 		t.Errorf("in focus = %v, want the task it kept", kept.InFocus)
 	}
 }

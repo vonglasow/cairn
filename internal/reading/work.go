@@ -1,6 +1,7 @@
 package reading
 
 import (
+	"slices"
 	"strconv"
 	"time"
 
@@ -69,9 +70,10 @@ type Goal struct {
 // and redraws from it; nothing is fetched while a key is being handled, so what
 // is on screen is always one consistent reading rather than several.
 type Snapshot struct {
-	Cards   []Card
-	Goals   []Goal
-	Focus   int
+	Cards []Card
+	Goals []Goal
+	// Focus is every task being worked on, in the order they were taken up.
+	Focus   []int
 	Version int64
 }
 
@@ -94,7 +96,7 @@ func Look(w Work) (Snapshot, error) {
 	// The focus comes with the listing that marks it rather than through a
 	// question of its own: every listing carries it, and asking twice could
 	// answer twice differently.
-	held := 0
+	var held []int
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
@@ -124,7 +126,7 @@ func Numbered(n int) engine.Input {
 }
 
 // cardOf turns one task into what a card draws.
-func cardOf(w Work, t task.Task, held int) (Card, error) {
+func cardOf(w Work, t task.Task, held []int) (Card, error) {
 	told := task.OfTask(t)
 	// The deadline crosses the membrane written the way a person reads it, and
 	// the board needs the day itself to say "in two days". Read back with the
@@ -156,7 +158,7 @@ func cardOf(w Work, t task.Task, held int) (Card, error) {
 		Objectives:  told.Objectives,
 		SubDone:     along.Done(),
 		SubTotal:    along.Total(),
-		InFocus:     told.Number == held,
+		InFocus:     slices.Contains(held, told.Number),
 	}, nil
 }
 

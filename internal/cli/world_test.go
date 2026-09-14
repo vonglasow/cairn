@@ -600,21 +600,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if !said {
 			return fmt.Errorf("the listing says nothing about the focus")
 		}
-		if got, want := fmt.Sprint(held), fmt.Sprint(n); got != want {
+		numbers, ok := held.([]any)
+		if !ok {
+			return fmt.Errorf("in_focus is %T, want a list of numbers", held)
+		}
+		if got, want := fmt.Sprint(numbers), fmt.Sprint([]any{float64(n)}); got != want {
 			return fmt.Errorf("it says %s is in focus, want %s", got, want)
 		}
 		return nil
 	})
 
 	// The flag belongs to the task, so a listing the task is not in has nothing
-	// to say about it — narrowing past the task in focus says none rather than
-	// naming a task the answer does not carry.
+	// to say about it — narrowing past the tasks in focus says none of these
+	// rather than naming a task the answer does not carry.
 	sc.Step(`^it says no task in it is in focus$`, func() error {
 		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {
 			return err
 		}
-		if held := envelope["in_focus"]; held != nil {
+		held := envelope["in_focus"]
+		if held == nil {
+			return fmt.Errorf("the listing says nothing about the focus, and it was asked")
+		}
+		if numbers, ok := held.([]any); !ok || len(numbers) != 0 {
 			return fmt.Errorf("it says %v is in focus, and the answer does not carry it", held)
 		}
 		return nil

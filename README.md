@@ -26,8 +26,9 @@ cairn task move 3 --first        # to the head of the ones it sits with
 cairn task move 3 --after 1      # directly behind another
 cairn task move 3 --last
 cairn task focus 3               # this is what I am working on
-cairn task focus                 # which one is that again?
-cairn task unfocus
+cairn task focus                 # which ones are those again?
+cairn task unfocus 3             # done with that one
+cairn task unfocus               # done with all of them
 ```
 
 | option | what it takes |
@@ -62,11 +63,13 @@ moving a task behind one in another column is refused, and so is moving a
 sub-task behind a root task — a sub-task takes its place among its sisters,
 where its parent sits carrying the whole block.
 
-`task focus` says which single task you are working on. One at a time, so putting
-another there releases the first, and deleting it leaves nothing in focus. The
-listing marks it. It is not the head of the list and does not move anything: a
-day goes ten minutes on one task, an hour on another and ten minutes back on the
-first, and none of that is a reordering.
+`task focus` says what you are working on. Several at once is fine — one agent
+session per task, and they run together — so taking up another keeps the first,
+`task unfocus 3` lets go of one, and bare `task unfocus` lets go of them all.
+Deleting a task takes it out. The listing marks every one of them. It is not the
+head of the list and does not move anything: a day goes ten minutes on one task,
+an hour on another and ten minutes back on the first, and none of that is a
+reordering.
 
 The place itself is never shown. The order is what there is to see, and a second
 number beside the one a task already carries would only mislead. See
@@ -138,9 +141,11 @@ trace records what changed, never what was read.
 
 A listing over a period ends with what can be worked out from it: how many
 stretches of work, on how many tasks, how often the work switched, and the time
-per task. A **stretch** is the focus taken until it is let go. A release that
-names another task is a cut — you were pulled onto something else; one that
-names nothing is a stop, and picking up later is a resumption.
+per task. A **stretch** is a task taken up until it is let go, and stretches
+overlap: taking up a second leaves the first held, so a day's stretches can add
+up to more than the day. A **switch** is work taken up while other work is
+already open — being pulled onto something else rather than starting your
+first thing of the morning.
 
 The total of the stretches is not the length of the day, and cairn does not
 pretend otherwise: nothing is in focus during a meeting, so a day has gaps, and

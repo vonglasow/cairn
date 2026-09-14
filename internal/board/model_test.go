@@ -34,7 +34,7 @@ func TestTakingTheFocusAndLettingItGo(t *testing.T) {
 		t.Fatalf("the board took hold of %v, want task 1", f.tookHold)
 	}
 
-	f.focus = 1
+	f.focus = []int{1}
 	held := standing(f)
 	held = hit(held, "l", "i")
 	if _, cmd := held.pressed("f"); cmd != nil {
@@ -623,7 +623,7 @@ func TestAFocusThatRefusesIsSaid(t *testing.T) {
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("a focus that could not be taken was passed over")
 	}
-	f.focus = 1
+	f.focus = []int{1}
 	held := hit(standing(f), "l", "i")
 	_, cmd = held.pressed("f")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {

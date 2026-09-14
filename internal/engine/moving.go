@@ -7,8 +7,8 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"slices"
 
-	"cairn/internal/store"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 )
@@ -49,8 +49,9 @@ type places interface {
 	MoveFirst(int) error
 	MoveLast(int) error
 	MoveAfter(int, int) error
-	Focus() (int, error)
-	SetFocus(int) error
+	Focus() ([]int, error)
+	AddFocus(int) error
+	DropFocus(int) error
 	ClearFocus() error
 }
 
@@ -100,19 +101,21 @@ func placeNamed(at Place, target int) string {
 	}
 }
 
-// Focus says which task is being worked on, or zero when none is. A listing
-// asks for the number rather than the task: it marks a line, and reading the
-// whole task to mark one would be a second query per listing.
-func (e *Engine) Focus() (int, error) {
+// Focus says which tasks are being worked on, oldest first, and nothing when
+// none are. A listing asks for the numbers rather than the tasks: it marks
+// lines, and reading every task to mark a few would be a second query per
+// listing.
+func (e *Engine) Focus() ([]int, error) {
 	return e.places.Focus()
 }
 
-// PutInFocus makes a task the one being worked on, releasing whichever was
-// before, and hands back the task so whoever asked sees what they are on.
+// PutInFocus takes up a task alongside whatever else is being worked on, and
+// hands it back so whoever asked sees what they are on.
 //
-// Both acts are written down, the release first: a stretch of work on the task
-// being left has to close before the next one opens, or every duration after it
-// runs on to the end of the day.
+// Alongside and not instead. One task at a time is how a person works, and how
+// this read for a long while; but an agent session is started per task, and
+// several run at once — a focus that held one made every other one invisible
+// to whoever asked what was being worked on.
 func (e *Engine) PutInFocus(number int) (task.Task, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
@@ -122,26 +125,14 @@ func (e *Engine) PutInFocus(number int) (task.Task, error) {
 	if err != nil {
 		return task.Task{}, err
 	}
-	// Already the one being worked on: nothing happens, and nothing is written
-	// down. Letting it through would close a stretch and open another on the
-	// same task at the same moment — a switch nobody made, counted among the
-	// ones they did.
-	if held == number {
+	// Already being worked on: nothing happens, and nothing is written down.
+	// Letting it through would open a second stretch on a task whose first has
+	// not closed, and every duration after it would count the same work twice.
+	if slices.Contains(held, number) {
 		return t, nil
 	}
-	if err := e.places.SetFocus(number); err != nil {
+	if err := e.places.AddFocus(number); err != nil {
 		return task.Task{}, err
-	}
-	// The release says what took over, and not only that it happened. Two acts
-	// land at the same moment when the focus moves straight from one task to
-	// another, so nothing in the sequence alone tells that apart from stopping
-	// and starting again — and the difference is exactly what a cut is. It reads
-	// as information too: what interrupted you is on the line.
-	if held != store.NoFocus {
-		if err := e.record(held, trace.FocusReleased, "", "",
-			fmt.Sprintf("to task %d", number)); err != nil {
-			return task.Task{}, err
-		}
 	}
 	if err := e.record(number, trace.FocusTaken, "", "", ""); err != nil {
 		return task.Task{}, err
@@ -149,10 +140,27 @@ func (e *Engine) PutInFocus(number int) (task.Task, error) {
 	return t, nil
 }
 
-// LetGo leaves nothing in focus. Letting go of nothing is not a failure, so
-// this answers the same either way — but it is not an act either, and nothing
-// is written down: a stretch closing that never opened would fault every
-// duration around it.
+// LetGoOf leaves one task and keeps the rest. Letting go of one that was never
+// taken up is not a failure — but it is not an act either, and nothing is
+// written down: a stretch closing that never opened would fault every duration
+// around it.
+func (e *Engine) LetGoOf(number int) error {
+	held, err := e.places.Focus()
+	if err != nil {
+		return err
+	}
+	if err := e.places.DropFocus(number); err != nil {
+		return err
+	}
+	if !slices.Contains(held, number) {
+		return nil
+	}
+	return e.record(number, trace.FocusReleased, "", "", "")
+}
+
+// LetGo leaves nothing in focus at all, and writes down the release of every
+// task that was being worked on. Every one of them: a release that named only
+// the first would leave the others' stretches open for ever.
 func (e *Engine) LetGo() error {
 	held, err := e.places.Focus()
 	if err != nil {
@@ -161,26 +169,29 @@ func (e *Engine) LetGo() error {
 	if err := e.places.ClearFocus(); err != nil {
 		return err
 	}
-	if held == store.NoFocus {
-		return nil
+	for _, number := range held {
+		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
+			return err
+		}
 	}
-	return e.record(held, trace.FocusReleased, "", "", "")
+	return nil
 }
 
-// InFocus hands back the task being worked on and its number, or an empty task
-// and store.NoFocus when none is. The number comes back alongside so a caller
-// answering about the focus does not have to ask twice for it.
-func (e *Engine) InFocus() (task.Task, int, error) {
-	number, err := e.Focus()
+// InFocus hands back the tasks being worked on and their numbers, and nothing
+// at all when none are. The numbers come back alongside so a caller answering
+// about the focus does not have to ask twice for them.
+func (e *Engine) InFocus() ([]task.Task, []int, error) {
+	numbers, err := e.Focus()
 	if err != nil {
-		return task.Task{}, store.NoFocus, err
+		return nil, nil, err
 	}
-	if number == store.NoFocus {
-		return task.Task{}, store.NoFocus, nil
+	held := make([]task.Task, 0, len(numbers))
+	for _, number := range numbers {
+		t, err := e.tasks.Find(number)
+		if err != nil {
+			return nil, nil, fmt.Errorf("reading a task in focus: %w", err)
+		}
+		held = append(held, t)
 	}
-	t, err := e.tasks.Find(number)
-	if err != nil {
-		return task.Task{}, store.NoFocus, fmt.Errorf("reading the task in focus: %w", err)
-	}
-	return t, number, nil
+	return held, numbers, nil
 }

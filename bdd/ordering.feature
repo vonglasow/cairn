@@ -159,7 +159,14 @@ Feature: Ordering
       Then it fails
       And it says where a task can be moved
 
-  Rule: One task is in focus, and never more than one
+  Rule: Several tasks can be in focus at once
+
+    Amended 2026-09-14. This rule read "One task is in focus, and never more
+    than one", and putting a second in focus released the first. A person
+    works on one thing at a time, which is what it was written for — but an
+    agent session is started per task, and several run at once. A focus that
+    held one made every other one invisible to whoever asked what was being
+    worked on.
 
     @ordering-focus-nothing-at-first
     Scenario: nothing is in focus to begin with
@@ -175,20 +182,63 @@ Feature: Ordering
       When I run `cairn task focus 2`
       Then it reports the task titled "Second"
 
-    @ordering-focus-releases-the-one-before
-    Scenario: putting another in focus releases the one before
+    @ordering-focus-keeps-the-one-before
+    Scenario: putting another in focus keeps the one before
       Given I added a task titled "First"
       And I added a task titled "Second"
       And I put task 1 in focus
       And I put task 2 in focus
       When I run `cairn task list`
-      Then it marks "Second" as the task in focus
-      And it marks nothing else
+      Then it marks "First" as a task in focus
+      And it marks "Second" as a task in focus
+      And it marks 2 tasks in focus
 
-    @ordering-unfocus
-    Scenario: the focus is let go
+    @ordering-focus-says-everything-it-holds
+    Scenario: asking about the focus names every task in it
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      And I put task 2 in focus
+      When I run `cairn task focus`
+      Then it succeeds
+      And it lists the tasks in the order "First", "Second"
+
+    @ordering-focus-twice-holds-it-once
+    Scenario: a task already in focus is not held twice
       Given I added a task titled "The only one"
       And I put task 1 in focus
+      And I put task 1 in focus
+      When I run `cairn task list`
+      Then it marks 1 task in focus
+
+    @ordering-unfocus-one
+    Scenario: one task is let go and the others stay
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      And I put task 2 in focus
+      When I run `cairn task unfocus 1`
+      Then it succeeds
+      When I run `cairn task list`
+      Then it marks "Second" as a task in focus
+      And it marks 1 task in focus
+
+    @ordering-unfocus-one-that-is-not-held
+    Scenario: letting go of a task that was not in focus is not a failure
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      When I run `cairn task unfocus 2`
+      Then it succeeds
+      When I run `cairn task list`
+      Then it marks 1 task in focus
+
+    @ordering-unfocus
+    Scenario: bare unfocus lets go of everything at once
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      And I put task 2 in focus
       When I run `cairn task unfocus`
       Then it succeeds
       And it says nothing is in focus

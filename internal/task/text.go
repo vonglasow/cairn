@@ -161,10 +161,6 @@ const InFocusMark = "  (in focus)"
 // Written out and exported for the reasons InFocusMark is.
 const NothingBlocksMark = "  (nothing blocks it)"
 
-// NothingInFocus is the number to hand Tree when no task is being worked on.
-// Zero is safe to mean none because the store never hands out zero.
-const NothingInFocus = 0
-
 // Marks are what a listing says about a task that the task does not carry
 // itself: which one is being worked on, and which ones are waiting on nothing
 // any more. Both are facts of the store rather than of any task, which is why
@@ -175,8 +171,8 @@ const NothingInFocus = 0
 // field costs nothing, where a signature that grows a parameter costs every
 // caller.
 type Marks struct {
-	// InFocus is the task being worked on, or NothingInFocus.
-	InFocus int
+	// InFocus are the tasks being worked on, and nothing when none are.
+	InFocus []int
 	// NothingBlocks are the blocked tasks whose every named blocker is done.
 	NothingBlocks []int
 }
@@ -225,13 +221,13 @@ func Lines(tasks []Task, marks Marks) string {
 	return out.String()
 }
 
-// marked renders one line of a listing with whatever the listing says about it.
-// One task is in focus at a time, so at most one line carries that; any number
-// of tasks can be waiting on nothing.
+// marked renders one line of a listing with whatever the listing says about
+// it. Any number of tasks can be in focus, and any number can be waiting on
+// nothing.
 func marked(t Task, marks Marks) string {
 	line := Line(t)
 	number := rowOf(t).number
-	if number == marks.InFocus {
+	if slices.Contains(marks.InFocus, number) {
 		line += InFocusMark
 	}
 	if slices.Contains(marks.NothingBlocks, number) {

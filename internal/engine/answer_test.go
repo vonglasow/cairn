@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -291,35 +292,52 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}
 }
 
-// What crosses about the focus: the task being worked on and its number, in one
-// shape.
-func TestOf_saysWhichTaskIsInFocusAndHandsItOver(t *testing.T) {
+// What crosses about the focus: the tasks being worked on and their numbers,
+// in one shape.
+func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
 	one := builtTask(t, 7, "The one")
-	held, ok := Of(Answer{Task: &one, InFocus: of(7)}).(Focus)
+	held, ok := Of(Answer{Task: &one, InFocus: list(7)}).(Focus)
 	if !ok {
-		t.Fatalf("Of on the focus = %T, want Focus", Of(Answer{Task: &one, InFocus: of(7)}))
+		t.Fatalf("Of on the focus = %T, want Focus", Of(Answer{Task: &one, InFocus: list(7)}))
 	}
-	if held.InFocus == nil || *held.InFocus != 7 {
-		t.Errorf("in_focus = %v, want 7", held.InFocus)
+	if !slices.Equal(held.InFocus, []int{7}) {
+		t.Errorf("in_focus = %v, want [7]", held.InFocus)
 	}
-	if held.Task == nil || held.Task.Number != 7 {
-		t.Errorf("the task handed over = %v, want task 7", held.Task)
+	if len(held.Tasks) != 1 || held.Tasks[0].Number != 7 {
+		t.Errorf("the tasks handed over = %v, want task 7", held.Tasks)
 	}
 }
 
-// Nothing in focus is the same shape with both fields empty, so a machine reads
-// one field of one shape either way. Null rather than zero: zero is a number no
-// task carries, and a machine testing for it would have to know that.
-func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
-	none, ok := Of(Answer{InFocus: of(task.NothingInFocus)}).(Focus)
+// Several at once, since several can be. Handed over in the order they were
+// taken up, which is the order the store answers them in.
+func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
+	first := builtTask(t, 1, "First")
+	second := builtTask(t, 2, "Second")
+	held, ok := Of(Answer{Held: []task.Task{second, first}, InFocus: list(2, 1)}).(Focus)
 	if !ok {
-		t.Fatalf("Of with nothing held = %T, want Focus", Of(Answer{InFocus: of(task.NothingInFocus)}))
+		t.Fatal("Of on several in focus did not answer the focus")
 	}
-	if none.InFocus != nil {
-		t.Errorf("in_focus = %v, want null", none.InFocus)
+	if !slices.Equal(held.InFocus, []int{2, 1}) {
+		t.Errorf("in_focus = %v, want [2 1]", held.InFocus)
 	}
-	if none.Task != nil {
-		t.Errorf("a task crossed with nothing in focus: %v", none.Task)
+	if len(held.Tasks) != 2 || held.Tasks[0].Number != 2 || held.Tasks[1].Number != 1 {
+		t.Errorf("the tasks handed over = %v, want 2 then 1", held.Tasks)
+	}
+}
+
+// Nothing in focus is the same shape with both lists empty, so a machine reads
+// one field of one shape either way. A list rather than null: a client that
+// reads a list either way does not have to test for null first.
+func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
+	none, ok := Of(Answer{InFocus: list()}).(Focus)
+	if !ok {
+		t.Fatalf("Of with nothing held = %T, want Focus", Of(Answer{InFocus: list()}))
+	}
+	if none.InFocus == nil || len(none.InFocus) != 0 {
+		t.Errorf("in_focus = %v, want an empty list", none.InFocus)
+	}
+	if len(none.Tasks) != 0 {
+		t.Errorf("a task crossed with nothing in focus: %v", none.Tasks)
 	}
 }
 
@@ -329,15 +347,15 @@ func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
 
-	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: of(2)}).(Tasks)
+	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: list(2)}).(Tasks)
 	if !ok {
 		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
 	if len(crossed.Tasks) != 2 {
 		t.Fatalf("%d tasks crossed, want 2", len(crossed.Tasks))
 	}
-	if crossed.InFocus == nil || *crossed.InFocus != 2 {
-		t.Errorf("in_focus = %v, want 2", crossed.InFocus)
+	if !slices.Equal(crossed.InFocus, []int{2}) {
+		t.Errorf("in_focus = %v, want [2]", crossed.InFocus)
 	}
 }
 
@@ -348,10 +366,14 @@ func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
 	if !ok {
 		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
-	if crossed.InFocus != nil {
-		t.Errorf("in_focus = %v, want null", crossed.InFocus)
+	if len(crossed.InFocus) != 0 {
+		t.Errorf("in_focus = %v, want nothing", crossed.InFocus)
 	}
 }
+
+// list is a run of numbers as an answer carries them, for a test saying what
+// an answer said about the focus.
+func list(numbers ...int) *[]int { return &numbers }
 
 // A card asked for by number is a task and nothing else: it was not asked about
 // the focus, so it does not answer about it.
@@ -364,7 +386,7 @@ func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 
 // Nothing in focus is an answer a person reads, not an empty one.
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
-	got := RenderText(Operation{}, Answer{InFocus: of(task.NothingInFocus)})
+	got := RenderText(Operation{}, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
 	}
@@ -375,7 +397,7 @@ func TestRenderText_saysNothingIsInFocus(t *testing.T) {
 func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
 
-	marked := RenderText(Operation{}, Answer{Tasks: tasks, InFocus: of(2)})
+	marked := RenderText(Operation{}, Answer{Tasks: tasks, InFocus: list(2)})
 	if want := "Second" + task.InFocusMark; !strings.Contains(marked, want) {
 		t.Errorf("the listing does not carry %q:\n%s", want, marked)
 	}
@@ -399,4 +421,30 @@ func builtTask(t *testing.T, number int, title string) task.Task {
 	built.Tell(a)
 	a.Numbered(number)
 	return a.Task()
+}
+
+// Nothing in focus reads the same whether the answer carries an empty list of
+// tasks or none at all: `task unfocus` hands back what is left, and what is
+// left is often nothing.
+func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
+	got := RenderText(Operation{}, Answer{Held: []task.Task{}, InFocus: list()})
+	if got != "nothing is in focus\n" {
+		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
+	}
+}
+
+// Several in focus are rendered as a listing, each marked, rather than as one
+// card after another — a dozen cards in a row is a page nobody reads.
+func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
+	first := builtTask(t, 1, "First")
+	second := builtTask(t, 2, "Second")
+	got := RenderText(Operation{}, Answer{Held: []task.Task{first, second}, InFocus: list(1, 2)})
+	for _, want := range []string{"First", "Second"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the answer does not carry %q:\n%s", want, got)
+		}
+	}
+	if marks := strings.Count(got, task.InFocusMark); marks != 2 {
+		t.Errorf("%d lines are marked, want both:\n%s", marks, got)
+	}
 }

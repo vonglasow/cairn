@@ -250,8 +250,8 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		{TaskSearch, Answer{Matched: []task.Task{}}},
 		{TaskMove, Answer{Tasks: []task.Task{}}},
 		{TaskDelete, Answer{Deleted: of(1)}},
-		{TaskFocus, Answer{Task: of(task.Task{}), InFocus: of(1)}},
-		{TaskUnfocus, Answer{InFocus: of(0)}},
+		{TaskFocus, Answer{Task: of(task.Task{}), InFocus: list(1)}},
+		{TaskUnfocus, Answer{InFocus: list()}},
 		{TraceShow, Answer{Acts: []trace.Act{}}},
 		{TraceList, Answer{Since: []trace.Act{}}},
 		{ObjectiveShow, Answer{Objective: of(objective.Objective{})}},
@@ -277,8 +277,8 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 // these" — which a client has to resolve at runtime, and at least one refuses
 // outright. So the shape holds and the fields empty out.
 func TestAnswers_taskFocusAnswersOneShapeHeldOrNot(t *testing.T) {
-	held := reflect.TypeOf(Of(Answer{Task: of(task.Task{}), InFocus: of(1)}))
-	none := reflect.TypeOf(Of(Answer{InFocus: of(0)}))
+	held := reflect.TypeOf(Of(Answer{Task: of(task.Task{}), InFocus: list(1)}))
+	none := reflect.TypeOf(Of(Answer{InFocus: list()}))
 	if held != none {
 		t.Fatalf("task_focus answers a %s when one is held and a %s when none is", held, none)
 	}

@@ -79,15 +79,37 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 	}
 }
 
-// Letting the focus go is its own operation and names no task: the board has to
-// ask `task unfocus`, not `task focus` with nothing in it.
-func TestLettingTheFocusGoAsksTaskUnfocus(t *testing.T) {
+// Letting the focus go is its own operation, and it names the task: several
+// can be in focus at once, so letting go of nothing in particular would let go
+// of every one of them.
+func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
-	f.focus = 1
+	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo", InFocus: true}}
+	f.focus = []int{1}
 	got := asks(t, f, []string{"l", "i"}, "f")
 	if got.op.Thing != "task" || got.op.Verb != "unfocus" {
 		t.Errorf("asked %q %q, want task unfocus", got.op.Thing, got.op.Verb)
+	}
+	if got.in.Given["number"] != "1" {
+		t.Errorf("it let go of %q, want task 1", got.in.Given["number"])
+	}
+}
+
+// And a task that is not in focus is taken up alongside whatever else is,
+// rather than replacing it.
+func TestTakingUpATaskAsksTaskFocusByNumber(t *testing.T) {
+	f := newFake()
+	f.cards = []reading.Card{
+		{Number: 1, Title: "One", State: "todo"},
+		{Number: 2, Title: "Two", State: "todo", InFocus: true},
+	}
+	f.focus = []int{2}
+	got := asks(t, f, []string{"l", "i"}, "f")
+	if got.op.Thing != "task" || got.op.Verb != "focus" {
+		t.Errorf("asked %q %q, want task focus", got.op.Thing, got.op.Verb)
+	}
+	if got.in.Given["number"] != "1" {
+		t.Errorf("it took up %q, want task 1", got.in.Given["number"])
 	}
 }
 

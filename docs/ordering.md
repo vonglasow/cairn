@@ -177,7 +177,7 @@ The cost is real and small: a sub-task under way does not show up in a
 `current` section. That is the question `focus` answers, and it answers it
 better — what is being worked on is read from a mark, not from a section.
 
-## `focus` is the one task being worked on
+## `focus` is what is being worked on
 
 A day is not a queue. Ten minutes on `#1`, an hour on `#2`, ten minutes on a
 `#3` that has just arrived, ten minutes back on `#2`, twenty back on `#1`
@@ -185,13 +185,25 @@ because feedback came in. It **goes backwards**, and the head of a list does
 not.
 
 So this is a thing of its own, and the closest thing to it is git's `HEAD`: a
-single reference that moves constantly and remembers nothing about where it has
-been. It is stored the same way — one row holding one task number, pinned to
-one row by a constraint. The single holder is then true by construction rather
-than by a rule somebody has to keep: there is one row, so there is at most one
-task in focus. Empty is an ordinary state, not a missing row.
+reference that moves constantly and remembers nothing about where it has been.
 
-The task it names may be deleted, and the focus is let go when that happens —
+**It held one task, and now holds as many as are under way.** Amended
+2026-09-14. One at a time is how a person works, and it was stored to match:
+one row, pinned to one row by a constraint, so the single holder was true by
+construction rather than by a rule anybody had to keep. But an agent session is
+started per task, and several run at once — a focus that held one made every
+other one invisible to whoever asked what was being worked on. It is a row per
+task now, keyed by the task so nothing can be held twice, and the order the
+rows were made is the order they were taken up in. Holding none is an ordinary
+state, not a missing row.
+
+What that costs is worth naming: the single holder no longer comes free from
+the shape of the table, and "taking up what is already held changes nothing" is
+now a rule the store keeps rather than one the schema makes impossible to
+break. It is kept in one statement — an insert that ignores a conflict — which
+is the smallest place it could live.
+
+A task it names may be deleted, and it is let go when that happens —
 by hand, in the same statement's company as the labels. The schema declares the
 reference `ON DELETE SET NULL` and that clause never fires: SQLite leaves
 foreign keys off unless a connection turns them on, and cairn's does not. The
@@ -209,7 +221,10 @@ tasks can sit in it at once. `head` invites the one misreading this design had
 to undo, since focus is precisely *not* the head of the list. `doing`, `now`
 and `active` already appear 10, 14 and 27 times as ordinary English in the code
 and the docs, so as a term each would blur into prose. `focus` appeared
-nowhere, and carries its own singularity: one focuses on one thing.
+nowhere. It carried a singularity that no longer holds, and the word was kept
+anyway: renaming a term that is in the store, three surfaces, the MCP contract
+and every scenario would cost more than the slight stretch of "several things
+in focus" costs a reader.
 
 ## Moving reorders; changing column is an edit
 
@@ -243,7 +258,7 @@ all.
 | | |
 |---|---|
 | a position on a task | 1..N with no hole, within its column and under one parent |
-| `focus` | one row, one task number, empty when nothing is in hand |
+| `focused` | a row per task being worked on, in the order they were taken up |
 
 One column and one table, then, and not the two columns this design first
 carried. **When a task last changed column is not a column here.** It was

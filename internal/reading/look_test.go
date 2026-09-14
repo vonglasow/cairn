@@ -3,6 +3,7 @@ package reading
 import (
 	"cairn/internal/objective"
 	"cairn/internal/task"
+	"slices"
 	"testing"
 )
 
@@ -10,7 +11,7 @@ import (
 // listing that marks it rather than through a question of its own.
 func TestLookAsksTheTwoListingsAndTakesTheFocusFromThem(t *testing.T) {
 	f := newFake()
-	f.focus = 7
+	f.focus = []int{7}
 
 	found, err := Look(f)
 	if err != nil {
@@ -25,8 +26,8 @@ func TestLookAsksTheTwoListingsAndTakesTheFocusFromThem(t *testing.T) {
 	if f.asked[1].op.Thing != "objective" || f.asked[1].op.Verb != "list" {
 		t.Errorf("second asked %q %q, want objective list", f.asked[1].op.Thing, f.asked[1].op.Verb)
 	}
-	if found.Focus != 7 {
-		t.Errorf("Focus = %d, want 7 read off the listing", found.Focus)
+	if !slices.Equal(found.Focus, []int{7}) {
+		t.Errorf("Focus = %v, want 7 read off the listing", found.Focus)
 	}
 }
 
@@ -37,7 +38,7 @@ func TestLookTurnsTheTwoListingsIntoCardsAndGoals(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{aTask("Write the spec"), aTask("Ship the board")}
 	f.goals = []objective.Objective{aGoal("Ship cairn")}
-	f.focus = 2
+	f.focus = []int{2}
 	f.version = 41
 
 	found, err := Look(f)
@@ -94,10 +95,10 @@ func TestACardIsToldWhetherAnythingIsWrittenAboutIt(t *testing.T) {
 	}
 }
 
-func TestACardKnowsWhetherItIsTheOneInHand(t *testing.T) {
+func TestACardKnowsWhetherItIsInHand(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{numbered(3, "First"), numbered(4, "Second")}
-	f.focus = 4
+	f.focus = []int{4}
 
 	read := found(t, f)
 	if read.Cards[0].InFocus {
@@ -105,6 +106,22 @@ func TestACardKnowsWhetherItIsTheOneInHand(t *testing.T) {
 	}
 	if !read.Cards[1].InFocus {
 		t.Error("the task in hand was not marked as such")
+	}
+}
+
+// Several tasks can be in hand at once — one per agent session — and each of
+// them is marked.
+func TestEveryCardInHandIsMarked(t *testing.T) {
+	f := newFake()
+	f.tasks = []task.Task{numbered(3, "First"), numbered(4, "Second"), numbered(5, "Third")}
+	f.focus = []int{3, 5}
+
+	read := found(t, f)
+	if !read.Cards[0].InFocus || !read.Cards[2].InFocus {
+		t.Error("a task in hand was not marked as such")
+	}
+	if read.Cards[1].InFocus {
+		t.Error("a task that is not in hand was marked as though it were")
 	}
 }
 

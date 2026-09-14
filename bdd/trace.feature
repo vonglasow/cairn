@@ -46,6 +46,12 @@ Feature: The trace
 
   Rule: Taking the focus and letting it go are acts
 
+    Amended 2026-09-14. Taking up a second task used to close the stretch on
+    the first, and the release named what had taken over so a cut could be told
+    from a stop. Several tasks are now worked on at once, one per agent
+    session, and their stretches overlap on purpose — so nothing is cut, and
+    what closes a stretch is letting go of that task and nothing else.
+
     @trace-focus-taken-and-released
     Scenario: taking the focus and letting it go are both written down
       Given I added a task titled "Write the spec"
@@ -54,14 +60,26 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released"
 
-    @trace-focus-moving-on-closes-the-one-before
-    Scenario: putting another task in focus closes the stretch on the first
+    @trace-focus-taking-another-leaves-the-first-open
+    Scenario: putting another task in focus leaves the first one open
       Given I added a task titled "First"
       And I added a task titled "Second"
       And I put task 1 in focus
       And I put task 2 in focus
       When I run `cairn trace show 1`
+      Then it lists the acts in the order "created", "focus taken"
+
+    @trace-focus-letting-one-go-closes-only-that-one
+    Scenario: letting one task go closes its stretch and no other
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      And I put task 2 in focus
+      And I let task 1 go
+      When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released"
+      When I run `cairn trace show 2`
+      Then it lists the acts in the order "created", "focus taken"
 
     @trace-focus-closed-when-the-task-goes
     Scenario: deleting the task in focus closes the stretch, and its history stays

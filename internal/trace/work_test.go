@@ -8,7 +8,6 @@ package trace
 // and it is the only reason.
 
 import (
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -45,20 +44,6 @@ func stopped(task, hour, minute int) Act {
 	return a.Act()
 }
 
-// wentTo builds an act of the focus leaving one task straight for another,
-// which is what a cut is.
-func wentTo(task, hour, minute, next int) Act {
-	var a AsTold
-	a.On(task)
-	a.Did(FocusReleased)
-	a.NothingNamed()
-	a.WasNothing()
-	a.Became("to task " + itoa(next))
-	a.ByHand()
-	a.At(at(hour, minute))
-	return a.Act()
-}
-
 // somethingElse builds an act that is not about the focus at all, so a test can
 // check the arithmetic ignores it.
 func somethingElse(task, hour, minute int) Act {
@@ -72,9 +57,6 @@ func somethingElse(task, hour, minute int) Act {
 	a.At(at(hour, minute))
 	return a.Act()
 }
-
-// itoa writes a small number, for the task a cut went to.
-func itoa(n int) string { return strconv.Itoa(n) }
 
 func TestAddedUp_measuresOneStretchFromItsEnds(t *testing.T) {
 	w := AddedUp([]Act{took(1, 9, 0), stopped(1, 9, 45)}, at(18, 0))
@@ -114,18 +96,23 @@ func TestAddedUp_doesNotCountTheGapsBetweenStretches(t *testing.T) {
 	}
 }
 
-// A release that names what took over is a cut. One that names nothing is a
-// stop, and picking up again afterwards is a resumption — the distinction the
-// whole count rests on.
-func TestAddedUp_countsACutButNotAResumption(t *testing.T) {
+// A switch is work taken up while other work was already under way. Taken up
+// with nothing else open it is a start, not a switch.
+//
+// It used to be read off the release instead: a release naming what took over
+// was a cut, one naming nothing was a stop. Nothing names what took over any
+// more — several tasks are worked on at once and their stretches overlap on
+// purpose — so what attention moving looks like is a take landing on top of
+// something already open.
+func TestAddedUp_countsTakingUpWorkOnTopOfWorkAlreadyOpen(t *testing.T) {
 	for _, tc := range []struct {
 		what string
 		acts []Act
 		want int
 	}{
 		{
-			"the focus went straight to another task",
-			[]Act{took(1, 9, 0), wentTo(1, 9, 30, 2), took(2, 9, 30), stopped(2, 10, 0)},
+			"the second task was taken up while the first was still held",
+			[]Act{took(1, 9, 0), took(2, 9, 30), stopped(1, 10, 0), stopped(2, 10, 30)},
 			1,
 		},
 		{
@@ -134,18 +121,36 @@ func TestAddedUp_countsACutButNotAResumption(t *testing.T) {
 			0,
 		},
 		{
-			"twice straight from one task to another",
+			"a third was taken up on top of two already held",
 			[]Act{
-				took(1, 9, 0), wentTo(1, 9, 10, 2),
-				took(2, 9, 10), wentTo(2, 9, 20, 3),
-				took(3, 9, 20), stopped(3, 9, 30),
+				took(1, 9, 0), took(2, 9, 10), took(3, 9, 20),
+				stopped(1, 9, 30), stopped(2, 9, 40), stopped(3, 9, 50),
 			},
 			2,
+		},
+		{
+			"the same task taken up again while it is already held",
+			[]Act{took(1, 9, 0), took(1, 9, 10), stopped(1, 9, 30)},
+			0,
 		},
 	} {
 		if got := AddedUp(tc.acts, at(18, 0)).switches; got != tc.want {
 			t.Errorf("%s: %d switches, want %d", tc.what, got, tc.want)
 		}
+	}
+}
+
+// Stretches on different tasks overlap, and each is measured from its own ends
+// rather than being cut short by the next task being taken up.
+func TestAddedUp_measuresOverlappingStretchesSeparately(t *testing.T) {
+	w := AddedUp([]Act{
+		took(1, 9, 0), took(2, 9, 30), stopped(2, 10, 0), stopped(1, 11, 0),
+	}, at(18, 0))
+	if got, want := w.on(1), 2*time.Hour; got != want {
+		t.Errorf("time on task 1 = %s, want %s", got, want)
+	}
+	if got, want := w.on(2), 30*time.Minute; got != want {
+		t.Errorf("time on task 2 = %s, want %s", got, want)
 	}
 }
 
@@ -189,8 +194,8 @@ func TestAddedUp_namesTheTasksInOneSettledOrder(t *testing.T) {
 
 func TestSummary_saysTheCountsAndTheTimePerTask(t *testing.T) {
 	got := Summary(AddedUp([]Act{
-		took(1, 9, 0), wentTo(1, 9, 30, 2),
-		took(2, 9, 30), stopped(2, 10, 45),
+		took(1, 9, 0), took(2, 9, 30),
+		stopped(1, 9, 30), stopped(2, 10, 45),
 	}, at(18, 0)))
 	for _, want := range []string{
 		"2 stretches of work on 2 task(s)", "switched 1 time(s)", "#1  30m", "#2  1h 15m",

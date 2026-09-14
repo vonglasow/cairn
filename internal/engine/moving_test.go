@@ -5,12 +5,13 @@ package engine
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
-	"cairn/internal/store"
 	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // titlesHeld reads back the titles the engine lists, in the one order there is.
@@ -122,15 +123,12 @@ func TestMove_refusesATaskThatIsNotThere(t *testing.T) {
 func TestFocus_isNothingToBeginWith(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "The only one")
-	held, number, err := e.InFocus()
+	held, numbers, err := e.InFocus()
 	if err != nil {
 		t.Fatalf("InFocus: %v", err)
 	}
-	if number != store.NoFocus {
-		t.Errorf("InFocus = %d, want %d", number, store.NoFocus)
-	}
-	if got := factsOf(held).title; got != "" {
-		t.Errorf("it handed back the task %q, want none", got)
+	if len(numbers) != 0 || len(held) != 0 {
+		t.Errorf("InFocus = %v (%d tasks), want nothing", numbers, len(held))
 	}
 }
 
@@ -144,14 +142,39 @@ func TestPutInFocus_handsBackTheTaskBeingWorkedOn(t *testing.T) {
 	if got := factsOf(put).title; got != "Second" {
 		t.Errorf("PutInFocus handed back %q, want %q", got, "Second")
 	}
-	held, number, err := e.InFocus()
+	held, numbers, err := e.InFocus()
 	if err != nil {
 		t.Fatalf("InFocus: %v", err)
 	}
-	if number != second || factsOf(held).title != "Second" {
-		t.Errorf("InFocus = %d (%q), want %d (%q)",
-			number, factsOf(held).title, second, "Second")
+	if !slices.Equal(numbers, []int{second}) {
+		t.Errorf("InFocus = %v, want %v", numbers, []int{second})
 	}
+	if len(held) != 1 || factsOf(held[0]).title != "Second" {
+		t.Errorf("it handed back %d tasks, want the one titled %q", len(held), "Second")
+	}
+}
+
+// Several at once, in the order they were taken up. One at a time is what a
+// person does; an agent session is started per task, and several run together.
+func TestPutInFocus_holdsSeveralAtOnce(t *testing.T) {
+	e := openEngine(t)
+	first, second, third := three(t, e)
+	for _, n := range []int{third, first} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
+	}
+	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{third, first}) {
+		t.Errorf("Focus = %v (%v), want %v", got, err, []int{third, first})
+	}
+	// And taking up what is already held changes nothing at all.
+	if _, err := e.PutInFocus(third); err != nil {
+		t.Fatalf("PutInFocus again: %v", err)
+	}
+	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{third, first}) {
+		t.Errorf("Focus = %v (%v) after taking up what was held, want %v", got, err, []int{third, first})
+	}
+	_ = second
 }
 
 func TestPutInFocus_refusesATaskThatIsNotThere(t *testing.T) {
@@ -160,33 +183,68 @@ func TestPutInFocus_refusesATaskThatIsNotThere(t *testing.T) {
 	}
 }
 
+// Letting go of one leaves the rest held. Letting go of one that was never
+// held is not a failure: the state asked for already holds.
+func TestLetGoOf_releasesOneAndKeepsTheRest(t *testing.T) {
+	e := openEngine(t)
+	first, second, _ := three(t, e)
+	for _, n := range []int{first, second} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
+	}
+	if err := e.LetGoOf(first); err != nil {
+		t.Fatalf("LetGoOf: %v", err)
+	}
+	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{second}) {
+		t.Errorf("Focus = %v (%v), want %v", got, err, []int{second})
+	}
+	if err := e.LetGoOf(first); err != nil {
+		t.Errorf("LetGoOf a task that was not held = %v, want nothing wrong", err)
+	}
+	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{second}) {
+		t.Errorf("Focus = %v (%v), want %v", got, err, []int{second})
+	}
+}
+
 func TestLetGo_leavesNothingInFocus(t *testing.T) {
 	e := openEngine(t)
-	first, _, _ := three(t, e)
-	if _, err := e.PutInFocus(first); err != nil {
-		t.Fatalf("PutInFocus: %v", err)
+	first, second, _ := three(t, e)
+	for _, n := range []int{first, second} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
 	}
 	if err := e.LetGo(); err != nil {
 		t.Fatalf("LetGo: %v", err)
 	}
-	if number, err := e.Focus(); err != nil || number != store.NoFocus {
-		t.Errorf("Focus = %d (%v), want %d", number, err, store.NoFocus)
+	if got, err := e.Focus(); err != nil || len(got) != 0 {
+		t.Errorf("Focus = %v (%v), want nothing", got, err)
 	}
 }
 
-// The focus points at a task that may go away. It goes with it, and InFocus
-// answers "none" rather than a task it could not read.
-func TestInFocus_answersNoneOnceTheTaskIsDeleted(t *testing.T) {
+// The focus points at tasks that may go away. One goes with it, and InFocus
+// answers with the rest rather than a task it could not read.
+func TestInFocus_dropsATaskOnceItIsDeleted(t *testing.T) {
 	e := openEngine(t)
-	first, _, _ := three(t, e)
-	if _, err := e.PutInFocus(first); err != nil {
-		t.Fatalf("PutInFocus: %v", err)
+	first, second, _ := three(t, e)
+	for _, n := range []int{first, second} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
 	}
 	if err := e.Delete(first); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, number, err := e.InFocus(); err != nil || number != store.NoFocus {
-		t.Errorf("InFocus = %d (%v), want %d", number, err, store.NoFocus)
+	held, numbers, err := e.InFocus()
+	if err != nil {
+		t.Fatalf("InFocus: %v", err)
+	}
+	if !slices.Equal(numbers, []int{second}) {
+		t.Errorf("InFocus = %v, want %v once the first was deleted", numbers, []int{second})
+	}
+	if len(held) != 1 {
+		t.Errorf("it handed back %d tasks, want one", len(held))
 	}
 }
 
@@ -262,7 +320,7 @@ func TestListing_carriesTheOrderAndWhatIsInFocus(t *testing.T) {
 	if len(answer.Tasks) != 3 {
 		t.Errorf("it listed %d tasks, want 3", len(answer.Tasks))
 	}
-	if answer.InFocus == nil || *answer.InFocus != second {
+	if answer.InFocus == nil || !slices.Equal(*answer.InFocus, []int{second}) {
 		t.Errorf("InFocus = %v, want %d", answer.InFocus, second)
 	}
 }
@@ -275,11 +333,11 @@ func TestWhatIsInFocus_answersTheTaskOrSaysThereIsNone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("whatIsInFocus: %v", err)
 	}
-	if answer.Task != nil {
-		t.Errorf("it answered with a task, want none: %v", factsOf(*answer.Task).title)
+	if len(answer.Held) != 0 {
+		t.Errorf("it answered with %d tasks, want none", len(answer.Held))
 	}
-	if answer.InFocus == nil || *answer.InFocus != store.NoFocus {
-		t.Errorf("InFocus = %v, want %d", answer.InFocus, store.NoFocus)
+	if answer.InFocus == nil || len(*answer.InFocus) != 0 {
+		t.Errorf("InFocus = %v, want nothing", answer.InFocus)
 	}
 
 	if _, err := e.PutInFocus(first); err != nil {
@@ -289,8 +347,8 @@ func TestWhatIsInFocus_answersTheTaskOrSaysThereIsNone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("whatIsInFocus: %v", err)
 	}
-	if answer.Task == nil || factsOf(*answer.Task).title != "First" {
-		t.Errorf("it answered with %v, want the task titled %q", answer.Task, "First")
+	if len(answer.Held) != 1 || factsOf(answer.Held[0]).title != "First" {
+		t.Errorf("it answered with %d tasks, want the one titled %q", len(answer.Held), "First")
 	}
 }
 
@@ -342,7 +400,7 @@ func TestTaskFocus_answersWithTheTaskOrSaysThereIsNone(t *testing.T) {
 	if put.Task == nil || factsOf(*put.Task).title != "Second" {
 		t.Errorf("it answered with %v, want the task titled %q", put.Task, "Second")
 	}
-	if put.InFocus == nil || *put.InFocus != second {
+	if put.InFocus == nil || !slices.Equal(*put.InFocus, []int{second}) {
 		t.Errorf("InFocus = %v, want %d", put.InFocus, second)
 	}
 
@@ -350,8 +408,8 @@ func TestTaskFocus_answersWithTheTaskOrSaysThereIsNone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskFocus.Run with no number: %v", err)
 	}
-	if asked.Task == nil || factsOf(*asked.Task).title != "Second" {
-		t.Errorf("asking answered with %v, want the task in focus", asked.Task)
+	if len(asked.Held) != 1 || factsOf(asked.Held[0]).title != "Second" {
+		t.Errorf("asking answered with %d tasks, want the one in focus", len(asked.Held))
 	}
 }
 
@@ -375,10 +433,10 @@ func TestTaskUnfocus_answersThatNothingIsInFocus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskUnfocus.Run: %v", err)
 	}
-	if answer.InFocus == nil || *answer.InFocus != store.NoFocus {
-		t.Errorf("InFocus = %v, want %d", answer.InFocus, store.NoFocus)
+	if answer.InFocus == nil || len(*answer.InFocus) != 0 {
+		t.Errorf("InFocus = %v, want nothing", answer.InFocus)
 	}
-	if answer.Task != nil {
+	if len(answer.Held) != 0 {
 		t.Error("it answered with a task, want nothing in focus")
 	}
 }
@@ -401,5 +459,55 @@ func TestTaskMove_refusesATaskThatIsNotThere(t *testing.T) {
 		Given: map[string]string{"number": "99", "first": "true"},
 	}); !errors.Is(err, ErrNoSuchTask) {
 		t.Errorf("TaskMove.Run on a task that is not there = %v, want %v", err, ErrNoSuchTask)
+	}
+}
+
+// Letting go of everything writes the release on every task that was held, and
+// not only on the first: a release that named one would leave the others'
+// stretches open for ever.
+func TestLetGo_writesTheReleaseOnEveryTaskHeld(t *testing.T) {
+	e := openEngine(t)
+	first, second, _ := three(t, e)
+	for _, n := range []int{first, second} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
+	}
+	if err := e.LetGo(); err != nil {
+		t.Fatalf("LetGo: %v", err)
+	}
+	for _, n := range []int{first, second} {
+		released := 0
+		for _, a := range actsOf(t, e, n) {
+			if did, _, _, _ := didOf(a); did == trace.FocusReleased {
+				released++
+			}
+		}
+		if released != 1 {
+			t.Errorf("task %d carries %d releases, want one", n, released)
+		}
+	}
+}
+
+// Letting go of one task through the operation names it, and leaves the rest.
+func TestTaskUnfocus_letsGoOfTheTaskItWasGiven(t *testing.T) {
+	e := openEngine(t)
+	first, second, _ := three(t, e)
+	for _, n := range []int{first, second} {
+		if _, err := e.PutInFocus(n); err != nil {
+			t.Fatalf("PutInFocus(%d): %v", n, err)
+		}
+	}
+	answer, err := TaskUnfocus.Run(On{Engine: e}, Input{
+		Given: map[string]string{"number": itoaEngine(first)},
+	})
+	if err != nil {
+		t.Fatalf("TaskUnfocus.Run: %v", err)
+	}
+	if answer.InFocus == nil || !slices.Equal(*answer.InFocus, []int{second}) {
+		t.Errorf("InFocus = %v, want %v", answer.InFocus, []int{second})
+	}
+	if len(answer.Held) != 1 || factsOf(answer.Held[0]).title != "Second" {
+		t.Errorf("it answered with %d tasks, want the one still held", len(answer.Held))
 	}
 }
