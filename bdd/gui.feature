@@ -774,6 +774,33 @@ Feature: The desktop board
       Then the tab "TASKS" says it holds 2
       And the tab "OBJECTIVES" says it holds 1
 
+  Rule: The window takes work up and tells a sub-task apart
+
+    @gui-focus-takes-a-task-up
+    Scenario: a task is taken up and let go from the window
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "f"
+      Then the engine was asked "task focus" for task 1
+      When I press "f"
+      Then the engine was asked "task unfocus" for task 1
+
+    @gui-focus-shows-on-the-card
+    Scenario: a card says it is being worked on
+      Given I added a task titled "Write the spec"
+      And I put task 1 in focus
+      When I open the window
+      Then the card "Write the spec" says it is being worked on
+
+    @gui-a-sub-task-is-told-apart
+    Scenario: a sub-task is told apart from a task
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      When I open the window
+      Then the card "Write the spec" says it hangs under another
+      And the card "Ship it" does not
+
   Rule: A key does what the bar offers, where the bar offers it
 
     The bar along the bottom is what somebody reads to find out what a key

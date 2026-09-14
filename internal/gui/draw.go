@@ -245,7 +245,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 	if chosen {
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
-	say(gtx, th, skin.Faint, parts.Number, strconv.Itoa(c.Number), small)
+	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
 	say(gtx, th, skin.Ink, parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
 }
 

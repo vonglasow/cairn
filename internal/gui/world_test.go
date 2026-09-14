@@ -437,6 +437,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.addTask(t, "", d)
 	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
+	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, func(title string, under int) error {
+		_, err := w.other.Add(title, engine.Changes{Parent: &under})
+		return err
+	})
+	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
+		_, err := w.other.PutInFocus(n)
+		return err
+	})
 	sc.Step(`^the store refuses what it is asked to change$`, w.storeRefuses)
 
 	sc.When(`^I open the window$`, w.open)

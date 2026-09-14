@@ -205,6 +205,15 @@ walks the fields, as it does in the terminal.
 The columns stand a gap clear of that band. Against it, the tabs read as the
 board's first row.
 
+**A card carries two marks and no more.** The eleven the terminal board draws
+were left out of this window on purpose; these two earn their place because
+neither can be worked out by looking. A card gives no sign that somebody — or
+some agent session — is on it, and a sub-task looks exactly like a task while
+being the one thing that cannot be dragged wherever you like: it moves among
+its sisters and nowhere else. So the number line carries `↳` and its parent's
+number, and `●` when it is being worked on. `f` takes the chosen task up or
+lets it go, under the same key the terminal board uses.
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen

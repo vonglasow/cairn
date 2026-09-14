@@ -356,6 +356,23 @@ func (w Window) other() Window {
 	return w
 }
 
+// working takes up the chosen task, or lets it go when it is already being
+// worked on. Both name the task: several can be in focus at once, so letting
+// go of nothing in particular would let go of every one of them.
+func (w Window) working() Window {
+	op := engine.TaskFocus
+	for _, c := range w.snap.Cards {
+		if c.Number == w.chosen && c.InFocus {
+			op = engine.TaskUnfocus
+		}
+	}
+	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
 // Holds is how much a page holds, which is what its tab says beside its name.
 // Read off what is showing, so a search that narrows the board narrows what the
 // tabs claim as well.
@@ -455,6 +472,7 @@ func (w Window) Helping() []reading.Field {
 		{Name: "wheel", Value: "scroll what is under the pointer — a column, the objectives, a history"},
 		{Name: "↑↓ on a task", Value: "scroll its history — the bar beside it can be pulled too"},
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
+		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
 		{Name: "d", Value: "delete what is chosen — it asks first"},
 		{Name: "⌘N", Value: "add"},
 		{Name: "/ or ⌘F", Value: "search — it reaches the description and the reason"},
@@ -646,6 +664,12 @@ func (w Window) Key(name string) Window {
 				return w.Choose(offer)
 			}
 		}
+	}
+	// Taking a task up is not offered on the bar: the bar has room for what
+	// changes a task, and this changes what somebody is working on. It is in
+	// the help, under the same key the terminal board uses.
+	if name == "f" && w.screen == OnTheBoard && w.chosen != 0 && !w.chosenGoal {
+		return w.working()
 	}
 	// The two spellings of a key the bar has no room to write twice.
 	switch name {

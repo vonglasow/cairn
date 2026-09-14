@@ -398,6 +398,9 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the objectives all fit without scrolling$`, w.objectivesAllFit)
 	sc.Then(`^what is chosen has moved on one$`, w.chosenMovedOnOne)
 	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
+	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
+	sc.Then(`^the card "([^"]*)" says it hangs under another$`, w.cardSaysSubTask)
+	sc.Then(`^the card "([^"]*)" does not$`, w.cardSaysNoSuchThing)
 	sc.Then(`^what is chosen is in sight$`, w.chosenInSight)
 	sc.Then(`^the objectives have moved$`, w.objectivesMoved)
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
@@ -955,5 +958,53 @@ func (w *world) chosenMovedDownARow() error {
 		return fmt.Errorf("what is chosen went from %d to %d, and a row is %d", w.was, at, GoalsAcross())
 	}
 	w.was = at
+	return nil
+}
+
+// cardOf finds a card by its title, so a step can ask what it says.
+func (w *world) cardOf(title string) (reading.Card, error) {
+	for _, c := range w.w.Showing().Cards {
+		if c.Title == title {
+			return c, nil
+		}
+	}
+	return reading.Card{}, fmt.Errorf("no card titled %q", title)
+}
+
+func (w *world) cardSaysInFocus(title string) error {
+	c, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	if !c.InFocus {
+		return fmt.Errorf("%q does not say it is being worked on", title)
+	}
+	if !strings.Contains(Numbered(c), InFocusMark) {
+		return fmt.Errorf("the card for %q reads %q, and says nothing about being worked on",
+			title, Numbered(c))
+	}
+	return nil
+}
+
+func (w *world) cardSaysSubTask(title string) error {
+	c, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(Numbered(c), UnderMark) {
+		return fmt.Errorf("the card for %q reads %q, and says nothing about hanging under another",
+			title, Numbered(c))
+	}
+	return nil
+}
+
+func (w *world) cardSaysNoSuchThing(title string) error {
+	c, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	if strings.Contains(Numbered(c), UnderMark) {
+		return fmt.Errorf("the card for %q reads %q, and it hangs under nothing", title, Numbered(c))
+	}
 	return nil
 }
