@@ -7,6 +7,7 @@ package reading
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"cairn/internal/task"
@@ -57,4 +58,20 @@ func startOfDay(t time.Time) time.Time {
 // held over its own place lands nowhere, because it is already there.
 func MayLandAfter(held, target Card) bool {
 	return held.Number != target.Number && task.SitTogether(held.Parent, target.Parent)
+}
+
+// Serving is the work under one objective, in the order the listing gave it.
+//
+// It reads the snapshot both boards already hold rather than asking a question
+// of its own: every card says what it serves, and asking twice could answer
+// twice differently — the same reason the focus travels with the listing that
+// marks it.
+func Serving(cards []Card, objective int) []Card {
+	var under []Card
+	for _, c := range cards {
+		if slices.Contains(c.Objectives, objective) {
+			under = append(under, c)
+		}
+	}
+	return under
 }

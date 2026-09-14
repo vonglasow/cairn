@@ -470,6 +470,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.addTask(t, "", d)
 	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
+	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, func(title string, n int) error {
+		_, err := w.other.Add(title, engine.Changes{Objective: &[]string{fmt.Sprint(n)}})
+		return err
+	})
+	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)" serving objective (\d+)$`, func(title, state string, n int) error {
+		_, err := w.other.Add(title, engine.Changes{State: &state, Objective: &[]string{fmt.Sprint(n)}})
+		return err
+	})
 	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, func(title string, under int) error {
 		_, err := w.other.Add(title, engine.Changes{Parent: &under})
 		return err
@@ -528,6 +536,26 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I drag the history's bar to the bottom$`, w.dragHistoryBar)
+	sc.Step(`^I added (\d+) tasks serving objective (\d+)$`, func(n, serving int) error {
+		for i := range n {
+			_, err := w.other.Add(fmt.Sprintf("Task %d", i+1),
+				engine.Changes{Objective: &[]string{fmt.Sprint(serving)}})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I scroll down over the work under it$`, func() error { return w.scrollServing(1) })
+	sc.Step(`^I scroll up over the work under it$`, func() error { return w.scrollServing(-1) })
+	sc.Step(`^I scroll down over the work under it (\d+) times$`, func(n int) error {
+		for range n {
+			if err := w.scrollServing(1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I put the keyboard on "([^"]*)"$`, w.keyboardOn)
@@ -564,6 +592,20 @@ func (w *world) workedOn(times int) error {
 // has to be over for the history and not a column to move.
 func (w *world) middleOfHistory() Point {
 	box := HistoryBox(Over(w.w.width, w.w.height))
+	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+}
+
+func (w *world) scrollServing(by int) error {
+	w.was = w.w.serving
+	// One card a notch, the way a column is scrolled: these are cards.
+	w.w = w.w.Scroll(w.middleOfServing(), by*CardHeight)
+	return nil
+}
+
+// middleOfServing is a point inside the box the work under an objective is
+// drawn in, which is where a wheel has to be for it to scroll that box.
+func (w *world) middleOfServing() Point {
+	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 

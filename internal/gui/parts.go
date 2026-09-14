@@ -48,6 +48,14 @@ func PartsOf(box Box) Parts {
 	}
 }
 
+// CountedAt is where an objective's count sits on its number line: hard right,
+// so that it and the number are read as two separate things rather than as one
+// run of digits.
+func CountedAt(number Box, said string) Box {
+	wide := len([]rune(said)) * perGlyph
+	return Box{X: number.X + number.W - wide, Y: number.Y, W: wide, H: number.H}
+}
+
 // Over is the panel a detail or a form is drawn in: the middle of the window,
 // with the board still showing around it.
 //
@@ -308,6 +316,40 @@ func DetailFields(box Box) Box {
 func DetailHistory(box Box) Box {
 	left := DetailFields(box)
 	return Box{X: left.X + left.W, Y: box.Y, W: box.W - left.W, H: box.H}
+}
+
+// ServingHead is where the box under the fields says what it is: the left
+// column, below the last field, in the room the fields did not take.
+func ServingHead(box Box, fields []reading.Field) Box {
+	left := DetailFields(box)
+	return Box{
+		X: left.X + padding,
+		Y: FieldTop(box, fields, len(fields)),
+		W: left.W - padding - padding,
+		H: lineHigh,
+	}
+}
+
+// ServingBox is the frame the work under an objective is drawn in: from under
+// its own heading down to just above what the panel offers, so it reaches
+// neither. Never smaller than one line, the way the history's frame is not —
+// a frame that collapses is a frame somebody reads as missing.
+func ServingBox(box Box, fields []reading.Field) Box {
+	head := ServingHead(box, fields)
+	top := head.Y + head.H + between
+	return Box{
+		X: head.X,
+		Y: top,
+		W: head.W - barWide - between,
+		H: max(lineHigh, PanelOfferAt(box, 0).Y-padding-top),
+	}
+}
+
+// ServingBar is the track beside that box, in the room its frame gave up for
+// it — the same shape the history's bar has.
+func ServingBar(box Box, fields []reading.Field) Box {
+	frame := ServingBox(box, fields)
+	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
 }
 
 // HistoryHead is where that column says what it is.

@@ -1,6 +1,7 @@
 package reading
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -95,4 +96,32 @@ func TestMayLandAfter_answersBeforeTheGestureIsOver(t *testing.T) {
 			t.Errorf("%s: MayLandAfter = %v, want %v", tc.what, got, tc.want)
 		}
 	}
+}
+
+// Serving is the work under one objective, taken from the listing both boards
+// already hold. No question of its own: the snapshot carries what each task
+// serves, and asking again could answer differently.
+func TestServing_isTheWorkUnderOneObjective(t *testing.T) {
+	cards := []Card{
+		{Number: 1, Title: "Write the spec", Objectives: []int{1}},
+		{Number: 2, Title: "Buy a lamp"},
+		{Number: 3, Title: "Draw the band", Objectives: []int{2, 1}},
+		{Number: 4, Title: "Something else", Objectives: []int{2}},
+	}
+	got := titlesOf(Serving(cards, 1))
+	want := []string{"Write the spec", "Draw the band"}
+	if !slices.Equal(got, want) {
+		t.Errorf("Serving(1) = %v, want %v", got, want)
+	}
+	if under := Serving(cards, 9); len(under) != 0 {
+		t.Errorf("Serving(9) = %v, want nothing under an objective nothing serves", titlesOf(under))
+	}
+}
+
+func titlesOf(cards []Card) []string {
+	var said []string
+	for _, c := range cards {
+		said = append(said, c.Title)
+	}
+	return said
 }

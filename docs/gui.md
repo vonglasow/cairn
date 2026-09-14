@@ -262,6 +262,32 @@ and goes is a bar somebody reaches for and does not find. Its grip says two
 things at once — how tall it is, how much of the history is showing; where it
 sits, which part — and it is never drawn smaller than can be taken hold of.
 
+**An objective opens on the work that serves it**, in a box under its fields,
+headed `WHAT SERVES IT`. They are drawn as **cards** — the same cards the board
+draws, at the same height, scrolled a card at a time by the wheel over them or
+by `↑↓`, with a bar beside them. A run of text lines was what it did first, and
+it made the one place that lists tasks the one place a task does not look like
+a task.
+
+The right column stays the history's. Taking it for an objective was the other
+way round, and it cost every task the thing that column was built for; an
+objective carries one line there saying it has no history of its own, because
+the trace is kept of tasks. An objective nothing serves yet says so in the box
+in as many words — an empty frame reads as a box that failed to load rather
+than as a question nobody has answered yet.
+
+It opened on a history before, and on the wrong one: the panel asked for the
+trace of the chosen number without asking which kind of thing carried it, so
+opening objective 1 showed whatever had happened to *task* 1 — a stranger's
+history, presented as the objective's. Measured, not reasoned about.
+
+**An objective's card says how much it carries and how much is done** —
+`7/12 · 58%`, on the number line it otherwise leaves half empty. The share is
+rounded down, so an objective one task short of finished does not read 100%.
+An objective nothing serves carries no count at all: `0/0` and a share of
+nothing are two ways of dividing by zero, and `0%` on an objective nobody has
+started reads as a failure rather than as one waiting for its first task.
+
 Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field
 touched is its own `task edit`, and twelve fields touched is twelve lines of

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -980,4 +981,110 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	if got := painted(drawn(t, w), above, Dark().Panel); got != 0 {
 		t.Errorf("%d pixels of objective were drawn above the run they belong in", got)
 	}
+}
+
+// The work under an objective is drawn as cards in its own box under the
+// fields, it stays inside that box however much of it there is, and the bar
+// beside it says where in it somebody is.
+//
+// Drawn and not merely known: this box was a run of text lines first, and
+// nothing in the suite could tell the difference until it was rendered.
+func TestTheWorkUnderAnObjectiveIsDrawnAsCardsInItsBox(t *testing.T) {
+	f := newFake()
+	var cards []reading.Card
+	for i := range 30 {
+		// A priority whose edge is a colour nothing else on this panel uses,
+		// so that what is counted below is a card and not the panel behind it.
+		cards = append(cards, reading.Card{
+			Number: i + 1, Title: fmt.Sprintf("Task %d", i+1), State: "todo",
+			Priority: "critical", Objectives: []int{1},
+		})
+	}
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: cards,
+		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
+	}
+	w = w.Key("tab")
+	w = w.Click(goalMiddle(w, 1)).Key("enter")
+	if w.Screen() != OnDetail || !w.ChosenGoal() {
+		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
+	}
+
+	frame := ServingBox(Over(w.width, w.height), w.Shown())
+	track := ServingBar(Over(w.width, w.height), w.Shown())
+	shot := drawn(t, w)
+
+	edge := Dark().Priority["critical"]
+	if painted(shot, frame, edge) == 0 {
+		t.Error("no card was drawn in the box under the fields")
+	}
+	// Nothing below the box: thirty cards are far more than it holds, and they
+	// must be cut to it the way a column's are.
+	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: CardHeight}
+	if got := painted(shot, under, edge); got != 0 {
+		t.Errorf("%d pixels of card ran out of the bottom of the box", got)
+	}
+
+	// The grip is at the top before anything is scrolled, and lower once it is.
+	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
+	if painted(shot, high, Dark().Edge) == 0 {
+		t.Error("the grip is not at the top of a list nobody has scrolled")
+	}
+	scrolled := drawn(t, w.Key("down").Key("down").Key("down").Key("down").Key("down"))
+	if painted(scrolled, high, Dark().Edge) == painted(shot, high, Dark().Edge) {
+		t.Error("the grip did not move when the list was scrolled")
+	}
+}
+
+// An objective nothing serves says so where its cards would have been, rather
+// than leaving a frame somebody reads as a box that failed to load.
+func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board", State: "active"}},
+	}
+	w = w.Key("tab")
+	w = w.Click(goalMiddle(w, 1)).Key("enter")
+
+	frame := ServingBox(Over(w.width, w.height), w.Shown())
+	shot := drawn(t, w)
+	if painted(shot, Inside(frame), Dark().Faint) == 0 {
+		t.Error("the box says nothing where an objective nothing serves should say so")
+	}
+	if got := painted(shot, frame, Dark().Priority["normal"]); got != 0 {
+		t.Errorf("%d pixels of card were drawn for an objective nothing serves", got)
+	}
+}
+
+// An objective's card says how much it carries and how much is done, on the
+// objectives tab, without anybody opening it.
+func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 12}},
+	}
+	w = w.Key("tab")
+
+	said := Counted(w.Reading().Goals[0])
+	if said != "7/12 · 58%" {
+		t.Fatalf("Counted = %q", said)
+	}
+	box := CountedAt(PartsOf(GoalAt(w.Layout(), 0, 0)).Number, said)
+	if painted(drawn(t, w), box, Dark().Faint) == 0 {
+		t.Error("the count was not drawn on the objective's card")
+	}
+}
+
+// goalMiddle is the point a person would click to hit an objective's card.
+func goalMiddle(w Window, number int) Point {
+	for at, g := range reading.Sorted(w.Showing().Goals) {
+		if g.Number == number {
+			box := GoalAt(w.Layout(), at, w.goals)
+			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+		}
+	}
+	return Point{}
 }

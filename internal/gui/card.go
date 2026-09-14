@@ -3,6 +3,7 @@ package gui
 // What a card says, worked out before anything is drawn.
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -64,4 +65,19 @@ func Numbered(c reading.Card) string {
 		line += InFocusMark
 	}
 	return line
+}
+
+// Counted is what an objective's card says of the work under it: how many
+// tasks serve it, how many are done, and what share of it that is. Empty when
+// nothing serves it — "0/0" and a share of nothing are two ways of dividing by
+// zero, and a card saying 0% of an objective nobody has started reads as a
+// failure rather than as an objective waiting for its first task.
+//
+// The share is rounded down: an objective one task short of finished must not
+// read 100%.
+func Counted(g reading.Goal) string {
+	if g.Total == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d/%d · %d%%", g.Done, g.Total, g.Done*100/g.Total)
 }

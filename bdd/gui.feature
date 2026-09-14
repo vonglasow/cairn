@@ -808,6 +808,103 @@ Feature: The desktop board
       Then the tab "TASKS" says it holds 2
       And the tab "OBJECTIVES" says it holds 1
 
+  Rule: An objective opens on the work that serves it
+
+    An objective is a question — is this finished — and the answer is the tasks
+    under it. Opening one shows them by name and by where each stands, because
+    a count alone says how far along it is and never what is left.
+
+    They sit under the fields, in what the left column has left, and they are
+    cards — the same cards the board draws, at the same height, scrolled the
+    same way. A run of text lines would make the one place that lists tasks the
+    one place a task does not look like a task.
+
+    The right column stays the history: it is what a task opens onto, and
+    moving it aside for an objective would cost every task the thing it was
+    built for.
+
+    @gui-an-objective-opens-on-what-serves-it
+    Scenario: opening an objective shows the work that serves it
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      And I added a task titled "Buy a lamp"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the desktop board"
+      And I press "enter"
+      Then the detail is open on "Ship the desktop board"
+      And the detail draws a card for "Write the spec" under its fields
+      And the detail draws no card for "Buy a lamp"
+      And the cards under the fields are the height of a card
+      And the right column is still headed "HISTORY"
+
+    @gui-the-work-under-an-objective-scrolls
+    Scenario: more work than the box holds scrolls, and stops at both ends
+      Given I added an objective titled "Ship the desktop board"
+      And I added 30 tasks serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the desktop board"
+      And I press "enter"
+      Then the work under it has more to show than it has room for
+      And the work under it is at its beginning
+      When I scroll down over the work under it
+      Then the work under it has moved
+      When I scroll up over the work under it
+      Then the work under it is at its beginning
+      When I scroll down over the work under it 99 times
+      Then the work under it is at its end
+
+    @gui-the-arrows-scroll-the-work-under-an-objective
+    Scenario: the arrows scroll the work while an objective is open
+      Given I added an objective titled "Ship the desktop board"
+      And I added 30 tasks serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the desktop board"
+      And I press "enter"
+      And I press "down"
+      Then the work under it has moved
+      When I press "up"
+      Then the work under it is at its beginning
+
+    @gui-an-objective-card-says-how-much-is-done
+    Scenario: an objective says how much work it carries and how much is done
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      And I added a task titled "Ship it" with the state "done" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the card for objective 1 says "1/2"
+      And the card for objective 1 says "50%"
+
+    @gui-an-objective-nothing-serves-carries-no-count
+    Scenario: an objective nothing serves carries no count at all
+      Given I added an objective titled "Ship the desktop board"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the card for objective 1 says nothing of how far along it is
+
+    @gui-an-objective-detail-is-its-own
+    Scenario: an objective's detail is its own, not that of the task sharing its number
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the desktop board"
+      And I press "enter"
+      Then the detail is open on "Ship the desktop board"
+
+    @gui-an-objective-with-nothing-under-it-says-so
+    Scenario: an objective nothing serves yet says so rather than showing an empty space
+      Given I added an objective titled "Ship the desktop board"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the desktop board"
+      And I press "enter"
+      Then the detail is open on "Ship the desktop board"
+      And the detail says nothing serves it yet
+
   Rule: The window takes work up and tells a sub-task apart
 
     @gui-focus-takes-a-task-up

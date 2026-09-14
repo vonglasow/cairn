@@ -257,9 +257,17 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	clipped := clip.Rect(rect(GoalsRun(l))).Push(gtx.Ops)
 	defer clipped.Pop()
 	for at, g := range reading.Sorted(w.Showing().Goals) {
-		drawCard(gtx, th, skin, GoalAt(l, at, w.goals), reading.Card{
+		box := GoalAt(l, at, w.goals)
+		drawCard(gtx, th, skin, box, reading.Card{
 			Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority,
 		}, g.Number == w.Chosen())
+		// How much work it carries and how much is done, on the number line an
+		// objective otherwise leaves half empty: it is the question an
+		// objective exists to ask, and a list that answered it only on opening
+		// each one would make somebody open all of them to find out.
+		if said := Counted(g); said != "" {
+			say(gtx, th, skin.Faint, CountedAt(PartsOf(box).Number, said), said, small)
+		}
 	}
 }
 
@@ -306,14 +314,50 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	for i := range fields {
 		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false)
 	}
+	if w.ChosenGoal() {
+		drawServing(gtx, th, skin, box, fields, w)
+	}
 	drawHistory(gtx, th, skin, box, w)
 	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // drawHistory is what was done to the task, beside what the task carries, in a
 // box of its own that scrolls rather than one that runs off the window.
+// drawServing is the work under an open objective, in the room the fields left
+// at the foot of the left column. Only for an objective: a task is served by
+// nothing, and a frame drawn over nothing is a frame that says there is
+// something to read.
+func drawServing(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, w Window) {
+	say(gtx, th, skin.Faint, ServingHead(box, fields), servingHead, small)
+	frame := ServingBox(box, fields)
+	fill(gtx, frame, skin.Back)
+	outline(gtx, frame, skin.Edge)
+
+	under := w.Serving()
+	if len(under) == 0 {
+		say(gtx, th, skin.Faint, LineAt(Inside(frame), 0, 0), ServingSays, small)
+		return
+	}
+
+	// The same cards the board draws, cut to the frame the way a column's are:
+	// this is the one place that lists tasks, and a run of text lines would
+	// make it the one place a task does not look like a task.
+	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
+	for at, c := range under {
+		drawCard(gtx, th, skin, w.ServingCardAt(at), c, false)
+	}
+	clipped.Pop()
+
+	// Drawn whether or not there is anything to scroll, for the same reason the
+	// history's is: a bar that comes and goes is a bar somebody reaches for and
+	// does not find.
+	track := ServingBar(box, fields)
+	fill(gtx, track, skin.Back)
+	fill(gtx, Thumb(track, len(under)*CardHeight, frame.H, w.ServingAt()), skin.Edge)
+}
+
 func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
-	say(gtx, th, skin.Faint, HistoryHead(box), "HISTORY", small)
+	say(gtx, th, skin.Faint, HistoryHead(box), w.PanelHead(), small)
 	frame := HistoryBox(box)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)

@@ -94,6 +94,11 @@ type Window struct {
 	// and not in acts: an act wraps onto as many lines as it needs, and a
 	// history that jumped an act at a time would skip past what it wrapped.
 	history int
+	// serving is how far the work under an open objective has been scrolled,
+	// counted in lines the way the history is: a task wraps onto as many lines
+	// as its title needs, and a list that jumped a task at a time would skip
+	// past what it wrapped.
+	serving int
 	// draggingBar says the pointer has taken hold of the bar beside the
 	// history. Told apart from a held card, because a panel is over the board
 	// and the board's cards are not there to be taken hold of.
@@ -183,6 +188,16 @@ func (w Window) Shown() []reading.Field {
 // ChosenGoal says whether what is chosen is an objective rather than a task.
 func (w Window) ChosenGoal() bool { return w.chosenGoal }
 
+// Serving is the work under the objective that is open, by title and by where
+// each task stands. Empty unless an objective is what was opened: a task is
+// served by nothing, and the question does not arise.
+func (w Window) Serving() []reading.Card {
+	if !w.chosenGoal {
+		return nil
+	}
+	return reading.Serving(w.snap.Cards, w.chosen)
+}
+
 // Ghost is the card in mid-air under the pointer, and whether there is one. A
 // drop with nothing shown moving is a drop nobody can aim.
 func (w Window) Ghost() (Box, bool) {
@@ -240,8 +255,33 @@ func (w Window) Acts() []string { return w.acts }
 // Lines is the history as the lines it is drawn on, wrapped to the room the
 // panel gives it.
 func (w Window) Lines() []string {
-	return Told(w.acts, room(Inside(HistoryBox(Over(w.width, w.height)))))
+	wide := room(Inside(HistoryBox(Over(w.width, w.height))))
+	// An objective has no history of its own — the trace is kept of tasks. It
+	// says so rather than leaving the frame empty, which reads as a panel that
+	// failed to load. The column itself stays the history's: it is what a task
+	// opens onto, and taking it for an objective would cost every task the
+	// thing this panel was built for.
+	if w.chosenGoal {
+		return Wrapped("an objective has no history of its own", wide).Said
+	}
+	return Told(w.acts, wide)
 }
+
+// servingHead names the box under the fields, where an objective says what
+// serves it. PanelHead names the right column, which is the history's whatever
+// is open.
+const (
+	historyHead = "HISTORY"
+	servingHead = "WHAT SERVES IT"
+)
+
+// PanelHead is what the right column is called.
+func (w Window) PanelHead() string { return historyHead }
+
+// ServingSays is what that box reads when there is no card to draw in it. An
+// objective nothing serves yet says so: an empty frame reads as a box that
+// failed to load rather than as a question nobody has answered.
+const ServingSays = "nothing serves it yet"
 
 // Told is how many of those lines there are, and Rows how many are shown at
 // once. The two together are what says whether there is anything to scroll.
@@ -258,6 +298,29 @@ func (w Window) History() int { return w.history }
 func (w Window) settledHistory(want int) int {
 	return min(max(0, w.Told()-w.Rows()), max(0, want))
 }
+
+// settledServing keeps the work under an objective between its two ends, the
+// way a column's scroll is kept between its own — in pixels, because these are
+// cards of one height and not lines of text that wrap.
+func (w Window) settledServing(want int) int {
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	return min(max(0, len(w.Serving())*CardHeight-box.H), max(0, want))
+}
+
+// ServingRows is how many cards that box shows at once.
+func (w Window) ServingRows() int {
+	return max(1, ServingBox(Over(w.width, w.height), w.Shown()).H/CardHeight)
+}
+
+// ServingCardAt is where one of those cards is drawn, counting the scroll —
+// the same reckoning a column makes of its own.
+func (w Window) ServingCardAt(at int) Box {
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	return Box{X: box.X, Y: box.Y + at*CardHeight - w.serving, W: box.W, H: CardHeight}
+}
+
+// ServingAt is how far that box has been scrolled.
+func (w Window) ServingAt() int { return w.serving }
 
 // Reading is the work as it was last read, which is what everything draws from.
 func (w Window) Reading() reading.Snapshot { return w.snap }
@@ -629,6 +692,9 @@ func (w Window) Scroll(p Point, by int) Window {
 		if HistoryBox(Over(w.width, w.height)).In(p) {
 			w.history = w.settledHistory(w.history + by/lineHigh)
 		}
+		if ServingBox(Over(w.width, w.height), w.Shown()).In(p) {
+			w.serving = w.settledServing(w.serving + by)
+		}
 		return w
 	}
 	l := w.Layout()
@@ -710,7 +776,19 @@ func (w Window) Key(name string) Window {
 	}
 	if w.screen == OnDetail {
 		// A hand on the keyboard reads a history the same way it reads a
-		// board: with the arrows, without reaching for the mouse.
+		// board: with the arrows, without reaching for the mouse. Over an
+		// objective they walk the work under it instead — that is the list
+		// there is to read, and the history column carries one line saying an
+		// objective has none.
+		if w.chosenGoal {
+			switch name {
+			case "down":
+				w.serving = w.settledServing(w.serving + CardHeight)
+			case "up":
+				w.serving = w.settledServing(w.serving - CardHeight)
+			}
+			return w
+		}
 		switch name {
 		case "down":
 			w.history = w.settledHistory(w.history + 1)
@@ -887,6 +965,14 @@ func (w Window) opening() Window {
 		return w
 	}
 	w.screen = OnDetail
+	// An objective is opened on the work under it and not on a history: it has
+	// none of its own, and the number it carries belongs to a task as well —
+	// asking for the trace of that number answered with a task nobody had
+	// chosen, which is the wrong answer said confidently.
+	if w.chosenGoal {
+		w.acts, w.history, w.serving = nil, 0, 0
+		return w
+	}
 	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
 	if err != nil {
 		w.err = err

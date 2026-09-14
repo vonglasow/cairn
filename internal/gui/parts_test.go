@@ -156,6 +156,11 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("framed four", Framed(value, 4))
 	say("inside four", Inside(Framed(value, 4)))
 	say("field top 1", Box{X: over.X, Y: FieldTop(over, reading.TaskFields(reading.Card{}), 1), W: 1, H: 1})
+	goalFields := reading.GoalFields(reading.Goal{})
+	say("serving head", ServingHead(over, goalFields))
+	say("serving box", ServingBox(over, goalFields))
+	say("serving bar", ServingBar(over, goalFields))
+	say("counted at", CountedAt(parts.Number, "7/12 · 58%"))
 	say("history head", HistoryHead(over))
 	say("history box", HistoryBox(over))
 	say("history bar", HistoryBar(over))
@@ -922,5 +927,40 @@ func TestExactlyWhereTheWindowOfShownLinesStarts(t *testing.T) {
 	}
 	if got := ten.Window(4, 3); got != 0 {
 		t.Errorf("the fourth of ten lines in room for four starts the window at %d, want 0", got)
+	}
+}
+
+// Where a card of the work under an objective sits: down by its rank, up by
+// what has been scrolled. Nothing else pinned this, and every sum in it
+// survived being changed.
+func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: []reading.Card{{Number: 1, Title: "Write the spec", Objectives: []int{1}}},
+		Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}},
+	}
+	w.chosen, w.chosenGoal, w.screen = 1, true, OnDetail
+
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	for _, tc := range []struct {
+		what       string
+		at, scroll int
+		want       int
+	}{
+		{"the first, unscrolled", 0, 0, box.Y},
+		{"the second, unscrolled", 1, 0, box.Y + CardHeight},
+		{"the third, unscrolled", 2, 0, box.Y + CardHeight + CardHeight},
+		{"the first, scrolled one card", 0, CardHeight, box.Y - CardHeight},
+		{"the second, scrolled one card", 1, CardHeight, box.Y},
+	} {
+		w.serving = tc.scroll
+		got := w.ServingCardAt(tc.at)
+		if got.Y != tc.want {
+			t.Errorf("%s: y = %d, want %d", tc.what, got.Y, tc.want)
+		}
+		if got.X != box.X || got.W != box.W || got.H != CardHeight {
+			t.Errorf("%s: %v, want the box's width at a card's height", tc.what, got)
+		}
 	}
 }

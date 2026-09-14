@@ -176,6 +176,19 @@ func (w *world) numberOf(title string) (int, error) {
 }
 
 func (w *world) isChosen(title string) error {
+	// An objective is chosen by the same field under a different kind, so the
+	// title is looked for where the chosen thing actually lives.
+	if w.w.ChosenGoal() {
+		for _, g := range w.w.Reading().Goals {
+			if g.Title == title {
+				if w.w.Chosen() != g.Number {
+					return fmt.Errorf("objective %d is chosen, not %q", w.w.Chosen(), title)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("no objective titled %q", title)
+	}
 	number, err := w.numberOf(title)
 	if err != nil {
 		return err
@@ -202,6 +215,67 @@ func (w *world) detailOpenOn(title string) error {
 		return fmt.Errorf("the window is on %v", w.w.Screen())
 	}
 	return w.isChosen(title)
+}
+
+// detailLists is asked of the work an open objective says serves it, by title:
+// a count says how far along it is and never what is left.
+// Asked of the lines the panel draws and not of what the window knows: a
+// window that has the answer and does not put it on screen has not answered.
+// Asked of the cards the box under the fields draws, and not of what the
+// window knows: a window that has the answer and does not put it on screen has
+// not answered.
+func (w *world) detailLists(title string) error {
+	for _, c := range w.w.Serving() {
+		if c.Title == title {
+			return nil
+		}
+	}
+	return fmt.Errorf("the box under the fields holds %v, and no card for %q", titles(w.w.Serving()), title)
+}
+
+func (w *world) detailDoesNotList(title string) error {
+	for _, c := range w.w.Serving() {
+		if c.Title == title {
+			return fmt.Errorf("the box under the fields holds a card for %q, which serves something else", title)
+		}
+	}
+	return nil
+}
+
+// servingCardsAreCards is what tells a card from a line of text: it is drawn at
+// the height every other card on this board is drawn at.
+func (w *world) servingCardsAreCards() error {
+	for at := range w.w.Serving() {
+		if got := w.w.ServingCardAt(at).H; got != CardHeight {
+			return fmt.Errorf("the card at %d is %d high, and a card is %d", at, got, CardHeight)
+		}
+	}
+	return nil
+}
+
+func (w *world) detailSaysNothingServes() error {
+	if got := w.w.Serving(); len(got) != 0 {
+		return fmt.Errorf("the box under the fields holds %v, and nothing serves it", titles(got))
+	}
+	return nil
+}
+
+// titles is what a failure prints of a run of cards.
+func titles(cards []reading.Card) []string {
+	var said []string
+	for _, c := range cards {
+		said = append(said, c.Title)
+	}
+	return said
+}
+
+// rightColumnHead is the assertion that the history keeps its column: it is
+// what a task opens onto, and an objective must not take it away.
+func (w *world) rightColumnHead(head string) error {
+	if got := w.w.PanelHead(); got != head {
+		return fmt.Errorf("the right column is headed %q, not %q", got, head)
+	}
+	return nil
 }
 
 func (w *world) detailShows(text string) error {
@@ -367,6 +441,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the card "([^"]*)" is not chosen$`, w.isNotChosen)
 	sc.Then(`^the detail is open on "([^"]*)"$`, w.detailOpenOn)
 	sc.Then(`^the detail shows "([^"]*)"$`, w.detailShows)
+	sc.Then(`^the detail draws a card for "([^"]*)" under its fields$`, w.detailLists)
+	sc.Then(`^the detail draws no card for "([^"]*)"$`, w.detailDoesNotList)
+	sc.Then(`^the cards under the fields are the height of a card$`, w.servingCardsAreCards)
+	sc.Then(`^the right column is still headed "([^"]*)"$`, w.rightColumnHead)
+	sc.Then(`^the detail says nothing serves it yet$`, w.detailSaysNothingServes)
 	sc.Then(`^the detail is closed$`, w.detailClosed)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
@@ -412,6 +491,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the history stays inside the panel$`, w.historyInsideThePanel)
 	sc.Then(`^the history has more to show than it has room for$`, w.historyHasMore)
 	sc.Then(`^the history has moved$`, w.historyMoved)
+	sc.Then(`^the work under it has more to show than it has room for$`, w.servingHasMore)
+	sc.Then(`^the work under it has moved$`, w.servingMoved)
+	sc.Then(`^the work under it is at its beginning$`, w.servingAtTheBeginning)
+	sc.Then(`^the work under it is at its end$`, w.servingAtTheEnd)
 	sc.Then(`^the history is at its beginning$`, w.historyAtTheBeginning)
 	sc.Then(`^the history is at its end$`, w.historyAtTheEnd)
 	sc.Then(`^the field "([^"]*)" is written on more than one line$`, w.fieldOnMoreThanOneLine)
@@ -427,6 +510,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the keyboard is on "([^"]*)"$`, w.keyboardIsOn)
 	sc.Then(`^the objectives read (".*")$`, w.objectivesRead)
 	sc.Then(`^the objective "([^"]*)" is chosen$`, w.objectiveChosen)
+	sc.Then(`^the card for objective (\d+) says "([^"]*)"$`, w.goalCardSays)
+	sc.Then(`^the card for objective (\d+) says nothing of how far along it is$`, w.goalCardSaysNoCount)
 	sc.Then(`^objective (\d+) is called "([^"]*)"$`, w.objectiveCalled)
 }
 
@@ -440,6 +525,32 @@ func (w *world) objectivesRead(list string) error {
 		return fmt.Errorf("the objectives read %v, want %v", got, want)
 	}
 	return nil
+}
+
+// goalCardSays is asked of the line the objectives tab draws beside an
+// objective's number: how much work it carries and how much of it is done.
+func (w *world) goalCardSays(number int, text string) error {
+	for _, g := range w.w.Reading().Goals {
+		if g.Number == number {
+			if said := Counted(g); !strings.Contains(said, text) {
+				return fmt.Errorf("the card for objective %d says %q, and nothing of %q", number, said, text)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("there is no objective %d", number)
+}
+
+func (w *world) goalCardSaysNoCount(number int) error {
+	for _, g := range w.w.Reading().Goals {
+		if g.Number == number {
+			if said := Counted(g); said != "" {
+				return fmt.Errorf("the card for objective %d says %q, and nothing serves it", number, said)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("there is no objective %d", number)
 }
 
 func (w *world) objectiveChosen(title string) error {
@@ -772,6 +883,37 @@ func (w *world) historyHasMore() error {
 	if w.w.Told() <= w.w.Rows() {
 		return fmt.Errorf("the history is %d lines in room for %d: it all fits, so this proves nothing",
 			w.w.Told(), w.w.Rows())
+	}
+	return nil
+}
+
+func (w *world) servingHasMore() error {
+	cards, rows := len(w.w.Serving()), w.w.ServingRows()
+	if cards <= rows {
+		return fmt.Errorf("the box shows %d cards at once and there are %d: nothing is out of sight", rows, cards)
+	}
+	return nil
+}
+
+func (w *world) servingMoved() error {
+	if w.w.serving == w.was {
+		return fmt.Errorf("the work under it is still at %d", w.w.serving)
+	}
+	return nil
+}
+
+func (w *world) servingAtTheBeginning() error {
+	if w.w.serving != 0 {
+		return fmt.Errorf("the work under it is at %d, not at its beginning", w.w.serving)
+	}
+	return nil
+}
+
+func (w *world) servingAtTheEnd() error {
+	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+	last := len(w.w.Serving())*CardHeight - box.H
+	if w.w.serving != last {
+		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
 	}
 	return nil
 }
