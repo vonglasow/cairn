@@ -8,6 +8,8 @@ package reading
 import (
 	"fmt"
 	"time"
+
+	"cairn/internal/task"
 )
 
 // soon is how many days ahead a deadline starts being worth a card's width.
@@ -43,4 +45,16 @@ func Deadline(due, now time.Time) (text string, show, late bool) {
 // opened.
 func startOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+// MayLandAfter says whether a held card may take the place behind another. A
+// board asks it while the card is still in hand, so that it draws a landing
+// only where there is one: a refusal that arrives once the gesture is over
+// says the gesture was wrong, and by then there is nothing left to do about it.
+//
+// The level rule is the domain's and is not restated here. What this adds is
+// the one case a board can see and the domain calls by another name: a card
+// held over its own place lands nowhere, because it is already there.
+func MayLandAfter(held, target Card) bool {
+	return held.Number != target.Number && task.SitTogether(held.Parent, target.Parent)
 }

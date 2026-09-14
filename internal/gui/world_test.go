@@ -327,6 +327,39 @@ func (w *world) dragToLane(title, kind string) error {
 
 // takeHold picks a card up and moves it over a column without letting go, so a
 // scenario can look at what is shown while a hand is still holding one.
+// takeHoldUnder picks a card up and holds it just below another, which is the
+// place behind that card: what the engine is told is `after` the card the
+// pointer sits under, so the step says the same thing the gesture does.
+func (w *world) takeHoldUnder(title, below string) error {
+	from, err := w.find(title)
+	if err != nil {
+		return err
+	}
+	under, err := w.under(below)
+	if err != nil {
+		return err
+	}
+	w.w = w.w.PressAt(from)
+	w.w = w.w.MoveTo(under)
+	return nil
+}
+
+// under is the point just inside the slot below a card.
+func (w *world) under(title string) (Point, error) {
+	l := w.w.Layout()
+	dealt, _ := reading.Deal(w.w.Reading().Cards)
+	for column, held := range dealt {
+		for at, c := range held.Cards {
+			if c.Title != title {
+				continue
+			}
+			box := l.CardAt(column, at+1, w.w.scroll[column])
+			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
+		}
+	}
+	return Point{}, fmt.Errorf("no card titled %q", title)
+}
+
 func (w *world) takeHold(title, column string) error {
 	from, err := w.find(title)
 	if err != nil {
@@ -478,6 +511,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I scroll down over the objectives$`, w.scrollObjectives)
 	sc.Step(`^I press the card "([^"]*)" and move it (\d+) pixels and let go$`, w.nudge)
 	sc.Step(`^I take hold of the card "([^"]*)" and move it over "([^"]*)"$`, w.takeHold)
+	sc.Step(`^I take hold of the card "([^"]*)" and move it under the card "([^"]*)"$`, w.takeHoldUnder)
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)"$`, w.dragOnto)
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)" above "([^"]*)"$`, w.dragAbove)
 	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)"$`, w.dragToLane)

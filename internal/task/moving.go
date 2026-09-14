@@ -42,7 +42,7 @@ func (t Task) MayMoveBehind(target Task) error {
 	if t.number == target.number {
 		return fmt.Errorf("task %d: %w", t.number, ErrMovedBehindItself)
 	}
-	if t.parent != target.parent {
+	if !SitTogether(t.parent, target.parent) {
 		return t.notAmongItsSisters(target)
 	}
 	if t.state != target.state {
@@ -52,8 +52,19 @@ func (t Task) MayMoveBehind(target Task) error {
 	return nil
 }
 
+// SitTogether says whether two tasks take their places in the same run: two
+// sub-tasks under one parent, or two tasks hanging under nothing. It is the
+// level alone and says nothing about the column — those two may well share
+// one, which is why the column is asked about separately.
+//
+// Exported because a surface has the same question before it draws: a board
+// that shows where a held card would land has to know where it may land, and a
+// board working that out for itself is the rule living twice.
+func SitTogether(parent, otherParent int) bool { return parent == otherParent }
+
 // notAmongItsSisters says which of the two hangs under what, since knowing
 // that is knowing where the task can go instead.
+
 func (t Task) notAmongItsSisters(target Task) error {
 	whose, hanging := t.number, t.parent
 	if hanging == NoParent {

@@ -113,3 +113,24 @@ func TestMayMoveBehind_namesTheColumnEachIsIn(t *testing.T) {
 		}
 	}
 }
+
+// SitTogether is the level rule on its own, asked without a task in hand: a
+// board has the same question before it draws, and a board working it out for
+// itself is the rule living twice.
+func TestSitTogether_isTheLevelAndNotTheColumn(t *testing.T) {
+	for _, tc := range []struct {
+		what string
+		a, b int
+		want bool
+	}{
+		{"two sub-tasks under one parent", 1, 1, true},
+		{"two tasks hanging under nothing", NoParent, NoParent, true},
+		{"a sub-task and a task", 1, NoParent, false},
+		{"a task and a sub-task", NoParent, 1, false},
+		{"sub-tasks under different parents", 1, 2, false},
+	} {
+		if got := SitTogether(tc.a, tc.b); got != tc.want {
+			t.Errorf("%s: SitTogether(%d, %d) = %v, want %v", tc.what, tc.a, tc.b, got, tc.want)
+		}
+	}
+}

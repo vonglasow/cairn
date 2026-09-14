@@ -230,6 +230,12 @@ Feature: The desktop board
     A drop says two things at once — which column, and which place among the
     cards there — and the engine is told them in that order.
 
+    A card only takes a place beside the cards it sits with: a sub-task among
+    its sisters, a task among tasks. The window says so while the card is in
+    hand rather than after it has been let go — a refusal that arrives once the
+    gesture is over says the gesture was wrong, and by then there is nothing
+    left to do about it.
+
     @gui-a-small-move-is-still-a-click
     Scenario: a click that barely moves is a click
       Given I added a task titled "Write the spec"
@@ -281,6 +287,34 @@ Feature: The desktop board
       And I drag the card "Client's answer" onto the lane "watching"
       Then task 1 is in the column "watching"
       And the lane "watching" carries "Client's answer"
+
+    @gui-a-card-says-nothing-where-it-cannot-land
+    Scenario: a sub-task says nothing where it cannot land
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Something else"
+      When I open the window
+      And I take hold of the card "Write the spec" and move it under the card "Something else"
+      Then it shows nowhere for the card to land
+
+    @gui-a-card-says-where-it-can-land
+    Scenario: the same sub-task says where it can land, among its sisters
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Draft the plan" hanging under task 1
+      When I open the window
+      And I take hold of the card "Write the spec" and move it under the card "Draft the plan"
+      Then it shows where the card would land in "BACKLOG"
+
+    @gui-a-root-task-says-nothing-over-a-sub-task
+    Scenario: a task says nothing over a sub-task, which is the same rule the other way
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Draft the plan" hanging under task 1
+      And I added a task titled "Something else"
+      When I open the window
+      And I take hold of the card "Something else" and move it under the card "Write the spec"
+      Then it shows nowhere for the card to land
 
     @gui-a-drop-that-is-refused-shows-the-truth
     Scenario: a drop the engine refuses leaves the board saying what is really there

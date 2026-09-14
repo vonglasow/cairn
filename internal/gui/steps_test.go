@@ -384,6 +384,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
 	sc.Then(`^the card being dragged follows the pointer$`, w.ghostFollows)
 	sc.Then(`^it shows where the card would land in "([^"]*)"$`, w.landsIn)
+	sc.Then(`^it shows nowhere for the card to land$`, w.landsNowhere)
 	sc.Then(`^"([^"]*)" does not carry "([^"]*)"$`, w.columnDoesNotCarry)
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
@@ -493,6 +494,15 @@ func (w *world) ghostFollows() error {
 	}
 	if !ghost.In(w.w.held.At) {
 		return fmt.Errorf("the card at %+v does not hold the pointer at %+v", ghost, w.w.held.At)
+	}
+	return nil
+}
+
+// landsNowhere is the assertion that the window draws no landing line: the card
+// is in hand and over a place it cannot take, so there is nothing true to draw.
+func (w *world) landsNowhere() error {
+	if landing, somewhere := w.w.Landing(); somewhere {
+		return fmt.Errorf("the board says the card would land at %v, and it cannot land there", landing)
 	}
 	return nil
 }

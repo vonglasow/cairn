@@ -208,6 +208,9 @@ func (w Window) Landing() (Box, bool) {
 	if lane, on := l.LaneUnder(w.held.At); on {
 		return l.Lane[lane], true
 	}
+	if !w.mayLandAt(l, w.held.At) {
+		return Box{}, false
+	}
 	for i := range Columns {
 		if !l.Column[i].In(w.held.At) {
 			continue
@@ -997,6 +1000,38 @@ func (w Window) dropped(number int, p Point) Window {
 //
 // A lane says a state and no place. The three kinds of stopped are not an order
 // anybody works through, so there is nothing to be first in.
+// mayLandAt says whether what is in hand may take the place under this point.
+// It asks of the very computation the drop uses, so that what is drawn and what
+// would happen cannot drift apart.
+//
+// first and last are always open: they name a place among the held card's own,
+// whatever cards happen to be drawn at the top or the bottom of the column.
+func (w Window) mayLandAt(l Layout, p Point) bool {
+	_, place, found := w.where(l, p)
+	if !found {
+		return false
+	}
+	behind, after := place["after"]
+	if !after {
+		return true
+	}
+	number, err := strconv.Atoi(behind)
+	if err != nil {
+		return false
+	}
+	return reading.MayLandAfter(w.cardFor(w.held.Number), w.cardFor(number))
+}
+
+// cardFor is the card a number stands for, as the snapshot holds it.
+func (w Window) cardFor(number int) reading.Card {
+	for _, c := range w.snap.Cards {
+		if c.Number == number {
+			return c
+		}
+	}
+	return reading.Card{}
+}
+
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
 		return Lanes[lane], nil, true
