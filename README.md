@@ -185,8 +185,8 @@ objectives existed says it holds none, rather than refusing to be read at all.
 ## The board
 
 ```sh
-cairn board                      # open it
-cairn board --icons unicode      # without a Nerd Font installed
+cairn tui                        # open it
+cairn tui --icons unicode        # without a Nerd Font installed
 ```
 
 The same cairn on a screen that stays open. Four columns — backlog, todo,

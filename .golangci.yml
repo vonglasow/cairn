@@ -257,7 +257,7 @@ linters:
               desc: what a board reads knows of no surface
             - pkg: cairn/internal/mcp
               desc: what a board reads knows of no surface
-            - pkg: cairn/internal/board
+            - pkg: cairn/internal/tui
               desc: the board reads through this, not the other way round
             - pkg: cairn/internal/store
               desc: state changes through the engine, never behind it
@@ -285,7 +285,7 @@ linters:
               desc: a surface changes state through the engine, never behind it
             - pkg: cairn/internal/mcp
               desc: two surfaces do not reach each other
-            - pkg: cairn/internal/board
+            - pkg: cairn/internal/tui
               desc: what the two boards share lives in reading, not in each other
             - pkg: database/sql
               desc: a surface never opens a database
@@ -295,8 +295,8 @@ linters:
         # The third surface. Same rule as the other two — it asks the engine and
         # never the store — plus the one mcp has: the command line builds the
         # board, so the board never reads the command line back.
-        board:
-          files: ["**/internal/board/**"]
+        tui:
+          files: ["**/internal/tui/**"]
           deny:
             - pkg: cairn/internal/cli
               desc: the command line opens the board, the board never reads it

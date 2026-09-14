@@ -16,8 +16,8 @@ only=${2:-}
 moving=${3:-}
 
 if [ -z "$package" ]; then
-  echo "usage: make red PKG=./internal/board [RUN=TestSomething]" >&2
-  echo "       make red PKG=./internal/board MOVING=\"what moves, and where to\"" >&2
+  echo "usage: make red PKG=./internal/tui [RUN=TestSomething]" >&2
+  echo "       make red PKG=./internal/tui MOVING=\"what moves, and where to\"" >&2
   exit 2
 fi
 

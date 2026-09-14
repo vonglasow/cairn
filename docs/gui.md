@@ -66,7 +66,7 @@ the `Work` interface — `Ask` and `Version`, two methods.
 
 What is its own: geometry in pixels, drawing, and the mouse.
 
-`cairn gui` is a command in `internal/cli`, built like `cairn board`, with the
+`cairn gui` is a command in `internal/cli`, built like `cairn tui`, with the
 same seam (`var openGui = func(…)`) so a test never needs a window.
 
 ## The window

@@ -3,7 +3,7 @@
 Read this before touching the terminal board — its shape, its keys, its modes —
 or before adding anything a person sees on screen.
 
-`cairn board` opens it. What follows is what it does and why it does it that
+`cairn tui` opens it. What follows is what it does and why it does it that
 way, decision by decision — written down because thirty decisions taken in one
 conversation are thirty decisions nobody can find afterwards.
 
@@ -170,7 +170,7 @@ Nerd Font by default, plain Unicode when the terminal cannot. Which one is said
 rather than guessed at, because detecting a Nerd Font is not reliable enough:
 
 ```
-cairn board --icons unicode
+cairn tui --icons unicode
 ```
 
 Two answers and no others; anything else is refused by name, and named at the

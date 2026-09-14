@@ -76,7 +76,7 @@ all of them.
 | `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, what a saved form asks the engine for, how the cards deal into columns | `domain`, the notions, `engine` |
 | `internal/cli` | parsing and choosing a rendering | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
-| `internal/board` | the board on a terminal | everything below but `cli` and `mcp` |
+| `internal/tui` | the board on a terminal | everything below but `cli` and `mcp` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `test` | the acceptance world the surfaces share | `engine` |
 
@@ -91,7 +91,7 @@ and all of it would otherwise be written twice.
 So `reading` is held to something stricter than a surface. `depguard` denies it
 lipgloss, bubbletea, huh and cobra outright — not because they would break it,
 but because reaching for one is the moment it stopped being shareable. It was
-lifted out of `internal/board` the day the second board was specified and not
+lifted out of `internal/tui` the day the second board was specified and not
 before: a package made for one consumer is a boundary guessed rather than
 measured.
 

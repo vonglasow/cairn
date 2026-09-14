@@ -3,12 +3,12 @@ package cli
 import (
 	"errors"
 
-	"cairn/internal/board"
 	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/mcp"
 	"cairn/internal/objective"
+	"cairn/internal/tui"
 )
 
 // The codes cairn returns to the shell. They answer one question: what kind of
@@ -54,7 +54,7 @@ var refusals = []error{
 	engine.ErrNothingToRollBack,
 	errNotConfirmed,
 	mcp.ErrNotAnAccess,
-	board.ErrNotASet,
+	tui.ErrNotASet,
 	config.ErrNotTOML,
 	config.ErrUnknownKey,
 	config.ErrNotAbsolute,

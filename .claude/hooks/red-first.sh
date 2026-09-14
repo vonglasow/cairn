@@ -6,7 +6,7 @@
 # a refusal naming the package that owes a failing test.
 #
 # Why it watches Bash and not only Write|Edit: measured, on 2026-08-30, a whole
-# package — internal/board, 4000 lines — was written through `cat > file <<'GO'`
+# package — internal/tui, 4000 lines — was written through `cat > file <<'GO'`
 # and through python scripts. A gate on Write|Edit alone would have watched it
 # happen and said nothing.
 #

@@ -41,7 +41,7 @@ run:
 ## failure to see. It demands a sentence, keeps it in the receipt, and marks the
 ## receipt as a move — so a write let through this way stays legible afterwards.
 ##
-##   make red PKG=./internal/board MOVING="askedFrom moves to internal/reading"
+##   make red PKG=./internal/tui MOVING="askedFrom moves to internal/reading"
 red:
 	@.claude/hooks/red.sh "$(PKG)" "$(RUN)" "$(MOVING)"
 

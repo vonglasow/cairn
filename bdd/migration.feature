@@ -30,7 +30,7 @@ Feature: Changes to the shape of the store
 
       Examples:
         | command |
-        | board   |
+        | tui     |
         | gui     |
 
     @store-behind-untouched
