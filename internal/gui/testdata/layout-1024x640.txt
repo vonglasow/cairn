@@ -1,0 +1,14 @@
+tabs         x=12    y=12    w=1000  h=40
+head 0       x=12    y=64    w=241   h=28
+column 0     x=12    y=92    w=241   h=492
+head 1       x=265   y=64    w=241   h=28
+column 1     x=265   y=92    w=241   h=266
+head 2       x=518   y=64    w=241   h=28
+column 2     x=518   y=92    w=241   h=266
+head 3       x=771   y=64    w=241   h=28
+column 3     x=771   y=92    w=241   h=266
+band         x=265   y=370   w=747   h=214
+lane blocked x=265   y=392   w=241   h=192
+lane watching x=518   y=392   w=241   h=192
+lane paused  x=771   y=392   w=241   h=192
+bar          x=12    y=596   w=1000  h=32

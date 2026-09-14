@@ -64,6 +64,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newActionGroups()...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newBoardCmd())
+	root.AddCommand(newGuiCmd())
 	return root
 }
 

@@ -1,0 +1,302 @@
+# The desktop board
+
+Read this before touching `internal/gui`, or anything a person sees in a
+window.
+
+The same board as the terminal, in a window: four columns, a stalled band, two
+tabs, the same work underneath. Prettier, and driven by a mouse. Nothing here
+is a second idea of what cairn is — where this file and
+[tui.md](tui.md) disagree about what a board *means*, tui.md is right and this
+is the port.
+
+This says what it is and why, including what was turned down — because the
+reason is the part the code cannot carry.
+
+## What it is for
+
+Three things, in the order they matter: **range, search, open**. The engine
+answers one command at a time, and that work wants everything visible at once.
+
+The mouse comes first. No modes, no cursor to move, no `esc`. A few flat
+shortcuts stay — `⌘N` for a new task, `⌘F` to search, `?` for help — and
+nothing that has to be learnt before the board can be used.
+
+**macOS and Linux.** That one sentence closed more than it looks: SwiftUI was
+out from the moment Linux was in.
+
+## Why Gio
+
+Three ways to draw the same window, measured rather than remembered:
+
+| | UI written in | under prek, gremlins, the coverage floor | drag and drop |
+|---|---|---|---|
+| **Gio** `v0.10.2` | Go | **yes, all of it** | to write |
+| **Wails** `v2.15.0` | HTML/CSS/TS | **no — the UI escapes every gate** | given |
+| **Fyne** `v2.8.1` | Go | yes | partly given |
+
+Wails has the highest ceiling on looks and was turned down for what it costs:
+the part being judged on its appearance would sit outside every check this
+repository has — no mutation, no coverage, no pinned frame — and it would add
+an npm build to a repository that has no JavaScript at all. WebKitGTK to
+install on Linux, and a v3 still in beta, were the smaller reasons.
+
+Fyne would be quickest to something clickable, and its look is its theme's
+look. That ceiling is the thing this port was asked to raise.
+
+Gio keeps one language, one static binary, and every line under the gates. It
+is also the most work: scrolling, dragging and text entry are built by hand.
+That is the trade, stated plainly.
+
+**One dependency, and this is its written reason** — `CLAUDE.md` asks for one:
+`gioui.org`. It is the only way to a vector-drawn window that is identical on
+macOS and Linux, in a single binary, with no system webview and no second
+language.
+
+## Where it lives
+
+`internal/gui`, a fourth surface beside `cli`, `mcp` and `board`. `depguard`
+denies it `store`, `database/sql`, `cobra`, `cli`, `mcp` — and `board`: two
+surfaces do not reach each other.
+
+**What it does not write again**, because `internal/reading` already carries
+it: `Look` and the two listings turned into cards and goals, `Deal` into
+columns, `Stopped`, `Deadline`, `Sorted`, `TaskFields`/`GoalFields` with each
+field's `Arg`, `Asked` turning a saved form into what an operation takes, and
+the `Work` interface — `Ask` and `Version`, two methods.
+
+What is its own: geometry in pixels, drawing, and the mouse.
+
+`cairn gui` is a command in `internal/cli`, built like `cairn board`, with the
+same seam (`var openGui = func(…)`) so a test never needs a window.
+
+## The window
+
+The terminal's shape, larger. Four columns — backlog, todo, current, done —
+the backlog full height, the stalled band across the last three. Two tabs:
+tasks, objectives.
+
+**Cards keep a fixed height.** In the terminal that is what makes moving the
+cursor arithmetic rather than measurement; with a mouse that reason is gone,
+and it was kept anyway for what it still buys: a column can say how many cards
+fit, where the n-th one is, and which card is under the pointer, without
+drawing anything. The price is the same as the terminal's — a long title is
+cut.
+
+Variable height was the alternative and would have cut nothing, at the cost of
+a column's geometry depending on its contents: scrolling and drop targets
+computed instead of multiplied, and two columns no longer sharing a grid, which
+shows the moment a card is dragged from one to the other.
+
+**Every size is a value worked out from the window**, redone on every resize,
+exactly as `LayoutFor` does in the terminal. Nothing carries its own size. That
+is what makes the geometry testable with no screen: a pure function from
+(width, height) to rectangles, compared against pinned numbers.
+
+In **dp** rather than pixels, so a Retina screen and a 96-dpi Linux screen give
+the same physical thing.
+
+**Too small**: below a threshold the window says what it needs instead of
+drawing something unreadable — the terminal's answer, for the terminal's
+reason. Imposing a minimum window size was the alternative and hides the
+question rather than answering it; showing fewer columns was turned down as a
+different board.
+
+**1024 by 640**, which is four columns of 285dp and the height two rows of the
+band and three cards above them come to. Written in rather than worked out,
+because what makes a card readable is not something a sum knows — and measured
+after the card was drawn rather than guessed before it.
+
+**The beat stays at two seconds**: `Version()` is one integer, and the board
+re-reads only when it moves. Waiting for the window to take focus was turned
+down for a reason worth keeping: a board on a second screen, never focused, has
+to be true.
+
+## The mouse
+
+A click chooses a card, or changes tab when it lands on one. A double-click
+opens a card's detail. The wheel scrolls the column under the pointer.
+
+A double-click is worked out here rather than asked of the system: Gio reports
+presses and says nothing about pairs of them. Two presses within 400ms and
+within the same few pixels are one gesture.
+
+**A click that moves becomes a drag.** Past a few pixels the card lifts and
+follows the pointer; below that it is a click. Without the threshold, a shaky
+click would move a task.
+
+**A drop carries the column and the place.** That is `task edit --state`, then
+`task move --after`. Two acts in the trace for one gesture, and no transaction
+between them: if the second fails, the board refreshes and shows the truth —
+column changed, place not. Visible rather than silent.
+
+Carrying only the column was the alternative: one operation, one line of
+history, faithful to an engine that refuses to change a column and a place in
+one act. It was turned down because dropping a card precisely somewhere and
+watching it land elsewhere is a small betrayal of the hand.
+
+**The stalled band is three lanes**, named `blocked`, `watching` and `paused`.
+Dropping into a lane *is* the answer to which kind of stopped this is. The
+terminal asks with a popup because a terminal band has no room for three named
+lanes; a window does. It also means a stopped card says which kind it is by
+where it sits, which the terminal needs a glyph for.
+
+## The form
+
+A modal dialog over the board, with *Save* and *Cancel*; `esc` cancels. One act
+in the trace per save.
+
+**The fields are not listed here.** They come from `reading.TaskFields(card)`
+and `reading.GoalFields(goal)`: the word a person reads, the closed set when
+there is one, the field that wants more than one line, and `Arg` — what the
+engine calls the same thing. An attribute added to the engine and to the
+terminal's form arrives here with no line written.
+
+A field with `Choices` is a dropdown, a `Long` field a multi-line box, the rest
+a line to type in. The field the keyboard is on is lit, and it is the only one:
+that is the whole of what says where typing would go.
+
+**Every field is drawn in a box**, whether or not the keyboard is on it, and
+the lit frame is the only difference between the two. A value floating on the
+panel's own ground looked like something written rather than somewhere to
+write.
+
+**Nothing written runs out of its box.** Text wraps — at a space when there is
+one, inside a word when the word is longer than the room — and the box is
+clipped, so even a line of unusually wide characters cannot escape it. Cutting
+a value down to one line was the alternative and is what this used to do; it
+said nothing about what was lost, and a description is the field it lost most
+of.
+
+**The caret is a shape, not a character.** Written into the text it took a
+letter's place and pushed everything after it along, so typing looked like the
+text was being rewritten under the hand. It is drawn between two letters, at a
+measured x, on the line it actually fell on — placed from the height of a
+whole wrapped label it lands on the last line whatever was typed.
+
+**What the arrows reach, they bring into sight.** Walking used to move the
+choice and leave the column where it was, so a card could be chosen below the
+bottom of its column — and a card chosen out of sight is a card whose title,
+whose state and whose place are all unknown to whoever chose it. Walking down a
+column and walking across into one somebody had scrolled both follow.
+
+**The objectives are a grid**, filled across and then down, each one the width
+of a card. One to a row and the width of the whole board, an objective was a
+card's height stretched over four columns of nothing — and a dozen of them ran
+off the bottom of the window, so the ones that mattered least were the only
+ones in sight. Across, a dozen fit without scrolling at the smallest window
+this board draws in, and the grid reflows with the window because it is laid
+out in the board's own columns rather than on a sum of its own.
+
+They scroll on a number of their own, being one grid rather than four columns.
+They had none at all: the wheel did nothing over them and the arrows walked
+past the bottom of the window. The arrows walk the grid — across to the next,
+down to the one a row below.
+
+**The tabs are folders, not two words one of which is coloured.** A band
+closed by a line runs the width of the window, and the tab somebody is on is a
+block carrying the page's own ground whose bottom breaks that line. It does not
+stand out by its colour, it stands out by opening onto the page — which is what
+says *you are on this page* rather than *this word is selected*. Each says how
+much its page holds, counted off what is showing, so a search narrows what the
+tabs claim as well. `tab` walks to the next page and `shift+tab` to the one
+before, round the end rather than stopping at it; inside a form `tab` still
+walks the fields, as it does in the terminal.
+
+The columns stand a gap clear of that band. Against it, the tabs read as the
+board's first row.
+
+**A key does what the bar offers, where the bar offers it.** The bar is what
+somebody reads to find out what a key does, so `Key` looks the key up among
+`Offers()` rather than carrying a list of its own — an offer added to a screen
+cannot arrive without its key, and a key cannot work on a screen whose bar says
+nothing about it. Two defects came from the older shape: the bar offered *Edit*
+on an open task while `e` did nothing there, and the key that adds worked over
+an open form and threw away what had been typed into it.
+
+What a key is *called* and how the bar *writes* it are two functions.
+`Shortcut("New")` is `cmd+n`, because that is how a key arrives; `Pretty` turns
+it into `⌘N`, because a bar reading out `cmd+n` is reading out a name meant for
+a program.
+
+## The detail
+
+The panel a task opens into, with `s`, `enter` or a double click. Two columns:
+what the task carries on the left, in the same boxes the form writes into, and
+its history on the right.
+
+**Two columns and not one above the other.** Stacked, twelve framed fields take
+nearly the whole panel at the smallest window this board draws in, and the
+history gets what is left — which is nothing. Beside them it has the panel's
+full height at every size.
+
+The history **scrolls**, by the wheel over it, by `↑↓`, or by pulling the bar
+beside it. It is counted in lines and not in acts, because an act wraps onto as
+many lines as it needs and a history that jumped an act at a time would skip
+past what it wrapped. Acts are told one after another with a blank line
+between two of them: without it, a wrapped act and the next one beginning
+straight after read as one act nobody could tell the end of.
+
+The bar is drawn whether or not there is anything to scroll. A bar that comes
+and goes is a bar somebody reaches for and does not find. Its grip says two
+things at once — how tall it is, how much of the history is showing; where it
+sits, which part — and it is never drawn smaller than can be taken hold of.
+
+Editing in place on the card was the alternative, and is what a mouse invites.
+It was turned down for the trace: with no single moment of saving, every field
+touched is its own `task edit`, and twelve fields touched is twelve lines of
+history for one sitting.
+
+## How it is tested
+
+Measured: a Gio window with no screen draws and hands its pixels back, in
+0.14 s. So the gates can reach this code. But **pixels are not what gets
+pinned** — the terminal pins characters, which are the same everywhere, while a
+pixel depends on font rasterisation, the Gio version and the graphics driver. A
+frame pinned in pixels would go red on another machine for something that is
+not a defect.
+
+Three layers, each with its own gate:
+
+| what | how | what it catches |
+|---|---|---|
+| the **geometry** — where each card is, which one is under the pointer, what is off screen | a pure function `(width, height, cards) → rectangles`, pinned as **numbers** in testdata | every layout sum, under mutation |
+| the **decisions** — what a click chooses, what a drop sets off, which operations go to the engine | state kept in one struct of ours, changed by a function a test can call without drawing, and read back off the `*fake` | dragging, the two operations, every refusal |
+| the **drawing** — that there is ink where there should be, in the right colour | a window with no screen, and assertions on one colour at a time: this rectangle holds some of the colour a chosen card is outlined in, that one holds none | having forgotten to draw something, and having drawn it in the wrong state |
+
+**Nothing in the drawing works anything out**, and that is not tidiness — it is
+what the mutation gate forced. Arithmetic inside a drawing is arithmetic no
+assertion can judge: a title moved six pixels still looks like a title, and the
+only test that would notice is the pinned pixel frame ruled out above. So every
+rectangle, down to the four edges of an outline and the row a field's name sits
+on, is worked out in `parts.go` where a test pins it as a number, and `draw.go`
+is left with nothing it can get wrong but a colour.
+
+Two things measured while building it, both worth keeping: counting "pixels
+that are not the background" says nothing about a card, because a card fills
+its own box — what discriminates is counting one colour. And the first drawing
+test that passed was passing for the wrong reason.
+
+The third does not judge whether it looks good and does not pretend to. Nobody
+can judge that but a person looking at it, which is why the definition of done
+asks for the built binary rather than an argument about it.
+
+**The middle row is the one the library fights**, and saying so now is cheaper
+than discovering it. Gio is immediate mode: there is no `Update` handing back a
+new model the way bubbletea does, and a widget that keeps its own state is the
+path of least resistance. So the state a decision turns on is kept in one
+struct of ours, changed by our own function, and only then drawn — the widgets
+hold what they must and decide nothing. Letting that slip is how this surface
+would become the one the gates cannot reach.
+
+## Deliberately not there yet
+
+- **The eleven marks.** `⊘ ◉ ‖ ▶ ✓ ✕ ≡ ▪ ⚑ ↳` carry meaning in the terminal
+  because a column is 24 characters wide and a word does not fit. A window has
+  room, so a card writes the word. Measured, for the day this is revisited: the
+  font Gio ships carries 2 of the 10 shapes (712 glyphs); Gio does not fall
+  back to system fonts; a symbol-rich font is 750 KB to 5 MB and
+  `check-added-large-files` refuses it at 500 KB; a subset of those ten glyphs
+  would be a few KB and would pass.
+- **Sub-tasks drawn under their parent**, as in the terminal.
+- **A permanent detail panel**, which the extra room would allow and which
+  would stop this being the same board.

@@ -1,0 +1,983 @@
+package gui
+
+import (
+	"image"
+	"image/color"
+	"strings"
+	"testing"
+
+	"gioui.org/f32"
+	"gioui.org/gpu/headless"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
+
+	"cairn/internal/reading"
+)
+
+// Drawing, checked coarsely and on purpose. What is pinned everywhere else is
+// numbers; pixels depend on a font's rasterisation, a driver and a version of
+// Gio, so a frame pinned in pixels would go red on another machine for
+// something that is not a defect.
+//
+// What these ask is the one thing numbers cannot: that something was actually
+// drawn, where it was supposed to be.
+
+// drawn renders a window with no screen and answers the pixels.
+func drawn(t *testing.T, w Window) *image.RGBA {
+	t.Helper()
+	window, err := headless.NewWindow(w.width, w.height)
+	if err != nil {
+		t.Skipf("no headless window here: %v", err)
+	}
+	t.Cleanup(window.Release)
+
+	var ops op.Ops
+	gtx := layout.Context{
+		Ops:         &ops,
+		Constraints: layout.Exact(image.Pt(w.width, w.height)),
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	Draw(gtx, Theme(), Dark(), w)
+	if err := window.Frame(gtx.Ops); err != nil {
+		t.Fatalf("drawing: %v", err)
+	}
+	shot := image.NewRGBA(image.Rect(0, 0, w.width, w.height))
+	if err := window.Screenshot(shot); err != nil {
+		t.Fatalf("reading the pixels back: %v", err)
+	}
+	return shot
+}
+
+// ink counts the pixels in a box that are not the background.
+func ink(shot *image.RGBA, b Box, back color.NRGBA) int {
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			got := shot.RGBAAt(x, y)
+			if got.R != back.R || got.G != back.G || got.B != back.B {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"},
+		reading.Card{Number: 2, Title: "Client's answer", State: "blocked"})
+
+	shot := drawn(t, w)
+	back := Dark().Back
+	l := w.Layout()
+
+	for what, box := range map[string]Box{
+		"the tabs":            l.Tabs,
+		"the todo header":     l.Head[1],
+		"the first todo card": l.CardAt(1, 0, 0),
+		"the blocked lane":    l.Lane[0],
+		"the bar":             l.Bar,
+	} {
+		if got := ink(shot, box, back); got == 0 {
+			t.Errorf("%s is blank", what)
+		}
+	}
+
+	// A column nothing stands in has its header and no card under it.
+	empty := l.CardAt(3, 0, 0)
+	if got := ink(shot, empty, back); got != 0 {
+		t.Errorf("an empty column drew %d pixels where its first card would be", got)
+	}
+}
+
+func TestAWindowTooSmallDrawsItsMessageAndNoBoard(t *testing.T) {
+	f := newFake()
+	w := New(f, 400, 300)
+
+	shot := drawn(t, w)
+	back := Dark().Back
+	if got := ink(shot, Box{W: 400, H: 300}, back); got == 0 {
+		t.Fatal("a window too small drew nothing at all")
+	}
+	// The board's own shape is not there: no bar along the bottom.
+	bottom := Box{X: 0, Y: 290, W: 400, H: 10}
+	if got := ink(shot, bottom, back); got != 0 {
+		t.Errorf("a window too small drew %d pixels of board along its bottom", got)
+	}
+}
+
+// A card fills its own box whether it is chosen or not, so counting what is not
+// the background says nothing here. What says it is the colour of the outline.
+func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			if got := shot.RGBAAt(x, y); got.R == want.R && got.G == want.G && got.B == want.B {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	box := w.Layout().CardAt(1, 0, 0)
+	edge := Dark().Chosen
+
+	plain := painted(drawn(t, w), box, edge)
+	chosen := painted(drawn(t, w.Click(middleOf(w, 1, 0))), box, edge)
+	if chosen <= plain {
+		t.Errorf("a chosen card drew %d pixels of its outline and an unchosen one %d", chosen, plain)
+	}
+}
+
+func TestTheFormIsDrawnOverTheBoard(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+
+	shot := drawn(t, w)
+	if got := ink(shot, Over(w.width, w.height), Dark().Back); got == 0 {
+		t.Fatal("the form is blank")
+	}
+	// The board is still there around it.
+	l := w.Layout()
+	if got := ink(shot, l.Head[0], Dark().Back); got == 0 {
+		t.Error("the form hid the board behind it rather than sitting over it")
+	}
+}
+
+func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
+	f := newFake()
+	f.fail = errNope
+	w := New(f, 1200, 800).Wonder()
+
+	shot := drawn(t, w)
+	if got := ink(shot, w.Layout().Bar, Dark().Back); got == 0 {
+		t.Fatal("nothing was said about a store out of reach")
+	}
+}
+
+// A lane with nothing of its kind in it is empty, and a board that drew a card
+// in the wrong lane would be a board that lied about what is in the way.
+func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+
+	shot := drawn(t, w)
+	back := Dark().Back
+	l := w.Layout()
+	if got := ink(shot, l.Lane[0], back); got == 0 {
+		t.Error("the blocked lane is empty and holds a blocked task")
+	}
+	for _, lane := range []int{1, 2} {
+		// A lane holds its name whatever is in it; what is asked here is that
+		// nothing was drawn where a card would be.
+		card := l.LaneCardAt(lane, 0, 0)
+		if got := ink(shot, card, back); got != 0 {
+			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", Lanes[lane], got)
+		}
+	}
+}
+
+// The detail shows the task it was opened on, and not the one beside it.
+func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Write the spec", State: "todo", Description: "the first"},
+		reading.Card{Number: 2, Title: "Ship it", State: "todo", Description: "the second"})
+
+	// The panel fills its own box, so what is counted is the colour the task's
+	// name is written in and not merely what is not the background.
+	box, written := Over(w.width, w.height), Dark().Ink
+	first := painted(drawn(t, w.DoubleClick(middleOf(w, 1, 0))), box, written)
+	second := painted(drawn(t, w.DoubleClick(middleOf(w, 1, 1))), box, written)
+	if first == 0 || second == 0 {
+		t.Fatal("a detail drew no title at all")
+	}
+	// Two different titles of two different lengths cannot draw the same.
+	if first == second {
+		t.Error("the detail drew the same thing for two different tasks")
+	}
+}
+
+// The field the keyboard is on is drawn differently from the rest, which is the
+// only thing saying where typing would go.
+func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+
+	box := Over(w.width, w.height)
+	lit := Dark().Chosen
+	first := painted(drawn(t, w), box, lit)
+
+	w.form = w.form.Set("priority", "high")
+	moved := painted(drawn(t, w), box, lit)
+	if first == moved {
+		t.Error("moving the keyboard to another field drew the same thing")
+	}
+}
+
+// The page being looked at is the open folder, and the other is not — and
+// clicking the other one opens it.
+func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	l := w.Layout()
+	open := Dark().Back
+
+	shot := drawn(t, w)
+	if painted(shot, TabAt(l, 0), open) == 0 {
+		t.Error("the tab being looked at is not open")
+	}
+	if got := painted(shot, TabAt(l, 1), open); got != 0 {
+		t.Errorf("the other tab drew %d pixels of an open folder", got)
+	}
+
+	second := TabAt(l, 1)
+	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	shot = drawn(t, w)
+	if painted(shot, TabAt(l, 1), open) == 0 {
+		t.Error("after clicking it, the second tab is not open")
+	}
+	if got := painted(shot, TabAt(l, 0), open); got != 0 {
+		t.Errorf("the first tab still drew %d pixels of an open folder", got)
+	}
+}
+
+// A card chosen in a lane is drawn chosen, the same as one in a column.
+func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+	box := w.Layout().LaneCardAt(0, 0, 0)
+	edge := Dark().Chosen
+
+	plain := painted(drawn(t, w), box, edge)
+	chosen := painted(drawn(t, w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
+	if chosen <= plain {
+		t.Errorf("a chosen lane card drew %d pixels of outline and an unchosen one %d", chosen, plain)
+	}
+}
+
+// Two cards of the same kind stack down their lane rather than on top of one
+// another.
+func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Client's answer", State: "blocked"},
+		reading.Card{Number: 2, Title: "Supplier's answer", State: "blocked"})
+
+	shot := drawn(t, w)
+	back := Dark().Back
+	if got := ink(shot, w.Layout().LaneCardAt(0, 0, 0), back); got == 0 {
+		t.Error("the first card of the lane is not there")
+	}
+	if got := ink(shot, w.Layout().LaneCardAt(0, 1, 0), back); got == 0 {
+		t.Error("the second card of the lane is drawn on top of the first")
+	}
+}
+
+// A detail opened on a task draws that task's name. With one task to choose
+// from, a detail that drew the others would draw nothing at all.
+func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.DoubleClick(middleOf(w, 1, 0))
+
+	if got := painted(drawn(t, w), Over(w.width, w.height), Dark().Ink); got == 0 {
+		t.Fatal("the detail drew no name at all")
+	}
+}
+
+// One field is lit at a time: the one the keyboard is on, and no other. A form
+// that lit every field but that one would say the typing goes everywhere.
+func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+
+	box := Over(w.width, w.height)
+	lit := Dark().Chosen
+	rowOf := func(i int) Box {
+		name, _ := FieldRow(box, FieldTop(box, w.Form().Fields(), i))
+		return name
+	}
+
+	shot := drawn(t, w)
+	if painted(shot, rowOf(0), lit) == 0 {
+		t.Error("the field the keyboard is on is not lit")
+	}
+	for i := 1; i < len(w.Form().Fields()); i++ {
+		if got := painted(shot, rowOf(i), lit); got != 0 {
+			t.Errorf("field %d is lit and the keyboard is not on it: %d pixels", i, got)
+		}
+	}
+
+	// And it follows the keyboard.
+	w.form = w.form.Set("priority", "high")
+	on := w.Form().On()
+	shot = drawn(t, w)
+	if painted(shot, rowOf(on), lit) == 0 {
+		t.Errorf("field %d is where the keyboard is and is not lit", on)
+	}
+	if got := painted(shot, rowOf(0), lit); got != 0 {
+		t.Errorf("the field the keyboard left is still lit: %d pixels", got)
+	}
+}
+
+// A window reports its size in pixels and this board works in dp, so on a
+// screen with two pixels to the dp everything must be drawn twice as large.
+// Getting this wrong is invisible to every test that draws at one to one — and
+// it made every card half-height on a Retina screen.
+func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+
+	window, err := headless.NewWindow(w.width*2, w.height*2)
+	if err != nil {
+		t.Skipf("no headless window here: %v", err)
+	}
+	t.Cleanup(window.Release)
+
+	var ops op.Ops
+	gtx := layout.Context{
+		Ops:         &ops,
+		Constraints: layout.Exact(image.Pt(w.width*2, w.height*2)),
+		Metric:      unit.Metric{PxPerDp: 2, PxPerSp: 2},
+	}
+	Draw(gtx, Theme(), Dark(), w)
+	if err := window.Frame(gtx.Ops); err != nil {
+		t.Fatalf("drawing: %v", err)
+	}
+	shot := image.NewRGBA(image.Rect(0, 0, w.width*2, w.height*2))
+	if err := window.Screenshot(shot); err != nil {
+		t.Fatalf("reading the pixels back: %v", err)
+	}
+
+	// The card the layout puts at these dp has to be drawn at twice them.
+	box := w.Layout().CardAt(1, 0, 0)
+	twice := Box{X: box.X * 2, Y: box.Y * 2, W: box.W * 2, H: box.H * 2}
+	if got := ink(shot, twice, Dark().Back); got == 0 {
+		t.Error("nothing was drawn where two pixels to the dp puts the first card")
+	}
+	// And not at the dp themselves, which is where it went when the ratio was
+	// ignored: a card half the size it should be, up in the corner.
+	//
+	// The band between the tabs and the column headers is what is looked at:
+	// it is empty when the ratio is honoured, and it is where the lower half
+	// of a card drawn at one pixel to the dp lands. The card's own corner used
+	// to be looked at and stopped discriminating the day the tabs were given a
+	// ground of their own — it is covered by that band whether the ratio was
+	// honoured or not.
+	empty := Box{X: box.X, Y: box.Y + box.H/2, W: box.W, H: box.H / 4}
+	if got := ink(shot, empty, Dark().Back); got != 0 {
+		t.Errorf("%d pixels were drawn as though one pixel were one dp", got)
+	}
+}
+
+// A pointer reports where it is in pixels too, and a board that took that for
+// dp would choose the wrong card on a Retina screen — the one twice as far
+// down the column.
+func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "First", State: "todo"},
+		reading.Card{Number: 2, Title: "Second", State: "todo"})
+
+	second := w.Layout().CardAt(1, 1, 0)
+	inDp := Point{X: second.X + second.W/2, Y: second.Y + second.H/2}
+	inPixels := f32.Pt(float32(inDp.X*2), float32(inDp.Y*2))
+
+	if got := Dp(inPixels, 2); got != inDp {
+		t.Fatalf("a pointer at %v on a two-pixel screen is at %v in dp, want %v", inPixels, got, inDp)
+	}
+	if got := w.Click(Dp(inPixels, 2)).Chosen(); got != 2 {
+		t.Errorf("the pointer chose task %d", got)
+	}
+}
+
+// The objectives tab draws a list, not four columns.
+func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Goals: []reading.Goal{
+		{Number: 3, Title: "Ship cairn", State: "active"},
+		{Number: 4, Title: "Keep it honest", State: "active"},
+	}}
+	w.tab = Objectives
+
+	shot := drawn(t, w)
+	back := Dark().Back
+	l := w.Layout()
+	for at := range 2 {
+		if got := ink(shot, GoalAt(l, at, 0), back); got == 0 {
+			t.Errorf("objective %d is not drawn", at)
+		}
+	}
+	// And the four column headers are not: this tab is not the board.
+	if got := ink(shot, l.Head[1], back); got != 0 {
+		t.Errorf("the objectives tab drew %d pixels of a column header", got)
+	}
+}
+
+// The bar draws what it offers, which is the only thing making them clickable
+// in earnest rather than in a test.
+func TestTheBarDrawsWhatItOffers(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0))
+
+	shot := drawn(t, w)
+	for i := range w.Offers() {
+		if got := ink(shot, OfferAt(w.Layout(), i), Dark().Back); got == 0 {
+			t.Errorf("offer %d is not drawn", i)
+		}
+	}
+}
+
+// A card in mid-air and the line it would land on are both drawn, or a drop is
+// a guess.
+func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "First", State: "todo"},
+		reading.Card{Number: 2, Title: "Second", State: "backlog"})
+
+	w = w.PressAt(middleOf(w, 0, 0))
+	w = w.MoveTo(middleOf(w, 1, 0))
+
+	shot := drawn(t, w)
+	ghost, _ := w.Ghost()
+	if got := painted(shot, ghost, Dark().Ghost); got == 0 {
+		t.Error("the card being dragged is not drawn")
+	}
+	landing, _ := w.Landing()
+	if got := painted(shot, landing, Dark().Chosen); got == 0 {
+		t.Error("where the card would land is not drawn")
+	}
+}
+
+// The detail draws the task's fields, not only what was done to it.
+func TestTheDetailDrawsTheTasksFields(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{
+		Number: 1, Title: "Write the spec", State: "todo", Priority: "high",
+	})
+	w = w.DoubleClick(middleOf(w, 1, 0))
+
+	box := Over(w.width, w.height)
+	shown := len(w.Shown())
+	rows := 0
+	for i := range shown {
+		name, _ := FieldRow(box, FieldTop(box, w.Shown(), i))
+		if painted(drawn(t, w), name, Dark().Faint) > 0 {
+			rows++
+		}
+	}
+	if rows < shown/2 {
+		t.Errorf("the detail drew %d of its %d fields", rows, shown)
+	}
+}
+
+// Text must be scaled once. Gio scales a label by the screen's ratio itself,
+// and the whole drawing is already scaled by that same ratio — so a label told
+// the ratio a second time comes out squared.
+//
+// What that looks like is not writing that spills, because a row is clipped to
+// itself: it is writing too large for the row, crammed into it and cut. So what
+// is measured is how full the row is. Measured both ways: 11.1% of the row at
+// one pixel to the dp, 8.3% at two when it is right, and 17.4% at two when the
+// ratio is applied twice.
+func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+
+	density := func(perDp float32) float64 {
+		wide, high := int(float32(w.width)*perDp), int(float32(w.height)*perDp)
+		window, err := headless.NewWindow(wide, high)
+		if err != nil {
+			t.Skipf("no headless window here: %v", err)
+		}
+		defer window.Release()
+
+		var ops op.Ops
+		gtx := layout.Context{
+			Ops:         &ops,
+			Constraints: layout.Exact(image.Pt(wide, high)),
+			Metric:      unit.Metric{PxPerDp: perDp, PxPerSp: perDp},
+		}
+		Draw(gtx, Theme(), Dark(), w)
+		if err := window.Frame(gtx.Ops); err != nil {
+			t.Fatalf("drawing: %v", err)
+		}
+		shot := image.NewRGBA(image.Rect(0, 0, wide, high))
+		if err := window.Screenshot(shot); err != nil {
+			t.Fatalf("reading the pixels back: %v", err)
+		}
+		title := PartsOf(w.Layout().CardAt(1, 0, 0)).Title
+		box := Box{
+			X: int(float32(title.X) * perDp), Y: int(float32(title.Y) * perDp),
+			W: int(float32(title.W) * perDp), H: int(float32(title.H) * perDp),
+		}
+		return float64(ink(shot, box, Dark().Panel)) / float64(box.W*box.H)
+	}
+
+	one, two := density(1), density(2)
+	if one == 0 || two == 0 {
+		t.Fatal("a title row is empty")
+	}
+	if two > one {
+		t.Errorf("a title fills %.1f%% of its row at one pixel to the dp and %.1f%% at two: "+
+			"it is being scaled twice", 100*one, 100*two)
+	}
+}
+
+// The card in mid-air carries the title of the card being dragged, and not of
+// whichever card is nearby.
+func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "A very long name indeed for a task", State: "todo"},
+		reading.Card{Number: 2, Title: "Short", State: "backlog"})
+
+	w = w.PressAt(middleOf(w, 0, 0))
+	w = w.MoveTo(middleOf(w, 1, 0))
+	ghost, _ := w.Ghost()
+
+	written := painted(drawn(t, w), PartsOf(ghost).Title, Dark().Ink)
+	if written == 0 {
+		t.Fatal("the card in mid-air carries no title")
+	}
+
+	// The one being dragged is "Short"; the long one would write a good deal
+	// more, and writing it would mean the wrong card is in hand.
+	long := holding(f, reading.Card{Number: 2, Title: "A very long name indeed for a task", State: "backlog"})
+	long = long.PressAt(middleOf(long, 0, 0)).MoveTo(middleOf(long, 1, 0))
+	longGhost, _ := long.Ghost()
+	if written >= painted(drawn(t, long), PartsOf(longGhost).Title, Dark().Ink) {
+		t.Error("the card in mid-air is carrying somebody else's title")
+	}
+}
+
+// Nothing in hand draws nothing in mid-air, whatever the pointer is over.
+func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	l := w.Layout()
+	// The gap between two columns: no card, no lane, nothing.
+	between := Box{X: l.Column[0].X + l.Column[0].W, Y: l.Column[0].Y, W: gap, H: l.Column[0].H}
+	if got := painted(drawn(t, w), between, Dark().Ghost); got != 0 {
+		t.Errorf("%d pixels of a card in mid-air were drawn with nothing in hand", got)
+	}
+}
+
+// An objective chosen in the list is drawn chosen, the same as a card is.
+func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Goals: []reading.Goal{
+		{Number: 3, Title: "Ship cairn", State: "active"},
+		{Number: 4, Title: "Keep it honest", State: "active"},
+	}}
+	w.tab = Objectives
+
+	first := GoalAt(w.Layout(), 0, 0)
+	edge := Dark().Chosen
+	plain := painted(drawn(t, w), first, edge)
+
+	chosen := w.Click(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if chosen.Chosen() != 3 {
+		t.Fatalf("clicking the first objective chose %d", chosen.Chosen())
+	}
+	shot := drawn(t, chosen)
+	if painted(shot, first, edge) <= plain {
+		t.Error("a chosen objective is drawn no differently")
+	}
+	// And the one beside it is not.
+	second := GoalAt(w.Layout(), 1, 0)
+	if got := painted(shot, second, edge); got != 0 {
+		t.Errorf("an objective nobody chose drew %d pixels of the chosen colour", got)
+	}
+}
+
+// A search narrows what is drawn, not merely what is counted.
+func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Write the spec", State: "backlog"},
+		reading.Card{Number: 2, Title: "Ship the board", State: "backlog"})
+
+	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), Dark().Back)
+	if both == 0 {
+		t.Fatal("the second card is not drawn to begin with")
+	}
+	narrowed := w.Key("/").Types("spec")
+	if got := ink(drawn(t, narrowed), narrowed.Layout().CardAt(0, 1, 0), Dark().Back); got != 0 {
+		t.Errorf("a search left %d pixels of a card it does not reach", got)
+	}
+}
+
+// What has been typed into a search is shown, or nobody knows what they are
+// looking at.
+func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w = w.Key("/").Types("spec")
+
+	shot := drawn(t, w)
+	if got := painted(shot, Searching(w.Layout()), Dark().Ink); got == 0 {
+		t.Error("what is being searched for is not shown along the bottom")
+	}
+	// And not across the middle, where the window says it is too small.
+	if got := painted(shot, Message(w.width, w.height), Dark().Ink); got != 0 {
+		t.Errorf("%d pixels of the search were written across the middle of the board", got)
+	}
+}
+
+// The help and the question are panels over the board, like the detail.
+func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0))
+
+	box := Over(w.width, w.height)
+	if got := painted(drawn(t, w.Choose("Help")), box, Dark().Ink); got == 0 {
+		t.Error("the help is blank")
+	}
+	if got := painted(drawn(t, w.Choose("Delete")), box, Dark().Ink); got == 0 {
+		t.Error("the question asked before deleting is blank")
+	}
+}
+
+// The caret is drawn on the field the keyboard is on, and the row it is on is
+// taller for a field that wants a paragraph.
+func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	valueOf := func(i int) Box {
+		_, value := FieldRow(box, FieldTop(box, fields, i))
+		return value
+	}
+
+	// The caret is drawn in its own colour, standing beside the letters rather
+	// than among them — so what is counted is the caret and not the writing.
+	on := w.On("title")
+	with := painted(drawn(t, on), valueOf(0), Dark().Chosen)
+	without := painted(drawn(t, on.On("priority")), valueOf(0), Dark().Chosen)
+	if with <= without {
+		t.Errorf("the title carried %d pixels of caret with the keyboard on it and %d without", with, without)
+	}
+	if without != 0 {
+		t.Errorf("a field the keyboard is not on carries %d pixels of caret", without)
+	}
+}
+
+// A description is drawn over the rows it was given, and the fields under it
+// begin below them.
+func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{
+		Number: 1, State: "todo", Title: "Write the spec",
+		Description: strings.Repeat("two columns, the client says, and nothing else. ", 6),
+	})
+	// On the description, because the caret is drawn only where the keyboard
+	// is and it is the caret's room that has to be four rows deep.
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("description")
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	_, value := FieldRow(box, FieldTop(box, fields, 1))
+	value.H = lineHigh * RowsOf(fields[1])
+
+	shot := drawn(t, w)
+	rows := 0
+	for row := range RowsOf(fields[1]) {
+		line := Box{X: value.X, Y: value.Y + row*lineHigh, W: value.W, H: lineHigh}
+		if painted(shot, line, Dark().Ink) > 0 {
+			rows++
+		}
+	}
+	if rows < 2 {
+		t.Errorf("a long description was drawn on %d of its %d rows", rows, RowsOf(fields[1]))
+	}
+}
+
+// The tab somebody is on is a folder opening onto the page: it carries the
+// page's own ground, it is closed on three sides, and the line across the band
+// stops either side of it. Told apart by the colour of its word alone, the two
+// sat in the same emptiness and neither of them looked like a page.
+func TestTheOpenTabIsAFolderAndNotAColouredWord(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	l := w.Layout()
+	shot := drawn(t, w)
+
+	// The band is its own ground; the open tab is the page's, and the shut one
+	// is left in the band.
+	if got := painted(shot, TabAt(l, 0), Dark().Back); got == 0 {
+		t.Error("the open tab does not carry the page's own ground")
+	}
+	if got := painted(shot, TabAt(l, 1), Dark().Back); got != 0 {
+		t.Errorf("a shut tab drew %d pixels of the page's ground", got)
+	}
+	if got := painted(shot, TabAt(l, 1), Dark().Panel); got == 0 {
+		t.Error("a shut tab does not sit in the band")
+	}
+	// Closed on three sides, and open at the bottom where the page begins.
+	for i, side := range TabSides(TabAt(l, 0)) {
+		if got := painted(shot, side, Dark().Edge); got == 0 {
+			t.Errorf("side %d of the open tab was not drawn", i)
+		}
+	}
+	// The line across the band runs either side of the open tab and not under
+	// it: that break is the whole of what makes it a folder.
+	for i, piece := range TabsLineAround(l, 0) {
+		if piece.W == 0 {
+			continue
+		}
+		if got := painted(shot, piece, Dark().Edge); got == 0 {
+			t.Errorf("piece %d of the line closing the band was not drawn", i)
+		}
+	}
+	under := Box{X: TabAt(l, 0).X + 2, Y: TabsLine(l).Y, W: TabAt(l, 0).W - 4, H: 1}
+	if got := painted(shot, under, Dark().Edge); got != 0 {
+		t.Errorf("%d pixels of line run under the open tab, which shuts the folder", got)
+	}
+}
+
+// The columns stand clear of the band of tabs rather than starting against it.
+func TestTheColumnsStandClearOfTheTabs(t *testing.T) {
+	l := LayoutFor(1280, 840)
+	if got := l.Head[0].Y - (l.Tabs.Y + l.Tabs.H); got < gap {
+		t.Errorf("the columns start %d below the tabs, and a gap is %d", got, gap)
+	}
+}
+
+// A search says what it is before it says what was typed. It used to draw the
+// key that opened it where the text goes, so the first thing on screen was a
+// character nobody had typed.
+func TestASearchSaysWhatItIs(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	l := w.Layout()
+	box := Searching(l)
+
+	off := painted(drawn(t, w), box, Dark().Panel)
+	on := drawn(t, w.Key("/"))
+	if got := painted(on, box, Dark().Panel); got <= off {
+		t.Errorf("the search drew %d pixels of box and the bar behind it %d", painted(on, box, Dark().Panel), off)
+	}
+	if got := painted(on, SearchWord(box), Dark().Faint); got == 0 {
+		t.Error("the search box does not say what it is")
+	}
+	// And what is typed goes beside that word, not over it.
+	typed := painted(drawn(t, w.Key("/").Types("spec")), SearchInto(box), Dark().Ink)
+	if typed == 0 {
+		t.Error("what was typed was not drawn where the search box types")
+	}
+}
+
+// A panel says what it is before it says anything else, and a key in a panel is
+// drawn on a chip so it reads as a key rather than as one more word.
+func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	box := Over(w.width, w.height)
+	help := w.Key("?")
+
+	shot := drawn(t, help)
+	if got := painted(shot, Heading(box), Dark().Ink); got == 0 {
+		t.Error("the help does not say what it is")
+	}
+	if got := painted(shot, Ruled(box), Dark().Edge); got < Ruled(box).W {
+		t.Errorf("the heading is underlined across %d of %d", got, Ruled(box).W)
+	}
+	name, _ := FieldRow(box, FirstRow(box))
+	if got := painted(shot, Chip(name), Dark().Back); got == 0 {
+		t.Error("the first key of the help is not on a chip")
+	}
+}
+
+// The bar says what to press beside what it does. A bar that only names what
+// can be done teaches nothing, and everything it names can already be done by
+// pointing at the bar itself.
+func TestTheBarSaysWhatToPress(t *testing.T) {
+	if got := Shortcut("New"); got != "cmd+n" {
+		t.Errorf("New is offered under %q", got)
+	}
+	if got := Shortcut("nothing at all"); got != "" {
+		t.Errorf("an offer with no key is offered under %q", got)
+	}
+	// What the bar writes is not what a key is called: a bar reading "cmd+n"
+	// would be reading out a name meant for a program.
+	if got := Pretty("cmd+n"); got != "⌘N" {
+		t.Errorf("the bar writes cmd+n as %q", got)
+	}
+	if got := Pretty("enter"); got != "⏎" {
+		t.Errorf("the bar writes enter as %q", got)
+	}
+	if got := Pretty("esc"); got != "esc" {
+		t.Errorf("the bar writes esc as %q", got)
+	}
+	if got := said("New"); !strings.Contains(got, "⌘N") || !strings.Contains(got, "New") {
+		t.Errorf("the bar writes New as %q", got)
+	}
+	if got := said("nothing at all"); got != "nothing at all" {
+		t.Errorf("an offer with no key is written %q, with a gap in front of it", got)
+	}
+}
+
+// Every field of a form is drawn in a box, and the box of the field the
+// keyboard is on is the one that is lit. A value floating on the panel's own
+// ground looked like something written rather than something to write in.
+func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	frameOf := func(name string) Box {
+		for i, field := range fields {
+			if field.Name == name {
+				_, value := FieldRow(box, FieldTop(box, fields, i))
+				return Framed(value, RowsOf(field))
+			}
+		}
+		t.Fatalf("the form has no field %q", name)
+		return Box{}
+	}
+
+	shot := drawn(t, w)
+	on, off := frameOf("title"), frameOf("priority")
+	for what, frame := range map[string]Box{"the field typed into": on, "a field not typed into": off} {
+		if got := painted(shot, frame, Dark().Back); got == 0 {
+			t.Errorf("%s is not drawn in a box", what)
+		}
+	}
+	if painted(shot, Edges(on)[0], Dark().Chosen) == 0 {
+		t.Error("the box of the field typed into is not lit")
+	}
+	if got := painted(shot, Edges(off)[0], Dark().Chosen); got != 0 {
+		t.Errorf("a field nobody is typing into has %d pixels of lit edge", got)
+	}
+}
+
+// What is typed into a long field goes onto the next line and stays in its box.
+func TestALongFieldWrapsInsideItsBox(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("description")
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	var frame Box
+	for i, field := range fields {
+		if field.Name == "description" {
+			_, value := FieldRow(box, FieldTop(box, fields, i))
+			frame = Framed(value, RowsOf(field))
+		}
+	}
+	long := "This description is far longer than one line of this form can hold, so it has to go somewhere"
+	shot := drawn(t, w.Types(long))
+
+	inside := Inside(frame)
+	first := Box{X: inside.X, Y: inside.Y, W: inside.W, H: lineHigh}
+	second := Box{X: inside.X, Y: inside.Y + lineHigh, W: inside.W, H: lineHigh}
+	if painted(shot, first, Dark().Ink) == 0 {
+		t.Error("nothing was written on the first line")
+	}
+	if painted(shot, second, Dark().Ink) == 0 {
+		t.Error("nothing went onto the second line: it was cut rather than wrapped")
+	}
+	// And nothing was drawn past the frame, on either side of it.
+	past := Box{X: frame.X + frame.W, Y: frame.Y, W: 40, H: frame.H}
+	if got := painted(shot, past, Dark().Ink); got != 0 {
+		t.Errorf("%d pixels of writing ran out of the right of the box", got)
+	}
+	// Only as far as the next field's own box, which is what is below this one.
+	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: between}
+	if got := painted(shot, under, Dark().Ink); got != 0 {
+		t.Errorf("%d pixels of writing ran out of the bottom of the box", got)
+	}
+}
+
+// The history is drawn in its own box beside the fields, it stays in that box
+// however long it is, and the bar beside it says where in it somebody is.
+func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
+	f := newFake()
+	for range 40 {
+		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
+	}
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Click(middleOf(w, 1, 0)).Key("enter")
+	if w.Screen() != OnDetail {
+		t.Fatalf("the window is on %v, not the detail", w.Screen())
+	}
+
+	box := Over(w.width, w.height)
+	frame, track := HistoryBox(box), HistoryBar(box)
+	shot := drawn(t, w)
+
+	if painted(shot, Inside(frame), Dark().Faint) == 0 {
+		t.Error("nothing of the history was drawn in its box")
+	}
+	// Nothing below the box, where it used to run off the panel and the window.
+	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: lineHigh}
+	if got := painted(shot, under, Dark().Faint); got != 0 {
+		t.Errorf("%d pixels of history ran out of the bottom of its box", got)
+	}
+
+	// The grip is at the top before anything is scrolled, and at the bottom
+	// once it is.
+	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
+	low := Box{X: track.X, Y: track.Y + track.H*3/4, W: track.W, H: track.H / 4}
+	if painted(shot, high, Dark().Edge) == 0 {
+		t.Error("the grip is not at the top of a history nobody has scrolled")
+	}
+	if got := painted(shot, low, Dark().Edge); got != 0 {
+		t.Errorf("the grip has %d pixels at the bottom of a history nobody has scrolled", got)
+	}
+	ended := drawn(t, w.Scroll(Point{X: frame.X + frame.W/2, Y: frame.Y + frame.H/2}, 999*lineHigh))
+	if painted(ended, low, Dark().Edge) == 0 {
+		t.Error("the grip is not at the bottom of a history scrolled to its end")
+	}
+	// And what is shown moved with it.
+	if painted(ended, Inside(frame), Dark().Faint) == 0 {
+		t.Error("a history scrolled to its end shows nothing")
+	}
+}
+
+// The objectives are cut to the run they are drawn in. Scrolled, they used to
+// be drawn over the band of tabs above them, because nothing cut them to it.
+func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
+	f := newFake()
+	var goals []reading.Goal
+	for i := 1; i <= 12; i++ {
+		goals = append(goals, reading.Goal{Number: i, Title: "Ship it", State: "live"})
+	}
+	w := holding(f)
+	w.snap.Goals = goals
+	l := w.Layout()
+	second := TabAt(l, 1)
+	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.Scroll(Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*CardHeight)
+
+	// The gap between the band of tabs and the column headers, which is empty
+	// when the objectives are cut to their run and holds a card when they are
+	// not. The band itself cannot be looked at: its own ground is the colour a
+	// card is drawn in.
+	above := Box{X: l.Column[0].X, Y: l.Tabs.Y + l.Tabs.H, W: l.Column[0].W, H: gap}
+	if got := painted(drawn(t, w), above, Dark().Panel); got != 0 {
+		t.Errorf("%d pixels of objective were drawn above the run they belong in", got)
+	}
+}

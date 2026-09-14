@@ -272,6 +272,26 @@ linters:
             - pkg: github.com/spf13/cobra
               desc: nothing here parses a command line
 
+        # The fourth surface: the same board in a window. Held exactly as the
+        # terminal one is, and forbidden it as well — two surfaces do not reach
+        # each other, however alike they look. What they share sits underneath
+        # them in `reading`, which is where a second copy gets caught.
+        gui:
+          files: ["**/internal/gui/**"]
+          deny:
+            - pkg: cairn/internal/cli
+              desc: the command line opens the window, the window never reads it
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: cairn/internal/mcp
+              desc: two surfaces do not reach each other
+            - pkg: cairn/internal/board
+              desc: what the two boards share lives in reading, not in each other
+            - pkg: database/sql
+              desc: a surface never opens a database
+            - pkg: github.com/spf13/cobra
+              desc: the window is opened by a command, it does not parse one
+
         # The third surface. Same rule as the other two — it asks the engine and
         # never the store — plus the one mcp has: the command line builds the
         # board, so the board never reads the command line back.

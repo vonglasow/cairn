@@ -202,6 +202,29 @@ It needs sixty columns. Below that it says so, rather than drawing something
 nobody can read. [docs/tui.md](docs/tui.md) says why every part of it is the
 way it is.
 
+## The window
+
+```sh
+cairn gui                        # the same board, in a window
+```
+
+The same four columns and the same band, at a size a mouse can reach. Click to
+choose, double-click to open, drag a card into a column to change its state —
+where it lands is its new place as well, so the order is set by putting things
+where they go rather than by a command. The wheel scrolls what is under it.
+
+The keys say what they do: the bar along the bottom writes each one beside what
+it does, and a key works exactly where the bar offers it. `tab` and `shift+tab`
+walk the two pages, which are drawn as folders — the one you are on opens onto
+the page rather than being merely a different colour.
+
+It needs 1024 by 640. Below that it says so and says what it needs, rather than
+drawing something nobody can read. It follows the store the way the terminal
+board does: what another terminal or an agent changes turns up on its own.
+
+macOS and Linux. [docs/gui.md](docs/gui.md) says why every part of it is the way
+it is, including what was turned down and for what reason.
+
 ## Answering an agent
 
 ```sh
