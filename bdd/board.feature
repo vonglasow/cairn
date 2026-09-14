@@ -413,6 +413,24 @@ Feature: The board
       Then the board says "The client wants two columns"
       And the board says "created"
 
+    @board-the-detail-edits-what-it-is-showing
+    Scenario: a task being read is edited without closing it first
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "enter"
+      And I press "e"
+      Then the mode is "EDIT"
+      And the board says "Write the spec"
+
+    @board-the-detail-focuses-what-it-is-showing
+    Scenario: the key the detail offers for focus focuses what it is showing
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "enter"
+      And I press "f"
+      And I press "esc"
+      Then the card for task 1 is drawn as the one in focus
+
   Rule: The board follows the store while it stays open
 
     @board-a-change-made-elsewhere-appears

@@ -145,6 +145,18 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 	if way, ok := direction(key); ok && b.screen == OnHelp {
 		return b.readOn(way), nil
 	}
+	// The detail's own bar offers e and f, and offering a key without serving
+	// it makes the bar a thing to distrust. They do here what they do on the
+	// board, on the task the detail is showing — which is the task the cursor
+	// is on, so there is nothing else to work out.
+	if b.screen == OnDetail {
+		switch key {
+		case "e":
+			return b.editForm()
+		case "f":
+			return b, b.toggleFocus()
+		}
+	}
 	return b, nil
 }
 
