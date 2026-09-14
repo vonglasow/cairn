@@ -46,6 +46,28 @@ rules and govulncheck's advisories current, and the cost is that a commit which
 passed yesterday can fail today without the code having moved. That is the
 right way round — the finding was already true yesterday.
 
+### When Go itself moves
+
+`govulncheck`, `golangci-lint` and `gremlins` are Go programs, and each one
+parses the sources it is pointed at. A tool built against an older Go cannot
+read a module written for a newer one, and it says so in its own words rather
+than in anything about this repository:
+
+| what it says | what it means |
+|---|---|
+| `Loading packages failed, possibly due to a mismatch between the Go version used to build govulncheck and the Go version on PATH` | govulncheck is behind |
+| `panic: file requires newer Go version go1.27 (application built with go1.26)` | golangci-lint is behind |
+| `go.mod requires go >= 1.26.6 (running go 1.26.5; GOTOOLCHAIN=local)` | Go itself is behind, and `GOTOOLCHAIN=local` forbids it from fetching the one the module asks for |
+
+So a Go upgrade is not one command but four: the toolchain, then the three
+tools above, by the same lines that installed them. None of it is a reason to
+skip a hook — every one of these is a tool that cannot read the code, not a
+check that found nothing.
+
+Measured, on the day Go went from 1.26.5 to 1.27.1: five advisories appeared
+against the standard library, and the two brew-installed tools then refused to
+run at all. The hour that cost is the reason this section exists.
+
 ## The three that are not the same question
 
 The suite says it works. Coverage says a line ran. **Mutation says a test would
