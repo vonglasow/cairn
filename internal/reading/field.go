@@ -83,6 +83,20 @@ func Priorities() []string {
 	return out
 }
 
+// NumbersIn reads back what Numbers wrote. What is not a number is passed
+// over rather than refused: this reads a field somebody may have typed into,
+// and a form that threw away everything because one word was wrong would lose
+// the choices that were right.
+func NumbersIn(said string) []int {
+	var all []int
+	for _, word := range strings.Fields(said) {
+		if n, err := strconv.Atoi(word); err == nil {
+			all = append(all, n)
+		}
+	}
+	return all
+}
+
 // Numbers writes a list of task or objective numbers the way a form takes them
 // back.
 func Numbers(all []int) string {

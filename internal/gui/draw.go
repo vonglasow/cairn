@@ -119,6 +119,51 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnAsking {
 		drawSaid(gtx, th, skin, w, asking(w))
 	}
+	if w.Screen() == OnChoosing {
+		// The form first, and the list on top of it: what is being filled in
+		// stays on screen, because a choice made with the rest of the form out
+		// of sight is a choice made from memory.
+		drawForm(gtx, th, skin, w)
+		drawChoosing(gtx, th, skin, w)
+	}
+}
+
+// TickedMark says an objective is in. A third mark in a window that took two on
+// purpose, and it earns its place the way they did: this list is about ticking,
+// and a word in the column where every row carries one would be read as part of
+// the name rather than as its state.
+const TickedMark = "✓"
+
+// drawChoosing is the list of objectives a task may serve, over the form. Drawn
+// like the help and the question rather than like a board: it is read down, and
+// what it offers is one line each.
+func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := ChoosingOver(w.width, w.height)
+	drawPanel(gtx, th, skin, box, Heads(w))
+
+	at := FirstRow(box)
+	offered := w.Choosing()
+	if len(offered) == 0 {
+		_, value := FieldRow(box, at)
+		say(gtx, th, skin.Faint, value, ChoosingSays, reads)
+		drawPanelOffers(gtx, th, skin, box, w)
+		return
+	}
+	for i, g := range offered {
+		name, value := FieldRow(box, at)
+		// The row the keyboard is on is lit the way a form lights the field it
+		// is on: one place to look for where you are, whatever is open.
+		if i == w.ChoosingAt() {
+			fill(gtx, Chip(name), skin.Back)
+			outline(gtx, Chip(name), skin.Chosen)
+		}
+		if w.Ticked(g.Number) {
+			say(gtx, th, skin.Chosen, name, TickedMark, reads)
+		}
+		say(gtx, th, skin.Ink, value, Numbered(reading.Card{Number: g.Number})+"  "+g.Title, reads)
+		at += apart
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // asking is the one question this window puts, written the way the help is so
@@ -312,7 +357,7 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	// it, and only the lit frame says which of the two is happening.
 	fields := w.Shown()
 	for i := range fields {
-		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false)
+		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false, w.FieldSays(fields[i]))
 	}
 	if w.ChosenGoal() {
 		drawServing(gtx, th, skin, box, fields, w)
@@ -379,7 +424,7 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 
 // drawField draws one field of a panel: its name beside it, what it holds
 // inside a box of its own, and the frame lit when the keyboard is on it.
-func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, caret int, carets bool) {
+func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, caret int, carets bool, said string) {
 	field := fields[i]
 	name, value := FieldRow(box, FieldTop(box, fields, i))
 	frame := Framed(value, RowsOf(field))
@@ -390,7 +435,7 @@ func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	say(gtx, th, ink, name, field.Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), field.Value, caret, carets, reads, RowsOf(field))
+	writing(gtx, th, skin, Inside(frame), said, caret, carets, reads, RowsOf(field))
 }
 
 func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
@@ -402,7 +447,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fields := w.Form().Fields()
 	for i := range fields {
 		on := i == w.Form().On()
-		drawField(gtx, th, skin, box, fields, i, on, w.Form().Writing().At, on)
+		drawField(gtx, th, skin, box, fields, i, on, w.Form().Writing().At, on, w.FieldSays(fields[i]))
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

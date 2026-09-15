@@ -157,6 +157,7 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("inside four", Inside(Framed(value, 4)))
 	say("field top 1", Box{X: over.X, Y: FieldTop(over, reading.TaskFields(reading.Card{}), 1), W: 1, H: 1})
 	goalFields := reading.GoalFields(reading.Goal{})
+	say("choosing over", ChoosingOver(1200, 800))
 	say("serving head", ServingHead(over, goalFields))
 	say("serving box", ServingBox(over, goalFields))
 	say("serving bar", ServingBar(over, goalFields))

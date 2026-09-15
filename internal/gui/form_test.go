@@ -449,3 +449,24 @@ func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 		t.Errorf("arriving at a field of four characters put the caret at %d", got)
 	}
 }
+
+// What a field says when it carries a number the snapshot has never heard of.
+// A name is looked up and there is none: the number stands on its own rather
+// than the field going blank, because a number that names nothing is still
+// truer than an empty space where a name should be.
+func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board"}},
+	}
+	field := reading.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
+	// Asked whole, and not for the two halves separately: a name and a number
+	// both being in there says nothing about the name belonging to that
+	// number. Measured — a test that asked that way passed with the lookup
+	// inverted, handing each number the other one's name.
+	want := "#1 Ship the desktop board, #7 "
+	if got := w.FieldSays(field); got != want {
+		t.Errorf("FieldSays = %q, want %q", got, want)
+	}
+}

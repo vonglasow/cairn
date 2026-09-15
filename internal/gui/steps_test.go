@@ -7,6 +7,7 @@ package gui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/cucumber/godog"
@@ -486,6 +487,15 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
 	sc.Then(`^the tab "([^"]*)" says it holds (\d+)$`, w.tabHolds)
 	sc.Then(`^the form is open on task (\d+)$`, w.formOpenOnTask)
+	sc.Then(`^the list of objectives is open$`, w.listOpen)
+	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
+	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
+	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the list is on "([^"]*)"$`, w.listOn)
+	sc.Then(`^objective (\d+) is ticked$`, func(n int) error { return w.ticked(n, true) })
+	sc.Then(`^objective (\d+) is not ticked$`, func(n int) error { return w.ticked(n, false) })
+	sc.Then(`^the field "([^"]*)" names "([^"]*)"$`, w.fieldNames)
+	sc.Then(`^the list says there is nothing to serve yet$`, w.listSaysNothing)
 	sc.Then(`^nothing has been looked for yet$`, func() error {
 		if said := w.w.Looking(); said != "" {
 			return fmt.Errorf("the search box already reads %q", said)
@@ -943,6 +953,137 @@ func (w *world) historyAtTheEnd() error {
 		return fmt.Errorf("the history is at line %d and its end is %d", w.w.history, want)
 	}
 	return nil
+}
+
+// formBehindTheList checks the list is an overlay and not a page of its own:
+// the form's own panel is wider than the list's, and both are drawn.
+func (w *world) formBehindTheList() error {
+	over, list := Over(w.w.width, w.w.height), ChoosingOver(w.w.width, w.w.height)
+	if list.W >= over.W || list.H >= over.H {
+		return fmt.Errorf("the list is %dx%d over a form of %dx%d: it covers it rather than sitting on it",
+			list.W, list.H, over.W, over.H)
+	}
+	// What makes it an overlay is that the form is still there underneath. The
+	// first field's own frame lies outside the list's panel, so if the list
+	// were a page of its own that frame would have been painted over.
+	fields := w.w.Form().Fields()
+	_, value := FieldRow(over, FieldTop(over, fields, 0))
+	frame := Framed(value, RowsOf(fields[0]))
+	if frame.Y+frame.H > list.Y {
+		return fmt.Errorf("the first field reaches %d and the list starts at %d: they overlap, so this proves nothing",
+			frame.Y+frame.H, list.Y)
+	}
+	// Its outline, and not its fill: the fill is the same colour as the ground
+	// the whole window is painted on, so counting that would pass even with no
+	// form drawn at all. Measured — it did.
+	if painted(drawn(w.t, w.w), frame, Dark().Edge) == 0 {
+		return fmt.Errorf("the form's first field is gone: the list covered it rather than sitting on it")
+	}
+	return nil
+}
+
+// fieldDrawnByName checks the drawing and not the window's own answer: the
+// field carries numbers and must be drawn as names, and a window that knows
+// the names without putting them on screen has not answered.
+func (w *world) fieldDrawnByName(field string) error {
+	for _, f := range w.w.Form().Fields() {
+		if f.Name != field {
+			continue
+		}
+		said := w.w.FieldSays(f)
+		if said == f.Value {
+			return fmt.Errorf("the field %q is drawn as %q, which is what it carries", field, said)
+		}
+		// Text cannot be read back out of a screenshot, so what is measured is
+		// reach: the names run far past where the numbers they stand for would
+		// have stopped. Two numbers and a comma cannot fill a third of this
+		// frame; two names do.
+		fields := w.w.Form().Fields()
+		at := slices.IndexFunc(fields, func(x reading.Field) bool { return x.Name == field })
+		box := Over(w.w.width, w.w.height)
+		_, value := FieldRow(box, FieldTop(box, fields, at))
+		frame := Framed(value, RowsOf(f))
+		// Past where the numbers themselves could have ended, and inside the
+		// frame rather than on it: the frame's own outline is not the field's
+		// writing, and a fraction of the width would only say the text is
+		// long. What proves the names are drawn is ink beyond the reach of
+		// what the field carries.
+		inside := Inside(frame)
+		from := inside.X + (len(f.Value)+2)*perGlyph
+		far := Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
+		if inked(drawn(w.t, w.w), far, Dark().Back) == 0 {
+			return fmt.Errorf("the field %q draws nothing past where %q would have ended", field, f.Value)
+		}
+		return nil
+	}
+	return fmt.Errorf("the form has no field %q", field)
+}
+
+func (w *world) listOpen() error {
+	if w.w.Screen() != OnChoosing {
+		return fmt.Errorf("the window is on %v", w.w.Screen())
+	}
+	return nil
+}
+
+func (w *world) listOffers(title string) error {
+	for _, g := range w.w.Choosing() {
+		if g.Title == title {
+			return nil
+		}
+	}
+	return fmt.Errorf("the list offers %v, and not %q", goalTitles(w.w.Choosing()), title)
+}
+
+func (w *world) listOn(title string) error {
+	on := w.w.Choosing()
+	at := w.w.ChoosingAt()
+	if at < 0 || at >= len(on) {
+		return fmt.Errorf("the list is on nothing, at %d of %d", at, len(on))
+	}
+	if on[at].Title != title {
+		return fmt.Errorf("the list is on %q, not %q", on[at].Title, title)
+	}
+	return nil
+}
+
+func (w *world) ticked(number int, want bool) error {
+	if got := w.w.Ticked(number); got != want {
+		return fmt.Errorf("objective %d ticked = %v, want %v", number, got, want)
+	}
+	return nil
+}
+
+// fieldNames is asked of what the field says on screen, and not of what it
+// carries: it carries the numbers the engine takes, and shows the names a
+// person knows. Asking the value would be asking the wrong half.
+func (w *world) fieldNames(field, title string) error {
+	for _, f := range w.w.Form().Fields() {
+		if f.Name != field {
+			continue
+		}
+		if said := w.w.FieldSays(f); !strings.Contains(said, title) {
+			return fmt.Errorf("the field %q says %q, and nothing of %q", field, said, title)
+		}
+		return nil
+	}
+	return fmt.Errorf("the form has no field %q", field)
+}
+
+func (w *world) listSaysNothing() error {
+	if got := w.w.Choosing(); len(got) != 0 {
+		return fmt.Errorf("the list offers %v, and there is nothing to serve", goalTitles(got))
+	}
+	return nil
+}
+
+// goalTitles is what a failure prints of a run of objectives.
+func goalTitles(goals []reading.Goal) []string {
+	var said []string
+	for _, g := range goals {
+		said = append(said, g.Title)
+	}
+	return said
 }
 
 func (w *world) formOpenOnTask(number int) error {

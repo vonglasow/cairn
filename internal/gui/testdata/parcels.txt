@@ -31,6 +31,7 @@ framed one     x=320   y=72    w=720   h=26
 framed four    x=320   y=72    w=720   h=80
 inside four    x=324   y=76    w=712   h=72
 field top 1    x=150   y=144   w=1     h=1
+choosing over  x=262   y=149   w=675   h=499
 serving head   x=160   y=390   w=520   h=18
 serving box    x=160   y=414   w=504   h=280
 serving bar    x=670   y=414   w=10    h=280

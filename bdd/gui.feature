@@ -967,6 +967,119 @@ Feature: The desktop board
       Then the form is open on task 1
       And the field "title" reads "Write it properly"
 
+  Rule: The objectives a task serves are picked from a list, not typed
+
+    A task serves as many objectives as it needs, and the form asked for them
+    as numbers typed by hand. Nobody knows an objective by its number: the one
+    place that says what a number means is the other tab, so filling this field
+    meant leaving the form to go and look.
+
+    Enter opens the list over the form. Everywhere else in a form enter saves,
+    and here it does not: this is the one field that cannot be typed into, so
+    the key that would have finished a line opens the thing the line is picked
+    from instead. Saving is still on the bar, which is where a key is looked
+    for.
+
+    The list is drawn over the form and not instead of it: what is being
+    filled in stays on screen behind it, because a choice made with the rest of
+    the form out of sight is a choice made from memory.
+
+    The field itself reads the objectives by name. It holds the numbers the
+    engine takes — a surface inventing its own spelling of an argument would be
+    a surface deciding something — but nobody knows an objective by its number,
+    so what is drawn is what a person would say.
+
+    The arrows walk the list, and so do j and k, which is what the board is
+    walked with. Space takes an objective in or out — ticking is not the same
+    act as finishing, and a list that closed on the first choice could never be
+    used to pick two. esc closes it, and what was ticked stays ticked; nothing
+    reaches the store until the form is saved, the way nothing else in a form
+    does.
+
+    @gui-the-objectives-field-opens-a-list
+    Scenario: the objectives field opens a list of what there is to serve
+      Given I added an objective titled "Ship the desktop board"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      Then the list of objectives is open
+      And the list offers "Ship the desktop board"
+      And the list offers "Keep it honest"
+      And the form is still drawn behind it
+
+    @gui-space-ticks-an-objective
+    Scenario: space takes an objective in, and takes it out again
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      And I press "space"
+      Then objective 1 is ticked
+      When I press "space"
+      Then objective 1 is not ticked
+
+    @gui-the-list-is-walked-like-the-board
+    Scenario: the arrows walk the list, and so do j and k
+      Given I added an objective titled "Ship the desktop board"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      Then the list is on "Ship the desktop board"
+      When I press "down"
+      Then the list is on "Keep it honest"
+      When I press "k"
+      Then the list is on "Ship the desktop board"
+      When I press "j"
+      Then the list is on "Keep it honest"
+      When I press "j"
+      Then the list is on "Keep it honest"
+      When I press "k"
+      And I press "k"
+      Then the list is on "Ship the desktop board"
+
+    @gui-what-was-ticked-is-what-the-field-carries
+    Scenario: closing the list leaves the field carrying what was ticked
+      Given I added an objective titled "Ship the desktop board"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      And I press "space"
+      And I press "down"
+      And I press "space"
+      And I press "esc"
+      Then the form is open on task 1
+      And the field "objectives" names "Ship the desktop board"
+      And the field "objectives" names "Keep it honest"
+      And the field "objectives" is drawn by name and not by number
+
+    @gui-a-store-with-no-objectives-says-so
+    Scenario: a list with nothing to offer says so rather than opening empty
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      Then the list of objectives is open
+      And the list says there is nothing to serve yet
+      When I press "space"
+      Then the list says there is nothing to serve yet
+
   Rule: The key that opens a field does not write in it
 
     A keyboard can say the same keystroke twice: once as a key with a name, and

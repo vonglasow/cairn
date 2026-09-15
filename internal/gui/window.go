@@ -39,6 +39,11 @@ const (
 	// OnHelp is what everything does, which is the one thing here that has to
 	// be read rather than pointed at.
 	OnHelp
+	// OnChoosing is the list of objectives a task may serve, open over the
+	// form. Its own screen and not a state of the form, because what a key
+	// does here is not what it does in a field: space ticks, and enter — which
+	// saves everywhere else — is what opened this.
+	OnChoosing
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -111,6 +116,12 @@ type Window struct {
 	// stands. A search narrows what is drawn and changes nothing, so it lives
 	// here and never reaches the store.
 	looking Written
+	// ticked is the objectives the open list has in, by number, and choosing
+	// is where in that list the keyboard sits. They live on the window and not
+	// in the form because the list is a screen of its own; the form is given
+	// what they came to only when the list closes.
+	ticked   map[int]bool
+	choosing int
 
 	err error
 }
@@ -507,7 +518,7 @@ func Shortcut(offer string) string {
 		return "e"
 	case "delete":
 		return "d"
-	case "save":
+	case "save", "choose":
 		return "enter"
 	case "close", "cancel", "clear":
 		return "esc"
@@ -556,7 +567,17 @@ func (w Window) Helping() []reading.Field {
 // than no offer.
 func (w Window) Offers() []string {
 	switch w.screen {
+	case OnChoosing:
+		return []string{"Close"}
 	case OnForm:
+		// The one field a list answers says so on the bar. enter is Save's key
+		// everywhere else in a form, and a bar that went on offering Save here
+		// while enter opened a list would be a bar that lies — which is the
+		// one thing this bar exists not to do. Save comes back the moment the
+		// keyboard leaves this field.
+		if w.form.Fields()[w.form.On()].Arg == "objective" {
+			return []string{"Choose", "Cancel"}
+		}
 		return []string{"Save", "Cancel"}
 	case OnDetail:
 		return []string{"Edit", "Close"}
@@ -754,6 +775,9 @@ func (w Window) Key(name string) Window {
 			w.screen, w.looking = OnTheBoard, Written{}
 			return w
 		}
+	}
+	if w.screen == OnChoosing {
+		return w.inChoosing(name)
 	}
 	if w.screen == OnForm {
 		return w.inForm(name)

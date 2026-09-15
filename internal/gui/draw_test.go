@@ -111,6 +111,26 @@ func TestAWindowTooSmallDrawsItsMessageAndNoBoard(t *testing.T) {
 
 // A card fills its own box whether it is chosen or not, so counting what is not
 // the background says nothing here. What says it is the colour of the outline.
+// inked counts what was drawn in a box whatever colour it came out, by
+// counting what is not the ground it was drawn on.
+//
+// painted asks for one colour exactly, which is right for a fill and wrong for
+// a thin glyph: anti-aliasing leaves a tick or a plus with no pixel at exactly
+// the colour asked for, and asking that way says nothing was drawn when
+// something was. Measured, and very nearly written down as "the font has no
+// tick in it".
+func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			if got := shot.RGBAAt(x, y); got.R != ground.R || got.G != ground.G || got.B != ground.B {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -1087,4 +1107,69 @@ func goalMiddle(w Window, number int) Point {
 		}
 	}
 	return Point{}
+}
+
+// The list of objectives is drawn over the form: every objective by name, a
+// mark on the ones that are in, and the row the keyboard is on lit.
+//
+// Drawn and not merely known — the window knowing what to offer and not
+// putting it on screen is the fault this suite exists to catch.
+func TestTheListOfObjectivesIsDrawn(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
+		Goals: []reading.Goal{
+			{Number: 1, Title: "Ship the desktop board", State: "active"},
+			{Number: 2, Title: "Keep it honest", State: "active"},
+		},
+	}
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if w.Screen() != OnChoosing {
+		t.Fatalf("the window is on %v, not the list", w.Screen())
+	}
+
+	box := ChoosingOver(w.width, w.height)
+	first, _ := FieldRow(box, FirstRow(box))
+	shot := drawn(t, w)
+
+	// The row the keyboard is on is lit, and the one below it is not.
+	if painted(shot, Chip(first), Dark().Chosen) == 0 {
+		t.Error("the row the keyboard is on is not lit")
+	}
+	second, _ := FieldRow(box, FirstRow(box)+apart)
+	if got := painted(shot, Chip(second), Dark().Chosen); got != 0 {
+		t.Errorf("%d pixels lit a row the keyboard is not on", got)
+	}
+
+	// Ticking puts a mark where there was none. Compared with the keyboard in
+	// the same place both times: a lit row and a tick are drawn in one colour,
+	// so moving the cursor as well would compare two things at once.
+	moved := inked(drawn(t, w.Key("down")), Chip(first), Dark().Panel)
+	ticked := inked(drawn(t, w.Key("space").Key("down")), Chip(first), Dark().Panel)
+	if ticked <= moved {
+		t.Errorf("a ticked row paints %d and an unticked one %d: no mark was drawn", ticked, moved)
+	}
+}
+
+// A store with no objectives says so where the list would have been.
+func TestAListWithNothingToOfferSaysSo(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+
+	box := ChoosingOver(w.width, w.height)
+	_, value := FieldRow(box, FirstRow(box))
+	if painted(drawn(t, w), value, Dark().Faint) == 0 {
+		t.Error("the list says nothing where it should say there is nothing to serve")
+	}
 }

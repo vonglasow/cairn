@@ -1,6 +1,7 @@
 package reading
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -60,5 +61,28 @@ func TestLookPassesOnAStoreThatCannotSayItsVersion(t *testing.T) {
 	f.versionFails = errNope
 	if _, err := Look(f); err == nil {
 		t.Fatal("a store that could not say its version was read as though it could")
+	}
+}
+
+// NumbersIn reads back what Numbers wrote. A form hands its field to the engine
+// as the engine takes it, so a surface that showed names had to be able to get
+// the numbers again — and getting them by splitting on spaces in the surface
+// would be the spelling of an argument living in two places.
+func TestNumbersIn_readsBackWhatNumbersWrote(t *testing.T) {
+	for _, tc := range []struct {
+		what string
+		said string
+		want []int
+	}{
+		{"what Numbers writes", Numbers([]int{1, 3}), []int{1, 3}},
+		{"one", "4", []int{4}},
+		{"nothing at all", "", nil},
+		{"spaces and nothing else", "   ", nil},
+		{"ragged spacing", " 2   7 ", []int{2, 7}},
+		{"a word that is not a number", "1 lamp 3", []int{1, 3}},
+	} {
+		if got := NumbersIn(tc.said); !slices.Equal(got, tc.want) {
+			t.Errorf("%s: NumbersIn(%q) = %v, want %v", tc.what, tc.said, got, tc.want)
+		}
 	}
 }

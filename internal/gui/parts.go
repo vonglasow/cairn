@@ -56,6 +56,19 @@ func CountedAt(number Box, said string) Box {
 	return Box{X: number.X + number.W - wide, Y: number.Y, W: wide, H: number.H}
 }
 
+// ChoosingOver is the panel the list of objectives is drawn in: inside the
+// form's own, so the form shows around it. A choice made with the rest of the
+// form out of sight is a choice made from memory.
+func ChoosingOver(width, height int) Box {
+	over := Over(width, height)
+	return Box{
+		X: over.X + over.W/8,
+		Y: over.Y + over.H/8,
+		W: over.W * 3 / 4,
+		H: over.H * 3 / 4,
+	}
+}
+
 // Over is the panel a detail or a form is drawn in: the middle of the window,
 // with the board still showing around it.
 //

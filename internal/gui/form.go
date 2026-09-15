@@ -290,12 +290,20 @@ func (w Window) Choose(name string) Window {
 		return w.Edit()
 	case "save":
 		return w.Save()
+	case "choose":
+		return w.choosingList()
 	case "cancel":
 		return w.Cancel()
 	case "new":
 		w.form, w.screen = adding(w.tab), OnForm
 		return w
 	case "close":
+		// Closing the list is not cancelling the form under it. What was
+		// ticked goes back into the field and the form is still there, with
+		// everything else somebody had already typed into it still in it.
+		if w.screen == OnChoosing {
+			return w.keeping()
+		}
 		return w.Cancel()
 	case "search":
 		w.screen = OnSearch
@@ -363,4 +371,103 @@ func (w Window) deleting() Window {
 	}
 	w.screen, w.chosen, w.chosenGoal = OnTheBoard, 0, false
 	return w.Look()
+}
+
+// Choosing is what the open list offers: every objective there is, in the order
+// the objectives tab shows them, so that a list and the tab behind it cannot
+// disagree about what comes first.
+func (w Window) Choosing() []reading.Goal {
+	if w.screen != OnChoosing {
+		return nil
+	}
+	return reading.Sorted(w.snap.Goals)
+}
+
+// ChoosingSays is what the list reads when there is nothing to serve. A store
+// with no objectives in it says so rather than opening an empty panel, which
+// reads as a list that failed to load.
+const ChoosingSays = "nothing to serve yet"
+
+// ChoosingAt is where in that list the keyboard sits.
+func (w Window) ChoosingAt() int { return w.choosing }
+
+// Ticked says whether an objective is in, as the open list has it.
+func (w Window) Ticked(number int) bool { return w.ticked[number] }
+
+// FieldSays is what a field reads on screen, which is not always what it
+// carries. The objectives field carries the numbers the engine takes and shows
+// the names a person knows: nobody knows an objective by its number, and the
+// one place that says what a number means is the other tab.
+func (w Window) FieldSays(field reading.Field) string {
+	if field.Arg != "objective" {
+		return field.Value
+	}
+	var said []string
+	for _, number := range reading.NumbersIn(field.Value) {
+		said = append(said, "#"+strconv.Itoa(number)+" "+w.goalTitle(number))
+	}
+	return strings.Join(said, ", ")
+}
+
+// goalTitle is what an objective is called, or its number again when the
+// snapshot has never heard of it — a number that names nothing is still truer
+// than an empty space where a name should be.
+func (w Window) goalTitle(number int) string {
+	for _, g := range w.snap.Goals {
+		if g.Number == number {
+			return g.Title
+		}
+	}
+	return ""
+}
+
+// choosing opens the list over the form, with what the field already carries
+// ticked. Opened from the objectives field and from nowhere else: it is the
+// one field a number was typed into, and the only one a list would answer.
+func (w Window) choosingList() Window {
+	on := w.form.Fields()[w.form.On()]
+	if on.Arg != "objective" {
+		return w
+	}
+	w.ticked, w.choosing = map[int]bool{}, 0
+	for _, number := range reading.NumbersIn(on.Value) {
+		w.ticked[number] = true
+	}
+	w.screen = OnChoosing
+	return w
+}
+
+// inChoosing is what a key does while the list has the window.
+func (w Window) inChoosing(name string) Window {
+	offered := w.Choosing()
+	switch name {
+	case "down", "j":
+		w.choosing = min(max(0, len(offered)-1), w.choosing+1)
+	case "up", "k":
+		w.choosing = max(0, w.choosing-1)
+	case " ", "space":
+		if w.choosing < len(offered) {
+			number := offered[w.choosing].Number
+			w.ticked[number] = !w.ticked[number]
+		}
+	case "esc", "enter", "return":
+		return w.keeping()
+	}
+	return w
+}
+
+// keeping closes the list and puts what was ticked back in the field, as the
+// numbers the engine takes. What a person reads there is FieldSays; what is
+// sent is this, because a surface that made up its own spelling of an argument
+// would be a surface deciding something.
+func (w Window) keeping() Window {
+	var numbers []int
+	for _, g := range w.Choosing() {
+		if w.ticked[g.Number] {
+			numbers = append(numbers, g.Number)
+		}
+	}
+	w.form = w.form.Writes(Ending(reading.Numbers(numbers)))
+	w.screen = OnForm
+	return w
 }

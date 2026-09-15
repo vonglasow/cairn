@@ -186,6 +186,26 @@ A field with `Choices` is a dropdown, a `Long` field a multi-line box, the rest
 a line to type in. The field the keyboard is on is lit, and it is the only one:
 that is the whole of what says where typing would go.
 
+**The objectives a task serves are picked from a list, not typed.** `enter` on
+that field opens the objectives over the form — over, and not instead of: a
+choice made with the rest of the form out of sight is a choice made from
+memory. The arrows walk it and so do `j`/`k`; **space** ticks and unticks;
+`esc` closes it and keeps what was ticked. Nothing reaches the store until the
+form is saved, the way nothing else in a form does.
+
+`enter` saves everywhere else in a form and here it does not, so the bar says
+`Choose` instead of `Save` while the keyboard is on this field, and `Save`
+comes back the moment it leaves. The rule is the one the rest of the window
+keeps — a key does what the bar offers — and a bar still offering *Save* while
+`enter` opened a list would be a bar that lies, which is the one thing it
+exists not to do.
+
+**The field carries numbers and is drawn as names.** `1 2` is what the engine
+takes, and a surface inventing its own spelling of an argument would be a
+surface deciding something; `#1 Ship the desktop board, #2 Keep it honest` is
+what a person reads, because nobody knows an objective by its number and the
+one place that said what a number meant was the other tab.
+
 **Every field is drawn in a box**, whether or not the keyboard is on it, and
 the lit frame is the only difference between the two. A value floating on the
 panel's own ground looked like something written rather than somewhere to
