@@ -967,6 +967,45 @@ Feature: The desktop board
       Then the form is open on task 1
       And the field "title" reads "Write it properly"
 
+  Rule: The key that opens a field does not write in it
+
+    A keyboard can say the same keystroke twice: once as a key with a name, and
+    once as the text an input method produced from it. Some systems send both,
+    some send one — so a window that listens to both hears `e` as "open the
+    form" and then as "write an e in it", and the title gains a letter nobody
+    typed on purpose. The same keystroke opening a search left every search
+    beginning with a slash, which finds nothing.
+
+    What opens a place to type does not also type in it. Text is taken only
+    where there was already somewhere for it to go.
+
+    @gui-the-key-that-opens-a-form-writes-nothing-in-it
+    Scenario: the key that opens the form does not land in the field
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And the keyboard says "e" as both a key and as text
+      Then the form is open on task 1
+      And the field "title" reads "Write the spec"
+
+    @gui-the-key-that-opens-a-search-writes-nothing-in-it
+    Scenario: the key that opens the search does not land in the box
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And the keyboard says "/" as both a key and as text
+      Then the window is asking what to look for
+      And nothing has been looked for yet
+
+    @gui-typing-into-an-open-field-still-writes
+    Scenario: typing into a field that is already open still writes
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And the keyboard says "s" as both a key and as text
+      Then the field "title" reads "Write the specs"
+
   Rule: What is on screen says what it is
 
     Somebody arriving at this window should not have to guess. Which page they

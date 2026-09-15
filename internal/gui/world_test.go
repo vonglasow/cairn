@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"gioui.org/io/key"
+
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
@@ -559,6 +561,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I put the keyboard on "([^"]*)"$`, w.keyboardOn)
+	// Both halves of one keystroke, in the order a keyboard sends them and
+	// through Gio's own router: the name first, then the text an input method
+	// made of it. This is what Linux does and macOS does not, and driving it
+	// here is how the difference is reached without a second machine.
+	sc.Step(`^the keyboard says "([^"]*)" as both a key and as text$`, func(said string) error {
+		w.w, _, _ = frames(w.t, w.w,
+			key.Event{Name: key.Name(strings.ToUpper(said)), State: key.Press},
+			key.EditEvent{Text: said})
+		return nil
+	})
 	sc.Step(`^I type "([^"]*)"$`, w.types)
 	sc.Step(`^I click the field "([^"]*)"$`, w.clickField)
 	sc.Step(`^I click (\d+) characters into the field "([^"]*)"$`, w.clickInto)

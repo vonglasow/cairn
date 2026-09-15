@@ -486,6 +486,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
 	sc.Then(`^the tab "([^"]*)" says it holds (\d+)$`, w.tabHolds)
 	sc.Then(`^the form is open on task (\d+)$`, w.formOpenOnTask)
+	sc.Then(`^nothing has been looked for yet$`, func() error {
+		if said := w.w.Looking(); said != "" {
+			return fmt.Errorf("the search box already reads %q", said)
+		}
+		return nil
+	})
 	sc.Then(`^every key the bar offers does what it offers$`, w.everyKeyTheBarOffers)
 	sc.Then(`^the history is beside the fields$`, w.historyBesideTheFields)
 	sc.Then(`^the history stays inside the panel$`, w.historyInsideThePanel)

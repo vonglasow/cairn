@@ -205,6 +205,13 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 	event.Op(gtx.Ops, tag)
 	area.Pop()
 
+	// Where the keyboard was before any of this frame's events were read. A
+	// keystroke can arrive twice — once as a key with a name, once as the text
+	// an input method made of it — and some systems send both where others
+	// send one. Judging by where the window was when the frame began is what
+	// keeps the key that opens a field from also writing in it.
+	was := w.screen
+
 	// The window asks for the keyboard and keeps it. There is one thing here to
 	// type into at a time and it is always the form's own field, so a second
 	// place for the focus to be would only be a second place to lose it.
@@ -257,7 +264,18 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 				w = Typed(w, string(e.Name), e.Modifiers)
 			}
 		case key.EditEvent:
-			w = w.Types(e.Text)
+			// Text goes only where there was already somewhere to put it. The
+			// `e` that opened this form arrived as a name first and as text
+			// second, and taking the second would write the shortcut into the
+			// field it just opened — measured: a title read "eWrite the spec",
+			// and every search began with the slash that opened it.
+			if takesTyping(was) {
+				w = w.Types(e.Text)
+			}
 		}
 	}
 }
+
+// takesTyping says whether a screen has somewhere for text to land. The board
+// and the panels do not: what they do with a letter is a shortcut.
+func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch }

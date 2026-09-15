@@ -116,6 +116,25 @@ to be true.
 A click chooses a card, or changes tab when it lands on one. A double-click
 opens a card's detail. The wheel scrolls the column under the pointer.
 
+**A keystroke can arrive twice**, and what a window does about that is not the
+same on every system. Gio sends a `key.Event` for a key with a name and a
+`key.EditEvent` for the text an input method made of it; X11 sends both for an
+ordinary letter where macOS sends one. Listening to both meant `e` opened the
+form and then wrote an `e` in the title, and `/` opened the search and then
+filled it with a slash — which finds nothing, so every search from the keyboard
+came back empty.
+
+Text is now taken only where there was already somewhere to put it: `heard`
+remembers which screen the window was on when the frame began, and an edit
+event is delivered only if that screen was the form or the search. Judging by
+where the window *was* rather than where it *is* is the whole of it — by the
+time the text arrives, the shortcut has already moved the window somewhere that
+would accept it.
+
+Measured, and reachable without a second machine: the scenarios drive both
+halves of one keystroke through Gio's own router, which is what made a
+Linux-only fault reproducible on a Mac.
+
 A double-click is worked out here rather than asked of the system: Gio reports
 presses and says nothing about pairs of them. Two presses within 400ms and
 within the same few pixels are one gesture.
