@@ -442,9 +442,21 @@ Feature: Tasks
     a listing filters, looking leaves alone; what somebody typed themselves,
     looking searches. Nothing is lost and the false answer is gone.
 
-    A number it does not reach either, because looking for "1" would answer 1,
-    10, 21 and everything hanging under them — and asking by number is what
-    `task show` is for.
+    A task's own number it does reach, and it used not to. The reason it was
+    left out held for the command line, where `task show 228` is right there;
+    it does not hold on a board, where the search box is the only way in and
+    there is no `show` to type. Somebody who knows the number had no way to use
+    it. Found by using it, which is where that kind of thing is found.
+
+    It is looked for the way every other thing is — as a substring, so 228
+    answers 228 and 1228 both. Weighed and kept: the alternative is a second
+    kind of matching in a membrane that has one, and being handed 1228 as well
+    costs a glance, while being handed nothing costs the way back.
+
+    What it still does not reach is what a task hangs under or serves. Those
+    are numbers a task carries about *other* things, and reaching them would
+    answer every sub-task of 228 to somebody looking for 228 — which is the
+    half of the old reason that was always true.
 
     Each thing named has to be found, and any field it still reaches may be
     where it is found. A thing with a space in it is one thing: the shell hands
@@ -455,6 +467,20 @@ Feature: Tasks
       Given I added a task titled "Write the spec"
       When I run `cairn task search spec`
       Then it lists task 1 titled "Write the spec"
+
+    @task-search-by-its-number
+    Scenario: the number is the way back when it is what somebody has
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I run `cairn task search 2`
+      Then it lists task 2 titled "Ship it"
+
+    @task-search-by-a-number-leaves-what-hangs-under-it-alone
+    Scenario: looking for a number does not answer what hangs under it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task search 1`
+      Then it lists 1 task
 
     @task-search-ignores-case
     Scenario: looking does not care how it was typed

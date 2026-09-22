@@ -1,6 +1,7 @@
 package task
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -10,10 +11,17 @@ import (
 // looking is a task's membrane for a search: it is told every fact a task
 // carries and keeps, for each thing named, whether it has turned up in any of
 // them — read the way a person reads a task, not the way it is stored, and
-// case-insensitive. A number is heard and ignored, on every one of its
-// shapes: what a task is numbered, hangs under or serves never contributes,
-// because looking for "1" is not what tells a task apart from the one
-// hanging under it.
+// case-insensitive. Its own number contributes; the numbers it carries about
+// other things do not. What a task hangs under or serves says nothing about
+// that task — reaching those would answer every sub-task of 228 to somebody
+// looking for 228, which is answering about the wrong task entirely.
+//
+// Its own number is looked for as a substring like everything else, so 228
+// answers 228 and 1228 both. Weighed and kept: a second kind of matching in a
+// membrane that has one costs more than a glance at one extra answer, and the
+// reason the number was left out altogether — that `task show` is how you ask
+// by number — holds only where there is a `task show` to type. On a board the
+// search box is the only way in.
 //
 // It hears the column, the priority and a label and says nothing to any of
 // them. Those come from closed sets, and a listing narrows by them — looking
@@ -41,7 +49,7 @@ func (l *looking) consider(text string) {
 	}
 }
 
-func (l *looking) Numbered(int)              {}
+func (l *looking) Numbered(n int)            { l.consider(strconv.Itoa(n)) }
 func (l *looking) Titled(s string)           { l.consider(s) }
 func (l *looking) InColumn(domain.State)     {}
 func (l *looking) Carries(domain.Priority)   {}

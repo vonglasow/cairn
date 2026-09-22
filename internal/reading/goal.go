@@ -43,9 +43,9 @@ func Sorted(goals []Goal) []Goal {
 	return out
 }
 
-// Reaches says whether a search reaches an objective, looking where somebody
+// ReachesGoal says whether a search reaches an objective, looking where somebody
 // typed something and nowhere else.
-func Reaches(g Goal, query string) bool {
+func ReachesGoal(g Goal, query string) bool {
 	query = strings.ToLower(query)
 	return strings.Contains(strings.ToLower(g.Title), query) ||
 		strings.Contains(strings.ToLower(g.Description), query)

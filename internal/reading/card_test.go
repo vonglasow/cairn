@@ -1,6 +1,7 @@
 package reading
 
 import (
+	"cairn/internal/task"
 	"slices"
 	"testing"
 	"time"
@@ -148,5 +149,43 @@ func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
 	// Not the root tasks: they hang under nothing, and nothing is not a task.
 	if under := Hanging(cards, 0); len(under) != 0 {
 		t.Errorf("Hanging(0) = %v, want nothing — no task is numbered nought", titlesOf(under))
+	}
+}
+
+// ReachesCard is what a search reaches, and it must reach exactly what the command
+// line reaches. This pins the two together: the same facts, told to the domain
+// and drawn as a card, have to answer the same of every query.
+//
+// It exists because they had drifted. The engine looked in six fields and each
+// board looked in three, and nothing noticed — every check this repo runs
+// measures one package against itself, and three tested copies of one rule
+// score three perfect marks.
+func TestReaches_answersWhatTheCommandLineAnswers(t *testing.T) {
+	spent := 90 * time.Minute
+	due := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	// Built through the membrane a store builds one through, so this compares
+	// the real rule against the real rule and not against a fixture.
+	var told task.AsTold
+	told.Numbered(228)
+	told.Titled("Write the spec")
+	told.Described("two columns")
+	told.Because("the client's answer")
+	told.Due(due)
+	told.Estimated(spent)
+	told.Spent(spent)
+	built := told.Task()
+	card := Card{
+		Number: 228, Title: "Write the spec", Description: "two columns",
+		Because: "the client's answer", Deadline: due,
+		Estimate: domain.FormatDuration(spent), Spent: domain.FormatDuration(spent),
+	}
+	for _, q := range []string{
+		"spec", "SPEC", "columns", "client", "228", "22", "1h30m", "2026-09",
+		"lamp", "9", "", "todo", "high",
+	} {
+		want := task.Matching(built, []string{q})
+		if got := ReachesCard(card, q); got != want {
+			t.Errorf("ReachesCard(%q) = %v and the command line answers %v", q, got, want)
+		}
 	}
 }

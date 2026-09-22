@@ -178,7 +178,7 @@ func (b Board) firstGoal() int {
 func (b Board) goals() []reading.Goal {
 	var kept []reading.Goal
 	for _, g := range b.snap.Goals {
-		if b.query != "" && !reading.Reaches(g, b.query) {
+		if b.query != "" && !reading.ReachesGoal(g, b.query) {
 			continue
 		}
 		kept = append(kept, g)

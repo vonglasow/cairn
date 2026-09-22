@@ -410,12 +410,12 @@ func (w Window) Showing() reading.Snapshot {
 	}
 	found := reading.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
 	for _, c := range w.snap.Cards {
-		if reaches(c.Title, w.looking.Reads()) || reaches(c.Description, w.looking.Reads()) || reaches(c.Because, w.looking.Reads()) {
+		if reading.ReachesCard(c, w.looking.Reads()) {
 			found.Cards = append(found.Cards, c)
 		}
 	}
 	for _, g := range w.snap.Goals {
-		if reading.Reaches(g, w.looking.Reads()) {
+		if reading.ReachesGoal(g, w.looking.Reads()) {
 			found.Goals = append(found.Goals, g)
 		}
 	}
@@ -427,12 +427,6 @@ func (w Window) Looking() string { return w.looking.Reads() }
 
 // Searched is the search as a written text, caret and all.
 func (w Window) Searched() Written { return w.looking }
-
-// reaches says whether a search reaches a piece of writing, looking the way a
-// person looks: without minding how anybody capitalised it.
-func reaches(written, looking string) bool {
-	return strings.Contains(strings.ToLower(written), strings.ToLower(looking))
-}
 
 // other is the page somebody is not on. Both tab and shift+tab come here.
 //

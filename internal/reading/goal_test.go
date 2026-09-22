@@ -42,11 +42,11 @@ func TestSortedLeavesWhatItWasGivenAlone(t *testing.T) {
 func TestReaches(t *testing.T) {
 	g := Goal{Title: "Ship the desktop board", Description: "before the winter"}
 	for _, query := range []string{"desktop", "DESKTOP", "winter"} {
-		if !Reaches(g, query) {
+		if !ReachesGoal(g, query) {
 			t.Fatalf("%q did not reach it", query)
 		}
 	}
-	if Reaches(g, "spec") {
+	if ReachesGoal(g, "spec") {
 		t.Fatal("a word that is nowhere in it reached it")
 	}
 }

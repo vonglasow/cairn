@@ -582,6 +582,26 @@ Feature: The desktop board
       Then "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
 
+    @gui-searching-by-number
+    Scenario: a number is the way back when it is what somebody has
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      When I open the window
+      And I press "/"
+      And I type "2"
+      Then "BACKLOG" carries "Ship the board"
+      And "BACKLOG" does not carry "Write the spec"
+
+    @gui-searching-reaches-what-the-command-line-reaches
+    Scenario: a search reaches every field the command line looks in
+      Given I added a task titled "Write the spec" with the estimate "90m"
+      And I added a task titled "Ship the board"
+      When I open the window
+      And I press "/"
+      And I type "1h30m"
+      Then "BACKLOG" carries "Write the spec"
+      And "BACKLOG" does not carry "Ship the board"
+
     @gui-a-search-stays-in-force
     Scenario: a search stays in force once it has been asked for
       Given I added a task titled "Write the spec"

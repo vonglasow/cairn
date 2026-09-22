@@ -6,8 +6,11 @@ package reading
 // out reads "4d", is the same on both.
 
 import (
+	"cairn/internal/domain"
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"cairn/internal/task"
@@ -95,4 +98,43 @@ func Hanging(cards []Card, parent int) []Card {
 		}
 	}
 	return under
+}
+
+// ReachesCard says whether a search reaches a card. It is what both boards ask,
+// and it answers what `task search` answers: the same facts read the way a
+// person reads them, case-insensitive, wherever among them the query sits.
+//
+// Its twin for objectives has been here all along, and both boards ask it.
+// This one lived three times instead. The engine looked in six fields,
+// the terminal board in three and the window in three, and nothing caught it —
+// every check this repo runs measures one package against itself, and three
+// tested copies of one rule score three perfect marks. depguard can forbid a
+// board from reaching the other; it cannot make either reach for this.
+//
+// What it does not reach is what a card carries about other things — its
+// parent, the objectives it serves — nor the closed sets a listing narrows by.
+// Those are the same lines the command line draws, and the test beside this
+// one holds the two answers together.
+func ReachesCard(c Card, query string) bool {
+	if query == "" {
+		return false
+	}
+	query = strings.ToLower(query)
+	said := []string{
+		strconv.Itoa(c.Number),
+		c.Title,
+		c.Description,
+		c.Because,
+		c.Estimate,
+		c.Spent,
+	}
+	if !c.Deadline.IsZero() {
+		said = append(said, domain.FormatDay(c.Deadline))
+	}
+	for _, field := range said {
+		if field != "" && strings.Contains(strings.ToLower(field), query) {
+			return true
+		}
+	}
+	return false
 }

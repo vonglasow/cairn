@@ -125,12 +125,21 @@ func TestMatching_aPhraseWithASpaceIsOneThing(t *testing.T) {
 	}
 }
 
-// TestMatching_aNumberIsNeverReached pins the frozen reason: looking for "1"
-// must not answer a task numbered 1, since asking by number is what
-// `task show` is for.
-func TestMatching_aNumberIsNeverReached(t *testing.T) {
-	if Matching(spec(t), []string{"1"}) {
-		t.Error("Matching = true, want false: a number is never reached by looking")
+// TestMatching_anotherTasksNumberIsNeverReached pins what survived of the rule
+// that no number was reached at all. That rule was amended in use: on a board
+// the search box is the only way in and there is no `task show` to type, so
+// somebody holding a number had no way to use it.
+//
+// What did not change is that the numbers a task carries about other things
+// stay out of reach. A task numbered 2 hanging under 1 must not answer to "1",
+// or looking for a parent would hand back everything beneath it.
+func TestMatching_anotherTasksNumberIsNeverReached(t *testing.T) {
+	child := carrying(t, func(a *AsTold) {
+		a.Numbered(2)
+		a.Under(1)
+	})
+	if Matching(child, []string{"1"}) {
+		t.Error("Matching = true, want false: the number it hangs under is not its own")
 	}
 }
 
@@ -178,5 +187,37 @@ func TestMatching_looksInTheEstimate(t *testing.T) {
 	}
 	if Matching(carrying, []string{"5400"}) {
 		t.Error("a task is found by the seconds of its estimate, which nobody types")
+	}
+}
+
+// A task's own number is looked in, and the numbers it carries about other
+// things are not. Looking for 228 answers 228 — and 1228, which is the price
+// of one kind of matching in a membrane that has one — but never every
+// sub-task of 228, which would be answering about the wrong task entirely.
+func TestMatching_reachesItsOwnNumberAndNoOtherTasks(t *testing.T) {
+	numbered := func(n int) Task {
+		return carrying(t, func(a *AsTold) { a.Numbered(n) })
+	}
+	for _, tc := range []struct {
+		what  string
+		task  Task
+		named string
+		want  bool
+	}{
+		{"its own number", numbered(1), "1", true},
+		{"a number it does not carry", numbered(1), "9", false},
+		{"its own number inside a longer one", numbered(1228), "228", true},
+		{"the number of what it hangs under", carrying(t, func(a *AsTold) {
+			a.Numbered(2)
+			a.Under(1)
+		}), "1", false},
+		{"the number of an objective it serves", carrying(t, func(a *AsTold) {
+			a.Numbered(2)
+			a.Serves(7)
+		}), "7", false},
+	} {
+		if got := Matching(tc.task, []string{tc.named}); got != tc.want {
+			t.Errorf("%s: Matching(%q) = %v, want %v", tc.what, tc.named, got, tc.want)
+		}
 	}
 }

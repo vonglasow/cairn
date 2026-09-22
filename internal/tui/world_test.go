@@ -189,6 +189,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.Step(`^I added a task titled "([^"]*)"$`, func(title string) error { return w.addTask(title, "", "", 0) })
+	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, func(title, est string) error {
+		_, err := w.other.Add(title, engine.Changes{Estimate: &est})
+		w.afterAChange()
+		return err
+	})
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, func(title, state string) error {
 		return w.addTask(title, state, "", 0)
 	})

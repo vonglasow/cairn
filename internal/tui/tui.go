@@ -2,7 +2,6 @@ package tui
 
 import (
 	"cairn/internal/reading"
-	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -273,7 +272,7 @@ func (b Board) cards() []reading.Card {
 		if b.inside != 0 && !serves(c, b.inside) {
 			continue
 		}
-		if b.query != "" && !matches(c, b.query) {
+		if b.query != "" && !reading.ReachesCard(c, b.query) {
 			continue
 		}
 		kept = append(kept, c)
@@ -286,20 +285,6 @@ func (b Board) cards() []reading.Card {
 func serves(c reading.Card, number int) bool {
 	for _, n := range c.Objectives {
 		if n == number {
-			return true
-		}
-	}
-	return false
-}
-
-// matches says whether a search reaches a task. It looks where somebody typed
-// something — the title, the description, and the words written about what is
-// in the way — and nowhere else, for the reason a listing gives: a closed set
-// is narrowed by, free text is looked in.
-func matches(c reading.Card, query string) bool {
-	query = strings.ToLower(query)
-	for _, field := range []string{c.Title, c.Description, c.Because} {
-		if strings.Contains(strings.ToLower(field), query) {
 			return true
 		}
 	}

@@ -44,13 +44,50 @@ exactly one way to ask each question. It is just a different one.
 | priority | ✓ | |
 | label | ✓ | |
 | objectives served | ✓ | |
-| number | | |
+| number | | ✓ |
 
-The line falls between **a closed set or something numbered** and **free text**.
-A closed set can be matched exactly, so it is narrowed by; free text cannot, so
-it is looked in as a substring. A number is reached by neither, for the reason
-`docs/ordering.md` gives: looking for "1" would answer 1, 10, 21 and everything
-hanging under them, and asking by number is what `task show` is for.
+The line falls between **a closed set** and **free text**. A closed set can be
+matched exactly, so it is narrowed by; free text cannot, so it is looked in as
+a substring.
+
+A task's own number is looked in too, and it used not to be. The old reason —
+that looking for "1" would answer 1, 10, 21, and that asking by number is what
+`task show` is for — held only where there is a `task show` to type. On a board
+the search box is the only way in, so somebody holding a number had no way to
+use it. Amended in use, which is where that kind of thing is found.
+
+It is looked for as a substring like everything else, so 228 answers 228 and
+1228 both. Weighed and kept: a second kind of matching in a membrane that has
+one costs more than a glance at one extra answer, and being handed nothing
+costs the way back.
+
+What a task *carries* about other things stays out of reach — what it hangs
+under, what it serves. Reaching those would answer every sub-task of 228 to
+somebody looking for 228, which is the half of the old reason that was always
+true.
+
+## One rule, and it had three implementations
+
+`reading.ReachesCard` is what a search reaches, and both boards ask it. They
+did not: the engine looked in six fields, the terminal board in three and the
+window in three, so `search 1h30m` answered on the command line and nothing at
+all on either board. Nobody had decided that; it simply drifted.
+
+Nothing here could have caught it. Coverage and mutation measure whether the
+tests judge the code that exists, and three tested copies of one rule score
+three perfect marks — mutation *rewards* duplication. depguard forbids a
+dependency and cannot require one: it stops the window reaching the terminal,
+which makes copying five lines easier than lifting them into `reading`. The
+one rule that would have caught it — look for it before you write it — is the
+one with no check behind it.
+
+What holds the two together now is a test rather than a wish:
+`TestReaches_answersWhatTheCommandLineAnswers` builds the same facts through
+`task.AsTold` and as a `Card`, and asserts `ReachesCard` and `task.Matching`
+answer the same of every query. If one moves without the other, it fails.
+
+Its twin `reading.ReachesGoal` had been there all along, asked by both boards.
+The place to share was never missing — only the looking.
 
 What this cost: `search high` no longer answers a task carrying the high
 priority. What it bought: `search high` no longer answers a task whose

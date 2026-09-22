@@ -278,6 +278,12 @@ Feature: The board
 
     The columns stay, so where a match sits in the flow is part of the answer.
 
+    What a search reaches is not this board's to decide. It reaches what the
+    command line reaches, out of `reading`, so that one question typed into
+    three surfaces cannot come back with three answers. It did: this board
+    looked in three fields where the engine looked in six, and neither knew
+    about the other.
+
     @tui-searching-narrows-in-place
     Scenario: only what matches is drawn, in the columns it sits in
       Given I added a task titled "Write the spec" with the state "todo"
@@ -288,6 +294,25 @@ Feature: The board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
       And "TODO" carries "Write the spec"
       And the board carries 1 task
+
+    @tui-searching-by-number
+    Scenario: a number is the way back when it is what somebody has
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Buy a lamp"
+      When I open the board
+      And I press "/"
+      And I type "2"
+      Then the board carries 1 task
+      And the board says "Buy a lamp"
+
+    @tui-searching-reaches-what-the-command-line-reaches
+    Scenario: a search reaches every field the command line looks in
+      Given I added a task titled "Write the spec" with the estimate "90m"
+      And I added a task titled "Buy a lamp"
+      When I open the board
+      And I press "/"
+      And I type "1h30m"
+      Then the board carries 1 task
 
     @tui-leaving-a-search-gives-the-board-back
     Scenario: escape ends the search
