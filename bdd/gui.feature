@@ -967,6 +967,38 @@ Feature: The desktop board
       Then the form is open on task 1
       And the field "title" reads "Write it properly"
 
+  Rule: A task opens on the work hanging under it
+
+    A parent is a question the same way an objective is — is this finished —
+    and the answer is the tasks under it. They sit in the same box under the
+    fields, drawn as the same cards, because it is the same question asked of
+    a different thing.
+
+    A task nothing hangs under says nothing there: an empty frame reads as a
+    box that failed to load, and most tasks have no sub-tasks at all.
+
+    @gui-a-task-opens-on-what-hangs-under-it
+    Scenario: opening a parent shows the work hanging under it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Something else"
+      When I open the window
+      And I click the card "Ship it"
+      And I press "enter"
+      Then the detail is open on "Ship it"
+      And the detail draws a card for "Write the spec" under its fields
+      And the detail draws no card for "Something else"
+      And the right column is still headed "HISTORY"
+
+    @gui-a-task-with-nothing-under-it-says-nothing
+    Scenario: a task nothing hangs under says nothing where the list would be
+      Given I added a task titled "Ship it"
+      When I open the window
+      And I click the card "Ship it"
+      And I press "enter"
+      Then the detail is open on "Ship it"
+      And the box under the fields is empty
+
   Rule: The objectives a task serves are picked from a list, not typed
 
     A task serves as many objectives as it needs, and the form asked for them

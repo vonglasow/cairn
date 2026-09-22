@@ -125,3 +125,28 @@ func titlesOf(cards []Card) []string {
 	}
 	return said
 }
+
+// Hanging is the work under one task, read from the listing both boards
+// already hold — the same shape as Serving, asked of a parent instead of an
+// objective, because it is the same question put to a different thing.
+func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
+	cards := []Card{
+		{Number: 1, Title: "Ship it"},
+		{Number: 2, Title: "Write the spec", Parent: 1},
+		{Number: 3, Title: "Something else"},
+		{Number: 4, Title: "Draw the band", Parent: 1},
+		{Number: 5, Title: "Under another", Parent: 3},
+	}
+	got := titlesOf(Hanging(cards, 1))
+	want := []string{"Write the spec", "Draw the band"}
+	if !slices.Equal(got, want) {
+		t.Errorf("Hanging(1) = %v, want %v", got, want)
+	}
+	if under := Hanging(cards, 2); len(under) != 0 {
+		t.Errorf("Hanging(2) = %v, want nothing under a task nothing hangs under", titlesOf(under))
+	}
+	// Not the root tasks: they hang under nothing, and nothing is not a task.
+	if under := Hanging(cards, 0); len(under) != 0 {
+		t.Errorf("Hanging(0) = %v, want nothing — no task is numbered nought", titlesOf(under))
+	}
+}

@@ -359,9 +359,7 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	for i := range fields {
 		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false, w.FieldSays(fields[i]))
 	}
-	if w.ChosenGoal() {
-		drawServing(gtx, th, skin, box, fields, w)
-	}
+	drawUnder(gtx, th, skin, box, fields, w)
 	drawHistory(gtx, th, skin, box, w)
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -372,15 +370,20 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 // at the foot of the left column. Only for an objective: a task is served by
 // nothing, and a frame drawn over nothing is a frame that says there is
 // something to read.
-func drawServing(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, w Window) {
-	say(gtx, th, skin.Faint, ServingHead(box, fields), servingHead, small)
+func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, w Window) {
+	say(gtx, th, skin.Faint, ServingHead(box, fields), w.UnderHead(), small)
 	frame := ServingBox(box, fields)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
 
-	under := w.Serving()
+	under := w.Under()
 	if len(under) == 0 {
-		say(gtx, th, skin.Faint, LineAt(Inside(frame), 0, 0), ServingSays, small)
+		// An objective says so; a task says nothing, because most tasks have
+		// nothing under them and a line saying so on every one of them would
+		// be a sentence nobody is reading by the third time.
+		if w.ChosenGoal() {
+			say(gtx, th, skin.Faint, LineAt(Inside(frame), 0, 0), ServingSays, small)
+		}
 		return
 	}
 

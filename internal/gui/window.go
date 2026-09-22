@@ -209,6 +209,26 @@ func (w Window) Serving() []reading.Card {
 	return reading.Serving(w.snap.Cards, w.chosen)
 }
 
+// Under is what the box beneath the fields holds: the work that serves an open
+// objective, or the work hanging under an open task. One box and one question
+// — what is under this — asked of whichever kind of thing was opened.
+func (w Window) Under() []reading.Card {
+	if w.chosenGoal {
+		return reading.Serving(w.snap.Cards, w.chosen)
+	}
+	return reading.Hanging(w.snap.Cards, w.chosen)
+}
+
+// UnderHead is what that box is called, which depends on what is open: an
+// objective is served, a task is hung under, and calling both by one word
+// would make the box say less than it knows.
+func (w Window) UnderHead() string {
+	if w.chosenGoal {
+		return servingHead
+	}
+	return hangingHead
+}
+
 // Ghost is the card in mid-air under the pointer, and whether there is one. A
 // drop with nothing shown moving is a drop nobody can aim.
 func (w Window) Ghost() (Box, bool) {
@@ -284,6 +304,7 @@ func (w Window) Lines() []string {
 const (
 	historyHead = "HISTORY"
 	servingHead = "WHAT SERVES IT"
+	hangingHead = "WHAT HANGS UNDER IT"
 )
 
 // PanelHead is what the right column is called.
@@ -315,7 +336,7 @@ func (w Window) settledHistory(want int) int {
 // cards of one height and not lines of text that wrap.
 func (w Window) settledServing(want int) int {
 	box := ServingBox(Over(w.width, w.height), w.Shown())
-	return min(max(0, len(w.Serving())*CardHeight-box.H), max(0, want))
+	return min(max(0, len(w.Under())*CardHeight-box.H), max(0, want))
 }
 
 // ServingRows is how many cards that box shows at once.

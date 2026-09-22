@@ -75,3 +75,24 @@ func Serving(cards []Card, objective int) []Card {
 	}
 	return under
 }
+
+// Hanging is the work under one task, in the order the listing gave it. The
+// same reading of the same snapshot as Serving, asked of a parent rather than
+// an objective: a board shows what is under a thing, and which thing it is
+// changes nothing about where the answer comes from.
+//
+// Nought is nobody: a root task hangs under nothing, and answering every root
+// task to a question about task nought would be answering a question nobody
+// asked.
+func Hanging(cards []Card, parent int) []Card {
+	if parent == 0 {
+		return nil
+	}
+	var under []Card
+	for _, c := range cards {
+		if c.Parent == parent {
+			under = append(under, c)
+		}
+	}
+	return under
+}

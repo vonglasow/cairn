@@ -226,7 +226,7 @@ func (w *world) detailOpenOn(title string) error {
 // window knows: a window that has the answer and does not put it on screen has
 // not answered.
 func (w *world) detailLists(title string) error {
-	for _, c := range w.w.Serving() {
+	for _, c := range w.w.Under() {
 		if c.Title == title {
 			return nil
 		}
@@ -235,7 +235,7 @@ func (w *world) detailLists(title string) error {
 }
 
 func (w *world) detailDoesNotList(title string) error {
-	for _, c := range w.w.Serving() {
+	for _, c := range w.w.Under() {
 		if c.Title == title {
 			return fmt.Errorf("the box under the fields holds a card for %q, which serves something else", title)
 		}
@@ -246,7 +246,7 @@ func (w *world) detailDoesNotList(title string) error {
 // servingCardsAreCards is what tells a card from a line of text: it is drawn at
 // the height every other card on this board is drawn at.
 func (w *world) servingCardsAreCards() error {
-	for at := range w.w.Serving() {
+	for at := range w.w.Under() {
 		if got := w.w.ServingCardAt(at).H; got != CardHeight {
 			return fmt.Errorf("the card at %d is %d high, and a card is %d", at, got, CardHeight)
 		}
@@ -255,7 +255,7 @@ func (w *world) servingCardsAreCards() error {
 }
 
 func (w *world) detailSaysNothingServes() error {
-	if got := w.w.Serving(); len(got) != 0 {
+	if got := w.w.Under(); len(got) != 0 {
 		return fmt.Errorf("the box under the fields holds %v, and nothing serves it", titles(got))
 	}
 	return nil
@@ -444,6 +444,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail shows "([^"]*)"$`, w.detailShows)
 	sc.Then(`^the detail draws a card for "([^"]*)" under its fields$`, w.detailLists)
 	sc.Then(`^the detail draws no card for "([^"]*)"$`, w.detailDoesNotList)
+	sc.Then(`^the box under the fields is empty$`, w.detailSaysNothingServes)
 	sc.Then(`^the cards under the fields are the height of a card$`, w.servingCardsAreCards)
 	sc.Then(`^the right column is still headed "([^"]*)"$`, w.rightColumnHead)
 	sc.Then(`^the detail says nothing serves it yet$`, w.detailSaysNothingServes)
@@ -904,7 +905,7 @@ func (w *world) historyHasMore() error {
 }
 
 func (w *world) servingHasMore() error {
-	cards, rows := len(w.w.Serving()), w.w.ServingRows()
+	cards, rows := len(w.w.Under()), w.w.ServingRows()
 	if cards <= rows {
 		return fmt.Errorf("the box shows %d cards at once and there are %d: nothing is out of sight", rows, cards)
 	}
@@ -927,7 +928,7 @@ func (w *world) servingAtTheBeginning() error {
 
 func (w *world) servingAtTheEnd() error {
 	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
-	last := len(w.w.Serving())*CardHeight - box.H
+	last := len(w.w.Under())*CardHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
 	}

@@ -301,8 +301,23 @@ and goes is a bar somebody reaches for and does not find. Its grip says two
 things at once — how tall it is, how much of the history is showing; where it
 sits, which part — and it is never drawn smaller than can be taken hold of.
 
-**An objective opens on the work that serves it**, in a box under its fields,
-headed `WHAT SERVES IT`. They are drawn as **cards** — the same cards the board
+**What is under a thing is drawn in one box**, under the fields of whatever is
+open: the tasks that serve an objective, or the tasks hanging under a parent.
+One box and one question — what is under this — with the heading saying which
+was asked, `WHAT SERVES IT` or `WHAT HANGS UNDER IT`. Calling both by one word
+would make the box say less than it knows.
+
+An objective nothing serves says so; a task nothing hangs under says nothing.
+Most tasks have no sub-tasks, and a line saying so on every one of them stops
+being read by the third time.
+
+A task's twelve fields leave that box far less room than an objective's seven:
+120 pixels against 280 at the smallest window this board draws in, which is one
+card against two. It grows with the window, and the remedy if it proves too
+tight is to move the list rather than to shrink what it holds.
+
+**An objective opens on the work that serves it**, in that box, headed
+`WHAT SERVES IT`. They are drawn as **cards** — the same cards the board
 draws, at the same height, scrolled a card at a time by the wheel over them or
 by `↑↓`, with a bar beside them. A run of text lines was what it did first, and
 it made the one place that lists tasks the one place a task does not look like
