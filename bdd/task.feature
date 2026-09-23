@@ -1259,6 +1259,59 @@ Feature: Tasks
       Then it writes JSON to standard output
       And it carries the parent 1
 
+  Rule: A task is not done while something under it is open
+
+    A parent is done because what hangs under it is done. If it can be
+    finished while a sub-task is still open, then either the sub-task was not
+    part of it — in which case it is another task — or the parent was closed
+    over work nobody did.
+
+    Refused rather than cascaded. Marking the children done on the parent's
+    behalf would finish work nobody finished, and it would do it silently; the
+    refusal says which ones are in the way, which is the useful thing to be
+    told. Every other stopped state stays open to a parent: blocked, watching
+    and paused say something about the parent itself, and done is the only one
+    that claims something about what hangs under it.
+
+    @task-done-refused-while-a-sub-task-is-open
+    Scenario: a parent is not finished while a sub-task is still open
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 1 --state done`
+      Then it fails
+      And it says task 2 is in the way
+      And task 1 is in the column "backlog"
+
+    @task-done-allowed-once-they-are-all-done
+    Scenario: a parent is finished once everything under it is
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I edited task 2 with the state "done"
+      When I run `cairn task edit 1 --state done`
+      Then it succeeds
+      And task 1 is in the column "done"
+
+    @task-done-with-nothing-under-it
+    Scenario: a task nothing hangs under is finished as it always was
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --state done`
+      Then it succeeds
+      And task 1 is in the column "done"
+
+    @task-stopped-is-not-done
+    Scenario Outline: a parent may still be stopped while a sub-task is open
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 1 --state <stopped>`
+      Then it succeeds
+      And task 1 is in the column "<stopped>"
+
+      Examples: what a parent says about itself
+        | stopped  |
+        | blocked  |
+        | watching |
+        | paused   |
+
   Rule: A task says how many of its sub-tasks are done
 
     A task counts what hangs under it, never itself: a task with two sub-tasks

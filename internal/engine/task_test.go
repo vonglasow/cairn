@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/domain"
+	"errors"
 	"strconv"
 	"strings"
 	"testing"
@@ -167,5 +169,51 @@ func TestAll_hasTwentySixDistinctOperations(t *testing.T) {
 		if op.Does == "" {
 			t.Errorf("%s carries no Does", name)
 		}
+	}
+}
+
+// A parent is not finished while something under it is open, and the engine is
+// where that is enforced once for all three surfaces.
+func TestEdit_refusesToFinishAParentWithAnOpenSubTask(t *testing.T) {
+	e := openEngine(t)
+	parent := factsOf(add(t, e, "Ship it")).number
+	under := factsOf(add(t, e, "Write the spec")).number
+	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+		t.Fatalf("hanging it under: %v", err)
+	}
+
+	finished := string(domain.Done)
+	if _, err := e.Edit(parent, Changes{State: &finished}); !errors.Is(err, task.ErrSubTaskStillOpen) {
+		t.Fatalf("err = %v, want it to say something under it is open", err)
+	}
+
+	// Once the sub-task is done, the parent may be.
+	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+		t.Fatalf("finishing the sub-task: %v", err)
+	}
+	if _, err := e.Edit(parent, Changes{State: &finished}); err != nil {
+		t.Errorf("finishing the parent: %v", err)
+	}
+}
+
+// A parent already done may still be edited for anything else. Asking the rule
+// of every edit would make a finished parent fail for a reason nobody caused
+// today — the sub-task was open when it was finished, or it was reopened
+// since, and neither is this edit's doing.
+func TestEdit_leavesAFinishedParentEditableForAnythingElse(t *testing.T) {
+	e := openEngine(t)
+	parent := factsOf(add(t, e, "Ship it")).number
+	finished := string(domain.Done)
+	if _, err := e.Edit(parent, Changes{State: &finished}); err != nil {
+		t.Fatalf("finishing it: %v", err)
+	}
+	under := factsOf(add(t, e, "Write the spec")).number
+	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+		t.Fatalf("hanging an open one under it: %v", err)
+	}
+
+	title := "Ship it properly"
+	if _, err := e.Edit(parent, Changes{Title: &title}); err != nil {
+		t.Errorf("editing a finished parent: %v", err)
 	}
 }

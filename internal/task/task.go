@@ -7,6 +7,7 @@ package task
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -189,6 +190,35 @@ func (t Task) MayHangUnderItsParent() error {
 		return fmt.Errorf("task %d: %w", t.number, ErrParentIsSelf)
 	}
 	return nil
+}
+
+// ErrSubTaskStillOpen is returned when a task is asked to be finished while
+// something hanging under it is not. A parent is done because what hangs under
+// it is done: if it could be finished with a sub-task still open, then either
+// that sub-task was never part of it — in which case it is another task — or
+// the parent was closed over work nobody did.
+var ErrSubTaskStillOpen = errors.New("something hanging under it is not done")
+
+// MayFinish says whether the task carrying number may be moved to done, given
+// what hangs under it.
+//
+// Refused rather than cascaded. Marking the children done on the parent's
+// behalf would finish work nobody finished, and it would do it silently; the
+// refusal names which ones are in the way, which is the useful thing to be
+// told. It is asked only of done: blocked, watching and paused say something
+// about the parent itself, and done is the only state that claims something
+// about what hangs under it.
+func MayFinish(number int, hanging []Task) error {
+	var open []string
+	for _, t := range hanging {
+		if t.state != domain.Done {
+			open = append(open, strconv.Itoa(t.number))
+		}
+	}
+	if len(open) == 0 {
+		return nil
+	}
+	return fmt.Errorf("task %d: task %s: %w", number, strings.Join(open, ", "), ErrSubTaskStillOpen)
 }
 
 // MayDelete says whether the task carrying number may be deleted, given what

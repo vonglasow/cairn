@@ -312,6 +312,30 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, "got ", "the reason")
 	})
 
+	// The refusal names what is in the way, which is the useful thing to be
+	// told: "it is not finished" leaves somebody hunting for which one.
+	sc.Step(`^it says task (\d+) is in the way$`, func(n int) error {
+		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d", n), "the refusal")
+	})
+
+	// Asked of the store through the real command, not of what the last run
+	// printed: what is being checked is where the task ended up, and the run
+	// under test may well have refused and printed nothing about it.
+	sc.Step(`^task (\d+) is in the column "([^"]*)"$`, func(n int, column string) error {
+		w.Run(fmt.Sprintf(`cairn task show %d --json`, n))
+		shown := w.Out
+		var said struct {
+			State string `json:"state"`
+		}
+		if err := json.Unmarshal([]byte(shown.Stdout), &said); err != nil {
+			return fmt.Errorf("reading what task %d carries: %w", n, err)
+		}
+		if said.State != column {
+			return fmt.Errorf("task %d is in %q, not %q", n, said.State, column)
+		}
+		return nil
+	})
+
 	sc.Step(`^it says there is no task$`, func() error {
 		return test.WantContains(w.Out.Stdout, "there is no task", "the answer")
 	})

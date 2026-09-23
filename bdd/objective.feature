@@ -596,7 +596,10 @@ Feature: Objectives
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec" with the objective "1"
       And I added a task titled "Write the tests" with the objective "1"
-      And I added a task titled "Ship it" with the parent "1"
+      # Under task 2, because task 1 is the one finished below and a task is
+      # not finished while something under it is open. The counts are the same
+      # either way: one sub-task, nobody's done.
+      And I added a task titled "Ship it" with the parent "2"
       When I run `cairn task edit 1 --state done`
       And I run `cairn objective show 1 --json`
       Then it writes JSON to standard output

@@ -260,6 +260,9 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if err := mayLeave(factsOf(was), factsOf(t)); err != nil {
 		return task.Task{}, err
 	}
+	if err := e.canFinish(was, t); err != nil {
+		return task.Task{}, err
+	}
 	if err := e.tasks.Update(t); err != nil {
 		return task.Task{}, err
 	}
@@ -478,4 +481,20 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		a.Estimated(estimate)
 	}
 	return a.Task(), nil
+}
+
+// canFinish refuses a task moved to done while something hanging under it is
+// not. Asked only when done is where it lands and is not where it was: a task
+// already finished, edited for something else, has nothing to answer for, and
+// asking anyway would make it fail for a reason nobody caused today.
+func (e *Engine) canFinish(was, now task.Task) error {
+	if factsOf(now).state != domain.Done || factsOf(was).state == domain.Done {
+		return nil
+	}
+	number := factsOf(now).number
+	hanging, err := e.tasks.Under(number)
+	if err != nil {
+		return err
+	}
+	return task.MayFinish(number, hanging)
 }

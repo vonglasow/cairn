@@ -305,3 +305,54 @@ func TestNewTask_keepsAnOrdinaryTitle(t *testing.T) {
 		}
 	}
 }
+
+// MayFinish is the rule that a parent is done because what hangs under it is
+// done. Refused rather than cascaded: marking the children done on the
+// parent's behalf would finish work nobody finished, and silently.
+func TestMayFinish_refusesWhileSomethingUnderItIsOpen(t *testing.T) {
+	open := func(state domain.State) Task {
+		var a AsTold
+		a.Numbered(2)
+		a.Titled("Write the spec")
+		a.Under(1)
+		a.InColumn(state)
+		return a.Task()
+	}
+	done := open(domain.Done)
+	for _, tc := range []struct {
+		what    string
+		hanging []Task
+		wantErr bool
+	}{
+		{"nothing under it", nil, false},
+		{"one still in the backlog", []Task{open(domain.Backlog)}, true},
+		{"one being worked on", []Task{open(domain.Current)}, true},
+		{"one blocked", []Task{open(domain.Blocked)}, true},
+		{"one paused", []Task{open(domain.Paused)}, true},
+		{"the only one done", []Task{done}, false},
+		{"one done and one open", []Task{done, open(domain.Todo)}, true},
+		{"both done", []Task{done, done}, false},
+	} {
+		err := MayFinish(1, tc.hanging)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("%s: MayFinish = %v, want an error: %v", tc.what, err, tc.wantErr)
+		}
+		if tc.wantErr && !errors.Is(err, ErrSubTaskStillOpen) {
+			t.Errorf("%s: MayFinish = %v, want it to be ErrSubTaskStillOpen", tc.what, err)
+		}
+	}
+}
+
+// The refusal names what is in the way, which is the useful thing to be told:
+// "it is not finished" leaves somebody hunting for which one.
+func TestMayFinish_namesWhatIsInTheWay(t *testing.T) {
+	var a AsTold
+	a.Numbered(7)
+	a.Titled("Write the spec")
+	a.Under(1)
+	a.InColumn(domain.Todo)
+	err := MayFinish(1, []Task{a.Task()})
+	if err == nil || !strings.Contains(err.Error(), "7") {
+		t.Errorf("MayFinish = %v, and says nothing of task 7", err)
+	}
+}

@@ -177,6 +177,31 @@ The cost is real and small: a sub-task under way does not show up in a
 `current` section. That is the question `focus` answers, and it answers it
 better — what is being worked on is read from a mark, not from a section.
 
+## A parent is not done while something under it is open
+
+A parent is done *because* what hangs under it is done. If it can be finished
+with a sub-task still open, then either that sub-task was never part of it — in
+which case it is another task — or the parent was closed over work nobody did.
+
+Refused rather than cascaded. Marking the children done on the parent's behalf
+would finish work nobody finished, and silently; the refusal names which ones
+are in the way, which is the useful thing to be told. It says where the work
+*is*, the same way the refusal about sisters says where a task *can* go.
+
+Asked of `done` alone, and only when that is where the task lands and is not
+where it was. `blocked`, `watching` and `paused` say something about the parent
+itself; `done` is the only state that claims something about what hangs under
+it. And a parent already finished stays editable for anything else — asking the
+rule of every edit would make it fail for a reason nobody caused today, since
+the sub-task was either open when it was finished or reopened since, and
+neither is this edit's doing.
+
+The rule guards the transition and not the stored state. Rows already in that
+shape are left alone: reopening work somebody marked finished, on their behalf
+and without asking, is worse than an inconsistency that nothing depends on.
+Measured on a real store of 235 tasks — none at first, one a week later, which
+is the rule finding its own case.
+
 ## `focus` is what is being worked on
 
 A day is not a queue. Ten minutes on `#1`, an hour on `#2`, ten minutes on a
