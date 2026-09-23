@@ -512,6 +512,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
 	sc.Step(`^I added an objective titled "([^"]*)"$`, w.addObjective)
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
+	sc.Step(`^I click the search box$`, func() error {
+		box := Searching(w.w.Layout())
+		w.w = w.w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
 	sc.Step(`^I press "([^"]*)"$`, w.press)
 	sc.Step(`^I press "([^"]*)" (\d+) times$`, func(key string, n int) error {
 		for range n {

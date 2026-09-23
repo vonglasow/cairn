@@ -384,10 +384,18 @@ func (w Window) Click(p Point) Window {
 		_, value := FieldRow(Over(w.width, w.height), FieldTop(Over(w.width, w.height), w.form.Fields(), at))
 		return w.CaretInto(into(value, p))
 	}
-	// And a panel over the board has the window. Letting a click through to
-	// the board behind it is how an open detail came to show something nobody
-	// asked it for.
-	if w.screen != OnTheBoard {
+	// A search is not a panel over the board: the board is still there, still
+	// showing what the search left, and a card under the pointer is a card.
+	// Making it wait for enter meant closing the box to reach what the box had
+	// just found. Over the box itself a click belongs to what is being typed.
+	if w.screen == OnSearch {
+		if Searching(w.Layout()).In(p) {
+			return w
+		}
+	} else if w.screen != OnTheBoard {
+		// And a panel over the board does have the window. Letting a click
+		// through to the board behind it is how an open detail came to show
+		// something nobody asked it for.
 		return w
 	}
 	if tab, on := w.tabAt(p); on {
@@ -660,7 +668,9 @@ func (w Window) tabAt(p Point) (Tab, bool) {
 // DoubleClick opens the detail of the card under the pointer, which is where
 // the description and the history are.
 func (w Window) DoubleClick(p Point) Window {
-	if w.screen != OnTheBoard {
+	// The same two screens a single click answers on, for the same reason: a
+	// search leaves the board showing, so a card under the pointer is a card.
+	if w.screen != OnTheBoard && w.screen != OnSearch {
 		return w
 	}
 	number := w.at(p)

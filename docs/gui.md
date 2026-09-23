@@ -116,6 +116,22 @@ to be true.
 A click chooses a card, or changes tab when it lands on one. A double-click
 opens a card's detail. The wheel scrolls the column under the pointer.
 
+**A search does not take the window.** It narrows the board in place, so the
+board keeps answering the mouse: a card is chosen by a click and opened by a
+double click while the box is still open and still being typed into. It used to
+swallow both, and reaching what a search had just found meant closing the box
+that found it.
+
+A click over the box itself belongs to what is being typed, and lets go of
+nothing. That is the whole of the exception — everywhere else on the board a
+click does what it always did.
+
+The guard that swallowed them was right about panels and wrong about this:
+a detail, a form or the help is drawn *over* the board, and a click reaching
+through one is how an open detail came to show something nobody asked it for.
+A search is not drawn over anything. Reading "not the board" as "a panel over
+the board" is what made one rule cover two unlike things.
+
 **A keystroke can arrive twice**, and what a window does about that is not the
 same on every system. Gio sends a `key.Event` for a key with a name and a
 `key.EditEvent` for the text an input method made of it; X11 sends both for an

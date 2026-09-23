@@ -602,6 +602,38 @@ Feature: The desktop board
       Then "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
 
+    @gui-a-card-can-be-clicked-while-still-searching
+    Scenario: a card is clicked while the search box is still open
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      When I open the window
+      And I press "/"
+      And I type "spec"
+      And I click the card "Write the spec"
+      Then the card "Write the spec" is chosen
+      And the window is asking what to look for
+      And "BACKLOG" does not carry "Ship the board"
+
+    @gui-a-card-opens-while-still-searching
+    Scenario: a card opens on a double click while the search box is still open
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "/"
+      And I type "spec"
+      And I double-click the card "Write the spec"
+      Then the detail is open on "Write the spec"
+
+    @gui-clicking-the-search-box-lets-go-of-nothing
+    Scenario: clicking the box being typed into does not let go of the card
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "/"
+      And I type "spec"
+      And I click the card "Write the spec"
+      And I click the search box
+      Then the card "Write the spec" is chosen
+      And the window is asking what to look for
+
     @gui-a-search-stays-in-force
     Scenario: a search stays in force once it has been asked for
       Given I added a task titled "Write the spec"

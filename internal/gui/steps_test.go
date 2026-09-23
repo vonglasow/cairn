@@ -518,6 +518,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^no line of the field "([^"]*)" runs out of it$`, w.noLineRunsOut)
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)
 	sc.Then(`^the window is asking what to look for$`, w.askingWhatToLookFor)
+	sc.Then(`^no card is chosen$`, func() error {
+		if w.w.Chosen() != 0 {
+			return fmt.Errorf("task %d is chosen", w.w.Chosen())
+		}
+		return nil
+	})
 	sc.Then(`^the help is headed "([^"]*)"$`, w.helpHeaded)
 	sc.Then(`^the search box is open$`, w.searchBoxOpen)
 	sc.Then(`^the search box is closed$`, w.searchBoxClosed)
