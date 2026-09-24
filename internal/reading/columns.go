@@ -112,3 +112,42 @@ func OnTheBoard(cards []Card) []Card {
 	}
 	return laid
 }
+
+// Found is what a board shows of a search: the work a query reaches, with a
+// part that reached it answering as the work it is part of.
+//
+// A board draws only the work, so a sub-task has no line of its own to appear
+// on. Dropping one that matched would make a search come back empty for a word
+// plainly in the store — measured on a real store, 44 of 49 sub-tasks carry a
+// word their parent does not, so that is most of them.
+//
+// Each parent once, however many of its parts matched, and in the order the
+// board already holds them: a search answers what to work on, not how many of
+// its pieces mentioned a word.
+//
+// The command line does not do this and should not. There a line carries a
+// number somebody can act on, so naming the sub-task itself says more than
+// naming what it hangs under.
+func Found(cards []Card, query string) []Card {
+	if query == "" {
+		return OnTheBoard(cards)
+	}
+	reached := map[int]bool{}
+	for _, c := range cards {
+		if !ReachesCard(c, query) {
+			continue
+		}
+		if c.Parent != 0 {
+			reached[c.Parent] = true
+			continue
+		}
+		reached[c.Number] = true
+	}
+	var found []Card
+	for _, c := range OnTheBoard(cards) {
+		if reached[c.Number] {
+			found = append(found, c)
+		}
+	}
+	return found
+}

@@ -559,6 +559,17 @@ Feature: The desktop board
       Then "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
 
+    @gui-searching-raises-the-work-a-part-belongs-to
+    Scenario: a word found only in a part answers the work it is part of
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the pipeline" hanging under task 1
+      And I added a task titled "Buy a lamp"
+      When I open the window
+      And I press "/"
+      And I type "pipeline"
+      Then "BACKLOG" carries "Ship it"
+      And "BACKLOG" does not carry "Buy a lamp"
+
     @gui-searching-by-number
     Scenario: a number is the way back when it is what somebody has
       Given I added a task titled "Write the spec"

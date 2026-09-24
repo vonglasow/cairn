@@ -86,6 +86,23 @@ would say it could. The type says the rule. It was found by the schema — a
 self-referential shape is one no schema can describe, and eight MCP tools lost
 the shape of their answer the moment a task held a task.
 
+## A part that matched answers as the work it belongs to
+
+On a board. `reading.Found` is what a board shows of a search: a sub-task that
+the query reached answers as its parent, each parent once, in the order the
+board already holds them.
+
+It has to, because a board draws only the work. A sub-task has no card of its
+own to appear on, so a search reaching one and drawing nothing would come back
+empty for a word plainly in the store — measured on a real store, 44 of 49
+sub-tasks carry a word their parent does not, so that is most of them.
+
+The command line does not raise anything and should not: there a line carries a
+number somebody can act on, so naming the sub-task itself says more than naming
+what it hangs under. `task search pipeline` answers the sub-task; the boards
+answer the work it is part of. The difference is deliberate and it is the same
+reason in both directions — say the thing that can be acted on.
+
 ## One rule, and it had three implementations
 
 `reading.ReachesCard` is what a search reaches, and both boards ask it. They

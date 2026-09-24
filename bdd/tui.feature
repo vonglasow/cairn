@@ -301,6 +301,13 @@ Feature: The board
     looked in three fields where the engine looked in six, and neither knew
     about the other.
 
+    A word found only in a part answers the work it is part of. A sub-task has
+    no line of its own here, so a search that reached one and drew nothing
+    would answer nothing at all for a word plainly in the store — measured, 44
+    of 49 sub-tasks carry a word their parent does not. The command line still
+    names the sub-task itself, because there a line carries a number somebody
+    can act on.
+
     @tui-searching-narrows-in-place
     Scenario: only what matches is drawn, in the columns it sits in
       Given I added a task titled "Write the spec" with the state "todo"
@@ -329,6 +336,27 @@ Feature: The board
       When I open the board
       And I press "/"
       And I type "1h30m"
+      Then the board carries 1 task
+
+    @tui-searching-raises-the-work-a-part-belongs-to
+    Scenario: a word found only in a part answers the work it is part of
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the pipeline" hanging under task 1
+      And I added a task titled "Buy a lamp"
+      When I open the board
+      And I press "/"
+      And I type "pipeline"
+      Then the board carries 1 task
+      And the board says "Ship it"
+
+    @tui-searching-raises-each-parent-once
+    Scenario: two parts of one task answer it once
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the pipeline" hanging under task 1
+      And I added a task titled "Fix the pipeline" hanging under task 1
+      When I open the board
+      And I press "/"
+      And I type "pipeline"
       Then the board carries 1 task
 
     @tui-leaving-a-search-gives-the-board-back

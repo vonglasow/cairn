@@ -127,3 +127,38 @@ func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
 		t.Errorf("Deal drew %v, want %v", drawn, want)
 	}
 }
+
+// A search reaches what a task carries, and a board draws only the work. So a
+// part that matched answers as the work it is part of: drawing nothing would
+// make a search come back empty for a word plainly in the store.
+func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
+	all := []Card{
+		{Number: 1, Title: "Ship it"},
+		{Number: 2, Title: "Write the pipeline", Parent: 1},
+		{Number: 3, Title: "Fix the pipeline", Parent: 1},
+		{Number: 4, Title: "Buy a lamp"},
+	}
+	numbers := func(cards []Card) []int {
+		var out []int
+		for _, c := range cards {
+			out = append(out, c.Number)
+		}
+		return out
+	}
+	for _, tc := range []struct {
+		what  string
+		query string
+		want  []int
+	}{
+		{"a word only a part carries", "pipeline", []int{1}},
+		{"two parts of one task, once", "the pipeline", []int{1}},
+		{"a word the work itself carries", "Ship", []int{1}},
+		{"a word carried by neither", "nothing at all", nil},
+		{"a word another task carries", "lamp", []int{4}},
+		{"nothing asked for, everything laid out", "", []int{1, 4}},
+	} {
+		if got := numbers(Found(all, tc.query)); !slices.Equal(got, tc.want) {
+			t.Errorf("%s: Found(%q) = %v, want %v", tc.what, tc.query, got, tc.want)
+		}
+	}
+}

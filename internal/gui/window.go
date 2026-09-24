@@ -414,11 +414,9 @@ func (w Window) Showing() reading.Snapshot {
 		return w.snap
 	}
 	found := reading.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
-	for _, c := range w.snap.Cards {
-		if reading.ReachesCard(c, w.looking.Reads()) {
-			found.Cards = append(found.Cards, c)
-		}
-	}
+	// What a board shows of a search: a part that matched answers as the work
+	// it is part of, since a sub-task has no card of its own here to appear on.
+	found.Cards = reading.Found(w.snap.Cards, w.looking.Reads())
 	for _, g := range w.snap.Goals {
 		if reading.ReachesGoal(g, w.looking.Reads()) {
 			found.Goals = append(found.Goals, g)
