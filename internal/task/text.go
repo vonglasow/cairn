@@ -126,8 +126,21 @@ func progressLine(p domain.Progress) string {
 		strings.Join(counts, " and "), p.Percent())
 }
 
+// DoneMark is what sets apart a sub-task that is finished. Written out rather
+// than drawn, for the reason InFocusMark is: what a listing says has to survive
+// being grepped, and a glyph is neither searchable nor sure to render.
+//
+// The space it leaves on the ones not done is deliberate. Their titles line up
+// with the finished ones, so the section reads as one column of work rather
+// than as two ragged lists.
+const DoneMark = "(done)"
+
 // Under renders what hangs beneath a task, and nothing at all when nothing
 // does — an empty heading would read as a section somebody forgot to fill.
+//
+// Each one is named with whether it is finished. This is the section that
+// answers "is the whole of it done", and one that named them without saying
+// which were finished made somebody open each in turn to find out.
 func Under(tasks []Task) string {
 	if len(tasks) == 0 {
 		return ""
@@ -135,15 +148,14 @@ func Under(tasks []Task) string {
 	var out strings.Builder
 	out.WriteString("\nsub-tasks\n")
 	for _, t := range tasks {
-		_, _ = fmt.Fprintf(&out, "  %s\n", Line(t))
+		mark := strings.Repeat(" ", len(DoneMark))
+		if rowOf(t).state == domain.Done {
+			mark = DoneMark
+		}
+		_, _ = fmt.Fprintf(&out, "  %s  %s\n", mark, Line(t))
 	}
 	return out.String()
 }
-
-// nest is what sets a sub-task apart in a listing. Indentation rather than a
-// drawn tree: one level does not need corners, and an indented line still
-// reads when someone greps for it.
-const nest = "    "
 
 // InFocusMark is what sets apart the task being worked on. Written out rather
 // than drawn: a listing is read left to right and grepped afterwards, and a
@@ -177,34 +189,29 @@ type Marks struct {
 	NothingBlocks []int
 }
 
-// Tree renders a listing with each sub-task under the task it hangs from, and
-// marks what a listing marks. Everything keeps its own number, so a line found
-// here can be acted on directly — the indentation says where it belongs, not
-// what it is.
+// Tree renders a listing of the work, and marks what a listing marks. Each
+// line keeps its own number, so one found here can be acted on directly.
+//
+// A sub-task is left out. It is a part of the work its parent names, read
+// where the parent is read — the section under a task answers whether the
+// whole of it is done, and a listing answers what there is to do. They used to
+// be indented here, which made a listing of 219 tasks show 219 lines when 170
+// of them were the work and the rest its pieces.
+//
+// A machine is still given them all: `--json` carries every task with the
+// parent it hangs under, because what is too much to read is not too much to
+// be handed.
 //
 // The place a task holds is never shown. The order is what there is to see,
 // and a second number beside one a task already carries would only mislead.
 func Tree(tasks []Task, marks Marks) string {
-	hanging := map[int][]Task{}
-	for _, t := range tasks {
-		if r := rowOf(t); r.parent != NoParent {
-			hanging[r.parent] = append(hanging[r.parent], t)
-		}
-	}
-
 	var out strings.Builder
 	for _, t := range tasks {
-		r := rowOf(t)
-		if r.parent != NoParent {
+		if rowOf(t).parent != NoParent {
 			continue
 		}
 		out.WriteString(marked(t, marks))
 		out.WriteString("\n")
-		for _, under := range hanging[r.number] {
-			out.WriteString(nest)
-			out.WriteString(marked(under, marks))
-			out.WriteString("\n")
-		}
 	}
 	return out.String()
 }
@@ -242,11 +249,15 @@ func marked(t Task, marks Marks) string {
 type listingRow struct {
 	number, parent int
 	title          string
+	// state is here for the one thing a listing says about it: whether a
+	// sub-task is done. Where a task stands is on its own card; whether a part
+	// of one is finished is what the section under it exists to answer.
+	state domain.State
 }
 
 func (r *listingRow) Numbered(n int)          { r.number = n }
 func (r *listingRow) Titled(s string)         { r.title = s }
-func (r *listingRow) InColumn(domain.State)   {}
+func (r *listingRow) InColumn(s domain.State) { r.state = s }
 func (r *listingRow) Carries(domain.Priority) {}
 func (r *listingRow) Described(string)        {}
 func (r *listingRow) NotDescribed()           {}

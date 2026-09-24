@@ -448,3 +448,47 @@ func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 		t.Errorf("%d lines are marked, want both:\n%s", marks, got)
 	}
 }
+
+// A machine asking about a task is told what hangs under it. The text says so
+// already; the JSON gave a count and nothing to act on, so an agent that wanted
+// to finish a part had to list every task and filter by parent.
+func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
+	var parent task.AsTold
+	parent.Numbered(1)
+	parent.Titled("Ship it")
+	var under task.AsTold
+	under.Numbered(2)
+	under.Titled("Write the tests")
+	under.Under(1)
+	under.InColumn(domain.Done)
+
+	shown := parent.Task()
+	said, ok := Of(Answer{
+		Task:  &shown,
+		Under: []task.Task{under.Task()},
+	}).(Task)
+	if !ok {
+		t.Fatalf("OfAnswer gave %T, want a Task", Of(Answer{Task: &shown}))
+	}
+	if len(said.SubTasks) != 1 {
+		t.Fatalf("SubTasks = %+v, want the one hanging under it", said.SubTasks)
+	}
+	if said.SubTasks[0].Number != 2 || said.SubTasks[0].State != string(domain.Done) {
+		t.Errorf("SubTasks[0] = %+v, want task 2 done", said.SubTasks[0])
+	}
+}
+
+// A listing carries no such field: every row would repeat what the rows after
+// it already say, and a listing pays for every line it hands over.
+func TestOfAnswer_leavesSubTasksOffAListing(t *testing.T) {
+	var one task.AsTold
+	one.Numbered(1)
+	one.Titled("Ship it")
+	said, ok := Of(Answer{Tasks: []task.Task{one.Task()}}).(Tasks)
+	if !ok {
+		t.Fatalf("OfAnswer gave the wrong shape for a listing")
+	}
+	if len(said.Tasks) != 1 || said.Tasks[0].SubTasks != nil {
+		t.Errorf("a listed task carries %+v under it, want nothing", said.Tasks[0].SubTasks)
+	}
+}

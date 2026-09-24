@@ -51,10 +51,12 @@ func renderConfig(c engine.Config) string {
 	// it", and a ragged right edge makes them read the second column line by
 	// line instead of at a glance. Padded to the longer rather than to a
 	// fixed width, since a path has no length anyone can plan for.
-	wide := len(c.Store.At)
-	if len(c.Notes.At) > wide {
-		wide = len(c.Notes.At)
-	}
+	// max rather than a comparison written out. The two say the same thing,
+	// and the written-out one generates a boundary mutant — > against >= —
+	// that no test can kill: the two branches differ only when the lengths are
+	// equal, and then both give the same width. An equivalent mutant is not
+	// chased, it is designed out.
+	wide := max(len(c.Store.At), len(c.Notes.At))
 	return fmt.Sprintf(
 		"file    %s\n\nstore   %-*s   named by %s\nnotes   %-*s   named by %s\n",
 		c.File, wide, c.Store.At, c.Store.By, wide, c.Notes.At, c.Notes.By,

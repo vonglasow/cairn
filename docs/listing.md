@@ -66,6 +66,26 @@ under, what it serves. Reaching those would answer every sub-task of 228 to
 somebody looking for 228, which is the half of the old reason that was always
 true.
 
+## A listing names the work, not its parts
+
+A sub-task is left out of `task list`. It is a part of the work its parent
+names, read where the parent is read: `task show` names what hangs under a task
+and says which of them are done, which is the question that section answers.
+Indented under their parents, they made a listing of 219 tasks show 219 lines
+when 170 were the work and the rest its pieces.
+
+A machine is still handed them all. `task list --json` carries every task with
+the parent it hangs under, because what is too much to read is not too much to
+be handed — and `task show --json` carries `sub_tasks`, so reading a parent
+answers what its parts are called and which are done without asking again for
+each number.
+
+That field has a shape of its own rather than being tasks again, and not only
+for brevity: a sub-task cannot itself carry sub-tasks, and a task holding tasks
+would say it could. The type says the rule. It was found by the schema — a
+self-referential shape is one no schema can describe, and eight MCP tools lost
+the shape of their answer the moment a task held a task.
+
 ## One rule, and it had three implementations
 
 `reading.ReachesCard` is what a search reaches, and both boards ask it. They

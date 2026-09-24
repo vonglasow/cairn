@@ -228,33 +228,41 @@ Feature: Tasks
       When I run `cairn task list`
       Then task 1 is listed before task 2
 
-    @task-list-under
-    Scenario: a sub-task is listed under the task it hangs from
+    @task-list-leaves-sub-tasks-out
+    Scenario: a listing names the work, and a sub-task is part of one
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
       When I run `cairn task list`
-      Then it lists 2 tasks
-      And task 2 is listed under task 1
+      Then it lists 1 task
+      And it lists task 1 titled "Ship it"
+      And it says nothing of task 2
 
-    @task-list-under-several
-    Scenario: everything hanging under a task is listed under it
+    @task-list-json-carries-sub-tasks
+    Scenario: a machine reading the listing is given them all
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task list --json`
+      Then it writes JSON to standard output
+      And it carries 2 tasks
+
+    @task-show-names-what-hangs-under-it
+    Scenario: what hangs under a task is named where the task is shown
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
       And I added a task titled "Write the docs" with the parent "1"
-      When I run `cairn task list`
-      Then it lists 3 tasks
-      And task 2 is listed under task 1
-      And task 3 is listed under task 1
+      And I edited task 2 with the state "done"
+      When I run `cairn task show 1`
+      Then it names task 2 as done
+      And it names task 3 as not done
 
-    @task-list-under-then-next
-    Scenario: a task hanging under nothing follows the whole of the one before it
+    @task-show-json-carries-what-hangs-under-it
+    Scenario: a machine asking about a task is told what hangs under it
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
-      And I added a task titled "Something else"
-      When I run `cairn task list`
-      Then task 2 is listed before task 3
-      And task 2 is listed under task 1
-      And task 3 hangs under nothing in the listing
+      And I edited task 2 with the state "done"
+      When I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it carries task 2 under it, done
 
   Rule: A listing can be narrowed to what is wanted
 
@@ -1280,11 +1288,12 @@ Feature: Tasks
       Then it lists task 2 titled "Write the tests"
 
     @task-parent-listed
-    Scenario: a sub-task is listed in its own right
+    Scenario: a sub-task keeps a number of its own, and is reached by it
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task list`
-      Then it lists 2 tasks
+      When I run `cairn task show 2`
+      Then it succeeds
+      And it lists task 2 titled "Write the tests"
 
     @task-parent-delete-refused
     Scenario: a task carrying sub-tasks is not deleted

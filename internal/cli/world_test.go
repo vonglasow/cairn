@@ -8,6 +8,7 @@ package cli
 // their feature; everything here is claimed by more than one.
 
 import (
+	"cairn/internal/task"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -338,6 +339,52 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it says a sub-task is done or it is not$`, func() error {
 		return test.WantContains(w.Out.Stderr, "done or it is not", "the refusal")
+	})
+
+	sc.Step(`^it says nothing of task (\d+)$`, func(n int) error {
+		if strings.Contains(w.Out.Stdout, fmt.Sprintf("#%d ", n)) {
+			return fmt.Errorf("the listing names task %d:\n%s", n, w.Out.Stdout)
+		}
+		return nil
+	})
+
+	// Named as done or not: a section that listed what hangs under a task
+	// without saying which of them were finished made somebody open each one
+	// to find out, which is the question the section exists to answer.
+	sc.Step(`^it names task (\d+) as (done|not done)$`, func(n int, how string) error {
+		for _, line := range strings.Split(w.Out.Stdout, "\n") {
+			if !strings.Contains(line, fmt.Sprintf("#%d ", n)) {
+				continue
+			}
+			if got := strings.Contains(line, task.DoneMark); got != (how == "done") {
+				return fmt.Errorf("task %d reads %q, and it is %s", n, line, how)
+			}
+			return nil
+		}
+		return fmt.Errorf("task %d is not named at all:\n%s", n, w.Out.Stdout)
+	})
+
+	sc.Step(`^it carries task (\d+) under it, (done|not done)$`, func(n int, how string) error {
+		var said struct {
+			SubTasks []struct {
+				Number int    `json:"number"`
+				Title  string `json:"title"`
+				State  string `json:"state"`
+			} `json:"sub_tasks"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+			return fmt.Errorf("reading what it carries: %w", err)
+		}
+		for _, under := range said.SubTasks {
+			if under.Number != n {
+				continue
+			}
+			if got := under.State == "done"; got != (how == "done") {
+				return fmt.Errorf("task %d is %q, and it is %s", n, under.State, how)
+			}
+			return nil
+		}
+		return fmt.Errorf("nothing under it is task %d: %+v", n, said.SubTasks)
 	})
 
 	sc.Step(`^it says there is no task$`, func() error {

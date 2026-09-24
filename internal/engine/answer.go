@@ -30,11 +30,47 @@ import (
 type Task struct {
 	task.Shape
 	Progress *domain.ProgressShape `json:"progress"`
+	// SubTasks is what hangs under this one, and only when it is what was
+	// asked about. Omitted from a listing rather than repeated on every row:
+	// the rows after a parent already say what hangs under it, and a listing
+	// pays for every line it hands over.
+	SubTasks []SubTask `json:"sub_tasks,omitempty"`
+}
+
+// SubTask is a part of the work a task names, as it crosses to a machine.
+//
+// Its own shape rather than a Task again, and that is not only convenience: a
+// sub-task cannot itself carry sub-tasks, and a Task holding Tasks would say
+// it could. The type says the rule — and a self-referential shape is one no
+// schema can describe, which is how this was found: eight MCP tools lost the
+// shape of their answer the moment Task held a Task.
+//
+// Three facts and no more, because three are what a part is asked about: which
+// one it is, what it is called, and whether it is done. Everything else about
+// it is reached by its number.
+type SubTask struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	State  string `json:"state"`
 }
 
 // OfTask turns a task and how far along it is into what crosses to a machine.
 func OfTask(t task.Task, p domain.Progress) Task {
 	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p)}
+}
+
+// ofTaskUnder is the same, plus what hangs under it.
+func ofTaskUnder(t task.Task, p domain.Progress, under []task.Task) Task {
+	said := OfTask(t, p)
+	for _, u := range under {
+		shape := task.OfTask(u)
+		said.SubTasks = append(said.SubTasks, SubTask{
+			Number: shape.Number,
+			Title:  shape.Title,
+			State:  shape.State,
+		})
+	}
+	return said
 }
 
 // Tasks is how a listing of tasks crosses: an object naming what it carries,
@@ -168,7 +204,7 @@ func Of(a Answer) any {
 		return ofFocus(a.Held, domain.Progress{}, *a.InFocus)
 	}
 	if a.Task != nil {
-		return OfTask(*a.Task, a.Progress)
+		return ofTaskUnder(*a.Task, a.Progress, a.Under)
 	}
 	if a.Tasks != nil {
 		return ofTasks(a.Tasks, a.InFocus)

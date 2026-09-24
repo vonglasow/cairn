@@ -111,52 +111,6 @@ func listed(number int, title string, parent int) Task {
 	return a.Task()
 }
 
-func TestTree_indentsWhatHangsUnderATask(t *testing.T) {
-	got := Tree([]Task{
-		listed(1, "Ship it", NoParent),
-		listed(2, "Write the tests", 1),
-	}, Marks{})
-	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
-	if len(lines) != 2 {
-		t.Fatalf("got %d lines, want 2:\n%s", len(lines), got)
-	}
-	if strings.HasPrefix(lines[0], " ") {
-		t.Errorf("a task hanging under nothing should not be indented: %q", lines[0])
-	}
-	if !strings.HasPrefix(lines[1], " ") {
-		t.Errorf("a sub-task should be indented: %q", lines[1])
-	}
-}
-
-func TestTree_putsEverythingHangingUnderATaskRightAfterIt(t *testing.T) {
-	got := Tree([]Task{
-		listed(1, "Ship it", NoParent),
-		listed(2, "Write the tests", 1),
-		listed(3, "Something else", NoParent),
-	}, Marks{})
-	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("got %d lines, want 3:\n%s", len(lines), got)
-	}
-	if !strings.Contains(lines[1], "Write the tests") {
-		t.Errorf("the sub-task should follow its parent, got %q", lines[1])
-	}
-	if strings.HasPrefix(lines[2], " ") {
-		t.Errorf("a task hanging under nothing should not be indented: %q", lines[2])
-	}
-}
-
-func TestTree_keepsSeveralSubTasksInTheirOrder(t *testing.T) {
-	got := Tree([]Task{
-		listed(1, "Ship it", NoParent),
-		listed(2, "Write the tests", 1),
-		listed(3, "Write the docs", 1),
-	}, Marks{})
-	if at2, at3 := strings.Index(got, "#2"), strings.Index(got, "#3"); at2 > at3 {
-		t.Errorf("sub-tasks should keep their order:\n%s", got)
-	}
-}
-
 func TestTree_writesNothingForNoTasks(t *testing.T) {
 	if got := Tree(nil, Marks{}); got != "" {
 		t.Errorf("Tree(nil, Marks{}) = %q, want nothing", got)
@@ -185,7 +139,12 @@ func TestTree_marksTheTasksInFocus(t *testing.T) {
 		listed(2, "Write the tests", 1),
 		listed(3, "Something else", NoParent),
 	}
-	for _, inFocus := range []int{1, 2, 3} {
+	// The work, and not what hangs under it: a listing no longer draws a
+	// sub-task, so one in focus has no line here to be marked on.
+	if got := Tree(tasks, Marks{InFocus: []int{2}}); strings.Contains(got, InFocusMark) {
+		t.Errorf("a sub-task in focus marked a listing it is not in:\n%s", got)
+	}
+	for _, inFocus := range []int{1, 3} {
 		got := Tree(tasks, Marks{InFocus: []int{inFocus}})
 		if marks := strings.Count(got, InFocusMark); marks != 1 {
 			t.Errorf("with %d in focus, %d lines are marked, want exactly one:\n%s",
@@ -262,5 +221,76 @@ func TestTheHangingRules_answerNothingWhenTheTaskMayHang(t *testing.T) {
 	under := listed(2, "Write the tests", 1)
 	if err := under.MayHangUnderItsParent(); err != nil {
 		t.Errorf("a task may hang under another, and it said %v", err)
+	}
+}
+
+// The section under a task says which of them are finished. It is the section
+// that answers "is the whole of it done", and one that named them without
+// saying so made somebody open each in turn to find out.
+func TestUnder_namesEachOneAsDoneOrNot(t *testing.T) {
+	made := func(number int, title string, state domain.State) Task {
+		var a AsTold
+		a.Numbered(number)
+		a.Titled(title)
+		a.Under(1)
+		a.InColumn(state)
+		return a.Task()
+	}
+	got := Under([]Task{
+		made(2, "Write the tests", domain.Done),
+		made(3, "Write the docs", domain.Todo),
+	})
+	for _, want := range []string{DoneMark + "  #2  Write the tests", "#3  Write the docs"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Under =\n%s\nwant a line reading %q", got, want)
+		}
+	}
+	if strings.Contains(got, DoneMark+"  #3") {
+		t.Errorf("Under =\n%s\nand task 3 is not done", got)
+	}
+}
+
+// A listing names the work, and a sub-task is part of one. It used to draw
+// them indented under their parent; what hangs under a task is now read where
+// the task is read, which is the one place it answers a question.
+func TestTree_leavesSubTasksOut(t *testing.T) {
+	made := func(number int, title string, parent int) Task {
+		var a AsTold
+		a.Numbered(number)
+		a.Titled(title)
+		if parent != NoParent {
+			a.Under(parent)
+		}
+		return a.Task()
+	}
+	got := Tree([]Task{
+		made(1, "Ship it", NoParent),
+		made(2, "Write the tests", 1),
+		made(3, "Something else", NoParent),
+	}, Marks{})
+	for _, want := range []string{"#1  Ship it", "#3  Something else"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Tree =\n%s\nwant it to name %q", got, want)
+		}
+	}
+	if strings.Contains(got, "Write the tests") {
+		t.Errorf("Tree =\n%s\nand a sub-task is not laid out in a listing", got)
+	}
+}
+
+// What hangs under a task keeps the order it was given, which is the order the
+// engine holds it in. A section that sorted it again would be a second place
+// deciding where a part sits.
+func TestUnder_keepsTheOrderItWasGiven(t *testing.T) {
+	made := func(number int, title string) Task {
+		var a AsTold
+		a.Numbered(number)
+		a.Titled(title)
+		a.Under(1)
+		return a.Task()
+	}
+	got := Under([]Task{made(3, "Write the docs"), made(2, "Write the tests")})
+	if at3, at2 := strings.Index(got, "#3"), strings.Index(got, "#2"); at3 > at2 {
+		t.Errorf("Under reordered them:\n%s", got)
 	}
 }
