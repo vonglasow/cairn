@@ -239,6 +239,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the bar does not offer "([^"]*)"$`, w.barDoesNotOffer)
 	sc.Then(`^the help is shown$`, w.helpIsShown)
 	sc.Then(`^the board carries (\d+) tasks?$`, w.boardCarries)
+	sc.Then(`^the board says nothing of "([^"]*)"$`, w.boardSaysNothingOf)
+	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, func(title string, under int) error {
+		_, err := w.other.Add(title, engine.Changes{Parent: &under})
+		w.afterAChange()
+		return err
+	})
 	sc.Then(`^the card for task (\d+) says "([^"]*)"$`, w.cardSays)
 	sc.Then(`^the card for objective (\d+) says "([^"]*)"$`, w.goalCardSays)
 	sc.Then(`^the card for task (\d+) is marked as described$`, w.cardDescribed)

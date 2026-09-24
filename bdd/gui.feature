@@ -15,12 +15,23 @@ Feature: The desktop board
   Rule: The work is laid out the way the terminal lays it out
 
     The same shape, with more room. A person who has learnt one board has
-    learnt the other.
+    learnt the other — sub-tasks left off both, since a part of the work is
+    read where the work is read.
 
     @gui-four-columns-left-to-right
     Scenario: the columns are named in the order the work goes through
       When I open the window
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
+
+    @gui-a-sub-task-is-not-on-the-board
+    Scenario: a sub-task does not stand in a column of its own
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Something else"
+      When I open the window
+      Then "BACKLOG" carries "Ship it"
+      And "BACKLOG" carries "Something else"
+      And the board says nothing of "Write the spec"
 
     @gui-an-empty-column-stays
     Scenario: a column with nothing in it is still drawn
@@ -230,12 +241,6 @@ Feature: The desktop board
     A drop says two things at once — which column, and which place among the
     cards there — and the engine is told them in that order.
 
-    A card only takes a place beside the cards it sits with: a sub-task among
-    its sisters, a task among tasks. The window says so while the card is in
-    hand rather than after it has been let go — a refusal that arrives once the
-    gesture is over says the gesture was wrong, and by then there is nothing
-    left to do about it.
-
     @gui-a-small-move-is-still-a-click
     Scenario: a click that barely moves is a click
       Given I added a task titled "Write the spec"
@@ -287,34 +292,6 @@ Feature: The desktop board
       And I drag the card "Client's answer" onto the lane "watching"
       Then task 1 is in the column "watching"
       And the lane "watching" carries "Client's answer"
-
-    @gui-a-card-says-nothing-where-it-cannot-land
-    Scenario: a sub-task says nothing where it cannot land
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      And I added a task titled "Something else"
-      When I open the window
-      And I take hold of the card "Write the spec" and move it under the card "Something else"
-      Then it shows nowhere for the card to land
-
-    @gui-a-card-says-where-it-can-land
-    Scenario: the same sub-task says where it can land, among its sisters
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      And I added a task titled "Draft the plan" hanging under task 1
-      When I open the window
-      And I take hold of the card "Write the spec" and move it under the card "Draft the plan"
-      Then it shows where the card would land in "TODO"
-
-    @gui-a-root-task-says-nothing-over-a-sub-task
-    Scenario: a task says nothing over a sub-task, which is the same rule the other way
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      And I added a task titled "Draft the plan" hanging under task 1
-      And I added a task titled "Something else"
-      When I open the window
-      And I take hold of the card "Something else" and move it under the card "Write the spec"
-      Then it shows nowhere for the card to land
 
     @gui-a-drop-that-is-refused-shows-the-truth
     Scenario: a drop the engine refuses leaves the board saying what is really there
@@ -957,7 +934,7 @@ Feature: The desktop board
       Then the detail is open on "Ship the desktop board"
       And the detail says nothing serves it yet
 
-  Rule: The window takes work up and tells a sub-task apart
+  Rule: The window takes work up
 
     @gui-focus-takes-a-task-up
     Scenario: a task is taken up and let go from the window
@@ -975,14 +952,6 @@ Feature: The desktop board
       And I put task 1 in focus
       When I open the window
       Then the card "Write the spec" says it is being worked on
-
-    @gui-a-sub-task-is-told-apart
-    Scenario: a sub-task is told apart from a task
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      When I open the window
-      Then the card "Write the spec" says it hangs under another
-      And the card "Ship it" does not
 
   Rule: A key does what the bar offers, where the bar offers it
 

@@ -169,17 +169,17 @@ history, faithful to an engine that refuses to change a column and a place in
 one act. It was turned down because dropping a card precisely somewhere and
 watching it land elsewhere is a small betrayal of the hand.
 
-**No line is drawn where the card cannot land.** A card takes a place beside
-the cards it sits with — a sub-task among its sisters, a task among tasks — and
-the window asks before it draws rather than after the hand has let go. The
-level rule is `task.SitTogether`, reached through `reading.MayLandAfter` so
-that both boards ask the same thing and neither works it out for itself.
+**Sub-tasks are not drawn on the board**, so every card on it hangs under
+nothing and any card may take any place. There was a rule here that drew no
+landing line where a sub-task could not go, and a mark on the card saying it
+hung under another; both went when sub-tasks left the board, since nothing
+draws one there to refuse or to mark.
 
-Showing the line and refusing the drop was what it did before: the refusal
-arrived in the bar once the gesture was over, which says the gesture was wrong
-at the one moment nothing can be done about it. `first` and `last` stay open
-wherever the pointer is, because they name a place among the held card's own
-whatever happens to be drawn at either end of the column.
+That rule is what made this change happen. It was right — a sub-task could only
+land among its sisters — and it read as arbitrary, because the sisters were
+scattered through the columns with nothing grouping them. Fixing the refusal
+showed that the hierarchy was invisible, and the answer turned out not to be a
+better refusal.
 
 **The stalled band is three lanes**, named `blocked`, `watching` and `paused`.
 Dropping into a lane *is* the answer to which kind of stopped this is. The

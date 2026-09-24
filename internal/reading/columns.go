@@ -36,6 +36,13 @@ const Band = "STALLED"
 // Deal puts every card where it belongs: in the column of its state, or in the
 // band if its state is one of the three that are not moving.
 //
+// A sub-task is left off entirely. It is a part of the work its parent names,
+// so the parent is what stands in a column and the part is read where the
+// parent is read — in the box under its fields. They used to sit beside their
+// parents as though they were work of their own, which made a board of 219
+// tasks show 219 things when 170 of them were the work and the rest its
+// pieces.
+//
 // The order inside a column is the order the cards arrived in, which is the
 // order the engine keeps them in. A board that sorted them again would be a
 // second place deciding where a task sits.
@@ -45,7 +52,7 @@ func Deal(cards []Card) ([]Column, []Card) {
 		out[i] = Column{State: c.state, Name: c.name}
 	}
 	var band []Card
-	for _, card := range cards {
+	for _, card := range OnTheBoard(cards) {
 		if Stopped(card.State) {
 			band = append(band, card)
 			continue
@@ -87,4 +94,21 @@ func StateAt(i int) string {
 		return ""
 	}
 	return columns[i].state
+}
+
+// OnTheBoard is what a board lays out: every task hanging under nothing.
+//
+// A sub-task is a part of the work its parent names, so the parent stands in a
+// column and the part is read where the parent is read. Asked here rather than
+// inside Deal, because what is counted and what the arrows walk have to be the
+// same set as what is drawn — a board whose cursor could reach a card nobody
+// drew is a board that loses the keyboard on it.
+func OnTheBoard(cards []Card) []Card {
+	var laid []Card
+	for _, c := range cards {
+		if c.Parent == 0 {
+			laid = append(laid, c)
+		}
+	}
+	return laid
 }

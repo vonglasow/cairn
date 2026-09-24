@@ -268,7 +268,9 @@ func (b Board) standingAt(place int) int {
 // force and by whichever objective is open.
 func (b Board) cards() []reading.Card {
 	var kept []reading.Card
-	for _, c := range b.snap.Cards {
+	// What a board lays out, so that what is counted and what the arrows walk
+	// is the same set as what is drawn.
+	for _, c := range reading.OnTheBoard(b.snap.Cards) {
 		if b.inside != 0 && !serves(c, b.inside) {
 			continue
 		}

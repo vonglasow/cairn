@@ -171,6 +171,15 @@ func (w *world) helpIsShown() error {
 	return nil
 }
 
+// boardSaysNothingOf is asked of the whole screen: a sub-task must not appear
+// in a column, in the band, or anywhere else a card is drawn.
+func (w *world) boardSaysNothingOf(title string) error {
+	if strings.Contains(w.screen(), title) {
+		return fmt.Errorf("the board draws %q:\n%s", title, w.screen())
+	}
+	return nil
+}
+
 func (w *world) boardCarries(want int) error {
 	got := w.b.Where().Showing
 	if got != want {

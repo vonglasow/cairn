@@ -41,26 +41,22 @@ const padding = 10
 
 // What a card's number line says besides the number.
 //
-// Written as marks rather than drawn as glyphs: the eleven glyph marks the
-// terminal board draws were left out of this window on purpose, and these two
-// earn their place because neither can be worked out by looking. A card gives
-// no sign that it is being worked on, and a sub-task looks exactly like a task
-// while being the one thing that cannot be dragged wherever you like — it
-// moves among its sisters and nowhere else.
+// Written as a mark rather than drawn as a glyph: the eleven glyph marks the
+// terminal board draws were left out of this window on purpose, and this one
+// earns its place because it cannot be worked out by looking — a card gives no
+// sign that somebody, or some agent session, is on it.
+//
+// There were two. The other said a card hung under another, and it went when
+// sub-tasks left the board: nothing draws one there to mark.
 const (
 	// InFocusMark says somebody, or some agent session, is on this task.
 	InFocusMark = " ●"
-	// UnderMark says this task hangs under another one.
-	UnderMark = " ↳"
 )
 
 // Numbered is a card's number line: the number, and what the card cannot say
 // for itself.
 func Numbered(c reading.Card) string {
 	line := strconv.Itoa(c.Number)
-	if c.Parent != 0 {
-		line += UnderMark + strconv.Itoa(c.Parent)
-	}
 	if c.InFocus {
 		line += InFocusMark
 	}

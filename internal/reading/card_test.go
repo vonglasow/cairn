@@ -71,34 +71,6 @@ func TestDeadlineIgnoresTheTimeOfDay(t *testing.T) {
 	}
 }
 
-// MayLandAfter is the question a board asks before it draws where a held card
-// would go. It is asked of both boards, so it lives here rather than in either.
-func TestMayLandAfter_answersBeforeTheGestureIsOver(t *testing.T) {
-	var (
-		task   = Card{Number: 1}
-		other  = Card{Number: 2}
-		sub    = Card{Number: 3, Parent: 1}
-		sister = Card{Number: 4, Parent: 1}
-		cousin = Card{Number: 5, Parent: 2}
-	)
-	for _, tc := range []struct {
-		what         string
-		held, target Card
-		want         bool
-	}{
-		{"a task behind a task", task, other, true},
-		{"a sub-task behind its sister", sub, sister, true},
-		{"a sub-task behind a task", sub, other, false},
-		{"a task behind a sub-task", task, sub, false},
-		{"a sub-task behind another parent's", sub, cousin, false},
-		{"a card behind itself", task, task, false},
-	} {
-		if got := MayLandAfter(tc.held, tc.target); got != tc.want {
-			t.Errorf("%s: MayLandAfter = %v, want %v", tc.what, got, tc.want)
-		}
-	}
-}
-
 // Serving is the work under one objective, taken from the listing both boards
 // already hold. No question of its own: the snapshot carries what each task
 // serves, and asking again could answer differently.

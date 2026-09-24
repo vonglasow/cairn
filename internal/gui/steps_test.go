@@ -481,8 +481,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^what is chosen has moved on one$`, w.chosenMovedOnOne)
 	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
 	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
-	sc.Then(`^the card "([^"]*)" says it hangs under another$`, w.cardSaysSubTask)
-	sc.Then(`^the card "([^"]*)" does not$`, w.cardSaysNoSuchThing)
 	sc.Then(`^what is chosen is in sight$`, w.chosenInSight)
 	sc.Then(`^the objectives have moved$`, w.objectivesMoved)
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
@@ -518,6 +516,25 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^no line of the field "([^"]*)" runs out of it$`, w.noLineRunsOut)
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)
 	sc.Then(`^the window is asking what to look for$`, w.askingWhatToLookFor)
+	// Asked of every card the board deals, columns and band alike: "not in
+	// BACKLOG" would pass for a card that merely sits in another column.
+	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
+		dealt, stalled := reading.Deal(w.w.Showing().Cards)
+		for _, held := range dealt {
+			for _, c := range held.Cards {
+				if c.Title == title {
+					return fmt.Errorf("the board deals %q into %q", title, held.Name)
+				}
+			}
+		}
+		for _, c := range stalled {
+			if c.Title == title {
+				return fmt.Errorf("the board deals %q into the band", title)
+			}
+		}
+		return nil
+	})
+
 	sc.Then(`^no card is chosen$`, func() error {
 		if w.w.Chosen() != 0 {
 			return fmt.Errorf("task %d is chosen", w.w.Chosen())
@@ -1288,29 +1305,6 @@ func (w *world) cardSaysInFocus(title string) error {
 	if !strings.Contains(Numbered(c), InFocusMark) {
 		return fmt.Errorf("the card for %q reads %q, and says nothing about being worked on",
 			title, Numbered(c))
-	}
-	return nil
-}
-
-func (w *world) cardSaysSubTask(title string) error {
-	c, err := w.cardOf(title)
-	if err != nil {
-		return err
-	}
-	if !strings.Contains(Numbered(c), UnderMark) {
-		return fmt.Errorf("the card for %q reads %q, and says nothing about hanging under another",
-			title, Numbered(c))
-	}
-	return nil
-}
-
-func (w *world) cardSaysNoSuchThing(title string) error {
-	c, err := w.cardOf(title)
-	if err != nil {
-		return err
-	}
-	if strings.Contains(Numbered(c), UnderMark) {
-		return fmt.Errorf("the card for %q reads %q, and it hangs under nothing", title, Numbered(c))
 	}
 	return nil
 }

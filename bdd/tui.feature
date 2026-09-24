@@ -18,10 +18,27 @@ Feature: The board
     done. The three states that mean "not moving" share a band underneath,
     because what tells them apart is what unblocks them, not where they sit.
 
+    A sub-task is not laid out here at all. It is a part of the work its parent
+    names, so the parent is what stands in a column and the part is read where
+    the parent is read. They used to sit beside their parents as though they
+    were tasks of their own, which made a board of 219 tasks show 219 things
+    when 170 of them were the work and the rest were its pieces.
+
     @tui-four-columns-left-to-right
     Scenario: the columns are named in the order the work goes through
       When I open the board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
+
+    @tui-a-sub-task-is-not-on-the-board
+    Scenario: a sub-task does not stand in a column of its own
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" hanging under task 1
+      And I added a task titled "Something else"
+      When I open the board
+      Then the board carries 2 tasks
+      And "BACKLOG" carries "Ship it"
+      And "BACKLOG" carries "Something else"
+      And the board says nothing of "Write the spec"
 
     @tui-the-band-holds-what-is-not-moving
     Scenario: blocked, watching and paused share one band

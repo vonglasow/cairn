@@ -1,25 +1,25 @@
   TASKS   objectives                                NORMAL
 
- ▌BACKLOG     3 TODO         3 CURRENT      1 DONE         2
+ ▌BACKLOG     3 TODO         2 CURRENT      1 DONE         1
  ━━━━━━━━━━━━━━ ────────────── ────────────── ──────────────
  ┏━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━┓ ╔════════════╗ ┏━━━━━━━━━━━━┓
- ┃ 1          ┃ ┃ 4        ≡ ┃ ║ 6        ≡ ║ ┃ 11         ┃
- ┃ Buy a lamp ┃ ┃ Write the  ┃ ║ Spec       ║ ┃ Draft the  ┃
- ┃            ┃ ┃ spec       ┃ ║ review     ║ ┃ columns    ┃
+ ┃ 1          ┃ ┃ 4        ≡ ┃ ║ 6        ≡ ║ ┃ 7          ┃
+ ┃ Buy a lamp ┃ ┃ Write the  ┃ ║ Spec       ║ ┃ Migrate    ┃
+ ┃            ┃ ┃ spec       ┃ ║ review     ║ ┃ the store  ┃
  ┃            ┃ ┃ 2d  ▪1/2   ┃ ║ 1d  ▪2/4   ║ ┃            ┃
  ┗━━━━━━━━━━━━┛ ┗━━━━━━━━━━━━┛ ╚════════════╝ ┗━━━━━━━━━━━━┛
- ┏━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━┓                ┏━━━━━━━━━━━━┓
- ┃ 2          ┃ ┃ 12         ┃                ┃ 7          ┃
- ┃ Read the   ┃ ┃ Get the    ┃                ┃ Migrate    ┃
- ┃ ADR        ┃ ┃ client's … ┃                ┃ the store  ┃
- ┃            ┃ ┃            ┃                ┃            ┃
- ┗━━━━━━━━━━━━┛ ┗━━━━━━━━━━━━┛                ┗━━━━━━━━━━━━┛
  ┏━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━┓
- ┃ 3          ┃ ┃ 5          ┃
- ┃ Ask legal  ┃ ┃ Fix the    ┃
- ┃ about the… ┃ ┃ hook       ┃
- ┃ −3d        ┃ ┃            ┃
+ ┃ 2          ┃ ┃ 5          ┃
+ ┃ Read the   ┃ ┃ Fix the    ┃
+ ┃ ADR        ┃ ┃ hook       ┃
+ ┃            ┃ ┃            ┃
  ┗━━━━━━━━━━━━┛ ┗━━━━━━━━━━━━┛
+ ┏━━━━━━━━━━━━┓
+ ┃ 3          ┃
+ ┃ Ask legal  ┃
+ ┃ about the… ┃
+ ┃ −3d        ┃
+ ┗━━━━━━━━━━━━┛
 
 
                 STALLED                                    4
