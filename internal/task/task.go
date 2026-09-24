@@ -172,6 +172,40 @@ func (t Task) MayCarrySubTasks() error {
 	return nil
 }
 
+// ErrSubTaskHasNoColumn is returned when a sub-task is put in a column that
+// says where work stands. A sub-task is a part of the work its parent names,
+// split off to be sure the whole is finished, and the only thing worth knowing
+// about a part is whether it is done.
+//
+// It had all seven columns and used two: measured on a store of 219 tasks, the
+// 49 sub-tasks in it were done forty-eight times and todo once, never current,
+// never stopped, never with a deadline or a blocker of their own. A part being
+// "blocked" is the parent being blocked; a part being "current" is the parent
+// being worked on.
+var ErrSubTaskHasNoColumn = errors.New("a sub-task is done or it is not")
+
+// MayCarryItsColumn says whether this task may stand in the column it carries.
+// Every column is open to a task hanging under nothing; a sub-task takes done
+// or todo and nothing else.
+func (t Task) MayCarryItsColumn() error {
+	if t.parent == NoParent || t.state == domain.Done || t.state == domain.Todo {
+		return nil
+	}
+	return fmt.Errorf("task %d in %s: %w", t.number, t.state, ErrSubTaskHasNoColumn)
+}
+
+// Settled is this task with a column a sub-task may carry: done stays done and
+// anything else becomes todo. What a task hung under another was doing on its
+// own stops being true the moment it becomes a part of something — except
+// being finished, which stays finished.
+func (t Task) Settled() Task {
+	if t.parent == NoParent || t.state == domain.Done {
+		return t
+	}
+	t.state = domain.Todo
+	return t
+}
+
 // MayServeAnObjective says whether a task may carry an objective alongside
 // whatever parent it carries: a sub-task never does, since it counts towards
 // its parent's objective by way of that parent and is never given one of its

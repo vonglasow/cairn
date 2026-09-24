@@ -146,6 +146,9 @@ func (e *Engine) Add(title string, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, creating); err != nil {
 		return task.Task{}, err
 	}
+	// A task added under a parent is a part from the start, so the column
+	// every new task begins in is not one it may keep.
+	t = t.Settled()
 	if err := e.canHang(t); err != nil {
 		return task.Task{}, err
 	}
@@ -222,6 +225,9 @@ func (e *Engine) canHang(t task.Task) error {
 	if parent == task.NoParent {
 		return nil
 	}
+	if err := t.MayCarryItsColumn(); err != nil {
+		return err
+	}
 	if err := t.MayServeAnObjective(); err != nil {
 		return err
 	}
@@ -247,6 +253,13 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	t := was
 	if t, err = apply(t, c, changing); err != nil {
 		return task.Task{}, err
+	}
+	// A task told to hang under another stops being what it was doing on its
+	// own — except finished, which stays finished. Settled before the rules
+	// are asked, so that hanging a task under one never fails for the column
+	// it happened to be in a moment ago.
+	if c.Parent != nil && factsOf(was).parent != factsOf(t).parent {
+		t = t.Settled()
 	}
 	if err := e.canHang(t); err != nil {
 		return task.Task{}, err

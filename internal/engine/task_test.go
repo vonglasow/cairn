@@ -217,3 +217,59 @@ func TestEdit_leavesAFinishedParentEditableForAnythingElse(t *testing.T) {
 		t.Errorf("editing a finished parent: %v", err)
 	}
 }
+
+// A sub-task takes done or todo, and hanging a task under another settles the
+// column it was carrying: done stays done, anything else becomes todo.
+func TestEdit_holdsASubTaskToDoneOrNot(t *testing.T) {
+	e := openEngine(t)
+	parent := factsOf(add(t, e, "Ship it")).number
+	under := factsOf(add(t, e, "Write the spec")).number
+
+	working := string(domain.Current)
+	if _, err := e.Edit(under, Changes{State: &working}); err != nil {
+		t.Fatalf("putting it in current while it hangs under nothing: %v", err)
+	}
+	// Hung under a parent, what it was doing on its own stops being true.
+	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+		t.Fatalf("hanging it under: %v", err)
+	}
+	if got := factsOf(shown(t, e, under)).state; got != domain.Todo {
+		t.Errorf("state = %q, want it settled to todo", got)
+	}
+	// And it will not go back.
+	if _, err := e.Edit(under, Changes{State: &working}); !errors.Is(err, task.ErrSubTaskHasNoColumn) {
+		t.Errorf("err = %v, want it to say a sub-task is done or it is not", err)
+	}
+	finished := string(domain.Done)
+	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+		t.Errorf("finishing a sub-task: %v", err)
+	}
+}
+
+// A task already done keeps being done when it is hung under one: finished is
+// the one thing a part was doing on its own that stays true.
+func TestEdit_keepsAFinishedTaskDoneWhenItIsHungUnderOne(t *testing.T) {
+	e := openEngine(t)
+	parent := factsOf(add(t, e, "Ship it")).number
+	under := factsOf(add(t, e, "Write the spec")).number
+	finished := string(domain.Done)
+	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+		t.Fatalf("finishing it: %v", err)
+	}
+	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+		t.Fatalf("hanging it under: %v", err)
+	}
+	if got := factsOf(shown(t, e, under)).state; got != domain.Done {
+		t.Errorf("state = %q, want it still done", got)
+	}
+}
+
+// shown reads a task back the way anything else does.
+func shown(t *testing.T, e *Engine, number int) task.Task {
+	t.Helper()
+	found, err := e.Show(number)
+	if err != nil {
+		t.Fatalf("Show(%d): %v", number, err)
+	}
+	return found
+}

@@ -304,7 +304,7 @@ Feature: The desktop board
       And I added a task titled "Draft the plan" hanging under task 1
       When I open the window
       And I take hold of the card "Write the spec" and move it under the card "Draft the plan"
-      Then it shows where the card would land in "BACKLOG"
+      Then it shows where the card would land in "TODO"
 
     @gui-a-root-task-says-nothing-over-a-sub-task
     Scenario: a task says nothing over a sub-task, which is the same rule the other way

@@ -154,4 +154,16 @@ INSERT OR IGNORE INTO focus (id, task_number)
 DROP TABLE IF EXISTS focused;`,
 		loses: "every task in focus beyond the first one taken",
 	},
+	{
+		name: "a sub-task is done or it is not",
+		does: `
+UPDATE tasks SET state = 'todo'
+	WHERE parent IS NOT NULL AND parent != 0 AND state != 'done';`,
+		// Nothing to undo: what column each sub-task stood in is gone by then,
+		// and putting them all back in the backlog would be inventing an
+		// answer rather than restoring one. The shape is unchanged either way,
+		// so an older cairn reads this store as it always did.
+		undoes: "",
+		loses:  "which column a sub-task stood in, for any that was not done",
+	},
 }

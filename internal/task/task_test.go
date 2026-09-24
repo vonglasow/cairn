@@ -356,3 +356,82 @@ func TestMayFinish_namesWhatIsInTheWay(t *testing.T) {
 		t.Errorf("MayFinish = %v, and says nothing of task 7", err)
 	}
 }
+
+// A sub-task is done or it is not. It carried all seven columns and used two:
+// measured on a store of 219 tasks, its 49 sub-tasks were done forty-eight
+// times and todo once — never current, never stopped. Where the work stands is
+// the parent's to say.
+func TestMayCarryItsColumn_holdsASubTaskToDoneOrNot(t *testing.T) {
+	under := func(state domain.State) Task {
+		var a AsTold
+		a.Numbered(2)
+		a.Titled("Write the tests")
+		a.Under(1)
+		a.InColumn(state)
+		return a.Task()
+	}
+	root := func(state domain.State) Task {
+		var a AsTold
+		a.Numbered(1)
+		a.Titled("Ship it")
+		a.InColumn(state)
+		return a.Task()
+	}
+	for _, tc := range []struct {
+		what    string
+		task    Task
+		wantErr bool
+	}{
+		{"a sub-task done", under(domain.Done), false},
+		{"a sub-task not done", under(domain.Todo), false},
+		{"a sub-task in the backlog", under(domain.Backlog), true},
+		{"a sub-task being worked on", under(domain.Current), true},
+		{"a sub-task blocked", under(domain.Blocked), true},
+		{"a sub-task watching", under(domain.Watching), true},
+		{"a sub-task paused", under(domain.Paused), true},
+		{"a task in any column it likes", root(domain.Current), false},
+		{"a task blocked", root(domain.Blocked), false},
+	} {
+		err := tc.task.MayCarryItsColumn()
+		if (err != nil) != tc.wantErr {
+			t.Errorf("%s: MayCarryItsColumn = %v, want an error: %v", tc.what, err, tc.wantErr)
+		}
+		if tc.wantErr && !errors.Is(err, ErrSubTaskHasNoColumn) {
+			t.Errorf("%s: %v, want ErrSubTaskHasNoColumn", tc.what, err)
+		}
+	}
+}
+
+// Settled is what a task becomes when it is hung under another: the column it
+// was standing in on its own stops being true, except done, which stays.
+func TestSettled_keepsDoneAndDropsEveryOtherColumn(t *testing.T) {
+	made := func(parent int, state domain.State) Task {
+		var a AsTold
+		a.Numbered(2)
+		a.Titled("Write the tests")
+		if parent != NoParent {
+			a.Under(parent)
+		}
+		a.InColumn(state)
+		return a.Task()
+	}
+	for _, tc := range []struct {
+		what string
+		task Task
+		want domain.State
+	}{
+		{"a sub-task being worked on", made(1, domain.Current), domain.Todo},
+		{"a sub-task in the backlog", made(1, domain.Backlog), domain.Todo},
+		{"a sub-task blocked", made(1, domain.Blocked), domain.Todo},
+		{"a sub-task already done", made(1, domain.Done), domain.Done},
+		{"a sub-task already todo", made(1, domain.Todo), domain.Todo},
+		{"a task hanging under nothing is left alone", made(NoParent, domain.Current), domain.Current},
+		{"a task hanging under nothing, done", made(NoParent, domain.Done), domain.Done},
+	} {
+		var told AsTold
+		tc.task.Settled().Tell(&told)
+		if got := told.Task().state; got != tc.want {
+			t.Errorf("%s: Settled = %q, want %q", tc.what, got, tc.want)
+		}
+	}
+}

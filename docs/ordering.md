@@ -150,6 +150,28 @@ Neither of these lives inside gremlins' reach: both are arithmetic inside a SQL
 string, which it does not read. The mutation gate says nothing about them, and
 that is precisely why they are measured by hand and written down.
 
+## A sub-task is done or it is not
+
+A sub-task is a part of the work its parent names, split off to be sure the
+whole is finished. The only thing worth knowing about a part is whether it is
+done: where the work stands is the parent's to say, because a part being
+"blocked" is the parent being blocked and a part being "current" is the parent
+being worked on.
+
+It carried all seven columns and used two. Measured on a real store of 219
+tasks: its 49 sub-tasks were `done` forty-eight times and `todo` once, never
+`current`, never stopped, never carrying a deadline or a blocker of their own.
+The model was not narrowed here so much as caught up with what the usage had
+already settled on.
+
+A task hung under another is **settled** on the way in: `done` stays `done`,
+every other column becomes `todo`. What it was doing on its own stops being
+true the moment it becomes a part of something — except being finished, which
+stays finished. The ninth change to the store's shape does the same to what was
+already there, and does not undo: the column each sub-task stood in is gone by
+then, and putting them all back in the backlog would be inventing an answer
+rather than restoring one.
+
 ## A sub-task takes its place among its sisters
 
 A sub-task carries a column of its own — measured: one can sit in `current`

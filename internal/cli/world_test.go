@@ -336,6 +336,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says a sub-task is done or it is not$`, func() error {
+		return test.WantContains(w.Out.Stderr, "done or it is not", "the refusal")
+	})
+
 	sc.Step(`^it says there is no task$`, func() error {
 		return test.WantContains(w.Out.Stdout, "there is no task", "the answer")
 	})

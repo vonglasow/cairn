@@ -305,7 +305,10 @@ Feature: Tasks
     @task-list-narrowed-keeps-the-parent-out
     Scenario: a parent that does not carry it is not brought along
       Given I added a task titled "Ship it" with the state "todo"
+      # Done, because a sub-task takes done or todo and the parent is in todo:
+      # the two have to differ for this to be about the narrowing at all.
       And I added a task titled "Write the tests" with the parent "1"
+      And I edited task 2 with the state "done"
       When I run `cairn task list --state todo`
       Then it lists 1 task
       And it lists task 1 titled "Ship it"
@@ -1149,14 +1152,71 @@ Feature: Tasks
   Rule: A task can hang under another one
 
     A task given a parent becomes one of its sub-tasks, and stays a task in
-    every other way: its own number, its own priority, its own labels, changed
-    and read back like any other. Only one level — a sub-task cannot itself
-    carry sub-tasks, so what hangs under a task is never something with more
-    hanging under it.
+    every other way: its own number, its own title, its own description, its
+    own labels, changed and read back like any other. Only one level — a
+    sub-task cannot itself carry sub-tasks, so what hangs under a task is never
+    something with more hanging under it.
+
+    What it stops carrying is a column of its own. A sub-task is a part of the
+    work its parent names, split off to be sure the whole is finished, and the
+    only thing worth knowing about a part is whether it is done. It had all
+    seven columns and used two: measured on a store of 219 tasks, the 49
+    sub-tasks in it were `done` forty-eight times and `todo` once, never
+    `current`, never stopped, never with a deadline or a blocker of their own.
+
+    So `done` and `todo` are what a sub-task takes, and any other column is
+    refused. Where the work stands is the parent's to say — a part being
+    "blocked" is the parent being blocked, and a part being "current" is the
+    parent being worked on.
 
     A task carrying sub-tasks is not deleted while they are there. What depends
     on it would go with it, and a deletion that takes more than the number
     typed is a deletion nobody asked for.
+
+    @task-sub-task-takes-done
+    Scenario Outline: a sub-task is done or it is not, and takes nothing else
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task edit 2 --state <column>`
+      Then it succeeds
+      And task 2 is in the column "<column>"
+
+      Examples: what a part of the work can say about itself
+        | column |
+        | done   |
+        | todo   |
+
+    @task-sub-task-refuses-a-column-of-its-own
+    Scenario Outline: a sub-task refuses the columns that say where work stands
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      When I run `cairn task edit 2 --state <column>`
+      Then it fails
+      And it says a sub-task is done or it is not
+
+      Examples: where the work stands is the parent's to say
+        | column   |
+        | backlog  |
+        | current  |
+        | blocked  |
+        | watching |
+        | paused   |
+
+    @task-hanging-a-task-under-another-settles-its-column
+    Scenario: a task given a parent keeps done and loses any other column
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the state "current"
+      When I run `cairn task edit 2 --parent 1`
+      Then it succeeds
+      And task 2 is in the column "todo"
+
+    @task-hanging-a-finished-task-under-another-keeps-it-done
+    Scenario: a task already done keeps being done when it is hung under one
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the state "done"
+      When I run `cairn task edit 2 --parent 1`
+      Then it succeeds
+      And task 2 is in the column "done"
 
     @task-parent-none
     Scenario: a task hangs under nothing unless it is told to
@@ -1328,20 +1388,13 @@ Feature: Tasks
       Then it says 1 of 2 sub-tasks are done
 
     @task-progress-counts-only-done
-    Scenario Outline: a sub-task stopped is not a sub-task done
+    Scenario: a sub-task not done is not a sub-task done
       Given I added a task titled "Ship it"
       And I added a task titled "Write the spec" with the parent "1"
       And I added a task titled "Write the tests" with the parent "1"
       And I edited task 2 with the state "done"
-      And I edited task 3 with the state "<stopped>"
       When I run `cairn task show 1`
       Then it says 1 of 2 sub-tasks are done
-
-      Examples: stopped is not finished
-        | stopped  |
-        | blocked  |
-        | paused   |
-        | watching |
 
     @task-progress-of-nothing
     Scenario: a task with nothing under it counts nothing
