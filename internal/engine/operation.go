@@ -313,7 +313,11 @@ type Answer struct {
 	Holds             *domain.Held
 	Deleted           *int
 	PutBack           *int
-	Applied           []string
+	// Archived is how many a sweep took off the board, Labelled how many it
+	// put a label on.
+	Archived *int
+	Labelled *int
+	Applied  []string
 	// Since is what was done over a period, across every task, oldest first.
 	// Its own field beside Acts for the reason Matched sits beside Tasks: a
 	// history is about one task and does not name it on every line, where a

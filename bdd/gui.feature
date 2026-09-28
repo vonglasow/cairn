@@ -23,6 +23,35 @@ Feature: The desktop board
       When I open the window
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
+    @gui-archived-are-off-the-board-until-asked-for
+    Scenario: what was archived comes back when it is asked for
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      And I archived task 1
+      When I open the window
+      Then the board says nothing of "Migration Jenkins"
+      When I press "shift+a"
+      Then "BACKLOG" carries "Migration Jenkins"
+      And the card "Migration Jenkins" is dimmed
+      When I press "shift+a"
+      Then the board says nothing of "Migration Jenkins"
+
+    @gui-a-card-is-taken-off-the-board
+    Scenario: a chosen card is taken off the board, and brought back
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      When I open the window
+      And I click the card "Migration Jenkins"
+      Then the bar offers "Archive" under "x"
+      When I choose "Archive"
+      Then the board says nothing of "Migration Jenkins"
+      When I press "shift+a"
+      And I click the card "Migration Jenkins"
+      Then the bar offers "Restore" under "x"
+      When I choose "Restore"
+      Then "BACKLOG" carries "Migration Jenkins"
+      And the card "Migration Jenkins" is not dimmed
+
     @gui-a-sub-task-is-not-on-the-board
     Scenario: a sub-task does not stand in a column of its own
       Given I added a task titled "Ship it"

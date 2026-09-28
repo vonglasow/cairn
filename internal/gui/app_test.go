@@ -90,6 +90,24 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	if got := Typed(w, "Q", 0); got.Screen() != OnTheBoard || len(f.asked) != 0 {
 		t.Error("a key nobody bound did something")
 	}
+	// Gio names the key "A" and says shift apart from it, so a window that
+	// only lowercased what it was given never saw ⇧A at all.
+	if got := Typed(w, "A", key.ModShift); !got.archived {
+		t.Error("⇧A did not show what was archived")
+	}
+	if got := Typed(Typed(w, "A", key.ModShift), "A", key.ModShift); got.archived {
+		t.Error("⇧A twice did not hide it again")
+	}
+	// Only a letter is put back together, and that is Gio's own rule: a letter
+	// is named in upper case whatever shift does, while a shifted "/" is
+	// already named "?" before it gets here. Joining punctuation would take
+	// the help away from every keyboard that writes "?" that way.
+	if got := Typed(w, "?", key.ModShift); got.Screen() != OnHelp {
+		t.Errorf("? left the window on %v, not the help", got.Screen())
+	}
+	if got := Typed(w, "/", key.ModShift); got.Screen() != OnSearch {
+		t.Errorf("a shifted punctuation key left the window on %v", got.Screen())
+	}
 }
 
 // The detail draws the task and its history, which is the one panel the board

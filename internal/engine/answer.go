@@ -150,6 +150,16 @@ func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Ob
 	}
 }
 
+// Labelled is how labelling answers: how many it put one on.
+type Labelled struct {
+	Labelled int `json:"labelled"`
+}
+
+// Swept is how a sweep answers: how many were taken off the board.
+type Swept struct {
+	Archived int `json:"archived"`
+}
+
 // Deleted confirms an act on something numbered — a task deleted, an
 // objective deleted, a backup deleted. Named once and reused, since deleting
 // any of the three answers the same shape.
@@ -235,6 +245,12 @@ func Of(a Answer) any {
 	}
 	if a.RolledBack != nil {
 		return migration.OfRolledBack(*a.RolledBack)
+	}
+	if a.Archived != nil {
+		return Swept{Archived: *a.Archived}
+	}
+	if a.Labelled != nil {
+		return Labelled{Labelled: *a.Labelled}
 	}
 	if a.Deleted != nil {
 		return Deleted{Deleted: *a.Deleted}
@@ -402,6 +418,12 @@ func RenderText(op Operation, a Answer) string {
 	}
 	if a.Changes != nil {
 		return migration.List(a.Changes, *a.Holds)
+	}
+	if a.Archived != nil {
+		return fmt.Sprintf("%d %s(s) archived\n", *a.Archived, op.Thing)
+	}
+	if a.Labelled != nil {
+		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	}
 	if a.Deleted != nil {
 		return fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)

@@ -14,7 +14,7 @@ func TestDeal(t *testing.T) {
 		{Number: 5, State: "blocked"},
 		{Number: 6, State: "watching"},
 		{Number: 7, State: "paused"},
-	})
+	}, false)
 	if len(all) != Columns {
 		t.Fatalf("dealt into %d columns, want %d", len(all), Columns)
 	}
@@ -35,7 +35,7 @@ func TestDealKeepsTheOrderItWasGiven(t *testing.T) {
 	all, _ := Deal([]Card{
 		{Number: 9, State: "todo"},
 		{Number: 2, State: "todo"},
-	})
+	}, false)
 	got, _ := At(all, "todo")
 	if got.Cards[0].Number != 9 || got.Cards[1].Number != 2 {
 		t.Fatalf("the order changed: %v", got.Cards)
@@ -43,7 +43,7 @@ func TestDealKeepsTheOrderItWasGiven(t *testing.T) {
 }
 
 func TestDealPassesOverAStateItDoesNotKnow(t *testing.T) {
-	all, band := Deal([]Card{{Number: 1, State: "elsewhere"}})
+	all, band := Deal([]Card{{Number: 1, State: "elsewhere"}}, false)
 	if len(band) != 0 {
 		t.Fatal("an unknown state went into the band")
 	}
@@ -55,7 +55,7 @@ func TestDealPassesOverAStateItDoesNotKnow(t *testing.T) {
 }
 
 func TestAt(t *testing.T) {
-	all, _ := Deal(nil)
+	all, _ := Deal(nil, false)
 	if _, ok := At(all, "todo"); !ok {
 		t.Fatal("there is no todo column")
 	}
@@ -94,7 +94,7 @@ func TestOnTheBoard_isEveryTaskHangingUnderNothing(t *testing.T) {
 		{Number: 3, Title: "Something else"},
 	}
 	var got []string
-	for _, c := range OnTheBoard(cards) {
+	for _, c := range OnTheBoard(cards, false) {
 		got = append(got, c.Title)
 	}
 	if want := []string{"Ship it", "Something else"}; !slices.Equal(got, want) {
@@ -112,7 +112,7 @@ func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
 		{Number: 3, Title: "Client's answer", State: "blocked"},
 		{Number: 4, Title: "A part of it", State: "done", Parent: 3},
 		{Number: 5, Title: "Something else", State: "done"},
-	})
+	}, false)
 	var drawn []string
 	for _, held := range dealt {
 		for _, c := range held.Cards {
@@ -157,8 +157,21 @@ func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
 		{"a word another task carries", "lamp", []int{4}},
 		{"nothing asked for, everything laid out", "", []int{1, 4}},
 	} {
-		if got := numbers(Found(all, tc.query)); !slices.Equal(got, tc.want) {
-			t.Errorf("%s: Found(%q) = %v, want %v", tc.what, tc.query, got, tc.want)
+		if got := numbers(Found(all, tc.query, false)); !slices.Equal(got, tc.want) {
+			t.Errorf("%s: Found(%q, false) = %v, want %v", tc.what, tc.query, got, tc.want)
 		}
+	}
+}
+
+func TestOnTheBoard_leavesArchivedOutUnlessAskedFor(t *testing.T) {
+	cards := []Card{
+		{Number: 1, State: "done", Archived: true},
+		{Number: 2, State: "done"},
+	}
+	if laid := OnTheBoard(cards, false); len(laid) != 1 || laid[0].Number != 2 {
+		t.Fatalf("the board laid out %v, not task 2 on its own", laid)
+	}
+	if laid := OnTheBoard(cards, true); len(laid) != 2 {
+		t.Fatalf("asked for, the archived stayed off the board: %v", laid)
 	}
 }

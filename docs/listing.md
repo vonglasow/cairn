@@ -45,6 +45,7 @@ exactly one way to ask each question. It is just a different one.
 | label | ✓ | |
 | objectives served | ✓ | |
 | number | | ✓ |
+| off the board | ✓ | |
 
 The line falls between **a closed set** and **free text**. A closed set can be
 matched exactly, so it is narrowed by; free text cannot, so it is looked in as
@@ -65,6 +66,37 @@ What a task *carries* about other things stays out of reach — what it hangs
 under, what it serves. Reaching those would answer every sub-task of 228 to
 somebody looking for 228, which is the half of the old reason that was always
 true.
+
+## What was archived is off every listing until it is asked for
+
+Archiving takes a task off the board without deleting it. It is a flag beside
+the column, not one of them: a task keeps the column it finished in, its
+history and everything it carries, and stops being answered.
+
+Every listing therefore narrows on it whether or not anybody named it — the
+default is `archived = 0`, written in `whereTasks` before the clauses a caller
+asked for. Two arguments change that: `--archived` keeps only what was taken
+off, `--with-archived` keeps both. Objectives have no such flag and go through
+`where`, which does not add the clause.
+
+Looking is the exception a person expects: `task show 228` answers 228 whether
+it is on the board or not, because somebody typing a number already knows which
+task they mean.
+
+Archiving takes a number or a narrowing, and `task archive --state done` sweeps
+a column in one go. A sweep passes over what it cannot take — what is already
+off the board, and a part, which goes off it with the work it belongs to rather
+than on its own. `task label` puts one label on everything a narrowing reaches,
+which is how a sprint gets marked before it is swept.
+
+Both directions refuse a task already in the state asked for. Archiving twice
+was refused first, because a sweep counts what it actually took and skips the
+rest on that error; bringing back what never went away was not, for a while,
+since nothing was counting. That asymmetry was an accident of what the sweep
+needed, not a decision, and a pair of gestures that answer the same mistake two
+different ways is a pair nobody can reason about. A board never meets either
+refusal — `x` reads the card and picks the verb — so they exist for the command
+line and the MCP, where a number is typed blind.
 
 ## A listing names the work, not its parts
 

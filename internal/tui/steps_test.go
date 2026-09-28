@@ -32,7 +32,7 @@ func (w *world) bandNamed(name string) error {
 }
 
 func (w *world) bandCarries(want int) error {
-	_, band := reading.Deal(w.cards())
+	_, band := reading.Deal(w.cards(), w.b.archived)
 	if len(band) != want {
 		return fmt.Errorf("the band carries %d tasks, not %d", len(band), want)
 	}
@@ -66,7 +66,7 @@ func (w *world) cards() []reading.Card {
 }
 
 func (w *world) columns() []reading.Column {
-	all, _ := reading.Deal(w.cards())
+	all, _ := reading.Deal(w.cards(), w.b.archived)
 	return all
 }
 

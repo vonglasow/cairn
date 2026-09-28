@@ -181,6 +181,74 @@ func (e *Engine) Show(number int) (task.Task, error) {
 	return e.tasks.Find(number)
 }
 
+// Archive takes a task off the board, keeping everything it carries.
+func (e *Engine) Archive(number int) error { return e.puttingAway(number, true) }
+
+// Unarchive brings one back.
+func (e *Engine) Unarchive(number int) error { return e.puttingAway(number, false) }
+
+func (e *Engine) puttingAway(number int, away bool) error {
+	found, err := e.tasks.Find(number)
+	if err != nil {
+		return err
+	}
+	may := found.MayUnarchive
+	if away {
+		may = found.MayArchive
+	}
+	if err := may(); err != nil {
+		return err
+	}
+	var a task.AsTold
+	found.Tell(&a)
+	if away {
+		a.Archived()
+	} else {
+		a.NotArchived()
+	}
+	return e.tasks.Update(a.Task())
+}
+
+// ArchiveEvery takes off the board every task a narrowing reaches, and says
+// how many. A sweep says what it did rather than refusing what it cannot take.
+func (e *Engine) ArchiveEvery(kept *store.Narrowing) (int, error) {
+	found, err := e.tasks.Narrowed(kept)
+	if err != nil {
+		return 0, err
+	}
+	swept := 0
+	for _, one := range found {
+		if err := e.Archive(factsOf(one).number); err != nil {
+			// A sweep passes over what it cannot take: one already off the
+			// board, and a part that goes with its parent.
+			if errors.Is(err, task.ErrAlreadyArchived) || errors.Is(err, task.ErrPartGoesWithItsWork) {
+				continue
+			}
+			return swept, err
+		}
+		swept++
+	}
+	return swept, nil
+}
+
+// LabelEvery puts one label on every task a narrowing reaches, keeping what
+// each already carries, and says how many.
+func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
+	found, err := e.tasks.Narrowed(kept)
+	if err != nil {
+		return 0, err
+	}
+	put := 0
+	adding := []string{"+" + label}
+	for _, one := range found {
+		if _, err := e.Edit(factsOf(one).number, Changes{Labels: &adding}); err != nil {
+			return put, err
+		}
+		put++
+	}
+	return put, nil
+}
+
 // Delete removes the task carrying number, refusing while something still
 // hangs under it: what depends on the task would go with it, and a deletion
 // that takes more than the number typed is a deletion nobody asked for.
@@ -365,11 +433,14 @@ type taskFacts struct {
 	because             string
 	deadline            time.Time
 	estimate, timeSpent time.Duration
+	archived            bool
 }
 
 func (f *taskFacts) Numbered(n int)            { f.number = n }
 func (f *taskFacts) Titled(s string)           { f.title = s }
 func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
+func (f *taskFacts) Archived()                 { f.archived = true }
+func (f *taskFacts) NotArchived()              { f.archived = false }
 func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
 func (f *taskFacts) Described(s string)        { f.description = s }
 func (f *taskFacts) NotDescribed()             { f.description = "" }

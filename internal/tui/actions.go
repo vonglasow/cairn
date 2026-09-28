@@ -132,6 +132,28 @@ func (b Board) remove() tea.Cmd {
 	}
 }
 
+// puttingAway takes the task the cursor is on off the board, or brings it back
+// when it is already off. One key both ways: the board is showing which of the
+// two it is, so a second key would only be a second thing to remember.
+func (b Board) puttingAway() tea.Cmd {
+	card, holding := b.held()
+	if !holding {
+		return nil
+	}
+	op := engine.TaskArchive
+	if card.Archived {
+		op = engine.TaskUnarchive
+	}
+	return func() tea.Msg {
+		asked := engine.Input{Given: map[string]string{"number": strconv.Itoa(card.Number)}}
+		if _, err := b.work.Ask(op, asked); err != nil {
+			return Looked{Err: err}
+		}
+		found, err := reading.Look(b.work)
+		return Looked{Snapshot: found, Err: err}
+	}
+}
+
 // removeGoal deletes the objective the cursor is on.
 func (b Board) removeGoal() tea.Cmd {
 	number := b.goal

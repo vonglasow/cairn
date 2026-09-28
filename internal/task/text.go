@@ -26,6 +26,11 @@ type textMembrane struct {
 	objectives []string
 }
 
+// Archived says so on a row of its own. Nothing is written when it is not:
+// every task in a listing is on the board, so saying it each time reads as noise.
+func (m *textMembrane) Archived()    { m.rows = append(m.rows, row{"archived", "yes"}) }
+func (m *textMembrane) NotArchived() {}
+
 func (c *textMembrane) Numbered(n int)  { c.number = n }
 func (c *textMembrane) Titled(s string) { c.title = s }
 func (c *textMembrane) InColumn(s domain.State) {
@@ -252,11 +257,14 @@ type listingRow struct {
 	// state is here for the one thing a listing says about it: whether a
 	// sub-task is done. Where a task stands is on its own card; whether a part
 	// of one is finished is what the section under it exists to answer.
-	state domain.State
+	state    domain.State
+	archived bool
 }
 
 func (r *listingRow) Numbered(n int)          { r.number = n }
 func (r *listingRow) Titled(s string)         { r.title = s }
+func (r *listingRow) Archived()               { r.archived = true }
+func (r *listingRow) NotArchived()            { r.archived = false }
 func (r *listingRow) InColumn(s domain.State) { r.state = s }
 func (r *listingRow) Carries(domain.Priority) {}
 func (r *listingRow) Described(string)        {}

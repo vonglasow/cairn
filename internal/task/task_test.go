@@ -3,6 +3,7 @@ package task
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,8 @@ func (r *told) InColumn(s domain.State) {
 func (r *told) Carries(p domain.Priority) {
 	r.said = append(r.said, fmt.Sprintf("Carries(%q)", p))
 }
+func (r *told) Archived()          { r.said = append(r.said, "Archived()") }
+func (r *told) NotArchived()       { r.said = append(r.said, "NotArchived()") }
 func (r *told) Described(s string) { r.said = append(r.said, fmt.Sprintf("Described(%q)", s)) }
 func (r *told) NotDescribed()      { r.said = append(r.said, "NotDescribed()") }
 func (r *told) Labelled(s string)  { r.said = append(r.said, fmt.Sprintf("Labelled(%q)", s)) }
@@ -70,7 +73,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 
 	want := []string{
 		`Numbered(3)`, `Titled("Write the spec")`, `InColumn("current")`,
-		`Carries("high")`, `Described("Say what it does")`,
+		`NotArchived()`, `Carries("high")`, `Described("Say what it does")`,
 		`Labelled("backend")`, `Labelled("urgent")`, `LabelsTold()`,
 		`BlockedBy(4)`, `BlockedBy(5)`, `BlockersTold()`,
 		`Because("the client's answer")`,
@@ -95,7 +98,7 @@ func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 
 	wantBare := []string{
 		`Numbered(0)`, `Titled("Write the spec")`, `InColumn("backlog")`,
-		`Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
+		`NotArchived()`, `Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
 		`NotBlocked()`, `BlockersTold()`, `NotBecause()`,
 		`NotDue()`, `NotEstimated()`, `NothingSpent()`, `UnderNothing()`,
 		`ServesNothing()`, `ObjectivesTold()`,
@@ -433,5 +436,106 @@ func TestSettled_keepsDoneAndDropsEveryOtherColumn(t *testing.T) {
 		if got := told.Task().state; got != tc.want {
 			t.Errorf("%s: Settled = %q, want %q", tc.what, got, tc.want)
 		}
+	}
+}
+
+// A task carries whether it is archived beside the column it stands in, so
+// that one archived after being finished is still finished, and one archived
+// without ever being done says exactly that.
+func TestArchived_isCarriedBesideTheColumn(t *testing.T) {
+	made := func(state domain.State, archived bool) Task {
+		var a AsTold
+		a.Numbered(1)
+		a.Titled("Migration Jenkins")
+		a.InColumn(state)
+		if archived {
+			a.Archived()
+		} else {
+			a.NotArchived()
+		}
+		return a.Task()
+	}
+	for _, tc := range []struct {
+		what  string
+		task  Task
+		state domain.State
+		want  bool
+	}{
+		{"done and archived", made(domain.Done, true), domain.Done, true},
+		{"done and not", made(domain.Done, false), domain.Done, false},
+		{"never done and archived", made(domain.Backlog, true), domain.Backlog, true},
+	} {
+		var back AsTold
+		tc.task.Tell(&back)
+		got := back.Task()
+		var read told
+		got.Tell(&read)
+		want := "Archived()"
+		if !tc.want {
+			want = "NotArchived()"
+		}
+		if !slices.Contains(read.said, want) {
+			t.Errorf("%s: told %v, want it to say %s", tc.what, read.said, want)
+		}
+		if said := fmt.Sprintf("InColumn(%q)", tc.state); !slices.Contains(read.said, said) {
+			t.Errorf("%s: told %v, want %s — archiving is not a column", tc.what, read.said, said)
+		}
+	}
+}
+
+// Archiving what is already archived is refused: it is not a thing that
+// happens twice, and a second one would write a line of history saying
+// nothing changed.
+func TestMayArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
+	var a AsTold
+	a.Numbered(1)
+	a.Titled("Migration Jenkins")
+	a.Archived()
+	if err := a.Task().MayArchive(); !errors.Is(err, ErrAlreadyArchived) {
+		t.Errorf("MayArchive = %v, want it to say the task is already archived", err)
+	}
+	var open AsTold
+	open.Numbered(2)
+	open.Titled("Spike Argo")
+	open.NotArchived()
+	if err := open.Task().MayArchive(); err != nil {
+		t.Errorf("MayArchive on one that is not = %v", err)
+	}
+}
+
+// A part is never archived on its own: it belongs to the work its parent
+// names, and goes off the board with it.
+func TestMayArchive_refusesAPartOnItsOwn(t *testing.T) {
+	var a AsTold
+	a.Numbered(2)
+	a.Titled("Préparation")
+	a.Under(1)
+	a.NotArchived()
+	err := a.Task().MayArchive()
+	if !errors.Is(err, ErrPartGoesWithItsWork) {
+		t.Errorf("MayArchive = %v, want it to say the part goes with its work", err)
+	}
+	if err == nil || !strings.Contains(err.Error(), "task 1") {
+		t.Errorf("MayArchive = %v, want it to name the work it belongs to", err)
+	}
+}
+
+// Bringing back what never went away is refused the way archiving twice is:
+// the two are one gesture in opposite directions, and one of them answering a
+// mistake while the other stays silent is a pair nobody can reason about.
+func TestMayUnarchive_refusesWhatIsOnTheBoard(t *testing.T) {
+	var here AsTold
+	here.Numbered(1)
+	here.Titled("Migration Jenkins")
+	here.NotArchived()
+	if err := here.Task().MayUnarchive(); !errors.Is(err, ErrNotArchived) {
+		t.Errorf("MayUnarchive = %v, want it to say the task is on the board", err)
+	}
+	var away AsTold
+	away.Numbered(2)
+	away.Titled("Spike Argo")
+	away.Archived()
+	if err := away.Task().MayUnarchive(); err != nil {
+		t.Errorf("MayUnarchive on an archived task = %v, want it allowed", err)
 	}
 }

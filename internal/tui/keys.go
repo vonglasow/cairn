@@ -177,6 +177,8 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		return b.takeHold(), nil
 	case "a":
 		return b.addForm()
+	case "shift+a":
+		return b.showingArchived(), nil
 	case "/":
 		b.prompt, b.typed = Searching, ""
 		return b, nil
@@ -221,8 +223,19 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 		return b, b.toggleFocus()
 	case "d":
 		return b, b.remove()
+	case "x":
+		return b, b.puttingAway()
+	case "shift+a":
+		return b.showingArchived(), nil
 	}
 	return b, nil
+}
+
+// showingArchived puts back on the board what was taken off it, or takes it
+// away again.
+func (b Board) showingArchived() Board {
+	b.archived = !b.archived
+	return b
 }
 
 // typing is what a key does while a prompt at the foot is taking it.

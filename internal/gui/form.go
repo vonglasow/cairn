@@ -323,8 +323,13 @@ func (w Window) Choose(name string) Window {
 	case "clear":
 		w.looking = Written{}
 		return w
+	case "archived":
+		w.archived = !w.archived
+		return w
 	case "delete":
 		return w.Delete()
+	case "archive", "restore":
+		return w.puttingAway()
 	}
 	return w
 }

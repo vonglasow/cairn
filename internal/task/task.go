@@ -66,6 +66,9 @@ type Task struct {
 	deadline    time.Time
 	estimate    time.Duration
 	timeSpent   time.Duration
+	// archived is beside the column, not one of them: a task archived after
+	// being finished is still finished.
+	archived bool
 }
 
 // Told is the membrane of a task: one method per fact it has to tell, absence
@@ -92,6 +95,8 @@ type Told interface {
 	NotEstimated()
 	Spent(time.Duration)
 	NothingSpent()
+	Archived()
+	NotArchived()
 	Under(int)
 	UnderNothing()
 	Serves(int)
@@ -105,6 +110,11 @@ func (t Task) Tell(to Told) {
 	to.Numbered(t.number)
 	to.Titled(t.title)
 	to.InColumn(t.state)
+	if t.archived {
+		to.Archived()
+	} else {
+		to.NotArchived()
+	}
 	to.Carries(t.priority)
 	if t.description == "" {
 		to.NotDescribed()
@@ -168,6 +178,36 @@ func (t Task) Tell(to Told) {
 func (t Task) MayCarrySubTasks() error {
 	if t.parent != NoParent {
 		return fmt.Errorf("task %d: %w", t.number, ErrParentIsSubTask)
+	}
+	return nil
+}
+
+// ErrAlreadyArchived is returned when a task off the board is archived again.
+var ErrAlreadyArchived = errors.New("the task is already archived")
+
+// ErrNotArchived is returned when a task on the board is brought back onto it.
+var ErrNotArchived = errors.New("the task is on the board")
+
+// ErrPartGoesWithItsWork is returned when a sub-task is archived on its own.
+var ErrPartGoesWithItsWork = errors.New("a part goes off the board with the work it belongs to")
+
+// MayArchive says whether this task may be taken off the board.
+func (t Task) MayArchive() error {
+	if t.parent != NoParent {
+		return fmt.Errorf("task %d: %w", t.parent, ErrPartGoesWithItsWork)
+	}
+	if t.archived {
+		return fmt.Errorf("task %d: %w", t.number, ErrAlreadyArchived)
+	}
+	return nil
+}
+
+// MayUnarchive says whether a task can be brought back onto the board. The
+// mirror of MayArchive: one gesture in two directions has to answer a mistake
+// the same way in both, or it is a pair nobody can reason about.
+func (t Task) MayUnarchive() error {
+	if !t.archived {
+		return fmt.Errorf("task %d: %w", t.number, ErrNotArchived)
 	}
 	return nil
 }

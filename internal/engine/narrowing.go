@@ -74,6 +74,14 @@ func keeping(in Input, taken []Argument) (*store.Narrowing, error) {
 	if labels := in.Changed("label"); labels != nil {
 		kept.Labelled(*labels)
 	}
+	// Naming it keeps what is off the board and nothing else; a board asks for
+	// both and draws them apart.
+	if in.Yes("archived") {
+		kept.Archived()
+	}
+	if in.Yes("with-archived") {
+		kept.WithArchived()
+	}
 	return kept, nil
 }
 

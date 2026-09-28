@@ -87,6 +87,7 @@ func (b Board) helpKeys() []string {
 		b.says("hjkl ←↓↑→", "columns, and the band"),
 		b.says("i", "insert mode"),
 		b.says("a", "add a task"),
+		b.says("⇧A", "show what was archived"),
 		b.says("/", "search"),
 		b.says("⇥", "next tab"),
 		b.says(":", "command"),
@@ -99,6 +100,7 @@ func (b Board) helpKeys() []string {
 		b.says("e", "the form"),
 		b.says("f", "take or let go the focus"),
 		b.says("d", "delete"),
+		b.says("x", "off the board, or back on"),
 		b.says("esc", "back to normal"),
 	)...)
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)

@@ -18,6 +18,11 @@ Feature: The board
     done. The three states that mean "not moving" share a band underneath,
     because what tells them apart is what unblocks them, not where they sit.
 
+    What was archived is not laid out here either, until `a` asks for it: then
+    it comes back into the columns it was in, dimmed, and `a` again puts it
+    away. Nothing is asked of the store either way — it changes what is drawn,
+    the way a search does.
+
     A sub-task is not laid out here at all. It is a part of the work its parent
     names, so the parent is what stands in a column and the part is read where
     the parent is read. They used to sit beside their parents as though they
@@ -28,6 +33,36 @@ Feature: The board
     Scenario: the columns are named in the order the work goes through
       When I open the board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
+
+    @tui-archived-are-off-the-board-until-asked-for
+    Scenario: what was archived comes back when it is asked for
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      And I archived task 1
+      When I open the board
+      Then the board carries 1 task
+      And the board says nothing of "Migration Jenkins"
+      When I press "shift+a"
+      Then the board carries 2 tasks
+      And "BACKLOG" carries "Migration Jenkins"
+      When I press "shift+a"
+      Then the board carries 1 task
+
+    @tui-a-task-is-taken-off-the-board-from-the-cursor
+    Scenario: a task is taken off the board, and brought back
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      When I open the board
+      And I press "i"
+      Then the cursor is on the task "Migration Jenkins"
+      When I press "x"
+      Then the board carries 1 task
+      And the board says nothing of "Migration Jenkins"
+      When I press "shift+a"
+      Then the board carries 2 tasks
+      When I press "x"
+      Then the board carries 2 tasks
+      And "BACKLOG" carries "Migration Jenkins"
 
     @tui-a-sub-task-is-not-on-the-board
     Scenario: a sub-task does not stand in a column of its own

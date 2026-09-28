@@ -149,7 +149,7 @@ func (w *world) resize(width, high int) error {
 // find is where on screen a card sits, by the title a scenario calls it.
 func (w *world) find(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, stalled := reading.Deal(w.w.Reading().Cards)
+	dealt, stalled := reading.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -255,9 +255,46 @@ func (w *world) clickOffer(name string) error {
 	return fmt.Errorf("the bar offers %v, and none of them is %q", w.w.Offers(), name)
 }
 
-func (w *world) press(key string) error {
-	w.w = w.w.Key(key)
+// press sends a key the way a window receives one: through the conversion a
+// real keyboard goes through. Driving Key directly let a scenario pass on a
+// key no window could send — ⇧A among them, which is how the key that shows
+// what was archived came to do nothing outside the tests.
+func (w *world) press(name string) error {
+	said, with := asGio(name)
+	w.w = Typed(w.w, said, with)
 	return nil
+}
+
+// asGio spells a key the way Gio hands it over: the name it gives the key, and
+// the modifiers apart from it.
+func asGio(name string) (string, key.Modifiers) {
+	var with key.Modifiers
+	for prefix, mod := range map[string]key.Modifiers{
+		"shift+": key.ModShift, "cmd+": key.ModCommand, "ctrl+": key.ModCtrl,
+	} {
+		if rest, ok := strings.CutPrefix(name, prefix); ok {
+			name, with = rest, mod
+		}
+	}
+	switch name {
+	case "esc":
+		return string(key.NameEscape), with
+	case "tab":
+		return string(key.NameTab), with
+	case "enter", "return":
+		return string(key.NameReturn), with
+	case "backspace":
+		return string(key.NameDeleteBackward), with
+	case "left":
+		return string(key.NameLeftArrow), with
+	case "right":
+		return string(key.NameRightArrow), with
+	case "up":
+		return string(key.NameUpArrow), with
+	case "down":
+		return string(key.NameDownArrow), with
+	}
+	return strings.ToUpper(name), with
 }
 
 func (w *world) nudge(title string, by int) error {
@@ -281,7 +318,7 @@ func (w *world) slotIn(column string, above string) (Point, error) {
 	l := w.w.Layout()
 	slot := 0
 	if above != "" {
-		dealt, _ := reading.Deal(w.w.Reading().Cards)
+		dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
 		found := false
 		for i, c := range dealt[at].Cards {
 			if c.Title == above {
@@ -359,7 +396,7 @@ func (w *world) takeHoldUnder(title, below string) error {
 // under is the point just inside the slot below a card.
 func (w *world) under(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, _ := reading.Deal(w.w.Reading().Cards)
+	dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -479,6 +516,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		_, err := w.other.Add(title, engine.Changes{Estimate: &est})
 		return err
 	})
+	sc.Step(`^I archived task (\d+)$`, func(n int) error { return w.other.Archive(n) })
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, func(t, s string) error {
 		return w.addTask(t, s, "")
 	})

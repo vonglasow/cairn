@@ -196,3 +196,57 @@ func TestNarrowedObjectives_keepsWhatWasNamed(t *testing.T) {
 		}
 	}
 }
+
+// A narrowing leaves archived tasks out unless it is asked for them. Archiving
+// is for taking work off the board, and a listing that handed it all back
+// would have moved the problem rather than answered it.
+//
+// Even one nobody narrowed: what is off the board is off it whether or not
+// anything else was named.
+func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
+	var plain Narrowing
+	where, _ := plain.whereTasks(taskLabels)
+	if !strings.Contains(where, "archived") {
+		t.Errorf("a narrowing nobody named gives %q, want it to leave archived out", where)
+	}
+
+	// The clause is the same either way; what it holds to is not. Comparing
+	// the two strings says nothing, which is what this asked at first.
+	_, plainArgs := plain.whereTasks(taskLabels)
+	var asked Narrowing
+	asked.Archived()
+	_, askedArgs := asked.whereTasks(taskLabels)
+	if len(plainArgs) == 0 || len(askedArgs) == 0 {
+		t.Fatalf("args = %v and %v, want each to hold to something", plainArgs, askedArgs)
+	}
+	if plainArgs[0] != false || askedArgs[0] != true {
+		t.Errorf("a plain narrowing holds to %v and one asking holds to %v, want false and true",
+			plainArgs[0], askedArgs[0])
+	}
+
+	// And asking for them says nothing about what else was named.
+	var both Narrowing
+	both.InColumn("done")
+	both.Archived()
+	said, args := both.whereTasks(taskLabels)
+	if !strings.Contains(said, "state = ?") {
+		t.Errorf("where = %q, want it to keep what else was named", said)
+	}
+	if len(args) == 0 {
+		t.Errorf("args = %v, want the column it was given", args)
+	}
+}
+
+// Narrows counts what a person named, and not the archived tasks a listing
+// leaves out on its own: a listing nobody narrowed is still shown as a tree.
+func TestNarrowing_countsOnlyWhatWasNamed(t *testing.T) {
+	var plain Narrowing
+	if plain.Narrows() {
+		t.Error("a narrowing nobody named says it narrows")
+	}
+	var asked Narrowing
+	asked.Archived()
+	if !asked.Narrows() {
+		t.Error("asking for archived tasks is something somebody named")
+	}
+}

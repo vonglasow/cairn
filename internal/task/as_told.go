@@ -23,6 +23,12 @@ type AsTold struct {
 	objectives []int
 }
 
+// Archived is told the task is off the board.
+func (a *AsTold) Archived() { a.task.archived = true }
+
+// NotArchived is told it is not.
+func (a *AsTold) NotArchived() { a.task.archived = false }
+
 // Numbered is told the task's number.
 func (a *AsTold) Numbered(n int) { a.task.number = n }
 

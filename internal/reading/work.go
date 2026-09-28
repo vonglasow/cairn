@@ -32,10 +32,12 @@ type Work interface {
 // task's own membrane rather than out of its fields, which is the only way in:
 // a task tells its facts, it does not hand them over.
 type Card struct {
-	Number      int
-	Parent      int
-	Title       string
-	State       string
+	Number int
+	Parent int
+	Title  string
+	State  string
+	// Archived says the task is off the board, drawn only when it is asked for.
+	Archived    bool
 	Priority    string
 	Described   bool
 	Labels      []string
@@ -81,7 +83,11 @@ type Snapshot struct {
 // draw anything at all: half a board would be a board that lies about what is
 // there.
 func Look(w Work) (Snapshot, error) {
-	listed, err := w.Ask(engine.TaskList, engine.Input{})
+	// Everything, archived included: which of them a board draws is the
+	// board's to decide.
+	listed, err := w.Ask(engine.TaskList, engine.Input{
+		Given: map[string]string{"with-archived": "true"},
+	})
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -144,6 +150,7 @@ func cardOf(w Work, t task.Task, held []int) (Card, error) {
 	return Card{
 		Number:      told.Number,
 		Parent:      told.Parent,
+		Archived:    told.Archived,
 		Title:       told.Title,
 		State:       told.State,
 		Priority:    told.Priority,

@@ -30,7 +30,7 @@ func quoted(list string) []string {
 func (w *world) columnsRead(list string) error {
 	want := quoted(list)
 	var got []string
-	dealt, _ := reading.Deal(w.w.Reading().Cards)
+	dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, column := range dealt {
 		got = append(got, column.Name)
 	}
@@ -45,7 +45,7 @@ func (w *world) cardsOf(column string) ([]reading.Card, error) {
 	if at < 0 {
 		return nil, fmt.Errorf("no column called %q", column)
 	}
-	dealt, _ := reading.Deal(w.w.Showing().Cards)
+	dealt, _ := reading.Deal(w.w.Showing().Cards, w.w.archived)
 	return dealt[at].Cards, nil
 }
 
@@ -94,7 +94,7 @@ func (w *world) lanesRead(list string) error {
 }
 
 func (w *world) laneCarries(kind, title string) error {
-	_, stalled := reading.Deal(w.w.Reading().Cards)
+	_, stalled := reading.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, c := range stalled {
 		if c.State == kind && c.Title == title {
 			return nil
@@ -430,9 +430,39 @@ func (w *world) saysWhatWentWrong() error {
 	return nil
 }
 
+// cardDimmed reads the ink the card would be written in, which is what the
+// drawing asks the skin for.
+func (w *world) cardDimmed(title string) error {
+	for _, c := range w.w.Showing().Cards {
+		if c.Title != title {
+			continue
+		}
+		if ink := Dark().Writing(c); ink != Dark().Faint {
+			return fmt.Errorf("%q is written in %v, not the faint ink", title, ink)
+		}
+		return nil
+	}
+	return fmt.Errorf("the board carries no card called %q", title)
+}
+
+func (w *world) cardNotDimmed(title string) error {
+	for _, c := range w.w.Showing().Cards {
+		if c.Title != title {
+			continue
+		}
+		if ink := Dark().Writing(c); ink != Dark().Ink {
+			return fmt.Errorf("%q is written in %v, not the ordinary ink", title, ink)
+		}
+		return nil
+	}
+	return fmt.Errorf("the board carries no card called %q", title)
+}
+
 func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the columns read (".*")$`, w.columnsRead)
 	sc.Then(`^"([^"]*)" carries "([^"]*)"$`, w.columnCarries)
+	sc.Then(`^the card "([^"]*)" is dimmed$`, w.cardDimmed)
+	sc.Then(`^the card "([^"]*)" is not dimmed$`, w.cardNotDimmed)
 	sc.Then(`^"([^"]*)" reads (".*")$`, w.columnReads)
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)
 	sc.Then(`^the band's lanes read (".*")$`, w.lanesRead)
@@ -671,7 +701,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	// Asked of every card the board deals, columns and band alike: "not in
 	// BACKLOG" would pass for a card that merely sits in another column.
 	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
-		dealt, stalled := reading.Deal(w.w.Showing().Cards)
+		dealt, stalled := reading.Deal(w.w.Showing().Cards, w.w.archived)
 		for _, held := range dealt {
 			for _, c := range held.Cards {
 				if c.Title == title {

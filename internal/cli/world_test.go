@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func flagFor(attribute string) string {
 		"estimate": "--estimate",
 		"priority": "--priority", "state": "--state", "parent": "--parent",
 		"time spent": "--spent", "objective": "--objective", "blocker": "--blocker",
-		"because": "--because",
+		"because": "--because", "label": "--label",
 	}[attribute]
 }
 
@@ -192,7 +193,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task add "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because|objective) "([^"]*)"$`,
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because|objective|label) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
@@ -385,6 +386,47 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		}
 		return fmt.Errorf("nothing under it is task %d: %+v", n, said.SubTasks)
+	})
+
+	sc.Step(`^I archived task (\d+)$`, func(n int) error {
+		return w.Seed(fmt.Sprintf("cairn task archive %d", n))
+	})
+
+	sc.Step(`^task (\d+) is archived$`, func(n int) error { return w.archived(n, true) })
+	sc.Step(`^task (\d+) is not archived$`, func(n int) error { return w.archived(n, false) })
+
+	sc.Step(`^it says (\d+) tasks? were archived$`, func(n int) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d", n), "what it shows")
+	})
+
+	sc.Step(`^it says task (\d+) is what would be archived$`, func(n int) error {
+		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d", n), "the refusal")
+	})
+
+	sc.Step(`^it says (\d+) tasks? were labelled$`, func(n int) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d", n), "what it shows")
+	})
+
+	sc.Step(`^task (\d+) carries the label "([^"]*)"$`, func(n int, label string) error {
+		return w.carriesLabel(n, label, true)
+	})
+	sc.Step(`^task (\d+) does not carry the label "([^"]*)"$`, func(n int, label string) error {
+		return w.carriesLabel(n, label, false)
+	})
+
+	sc.Step(`^it says what it needs to go on$`, func() error {
+		return test.WantContains(w.Out.Stderr, "narrow", "the refusal")
+	})
+
+	sc.Step(`^it says the task is archived$`, func() error {
+		return test.WantContains(w.Out.Stdout, "archived", "what it shows")
+	})
+
+	sc.Step(`^it says the task is on the board$`, func() error {
+		return test.WantContains(w.Out.Stderr, "on the board", "the refusal")
+	})
+	sc.Step(`^it says the task is already archived$`, func() error {
+		return test.WantContains(w.Out.Stderr, "already archived", "the refusal")
 	})
 
 	sc.Step(`^it says there is no task$`, func() error {
@@ -841,6 +883,37 @@ func (w *world) blocksIt(line, blocker string) error {
 	}
 	if !strings.Contains(blocking, blocker) {
 		return fmt.Errorf("what blocks it is %q, and does not name %q", blocking, blocker)
+	}
+	return nil
+}
+
+// archived asks the store what a task carries, through the real command: what
+// is being checked is what was kept, not what the last run printed.
+func (w *world) archived(number int, want bool) error {
+	w.Run(fmt.Sprintf("cairn task show %d --json", number))
+	var said struct {
+		Archived bool `json:"archived"`
+	}
+	if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+		return fmt.Errorf("reading what task %d carries: %w", number, err)
+	}
+	if said.Archived != want {
+		return fmt.Errorf("task %d archived = %v, want %v", number, said.Archived, want)
+	}
+	return nil
+}
+
+// carriesLabel asks the store what a task carries, through the real command.
+func (w *world) carriesLabel(number int, label string, want bool) error {
+	w.Run(fmt.Sprintf("cairn task show %d --json", number))
+	var said struct {
+		Labels []string `json:"labels"`
+	}
+	if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+		return fmt.Errorf("reading what task %d carries: %w", number, err)
+	}
+	if slices.Contains(said.Labels, label) != want {
+		return fmt.Errorf("task %d carries %v, want %q to be there: %v", number, said.Labels, label, want)
 	}
 	return nil
 }

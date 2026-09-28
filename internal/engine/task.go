@@ -22,6 +22,7 @@ func (o Operation) Line() string { return o.Thing + " " + o.Verb }
 func All() []Operation {
 	return []Operation{
 		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
+		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus,
 		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
@@ -78,12 +79,25 @@ var TaskList = Operation{
 // taskNarrowing are the facts a listing of tasks can be kept down to. The four
 // that come from closed sets or from something numbered: what a person typed
 // themselves is what `task search` looks in.
-var taskNarrowing = narrowedBy(taskAttributes, map[string]string{
+var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	"state":     "keep only the tasks sitting in this column",
 	"priority":  "keep only the tasks carrying this priority",
 	"label":     "keep only the tasks carrying this label; named twice, only those carrying both",
 	"objective": "keep only the tasks serving this objective",
-})
+}),
+	// Not one of a task's attributes: being off the board is done to a task,
+	// not carried by one.
+	Argument{
+		Name:  "archived",
+		Kind:  Bool,
+		Means: "keep only the tasks taken off the board, instead of the ones still on it",
+	},
+	Argument{
+		Name:  "with-archived",
+		Kind:  Bool,
+		Means: "keep both the tasks on the board and the ones taken off it",
+	},
+)
 
 // TaskShow says what a task carries, what hangs under it and how far along it
 // is.
@@ -114,6 +128,125 @@ var TaskShow = Operation{
 		}
 		return Answer{Task: &shown, Under: under, Progress: p}, nil
 	},
+}
+
+// TaskArchive takes a task off the board. Its own verb rather than a flag on
+// edit: it is done to a task, not carried by one.
+var TaskArchive = Operation{
+	Thing:   "task",
+	Verb:    "archive",
+	Short:   "Take a task off the board, keeping everything it carries",
+	Does:    "Take a task off the board. Everything it carries is kept, and it can be brought back; deleting is the other thing.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Task{},
+	Takes: append([]Argument{
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
+	}, taskNarrowing...),
+	Run: func(on On, in Input) (Answer, error) {
+		if n, named := in.Whole("number"); named && n != 0 {
+			if err := on.Engine.Archive(n); err != nil {
+				return Answer{}, err
+			}
+			return shownTask(on, n)
+		}
+		kept, err := keeping(in, taskNarrowing)
+		if err != nil {
+			return Answer{}, err
+		}
+		// Nothing to go on would take the whole board off it, which is not
+		// something to find out afterwards.
+		if !kept.Narrows() {
+			return Answer{}, ErrNothingToArchive
+		}
+		swept, err := on.Engine.ArchiveEvery(kept)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Archived: &swept}, nil
+	},
+}
+
+// TaskLabel puts one label on every task a narrowing reaches. Marking a sprint
+// one task at a time is not marking it at all.
+var TaskLabel = Operation{
+	Thing:   "task",
+	Verb:    "label",
+	Short:   "Put a label on every task a narrowing reaches",
+	Does:    "Put a label on every task the narrowing reaches, keeping the ones each already carries.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Labelled{},
+	Takes: append([]Argument{
+		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
+	}, taskNarrowing...),
+	Run: func(on On, in Input) (Answer, error) {
+		label := ""
+		if given := in.Change("label"); given != nil {
+			label = *given
+		}
+		kept, err := keeping(withoutLabel(in), taskNarrowing)
+		if err != nil {
+			return Answer{}, err
+		}
+		if !kept.Narrows() {
+			return Answer{}, ErrNothingToLabel
+		}
+		put, err := on.Engine.LabelEvery(kept, label)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Labelled: &put}, nil
+	},
+}
+
+// withoutLabel drops the label being put on, so it is not read as one to
+// narrow by: the two share a name and mean opposite things here.
+func withoutLabel(in Input) Input {
+	given := make(map[string]string, len(in.Given))
+	for name, value := range in.Given {
+		if name != "label" {
+			given[name] = value
+		}
+	}
+	return Input{Given: given}
+}
+
+// ErrNothingToLabel is returned when labelling is given nothing to narrow by.
+var ErrNothingToLabel = errors.New("labelling needs something to narrow by")
+
+// ErrNothingToArchive is returned when archiving is given neither a number nor
+// a narrowing.
+var ErrNothingToArchive = errors.New("archiving needs a number or something to narrow by")
+
+// TaskUnarchive brings one back onto the board.
+var TaskUnarchive = Operation{
+	Thing:   "task",
+	Verb:    "unarchive",
+	Short:   "Bring a task back onto the board",
+	Does:    "Bring a task back onto the board.",
+	Level:   Write,
+	Needs:   AStore,
+	Answers: Task{},
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		if err := on.Engine.Unarchive(n); err != nil {
+			return Answer{}, err
+		}
+		return shownTask(on, n)
+	},
+}
+
+// shownTask answers with the task as it ends up, so nobody has to ask again.
+func shownTask(on On, number int) (Answer, error) {
+	found, err := on.Engine.Show(number)
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Task: &found}, nil
 }
 
 // TaskEdit changes what a task carries.

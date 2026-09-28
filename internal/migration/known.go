@@ -166,4 +166,14 @@ UPDATE tasks SET state = 'todo'
 		undoes: "",
 		loses:  "which column a sub-task stood in, for any that was not done",
 	},
+	{
+		name: "a task can be taken off the board and kept",
+		does: `
+ALTER TABLE tasks ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;`,
+		// The column goes with it: rolling back and applying again is a thing
+		// this store does, and the second apply fails on a column left behind.
+		undoes: `
+ALTER TABLE tasks DROP COLUMN archived;`,
+		loses: "which tasks had been taken off the board",
+	},
 }

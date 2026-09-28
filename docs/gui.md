@@ -289,6 +289,31 @@ nothing about it. Two defects came from the older shape: the bar offered *Edit*
 on an open task while `e` did nothing there, and the key that adds worked over
 an open form and threw away what had been typed into it.
 
+**Archive** is one of those offers, under `x`, beside *Edit* and *Delete* on a
+chosen card. On a card already off the board the bar reads *Restore* instead:
+one key both ways, and the bar says which way it goes rather than leaving it to
+be worked out. Unlike *Delete* it asks nothing first — nothing is lost.
+
+**Archived** is another, under `⇧A`. It puts back on the board what
+was taken off it, and takes it away again — the same key the terminal board
+uses, because the two boards should not have to be learned twice. A card shown
+that way is written in the faint ink and loses its priority stripe: it is on
+screen because somebody asked, not because it is work to do. Which ink a card
+is written in is `Skin.Writing`, so what a scenario asserts is the decision the
+drawing makes rather than the pixels it made.
+
+**Shift arrives apart from the key, but only for a letter.** Gio names a letter
+in upper case whatever shift does and reports the modifier separately, so
+`Typed` puts the two back together into the `shift+a` this board's vocabulary
+uses. Punctuation is left alone, because Gio has already applied shift to it:
+the `/` key with shift is named `?` before it gets here, which is how the help
+is reached. Joining it would have taken the help away.
+
+`⇧A` did nothing in a real window until this was written, and every scenario
+passed anyway, because the step that presses a key drove `Key` directly. It now
+goes through `Typed`, so a key no window could send can no longer make a
+scenario green.
+
 What a key is *called* and how the bar *writes* it are two functions.
 `Shortcut("New")` is `cmd+n`, because that is how a key arrives; `Pretty` turns
 it into `⌘N`, because a bar reading out `cmd+n` is reading out a name meant for

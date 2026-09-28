@@ -194,6 +194,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.afterAChange()
 		return err
 	})
+	sc.Step(`^I archived task (\d+)$`, func(n int) error {
+		if err := w.other.Archive(n); err != nil {
+			return err
+		}
+		w.afterAChange()
+		return nil
+	})
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, func(title, state string) error {
 		return w.addTask(title, state, "", 0)
 	})

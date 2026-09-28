@@ -25,6 +25,13 @@ func (c *Counter) Numbered(int) {}
 // Titled is heard and ignored: a tally does not care what a task is called.
 func (c *Counter) Titled(string) {}
 
+// Archived is dropped: being off the board says nothing about how far along
+// the work under a task has got.
+func (c *Counter) Archived() {}
+
+// NotArchived is dropped for the same reason.
+func (c *Counter) NotArchived() {}
+
 // InColumn is the one fact a tally needs: it counts the task, and counts it
 // again as done when the column it sits in is Done.
 func (c *Counter) InColumn(s domain.State) {

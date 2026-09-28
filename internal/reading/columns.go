@@ -46,13 +46,13 @@ const Band = "STALLED"
 // The order inside a column is the order the cards arrived in, which is the
 // order the engine keeps them in. A board that sorted them again would be a
 // second place deciding where a task sits.
-func Deal(cards []Card) ([]Column, []Card) {
+func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 	out := make([]Column, len(columns))
 	for i, c := range columns {
 		out[i] = Column{State: c.state, Name: c.name}
 	}
 	var band []Card
-	for _, card := range OnTheBoard(cards) {
+	for _, card := range OnTheBoard(cards, withArchived) {
 		if Stopped(card.State) {
 			band = append(band, card)
 			continue
@@ -103,12 +103,13 @@ func StateAt(i int) string {
 // inside Deal, because what is counted and what the arrows walk have to be the
 // same set as what is drawn — a board whose cursor could reach a card nobody
 // drew is a board that loses the keyboard on it.
-func OnTheBoard(cards []Card) []Card {
+func OnTheBoard(cards []Card, withArchived bool) []Card {
 	var laid []Card
 	for _, c := range cards {
-		if c.Parent == 0 {
-			laid = append(laid, c)
+		if c.Parent != 0 || (c.Archived && !withArchived) {
+			continue
 		}
+		laid = append(laid, c)
 	}
 	return laid
 }
@@ -128,9 +129,9 @@ func OnTheBoard(cards []Card) []Card {
 // The command line does not do this and should not. There a line carries a
 // number somebody can act on, so naming the sub-task itself says more than
 // naming what it hangs under.
-func Found(cards []Card, query string) []Card {
+func Found(cards []Card, query string, withArchived bool) []Card {
 	if query == "" {
-		return OnTheBoard(cards)
+		return OnTheBoard(cards, withArchived)
 	}
 	reached := map[int]bool{}
 	for _, c := range cards {
@@ -144,7 +145,7 @@ func Found(cards []Card, query string) []Card {
 		reached[c.Number] = true
 	}
 	var found []Card
-	for _, c := range OnTheBoard(cards) {
+	for _, c := range OnTheBoard(cards, withArchived) {
 		if reached[c.Number] {
 			found = append(found, c)
 		}

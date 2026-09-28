@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"gioui.org/app"
 	"gioui.org/f32"
@@ -86,10 +87,20 @@ func Typed(w Window, name string, with key.Modifiers) Window {
 		return w.Key("cmd+" + strings.ToLower(name))
 	}
 	said := named(name)
-	if with.Contain(key.ModShift) && said == "tab" {
-		return w.Key("shift+tab")
+	// Shift is a modifier Gio reports apart from the key, so a shifted letter
+	// arrives as the plain letter and has to be put back together here. Only a
+	// letter and tab: a shifted "/" is a different character, not a shifted
+	// key. Nothing typed comes this way — text goes through EditEvent.
+	if with.Contain(key.ModShift) && (said == "tab" || aLetter(said)) {
+		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
+}
+
+// aLetter says whether a name is a single letter.
+func aLetter(name string) bool {
+	r := []rune(name)
+	return len(r) == 1 && unicode.IsLetter(r[0])
 }
 
 // named turns what Gio calls a key into what this board calls it. Gio spells

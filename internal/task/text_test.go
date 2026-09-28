@@ -294,3 +294,27 @@ func TestUnder_keepsTheOrderItWasGiven(t *testing.T) {
 		t.Errorf("Under reordered them:\n%s", got)
 	}
 }
+
+// A task off the board says so where it is read in full, and one on it says
+// nothing: every task in a listing is on the board, and a row saying so on
+// each of them is a line nobody reads.
+func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
+	made := func(archived bool) Task {
+		var a AsTold
+		a.Numbered(1)
+		a.Titled("Migration Jenkins")
+		a.InColumn(domain.Done)
+		if archived {
+			a.Archived()
+		} else {
+			a.NotArchived()
+		}
+		return a.Task()
+	}
+	if got := Text(made(true), domain.Progress{}); !strings.Contains(got, "archived") {
+		t.Errorf("Text of an archived task =\n%s\nwant it to say so", got)
+	}
+	if got := Text(made(false), domain.Progress{}); strings.Contains(got, "archived") {
+		t.Errorf("Text of one on the board =\n%s\nwant it to say nothing of archiving", got)
+	}
+}

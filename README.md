@@ -29,6 +29,11 @@ cairn task focus 3               # this is what I am working on
 cairn task focus                 # which ones are those again?
 cairn task unfocus 3             # done with that one
 cairn task unfocus               # done with all of them
+cairn task archive 1             # off the board, kept whole
+cairn task archive --state done  # the whole column in one go
+cairn task label --state done --label sprint-12   # mark a sprint before sweeping it
+cairn task list --archived       # only what was taken off
+cairn task unarchive 1           # back on the board
 ```
 
 | option | what it takes |
@@ -62,6 +67,14 @@ edit, and one act with two meanings is an act nobody can undo confidently. So
 moving a task behind one in another column is refused, and so is moving a
 sub-task behind a root task — a sub-task takes its place among its sisters,
 where its parent sits carrying the whole block.
+
+`task archive` takes a task off the board without deleting it: the column it
+finished in, its history and everything it carries stay. It takes a number or a
+narrowing, so a finished column goes in one command, and `task label` marks a
+set first when a sprint is what you want to sweep. A listing leaves the archived
+out until `--archived` or `--with-archived` asks for them; `task show` answers
+one either way. On both boards `x` takes the task under the cursor off the
+board or puts it back, and `⇧A` shows what was taken off, written faintly.
 
 `task focus` says what you are working on. Several at once is fine — one agent
 session per task, and they run together — so taking up another keeps the first,

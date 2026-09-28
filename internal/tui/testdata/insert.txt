@@ -37,4 +37,4 @@
                           ┃ ↳ the fourth, so th… ┃
                           ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
- hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ detail   e edit   f focus   d delete   ? help   esc normal
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   d delete   x archive   ? help   esc back

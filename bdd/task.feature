@@ -1157,6 +1157,190 @@ Feature: Tasks
         | -ages | not a duration to take  |
         | +     | a sign with no duration |
 
+  Rule: A label is put on everything a narrowing reaches
+
+    Marking a sprint is putting one word on the work it held. Done one task at
+    a time it is not done at all, so the same narrowing that sweeps a column
+    puts a label on what it reaches.
+
+    @task-label-what-a-narrowing-reaches
+    Scenario: a label is put on everything a narrowing reaches
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I added a task titled "Dépôt APP" with the state "done"
+      And I added a task titled "Spike Argo"
+      When I run `cairn task label sprint-41 --state done`
+      Then it succeeds
+      And it says 2 tasks were labelled
+      And task 1 carries the label "sprint-41"
+      And task 3 does not carry the label "sprint-41"
+
+    @task-label-keeps-what-is-already-there
+    Scenario: a label is added to the ones a task already carries
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I edited task 1 with the label "backend"
+      When I run `cairn task label sprint-41 --state done`
+      Then it succeeds
+      And task 1 carries the label "backend"
+      And task 1 carries the label "sprint-41"
+
+    @task-label-needs-something-to-go-on
+    Scenario: labelling with nothing to narrow by is refused
+      Given I added a task titled "Spike Argo"
+      When I run `cairn task label sprint-41`
+      Then it fails
+      And it says what it needs to go on
+
+  Rule: A task is archived rather than deleted
+
+    A column of a hundred and twenty finished tasks is a column nobody reads.
+    Measured on a real store: 120 of its 170 tasks were done, seven in ten, and
+    the work still to do sat among them.
+
+    Archiving takes a task off the board and keeps everything it carries — its
+    number, its title, what happened to it. Deleting is the other thing, and it
+    is still there for work that should never have existed.
+
+    A mark beside the column and not a column of its own. A task archived after
+    being finished is still finished, and one archived without ever being done
+    — abandoned, overtaken — says exactly that rather than being given a
+    standing it never had.
+
+    Named by number it takes one; named by what a task carries, it takes every
+    one the narrowing reaches. That is how a column of a hundred and twenty is
+    cleared without choosing each in turn.
+
+    A sub-task is never archived on its own: it is part of the work its parent
+    names, and goes off the board with it or not at all.
+
+    A listing leaves them out. That is the whole point of archiving: a column
+    of a hundred and twenty finished tasks is a column nobody reads, and a
+    listing that still handed them all over would have moved the problem rather
+    than answered it. `--archived` brings them back, on their own or beside the
+    rest.
+
+    @task-list-leaves-archived-out
+    Scenario: a listing is the work still on the board
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      And I archived task 1
+      When I run `cairn task list`
+      Then it lists 1 task
+      And it lists task 2 titled "Spike Argo"
+      And it says nothing of task 1
+
+    @task-list-archived-on-their-own
+    Scenario: what was archived is asked for by name
+      Given I added a task titled "Migration Jenkins"
+      And I added a task titled "Spike Argo"
+      And I archived task 1
+      When I run `cairn task list --archived`
+      Then it lists 1 task
+      And it lists task 1 titled "Migration Jenkins"
+
+    @task-show-reaches-an-archived-task
+    Scenario: an archived task is still reached by its number
+      Given I added a task titled "Migration Jenkins"
+      And I archived task 1
+      When I run `cairn task show 1`
+      Then it succeeds
+      And it says the task is archived
+
+    @task-archive
+    Scenario: a task is archived and stays what it was
+      Given I added a task titled "Migration Jenkins"
+      And I edited task 1 with the state "done"
+      When I run `cairn task archive 1`
+      Then it succeeds
+      And task 1 is archived
+      And task 1 is in the column "done"
+
+    @task-archive-what-was-never-done
+    Scenario: work abandoned is archived without being called finished
+      Given I added a task titled "Spike Argo"
+      When I run `cairn task archive 1`
+      Then it succeeds
+      And task 1 is archived
+      And task 1 is in the column "backlog"
+
+    @task-unarchive
+    Scenario: an archived task is brought back
+      Given I added a task titled "Migration Jenkins"
+      And I archived task 1
+      When I run `cairn task unarchive 1`
+      Then it succeeds
+      And task 1 is not archived
+
+    @task-archive-what-a-narrowing-reaches
+    Scenario: everything a narrowing reaches is archived at once
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I added a task titled "Dépôt APP" with the state "done"
+      And I added a task titled "Spike Argo"
+      When I run `cairn task archive --state done`
+      Then it succeeds
+      And it says 2 tasks were archived
+      And task 1 is archived
+      And task 2 is archived
+      And task 3 is not archived
+
+    @task-archive-a-sprint
+    Scenario: a sprint is cleared by what its tasks carry
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I edited task 1 with the label "sprint-41"
+      And I added a task titled "Dépôt APP" with the state "done"
+      And I edited task 2 with the label "sprint-42"
+      When I run `cairn task archive --state done --label sprint-41`
+      Then it succeeds
+      And task 1 is archived
+      And task 2 is not archived
+
+    @task-archive-leaves-parts-to-their-parent
+    Scenario: a sweep leaves what hangs under a task to the task
+      Given I added a task titled "Dépôt APP" with the state "done"
+      And I added a task titled "Préparation" with the parent "1"
+      And I edited task 2 with the state "done"
+      When I run `cairn task archive --state done`
+      Then it succeeds
+      And it says 1 task were archived
+      And task 1 is archived
+      And task 2 is not archived
+
+    @task-archive-a-part-on-its-own
+    Scenario: archiving a part on its own is refused, naming the work it belongs to
+      Given I added a task titled "Dépôt APP"
+      And I added a task titled "Préparation" with the parent "1"
+      When I run `cairn task archive 2`
+      Then it fails
+      And it says task 1 is what would be archived
+
+    @task-archive-reaching-nothing
+    Scenario: a narrowing reaching nothing says so rather than claiming a clean sweep
+      Given I added a task titled "Spike Argo"
+      When I run `cairn task archive --state done`
+      Then it succeeds
+      And it says 0 tasks were archived
+
+    @task-archive-needs-something-to-go-on
+    Scenario: archiving with neither a number nor a narrowing is refused
+      Given I added a task titled "Spike Argo"
+      When I run `cairn task archive`
+      Then it fails
+      And it says what it needs to go on
+
+    @task-archive-twice
+    Scenario: archiving what is already archived is refused rather than counted twice
+      Given I added a task titled "Migration Jenkins"
+      And I archived task 1
+      When I run `cairn task archive 1`
+      Then it fails
+      And it says the task is already archived
+
+    @task-unarchive-what-is-on-the-board
+    Scenario: bringing back what never went away is refused, the way archiving twice is
+      Given I added a task titled "Migration Jenkins"
+      When I run `cairn task unarchive 1`
+      Then it fails
+      And it says the task is on the board
+
   Rule: A task can hang under another one
 
     A task given a parent becomes one of its sub-tasks, and stays a task in

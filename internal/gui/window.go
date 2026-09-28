@@ -123,6 +123,9 @@ type Window struct {
 	// stands. A search narrows what is drawn and changes nothing, so it lives
 	// here and never reaches the store.
 	looking Written
+	// archived says what was taken off the board is drawn with the rest,
+	// dimmed. Nothing is asked of the store either way.
+	archived bool
 	// ticked is the objectives the open list has in, by number, and choosing
 	// is where in that list the keyboard sits. They live on the window and not
 	// in the form because the list is a screen of its own; the form is given
@@ -591,7 +594,7 @@ func (w Window) Showing() reading.Snapshot {
 	found := reading.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
 	// What a board shows of a search: a part that matched answers as the work
 	// it is part of, since a sub-task has no card of its own here to appear on.
-	found.Cards = reading.Found(w.snap.Cards, w.looking.Reads())
+	found.Cards = reading.Found(w.snap.Cards, w.looking.Reads(), w.archived)
 	for _, g := range w.snap.Goals {
 		if reading.ReachesGoal(g, w.looking.Reads()) {
 			found.Goals = append(found.Goals, g)
@@ -635,6 +638,29 @@ func (w Window) working() Window {
 		if c.Number == w.chosen && c.InFocus {
 			op = engine.TaskUnfocus
 		}
+	}
+	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
+// chosenIsArchived says whether the card chosen is one off the board.
+func (w Window) chosenIsArchived() bool {
+	for _, c := range w.snap.Cards {
+		if c.Number == w.chosen {
+			return c.Archived
+		}
+	}
+	return false
+}
+
+// puttingAway takes the chosen card off the board, or brings it back.
+func (w Window) puttingAway() Window {
+	op := engine.TaskArchive
+	if w.chosenIsArchived() {
+		op = engine.TaskUnarchive
 	}
 	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
 		w.err = err
@@ -707,6 +733,10 @@ func Shortcut(offer string) string {
 		return "/"
 	case "help":
 		return "?"
+	case "archived":
+		return "shift+a"
+	case "archive", "restore":
+		return "x"
 	case "edit":
 		return "e"
 	case "delete":
@@ -728,6 +758,8 @@ func Pretty(key string) string {
 	switch key {
 	case "cmd+n":
 		return "⌘N"
+	case "shift+a":
+		return "⇧A"
 	case "enter":
 		return "⏎"
 	}
@@ -747,6 +779,8 @@ func (w Window) Helping() []reading.Field {
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
 		{Name: "d", Value: "delete what is chosen — it asks first"},
+		{Name: "x", Value: "take what is chosen off the board, or put it back"},
+		{Name: "⇧A", Value: "what was archived, on the board or off it — it reads faintly"},
 		{Name: "⌘N", Value: "add"},
 		{Name: "/ or ⌘F", Value: "search — it reaches the description and the reason"},
 		{Name: "⏎ in a search", Value: "keep what it narrowed and go back to the board"},
@@ -792,12 +826,18 @@ func (w Window) Offers() []string {
 		// would be a word sitting in the middle of what is being typed.
 		return nil
 	}
-	offers := []string{"New", "Search", "Help"}
+	offers := []string{"New", "Search", "Archived", "Help"}
 	if !w.looking.Empty() {
 		offers = append(offers, "Clear")
 	}
 	if w.chosen != 0 {
-		offers = append(offers, "Edit", "Delete")
+		// Archive and Restore are the same key on the same card: the bar names
+		// which way it goes, so nobody has to work out which it will be.
+		away := "Archive"
+		if w.chosenIsArchived() {
+			away = "Restore"
+		}
+		offers = append(offers, "Edit", away, "Delete")
 	}
 	return offers
 }
@@ -1189,7 +1229,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 		}
 		return Box{}, Box{}, false
 	}
-	dealt, _ := reading.Deal(w.Showing().Cards)
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {
@@ -1206,7 +1246,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 func (w Window) whereChosen() (column, at int) {
 	// What is walked is what is showing: under a search, the arrows reach
 	// what the search left and nothing behind it.
-	dealt, _ := reading.Deal(w.Showing().Cards)
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {
@@ -1370,12 +1410,12 @@ func (w Window) where(l Layout, p Point) (state string, place map[string]string,
 // inColumn and inLane are the cards of one column and of one lane, in the order
 // the engine keeps them.
 func (w Window) inColumn(column int) []reading.Card {
-	dealt, _ := reading.Deal(w.Showing().Cards)
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
 	return dealt[column].Cards
 }
 
 func (w Window) inLane(lane int) []reading.Card {
-	_, stalled := reading.Deal(w.Showing().Cards)
+	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
 	var here []reading.Card
 	for _, c := range stalled {
 		if c.State == Lanes[lane] {

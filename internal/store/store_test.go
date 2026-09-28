@@ -71,6 +71,8 @@ type taskFacts struct {
 func (f *taskFacts) Numbered(n int)            { f.number = n }
 func (f *taskFacts) Titled(s string)           { f.title = s }
 func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
+func (f *taskFacts) Archived()                 {}
+func (f *taskFacts) NotArchived()              {}
 func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
 func (f *taskFacts) Described(s string)        { f.description = s }
 func (f *taskFacts) NotDescribed()             { f.description = "" }
@@ -738,3 +740,67 @@ func TestOpen_reportsAShapeItCouldNotLayDown(t *testing.T) {
 		t.Errorf("Open said %q, want it to name the change it could not apply", err)
 	}
 }
+
+// Whether a task is archived is kept and read back, beside the column it
+// stands in: a task archived after being finished is still finished when the
+// store hands it over again.
+func TestStore_keepsWhetherATaskIsArchived(t *testing.T) {
+	s := openStore(t)
+	kept := keep(t, s, "Migration Jenkins")
+
+	var a task.AsTold
+	kept.Tell(&a)
+	a.InColumn(domain.Done)
+	a.Archived()
+	if err := s.Update(a.Task()); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	found, err := s.Find(1)
+	if err != nil {
+		t.Fatalf("Find: %v", err)
+	}
+	var read told
+	found.Tell(&read)
+	if !read.archived {
+		t.Error("the store gave back a task that is not archived")
+	}
+	if read.state != domain.Done {
+		t.Errorf("state = %q, want it still done — archiving is not a column", read.state)
+	}
+}
+
+// told is what a store test reads a task back through, which is the membrane
+// everything else reads one through.
+type told struct {
+	archived bool
+	state    domain.State
+}
+
+func (r *told) Numbered(int)            {}
+func (r *told) Titled(string)           {}
+func (r *told) InColumn(s domain.State) { r.state = s }
+func (r *told) Archived()               { r.archived = true }
+func (r *told) NotArchived()            { r.archived = false }
+func (r *told) Carries(domain.Priority) {}
+func (r *told) Described(string)        {}
+func (r *told) NotDescribed()           {}
+func (r *told) Labelled(string)         {}
+func (r *told) NotLabelled()            {}
+func (r *told) LabelsTold()             {}
+func (r *told) BlockedBy(int)           {}
+func (r *told) NotBlocked()             {}
+func (r *told) BlockersTold()           {}
+func (r *told) Because(string)          {}
+func (r *told) NotBecause()             {}
+func (r *told) Due(time.Time)           {}
+func (r *told) NotDue()                 {}
+func (r *told) Estimated(time.Duration) {}
+func (r *told) NotEstimated()           {}
+func (r *told) Spent(time.Duration)     {}
+func (r *told) NothingSpent()           {}
+func (r *told) Under(int)               {}
+func (r *told) UnderNothing()           {}
+func (r *told) Serves(int)              {}
+func (r *told) ServesNothing()          {}
+func (r *told) ObjectivesTold()         {}

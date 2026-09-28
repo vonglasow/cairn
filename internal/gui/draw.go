@@ -250,7 +250,7 @@ func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 }
 
 func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	dealt, _ := reading.Deal(w.Showing().Cards)
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
 		clipped := clip.Rect(rect(l.Column[i])).Push(gtx.Ops)
@@ -262,7 +262,7 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	_, stalled := reading.Deal(w.Showing().Cards)
+	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
 	for lane, kind := range Lanes {
 		say(gtx, th, skin.Faint, LaneName(l, lane), kind, small)
 		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
@@ -286,16 +286,30 @@ func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, chosen bool) {
 	parts := PartsOf(box)
 	fill(gtx, parts.Panel, skin.Panel)
-	edge, known := skin.Priority[c.Priority]
-	if !known {
-		edge = skin.Edge
-	}
-	fill(gtx, parts.Edge, edge)
+	fill(gtx, parts.Edge, skin.edgeOf(c))
 	if chosen {
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
 	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
-	say(gtx, th, skin.Ink, parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
+	say(gtx, th, skin.Writing(c), parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
+}
+
+// Writing is the ink a card's title is written in. Archived, it is faint: what
+// is off the board is on screen because somebody asked, not because it is work.
+func (s Skin) Writing(c reading.Card) color.NRGBA {
+	if c.Archived {
+		return s.Faint
+	}
+	return s.Ink
+}
+
+// edgeOf is the stripe down a card's side, which is its priority. Archived, it
+// is the plain edge: a colour that shouts is a colour asking to be acted on.
+func (s Skin) edgeOf(c reading.Card) color.NRGBA {
+	if edge, known := s.Priority[c.Priority]; known && !c.Archived {
+		return edge
+	}
+	return s.Edge
 }
 
 // drawGoals is the objectives tab: a list across the whole board, because an

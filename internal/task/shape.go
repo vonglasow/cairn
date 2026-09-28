@@ -13,10 +13,12 @@ import (
 // How far along a task is has no field here: it is not the task's to say, and
 // wire — the one place that reaches both notions — carries it instead.
 type Shape struct {
-	Number      int      `json:"number"`
-	Parent      int      `json:"parent"`
-	Title       string   `json:"title"`
-	State       string   `json:"state"`
+	Number int    `json:"number"`
+	Parent int    `json:"parent"`
+	Title  string `json:"title"`
+	State  string `json:"state"`
+	// Archived is beside the state, so a machine is told both.
+	Archived    bool     `json:"archived"`
 	Priority    string   `json:"priority"`
 	Description string   `json:"description"`
 	Labels      []string `json:"labels"`
@@ -39,10 +41,14 @@ type shapeMembrane struct {
 	blockers                            []int
 	because                             string
 	deadline, estimate, timeSpent       string
+	archived                            bool
 }
 
-func (m *shapeMembrane) Numbered(n int)            { m.number = n }
-func (m *shapeMembrane) Titled(s string)           { m.title = s }
+func (m *shapeMembrane) Numbered(n int)  { m.number = n }
+func (m *shapeMembrane) Titled(s string) { m.title = s }
+func (m *shapeMembrane) Archived()       { m.archived = true }
+func (m *shapeMembrane) NotArchived()    { m.archived = false }
+
 func (m *shapeMembrane) InColumn(s domain.State)   { m.state = string(s) }
 func (m *shapeMembrane) Carries(p domain.Priority) { m.priority = string(p) }
 func (m *shapeMembrane) Described(s string)        { m.description = s }
@@ -85,7 +91,7 @@ func OfTask(t Task) Shape {
 	t.Tell(m)
 	return Shape{
 		Number: m.number, Parent: m.parent, Title: m.title,
-		State: m.state, Priority: m.priority,
+		State: m.state, Archived: m.archived, Priority: m.priority,
 		Description: m.description, Labels: m.labels,
 		BlockedBy: m.blockers, Because: m.because,
 		Deadline:   m.deadline,

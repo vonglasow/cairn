@@ -9,22 +9,22 @@
  │ the band                      │ │   ▌ normal                    │
  │   i           insert mode     │ │   ▌ high                      │
  │   a           add a task      │ │   ▌ critical                  │
- │   /           search          │ │                               │
- │   ⇥           next tab        │ │ STALLED — the top right of a  │
- │   :           command         │ │ card                          │
- │                               │ │   ⊘  blocked   waiting on     │
- │ INSERT — the cursor on a task │ │ somebody else                 │
- │   hjkl ←↓↑→   tasks, and the  │ │   ◉  watching  handed over,   │
- │ band                          │ │ needs a look                  │
- │   gg / G      first / last in │ │   ‖  paused    waiting on     │
- │ the column                    │ │ your decision                 │
- │   ⇧hjkl       move it:        │ │                               │
- │ sideways changes column, up   │ │ OBJECTIVES                    │
- │ and down change place         │ │   ▶  active    being worked   │
- │   ⏎           the detail      │ │ towards                       │
- │   e           the form        │ │   ‖  on-hold   not for now    │
- │   f           take or let go  │ │   ✓  reached   done with      │
- │ the focus                     │ │   ✕  dropped   given up       │
- │   d           delete          │ │                               │
+ │   ⇧A          show what was   │ │                               │
+ │ archived                      │ │ STALLED — the top right of a  │
+ │   /           search          │ │ card                          │
+ │   ⇥           next tab        │ │   ⊘  blocked   waiting on     │
+ │   :           command         │ │ somebody else                 │
+ │                               │ │   ◉  watching  handed over,   │
+ │ INSERT — the cursor on a task │ │ needs a look                  │
+ │   hjkl ←↓↑→   tasks, and the  │ │   ‖  paused    waiting on     │
+ │ band                          │ │ your decision                 │
+ │   gg / G      first / last in │ │                               │
+ │ the column                    │ │ OBJECTIVES                    │
+ │   ⇧hjkl       move it:        │ │   ▶  active    being worked   │
+ │ sideways changes column, up   │ │ towards                       │
+ │ and down change place         │ │   ‖  on-hold   not for now    │
+ │   ⏎           the detail      │ │   ✓  reached   done with      │
+ │   e           the form        │ │   ✕  dropped   given up       │
+ │   f           take or let go  │ │                               │
 
  ↓↑ read on   esc close

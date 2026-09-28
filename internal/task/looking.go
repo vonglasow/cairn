@@ -69,6 +69,8 @@ func (l *looking) Estimated(d time.Duration) { l.consider(domain.FormatDuration(
 func (l *looking) NotEstimated()             {}
 func (l *looking) Spent(d time.Duration)     { l.consider(domain.FormatDuration(d)) }
 func (l *looking) NothingSpent()             {}
+func (l *looking) Archived()                 {}
+func (l *looking) NotArchived()              {}
 func (l *looking) Under(int)                 {}
 func (l *looking) UnderNothing()             {}
 func (l *looking) Serves(int)                {}

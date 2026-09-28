@@ -240,6 +240,8 @@ from that mode's bar, and pressing it there does nothing.
 | `i` | ✓ | | ✓ | enter insert · on objectives, open the objective |
 | `⇧hjkl` `⇧←↓↑→` | | ✓ | | move the task anywhere; its state follows where it lands |
 | `a` | ✓ | | ✓ | add — the column under the cursor gives the state |
+| `x` | | ✓ | | take the task off the board, or put it back |
+| `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
 | `e` | | ✓ | ✓ | the form |
 | `d` | | ✓ | ✓ | delete |
 | `f` | | ✓ | | take or let go of the focus — an objective has none |

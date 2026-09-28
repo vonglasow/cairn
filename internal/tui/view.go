@@ -110,7 +110,7 @@ func (b Board) modeName() string {
 // tasksBoard is the four columns, the band under three of them, and the
 // objective's own card above the lot when one is open.
 func (b Board) tasksBoard(l Layout) []string {
-	all, band := reading.Deal(b.cards())
+	all, band := reading.Deal(b.cards(), b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
@@ -321,9 +321,9 @@ func (b Board) offers() []string {
 	}
 	if b.mode == Insert {
 		return []string{
-			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "detail"),
+			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
 			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("d", "delete"),
-			b.offer("?", "help"), b.offer("esc", "normal"),
+			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"),
 		}
 	}
 	out := []string{

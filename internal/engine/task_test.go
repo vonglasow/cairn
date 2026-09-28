@@ -3,6 +3,8 @@ package engine
 import (
 	"cairn/internal/domain"
 	"errors"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -138,7 +140,7 @@ func TestTaskAdd_addsATask(t *testing.T) {
 	}
 }
 
-func TestAll_hasTwentySixDistinctOperations(t *testing.T) {
+func TestAll_hasThirtyDistinctOperations(t *testing.T) {
 	if got := TaskAdd.Name(); got != "task_add" {
 		t.Errorf("TaskAdd.Name() = %q, want %q", got, "task_add")
 	}
@@ -147,8 +149,8 @@ func TestAll_hasTwentySixDistinctOperations(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 27 {
-		t.Fatalf("len(All()) = %d, want 27", len(ops))
+	if len(ops) != 30 {
+		t.Fatalf("len(All()) = %d, want 30", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {
@@ -272,4 +274,252 @@ func shown(t *testing.T, e *Engine, number int) task.Task {
 		t.Fatalf("Show(%d): %v", number, err)
 	}
 	return found
+}
+
+// Archiving takes a task off the board and keeps everything it carries. It is
+// the engine that says so, once, for every surface.
+func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
+	e := openEngine(t)
+	number := factsOf(add(t, e, "Migration Jenkins")).number
+	finished := string(domain.Done)
+	if _, err := e.Edit(number, Changes{State: &finished}); err != nil {
+		t.Fatalf("finishing it: %v", err)
+	}
+
+	if err := e.Archive(number); err != nil {
+		t.Fatalf("Archive: %v", err)
+	}
+	found := factsOf(shown(t, e, number))
+	if !found.archived {
+		t.Error("the task is not archived")
+	}
+	if found.state != domain.Done {
+		t.Errorf("state = %q, want it still done — archiving is not a column", found.state)
+	}
+
+	// And it comes back.
+	if err := e.Unarchive(number); err != nil {
+		t.Fatalf("Unarchive: %v", err)
+	}
+	if factsOf(shown(t, e, number)).archived {
+		t.Error("the task is still archived after being brought back")
+	}
+}
+
+// Archiving what is already off the board is refused rather than written down
+// again.
+func TestArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
+	e := openEngine(t)
+	number := factsOf(add(t, e, "Migration Jenkins")).number
+	if err := e.Archive(number); err != nil {
+		t.Fatalf("Archive: %v", err)
+	}
+	if err := e.Archive(number); !errors.Is(err, task.ErrAlreadyArchived) {
+		t.Errorf("err = %v, want it to say the task is already archived", err)
+	}
+}
+
+// A listing leaves what is off the board out, and hands it over when it is
+// asked for by name.
+func TestListing_leavesArchivedOutUntilAskedFor(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	away := factsOf(add(t, e, "Migration Jenkins")).number
+	kept := factsOf(add(t, e, "Spike Argo")).number
+	if err := e.Archive(away); err != nil {
+		t.Fatalf("Archive: %v", err)
+	}
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	numbers := func(in Input) []int {
+		answer, err := Do(TaskList, path, in)
+		if err != nil {
+			t.Fatalf("Do(TaskList): %v", err)
+		}
+		// Both fields: a listing nobody narrowed answers in Tasks and a
+		// narrowed one in Matched, and asking for what is off the board is a
+		// narrowing. Reading only the first said the archived ones were gone.
+		var out []int
+		for _, one := range append(answer.Tasks, answer.Matched...) {
+			out = append(out, factsOf(one).number)
+		}
+		return out
+	}
+	if got := numbers(Input{}); !slices.Equal(got, []int{kept}) {
+		t.Errorf("a listing gave %v, want only what is on the board (%d)", got, kept)
+	}
+	if got := numbers(Input{Given: map[string]string{"archived": "true"}}); !slices.Equal(got, []int{away}) {
+		t.Errorf("asking for archived gave %v, want only what was put away (%d)", got, away)
+	}
+}
+
+// Archiving takes a number or a narrowing, and says how many it reached.
+func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	done := string(domain.Done)
+	for _, title := range []string{"Migration Jenkins", "Dépôt APP"} {
+		n := factsOf(add(t, e, title)).number
+		if _, err := e.Edit(n, Changes{State: &done}); err != nil {
+			t.Fatalf("finishing %q: %v", title, err)
+		}
+	}
+	add(t, e, "Spike Argo")
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	answer, err := Do(TaskArchive, path, Input{Given: map[string]string{"state": done}})
+	if err != nil {
+		t.Fatalf("Do(TaskArchive): %v", err)
+	}
+	if answer.Archived == nil || *answer.Archived != 2 {
+		t.Fatalf("Archived = %v, want 2", answer.Archived)
+	}
+
+	// What it did not reach is still on the board.
+	listed, err := Do(TaskList, path, Input{})
+	if err != nil {
+		t.Fatalf("Do(TaskList): %v", err)
+	}
+	if len(listed.Tasks) != 1 {
+		t.Errorf("the board holds %d tasks, want the one that was not done", len(listed.Tasks))
+	}
+}
+
+// A narrowing reaching nothing archives nothing and says so.
+func TestArchiving_saysWhenItReachedNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	add(t, e, "Spike Argo")
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	answer, err := Do(TaskArchive, path, Input{Given: map[string]string{"state": string(domain.Done)}})
+	if err != nil {
+		t.Fatalf("Do(TaskArchive): %v", err)
+	}
+	if answer.Archived == nil || *answer.Archived != 0 {
+		t.Errorf("Archived = %v, want 0", answer.Archived)
+	}
+}
+
+// Neither a number nor a narrowing is refused: archiving everything by
+// accident is not something to find out afterwards.
+func TestArchiving_refusesWithNothingToGoOn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	add(t, e, "Spike Argo")
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if _, err := Do(TaskArchive, path, Input{}); err == nil {
+		t.Error("archiving with nothing to go on was allowed")
+	}
+}
+
+// A label is put on everything a narrowing reaches, keeping what each already
+// carries.
+func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	done := string(domain.Done)
+	first := factsOf(add(t, e, "Migration Jenkins")).number
+	if _, err := e.Edit(first, Changes{State: &done, Labels: &[]string{"backend"}}); err != nil {
+		t.Fatalf("setting it up: %v", err)
+	}
+	add(t, e, "Spike Argo")
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	answer, err := Do(TaskLabel, path, Input{Given: map[string]string{"label": "sprint-41", "state": done}})
+	if err != nil {
+		t.Fatalf("Do(TaskLabel): %v", err)
+	}
+	if answer.Labelled == nil || *answer.Labelled != 1 {
+		t.Fatalf("Labelled = %v, want 1", answer.Labelled)
+	}
+
+	back, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = back.Close() }()
+	var carried labelReader
+	found, err := back.Show(first)
+	if err != nil {
+		t.Fatalf("Show: %v", err)
+	}
+	found.Tell(&carried)
+	for _, want := range []string{"backend", "sprint-41"} {
+		if !slices.Contains(carried.labels, want) {
+			t.Errorf("task carries %v, want %q among them", carried.labels, want)
+		}
+	}
+}
+
+// labelReader reads back the labels a task carries.
+type labelReader struct {
+	task.AsTold
+	labels []string
+}
+
+func (r *labelReader) Labelled(s string) { r.labels = append(r.labels, s) }
+
+// Archiving one by number, and bringing it back. Both answer with the task as
+// it ends up, and both refuse a number no task carries.
+func TestArchiving_oneByNumber(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	n := factsOf(add(t, e, "Migration Jenkins")).number
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	number := map[string]string{"number": strconv.Itoa(n)}
+
+	answer, err := Do(TaskArchive, path, Input{Given: number})
+	if err != nil {
+		t.Fatalf("Do(TaskArchive): %v", err)
+	}
+	if answer.Task == nil || factsOf(*answer.Task).number != n {
+		t.Fatalf("archiving answered %v, want task %d", answer.Task, n)
+	}
+	if _, err := Do(TaskArchive, path, Input{Given: number}); err == nil {
+		t.Error("archiving the same task twice was allowed")
+	}
+
+	back, err := Do(TaskUnarchive, path, Input{Given: number})
+	if err != nil {
+		t.Fatalf("Do(TaskUnarchive): %v", err)
+	}
+	if back.Task == nil || factsOf(*back.Task).number != n {
+		t.Fatalf("bringing it back answered %v, want task %d", back.Task, n)
+	}
+	if _, err := Do(TaskUnarchive, path, Input{Given: number}); err == nil {
+		t.Error("bringing back a task already on the board was allowed")
+	}
+	if _, err := Do(TaskUnarchive, path, Input{Given: map[string]string{"number": "404"}}); err == nil {
+		t.Error("bringing back a task that is not there was allowed")
+	}
 }

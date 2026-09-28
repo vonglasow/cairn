@@ -32,6 +32,8 @@ type taskFacts struct {
 func (f *taskFacts) Numbered(int)            {}
 func (f *taskFacts) Titled(s string)         { f.title = s }
 func (f *taskFacts) InColumn(domain.State)   {}
+func (f *taskFacts) Archived()               {}
+func (f *taskFacts) NotArchived()            {}
 func (f *taskFacts) Carries(domain.Priority) {}
 func (f *taskFacts) Described(string)        {}
 func (f *taskFacts) NotDescribed()           {}

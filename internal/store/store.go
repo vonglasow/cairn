@@ -170,7 +170,7 @@ func (s *Store) Close() error {
 // taskColumns is the reading order every query below hands to scanTask,
 // written once so Find, All and Under cannot drift apart. A column added to
 // one of them and forgotten in the others comes back as a zero nobody notices.
-const taskColumns = `number, parent, title, description, state, priority, because, deadline, estimate, time_spent`
+const taskColumns = `number, parent, title, description, state, archived, priority, because, deadline, estimate, time_spent`
 
 // taskOrder is how every listing reads a task's place: the column first, in the
 // order the columns are read, then the place set by hand inside it.
@@ -218,11 +218,14 @@ type boundTask struct {
 	objectives      []int
 	because         string
 	estimate, spent int64
+	archived        bool
 }
 
 func (b *boundTask) Numbered(n int)            { b.number = n }
 func (b *boundTask) Titled(s string)           { b.title = s }
 func (b *boundTask) InColumn(s domain.State)   { b.state = string(s) }
+func (b *boundTask) Archived()                 { b.archived = true }
+func (b *boundTask) NotArchived()              { b.archived = false }
 func (b *boundTask) Carries(p domain.Priority) { b.priority = string(p) }
 func (b *boundTask) Described(s string)        { b.description = s }
 func (b *boundTask) NotDescribed()             { b.description = "" }
@@ -268,10 +271,10 @@ func renumbered(t task.Task, number int) task.Task {
 func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
 	res, err := s.db.Exec(
-		`INSERT INTO tasks (parent, title, description, state, priority,
+		`INSERT INTO tasks (parent, title, description, state, archived, priority,
 		 because, deadline, estimate, time_spent, position)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
-		b.parent, b.title, b.description, b.state, b.priority,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
+		b.parent, b.title, b.description, b.state, b.archived, b.priority,
 		b.because, b.deadline, b.estimate, b.spent, b.state, b.parent)
 	if err != nil {
 		return task.Task{}, fmt.Errorf("keeping the task: %w", err)
@@ -317,9 +320,10 @@ func (s *Store) Update(t task.Task) error {
 
 	if _, err := s.db.Exec(
 		`UPDATE tasks SET parent = ?, title = ?, description = ?, state = ?,
-		 priority = ?, because = ?, deadline = ?, estimate = ?, time_spent = ?, position = ?
+		 archived = ?, priority = ?, because = ?, deadline = ?, estimate = ?,
+		 time_spent = ?, position = ?
 		 WHERE number = ?`,
-		b.parent, b.title, b.description, b.state, b.priority,
+		b.parent, b.title, b.description, b.state, b.archived, b.priority,
 		b.because, b.deadline, b.estimate, b.spent, place, b.number); err != nil {
 		return fmt.Errorf("changing the task: %w", err)
 	}
@@ -445,8 +449,9 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		state, priority    string
 		because, deadline  string
 		estimate, spent    int64
+		archived           bool
 	)
-	if err := row.Scan(&number, &parent, &title, &description, &state, &priority,
+	if err := row.Scan(&number, &parent, &title, &description, &state, &archived, &priority,
 		&because, &deadline, &estimate, &spent); err != nil {
 		return task.Task{}, err
 	}
@@ -471,6 +476,11 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 	a.Numbered(number)
 	a.Titled(title)
 	a.InColumn(domain.State(state))
+	if archived {
+		a.Archived()
+	} else {
+		a.NotArchived()
+	}
 	a.Carries(domain.Priority(priority))
 	if description == "" {
 		a.NotDescribed()

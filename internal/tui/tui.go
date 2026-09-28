@@ -96,6 +96,9 @@ type Board struct {
 
 	typed string
 	query string
+	// archived says what was taken off the board is drawn with the rest,
+	// dimmed. Nothing is asked of the store either way.
+	archived bool
 
 	choosing bool
 	choice   int
@@ -271,7 +274,7 @@ func (b Board) cards() []reading.Card {
 	// What a board shows of a search, so that what is counted and what the
 	// arrows walk is the same set as what is drawn — a part that matched
 	// answering as the work it is part of.
-	for _, c := range reading.Found(b.snap.Cards, b.query) {
+	for _, c := range reading.Found(b.snap.Cards, b.query, b.archived) {
 		if b.inside != 0 && !serves(c, b.inside) {
 			continue
 		}
@@ -293,7 +296,7 @@ func serves(c reading.Card, number int) bool {
 
 // here is the cards the cursor is standing over: a column's, or the band's.
 func (b Board) here() []reading.Card {
-	all, band := reading.Deal(b.cards())
+	all, band := reading.Deal(b.cards(), b.archived)
 	if b.inBand {
 		return band
 	}

@@ -23,7 +23,18 @@ type Narrowing struct {
 	clauses []string
 	args    []any
 	labels  []string
+	// archived keeps what was taken off the board instead of what is on it;
+	// both keeps either.
+	archived bool
+	both     bool
 }
+
+// Archived keeps the tasks taken off the board, instead of the ones still on it.
+func (n *Narrowing) Archived() { n.archived = true }
+
+// WithArchived keeps both, which is what a board asks for: it draws the two
+// apart rather than reading the store twice.
+func (n *Narrowing) WithArchived() { n.both = true }
 
 // InColumn keeps what sits in one column.
 func (n *Narrowing) InColumn(state string) {
@@ -59,7 +70,7 @@ func (n *Narrowing) Labelled(labels []string) {
 // depends on it: a listing nobody narrowed is shown as the tree it is, and a
 // narrowed one is shown flat, since where a task sits is not what was asked.
 func (n *Narrowing) Narrows() bool {
-	return len(n.clauses)+len(n.labels) > 0
+	return len(n.clauses)+len(n.labels) > 0 || n.archived
 }
 
 // keep records one clause and the value it holds to.
@@ -88,9 +99,30 @@ func (n *Narrowing) where(labels labelStore) (string, []any) {
 	return ` WHERE ` + strings.Join(clauses, ` AND `), args
 }
 
+// whereTasks is the same for tasks, which alone can be taken off the board.
+// Its own method because a narrowing is shared with objectives, which cannot.
+func (n *Narrowing) whereTasks(labels labelStore) (string, []any) {
+	// Always a clause, named or not — unless both are wanted.
+	var clauses []string
+	var args []any
+	if !n.both {
+		clauses, args = []string{`archived = ?`}, []any{n.archived}
+	}
+	clauses = append(clauses, n.clauses...)
+	args = append(args, n.args...)
+	for _, label := range n.labels {
+		clauses = append(clauses, labels.carrier)
+		args = append(args, label)
+	}
+	if len(clauses) == 0 {
+		return "", nil
+	}
+	return ` WHERE ` + strings.Join(clauses, ` AND `), args
+}
+
 // Narrowed hands back the tasks a narrowing keeps, in the one order there is.
 func (s *Store) Narrowed(narrowing *Narrowing) ([]task.Task, error) {
-	where, args := narrowing.where(taskLabels)
+	where, args := narrowing.whereTasks(taskLabels)
 	rows, err := s.db.Query(
 		`SELECT `+taskColumns+` FROM tasks`+where+` `+taskOrder, args...)
 	if err != nil {
