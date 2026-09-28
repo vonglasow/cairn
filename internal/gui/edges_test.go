@@ -64,7 +64,7 @@ func TestADetailThatCannotReadTheHistorySaysSo(t *testing.T) {
 	f.fail = errNope
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 	if w.Wrong() == nil {
 		t.Fatal("a history out of reach was drawn as an empty one")
 	}
@@ -74,7 +74,7 @@ func TestADetailThatCannotReadTheHistorySaysSo(t *testing.T) {
 func TestADoubleClickOnNothingOpensNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.DoubleClick(Point{X: 0, Y: 0}); got.Screen() != OnTheBoard {
+	if got := w.doubleClicked(Point{X: 0, Y: 0}); got.Screen() != OnTheBoard {
 		t.Fatalf("double-clicking the margin left the window on %v", got.Screen())
 	}
 }
@@ -84,7 +84,7 @@ func TestADoubleClickOnNothingOpensNothing(t *testing.T) {
 func TestResizingAWindowThatIsBigEnoughLeavesTheScreenAlone(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	if got := w.Resized(1400, 900); got.Screen() != OnForm {
 		t.Fatalf("resizing closed the form: the window is on %v", got.Screen())
@@ -138,7 +138,7 @@ func TestEveryShapeAHistoryLineCanTake(t *testing.T) {
 		anAct("edited", "state", "todo", ""),
 		anAct("edited", "title", "Write the whole spec", "board"),
 	}
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	lines := w.Acts()
 	if len(lines) != 3 {
@@ -213,9 +213,9 @@ func TestAScrolledColumnAnswersAndDrawsFromWhereItStands(t *testing.T) {
 	}
 
 	at := Point{X: l.Column[1].X + 10, Y: l.Column[1].Y + 10}
-	unscrolled := w.Click(at).Chosen()
+	unscrolled := w.clicked(at).Chosen()
 	w = w.Scroll(Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}, CardHeight*2)
-	scrolled := w.Click(at).Chosen()
+	scrolled := w.clicked(at).Chosen()
 	if scrolled != unscrolled+2 {
 		t.Errorf("scrolled by two cards, the same point chose %d after %d", scrolled, unscrolled)
 	}
@@ -264,12 +264,12 @@ func TestALaneIsNotScrolledByTheColumnsAboveIt(t *testing.T) {
 
 	box := w.Layout().LaneCardAt(0, 0, 0)
 	at := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
-	if got := w.Click(at).Chosen(); got != 99 {
+	if got := w.clicked(at).Chosen(); got != 99 {
 		t.Fatalf("clicking the lane chose %d", got)
 	}
 	l := w.Layout()
 	w = w.Scroll(Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}, CardHeight*3)
-	if got := w.Click(at).Chosen(); got != 99 {
+	if got := w.clicked(at).Chosen(); got != 99 {
 		t.Errorf("after scrolling a column, the lane chose %d", got)
 	}
 }

@@ -7,6 +7,7 @@ package gui
 
 import (
 	"fmt"
+	"image/color"
 	"slices"
 	"strings"
 
@@ -243,13 +244,17 @@ func (w *world) detailDoesNotList(title string) error {
 	return nil
 }
 
-// servingCardsAreCards is what tells a card from a line of text: it is drawn at
-// the height every other card on this board is drawn at.
+// servingCardsAreCards checks the tiles are a line high and no more: a card's
+// 96 pixels were mostly room for facts a sub-task no longer carries, and the
+// box holds five of these where it held one of those.
 func (w *world) servingCardsAreCards() error {
 	for at := range w.w.Under() {
-		if got := w.w.ServingCardAt(at).H; got != CardHeight {
-			return fmt.Errorf("the card at %d is %d high, and a card is %d", at, got, CardHeight)
+		if got := w.w.ServingCardAt(at).H; got != SubHeight {
+			return fmt.Errorf("the tile at %d is %d high, and a tile is %d", at, got, SubHeight)
 		}
+	}
+	if SubHeight > lineHigh+padding {
+		return fmt.Errorf("a tile is %d high, which is more than one line and its padding", SubHeight)
 	}
 	return nil
 }
@@ -445,7 +450,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail draws a card for "([^"]*)" under its fields$`, w.detailLists)
 	sc.Then(`^the detail draws no card for "([^"]*)"$`, w.detailDoesNotList)
 	sc.Then(`^the box under the fields is empty$`, w.detailSaysNothingServes)
-	sc.Then(`^the cards under the fields are the height of a card$`, w.servingCardsAreCards)
+	sc.Then(`^what hangs under it is drawn one line to a tile$`, w.servingCardsAreCards)
 	sc.Then(`^the right column is still headed "([^"]*)"$`, w.rightColumnHead)
 	sc.Then(`^the detail says nothing serves it yet$`, w.detailSaysNothingServes)
 	sc.Then(`^the detail is closed$`, w.detailClosed)
@@ -454,6 +459,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^nothing was asked of the engine$`, w.askedNothing)
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Then(`^the engine was not asked "([^"]*)"$`, w.wasNotAsked)
+	sc.Then(`^what hangs under it reads (.+)$`, func(said string) error {
+		var want []string
+		for _, one := range strings.Split(said, ", ") {
+			want = append(want, strings.Trim(one, `"`))
+		}
+		var got []string
+		for _, c := range w.w.Under() {
+			got = append(got, c.Title)
+		}
+		if !slices.Equal(got, want) {
+			return fmt.Errorf("what hangs under it reads %v, want %v", got, want)
+		}
+		return nil
+	})
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
 	sc.Then(`^task (\d+) is called "([^"]*)"$`, w.taskCalled)
@@ -464,12 +483,65 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail shows the field "([^"]*)"$`, w.detailShowsField)
 	sc.Then(`^the detail shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
 	sc.Then(`^the card being dragged follows the pointer$`, w.ghostFollows)
+	sc.Then(`^the tile being dragged follows the pointer$`, w.ghostFollows)
+	// Inside the ghost and not merely somewhere: a ghost drawn with a card's
+	// layout put its title 28 pixels down, which is past the bottom of a tile
+	// — the writing landed on whatever was behind it instead.
+	sc.Then(`^what is in hand says what it carries$`, func() error {
+		ghost, dragging := w.w.Ghost()
+		if !dragging {
+			return fmt.Errorf("nothing is in hand")
+		}
+		// Strictly inside its own outline, which would otherwise be what is
+		// counted — measured, it was, and this passed with the writing landing
+		// entirely outside the ghost.
+		inside := Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
+		if inked(drawn(w.t, w.w), inside, Dark().Ghost) == 0 {
+			return fmt.Errorf("nothing is written on what is in hand, at %+v", ghost)
+		}
+		return nil
+	})
+
+	sc.Then(`^it shows where the tile would land$`, func() error {
+		landing, somewhere := w.w.Landing()
+		if !somewhere {
+			return fmt.Errorf("nothing says where the tile would land")
+		}
+		box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+		if landing.X != box.X || landing.W != box.W {
+			return fmt.Errorf("it lands at %+v, and the box is %+v", landing, box)
+		}
+		return nil
+	})
+	// The board is still drawn behind the panel, and it was still being asked
+	// where a point over it would land: a blue line appeared under the panel
+	// for a gesture that had nothing to do with the board.
+	sc.Then(`^the board behind shows no landing$`, func() error {
+		landing, somewhere := w.w.Landing()
+		if !somewhere {
+			return nil
+		}
+		for i := range Columns {
+			if w.w.Layout().Column[i].X == landing.X {
+				return fmt.Errorf("the landing at %+v is column %d's, not the box's", landing, i)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^it shows where the card would land in "([^"]*)"$`, w.landsIn)
 	sc.Then(`^it shows nowhere for the card to land$`, w.landsNowhere)
 	sc.Then(`^"([^"]*)" does not carry "([^"]*)"$`, w.columnDoesNotCarry)
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)
+	sc.Then(`^the bar does not offer "([^"]*)"$`, func(offer string) error {
+		for _, on := range w.w.Offers() {
+			if on == offer {
+				return fmt.Errorf("the bar offers %q: %v", offer, w.w.Offers())
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the field "([^"]*)" shows a caret$`, w.fieldShowsACaret)
 	sc.Then(`^no other field shows a caret$`, w.noOtherFieldShowsACaret)
 	sc.Then(`^the field "([^"]*)" has room for more than one line$`, w.fieldHasRoomForMoreThanOneLine)
@@ -486,6 +558,86 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
 	sc.Then(`^the tab "([^"]*)" says it holds (\d+)$`, w.tabHolds)
 	sc.Then(`^the form is open on task (\d+)$`, w.formOpenOnTask)
+	sc.Then(`^the tile the keyboard is on is "([^"]*)"$`, func(title string) error {
+		under, at := w.w.Under(), w.w.UnderAt()
+		if at < 0 || at >= len(under) {
+			return fmt.Errorf("the keyboard is on nothing, at %d of %d", at, len(under))
+		}
+		if under[at].Title != title {
+			return fmt.Errorf("the keyboard is on %q, not %q", under[at].Title, title)
+		}
+		return nil
+	})
+
+	// Asked of the pixels: a window that knows where the keyboard is and does
+	// not show it has not shown it.
+	sc.Then(`^the tile the keyboard is on is lit$`, func() error {
+		at := w.w.UnderAt()
+		shot := drawn(w.t, w.w)
+		on := w.w.ServingCardAt(at)
+		if painted(shot, on, Dark().Chosen) == 0 {
+			return fmt.Errorf("the tile at %d is not lit", at)
+		}
+		for other := range w.w.Under() {
+			if other == at {
+				continue
+			}
+			if got := painted(shot, w.w.ServingCardAt(other), Dark().Chosen); got != 0 {
+				return fmt.Errorf("the tile at %d is lit too, by %d pixels", other, got)
+			}
+		}
+		return nil
+	})
+
+	// Asked before the one below it, and for the same reason it exists: that
+	// one asks whether writing reaches the frame's edge, which is trivially
+	// true of a tile with no writing on it at all. A measuring bug once cut
+	// every title to a lone ellipsis and it passed.
+	sc.Then(`^the second tile says what it holds$`, func() error {
+		tile := w.w.ServingCardAt(1)
+		line := Row(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
+		// Strictly inside the tile's own border, which runs its whole width
+		// and would ink every column asked about. Measured — it did, and this
+		// read as a full line of writing where there was a lone ellipsis.
+		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
+		shot := drawn(w.t, w.w)
+		var reached int
+		for x := band.X; x < band.X+band.W; x++ {
+			if inked(shot, Box{X: x, Y: band.Y, W: 1, H: band.H}, Dark().Panel) > 0 {
+				reached = x - band.X
+			}
+		}
+		if reached < line.W/2 {
+			return fmt.Errorf("the tile writes across %d of its %d: a long title fills its line", reached, line.W)
+		}
+		return nil
+	})
+
+	// Measured in pixels at the tile's right edge: a title cut by counting an
+	// average glyph width ran all the way there and was clipped, which reads
+	// as a word chopped against the scrollbar.
+	sc.Then(`^the second tile leaves room before its frame$`, func() error {
+		// The writing's own colour, and not everything that is not the tile:
+		// the tile the keyboard is on is outlined, and its outline runs down
+		// the very edge this asks about. Measured — it counted that.
+		tile := w.w.ServingCardAt(1)
+		edge := Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
+		shot := drawn(w.t, w.w)
+		for what, ink := range map[string]color.NRGBA{"faint": Dark().Faint, "ink": Dark().Ink} {
+			if got := painted(shot, edge, ink); got != 0 {
+				return fmt.Errorf("%d pixels of %s writing reach the tile's last %d", got, what, padding)
+			}
+		}
+		return nil
+	})
+
+	sc.Then(`^the search is not in force$`, func() error {
+		if !w.w.Searched().Empty() {
+			return fmt.Errorf("the board is still narrowed to %q", w.w.Looking())
+		}
+		return nil
+	})
+
 	sc.Then(`^the list of objectives is open$`, w.listOpen)
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
@@ -951,7 +1103,7 @@ func (w *world) servingAtTheBeginning() error {
 
 func (w *world) servingAtTheEnd() error {
 	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
-	last := len(w.w.Under())*CardHeight - box.H
+	last := len(w.w.Under())*SubHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
 	}

@@ -78,7 +78,7 @@ func TestClickingACardInALaneChoosesIt(t *testing.T) {
 
 	for lane, number := range map[int]int{0: 1, 1: 2, 2: 3} {
 		box := w.Layout().LaneCardAt(lane, 0, 0)
-		got := w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		got := w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		if got.Chosen() != number {
 			t.Errorf("clicking lane %d chose %d, want %d", lane, got.Chosen(), number)
 		}
@@ -92,11 +92,11 @@ func TestClickingAnEmptyLaneChoosesNothing(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	box := w.Layout().LaneCardAt(1, 0, 0)
-	if got := w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); got.Chosen() != 0 {
+	if got := w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); got.Chosen() != 0 {
 		t.Errorf("an empty lane chose %d", got.Chosen())
 	}
 	below := w.Layout().LaneCardAt(0, 4, 0)
-	if got := w.Click(Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen() != 0 {
+	if got := w.clicked(Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen() != 0 {
 		t.Errorf("past the last card of a lane chose %d", got.Chosen())
 	}
 }
@@ -221,11 +221,11 @@ func TestJustPastTheLastCardChoosesNothing(t *testing.T) {
 		reading.Card{Number: 2, Title: "Second", State: "todo"})
 
 	last := w.Layout().CardAt(1, 1, 0)
-	if got := w.Click(Point{X: last.X + 10, Y: last.Y + 10}); got.Chosen() != 2 {
+	if got := w.clicked(Point{X: last.X + 10, Y: last.Y + 10}); got.Chosen() != 2 {
 		t.Fatalf("the last card chose %d", got.Chosen())
 	}
 	past := w.Layout().CardAt(1, 2, 0)
-	if got := w.Click(Point{X: past.X + 10, Y: past.Y + 10}); got.Chosen() != 0 {
+	if got := w.clicked(Point{X: past.X + 10, Y: past.Y + 10}); got.Chosen() != 0 {
 		t.Errorf("just past the last card chose %d", got.Chosen())
 	}
 }

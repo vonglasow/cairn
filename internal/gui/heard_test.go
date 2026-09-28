@@ -229,7 +229,7 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w, _, _ = frames(t, w, key.EditEvent{Text: " properly"})
 	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
@@ -266,7 +266,7 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title").Types(" properly")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Types(" properly")
 
 	button := PanelOfferAt(Over(w.width, w.height), 0)
 	on := f32.Pt(float32(button.X+button.W/2), float32(button.Y+button.H/2))

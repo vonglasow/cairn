@@ -13,7 +13,7 @@ func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
 
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 
 	if w.Screen() != OnForm {
@@ -61,7 +61,7 @@ func TestSavingAFormWritesOnceAndClosesIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w.form = w.form.Set("title", " Write the whole spec ")
 	w = w.Choose("Save")
@@ -105,7 +105,7 @@ func TestCancellingWritesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w.form = w.form.Set("title", "Something else")
 	w = w.Choose("Cancel")
@@ -140,7 +140,7 @@ func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 	f.failOp = errRefuse
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w = w.Choose("Save")
 
@@ -187,7 +187,7 @@ func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
 func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w = w.Key("esc")
 
@@ -214,7 +214,7 @@ func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.On("title").Types(" properly")
 	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
@@ -241,7 +241,7 @@ func TestTypingWithNoFormOpenChangesNothing(t *testing.T) {
 func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the specx", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
 	if got := w.Form().ValueOf("title"); got != "Write the spec" {
@@ -262,7 +262,7 @@ func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "réunion", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
 	if got := w.Form().ValueOf("title"); got != "réunio" {
@@ -279,7 +279,7 @@ func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("tab")
 	if got := w.Form().Fields()[w.Form().On()].Name; got != "description" {
@@ -303,7 +303,7 @@ func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
-	w = w.Click(middleOf(w, 0, 0)).Choose("Edit").On("column")
+	w = w.clicked(middleOf(w, 0, 0)).Choose("Edit").On("column")
 
 	if got := w.Key("right").Form().ValueOf("column"); got != "todo" {
 		t.Errorf("right of backlog is %q", got)
@@ -329,12 +329,12 @@ func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
 	at := 3
 	name, _ := FieldRow(box, FieldTop(box, w.Form().Fields(), at))
-	w = w.Click(Point{X: name.X + 10, Y: name.Y + name.H/2})
+	w = w.clicked(Point{X: name.X + 10, Y: name.Y + name.H/2})
 	if got := w.Form().On(); got != at {
 		t.Fatalf("clicking field %d put the keyboard on %d", at, got)
 	}
@@ -344,7 +344,7 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 func TestEnterSavesTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.Key("enter")
 	if w.Screen() != OnTheBoard {
@@ -360,12 +360,12 @@ func TestEnterSavesTheForm(t *testing.T) {
 func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	opened := w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(opened.width, opened.height)
 	press := func(at int) Window {
 		button := PanelOfferAt(box, at)
-		return opened.Click(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
+		return opened.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
 	if got := press(0); got.Screen() != OnTheBoard || f.what("task", "edit") != 1 {
@@ -383,12 +383,12 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 
 	box := Over(w.width, w.height)
 	press := func(from Window, at int) Window {
 		button := PanelOfferAt(box, at)
-		return from.Click(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
+		return from.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
 	asked := w.Choose("Delete")
@@ -399,7 +399,7 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	if got := press(w.Choose("Help"), 0); got.Screen() != OnTheBoard {
 		t.Errorf("Close on the help left the window on %v", got.Screen())
 	}
-	if got := press(w.DoubleClick(middleOf(w, 1, 0)), 1); got.Screen() != OnTheBoard {
+	if got := press(w.doubleClicked(middleOf(w, 1, 0)), 1); got.Screen() != OnTheBoard {
 		t.Errorf("Close on the detail left the window on %v", got.Screen())
 	}
 }
@@ -409,7 +409,7 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
@@ -422,12 +422,12 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	name, _ := FieldRow(box, FieldTop(box, fields, at))
 	for _, row := range []int{0, RowsOf(fields[at]) - 1} {
 		down := row*lineHigh + lineHigh/2
-		if got := w.Click(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
+		if got := w.clicked(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d of the description put the keyboard on %d", row, got)
 		}
 		// Its name answers over the same rows, or the left half of a tall
 		// field would be dead.
-		if got := w.Click(Point{X: name.X + 10, Y: name.Y + down}).Form().On(); got != at {
+		if got := w.clicked(Point{X: name.X + 10, Y: name.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d beside the description put the keyboard on %d", row, got)
 		}
 	}

@@ -44,6 +44,25 @@ var Lanes = []string{"blocked", "watching", "paused"}
 // without drawing a thing.
 const CardHeight = 96
 
+// SubHeight is what a part of the work takes in the box under a task's fields:
+// one line and the padding round it.
+//
+// A card is 96 and uses 50 — the rest was room for a deadline, a progress bar
+// and a run of labels, none of which a sub-task carries any more: it is its
+// number, its title, and whether it is done. Those fit on one line, and five
+// of them fit in a box where one card did.
+//
+// Measured before it was chosen. The box under twelve fields is 120 pixels in
+// the smallest window this board draws in, 287 in a large one; at 96 that is
+// one tile and two, at 24 it is five and eleven. The same measurement said a
+// second line would buy nine characters of title and cost two tiles of sight,
+// so there is one.
+//
+// Written as the number it is rather than as lineHigh + padding: the sum says
+// no more than the number does, and it is one more piece of arithmetic for a
+// gate to ask about and nothing to answer with.
+const SubHeight = 28
+
 // The room everything else takes before a card is drawn.
 const (
 	margin    = 12 // around the whole board

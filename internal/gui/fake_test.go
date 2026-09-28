@@ -119,3 +119,19 @@ func inLane(w Window, lane int) Point {
 	box := w.Layout().Lane[lane]
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
+
+// clicked is what a mouse does: a press and a release at one point. Every test
+// that meant "somebody clicked here" says it this way.
+//
+// Calling Click straight skips PressAt and LetGo, and LetGo is where a release
+// decides whether it was a click at all — so a fault living there is a fault
+// no such test can see. Two got through that way: a release on an open task
+// never reached Click, so nothing outside a panel could close it; and the
+// release after a double click closed what the click had just opened.
+func (w Window) clicked(at Point) Window { return w.PressAt(at).LetGo(at) }
+
+// doubleClicked is the whole of what a mouse sends for one: a click, the
+// second press that makes it a double, and the release that follows it.
+func (w Window) doubleClicked(at Point) Window {
+	return w.clicked(at).DoubleClick(at).LetGo(at)
+}

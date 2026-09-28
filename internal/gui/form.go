@@ -275,10 +275,17 @@ func (w Window) Save() Window {
 // form: the question asked before deleting is answered with the same word, and
 // a Cancel that only knew about forms left it open.
 func (w Window) Cancel() Window {
+	// On the board, esc is what clears a search — there is nothing else here
+	// to put away.
 	if w.screen == OnTheBoard {
+		w.looking = Written{}
 		return w
 	}
-	w.screen, w.form, w.looking = OnTheBoard, Form{}, Written{}
+	// Anywhere else it closes what is open and nothing more. A search
+	// narrowing the board is not what was opened: a task found by searching,
+	// opened, changed and put away used to give back the whole board, leaving
+	// somebody to type their search again to carry on where they were.
+	w.screen, w.form = OnTheBoard, Form{}
 	return w
 }
 
@@ -292,6 +299,8 @@ func (w Window) Choose(name string) Window {
 		return w.Save()
 	case "choose":
 		return w.choosingList()
+	case "done":
+		return w.marking()
 	case "cancel":
 		return w.Cancel()
 	case "new":

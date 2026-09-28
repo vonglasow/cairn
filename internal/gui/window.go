@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/trace"
@@ -110,8 +111,14 @@ type Window struct {
 	draggingBar bool
 
 	held Held
-	acts []string
-	form Form
+	// pressed says a press is still waiting for its release, and on which
+	// screen it happened. A release belongs to the press it follows: if what
+	// is on screen changed in between — a double click opening a task — then
+	// the release is not a click on a screen the press never saw.
+	pressed   bool
+	pressedOn Screen
+	acts      []string
+	form      Form
 	// looking is what a search has been given so far, and where its caret
 	// stands. A search narrows what is drawn and changes nothing, so it lives
 	// here and never reaches the store.
@@ -122,6 +129,11 @@ type Window struct {
 	// what they came to only when the list closes.
 	ticked   map[int]bool
 	choosing int
+	// underAt is which part of the work the keyboard is on in the box beneath
+	// an open task's fields. Put back to the first whenever another thing is
+	// opened: a cursor kept from the last one would point at a part of it that
+	// is not there any more.
+	underAt int
 
 	err error
 }
@@ -235,6 +247,12 @@ func (w Window) Ghost() (Box, bool) {
 	if !w.Dragging() {
 		return Box{}, false
 	}
+	// A tile in hand is a tile, not a card: the same ghost, sized to what is
+	// being carried.
+	if w.screen == OnDetail {
+		box := ServingBox(Over(w.width, w.height), w.Shown())
+		return Box{X: box.X, Y: w.held.At.Y - SubHeight/2, W: box.W, H: SubHeight}, true
+	}
 	l := w.Layout()
 	return Box{
 		X: w.held.At.X - l.Column[0].W/2,
@@ -249,6 +267,13 @@ func (w Window) Ghost() (Box, bool) {
 func (w Window) Landing() (Box, bool) {
 	if !w.Dragging() {
 		return Box{}, false
+	}
+	// Where a thing may land depends on what is open, and nothing else about
+	// the gesture does. Asked of the board while a part was in hand, this drew
+	// the board's own line under the panel — for a drop that could never reach
+	// a column.
+	if w.screen == OnDetail {
+		return w.landingUnder()
 	}
 	l := w.Layout()
 	if lane, on := l.LaneUnder(w.held.At); on {
@@ -333,19 +358,160 @@ func (w Window) settledHistory(want int) int {
 // cards of one height and not lines of text that wrap.
 func (w Window) settledServing(want int) int {
 	box := ServingBox(Over(w.width, w.height), w.Shown())
-	return min(max(0, len(w.Under())*CardHeight-box.H), max(0, want))
+	return min(max(0, len(w.Under())*SubHeight-box.H), max(0, want))
 }
 
-// ServingRows is how many cards that box shows at once.
+// ServingRows is how many tiles that box shows at once.
 func (w Window) ServingRows() int {
-	return max(1, ServingBox(Over(w.width, w.height), w.Shown()).H/CardHeight)
+	return max(1, ServingBox(Over(w.width, w.height), w.Shown()).H/SubHeight)
 }
 
-// ServingCardAt is where one of those cards is drawn, counting the scroll —
-// the same reckoning a column makes of its own.
+// ServingCardAt is where one of those tiles is drawn, counting the scroll —
+// the same reckoning a column makes of its cards.
 func (w Window) ServingCardAt(at int) Box {
 	box := ServingBox(Over(w.width, w.height), w.Shown())
-	return Box{X: box.X, Y: box.Y + at*CardHeight - w.serving, W: box.W, H: CardHeight}
+	return Box{X: box.X, Y: box.Y + at*SubHeight - w.serving, W: box.W, H: SubHeight}
+}
+
+// UnderAt is which of them the keyboard is on.
+func (w Window) UnderAt() int { return w.underAt }
+
+// walkingUnder moves the keyboard through the box and brings what it lands on
+// into sight, the way walking a column does. A cursor that could leave the
+// frame would be a cursor somebody loses.
+func (w Window) walkingUnder(by int) Window {
+	under := w.Under()
+	if len(under) == 0 {
+		return w
+	}
+	w.underAt = min(len(under)-1, max(0, w.underAt+by))
+	top := w.underAt * SubHeight
+	w.serving = min(w.serving, top)
+	// max rather than a comparison written out: the two say the same thing,
+	// and the written-out one generates a boundary mutant no test can kill —
+	// its branches part company only where they agree.
+	w.serving = max(w.serving, top+SubHeight-w.ServingRows()*SubHeight)
+	return w
+}
+
+// marking turns the part the keyboard is on done, or back. One key and one
+// act: this is not a form, and a tile is one fact somebody is either changing
+// or not, so it reaches the store at once.
+func (w Window) marking() Window {
+	// Only what hangs under a task. The work under an objective is tasks with
+	// columns of their own — one of them may be current, or blocked — and
+	// "not done" for those is not todo. A part of a task has nothing else to
+	// be, which is what makes one key enough here and not there.
+	if w.chosenGoal {
+		return w
+	}
+	// Walked to rather than indexed: whatever moved the cursor keeps it inside,
+	// so an index needs a guard that guards against nothing — and a clamp
+	// written to satisfy one hides its own arithmetic behind the min.
+	var on reading.Card
+	var found bool
+	for at, c := range w.Under() {
+		if at == w.underAt {
+			on, found = c, true
+		}
+	}
+	if !found {
+		return w
+	}
+	into := string(domain.Todo)
+	if !reading.Finished(on) {
+		into = string(domain.Done)
+	}
+	asked := engine.Input{Given: map[string]string{
+		"number": strconv.Itoa(on.Number),
+		"state":  into,
+	}}
+	if _, err := w.work.Ask(engine.TaskEdit, asked); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
+// landingUnder is the line a tile would land on, snapped to the slot the hand
+// is over — the same reckoning the board makes of a column, in the one place a
+// part may go.
+func (w Window) landingUnder() (Box, bool) {
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	if !box.In(w.held.At) {
+		return Box{}, false
+	}
+	at := (w.held.At.Y - box.Y) / SubHeight
+	return Box{X: box.X, Y: box.Y + at*SubHeight, W: box.W, H: landingHigh}, true
+}
+
+// closesOnAClickOff says whether what is open goes away when a click lands
+// outside it. Everything that can be left without losing anything: the detail,
+// the help, the question about deleting, the list of objectives.
+//
+// Not the form, and not the board or a search, which have nothing to close.
+func (w Window) closesOnAClickOff() bool {
+	switch w.screen {
+	case OnDetail, OnHelp, OnAsking, OnChoosing:
+		return true
+	}
+	return false
+}
+
+// tileUnder says which part of the work a point falls on, if any.
+func (w Window) tileUnder(p Point) (int, bool) {
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	if !box.In(p) {
+		return 0, false
+	}
+	at := (p.Y - box.Y + w.serving) / SubHeight
+	if at < 0 || at >= len(w.Under()) {
+		return 0, false
+	}
+	return at, true
+}
+
+// droppedUnder is a tile let go: it takes the place it was let go on, and what
+// was there moves down. Where it lands is reckoned the way a column reckons a
+// card — the slot the pointer is over, which is first or behind the one above.
+//
+// Let go anywhere but in the box, nothing happens. A part has no column to
+// fall into and its parent is where it belongs, so there is nowhere else for
+// it to go.
+func (w Window) droppedUnder(p Point) Window {
+	held := w.held
+	w.held = Held{}
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	if !box.In(p) || held.Number == 0 {
+		return w
+	}
+	at := (p.Y - box.Y + w.serving) / SubHeight
+	under := w.Under()
+	// Let go on its own place, or on the edge just below it, nothing is asked:
+	// both name where it already is, and a move to where a thing already sits
+	// is a line of history saying nothing happened.
+	for i, c := range under {
+		if c.Number == held.Number && (at == i || at == i+1) {
+			return w
+		}
+	}
+	// Written with ifs rather than a switch, for the reason internal/engine
+	// gives where it does the same: a tagless switch puts its conditions
+	// outside any covered block, so a mutation of one reports as unreachable
+	// and the gate cannot judge it. Measured here — six of them at once.
+	given := map[string]string{"number": strconv.Itoa(held.Number)}
+	if at <= 0 {
+		given["first"] = "true"
+	} else if at-1 < len(under) {
+		given["after"] = strconv.Itoa(under[at-1].Number)
+	} else {
+		given["last"] = "true"
+	}
+	if _, err := w.work.Ask(engine.TaskMove, engine.Input{Given: given}); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
 }
 
 // ServingAt is how far that box has been scrolled.
@@ -380,6 +546,15 @@ func (w Window) Click(p Point) Window {
 		w.form = w.form.onto(at)
 		_, value := FieldRow(Over(w.width, w.height), FieldTop(Over(w.width, w.height), w.form.Fields(), at))
 		return w.CaretInto(into(value, p))
+	}
+	// Off a panel is out of it, where getting out costs nothing. A hand on the
+	// mouse should not have to reach for the keyboard to put something away.
+	//
+	// A form is the exception and the only one: it holds what somebody typed
+	// and has not saved, and a click landing anywhere outside would throw that
+	// away without asking. esc is still there, and the bar offers it.
+	if w.closesOnAClickOff() && !Over(w.width, w.height).In(p) {
+		return w.Choose("Close")
 	}
 	// A search is not a panel over the board: the board is still there, still
 	// showing what the search left, and a card under the pointer is a card.
@@ -538,6 +713,8 @@ func Shortcut(offer string) string {
 		return "d"
 	case "save", "choose":
 		return "enter"
+	case "done":
+		return "space"
 	case "close", "cancel", "clear":
 		return "esc"
 	}
@@ -565,7 +742,8 @@ func (w Window) Helping() []reading.Field {
 		{Name: "drag", Value: "move it — the column it lands in is its new state"},
 		{Name: "drag into a lane", Value: "blocked, watching or paused"},
 		{Name: "wheel", Value: "scroll what is under the pointer — a column, the objectives, a history"},
-		{Name: "↑↓ on a task", Value: "scroll its history — the bar beside it can be pulled too"},
+		{Name: "↑↓ under a task", Value: "walk what hangs under it — space marks one done, or not"},
+		{Name: "wheel on a history", Value: "scroll it — the bar beside it can be pulled too"},
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
 		{Name: "d", Value: "delete what is chosen — it asks first"},
@@ -598,6 +776,12 @@ func (w Window) Offers() []string {
 		}
 		return []string{"Save", "Cancel"}
 	case OnDetail:
+		// Done only where there is a part to mark. The bar is where a key is
+		// looked for, so it says what space does exactly where space does it,
+		// and says nothing of it on a task nothing hangs under.
+		if len(w.Under()) > 0 && !w.chosenGoal {
+			return []string{"Done", "Edit", "Close"}
+		}
 		return []string{"Edit", "Close"}
 	case OnAsking:
 		return []string{"Delete", "Cancel"}
@@ -679,8 +863,16 @@ func (w Window) DoubleClick(p Point) Window {
 // PressAt takes hold of whatever is under the pointer, without deciding yet
 // whether this is a click or a drag.
 func (w Window) PressAt(p Point) Window {
+	w.pressed, w.pressedOn = true, w.screen
 	if w.screen == OnDetail {
 		w.draggingBar = HistoryBar(Over(w.width, w.height)).In(p)
+		// A tile is taken hold of the way a card is: solidary with its parent
+		// does not mean fixed among its sisters, and the order is what says
+		// which part is wanted first.
+		if at, on := w.tileUnder(p); on {
+			w.held = Held{Number: w.Under()[at].Number, From: p, At: p}
+			w.underAt = at
+		}
 		return w
 	}
 	if w.screen != OnTheBoard {
@@ -712,6 +904,28 @@ func (w Window) LetGo(p Point) Window {
 	if w.draggingBar {
 		w.draggingBar = false
 		return w
+	}
+	// A release with no press behind it on this screen is not a click here.
+	// A double click opens a task on the press, and the release that follows
+	// landed on the board it had just left — closing what it had just opened,
+	// for anyone whose pointer was on the part of a card the panel does not
+	// cover.
+	waiting, was := w.pressed, w.pressedOn
+	w.pressed = false
+	if !waiting || was != w.screen {
+		w.held = Held{}
+		return w
+	}
+	if w.screen == OnDetail {
+		if w.held.Moved {
+			return w.droppedUnder(p)
+		}
+		// Nothing was dragged, so this is a click, and it goes where every
+		// other click goes. Answered here instead, it left the panel deaf to
+		// the mouse — which is the fault the comment below was written about,
+		// made again on a screen it did not name.
+		w.held = Held{}
+		return w.Click(p)
 	}
 	held := w.held
 	w.held = Held{}
@@ -824,12 +1038,18 @@ func (w Window) Key(name string) Window {
 		// objective they walk the work under it instead — that is the list
 		// there is to read, and the history column carries one line saying an
 		// objective has none.
-		if w.chosenGoal {
+		// The box takes the arrows wherever there is one, because it is what
+		// somebody acts on: a tile is marked done, and a line of history is
+		// read rather than changed. The history keeps the wheel over it and
+		// the bar beside it.
+		if len(w.Under()) > 0 {
 			switch name {
 			case "down":
-				w.serving = w.settledServing(w.serving + CardHeight)
+				return w.walkingUnder(1)
 			case "up":
-				w.serving = w.settledServing(w.serving - CardHeight)
+				return w.walkingUnder(-1)
+			case " ", "space":
+				return w.marking()
 			}
 			return w
 		}
@@ -1013,6 +1233,7 @@ func (w Window) opening() Window {
 	// none of its own, and the number it carries belongs to a task as well —
 	// asking for the trace of that number answered with a task nobody had
 	// chosen, which is the wrong answer said confidently.
+	w.underAt = 0
 	if w.chosenGoal {
 		w.acts, w.history, w.serving = nil, 0, 0
 		return w

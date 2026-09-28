@@ -13,6 +13,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
 
@@ -150,7 +151,7 @@ func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 	edge := Dark().Chosen
 
 	plain := painted(drawn(t, w), box, edge)
-	chosen := painted(drawn(t, w.Click(middleOf(w, 1, 0))), box, edge)
+	chosen := painted(drawn(t, w.clicked(middleOf(w, 1, 0))), box, edge)
 	if chosen <= plain {
 		t.Errorf("a chosen card drew %d pixels of its outline and an unchosen one %d", chosen, plain)
 	}
@@ -159,7 +160,7 @@ func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 func TestTheFormIsDrawnOverTheBoard(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	shot := drawn(t, w)
 	if got := ink(shot, Over(w.width, w.height), Dark().Back); got == 0 {
@@ -215,8 +216,8 @@ func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 	// The panel fills its own box, so what is counted is the colour the task's
 	// name is written in and not merely what is not the background.
 	box, written := Over(w.width, w.height), Dark().Ink
-	first := painted(drawn(t, w.DoubleClick(middleOf(w, 1, 0))), box, written)
-	second := painted(drawn(t, w.DoubleClick(middleOf(w, 1, 1))), box, written)
+	first := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 0))), box, written)
+	second := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 1))), box, written)
 	if first == 0 || second == 0 {
 		t.Fatal("a detail drew no title at all")
 	}
@@ -231,7 +232,7 @@ func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
 	lit := Dark().Chosen
@@ -261,7 +262,7 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	}
 
 	second := TabAt(l, 1)
-	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	shot = drawn(t, w)
 	if painted(shot, TabAt(l, 1), open) == 0 {
 		t.Error("after clicking it, the second tab is not open")
@@ -279,7 +280,7 @@ func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	edge := Dark().Chosen
 
 	plain := painted(drawn(t, w), box, edge)
-	chosen := painted(drawn(t, w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
+	chosen := painted(drawn(t, w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
 	if chosen <= plain {
 		t.Errorf("a chosen lane card drew %d pixels of outline and an unchosen one %d", chosen, plain)
 	}
@@ -308,7 +309,7 @@ func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	if got := painted(drawn(t, w), Over(w.width, w.height), Dark().Ink); got == 0 {
 		t.Fatal("the detail drew no name at all")
@@ -320,7 +321,7 @@ func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
 	lit := Dark().Chosen
@@ -417,7 +418,7 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 	if got := Dp(inPixels, 2); got != inDp {
 		t.Fatalf("a pointer at %v on a two-pixel screen is at %v in dp, want %v", inPixels, got, inDp)
 	}
-	if got := w.Click(Dp(inPixels, 2)).Chosen(); got != 2 {
+	if got := w.clicked(Dp(inPixels, 2)).Chosen(); got != 2 {
 		t.Errorf("the pointer chose task %d", got)
 	}
 }
@@ -451,7 +452,7 @@ func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
 func TestTheBarDrawsWhatItOffers(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 
 	shot := drawn(t, w)
 	for i := range w.Offers() {
@@ -489,7 +490,7 @@ func TestTheDetailDrawsTheTasksFields(t *testing.T) {
 	w := holding(f, reading.Card{
 		Number: 1, Title: "Write the spec", State: "todo", Priority: "high",
 	})
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	box := Over(w.width, w.height)
 	shown := len(w.Shown())
@@ -611,7 +612,7 @@ func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	edge := Dark().Chosen
 	plain := painted(drawn(t, w), first, edge)
 
-	chosen := w.Click(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	chosen := w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if chosen.Chosen() != 3 {
 		t.Fatalf("clicking the first objective chose %d", chosen.Chosen())
 	}
@@ -664,7 +665,7 @@ func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 
 	box := Over(w.width, w.height)
 	if got := painted(drawn(t, w.Choose("Help")), box, Dark().Ink); got == 0 {
@@ -680,7 +681,7 @@ func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
@@ -712,7 +713,7 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	})
 	// On the description, because the caret is drawn only where the keyboard
 	// is and it is the caret's room that has to be four rows deep.
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("description")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
@@ -863,7 +864,7 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("title")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
@@ -897,7 +898,7 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit").On("description")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
@@ -940,7 +941,7 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Key("enter")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 	if w.Screen() != OnDetail {
 		t.Fatalf("the window is on %v, not the detail", w.Screen())
 	}
@@ -990,7 +991,7 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	w.snap.Goals = goals
 	l := w.Layout()
 	second := TabAt(l, 1)
-	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	w = w.Scroll(Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*CardHeight)
 
 	// The gap between the band of tabs and the column headers, which is empty
@@ -1009,15 +1010,15 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 //
 // Drawn and not merely known: this box was a run of text lines first, and
 // nothing in the suite could tell the difference until it was rendered.
-func TestTheWorkUnderAnObjectiveIsDrawnAsCardsInItsBox(t *testing.T) {
+func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	f := newFake()
 	var cards []reading.Card
 	for i := range 30 {
 		// A priority whose edge is a colour nothing else on this panel uses,
 		// so that what is counted below is a card and not the panel behind it.
 		cards = append(cards, reading.Card{
-			Number: i + 1, Title: fmt.Sprintf("Task %d", i+1), State: "todo",
-			Priority: "critical", Objectives: []int{1},
+			Number: i + 1, Title: fmt.Sprintf("Task %d", i+1), State: "done",
+			Objectives: []int{1},
 		})
 	}
 	w := New(f, 1200, 800)
@@ -1026,7 +1027,7 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsCardsInItsBox(t *testing.T) {
 		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
 	}
 	w = w.Key("tab")
-	w = w.Click(goalMiddle(w, 1)).Key("enter")
+	w = w.clicked(goalMiddle(w, 1)).Key("enter")
 	if w.Screen() != OnDetail || !w.ChosenGoal() {
 		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
 	}
@@ -1035,15 +1036,19 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsCardsInItsBox(t *testing.T) {
 	track := ServingBar(Over(w.width, w.height), w.Shown())
 	shot := drawn(t, w)
 
-	edge := Dark().Priority["critical"]
-	if painted(shot, frame, edge) == 0 {
-		t.Error("no card was drawn in the box under the fields")
+	// The strip down a tile's left, which says done: three pixels wide at the
+	// box's own X, where nothing else on this panel draws that colour. The
+	// tile's body is the panel's colour and counting that would count the
+	// panel behind it — measured, it did.
+	strip := func(b Box) Box { return Box{X: b.X, Y: b.Y, W: edgeWide, H: b.H} }
+	if painted(shot, strip(frame), Dark().Chosen) == 0 {
+		t.Error("no tile was drawn in the box under the fields")
 	}
-	// Nothing below the box: thirty cards are far more than it holds, and they
-	// must be cut to it the way a column's are.
-	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: CardHeight}
-	if got := painted(shot, under, edge); got != 0 {
-		t.Errorf("%d pixels of card ran out of the bottom of the box", got)
+	// Nothing below the box: thirty tiles are far more than it holds, and they
+	// must be cut to it the way a column's cards are.
+	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: SubHeight}
+	if got := painted(shot, strip(under), Dark().Chosen); got != 0 {
+		t.Errorf("%d pixels of tile ran out of the bottom of the box", got)
 	}
 
 	// The grip is at the top before anything is scrolled, and lower once it is.
@@ -1051,7 +1056,13 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsCardsInItsBox(t *testing.T) {
 	if painted(shot, high, Dark().Edge) == 0 {
 		t.Error("the grip is not at the top of a list nobody has scrolled")
 	}
-	scrolled := drawn(t, w.Key("down").Key("down").Key("down").Key("down").Key("down"))
+	// Past the last tile the box can show, since the arrows walk the cursor
+	// and the box only follows it out of sight. Ten fit where two cards did.
+	walked := w
+	for range w.ServingRows() + 2 {
+		walked = walked.Key("down")
+	}
+	scrolled := drawn(t, walked)
 	if painted(scrolled, high, Dark().Edge) == painted(shot, high, Dark().Edge) {
 		t.Error("the grip did not move when the list was scrolled")
 	}
@@ -1066,15 +1077,15 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board", State: "active"}},
 	}
 	w = w.Key("tab")
-	w = w.Click(goalMiddle(w, 1)).Key("enter")
+	w = w.clicked(goalMiddle(w, 1)).Key("enter")
 
 	frame := ServingBox(Over(w.width, w.height), w.Shown())
 	shot := drawn(t, w)
 	if painted(shot, Inside(frame), Dark().Faint) == 0 {
 		t.Error("the box says nothing where an objective nothing serves should say so")
 	}
-	if got := painted(shot, frame, Dark().Priority["normal"]); got != 0 {
-		t.Errorf("%d pixels of card were drawn for an objective nothing serves", got)
+	if got := painted(shot, Box{X: frame.X, Y: frame.Y, W: edgeWide, H: frame.H}, Dark().Chosen); got != 0 {
+		t.Errorf("%d pixels of tile were drawn for an objective nothing serves", got)
 	}
 }
 
@@ -1124,7 +1135,7 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 			{Number: 2, Title: "Keep it honest", State: "active"},
 		},
 	}
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
@@ -1161,7 +1172,7 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
 	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
-	w = w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
@@ -1171,5 +1182,122 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	_, value := FieldRow(box, FirstRow(box))
 	if painted(drawn(t, w), value, Dark().Faint) == 0 {
 		t.Error("the list says nothing where it should say there is nothing to serve")
+	}
+}
+
+// What fits in the room there is, measured rather than reckoned.
+//
+// Every case of the walk back: what already fits is left alone, what does not
+// is cut with an ellipsis, and a width too narrow for even one rune and an
+// ellipsis answers the ellipsis on its own rather than looping for ever.
+func TestFits_cutsToTheRoomThereIs(t *testing.T) {
+	var ops op.Ops
+	gtx := layout.Context{
+		Ops:         &ops,
+		Constraints: layout.Exact(image.Pt(1200, 800)),
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	th := Theme()
+	long := "T090f · Ajouter une étape pour réouvrir les droits avant intervention"
+
+	if got := fits(gtx, th, "short", 400, small); got != "short" {
+		t.Errorf("fits(short, 400) = %q, want it left alone", got)
+	}
+	cut := fits(gtx, th, long, 200, small)
+	if !strings.HasSuffix(cut, "…") {
+		t.Errorf("fits(long, 200) = %q, want it cut with an ellipsis", cut)
+	}
+	if wide(loosened(gtx), th, cut, small).Size.X > 200 {
+		t.Errorf("fits(long, 200) = %q, which is wider than 200", cut)
+	}
+	if len([]rune(cut)) >= len([]rune(long)) {
+		t.Errorf("fits(long, 200) = %q, which is no shorter than what it was given", cut)
+	}
+	// Exactly as wide as the room there is, which is the one width where
+	// "fits" and "is narrower than" part company. Measured and then handed
+	// back, rather than guessed at: nothing about a proportional font lets a
+	// count of runes name this number.
+	exact := wide(loosened(gtx), th, "short", small).Size.X
+	if got := fits(gtx, th, "short", exact, small); got != "short" {
+		t.Errorf("fits(short, its own width) = %q, want it left alone", got)
+	}
+	if got := fits(gtx, th, "short", exact-1, small); got == "short" {
+		t.Errorf("fits(short, one less than its width) = %q, want it cut", got)
+	}
+
+	// Exactly the width of a cut one, which is the boundary the walk itself
+	// turns on. Measured and handed back, for the same reason as above.
+	oneCut := fits(gtx, th, long, 200, small)
+	atCut := wide(loosened(gtx), th, oneCut, small).Size.X
+	if got := fits(gtx, th, long, atCut, small); got != oneCut {
+		t.Errorf("fits(long, the width of its own cut) = %q, want %q", got, oneCut)
+	}
+
+	// The width where exactly one rune and an ellipsis fit, which is the last
+	// step of the walk. Found by measuring rather than by choosing a number:
+	// a walk that stopped one step early would answer the ellipsis alone here,
+	// and nothing about the font says where that width falls.
+	one := string([]rune(long)[:1]) + "…"
+	atOne := wide(loosened(gtx), th, one, small).Size.X
+	if got := fits(gtx, th, long, atOne, small); got != one {
+		t.Errorf("fits(long, room for one rune) = %q, want %q", got, one)
+	}
+
+	// Narrower than anything can be: the ellipsis alone, and no loop that
+	// never ends.
+	if got := fits(gtx, th, long, 1, small); got != "…" {
+		t.Errorf("fits(long, 1) = %q, want the ellipsis on its own", got)
+	}
+}
+
+// loosened is what fits measures with, kept here so the test asks the same
+// question the code does.
+func loosened(gtx layout.Context) layout.Context {
+	loose := gtx
+	loose.Constraints = layout.Constraints{Max: image.Pt(1<<20, lineHigh)}
+	return loose
+}
+
+// A card's ghost is a whole card and a tile's is a whole tile. The body drawn
+// for each is its own kind's, so what is carried looks like what it will be
+// once it is put down.
+func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	from := middleOf(w, 1, 0)
+	to := Point{X: from.X, Y: from.Y - CardHeight}
+	w = w.PressAt(from).MoveTo(to)
+	ghost, dragging := w.Ghost()
+	if !dragging {
+		t.Fatal("nothing is in hand on the board")
+	}
+	// A card's ghost is filled the whole of its height. A tile's body is its
+	// box less the gap to the next; taking that off a card here would leave a
+	// strip of board showing through the bottom of what is in hand.
+	shot := drawn(t, w)
+	foot := Box{X: ghost.X + 2, Y: ghost.Y + ghost.H - between, W: ghost.W - 4, H: between - 2}
+	if painted(shot, foot, Dark().Ghost) == 0 {
+		t.Errorf("the foot of what is in hand is not filled: %+v", foot)
+	}
+}
+
+// The last part can be marked done, which is the far end of the cursor's walk.
+func TestMarking_reachesTheLastPart(t *testing.T) {
+	w := openOnAParent(t, 3)
+	for range 5 {
+		w = w.walkingUnder(1)
+	}
+	w = w.Key("space")
+	var asked *asked
+	for i, one := range w.work.(*fake).asked {
+		if one.op.Thing == engine.TaskEdit.Thing && one.op.Verb == engine.TaskEdit.Verb {
+			asked = &w.work.(*fake).asked[i]
+		}
+	}
+	if asked == nil {
+		t.Fatal("marking the last part asked nothing")
+	}
+	if got := asked.in.Given["number"]; got != "4" {
+		t.Errorf("it marked task %s, want the last part", got)
 	}
 }

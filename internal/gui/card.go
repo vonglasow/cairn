@@ -77,3 +77,16 @@ func Counted(g reading.Goal) string {
 	}
 	return fmt.Sprintf("%d/%d · %d%%", g.Done, g.Total, g.Done*100/g.Total)
 }
+
+// SubLine is what one part of the work reads on its tile: its number, then its
+// title, cut to the room there is.
+//
+// Whether it is done is not written here — the strip down the left says it, and
+// a word as well would spend on repetition the room the title needs.
+//
+// Cutting it to the tile is not done here. The font is proportional, so what
+// fits is measured where there is something to measure with, and a count of
+// runes would only be close.
+func SubLine(c reading.Card) string {
+	return "#" + strconv.Itoa(c.Number) + "  " + c.Title
+}

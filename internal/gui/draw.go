@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/color"
 	"strconv"
+	"strings"
 
 	"gioui.org/f32"
 	"gioui.org/font/gofont"
@@ -109,6 +110,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	if w.Screen() == OnDetail {
 		drawDetail(gtx, th, skin, w)
+		// Over the panel and not under it: what is in hand is in hand over
+		// whatever is on screen, and the panel is what is on screen.
+		drawDragging(gtx, th, skin, w)
 	}
 	if w.Screen() == OnForm {
 		drawForm(gtx, th, skin, w)
@@ -326,12 +330,26 @@ func drawDragging(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if !dragging {
 		return
 	}
-	fill(gtx, ghost, skin.Ghost)
-	outline(gtx, ghost, skin.Chosen)
+	body := ghost
+	if w.Screen() == OnDetail {
+		body = SubPanel(ghost)
+	}
+	fill(gtx, body, skin.Ghost)
+	outline(gtx, body, skin.Chosen)
 	for _, c := range w.Reading().Cards {
-		if c.Number == w.held.Number {
-			say(gtx, th, skin.Ink, PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain)
+		if c.Number != w.held.Number {
+			continue
 		}
+		// Written where the thing in hand writes it. A card puts its title 28
+		// pixels down and a tile is 22 high, so a card's layout put the
+		// writing past the bottom of the ghost and onto whatever was behind
+		// it. What is carried is drawn the way it is drawn where it came from.
+		if w.Screen() == OnDetail {
+			line := SubWriting(ghost)
+			say(gtx, th, skin.Ink, line, fits(gtx, th, SubLine(c), line.W, small), small)
+			continue
+		}
+		say(gtx, th, skin.Ink, PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain)
 	}
 }
 
@@ -370,6 +388,29 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 // at the foot of the left column. Only for an objective: a task is served by
 // nothing, and a frame drawn over nothing is a frame that says there is
 // something to read.
+// drawSub is one part of the work: a strip saying whether it is done, then its
+// number and its title on the one line it has.
+//
+// The strip carries done where a card's carries priority. It is the only fact
+// a part has left that a glance should not have to read the words for, and a
+// sub-task has no priority of its own to put there instead.
+func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, on bool) {
+	panel := SubPanel(box)
+	fill(gtx, panel, skin.Panel)
+	edge, ink := skin.Edge, skin.Faint
+	if reading.Finished(c) {
+		edge, ink = skin.Chosen, skin.Ink
+	}
+	fill(gtx, Box{X: panel.X, Y: panel.Y, W: edgeWide, H: panel.H}, edge)
+	// Outlined where the keyboard is, the way a form lights the field it is
+	// on: one place to look for where you are, whatever is open.
+	if on {
+		outline(gtx, panel, skin.Chosen)
+	}
+	line := SubWriting(box)
+	say(gtx, th, ink, line, fits(gtx, th, SubLine(c), line.W, small), small)
+}
+
 func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, w Window) {
 	say(gtx, th, skin.Faint, ServingHead(box, fields), w.UnderHead(), small)
 	frame := ServingBox(box, fields)
@@ -387,12 +428,12 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 		return
 	}
 
-	// The same cards the board draws, cut to the frame the way a column's are:
-	// this is the one place that lists tasks, and a run of text lines would
-	// make it the one place a task does not look like a task.
+	// Tiles of one line, cut to the frame the way a column's cards are. Not
+	// the board's cards: those are 96 pixels and use 50, the rest being room
+	// for facts a part of the work does not carry.
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
 	for at, c := range under {
-		drawCard(gtx, th, skin, w.ServingCardAt(at), c, false)
+		drawSub(gtx, th, skin, w.ServingCardAt(at), c, at == w.UnderAt())
 	}
 	clipped.Pop()
 
@@ -401,7 +442,7 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	// does not find.
 	track := ServingBar(box, fields)
 	fill(gtx, track, skin.Back)
-	fill(gtx, Thumb(track, len(under)*CardHeight, frame.H, w.ServingAt()), skin.Edge)
+	fill(gtx, Thumb(track, len(under)*SubHeight, frame.H, w.ServingAt()), skin.Edge)
 }
 
 func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
@@ -516,6 +557,45 @@ func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said stri
 	before := wide(loose, th, string(kept[:min(len(kept), column)]), size)
 
 	fill(gtx, CaretAt(b, line, from, before.Size.X), skin.Chosen)
+}
+
+// fits cuts a piece of text to the room there is, measured rather than
+// reckoned. Counting an average glyph width is close enough for a card, whose
+// title has a line to itself; on a tile it left the text running to the
+// frame's edge, where say clipped it mid-word against the bar beside it.
+//
+// Measured by drawing nowhere, which is what wide already does for the caret.
+// Walked back one rune at a time rather than guessed at: the font is
+// proportional, so no arithmetic on a count of runes answers this.
+func fits(gtx layout.Context, th *material.Theme, said string, width, size int) string {
+	// Loosened before measuring, the way the caret loosens it. A label laid out
+	// under the window's own constraints answers the width it was allowed and
+	// not the width it wants, so every string measured wider than any tile and
+	// every title came out as a lone ellipsis. Seen in a screenshot: the pixel
+	// tests all passed, because what they asked was whether writing reached
+	// the frame's edge, and there was no writing left anywhere.
+	loose := gtx
+	loose.Constraints = layout.Constraints{Max: image.Pt(1<<20, lineHigh)}
+	if wide(loose, th, said, size).Size.X <= width {
+		return said
+	}
+	// Grown from the front rather than shrunk from the back: the longest that
+	// still fits is kept, and the first that does not ends it.
+	//
+	// Walking down from the full length gave the same answer from any starting
+	// point at or above it — every step above the answer produces a string too
+	// wide to take, so where the walk began could not be read from what it
+	// returned. Growing forward makes each step tell.
+	best := "…"
+	kept := []rune(said)
+	for n := range kept {
+		cut := strings.TrimRight(string(kept[:n+1]), " ") + "…"
+		if wide(loose, th, cut, size).Size.X > width {
+			break
+		}
+		best = cut
+	}
+	return best
 }
 
 // wide is how much room a piece of text takes, measured by drawing it nowhere.

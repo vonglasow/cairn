@@ -48,6 +48,21 @@ func PartsOf(box Box) Parts {
 	}
 }
 
+// SubPanel is the body of one tile: its box less the gap that separates it
+// from the next.
+func SubPanel(b Box) Box {
+	return Box{X: b.X, Y: b.Y, W: b.W, H: b.H - between}
+}
+
+// SubWriting is where a tile writes what it carries, which is the one line it
+// has. Asked for by the tile and by the ghost of one in hand, so that what is
+// carried is drawn where it would be drawn if it were put down — a ghost laid
+// out any other way is a ghost that lies about where the thing will go.
+func SubWriting(b Box) Box {
+	panel := SubPanel(b)
+	return Row(panel, panel.Y+inset, lineHigh)
+}
+
 // CountedAt is where an objective's count sits on its number line: hard right,
 // so that it and the number are read as two separate things rather than as one
 // run of digits.

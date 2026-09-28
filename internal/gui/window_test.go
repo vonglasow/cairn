@@ -1,9 +1,14 @@
 package gui
 
 import (
+	"errors"
+	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
+	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
 
@@ -17,11 +22,11 @@ func TestAClickChoosesTheCardUnderIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
 
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	if w.Chosen() != 1 {
 		t.Fatalf("chose %d, want task 1", w.Chosen())
 	}
-	w = w.Click(middleOf(w, 1, 1))
+	w = w.clicked(middleOf(w, 1, 1))
 	if w.Chosen() != 2 {
 		t.Fatalf("chose %d, want task 2", w.Chosen())
 	}
@@ -30,8 +35,8 @@ func TestAClickChoosesTheCardUnderIt(t *testing.T) {
 func TestAClickOnNothingChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
-	w = w.Click(middleOf(w, 1, 0))
-	w = w.Click(Point{X: 0, Y: 0})
+	w = w.clicked(middleOf(w, 1, 0))
+	w = w.clicked(Point{X: 0, Y: 0})
 	if w.Chosen() != 0 {
 		t.Fatalf("clicking the margin left %d chosen", w.Chosen())
 	}
@@ -41,7 +46,7 @@ func TestADoubleClickOpensTheDetail(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 	if w.Screen() != OnDetail {
 		t.Fatalf("the window is on %v, want the detail", w.Screen())
 	}
@@ -274,7 +279,7 @@ func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 
 	at := -1
 	for i, offer := range w.Offers() {
@@ -286,7 +291,7 @@ func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 		t.Fatalf("the bar offers %v, and none of them edits", w.Offers())
 	}
 	box := OfferAt(w.Layout(), at)
-	w = w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	if w.Screen() != OnForm {
 		t.Fatalf("clicking Edit left the window on %v", w.Screen())
 	}
@@ -313,10 +318,10 @@ func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
 	tab := TabAt(w.Layout(), 1)
-	w = w.Click(Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2})
+	w = w.clicked(Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2})
 
 	second := GoalAt(w.Layout(), 1, 0)
-	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if w.Chosen() != 4 {
 		t.Fatalf("clicking the second objective chose %d", w.Chosen())
 	}
@@ -338,7 +343,7 @@ func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 	w.tab = Objectives
 
 	below := GoalAt(w.Layout(), 4, 0)
-	if got := w.Click(Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen() != 0 {
+	if got := w.clicked(Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen() != 0 {
 		t.Errorf("clicking below the list chose %d", got.Chosen())
 	}
 }
@@ -352,7 +357,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 		Description: "The client wants two columns",
 	})
 
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 	shown := w.Shown()
 	if len(shown) == 0 {
 		t.Fatal("the detail shows nothing of the task")
@@ -445,7 +450,7 @@ func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 
 	for at, want := range map[int]int{0: 3, 1: 4} {
 		box := GoalAt(w.Layout(), at, 0)
-		got := w.DoubleClick(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		got := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		if got.Screen() != OnDetail {
 			t.Fatalf("double-clicking objective %d left the window on %v", at, got.Screen())
 		}
@@ -468,13 +473,13 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 	w.tab = Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	w = w.DoubleClick(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	w = w.doubleClicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if w.Chosen() != 3 {
 		t.Fatalf("the detail opened on %d", w.Chosen())
 	}
 
 	second := GoalAt(w.Layout(), 1, 0)
-	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if w.Chosen() != 3 {
 		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen())
 	}
@@ -485,7 +490,7 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 			continue
 		}
 		box := OfferAt(w.Layout(), i)
-		w = w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	}
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("Close left the window on %v", w.Screen())
@@ -496,7 +501,7 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	w = w.PressAt(middleOf(w, 1, 0))
 	w = w.MoveTo(Point{X: 20, Y: 400})
@@ -514,7 +519,7 @@ func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	w.tab = Objectives
 
 	box := GoalAt(w.Layout(), 0, 0)
-	w = w.DoubleClick(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	w = w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 
 	shown := w.Shown()
 	if len(shown) == 0 {
@@ -571,7 +576,7 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	// On the objectives tab, the objective.
 	w.tab = Objectives
 	box := GoalAt(w.Layout(), 0, 0)
-	goal := w.DoubleClick(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	goal := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	if got := goal.Shown(); len(got) == 0 || got[0].Value != "Ship cairn" {
 		t.Errorf("the detail of objective 1 shows %v", got)
 	}
@@ -581,7 +586,7 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 
 	// On the tasks tab, the task.
 	w.tab = Tasks
-	task := w.DoubleClick(middleOf(w, 0, 0))
+	task := w.doubleClicked(middleOf(w, 0, 0))
 	if got := task.Shown(); len(got) == 0 || got[0].Value != "Write the spec" {
 		t.Errorf("the detail of task 1 shows %v", got)
 	}
@@ -599,7 +604,7 @@ func TestEEditsWhateverIsChosen(t *testing.T) {
 	if got := w.Key("e"); got.Screen() != OnTheBoard {
 		t.Error("e with nothing chosen opened something")
 	}
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 	if got := w.Key("e"); got.Screen() != OnForm {
 		t.Fatalf("e left the window on %v", got.Screen())
 	}
@@ -612,7 +617,7 @@ func TestEEditsWhateverIsChosen(t *testing.T) {
 func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0))
 
 	asked := w.Choose("Delete")
 	if asked.Screen() != OnAsking {
@@ -795,7 +800,7 @@ func TestTheArrowsWalkTheBoard(t *testing.T) {
 		reading.Card{Number: 2, Title: "First", State: "todo"},
 		reading.Card{Number: 3, Title: "Second", State: "todo"})
 
-	w = w.Click(middleOf(w, 0, 0))
+	w = w.clicked(middleOf(w, 0, 0))
 	if got := w.Key("right").Chosen(); got != 2 {
 		t.Errorf("right of the backlog chose %d", got)
 	}
@@ -819,7 +824,7 @@ func TestTheArrowsStopAtTheEdges(t *testing.T) {
 		reading.Card{Number: 1, Title: "Only", State: "backlog"},
 		reading.Card{Number: 2, Title: "Last", State: "done"})
 
-	w = w.Click(middleOf(w, 0, 0))
+	w = w.clicked(middleOf(w, 0, 0))
 	if got := w.Key("left").Chosen(); got != 1 {
 		t.Errorf("left of the first column chose %d", got)
 	}
@@ -855,7 +860,7 @@ func TestTheArrowsWalkTheObjectives(t *testing.T) {
 	w.tab = Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	w = w.Click(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	w = w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if got := w.Key("down").Chosen(); got != 4 {
 		t.Errorf("down the list chose %d", got)
 	}
@@ -876,7 +881,7 @@ func TestEnterOpensWhatIsChosen(t *testing.T) {
 	if got := w.Key("enter"); got.Screen() != OnTheBoard {
 		t.Error("enter with nothing chosen opened something")
 	}
-	w = w.Click(middleOf(w, 1, 0)).Key("enter")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 	if w.Screen() != OnDetail {
 		t.Fatalf("enter left the window on %v", w.Screen())
 	}
@@ -895,7 +900,7 @@ func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 		reading.Card{Number: 3, Title: "Three", State: "backlog"},
 		reading.Card{Number: 4, Title: "Only", State: "todo"})
 
-	w = w.Click(middleOf(w, 0, 2))
+	w = w.clicked(middleOf(w, 0, 2))
 	if got := w.Chosen(); got != 3 {
 		t.Fatalf("the third card of the backlog is %d", got)
 	}
@@ -943,7 +948,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	if got := Heads(w); got != "" {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
-	on := w.Click(middleOf(w, 1, 0))
+	on := w.clicked(middleOf(w, 1, 0))
 	if got := Heads(on.Key("enter")); got != "task 7" {
 		t.Errorf("an open task is headed %q", got)
 	}
@@ -960,7 +965,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("adding a task is headed %q", got)
 	}
 	second := TabAt(w.Layout(), 1)
-	goals := w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	goals := w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if got := Heads(goals.Key("cmd+n")); got != "New objective" {
 		t.Errorf("adding an objective is headed %q", got)
 	}
@@ -986,7 +991,7 @@ func TestTheOtherPageIsTheOneNobodyIsOn(t *testing.T) {
 	}
 	// And changing page lets go of what was chosen: a card chosen on the page
 	// you left is a card the arrows would walk from on the page you are on.
-	if got := w.Click(middleOf(w, 1, 0)).other(); got.Chosen() != 0 {
+	if got := w.clicked(middleOf(w, 1, 0)).other(); got.Chosen() != 0 {
 		t.Errorf("after changing page, task %d is still chosen", got.Chosen())
 	}
 }
@@ -1000,7 +1005,7 @@ func TestWhereWhatIsChosenIsDrawn(t *testing.T) {
 		reading.Card{Number: 2, Title: "Second", State: "todo"})
 	l := w.Layout()
 
-	first := w.Click(middleOf(w, 1, 0))
+	first := w.clicked(middleOf(w, 1, 0))
 	box, run, ok := first.WhereChosen()
 	if !ok {
 		t.Fatal("the first card is chosen and drawn nowhere")
@@ -1028,7 +1033,7 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.Click(middleOf(w, 1, 0)).Key("enter")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 	over := HistoryBox(Over(w.width, w.height))
 	at := Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
 
@@ -1120,5 +1125,268 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	w.chosen = 99
 	if _, _, ok := w.WhereChosen(); ok {
 		t.Error("an objective that is not there was said to be drawn somewhere")
+	}
+}
+
+// Where a point falls in the box under the fields, and where it does not.
+func TestTileUnder_saysWhichPartAPointIsOn(t *testing.T) {
+	w := openOnAParent(t, 3)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	for _, tc := range []struct {
+		what string
+		at   Point
+		want int
+		on   bool
+	}{
+		{"the first tile", Point{X: box.X + 5, Y: box.Y + 2}, 0, true},
+		{"the second", Point{X: box.X + 5, Y: box.Y + SubHeight + 2}, 1, true},
+		{"above the box", Point{X: box.X + 5, Y: box.Y - 1}, 0, false},
+		{"below the box", Point{X: box.X + 5, Y: box.Y + box.H + 1}, 0, false},
+		{"left of it", Point{X: box.X - 1, Y: box.Y + 2}, 0, false},
+		{"in the box, past the last tile", Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}, 0, false},
+	} {
+		at, on := w.tileUnder(tc.at)
+		if on != tc.on || (on && at != tc.want) {
+			t.Errorf("%s: tileUnder = %d, %v, want %d, %v", tc.what, at, on, tc.want, tc.on)
+		}
+	}
+}
+
+// Where a tile lands when it is let go, which is the slot the pointer is over.
+func TestDroppedUnder_takesThePlaceItWasLetGoOn(t *testing.T) {
+	box := func(w Window) Box { return ServingBox(Over(w.width, w.height), w.Shown()) }
+	// Every slot is inside the box. Past its bottom is not a place a part can
+	// land — it has no column to fall into — so that is the other test.
+	for _, tc := range []struct {
+		what       string
+		held, slot int
+		want       map[string]string
+	}{
+		{"the third onto the first", 2, 0, map[string]string{"number": "4", "first": "true"}},
+		{"the third onto the second", 2, 1, map[string]string{"number": "4", "after": "2"}},
+		{"the first past the last", 0, 4, map[string]string{"number": "2", "last": "true"}},
+	} {
+		w := openOnAParent(t, 3)
+		from := Point{X: box(w).X + 5, Y: box(w).Y + tc.held*SubHeight + 2}
+		to := Point{X: box(w).X + 5, Y: box(w).Y + tc.slot*SubHeight + 2}
+		w = w.PressAt(from).MoveTo(to).LetGo(to)
+		// The move among what was asked, and not the last of them: a move that
+		// went through is followed by the reading that redraws the board.
+		var moved *asked
+		for i, one := range w.work.(*fake).asked {
+			if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
+				moved = &w.work.(*fake).asked[i]
+			}
+		}
+		if moved == nil {
+			t.Fatalf("%s: no move was asked", tc.what)
+		}
+		for name, value := range tc.want {
+			if moved.in.Given[name] != value {
+				t.Errorf("%s: asked %v, want %s=%s", tc.what, moved.in.Given, name, value)
+			}
+		}
+	}
+}
+
+// A tile let go on its own place asks nothing: it is already there.
+func TestDroppedUnder_asksNothingForAPartAlreadyThere(t *testing.T) {
+	w := openOnAParent(t, 3)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	at := Point{X: box.X + 5, Y: box.Y + SubHeight + 2}
+	past := Point{X: at.X + Grip + 2, Y: at.Y}
+	w = w.PressAt(at).MoveTo(past).LetGo(at)
+	for _, one := range w.work.(*fake).asked {
+		if one.op.Verb == engine.TaskMove.Verb && one.op.Thing == engine.TaskMove.Thing {
+			t.Errorf("a part let go where it already was asked %v", one.in.Given)
+		}
+	}
+}
+
+// openOnAParent is a window with a task open on the parts hanging under it,
+// numbered 2 upward in the order they are given.
+func openOnAParent(t *testing.T, parts int) Window {
+	t.Helper()
+	f := newFake()
+	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo"}}
+	for i := range parts {
+		cards = append(cards, reading.Card{
+			Number: i + 2, Title: fmt.Sprintf("Part %d", i+1), State: "todo", Parent: 1,
+		})
+	}
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: cards}
+	return w.clicked(middleOf(w, 1, 0)).Key("enter")
+}
+
+// What a tile in hand looks like, and where it would land. Pinned because the
+// arithmetic that places them is the arithmetic a drop is aimed by: a ghost
+// half a tile out or a line on the wrong slot makes the gesture lie.
+func TestGhostAndLanding_areTheTilesOwnWhileOneIsHeld(t *testing.T) {
+	w := openOnAParent(t, 3)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	from := Point{X: box.X + 5, Y: box.Y + 2*SubHeight + 2}
+	to := Point{X: box.X + 5, Y: box.Y + SubHeight + 4}
+	w = w.PressAt(from).MoveTo(to)
+
+	ghost, dragging := w.Ghost()
+	if !dragging {
+		t.Fatal("nothing is in hand")
+	}
+	// A whole tile: its body is derived the way a tile's is, so that what is
+	// carried is laid out exactly as it will be once it is put down.
+	want := Box{X: box.X, Y: to.Y - SubHeight/2, W: box.W, H: SubHeight}
+	if ghost != want {
+		t.Errorf("Ghost = %+v, want %+v", ghost, want)
+	}
+	if !ghost.In(to) {
+		t.Errorf("Ghost = %+v does not hold the pointer at %+v", ghost, to)
+	}
+
+	landing, somewhere := w.Landing()
+	if !somewhere {
+		t.Fatal("nothing says where it would land")
+	}
+	// Snapped to the slot the hand is over, which is the second.
+	wantLanding := Box{X: box.X, Y: box.Y + SubHeight, W: box.W, H: landingHigh}
+	if landing != wantLanding {
+		t.Errorf("Landing = %+v, want %+v", landing, wantLanding)
+	}
+}
+
+// Nothing is in hand, and nothing says where it would land, once a tile is let
+// go outside the box.
+func TestLanding_saysNothingOutsideTheBox(t *testing.T) {
+	w := openOnAParent(t, 3)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	from := Point{X: box.X + 5, Y: box.Y + 2}
+	out := Point{X: box.X + 5, Y: box.Y + box.H + CardHeight}
+	w = w.PressAt(from).MoveTo(out)
+	if landing, somewhere := w.Landing(); somewhere {
+		t.Errorf("it says a tile would land at %+v, outside its box", landing)
+	}
+}
+
+// The box follows the cursor out of sight, and comes back with it.
+func TestWalkingUnder_bringsWhatItLandsOnIntoSight(t *testing.T) {
+	w := openOnAParent(t, 20)
+	rows := w.ServingRows()
+	if w.ServingAt() != 0 {
+		t.Fatalf("it starts at %d, not at the top", w.ServingAt())
+	}
+	// Walked to the last tile the box can show, nothing has scrolled yet.
+	for range rows - 1 {
+		w = w.walkingUnder(1)
+	}
+	if w.ServingAt() != 0 {
+		t.Errorf("it scrolled to %d before the cursor left the box", w.ServingAt())
+	}
+	// One more, and it follows by exactly one tile.
+	w = w.walkingUnder(1)
+	if got := w.ServingAt(); got != SubHeight {
+		t.Errorf("it scrolled to %d, want one tile (%d)", got, SubHeight)
+	}
+	// Back up to the top, and it comes back.
+	for range rows + 2 {
+		w = w.walkingUnder(-1)
+	}
+	if got := w.ServingAt(); got != 0 {
+		t.Errorf("it is at %d after walking back to the first, want the top", got)
+	}
+}
+
+// A move the store refuses leaves the window saying so, and the parts where
+// they were: a board that reordered itself on a refusal would be a board
+// showing something nobody's store holds.
+func TestDroppedUnder_saysSoWhenTheStoreRefuses(t *testing.T) {
+	w := openOnAParent(t, 3)
+	w.work.(*fake).failOp = errors.New("the store said no")
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	from := Point{X: box.X + 5, Y: box.Y + 2*SubHeight + 2}
+	to := Point{X: box.X + 5, Y: box.Y + 2}
+	w = w.PressAt(from).MoveTo(to).LetGo(to)
+	if w.Wrong() == nil {
+		t.Error("a refused move said nothing")
+	}
+	if got := titles(w.Under()); !slices.Equal(got, []string{"Part 1", "Part 2", "Part 3"}) {
+		t.Errorf("the parts read %v, want them where they were", got)
+	}
+}
+
+// Where a point falls, and where a tile lands, once the box has been scrolled.
+//
+// Every other test of these leaves the box at its top, where the scroll adds
+// nothing — so the reckoning could have dropped it entirely and none of them
+// would have noticed. A part let go on the fourth tile of a scrolled box must
+// name the fourth, not whichever one happens to sit there on screen.
+func TestUnderAScrolledBox_reckonsWithWhatIsOutOfSight(t *testing.T) {
+	w := openOnAParent(t, 20)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	// Walked far enough that the box has followed the cursor down.
+	for range w.ServingRows() + 2 {
+		w = w.walkingUnder(1)
+	}
+	if w.ServingAt() == 0 {
+		t.Fatal("the box did not scroll")
+	}
+	scrolled := w.ServingAt() / SubHeight
+
+	// The tile under the top of the box is the one the scroll put there.
+	at, on := w.tileUnder(Point{X: box.X + 5, Y: box.Y + 2})
+	if !on || at != scrolled {
+		t.Errorf("the top of a scrolled box is tile %d (%v), want %d", at, on, scrolled)
+	}
+
+	// And a part let go there takes that tile's place, not the first one's.
+	// Read before the drop: the window reads the store again once a move goes
+	// through, and this one is answered by a fake that holds no tasks.
+	want := strconv.Itoa(w.Under()[scrolled].Number)
+	from := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
+	to := Point{X: box.X + 5, Y: box.Y + SubHeight + 2}
+	w = w.PressAt(from).MoveTo(to).LetGo(to)
+	var moved *asked
+	for i, one := range w.work.(*fake).asked {
+		if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
+			moved = &w.work.(*fake).asked[i]
+		}
+	}
+	if moved == nil {
+		t.Fatal("nothing was moved")
+	}
+	// Behind the tile above where it was let go, counted from the top of the
+	// listing and not from the top of what is showing.
+	if got := moved.in.Given["after"]; got != want {
+		t.Errorf("it was put after %s, want %s — the scroll was not counted", got, want)
+	}
+}
+
+// A part let go just below the last one is put after it, and the window says
+// which one it is going after.
+//
+// This is the slot that tells the reckoning apart: one below the last is still
+// inside the box, and naming the last part is not the same as asking for the
+// end of the list — both put it in the same place, and only one of them says
+// what it is measuring from.
+func TestDroppedUnder_namesTheLastPartWhenItGoesBelowIt(t *testing.T) {
+	w := openOnAParent(t, 3)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	last := strconv.Itoa(w.Under()[2].Number)
+	from := Point{X: box.X + 5, Y: box.Y + 2}
+	to := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
+	w = w.PressAt(from).MoveTo(to).LetGo(to)
+	var moved *asked
+	for i, one := range w.work.(*fake).asked {
+		if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
+			moved = &w.work.(*fake).asked[i]
+		}
+	}
+	if moved == nil {
+		t.Fatal("nothing was moved")
+	}
+	if got := moved.in.Given["after"]; got != last {
+		t.Errorf("it was put after %q, want after the last part (%s)", got, last)
+	}
+	if _, asLast := moved.in.Given["last"]; asLast {
+		t.Error("it asked for the end of the list rather than naming what it goes after")
 	}
 }

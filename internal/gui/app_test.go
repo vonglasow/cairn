@@ -83,7 +83,7 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	if got := Typed(w, "N", key.ModCtrl); got.Screen() != OnForm {
 		t.Errorf("ctrl+N left the window on %v", got.Screen())
 	}
-	opened := w.Click(middleOf(w, 1, 0)).Choose("Edit")
+	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	if got := Typed(opened, string(key.NameEscape), 0); got.Screen() != OnTheBoard {
 		t.Errorf("escape left the window on %v", got.Screen())
 	}
@@ -102,7 +102,7 @@ func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 		Description: "The client wants two columns",
 	})
 
-	w = w.DoubleClick(middleOf(w, 1, 0))
+	w = w.doubleClicked(middleOf(w, 1, 0))
 	if got := ink(drawn(t, w), Over(w.width, w.height), Dark().Back); got == 0 {
 		t.Fatal("the detail is blank")
 	}
@@ -214,12 +214,12 @@ func TestClickingATabChangesToIt(t *testing.T) {
 	l := w.Layout()
 
 	second := TabAt(l, 1)
-	w = w.Click(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if w.Tab() != Objectives {
 		t.Fatalf("clicking the second tab left the window on %v", w.Tab())
 	}
 	first := TabAt(l, 0)
-	w = w.Click(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	w = w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if w.Tab() != Tasks {
 		t.Fatalf("clicking the first tab left the window on %v", w.Tab())
 	}
@@ -231,7 +231,7 @@ func TestClickingBesideTheTabsChangesNothing(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 	beside := Point{X: l.Tabs.X + l.Tabs.W - 10, Y: l.Tabs.Y + l.Tabs.H/2}
-	if got := w.Click(beside); got.Tab() != Tasks {
+	if got := w.clicked(beside); got.Tab() != Tasks {
 		t.Errorf("clicking beside the tabs left the window on %v", got.Tab())
 	}
 }

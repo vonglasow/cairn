@@ -124,3 +124,8 @@ func ReachesCard(c Card, query string) bool {
 	}
 	return false
 }
+
+// Finished says whether a card is done. One line, and it earns being here
+// rather than written out at each board: `done` is a word of the domain's, and
+// a board spelling it for itself is a board deciding what finished means.
+func Finished(c Card) bool { return c.State == string(domain.Done) }

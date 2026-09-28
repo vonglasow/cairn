@@ -161,3 +161,21 @@ func TestReaches_answersWhatTheCommandLineAnswers(t *testing.T) {
 		}
 	}
 }
+
+// Whether a part of the work is done. Both boards ask it and the answer is one
+// word of the domain's, so it is not each board's to spell.
+func TestFinished_isWhatDoneMeansOnACard(t *testing.T) {
+	for _, tc := range []struct {
+		state string
+		want  bool
+	}{
+		{"done", true},
+		{"todo", false},
+		{"current", false},
+		{"", false},
+	} {
+		if got := Finished(Card{State: tc.state}); got != tc.want {
+			t.Errorf("Finished(%q) = %v, want %v", tc.state, got, tc.want)
+		}
+	}
+}

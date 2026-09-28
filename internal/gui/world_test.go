@@ -180,16 +180,26 @@ func (w *world) click(title string) error {
 	if err != nil {
 		return err
 	}
-	w.w = w.w.Click(at)
+	w.w = w.w.clicked(at)
 	return nil
 }
 
+// doubleClick is the two presses and the two releases a mouse sends, not a
+// call to DoubleClick: what a release does with what the press opened is the
+// whole of what this is for.
 func (w *world) doubleClick(title string) error {
 	at, err := w.find(title)
 	if err != nil {
 		return err
 	}
-	w.w = w.w.DoubleClick(at)
+	// On the card's left edge and not its middle: a card is wider than the
+	// panel that opens over it, so the middle of one lands inside the panel
+	// and its edge does not. The release that follows the double click landed
+	// outside and closed what the click had just opened, and a test aiming at
+	// the middle could never see it.
+	edge := Point{X: at.X - w.w.Layout().Column[0].W/2 + 2, Y: at.Y}
+	w.w = w.w.PressAt(edge).LetGo(edge)
+	w.w = w.w.doubleClicked(edge).LetGo(edge)
 	return nil
 }
 
@@ -200,7 +210,7 @@ func (w *world) clickTab(name string) error {
 		return fmt.Errorf("no tab called %q", name)
 	}
 	box := TabAt(w.w.Layout(), int(tab))
-	w.w = w.w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	return nil
 }
 
@@ -227,7 +237,7 @@ func (w *world) clickGoal(title string) error {
 	if err != nil {
 		return err
 	}
-	w.w = w.w.Click(at)
+	w.w = w.w.clicked(at)
 	return nil
 }
 
@@ -239,7 +249,7 @@ func (w *world) clickOffer(name string) error {
 			continue
 		}
 		box := OfferAt(w.w.Layout(), i)
-		w.w = w.w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
 	}
 	return fmt.Errorf("the bar offers %v, and none of them is %q", w.w.Offers(), name)
@@ -414,7 +424,7 @@ func (w *world) clickField(name string) error {
 			continue
 		}
 		row, _ := FieldRow(box, FieldTop(box, fields, i))
-		w.w = w.w.Click(Point{X: row.X + 10, Y: row.Y + row.H/2})
+		w.w = w.w.clicked(Point{X: row.X + 10, Y: row.Y + row.H/2})
 		return nil
 	}
 	return fmt.Errorf("the form has no field called %q", name)
@@ -431,7 +441,7 @@ func (w *world) clickInto(characters int, name string) error {
 		}
 		_, value := FieldRow(box, FieldTop(box, fields, i))
 		at := Point{X: value.X + padding + characters*perGlyph, Y: value.Y + value.H/2}
-		w.w = w.w.Click(at)
+		w.w = w.w.clicked(at)
 		return nil
 	}
 	return fmt.Errorf("the form has no field called %q", name)
@@ -512,9 +522,17 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
 	sc.Step(`^I added an objective titled "([^"]*)"$`, w.addObjective)
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
+	// Pressed and let go, which is how a click reaches this window. Calling
+	// Click straight misses everything a release decides on the way — and it
+	// did: this passed while no click outside a panel closed anything at all.
+	sc.Step(`^I click outside the panel$`, func() error {
+		off := Point{X: 2, Y: 2}
+		w.w = w.w.PressAt(off).LetGo(off)
+		return nil
+	})
 	sc.Step(`^I click the search box$`, func() error {
 		box := Searching(w.w.Layout())
-		w.w = w.w.Click(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return nil
 	})
 	sc.Step(`^I press "([^"]*)"$`, w.press)
@@ -557,6 +575,20 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Step(`^I drag the tile "([^"]*)" onto the tile "([^"]*)"$`, w.dragTile)
+	sc.Step(`^I take hold of the tile "([^"]*)" and move it over the tile "([^"]*)"$`, func(what, onto string) error {
+		from, err := w.tileAt(what)
+		if err != nil {
+			return err
+		}
+		to, err := w.tileAt(onto)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.PressAt(from).MoveTo(to)
+		return nil
+	})
+	sc.Step(`^I drag the tile "([^"]*)" out of its box$`, w.dragTileOut)
 	sc.Step(`^I scroll down over the work under it$`, func() error { return w.scrollServing(1) })
 	sc.Step(`^I scroll up over the work under it$`, func() error { return w.scrollServing(-1) })
 	sc.Step(`^I scroll down over the work under it (\d+) times$`, func(n int) error {
@@ -616,10 +648,47 @@ func (w *world) middleOfHistory() Point {
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
+// tileAt is the middle of the tile a part is drawn on.
+func (w *world) tileAt(title string) (Point, error) {
+	for at, c := range w.w.Under() {
+		if c.Title == title {
+			box := w.w.ServingCardAt(at)
+			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
+		}
+	}
+	return Point{}, fmt.Errorf("nothing under it is titled %q", title)
+}
+
+func (w *world) dragTile(what, onto string) error {
+	from, err := w.tileAt(what)
+	if err != nil {
+		return err
+	}
+	to, err := w.tileAt(onto)
+	if err != nil {
+		return err
+	}
+	w.w = w.w.PressAt(from).MoveTo(to).LetGo(to)
+	return nil
+}
+
+// dragTileOut lets a tile go past the bottom of its box, which is nowhere it
+// can land: a part moves among its sisters and has no column to fall into.
+func (w *world) dragTileOut(what string) error {
+	from, err := w.tileAt(what)
+	if err != nil {
+		return err
+	}
+	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+	out := Point{X: from.X, Y: box.Y + box.H + CardHeight}
+	w.w = w.w.PressAt(from).MoveTo(out).LetGo(out)
+	return nil
+}
+
 func (w *world) scrollServing(by int) error {
 	w.was = w.w.serving
-	// One card a notch, the way a column is scrolled: these are cards.
-	w.w = w.w.Scroll(w.middleOfServing(), by*CardHeight)
+	// One tile a notch, the way a column is scrolled by one card.
+	w.w = w.w.Scroll(w.middleOfServing(), by*SubHeight)
 	return nil
 }
 

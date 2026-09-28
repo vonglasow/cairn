@@ -157,6 +157,8 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("inside four", Inside(Framed(value, 4)))
 	say("field top 1", Box{X: over.X, Y: FieldTop(over, reading.TaskFields(reading.Card{}), 1), W: 1, H: 1})
 	goalFields := reading.GoalFields(reading.Goal{})
+	say("sub panel", SubPanel(Box{X: 100, Y: 200, W: 400, H: SubHeight}))
+	say("sub writing", SubWriting(Box{X: 100, Y: 200, W: 400, H: SubHeight}))
 	say("choosing over", ChoosingOver(1200, 800))
 	say("serving head", ServingHead(over, goalFields))
 	say("serving box", ServingBox(over, goalFields))
@@ -931,7 +933,7 @@ func TestExactlyWhereTheWindowOfShownLinesStarts(t *testing.T) {
 	}
 }
 
-// Where a card of the work under an objective sits: down by its rank, up by
+// Where a tile of the work under an objective sits: down by its rank, up by
 // what has been scrolled. Nothing else pinned this, and every sum in it
 // survived being changed.
 func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
@@ -950,18 +952,18 @@ func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 		want       int
 	}{
 		{"the first, unscrolled", 0, 0, box.Y},
-		{"the second, unscrolled", 1, 0, box.Y + CardHeight},
-		{"the third, unscrolled", 2, 0, box.Y + CardHeight + CardHeight},
-		{"the first, scrolled one card", 0, CardHeight, box.Y - CardHeight},
-		{"the second, scrolled one card", 1, CardHeight, box.Y},
+		{"the second, unscrolled", 1, 0, box.Y + SubHeight},
+		{"the third, unscrolled", 2, 0, box.Y + SubHeight + SubHeight},
+		{"the first, scrolled one tile", 0, SubHeight, box.Y - SubHeight},
+		{"the second, scrolled one tile", 1, SubHeight, box.Y},
 	} {
 		w.serving = tc.scroll
 		got := w.ServingCardAt(tc.at)
 		if got.Y != tc.want {
 			t.Errorf("%s: y = %d, want %d", tc.what, got.Y, tc.want)
 		}
-		if got.X != box.X || got.W != box.W || got.H != CardHeight {
-			t.Errorf("%s: %v, want the box's width at a card's height", tc.what, got)
+		if got.X != box.X || got.W != box.W || got.H != SubHeight {
+			t.Errorf("%s: %v, want the box's width at a tile's height", tc.what, got)
 		}
 	}
 }
