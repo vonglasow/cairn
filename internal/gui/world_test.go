@@ -512,6 +512,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Given(`^nothing in it yet$`, func() error { return nil })
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 	sc.Step(`^I added a task titled "([^"]*)"$`, func(t string) error { return w.addTask(t, "", "") })
+	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
+		func(n int, first, second string) error {
+			_, err := w.other.Edit(n, engine.Changes{Labels: &[]string{first, second}})
+			return err
+		})
 	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, func(title, est string) error {
 		_, err := w.other.Add(title, engine.Changes{Estimate: &est})
 		return err
@@ -592,6 +597,24 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)"$`, w.dragToLane)
 	sc.Step(`^I scroll down over "([^"]*)"$`, w.scrollOver)
 	sc.Step(`^it was worked on (\d+) times$`, w.workedOn)
+	sc.Step(`^I scroll down over the description$`, func() error { return w.scrollSaying(1) })
+	sc.Step(`^I scroll up over the description$`, func() error { return w.scrollSaying(-1) })
+	sc.Step(`^I scroll down over the description (\d+) times$`, func(n int) error {
+		for range n {
+			if err := w.scrollSaying(1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I added a task titled "([^"]*)" with a description of (\d+) lines$`,
+		func(title string, lines int) error {
+			said := make([]string, lines)
+			for i := range said {
+				said[i] = fmt.Sprintf("Ligne %d de ce que la tâche raconte", i+1)
+			}
+			return w.addTask(title, "", strings.Join(said, "\n"))
+		})
 	sc.Step(`^I scroll down over the history$`, func() error { return w.scrollHistory(1) })
 	sc.Step(`^I scroll up over the history$`, func() error { return w.scrollHistory(-1) })
 	sc.Step(`^I scroll down over the history (\d+) times$`, func(n int) error {
@@ -603,6 +626,15 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I drag the history's bar to the bottom$`, w.dragHistoryBar)
+	sc.Step(`^I drag the description's bar to the bottom$`, w.dragSayingBar)
+	sc.Step(`^I scroll up over the description (\d+) times$`, func(n int) error {
+		for range n {
+			if err := w.scrollSaying(-1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	sc.Step(`^I added (\d+) tasks serving objective (\d+)$`, func(n, serving int) error {
 		for i := range n {
 			_, err := w.other.Add(fmt.Sprintf("Task %d", i+1),
@@ -737,9 +769,35 @@ func (w *world) middleOfServing() Point {
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
+// middleOfSaying is a point over the description on an open task.
+func (w *world) middleOfSaying() Point {
+	at, _ := LongField(w.w.Shown())
+	b := SayingBox(Over(w.w.width, w.w.height), w.w.Shown(), at)
+	return Point{X: b.X + b.W/2, Y: b.Y + b.H/2}
+}
+
+func (w *world) scrollSaying(by int) error {
+	w.was = w.w.saying
+	w.w = w.w.Scroll(w.middleOfSaying(), by*lineHigh)
+	return nil
+}
+
 func (w *world) scrollHistory(by int) error {
 	w.was = w.w.history
 	w.w = w.w.Scroll(w.middleOfHistory(), by*lineHigh)
+	return nil
+}
+
+// dragSayingBar pulls the bar beside a description past the bottom of its
+// track, the way the history's is pulled.
+func (w *world) dragSayingBar() error {
+	at, _ := LongField(w.w.Shown())
+	track := SayingBar(Over(w.w.width, w.w.height), w.w.Shown(), at)
+	thumb := Thumb(track, len(w.w.SaidLines()), w.w.SaidRows(), w.w.saying)
+	w.was = w.w.saying
+	w.w = w.w.PressAt(Point{X: thumb.X + thumb.W/2, Y: thumb.Y + thumb.H/2})
+	w.w = w.w.MoveTo(Point{X: thumb.X + thumb.W/2, Y: track.Y + track.H + 999})
+	w.w = w.w.LetGo(Point{X: thumb.X + thumb.W/2, Y: track.Y + track.H + 999})
 	return nil
 }
 

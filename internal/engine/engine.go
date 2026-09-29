@@ -209,19 +209,37 @@ func (e *Engine) puttingAway(number int, away bool) error {
 	return e.tasks.Update(a.Task())
 }
 
+// sweeping is what a narrowing reaches with its parts left out. A sweep acts
+// on the work, not on the pieces it is made of, and both sweeps read the same
+// world — one counting parts while the other does not is a pair answering two
+// different boards.
+func (e *Engine) sweeping(kept *store.Narrowing) ([]task.Task, error) {
+	found, err := e.tasks.Narrowed(kept)
+	if err != nil {
+		return nil, err
+	}
+	work := make([]task.Task, 0, len(found))
+	for _, one := range found {
+		if factsOf(one).parent == task.NoParent {
+			work = append(work, one)
+		}
+	}
+	return work, nil
+}
+
 // ArchiveEvery takes off the board every task a narrowing reaches, and says
 // how many. A sweep says what it did rather than refusing what it cannot take.
 func (e *Engine) ArchiveEvery(kept *store.Narrowing) (int, error) {
-	found, err := e.tasks.Narrowed(kept)
+	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
 	}
 	swept := 0
 	for _, one := range found {
 		if err := e.Archive(factsOf(one).number); err != nil {
-			// A sweep passes over what it cannot take: one already off the
-			// board, and a part that goes with its parent.
-			if errors.Is(err, task.ErrAlreadyArchived) || errors.Is(err, task.ErrPartGoesWithItsWork) {
+			// A narrowing asked to keep both reaches what is already off the
+			// board; a sweep passes over it rather than refusing.
+			if errors.Is(err, task.ErrAlreadyArchived) {
 				continue
 			}
 			return swept, err
@@ -234,7 +252,7 @@ func (e *Engine) ArchiveEvery(kept *store.Narrowing) (int, error) {
 // LabelEvery puts one label on every task a narrowing reaches, keeping what
 // each already carries, and says how many.
 func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
-	found, err := e.tasks.Narrowed(kept)
+	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
 	}

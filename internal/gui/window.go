@@ -100,11 +100,20 @@ type Window struct {
 	// and not in acts: an act wraps onto as many lines as it needs, and a
 	// history that jumped an act at a time would skip past what it wrapped.
 	history int
+	// saying is how far the description on an open task has been scrolled,
+	// counted in lines the way the history is.
+	saying int
+	// What a wheel sent that did not come to a whole line, kept until the
+	// turns after it make one.
+	spareHistory, spareSaying int
 	// serving is how far the work under an open objective has been scrolled,
 	// counted in lines the way the history is: a task wraps onto as many lines
 	// as its title needs, and a list that jumped a task at a time would skip
 	// past what it wrapped.
 	serving int
+	// draggingSaying says the pointer has taken hold of the bar beside the
+	// description, which is pulled the way the history's is.
+	draggingSaying bool
 	// draggingBar says the pointer has taken hold of the bar beside the
 	// history. Told apart from a held card, because a panel is over the board
 	// and the board's cards are not there to be taken hold of.
@@ -349,6 +358,27 @@ func (w Window) Rows() int { return HistoryRows(Over(w.width, w.height)) }
 
 // History is the first line of the history that is shown.
 func (w Window) History() int { return w.history }
+
+// Saying is how far the description on an open task has been scrolled.
+func (w Window) Saying() int { return w.saying }
+
+// SaidLines is the description as it is laid out in its box, and SaidRows how
+// many of them are in sight.
+func (w Window) SaidLines() []string {
+	at, long := LongField(w.Shown())
+	if !long {
+		return nil
+	}
+	fields := w.Shown()
+	return Wrapped(w.FieldSays(fields[at]), room(SayingBox(Over(w.width, w.height), fields, at))).Said
+}
+
+// SaidRows is how many lines of the description its box holds.
+func (w Window) SaidRows() int { return longRows }
+
+func (w Window) settledSaying(want int) int {
+	return min(max(0, len(w.SaidLines())-w.SaidRows()), max(0, want))
+}
 
 // settledHistory keeps the history between its two ends: never above its first
 // line, never past the last screenful of it.
@@ -906,6 +936,9 @@ func (w Window) PressAt(p Point) Window {
 	w.pressed, w.pressedOn = true, w.screen
 	if w.screen == OnDetail {
 		w.draggingBar = HistoryBar(Over(w.width, w.height)).In(p)
+		if at, long := LongField(w.Shown()); long {
+			w.draggingSaying = SayingBar(Over(w.width, w.height), w.Shown(), at).In(p)
+		}
 		// A tile is taken hold of the way a card is: solidary with its parent
 		// does not mean fixed among its sisters, and the order is what says
 		// which part is wanted first.
@@ -929,6 +962,12 @@ func (w Window) MoveTo(p Point) Window {
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
+	if w.draggingSaying {
+		at, _ := LongField(w.Shown())
+		track := SayingBar(Over(w.width, w.height), w.Shown(), at)
+		w.saying = w.settledSaying(Reached(track, len(w.SaidLines()), w.SaidRows(), p))
+		return w
+	}
 	if w.held.Number == 0 {
 		return w
 	}
@@ -941,8 +980,8 @@ func (w Window) MoveTo(p Point) Window {
 
 // LetGo drops the card, or lets a click be a click.
 func (w Window) LetGo(p Point) Window {
-	if w.draggingBar {
-		w.draggingBar = false
+	if w.draggingBar || w.draggingSaying {
+		w.draggingBar, w.draggingSaying = false, false
 		return w
 	}
 	// A release with no press behind it on this screen is not a click here.
@@ -979,16 +1018,30 @@ func (w Window) LetGo(p Point) Window {
 	return w.Click(p)
 }
 
+// turning adds what a wheel sent to what the turns before it left over, and
+// answers whole lines and the new leftover. A trackpad sends a few pixels at a
+// time: taken one by one they each round to nothing and are thrown away, and
+// added up they are a line like any other.
+func turning(spare, by int) (lines, left int) {
+	total := spare + by
+	return total / lineHigh, total % lineHigh
+}
+
 // Scroll moves the column under the pointer, and no other.
 func (w Window) Scroll(p Point, by int) Window {
 	if w.screen == OnDetail {
 		// The panel is over the board, so the wheel over it moves the history
 		// and never a column behind it.
 		if HistoryBox(Over(w.width, w.height)).In(p) {
-			w.history = w.settledHistory(w.history + by/lineHigh)
+			lines, left := turning(w.spareHistory, by)
+			w.history, w.spareHistory = w.settledHistory(w.history+lines), left
 		}
 		if ServingBox(Over(w.width, w.height), w.Shown()).In(p) {
 			w.serving = w.settledServing(w.serving + by)
+		}
+		if at, long := LongField(w.Shown()); long && SayingBox(Over(w.width, w.height), w.Shown(), at).In(p) {
+			lines, left := turning(w.spareSaying, by)
+			w.saying, w.spareSaying = w.settledSaying(w.saying+lines), left
 		}
 		return w
 	}
@@ -1275,7 +1328,8 @@ func (w Window) opening() Window {
 	// chosen, which is the wrong answer said confidently.
 	w.underAt = 0
 	if w.chosenGoal {
-		w.acts, w.history, w.serving = nil, 0, 0
+		w.acts, w.history, w.serving, w.saying = nil, 0, 0, 0
+		w.spareHistory, w.spareSaying = 0, 0
 		return w
 	}
 	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))

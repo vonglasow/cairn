@@ -17,6 +17,7 @@ const (
 	edgeWide = 3  // the coloured strip down a card's left, for its priority
 	numberAt = 6  // how far below a card's top its number sits
 	titleAt  = 28 // and its title
+	labelsAt = 54 // and the labels it carries, under the room the title has
 	lineHigh = 18
 	titleHi  = 22
 )
@@ -32,7 +33,7 @@ const namesWide = 170
 
 // Parts is where the pieces of a card go inside the box it was given.
 type Parts struct {
-	Panel, Edge, Number, Title Box
+	Panel, Edge, Number, Title, Labels Box
 }
 
 // PartsOf shares out a card's box. The gap at the bottom is what keeps two
@@ -45,6 +46,7 @@ func PartsOf(box Box) Parts {
 		Edge:   Box{X: panel.X, Y: panel.Y, W: edgeWide, H: panel.H},
 		Number: Box{X: panel.X + padding, Y: panel.Y + numberAt, W: inside, H: lineHigh},
 		Title:  Box{X: panel.X + padding, Y: panel.Y + titleAt, W: inside, H: titleHi},
+		Labels: Box{X: panel.X + padding, Y: panel.Y + labelsAt, W: inside, H: lineHigh},
 	}
 }
 
@@ -397,6 +399,34 @@ func HistoryBox(box Box) Box {
 		W: head.W - barWide - between,
 		H: max(lineHigh, PanelOfferAt(box, 0).Y-padding-top),
 	}
+}
+
+// SayingBox is where a task's description is read on the detail, narrowed by
+// the room its bar takes. Its own function and not a field's plain box: on the
+// detail the description is read rather than written, so nothing follows a
+// caret and what does not fit has to be reachable another way.
+func SayingBox(box Box, fields []reading.Field, at int) Box {
+	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
+	frame := Framed(value, longRows)
+	return Box{X: frame.X, Y: frame.Y, W: frame.W - barWide - between, H: frame.H}
+}
+
+// SayingBar is the track of the bar beside it, drawn whether or not there is
+// anything to scroll — the same rule the history goes by.
+func SayingBar(box Box, fields []reading.Field, at int) Box {
+	frame := SayingBox(box, fields, at)
+	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+}
+
+// LongField says which of a panel's fields is the one read in that box, and
+// whether there is one at all.
+func LongField(fields []reading.Field) (int, bool) {
+	for i, field := range fields {
+		if field.Long {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 // HistoryBar is the track of the bar beside it.

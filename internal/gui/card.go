@@ -22,6 +22,10 @@ import (
 // is cut by the face rather than spilling.
 const perGlyph = 8
 
+// perSmallGlyph is the same for the small face, which is what a card's labels
+// and its number are written in.
+const perSmallGlyph = 7
+
 // TitleOf is a title cut to what a card of this width can show, ending in an
 // ellipsis when it had to be cut. A card is a fixed height and a title is one
 // line of it: something has to give, and it is the tail of a long name rather
@@ -33,6 +37,37 @@ func TitleOf(title string, width int) string {
 	}
 	kept := []rune(title)[:room-1]
 	return strings.TrimRight(string(kept), " ") + "…"
+}
+
+// Tagged is the labels a card says it carries, cut to what its width holds.
+// What is left out is counted rather than dropped in silence: a card saying
+// two of five labels while reading like it says all of them is a card that
+// misleads about the work.
+func Tagged(c reading.Card, width int) string {
+	room := width / perSmallGlyph
+	shown := 0
+	// Grown one at a time, counting the rest as it goes: what is left over is
+	// written on the same line, so a label only fits if it fits beside the
+	// count of the ones it pushes out.
+	for shown < len(c.Labels) && utf8.RuneCountInString(saying(c.Labels, shown+1)) <= room {
+		shown++
+	}
+	return saying(c.Labels, shown)
+}
+
+// saying is the line for the first so many labels, with however many are left
+// over counted at its end.
+func saying(labels []string, shown int) string {
+	line := strings.Join(labels[:shown], "  ")
+	left := len(labels) - shown
+	if left == 0 {
+		return line
+	}
+	said := "+" + strconv.Itoa(left)
+	if line == "" {
+		return said
+	}
+	return line + "  " + said
 }
 
 // padding is the room left inside a card's edge, so text never touches its

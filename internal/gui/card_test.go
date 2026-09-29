@@ -3,6 +3,8 @@ package gui
 import (
 	"strings"
 	"testing"
+
+	"cairn/internal/reading"
 )
 
 // A card is one line of title and a fixed height, so a long name is cut rather
@@ -57,5 +59,42 @@ func TestASpaceAtTheCutGoesWithIt(t *testing.T) {
 	got := TitleOf(title, 285)
 	if strings.HasSuffix(got, " …") {
 		t.Fatalf("the cut left a space before the ellipsis: %q", got)
+	}
+}
+
+// Labels are measured at the size they are drawn in. They are written in the
+// small face while perGlyph is the wide one the title uses, so measuring with
+// the title's gabarit left a fifth of every card's label line empty — and on a
+// card carrying three, the third was the one dropped.
+func TestTagged_measuresAtTheSizeItIsDrawnIn(t *testing.T) {
+	c := reading.Card{Labels: []string{"ado:36467", "chantier:tests-qualite", "sp26-20"}}
+	got := Tagged(c, 270)
+	if !strings.Contains(got, "chantier:tests-qualite") {
+		t.Errorf("Tagged = %q, want room for the second label at the size it is drawn in", got)
+	}
+}
+
+// What a card's label line says, at the edges. Room is counted in glyphs of
+// the small face, so the widths here are that many times perSmallGlyph.
+func TestTagged_atItsEdges(t *testing.T) {
+	room := func(glyphs int) int { return glyphs * perSmallGlyph }
+	for _, c := range []struct {
+		what   string
+		labels []string
+		room   int
+		want   string
+	}{
+		{"nothing to say", nil, room(20), ""},
+		{"one that fits", []string{"devops"}, room(20), "devops"},
+		{"two that fit", []string{"devops", "release"}, room(20), "devops  release"},
+		{"exactly the room there is", []string{"devops", "release"}, room(15), "devops  release"},
+		{"one glyph short of it", []string{"devops", "release"}, room(14), "devops  +1"},
+		{"none of them fits", []string{"an-altogether-overlong-label"}, room(4), "+1"},
+		{"the count is what is left, not what was dropped last",
+			[]string{"devops", "release", "suivi", "backend"}, room(14), "devops  +3"},
+	} {
+		if got := Tagged(reading.Card{Labels: c.labels}, c.room); got != c.want {
+			t.Errorf("%s: Tagged = %q, want %q", c.what, got, c.want)
+		}
 	}
 }

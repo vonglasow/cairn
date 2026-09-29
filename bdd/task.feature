@@ -1174,6 +1174,17 @@ Feature: Tasks
       And task 1 carries the label "sprint-41"
       And task 3 does not carry the label "sprint-41"
 
+    @task-label-leaves-parts-to-their-work
+    Scenario: a part is left out, the way a sweep leaves it out
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I edited task 2 with the state "done"
+      When I run `cairn task label sprint-41 --state done`
+      Then it succeeds
+      And it says 1 task was labelled
+      And task 1 carries the label "sprint-41"
+      And task 2 does not carry the label "sprint-41"
+
     @task-label-keeps-what-is-already-there
     Scenario: a label is added to the ones a task already carries
       Given I added a task titled "Migration Jenkins" with the state "done"

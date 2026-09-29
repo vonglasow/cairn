@@ -2,6 +2,7 @@ package gui
 
 import (
 	"image"
+	"strings"
 	"testing"
 	"time"
 
@@ -317,5 +318,44 @@ func TestASizeAndAScrollAreBothReadInDp(t *testing.T) {
 	}
 	if got := Turned(-192, 2); got != -96 {
 		t.Errorf("a wheel turned the other way turned %d", got)
+	}
+}
+
+// The wheel over a description reaches it through the pointer, not only
+// through Scroll: a scenario that drives Scroll directly passes on a gesture
+// no window can send. And a notch smaller than a line has to count for one —
+// a trackpad sends a few pixels at a time, and integer division turned every
+// one of them into nothing.
+func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
+	f := newFake()
+	said := make([]string, 30)
+	for i := range said {
+		said[i] = "Une ligne de ce que la tâche raconte, assez longue pour compter"
+	}
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: strings.Join(said, "\n")})
+	w = w.doubleClicked(middleOf(w, 1, 0))
+	if w.Screen() != OnDetail {
+		t.Fatalf("the task did not open: %v", w.Screen())
+	}
+	at, long := LongField(w.Shown())
+	if !long {
+		t.Fatal("the open task shows no description")
+	}
+	box := SayingBox(Over(w.width, w.height), w.Shown(), at)
+	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+
+	if got := Pointed(w, pointer.Scroll, over, lineHigh); got.Saying() == 0 {
+		t.Error("the wheel over the description left it where it was")
+	}
+	// Six nudges of three pixels are a line like any other. Taken one by one
+	// they each rounded to nothing and were thrown away, so a trackpad moved
+	// the description not at all.
+	small := w
+	for range 6 {
+		small = Pointed(small, pointer.Scroll, over, 3)
+	}
+	if small.Saying() != 1 {
+		t.Errorf("six nudges of three pixels left the description at %d, want 1", small.Saying())
 	}
 }

@@ -194,7 +194,7 @@ func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w W
 	outline(gtx, box, skin.Chosen)
 	say(gtx, th, skin.Faint, SearchWord(box), "SEARCH", small)
 	into := SearchInto(box)
-	writing(gtx, th, skin, into, w.Searched().Reads(), w.Searched().At, true, reads, 1)
+	writing(gtx, th, skin, into, w.Searched().Reads(), w.Searched().At, true, reads, 1, 0)
 }
 
 // drawSaid is a panel of lines: the help, and the question. Both are read
@@ -292,6 +292,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 	}
 	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
 	say(gtx, th, skin.Writing(c), parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
+	say(gtx, th, skin.Faint, parts.Labels, Tagged(c, parts.Labels.W), small)
 }
 
 // Writing is the ink a card's title is written in. Archived, it is faint: what
@@ -389,6 +390,10 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	// it, and only the lit frame says which of the two is happening.
 	fields := w.Shown()
 	for i := range fields {
+		if fields[i].Long {
+			drawSaying(gtx, th, skin, box, fields, i, w)
+			continue
+		}
 		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false, w.FieldSays(fields[i]))
 	}
 	drawUnder(gtx, th, skin, box, fields, w)
@@ -493,7 +498,23 @@ func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	say(gtx, th, ink, name, field.Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), said, caret, carets, reads, RowsOf(field))
+	writing(gtx, th, skin, Inside(frame), said, caret, carets, reads, RowsOf(field), 0)
+}
+
+// drawSaying is the description on an open task: read rather than written, so
+// what does not fit is reached by the wheel and a bar says where in it you are.
+// It draws the pieces a field draws, in a box narrowed by the bar beside it.
+func drawSaying(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, at int, w Window) {
+	name, _ := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
+	frame := SayingBox(box, fields, at)
+	say(gtx, th, skin.Faint, name, fields[at].Name, small)
+	fill(gtx, frame, skin.Back)
+	outline(gtx, frame, skin.Edge)
+	writing(gtx, th, skin, Inside(frame), w.FieldSays(fields[at]), 0, false, reads, w.SaidRows(), w.Saying())
+
+	track := SayingBar(box, fields, at)
+	fill(gtx, track, skin.Back)
+	fill(gtx, Thumb(track, len(w.SaidLines()), w.SaidRows(), w.Saying()), skin.Edge)
 }
 
 func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
@@ -548,13 +569,18 @@ func outline(gtx layout.Context, b Box, with color.NRGBA) {
 // out here, so the caret can be put on the line it actually fell on. A caret
 // placed from the height of a whole wrapped label lands on the last line
 // whatever was typed.
-func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said string, at int, carets bool, size, rows int) {
+func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said string, at int, carets bool, size, rows, scrolled int) {
 	clipped := clip.Rect(rect(b)).Push(gtx.Ops)
 	defer clipped.Pop()
 
 	lines := Wrapped(said, room(b))
 	line, column := lines.At(at)
-	from := lines.Window(rows, line)
+	// A caret drags the window along with it; with no caret there is nothing
+	// to follow, so what is in sight is what was scrolled to.
+	from := scrolled
+	if carets {
+		from = lines.Window(rows, line)
+	}
 
 	for i := from; i < Lasting(len(lines.Said), from, rows); i++ {
 		say(gtx, th, skin.Ink, LineAt(b, i, from), lines.Said[i], size)

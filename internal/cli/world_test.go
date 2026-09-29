@@ -403,7 +403,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d", n), "the refusal")
 	})
 
-	sc.Step(`^it says (\d+) tasks? were labelled$`, func(n int) error {
+	sc.Step(`^it says (\d+) tasks? (?:was|were) labelled$`, func(n int) error {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d", n), "what it shows")
 	})
 

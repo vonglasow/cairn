@@ -87,6 +87,19 @@ a column's geometry depending on its contents: scrolling and drop targets
 computed instead of multiplied, and two columns no longer sharing a grid, which
 shows the moment a card is dragged from one to the other.
 
+**A card is three lines**: its number, its title, and the labels it carries.
+The third fills room the fixed height already paid for and left empty, and it
+answers the question a board is asked most — which sprint, which chantier, which
+ADO ticket — without opening anything. What does not fit is counted rather than
+dropped in silence: `ado:77594  pipelines  release  +1`. `Tagged` cuts the line
+and the scenarios read it, so what is asserted is the decision rather than the
+pixels.
+
+It measures with `perSmallGlyph` and not `perGlyph`. Labels are written in the
+small face while the title uses the wide one, and measuring with the title's
+gabarit left a fifth of every label line empty — on a card carrying three, the
+third was dropped for room that was there.
+
 **Every size is a value worked out from the window**, redone on every resize,
 exactly as `LayoutFor` does in the terminal. Nothing carries its own size. That
 is what makes the geometry testable with no screen: a pure function from
@@ -318,6 +331,29 @@ What a key is *called* and how the bar *writes* it are two functions.
 `Shortcut("New")` is `cmd+n`, because that is how a key arrives; `Pretty` turns
 it into `⌘N`, because a bar reading out `cmd+n` is reading out a name meant for
 a program.
+
+**The description scrolls, and says so.** On the detail it is read rather than
+written, so nothing follows a caret and the four rows its box holds were the
+whole of what a long description could ever show — the rest was clipped, with
+nothing on screen saying it was there. It now takes the wheel and carries a bar
+beside it, reusing the history's `Thumb` and window rather than growing a
+second scrolling mechanism. The bar is drawn whether or not there is anything
+to scroll, by the same rule the history goes by.
+
+The form is left alone: there the caret drags the window along with it, so what
+does not fit is already reachable.
+
+**A wheel keeps what did not come to a line.** `by / lineHigh` threw away every
+turn smaller than a row, which is every turn a trackpad sends — one pixel at a
+time, each rounding to nothing, so a description could not be scrolled with a
+mouse at all and a history answered only a notched wheel. `turning` adds the
+leftover to the next turn instead. A history still moves by whole lines, which
+is what its own test asks; six nudges of three pixels are now one of them.
+
+The bar beside a description **can be pulled**, like the history's. Without it
+a press on the bar fell through to the board behind the panel and closed the
+task — and the scenario passed anyway, because the end of a description nobody
+is showing is zero, which is where an untouched window already sits.
 
 ## The detail
 

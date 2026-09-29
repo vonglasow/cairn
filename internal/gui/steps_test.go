@@ -583,6 +583,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^what is chosen has moved on one$`, w.chosenMovedOnOne)
 	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
 	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
+	sc.Then(`^the card "([^"]*)" says "([^"]*)"$`, w.cardSays)
 	sc.Then(`^what is chosen is in sight$`, w.chosenInSight)
 	sc.Then(`^the objectives have moved$`, w.objectivesMoved)
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
@@ -692,6 +693,54 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the work under it has moved$`, w.servingMoved)
 	sc.Then(`^the work under it is at its beginning$`, w.servingAtTheBeginning)
 	sc.Then(`^the work under it is at its end$`, w.servingAtTheEnd)
+	sc.Then(`^the description is at its beginning$`, func() error {
+		if w.w.saying != 0 {
+			return fmt.Errorf("the description is at line %d, not its beginning", w.w.saying)
+		}
+		return nil
+	})
+	sc.Then(`^the description is at its end$`, func() error {
+		// Asked first, because the end of a description nobody is showing is
+		// zero — and zero is where an untouched window already sits, so the
+		// question would answer yes to a gesture that did nothing at all.
+		if _, long := LongField(w.w.Shown()); !long {
+			return fmt.Errorf("no description is open: the window is on %v", w.w.Screen())
+		}
+		want := max(0, len(w.w.SaidLines())-w.w.SaidRows())
+		if w.w.saying != want {
+			return fmt.Errorf("the description is at line %d and its end is %d", w.w.saying, want)
+		}
+		return nil
+	})
+	sc.Then(`^the description has more to show than it has room for$`, func() error {
+		if len(w.w.SaidLines()) <= w.w.SaidRows() {
+			return fmt.Errorf("the description is %d lines and its box holds %d",
+				len(w.w.SaidLines()), w.w.SaidRows())
+		}
+		return nil
+	})
+	sc.Then(`^the description has moved$`, func() error {
+		if w.w.saying == w.was {
+			return fmt.Errorf("the description stayed at line %d", w.w.saying)
+		}
+		return nil
+	})
+	sc.Then(`^a bar sits beside the description$`, func() error {
+		at, long := LongField(w.w.Shown())
+		if !long {
+			return fmt.Errorf("the open task shows no description")
+		}
+		box := Over(w.w.width, w.w.height)
+		frame, track := SayingBox(box, w.w.Shown(), at), SayingBar(box, w.w.Shown(), at)
+		if track.W <= 0 || track.H <= 0 {
+			return fmt.Errorf("the bar beside the description is %dx%d", track.W, track.H)
+		}
+		if track.X < frame.X+frame.W {
+			return fmt.Errorf("the bar at %d sits over the description, which ends at %d",
+				track.X, frame.X+frame.W)
+		}
+		return nil
+	})
 	sc.Then(`^the history is at its beginning$`, w.historyAtTheBeginning)
 	sc.Then(`^the history is at its end$`, w.historyAtTheEnd)
 	sc.Then(`^the field "([^"]*)" is written on more than one line$`, w.fieldOnMoreThanOneLine)
@@ -1474,6 +1523,20 @@ func (w *world) cardOf(title string) (reading.Card, error) {
 		}
 	}
 	return reading.Card{}, fmt.Errorf("no card titled %q", title)
+}
+
+// cardSays reads the line of labels a card draws, at the width a card in a
+// column actually has.
+func (w *world) cardSays(title, said string) error {
+	c, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	line := Tagged(c, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W)
+	if !strings.Contains(line, said) {
+		return fmt.Errorf("the card for %q reads %q, and says nothing of %q", title, line, said)
+	}
+	return nil
 }
 
 func (w *world) cardSaysInFocus(title string) error {

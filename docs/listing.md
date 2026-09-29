@@ -84,10 +84,15 @@ it is on the board or not, because somebody typing a number already knows which
 task they mean.
 
 Archiving takes a number or a narrowing, and `task archive --state done` sweeps
-a column in one go. A sweep passes over what it cannot take — what is already
-off the board, and a part, which goes off it with the work it belongs to rather
-than on its own. `task label` puts one label on everything a narrowing reaches,
-which is how a sprint gets marked before it is swept.
+a column in one go. `task label` puts one label on everything a narrowing
+reaches, which is how a sprint gets marked before it is swept.
+
+**A sweep acts on the work, not on its parts.** Both go through `sweeping`,
+which drops what hangs under something before either touches a row. One sweep
+counting parts while the other did not was a pair answering two different
+boards, and it showed: archiving a finished column took 120 tasks where
+labelling the same narrowing took 167. A part still goes off the board — with
+the work it belongs to, and archiving one on its own is refused by name.
 
 Both directions refuse a task already in the state asked for. Archiving twice
 was refused first, because a sweep counts what it actually took and skips the

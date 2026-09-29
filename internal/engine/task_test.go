@@ -446,6 +446,12 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 		t.Fatalf("setting it up: %v", err)
 	}
 	add(t, e, "Spike Argo")
+	// A part of the work the narrowing reaches is left out with it, the way a
+	// sweep leaves it out: both read the same world.
+	part := factsOf(add(t, e, "Write the tests")).number
+	if _, err := e.Edit(part, Changes{Parent: &first, State: &done}); err != nil {
+		t.Fatalf("hanging it under: %v", err)
+	}
 	if err := e.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}

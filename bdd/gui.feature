@@ -813,6 +813,34 @@ Feature: The desktop board
       Then the history is beside the fields
       And the history stays inside the panel
 
+    @gui-a-long-description-scrolls
+    Scenario: a description longer than its box scrolls, and says so with a bar
+      Given I added a task titled "Write the spec" with a description of 20 lines
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "enter"
+      Then the description has more to show than it has room for
+      And the description is at its beginning
+      And a bar sits beside the description
+      When I scroll down over the description
+      Then the description has moved
+      When I scroll up over the description
+      Then the description is at its beginning
+      When I scroll down over the description 99 times
+      Then the description is at its end
+      When I scroll up over the description 99 times
+      And I drag the description's bar to the bottom
+      Then the description is at its end
+
+    @gui-a-short-description-keeps-its-bar
+    Scenario: a description that fits keeps its bar, so it is where it is looked for
+      Given I added a task titled "Write the spec" with the description "Two columns"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "enter"
+      Then a bar sits beside the description
+      And the description is at its beginning
+
     @gui-the-history-scrolls
     Scenario: a history longer than its box scrolls, and stops at both ends
       Given I added a task titled "Write the spec"
@@ -1058,6 +1086,21 @@ Feature: The desktop board
       Then the engine was asked "task focus" for task 1
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
+
+    @gui-labels-show-on-the-card
+    Scenario: a card says what it is labelled without being opened
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "backend" and "sp26-20"
+      When I open the window
+      Then the card "Write the spec" says "backend"
+      And the card "Write the spec" says "sp26-20"
+
+    @gui-a-card-says-how-many-labels-it-could-not-show
+    Scenario: a card too narrow for every label says how many it left out
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
+      When I open the window
+      Then the card "Write the spec" says "+1"
 
     @gui-focus-shows-on-the-card
     Scenario: a card says it is being worked on

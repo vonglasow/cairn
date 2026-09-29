@@ -1301,3 +1301,41 @@ func TestMarking_reachesTheLastPart(t *testing.T) {
 		t.Errorf("it marked task %s, want the last part", got)
 	}
 }
+
+// Scrolling a description changes what is drawn in its box. Asked of the
+// pixels and not of a pure function: what the scenarios read is the decision,
+// and a detail that stopped drawing the description through drawSaying would
+// leave every one of them green.
+func TestADescriptionDrawsWhereItWasScrolledTo(t *testing.T) {
+	f := newFake()
+	said := make([]string, 30)
+	for i := range said {
+		said[i] = fmt.Sprintf("Ligne %d de ce que la tâche raconte, assez longue", i+1)
+	}
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: strings.Join(said, "\n")})
+	w = w.doubleClicked(middleOf(w, 1, 0))
+	at, long := LongField(w.Shown())
+	if !long {
+		t.Fatal("the open task shows no description")
+	}
+	box := Inside(SayingBox(Over(w.width, w.height), w.Shown(), at))
+
+	first := drawn(t, w)
+	moved := drawn(t, w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, 5*lineHigh))
+	if same(first, moved, box) {
+		t.Error("scrolled by five lines, the description drew the same thing")
+	}
+}
+
+// same says whether two shots carry the same pixels inside a box.
+func same(a, b *image.RGBA, in Box) bool {
+	for y := in.Y; y < in.Y+in.H; y++ {
+		for x := in.X; x < in.X+in.W; x++ {
+			if a.RGBAAt(x, y) != b.RGBAAt(x, y) {
+				return false
+			}
+		}
+	}
+	return true
+}
