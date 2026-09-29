@@ -57,6 +57,29 @@ func Sized(max image.Point, perDp float32) (width, height int) {
 // Turned is the same for how far a wheel says it went.
 func Turned(by, perDp float32) int { return int(by / perDp) }
 
+// Gesture is what a pointer has said so far: when the last press landed and
+// where, which is the whole of what tells the press after it from the second
+// half of a double-click.
+type Gesture struct {
+	At    time.Time
+	Where Point
+}
+
+// Pointing is everything a pointer event does, the double-click included, and
+// the gesture it leaves behind. One function and not a rule kept in the loop:
+// what the loop decided itself, no scenario could reach — and the release
+// after a double-click closed the task it had just opened, found by hand in a
+// window rather than by any test.
+func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time.Time) (Window, Gesture) {
+	if kind == pointer.Press {
+		if Twice(g.At, now, g.Where, at) {
+			return w.DoubleClick(at), Gesture{}
+		}
+		g = Gesture{At: now, Where: at}
+	}
+	return Pointed(w, kind, at, by), g
+}
+
 // Pointed says what a pointer event does to a window.
 func Pointed(w Window, kind pointer.Kind, at Point, by int) Window {
 	switch kind {
@@ -261,15 +284,11 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 		}
 		switch e := raw.(type) {
 		case pointer.Event:
-			at := Dp(e.Position, gtx.Metric.PxPerDp)
-			if e.Kind == pointer.Press {
-				if Twice(pressed, gtx.Now, pressedAt, at) {
-					w, pressed = w.DoubleClick(at), time.Time{}
-					continue
-				}
-				pressed, pressedAt = gtx.Now, at
-			}
-			w = Pointed(w, e.Kind, at, Turned(e.Scroll.Y, gtx.Metric.PxPerDp))
+			var g Gesture
+			w, g = Pointing(w, Gesture{At: pressed, Where: pressedAt}, e.Kind,
+				Dp(e.Position, gtx.Metric.PxPerDp),
+				Turned(e.Scroll.Y, gtx.Metric.PxPerDp), gtx.Now)
+			pressed, pressedAt = g.At, g.Where
 		case key.Event:
 			if e.State == key.Press {
 				w = Typed(w, string(e.Name), e.Modifiers)

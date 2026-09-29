@@ -475,6 +475,5 @@ would become the one the gates cannot reach.
   back to system fonts; a symbol-rich font is 750 KB to 5 MB and
   `check-added-large-files` refuses it at 500 KB; a subset of those ten glyphs
   would be a few KB and would pass.
-- **Sub-tasks drawn under their parent**, as in the terminal.
 - **A permanent detail panel**, which the extra room would allow and which
   would stop this being the same board.

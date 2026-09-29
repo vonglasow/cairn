@@ -359,3 +359,62 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 		t.Errorf("six nudges of three pixels left the description at %d, want 1", small.Saying())
 	}
 }
+
+// A pointer's whole gesture, the double-click included, is one function the
+// loop and the scenarios both go through. It used to be the loop's own
+// arithmetic: nothing could reach it, and the release after a double-click
+// closed what the double-click had just opened — found by hand, in a window.
+func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	at := middleOf(w, 1, 0)
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+
+	one, g := Pointing(w, Gesture{}, pointer.Press, at, 0, now)
+	one, g = Pointing(one, g, pointer.Release, at, 0, now)
+	if one.Screen() != OnTheBoard || one.Chosen() != 1 {
+		t.Fatalf("one click left the window on %v, choosing %d", one.Screen(), one.Chosen())
+	}
+
+	two, g := Pointing(one, g, pointer.Press, at, 0, now.Add(time.Millisecond))
+	two, _ = Pointing(two, g, pointer.Release, at, 0, now.Add(time.Millisecond))
+	if two.Screen() != OnDetail {
+		t.Errorf("the second click left the window on %v, not the task it opened", two.Screen())
+	}
+
+	// And two presses too far apart are two clicks, not one gesture.
+	apart, g := Pointing(one, g, pointer.Press, at, 0, now.Add(Twin()+time.Second))
+	apart, _ = Pointing(apart, g, pointer.Release, at, 0, now.Add(Twin()+time.Second))
+	if apart.Screen() != OnTheBoard {
+		t.Errorf("two clicks a second apart opened the task anyway: %v", apart.Screen())
+	}
+}
+
+// Every kind of pointer event reaches the thing it is meant to. The scenarios
+// drive the window's own methods, which is fine only as long as the dispatch
+// above them is right — so the dispatch is asserted here, once, rather than
+// assumed a hundred times.
+func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
+	f := newFake()
+	long := strings.Repeat("Une ligne de ce que la tâche raconte, bien assez longue\n", 30)
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo", Description: long})
+	at := middleOf(w, 1, 0)
+
+	if got := Pointed(w, pointer.Press, at, 0); !got.pressed {
+		t.Error("a press took hold of nothing")
+	}
+	// A press then a drag past the grip is a card in hand.
+	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Drag,
+		Point{X: at.X + Grip + 1, Y: at.Y}, 0); !got.held.Moved {
+		t.Error("a drag did not move what the press had taken hold of")
+	}
+	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Release, at, 0); got.Chosen() != 1 {
+		t.Error("a release did not finish the click it belonged to")
+	}
+	open := w.doubleClicked(at)
+	box := SayingBox(Over(open.width, open.height), open.Shown(), 1)
+	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	if got := Pointed(open, pointer.Scroll, over, 5*lineHigh); got.Saying() == 0 {
+		t.Error("a scroll moved nothing")
+	}
+}

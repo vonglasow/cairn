@@ -697,8 +697,5 @@ would otherwise lose the whole form.
 - **What a card shows of its objectives and its parent.** Both were left off:
   an objective is a link to elsewhere and there is a tab for it, and a parent
   belongs to how a column draws its tree rather than repeated on every card.
-- **Sub-tasks in a column.** Every task is drawn at the top level, so a sub-task
-  sits beside its parent rather than under it. The detail shows the tree; the
-  board does not yet.
 - **Moving between the three stopped states.** Once a task is in the band, going
   from blocked to watching is the form's job. The popup only asks on the way in.

@@ -2,6 +2,9 @@ package gui
 
 import (
 	"errors"
+	"time"
+
+	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
 	"cairn/internal/reading"
@@ -128,10 +131,30 @@ func inLane(w Window, lane int) Point {
 // no such test can see. Two got through that way: a release on an open task
 // never reached Click, so nothing outside a panel could close it; and the
 // release after a double click closed what the click had just opened.
-func (w Window) clicked(at Point) Window { return w.PressAt(at).LetGo(at) }
+func (w Window) clicked(at Point) Window {
+	w, _ = tapped(w, Gesture{}, at)
+	return w
+}
+
+// moment is when a scenario's pointer does what it does. Fixed: what a gesture
+// means depends on how far apart two presses are, never on the hour.
+var moment = time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+
+// tapped is a press and the release after it, through the path a window takes
+// when a mouse sends them — the whole point being that a scenario cannot reach
+// a gesture a real pointer could not make.
+func tapped(w Window, g Gesture, at Point) (Window, Gesture) {
+	w, g = Pointing(w, g, pointer.Press, at, 0, moment)
+	return Pointing(w, g, pointer.Release, at, 0, moment)
+}
 
 // doubleClicked is the whole of what a mouse sends for one: a click, the
 // second press that makes it a double, and the release that follows it.
 func (w Window) doubleClicked(at Point) Window {
-	return w.clicked(at).DoubleClick(at).LetGo(at)
+	w, g := tapped(w, Gesture{}, at)
+	// The second press is what makes it a double, and it has to land soon
+	// enough after the first — which is the whole of the decision.
+	w, g = Pointing(w, g, pointer.Press, at, 0, moment.Add(time.Millisecond))
+	w, _ = Pointing(w, g, pointer.Release, at, 0, moment.Add(time.Millisecond))
+	return w
 }
