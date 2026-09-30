@@ -529,3 +529,42 @@ func TestArchiving_oneByNumber(t *testing.T) {
 		t.Error("bringing back a task that is not there was allowed")
 	}
 }
+
+// A search can be narrowed by what a listing narrows by. The one place the two
+// vocabularies meet: what is looked for is free text and what narrows it is a
+// closed set, and a word common enough to be worth searching is a word that
+// answers the whole board without one.
+func TestSearching_canBeNarrowed(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	done := string(domain.Done)
+	kept := factsOf(add(t, e, "Write the spec")).number
+	gone := factsOf(add(t, e, "Rewrite the spec")).number
+	if _, err := e.Edit(gone, Changes{State: &done}); err != nil {
+		t.Fatalf("finishing it: %v", err)
+	}
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	looking := map[string][]string{"named": {"spec"}}
+	answer, err := Do(TaskSearch, path, Input{Listed: looking, Given: map[string]string{"state": done}})
+	if err != nil {
+		t.Fatalf("Do(TaskSearch): %v", err)
+	}
+	if len(answer.Matched) != 1 || factsOf(answer.Matched[0]).number != gone {
+		t.Fatalf("narrowed to done, the search answered %d tasks, want only %d", len(answer.Matched), gone)
+	}
+	// And told nothing to narrow by, it still answers the whole board.
+	all, err := Do(TaskSearch, path, Input{Listed: looking})
+	if err != nil {
+		t.Fatalf("Do(TaskSearch): %v", err)
+	}
+	if len(all.Matched) != 2 {
+		t.Errorf("with nothing to narrow by, the search answered %d tasks, want 2 including %d",
+			len(all.Matched), kept)
+	}
+}

@@ -284,6 +284,27 @@ Feature: Tasks
       Then it lists 1 task
       And it lists task 1 titled "Write the spec"
 
+    @task-list-narrowed-by-a-deadline
+    Scenario: only the tasks due on or before a day
+      Given I added a task titled "Write the spec" with the deadline "2026-09-10"
+      And I added a task titled "Ship it" with the deadline "2026-12-01"
+      And I added a task titled "Someday"
+      When I run `cairn task list --due-before 2026-10-01`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-by-a-deadline-takes-the-day-itself
+    Scenario: the day named is inside the range, not beside it
+      Given I added a task titled "Write the spec" with the deadline "2026-10-01"
+      When I run `cairn task list --due-before 2026-10-01`
+      Then it lists 1 task
+
+    @task-list-narrowed-by-a-deadline-refuses-what-is-not-a-day
+    Scenario: a day that is not one is refused rather than read as none
+      Given I added a task titled "Write the spec" with the deadline "2026-10-01"
+      When I run `cairn task list --due-before soon`
+      Then it fails
+
     @task-list-narrowed-by-priority
     Scenario: only the tasks carrying one priority
       Given I added a task titled "Write the spec" with the priority "high"
@@ -491,6 +512,31 @@ Feature: Tasks
       Given I added a task titled "Ship it"
       And I added a task titled "Write the spec" with the parent "1"
       When I run `cairn task search 1`
+      Then it lists 1 task
+
+    @task-search-narrowed
+    Scenario: a search can be narrowed by what a listing narrows by
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Rewrite the spec" with the state "done"
+      When I run `cairn task search spec --state todo`
+      Then it succeeds
+      And it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-search-narrowed-reaching-nothing
+    Scenario: a search narrowed to where the word is not answers nothing
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I run `cairn task search spec --state done`
+      Then it succeeds
+      And it says there is no task
+
+    @task-search-leaves-archived-out-until-asked-for
+    Scenario: what was taken off the board is not looked in until it is asked for
+      Given I added a task titled "Write the spec"
+      And I archived task 1
+      When I run `cairn task search spec`
+      Then it says there is no task
+      When I run `cairn task search spec --archived`
       Then it lists 1 task
 
     @task-search-ignores-case

@@ -232,15 +232,23 @@ func (o Operation) Check(in Input) error {
 		if arg.Required && !in.Named(arg.Name) {
 			return fmt.Errorf("%s needs %q, and was not given one", o.Line(), arg.Name)
 		}
-		if arg.Kind != Number {
-			continue
-		}
 		given, named := in.Given[arg.Name]
 		if !named || given == "" {
 			continue
 		}
-		if _, err := strconv.Atoi(given); err != nil {
-			return fmt.Errorf("%q: %s number is expected", given, arg.Of)
+		switch arg.Kind {
+		case Number:
+			if _, err := strconv.Atoi(given); err != nil {
+				return fmt.Errorf("%q: %s number is expected", given, arg.Of)
+			}
+		case Day:
+			// A narrowing reads a day and compares it against a column of
+			// days. Left unread, it compared against whatever was typed and
+			// answered whatever that sorted beside — silence where a refusal
+			// belonged.
+			if _, err := domain.ParseDeadline(given); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

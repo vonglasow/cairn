@@ -41,6 +41,17 @@ func (n *Narrowing) InColumn(state string) {
 	n.keep(`state = ?`, state)
 }
 
+// DueBefore keeps what is due on or before a day, the day itself included: a
+// deadline is the last day something may be done, so a listing of what is due
+// by the first that left out the first would answer a different question.
+//
+// What carries no deadline is left out. It is not due by that day — it is not
+// due at all — and a listing of what is coming up that answered every dateless
+// task would answer most of the board.
+func (n *Narrowing) DueBefore(day string) {
+	n.keep(`deadline != '' AND deadline <= ?`, day)
+}
+
 // Carrying keeps what carries one priority.
 func (n *Narrowing) Carrying(priority string) {
 	n.keep(`priority = ?`, priority)

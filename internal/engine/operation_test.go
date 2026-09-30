@@ -302,3 +302,24 @@ func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
 		t.Errorf("%d operations do not answer an object: %v", len(bare), bare)
 	}
 }
+
+// A day that is not one is refused before any Run sees it, the way a number
+// that is not one already is. Without it a narrowing compared a column of days
+// against whatever text was typed, and answered whatever that happened to sort
+// beside — silence where a refusal belonged.
+func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
+	op := Operation{
+		Thing: "task", Verb: "list",
+		Takes: []Argument{{Name: "due-before", Kind: Day, Means: "due on or before this day"}},
+	}
+	if err := op.Check(Input{Given: map[string]string{"due-before": "soon"}}); err == nil {
+		t.Error("a day that is not one was allowed through")
+	}
+	if err := op.Check(Input{Given: map[string]string{"due-before": "2026-10-01"}}); err != nil {
+		t.Errorf("a day that is one was refused: %v", err)
+	}
+	// Empty is how such an argument is cleared, and clearing is not a mistake.
+	if err := op.Check(Input{Given: map[string]string{"due-before": ""}}); err != nil {
+		t.Errorf("an empty day was refused: %v", err)
+	}
+}

@@ -88,6 +88,11 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	// Not one of a task's attributes: being off the board is done to a task,
 	// not carried by one.
 	Argument{
+		Name:  "due-before",
+		Kind:  Day,
+		Means: "keep only the tasks due on or before this day",
+	},
+	Argument{
 		Name:  "archived",
 		Kind:  Bool,
 		Means: "keep only the tasks taken off the board, instead of the ones still on it",
@@ -312,12 +317,19 @@ var TaskSearch = Operation{
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes: []Argument{
+	// The one place the two vocabularies meet: what is looked for is free text
+	// and what narrows it is a closed set. A word worth searching for is a word
+	// common enough to answer the whole board without one.
+	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
-	},
+	}, taskNarrowing...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
-		tasks, err := on.Engine.List()
+		kept, err := keeping(in, taskNarrowing)
+		if err != nil {
+			return Answer{}, err
+		}
+		tasks, err := on.Engine.Narrowed(kept)
 		if err != nil {
 			return Answer{}, err
 		}

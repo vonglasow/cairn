@@ -7,6 +7,7 @@ package store
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/objective"
@@ -249,4 +250,32 @@ func TestNarrowing_countsOnlyWhatWasNamed(t *testing.T) {
 	if !asked.Narrows() {
 		t.Error("asking for archived tasks is something somebody named")
 	}
+}
+
+// What is due by a day, the day itself included: a deadline is the last day
+// something may be done, so a listing of what is due by the first that left
+// out the first would answer a different question. What carries no deadline is
+// not due by that day — it is not due at all — and is left out.
+func TestNarrowed_keepsWhatIsDueByADay(t *testing.T) {
+	s := openStore(t)
+	due := func(title, day string) {
+		t.Helper()
+		when, err := time.Parse("2006-01-02", day)
+		if err != nil {
+			t.Fatalf("reading %q: %v", day, err)
+		}
+		if _, err := s.Keep(changed(mustBuild(t, title), func(a *task.AsTold) {
+			a.Due(when)
+		})); err != nil {
+			t.Fatalf("Keep %q: %v", title, err)
+		}
+	}
+	due("Write the spec", "2026-09-10")
+	due("On the day itself", "2026-10-01")
+	due("Ship it", "2026-12-01")
+	keep(t, s, "Someday")
+
+	narrowing := &Narrowing{}
+	narrowing.DueBefore("2026-10-01")
+	wantKept(t, s, narrowing, "Write the spec", "On the day itself")
 }

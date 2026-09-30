@@ -46,6 +46,7 @@ exactly one way to ask each question. It is just a different one.
 | objectives served | ✓ | |
 | number | | ✓ |
 | off the board | ✓ | |
+| deadline, as a range | ✓ | |
 
 The line falls between **a closed set** and **free text**. A closed set can be
 matched exactly, so it is narrowed by; free text cannot, so it is looked in as
@@ -251,6 +252,38 @@ could satisfy.
 A task serves a set, so naming two keeps what serves **both**, the way two
 labels do.
 
+## A deadline narrows as a range, and is looked in as text
+
+`--due-before 2026-10-01` keeps what is due on or before that day, the day
+itself included: a deadline is the last day something may be done, so a listing
+of what is due by the first that left out the first would answer a different
+question.
+
+What carries no deadline is left out. It is not due by that day — it is not due
+at all — and a listing of what is coming up that answered every dateless task
+would answer most of the board.
+
+It is the one narrowing that is also looked in: a deadline is free text to
+`task search`, which answers a month or a day as a substring. The two do not
+collide because they answer different questions — "which tasks say October" and
+"which tasks are due by the first".
+
+A day that is not one is now refused by `Check`, beside the number that is not
+one. It had to be: a narrowing compares a column of days against what was
+typed, and left unread it answered whatever that sorted beside. Every `Day`
+argument gains the refusal, not only this one.
+
+## A search narrows the same way a listing does
+
+`task search spec --state todo` is the one place the two vocabularies meet:
+what is looked for is free text, what narrows it is a closed set. It went in
+when the board grew long enough that a word worth searching for was a word
+answering the whole of it.
+
+It reads the narrowed listing and looks in that, rather than reading everything
+and narrowing afterwards — so `--archived` reaches what was taken off the board
+and nothing else does, which is the same rule every other listing follows.
+
 ## Where the narrowing happens
 
 In SQL, in `internal/store/narrowing.go`, not by reading everything and
@@ -267,12 +300,6 @@ than a second loop over the same rows.
 
 ## Deliberately not there yet
 
-- **Narrowing by a deadline** — `--due-before`, `--overdue`. Looking still
-  reaches a deadline as a substring, which answers a month or a day but not a
-  range. A range is a different kind of argument and has not been asked for.
-- **Narrowing a search** — `task search spec --state todo`. It would work, and
-  it would be the only place the two vocabularies meet. Left out until
-  something needs it.
 - **Any of, rather than all of** — `--state todo,current`. The one shape asked
   for was all of it; a set would need a second spelling and both commands would
   have to agree on it.

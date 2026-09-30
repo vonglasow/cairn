@@ -59,6 +59,12 @@ func keeping(in Input, taken []Argument) (*store.Narrowing, error) {
 	if priority, named := in.Given["priority"]; named {
 		kept.Carrying(priority)
 	}
+	// Already read as a day by Check, which refuses what would not parse
+	// before Run is reached. Passed on as the text the store holds, so the
+	// comparison is the one SQL makes on the column as it is written.
+	if due, named := in.Given["due-before"]; named {
+		kept.DueBefore(due)
+	}
 	// Named one at a time and kept one at a time: a task serves a set, so
 	// naming two objectives keeps what serves both — the same as naming two
 	// labels, and for the same reason.
