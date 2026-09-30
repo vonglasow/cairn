@@ -145,26 +145,34 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := ChoosingOver(w.width, w.height)
 	drawPanel(gtx, th, skin, box, Heads(w))
 
-	at := FirstRow(box)
+	// The line that narrows the list, above it and inside the same panel.
+	looking := ChoosingLooking(box)
+	fill(gtx, looking, skin.Back)
+	outline(gtx, looking, skin.Edge)
+	writing(gtx, th, skin, Inside(looking), w.Filtering().Reads(), w.Filtering().At, true, reads, 1, 0)
+
+	at := ChoosingFrom(box)
 	offered := w.Choosing()
 	if len(offered) == 0 {
-		_, value := FieldRow(box, at)
-		say(gtx, th, skin.Faint, value, ChoosingSays, reads)
+		say(gtx, th, skin.Faint, Row(box, at, lineHigh), ChoosingSays, reads)
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
 	}
-	for i, g := range offered {
-		name, value := FieldRow(box, at)
-		// The row the keyboard is on is lit the way a form lights the field it
-		// is on: one place to look for where you are, whatever is open.
+	for i, one := range offered {
+		row := ChoosingRow(box, at)
+		// The row the keyboard is on is lit, and the row is what is lit: a
+		// list is read down, and a mark beside the names said nothing about
+		// which line it belonged to.
 		if i == w.ChoosingAt() {
-			fill(gtx, Chip(name), skin.Back)
-			outline(gtx, Chip(name), skin.Chosen)
+			fill(gtx, row, skin.Back)
+			outline(gtx, row, skin.Chosen)
 		}
-		if w.Ticked(g.Number) {
-			say(gtx, th, skin.Chosen, name, TickedMark, reads)
+		said := "   "
+		if w.Ticked(one.Number) {
+			said = TickedMark + "  "
 		}
-		say(gtx, th, skin.Ink, value, Numbered(reading.Card{Number: g.Number})+"  "+g.Title, reads)
+		say(gtx, th, skin.Ink, Row(box, at, lineHigh),
+			said+Numbered(reading.Card{Number: one.Number})+"  "+one.Title, reads)
 		at += apart
 	}
 	drawPanelOffers(gtx, th, skin, box, w)

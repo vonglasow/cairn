@@ -106,6 +106,10 @@ type Window struct {
 	// What a wheel sent that did not come to a whole line, kept until the
 	// turns after it make one.
 	spareHistory, spareSaying int
+	// choosingFor is the field the open list is choosing for, and filtering
+	// what is being typed into it to narrow that list.
+	choosingFor string
+	filtering   Written
 	// serving is how far the work under an open objective has been scrolled,
 	// counted in lines the way the history is: a task wraps onto as many lines
 	// as its title needs, and a list that jumped a task at a time would skip
@@ -718,6 +722,14 @@ var Pages = []string{"TASKS", "OBJECTIVES"}
 // Nothing when no panel is open: the board is its own heading.
 func Heads(w Window) string {
 	switch w.screen {
+	case OnChoosing:
+		// What is being chosen, and what for. A list with no heading is a list
+		// somebody has to remember the way into.
+		what := "objectives for"
+		if w.OneOnly() {
+			what = "a parent for"
+		}
+		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -852,14 +864,14 @@ func (w Window) Helping() []reading.Field {
 func (w Window) Offers() []string {
 	switch w.screen {
 	case OnChoosing:
-		return []string{"Close"}
+		return []string{"Choose", "Close"}
 	case OnForm:
 		// The one field a list answers says so on the bar. enter is Save's key
 		// everywhere else in a form, and a bar that went on offering Save here
 		// while enter opened a list would be a bar that lies — which is the
 		// one thing this bar exists not to do. Save comes back the moment the
 		// keyboard leaves this field.
-		if w.form.Fields()[w.form.On()].Arg == "objective" {
+		if chosenFromAList(w.form.Fields()[w.form.On()].Arg) {
 			return []string{"Choose", "Cancel"}
 		}
 		return []string{"Save", "Cancel"}
@@ -895,6 +907,11 @@ func (w Window) Offers() []string {
 	}
 	return offers
 }
+
+// chosenFromAList says whether a field is answered by picking from a list
+// rather than by typing. Both are numbers somebody would otherwise have to go
+// and look up, which is the whole of why the list exists.
+func chosenFromAList(arg string) bool { return arg == "objective" || arg == "parent" }
 
 // offerAt says which offer a point lands on, in the bar along the bottom or on
 // the panel that has the window. Both say the same things and both answer,

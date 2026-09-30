@@ -118,6 +118,12 @@ func (w Window) Types(text string) Window {
 		w.looking = w.looking.Types(text)
 		return w
 	}
+	// A list narrows as it is typed into. It is the same gesture as a search
+	// over the board, and the same matching rule answers it.
+	if w.screen == OnChoosing {
+		w.filtering, w.choosing = w.filtering.Types(text), 0
+		return w
+	}
 	if w.screen != OnForm {
 		return w
 	}
@@ -298,6 +304,13 @@ func (w Window) Choose(name string) Window {
 	case "save":
 		return w.Save()
 	case "choose":
+		// The same word twice, and two different acts: on a form it opens the
+		// list, and in the list it takes what the keyboard is on. A bar that
+		// said "Open a list" would be naming the mechanism rather than what
+		// somebody came to do.
+		if w.screen == OnChoosing {
+			return w.picking()
+		}
 		return w.choosingList()
 	case "done":
 		return w.marking()
@@ -390,11 +403,11 @@ func (w Window) deleting() Window {
 // Choosing is what the open list offers: every objective there is, in the order
 // the objectives tab shows them, so that a list and the tab behind it cannot
 // disagree about what comes first.
-func (w Window) Choosing() []reading.Goal {
+func (w Window) Choosing() []Choice {
 	if w.screen != OnChoosing {
 		return nil
 	}
-	return reading.Sorted(w.snap.Goals)
+	return w.choices()
 }
 
 // ChoosingSays is what the list reads when there is nothing to serve. A store
@@ -413,14 +426,33 @@ func (w Window) Ticked(number int) bool { return w.ticked[number] }
 // the names a person knows: nobody knows an objective by its number, and the
 // one place that says what a number means is the other tab.
 func (w Window) FieldSays(field reading.Field) string {
-	if field.Arg != "objective" {
+	var said []string
+	switch field.Arg {
+	case "objective":
+		for _, number := range reading.NumbersIn(field.Value) {
+			said = append(said, "#"+strconv.Itoa(number)+" "+w.goalTitle(number))
+		}
+	case "parent":
+		// The number and what it is called. A number alone is what somebody
+		// has to go and look up, which is the whole of why the list exists.
+		for _, number := range reading.NumbersIn(field.Value) {
+			said = append(said, "#"+strconv.Itoa(number)+" "+w.cardTitle(number))
+		}
+	default:
 		return field.Value
 	}
-	var said []string
-	for _, number := range reading.NumbersIn(field.Value) {
-		said = append(said, "#"+strconv.Itoa(number)+" "+w.goalTitle(number))
-	}
 	return strings.Join(said, ", ")
+}
+
+// cardTitle is what a task is called, or its number again when the snapshot
+// has never heard of it — the same rule an objective's title goes by.
+func (w Window) cardTitle(number int) string {
+	for _, c := range w.snap.Cards {
+		if c.Number == number {
+			return c.Title
+		}
+	}
+	return strconv.Itoa(number)
 }
 
 // goalTitle is what an objective is called, or its number again when the
@@ -440,16 +472,58 @@ func (w Window) goalTitle(number int) string {
 // one field a number was typed into, and the only one a list would answer.
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
-	if on.Arg != "objective" {
+	if !chosenFromAList(on.Arg) {
 		return w
 	}
 	w.ticked, w.choosing = map[int]bool{}, 0
+	w.choosingFor, w.filtering = on.Arg, Written{}
 	for _, number := range reading.NumbersIn(on.Value) {
 		w.ticked[number] = true
 	}
 	w.screen = OnChoosing
 	return w
 }
+
+// Choice is one line of the list: what it is numbered and what it is called.
+// A task and an objective are the same thing to a list, which is why the list
+// is one piece of code and not two.
+type Choice struct {
+	Number int
+	Title  string
+}
+
+// choices is everything the open list offers, narrowed by what is typed into
+// it. The narrowing is the board's own — a list that matched its own way would
+// answer a different set from the search box two keystrokes away.
+func (w Window) choices() []Choice {
+	looking := w.filtering.Reads()
+	var out []Choice
+	if w.choosingFor == "parent" {
+		for _, c := range reading.OnTheBoard(w.snap.Cards, false) {
+			// Nothing hangs under itself, and nothing hangs under a part.
+			if c.Number == w.form.Number || c.Parent != 0 {
+				continue
+			}
+			if looking == "" || reading.ReachesCard(c, looking) {
+				out = append(out, Choice{Number: c.Number, Title: c.Title})
+			}
+		}
+		return out
+	}
+	for _, g := range reading.Sorted(w.snap.Goals) {
+		if looking == "" || strings.Contains(strings.ToLower(g.Title), strings.ToLower(looking)) {
+			out = append(out, Choice{Number: g.Number, Title: g.Title})
+		}
+	}
+	return out
+}
+
+// Filtering is what has been typed into the open list.
+func (w Window) Filtering() Written { return w.filtering }
+
+// OneOnly says whether the open list takes one answer rather than several. A
+// task hangs under one parent; it serves as many objectives as it serves.
+func (w Window) OneOnly() bool { return w.choosingFor == "parent" }
 
 // inChoosing is what a key does while the list has the window.
 func (w Window) inChoosing(name string) Window {
@@ -464,9 +538,28 @@ func (w Window) inChoosing(name string) Window {
 			number := offered[w.choosing].Number
 			w.ticked[number] = !w.ticked[number]
 		}
-	case "esc", "enter", "return":
+	case "esc":
+		return w.keeping()
+	case "enter", "return":
+		return w.picking()
+	}
+	return w
+}
+
+// picking takes what the keyboard is on, and closes the list when the field
+// takes one answer. Several, and the list stays open: ticking is what it is
+// for, and a list that closed on every tick would be reopened for every one.
+func (w Window) picking() Window {
+	offered := w.Choosing()
+	if w.choosing >= len(offered) {
+		return w
+	}
+	number := offered[w.choosing].Number
+	if w.OneOnly() {
+		w.ticked = map[int]bool{number: true}
 		return w.keeping()
 	}
+	w.ticked[number] = !w.ticked[number]
 	return w
 }
 

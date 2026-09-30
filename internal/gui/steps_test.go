@@ -712,6 +712,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the list does not offer "([^"]*)"$`, func(title string) error {
+		for _, one := range w.w.Choosing() {
+			if one.Title == title {
+				return fmt.Errorf("the list still offers %q", title)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the window is choosing$`, func() error {
+		if w.w.Screen() != OnChoosing {
+			return fmt.Errorf("the window is on %v, not the list", w.w.Screen())
+		}
+		return nil
+	})
+	sc.Then(`^the window is on the form$`, func() error {
+		if w.w.Screen() != OnForm {
+			return fmt.Errorf("the window is on %v, not the form", w.w.Screen())
+		}
+		return nil
+	})
 	sc.Then(`^the list is on "([^"]*)"$`, w.listOn)
 	sc.Then(`^objective (\d+) is ticked$`, func(n int) error { return w.ticked(n, true) })
 	sc.Then(`^objective (\d+) is not ticked$`, func(n int) error { return w.ticked(n, false) })
@@ -1373,10 +1393,10 @@ func (w *world) listSaysNothing() error {
 }
 
 // goalTitles is what a failure prints of a run of objectives.
-func goalTitles(goals []reading.Goal) []string {
+func goalTitles(offered []Choice) []string {
 	var said []string
-	for _, g := range goals {
-		said = append(said, g.Title)
+	for _, one := range offered {
+		said = append(said, one.Title)
 	}
 	return said
 }

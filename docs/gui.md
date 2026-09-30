@@ -355,6 +355,25 @@ a press on the bar fell through to the board behind the panel and closed the
 task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
 
+**A number somebody would have to look up is chosen from a list.** Two fields
+are answered that way — the objective a task serves, and the task it hangs
+under — and one list answers both. It carries a line that narrows it as it is
+typed into, by the board's own matching rule rather than one of its own: a list
+that matched its own way would answer a different set from the search box two
+keystrokes away.
+
+The two differ in one thing, and the list reads it off the field: a task hangs
+under one parent, so `⏎` takes what the keyboard is on and closes; it serves as
+many objectives as it serves, so `⏎` ticks and the list stays open until `esc`.
+The field then reads `#1 Ship it` rather than `1` — the number is what the
+engine takes and what a person has to go and look up, which is the whole of why
+the list exists.
+
+The row the keyboard is on is lit, and the row is what is lit. It used to be a
+chip in the form's *name* column while the title was drawn in the *value*
+column, a hundred and fifty pixels away — a list borrowing a form's two columns
+when a list wants one.
+
 **An open task is headed by its whole title.** The panel's heading said `task
 243` and left the rest of the line empty; it now reads `task 243 · <title>`.
 That line holds 99 characters at the smallest window this board draws in, 166

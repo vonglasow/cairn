@@ -470,3 +470,52 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 		t.Errorf("FieldSays = %q, want %q", got, want)
 	}
 }
+
+// The objectives list narrows as it is typed into, the way the parents list
+// does. One list, two fields: a filter that answered only one of them would be
+// a list behaving differently depending on where it was opened from.
+func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
+		Goals: []reading.Goal{
+			{Number: 1, Title: "Modularité / Helm"},
+			{Number: 2, Title: "Stabiliser les environnements"},
+		},
+	}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if got := w.Choosing(); len(got) != 2 {
+		t.Fatalf("the list offers %d objectives, want both", len(got))
+	}
+	narrowed := w.Types("helm")
+	if got := narrowed.Choosing(); len(got) != 1 || got[0].Number != 1 {
+		t.Errorf("narrowed to \"helm\", the list offers %v", goalTitles(got))
+	}
+	// And it does not care how it was typed, the way looking does not.
+	if got := w.Types("HELM").Choosing(); len(got) != 1 {
+		t.Errorf("narrowed to \"HELM\", the list offers %v", goalTitles(got))
+	}
+}
+
+// Choosing out of an empty list does nothing rather than reaching past its end.
+func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if len(w.Choosing()) != 0 {
+		t.Fatalf("the store has no objectives and the list offers %d", len(w.Choosing()))
+	}
+	if got := w.Choose("Choose"); got.Screen() != OnChoosing {
+		t.Errorf("choosing out of an empty list left the window on %v", got.Screen())
+	}
+}

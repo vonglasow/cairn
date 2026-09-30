@@ -1087,6 +1087,48 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
+    @gui-a-parent-is-chosen-from-a-list
+    Scenario: the task something hangs under is chosen from a list, not typed as a number
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the bar offers "Choose" under "⏎"
+      When I press "enter"
+      Then the window is choosing
+      And the panel is headed "a parent for task 2"
+      And the list offers "Ship it"
+
+    @gui-the-list-narrows-as-it-is-typed-into
+    Scenario: typing in the list keeps only what matches
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      And I added a task titled "Rewrite the tests"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I press "enter"
+      And I type "tests"
+      Then the list offers "Rewrite the tests"
+      And the list does not offer "Ship it"
+
+    @gui-choosing-a-parent-says-which-task-it-is
+    Scenario: the field says which task it was attached to, not only its number
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I press "enter"
+      And I press "enter"
+      Then the window is on the form
+      And the field "parent" names "Ship it"
+      And the field "parent" reads "1"
+
     @gui-an-open-task-is-headed-by-its-whole-title
     Scenario: an open task says its whole title on the line beside its number
       Given I added a task titled "install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"

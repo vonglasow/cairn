@@ -1145,23 +1145,24 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	}
 
 	box := ChoosingOver(w.width, w.height)
-	first, _ := FieldRow(box, FirstRow(box))
+	first := ChoosingRow(box, ChoosingFrom(box))
 	shot := drawn(t, w)
 
-	// The row the keyboard is on is lit, and the one below it is not.
-	if painted(shot, Chip(first), Dark().Chosen) == 0 {
+	// The row the keyboard is on is lit, and the row is what is lit — a mark
+	// beside the names said nothing about which line it belonged to.
+	if painted(shot, first, Dark().Chosen) == 0 {
 		t.Error("the row the keyboard is on is not lit")
 	}
-	second, _ := FieldRow(box, FirstRow(box)+apart)
-	if got := painted(shot, Chip(second), Dark().Chosen); got != 0 {
+	second := ChoosingRow(box, ChoosingFrom(box)+apart)
+	if got := painted(shot, second, Dark().Chosen); got != 0 {
 		t.Errorf("%d pixels lit a row the keyboard is not on", got)
 	}
 
 	// Ticking puts a mark where there was none. Compared with the keyboard in
 	// the same place both times: a lit row and a tick are drawn in one colour,
 	// so moving the cursor as well would compare two things at once.
-	moved := inked(drawn(t, w.Key("down")), Chip(first), Dark().Panel)
-	ticked := inked(drawn(t, w.Key("space").Key("down")), Chip(first), Dark().Panel)
+	moved := inked(drawn(t, w.Key("down")), first, Dark().Panel)
+	ticked := inked(drawn(t, w.Key("space").Key("down")), first, Dark().Panel)
 	if ticked <= moved {
 		t.Errorf("a ticked row paints %d and an unticked one %d: no mark was drawn", ticked, moved)
 	}
@@ -1179,7 +1180,7 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	w = w.Key("enter")
 
 	box := ChoosingOver(w.width, w.height)
-	_, value := FieldRow(box, FirstRow(box))
+	value := Row(box, ChoosingFrom(box), lineHigh)
 	if painted(drawn(t, w), value, Dark().Faint) == 0 {
 		t.Error("the list says nothing where it should say there is nothing to serve")
 	}

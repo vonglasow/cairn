@@ -109,6 +109,27 @@ func FieldRow(box Box, at int) (name, value Box) {
 		Box{X: box.X + namesWide, Y: at, W: box.W - namesWide - padding, H: lineHigh}
 }
 
+// ChoosingRow is one line of a list: the whole width of the panel, not a form's
+// name column beside its value column. A list is read down, so what says where
+// the keyboard is has to be the line itself — lit in the name column, it sat a
+// hundred and fifty pixels from the row it marked.
+func ChoosingRow(box Box, at int) Box {
+	return Box{X: box.X + padding, Y: at - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
+}
+
+// ChoosingLooking is the line at the top of a list that narrows it, above the
+// first row and inside the same panel.
+func ChoosingLooking(box Box) Box {
+	return Box{X: box.X + padding, Y: FirstRow(box) - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
+}
+
+// ChoosingFrom is where a list's own rows begin, under the line that narrows
+// them.
+func ChoosingFrom(box Box) int {
+	looking := ChoosingLooking(box)
+	return looking.Y + looking.H + between
+}
+
 // PanelOfferAt is where one of a panel's own offers sits: along its bottom,
 // each in its own place so a pointer can land on one of them.
 //
