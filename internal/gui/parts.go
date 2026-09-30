@@ -123,6 +123,17 @@ func ChoosingLooking(box Box) Box {
 	return Box{X: box.X + padding, Y: FirstRow(box) - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
 }
 
+// ChoosingAtPoint says which row of a list a point lands on, and whether it
+// lands on one at all.
+func ChoosingAtPoint(box Box, rows int, p Point) (int, bool) {
+	for i := range rows {
+		if ChoosingRow(box, ChoosingFrom(box)+i*apart).In(p) {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
 // ChoosingFrom is where a list's own rows begin, under the line that narrows
 // them.
 func ChoosingFrom(box Box) int {

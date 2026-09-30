@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"strconv"
 	"testing"
 
 	"cairn/internal/reading"
@@ -517,5 +518,42 @@ func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	}
 	if got := w.Choose("Choose"); got.Screen() != OnChoosing {
 		t.Errorf("choosing out of an empty list left the window on %v", got.Screen())
+	}
+}
+
+// A click lands on the row it is over, and not always on the first one. The
+// walk down the rows is arithmetic, and arithmetic only exercised at nought
+// answers the same whatever it does.
+func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{
+		{Number: 1, Title: "Ship it", State: "todo"},
+		{Number: 2, Title: "Write the spec", State: "todo"},
+		{Number: 3, Title: "Rewrite the tests", State: "todo"},
+	}}
+	w = w.clicked(middleOf(w, 1, 1)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	offered := w.Choosing()
+	if len(offered) != 2 {
+		t.Fatalf("the list offers %v, want the two tasks this one may hang under", goalTitles(offered))
+	}
+
+	box := ChoosingOver(w.width, w.height)
+	for at, one := range offered {
+		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
+		got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+		if got.Form().ValueOf("parent") != strconv.Itoa(one.Number) {
+			t.Errorf("clicking row %d took %q, want task %d (%s)",
+				at, got.Form().ValueOf("parent"), one.Number, one.Title)
+		}
+	}
+	// And a point below the last row lands on no row at all.
+	below := ChoosingRow(box, ChoosingFrom(box)+len(offered)*apart)
+	if _, on := ChoosingAtPoint(box, len(offered), Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
+		t.Error("a point past the last row was read as a row")
 	}
 }

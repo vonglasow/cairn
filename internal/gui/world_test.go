@@ -454,7 +454,10 @@ func (w *world) types(text string) error {
 
 // clickField is how a pointer puts the keyboard on a field.
 func (w *world) clickField(name string) error {
-	box := Over(w.w.Layout().Bar.W+2*margin, w.w.Layout().Bar.Y+barHigh+margin)
+	// The box production looks in, not one worked back out of the layout: a
+	// helper that reckons its own geometry clicks where nothing is, and says
+	// so by failing somewhere else entirely.
+	box := Over(w.w.width, w.w.height)
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
 		if field.Name != name {
@@ -688,6 +691,23 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I type "([^"]*)"$`, w.types)
 	sc.Step(`^I click the field "([^"]*)"$`, w.clickField)
+	sc.Step(`^I click the list row "([^"]*)"$`, func(title string) error {
+		box := ChoosingOver(w.w.width, w.w.height)
+		for i, one := range w.w.Choosing() {
+			if one.Title != title {
+				continue
+			}
+			row := ChoosingRow(box, ChoosingFrom(box)+i*apart)
+			w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+			return nil
+		}
+		return fmt.Errorf("the list offers no row called %q", title)
+	})
+	sc.Step(`^I click the line that narrows the list$`, func() error {
+		look := ChoosingLooking(ChoosingOver(w.w.width, w.w.height))
+		w.w = w.w.clicked(Point{X: look.X + 20, Y: look.Y + look.H/2})
+		return nil
+	})
 	sc.Step(`^I click (\d+) characters into the field "([^"]*)"$`, w.clickInto)
 	sc.Step(`^somebody else adds a task titled "([^"]*)"$`, w.somebodyElseAdds)
 	sc.Step(`^the window looks again$`, w.looksAgain)

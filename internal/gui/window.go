@@ -577,10 +577,22 @@ func (w Window) Click(p Point) Window {
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}
+	// A list answers before the form does. It is drawn over one, and the boxes
+	// underneath are still where they were — a click meant for a row used to
+	// fall through and move the keyboard to whatever field was behind it.
+	if w.screen == OnChoosing {
+		return w.clickingList(p)
+	}
 	// A form's own fields answer, because that is how the keyboard gets to one
 	// with a mouse.
 	if at, on := w.fieldAt(p); on {
 		w.form = w.form.onto(at)
+		// A field a list answers opens it. There is nothing to type there, so
+		// a click that only moved the keyboard onto it left a pointer with
+		// nowhere to go and nothing saying a list was behind it.
+		if chosenFromAList(w.form.Fields()[at].Arg) {
+			return w.choosingList()
+		}
 		_, value := FieldRow(Over(w.width, w.height), FieldTop(Over(w.width, w.height), w.form.Fields(), at))
 		return w.CaretInto(into(value, p))
 	}
@@ -906,6 +918,22 @@ func (w Window) Offers() []string {
 		offers = append(offers, "Edit", away, "Delete")
 	}
 	return offers
+}
+
+// clickingList is what a click does inside an open list: a row is taken the
+// way the keyboard takes it, and the line that narrows it takes the caret.
+// Anywhere else inside the panel it does nothing, which is what a click on a
+// panel's own ground has always done.
+func (w Window) clickingList(p Point) Window {
+	box := ChoosingOver(w.width, w.height)
+	if at, on := ChoosingAtPoint(box, len(w.Choosing()), p); on {
+		w.choosing = at
+		return w.picking()
+	}
+	if looking := ChoosingLooking(box); looking.In(p) {
+		w.filtering = w.filtering.CaretAt(into(Inside(looking), p))
+	}
+	return w
 }
 
 // chosenFromAList says whether a field is answered by picking from a list

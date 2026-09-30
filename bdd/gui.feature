@@ -1095,11 +1095,44 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "parent"
-      Then the bar offers "Choose" under "⏎"
-      When I press "enter"
       Then the window is choosing
       And the panel is headed "a parent for task 2"
       And the list offers "Ship it"
+
+    @gui-clicking-a-field-that-a-list-answers-opens-it
+    Scenario: clicking the field opens its list, which is what a pointer is for
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the window is choosing
+      And the panel is headed "a parent for task 2"
+
+    @gui-a-list-answers-the-mouse
+    Scenario: a row is chosen by clicking it, the way everything else here is
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I click the list row "Ship it"
+      Then the window is on the form
+      And the field "parent" names "Ship it"
+
+    @gui-a-click-in-a-list-leaves-the-form-under-it-alone
+    Scenario: a click inside the list does not reach the form behind it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I click the line that narrows the list
+      Then the window is choosing
+      And the form is still on the field "parent"
 
     @gui-the-list-narrows-as-it-is-typed-into
     Scenario: typing in the list keeps only what matches
@@ -1110,7 +1143,6 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "parent"
-      And I press "enter"
       And I type "tests"
       Then the list offers "Rewrite the tests"
       And the list does not offer "Ship it"
@@ -1123,7 +1155,6 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "parent"
-      And I press "enter"
       And I press "enter"
       Then the window is on the form
       And the field "parent" names "Ship it"

@@ -726,6 +726,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the form is still on the field "([^"]*)"$`, func(name string) error {
+		if got := w.w.Form().Fields()[w.w.Form().On()].Name; got != name {
+			return fmt.Errorf("the keyboard is on the field %q, not %q", got, name)
+		}
+		return nil
+	})
 	sc.Then(`^the window is on the form$`, func() error {
 		if w.w.Screen() != OnForm {
 			return fmt.Errorf("the window is on %v, not the form", w.w.Screen())

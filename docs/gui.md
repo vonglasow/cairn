@@ -369,6 +369,12 @@ The field then reads `#1 Ship it` rather than `1` — the number is what the
 engine takes and what a person has to go and look up, which is the whole of why
 the list exists.
 
+Clicking the field opens it, and clicking a row takes it. Neither was true
+when the list first went in: `Click` had no branch for the list, so a click
+meant for a row fell through to the form drawn behind the panel and moved the
+keyboard to whatever field was there. The list answered the keyboard and
+nothing else, which reads as a list that does not work at all.
+
 The row the keyboard is on is lit, and the row is what is lit. It used to be a
 chip in the form's *name* column while the title was drawn in the *value*
 column, a hundred and fifty pixels away — a list borrowing a form's two columns
