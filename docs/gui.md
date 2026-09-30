@@ -355,6 +355,18 @@ a press on the bar fell through to the board behind the panel and closed the
 task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
 
+**An open task is headed by its whole title.** The panel's heading said `task
+243` and left the rest of the line empty; it now reads `task 243 · <title>`.
+That line holds 99 characters at the smallest window this board draws in, 166
+at the largest, where the title *field* below it cuts at thirty — so a title
+worth reading had nowhere to be read. Not while the task is being edited: the
+title is in the field being typed into, and a heading repeating it would go
+stale between two keystrokes.
+
+Measured before it was written, against three window sizes. Widening the field
+or splitting it over two rows were the other two ways, and both moved every
+field below them to buy a line that was already there.
+
 **A card says what it holds and does not show.** `≡` that there is a
 description to read, `▪ 3/8` how far the parts under it have got — beside the
 number, where an objective's count already sits.

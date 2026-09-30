@@ -812,6 +812,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the help is headed "([^"]*)"$`, w.helpHeaded)
+	sc.Then(`^the panel is headed "([^"]*)"$`, w.helpHeaded)
 	sc.Then(`^the search box is open$`, w.searchBoxOpen)
 	sc.Then(`^the search box is closed$`, w.searchBoxClosed)
 	sc.Then(`^the search is still in force$`, w.searchStillInForce)

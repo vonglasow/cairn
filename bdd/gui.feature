@@ -1087,6 +1087,23 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
+    @gui-an-open-task-is-headed-by-its-whole-title
+    Scenario: an open task says its whole title on the line beside its number
+      Given I added a task titled "install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
+      When I open the window
+      And I click the card "install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
+      And I press "enter"
+      Then the panel is headed "task 1 · install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
+
+    @gui-an-open-objective-is-headed-by-its-title-too
+    Scenario: an objective says its title there as well
+      Given I added an objective titled "Ship cairn"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship cairn"
+      And I press "enter"
+      Then the panel is headed "objective 1 · Ship cairn"
+
     @gui-a-card-says-it-carries-more-than-it-shows
     Scenario: a card says a description exists and how far its parts have got
       Given I added a task titled "Write the spec" with the description "Two columns"

@@ -949,9 +949,14 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
 	on := w.clicked(middleOf(w, 1, 0))
-	if got := Heads(on.Key("enter")); got != "task 7" {
+	// The title goes with the number on an open task: the line was empty, it
+	// holds ninety-nine characters at the smallest window, and the field below
+	// it cuts a title at thirty.
+	if got := Heads(on.Key("enter")); got != "task 7 · Write the spec" {
 		t.Errorf("an open task is headed %q", got)
 	}
+	// Not while it is being edited: the title is in the field being typed
+	// into, and a heading repeating it would go stale between two keystrokes.
 	if got := Heads(on.Choose("Edit")); got != "task 7" {
 		t.Errorf("a task being edited is headed %q", got)
 	}
