@@ -432,6 +432,28 @@ func (w *world) saysWhatWentWrong() error {
 
 // cardDimmed reads the ink the card would be written in, which is what the
 // drawing asks the skin for.
+// cardNumbered is the card a scenario names by its number.
+func (w *world) cardNumbered(n int) (reading.Card, error) {
+	for _, c := range w.w.Showing().Cards {
+		if c.Number == n {
+			return c, nil
+		}
+	}
+	return reading.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
+}
+
+// markedDescribed reads the mark a card writes beside its number.
+func (w *world) markedDescribed(n int, want bool) error {
+	c, err := w.cardNumbered(n)
+	if err != nil {
+		return err
+	}
+	if got := strings.Contains(Carried(c, Marks()), Marks().Described); got != want {
+		return fmt.Errorf("the card for task %d is marked as described: %v, want %v", n, got, want)
+	}
+	return nil
+}
+
 func (w *world) cardDimmed(title string) error {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title != title {
@@ -462,6 +484,23 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the columns read (".*")$`, w.columnsRead)
 	sc.Then(`^"([^"]*)" carries "([^"]*)"$`, w.columnCarries)
 	sc.Then(`^the card "([^"]*)" is dimmed$`, w.cardDimmed)
+	sc.Then(`^the card for task (\d+) is marked as described$`, func(n int) error {
+		return w.markedDescribed(n, true)
+	})
+	sc.Then(`^the card for task (\d+) is not marked as described$`, func(n int) error {
+		return w.markedDescribed(n, false)
+	})
+	sc.Then(`^the card for task (\d+) says "([^"]*)"$`, func(n int, said string) error {
+		c, err := w.cardNumbered(n)
+		if err != nil {
+			return err
+		}
+		if line := Carried(c, Marks()); !strings.Contains(line, said) {
+			return fmt.Errorf("the card for task %d reads %q beside its number, and says nothing of %q",
+				n, line, said)
+		}
+		return nil
+	})
 	sc.Then(`^the card "([^"]*)" is not dimmed$`, w.cardNotDimmed)
 	sc.Then(`^"([^"]*)" reads (".*")$`, w.columnReads)
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)

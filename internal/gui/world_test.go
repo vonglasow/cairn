@@ -529,6 +529,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.addTask(t, "", d)
 	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
+	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, func(n int, state string) error {
+		_, err := w.other.Edit(n, engine.Changes{State: &state})
+		return err
+	})
 	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, func(title string, n int) error {
 		_, err := w.other.Add(title, engine.Changes{Objective: &[]string{fmt.Sprint(n)}})
 		return err

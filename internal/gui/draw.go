@@ -291,6 +291,9 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
 	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
+	if said := Carried(c, Marks()); said != "" {
+		say(gtx, th, skin.Faint, CountedAt(parts.Number, said), said, small)
+	}
 	say(gtx, th, skin.Writing(c), parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
 	say(gtx, th, skin.Faint, parts.Labels, Tagged(c, parts.Labels.W), small)
 }

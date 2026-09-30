@@ -98,6 +98,35 @@ func Numbered(c reading.Card) string {
 	return line
 }
 
+// Carried is what a card says of what it holds but does not show: that there
+// is a description to read, and how far the parts under it have got. The two
+// facts the terminal's marks carry that a window had no other way of saying —
+// the rest of them it says by where a card sits, what colour its edge is, and
+// the labels written across it.
+func Carried(c reading.Card, g Glyphs) string {
+	said := ""
+	if c.Described {
+		said = g.Described
+	}
+	if c.SubTotal > 0 {
+		said = strings.TrimSpace(said + " " + g.SubTasks + " " +
+			strconv.Itoa(c.SubDone) + "/" + strconv.Itoa(c.SubTotal))
+	}
+	return said
+}
+
+// Glyphs are the marks a card writes. Named rather than written in, because
+// the terminal has two sets and the day a window wants the other one there is
+// somewhere for it to go.
+type Glyphs struct {
+	Described, SubTasks string
+}
+
+// Marks is the one set a window draws. Nine of the ten shapes the terminal
+// uses render in the font Gio ships; only the flag does not, and a window
+// writes its labels out rather than flagging them.
+func Marks() Glyphs { return Glyphs{Described: "≡", SubTasks: "▪"} }
+
 // Counted is what an objective's card says of the work under it: how many
 // tasks serve it, how many are done, and what share of it that is. Empty when
 // nothing serves it — "0/0" and a share of nothing are two ways of dividing by

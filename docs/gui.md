@@ -355,6 +355,22 @@ a press on the bar fell through to the board behind the panel and closed the
 task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
 
+**A card says what it holds and does not show.** `≡` that there is a
+description to read, `▪ 3/8` how far the parts under it have got — beside the
+number, where an objective's count already sits.
+
+Those two and no more. The terminal compresses ten facts into marks because a
+column is 24 characters wide; a window says most of them another way, and
+saying them twice would be noise: where a card sits gives blocked, watching and
+paused, its edge gives priority, the dot on its number gives the focus, and the
+labels are written out rather than flagged.
+
+The note this replaces held that only 2 of the 10 shapes rendered in the font
+Gio ships, and parked the whole idea on the weight of a font that would have to
+be embedded. Drawn and looked at, nine of the ten render; only `⚑` comes out an
+empty box, and a window has no use for it. Measurements go stale — this one had
+been true enough to stop the work.
+
 ## The detail
 
 The panel a task opens into, with `s`, `enter` or a double click. Two columns:
@@ -468,12 +484,5 @@ would become the one the gates cannot reach.
 
 ## Deliberately not there yet
 
-- **The eleven marks.** `⊘ ◉ ‖ ▶ ✓ ✕ ≡ ▪ ⚑ ↳` carry meaning in the terminal
-  because a column is 24 characters wide and a word does not fit. A window has
-  room, so a card writes the word. Measured, for the day this is revisited: the
-  font Gio ships carries 2 of the 10 shapes (712 glyphs); Gio does not fall
-  back to system fonts; a symbol-rich font is 750 KB to 5 MB and
-  `check-added-large-files` refuses it at 500 KB; a subset of those ten glyphs
-  would be a few KB and would pass.
 - **A permanent detail panel**, which the extra room would allow and which
   would stop this being the same board.

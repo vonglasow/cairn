@@ -1087,6 +1087,17 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
+    @gui-a-card-says-it-carries-more-than-it-shows
+    Scenario: a card says a description exists and how far its parts have got
+      Given I added a task titled "Write the spec" with the description "Two columns"
+      And I added a task titled "Ship it"
+      And I added a task titled "Write the tests" hanging under task 2
+      And I edited task 3 with the state "done"
+      When I open the window
+      Then the card for task 1 is marked as described
+      And the card for task 2 says "1/1"
+      And the card for task 2 is not marked as described
+
     @gui-labels-show-on-the-card
     Scenario: a card says what it is labelled without being opened
       Given I added a task titled "Write the spec"

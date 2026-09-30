@@ -98,3 +98,26 @@ func TestTagged_atItsEdges(t *testing.T) {
 		}
 	}
 }
+
+// What a card says beside its number, at its edges. A card with nothing under
+// it says nothing about parts: "0/0" is a card claiming to be a piece of work
+// that was split, which it was not.
+func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
+	g := Marks()
+	for _, c := range []struct {
+		what string
+		card reading.Card
+		want string
+	}{
+		{"nothing to say", reading.Card{}, ""},
+		{"a description and no parts", reading.Card{Described: true}, g.Described},
+		{"parts and no description", reading.Card{SubDone: 1, SubTotal: 3}, g.SubTasks + " 1/3"},
+		{"both", reading.Card{Described: true, SubDone: 0, SubTotal: 2},
+			g.Described + " " + g.SubTasks + " 0/2"},
+		{"nothing under it", reading.Card{SubDone: 0, SubTotal: 0}, ""},
+	} {
+		if got := Carried(c.card, g); got != c.want {
+			t.Errorf("%s: Carried = %q, want %q", c.what, got, c.want)
+		}
+	}
+}

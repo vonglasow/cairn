@@ -1339,3 +1339,25 @@ func same(a, b *image.RGBA, in Box) bool {
 	}
 	return true
 }
+
+// The marks are drawn, and only where there are marks. Asked of the pixels in
+// the room beside a card's number: a card carrying nothing leaves it empty,
+// and one carrying something does not.
+func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Bare", State: "todo"},
+		reading.Card{Number: 2, Title: "Carries", State: "todo", Described: true, SubDone: 1, SubTotal: 3},
+	)
+	shot := drawn(t, w)
+	beside := func(at int) Box {
+		number := PartsOf(w.Layout().CardAt(1, at, 0)).Number
+		return Box{X: number.X + number.W/2, Y: number.Y, W: number.W / 2, H: number.H}
+	}
+	if got := ink(shot, beside(0), Dark().Panel); got != 0 {
+		t.Errorf("a card carrying nothing drew %d pixels beside its number", got)
+	}
+	if got := ink(shot, beside(1), Dark().Panel); got == 0 {
+		t.Error("a card carrying a description and its parts drew nothing beside its number")
+	}
+}
