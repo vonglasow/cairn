@@ -553,7 +553,74 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	}
 	// And a point below the last row lands on no row at all.
 	below := ChoosingRow(box, ChoosingFrom(box)+len(offered)*apart)
-	if _, on := ChoosingAtPoint(box, len(offered), Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
+	if _, on := ChoosingAtPoint(box, len(offered), 0, Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
 		t.Error("a point past the last row was read as a row")
+	}
+}
+
+// Walking down a long list brings each row into sight, and brings in exactly
+// the one asked for: the run rarely divides into whole rows, and an answer
+// rounded the other way leaves the row the keyboard is on half under the edge.
+func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	cards := []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
+	for i := 2; i <= 45; i++ {
+		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
+	}
+	w.snap = reading.Snapshot{Cards: cards}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	room := w.ChoosingRoom()
+
+	for at := range len(w.Choosing()) {
+		if at > 0 {
+			w = w.Key("down")
+		}
+		from := w.ChoosingFromRow()
+		if at < room {
+			if from != 0 {
+				t.Fatalf("on row %d of %d in sight, the list moved to %d", at, room, from)
+			}
+			continue
+		}
+		if want := at - room + 1; from != want {
+			t.Fatalf("on row %d, the list starts at %d, want %d", at, from, want)
+		}
+	}
+}
+
+// A click lands on the row it is over after the list has been scrolled, not on
+// the one that was there before.
+func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	cards := []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
+	for i := 2; i <= 45; i++ {
+		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
+	}
+	w.snap = reading.Snapshot{Cards: cards}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	box := ChoosingOver(w.width, w.height)
+	run := ChoosingRun(box)
+	w = w.Scroll(Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, 6*lineHigh)
+	if w.ChoosingFromRow() != 6 {
+		t.Fatalf("the list starts at row %d, want 6", w.ChoosingFromRow())
+	}
+
+	// The second row drawn is the eighth of the list once six are above it.
+	row := ChoosingRow(box, ChoosingFrom(box)+apart)
+	got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+	want := w.Choosing()[7].Number
+	if got.Form().ValueOf("parent") != strconv.Itoa(want) {
+		t.Errorf("clicking the second row drawn took %q, want task %d",
+			got.Form().ValueOf("parent"), want)
 	}
 }

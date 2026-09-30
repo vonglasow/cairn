@@ -158,7 +158,14 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
 	}
-	for i, one := range offered {
+	// Cut to the run the panel has. A list of everything a task may hang under
+	// is as long as the board, and drawn whole it ran past the panel, past the
+	// window, and over everything behind both.
+	run := ChoosingRun(box)
+	clipped := clip.Rect(rect(run)).Push(gtx.Ops)
+	from := w.ChoosingFromRow()
+	for i := from; i < Lasting(len(offered), from, w.ChoosingRoom()); i++ {
+		one := offered[i]
 		row := ChoosingRow(box, at)
 		// The row the keyboard is on is lit, and the row is what is lit: a
 		// list is read down, and a mark beside the names said nothing about
@@ -175,6 +182,11 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			said+Numbered(reading.Card{Number: one.Number})+"  "+one.Title, reads)
 		at += apart
 	}
+	clipped.Pop()
+
+	track := ChoosingBar(box)
+	fill(gtx, track, skin.Back)
+	fill(gtx, Thumb(track, len(offered), w.ChoosingRoom(), from), skin.Edge)
 	drawPanelOffers(gtx, th, skin, box, w)
 }
 
@@ -530,7 +542,7 @@ func drawSaying(gtx layout.Context, th *material.Theme, skin Skin, box Box, fiel
 
 func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := Over(w.width, w.height)
-	drawPanel(gtx, th, skin, box, Heads(w))
+	drawPanel(gtx, th, skin, box, HeadsOn(w, OnForm))
 	// Every field is a box, whether or not the keyboard is on it, and the one
 	// it is on is the one whose frame is lit. A place somebody types should
 	// look like one before they have typed in it.

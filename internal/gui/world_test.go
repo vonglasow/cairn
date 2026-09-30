@@ -703,6 +703,23 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the list offers no row called %q", title)
 	})
+	sc.Step(`^I added (\d+) tasks$`, func(n int) error {
+		for i := 1; i <= n; i++ {
+			if err := w.addTask(fmt.Sprintf("Une tâche de plus, la %d", i), "", ""); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I scroll down over the list$`, func() error { return w.scrollList(1) })
+	sc.Step(`^I scroll down over the list (\d+) times$`, func(n int) error {
+		for range n {
+			if err := w.scrollList(1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	sc.Step(`^I click the line that narrows the list$`, func() error {
 		look := ChoosingLooking(ChoosingOver(w.w.width, w.w.height))
 		w.w = w.w.clicked(Point{X: look.X + 20, Y: look.Y + look.H/2})
@@ -798,6 +815,14 @@ func (w *world) middleOfSaying() Point {
 	at, _ := LongField(w.w.Shown())
 	b := SayingBox(Over(w.w.width, w.w.height), w.w.Shown(), at)
 	return Point{X: b.X + b.W/2, Y: b.Y + b.H/2}
+}
+
+// scrollList turns the wheel over an open list.
+func (w *world) scrollList(by int) error {
+	run := ChoosingRun(ChoosingOver(w.w.width, w.w.height))
+	w.was = w.w.ChoosingFromRow()
+	w.w = w.w.Scroll(Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, by*lineHigh)
+	return nil
 }
 
 func (w *world) scrollSaying(by int) error {

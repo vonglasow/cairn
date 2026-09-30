@@ -369,6 +369,18 @@ The field then reads `#1 Ship it` rather than `1` — the number is what the
 engine takes and what a person has to go and look up, which is the whole of why
 the list exists.
 
+**The list is as long as the panel, not as long as what it offers.** A board of
+fifty tasks drew fifty rows, straight past the panel, past the window, and over
+everything behind both. It is cut to the run the panel has and scrolled to for
+the rest — by the wheel, by a bar beside it, and by the keyboard, which brings
+the row it is on into sight the way a column brings a card. The same `Thumb`
+and the same window of lines the history and the description use.
+
+Counted in rows and not in pixels. The walk in pixels had to divide by a row's
+height at the end, and a run rarely divides into whole rows: the remainder was
+arithmetic no assertion could judge, and it survived mutation twice before it
+was written out as rows.
+
 Clicking the field opens it, and clicking a row takes it. Neither was true
 when the list first went in: `Click` had no branch for the list, so a click
 meant for a row fell through to the form drawn behind the panel and moved the

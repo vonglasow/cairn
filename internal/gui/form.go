@@ -121,7 +121,7 @@ func (w Window) Types(text string) Window {
 	// A list narrows as it is typed into. It is the same gesture as a search
 	// over the board, and the same matching rule answers it.
 	if w.screen == OnChoosing {
-		w.filtering, w.choosing = w.filtering.Types(text), 0
+		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
 	}
 	if w.screen != OnForm {
@@ -475,7 +475,7 @@ func (w Window) choosingList() Window {
 	if !chosenFromAList(on.Arg) {
 		return w
 	}
-	w.ticked, w.choosing = map[int]bool{}, 0
+	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
 	w.choosingFor, w.filtering = on.Arg, Written{}
 	for _, number := range reading.NumbersIn(on.Value) {
 		w.ticked[number] = true
@@ -531,8 +531,10 @@ func (w Window) inChoosing(name string) Window {
 	switch name {
 	case "down", "j":
 		w.choosing = min(max(0, len(offered)-1), w.choosing+1)
+		w.choosingFrom = w.bringingIntoSight()
 	case "up", "k":
 		w.choosing = max(0, w.choosing-1)
+		w.choosingFrom = w.bringingIntoSight()
 	case " ", "space":
 		if w.choosing < len(offered) {
 			number := offered[w.choosing].Number
@@ -561,6 +563,18 @@ func (w Window) picking() Window {
 	}
 	w.ticked[number] = !w.ticked[number]
 	return w
+}
+
+// bringingIntoSight moves the run of rows in sight so the one the keyboard is
+// on is inside it, which is what a column does when a card is chosen off the
+// bottom of it.
+// Counted in rows and not in pixels. The same walk in pixels had to divide by
+// a row's height at the end, and a run rarely divides into whole rows — the
+// remainder was an arithmetic nothing could judge, which is what this file's
+// own header says to write out as numbers instead.
+func (w Window) bringingIntoSight() int {
+	room := w.ChoosingRoom()
+	return min(w.choosing, max(w.choosingFrom, w.choosing-room+1))
 }
 
 // keeping closes the list and puts what was ticked back in the field, as the

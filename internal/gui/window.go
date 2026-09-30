@@ -105,11 +105,14 @@ type Window struct {
 	saying int
 	// What a wheel sent that did not come to a whole line, kept until the
 	// turns after it make one.
-	spareHistory, spareSaying int
+	spareHistory, spareSaying, spareChoosing int
 	// choosingFor is the field the open list is choosing for, and filtering
 	// what is being typed into it to narrow that list.
 	choosingFor string
 	filtering   Written
+	// choosingFrom is the first row of the list in sight. A list of everything
+	// a task may hang under is as long as the board, and a panel is not.
+	choosingFrom int
 	// serving is how far the work under an open objective has been scrolled,
 	// counted in lines the way the history is: a task wraps onto as many lines
 	// as its title needs, and a list that jumped a task at a time would skip
@@ -362,6 +365,17 @@ func (w Window) Rows() int { return HistoryRows(Over(w.width, w.height)) }
 
 // History is the first line of the history that is shown.
 func (w Window) History() int { return w.history }
+
+// ChoosingFromRow is the first row of the open list in sight, and ChoosingRoom
+// how many of them are in sight at once.
+func (w Window) ChoosingFromRow() int { return w.choosingFrom }
+
+// ChoosingRoom is how many rows the open list shows at once.
+func (w Window) ChoosingRoom() int { return ChoosingRows(ChoosingOver(w.width, w.height)) }
+
+func (w Window) settledChoosing(want int) int {
+	return min(max(0, len(w.Choosing())-w.ChoosingRoom()), max(0, want))
+}
 
 // Saying is how far the description on an open task has been scrolled.
 func (w Window) Saying() int { return w.saying }
@@ -732,8 +746,13 @@ var Pages = []string{"TASKS", "OBJECTIVES"}
 
 // Heads is what the panel that is open says it is, written across its top.
 // Nothing when no panel is open: the board is its own heading.
-func Heads(w Window) string {
-	switch w.screen {
+func Heads(w Window) string { return HeadsOn(w, w.screen) }
+
+// HeadsOn is what a given panel says it is, whether or not it is the one on
+// top. A panel drawn under another is still drawn, and asking the window what
+// it was on made the form under an open list read the list's own heading.
+func HeadsOn(w Window, screen Screen) string {
+	switch screen {
 	case OnChoosing:
 		// What is being chosen, and what for. A list with no heading is a list
 		// somebody has to remember the way into.
@@ -926,7 +945,7 @@ func (w Window) Offers() []string {
 // panel's own ground has always done.
 func (w Window) clickingList(p Point) Window {
 	box := ChoosingOver(w.width, w.height)
-	if at, on := ChoosingAtPoint(box, len(w.Choosing()), p); on {
+	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 		w.choosing = at
 		return w.picking()
 	}
@@ -1098,6 +1117,14 @@ func turning(spare, by int) (lines, left int) {
 
 // Scroll moves the column under the pointer, and no other.
 func (w Window) Scroll(p Point, by int) Window {
+	if w.screen == OnChoosing {
+		box := ChoosingOver(w.width, w.height)
+		if ChoosingRun(box).In(p) || ChoosingBar(box).In(p) {
+			lines, left := turning(w.spareChoosing, by)
+			w.choosingFrom, w.spareChoosing = w.settledChoosing(w.choosingFrom+lines), left
+		}
+		return w
+	}
 	if w.screen == OnDetail {
 		// The panel is over the board, so the wheel over it moves the history
 		// and never a column behind it.

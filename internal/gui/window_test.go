@@ -1395,3 +1395,25 @@ func TestDroppedUnder_namesTheLastPartWhenItGoesBelowIt(t *testing.T) {
 		t.Error("it asked for the end of the list rather than naming what it goes after")
 	}
 }
+
+// A panel drawn under another keeps its own heading. The form is still there
+// while a list is open over it, and both were asking the window what it was
+// on — so both read the list's heading and the form said it twice.
+func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 7, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	open := w.Key("enter")
+	if open.Screen() != OnChoosing {
+		t.Fatalf("the list did not open: %v", open.Screen())
+	}
+	if got := Heads(open); got != "a parent for task 7" {
+		t.Errorf("the list is headed %q", got)
+	}
+	if got := HeadsOn(open, OnForm); got != "task 7" {
+		t.Errorf("the form under it is headed %q, not its own", got)
+	}
+}

@@ -123,11 +123,33 @@ func ChoosingLooking(box Box) Box {
 	return Box{X: box.X + padding, Y: FirstRow(box) - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
 }
 
+// ChoosingRun is the room a list's rows have: from under the line that narrows
+// them to above the offers along the panel's foot. A list is not as long as
+// what it offers — it is as long as the panel, and the rest is scrolled to.
+func ChoosingRun(box Box) Box {
+	// Begun where a row's box begins and not where its text does: a row is
+	// drawn an inset above its line, so a run measured from the line left the
+	// first row's own box hanging over the top of it.
+	top := ChoosingFrom(box) - inset
+	return Box{X: box.X + padding, Y: top, W: box.W - padding - padding - barWide - between,
+		H: max(apart, PanelOfferAt(box, 0).Y-padding-top)}
+}
+
+// ChoosingRows is how many rows fit in that run.
+func ChoosingRows(box Box) int { return max(1, ChoosingRun(box).H/apart) }
+
+// ChoosingBar is the track of the bar beside a list, drawn whether or not
+// there is anything to scroll — the same rule the history goes by.
+func ChoosingBar(box Box) Box {
+	run := ChoosingRun(box)
+	return Box{X: run.X + run.W + between, Y: run.Y, W: barWide, H: run.H}
+}
+
 // ChoosingAtPoint says which row of a list a point lands on, and whether it
 // lands on one at all.
-func ChoosingAtPoint(box Box, rows int, p Point) (int, bool) {
-	for i := range rows {
-		if ChoosingRow(box, ChoosingFrom(box)+i*apart).In(p) {
+func ChoosingAtPoint(box Box, rows, from int, p Point) (int, bool) {
+	for i := from; i < min(rows, from+ChoosingRows(box)); i++ {
+		if ChoosingRow(box, ChoosingFrom(box)+(i-from)*apart).In(p) {
 			return i, true
 		}
 	}

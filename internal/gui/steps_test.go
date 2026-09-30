@@ -454,6 +454,23 @@ func (w *world) markedDescribed(n int, want bool) error {
 	return nil
 }
 
+// listInsideThePanel asks of every row drawn that it is inside the run the
+// panel gives them. A list longer than its panel used to draw straight past it
+// and over the window behind.
+func (w *world) listInsideThePanel() error {
+	box := ChoosingOver(w.w.width, w.w.height)
+	run := ChoosingRun(box)
+	offered, from, room := w.w.Choosing(), w.w.ChoosingFromRow(), w.w.ChoosingRoom()
+	for i := from; i < min(len(offered), from+room); i++ {
+		row := ChoosingRow(box, ChoosingFrom(box)+(i-from)*apart)
+		if row.Y < run.Y || row.Y+row.H > run.Y+run.H {
+			return fmt.Errorf("row %d is drawn at %d..%d, and the panel holds %d..%d",
+				i, row.Y, row.Y+row.H, run.Y, run.Y+run.H)
+		}
+	}
+	return nil
+}
+
 func (w *world) cardDimmed(title string) error {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title != title {
@@ -717,6 +734,52 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			if one.Title == title {
 				return fmt.Errorf("the list still offers %q", title)
 			}
+		}
+		return nil
+	})
+	sc.Then(`^the list has more to show than it has room for$`, func() error {
+		if len(w.w.Choosing()) <= w.w.ChoosingRoom() {
+			return fmt.Errorf("the list offers %d rows and shows %d",
+				len(w.w.Choosing()), w.w.ChoosingRoom())
+		}
+		return nil
+	})
+	sc.Then(`^the list is at its beginning$`, func() error {
+		if w.w.ChoosingFromRow() != 0 {
+			return fmt.Errorf("the list starts at row %d", w.w.ChoosingFromRow())
+		}
+		return nil
+	})
+	sc.Then(`^the list is at its end$`, func() error {
+		want := max(0, len(w.w.Choosing())-w.w.ChoosingRoom())
+		if w.w.ChoosingFromRow() != want {
+			return fmt.Errorf("the list starts at row %d and its end is %d", w.w.ChoosingFromRow(), want)
+		}
+		return nil
+	})
+	sc.Then(`^the list has moved$`, func() error {
+		if w.w.ChoosingFromRow() == w.was {
+			return fmt.Errorf("the list stayed at row %d", w.w.ChoosingFromRow())
+		}
+		return nil
+	})
+	sc.Then(`^every row of the list is inside the panel$`, w.listInsideThePanel)
+	sc.Then(`^a bar sits beside the list$`, func() error {
+		box := ChoosingOver(w.w.width, w.w.height)
+		run, track := ChoosingRun(box), ChoosingBar(box)
+		if track.W <= 0 || track.H <= 0 {
+			return fmt.Errorf("the bar beside the list is %dx%d", track.W, track.H)
+		}
+		if track.X < run.X+run.W {
+			return fmt.Errorf("the bar at %d sits over the rows, which end at %d", track.X, run.X+run.W)
+		}
+		return nil
+	})
+	sc.Then(`^the row the keyboard is on is in sight$`, func() error {
+		at, from, room := w.w.ChoosingAt(), w.w.ChoosingFromRow(), w.w.ChoosingRoom()
+		if at < from || at >= from+room {
+			return fmt.Errorf("the keyboard is on row %d, and rows %d to %d are in sight",
+				at, from, from+room-1)
 		}
 		return nil
 	})

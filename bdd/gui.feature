@@ -1099,6 +1099,36 @@ Feature: The desktop board
       And the panel is headed "a parent for task 2"
       And the list offers "Ship it"
 
+    @gui-a-long-list-stays-inside-its-panel
+    Scenario: a list of more tasks than fit stays inside the panel and scrolls
+      Given I added a task titled "Write the spec"
+      And I added 40 tasks
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the list has more to show than it has room for
+      And every row of the list is inside the panel
+      And a bar sits beside the list
+      And the list is at its beginning
+      When I scroll down over the list
+      Then the list has moved
+      And every row of the list is inside the panel
+      When I scroll down over the list 99 times
+      Then the list is at its end
+      And every row of the list is inside the panel
+
+    @gui-walking-past-the-last-row-in-sight-scrolls-the-list
+    Scenario: the keyboard brings a row into sight rather than leaving it below
+      Given I added a task titled "Write the spec"
+      And I added 40 tasks
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I press "down" 30 times
+      Then the row the keyboard is on is in sight
+
     @gui-clicking-a-field-that-a-list-answers-opens-it
     Scenario: clicking the field opens its list, which is what a pointer is for
       Given I added a task titled "Ship it"
