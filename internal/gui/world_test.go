@@ -30,6 +30,10 @@ type world struct {
 	w     Window
 
 	width, high int
+	// clipboard is what the system's would hold, kept here because a scenario
+	// has no system: the window asks and the loop does, so the world plays the
+	// loop's part.
+	clipboard string
 	// scrolled is what each column stood at before the last gesture, so a
 	// scenario can say which one moved.
 	scrolled [Columns]int
@@ -262,6 +266,20 @@ func (w *world) clickOffer(name string) error {
 func (w *world) press(name string) error {
 	said, with := asGio(name)
 	w.w = Typed(w.w, said, with)
+	return w.clipping()
+}
+
+// clipping is what the loop does between frames: it puts on the clipboard what
+// the window asked to copy, and hands back what is on it when the window has
+// asked to paste.
+func (w *world) clipping() error {
+	if said, wants := w.w.Copying(); wants {
+		w.clipboard = said
+		w.w = w.w.Copied()
+	}
+	if w.w.Pasting() {
+		w.w = w.w.Pasted(w.clipboard)
+	}
 	return nil
 }
 
@@ -691,6 +709,37 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I type "([^"]*)"$`, w.types)
 	sc.Step(`^I click the field "([^"]*)"$`, w.clickField)
+	sc.Step(`^I drag across the field "([^"]*)" from (\d+) to (\d+)$`,
+		func(name string, from, to int) error {
+			box := Over(w.w.width, w.w.height)
+			fields := w.w.Form().Fields()
+			for i, field := range fields {
+				if field.Name != name {
+					continue
+				}
+				_, value := FieldRow(box, FieldTop(box, fields, i))
+				// Where production reads a character from, not a geometry
+				// worked out beside it.
+				at := func(n int) Point {
+					return Point{X: value.X + padding + n*perGlyph, Y: value.Y + value.H/2}
+				}
+				w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
+				return nil
+			}
+			return fmt.Errorf("the form has no field called %q", name)
+		})
+	sc.Step(`^I double-click the list row "([^"]*)"$`, func(title string) error {
+		box := ChoosingOver(w.w.width, w.w.height)
+		for i, one := range w.w.Choosing() {
+			if one.Title != title {
+				continue
+			}
+			row := ChoosingRow(box, ChoosingFrom(box)+(i-w.w.ChoosingFromRow())*apart)
+			w.w = w.w.doubleClicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+			return nil
+		}
+		return fmt.Errorf("the list offers no row called %q", title)
+	})
 	sc.Step(`^I click the list row "([^"]*)"$`, func(title string) error {
 		box := ChoosingOver(w.w.width, w.w.height)
 		for i, one := range w.w.Choosing() {

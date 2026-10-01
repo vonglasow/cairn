@@ -17,6 +17,10 @@ import "strings"
 type Written struct {
 	Value string
 	At    int
+	// Held is how far the anchor of a held run lies from the caret, signed.
+	// Nought is nothing held — which makes the zero value, and every literal
+	// written before any of this existed, a text holding nothing.
+	Held int
 }
 
 // Ending is a text with the caret after its last character, which is where a
@@ -25,27 +29,78 @@ func Ending(value string) Written {
 	return Written{Value: value, At: len([]rune(value))}
 }
 
+// Holding says whether a run of text is held.
+func (w Written) Holding() bool {
+	from, to := w.Run()
+	return from != to
+}
+
+// Run is the two ends of what is held, in the order they are read.
+func (w Written) Run() (from, to int) {
+	a, b := w.settled(w.At), w.settled(w.At+w.Held)
+	return min(a, b), max(a, b)
+}
+
+// Holds is the text between them.
+func (w Written) Holds() string {
+	from, to := w.Run()
+	return string([]rune(w.Value)[from:to])
+}
+
+// Selects moves the caret and leaves the anchor where it was, which is what
+// holding a run down to somewhere means.
+func (w Written) Selects(at int) Written {
+	was := w.settled(w.At + w.Held)
+	w.At = w.settled(at)
+	w.Held = was - w.At
+	return w
+}
+
+// All holds the whole of it.
+func (w Written) All() Written {
+	w.At, w.Held = len([]rune(w.Value)), -len([]rune(w.Value))
+	return w
+}
+
 // Types puts what was typed in at the caret and leaves the caret after it.
 func (w Written) Types(text string) Written {
 	if text == "" {
 		return w
 	}
+	// What is held is replaced, which is what every text field does and what
+	// makes holding a run worth anything.
+	if w.Holding() {
+		w = w.cut()
+	}
 	kept := []rune(w.Value)
 	at := w.settled(w.At)
 	w.Value = string(kept[:at]) + text + string(kept[at:])
-	w.At = at + len([]rune(text))
+	w.At, w.Held = at+len([]rune(text)), 0
 	return w
 }
 
 // Back takes out the character before the caret, and takes the caret with it.
 func (w Written) Back() Written {
+	// A held run goes in one stroke rather than one character at a time.
+	if w.Holding() {
+		return w.cut()
+	}
 	kept := []rune(w.Value)
 	at := w.settled(w.At)
 	if at == 0 {
 		return w
 	}
 	w.Value = string(kept[:at-1]) + string(kept[at:])
-	w.At = at - 1
+	w.At, w.Held = at-1, 0
+	return w
+}
+
+// cut takes the held run out and leaves the caret where it was.
+func (w Written) cut() Written {
+	from, to := w.Run()
+	kept := []rune(w.Value)
+	w.Value = string(kept[:from]) + string(kept[to:])
+	w.At, w.Held = from, 0
 	return w
 }
 
@@ -58,7 +113,7 @@ func (w Written) Right() Written { return w.CaretAt(w.At + 1) }
 // CaretAt puts the caret where it is asked for, or at the nearest end: a click
 // past the last letter means the end, not a mistake.
 func (w Written) CaretAt(at int) Written {
-	w.At = w.settled(at)
+	w.At, w.Held = w.settled(at), 0
 	return w
 }
 

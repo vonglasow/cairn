@@ -113,6 +113,15 @@ type Window struct {
 	// choosingFrom is the first row of the list in sight. A list of everything
 	// a task may hang under is as long as the board, and a panel is not.
 	choosingFrom int
+	// copying is what the window has been asked to put on the clipboard, and
+	// pasting that it has asked for what is on it. The window is a value and
+	// cannot execute anything: it says what it wants and the loop does it.
+	copying string
+	pasting bool
+	// holdingText says a press landed in a field and the pointer has not been
+	// let go: dragging from there holds a run, which is how text is selected
+	// with a mouse everywhere else.
+	holdingText bool
 	// serving is how far the work under an open objective has been scrolled,
 	// counted in lines the way the history is: a task wraps onto as many lines
 	// as its title needs, and a list that jumped a task at a time would skip
@@ -834,12 +843,26 @@ func Shortcut(offer string) string {
 		return "shift+a"
 	case "archive", "restore":
 		return "x"
+	case "take":
+		return "enter"
+	case "keep":
+		// Not space, which a list with a line to type into cannot have: a
+		// title has spaces in it, so the filter needs them and the shortcut
+		// cannot. Taking a row and being done with the list are two acts, and
+		// the second gets the modifier.
+		return "cmd+enter"
 	case "edit":
 		return "e"
 	case "delete":
 		return "d"
-	case "save", "choose":
+	case "choose":
 		return "enter"
+	case "save":
+		// Two keys, because a form has two acts and one of its fields already
+		// spends enter on the other. ⌘⏎ saves wherever the keyboard is; enter
+		// saves too, except on a field a list answers, where it opens the
+		// list. The bar says which, field by field.
+		return "cmd+enter"
 	case "done":
 		return "space"
 	case "close", "cancel", "clear":
@@ -855,6 +878,8 @@ func Pretty(key string) string {
 	switch key {
 	case "cmd+n":
 		return "⌘N"
+	case "cmd+enter":
+		return "⌘⏎"
 	case "shift+a":
 		return "⇧A"
 	case "enter":
@@ -895,15 +920,22 @@ func (w Window) Helping() []reading.Field {
 func (w Window) Offers() []string {
 	switch w.screen {
 	case OnChoosing:
-		return []string{"Choose", "Close"}
+		// Take and Done, not Choose twice. Space takes what the keyboard is
+		// on, which is the gesture a hand already has for a list; enter is
+		// done with the whole list, which is a different act and says so.
+		return []string{"Take", "Keep", "Cancel"}
 	case OnForm:
 		// The one field a list answers says so on the bar. enter is Save's key
 		// everywhere else in a form, and a bar that went on offering Save here
 		// while enter opened a list would be a bar that lies — which is the
 		// one thing this bar exists not to do. Save comes back the moment the
 		// keyboard leaves this field.
+		// Save is always offered. It used to give way to Choose on a field a
+		// list answers, and with the keyboard left on that field after the
+		// list closed there was no way to save at all — the one act a form
+		// exists for, unreachable for having chosen something.
 		if chosenFromAList(w.form.Fields()[w.form.On()].Arg) {
-			return []string{"Choose", "Cancel"}
+			return []string{"Choose", "Save", "Cancel"}
 		}
 		return []string{"Save", "Cancel"}
 	case OnDetail:
@@ -945,9 +977,12 @@ func (w Window) Offers() []string {
 // panel's own ground has always done.
 func (w Window) clickingList(p Point) Window {
 	box := ChoosingOver(w.width, w.height)
+	// A click puts the keyboard on the row; it does not take it. Taking is
+	// space, and a double-click — a single click that took would make choosing
+	// which row to read impossible without choosing it.
 	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 		w.choosing = at
-		return w.picking()
+		return w
 	}
 	if looking := ChoosingLooking(box); looking.In(p) {
 		w.filtering = w.filtering.CaretAt(into(Inside(looking), p))
@@ -1005,6 +1040,19 @@ func (w Window) tabAt(p Point) (Tab, bool) {
 // DoubleClick opens the detail of the card under the pointer, which is where
 // the description and the history are.
 func (w Window) DoubleClick(p Point) Window {
+	// In a list it takes the row and is done with it, which is the gesture a
+	// hand already has: one click says which row, two say that one.
+	if w.screen == OnChoosing {
+		box := ChoosingOver(w.width, w.height)
+		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
+			w.choosing = at
+			w = w.taking()
+			if w.screen == OnChoosing {
+				return w.keeping()
+			}
+		}
+		return w
+	}
 	// The same two screens a single click answers on, for the same reason: a
 	// search leaves the board showing, so a card under the pointer is a card.
 	if w.screen != OnTheBoard && w.screen != OnSearch {
@@ -1036,6 +1084,19 @@ func (w Window) PressAt(p Point) Window {
 		}
 		return w
 	}
+	// A press in a field is where a run of text may be held from, so the caret
+	// goes where the press landed and not to the field's end: the end is where
+	// somebody arriving at a field types, and this one is not arriving.
+	if w.screen == OnForm {
+		if at, on := w.fieldAt(p); on {
+			w.form = w.form.onto(at)
+			_, value := FieldRow(Over(w.width, w.height),
+				FieldTop(Over(w.width, w.height), w.form.Fields(), at))
+			w.form = w.form.Writes(w.form.Writing().CaretAt(into(value, p)))
+			w.holdingText = true
+		}
+		return w
+	}
 	if w.screen != OnTheBoard {
 		return w
 	}
@@ -1048,6 +1109,15 @@ func (w Window) MoveTo(p Point) Window {
 	if w.draggingBar {
 		track := HistoryBar(Over(w.width, w.height))
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
+		return w
+	}
+	// A pointer held down in a field holds a run of its text.
+	if w.holdingText && w.screen == OnForm {
+		if at, on := w.fieldAt(p); on && at == w.form.On() {
+			_, value := FieldRow(Over(w.width, w.height),
+				FieldTop(Over(w.width, w.height), w.form.Fields(), at))
+			w.form = w.form.Writes(w.form.Writing().Selects(into(value, p)))
+		}
 		return w
 	}
 	if w.draggingSaying {
@@ -1071,6 +1141,15 @@ func (w Window) LetGo(p Point) Window {
 	if w.draggingBar || w.draggingSaying {
 		w.draggingBar, w.draggingSaying = false, false
 		return w
+	}
+	if w.holdingText {
+		// Let go where it was let go. A run held with the mouse is finished by
+		// lifting it, and the click that would follow would collapse the run
+		// it just made.
+		w.holdingText = false
+		if w.form.Writing().Holding() {
+			return w
+		}
 	}
 	// A release with no press behind it on this screen is not a click here.
 	// A double click opens a task on the press, and the release that follows
@@ -1279,13 +1358,75 @@ func (w Window) inForm(name string) Window {
 		w.form = w.form.onto(w.form.On() - 1)
 	case "backspace":
 		return w.back()
+	case "cmd+a":
+		w.form = w.form.Writes(w.form.Writing().All())
+	case "cmd+c":
+		w.copying = w.form.Writing().Holds()
+	case "cmd+x":
+		w.copying = w.form.Writing().Holds()
+		w.form = w.form.Writes(w.form.Writing().Back())
+	case "cmd+v":
+		// Asked for here and answered later: a clipboard is read by the
+		// system, which takes as long as it takes, and the answer comes back
+		// as an event like any other.
+		w.pasting = true
+	case "shift+left":
+		return w.holding(-1)
+	case "shift+right":
+		return w.holding(1)
 	case "left":
 		return w.walks(-1)
 	case "right":
 		return w.walks(1)
 	case "enter", "return":
 		return w.Save()
+	case "shift+enter", "shift+return":
+		// A field with room for several lines takes a line break, since enter
+		// is what saves the form. Without it a description was written on one
+		// line, however many the box drew.
+		if RowsOf(w.form.Fields()[w.form.On()]) > 1 {
+			w.form = w.form.Writes(w.form.Writing().Types("\n"))
+		}
 	}
+	return w
+}
+
+// holding walks the caret and leaves the anchor, which is how a run is held
+// from the keyboard.
+func (w Window) holding(by int) Window {
+	writing := w.form.Writing()
+	w.form = w.form.Writes(writing.Selects(writing.At + by))
+	return w
+}
+
+// Copying is what the window wants put on the clipboard, and whether it wants
+// anything at all.
+func (w Window) Copying() (string, bool) { return w.copying, w.copying != "" }
+
+// Copied says the loop has done it.
+func (w Window) Copied() Window {
+	w.copying = ""
+	return w
+}
+
+// Pasting says the window has asked for what is on the clipboard.
+func (w Window) Pasting() bool { return w.pasting }
+
+// Pasted hands over what was on it. Empty is still an answer: the clipboard
+// held nothing, and the window has stopped waiting either way.
+func (w Window) Pasted(text string) Window {
+	w.pasting = false
+	if text == "" {
+		return w
+	}
+	if w.screen == OnChoosing {
+		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
+		return w
+	}
+	if w.screen != OnForm {
+		return w
+	}
+	w.form = w.form.Writes(w.form.Writing().Types(text))
 	return w
 }
 

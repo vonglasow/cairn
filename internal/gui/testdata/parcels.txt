@@ -36,8 +36,9 @@ sub panel      x=100   y=200   w=400   h=22
 sub writing    x=110   y=204   w=380   h=18
 choosing over  x=262   y=149   w=675   h=499
 choosing looking x=272   y=191   w=655   h=26
-choosing row 0 x=272   y=219   w=655   h=26
-choosing row 1 x=272   y=245   w=655   h=26
+choosing row 0 x=272   y=219   w=639   h=26
+choosing row 1 x=272   y=245   w=639   h=26
+choosing line 0 x=282   y=223   w=619   h=18
 choosing run   x=272   y=219   w=639   h=391
 choosing bar   x=917   y=219   w=10    h=391
 choosing thumb at the top x=917   y=219   w=10    h=133

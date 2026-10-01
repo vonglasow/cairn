@@ -1099,6 +1099,183 @@ Feature: The desktop board
       And the panel is headed "a parent for task 2"
       And the list offers "Ship it"
 
+    @gui-a-list-is-corrected-like-any-other-field
+    Scenario: what was typed into a list can be taken back out
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I type "shipx"
+      Then the list offers nothing
+      When I press "backspace"
+      Then the list offers "Ship it"
+
+    @gui-enter-takes-and-cmd-enter-keeps
+    Scenario: enter takes a row and the list is kept when they are all in
+      Given I added an objective titled "Ship cairn"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "objectives"
+      Then the bar offers "Take" under "⏎"
+      And the bar offers "Keep" under "⌘⏎"
+      When I press "enter"
+      And I press "down"
+      And I press "enter"
+      Then the list has taken 2
+      When I press "cmd+enter"
+      Then the window is on the form
+      And the field "objectives" names "Ship cairn"
+      And the field "objectives" names "Keep it honest"
+
+    @gui-text-is-held-and-carried
+    Scenario: a run of text is held, copied, and put down somewhere else
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "description"
+      And I type "Deux colonnes"
+      And I press "shift+left" 8 times
+      Then the field "description" holds "colonnes"
+      When I press "cmd+c"
+      Then the clipboard reads "colonnes"
+      When I click the field "title"
+      And I press "cmd+a"
+      And I press "cmd+v"
+      Then the field "title" reads "colonnes"
+
+    @gui-a-run-is-held-with-the-mouse
+    Scenario: a run of text is held by dragging across it
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I drag across the field "title" from 0 to 5
+      Then the field "title" holds "Write"
+
+    @gui-a-held-run-is-typed-over
+    Scenario: typing over a held run replaces it, and cutting takes it away
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "title"
+      And I press "cmd+a"
+      And I press "cmd+x"
+      Then the field "title" reads ""
+      And the clipboard reads "Write the spec"
+
+    @gui-a-form-can-always-be-saved
+    Scenario: a form is saved whatever field the keyboard is on
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I press "enter"
+      Then the window is on the form
+      And the bar offers "Save" under "⌘⏎"
+      And the bar offers "Choose" under "⏎"
+      When I press "cmd+enter"
+      Then the window is on the board
+      And the engine was asked "task edit" for task 2
+
+    @gui-a-parent-is-taken-off-the-way-it-was-taken-on
+    Scenario: the task something hangs under can be taken off again
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I press "enter"
+      Then the field "parent" reads "1"
+      When I click the field "parent"
+      Then the window is choosing
+      And the list has taken 1
+      And the row the keyboard is on is "Ship it"
+      When I press "enter"
+      Then the window is on the form
+      And the field "parent" reads ""
+
+    @gui-a-list-of-tasks-offers-the-worked-on-first
+    Scenario: the list offers what is being worked on before what is waiting
+      Given I added a task titled "Un jour peut-être"
+      And I added a task titled "En cours maintenant" with the state "current"
+      And I added a task titled "À faire ensuite" with the state "todo"
+      And I added a task titled "Déjà fini" with the state "done"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the list reads "En cours maintenant", "À faire ensuite", "Un jour peut-être", "Déjà fini"
+
+    @gui-two-in-one-column-keep-the-order-the-board-gives-them
+    Scenario: two tasks in the same column keep the order the board gives them
+      Given I added a task titled "La première" with the state "current"
+      And I added a task titled "La seconde" with the state "current"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the list reads "La première", "La seconde"
+
+    @gui-a-list-of-tasks-says-where-each-one-stands
+    Scenario: a row says which column its task sits in
+      Given I added a task titled "En cours maintenant" with the state "current"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      Then the row "En cours maintenant" says "current"
+
+    @gui-a-space-in-a-list-is-a-space
+    Scenario: a space typed into a list is a space, because a title has them
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I type "ship it"
+      Then the list offers "Ship it"
+
+    @gui-a-double-click-is-done-with-the-list
+    Scenario: a double-click takes a row and is done, which is what a hand expects
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "parent"
+      And I double-click the list row "Ship it"
+      Then the window is on the form
+      And the field "parent" names "Ship it"
+
+    @gui-a-long-field-takes-a-line-break
+    Scenario: a description is written in paragraphs, not on one line
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "description"
+      And I type "Deux colonnes"
+      And I press "shift+enter"
+      And I type "et une bande"
+      Then the window is on the form
+      And the field "description" is written on more than one line
+      And the field "description" names "Deux colonnes"
+      And the field "description" names "et une bande"
+
     @gui-a-long-list-stays-inside-its-panel
     Scenario: a list of more tasks than fit stays inside the panel and scrolls
       Given I added a task titled "Write the spec"
@@ -1149,6 +1326,8 @@ Feature: The desktop board
       And I choose "Edit"
       And I click the field "parent"
       And I click the list row "Ship it"
+      Then the window is choosing
+      When I press "enter"
       Then the window is on the form
       And the field "parent" names "Ship it"
 
@@ -1506,7 +1685,7 @@ Feature: The desktop board
       And the form is still drawn behind it
 
     @gui-space-ticks-an-objective
-    Scenario: space takes an objective in, and takes it out again
+    Scenario: enter takes an objective in, and takes it out again
       Given I added an objective titled "Ship the desktop board"
       And I added a task titled "Write the spec"
       When I open the window
@@ -1514,9 +1693,9 @@ Feature: The desktop board
       And I choose "Edit"
       And I put the keyboard on "objectives"
       And I press "enter"
-      And I press "space"
+      And I press "enter"
       Then objective 1 is ticked
-      When I press "space"
+      When I press "enter"
       Then objective 1 is not ticked
 
     @gui-the-list-is-walked-like-the-board
@@ -1542,8 +1721,8 @@ Feature: The desktop board
       And I press "k"
       Then the list is on "Ship the desktop board"
 
-    @gui-what-was-ticked-is-what-the-field-carries
-    Scenario: closing the list leaves the field carrying what was ticked
+    @gui-what-was-taken-is-what-the-field-carries
+    Scenario: keeping the list leaves the field carrying what was taken
       Given I added an objective titled "Ship the desktop board"
       And I added an objective titled "Keep it honest"
       And I added a task titled "Write the spec"
@@ -1552,14 +1731,28 @@ Feature: The desktop board
       And I choose "Edit"
       And I put the keyboard on "objectives"
       And I press "enter"
-      And I press "space"
+      And I press "enter"
       And I press "down"
-      And I press "space"
-      And I press "esc"
+      And I press "enter"
+      And I press "cmd+enter"
       Then the form is open on task 1
       And the field "objectives" names "Ship the desktop board"
       And the field "objectives" names "Keep it honest"
       And the field "objectives" is drawn by name and not by number
+
+    @gui-backing-out-of-a-list-keeps-nothing
+    Scenario: backing out of a list puts nothing in the field, and keeps the form
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      And I press "enter"
+      And I press "esc"
+      Then the form is open on task 1
+      And the field "objectives" reads ""
 
     @gui-a-store-with-no-objectives-says-so
     Scenario: a list with nothing to offer says so rather than opening empty

@@ -381,7 +381,61 @@ height at the end, and a run rarely divides into whole rows: the remainder was
 arithmetic no assertion could judge, and it survived mutation twice before it
 was written out as rows.
 
-Clicking the field opens it, and clicking a row takes it. Neither was true
+**Text is held, carried, and put down again.** A run is selected with
+`⇧←→`, with `⌘A`, or by dragging across it, and `⌘C` `⌘X` `⌘V` carry it.
+The anchor lives beside the caret in `Written`, counted **from** the caret
+rather than from the start: nought is nothing held, so every literal written
+before any of this existed still holds nothing. Stored the other way round, a
+`Written{Value, At}` meant "held from the beginning" and three tests fell at
+once.
+
+The run is measured with the font, the way the caret is. Measured at so many
+pixels a glyph — the width a card's title uses — it sat a word away from its
+own caret at the far end of a line.
+
+The clipboard goes through the loop. A window is a value and cannot execute
+anything, so it says what it wants: `Copying()` is read and done, `Pasting()`
+asks, and the answer comes back as an event like any other. What the system
+hands back is read in `pasting`, outside the loop, so a scenario can reach it —
+the loop decides nothing.
+
+**Save is always offered**, under `⌘⏎`. It used to give way to *Choose* on a
+field a list answers, and since the keyboard stays on that field after the list
+closes, there was then no way to save at all: the one act a form exists for,
+unreachable for having chosen something.
+
+**A list offers what is reached for first.** The board reads from what has not
+been started to what is finished; work is hung under what is being worked on,
+so the list reads the other way — current, then todo, then what is stopped,
+then the backlog, then what is over. Opened in the board's own order it put two
+dozen backlog tasks in front of the three anybody would pick.
+
+Each row says which column its task sits in, hard right and faint. Fifty rows
+that read alike are scanned by something other than the words.
+
+**A click says which row, `⏎` takes it, `⌘⏎` keeps the list.** One click that took made reading a row impossible without choosing it, and one
+key doing both taking and keeping left no word for being done with the whole
+list. The bar says all three — *Take*, *Keep*, *Cancel* — and a double-click is
+take-and-keep in one gesture, which is what a hand already does to a list.
+`esc` backs out of the list and not out of the form under it: the form holds
+what somebody typed.
+
+Not space, which is the obvious key and the wrong one here. A list with a line
+to type into cannot spend it: `Ship it` has a space in it, so the filter needs
+the character and the shortcut cannot have the key. Taking a row and being done
+with the list are two acts, and the second takes the modifier.
+
+The line that narrows a list is corrected like any other text here, backspace
+included. Without it a mistyped letter meant closing the list and opening it
+again.
+
+**A long field takes a line break under `⇧⏎`**, since `⏎` saves the form. And
+`Wrapped` breaks where the text breaks, which it never did: a description
+written in paragraphs came back as one run of words with the breaks still in
+it. Both halves were needed — there was no way to write a paragraph, and no way
+to draw one.
+
+Clicking the field opens it. Neither that nor the mouse in the list was true
 when the list first went in: `Click` had no branch for the list, so a click
 meant for a row fell through to the form drawn behind the panel and moved the
 keyboard to whatever field was there. The list answered the keyboard and

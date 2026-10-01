@@ -729,6 +729,62 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the list reads (".*")$`, func(said string) error {
+		var want []string
+		for _, one := range strings.Split(said, ",") {
+			want = append(want, strings.Trim(strings.TrimSpace(one), `"`))
+		}
+		got := goalTitles(w.w.Choosing())
+		if len(got) != len(want) {
+			return fmt.Errorf("the list reads %v, want %v", got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				return fmt.Errorf("the list reads %v, want %v", got, want)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the row "([^"]*)" says "([^"]*)"$`, func(title, said string) error {
+		for _, one := range w.w.Choosing() {
+			if one.Title != title {
+				continue
+			}
+			if one.State != said {
+				return fmt.Errorf("the row for %q says %q, not %q", title, one.State, said)
+			}
+			return nil
+		}
+		return fmt.Errorf("the list offers no row called %q", title)
+	})
+	sc.Then(`^the row the keyboard is on is "([^"]*)"$`, func(title string) error {
+		offered, at := w.w.Choosing(), w.w.ChoosingAt()
+		if at >= len(offered) {
+			return fmt.Errorf("the keyboard is on row %d of %d", at, len(offered))
+		}
+		if offered[at].Title != title {
+			return fmt.Errorf("the keyboard is on %q, not %q", offered[at].Title, title)
+		}
+		return nil
+	})
+	sc.Then(`^the list offers nothing$`, func() error {
+		if got := w.w.Choosing(); len(got) != 0 {
+			return fmt.Errorf("the list offers %v", goalTitles(got))
+		}
+		return nil
+	})
+	sc.Then(`^the list has taken (\d+)$`, func(n int) error {
+		taken := 0
+		for _, one := range w.w.Choosing() {
+			if w.w.Ticked(one.Number) {
+				taken++
+			}
+		}
+		if taken != n {
+			return fmt.Errorf("the list has taken %d rows, not %d", taken, n)
+		}
+		return nil
+	})
 	sc.Then(`^the list does not offer "([^"]*)"$`, func(title string) error {
 		for _, one := range w.w.Choosing() {
 			if one.Title == title {
@@ -792,6 +848,30 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form is still on the field "([^"]*)"$`, func(name string) error {
 		if got := w.w.Form().Fields()[w.w.Form().On()].Name; got != name {
 			return fmt.Errorf("the keyboard is on the field %q, not %q", got, name)
+		}
+		return nil
+	})
+	sc.Then(`^the clipboard reads "([^"]*)"$`, func(said string) error {
+		if w.clipboard != said {
+			return fmt.Errorf("the clipboard reads %q, not %q", w.clipboard, said)
+		}
+		return nil
+	})
+	sc.Then(`^the field "([^"]*)" holds "([^"]*)"$`, func(name, said string) error {
+		for _, f := range w.w.Form().Fields() {
+			if f.Name != name {
+				continue
+			}
+			if got := w.w.Form().Writing().Holds(); got != said {
+				return fmt.Errorf("the field %q holds %q, not %q", name, got, said)
+			}
+			return nil
+		}
+		return fmt.Errorf("the form has no field %q", name)
+	})
+	sc.Then(`^the window is on the board$`, func() error {
+		if w.w.Screen() != OnTheBoard {
+			return fmt.Errorf("the window is on %v, not the board", w.w.Screen())
 		}
 		return nil
 	})

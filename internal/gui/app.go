@@ -10,10 +10,14 @@ package gui
 
 import (
 	"image"
+	"io"
 	"os"
 	"strings"
 	"time"
 	"unicode"
+
+	"gioui.org/io/clipboard"
+	"gioui.org/io/transfer"
 
 	"gioui.org/app"
 	"gioui.org/f32"
@@ -56,6 +60,17 @@ func Sized(max image.Point, perDp float32) (width, height int) {
 
 // Turned is the same for how far a wheel says it went.
 func Turned(by, perDp float32) int { return int(by / perDp) }
+
+// pasting hands the window what the clipboard held. A clipboard that will not
+// read leaves the text alone and stops the waiting all the same: a paste that
+// silently emptied a field would be worse than one that did nothing.
+func pasting(w Window, said io.Reader) Window {
+	read, err := io.ReadAll(said)
+	if err != nil {
+		return w.Pasted("")
+	}
+	return w.Pasted(string(read))
+}
 
 // Gesture is what a pointer has said so far: when the last press landed and
 // where, which is the whole of what tells the press after it from the second
@@ -107,14 +122,20 @@ func Twice(before, now time.Time, was, at Point) bool {
 // Typed says what a key does. The few flat shortcuts, and nothing modal.
 func Typed(w Window, name string, with key.Modifiers) Window {
 	if with.Contain(key.ModCommand) || with.Contain(key.ModCtrl) {
-		return w.Key("cmd+" + strings.ToLower(name))
+		// Named first, like every other key. Lowercasing Gio's own spelling
+		// left ⌘ with a special key arriving as "cmd+⏎" — a name nothing is
+		// bound to, and nothing said so.
+		return w.Key("cmd+" + named(name))
 	}
 	said := named(name)
 	// Shift is a modifier Gio reports apart from the key, so a shifted letter
 	// arrives as the plain letter and has to be put back together here. Only a
 	// letter and tab: a shifted "/" is a different character, not a shifted
 	// key. Nothing typed comes this way — text goes through EditEvent.
-	if with.Contain(key.ModShift) && (said == "tab" || aLetter(said)) {
+	// A named key or a letter: those are what this board spells with a shift+
+	// prefix. Punctuation is left alone, because Gio has already applied shift
+	// to it — the "/" key with shift is named "?" before it gets here.
+	if _, isNamed := naming(name); with.Contain(key.ModShift) && (isNamed || aLetter(said)) {
 		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
@@ -129,25 +150,33 @@ func aLetter(name string) bool {
 // named turns what Gio calls a key into what this board calls it. Gio spells
 // them for a keyboard; a board says what they do.
 func named(name string) string {
+	said, _ := naming(name)
+	return said
+}
+
+// naming does the same and says whether the key was one this board has a word
+// for. Shift is joined to those and to letters, and to nothing else: Gio has
+// already applied it to punctuation.
+func naming(name string) (string, bool) {
 	switch key.Name(name) {
 	case key.NameEscape:
-		return "esc"
+		return "esc", true
 	case key.NameTab:
-		return "tab"
+		return "tab", true
 	case key.NameReturn, key.NameEnter:
-		return "enter"
+		return "enter", true
 	case key.NameDeleteBackward:
-		return "backspace"
+		return "backspace", true
 	case key.NameLeftArrow:
-		return "left"
+		return "left", true
 	case key.NameRightArrow:
-		return "right"
+		return "right", true
 	case key.NameUpArrow:
-		return "up"
+		return "up", true
 	case key.NameDownArrow:
-		return "down"
+		return "down", true
 	}
-	return strings.ToLower(name)
+	return strings.ToLower(name), false
 }
 
 // reach is how far one turn of a wheel is allowed to say it went. Larger than
@@ -251,6 +280,17 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 	// place for the focus to be would only be a second place to lose it.
 	gtx.Execute(key.FocusCmd{Tag: tag})
 
+	// What the window asked for, done here because a value cannot execute
+	// anything. Copying goes out now; pasting comes back as an event above.
+	if said, wants := w.Copying(); wants {
+		gtx.Execute(clipboard.WriteCmd{Type: "application/text",
+			Data: io.NopCloser(strings.NewReader(said))})
+		w = w.Copied()
+	}
+	if w.Pasting() {
+		gtx.Execute(clipboard.ReadCmd{Tag: tag})
+	}
+
 	for {
 		raw, ok := gtx.Event(
 			pointer.Filter{
@@ -278,6 +318,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 			// And what an input method sends, which is how text actually
 			// arrives: a letter is not a key press with a name, it is an edit.
 			key.FocusFilter{Target: tag},
+			transfer.TargetFilter{Target: tag, Type: "application/text"},
 		)
 		if !ok {
 			return w, pressed, pressedAt
@@ -293,6 +334,11 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 			if e.State == key.Press {
 				w = Typed(w, string(e.Name), e.Modifiers)
 			}
+		case transfer.DataEvent:
+			// What the clipboard held, come back as an event: the read was
+			// asked for a frame or more ago and answered when the system
+			// could.
+			w = pasting(w, e.Open())
 		case key.EditEvent:
 			// Text goes only where there was already somewhere to put it. The
 			// `e` that opened this form arrived as a name first and as text

@@ -8,9 +8,11 @@ package gui
 // to the engine and to the terminal's form arrives here with no line written.
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
@@ -31,6 +33,8 @@ type Form struct {
 	// because somebody arriving at a field is adding to it.
 	at    int
 	caret int
+	// held is how far a run's anchor lies from the caret, nought for none.
+	held int
 }
 
 // Writing is the field the keyboard is on, as a text with its caret.
@@ -38,7 +42,7 @@ func (f Form) Writing() Written {
 	if len(f.fields) == 0 {
 		return Written{}
 	}
-	return Written{Value: f.fields[f.at].Value, At: f.caret}
+	return Written{Value: f.fields[f.at].Value, At: f.caret, Held: f.held}
 }
 
 // Writes puts a written text back into the field the keyboard is on.
@@ -47,14 +51,14 @@ func (f Form) Writes(written Written) Form {
 		return f
 	}
 	f = f.Set(f.fields[f.at].Name, written.Reads())
-	f.caret = written.At
+	f.caret, f.held = written.At, written.Held
 	return f
 }
 
 // onto moves the keyboard to a field and puts the caret at its end.
 func (f Form) onto(at int) Form {
 	f.at = min(len(f.fields)-1, max(0, at))
-	f.caret = len([]rune(f.fields[f.at].Value))
+	f.caret, f.held = len([]rune(f.fields[f.at].Value)), 0
 	return f
 }
 
@@ -175,7 +179,7 @@ func (w Window) CaretInto(characters int) Window {
 	if w.screen != OnForm {
 		return w
 	}
-	w.form.caret = w.form.Writing().CaretAt(characters).At
+	w.form = w.form.Writes(w.form.Writing().CaretAt(characters))
 	return w
 }
 
@@ -303,22 +307,31 @@ func (w Window) Choose(name string) Window {
 		return w.Edit()
 	case "save":
 		return w.Save()
+	case "cmd+enter":
+		return w.Save()
 	case "choose":
 		// The same word twice, and two different acts: on a form it opens the
 		// list, and in the list it takes what the keyboard is on. A bar that
 		// said "Open a list" would be naming the mechanism rather than what
 		// somebody came to do.
-		if w.screen == OnChoosing {
-			return w.picking()
-		}
 		return w.choosingList()
 	case "done":
 		return w.marking()
 	case "cancel":
+		// Backing out of a list is backing out of the list, not of the form
+		// under it: the form holds what somebody typed, and throwing that away
+		// is what Cancel on a form means.
+		if w.screen == OnChoosing {
+			return w.leaving()
+		}
 		return w.Cancel()
 	case "new":
 		w.form, w.screen = adding(w.tab), OnForm
 		return w
+	case "take":
+		return w.taking()
+	case "keep":
+		return w.keeping()
 	case "close":
 		// Closing the list is not cancelling the form under it. What was
 		// ticked goes back into the field and the form is still there, with
@@ -481,6 +494,15 @@ func (w Window) choosingList() Window {
 		w.ticked[number] = true
 	}
 	w.screen = OnChoosing
+	// Opened on what it already carries, so taking it off is one key rather
+	// than a walk down the list to find it.
+	for at, one := range w.Choosing() {
+		if w.ticked[one.Number] {
+			w.choosing = at
+			break
+		}
+	}
+	w.choosingFrom = w.bringingIntoSight()
 	return w
 }
 
@@ -490,6 +512,9 @@ func (w Window) choosingList() Window {
 type Choice struct {
 	Number int
 	Title  string
+	// State is the column the task sits in, said on the row. Empty for an
+	// objective, which sits in no column a list has any use for.
+	State string
 }
 
 // choices is everything the open list offers, narrowed by what is typed into
@@ -505,9 +530,16 @@ func (w Window) choices() []Choice {
 				continue
 			}
 			if looking == "" || reading.ReachesCard(c, looking) {
-				out = append(out, Choice{Number: c.Number, Title: c.Title})
+				out = append(out, Choice{Number: c.Number, Title: c.Title, State: c.State})
 			}
 		}
+		// In the order somebody reaches for them, which is not the order the
+		// board reads. A board goes from what has not been started to what is
+		// finished; work is hung under what is being worked on, and the board's
+		// order put two dozen backlog tasks in front of it.
+		sort.SliceStable(out, func(i, j int) bool {
+			return reachedFor(out[i].State) < reachedFor(out[j].State)
+		})
 		return out
 	}
 	for _, g := range reading.Sorted(w.snap.Goals) {
@@ -516,6 +548,23 @@ func (w Window) choices() []Choice {
 		}
 	}
 	return out
+}
+
+// reachedFor is how soon a column is reached for when something is being hung
+// under it: what is being worked on, then what is next, then what is stopped,
+// then what has not been started, and last what is over.
+func reachedFor(state string) int {
+	switch domain.State(state) {
+	case domain.Current:
+		return 0
+	case domain.Todo:
+		return 1
+	case domain.Blocked, domain.Watching, domain.Paused:
+		return 2
+	case domain.Backlog:
+		return 3
+	}
+	return 4
 }
 
 // Filtering is what has been typed into the open list.
@@ -535,30 +584,37 @@ func (w Window) inChoosing(name string) Window {
 	case "up", "k":
 		w.choosing = max(0, w.choosing-1)
 		w.choosingFrom = w.bringingIntoSight()
-	case " ", "space":
-		if w.choosing < len(offered) {
-			number := offered[w.choosing].Number
-			w.ticked[number] = !w.ticked[number]
-		}
+	case "backspace":
+		// A list is corrected the way every other text here is. Without it a
+		// mistyped letter meant closing the list and opening it again.
+		w.filtering, w.choosing, w.choosingFrom = w.filtering.Back(), 0, 0
 	case "esc":
-		return w.keeping()
+		return w.leaving()
 	case "enter", "return":
-		return w.picking()
+		return w.taking()
+	case "cmd+enter":
+		return w.keeping()
 	}
 	return w
 }
 
-// picking takes what the keyboard is on, and closes the list when the field
-// takes one answer. Several, and the list stays open: ticking is what it is
-// for, and a list that closed on every tick would be reopened for every one.
-func (w Window) picking() Window {
+// taking takes what the keyboard is on, or gives it back. One answer closes
+// the list with it, since there is nothing left to say; several stay open,
+// because taking them one at a time is what the list is for.
+func (w Window) taking() Window {
 	offered := w.Choosing()
 	if w.choosing >= len(offered) {
 		return w
 	}
 	number := offered[w.choosing].Number
 	if w.OneOnly() {
-		w.ticked = map[int]bool{number: true}
+		// Taken again is taken off. One answer is still an answer that can be
+		// withdrawn, and a field a list fills is a field only a list empties.
+		if w.ticked[number] {
+			w.ticked = map[int]bool{}
+		} else {
+			w.ticked = map[int]bool{number: true}
+		}
 		return w.keeping()
 	}
 	w.ticked[number] = !w.ticked[number]
@@ -575,6 +631,13 @@ func (w Window) picking() Window {
 func (w Window) bringingIntoSight() int {
 	room := w.ChoosingRoom()
 	return min(w.choosing, max(w.choosingFrom, w.choosing-room+1))
+}
+
+// leaving closes the list and puts nothing back, which is what backing out of
+// one means.
+func (w Window) leaving() Window {
+	w.screen = OnForm
+	return w
 }
 
 // keeping closes the list and puts what was ticked back in the field, as the

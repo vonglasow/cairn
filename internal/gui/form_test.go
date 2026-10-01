@@ -516,7 +516,7 @@ func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	if len(w.Choosing()) != 0 {
 		t.Fatalf("the store has no objectives and the list offers %d", len(w.Choosing()))
 	}
-	if got := w.Choose("Choose"); got.Screen() != OnChoosing {
+	if got := w.Choose("Take"); got.Screen() != OnChoosing {
 		t.Errorf("choosing out of an empty list left the window on %v", got.Screen())
 	}
 }
@@ -545,7 +545,8 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	box := ChoosingOver(w.width, w.height)
 	for at, one := range offered {
 		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
-		got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+		// A click says which row; space takes it.
+		got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}).Key("enter")
 		if got.Form().ValueOf("parent") != strconv.Itoa(one.Number) {
 			t.Errorf("clicking row %d took %q, want task %d (%s)",
 				at, got.Form().ValueOf("parent"), one.Number, one.Title)
@@ -617,10 +618,54 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 
 	// The second row drawn is the eighth of the list once six are above it.
 	row := ChoosingRow(box, ChoosingFrom(box)+apart)
-	got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+	got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}).Key("enter")
 	want := w.Choosing()[7].Number
 	if got.Form().ValueOf("parent") != strconv.Itoa(want) {
 		t.Errorf("clicking the second row drawn took %q, want task %d",
 			got.Form().ValueOf("parent"), want)
+	}
+}
+
+// Shift+enter writes a line break where there is room for one, and nowhere
+// else. A title is one line whatever is typed into it, and a break written
+// into it would be a character nothing can draw and nobody asked for.
+func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+
+	on := w.On("title").Key("shift+enter")
+	if got := on.Form().ValueOf("title"); got != "Write the spec" {
+		t.Errorf("the title reads %q, and a title is one line", got)
+	}
+	long := w.On("description").Types("un").Key("shift+enter").Types("deux")
+	if got := long.Form().ValueOf("description"); got != "un\ndeux" {
+		t.Errorf("the description reads %q", got)
+	}
+}
+
+// What a list of tasks offers, told something to look for and told nothing.
+// The two answers are different sets, and the line between them is the empty
+// filter: told nothing, a list offers everything rather than nothing.
+func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
+	w := New(newFake(), 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{
+		{Number: 1, Title: "Write the spec", State: "todo"},
+		{Number: 2, Title: "Ship it", State: "current"},
+		{Number: 3, Title: "Rewrite the tests", State: "todo"},
+	}}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if got := w.Choosing(); len(got) != 2 {
+		t.Fatalf("told nothing, the list offers %v, want both of the others", goalTitles(got))
+	}
+	if got := w.Types("ship").Choosing(); len(got) != 1 || got[0].Number != 2 {
+		t.Errorf("told \"ship\", the list offers %v", goalTitles(got))
+	}
+	if got := w.Types("zzz").Choosing(); len(got) != 0 {
+		t.Errorf("told something nothing carries, the list offers %v", goalTitles(got))
 	}
 }

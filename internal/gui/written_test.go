@@ -86,3 +86,40 @@ func TestAFieldOpensWithTheCaretAtTheEnd(t *testing.T) {
 		t.Errorf("an empty field opens with the caret at %d", got.At)
 	}
 }
+
+// A run of text can be held, which is what selecting is: an anchor where it
+// began and the caret where it stands now. Everything else here already works
+// on one place; this is the only thing that works on two.
+func TestWritten_holdsARunOfText(t *testing.T) {
+	w := Ending("Deux colonnes")
+	if w.Holding() {
+		t.Error("a text nobody selected is holding a run")
+	}
+
+	// Held back from the end, the run is what lies between the two places,
+	// whichever way round they are.
+	held := w.CaretAt(5).Selects(9)
+	if got := held.Holds(); got != "colo" {
+		t.Errorf("held %q, want %q", got, "colo")
+	}
+	if got := w.CaretAt(9).Selects(5).Holds(); got != "colo" {
+		t.Errorf("held backwards %q, want %q", got, "colo")
+	}
+
+	// Typing over a held run replaces it, which is what every text field does.
+	if got := held.Types("X").Reads(); got != "Deux Xnnes" {
+		t.Errorf("typing over the run gave %q", got)
+	}
+	// And so does deleting, in one stroke rather than four.
+	if got := held.Back().Reads(); got != "Deux nnes" {
+		t.Errorf("deleting the run gave %q", got)
+	}
+	// Putting the caret anywhere lets the run go.
+	if held.CaretAt(2).Holding() {
+		t.Error("moving the caret kept the run held")
+	}
+	// All of it is a run from one end to the other.
+	if got := w.All().Holds(); got != "Deux colonnes" {
+		t.Errorf("holding all of it gave %q", got)
+	}
+}

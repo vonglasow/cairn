@@ -149,12 +149,12 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	looking := ChoosingLooking(box)
 	fill(gtx, looking, skin.Back)
 	outline(gtx, looking, skin.Edge)
-	writing(gtx, th, skin, Inside(looking), w.Filtering().Reads(), w.Filtering().At, true, reads, 1, 0)
+	writing(gtx, th, skin, Inside(looking), w.Filtering(), true, reads, 1, 0)
 
 	at := ChoosingFrom(box)
 	offered := w.Choosing()
 	if len(offered) == 0 {
-		say(gtx, th, skin.Faint, Row(box, at, lineHigh), ChoosingSays, reads)
+		say(gtx, th, skin.Faint, ChoosingLine(box, at), ChoosingSays, reads)
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
 	}
@@ -178,8 +178,14 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		if w.Ticked(one.Number) {
 			said = TickedMark + "  "
 		}
-		say(gtx, th, skin.Ink, Row(box, at, lineHigh),
+		line := ChoosingLine(box, at)
+		say(gtx, th, skin.Ink, line,
 			said+Numbered(reading.Card{Number: one.Number})+"  "+one.Title, reads)
+		// Where it stands, hard right and faint: a list of fifty rows that all
+		// read alike is scanned by something other than the words.
+		if one.State != "" {
+			say(gtx, th, skin.Faint, CountedAt(line, one.State), one.State, small)
+		}
 		at += apart
 	}
 	clipped.Pop()
@@ -214,7 +220,7 @@ func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w W
 	outline(gtx, box, skin.Chosen)
 	say(gtx, th, skin.Faint, SearchWord(box), "SEARCH", small)
 	into := SearchInto(box)
-	writing(gtx, th, skin, into, w.Searched().Reads(), w.Searched().At, true, reads, 1, 0)
+	writing(gtx, th, skin, into, w.Searched(), true, reads, 1, 0)
 }
 
 // drawSaid is a panel of lines: the help, and the question. Both are read
@@ -417,7 +423,8 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			drawSaying(gtx, th, skin, box, fields, i, w)
 			continue
 		}
-		drawField(gtx, th, skin, DetailFields(box), fields, i, false, 0, false, w.FieldSays(fields[i]))
+		drawField(gtx, th, skin, DetailFields(box), fields, i, false, false,
+			Written{Value: w.FieldSays(fields[i])})
 	}
 	drawUnder(gtx, th, skin, box, fields, w)
 	drawHistory(gtx, th, skin, box, w)
@@ -510,7 +517,7 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 
 // drawField draws one field of a panel: its name beside it, what it holds
 // inside a box of its own, and the frame lit when the keyboard is on it.
-func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, caret int, carets bool, said string) {
+func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written) {
 	field := fields[i]
 	name, value := FieldRow(box, FieldTop(box, fields, i))
 	frame := Framed(value, RowsOf(field))
@@ -521,7 +528,7 @@ func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	say(gtx, th, ink, name, field.Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), said, caret, carets, reads, RowsOf(field), 0)
+	writing(gtx, th, skin, Inside(frame), said, carets, reads, RowsOf(field), 0)
 }
 
 // drawSaying is the description on an open task: read rather than written, so
@@ -533,7 +540,7 @@ func drawSaying(gtx layout.Context, th *material.Theme, skin Skin, box Box, fiel
 	say(gtx, th, skin.Faint, name, fields[at].Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
-	writing(gtx, th, skin, Inside(frame), w.FieldSays(fields[at]), 0, false, reads, w.SaidRows(), w.Saying())
+	writing(gtx, th, skin, Inside(frame), Written{Value: w.FieldSays(fields[at])}, false, reads, w.SaidRows(), w.Saying())
 
 	track := SayingBar(box, fields, at)
 	fill(gtx, track, skin.Back)
@@ -549,7 +556,17 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fields := w.Form().Fields()
 	for i := range fields {
 		on := i == w.Form().On()
-		drawField(gtx, th, skin, box, fields, i, on, w.Form().Writing().At, on, w.FieldSays(fields[i]))
+		// The field the keyboard is on is drawn from what is being typed, with
+		// its caret and whatever run is held; the rest from what they say. A
+		// field a list answers is never typed into, so it says its names even
+		// while the keyboard is on it — the numbers underneath are for the
+		// engine, not for reading.
+		typed := on && !chosenFromAList(fields[i].Arg)
+		said := Written{Value: w.FieldSays(fields[i])}
+		if typed {
+			said = w.Form().Writing()
+		}
+		drawField(gtx, th, skin, box, fields, i, on, typed, said)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -592,11 +609,12 @@ func outline(gtx layout.Context, b Box, with color.NRGBA) {
 // out here, so the caret can be put on the line it actually fell on. A caret
 // placed from the height of a whole wrapped label lands on the last line
 // whatever was typed.
-func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said string, at int, carets bool, size, rows, scrolled int) {
+func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said Written, carets bool, size, rows, scrolled int) {
 	clipped := clip.Rect(rect(b)).Push(gtx.Ops)
 	defer clipped.Pop()
 
-	lines := Wrapped(said, room(b))
+	at := said.At
+	lines := Wrapped(said.Reads(), room(b))
 	line, column := lines.At(at)
 	// A caret drags the window along with it; with no caret there is nothing
 	// to follow, so what is in sight is what was scrolled to.
@@ -605,7 +623,20 @@ func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said stri
 		from = lines.Window(rows, line)
 	}
 
+	// The held run first, so the words are read over it rather than under.
+	// Measured with the font, the way the caret is: a run measured at so many
+	// pixels a glyph ended a word away from its own caret.
+	begins, ends := said.Run()
+	loose := gtx
+	loose.Constraints = layout.Constraints{Max: image.Pt(b.W, lineHigh)}
 	for i := from; i < Lasting(len(lines.Said), from, rows); i++ {
+		if a, z, on := HeldOn(lines, begins, ends, i); said.Holding() && on {
+			kept := []rune(lines.Said[i])
+			at := LineAt(b, i, from)
+			left := wide(loose, th, string(kept[:a]), size).Size.X
+			fill(gtx, Box{X: at.X + left, Y: at.Y, H: at.H,
+				W: wide(loose, th, string(kept[a:z]), size).Size.X}, skin.Ghost)
+		}
 		say(gtx, th, skin.Ink, LineAt(b, i, from), lines.Said[i], size)
 	}
 	if !carets {
@@ -614,8 +645,6 @@ func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said stri
 	// Measured with room to grow and not with the box's exact size: asked for
 	// an exact size, a label answers that size whatever it wrote, and a caret
 	// placed from that lands at the far edge of the box every time.
-	loose := gtx
-	loose.Constraints = layout.Constraints{Max: image.Pt(b.W, lineHigh)}
 	kept := []rune(lines.Said[line])
 	before := wide(loose, th, string(kept[:min(len(kept), column)]), size)
 

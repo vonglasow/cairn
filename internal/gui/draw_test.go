@@ -1162,7 +1162,7 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	// the same place both times: a lit row and a tick are drawn in one colour,
 	// so moving the cursor as well would compare two things at once.
 	moved := inked(drawn(t, w.Key("down")), first, Dark().Panel)
-	ticked := inked(drawn(t, w.Key("space").Key("down")), first, Dark().Panel)
+	ticked := inked(drawn(t, w.Key("enter").Key("down")), first, Dark().Panel)
 	if ticked <= moved {
 		t.Errorf("a ticked row paints %d and an unticked one %d: no mark was drawn", ticked, moved)
 	}
@@ -1360,5 +1360,77 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	}
 	if got := ink(shot, beside(1), Dark().Panel); got == 0 {
 		t.Error("a card carrying a description and its parts drew nothing beside its number")
+	}
+}
+
+// A task's row says which column it sits in; an objective's says nothing,
+// because an objective sits in none. Asked of the pixels in the strip a row
+// keeps for it, on both lists.
+func TestOnlyATaskSaysWhereItStands(t *testing.T) {
+	strip := func(w Window) Box {
+		box := ChoosingOver(w.width, w.height)
+		line := ChoosingLine(box, ChoosingFrom(box))
+		return Box{X: line.X + line.W*3/4, Y: line.Y, W: line.W / 4, H: line.H}
+	}
+	opened := func(arg string, snap reading.Snapshot) Window {
+		t.Helper()
+		w := New(newFake(), 1200, 800)
+		w.snap = snap
+		w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+		for w.Form().Fields()[w.Form().On()].Arg != arg {
+			w = w.Key("tab")
+		}
+		return w.Key("enter")
+	}
+
+	// Compared with each other and not with the ground: the row the keyboard
+	// is on is lit in both, and that light is what a count against the panel
+	// would be measuring.
+	tasks := opened("parent", reading.Snapshot{Cards: []reading.Card{
+		{Number: 1, Title: "Write the spec", State: "todo"},
+		{Number: 2, Title: "Ship it", State: "current"},
+	}})
+	goals := opened("objective", reading.Snapshot{
+		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
+		Goals: []reading.Goal{{Number: 1, Title: "Ship it"}},
+	})
+	said := ink(drawn(t, tasks), strip(tasks), Dark().Back)
+	silent := ink(drawn(t, goals), strip(goals), Dark().Back)
+	if said <= silent {
+		t.Errorf("a task's row paints %d where a column goes and an objective's %d: "+
+			"the column is not drawn", said, silent)
+	}
+}
+
+// A held run is painted behind the words. Asked of the pixels, because where
+// it falls is measured with the font and nothing else can judge that: a run
+// measured any other way sits a word away from its own caret.
+func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	var value Box
+	for i, field := range fields {
+		if field.Name == "title" {
+			_, value = FieldRow(box, FieldTop(box, fields, i))
+		}
+	}
+	inside := Inside(Framed(value, 1))
+
+	loose := ink(drawn(t, w), inside, Dark().Back)
+	held := ink(drawn(t, w.Key("cmd+a")), inside, Dark().Back)
+	if held <= loose {
+		t.Errorf("holding the whole field painted %d pixels and letting go %d: "+
+			"the run is not drawn", held, loose)
+	}
+	// And a run held from the right only covers part of it.
+	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, Dark().Back)
+	if some <= loose || some >= held {
+		t.Errorf("a run of two characters painted %d, between %d and %d expected",
+			some, loose, held)
 	}
 }

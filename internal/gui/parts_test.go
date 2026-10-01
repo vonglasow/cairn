@@ -165,6 +165,7 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("choosing looking", ChoosingLooking(choosing))
 	say("choosing row 0", ChoosingRow(choosing, ChoosingFrom(choosing)))
 	say("choosing row 1", ChoosingRow(choosing, ChoosingFrom(choosing)+apart))
+	say("choosing line 0", ChoosingLine(choosing, ChoosingFrom(choosing)))
 	say("choosing run", ChoosingRun(choosing))
 	say("choosing bar", ChoosingBar(choosing))
 	say("choosing thumb at the top", Thumb(ChoosingBar(choosing), 44, 15, 0))
@@ -980,5 +981,64 @@ func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 		if got.X != box.X || got.W != box.W || got.H != SubHeight {
 			t.Errorf("%s: %v, want the box's width at a tile's height", tc.what, got)
 		}
+	}
+}
+
+// A line break is a line break. Wrapping answered the width and nothing else,
+// so a description written in paragraphs was drawn as one run of words — and
+// there was no way to write one anyway, since enter saves a form.
+func TestWrapped_breaksWhereTheTextDoes(t *testing.T) {
+	lines := Wrapped("Deux colonnes\net une bande", 40)
+	if len(lines.Said) != 2 {
+		t.Fatalf("wrapped to %d lines: %q", len(lines.Said), lines.Said)
+	}
+	if lines.Said[0] != "Deux colonnes" || lines.Said[1] != "et une bande" {
+		t.Errorf("wrapped to %q", lines.Said)
+	}
+	// An empty line between two paragraphs is a line, and reads as the space
+	// somebody left there.
+	if got := Wrapped("un\n\ndeux", 40); len(got.Said) != 3 || got.Said[1] != "" {
+		t.Errorf("a blank line between paragraphs came back as %q", got.Said)
+	}
+	// A text that begins with a break begins with an empty line: the break is
+	// at the very first place, which is a place like any other.
+	if got := Wrapped("\nun", 40); len(got.Said) != 2 || got.Said[0] != "" || got.Said[1] != "un" {
+		t.Errorf("a text beginning with a break came back as %q", got.Said)
+	}
+	// And a paragraph longer than the room still wraps inside itself.
+	if got := Wrapped("un deux trois quatre\ncinq", 10); len(got.Said) < 3 {
+		t.Errorf("a long paragraph did not wrap: %q", got.Said)
+	}
+}
+
+// Which characters of each line a held run covers. A run over several lines
+// covers all of the middle ones and part of the two ends; a line outside it
+// carries none of it and says so.
+func TestHeldOn_coversTheLinesItCrosses(t *testing.T) {
+	lines := Wrapped("un deux\ntrois quatre\ncinq six", 40)
+	if len(lines.Said) != 3 {
+		t.Fatalf("wrapped to %q", lines.Said)
+	}
+	// "deux\ntrois" — the end of the first line and the start of the second.
+	for _, c := range []struct {
+		what   string
+		line   int
+		wantA  int
+		wantB  int
+		wantOn bool
+	}{
+		{"the first line, from the run's start to its end", 0, 3, 7, true},
+		{"the second, from its own start", 1, 0, 5, true},
+		{"the third, which the run does not reach", 2, 0, 0, false},
+	} {
+		a, b, on := HeldOn(lines, 3, 13, c.line)
+		if on != c.wantOn || (on && (a != c.wantA || b != c.wantB)) {
+			t.Errorf("%s: HeldOn = %d,%d,%v want %d,%d,%v",
+				c.what, a, b, on, c.wantA, c.wantB, c.wantOn)
+		}
+	}
+	// A run of no length covers nothing, on the line it sits in.
+	if _, _, on := HeldOn(lines, 4, 4, 0); on {
+		t.Error("a run of no length was said to cover a line")
 	}
 }

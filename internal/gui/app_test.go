@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"image"
 	"strings"
 	"testing"
@@ -418,3 +419,38 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 		t.Error("a scroll moved nothing")
 	}
 }
+
+// What the clipboard held comes back as a stream, and the window takes it the
+// way it takes anything else. Its own function and not a branch inside the
+// loop: a decision the loop makes itself is a decision no scenario reaches,
+// which is what put ⇧A and the double-click out of reach before it.
+func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Key("cmd+a")
+	if !w.Pasting() {
+		w = w.Key("cmd+v")
+	}
+
+	got := pasting(w, strings.NewReader("colonnes"))
+	if said := got.Form().ValueOf("title"); said != "colonnes" {
+		t.Errorf("the title reads %q after pasting", said)
+	}
+	if got.Pasting() {
+		t.Error("the window is still waiting for a clipboard it has been given")
+	}
+	// A clipboard that cannot be read leaves the text alone rather than
+	// emptying it, and stops the waiting all the same.
+	broken := pasting(w, failing{})
+	if said := broken.Form().ValueOf("title"); said != "Write the spec" {
+		t.Errorf("a clipboard that would not open left the title as %q", said)
+	}
+	if broken.Pasting() {
+		t.Error("a clipboard that would not open left the window waiting")
+	}
+}
+
+// failing is a reader that will not read.
+type failing struct{}
+
+func (failing) Read([]byte) (int, error) { return 0, errors.New("no") }

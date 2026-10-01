@@ -114,7 +114,15 @@ func FieldRow(box Box, at int) (name, value Box) {
 // the keyboard is has to be the line itself — lit in the name column, it sat a
 // hundred and fifty pixels from the row it marked.
 func ChoosingRow(box Box, at int) Box {
-	return Box{X: box.X + padding, Y: at - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
+	run := ChoosingRun(box)
+	return Box{X: run.X, Y: at - inset, W: run.W, H: lineHigh + inset + inset}
+}
+
+// ChoosingLine is where a row's words go: the same width, so what is written
+// hard right of it is not cut off by the bar beside the run.
+func ChoosingLine(box Box, at int) Box {
+	run := ChoosingRun(box)
+	return Box{X: run.X + padding, Y: at, W: run.W - padding - padding, H: lineHigh}
 }
 
 // ChoosingLooking is the line at the top of a list that narrows it, above the
@@ -560,6 +568,20 @@ func LineAt(inside Box, i, from int) Box {
 // there is room for.
 func Lasting(lines, from, rows int) int { return min(lines, from+rows) }
 
+// HeldOn says which characters of one line a held stretch of text covers, and
+// whether that line carries any of it. Counted in characters and not in
+// pixels: how wide a character is, is a question for the font, and it is asked
+// where the caret asks it — a run measured at so many pixels a glyph sat a
+// word away from the caret at its own end.
+func HeldOn(lines Lines, from, to, i int) (a, b int, on bool) {
+	begins, ends := lines.From[i], len([]rune(lines.Said[i]))+lines.From[i]
+	a, b = max(from, begins), min(to, ends)
+	if a >= b {
+		return 0, 0, false
+	}
+	return a - begins, b - begins, true
+}
+
 // CaretAt is where the caret stands: on the line it fell on, after however
 // much room what comes before it takes.
 func CaretAt(inside Box, line, from, wide int) Box {
@@ -631,6 +653,15 @@ func Wrapped(said string, room int) Lines {
 	from := 0
 	for from < len(kept) {
 		end := min(len(kept), from+room)
+		// A line break is a line, before the width is ever consulted. Answered
+		// only by the width, a description written in paragraphs came back as
+		// one run of words with the breaks still in it, drawn as squares.
+		if at := next(kept, from, end); at >= 0 {
+			lines.Said = append(lines.Said, string(kept[from:at]))
+			lines.From = append(lines.From, from)
+			from = at + 1
+			continue
+		}
 		if end < len(kept) {
 			// Back to the last space there is room for — but never as far as
 			// the line's own beginning, which would give an empty line and a
@@ -651,6 +682,17 @@ func Wrapped(said string, room int) Lines {
 		}
 	}
 	return lines
+}
+
+// next is where the first line break between two places is, or that there is
+// none.
+func next(kept []rune, from, end int) int {
+	for i := from; i < end; i++ {
+		if kept[i] == '\n' {
+			return i
+		}
+	}
+	return -1
 }
 
 // At says which line the caret fell on and how far into that line it is.
