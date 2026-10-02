@@ -40,6 +40,11 @@ const (
 	// OnHelp is what everything does, which is the one thing here that has to
 	// be read rather than pointed at.
 	OnHelp
+	// OnWriting is one long field, opened on the whole panel. Its own screen
+	// and not a state of the form, because a field that has the panel is read
+	// and written the way nothing in a value column can be: a description of
+	// eighty lines had thirty-nine columns and four rows to be read through.
+	OnWriting
 	// OnChoosing is the list of objectives a task may serve, open over the
 	// form. Its own screen and not a state of the form, because what a key
 	// does here is not what it does in a field: space ticks, and enter — which
@@ -413,6 +418,22 @@ func (w Window) settledChoosing(want int) int {
 // Saying is how far the description on an open task has been scrolled.
 func (w Window) Saying() int { return w.saying }
 
+// WrittenLines is the opened field as it is laid out on the panel, which is
+// what its bar is sized against.
+func (w Window) WrittenLines() []string {
+	return Wrapped(w.Form().Writing().Reads(), room(Inside(WritingOver(w.width, w.height)))).Said
+}
+
+// WrittenFrom is the first line of the opened field in sight. There is a caret
+// here, so what is in sight is whatever the caret is on — the bar says where
+// that is rather than inventing a scroll of its own.
+func (w Window) WrittenFrom() int {
+	rows := WritingRows(w.width, w.height)
+	lines := Wrapped(w.Form().Writing().Reads(), room(Inside(WritingOver(w.width, w.height))))
+	line, _ := lines.At(w.Form().Writing().At)
+	return lines.Window(rows, line)
+}
+
 // SaidLines is the description as it is laid out in its box, and SaidRows how
 // many of them are in sight.
 func (w Window) SaidLines() []string {
@@ -425,7 +446,10 @@ func (w Window) SaidLines() []string {
 }
 
 // SaidRows is how many lines of the description its box holds.
-func (w Window) SaidRows() int { return longRows }
+func (w Window) SaidRows() int {
+	fields := w.Shown()
+	return LongRows(Over(w.width, w.height), fields)
+}
 
 func (w Window) settledSaying(want int) int {
 	return min(max(0, len(w.SaidLines())-w.SaidRows()), max(0, want))
@@ -814,6 +838,9 @@ func HeadsOn(w Window, screen Screen) string {
 			what = "a parent for"
 		}
 		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
+	case OnWriting:
+		fields := w.form.Fields()
+		return headed(w.formKind()+" "+strconv.Itoa(w.form.Number), fields[w.form.On()].Name)
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -913,10 +940,10 @@ func Shortcut(offer string) string {
 	case "choose":
 		return "enter"
 	case "save":
-		// Two keys, because a form has two acts and one of its fields already
-		// spends enter on the other. ⌘⏎ saves wherever the keyboard is; enter
-		// saves too, except on a field a list answers, where it opens the
-		// list. The bar says which, field by field.
+		// One key, and not enter. A form has two acts and enter is spent on
+		// the other: it opens the list a field answers with, and it breaks a
+		// line in a field with room for one. ⌘⏎ saves wherever the keyboard
+		// is, which is what the bar says.
 		return "cmd+enter"
 	case "done":
 		return "space"
@@ -962,8 +989,9 @@ func (w Window) Helping() []reading.Field {
 		{Name: "⇧←→↑↓", Value: "move what is chosen — sideways changes its column"},
 		{Name: "⏎ on the board", Value: "open what is chosen"},
 		{Name: "⏎ on a question", Value: "agree to it"},
-		{Name: "⇧⏎ in a long field", Value: "a new line, since ⏎ saves"},
-		{Name: "⌘⏎ in a form", Value: "save, wherever the keyboard is"},
+		{Name: "⏎ on a long field", Value: "open it on the whole panel — esc comes back with what was written"},
+		{Name: "⏎ in an opened field", Value: "a new line · ⇧⏎ breaks one without opening it"},
+		{Name: "⌘⏎ in a form", Value: "save, wherever the keyboard is — ⏎ does not"},
 		{Name: "⌘A ⌘C ⌘X ⌘V", Value: "hold all of a field, copy, cut, paste"},
 		{Name: "⇧←→ in a field", Value: "hold a run of text — dragging across it does the same"},
 		{Name: "⏎ in a list", Value: "take the row · ⌘⏎ keeps the list · j and k walk it"},
@@ -1011,6 +1039,11 @@ func (w Window) Offers() []string {
 			return []string{"Done", "Edit", "Close"}
 		}
 		return []string{"Edit", "Close"}
+	case OnWriting:
+		// Close and not Cancel: going back to the form keeps what was
+		// written, and a word that said otherwise would be a word nobody
+		// trusts.
+		return []string{"Save", "Close"}
 	case OnAsking:
 		return []string{"Agree", "Cancel"}
 	case OnHelp:
@@ -1445,6 +1478,9 @@ func (w Window) Key(name string) Window {
 	if w.screen == OnChoosing {
 		return w.inChoosing(name)
 	}
+	if w.screen == OnWriting {
+		return w.inWriting(name)
+	}
 	if w.screen == OnForm {
 		return w.inForm(name)
 	}
@@ -1519,6 +1555,22 @@ func (w Window) Key(name string) Window {
 	return w
 }
 
+// inWriting is what a key does while one long field has the whole panel. It
+// is the form's own text editing, less the keys that move between fields:
+// there is one field here, and enter is a line break because there is nothing
+// left for it to open.
+func (w Window) inWriting(name string) Window {
+	switch name {
+	case "enter", "return", "shift+enter", "shift+return":
+		w.form = w.form.Writes(w.form.Writing().Types("\n"))
+		return w
+	case "esc", "tab", "shift+tab", "up", "down":
+		w.screen = OnForm
+		return w
+	}
+	return w.inForm(name)
+}
+
 // inForm is what a key does while the form has the window. Everything here is
 // about one field, because a form is a column of fields and the keyboard is on
 // one of them.
@@ -1551,12 +1603,19 @@ func (w Window) inForm(name string) Window {
 	case "right":
 		return w.walks(1)
 	case "enter", "return":
-		return w.Save()
+		// Enter opens, the way it opens a task on the board and takes a row in
+		// a list. A field of one line has nothing to open, and nothing happens.
+		//
+		// It used to save, while the bar offered Save under ⌘⏎ — a key doing
+		// what the bar does not say, which is the one thing the bar exists not
+		// to do.
+		if w.form.Fields()[w.form.On()].Long {
+			w.screen = OnWriting
+		}
 	case "shift+enter", "shift+return":
-		// A field with room for several lines takes a line break, since enter
-		// is what saves the form. Without it a description was written on one
-		// line, however many the box drew.
-		if RowsOf(w.form.Fields()[w.form.On()]) > 1 {
+		// A line break without leaving the small box, for somebody who wants
+		// one line more and not the whole panel.
+		if w.form.Fields()[w.form.On()].Long {
 			w.form = w.form.Writes(w.form.Writing().Types("\n"))
 		}
 	}

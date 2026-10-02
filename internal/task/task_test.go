@@ -282,25 +282,6 @@ func TestTask_refusesToHangUnderItself(t *testing.T) {
 	}
 }
 
-// TestMayDelete_refusesATaskCarryingSubTasks checks the rule that keeps a
-// task's sub-tasks from being left pointing at a number nothing carries —
-// and that a task with nothing hanging under it is not caught by it.
-func TestMayDelete_refusesATaskCarryingSubTasks(t *testing.T) {
-	for _, c := range []struct {
-		name    string
-		hanging []Task
-		want    error
-	}{
-		{"something hangs under it", []Task{{number: 2, parent: 1}}, ErrCarriesSubTasks},
-		{"nothing hangs under it", nil, nil},
-	} {
-		if err := MayDelete(1, c.hanging); !errors.Is(err, c.want) {
-			t.Errorf("%s: err = %v, want %v", c.name, err, c.want)
-		}
-	}
-}
-
-// The spaces inside a title are still spaces: only control characters go.
 func TestNewTask_keepsAnOrdinaryTitle(t *testing.T) {
 	for _, title := range []string{"Write  the spec", "café — 100%", "🎯 ship it"} {
 		if _, err := NewTask(title); err != nil {

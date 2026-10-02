@@ -718,18 +718,18 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
 	_, value := FieldRow(box, FieldTop(box, fields, 1))
-	value.H = lineHigh * RowsOf(fields[1])
+	value.H = lineHigh * RowsOf(box, fields, 1)
 
 	shot := drawn(t, w)
 	rows := 0
-	for row := range RowsOf(fields[1]) {
+	for row := range RowsOf(box, fields, 1) {
 		line := Box{X: value.X, Y: value.Y + row*lineHigh, W: value.W, H: lineHigh}
 		if painted(shot, line, Dark().Ink) > 0 {
 			rows++
 		}
 	}
 	if rows < 2 {
-		t.Errorf("a long description was drawn on %d of its %d rows", rows, RowsOf(fields[1]))
+		t.Errorf("a long description was drawn on %d of its %d rows", rows, RowsOf(box, fields, 1))
 	}
 }
 
@@ -872,7 +872,7 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 		for i, field := range fields {
 			if field.Name == name {
 				_, value := FieldRow(box, FieldTop(box, fields, i))
-				return Framed(value, RowsOf(field))
+				return Framed(value, RowsOf(box, fields, i))
 			}
 		}
 		t.Fatalf("the form has no field %q", name)
@@ -906,7 +906,7 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	for i, field := range fields {
 		if field.Name == "description" {
 			_, value := FieldRow(box, FieldTop(box, fields, i))
-			frame = Framed(value, RowsOf(field))
+			frame = Framed(value, RowsOf(box, fields, i))
 		}
 	}
 	long := "This description is far longer than one line of this form can hold, so it has to go somewhere"

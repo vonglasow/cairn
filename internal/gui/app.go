@@ -371,4 +371,6 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 
 // takesTyping says whether a screen has somewhere for text to land. The board
 // and the panels do not: what they do with a letter is a shortcut.
-func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }
+func takesTyping(s Screen) bool {
+	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnWriting
+}

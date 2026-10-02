@@ -251,9 +251,10 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 		t.Fatalf("backspace through the loop left %q", got)
 	}
 
-	w, _, _ = frames(t, w, key.Event{Name: key.NameReturn, State: key.Press})
+	w, _, _ = frames(t, w, key.Event{
+		Name: key.NameReturn, Modifiers: key.ModCommand, State: key.Press})
 	if w.Screen() != OnTheBoard {
-		t.Fatalf("return through the loop left the window on %v", w.Screen())
+		t.Fatalf("⌘⏎ through the loop left the window on %v", w.Screen())
 	}
 	if f.what("task", "edit") != 1 {
 		t.Errorf("it asked for %d edits", f.what("task", "edit"))

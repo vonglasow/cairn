@@ -37,11 +37,6 @@ var ErrParentIsSubTask = errors.New("a sub-task cannot carry sub-tasks")
 // ErrParentIsSelf is returned when a task is asked to hang under itself.
 var ErrParentIsSelf = errors.New("a task cannot hang under itself")
 
-// ErrCarriesSubTasks is returned when a task carrying sub-tasks is asked to
-// be deleted. What depends on it would go with it, and a deletion that takes
-// more than the number typed is a deletion nobody asked for.
-var ErrCarriesSubTasks = errors.New("the task carries sub-tasks")
-
 // ErrSubTaskServesNoObjective is returned when a task is asked to carry both
 // a parent and an objective at once. A sub-task lives with the task it hangs
 // under, counts towards that task's objective through it, and is never given
@@ -293,16 +288,6 @@ func MayFinish(number int, hanging []Task) error {
 		return nil
 	}
 	return fmt.Errorf("task %d: task %s: %w", number, strings.Join(open, ", "), ErrSubTaskStillOpen)
-}
-
-// MayDelete says whether the task carrying number may be deleted, given what
-// hangs under it. What depends on it would go with it, and a deletion that
-// takes more than the number typed is a deletion nobody asked for.
-func MayDelete(number int, hanging []Task) error {
-	if len(hanging) > 0 {
-		return fmt.Errorf("task %d: %w", number, ErrCarriesSubTasks)
-	}
-	return nil
 }
 
 // NewTask builds a task from a title, refusing one that carries no text.

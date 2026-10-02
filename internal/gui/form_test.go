@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
 
@@ -345,12 +346,12 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 }
 
 // Enter saves, because a form is answered rather than dismissed.
-func TestEnterSavesTheForm(t *testing.T) {
+func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	w = w.Key("enter")
+	w = w.Key("cmd+enter")
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("enter left the window on %v", w.Screen())
 	}
@@ -424,7 +425,7 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	_, value := FieldRow(box, FieldTop(box, fields, at))
 
 	name, _ := FieldRow(box, FieldTop(box, fields, at))
-	for _, row := range []int{0, RowsOf(fields[at]) - 1} {
+	for _, row := range []int{0, RowsOf(box, fields, at) - 1} {
 		down := row*lineHigh + lineHigh/2
 		if got := w.clicked(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d of the description put the keyboard on %d", row, got)
@@ -710,5 +711,184 @@ func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
 	}
 	if got := into(box, Point{X: box.X + 3*perGlyph}); got != 3 {
 		t.Errorf("a click three glyphs in lands at %d", got)
+	}
+}
+
+// A key does what the bar offers, where the bar offers it. The bar offers Save
+// under ⌘⏎ and enter saved as well, which is a key doing what the bar does not
+// say — and it is why writing a description in paragraphs needed ⇧⏎.
+func TestEnterDoesNotSaveTheForm(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
+
+	if after := w.Key("enter"); after.Screen() != OnForm {
+		t.Fatalf("enter left the form: %v", after.Screen())
+	}
+	if len(f.asked) != 0 {
+		t.Fatalf("enter wrote to the store: %v", f.asked)
+	}
+	if after := w.Key("cmd+enter"); after.Screen() == OnForm {
+		t.Fatal("⌘⏎ did not save the form")
+	}
+}
+
+// In a field with room for several lines, enter is what a line break always
+// was everywhere else: the one key a hand reaches for.
+func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.Types("Deux colonnes").Key("shift+enter").Types("et une bande")
+	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
+		t.Fatalf("the description reads %q", said)
+	}
+	// A field of one line is not a place for a break.
+	w.form = w.form.onto(0)
+	before := w.Form().Writing().Reads()
+	if after := w.Key("shift+enter").Form().Writing().Reads(); after != before {
+		t.Fatalf("⇧⏎ wrote %q into a one-line field", after)
+	}
+}
+
+// A long field opens on the whole panel, the way a task opens on the board:
+// enter goes in, esc comes back with what was written, and what it holds is
+// the field's own value throughout.
+func TestALongFieldOpensOnThePanel(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
+		}
+	}
+	// Enter opens it; a field of one line has nothing to open.
+	w = w.Key("enter")
+	if w.Screen() != OnWriting {
+		t.Fatalf("enter on the description left the window on %v", w.Screen())
+	}
+	w = w.Types("Deux colonnes").Key("enter").Types("et une bande")
+	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
+		t.Fatalf("what was written reads %q", said)
+	}
+	w = w.Key("esc")
+	if w.Screen() != OnForm {
+		t.Fatalf("esc left the window on %v", w.Screen())
+	}
+	if said := w.Form().ValueOf("description"); said != "Deux colonnes\net une bande" {
+		t.Fatalf("the field came back holding %q", said)
+	}
+	if len(f.asked) != 0 {
+		t.Fatalf("opening and closing a field wrote to the store: %v", f.asked)
+	}
+	// And saving from inside it saves the form.
+	w = w.Key("enter").Key("cmd+enter")
+	if w.Screen() == OnWriting {
+		t.Fatal("⌘⏎ inside an opened field did not save")
+	}
+}
+
+// A field of one line has nothing to open, so enter there does nothing at all.
+func TestAShortFieldDoesNotOpen(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	w.form = w.form.onto(0)
+	if after := w.Key("enter"); after.Screen() != OnForm {
+		t.Fatalf("enter on a one-line field left the window on %v", after.Screen())
+	}
+}
+
+// The parts of a task are reachable in the form of the task they belong to,
+// and nowhere else: they are off the board, so a task carrying them could
+// neither be changed nor deleted once they were.
+func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
+		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
+		reading.Card{Number: 3, Title: "Trancher", State: "done", Parent: 1})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+
+	if said := w.Form().ValueOf("parts"); said != "#2 [ ] Relire l'ADR\n#3 [x] Trancher" {
+		t.Fatalf("the form opened holding %q", said)
+	}
+
+	// Rename one, tick it, drop the other, and name a new one.
+	w.form = w.form.Set("parts", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
+	w = w.Save()
+
+	var added, edited, deleted []engine.Input
+	for _, one := range f.asked {
+		switch {
+		case one.op.Thing == "task" && one.op.Verb == "add":
+			added = append(added, one.in)
+		case one.op.Thing == "task" && one.op.Verb == "edit" && one.in.Given["number"] != "1":
+			edited = append(edited, one.in)
+		case one.op.Thing == "task" && one.op.Verb == "delete":
+			deleted = append(deleted, one.in)
+		}
+	}
+	if len(added) != 1 || added[0].Given["title"] != "Rédiger la section Flux" ||
+		added[0].Given["parent"] != "1" {
+		t.Errorf("what was added: %v", added)
+	}
+	if len(edited) != 1 || edited[0].Given["title"] != "Relire l'ADR 0014" ||
+		edited[0].Given["state"] != "done" {
+		t.Errorf("what was changed: %v", edited)
+	}
+	if len(deleted) != 1 || deleted[0].Given["number"] != "3" {
+		t.Errorf("what was taken away: %v", deleted)
+	}
+}
+
+// A task with nothing under it opens on an empty field rather than none: it is
+// where a first part is written.
+func TestATaskWithNoPartsStillHasTheField(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Ship it", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	if said := w.Form().ValueOf("parts"); said != "" {
+		t.Fatalf("a task with nothing under it opened holding %q", said)
+	}
+}
+
+// A part the store will not let go of leaves the window saying so, rather than
+// closing the form as though the list had been settled.
+func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
+		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	w.form = w.form.Set("parts", "")
+	// Only the deletion: the task's own edit has to go through for the part to
+	// be reached at all.
+	f.refuseDelete = errRefuse
+	w = w.Save()
+	if w.Wrong() == nil {
+		t.Fatal("a part that could not be deleted was passed over")
+	}
+}
+
+// The heading of an opened field says which task and which field, so a panel
+// holding nothing but text still says what the text is.
+func TestAnOpenedFieldSaysWhatItIs(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 7, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
+		}
+	}
+	head := Heads(w.Key("enter"))
+	for _, said := range []string{"task 7", "description"} {
+		if !strings.Contains(head, said) {
+			t.Errorf("an opened field is headed %q, which says nothing of %q", head, said)
+		}
 	}
 }

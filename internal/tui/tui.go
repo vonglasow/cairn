@@ -254,11 +254,17 @@ func (b Board) wonder() tea.Cmd {
 func (b Board) took(l Looked) Board {
 	if l.Err != nil {
 		b.err = l.Err
+		// A write that was refused gives the form back, with everything
+		// somebody had typed into it still there. The form was kept rather
+		// than emptied for exactly this.
+		if b.form.asked != nil {
+			b.screen = OnForm
+		}
 		return b
 	}
-	// A write that went through is what closes a form, so a refused one stays
-	// open with everything still in it.
-	if b.screen == OnForm {
+	// A write that went through is what empties the form, so a refused one
+	// keeps everything in it for the screen to be put back on.
+	if b.form.asked != nil {
 		b.screen, b.form = OnTheBoard, Form{}
 	}
 	was := b.task

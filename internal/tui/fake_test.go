@@ -29,6 +29,10 @@ type fake struct {
 	// different faults, and a board that muddled them would say the wrong one.
 	fail   error
 	failOp error
+	// refuseVerb refuses one verb and nothing else, which is how the later of
+	// several writes in one gesture is reached: the ones before it have to go
+	// through for it to be asked for at all.
+	refuseVerb string
 
 	// asked is every operation the board asked for, in order, with what it
 	// gave. The fields below are the same thing read the way a test wants it:
@@ -285,6 +289,12 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	refusal := f.fail
 	if op.Level != engine.Read {
 		refusal = f.failing()
+	}
+	if f.refuseVerb != "" {
+		refusal = nil
+		if op.Verb == f.refuseVerb {
+			refusal = errRefuse
+		}
 	}
 	if refusal != nil {
 		return engine.Answer{}, refusal

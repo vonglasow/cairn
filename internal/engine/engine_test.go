@@ -371,18 +371,6 @@ func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
 	}
 }
 
-func TestEngine_refusesToDeleteATaskCarryingSubTasks(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-	if _, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)}); err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-
-	if err := e.Delete(factsOf(under).number); !errors.Is(err, ErrCarriesSubTasks) {
-		t.Errorf("err = %v, want ErrCarriesSubTasks", err)
-	}
-}
-
 func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
@@ -484,5 +472,34 @@ func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 func TestEngine_refusesATimeItCannotMakeSenseOf(t *testing.T) {
 	if _, err := openEngine(t).Add("Write the spec", Changes{Spent: of("+ages")}); err == nil {
 		t.Error("Add with a time it cannot read should fail")
+	}
+}
+
+// A task goes off with what hangs under it. It used to be refused while a part
+// was there, and the parts are reachable only in the form of the task they
+// belong to — so a task that carried one could not be deleted at all once the
+// board stopped drawing them.
+//
+// It is the rule archiving already goes by: a part goes off the board with the
+// work it belongs to. A part is not work in its own right; it is a line of a
+// list its task owns.
+func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
+	e := openEngine(t)
+	ship := factsOf(add(t, e, "Ship it")).number
+	parent := ship
+	first := factsOf(add(t, e, "Relire l'ADR")).number
+	second := factsOf(add(t, e, "Trancher")).number
+	for _, part := range []int{first, second} {
+		if _, err := e.Edit(part, Changes{Parent: &parent}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := e.Delete(ship); err != nil {
+		t.Fatalf("deleting a task carrying parts: %v", err)
+	}
+	for _, gone := range []int{ship, first, second} {
+		if _, err := e.Show(gone); err == nil {
+			t.Errorf("task %d is still there", gone)
+		}
 	}
 }

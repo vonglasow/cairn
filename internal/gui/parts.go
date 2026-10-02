@@ -510,7 +510,7 @@ func HistoryBox(box Box) Box {
 // caret and what does not fit has to be reachable another way.
 func SayingBox(box Box, fields []reading.Field, at int) Box {
 	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
-	frame := Framed(value, longRows)
+	frame := Framed(value, LongRows(box, fields))
 	return Box{X: frame.X, Y: frame.Y, W: frame.W - barWide - between, H: frame.H}
 }
 
@@ -666,8 +666,8 @@ const apart = 32
 
 // fieldHigh is what one field takes from the top of its frame to the top of
 // the next: its lines, the room its frame keeps, and what it leaves after it.
-func fieldHigh(field reading.Field) int {
-	return RowsOf(field)*lineHigh + inset + inset + between
+func fieldHigh(box Box, fields []reading.Field, at int) int {
+	return RowsOf(box, fields, at)*lineHigh + inset + inset + between
 }
 
 // The scale everything is spaced on, in steps of four: 4 inside a frame, 12
@@ -737,6 +737,14 @@ func Wrapped(said string, room int) Lines {
 			from++
 		}
 	}
+	// A text ending in a break has one more line, empty, for the caret to
+	// stand on. Without it the caret stayed drawn at the end of the line
+	// above and only came down once something had been typed there, so ⇧⏎
+	// looked as though it had done nothing at all.
+	if kept[len(kept)-1] == '\n' {
+		lines.Said = append(lines.Said, "")
+		lines.From = append(lines.From, len(kept))
+	}
 	return lines
 }
 
@@ -780,11 +788,39 @@ func (l Lines) Window(rows, line int) int {
 const longRows = 4
 
 // RowsOf is how many rows a field takes.
-func RowsOf(field reading.Field) int {
-	if field.Long {
-		return longRows
+func RowsOf(box Box, fields []reading.Field, at int) int {
+	if fields[at].Long {
+		return LongRows(box, fields)
 	}
 	return 1
+}
+
+// LongRows is how many lines the one field that wants more than one gets: four
+// at least, and every line the panel has room for beyond that.
+//
+// It used to be four whatever the window was. A description of 2800 characters
+// comes to seventy-eight lines once wrapped, so it was read a hundred and fifty
+// characters at a time through a box the panel had two hundred unused points
+// underneath — which reads as a text cut off rather than one to scroll.
+//
+// What it leaves behind is what the box under the fields needs to be worth
+// drawing: its heading and four tiles. Below that the window is too short to
+// give anything away, and the four lines stand.
+//
+// On a window somebody works in it leaves the four as they were: twelve fields
+// take two thirds of the column and the parts box the rest. It is on a tall
+// screen that it gives anything, and reading a description of eighty lines is
+// what opening it on the whole panel is for.
+func LongRows(box Box, fields []reading.Field) int {
+	taken := 0
+	for i := range fields {
+		if !fields[i].Long {
+			taken += lineHigh + inset + inset + between
+		}
+	}
+	under := lineHigh + between + 4*SubHeight + padding
+	room := PanelOfferAt(box, 0).Y - padding - FirstRow(box) - taken - under - inset - inset - between
+	return max(longRows, room/lineHigh)
 }
 
 // FieldTop is where a field begins, counting what the fields above it took. A
@@ -794,8 +830,8 @@ func FieldTop(box Box, fields []reading.Field, at int) int {
 	// One guard and not two: a second condition on the same loop has a
 	// boundary nothing can reach, since what is counted is only ever the
 	// fields that exist.
-	for _, field := range fields[:min(at, len(fields))] {
-		top += fieldHigh(field)
+	for i := range fields[:min(at, len(fields))] {
+		top += fieldHigh(box, fields, i)
 	}
 	return top
 }
@@ -882,4 +918,35 @@ func GhostSays(screen Screen, ghost Box, c reading.Card) (Box, string, int) {
 		return SubWriting(ghost), SubLine(c), small
 	}
 	return PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain
+}
+
+// WritingOver is the box a long field is written in once it has been opened:
+// the whole panel, less its heading and what the panel offers at its foot.
+//
+// A description is what somebody opens a task to read, and in the form it has
+// a value column thirty-nine characters wide and four lines tall. A text of
+// 2800 characters comes to seventy-eight lines there, read a hundred and fifty
+// characters at a time — which reads as a text cut off rather than one to
+// scroll. The column cannot be made to hold it: twelve fields take two thirds
+// of it. So the field opens, the way a task opens on the board.
+func WritingOver(width, height int) Box {
+	panel := Over(width, height)
+	top := FirstRow(panel)
+	return Box{
+		X: panel.X + padding,
+		Y: top,
+		W: panel.W - padding - padding - barWide - between,
+		H: PanelOfferAt(panel, 0).Y - padding - top,
+	}
+}
+
+// WritingBar is the track beside it, by the rule every other bar goes by.
+func WritingBar(width, height int) Box {
+	frame := WritingOver(width, height)
+	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+}
+
+// WritingRows is how many lines of it are in sight.
+func WritingRows(width, height int) int {
+	return Inside(WritingOver(width, height)).H / lineHigh
 }

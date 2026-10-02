@@ -407,25 +407,25 @@ func TestAFieldThatWantsMoreThanOneLineGetsIt(t *testing.T) {
 		{Name: "description", Long: true},
 		{Name: "column"},
 	}
-	if got := RowsOf(fields[0]); got != 1 {
+	box := Over(1200, 800)
+	if got := RowsOf(box, fields, 0); got != 1 {
 		t.Errorf("a plain field takes %d rows", got)
 	}
-	if got := RowsOf(fields[1]); got <= 1 {
+	if got := RowsOf(box, fields, 1); got <= 1 {
 		t.Errorf("a long field takes %d rows", got)
 	}
 
-	box := Over(1200, 800)
 	first := FieldTop(box, fields, 0)
 	second := FieldTop(box, fields, 1)
 	third := FieldTop(box, fields, 2)
 	// A field takes its rows, the room its frame keeps around them, and what it
 	// leaves before the next one.
-	if second-first != fieldHigh(fields[0]) {
-		t.Errorf("the second field is %d below the first, want %d", second-first, fieldHigh(fields[0]))
+	if second-first != fieldHigh(box, fields, 0) {
+		t.Errorf("the second field is %d below the first, want %d", second-first, fieldHigh(box, fields, 0))
 	}
-	if third-second != fieldHigh(fields[1]) {
+	if third-second != fieldHigh(box, fields, 1) {
 		t.Errorf("the third field is %d below the second, which takes %d rows",
-			third-second, RowsOf(fields[1]))
+			third-second, RowsOf(box, fields, 1))
 	}
 	if third-second <= second-first {
 		t.Error("a field of four lines is no further from the next than a field of one")
@@ -614,7 +614,7 @@ func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 	} {
 		last := len(fields) - 1
 		_, value := FieldRow(box, FieldTop(box, fields, last))
-		bottom := Framed(value, RowsOf(fields[last]))
+		bottom := Framed(value, RowsOf(box, fields, last))
 		if got, want := bottom.Y+bottom.H, PanelOfferAt(box, 0).Y; got >= want {
 			t.Errorf("the last of %d fields ends at %d and the offers start at %d",
 				len(fields), got, want)
@@ -1098,11 +1098,11 @@ func TestAOneLineFieldIsNotAsWideAsThePanel(t *testing.T) {
 	for i, field := range fields {
 		_, value := FieldRow(box, FieldTop(box, fields, i))
 		if field.Long {
-			long = Framed(value, RowsOf(field))
+			long = Framed(value, RowsOf(box, fields, i))
 			continue
 		}
 		if short.W == 0 {
-			short = Framed(value, RowsOf(field))
+			short = Framed(value, RowsOf(box, fields, i))
 		}
 	}
 	if short.W >= long.W {
@@ -1157,14 +1157,18 @@ func TestOneFieldToTheNextIsOneStep(t *testing.T) {
 	// Written as numbers and not as the sum they come from: an expression
 	// repeated on both sides of a comparison agrees with itself however it is
 	// mutated, and says nothing at all.
-	if one := fieldHigh(reading.Field{Name: "title"}); one != 32 {
+	box := Over(1200, 800)
+	fields := []reading.Field{{Name: "title"}, {Name: "description", Long: true}}
+	if one := fieldHigh(box, fields, 0); one != 32 {
 		t.Fatalf("a one-line field takes %d, want 32", one)
 	}
 	if apart != 32 {
 		t.Fatalf("a panel's rows are %d apart, want the 32 a field is high", apart)
 	}
-	if long := fieldHigh(reading.Field{Name: "description", Long: true}); long != 86 {
-		t.Fatalf("a long field takes %d, want 86", long)
+	// A long field takes the room the panel has left, so what is pinned is the
+	// frame around its lines and not a number of them.
+	if long, rows := fieldHigh(box, fields, 1), LongRows(box, fields); long != rows*lineHigh+14 {
+		t.Fatalf("a long field of %d lines takes %d", rows, long)
 	}
 }
 
@@ -1247,5 +1251,101 @@ func TestWhatIsInHandWritesWhereItWillWrite(t *testing.T) {
 	}
 	if said != SubLine(c) || size != small {
 		t.Errorf("a tile in hand says %q at %d", said, size)
+	}
+}
+
+// A text ending in a line break has a line for the caret to stand on. Without
+// one the caret stayed drawn at the end of the line above, and only moved down
+// once something had been typed on the new line — so ⇧⏎ looked as though it had
+// done nothing at all.
+func TestATextEndingInABreakKeepsALineForTheCaret(t *testing.T) {
+	lines := Wrapped("abc\n", 20)
+	if len(lines.Said) != 2 {
+		t.Fatalf("it came back as %q, want a line for the caret after it", lines.Said)
+	}
+	if lines.Said[1] != "" || lines.From[1] != 4 {
+		t.Fatalf("the last line is %q beginning at %d", lines.Said[1], lines.From[1])
+	}
+	if line, column := lines.At(4); line != 1 || column != 0 {
+		t.Fatalf("the caret falls on line %d column %d, want the new line", line, column)
+	}
+	// And a break on its own is two lines, both empty.
+	if only := Wrapped("\n", 20); len(only.Said) != 2 {
+		t.Fatalf("a break on its own came back as %q", only.Said)
+	}
+	// A text that does not end in one is unchanged.
+	if plain := Wrapped("abc", 20); len(plain.Said) != 1 {
+		t.Fatalf("a text with no break came back as %q", plain.Said)
+	}
+}
+
+// A description is what somebody opens a task to read, and it had four lines
+// of thirty-nine columns whatever the window was — a task of 2800 characters
+// came to seventy-eight lines, read a hundred and fifty characters at a time.
+// It takes the room the panel has left once everything else has taken its own.
+func TestADescriptionTakesTheRoomThePanelHasLeft(t *testing.T) {
+	fields := reading.TaskFields(reading.Card{})
+	for _, c := range []struct {
+		what          string
+		width, height int
+		rows          int
+	}{
+		// Three heights and not one: the room left over is a sum of half a
+		// dozen terms, and a single height lets one of them be wrong by
+		// exactly what the division then throws away.
+		{"a tall screen", 1200, 1400, 30},
+		{"a screen half again as tall", 1200, 1000, 11},
+		{"a window somebody works in", 1200, 800, longRows},
+		{"the smallest window there is", Narrowest, Shortest, longRows},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			box := Over(c.width, c.height)
+			if rows := LongRows(box, fields); rows != c.rows {
+				t.Errorf("a description gets %d lines, want %d", rows, c.rows)
+			}
+			// And what the box under the fields had, it keeps.
+			if under := ServingBox(box, fields); under.H < lineHigh {
+				t.Errorf("the box under the fields is %d, too small to read", under.H)
+			}
+			// Nothing runs past the offers at the foot.
+			last := FieldTop(box, fields, len(fields)-1) + fieldHigh(box, fields, len(fields)-1)
+			if last > PanelOfferAt(box, 0).Y {
+				t.Errorf("the last field ends at %d, past the offers at %d",
+					last, PanelOfferAt(box, 0).Y)
+			}
+		})
+	}
+}
+
+// A description opened on the whole panel: the room a text of eighty lines
+// needs, which a form's value column never had.
+func TestADescriptionOpenedTakesThePanel(t *testing.T) {
+	box := Over(1200, 800)
+	// Pinned to the point, like every other parcel: a box that merely looks
+	// roomy is a box nothing holds to its size.
+	if got, want := WritingOver(1200, 800), (Box{X: 162, Y: 116, W: 860, H: 560}); got != want {
+		t.Errorf("the writing area is %+v, want %+v", got, want)
+	}
+	if got, want := WritingBar(1200, 800), (Box{X: 1028, Y: 116, W: 10, H: 560}); got != want {
+		t.Errorf("its bar is %+v, want %+v", got, want)
+	}
+	if got := WritingRows(1200, 800); got != 30 {
+		t.Errorf("it holds %d lines, want 30", got)
+	}
+	// Which is the point of it: the field it came from holds four.
+	if LongRows(box, reading.TaskFields(reading.Card{})) >= WritingRows(1200, 800) {
+		t.Error("opening a field gains nothing over leaving it in the form")
+	}
+	// It stays inside the panel, above what the panel offers, and its bar
+	// stands beside it rather than over it.
+	writing := WritingOver(1200, 800)
+	if writing.Y < box.Y || writing.Y+writing.H > PanelOfferAt(box, 0).Y {
+		t.Errorf("the writing area runs from %d to %d, outside the panel %d..%d",
+			writing.Y, writing.Y+writing.H, box.Y, PanelOfferAt(box, 0).Y)
+	}
+	if bar := WritingBar(1200, 800); bar.X < writing.X+writing.W ||
+		bar.X+bar.W > box.X+box.W {
+		t.Errorf("the bar at %d..%d does not sit between the text and the panel's edge",
+			bar.X, bar.X+bar.W)
 	}
 }

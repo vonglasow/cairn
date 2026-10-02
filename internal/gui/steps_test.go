@@ -881,6 +881,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the window is writing one field on the whole panel$`, func() error {
+		if w.w.Screen() != OnWriting {
+			return fmt.Errorf("the window is on %v, not writing a field", w.w.Screen())
+		}
+		return nil
+	})
 	sc.Then(`^the window is on the form$`, func() error {
 		if w.w.Screen() != OnForm {
 			return fmt.Errorf("the window is on %v, not the form", w.w.Screen())
@@ -992,6 +998,24 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the search box is closed$`, w.searchBoxClosed)
 	sc.Then(`^the search is still in force$`, w.searchStillInForce)
 	sc.Then(`^the caret is at (\d+)$`, w.caretIsAt)
+	sc.Then(`^the caret is on line (\d+) of the field "([^"]*)"$`,
+		func(want int, name string) error {
+			if w.w.Screen() != OnForm {
+				return fmt.Errorf("nothing is being typed into")
+			}
+			fields := w.w.Form().Fields()
+			at := w.w.Form().On()
+			if fields[at].Name != name {
+				return fmt.Errorf("the keyboard is on %q, not on %q", fields[at].Name, name)
+			}
+			said := w.w.Form().Writing()
+			box := Inside(SayingBox(Over(w.w.width, w.w.height), fields, at))
+			line, _ := Wrapped(said.Reads(), room(box)).At(said.At)
+			if line+1 != want {
+				return fmt.Errorf("the caret is on line %d of %q, want line %d", line+1, name, want)
+			}
+			return nil
+		})
 	sc.Then(`^the search reads "([^"]*)"$`, w.searchReads)
 	sc.Then(`^the keyboard is on "([^"]*)"$`, w.keyboardIsOn)
 	sc.Then(`^the objectives read (".*")$`, w.objectivesRead)
@@ -1181,27 +1205,36 @@ func (w *world) noOtherFieldShowsACaret() error {
 }
 
 func (w *world) fieldHasRoomForMoreThanOneLine(name string) error {
-	for _, field := range w.w.Form().Fields() {
-		if field.Name == name {
-			if RowsOf(field) <= 1 {
-				return fmt.Errorf("%q has room for %d line", name, RowsOf(field))
-			}
-			return nil
-		}
+	rows, err := w.rowsOfField(name)
+	if err != nil {
+		return err
 	}
-	return fmt.Errorf("the form has no field called %q", name)
+	if rows <= 1 {
+		return fmt.Errorf("%q has room for %d line", name, rows)
+	}
+	return nil
 }
 
 func (w *world) fieldHasRoomForOne(name string) error {
-	for _, field := range w.w.Form().Fields() {
-		if field.Name == name {
-			if RowsOf(field) != 1 {
-				return fmt.Errorf("%q has room for %d lines", name, RowsOf(field))
-			}
-			return nil
+	rows, err := w.rowsOfField(name)
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return fmt.Errorf("%q has room for %d lines", name, rows)
+	}
+	return nil
+}
+
+// rowsOfField is how many lines a field of the open form is drawn over.
+func (w *world) rowsOfField(name string) (int, error) {
+	fields := w.w.Form().Fields()
+	for i := range fields {
+		if fields[i].Name == name {
+			return RowsOf(Over(w.w.width, w.w.height), fields, i), nil
 		}
 	}
-	return fmt.Errorf("the form has no field called %q", name)
+	return 0, fmt.Errorf("the form has no field called %q", name)
 }
 
 func (w *world) fieldShowsTheEnd(name string) error {
@@ -1212,12 +1245,13 @@ func (w *world) fieldShowsTheEnd(name string) error {
 			continue
 		}
 		_, value := FieldRow(box, FieldTop(box, fields, i))
-		lines := Wrapped(field.Value, room(Inside(Framed(value, RowsOf(field)))))
+		rows := RowsOf(box, fields, i)
+		lines := Wrapped(field.Value, room(Inside(Framed(value, rows))))
 		if len(lines.Said) < 2 {
 			return fmt.Errorf("%q is not longer than its room, so this proves nothing", name)
 		}
 		line, _ := lines.At(w.w.Form().Writing().At)
-		shown := lines.Said[lines.Window(RowsOf(field), line)]
+		shown := lines.Said[lines.Window(rows, line)]
 		if !strings.HasSuffix(field.Value, shown) {
 			return fmt.Errorf("%q shows %q, which is not the end of %q", name, shown, field.Value)
 		}
@@ -1305,8 +1339,9 @@ func (w *world) wrapping(name string) (Lines, int, error) {
 		if field.Name != name {
 			continue
 		}
-		_, value := FieldRow(Over(w.w.width, w.w.height), FieldTop(Over(w.w.width, w.w.height), fields, i))
-		fits := room(Inside(Framed(value, RowsOf(field))))
+		box := Over(w.w.width, w.w.height)
+		_, value := FieldRow(box, FieldTop(box, fields, i))
+		fits := room(Inside(Framed(value, RowsOf(box, fields, i))))
 		return Wrapped(field.Value, fits), fits, nil
 	}
 	return Lines{}, 0, fmt.Errorf("the form has no field %q", name)
@@ -1438,7 +1473,7 @@ func (w *world) formBehindTheList() error {
 	// were a page of its own that frame would have been painted over.
 	fields := w.w.Form().Fields()
 	_, value := FieldRow(over, FieldTop(over, fields, 0))
-	frame := Framed(value, RowsOf(fields[0]))
+	frame := Framed(value, RowsOf(over, fields, 0))
 	if frame.Y+frame.H > list.Y {
 		return fmt.Errorf("the first field reaches %d and the list starts at %d: they overlap, so this proves nothing",
 			frame.Y+frame.H, list.Y)
@@ -1472,7 +1507,7 @@ func (w *world) fieldDrawnByName(field string) error {
 		at := slices.IndexFunc(fields, func(x reading.Field) bool { return x.Name == field })
 		box := Over(w.w.width, w.w.height)
 		_, value := FieldRow(box, FieldTop(box, fields, at))
-		frame := Framed(value, RowsOf(f))
+		frame := Framed(value, RowsOf(box, fields, at))
 		// Past where the numbers themselves could have ended, and inside the
 		// frame rather than on it: the frame's own outline is not the field's
 		// writing, and a fraction of the width would only say the text is

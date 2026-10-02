@@ -86,3 +86,47 @@ func TestNumbersIn_readsBackWhatNumbersWrote(t *testing.T) {
 		}
 	}
 }
+
+// The parts of a task, written as one line each so they can be read, ticked,
+// renamed, added to and taken away in one place — the form of the task they
+// belong to, which is the only place they are reachable at all.
+func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
+	said := PartsSaid([]Card{
+		{Number: 2, Title: "Relire l'ADR", State: "todo"},
+		{Number: 3, Title: "Trancher", State: "done"},
+	})
+	want := "#2 [ ] Relire l'ADR\n#3 [x] Trancher"
+	if said != want {
+		t.Fatalf("the parts read\n%q\nwant\n%q", said, want)
+	}
+
+	back := PartsIn(said + "\n[ ] Une nouvelle\n   \n[x] Déjà faite")
+	if len(back) != 4 {
+		t.Fatalf("read back %d parts, want 4 — a line of spaces is not one", len(back))
+	}
+	for i, c := range []struct {
+		number int
+		title  string
+		done   bool
+	}{
+		{2, "Relire l'ADR", false},
+		{3, "Trancher", true},
+		{0, "Une nouvelle", false},
+		{0, "Déjà faite", true},
+	} {
+		if back[i].Number != c.number || back[i].Title != c.title || back[i].Done != c.done {
+			t.Errorf("part %d read %+v, want %d %q %v", i, back[i], c.number, c.title, c.done)
+		}
+	}
+}
+
+// A task with no parts says nothing, so the field is empty rather than
+// carrying a shape nobody typed.
+func TestATaskWithNoPartsSaysNothing(t *testing.T) {
+	if said := PartsSaid(nil); said != "" {
+		t.Fatalf("a task with no parts reads %q", said)
+	}
+	if back := PartsIn(""); len(back) != 0 {
+		t.Fatalf("nothing read back as %v", back)
+	}
+}

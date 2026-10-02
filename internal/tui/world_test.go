@@ -588,3 +588,82 @@ func TestTheWholeColumnCanBeArchivedAtOnce(t *testing.T) {
 		t.Fatalf("%d tasks are still on the board", w.b.Where().Showing)
 	}
 }
+
+// Saving hands the window back at once, and a refusal brings the form back
+// with everything still in it. Keeping the window while the write was in
+// flight made the write one of the form's own commands, and the form's
+// commands are raced against a deadline — so under load the write was dropped
+// and the board answered from a reading that never had the task in it.
+func TestSavingHandsTheWindowBackAndARefusalGivesItBack(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	w.b.form = w.b.form.typedInto("title", "Something else")
+	model, _ := w.b.save()
+	w.b = model.(Board)
+	if w.b.screen != OnTheBoard {
+		t.Fatalf("saving left the window on %v", w.b.screen)
+	}
+	if !w.b.form.Changed() {
+		t.Fatal("what was typed went with the window")
+	}
+	after := w.b.took(Looked{Err: errNope})
+	if after.screen != OnForm {
+		t.Fatalf("a refused write left the board on %v", after.screen)
+	}
+	if after.form.valueOf("title") != "Something else" {
+		t.Fatalf("the form came back holding %q", after.form.valueOf("title"))
+	}
+}
+
+// The parts of a task are edited in the form of the task they belong to, here
+// as in the window: they are off the board, so a task carrying them could
+// neither be changed nor deleted once they were.
+func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Ship it", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	under := 1
+	if _, err := w.other.Add("Relire l'ADR", engine.Changes{Parent: &under}); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	if said := w.b.form.valueOf("parts"); said != "#2 [ ] Relire l'ADR" {
+		t.Fatalf("the form opened holding %q", said)
+	}
+	w.b.form = w.b.form.typedInto("parts", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
+	model, cmd := w.b.save()
+	w.b = model.(Board)
+	if cmd != nil {
+		w.settle(cmd)
+	}
+	if err := w.lookAgain(); err != nil {
+		t.Fatal(err)
+	}
+	parts := reading.Hanging(w.b.snap.Cards, 1)
+	if len(parts) != 2 {
+		t.Fatalf("the task carries %d parts, want 2", len(parts))
+	}
+	// By what they are called and not by the order they come back in: what a
+	// part is called and whether it is done is what the field says, and where
+	// it sits among its sisters is the board's own ordering.
+	states := map[string]string{}
+	for _, part := range parts {
+		states[part.Title] = part.State
+	}
+	if states["Relire l'ADR 0014"] != "done" {
+		t.Errorf("the part that was ticked is %q", states["Relire l'ADR 0014"])
+	}
+	if states["Rédiger la section Flux"] != "todo" {
+		t.Errorf("the part that was named is %q", states["Rédiger la section Flux"])
+	}
+}

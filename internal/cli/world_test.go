@@ -279,7 +279,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says what is in the way and how to take it away$`:                    "take them away first: task ",
 		`^it says nothing would ever be able to start$`:                           "nothing would ever be able to start",
 		`^it says a sub-task cannot carry sub-tasks$`:                             "sub-task cannot carry sub-tasks",
-		`^it says the task carries sub-tasks$`:                                    "carries sub-tasks",
 		`^it says a task cannot be moved behind itself$`:                          "cannot be moved behind itself",
 		`^it says a task is moved inside its own column$`:                         "moved inside its own column",
 		`^it says a sub-task is moved among its sisters$`:                         "moved among its sisters",
@@ -580,6 +579,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step("^`([^`]*)` still reports a task titled \"([^\"]*)\"$", func(line, title string) error {
 		w.Run(line)
 		return test.WantContains(w.heading(), title, "the heading")
+	})
+
+	sc.Step("^`([^`]*)` says there is no such task$", func(line string) error {
+		w.Run(line)
+		return test.WantContains(w.Out.Stderr, "there is no such task", "the reason")
 	})
 
 	// The indentation is what says a task hangs under another, so these read

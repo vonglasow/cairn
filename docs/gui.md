@@ -240,6 +240,26 @@ where it sits, which the terminal needs a glyph for.
 
 ## The form
 
+**A part of the work is reached in the form of the task it belongs to, and
+nowhere else.** The form carries a field holding one line per part — `#2 [x]
+Relire l'ADR` — which is where one is ticked, renamed, added and taken away.
+Saving settles them one at a time against what the task already carried: a line
+with a number is that part, a line without is one nobody had written down yet,
+and a number the field no longer carries is a part that has gone. Each is an
+add, an edit or a delete through the engine; the engine has no argument for a
+set of parts and should not grow one.
+
+The board forced it. Parts left the board when a board of 219 tasks drew 219
+things of which 170 were the work and the rest its pieces — and once off it, a
+task carrying one could neither be changed nor deleted, because the deletion was
+refused while a part was there and nothing was left that could remove the part.
+**Deleting a task now takes its parts with it**, which is the rule archiving
+already went by: a part goes off the board with the work it belongs to.
+
+A part carries a title and whether it is done, and nothing else. Measured on a
+store of 219 tasks, its 49 parts were done 47 times and todo twice, with no
+deadline, no label, no priority and no blocker among them.
+
 A modal dialog over the board, with *Save* and *Cancel*; `esc` cancels. One act
 in the trace per save.
 

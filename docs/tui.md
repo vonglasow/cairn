@@ -363,6 +363,15 @@ One form, for adding and for editing, behaving the same way both times.
 on paper and dropped: `cancel` would have meant nothing, and the same form could
 not have served to create something that does not exist yet.
 
+**The parts of a task are edited in its form**, in a field holding one line
+each — `#2 [x] Relire l'ADR` — and nowhere else. Saving settles them against
+what the task carried: a line with a number is that part, a line without is one
+nobody had written down yet, and a number the field no longer carries is a part
+that has gone. The window does the same thing in the same words.
+
+A part carries a title and whether it is done, and nothing else. Deleting a task
+takes its parts with it, by the rule archiving already went by.
+
 **A form somebody typed into is asked about before it goes.** `esc` on an
 untouched form closes it; `esc` on one with a change in it puts the question at
 the foot, and `esc` again gives the form back with everything still in it. The

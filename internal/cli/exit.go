@@ -43,7 +43,6 @@ var refusals = []error{
 	engine.ErrLabelSignAtCreation,
 	engine.ErrParentIsSelf,
 	engine.ErrParentIsSubTask,
-	engine.ErrCarriesSubTasks,
 	engine.ErrNoSuchObjective,
 	engine.ErrBlockerSignAtBirth,
 	engine.ErrBlockerRequired,

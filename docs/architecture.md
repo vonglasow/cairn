@@ -343,3 +343,26 @@ reads the source of every package that can refuse, and every `Err…` it declare
 has to be in the list or named in `notARefusal` beside the reason it is not. An
 error added anywhere now fails that test until somebody has said which kind of
 answer it is.
+
+## A part of the work is not work in its own right
+
+A sub-task is a line of a list its task owns: a title, and whether it is done.
+It keeps a number and a row of its own in the store — so the trace of it is the
+trace of anything else, and `task show 2` still answers — and it is reachable on
+neither board except in the form of the task it hangs under.
+
+Three rules follow, and they are one rule seen from three sides:
+
+- it stands in `todo` or `done` and nowhere else. A part being "blocked" is its
+  task being blocked; a part being "current" is its task being worked on;
+- it goes off the board with the work it belongs to, and it goes when that work
+  is deleted. A deletion that refused while a part was there could not be
+  carried out at all once the boards stopped drawing parts;
+- what it carries beyond a title and a tick is not asked for. Measured on a
+  store of 219 tasks: its 49 parts were done 47 times and todo twice, and
+  carried no deadline, no label, no priority, no objective and no blocker.
+
+The command line and the MCP server keep `--parent`, so an agent can still cut a
+task into pieces. What they do not have is a way to reach a part that is not a
+way to reach any task, which is the point: the constraint is on where a part is
+*edited*, not on what the engine will hold.

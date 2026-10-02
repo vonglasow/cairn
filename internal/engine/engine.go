@@ -43,7 +43,6 @@ var ErrNoSuchTask = store.ErrNoSuchTask
 var (
 	ErrParentIsSelf    = task.ErrParentIsSelf
 	ErrParentIsSubTask = task.ErrParentIsSubTask
-	ErrCarriesSubTasks = task.ErrCarriesSubTasks
 )
 
 // tasks is what the engine needs from whatever keeps its tasks. Declared here,
@@ -267,16 +266,20 @@ func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
 	return put, nil
 }
 
-// Delete removes the task carrying number, refusing while something still
-// hangs under it: what depends on the task would go with it, and a deletion
-// that takes more than the number typed is a deletion nobody asked for.
+// Delete removes the task carrying number, and everything hanging under it.
 func (e *Engine) Delete(number int) error {
 	hanging, err := e.tasks.Under(number)
 	if err != nil {
 		return err
 	}
-	if err := task.MayDelete(number, hanging); err != nil {
-		return err
+	// What hangs under it goes with it. A part is not work in its own right —
+	// it is a line of a list its task owns, reachable only in that task's own
+	// form — so a task refused while a part was there could not be deleted at
+	// all. It is the rule archiving already goes by.
+	for _, part := range hanging {
+		if err := e.Delete(factsOf(part).number); err != nil {
+			return err
+		}
 	}
 	// Which task was in focus is read before the deletion, since the store lets
 	// go of it on the way and there would be nothing left to ask afterwards.

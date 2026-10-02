@@ -30,6 +30,10 @@ type fake struct {
 	// refuseMove refuses the second half of a drop and nothing else, which is
 	// the one thing a real store cannot be asked for on demand.
 	refuseMove error
+	// refuseDelete refuses a deletion and nothing else, which is how the last
+	// of several writes in one gesture is reached: the ones before it have to
+	// go through for it to be asked for at all.
+	refuseDelete error
 
 	// acts is the history a detail is given when it asks for one.
 	acts []trace.Act
@@ -62,6 +66,9 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	}
 	if op.Thing == "task" && op.Verb == "move" && f.refuseMove != nil {
 		return engine.Answer{}, f.refuseMove
+	}
+	if op.Thing == "task" && op.Verb == "delete" && f.refuseDelete != nil {
+		return engine.Answer{}, f.refuseDelete
 	}
 	switch op.Thing + " " + op.Verb {
 	case "task list":

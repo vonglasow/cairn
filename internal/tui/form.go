@@ -219,7 +219,13 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(reading.TaskFields(held), b.formWidth(), b.formHeight(), b.skin)
+	// The parts come with it. They are reachable here and nowhere else: a part
+	// is off the board, so a task that carried one could neither be changed
+	// nor deleted once it did.
+	fields := append(reading.TaskFields(held), reading.Field{
+		Name: "parts", Value: reading.PartsSaid(reading.Hanging(b.snap.Cards, held.Number)), Long: true,
+	})
+	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin)
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()

@@ -97,9 +97,14 @@ func adding(tab Tab) Form {
 	return asOpened(Form{Adding: true, fields: reading.TaskFields(reading.Card{})})
 }
 
-// editing opens a form on what a task already carries.
-func editing(c reading.Card) Form {
-	return asOpened(Form{Number: c.Number, fields: reading.TaskFields(c)})
+// editing opens a form on what a task already carries, its parts included.
+// They are reachable here and nowhere else: a part is off the board, so a task
+// that carried one could neither be changed nor deleted once it did.
+func editing(c reading.Card, parts []reading.Card) Form {
+	fields := append(reading.TaskFields(c), reading.Field{
+		Name: "parts", Value: reading.PartsSaid(parts), Long: true,
+	})
+	return asOpened(Form{Number: c.Number, fields: fields})
 }
 
 // editingGoal is the same for an objective.
@@ -155,7 +160,8 @@ func (w Window) Types(text string) Window {
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
 	}
-	if w.screen != OnForm {
+	// An opened field is the form's field still, with the panel to itself.
+	if w.screen != OnForm && w.screen != OnWriting {
 		return w
 	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
@@ -240,11 +246,12 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	}
 	box := Over(w.width, w.height)
 	fields := w.form.Fields()
-	for i, field := range fields {
+	for i := range fields {
 		top := FieldTop(box, fields, i)
 		name, value := FieldRow(box, top)
 		// A field that wants several rows is answered anywhere in them.
-		name.H, value.H = lineHigh*RowsOf(field), lineHigh*RowsOf(field)
+		rows := RowsOf(box, fields, i)
+		name.H, value.H = lineHigh*rows, lineHigh*rows
 		if name.In(p) || value.In(p) {
 			return i, true
 		}
@@ -266,7 +273,7 @@ func (w Window) reaching(at int, p Point) int {
 	fields := w.form.Fields()
 	box := Over(w.width, w.height)
 	_, value := FieldRow(box, FieldTop(box, fields, at))
-	inside := Inside(Framed(value, RowsOf(fields[at])))
+	inside := Inside(Framed(value, RowsOf(box, fields, at)))
 	lines := Wrapped(fields[at].Value, room(inside))
 	return lines.Reaches(inside, p, perGlyph)
 }
@@ -295,7 +302,7 @@ func (w Window) Edit() Window {
 	}
 	for _, c := range w.snap.Cards {
 		if c.Number == w.chosen {
-			w.form, w.screen = editing(c), OnForm
+			w.form, w.screen = editing(c, reading.Hanging(w.snap.Cards, c.Number)), OnForm
 			return w
 		}
 	}
@@ -309,7 +316,10 @@ func (w Window) Form() Form { return w.form }
 // save, which is the whole reason this is a modal and not twelve fields edited
 // in place on a card.
 func (w Window) Save() Window {
-	if w.screen != OnForm {
+	// An opened field is the form still, so saving from inside it saves the
+	// form: a key that did nothing there would make somebody close the field
+	// to use it.
+	if w.screen != OnForm && w.screen != OnWriting {
 		return w
 	}
 	op, asked := w.saving()
@@ -317,8 +327,68 @@ func (w Window) Save() Window {
 		w.err = err
 		return w
 	}
+	if err := w.savingParts(); err != nil {
+		w.err = err
+		return w
+	}
 	w.screen, w.form = OnTheBoard, Form{}
 	return w.Look()
+}
+
+// savingParts settles what hangs under the task with what the form's own field
+// says: a line carrying a number is that part, named and ticked as it reads; a
+// line carrying none is a part nobody has written down yet; a number the field
+// no longer carries is a part that has gone.
+//
+// One operation each, through the engine like everything else. The engine has
+// no argument for a set of parts and should not grow one: what it is asked for
+// here is adding a task, changing a task and deleting a task, which is what
+// these are.
+func (w Window) savingParts() error {
+	if w.form.Adding {
+		return nil
+	}
+	said, holds := "", false
+	for _, field := range w.form.fields {
+		if field.Name == "parts" {
+			said, holds = field.Value, true
+		}
+	}
+	if !holds {
+		return nil
+	}
+	parent := strconv.Itoa(w.form.Number)
+	want := reading.PartsIn(said)
+	kept := map[int]bool{}
+	for _, part := range want {
+		state := string(domain.Todo)
+		if part.Done {
+			state = string(domain.Done)
+		}
+		if part.Number == 0 {
+			if _, err := w.work.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{
+				"title": part.Title, "parent": parent, "state": state,
+			}}); err != nil {
+				return err
+			}
+			continue
+		}
+		kept[part.Number] = true
+		if _, err := w.work.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(part.Number), "title": part.Title, "state": state,
+		}}); err != nil {
+			return err
+		}
+	}
+	for _, was := range reading.Hanging(w.snap.Cards, w.form.Number) {
+		if kept[was.Number] {
+			continue
+		}
+		if _, err := w.work.Ask(engine.TaskDelete, reading.Numbered(was.Number)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Cancel closes whatever is open and writes nothing. Whatever, and not only a
@@ -403,6 +473,12 @@ func (w Window) Choose(name string) Window {
 		// everything else somebody had already typed into it still in it.
 		if w.screen == OnChoosing {
 			return w.keeping()
+		}
+		// Nor is closing an opened field: what was written is the field's
+		// value already, and the form is still there underneath.
+		if w.screen == OnWriting {
+			w.screen = OnForm
+			return w
 		}
 		return w.Cancel()
 	case "search":

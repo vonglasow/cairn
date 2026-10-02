@@ -1548,22 +1548,23 @@ Feature: Tasks
       Then it succeeds
       And it lists task 2 titled "Write the tests"
 
-    @task-parent-delete-refused
-    Scenario: a task carrying sub-tasks is not deleted
+    @task-parent-delete-takes-the-parts
+    Scenario: deleting a task takes what hangs under it
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task delete 1 --yes`
-      Then it fails
-      And it says the task carries sub-tasks
-      And `cairn task show 1` still reports a task titled "Ship it"
-
-    @task-parent-delete-freed
-    Scenario: once nothing hangs under it, the task can be deleted
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I deleted task 2
       When I run `cairn task delete 1 --yes`
       Then it succeeds
+      And `cairn task show 1` says there is no such task
+      And `cairn task show 2` says there is no such task
+
+    @task-parent-delete-leaves-the-rest
+    Scenario: it takes its own parts and nothing else
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the tests" with the parent "1"
+      And I added a task titled "Buy a lamp"
+      When I run `cairn task delete 1 --yes`
+      Then it succeeds
+      And `cairn task show 3` still reports a task titled "Buy a lamp"
 
     @task-parent-survives
     Scenario: the link outlives the command that made it

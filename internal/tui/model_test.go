@@ -1797,3 +1797,33 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 		t.Fatalf("a reading coming back closed the detail: %v", after.screen)
 	}
 }
+
+// Settling the parts of a task is several writes in one gesture, and any of
+// them may be refused. What the store refuses is said rather than swallowed,
+// whichever of them it was.
+func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
+	for _, verb := range []string{"add", "delete"} {
+		t.Run("a part the store will not "+verb, func(t *testing.T) {
+			f := newFake()
+			f.cards = []reading.Card{
+				{Number: 1, Title: "Ship it", State: "todo"},
+				{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
+			}
+			b := hit(standing(f), "l", "i", "e")
+			if b.screen != OnForm {
+				t.Fatalf("the form did not open: %v", b.screen)
+			}
+			// Naming one and dropping the other, so both writes are asked for.
+			b.form = b.form.typedInto("parts", "[ ] Rédiger la section Flux")
+			f.refuseVerb = verb
+			cmd := b.saveTask(b.form)
+			if cmd == nil {
+				t.Fatal("saving asked for nothing")
+			}
+			looked, ok := cmd().(Looked)
+			if !ok || looked.Err == nil {
+				t.Fatalf("a part the store refused to %s answered %v", verb, looked)
+			}
+		})
+	}
+}

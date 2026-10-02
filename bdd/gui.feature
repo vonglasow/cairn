@@ -1317,6 +1317,46 @@ Feature: The desktop board
       And the field "description" names "Deux colonnes"
       And the field "description" names "et une bande"
 
+    @gui-enter-does-not-save
+    Scenario: enter opens the description rather than saving the form
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "description"
+      And I type "Deux colonnes"
+      And I press "enter"
+      And I type "et une bande"
+      Then the window is writing one field on the whole panel
+      And the field "description" names "Deux colonnes"
+      And the field "description" names "et une bande"
+      And task 1 is called "Write the spec"
+
+    @gui-an-opened-field-comes-back-with-what-was-written
+    Scenario: closing an opened field gives the form back, holding what was written
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "description"
+      And I press "enter"
+      And I type "Deux colonnes"
+      And I choose "Close"
+      Then the window is on the form
+      And the field "description" names "Deux colonnes"
+      And task 1 is called "Write the spec"
+
+    @gui-a-line-break-takes-the-caret-with-it
+    Scenario: the caret moves to the new line, before anything is typed on it
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "description"
+      And I type "Deux colonnes"
+      And I press "shift+enter"
+      Then the caret is on line 2 of the field "description"
+
     @gui-a-long-list-stays-inside-its-panel
     Scenario: a list of more tasks than fit stays inside the panel and scrolls
       Given I added a task titled "Write the spec"

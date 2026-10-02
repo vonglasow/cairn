@@ -165,6 +165,34 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 		drawChoosing(gtx, th, skin, w)
 	}
+	if w.Screen() == OnWriting {
+		drawWriting(gtx, th, skin, w)
+	}
+}
+
+// drawWriting is one long field with the whole panel: the room a description
+// of eighty lines needs, which a form's value column never had.
+//
+// The panel and not an overlay over the form, because there is nothing on the
+// form worth seeing while a text is being written — unlike the list, which is
+// a choice made against the rest of what was filled in.
+func drawWriting(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := Over(w.width, w.height)
+	drawPanel(gtx, th, skin, box, Heads(w))
+
+	frame := WritingOver(w.width, w.height)
+	fill(gtx, frame, skin.Back)
+	outline(gtx, frame, skin.Chosen)
+	writing(gtx, th, skin, Inside(frame), w.Form().Writing(), true, reads,
+		WritingRows(w.width, w.height), 0)
+
+	// The bar is drawn whether or not there is anything to scroll, by the rule
+	// every other bar here goes by.
+	track := WritingBar(w.width, w.height)
+	fill(gtx, track, skin.Back)
+	fill(gtx, Thumb(track, len(w.WrittenLines()), WritingRows(w.width, w.height), w.WrittenFrom()), skin.Edge)
+
+	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // TickedMark says an objective is in. A third mark in a window that took two on
@@ -589,7 +617,7 @@ func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, said s
 func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written) {
 	field := fields[i]
 	name, value := FieldRow(box, FieldTop(box, fields, i))
-	frame := Framed(value, RowsOf(field))
+	frame := Framed(value, RowsOf(box, fields, i))
 	ink, edge := skin.Faint, skin.Edge
 	if lit {
 		ink, edge = skin.Chosen, skin.Chosen
@@ -597,7 +625,7 @@ func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	say(gtx, th, ink, name, field.Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), said, carets, reads, RowsOf(field), 0)
+	writing(gtx, th, skin, Inside(frame), said, carets, reads, RowsOf(box, fields, i), 0)
 }
 
 // drawSaying is the description on an open task: read rather than written, so
