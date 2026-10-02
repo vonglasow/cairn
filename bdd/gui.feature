@@ -1318,7 +1318,7 @@ Feature: The desktop board
       And the field "description" names "et une bande"
 
     @gui-enter-does-not-save
-    Scenario: enter opens the description rather than saving the form
+    Scenario: enter writes a line in the description, and saves nothing
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -1327,23 +1327,21 @@ Feature: The desktop board
       And I type "Deux colonnes"
       And I press "enter"
       And I type "et une bande"
-      Then the window is writing one field on the whole panel
+      Then the window is on the form
+      And the field "description" is written on more than one line
       And the field "description" names "Deux colonnes"
       And the field "description" names "et une bande"
       And task 1 is called "Write the spec"
 
-    @gui-an-opened-field-comes-back-with-what-was-written
-    Scenario: closing an opened field gives the form back, holding what was written
+    @gui-enter-moves-on-from-a-one-line-field
+    Scenario: enter on a field of one line moves on to the next
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "description"
+      And I click the field "title"
       And I press "enter"
-      And I type "Deux colonnes"
-      And I choose "Close"
-      Then the window is on the form
-      And the field "description" names "Deux colonnes"
+      Then the keyboard is on "description"
       And task 1 is called "Write the spec"
 
     @gui-a-line-break-takes-the-caret-with-it

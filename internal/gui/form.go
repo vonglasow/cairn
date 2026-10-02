@@ -160,12 +160,11 @@ func (w Window) Types(text string) Window {
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
 	}
-	// An opened field is the form's field still, with the panel to itself.
-	if w.screen != OnForm && w.screen != OnWriting {
+	if w.screen != OnForm {
 		return w
 	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
-	return w
+	return w.inSightOfTheCaret()
 }
 
 // On puts the keyboard on a field by name, which is what a click does and what
@@ -316,10 +315,7 @@ func (w Window) Form() Form { return w.form }
 // save, which is the whole reason this is a modal and not twelve fields edited
 // in place on a card.
 func (w Window) Save() Window {
-	// An opened field is the form still, so saving from inside it saves the
-	// form: a key that did nothing there would make somebody close the field
-	// to use it.
-	if w.screen != OnForm && w.screen != OnWriting {
+	if w.screen != OnForm {
 		return w
 	}
 	op, asked := w.saving()
@@ -473,12 +469,6 @@ func (w Window) Choose(name string) Window {
 		// everything else somebody had already typed into it still in it.
 		if w.screen == OnChoosing {
 			return w.keeping()
-		}
-		// Nor is closing an opened field: what was written is the field's
-		// value already, and the form is still there underneath.
-		if w.screen == OnWriting {
-			w.screen = OnForm
-			return w
 		}
 		return w.Cancel()
 	case "search":

@@ -881,12 +881,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the window is writing one field on the whole panel$`, func() error {
-		if w.w.Screen() != OnWriting {
-			return fmt.Errorf("the window is on %v, not writing a field", w.w.Screen())
-		}
-		return nil
-	})
 	sc.Then(`^the window is on the form$`, func() error {
 		if w.w.Screen() != OnForm {
 			return fmt.Errorf("the window is on %v, not the form", w.w.Screen())

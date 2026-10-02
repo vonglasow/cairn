@@ -748,65 +748,16 @@ func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
 		t.Fatalf("the description reads %q", said)
 	}
-	// A field of one line is not a place for a break.
+	// A field of one line is not a place for a break: ⇧⏎ there moves on, the
+	// way ⏎ does, and writes nothing into what it leaves.
 	w.form = w.form.onto(0)
-	before := w.Form().Writing().Reads()
-	if after := w.Key("shift+enter").Form().Writing().Reads(); after != before {
-		t.Fatalf("⇧⏎ wrote %q into a one-line field", after)
+	before := w.Form().ValueOf("title")
+	if after := w.Key("shift+enter"); after.Form().ValueOf("title") != before || after.Form().On() != 1 {
+		t.Fatalf("⇧⏎ on the title left it %q and moved to field %d",
+			after.Form().ValueOf("title"), after.Form().On())
 	}
 }
 
-// A long field opens on the whole panel, the way a task opens on the board:
-// enter goes in, esc comes back with what was written, and what it holds is
-// the field's own value throughout.
-func TestALongFieldOpensOnThePanel(t *testing.T) {
-	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
-		if field.Name == "description" {
-			w.form = w.form.onto(i)
-		}
-	}
-	// Enter opens it; a field of one line has nothing to open.
-	w = w.Key("enter")
-	if w.Screen() != OnWriting {
-		t.Fatalf("enter on the description left the window on %v", w.Screen())
-	}
-	w = w.Types("Deux colonnes").Key("enter").Types("et une bande")
-	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
-		t.Fatalf("what was written reads %q", said)
-	}
-	w = w.Key("esc")
-	if w.Screen() != OnForm {
-		t.Fatalf("esc left the window on %v", w.Screen())
-	}
-	if said := w.Form().ValueOf("description"); said != "Deux colonnes\net une bande" {
-		t.Fatalf("the field came back holding %q", said)
-	}
-	if len(f.asked) != 0 {
-		t.Fatalf("opening and closing a field wrote to the store: %v", f.asked)
-	}
-	// And saving from inside it saves the form.
-	w = w.Key("enter").Key("cmd+enter")
-	if w.Screen() == OnWriting {
-		t.Fatal("⌘⏎ inside an opened field did not save")
-	}
-}
-
-// A field of one line has nothing to open, so enter there does nothing at all.
-func TestAShortFieldDoesNotOpen(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	w.form = w.form.onto(0)
-	if after := w.Key("enter"); after.Screen() != OnForm {
-		t.Fatalf("enter on a one-line field left the window on %v", after.Screen())
-	}
-}
-
-// The parts of a task are reachable in the form of the task they belong to,
-// and nowhere else: they are off the board, so a task carrying them could
-// neither be changed nor deleted once they were.
 func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -875,20 +826,175 @@ func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 	}
 }
 
-// The heading of an opened field says which task and which field, so a panel
-// holding nothing but text still says what the text is.
-func TestAnOpenedFieldSaysWhatItIs(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 7, Title: "Write the spec", State: "todo"})
+// One rule for a form, on both surfaces: enter writes a line where a line can
+// be written and moves on everywhere else, and it never saves. Saving is a
+// chord of its own, so it cannot happen by reaching for the key that breaks a
+// line.
+func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+
+	// A one-line field: on to the next one.
+	w.form = w.form.onto(0)
+	if after := w.Key("enter"); after.Form().On() != 1 || after.Screen() != OnForm {
+		t.Fatalf("enter on the title went to field %d on %v", after.Form().On(), after.Screen())
+	}
+	// The description: a line, and the form stays where it is.
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.Types("Deux colonnes").Key("enter").Types("et une bande")
+	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
+		t.Fatalf("the description reads %q", said)
+	}
+	if w.Screen() != OnForm || len(f.asked) != 0 {
+		t.Fatalf("enter left the form on %v having asked %v", w.Screen(), f.asked)
+	}
+	// Both chords save, from anywhere in it.
+	for _, chord := range []string{"cmd+enter", "cmd+s"} {
+		if after := w.Key(chord); after.Screen() == OnForm {
+			t.Errorf("%s did not save the form", chord)
+		}
+	}
+}
+
+// Inside the description the arrows walk its lines, so every one of them can
+// be reached — down used to leave for the next field, and the only way through
+// a long text was a character at a time. Tab is what leaves.
+func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: "one\ntwo\nthree"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	at := -1
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			at = i
+		}
+	}
+	w.form = w.form.onto(at)
+	w.form = w.form.Writes(w.form.Writing().CaretAt(0))
+	w = w.Key("down")
+	if w.Form().On() != at {
+		t.Fatalf("down left the description for field %d", w.Form().On())
+	}
+	if got := w.Form().Writing().At; got != 4 {
+		t.Fatalf("down from the start of the first line put the caret at %d, want 4", got)
+	}
+	if got := w.Key("down").Form().Writing().At; got != 8 {
+		t.Fatalf("down again put the caret at %d, want 8", got)
+	}
+	if got := w.Key("down").Key("up").Form().Writing().At; got != 4 {
+		t.Fatalf("up from the last line put the caret at %d, want 4", got)
+	}
+	if got := w.Key("tab").Form().On(); got != at+1 {
+		t.Fatalf("tab out of the description went to field %d", got)
+	}
+	// Past the last line it stays where it is: leaving is what tab is for.
+	if got := w.Key("down").Key("down").Key("down").Form().Writing().At; got != 8 {
+		t.Fatalf("down past the last line put the caret at %d, want it kept at 8", got)
+	}
+	// Into a shorter line, as far in as that line goes and no further: four
+	// letters into "three", up onto "two", lands at the end of "two".
+	w.form = w.form.Writes(w.form.Writing().CaretAt(12))
+	if got := w.Key("up").Form().Writing().At; got != 7 {
+		t.Fatalf("up from four letters into the last line put the caret at %d, want 7", got)
+	}
+	// And as far in as it was, onto a line long enough to take it.
+	w.form = w.form.Writes(w.form.Writing().CaretAt(6))
+	if got := w.Key("down").Form().Writing().At; got != 10 {
+		t.Fatalf("down from two letters into the second line put the caret at %d, want 10", got)
+	}
+}
+
+// The description in the form scrolls, carries the bar the detail's carries,
+// and its end can be reached — the same box on both screens.
+func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
 		if field.Name == "description" {
 			w.form = w.form.onto(i)
 		}
 	}
-	head := Heads(w.Key("enter"))
-	for _, said := range []string{"task 7", "description"} {
-		if !strings.Contains(head, said) {
-			t.Errorf("an opened field is headed %q, which says nothing of %q", head, said)
+	frame, bar, lines, rows, ok := w.sayingOn()
+	if !ok {
+		t.Fatal("the description in the form has no box of its own")
+	}
+	if bar.X < frame.X+frame.W {
+		t.Fatalf("the bar at %d sits over the text, which ends at %d", bar.X, frame.X+frame.W)
+	}
+	// The wheel takes it to the end, and the end is the text's last line.
+	for range len(lines.Said) {
+		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
+	}
+	if last := lines.Said[min(len(lines.Said)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "LA FIN") {
+		t.Fatalf("scrolled to the end, the last line in sight is %q", last)
+	}
+	// And the wheel over it does not move the keyboard off it.
+	if w.Form().Fields()[w.Form().On()].Name != "description" {
+		t.Fatal("scrolling the description put the keyboard somewhere else")
+	}
+}
+
+// What is in sight follows the caret: arriving at the description shows where
+// the caret is, and typing after the wheel moved the box away brings it back.
+// The wheel is left alone otherwise — that is what reading back through a text
+// is.
+func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: text})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	w.form = w.form.onto(0)
+	w = w.Key("tab") // onto the description, with the caret at its end
+	if w.Form().Fields()[w.Form().On()].Name != "description" {
+		t.Fatalf("tab went to %q", w.Form().Fields()[w.Form().On()].Name)
+	}
+	_, _, lines, rows, _ := w.sayingOn()
+	end := len(lines.Said) - rows
+	if w.saying != end {
+		t.Fatalf("arriving at the description shows line %d, want the caret's at %d", w.saying, end)
+	}
+	frame, _, _, _, _ := w.sayingOn()
+	for range len(lines.Said) {
+		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, -lineHigh)
+	}
+	if w.saying != 0 {
+		t.Fatalf("the wheel left the description at %d, want its beginning", w.saying)
+	}
+	if w = w.Types("x"); w.saying != end {
+		t.Fatalf("typing at the end left the description at %d, want %d", w.saying, end)
+	}
+}
+
+// The bar beside the description in the form is pulled the way the detail's
+// is, and a press on it is not a press in the text.
+func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: text})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
 		}
+	}
+	w.form = w.form.Writes(w.form.Writing().CaretAt(0))
+	w = w.inSightOfTheCaret()
+	_, bar, lines, rows, _ := w.sayingOn()
+	before := w.Form().Writing().At
+	w = w.PressAt(Point{X: bar.X + bar.W/2, Y: bar.Y + 1}).
+		MoveTo(Point{X: bar.X + bar.W/2, Y: bar.Y + bar.H - 1})
+	if w.saying != len(lines.Said)-rows {
+		t.Fatalf("pulling the bar to the bottom left the description at %d, want %d",
+			w.saying, len(lines.Said)-rows)
+	}
+	if w.Form().Writing().At != before {
+		t.Fatalf("a press on the bar moved the caret from %d to %d", before, w.Form().Writing().At)
 	}
 }

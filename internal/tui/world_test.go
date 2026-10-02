@@ -19,6 +19,7 @@ import (
 
 	"cairn/internal/engine"
 	"cairn/internal/reading"
+	"cairn/internal/task"
 )
 
 // stood is the day every scenario is run on, so a deadline reads the same
@@ -223,6 +224,20 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.When(`^I open the board$`, func() error { w.open(); return nil })
 	sc.Step(`^I press (".*")$`, w.pressMany)
+	sc.Step(`^I press "([^"]*)" (\d+) times$`, func(name string, times int) error {
+		for range times {
+			w.press(name)
+		}
+		return nil
+	})
+	sc.Step(`^I added a task titled "([^"]*)" with a description of (\d+) lines ending "([^"]*)"$`,
+		func(title string, lines int, end string) error {
+			said := make([]string, 0, lines)
+			for i := range lines - 1 {
+				said = append(said, fmt.Sprintf("line %d of a description long enough to scroll", i+1))
+			}
+			return w.addTask(title, "", strings.Join(append(said, end), "\n"), 0)
+		})
 	sc.Step(`^I type "([^"]*)"$`, w.typeIn)
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
@@ -665,5 +680,196 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	}
 	if states["Rédiger la section Flux"] != "todo" {
 		t.Errorf("the part that was named is %q", states["Rédiger la section Flux"])
+	}
+}
+
+// One rule for a form on both boards: enter writes a line in the description
+// and moves on everywhere else, the arrows walk the description's lines, tab
+// leaves it, and ^S saves from anywhere — enter never does.
+func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	w.press("tab") // onto the description
+	for _, r := range "un" {
+		w.press(string(r))
+	}
+	w.press("enter")
+	for _, r := range "deux" {
+		w.press(string(r))
+	}
+	if said := w.b.form.valueOf("description"); said != "un\ndeux" {
+		t.Fatalf("the description reads %q", said)
+	}
+	if w.b.screen != OnForm {
+		t.Fatalf("enter in the description left the form on %v", w.b.screen)
+	}
+	// Up stays inside the description, on its first line.
+	w.press("up")
+	w.press("x")
+	if said := w.b.form.valueOf("description"); !strings.Contains(said, "x") || !strings.Contains(said, "\n") {
+		t.Fatalf("after up and a letter the description reads %q", said)
+	}
+	w.press("ctrl+s")
+	if err := w.lookAgain(); err != nil {
+		t.Fatal(err)
+	}
+	if w.b.screen == OnForm {
+		t.Fatal("^S did not save the form")
+	}
+	found, err := w.other.Show(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(task.OfTask(found).Description, "deux") {
+		t.Fatalf("what was saved reads %q", task.OfTask(found).Description)
+	}
+}
+
+// What was typed into the form is what is saved, every field of it. Only the
+// title was: the rest was read back from what the form had opened with, so a
+// label, a date or a description changed on the board was dropped on save
+// without a word — since the board first had a form.
+func TestTheFormSavesEveryFieldThatWasTyped(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	for field, value := range map[string]string{
+		"labels":      "backend",
+		"deadline":    "2026-10-09",
+		"description": "deux colonnes",
+	} {
+		w.b.form = w.b.form.typedInto(field, value)
+	}
+	model, cmd := w.b.save()
+	w.b = model.(Board)
+	w.settle(cmd)
+	found, err := w.other.Show(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	told := task.OfTask(found)
+	if len(told.Labels) != 1 || told.Labels[0] != "backend" {
+		t.Errorf("the labels saved are %v", told.Labels)
+	}
+	if told.Deadline != "2026-10-09" {
+		t.Errorf("the deadline saved is %q", told.Deadline)
+	}
+	if told.Description != "deux colonnes" {
+		t.Errorf("the description saved is %q", told.Description)
+	}
+}
+
+// The description on an open task is a box that scrolls, with its bar, the way
+// the window's is — it used to be drawn whole, and a long one ran off the
+// bottom of the terminal with everything under it. ^D and ^U walk it, half a
+// box at a time, and the last line can be reached.
+func TestTheDetailsDescriptionScrollsToItsEnd(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 40) + "LA FIN"
+	if err := w.addTask("Write the spec", "", text, 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("enter")
+	drawn := w.b.Draw()
+	if got := strings.Count(drawn, "\n") + 1; got > w.high {
+		t.Fatalf("the detail is %d lines tall in a terminal of %d", got, w.high)
+	}
+	if !strings.Contains(drawn, Track) && !strings.Contains(drawn, Thumb) {
+		t.Fatal("the description carries no bar")
+	}
+	if strings.Contains(drawn, "LA FIN") {
+		t.Fatal("this proves nothing: the whole description fits")
+	}
+	for range 60 {
+		w.press("ctrl+d")
+	}
+	if !strings.Contains(w.b.Draw(), "LA FIN") {
+		t.Fatal("^D to the end does not bring the last line into sight")
+	}
+	for range 60 {
+		w.press("ctrl+u")
+	}
+	if !strings.Contains(w.b.Draw(), "une phrase") {
+		t.Fatal("^U back up does not bring the beginning into sight")
+	}
+}
+
+// The description on an open task, to the line: how many rows its box holds in
+// a terminal of a known height, how far ^D and ^U move it, and where both ends
+// stop. "The end can be reached" says nothing about a box one line too short.
+func TestTheDetailsDescriptionToTheLine(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	lines := make([]string, 80)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("line %d", i+1)
+	}
+	if err := w.addTask("Write the spec", "", strings.Join(lines, "\n"), 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("enter")
+	held, _ := w.b.held()
+	laid, rows := w.b.saidOn(held, w.b.detailWidth(), nil)
+	// Forty-four rows, less the seven around the detail and the three of the
+	// panel's own frame and name.
+	if rows != 34 {
+		t.Fatalf("the description's box holds %d rows in a terminal of %d, want 34", rows, w.high)
+	}
+	if len(laid) != 80 {
+		t.Fatalf("eighty short lines laid out as %d", len(laid))
+	}
+	w.press("ctrl+d")
+	if w.b.saying != 17 {
+		t.Fatalf("^D moved the description to %d, want half its box at 17", w.b.saying)
+	}
+	w.press("ctrl+u")
+	if w.b.saying != 0 {
+		t.Fatalf("^U moved it back to %d, want 0", w.b.saying)
+	}
+	for range 10 {
+		w.press("ctrl+d")
+	}
+	if w.b.saying != 46 {
+		t.Fatalf("^D to the end stopped at %d, want the last box of it at 46", w.b.saying)
+	}
+	w.b.saying = 1000
+	if got := w.b.scrolledSaying(held, laid, rows); got != 46 {
+		t.Fatalf("a scroll past the end reads as %d, want 46", got)
+	}
+}
+
+// The panels under the description take their rows out of its box: a task with
+// parts shows fewer lines of its description than one without, by exactly the
+// height of what is under it.
+func TestThePanelsUnderTheDescriptionTakeTheirRows(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "une description", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	held, _ := w.b.held()
+	_, alone := w.b.saidOn(held, w.b.detailWidth(), nil)
+	under := []string{"one\ntwo\nthree\nfour"}
+	_, shared := w.b.saidOn(held, w.b.detailWidth(), under)
+	if alone-shared != 4 {
+		t.Fatalf("four rows under the description took %d of its own", alone-shared)
 	}
 }

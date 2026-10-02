@@ -26,15 +26,15 @@
  │   x           off the board, or back on     │ │   ⚑            a label                      │
  │   esc         back to normal                │ │   ↳            what is in the way           │
  │                                             │ │   2d          a deadline close by           │
- │ EVERYWHERE                                  │ │   −3d         one that has passed           │
- │   ?           help                          │ │   ╔═╗         the task in focus             │
- ╰─────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
-
-
-
-
-
-
-
+ │ DETAIL — one task, open                     │ │   −3d         one that has passed           │
+ │   ^D ^U       walk its description, half a  │ │   ╔═╗         the task in focus             │
+ │ box at a time                               │ ╰─────────────────────────────────────────────╯
+ │                                             │
+ │ FORM — the same keys as the window          │
+ │   ⏎           a new line in the             │
+ │ description, the next field anywhere else   │
+ │   ↑↓          the description's lines — tab │
+ │ leaves it                                   │
+ │   tab ⇧tab    next / previous field         │
 
  ↓↑ read on   esc close

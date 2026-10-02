@@ -6,8 +6,8 @@
  │   title                                          deadline                                      │
  │   > Write the spec                               > 2026-09-03                                  │
  │                                                                                                │
- │   description                                    estimate                                      │
- │   The client wants two columns, not three.       >                                             │
+ │   description · 1 line                           estimate                                      │
+ │     1 The client wants two columns, not three.   >                                             │
  │                                                                                                │
  │                                                  time spent                                    │
  │                                                  >                                             │
@@ -18,9 +18,9 @@
  │   high                                           objectives                                    │
  │                                                  >                                             │
  │   labels                                                                                       │
- │   > spec                                         parts                                         │
- │                                                  #11 [x] Draft the columns                     │
- │   blockers                                       #12 [ ] Get the client's nod                  │
+ │   > spec                                         parts · 2 lines                               │
+ │                                                    1 #11 [x] Draft the columns                 │
+ │   blockers                                         2 #12 [ ] Get the client's nod              │
  │   >                                                                                            │
  │                                                                                                │
  │   because                                          save     cancel                             │
@@ -28,4 +28,4 @@
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- ↓↑ field   ←→ change   ⏎ next   ? help   esc cancel
+ ⇥ field   ←→ change   ⏎ next · a line   ^S save   ? help   esc cancel

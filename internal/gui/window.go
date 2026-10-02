@@ -40,11 +40,6 @@ const (
 	// OnHelp is what everything does, which is the one thing here that has to
 	// be read rather than pointed at.
 	OnHelp
-	// OnWriting is one long field, opened on the whole panel. Its own screen
-	// and not a state of the form, because a field that has the panel is read
-	// and written the way nothing in a value column can be: a description of
-	// eighty lines had thirty-nine columns and four rows to be read through.
-	OnWriting
 	// OnChoosing is the list of objectives a task may serve, open over the
 	// form. Its own screen and not a state of the form, because what a key
 	// does here is not what it does in a field: space ticks, and enter — which
@@ -416,39 +411,55 @@ func (w Window) settledChoosing(want int) int {
 }
 
 // Saying is how far the description on an open task has been scrolled.
-func (w Window) Saying() int { return w.saying }
-
-// WrittenLines is the opened field as it is laid out on the panel, which is
-// what its bar is sized against.
-func (w Window) WrittenLines() []string {
-	return Wrapped(w.Form().Writing().Reads(), room(Inside(WritingOver(w.width, w.height)))).Said
-}
-
-// WrittenFrom is the first line of the opened field in sight. There is a caret
-// here, so what is in sight is whatever the caret is on — the bar says where
-// that is rather than inventing a scroll of its own.
-func (w Window) WrittenFrom() int {
-	rows := WritingRows(w.width, w.height)
-	lines := Wrapped(w.Form().Writing().Reads(), room(Inside(WritingOver(w.width, w.height))))
-	line, _ := lines.At(w.Form().Writing().At)
-	return lines.Window(rows, line)
-}
+func (w Window) Saying() int { return w.settledSaying(w.saying) }
 
 // SaidLines is the description as it is laid out in its box, and SaidRows how
 // many of them are in sight.
 func (w Window) SaidLines() []string {
-	at, long := LongField(w.Shown())
-	if !long {
-		return nil
+	_, _, lines, _, _ := w.sayingOn()
+	return lines.Said
+}
+
+// sayingOn is the long field the window is showing a scroll of — the
+// description on an open task, or the long field the keyboard is on in the
+// form — as one thing: its frame, its bar, the lines it is laid out on, and how
+// many of them are in sight.
+//
+// One answer for both screens, and the lines are laid out on the width they
+// are drawn on. The end of the scroll used to be worked out from the text laid
+// out on a width a few points wider than the one it was drawn on, so what was
+// drawn ran longer than what was counted and the last lines of a long
+// description could never be brought into the box.
+func (w Window) sayingOn() (frame, bar Box, lines Lines, rows int, ok bool) {
+	box := Over(w.width, w.height)
+	switch w.screen {
+	case OnDetail:
+		fields := w.Shown()
+		at, long := LongField(fields)
+		if !long {
+			return Box{}, Box{}, Lines{}, 0, false
+		}
+		frame, bar = SayingBox(box, fields, at), SayingBar(box, fields, at)
+		rows = LongRows(box, fields)
+		return frame, bar, Wrapped(w.FieldSays(fields[at]), room(Inside(frame))), rows, true
+	case OnForm:
+		fields := w.form.Fields()
+		at := w.form.On()
+		if !fields[at].Long {
+			return Box{}, Box{}, Lines{}, 0, false
+		}
+		_, value := FieldRow(box, FieldTop(box, fields, at))
+		rows = RowsOf(box, fields, at)
+		frame, bar = Saying(value, rows)
+		return frame, bar, Wrapped(w.form.Writing().Reads(), room(Inside(frame))), rows, true
 	}
-	fields := w.Shown()
-	return Wrapped(w.FieldSays(fields[at]), room(SayingBox(Over(w.width, w.height), fields, at))).Said
+	return Box{}, Box{}, Lines{}, 0, false
 }
 
 // SaidRows is how many lines of the description its box holds.
 func (w Window) SaidRows() int {
-	fields := w.Shown()
-	return LongRows(Over(w.width, w.height), fields)
+	_, _, _, rows, _ := w.sayingOn()
+	return rows
 }
 
 func (w Window) settledSaying(want int) int {
@@ -838,9 +849,6 @@ func HeadsOn(w Window, screen Screen) string {
 			what = "a parent for"
 		}
 		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
-	case OnWriting:
-		fields := w.form.Fields()
-		return headed(w.formKind()+" "+strconv.Itoa(w.form.Number), fields[w.form.On()].Name)
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -980,6 +988,7 @@ func (w Window) Helping() []reading.Field {
 		{Name: "wheel", Value: "scroll what is under the pointer — a column, the objectives, a history"},
 		{Name: "↑↓ under a task", Value: "walk what hangs under it — space marks one done, or not"},
 		{Name: "wheel on a history", Value: "scroll it — the bar beside it can be pulled too"},
+		{Name: "^D ^U on an open task", Value: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
 		{Name: "d", Value: "delete what is chosen — it asks first"},
@@ -989,9 +998,9 @@ func (w Window) Helping() []reading.Field {
 		{Name: "⇧←→↑↓", Value: "move what is chosen — sideways changes its column"},
 		{Name: "⏎ on the board", Value: "open what is chosen"},
 		{Name: "⏎ on a question", Value: "agree to it"},
-		{Name: "⏎ on a long field", Value: "open it on the whole panel — esc comes back with what was written"},
-		{Name: "⏎ in an opened field", Value: "a new line · ⇧⏎ breaks one without opening it"},
-		{Name: "⌘⏎ in a form", Value: "save, wherever the keyboard is — ⏎ does not"},
+		{Name: "⏎ in a form", Value: "a new line in the description, the next field anywhere else — it never saves"},
+		{Name: "↑↓ in the description", Value: "walk its lines — tab leaves it, and the wheel and the bar scroll it"},
+		{Name: "⌘⏎ or ⌘S in a form", Value: "save, wherever the keyboard is"},
 		{Name: "⌘A ⌘C ⌘X ⌘V", Value: "hold all of a field, copy, cut, paste"},
 		{Name: "⇧←→ in a field", Value: "hold a run of text — dragging across it does the same"},
 		{Name: "⏎ in a list", Value: "take the row · ⌘⏎ keeps the list · j and k walk it"},
@@ -1000,9 +1009,8 @@ func (w Window) Helping() []reading.Field {
 		{Name: "/ or ⌘F", Value: "search — it reaches the description and the reason"},
 		{Name: "⏎ in a search", Value: "keep what it narrowed and go back to the board"},
 		{Name: "tab", Value: "the other page — shift+tab the one before"},
-		{Name: "tab, ↑↓ in a form", Value: "walk its fields"},
+		{Name: "tab, ↑↓ in a form", Value: "walk its fields — inside the description ↑↓ walk its lines"},
 		{Name: "←→", Value: "change a field that has a closed set"},
-		{Name: "⏎", Value: "save the form"},
 		{Name: "esc", Value: "back out of whatever is open"},
 	}
 }
@@ -1039,11 +1047,6 @@ func (w Window) Offers() []string {
 			return []string{"Done", "Edit", "Close"}
 		}
 		return []string{"Edit", "Close"}
-	case OnWriting:
-		// Close and not Cancel: going back to the form keeps what was
-		// written, and a word that said otherwise would be a word nobody
-		// trusts.
-		return []string{"Save", "Close"}
 	case OnAsking:
 		return []string{"Agree", "Cancel"}
 	case OnHelp:
@@ -1258,10 +1261,17 @@ func (w Window) PressAt(p Point) Window {
 		return w
 	}
 	if w.screen == OnForm {
+		// The bar beside the long field the keyboard is on is taken hold of,
+		// and a press on it is not a press in the text.
+		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
+			w.draggingSaying = true
+			return w
+		}
 		if at, on := w.fieldAt(p); on {
 			w.form = w.form.onto(at)
 			w.form = w.form.Writes(w.form.Writing().CaretAt(w.reaching(at, p)))
 			w.holdingText = true
+			return w.inSightOfTheCaret()
 		}
 		return w
 	}
@@ -1293,9 +1303,8 @@ func (w Window) MoveTo(p Point) Window {
 		return w
 	}
 	if w.draggingSaying {
-		at, _ := LongField(w.Shown())
-		track := SayingBar(Over(w.width, w.height), w.Shown(), at)
-		w.saying = w.settledSaying(Reached(track, len(w.SaidLines()), w.SaidRows(), p))
+		_, track, lines, rows, _ := w.sayingOn()
+		w.saying = w.settledSaying(Reached(track, len(lines.Said), rows, p))
 		return w
 	}
 	if w.draggingChoosing {
@@ -1384,8 +1393,13 @@ func turning(spare, by int) (lines, left int) {
 // Scroll moves the column under the pointer, and no other.
 func (w Window) Scroll(p Point, by int) Window {
 	// A panel stops the wheel. Over a form, the help or the question it used to
-	// reach the board behind, and scrolled something nobody could see.
-	if w.screen == OnForm || w.screen == OnHelp || w.screen == OnAsking {
+	// reach the board behind, and scrolled something nobody could see. What
+	// it reaches on a form is the long field the keyboard is on, the way it
+	// reaches the description on an open task.
+	if w.screen == OnForm {
+		return w.scrollingSaying(p, by)
+	}
+	if w.screen == OnHelp || w.screen == OnAsking {
 		return w
 	}
 	if w.screen == OnChoosing {
@@ -1406,11 +1420,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		if ServingBox(Over(w.width, w.height), w.Shown()).In(p) {
 			w.serving = w.settledServing(w.serving + by)
 		}
-		if at, long := LongField(w.Shown()); long && SayingBox(Over(w.width, w.height), w.Shown(), at).In(p) {
-			lines, left := turning(w.spareSaying, by)
-			w.saying, w.spareSaying = w.settledSaying(w.saying+lines), left
-		}
-		return w
+		return w.scrollingSaying(p, by)
 	}
 	l := w.Layout()
 	if w.tab == Objectives {
@@ -1463,6 +1473,20 @@ func (w Window) Key(name string) Window {
 		w.screen, w.question = OnAsking, aboutSweeping
 		return w
 	}
+	// Half a box at a time through the description on an open task: the
+	// terminal board's keys for it, taken here too so the same fingers work.
+	if w.screen == OnDetail && (name == "cmd+d" || name == "cmd+u") {
+		_, _, _, rows, ok := w.sayingOn()
+		if !ok {
+			return w
+		}
+		by := max(1, rows/2)
+		if name == "cmd+u" {
+			by = -by
+		}
+		w.saying = w.settledSaying(w.saying + by)
+		return w
+	}
 	// The two spellings of a key the bar has no room to write twice.
 	switch name {
 	case "ctrl+n":
@@ -1478,11 +1502,8 @@ func (w Window) Key(name string) Window {
 	if w.screen == OnChoosing {
 		return w.inChoosing(name)
 	}
-	if w.screen == OnWriting {
-		return w.inWriting(name)
-	}
 	if w.screen == OnForm {
-		return w.inForm(name)
+		return w.inForm(name).inSightOfTheCaret()
 	}
 	if w.screen == OnTheBoard {
 		switch name {
@@ -1555,31 +1576,29 @@ func (w Window) Key(name string) Window {
 	return w
 }
 
-// inWriting is what a key does while one long field has the whole panel. It
-// is the form's own text editing, less the keys that move between fields:
-// there is one field here, and enter is a line break because there is nothing
-// left for it to open.
-func (w Window) inWriting(name string) Window {
-	switch name {
-	case "enter", "return", "shift+enter", "shift+return":
-		w.form = w.form.Writes(w.form.Writing().Types("\n"))
-		return w
-	case "esc", "tab", "shift+tab", "up", "down":
-		w.screen = OnForm
-		return w
-	}
-	return w.inForm(name)
-}
-
 // inForm is what a key does while the form has the window. Everything here is
 // about one field, because a form is a column of fields and the keyboard is on
 // one of them.
 func (w Window) inForm(name string) Window {
+	long := w.form.Fields()[w.form.On()].Long
 	switch name {
-	case "tab", "down":
+	case "tab":
 		w.form = w.form.onto(w.form.On() + 1)
-	case "shift+tab", "up":
+	case "shift+tab":
 		w.form = w.form.onto(w.form.On() - 1)
+	case "down", "up":
+		// Inside the description the arrows walk its lines, so every one of
+		// them can be reached. Down used to leave for the next field, and the
+		// only way through a long text was a character at a time — which is
+		// why it read as cut off. Tab is what leaves it.
+		by := 1
+		if name == "up" {
+			by = -1
+		}
+		if long {
+			return w.walksLines(by)
+		}
+		w.form = w.form.onto(w.form.On() + by)
 	case "backspace":
 		return w.back()
 	case "cmd+a":
@@ -1594,6 +1613,11 @@ func (w Window) inForm(name string) Window {
 		// system, which takes as long as it takes, and the answer comes back
 		// as an event like any other.
 		w.pasting = true
+	case "cmd+s":
+		// The terminal's save, which the window takes too: a terminal cannot
+		// be sent ⌘, so the board saves on ^S, and the same fingers should
+		// work in both.
+		return w.Save()
 	case "shift+left":
 		return w.holding(-1)
 	case "shift+right":
@@ -1602,23 +1626,57 @@ func (w Window) inForm(name string) Window {
 		return w.walks(-1)
 	case "right":
 		return w.walks(1)
-	case "enter", "return":
-		// Enter opens, the way it opens a task on the board and takes a row in
-		// a list. A field of one line has nothing to open, and nothing happens.
-		//
-		// It used to save, while the bar offered Save under ⌘⏎ — a key doing
-		// what the bar does not say, which is the one thing the bar exists not
-		// to do.
-		if w.form.Fields()[w.form.On()].Long {
-			w.screen = OnWriting
-		}
-	case "shift+enter", "shift+return":
-		// A line break without leaving the small box, for somebody who wants
-		// one line more and not the whole panel.
-		if w.form.Fields()[w.form.On()].Long {
+	case "enter", "return", "shift+enter", "shift+return":
+		// A line where a line can be written, and on to the next field
+		// everywhere else — the same on both boards. It never saves: saving
+		// is a chord of its own, so it cannot happen by reaching for the key
+		// that breaks a line.
+		if long {
 			w.form = w.form.Writes(w.form.Writing().Types("\n"))
+			return w.inSightOfTheCaret()
 		}
+		w.form = w.form.onto(w.form.On() + 1)
 	}
+	return w
+}
+
+// scrollingSaying is the wheel over a long field, on whichever screen has one.
+func (w Window) scrollingSaying(p Point, by int) Window {
+	frame, bar, _, _, ok := w.sayingOn()
+	if !ok || !frame.In(p) && !bar.In(p) {
+		return w
+	}
+	lines, left := turning(w.spareSaying, by)
+	w.saying, w.spareSaying = w.settledSaying(w.saying+lines), left
+	return w
+}
+
+// walksLines moves the caret a line up or down inside a long field, keeping as
+// far into the line as it was, and brings it into sight. At either end it
+// stays: leaving the field is what tab is for.
+func (w Window) walksLines(by int) Window {
+	_, _, lines, _, ok := w.sayingOn()
+	if !ok {
+		return w
+	}
+	writing := w.form.Writing()
+	line, column := lines.At(writing.At)
+	to := min(len(lines.Said)-1, max(0, line+by))
+	at := lines.From[to] + min(column, len([]rune(lines.Said[to])))
+	w.form = w.form.Writes(writing.CaretAt(at))
+	return w.inSightOfTheCaret()
+}
+
+// inSightOfTheCaret scrolls the long field the keyboard is on just far enough
+// for the caret's line to be in the box. The wheel moves the box on its own; the
+// caret moving brings it back.
+func (w Window) inSightOfTheCaret() Window {
+	_, _, lines, rows, ok := w.sayingOn()
+	if !ok {
+		return w
+	}
+	line, _ := lines.At(w.form.Writing().At)
+	w.saying = w.settledSaying(inSight(line, 1, rows, w.saying))
 	return w
 }
 
@@ -1883,14 +1941,18 @@ func (w Window) opening() Window {
 		return w
 	}
 	w.screen = OnDetail
+	// Whatever is opened is opened at its top: its description, the work under
+	// it, its history. The description's scroll was left where the last task or
+	// the form had put it, so a short description opened after a long one had
+	// been read to its end showed an empty box until the wheel moved.
+	w.underAt, w.history, w.serving, w.saying = 0, 0, 0, 0
+	w.spareHistory, w.spareSaying = 0, 0
 	// An objective is opened on the work under it and not on a history: it has
 	// none of its own, and the number it carries belongs to a task as well —
 	// asking for the trace of that number answered with a task nobody had
 	// chosen, which is the wrong answer said confidently.
-	w.underAt = 0
 	if w.chosenGoal {
-		w.acts, w.history, w.serving, w.saying = nil, 0, 0, 0
-		w.spareHistory, w.spareSaying = 0, 0
+		w.acts = nil
 		return w
 	}
 	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
@@ -1898,7 +1960,7 @@ func (w Window) opening() Window {
 		w.err = err
 		return w
 	}
-	w.acts, w.history = nil, 0
+	w.acts = nil
 	for _, act := range shown.Acts {
 		w.acts = append(w.acts, line(act))
 	}

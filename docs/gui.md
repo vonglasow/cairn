@@ -486,6 +486,26 @@ asks, and the answer comes back as an event like any other. What the system
 hands back is read in `pasting`, outside the loop, so a scenario can reach it —
 the loop decides nothing.
 
+**One rule for a form, on both boards.** `⏎` writes a line in the
+description and moves on to the next field everywhere else; it never saves.
+Inside the description `↑↓` walk its lines and `⇥` is what leaves it. `⌘⏎`
+saves from anywhere in the form, and so does `⌘S` — because the terminal board
+cannot be sent `⌘` and saves on `^S`, and the same fingers should work in both.
+
+Enter used to save, while the bar offered Save under `⌘⏎`: a key doing what the
+bar does not say. And `↓` used to leave the description for the next field, so
+the only way through a long text was a character at a time — which is why it
+read as cut off.
+
+**The description is the same box on an open task and in the form**: its
+frame, its bar inside the right edge, the wheel, and a bar that can be pulled.
+`sayingOn` answers for both screens, and the lines it counts are laid out on
+the width they are drawn on. They were not: the end of the scroll was worked out
+from the text laid out a few points wider than it was drawn, so what was drawn
+ran longer than what was counted, and the last lines of a long description
+could never be brought into the box — bar or no bar. What is in sight follows
+the caret when the caret moves, and is left where the wheel put it otherwise.
+
 **Save is always offered**, under `⌘⏎`. It used to give way to *Choose* on a
 field a list answers, and since the keyboard stays on that field after the list
 closes, there was then no way to save at all: the one act a form exists for,

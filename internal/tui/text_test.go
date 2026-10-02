@@ -146,3 +146,85 @@ func TestSpreadWithExactlyOneColumnBetweenThem(t *testing.T) {
 		t.Fatalf("Spread with no room gave %q", got)
 	}
 }
+
+// A text laid out on lines of a width, every paragraph kept: a break somebody
+// wrote is a line, and nothing is cut short.
+func TestATextIsLaidOutParagraphByParagraph(t *testing.T) {
+	got := Paragraphs("un deux trois\n\nquatre", 8)
+	want := []string{"un deux", "trois", "", "quatre"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("laid out as %q, want %q", got, want)
+	}
+	if got := Paragraphs("", 8); len(got) != 0 {
+		t.Fatalf("nothing laid out as %q", got)
+	}
+}
+
+// What is in sight of a text that scrolls, with the bar down its right side:
+// the track the whole height, and the thumb where the window is and as long
+// as the share of it in sight.
+func TestAScrolledTextCarriesItsBar(t *testing.T) {
+	lines := []string{"a", "b", "c", "d", "e", "f", "g", "h"}
+	shown := InSight(lines, 2, 4, 3)
+	if len(shown) != 4 {
+		t.Fatalf("%d lines in sight, want 4", len(shown))
+	}
+	for i, want := range []string{"c", "d", "e", "f"} {
+		if !strings.HasPrefix(shown[i], want) {
+			t.Errorf("line %d in sight is %q, want it to begin %q", i, shown[i], want)
+		}
+	}
+	thumb := 0
+	for _, line := range shown {
+		if strings.HasSuffix(line, Thumb) {
+			thumb++
+		} else if !strings.HasSuffix(line, Track) {
+			t.Errorf("%q carries no bar", line)
+		}
+	}
+	if thumb != 2 {
+		t.Errorf("the thumb is %d lines long, want 2 — half of what is shown, for half of it in sight", thumb)
+	}
+	// A text that fits has its bar too, all thumb: it is where it is looked for.
+	for _, line := range InSight([]string{"a"}, 0, 4, 3) {
+		if !strings.HasSuffix(line, Thumb) {
+			t.Errorf("a text that fits reads %q", line)
+		}
+	}
+}
+
+// The bar to the row: where the thumb starts, and how long it is, at the two
+// ends and in the middle — and a text exactly as long as its box is all thumb.
+func TestTheBarToTheRow(t *testing.T) {
+	ten := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
+	thumbs := func(shown []string) string {
+		var out strings.Builder
+		for _, line := range shown {
+			if strings.HasSuffix(line, Thumb) {
+				out.WriteString("┃")
+			} else {
+				out.WriteString("│")
+			}
+		}
+		return out.String()
+	}
+	for _, c := range []struct {
+		from int
+		want string
+	}{
+		{0, "┃┃│││"},
+		{5, "│││┃┃"},
+		{2, "│┃┃││"},
+		{99, "│││┃┃"}, // past the end is the end
+	} {
+		if got := thumbs(InSight(ten, c.from, 5, 3)); got != c.want {
+			t.Errorf("from %d the bar reads %s, want %s", c.from, got, c.want)
+		}
+	}
+	if got := InSight(ten, 99, 5, 3); !strings.HasPrefix(got[0], "5") {
+		t.Errorf("past the end the box starts at %q, want the last five lines", got[0])
+	}
+	if got := thumbs(InSight(ten[:5], 0, 5, 3)); got != "┃┃┃┃┃" {
+		t.Errorf("a text exactly as long as its box reads %s, want all thumb", got)
+	}
+}

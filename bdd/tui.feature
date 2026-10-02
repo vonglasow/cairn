@@ -583,6 +583,34 @@ Feature: The board
       And I save the form
       Then task 1 is in the column "todo"
 
+  Rule: A form is filled in the same way as the window's
+
+    One rule for a form, on both boards. Enter writes a line in the description
+    and moves on everywhere else; the arrows walk the description's lines and
+    tab is what leaves it; ^S saves from anywhere — enter never does. Every
+    field that was typed into is what is saved.
+
+    @tui-enter-writes-a-line-in-the-description
+    Scenario: enter writes a line in the description rather than saving
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "e", "tab"
+      And I type "Deux colonnes"
+      And I press "enter"
+      And I type "et une bande"
+      Then the mode is "EDIT"
+      And task 1 is titled "Write the spec"
+
+    @tui-ctrl-s-saves-every-field
+    Scenario: ^S saves the form, and every field typed into is kept
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "e"
+      And I set the field "labels" to "backend"
+      And I press "ctrl+s"
+      And the board looks again
+      Then the card for task 1 says "backend"
+
   Rule: Losing work is asked about first
 
     Two gestures lose work and neither can be undone: deleting a task, and
@@ -645,6 +673,15 @@ Feature: The board
       And I press "i", "enter"
       Then the board says "The client wants two columns"
       And the board says "created"
+
+    @tui-the-detail-scrolls-its-description
+    Scenario: a long description stays in its box, and ^D walks it to the end
+      Given I added a task titled "Write the spec" with a description of 80 lines ending "LA FIN"
+      When I open the board
+      And I press "i", "enter"
+      Then the board says nothing of "LA FIN"
+      When I press "ctrl+d" 40 times
+      Then the board says "LA FIN"
 
     @tui-the-detail-edits-what-it-is-showing
     Scenario: a task being read is edited without closing it first

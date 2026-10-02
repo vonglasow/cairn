@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/reading"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -49,6 +50,34 @@ func (f Form) Changed() bool {
 		}
 	}
 	return false
+}
+
+// LongTitle is a long field's name and how many lines it holds, which is the
+// half of a bar's job a terminal box can do from its title.
+func LongTitle(name, value string) string {
+	if value == "" {
+		return name
+	}
+	count := strings.Count(value, "\n") + 1
+	if count == 1 {
+		return name + " · 1 line"
+	}
+	return fmt.Sprintf("%s · %d lines", name, count)
+}
+
+// typed is the form's fields carrying what was typed into them, which is what
+// a save hands over. The fields themselves keep what the form opened with —
+// that is what Changed compares against — and handing those over saved the
+// title and nothing else, since the board first had a form.
+func (f Form) typed() []reading.Field {
+	out := make([]reading.Field, len(f.fields))
+	for i, field := range f.fields {
+		if held, there := f.held[field.Name]; there {
+			field.Value = *held
+		}
+		out[i] = field
+	}
+	return out
 }
 
 // typedInto puts a value into a field, the way the form itself would. Written
@@ -121,7 +150,15 @@ func walkedByArrows() *huh.KeyMap {
 	down := key.NewBinding(key.WithKeys("down", "tab", "enter"))
 	up := key.NewBinding(key.WithKeys("up", "shift+tab"))
 	keys.Input.Next, keys.Input.Prev = down, up
-	keys.Text.Next, keys.Text.Prev = key.NewBinding(key.WithKeys("down", "tab")), up
+	// In the description the arrows walk its lines and enter writes one, the
+	// same as in the window; tab is what leaves it. Down used to leave for the
+	// next field and enter to submit, so the only way through a long text was
+	// a character at a time and the key a hand reaches for to break a line
+	// finished the form instead.
+	keys.Text.Next = key.NewBinding(key.WithKeys("tab"))
+	keys.Text.Prev = key.NewBinding(key.WithKeys("shift+tab"))
+	keys.Text.NewLine = key.NewBinding(key.WithKeys("enter", "shift+enter", "alt+enter", "ctrl+j"))
+	keys.Text.Submit = key.NewBinding(key.WithDisabled())
 	keys.Select.Next, keys.Select.Prev = down, up
 	keys.Confirm.Next, keys.Confirm.Prev = key.NewBinding(key.WithKeys("down", "tab")), up
 	// A list picked in place is walked with left and right; up and down are
@@ -147,7 +184,16 @@ func oneField(field reading.Field, into *string) huh.Field {
 			Value(into)
 	}
 	if field.Long {
-		return huh.NewText().Key(field.Name).Title(field.Name).Lines(3).Value(into)
+		// What a bar says, in the two halves a terminal box can carry: how much
+		// there is, beside the name, and where in it the cursor stands, down
+		// the side. huh draws the box and offers no bar, and a description the
+		// arrows could not walk through read as one cut off.
+		// Title first, for what it says the moment the form opens: huh works
+		// a TitleFunc out on the first update and draws nothing until then.
+		return huh.NewText().Key(field.Name).
+			Title(LongTitle(field.Name, *into)).
+			TitleFunc(func() string { return LongTitle(field.Name, *into) }, into).
+			Lines(3).ShowLineNumbers(true).Value(into)
 	}
 	return huh.NewInput().Key(field.Name).Title(field.Name).Value(into)
 }
@@ -317,8 +363,9 @@ func (b Board) drawForm() string {
 	return strings.Join([]string{
 		b.tabs(), "",
 		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
-		"", b.bar(b.offer("↓↑", "field"), b.offer("←→", "change"),
-			b.offer("⏎", "next"), b.offer("?", "help"), b.offer("esc", "cancel")),
+		"", b.bar(b.offer("⇥", "field"), b.offer("←→", "change"),
+			b.offer("⏎", "next · a line"), b.offer("^S", "save"),
+			b.offer("?", "help"), b.offer("esc", "cancel")),
 	}, "\n")
 }
 

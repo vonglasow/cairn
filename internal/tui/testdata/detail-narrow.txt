@@ -5,8 +5,8 @@
 
  ╭───────────────────────────────────────╮ ╭──────────────────────────╮
  │ DESCRIPTION                           │ │ HISTORY                  │
- │ The client wants two columns, not     │ │ 2026-09-02 15:30  chang… │
- │ three.                                │ │ 2026-09-02 16:30  chang… │
+ │ The client wants two columns, not   ┃ │ │ 2026-09-02 15:30  chang… │
+ │ three.                              ┃ │ │ 2026-09-02 16:30  chang… │
  ╰───────────────────────────────────────╯ │ 2026-09-02 17:30  chang… │
  ╭───────────────────────────────────────╮ │ 2026-09-02 18:30  chang… │
  │ SUB-TASKS   1/2                       │ │ 2026-09-02 19:30  chang… │
@@ -25,4 +25,4 @@
                                            │ 2026-09-03 08:30  chang… │
                                            ╰──────────────────────────╯
 
- hjkl ←↓↑→ navigate   e edit   f focus   ? help   esc back
+ hjkl ←↓↑→ navigate   e edit   f focus   ^D ^U description   ? help

@@ -2081,3 +2081,109 @@ func TestPullingTheBarUnderATaskReachesTheLastTile(t *testing.T) {
 			tile.Y, tile.Y+tile.H, box.Y, box.Y+box.H)
 	}
 }
+
+// Scrolling a description to the end shows its last line. It did not: the end
+// of the scroll was worked out from the text laid out on one width and the text
+// was drawn on another, a few points narrower — so what was drawn ran longer
+// than what was counted, and the last lines of a long description could never
+// be brought into the box, bar or no bar.
+func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: text})
+	w = w.clicked(middleOf(w, 1, 0))
+	w = w.DoubleClick(middleOf(w, 1, 0))
+	if w.Screen() != OnDetail {
+		t.Fatalf("the task did not open: %v", w.Screen())
+	}
+	frame, _, lines, rows, ok := w.sayingOn()
+	if !ok {
+		t.Fatal("an open task with a description has none on screen")
+	}
+	drawn := Wrapped(text, room(Inside(frame))).Said
+	if len(drawn) != len(lines.Said) {
+		t.Fatalf("the description is counted as %d lines and drawn as %d", len(lines.Said), len(drawn))
+	}
+	w.saying = w.settledSaying(1 << 20)
+	if last := drawn[min(len(drawn)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "LA FIN") {
+		t.Fatalf("scrolled to the end, the last line in sight is %q", last)
+	}
+}
+
+// ^D and ^U walk the description on an open task, half its box at a time —
+// the terminal board's keys for it, taken here too so the same fingers work.
+func TestHalfABoxAtATimeOnTheDescription(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+		Description: text})
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	_, _, lines, rows, _ := w.sayingOn()
+	if w = w.Key("cmd+d"); w.saying != rows/2 {
+		t.Fatalf("^D moved the description to %d, want %d", w.saying, rows/2)
+	}
+	for range len(lines.Said) {
+		w = w.Key("cmd+d")
+	}
+	if w.saying != len(lines.Said)-rows {
+		t.Fatalf("^D to the end left the description at %d, want %d", w.saying, len(lines.Said)-rows)
+	}
+	for range len(lines.Said) {
+		w = w.Key("cmd+u")
+	}
+	if w.saying != 0 {
+		t.Fatalf("^U to the top left the description at %d", w.saying)
+	}
+}
+
+// A task opens on the top of its description, whatever was scrolled before it.
+// The scroll was left where the last task or the form had put it, and drawn as
+// it stood: a task opened after a long description had been read to its end
+// showed an empty box until the wheel brought the scroll back inside the text.
+func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
+	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
+	w := holding(newFake(),
+		reading.Card{Number: 1, Title: "Long", State: "todo", Description: long},
+		reading.Card{Number: 2, Title: "Short", State: "todo", Description: "PREMIERE LIGNE"})
+	// Read the long one to its end, and put it away.
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	_, _, lines, _, _ := w.sayingOn()
+	for range len(lines.Said) {
+		w = w.Key("cmd+d")
+	}
+	if w.Saying() == 0 {
+		t.Fatal("this proves nothing: the long description was not scrolled")
+	}
+	w = w.Cancel()
+	// The short one opens on its first line.
+	w = w.clicked(middleOf(w, 1, 1)).DoubleClick(middleOf(w, 1, 1))
+	if w.Screen() != OnDetail || w.Chosen() != 2 {
+		t.Fatalf("the short task did not open: %v on %d", w.Screen(), w.Chosen())
+	}
+	if got := w.Saying(); got != 0 {
+		t.Fatalf("the short task opened with its description scrolled to %d", got)
+	}
+	// And it is the same coming from the form.
+	w = w.Cancel().clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "description" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.inSightOfTheCaret().Cancel()
+	w = w.clicked(middleOf(w, 1, 1)).DoubleClick(middleOf(w, 1, 1))
+	if got := w.Saying(); got != 0 {
+		t.Fatalf("a task opened after the form showed its description from %d", got)
+	}
+}
+
+// Whatever the scroll holds, what is drawn is inside the text: a scroll past
+// the end is read as the end.
+func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Short", State: "todo",
+		Description: "PREMIERE LIGNE"})
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	w.saying = 40
+	if got := w.Saying(); got != 0 {
+		t.Fatalf("a scroll of 40 on a description of one line reads as %d", got)
+	}
+}

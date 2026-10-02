@@ -205,3 +205,20 @@ func TestARowThatCountsWhatItDropped(t *testing.T) {
 		t.Errorf("at two the row reads %q, want nothing at all", got)
 	}
 }
+
+// A long field says how much it holds, beside its name: the half of what a bar
+// says that a terminal box can carry. The other half — where in it you are — is
+// the line numbers down its side.
+func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
+	for _, c := range []struct {
+		value, want string
+	}{
+		{"", "description"},
+		{"une ligne", "description · 1 line"},
+		{"un\ndeux\ntrois", "description · 3 lines"},
+	} {
+		if got := LongTitle("description", c.value); got != c.want {
+			t.Errorf("a description of %q is titled %q, want %q", c.value, got, c.want)
+		}
+	}
+}

@@ -109,7 +109,7 @@ func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Opera
 	if form.Adding {
 		op = adding
 	}
-	asked := reading.Asked(form.fields, op)
+	asked := reading.Asked(form.typed(), op)
 	asked.Given["title"] = strings.TrimSpace(form.valueOf("title"))
 	if !form.Adding {
 		asked.Given["number"] = strconv.Itoa(form.Number)

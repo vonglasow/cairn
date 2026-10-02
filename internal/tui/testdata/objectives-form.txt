@@ -7,7 +7,7 @@
  │ ┃ > Ship the desktop board                       > product                                     │
  │                                                                                                │
  │   description                                    deadline                                      │
- │                                                  > 2026-10-16                                  │
+ │     1                                            > 2026-10-16                                  │
  │                                                                                                │
  │                                                  estimate                                      │
  │                                                  >                                             │
@@ -19,4 +19,4 @@
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- ↓↑ field   ←→ change   ⏎ next   ? help   esc cancel
+ ⇥ field   ←→ change   ⏎ next · a line   ^S save   ? help   esc cancel

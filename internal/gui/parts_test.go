@@ -1317,35 +1317,15 @@ func TestADescriptionTakesTheRoomThePanelHasLeft(t *testing.T) {
 	}
 }
 
-// A description opened on the whole panel: the room a text of eighty lines
-// needs, which a form's value column never had.
-func TestADescriptionOpenedTakesThePanel(t *testing.T) {
-	box := Over(1200, 800)
-	// Pinned to the point, like every other parcel: a box that merely looks
-	// roomy is a box nothing holds to its size.
-	if got, want := WritingOver(1200, 800), (Box{X: 162, Y: 116, W: 860, H: 560}); got != want {
-		t.Errorf("the writing area is %+v, want %+v", got, want)
+// Where a field's text starts in sight. A field with a caret and no scroll of
+// its own follows the caret; a long field the wheel has moved shows what the
+// wheel left — the same on the detail and in the form.
+func TestWhereAFieldsTextStartsInSight(t *testing.T) {
+	lines := Wrapped("un\ndeux\ntrois\nquatre\ncinq\nsix", 40)
+	if got := StartsAt(lines, 3, 5, Follow); got != 3 {
+		t.Errorf("a field following its caret on line 5 starts at %d, want 3", got)
 	}
-	if got, want := WritingBar(1200, 800), (Box{X: 1028, Y: 116, W: 10, H: 560}); got != want {
-		t.Errorf("its bar is %+v, want %+v", got, want)
-	}
-	if got := WritingRows(1200, 800); got != 30 {
-		t.Errorf("it holds %d lines, want 30", got)
-	}
-	// Which is the point of it: the field it came from holds four.
-	if LongRows(box, reading.TaskFields(reading.Card{})) >= WritingRows(1200, 800) {
-		t.Error("opening a field gains nothing over leaving it in the form")
-	}
-	// It stays inside the panel, above what the panel offers, and its bar
-	// stands beside it rather than over it.
-	writing := WritingOver(1200, 800)
-	if writing.Y < box.Y || writing.Y+writing.H > PanelOfferAt(box, 0).Y {
-		t.Errorf("the writing area runs from %d to %d, outside the panel %d..%d",
-			writing.Y, writing.Y+writing.H, box.Y, PanelOfferAt(box, 0).Y)
-	}
-	if bar := WritingBar(1200, 800); bar.X < writing.X+writing.W ||
-		bar.X+bar.W > box.X+box.W {
-		t.Errorf("the bar at %d..%d does not sit between the text and the panel's edge",
-			bar.X, bar.X+bar.W)
+	if got := StartsAt(lines, 3, 5, 1); got != 1 {
+		t.Errorf("a field the wheel left at 1 starts at %d, want 1", got)
 	}
 }

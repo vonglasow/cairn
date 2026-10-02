@@ -363,6 +363,26 @@ One form, for adding and for editing, behaving the same way both times.
 on paper and dropped: `cancel` would have meant nothing, and the same form could
 not have served to create something that does not exist yet.
 
+**A form is filled in the window's way.** `⏎` writes a line in the
+description and moves on everywhere else, and never saves; `↑↓` walk the
+description's lines and `⇥` leaves it; `^S` saves from anywhere. huh had enter
+submit the description and down leave it, so a description could neither be
+written in paragraphs nor read through.
+
+The description carries its line numbers down the side and its length beside
+its name — `description · 25 lines` — which is the half of a bar's job a
+terminal box can do: huh draws the box and offers no bar.
+
+**What was typed is what is saved.** The form handed the engine the values it
+had opened with and only the title as it had been typed, so every other change
+made on the board was dropped on save without a word, since the board first had
+a form.
+
+**The description on an open task is a box that scrolls**, with a bar down its
+right — `┃` where the window is, `│` the rest of the track — and `^D` `^U` walk
+it half a box at a time. It used to be drawn whole, and a long one ran off the
+bottom of the terminal with everything under it.
+
 **The parts of a task are edited in its form**, in a field holding one line
 each — `#2 [x] Relire l'ADR` — and nowhere else. Saving settles them against
 what the task carried: a line with a number is that part, a line without is one

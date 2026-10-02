@@ -110,7 +110,10 @@ type Board struct {
 	leaving bool
 	// sweeping says the question is about taking a whole column off the board.
 	sweeping bool
-	choice   int
+	// saying is how far the description on an open task is scrolled, and
+	// sayingOf the task that is about: opening another starts it at the top.
+	saying, sayingOf int
+	choice           int
 
 	// form is what is being added or edited, when the form has the window.
 	form Form
@@ -202,6 +205,12 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// bar said escape cancelled and escape did nothing at all.
 			if key == "?" {
 				return b.pressed(key)
+			}
+			// Saved from wherever the keyboard is, on the chord the window
+			// takes too. A terminal cannot be sent ⌘, so ^S is the board's
+			// spelling of it, and the same fingers work on both.
+			if key == "ctrl+s" {
+				return b.save()
 			}
 			if key == "esc" {
 				// A form somebody typed into is asked about before it goes.

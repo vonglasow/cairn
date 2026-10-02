@@ -165,34 +165,6 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 		drawChoosing(gtx, th, skin, w)
 	}
-	if w.Screen() == OnWriting {
-		drawWriting(gtx, th, skin, w)
-	}
-}
-
-// drawWriting is one long field with the whole panel: the room a description
-// of eighty lines needs, which a form's value column never had.
-//
-// The panel and not an overlay over the form, because there is nothing on the
-// form worth seeing while a text is being written — unlike the list, which is
-// a choice made against the rest of what was filled in.
-func drawWriting(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	box := Over(w.width, w.height)
-	drawPanel(gtx, th, skin, box, Heads(w))
-
-	frame := WritingOver(w.width, w.height)
-	fill(gtx, frame, skin.Back)
-	outline(gtx, frame, skin.Chosen)
-	writing(gtx, th, skin, Inside(frame), w.Form().Writing(), true, reads,
-		WritingRows(w.width, w.height), 0)
-
-	// The bar is drawn whether or not there is anything to scroll, by the rule
-	// every other bar here goes by.
-	track := WritingBar(w.width, w.height)
-	fill(gtx, track, skin.Back)
-	fill(gtx, Thumb(track, len(w.WrittenLines()), WritingRows(w.width, w.height), w.WrittenFrom()), skin.Edge)
-
-	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // TickedMark says an objective is in. A third mark in a window that took two on
@@ -212,7 +184,7 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	looking := ChoosingLooking(box)
 	fill(gtx, looking, skin.Back)
 	outline(gtx, looking, skin.Edge)
-	writing(gtx, th, skin, Inside(looking), w.Filtering(), true, reads, 1, 0)
+	writing(gtx, th, skin, Inside(looking), w.Filtering(), true, reads, 1, Follow)
 
 	at := ChoosingFrom(box)
 	offered := w.Choosing()
@@ -283,7 +255,7 @@ func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w W
 	outline(gtx, box, skin.Chosen)
 	say(gtx, th, skin.Faint, SearchWord(box), "SEARCH", small)
 	into := SearchInto(box)
-	writing(gtx, th, skin, into, w.Searched(), true, reads, 1, 0)
+	writing(gtx, th, skin, into, w.Searched(), true, reads, 1, Follow)
 }
 
 // drawSaid is a panel of lines: the help, and the question. Both are read
@@ -615,9 +587,21 @@ func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, said s
 // drawField draws one field of a panel: its name beside it, what it holds
 // inside a box of its own, and the frame lit when the keyboard is on it.
 func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written) {
+	drawFieldAt(gtx, th, skin, box, fields, i, lit, carets, said, Follow)
+}
+
+// drawFieldAt is drawField with where the text starts in sight given. A long
+// field is drawn with the bar the description carries on an open task, in the
+// same place: the description is the same box on both screens.
+func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written, scrolled int) {
 	field := fields[i]
 	name, value := FieldRow(box, FieldTop(box, fields, i))
-	frame := Framed(value, RowsOf(box, fields, i))
+	rows := RowsOf(box, fields, i)
+	frame := Framed(value, rows)
+	var bar Box
+	if field.Long {
+		frame, bar = Saying(value, rows)
+	}
 	ink, edge := skin.Faint, skin.Edge
 	if lit {
 		ink, edge = skin.Chosen, skin.Chosen
@@ -625,7 +609,13 @@ func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	say(gtx, th, ink, name, field.Name, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), said, carets, reads, RowsOf(box, fields, i), 0)
+	writing(gtx, th, skin, Inside(frame), said, carets, reads, rows, scrolled)
+	if field.Long {
+		lines := Wrapped(said.Reads(), room(Inside(frame)))
+		line, _ := lines.At(said.At)
+		fill(gtx, bar, skin.Back)
+		fill(gtx, Thumb(bar, len(lines.Said), rows, StartsAt(lines, rows, line, scrolled)), skin.Edge)
+	}
 }
 
 // drawSaying is the description on an open task: read rather than written, so
@@ -663,7 +653,16 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		if typed {
 			said = w.Form().Writing()
 		}
-		drawField(gtx, th, skin, box, fields, i, on, typed, said)
+		// The long field the keyboard is on shows what the wheel left; the
+		// others show their beginning, which is where a text is read from.
+		scrolled := Follow
+		if fields[i].Long {
+			scrolled = 0
+			if on {
+				scrolled = w.Saying()
+			}
+		}
+		drawFieldAt(gtx, th, skin, box, fields, i, on, typed, said, scrolled)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -713,12 +712,7 @@ func writing(gtx layout.Context, th *material.Theme, skin Skin, b Box, said Writ
 	at := said.At
 	lines := Wrapped(said.Reads(), room(b))
 	line, column := lines.At(at)
-	// A caret drags the window along with it; with no caret there is nothing
-	// to follow, so what is in sight is what was scrolled to.
-	from := scrolled
-	if carets {
-		from = lines.Window(rows, line)
-	}
+	from := StartsAt(lines, rows, line, scrolled)
 
 	// The held run first, so the words are read over it rather than under.
 	// Measured with the font, the way the caret is: a run measured at so many

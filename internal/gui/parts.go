@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"math"
 	"strings"
 	"time"
 
@@ -504,21 +505,32 @@ func HistoryBox(box Box) Box {
 	}
 }
 
-// SayingBox is where a task's description is read on the detail, narrowed by
-// the room its bar takes. Its own function and not a field's plain box: on the
-// detail the description is read rather than written, so nothing follows a
-// caret and what does not fit has to be reachable another way.
-func SayingBox(box Box, fields []reading.Field, at int) Box {
-	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
-	frame := Framed(value, LongRows(box, fields))
-	return Box{X: frame.X, Y: frame.Y, W: frame.W - barWide - between, H: frame.H}
+// Saying is a long field's frame and the bar inside its right edge, given the
+// value box its row has and how many lines it is given. One shape for the
+// detail and the form: the description is the same box on both, with the same
+// bar in the same place, and the wheel reaches the same end.
+//
+// The bar is drawn whether or not there is anything to scroll — the same rule
+// the history goes by.
+func Saying(value Box, rows int) (frame, bar Box) {
+	whole := Framed(value, rows)
+	frame = Box{X: whole.X, Y: whole.Y, W: whole.W - barWide - between, H: whole.H}
+	bar = Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+	return frame, bar
 }
 
-// SayingBar is the track of the bar beside it, drawn whether or not there is
-// anything to scroll — the same rule the history goes by.
+// SayingBox is where a task's description is read on the detail.
+func SayingBox(box Box, fields []reading.Field, at int) Box {
+	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
+	frame, _ := Saying(value, LongRows(box, fields))
+	return frame
+}
+
+// SayingBar is the track of the bar beside it.
 func SayingBar(box Box, fields []reading.Field, at int) Box {
-	frame := SayingBox(box, fields, at)
-	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
+	_, bar := Saying(value, LongRows(box, fields))
+	return bar
 }
 
 // LongField says which of a panel's fields is the one read in that box, and
@@ -920,33 +932,18 @@ func GhostSays(screen Screen, ghost Box, c reading.Card) (Box, string, int) {
 	return PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain
 }
 
-// WritingOver is the box a long field is written in once it has been opened:
-// the whole panel, less its heading and what the panel offers at its foot.
-//
-// A description is what somebody opens a task to read, and in the form it has
-// a value column thirty-nine characters wide and four lines tall. A text of
-// 2800 characters comes to seventy-eight lines there, read a hundred and fifty
-// characters at a time — which reads as a text cut off rather than one to
-// scroll. The column cannot be made to hold it: twelve fields take two thirds
-// of it. So the field opens, the way a task opens on the board.
-func WritingOver(width, height int) Box {
-	panel := Over(width, height)
-	top := FirstRow(panel)
-	return Box{
-		X: panel.X + padding,
-		Y: top,
-		W: panel.W - padding - padding - barWide - between,
-		H: PanelOfferAt(panel, 0).Y - padding - top,
+// Follow is the scroll a field is given when what is in sight is wherever its
+// caret is, rather than wherever a wheel left it. A value no scroll can be: it
+// was -1, and one character from 1, which is a line a wheel can leave a text
+// at — so a slip there would have read a scrolled field as one following its
+// caret, and no test could have reached a constant to say so.
+const Follow = math.MinInt
+
+// StartsAt is the first line of a text in sight: where the wheel left it, or,
+// for a field that follows its caret, whatever window holds the caret's line.
+func StartsAt(lines Lines, rows, caretLine, scrolled int) int {
+	if scrolled == Follow {
+		return lines.Window(rows, caretLine)
 	}
-}
-
-// WritingBar is the track beside it, by the rule every other bar goes by.
-func WritingBar(width, height int) Box {
-	frame := WritingOver(width, height)
-	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
-}
-
-// WritingRows is how many lines of it are in sight.
-func WritingRows(width, height int) int {
-	return Inside(WritingOver(width, height)).H / lineHigh
+	return scrolled
 }

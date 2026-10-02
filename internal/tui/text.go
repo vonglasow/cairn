@@ -119,3 +119,65 @@ func Join(sep string, width int, facts ...string) string {
 	}
 	return out
 }
+
+// Paragraphs lays a text out on lines of a width, every paragraph of it: a
+// break somebody wrote is a line, and nothing is cut short. Wrap is for a card,
+// which has two lines and a word to spare; this is for a text that scrolls.
+func Paragraphs(s string, width int) []string {
+	if s == "" {
+		return nil
+	}
+	var out []string
+	for _, paragraph := range strings.Split(s, "\n") {
+		lines := Wrap(paragraph, width, max(1, len([]rune(paragraph))))
+		kept := 0
+		for i, line := range lines {
+			if line != "" {
+				kept = i + 1
+			}
+		}
+		out = append(out, lines[:max(1, kept)]...)
+	}
+	return out
+}
+
+// The two marks a bar is drawn with down the right of a text that scrolls: the
+// track the whole height, and the thumb where the window is.
+const (
+	Track = "│"
+	Thumb = "┃"
+)
+
+// InSight is what of a laid-out text is in a box of so many rows, starting at
+// a line, each line padded to a width and carrying the bar down its right. The
+// bar is drawn whether or not there is anything to scroll, the rule the window
+// goes by: a bar that comes and goes is a bar somebody reaches for and does
+// not find.
+func InSight(lines []string, from, rows, width int) []string {
+	from = min(max(0, from), max(0, len(lines)-rows))
+	shown := lines[from:min(len(lines), from+rows)]
+	if len(lines) <= rows {
+		return marked(shown, width, 0, len(shown))
+	}
+	long := max(1, rows*rows/len(lines))
+	// Spread over the room the thumb leaves, end to end: the window at the
+	// last line puts the thumb at the bottom of the track. Spread over the
+	// whole track it never got there, and a bar that never reaches the bottom
+	// says there is more to come when there is not.
+	at := from * (rows - long) / (len(lines) - rows)
+	return marked(shown, width, at, long)
+}
+
+// marked pads each line in sight to a width and puts the bar down its right:
+// the thumb from a row, so many rows long, and the track everywhere else.
+func marked(shown []string, width, at, long int) []string {
+	out := make([]string, len(shown))
+	for i, line := range shown {
+		mark := Track
+		if i >= at && i < at+long {
+			mark = Thumb
+		}
+		out[i] = Clip(line, width) + strings.Repeat(" ", max(0, width-lipgloss.Width(Clip(line, width)))) + " " + mark
+	}
+	return out
+}

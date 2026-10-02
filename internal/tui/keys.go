@@ -206,6 +206,10 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 			return b.editForm()
 		case "f":
 			return b, b.toggleFocus()
+		case "ctrl+d":
+			return b.scrollingSaying(true), nil
+		case "ctrl+u":
+			return b.scrollingSaying(false), nil
 		}
 	}
 	return b, nil

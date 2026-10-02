@@ -5,7 +5,7 @@
 
  ╭───────────────────────────────────────────────────────╮ ╭──────────────────────────────────────╮
  │ DESCRIPTION                                           │ │ HISTORY                              │
- │ The client wants two columns, not three.              │ │ 2026-09-02 03:30  changed  priority… │
+ │ The client wants two columns, not three.            ┃ │ │ 2026-09-02 03:30  changed  priority… │
  ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 04:30  changed  priority… │
  ╭───────────────────────────────────────────────────────╮ │ 2026-09-02 05:30  changed  priority… │
  │ SUB-TASKS   1/2                                       │ │ 2026-09-02 06:30  changed  priority… │
@@ -37,4 +37,4 @@
                                                            │ 2026-09-03 08:30  changed  priority… │
                                                            ╰──────────────────────────────────────╯
 
- hjkl ←↓↑→ navigate   e edit   f focus   ? help   esc back
+ hjkl ←↓↑→ navigate   e edit   f focus   ^D ^U description   ? help   esc back

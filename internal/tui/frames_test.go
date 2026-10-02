@@ -128,8 +128,10 @@ func TestFrames(t *testing.T) {
 		{"inside", 100, 40, []string{"tab", "enter"}},
 		{"band", 100, 40, []string{"l", "j"}},
 		{"band-insert", 100, 40, []string{"l", "j", "i"}},
-		{"form-on-a-choice", 100, 40, []string{"l", "i", "e", "down", "down"}},
-		{"form-changed-a-choice", 100, 40, []string{"l", "i", "e", "down", "down", "right"}},
+		// By tab and not by down: inside the description the arrows walk its
+		// lines, so down stays there, and tab is what leaves it.
+		{"form-on-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab"}},
+		{"form-changed-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab", "right"}},
 		{"objectives-form", 100, 40, []string{"tab", "e"}},
 		{"detail-stalled", 100, 40, []string{"l", "j", "i", "enter"}},
 		{"help-narrow", 72, 30, []string{"?"}},

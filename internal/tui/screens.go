@@ -104,6 +104,15 @@ func (b Board) helpKeys() []string {
 		b.says("x", "off the board, or back on"),
 		b.says("esc", "back to normal"),
 	)...)
+	out = append(out, b.group("DETAIL — one task, open",
+		b.says("^D ^U", "walk its description, half a box at a time"),
+	)...)
+	out = append(out, b.group("FORM — the same keys as the window",
+		b.says("⏎", "a new line in the description, the next field anywhere else"),
+		b.says("↑↓", "the description's lines — tab leaves it"),
+		b.says("tab ⇧tab", "next / previous field"),
+		b.says("^S", "save, from anywhere in it — ⏎ never does"),
+	)...)
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)
 }
 
@@ -159,7 +168,7 @@ func (b Board) drawDetail() string {
 			"", b.bar(b.offer("esc", "back"))}, "\n")
 	}
 	width := b.width - margin - margin
-	left := (width * 3 / 5) - 1
+	left := b.detailWidth()
 	right := width - left - 1
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.JoinVertical(lipgloss.Left, b.detailLeft(held, left)...),
@@ -169,30 +178,105 @@ func (b Board) drawDetail() string {
 	return strings.Join([]string{
 		b.tabs(), "", b.detailBand(held), "",
 		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
-		"", b.bar(b.offer("hjkl ←↓↑→", "navigate"), b.offer("e", "edit"),
-			b.offer("f", "focus"), b.offer("?", "help"), b.offer("esc", "back")),
+		"", b.bar(b.detailOffers(held)...),
 	}, "\n")
+}
+
+// detailOffers is the detail's bar. ^D and ^U are on it only when there is a
+// description for them to walk: a key on the bar does something here.
+func (b Board) detailOffers(c reading.Card) []string {
+	offers := []string{b.offer("hjkl ←↓↑→", "navigate"), b.offer("e", "edit"), b.offer("f", "focus")}
+	if c.Description != "" {
+		offers = append(offers, b.offer("^D ^U", "description"))
+	}
+	return append(offers, b.offer("?", "help"), b.offer("esc", "back"))
 }
 
 // detailLeft is what stacks down the left of the detail: what was written about
 // the task, and what hangs under it.
 func (b Board) detailLeft(c reading.Card, width int) []string {
+	under := b.detailLeftUnder(c, width)
 	var out []string
 	if c.Description != "" {
-		out = append(out, b.named("DESCRIPTION", b.skin.Bright.Render(c.Description), width))
+		lines, rows := b.saidOn(c, width, under)
+		shown := InSight(lines, b.scrolledSaying(c, lines, rows), rows, width-describing)
+		out = append(out, b.named("DESCRIPTION", b.skin.Bright.Render(strings.Join(shown, "\n")), width))
 	}
-	if rows := b.subTasks(c, width-4); len(rows) > 0 {
-		out = append(out, b.named(fmt.Sprintf("SUB-TASKS   %d/%d", c.SubDone, c.SubTotal),
-			strings.Join(rows, "\n"), width))
-	}
-	if len(c.Objectives) > 0 {
-		out = append(out, b.named("SERVES", b.serves(c, width-4), width))
-	}
+	out = append(out, under...)
 	if len(out) == 0 {
 		return []string{b.named("NOTHING WRITTEN DOWN",
 			b.skin.Faint.Render("no description, no sub-tasks, nothing served"), width)}
 	}
 	return out
+}
+
+// describing is the room a description's panel keeps for itself across: its
+// border and padding, and the bar with the space before it.
+const describing = 6
+
+// aroundTheDetail is the rows the detail takes for everything but its panels:
+// the tabs, the band of short facts, the bar, and the space between them.
+const aroundTheDetail = 7
+
+// saidOn is the description of an open task laid out on its panel's width, and
+// how many of its lines that panel shows: what the screen has left once the
+// panels under it have taken theirs, and three at the least.
+//
+// It used to be drawn whole, and a long one ran off the bottom of the terminal
+// with everything under it.
+func (b Board) saidOn(c reading.Card, width int, under []string) ([]string, int) {
+	taken := 0
+	for _, panel := range under {
+		taken += lipgloss.Height(panel)
+	}
+	// Its own border, top and bottom, and the line its name is on.
+	rows := max(3, b.height-aroundTheDetail-taken-3)
+	return Paragraphs(c.Description, width-describing), rows
+}
+
+// scrolledSaying is where the description of this task is scrolled to, kept
+// between its two ends. Another task's scroll is not this one's.
+func (b Board) scrolledSaying(c reading.Card, lines []string, rows int) int {
+	if b.sayingOf != c.Number {
+		return 0
+	}
+	return min(max(0, len(lines)-rows), max(0, b.saying))
+}
+
+// scrollingSaying moves the description of the open task by half its box,
+// the way ^D and ^U move a page in the grammar this board borrows.
+func (b Board) scrollingSaying(down bool) Board {
+	c, ok := b.held()
+	if !ok || c.Description == "" {
+		return b
+	}
+	width := b.detailWidth()
+	lines, rows := b.saidOn(c, width, b.detailLeftUnder(c, width))
+	by := max(1, rows/2)
+	if !down {
+		by = -by
+	}
+	at := b.scrolledSaying(c, lines, rows)
+	b.saying, b.sayingOf = min(max(0, len(lines)-rows), max(0, at+by)), c.Number
+	return b
+}
+
+// detailWidth is how wide the left of the detail is: three fifths of what the
+// margins leave, less the space between it and the history.
+func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
+
+// detailLeftUnder is the panels under the description, measured to know how
+// much room is left for it.
+func (b Board) detailLeftUnder(c reading.Card, width int) []string {
+	var under []string
+	if rows := b.subTasks(c, width-4); len(rows) > 0 {
+		under = append(under, b.named(fmt.Sprintf("SUB-TASKS   %d/%d", c.SubDone, c.SubTotal),
+			strings.Join(rows, "\n"), width))
+	}
+	if len(c.Objectives) > 0 {
+		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
+	}
+	return under
 }
 
 // detailBand is the short facts, on two rows above the panels.
