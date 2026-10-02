@@ -39,6 +39,11 @@ import (
 // arithmetic of a package-level constant is never inside a covered block.
 func Beat() time.Duration { return 2 * time.Second }
 
+// Still is how long the wheel has to be left alone for the next turn to be a
+// turn of its own. A trackpad goes on sending after the fingers leave it, about
+// one turn a frame, so anything closer than this is the same gesture going on.
+func Still() time.Duration { return 150 * time.Millisecond }
+
 // Twin is how long after a press a second one at the same place is the same
 // gesture. Worked out here because Gio reports presses and says nothing about
 // double-clicks.
@@ -93,6 +98,9 @@ type Gesture struct {
 // after a double-click closed the task it had just opened, found by hand in a
 // window rather than by any test.
 func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time.Time) (Window, Gesture) {
+	if kind == pointer.Scroll {
+		return w.wheeling(by, at, now), g
+	}
 	if kind == pointer.Press {
 		if Twice(g.At, now, g.Where, at) {
 			return w.DoubleClick(at), Gesture{}

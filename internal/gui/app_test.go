@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"image"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -454,3 +455,60 @@ func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 type failing struct{}
 
 func (failing) Read([]byte) (int, error) { return 0, errors.New("no") }
+
+// A wheel's turn belongs to what it began on. A trackpad goes on sending turns
+// after the fingers have left it, and a task put away with esc while they were
+// still coming handed the rest of them to the board: the column under the
+// pointer scrolled though nobody had turned anything over it.
+func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
+	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
+	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo", Description: long}}
+	for i := 2; i <= 40; i++ {
+		cards = append(cards, reading.Card{Number: i, Title: "Other " + strconv.Itoa(i), State: "todo"})
+	}
+	w := holding(newFake(), cards...)
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	frame, _, _, _, _ := w.sayingOn()
+	over := Point{X: frame.X + 10, Y: frame.Y + 10}
+	if !w.Layout().Column[1].In(over) {
+		t.Fatal("this proves nothing: there is no column under the description")
+	}
+	start := moment
+	turn := func(w Window, after time.Duration) Window {
+		w, _ = Pointing(w, Gesture{}, pointer.Scroll, over, lineHigh, start.Add(after))
+		return w
+	}
+	w = turn(w, 0)
+	w = turn(w, 16*time.Millisecond)
+	if w.Saying() == 0 {
+		t.Fatal("the turn did not scroll the description")
+	}
+	// Put away while the trackpad is still sending.
+	w = w.Key("esc")
+	if w.Screen() != OnTheBoard {
+		t.Fatalf("esc left the window on %v", w.Screen())
+	}
+	for i := 2; i < 10; i++ {
+		w = turn(w, time.Duration(i)*16*time.Millisecond)
+	}
+	if w.scroll[1] != 0 {
+		t.Fatalf("the rest of the turn scrolled the column under it to %d", w.scroll[1])
+	}
+	// A turn begun after a pause is a turn of its own, and it reaches the board
+	// — a pause of exactly Still() included, which is where one gesture ends.
+	fresh := 9*16*time.Millisecond + Still()
+	w = turn(w, fresh)
+	if w.scroll[1] == 0 {
+		t.Fatal("a fresh turn over the board after a pause of Still() did not scroll it")
+	}
+	// And the other way round: the rest of a turn of the board does not scroll
+	// the task opened while it was still coming.
+	w = w.DoubleClick(middleOf(w, 1, 0))
+	if w.Screen() != OnDetail {
+		t.Fatalf("the task did not open: %v", w.Screen())
+	}
+	w = turn(w, fresh+16*time.Millisecond)
+	if w.Saying() != 0 {
+		t.Fatalf("the rest of a turn of the board scrolled the description to %d", w.Saying())
+	}
+}

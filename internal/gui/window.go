@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -163,6 +164,11 @@ type Window struct {
 	// says a word can be clicked was missing from the whole surface.
 	over    string
 	hovered bool
+	// wheelOn is the screen the turn of the wheel under way began on, and
+	// wheelAt when its last part arrived: the rest of a turn belongs to what it
+	// began on, and never to what opens under it while it is still coming.
+	wheelOn Screen
+	wheelAt time.Time
 	// question is which of the two things the one question screen is asking
 	// about. There used to be only one.
 	question Question
@@ -1388,6 +1394,22 @@ func (w Window) LetGo(p Point) Window {
 func turning(spare, by int) (lines, left int) {
 	total := spare + by
 	return total / lineHigh, total % lineHigh
+}
+
+// wheeling is one part of a turn of the wheel. A part close enough to the last
+// one goes on the same gesture, and is dropped if what that gesture began on
+// has gone: a trackpad goes on sending after the fingers leave it, and a task
+// put away with esc while it was still sending handed the rest of the turn to
+// the board — the column under the pointer scrolled though nobody had turned
+// anything over it. A part after a pause is a turn of its own.
+func (w Window) wheeling(by int, p Point, now time.Time) Window {
+	goingOn := !w.wheelAt.IsZero() && now.Sub(w.wheelAt) < Still()
+	w.wheelAt = now
+	if goingOn && w.wheelOn != w.screen {
+		return w
+	}
+	w.wheelOn = w.screen
+	return w.Scroll(p, by)
 }
 
 // Scroll moves the column under the pointer, and no other.

@@ -163,6 +163,15 @@ Gio is asked for `Move`, `Enter` and `Leave`, the window keeps which offer the
 pointer is over, and the drawing decides what that looks like — a value, like
 everything else here, so a scenario can ask.
 
+**A turn of the wheel belongs to what it began on.** A trackpad goes on
+sending after the fingers leave it, and a task put away with `esc` while it was
+still sending handed the rest of the turn to the board: the column under the
+pointer scrolled though nobody had turned anything over it. A part of a turn
+that comes within 150 ms of the last one goes on the same gesture, and is
+dropped if what the gesture began on has gone; a part after a pause is a turn
+of its own. Gio reports no phases for a gesture, so the pause is what says one
+has ended.
+
 **Every bar can be pulled.** The history's, the description's, the work under a
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
