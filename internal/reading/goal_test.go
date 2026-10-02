@@ -50,3 +50,18 @@ func TestReaches(t *testing.T) {
 		t.Fatal("a word that is nowhere in it reached it")
 	}
 }
+
+// An objective was searched on two fields where a task is searched on all of
+// them. One word, "search", and two meanings a tab apart.
+func TestAGoalIsSearchedTheWayACardIs(t *testing.T) {
+	g := Goal{Number: 3, Title: "Ship cairn", State: "active", Priority: "high",
+		Labels: []string{"q4"}}
+	for _, word := range []string{"q4", "active", "high", "3"} {
+		if !ReachesGoal(g, word) {
+			t.Errorf("a search for %q does not reach the objective", word)
+		}
+	}
+	if ReachesGoal(g, "ship q3") {
+		t.Error("a word the objective does not carry still reached it")
+	}
+}

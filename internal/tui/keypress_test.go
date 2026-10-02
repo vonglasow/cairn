@@ -30,12 +30,25 @@ func keyPress(name string) tea.KeyPressMsg {
 		// A key that types nothing, for the tests that need one.
 		return tea.KeyPressMsg{Code: tea.KeyF1}
 	}
+	if rest, found := cutCtrl(name); found {
+		r := []rune(rest)[0]
+		return tea.KeyPressMsg{Code: r, Mod: tea.ModCtrl, Text: string(r)}
+	}
 	if rest, found := cutShift(name); found {
 		r := []rune(rest)[0]
 		return tea.KeyPressMsg{Code: r, Mod: tea.ModShift, Text: string(r)}
 	}
 	r := []rune(name)[0]
 	return tea.KeyPressMsg{Code: r, Text: name}
+}
+
+// cutCtrl takes the "ctrl+" off a key's name, the way cutShift does its own.
+func cutCtrl(name string) (string, bool) {
+	const ctrl = "ctrl+"
+	if len(name) > len(ctrl) && name[:len(ctrl)] == ctrl {
+		return name[len(ctrl):], true
+	}
+	return "", false
 }
 
 // cutShift takes the "shift+" off a key's name.

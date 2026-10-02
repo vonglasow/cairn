@@ -404,6 +404,39 @@ Feature: The board
       And I press "esc"
       Then the board carries 2 tasks
 
+    @tui-escape-widens-a-search-already-accepted
+    Scenario: escape widens a board a search has already narrowed
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Buy a lamp"
+      When I open the board
+      And I press "/"
+      And I type "spec"
+      And I press "enter"
+      Then the board carries 1 task
+      When I press "esc"
+      Then the board carries 2 tasks
+
+    @tui-searching-by-label-and-by-column
+    Scenario: a search reaches the labels and the column, as the engine's does
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Buy a lamp"
+      And I edited task 1 with the labels "backend" and "sprint-172"
+      When I open the board
+      And I press "/"
+      And I type "backend"
+      Then the board carries 1 task
+      And the board says "Write the spec"
+
+    @tui-searching-keeps-only-what-carries-every-word
+    Scenario: every word typed has to be carried, not one of them
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Write the report"
+      When I open the board
+      And I press "/"
+      And I type "write todo"
+      Then the board carries 1 task
+      And the board says "Write the spec"
+
   Rule: A card says what its task carries, and no more
 
     Twenty characters of width decide what fits. What is on a card was chosen
@@ -432,12 +465,54 @@ Feature: The board
       When I open the board
       Then the card for task 2 says "1"
 
+    @tui-a-card-says-when-nothing-blocks-it-any-more
+    Scenario: a stalled card says when every task it waits on is done
+      Given I added a task titled "Write the spec" with the state "done"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 2 with the state "blocked"
+      When I open the board
+      Then the card for task 2 says "nothing blocks it"
+
+    @tui-an-archived-card-is-marked
+    Scenario: what was archived is told apart from what is on the board
+      Given I added a task titled "Write the spec"
+      And I archived task 1
+      When I open the board
+      And I press "shift+a"
+      Then the card for task 1 is marked as archived
+
     @tui-the-task-in-focus-is-told-apart
     Scenario: the task in hand is drawn unlike any other
       Given I added a task titled "Write the spec"
       And I put task 1 in focus
       When I open the board
       Then the card for task 1 is drawn as the one in focus
+
+  Rule: The command prompt runs what the command line runs
+
+    The bar offers ":" and the prompt behind it knew two words out of the whole
+    engine. What is understood there is what is understood at the command line,
+    read off the same list of operations — so an operation added to cairn is
+    understood here the day it is added.
+
+    @tui-the-command-prompt-runs-an-operation
+    Scenario: a command typed at the prompt is the command line's own
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press ":"
+      And I type "task edit 1 --state current"
+      And I press "enter"
+      And the board looks again
+      Then task 1 is in the column "current"
+
+    @tui-the-command-prompt-says-what-it-did-not-understand
+    Scenario: a command nobody could read is said rather than swallowed
+      When I open the board
+      And I press ":"
+      And I type "zz"
+      And I press "enter"
+      Then the board says "zz"
 
   Rule: Two tabs, and an objective opens a board of its own
 
@@ -507,6 +582,59 @@ Feature: The board
       And I set the field "title" to "Write the spec"
       And I save the form
       Then task 1 is in the column "todo"
+
+  Rule: Losing work is asked about first
+
+    Two gestures lose work and neither can be undone: deleting a task, and
+    throwing away a form somebody has typed into. Both are asked about, in the
+    same place and with the same two keys — enter agrees, anything else backs
+    out. A whole column going off the board is asked about too: it is not lost,
+    but twelve cards moving on one key is not something to find out afterwards.
+
+    @tui-deleting-asks-first
+    Scenario: deleting asks before it takes the task away
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "d"
+      Then the board says "delete task 1?"
+      And the board carries 1 task
+      When I press "esc"
+      Then the board carries 1 task
+      When I press "d", "enter"
+      And the board looks again
+      Then the board carries 0 tasks
+
+    @tui-a-filled-form-asks-before-it-is-thrown-away
+    Scenario: a form somebody typed into is asked about before it goes
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "e"
+      And I set the field "title" to "Something else"
+      And I press "esc"
+      Then the board says "throw away what you typed?"
+      When I press "esc"
+      Then the mode is "EDIT"
+
+    @tui-an-untouched-form-asks-nothing
+    Scenario: a form nobody typed into closes without a question
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "e"
+      And I press "esc"
+      Then the board does not say "throw away what you typed?"
+      And the mode is "INSERT"
+
+    @tui-a-whole-column-goes-off-the-board-at-once
+    Scenario: the column the cursor is on is archived in one gesture
+      Given I added a task titled "Write the spec" with the state "done"
+      And I added a task titled "Ship it" with the state "done"
+      When I open the board
+      And I press "l", "l", "l"
+      And I press "shift+x"
+      Then the board says "take every task in DONE off the board?"
+      When I press "enter"
+      And the board looks again
+      Then the board carries 0 tasks
 
   Rule: The detail shows what a card cannot
 

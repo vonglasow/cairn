@@ -14,10 +14,12 @@ import (
 // the same Changes the command line hands over, so a field set here and a flag
 // typed there are read by one piece of code and refused by one piece of code.
 
-// save writes what the form holds, and closes it.
+// save writes what the form holds. It does not close it: the answer comes back
+// later, and a form closed before the write was tried took everything somebody
+// had typed with it when the write was refused — a date mistyped, a title left
+// empty. What closes the form is the reading that comes back without an error.
 func (b Board) save() (tea.Model, tea.Cmd) {
 	form := b.form
-	b.screen = OnTheBoard
 	if form.ForObjective {
 		return b, b.saveGoal(form)
 	}

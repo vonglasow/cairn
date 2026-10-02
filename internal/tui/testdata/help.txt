@@ -8,27 +8,27 @@
  │   i           insert mode                   │ │   ▌ normal                                  │
  │   a           add a task                    │ │   ▌ high                                    │
  │   ⇧A          show what was archived        │ │   ▌ critical                                │
- │   /           search                        │ │                                             │
- │   ⇥           next tab                      │ │ STALLED — the top right of a card           │
- │   :           command                       │ │   ⊘  blocked   waiting on somebody else     │
- │                                             │ │   ◉  watching  handed over, needs a look    │
- │ INSERT — the cursor on a task               │ │   ‖  paused    waiting on your decision     │
- │   hjkl ←↓↑→   tasks, and the band           │ │                                             │
- │   gg / G      first / last in the column    │ │ OBJECTIVES                                  │
- │   ⇧hjkl       move it: sideways changes     │ │   ▶  active    being worked towards         │
- │ column, up and down change place            │ │   ‖  on-hold   not for now                  │
- │   ⏎           the detail                    │ │   ✓  reached   done with                    │
- │   e           the form                      │ │   ✕  dropped   given up                     │
- │   f           take or let go the focus      │ │                                             │
- │   d           delete                        │ │ ON A CARD                                   │
- │   x           off the board, or back on     │ │   ≡            a description exists         │
- │   esc         back to normal                │ │   ▪            sub-tasks done / total       │
- │                                             │ │   ⚑            a label                      │
- │ EVERYWHERE                                  │ │   ↳            what is in the way           │
- │   ?           help                          │ │   2d          a deadline close by           │
- ╰─────────────────────────────────────────────╯ │   −3d         one that has passed           │
-                                                 │   ╔═╗         the task in focus             │
-                                                 ╰─────────────────────────────────────────────╯
+ │   ⇧X          take every task in this       │ │                                             │
+ │ column off the board — it asks first        │ │ STALLED — the top right of a card           │
+ │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
+ │   ⇥           next tab                      │ │   ◉  watching  handed over, needs a look    │
+ │   :           command                       │ │   ‖  paused    waiting on your decision     │
+ │                                             │ │                                             │
+ │ INSERT — the cursor on a task               │ │ OBJECTIVES                                  │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ▶  active    being worked towards         │
+ │   gg / G      first / last in the column    │ │   ‖  on-hold   not for now                  │
+ │   ⇧hjkl       move it: sideways changes     │ │   ✓  reached   done with                    │
+ │ column, up and down change place            │ │   ✕  dropped   given up                     │
+ │   ⏎           the detail                    │ │                                             │
+ │   e           the form                      │ │ ON A CARD                                   │
+ │   f           take or let go the focus      │ │   ≡            a description exists         │
+ │   d           delete                        │ │   ▪            sub-tasks done / total       │
+ │   x           off the board, or back on     │ │   ⚑            a label                      │
+ │   esc         back to normal                │ │   ↳            what is in the way           │
+ │                                             │ │   2d          a deadline close by           │
+ │ EVERYWHERE                                  │ │   −3d         one that has passed           │
+ │   ?           help                          │ │   ╔═╗         the task in focus             │
+ ╰─────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
 
 
 

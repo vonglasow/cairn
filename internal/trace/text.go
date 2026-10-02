@@ -123,6 +123,11 @@ func (l *line) columns() string {
 	_, _ = fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.at), l.what())
 	if l.field == "" && l.became != "" {
 		_, _ = fmt.Fprintf(&out, "\t%s", l.became)
+	} else if l.field == "" && l.was != "" {
+		// A deletion names no attribute and became nothing: what it says is
+		// what the task held when it went. Printed, because a history that
+		// keeps it and does not show it keeps it where nobody can read it.
+		_, _ = fmt.Fprintf(&out, "\t%s", l.was)
 	} else if l.field != "" && (l.was != "" || l.became != "") {
 		_, _ = fmt.Fprintf(&out, "\t%s %s %s",
 			domain.OrNothing(l.was), went, domain.OrNothing(l.became))

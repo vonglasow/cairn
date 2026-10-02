@@ -34,6 +34,31 @@ type Form struct {
 	held   map[string]*string
 	keep   *bool
 	fields []reading.Field
+	// opened is what the fields held when the form was opened, so leaving it
+	// can tell a form somebody typed into from one they only looked at. Ten
+	// minutes of typing used to go on an esc with no question, while a
+	// deletion of two words was guarded.
+	opened map[string]string
+}
+
+// Changed says whether anything in the form differs from what it opened with.
+func (f Form) Changed() bool {
+	for name, was := range f.opened {
+		if now, there := f.held[name]; there && *now != was {
+			return true
+		}
+	}
+	return false
+}
+
+// typedInto puts a value into a field, the way the form itself would. Written
+// here rather than in a test, because what a form holds is held behind pointers
+// and a test reaching for them would be a test reaching past the form.
+func (f Form) typedInto(name, value string) Form {
+	if held, there := f.held[name]; there {
+		*held = value
+	}
+	return f
 }
 
 // asking builds the form over a set of fields. Every value is held behind a
@@ -78,7 +103,11 @@ func asking(fields []reading.Field, width, height int, skin Skin) Form {
 		WithKeyMap(walkedByArrows()).
 		WithShowHelp(false).
 		WithHeight(max(6, height))
-	return Form{asked: form, held: held, keep: keep, fields: fields}
+	opened := make(map[string]string, len(fields))
+	for _, field := range fields {
+		opened[field.Name] = field.Value
+	}
+	return Form{asked: form, held: held, keep: keep, fields: fields, opened: opened}
 }
 
 // walkedByArrows is the form's clavier: the arrows walk the fields, and a field
@@ -216,6 +245,13 @@ func (b Board) started() (Board, tea.Cmd) {
 	if form, ok := model.(*huh.Form); ok {
 		b.form.asked = form
 	}
+	// What the form holds once it has settled, and not what the fields were
+	// built from: a closed set opened on nothing comes back holding its first
+	// choice, and comparing with the value before that made every form read as
+	// one somebody had typed into.
+	for name, held := range b.form.held {
+		b.form.opened[name] = *held
+	}
 	return b, cmd
 }
 
@@ -229,13 +265,21 @@ func (b Board) inForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch b.form.asked.State {
 	case huh.StateAborted:
+		// A form somebody typed into is asked about before it goes.
+		if b.form.Changed() {
+			b.asking, b.leaving, b.screen = true, true, OnTheBoard
+			return b, nil
+		}
 		b.screen = OnTheBoard
 		return b, nil
 	case huh.StateCompleted:
-		b.screen = OnTheBoard
 		if !*b.form.keep {
+			b.screen = OnTheBoard
 			return b, nil
 		}
+		// Left open until the write comes back without a refusal. Closed here,
+		// a title left empty or a date mistyped put the refusal in the footer
+		// and everything that had been typed in the bin.
 		return b.save()
 	}
 	return b, cmd

@@ -148,3 +148,60 @@ func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
 		t.Fatal("the card under the cursor is drawn exactly like the others")
 	}
 }
+
+// An archived task showed exactly like a live one. Turn the archive on and the
+// board gained rows that behaved differently from their neighbours with nothing
+// on them to say so.
+func TestAnArchivedTaskCarriesItsOwnMark(t *testing.T) {
+	g := GlyphsFor(Unicode)
+	live := reading.Card{Number: 1, Title: "One", State: "todo"}
+	away := reading.Card{Number: 2, Title: "Two", State: "todo", Archived: true}
+	if marks(live, g) == marks(away, g) {
+		t.Fatalf("an archived card is marked like a live one: %q", marks(away, g))
+	}
+	if !strings.Contains(marks(away, g), g.Archived) {
+		t.Fatalf("the archived mark is not on the card: %q", marks(away, g))
+	}
+}
+
+// Labels past the end of the row were dropped without a word, so a card said it
+// carried one label when it carried four.
+func TestLabelsThatDoNotFitAreCounted(t *testing.T) {
+	c := reading.Card{Number: 1, Title: "One", State: "todo",
+		Labels: []string{"sprint-172", "backend", "urgent", "review"}}
+	row := facts(c, GlyphsFor(Unicode), PlainSkin(), today, 18)
+	if !strings.Contains(row, "+3") {
+		t.Fatalf("a row that dropped three labels does not say so: %q", row)
+	}
+}
+
+// The one thing about a blocked task that has to be acted on: every task it
+// waits on is done. The command line said so and the board did not.
+func TestABlockedCardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
+	c := reading.Card{Number: 1, Title: "Ship it", State: "blocked",
+		Blockers: []int{2}, Freed: true}
+	row := facts(c, GlyphsFor(Unicode), PlainSkin(), today, 40)
+	if !strings.Contains(row, "nothing blocks it") {
+		t.Fatalf("a freed card says %q", row)
+	}
+}
+
+// The two ends of the row that counts what it dropped: a width that holds the
+// count exactly, and one that holds nothing at all.
+func TestARowThatCountsWhatItDropped(t *testing.T) {
+	c := reading.Card{Number: 1, Title: "One", State: "todo",
+		Labels: []string{"aaa", "bbb", "ccc"}}
+	g, s := GlyphsFor(Unicode), PlainSkin()
+
+	// "⚑ aaa  +2" is nine cells. At nine it fits exactly; at eight the last
+	// fact goes too and nothing is left to count beside.
+	if got := facts(c, g, s, today, 9); got != "⚑ aaa  +2" {
+		t.Errorf("at nine the row reads %q", got)
+	}
+	if got := facts(c, g, s, today, 8); got != "" {
+		t.Errorf("at eight the row reads %q, want nothing at all", got)
+	}
+	if got := facts(c, g, s, today, 2); got != "" {
+		t.Errorf("at two the row reads %q, want nothing at all", got)
+	}
+}

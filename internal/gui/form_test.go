@@ -2,6 +2,7 @@ package gui
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"cairn/internal/reading"
@@ -109,7 +110,9 @@ func TestCancellingWritesNothing(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w.form = w.form.Set("title", "Something else")
-	w = w.Choose("Cancel")
+	// Twice: once for the question a changed form now asks, once to agree to
+	// losing what was typed.
+	w = w.Choose("Cancel").Choose("Agree")
 
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("cancelling left the window on %v", w.Screen())
@@ -667,5 +670,45 @@ func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 	}
 	if got := w.Types("zzz").Choosing(); len(got) != 0 {
 		t.Errorf("told something nothing carries, the list offers %v", goalTitles(got))
+	}
+}
+
+// Both surfaces guard a deletion of two words and neither guarded ten minutes
+// of typing: Cancel emptied a filled form without a question.
+func TestLeavingAFilledFormAsksFirst(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	if w.Screen() != OnForm {
+		t.Fatalf("the form did not open: %v", w.Screen())
+	}
+	// Nothing typed: there is nothing to lose, and a question would be noise.
+	if left := w.Choose("Cancel"); left.Screen() != OnTheBoard {
+		t.Fatalf("an untouched form asked about being closed: %v", left.Screen())
+	}
+	w = w.Types("x")
+	asked := w.Choose("Cancel")
+	if asked.Screen() != OnAsking {
+		t.Fatalf("a filled form was thrown away without a question: %v", asked.Screen())
+	}
+	if !strings.Contains(Heads(asked), "typed") {
+		t.Errorf("the question does not say what is being lost: %q", Heads(asked))
+	}
+	if back := asked.Choose("Cancel"); back.Screen() != OnForm {
+		t.Fatalf("backing out of the question did not go back to the form: %v", back.Screen())
+	}
+	if gone := asked.Choose("Agree"); gone.Screen() != OnTheBoard {
+		t.Fatalf("agreeing to lose it left %v", gone.Screen())
+	}
+}
+
+// into() takes the box the text is drawn in, and went on subtracting a card's
+// padding from it as well: the caret landed a glyph and a half from the click.
+func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
+	box := Box{X: 100, Y: 0, W: 200, H: lineHigh}
+	if got := into(box, Point{X: box.X}); got != 0 {
+		t.Errorf("a click on the first character lands at %d", got)
+	}
+	if got := into(box, Point{X: box.X + 3*perGlyph}); got != 3 {
+		t.Errorf("a click three glyphs in lands at %d", got)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -216,6 +217,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added an objective titled "([^"]*)"$`, w.addObjective)
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, w.blockTask)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, w.stateTask)
+	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`, w.labelTask)
 	sc.Step(`^I deleted task (\d+)$`, w.deleteTask)
 	sc.Step(`^I put task (\d+) in focus$`, w.focusTask)
 
@@ -255,6 +257,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the card for task (\d+) says "([^"]*)"$`, w.cardSays)
 	sc.Then(`^the card for objective (\d+) says "([^"]*)"$`, w.goalCardSays)
 	sc.Then(`^the card for task (\d+) is marked as described$`, w.cardDescribed)
+	sc.Then(`^the card for task (\d+) is marked as archived$`, w.cardArchived)
 	sc.Then(`^the card for task (\d+) is drawn as the one in focus$`, w.cardInFocus)
 	sc.Then(`^the board says "([^"]*)"$`, w.boardSays)
 	sc.Then(`^the board does not say "([^"]*)"$`, w.boardDoesNotSay)
@@ -346,6 +349,15 @@ func (w *world) choose(kind string) error {
 // setField walks to a field, clears it, and types what the scenario said. The
 // form is Huh's, so moving on is a tab: enter would only add a line to the box
 // the description is written in.
+// labelTask puts two labels on a task, so a scenario can search for one.
+func (w *world) labelTask(number int, one, two string) error {
+	_, err := w.held.Ask(engine.TaskEdit, engine.Input{
+		Given:  map[string]string{"number": strconv.Itoa(number)},
+		Listed: map[string][]string{"label": {one, two}},
+	})
+	return err
+}
+
 func (w *world) setField(name, value string) error {
 	at := -1
 	for i, field := range w.b.form.fields {
@@ -393,4 +405,186 @@ func (w *world) saveForm() error {
 func (w *world) lookAgain() error {
 	w.refresh()
 	return nil
+}
+
+// A form refused keeps what was typed. It closed before the write was tried,
+// so a title left empty or a date mistyped put the refusal in the footer and
+// the whole form in the bin — the window has always done the opposite.
+func TestARefusedFormKeepsWhatWasTyped(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	if w.b.screen != OnForm {
+		t.Fatalf("the form did not open: %v", w.b.screen)
+	}
+	if err := w.setField("title", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.saveForm(); err != nil {
+		t.Fatal(err)
+	}
+	if w.b.screen != OnForm {
+		t.Errorf("a refused form left the board on %v, losing what was typed", w.b.screen)
+	}
+	if w.b.err == nil {
+		t.Error("a refused form said nothing about why")
+	}
+}
+
+// The help gives back whatever it was asked over. Leaving it put the board
+// back on the board, so asking for help from a form threw the form away —
+// which docs/tui.md promises it does not.
+func TestTheHelpGivesBackWhatItWasAskedOver(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	if w.b.screen != OnForm {
+		t.Fatalf("the form did not open: %v", w.b.screen)
+	}
+	w.press("?")
+	w.press("esc")
+	if w.b.screen != OnForm {
+		t.Errorf("leaving the help by esc put the board on %v", w.b.screen)
+	}
+}
+
+// ctrl+c closes the board. :q was the only way out, and nothing said so —
+// whoever had not read the documentation was shut inside the alt-screen.
+func TestCtrlCClosesTheBoard(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	w.open()
+	_, cmd := w.b.Update(keyPress("ctrl+c"))
+	if cmd == nil {
+		t.Fatal("ctrl+c asked for nothing")
+	}
+	if _, quits := cmd().(tea.QuitMsg); !quits {
+		t.Errorf("ctrl+c asked for %T, not to quit", cmd())
+	}
+}
+
+// Deleting is asked about first. The command line wants --yes, the window puts
+// a question, the agent is told the act destroys — the terminal alone did it on
+// one key, and nothing anywhere can undo it.
+func TestDeletingIsAskedAboutFirst(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("d")
+	if !w.b.Asking() {
+		t.Fatal("d deleted without asking")
+	}
+	w.press("esc")
+	if w.b.Asking() {
+		t.Error("esc left the question open")
+	}
+	if w.b.Where().Showing == 0 {
+		t.Error("the task went even though the question was backed out of")
+	}
+	w.press("d")
+	w.press("enter")
+	if err := w.lookAgain(); err != nil {
+		t.Fatal(err)
+	}
+	if w.b.Where().Showing != 0 {
+		t.Error("agreeing to the question did not delete the task")
+	}
+}
+
+// A search that was accepted can be cleared. esc cleared it only while it was
+// being typed; once accepted the board stayed narrowed, the mode still read
+// NORMAL, and nothing said a filter was on.
+func TestAnAcceptedSearchIsCleared(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	for _, title := range []string{"Write the spec", "Ship it"} {
+		if err := w.addTask(title, "", "", 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	w.open()
+	w.press("/")
+	for _, r := range "spec" {
+		w.press(string(r))
+	}
+	w.press("enter")
+	if w.b.query != "spec" {
+		t.Fatalf("the board is narrowed to %q", w.b.query)
+	}
+	w.press("esc")
+	if w.b.query != "" {
+		t.Errorf("esc left the board narrowed to %q", w.b.query)
+	}
+}
+
+// The board guards a deletion of two words and threw ten minutes of typing away
+// on an esc. A form somebody typed into is asked about; one they only looked at
+// is not.
+func TestLeavingAFilledFormAsksFirst(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.press("i")
+	w.press("e")
+	if w.b.screen != OnForm {
+		t.Fatalf("the form did not open: %v", w.b.screen)
+	}
+	w.b.form = w.b.form.typedInto("title", "Write the spec, differently")
+	w.press("esc")
+	if !w.b.Asking() {
+		t.Fatal("a filled form was thrown away without a question")
+	}
+	w.press("esc")
+	if w.b.screen != OnForm {
+		t.Fatalf("backing out of the question left the board on %v", w.b.screen)
+	}
+	w.press("esc")
+	w.press("enter")
+	if w.b.screen == OnForm {
+		t.Fatal("agreeing to lose what was typed left the form open")
+	}
+}
+
+// Archiving twelve finished tasks was one gesture on the command line and
+// twenty-four on the board. The column the cursor is on goes in one.
+func TestTheWholeColumnCanBeArchivedAtOnce(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	for _, title := range []string{"One", "Two"} {
+		if err := w.addTask(title, "done", "", 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	w.open()
+	for i := 0; i < 3; i++ {
+		w.press("l")
+	}
+	w.press("shift+x")
+	if !w.b.Asking() {
+		t.Fatal("a whole column went without a question")
+	}
+	w.press("enter")
+	if err := w.lookAgain(); err != nil {
+		t.Fatal(err)
+	}
+	if w.b.Where().Showing != 0 {
+		t.Fatalf("%d tasks are still on the board", w.b.Where().Showing)
+	}
 }

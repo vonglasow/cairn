@@ -284,6 +284,15 @@ func (e *Engine) Delete(number int) error {
 	if err != nil {
 		return err
 	}
+	// What the task was, read before it goes. The trace recorded that a task
+	// had been deleted and nothing of what it held — no title, no description
+	// — so even putting it back by hand was impossible. Reading and undoing
+	// are two different asks and cairn answers only the first; a trace that
+	// kept no content made the second unanswerable by anybody.
+	gone, err := e.tasks.Find(number)
+	if err != nil {
+		return err
+	}
 	if err := e.tasks.Delete(number); err != nil {
 		return err
 	}
@@ -295,7 +304,7 @@ func (e *Engine) Delete(number int) error {
 			return err
 		}
 	}
-	return e.record(number, trace.Deleted, "", "", "")
+	return e.record(number, trace.Deleted, "", whatItHeld(gone), "")
 }
 
 // Under hands back what hangs directly under a task.

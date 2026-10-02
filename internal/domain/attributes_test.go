@@ -255,3 +255,33 @@ func TestParseEstimate_saysWhatItWasGiven(t *testing.T) {
 		t.Errorf("err = %q, want it to quote what it was given", got)
 	}
 }
+
+// A refusal that names what was wrong and not what is right leaves somebody
+// guessing. All four of these are closed sets, or one fixed shape, and saying
+// so costs one clause.
+func TestARefusalSaysWhatWouldHaveBeenTaken(t *testing.T) {
+	for _, c := range []struct {
+		what string
+		err  error
+		says []string
+	}{
+		{"state", refusedBy(ParseState("nope")), []string{"backlog", "todo", "current", "done"}},
+		{"priority", refusedBy(ParsePriority("nope")), []string{"low", "normal", "high", "critical"}},
+		{"deadline", refusedBy(ParseDeadline("nope")), []string{"2006-01-02"}},
+		{"estimate", refusedBy(ParseEstimate("nope")), []string{"1h30m", "2h"}},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			if c.err == nil {
+				t.Fatal("nothing was refused")
+			}
+			for _, word := range c.says {
+				if !strings.Contains(c.err.Error(), word) {
+					t.Errorf("%q does not say %q is taken", c.err, word)
+				}
+			}
+		})
+	}
+}
+
+// refusedBy drops the value a parser returned and keeps what it refused with.
+func refusedBy[T any](_ T, err error) error { return err }

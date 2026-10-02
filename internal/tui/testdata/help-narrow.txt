@@ -11,20 +11,20 @@
  │   a           add a task      │ │   ▌ critical                  │
  │   ⇧A          show what was   │ │                               │
  │ archived                      │ │ STALLED — the top right of a  │
- │   /           search          │ │ card                          │
- │   ⇥           next tab        │ │   ⊘  blocked   waiting on     │
- │   :           command         │ │ somebody else                 │
- │                               │ │   ◉  watching  handed over,   │
- │ INSERT — the cursor on a task │ │ needs a look                  │
- │   hjkl ←↓↑→   tasks, and the  │ │   ‖  paused    waiting on     │
- │ band                          │ │ your decision                 │
- │   gg / G      first / last in │ │                               │
- │ the column                    │ │ OBJECTIVES                    │
- │   ⇧hjkl       move it:        │ │   ▶  active    being worked   │
- │ sideways changes column, up   │ │ towards                       │
- │ and down change place         │ │   ‖  on-hold   not for now    │
- │   ⏎           the detail      │ │   ✓  reached   done with      │
- │   e           the form        │ │   ✕  dropped   given up       │
- │   f           take or let go  │ │                               │
+ │   ⇧X          take every task │ │ card                          │
+ │ in this column off the board  │ │   ⊘  blocked   waiting on     │
+ │ — it asks first               │ │ somebody else                 │
+ │   /           search          │ │   ◉  watching  handed over,   │
+ │   ⇥           next tab        │ │ needs a look                  │
+ │   :           command         │ │   ‖  paused    waiting on     │
+ │                               │ │ your decision                 │
+ │ INSERT — the cursor on a task │ │                               │
+ │   hjkl ←↓↑→   tasks, and the  │ │ OBJECTIVES                    │
+ │ band                          │ │   ▶  active    being worked   │
+ │   gg / G      first / last in │ │ towards                       │
+ │ the column                    │ │   ‖  on-hold   not for now    │
+ │   ⇧hjkl       move it:        │ │   ✓  reached   done with      │
+ │ sideways changes column, up   │ │   ✕  dropped   given up       │
+ │ and down change place         │ │                               │
 
  ↓↑ read on   esc close

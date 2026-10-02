@@ -96,6 +96,27 @@ func (e *Engine) recordCreated(t task.Task) error {
 	return nil
 }
 
+// whatItHeld is everything a task carried, written into the one act that says
+// it was deleted. The trace used to record that a task had gone and nothing of
+// what went with it — no title, no description — so even putting it back by
+// hand was impossible.
+//
+// On the act itself rather than one act per attribute: a deletion is one thing
+// that happened, and a history that read as twelve would say a task was deleted
+// twelve times.
+func whatItHeld(t task.Task) string {
+	f := factsOf(t)
+	var held []string
+	for _, a := range theAttributes {
+		value := a.value(f)
+		if value == "" {
+			continue
+		}
+		held = append(held, a.named+": "+value)
+	}
+	return strings.Join(held, "; ")
+}
+
 // recordChanges writes down one act per attribute that actually took another
 // value. An attribute named in an edit but given what it already held is not a
 // change, and recording it would fill a history with acts nobody performed.

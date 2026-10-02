@@ -43,6 +43,12 @@ func StoppedGlyph(state string, g Glyphs) string {
 // whenever a task happens to carry a description.
 func marks(c reading.Card, g Glyphs) string {
 	var found []string
+	// First, and before anything else a card carries: an archived task is on a
+	// board that behaves differently from the one it looks like it is on, and
+	// nothing else on the row says so.
+	if c.Archived {
+		found = append(found, g.Archived)
+	}
 	if c.Described {
 		found = append(found, g.Described)
 	}
@@ -62,6 +68,12 @@ func marks(c reading.Card, g Glyphs) string {
 // afterwards, one fact at a time.
 func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
 	if reading.Stopped(c.State) {
+		// A task waiting on nothing any more is the one thing about blocking
+		// that has to be acted on, so it is said in the bright ink and in place
+		// of the list of what used to be in the way.
+		if c.Freed {
+			return s.Bright.Render(Clip(g.Reached+" nothing blocks it", width))
+		}
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
@@ -83,7 +95,9 @@ func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		told = append(told, tag)
 		dressed = append(dressed, s.Says.Render(tag))
 	}
-	return dress(Join("  ", width, told...), told, dressed)
+	// A row that ran out of width dropped whatever did not fit without a word,
+	// so a task carrying four labels read as a task carrying one.
+	return withMore(told, dressed, s, width)
 }
 
 // dress puts the styling back on a row whose width was worked out plain. It
@@ -93,14 +107,38 @@ func dress(kept string, told, dressed []string) string {
 	if kept == "" {
 		return ""
 	}
-	how := 1
+	return strings.Join(dressed[:max(fit(told, lipgloss.Width(kept)), 1)], "  ")
+}
+
+// withMore says how many facts a row had no room for, and drops one more fact
+// to make room for saying it. Nothing is added when everything fitted: a row
+// that said "+0" would be a row saying something about nothing.
+func withMore(told, dressed []string, s Skin, width int) string {
+	shown := fit(told, width)
+	if shown == len(told) {
+		return dress(Join("  ", width, told...), told, dressed)
+	}
+	for shown > 0 {
+		more := fmt.Sprintf("+%d", len(told)-shown)
+		row := append(append([]string{}, told[:shown]...), more)
+		if lipgloss.Width(strings.Join(row, "  ")) <= width {
+			kept := append(append([]string{}, dressed[:shown]...), s.Faint.Render(more))
+			return strings.Join(kept, "  ")
+		}
+		shown--
+	}
+	return ""
+}
+
+// fit says how many of the facts a row of this width holds.
+func fit(told []string, width int) int {
+	kept := Join("  ", width, told...)
 	for i := range told {
 		if !strings.Contains(kept, told[i]) {
-			break
+			return i
 		}
-		how = i + 1
 	}
-	return strings.Join(dressed[:how], "  ")
+	return len(told)
 }
 
 // inTheWay says what is stopping a task: the tasks it waits on, or the words

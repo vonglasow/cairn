@@ -18,6 +18,12 @@ cairns wearing one name.
 The consequence worth stating: nothing in this file changes what cairn does. It
 changes who may ask, and how the asking is shaped.
 
+It also means what an agent reads is what a person reads. A row of a listing
+said only `#12  Write the spec` for a long time, which left an agent opening
+every task one at a time to find out which was urgent or late; the row now
+carries the column, the priority, the deadline and the labels, and it does so
+for both of them at once because there is only one place it is written.
+
 ## It is started like every other command
 
 `cairn mcp serve`, because everything else reads `cairn <thing> <verb>` and a

@@ -179,7 +179,7 @@ func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
 	w := New(f, 1200, 800).Wonder()
 
 	shot := drawn(t, w)
-	if got := ink(shot, w.Layout().Bar, Dark().Back); got == 0 {
+	if got := ink(shot, WrongBox(w.Layout()), Dark().Back); got == 0 {
 		t.Fatal("nothing was said about a store out of reach")
 	}
 }
@@ -1432,5 +1432,39 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	if some <= loose || some >= held {
 		t.Errorf("a run of two characters painted %d, between %d and %d expected",
 			some, loose, held)
+	}
+}
+
+// Every card has an edge, not only the one that is chosen. A fill at 1.35
+// against the board is a hint; the edge is what says where a card stops.
+func TestEveryCardHasAnEdge(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		card(1, "Write the spec", "todo"),
+		card(2, "Ship it", "todo"))
+	shot := drawn(t, w.clicked(middleOf(w, 1, 0)))
+
+	for at, what := range map[int]string{0: "the chosen card", 1: "a card nobody chose"} {
+		parts := PartsOf(w.Layout().CardAt(1, at, 0))
+		top := Box{X: parts.Panel.X, Y: parts.Panel.Y, W: parts.Panel.W, H: 1}
+		if ink(shot, top, Dark().Back) == 0 {
+			t.Errorf("%s is drawn without an edge", what)
+		}
+	}
+}
+
+// The three lanes count what they hold, the way the four columns do, and the
+// objectives page says what it is. Counting by eye is not counting.
+func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "Write the spec", State: "blocked"},
+		reading.Card{Number: 2, Title: "Ship it", State: "blocked"},
+		reading.Card{Number: 3, Title: "Later", State: "watching"})
+	if got := w.LaneSays("blocked"); got != "blocked  2" {
+		t.Errorf("the blocked lane says %q", got)
+	}
+	if got := w.LaneSays("paused"); got != "paused  0" {
+		t.Errorf("a lane with nothing in it says %q", got)
 	}
 }

@@ -18,6 +18,7 @@ type fake struct {
 	tasks   []task.Task
 	goals   []objective.Objective
 	focus   []int
+	freed   []int
 	version int64
 	// fail refuses everything; refuse refuses one operation by name, which is
 	// what a test needs to reach the path that gives up halfway through a
@@ -52,7 +53,7 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	switch named {
 	case "task list":
 		// A listing marks the focus, which is where a reading learns it.
-		return engine.Answer{Tasks: f.tasks, InFocus: &f.focus}, nil
+		return engine.Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed}, nil
 	case "objective list":
 		return engine.Answer{Objectives: f.goals}, nil
 	}

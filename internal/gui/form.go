@@ -35,6 +35,33 @@ type Form struct {
 	caret int
 	// held is how far a run's anchor lies from the caret, nought for none.
 	held int
+	// opened is what the fields held when the form was opened, so leaving it
+	// can tell a form somebody typed into from one they only looked at. Ten
+	// minutes of typing used to go on an esc without a question, while a
+	// deletion of two words was guarded.
+	opened []string
+}
+
+// Changed says whether anything in the form differs from what it opened with.
+func (f Form) Changed() bool {
+	if len(f.opened) != len(f.fields) {
+		return false
+	}
+	for i := range f.fields {
+		if f.fields[i].Value != f.opened[i] {
+			return true
+		}
+	}
+	return false
+}
+
+// asOpened records what the fields held, which is what Changed compares with.
+func asOpened(f Form) Form {
+	f.opened = make([]string, len(f.fields))
+	for i := range f.fields {
+		f.opened[i] = f.fields[i].Value
+	}
+	return f
 }
 
 // Writing is the field the keyboard is on, as a text with its caret.
@@ -65,19 +92,19 @@ func (f Form) onto(at int) Form {
 // adding opens an empty form for whichever tab asked.
 func adding(tab Tab) Form {
 	if tab == Objectives {
-		return Form{Adding: true, ForObjective: true, fields: reading.GoalFields(reading.Goal{})}
+		return asOpened(Form{Adding: true, ForObjective: true, fields: reading.GoalFields(reading.Goal{})})
 	}
-	return Form{Adding: true, fields: reading.TaskFields(reading.Card{})}
+	return asOpened(Form{Adding: true, fields: reading.TaskFields(reading.Card{})})
 }
 
 // editing opens a form on what a task already carries.
 func editing(c reading.Card) Form {
-	return Form{Number: c.Number, fields: reading.TaskFields(c)}
+	return asOpened(Form{Number: c.Number, fields: reading.TaskFields(c)})
 }
 
 // editingGoal is the same for an objective.
 func editingGoal(g reading.Goal) Form {
-	return Form{Number: g.Number, ForObjective: true, fields: reading.GoalFields(g)}
+	return asOpened(Form{Number: g.Number, ForObjective: true, fields: reading.GoalFields(g)})
 }
 
 // Fields is what the form asks about, in the order it lays them out.
@@ -228,7 +255,20 @@ func (w Window) fieldAt(p Point) (int, bool) {
 // into says how many characters into a field's value a point falls, so that
 // clicking in the middle of a word puts the caret there rather than at the end.
 func into(value Box, p Point) int {
-	return max(0, (p.X-value.X-padding)/perGlyph)
+	return max(0, (p.X-value.X)/perGlyph)
+}
+
+// reaching says which character of a field a point lands on, line and column
+// both. It measures inside the frame the words are drawn in, where into()
+// measured from the value box and so sat six points off, and it reads the line
+// the point is down to, which into() never did.
+func (w Window) reaching(at int, p Point) int {
+	fields := w.form.Fields()
+	box := Over(w.width, w.height)
+	_, value := FieldRow(box, FieldTop(box, fields, at))
+	inside := Inside(Framed(value, RowsOf(fields[at])))
+	lines := Wrapped(fields[at].Value, room(inside))
+	return lines.Reaches(inside, p, perGlyph)
 }
 
 // Walk moves the keyboard from one field to the next, and stops at both ends
@@ -291,11 +331,26 @@ func (w Window) Cancel() Window {
 		w.looking = Written{}
 		return w
 	}
+	// Backing out of the search box itself clears what it was narrowing to.
+	// This used to be a branch on esc alone; the bar now offers the same act,
+	// and an offer that did less than the key behind it would be a bar lying
+	// about what it does.
+	if w.screen == OnSearch {
+		w.screen, w.looking = OnTheBoard, Written{}
+		return w
+	}
+	// A form somebody typed into is asked about before it goes. The window
+	// guards a deletion of two words; ten minutes of typing went on an esc
+	// with no question at all.
+	if w.screen == OnForm && w.form.Changed() {
+		w.screen, w.question = OnAsking, aboutLeaving
+		return w
+	}
 	// Anywhere else it closes what is open and nothing more. A search
 	// narrowing the board is not what was opened: a task found by searching,
 	// opened, changed and put away used to give back the whole board, leaving
 	// somebody to type their search again to carry on where they were.
-	w.screen, w.form = OnTheBoard, Form{}
+	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 	return w
 }
 
@@ -323,6 +378,16 @@ func (w Window) Choose(name string) Window {
 		// is what Cancel on a form means.
 		if w.screen == OnChoosing {
 			return w.leaving()
+		}
+		// Backing out of the question about leaving a form goes back to the
+		// form, which is the whole point of having asked.
+		if w.question == aboutLeaving {
+			w.screen, w.question = OnForm, aboutDeleting
+			return w
+		}
+		if w.question == aboutSweeping {
+			w.screen, w.question = OnTheBoard, aboutDeleting
+			return w
 		}
 		return w.Cancel()
 	case "new":
@@ -352,7 +417,14 @@ func (w Window) Choose(name string) Window {
 	case "archived":
 		w.archived = !w.archived
 		return w
-	case "delete":
+	case "delete", "agree":
+		if w.question == aboutSweeping {
+			return w.sweeping()
+		}
+		if w.question == aboutLeaving {
+			w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+			return w
+		}
 		return w.Delete()
 	case "archive", "restore":
 		return w.puttingAway()
@@ -389,7 +461,7 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 // window does that loses work, and work lost without being asked is work
 // somebody has to remember they lost.
 func (w Window) Delete() Window {
-	if w.screen == OnAsking {
+	if w.screen == OnAsking && w.question == aboutDeleting {
 		return w.deleting()
 	}
 	if w.chosen == 0 {

@@ -14,7 +14,8 @@ cairn task add "Write the tests" --parent 1
 cairn task add "Write the docs" --objective 1
 cairn task add "Write the spec" --objective 1 --objective 2   # it serves both
 cairn task edit 1 --objective +3   # one more, without naming the others
-cairn task list      # sub-tasks are listed under the task they hang from
+cairn task list      # each row says its column, priority, deadline and labels
+                     # sub-tasks are listed under the task they hang from
 cairn task list --state todo --priority high   # only what carries all of it
 cairn task list --label team --label urgent    # both labels, not either
 cairn task list --objective 1                  # only what serves it
@@ -210,7 +211,13 @@ each of them opens the same board holding only what serves it.
 It reads like vim. `hjkl` and the arrows only ever navigate; `i` takes hold of a
 task and `⇧hjkl` moves it, its state following wherever it lands. `a` adds, `e`
 opens the form, `⏎` opens the detail, `/` narrows the board in place, `:` takes
-the commands the command line takes, and `?` answers in every mode. `:q` leaves.
+every operation the command line takes, and `?` answers in every mode. `:q`
+leaves.
+
+Two things lose work and both are asked about first: `d`, which deletes, and
+leaving a form you have typed into. `⇧X` takes a whole column off the board and
+asks as well — nothing is lost, but twelve cards moving on one key is not
+something to find out about afterwards.
 
 It stays true while it is open: something added at another terminal, or by an
 agent over MCP, turns up on its own — and your cursor stays on the task it was
@@ -231,8 +238,13 @@ choose, double-click to open, drag a card into a column to change its state —
 where it lands is its new place as well, so the order is set by putting things
 where they go rather than by a command. The wheel scrolls what is under it.
 
+A card says when it is wanted, what the work has cost against what it was
+reckoned to cost, and what it serves — on the line that carries its labels, so
+none of it needs opening anything.
+
 The keys say what they do: the bar along the bottom writes each one beside what
-it does, and a key works exactly where the bar offers it. `tab` and `shift+tab`
+it does, a key works exactly where the bar offers it, and whatever the pointer
+is resting on lights up. `tab` and `shift+tab`
 walk the two pages, which are drawn as folders — the one you are on opens onto
 the page rather than being merely a different colour.
 

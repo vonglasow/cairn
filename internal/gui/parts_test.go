@@ -236,7 +236,7 @@ func TestTheFourEdgesOfAnOutline(t *testing.T) {
 
 // The first row of a panel is inside it, below its top.
 func TestTheFirstRowOfAPanel(t *testing.T) {
-	box := Box{X: 10, Y: 20, W: 100, H: 50}
+	box := Box{X: 10, Y: 20, W: 100, H: 200}
 	if got := FirstRow(box); got <= box.Y || got >= box.Y+box.H {
 		t.Errorf("the first row is at %d in a panel from %d to %d", got, box.Y, box.Y+box.H)
 	}
@@ -343,8 +343,17 @@ func TestTheSearchIsABoxAlongTheBottom(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	box := Searching(l)
 
-	if box != l.Bar {
+	// It shares the bar with one offer, so a search can be left with the
+	// pointer: taking the whole of it left a key as the only way out.
+	if box.Y != l.Bar.Y || box.H != l.Bar.H {
 		t.Errorf("the search box is %+v and the bar %+v", box, l.Bar)
+	}
+	if first := OfferAt(l, 0); box.X < first.X+first.W {
+		t.Errorf("the search box starts at %d and the offer ends at %d", box.X, first.X+first.W)
+	}
+	if box.X+box.W > l.Bar.X+l.Bar.W {
+		t.Errorf("the search box runs to %d and the bar ends at %d",
+			box.X+box.W, l.Bar.X+l.Bar.W)
 	}
 	word, into := SearchWord(box), SearchInto(box)
 	if word.X < box.X || word.X+word.W > into.X {
@@ -576,8 +585,13 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 	if four.H <= one.H {
 		t.Errorf("a field of four lines is %d tall and one of a single line %d", four.H, one.H)
 	}
-	if one.W != value.W || one.X != value.X {
-		t.Errorf("the frame is %+v and what it holds %+v", one, value)
+	// A field of one line is bounded; a long one takes the room there is.
+	if one.X != value.X {
+		t.Errorf("the frame starts at %d and what it holds at %d", one.X, value.X)
+	}
+	if one.W > value.W || four.W != value.W {
+		t.Errorf("the one-line frame is %d wide, the long one %d, the value %d",
+			one.W, four.W, value.W)
 	}
 	inside := Inside(four)
 	if inside.X <= four.X || inside.X+inside.W >= four.X+four.W {
@@ -1040,5 +1054,198 @@ func TestHeldOn_coversTheLinesItCrosses(t *testing.T) {
 	// A run of no length covers nothing, on the line it sits in.
 	if _, _, on := HeldOn(lines, 4, 4, 0); on {
 		t.Error("a run of no length was said to cover a line")
+	}
+}
+
+// A panel's own offers are as easy to hit as the bar's. They were eighteen
+// points tall against the bar's thirty-two — so Delete and Cancel, on the one
+// screen that asks before losing work, were the smallest targets drawn.
+func TestAPanelsOffersAreAsEasyToHitAsTheBars(t *testing.T) {
+	box := Over(1200, 800)
+	offer := PanelOfferAt(box, 0)
+	bar := OfferAt(LayoutFor(1200, 800), 0)
+	if offer.H < bar.H {
+		t.Errorf("a panel's offer is %d tall and the bar's is %d", offer.H, bar.H)
+	}
+	// And it still sits inside the panel it belongs to.
+	if offer.Y+offer.H > box.Y+box.H {
+		t.Errorf("the offer runs to %d and the panel ends at %d", offer.Y+offer.H, box.Y+box.H)
+	}
+}
+
+// A tile has as much room under its words as over them. It had four points
+// above and none below: the text finished exactly on the panel's edge.
+func TestATileBreathesOnBothSides(t *testing.T) {
+	tile := Box{X: 0, Y: 100, W: 400, H: SubHeight}
+	panel, writing := SubPanel(tile), SubWriting(tile)
+	over := writing.Y - panel.Y
+	under := (panel.Y + panel.H) - (writing.Y + writing.H)
+	if over != under {
+		t.Errorf("a tile leaves %d above its words and %d below", over, under)
+	}
+	if under <= 0 {
+		t.Errorf("a tile leaves %d below its words", under)
+	}
+}
+
+// A field holding one line is as wide as one line needs, not as wide as the
+// panel. A date in a box of seven hundred points says nothing about what it
+// expects.
+func TestAOneLineFieldIsNotAsWideAsThePanel(t *testing.T) {
+	box := Over(1200, 800)
+	fields := reading.TaskFields(reading.Card{})
+	var short, long Box
+	for i, field := range fields {
+		_, value := FieldRow(box, FieldTop(box, fields, i))
+		if field.Long {
+			long = Framed(value, RowsOf(field))
+			continue
+		}
+		if short.W == 0 {
+			short = Framed(value, RowsOf(field))
+		}
+	}
+	if short.W >= long.W {
+		t.Errorf("a one-line field is %d wide and a long one %d", short.W, long.W)
+	}
+	if short.W < 240 {
+		t.Errorf("a one-line field is %d wide, which is too little to type in", short.W)
+	}
+}
+
+// The most instructive refusal the product has — "it is still blocked, by #3
+// … take them away first" — was drawn on one line of bar, at the smallest size
+// in the window, and cut off just before the instruction.
+func TestAnErrorHasRoomForMoreThanTheBar(t *testing.T) {
+	l := LayoutFor(1200, 800)
+	wrong := WrongBox(l)
+	if wrong.H < 2*lineHigh {
+		t.Errorf("an error gets %d, which is less than two lines", wrong.H)
+	}
+	if wrong.Y+wrong.H != l.Bar.Y+l.Bar.H {
+		t.Errorf("an error does not end where the bar does: %d against %d",
+			wrong.Y+wrong.H, l.Bar.Y+l.Bar.H)
+	}
+	if wrong.Y >= l.Bar.Y {
+		t.Error("an error has no more room than the bar it replaces")
+	}
+}
+
+// The history was thirty lines of the faintest ink in the window — a thing to
+// read written in the ink reserved for metadata. The time stays faint; what was
+// done is read.
+func TestAHistoryLineIsSplitFromItsTimestamp(t *testing.T) {
+	stamp, rest, ok := Stamped("2026-10-01T09:00:00Z  set title → Write the spec")
+	if !ok {
+		t.Fatal("a line beginning with a time was not split")
+	}
+	if stamp != "2026-10-01T09:00:00Z" {
+		t.Errorf("the stamp is %q", stamp)
+	}
+	if rest != "set title → Write the spec" {
+		t.Errorf("what was done is %q", rest)
+	}
+	if _, _, ok := Stamped("  a line carried on from the one above"); ok {
+		t.Error("a wrapped line was taken for one beginning with a time")
+	}
+}
+
+// One field to the next, and one line of a panel to the next, are the same
+// step. Pinned, because a window spacing the same text at two rhythms reads as
+// two pieces of software and nothing else would notice.
+func TestOneFieldToTheNextIsOneStep(t *testing.T) {
+	// Written as numbers and not as the sum they come from: an expression
+	// repeated on both sides of a comparison agrees with itself however it is
+	// mutated, and says nothing at all.
+	if one := fieldHigh(reading.Field{Name: "title"}); one != 32 {
+		t.Fatalf("a one-line field takes %d, want 32", one)
+	}
+	if apart != 32 {
+		t.Fatalf("a panel's rows are %d apart, want the 32 a field is high", apart)
+	}
+	if long := fieldHigh(reading.Field{Name: "description", Long: true}); long != 86 {
+		t.Fatalf("a long field takes %d, want 86", long)
+	}
+}
+
+// The labels get what the facts beside them leave. Worked out here and not in
+// the drawing, for the reason this file opens with: arithmetic inside a drawing
+// is arithmetic no assertion can judge.
+func TestTheLabelsGetWhatTheFactsLeave(t *testing.T) {
+	labels := Box{X: 10, Y: 0, W: 200, H: lineHigh}
+	if got := LabelsRoom(labels, ""); got != labels.W {
+		t.Fatalf("a card carrying no facts leaves %d of %d", got, labels.W)
+	}
+	said := "2d  9h/2h"
+	got := LabelsRoom(labels, said)
+	if want := labels.W - CountedAt(labels, said).W - padding; got != want {
+		t.Fatalf("the labels get %d, want %d", got, want)
+	}
+	if LabelsRoom(Box{W: 8}, said) != 0 {
+		t.Fatal("a card with no room left gives the labels a negative width")
+	}
+}
+
+// Where what was done is written, once the time it happened has taken its room.
+func TestWhatWasDoneIsWrittenPastTheTime(t *testing.T) {
+	if got := StampedOver("2026-10-01T09:00:00Z"); got != 154 {
+		t.Fatalf("a timestamp of twenty characters takes %d, want 154", got)
+	}
+	if got := StampedOver(""); got != 14 {
+		t.Fatalf("nothing at all takes %d, want the two spaces after it", got)
+	}
+}
+
+// What is in hand is drawn as what it will become: a card on the board, a tile
+// in the box under an open task. Decided here rather than in the drawing, so a
+// scenario can ask what shape a ghost takes.
+func TestWhatIsInHandTakesTheShapeItWillLandAs(t *testing.T) {
+	ghost := Box{X: 10, Y: 20, W: 200, H: 80}
+	if got := GhostBody(OnTheBoard, ghost); got != ghost {
+		t.Fatalf("a card in hand on the board is %v, want %v", got, ghost)
+	}
+	if got := GhostBody(OnDetail, ghost); got != SubPanel(ghost) {
+		t.Fatalf("a tile in hand is %v, want %v", got, SubPanel(ghost))
+	}
+}
+
+// Where what was done is written, as a box: past the time it happened, and no
+// wider than what is left of the line.
+func TestWhatWasDoneIsBoxedPastTheTime(t *testing.T) {
+	box := Box{X: 100, Y: 0, W: 400, H: lineHigh}
+	got := PastStamp(box, "2026-10-01T09:00:00Z")
+	if got.X != box.X+154 {
+		t.Errorf("it begins at %d, want %d", got.X, box.X+154)
+	}
+	if got.W != box.W-154 {
+		t.Errorf("it is %d wide, want %d", got.W, box.W-154)
+	}
+	if got.Y != box.Y || got.H != box.H {
+		t.Errorf("it moved off its line: %v", got)
+	}
+}
+
+// What is in hand writes what it carries where it would write it once it has
+// landed: a card puts its title 28 points down and a tile is 22 high, so a
+// card's layout put a tile's writing past the bottom of the ghost and onto
+// whatever was behind it.
+func TestWhatIsInHandWritesWhereItWillWrite(t *testing.T) {
+	ghost := Box{X: 10, Y: 20, W: 200, H: 80}
+	c := reading.Card{Number: 7, Title: "Write the spec"}
+
+	box, said, size := GhostSays(OnTheBoard, ghost, c)
+	if box != PartsOf(ghost).Title {
+		t.Errorf("a card in hand writes at %v, want its title's own box", box)
+	}
+	if said != TitleOf(c.Title, ghost.W) || size != plain {
+		t.Errorf("a card in hand says %q at %d", said, size)
+	}
+
+	box, said, size = GhostSays(OnDetail, ghost, c)
+	if box != SubWriting(ghost) {
+		t.Errorf("a tile in hand writes at %v, want a tile's own line", box)
+	}
+	if said != SubLine(c) || size != small {
+		t.Errorf("a tile in hand says %q at %d", said, size)
 	}
 }

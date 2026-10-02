@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"cairn/internal/reading"
@@ -71,8 +72,9 @@ func saying(labels []string, shown int) string {
 }
 
 // padding is the room left inside a card's edge, so text never touches its
-// border.
-const padding = 10
+// border. On the scale everything else is spaced on, which the window did not
+// used to be: 10 here where a margin and a gap were both 12.
+const padding = 12
 
 // What a card's number line says besides the number.
 //
@@ -153,4 +155,113 @@ func Counted(g reading.Goal) string {
 // runes would only be close.
 func SubLine(c reading.Card) string {
 	return "#" + strconv.Itoa(c.Number) + "  " + c.Title
+}
+
+// Due is what a card says about when it is wanted, and whether that day has
+// passed. The window knew nothing about time: no deadline, no notion of late,
+// where the terminal has written it on the card all along. Deciding what to do
+// without knowing what is due is not deciding.
+//
+// The answer is reading.Deadline's and not a second reckoning of its own: two
+// boards saying different things about the same day would be worse than one
+// board saying nothing.
+func Due(c reading.Card, now time.Time) (said string, late bool) {
+	text, show, over := reading.Deadline(c.Deadline, now)
+	if !show {
+		return "", false
+	}
+	return text, over
+}
+
+// Spent is how long a task was reckoned to take against how long it has, and
+// whether it has gone past. Empty when neither was ever written: a card saying
+// "0h/0h" says nothing and takes the room of something that would.
+func Spent(c reading.Card) (said string, over bool) {
+	if c.Spent == "" && c.Estimate == "" {
+		return "", false
+	}
+	if c.Estimate == "" {
+		return c.Spent, false
+	}
+	if c.Spent == "" {
+		return c.Estimate, false
+	}
+	spent, oneErr := time.ParseDuration(c.Spent)
+	reckoned, twoErr := time.ParseDuration(c.Estimate)
+	return c.Spent + "/" + c.Estimate, oneErr == nil && twoErr == nil && spent > reckoned
+}
+
+// FreedMark is what a blocked task wears once every task it waits on is done.
+const FreedMark = "✓ nothing blocks it"
+
+// ServesMark is what stands in front of the objectives a task serves.
+const ServesMark = "◇"
+
+// Serves is what a task contributes to, which the detail carried and no
+// overview ever summarised.
+func Serves(c reading.Card) string {
+	if len(c.Objectives) == 0 {
+		return ""
+	}
+	numbers := make([]string, 0, len(c.Objectives))
+	for _, one := range c.Objectives {
+		numbers = append(numbers, strconv.Itoa(one))
+	}
+	return ServesMark + strings.Join(numbers, " ")
+}
+
+// Standing is the mark an objective's card wears for where it stands. An
+// objective was drawn exactly like a task, so a list mixed what is running with
+// what was abandoned and nothing on either said which was which.
+func Standing(g reading.Goal) string {
+	switch g.State {
+	case "active":
+		return "▶"
+	case "on-hold":
+		return "‖"
+	case "reached":
+		return "✓"
+	case "dropped":
+		return "✕"
+	}
+	return ""
+}
+
+// Facts is the right-hand end of a card's label row: when it is wanted, what it
+// has cost against what it was reckoned to cost, and what it serves. Three
+// facts the detail carried and no overview ever summarised.
+//
+// One string and one warning rather than a piece per ink: a card has one row
+// left and the eye reads it as one run. The warning is late or over, which are
+// the two states that ask to be acted on.
+func Facts(c reading.Card, now time.Time) (said string, warn bool) {
+	// Waiting on nothing any more is the one thing about a blocked task that
+	// has to be acted on, and it crowds out the rest: a task that can start is
+	// not asking how long it was reckoned to take.
+	if c.Freed {
+		return FreedMark, true
+	}
+	var pieces []string
+	due, late := Due(c, now)
+	if due != "" {
+		pieces = append(pieces, due)
+	}
+	spent, over := Spent(c)
+	if spent != "" {
+		pieces = append(pieces, spent)
+	}
+	if serves := Serves(c); serves != "" {
+		pieces = append(pieces, serves)
+	}
+	return strings.Join(pieces, "  "), late || over
+}
+
+// Standings is where an objective stands, put where a card writes its labels.
+// An objective was drawn exactly like a task and said nothing about whether it
+// was running, on hold, reached or abandoned — so a list mixed all four.
+func Standings(g reading.Goal) []string {
+	if mark := Standing(g); mark != "" {
+		return []string{mark + " " + g.State}
+	}
+	return nil
 }

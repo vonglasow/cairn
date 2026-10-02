@@ -179,3 +179,24 @@ func TestFinished_isWhatDoneMeansOnACard(t *testing.T) {
 		}
 	}
 }
+
+// The boards searched six fields with one word; the engine searches every fact
+// a task carries, with as many words as were typed, all of them. Two meanings
+// for one word: searching by label was impossible on either board.
+func TestACardIsSearchedTheWayTheEngineSearches(t *testing.T) {
+	c := Card{
+		Number: 12, Title: "Write the spec", State: "current", Priority: "high",
+		Labels: []string{"backend", "sprint-172"},
+	}
+	for _, word := range []string{"backend", "sprint-172", "current", "high"} {
+		if !ReachesCard(c, word) {
+			t.Errorf("a search for %q does not reach the card", word)
+		}
+	}
+	if !ReachesCard(c, "spec backend") {
+		t.Error("two words the card carries do not reach it")
+	}
+	if ReachesCard(c, "spec frontend") {
+		t.Error("a word the card does not carry still reached it")
+	}
+}

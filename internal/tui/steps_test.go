@@ -208,6 +208,16 @@ func (w *world) cardDescribed(number int) error {
 	})
 }
 
+// cardArchived reads the mark that tells a card off the board from one on it.
+func (w *world) cardArchived(number int) error {
+	return w.rowsOf(number, func(rows []string) error {
+		if strings.Contains(rows[0], GlyphsFor(Unicode).Archived) {
+			return nil
+		}
+		return fmt.Errorf("the card for task %d is not marked as archived: %q", number, rows[0])
+	})
+}
+
 // rowsOf hands the four lines of one card to whoever is checking them.
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {

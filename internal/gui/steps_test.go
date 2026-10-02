@@ -640,6 +640,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
 	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
 	sc.Then(`^the card "([^"]*)" says "([^"]*)"$`, w.cardSays)
+	sc.Then(`^the card "([^"]*)" says nothing of "([^"]*)"$`, func(title, said string) error {
+		if err := w.cardSays(title, said); err == nil {
+			return fmt.Errorf("the card for %q says %q, and should not", title, said)
+		}
+		return nil
+	})
 	sc.Then(`^what is chosen is in sight$`, w.chosenInSight)
 	sc.Then(`^the objectives have moved$`, w.objectivesMoved)
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
@@ -1741,7 +1747,10 @@ func (w *world) cardSays(title, said string) error {
 	if err != nil {
 		return err
 	}
-	line := Tagged(c, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W)
+	// The whole bottom row: the labels on the left, and what is due, what it
+	// has cost and what it serves on the right.
+	facts, _ := Facts(c, moment)
+	line := Tagged(c, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W) + "  " + facts
 	if !strings.Contains(line, said) {
 		return fmt.Errorf("the card for %q reads %q, and says nothing of %q", title, line, said)
 	}

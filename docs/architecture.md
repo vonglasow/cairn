@@ -318,3 +318,28 @@ Two consequences, both measured rather than expected:
   reachable without godog — and a step that quietly stopped asserting would
   otherwise have shown up as somebody else's scenario passing for the wrong
   reason.
+
+## The four exit codes, and what holds them true
+
+`cmd/cairn` exits with what `cli.Main` returns, and a shell is told which of
+four kinds of answer it got:
+
+| | |
+|---|---|
+| `0` | it worked |
+| `1` | the request was understood, and could not be satisfied |
+| `2` | the request was not understood at all |
+| `3` | the store could not be used |
+
+The difference between 1 and 2 is the one worth getting right. A script that
+only knew "it failed" would have to read the message to decide whether to fix
+its arguments or to wait and retry. A refusal answered with 2 says "I did not
+understand you" about a request that was understood perfectly well.
+
+`refusals` in `internal/cli/exit.go` is the list of errors that are kind 1, and
+a refusal left out of it quietly becomes kind 2. Nineteen of them were. The
+list is now held true by a test rather than by care: `TestEveryRefusalHasItsCode`
+reads the source of every package that can refuse, and every `Err…` it declares
+has to be in the list or named in `notARefusal` beside the reason it is not. An
+error added anywhere now fails that test until somebody has said which kind of
+answer it is.

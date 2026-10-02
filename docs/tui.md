@@ -115,7 +115,7 @@ Always six: a border, four lines of content, a border.
 |---|---|
 | 1 | the number on the left, the marks on the right |
 | 2–3 | the title, cut at a word, `…` if it overruns |
-| 4 | the facts, in this order: deadline, sub-tasks, labels — cut when the line is full |
+| 4 | the facts, in this order: deadline, sub-tasks, labels — cut when the line is full, with `+n` saying how many were left out |
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
@@ -130,8 +130,18 @@ the objectives, a task's history. Each is drawn behind a viewport that follows
 the cursor, by whole cards — a column that scrolled by lines would leave half a
 card at the top, and half a card says its number and nothing else.
 
-The marks on line 1 are right-aligned in a fixed order: the description mark
-first, the state glyph last. The state anchors the far right so the eye finds it
+A full line used to drop whatever did not fit and say nothing, so a task
+carrying four labels read as a task carrying one. It now drops one more fact to
+make room for `+3`: a card that says less than it holds is better than a card
+that hides how much it is hiding.
+
+A stalled card's fourth line says what is in the way — or, once every task it
+waits on is done, that **nothing blocks it any more**, in the bright ink and in
+place of the list. That is the one thing about blocking that has to be acted on,
+and it reached the command line's listing and nowhere else.
+
+The marks on line 1 are right-aligned in a fixed order: `▭` for a card off the
+board first, then the description mark, and the state glyph last. The state anchors the far right so the eye finds it
 in the same place on every card in the band. Both fit alongside a four-digit
 number in ten characters, which is the real ceiling — numbers only ever go up.
 
@@ -198,6 +208,7 @@ edge out of line.
 | sub-tasks done / total | `nf-oct-checklist` | `▪` | |
 | a label | `nf-oct-tag` | `⚑` | |
 | what is in the way | `nf-oct-blocked` | `↳` | |
+| off the board | `nf-oct-archive` | `▭` | |
 
 `‖` does double duty — `paused` on a task, `on-hold` on an objective. It is the
 same idea in two tabs, so it kept one symbol rather than inventing a second for
@@ -242,8 +253,9 @@ from that mode's bar, and pressing it there does nothing.
 | `a` | ✓ | | ✓ | add — the column under the cursor gives the state |
 | `x` | | ✓ | | take the task off the board, or put it back |
 | `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
+| `⇧X` | ✓ | | | take every task in the column off the board — it asks first |
 | `e` | | ✓ | ✓ | the form |
-| `d` | | ✓ | ✓ | delete |
+| `d` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out |
 | `f` | | ✓ | | take or let go of the focus — an objective has none |
 | `⏎` | | ✓ | ✓ | the detail · on objectives, open the objective |
 | `/` | ✓ | | ✓ | search |
@@ -253,9 +265,16 @@ from that mode's bar, and pressing it there does nothing.
 | `gg` `G` | | ✓ | ✓ | the first / the last of what you are in |
 | `esc` | ✓ | ✓ | | back up one level |
 
-On the board itself `esc` does nothing: there is nothing above it to back up to,
-and leaving is `:q`. Inside an objective's own board there is — it goes back to
+On the board itself `esc` widens a search that is still in force, and does
+nothing once there is none: there is nothing above it to back up to, and leaving
+is `:q`. A search accepted with `⏎` outlives the prompt that typed it, and
+nothing else on the board says so — so `esc` is the way back to the whole board. Inside an objective's own board there is — it goes back to
 the list of objectives, with the cursor still on the one you were in.
+
+**Taking a whole column off the board** is `⇧X`, in normal mode, on the column
+the cursor is on. It asks first and names the column, because a key that moves
+twelve cards is not a key to press and find out about. The engine has swept by a
+narrowing since the beginning; only the command line ever asked it to.
 
 `?` is the one key with no mode. Help that cannot be reached from the mode you
 are stuck in is help you have to already understand to find, so it answers
@@ -344,6 +363,12 @@ One form, for adding and for editing, behaving the same way both times.
 on paper and dropped: `cancel` would have meant nothing, and the same form could
 not have served to create something that does not exist yet.
 
+**A form somebody typed into is asked about before it goes.** `esc` on an
+untouched form closes it; `esc` on one with a change in it puts the question at
+the foot, and `esc` again gives the form back with everything still in it. The
+board guards a deletion of two words, and used to throw ten minutes of typing
+away on one key.
+
 **No field has a key of its own.** A key per field was designed and thrown away —
 `hjkl` had already taken four letters and `d` was delete, so `deadline` and
 `labels` ended up on `t` and `#`, letters chosen by constraint rather than by
@@ -423,7 +448,15 @@ nowhere to be looked at.
 
 `/` **filters the board in place.** The columns stay — empty ones included, for
 the same reason they stay on the whole board — and show only what matches, so you
-see at once where the matches sit in the flow. `esc` gives the whole board back.
+see at once where the matches sit in the flow. `esc` gives the whole board back,
+whether the search is still being typed or has already been accepted with `⏎`.
+
+**What a search reaches is what the engine reaches.** Every fact a task carries,
+its labels, its column and its priority included, and every word typed has to be
+carried — not one of them. The boards used to look in six fields with one word
+where the engine looked everywhere with as many as were given, so one word,
+"search", meant two things depending on where it was typed, and searching by
+label was impossible on either board.
 
 The counts in the headers are the counts of what matched, and the foot says how
 much of the store that is. Typing narrows as you go.
@@ -505,8 +538,16 @@ be learnt twice.
 | `:trace` | `list`, `show <n>` |
 | `:q` | quit |
 
-It does **not** take `task` or `objective`. Everything they do has a key, and a
-second way in would be a second way to get it wrong.
+The table above is what the prompt was planned to take. It now takes **every
+operation the engine has**, read off `engine.All()` rather than written out
+again: a thing, a verb, then the positional arguments in the order the operation
+lists them and `--name value` for the rest. `:task edit 1 --state current` works
+here exactly as it works at the command line, and an operation added to cairn is
+understood here the day it is added. A prompt that knew two words out of thirty
+made a bar offering `:` an offer of almost nothing.
+
+Everything `task` and `objective` do also has a key. The prompt is the way in
+for the arguments no key can carry, not a second way of doing what a key does.
 
 ## Objectives
 

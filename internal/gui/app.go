@@ -72,6 +72,13 @@ func pasting(w Window, said io.Reader) Window {
 	return w.Pasted(string(read))
 }
 
+// Acts says whether a pointer event carries a button this board answers. Only
+// the first: a right or a middle click arrived as a press and a release like
+// any other, so it chose cards and pressed offers while nothing on screen
+// suggested it would — and there is no menu behind it to make that mean
+// something. A scroll carries no button at all and goes through.
+func Acts(b pointer.Buttons) bool { return b == 0 || b == pointer.ButtonPrimary }
+
 // Gesture is what a pointer has said so far: when the last press landed and
 // where, which is the whole of what tells the press after it from the second
 // half of a double-click.
@@ -106,6 +113,10 @@ func Pointed(w Window, kind pointer.Kind, at Point, by int) Window {
 		return w.LetGo(at)
 	case pointer.Scroll:
 		return w.Scroll(at, by)
+	case pointer.Move, pointer.Enter:
+		return w.Hovering(at)
+	case pointer.Leave:
+		return w.Away()
 	}
 	return w
 }
@@ -295,7 +306,10 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 		raw, ok := gtx.Event(
 			pointer.Filter{
 				Target: tag,
-				Kinds:  pointer.Press | pointer.Drag | pointer.Release | pointer.Scroll,
+				Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Scroll |
+					// And what the pointer does before it is pressed, which
+					// is the whole of the window's hovering.
+					pointer.Move | pointer.Enter | pointer.Leave,
 				// A range, and not the zero one: Gio delivers a scroll only
 				// when it falls inside what was asked for, and the zero range
 				// asks for scrolls of nothing. Found by a test that scrolled a
@@ -325,6 +339,9 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 		}
 		switch e := raw.(type) {
 		case pointer.Event:
+			if !Acts(e.Buttons) {
+				continue
+			}
 			var g Gesture
 			w, g = Pointing(w, Gesture{At: pressed, Where: pressedAt}, e.Kind,
 				Dp(e.Position, gtx.Metric.PxPerDp),

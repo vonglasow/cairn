@@ -115,6 +115,10 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "created", "the history")
 	})
 
+	sc.Step(`^it says the deletion took "([^"]*)" with it$`, func(said string) error {
+		return test.WantContains(w.Out.Stdout, said, "the history")
+	})
+
 	sc.Step(`^it says it started in the (\w+) at (\w+) priority$`,
 		func(column, priority string) error {
 			for _, said := range []string{column, priority} {

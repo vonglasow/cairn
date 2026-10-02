@@ -166,6 +166,18 @@ Feature: The desktop board
       And I resize the window to 1200 by 800
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
+    @gui-growing-back-gives-the-form-back
+    Scenario: a window dragged narrow and back gives back what was open
+      Given a window of 1200 by 800
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I resize the window to 320 by 240
+      Then it says the window is too small
+      When I resize the window to 1200 by 800
+      Then the window is on the form
+
   Rule: A click outside a panel closes it, where closing loses nothing
 
     A hand on the mouse should not have to reach for the keyboard to put
@@ -403,6 +415,35 @@ Feature: The desktop board
       Then it says what went wrong
       And "BACKLOG" carries "Write the spec"
 
+  Rule: A card says when it is wanted and what it has cost
+
+    The window knew nothing about time: no deadline, no notion of late, where
+    the terminal has written it on the card all along. Deciding what to do
+    without knowing what is due is not deciding.
+
+    Beside it, what the work has cost against what it was reckoned to cost, and
+    what it serves — three facts the detail carried and no overview summarised.
+
+    @gui-a-card-says-when-it-is-due
+    Scenario: a day close enough to matter is written on the card
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-10-01"
+      When I open the window
+      Then the card "Write the spec" says "2d"
+
+    @gui-a-card-says-nothing-of-a-day-months-away
+    Scenario: a day too far off to act on is not written on the card
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2027-06-01"
+      When I open the window
+      Then the card "Write the spec" says nothing of "2027"
+
+    @gui-a-card-says-what-it-has-cost
+    Scenario: what a task has cost is written beside what it was reckoned to cost
+      Given I added a task titled "Write the spec" with the estimate "2h"
+      When I open the window
+      Then the card "Write the spec" says "2h"
+
   Rule: A form is the whole of a task
 
     Adding and editing are one form. Every field is asked about, including the
@@ -628,7 +669,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I click "Delete"
-      And I click "Delete"
+      And I click "Agree"
       Then "BACKLOG" does not carry "Write the spec"
 
     @gui-deleting-asks-first
@@ -1805,6 +1846,46 @@ Feature: The desktop board
       And I put the keyboard on "title"
       And the keyboard says "s" as both a key and as text
       Then the field "title" reads "Write the specs"
+
+  Rule: Losing work is asked about first
+
+    Two gestures lose work: deleting a task, and throwing away a form somebody
+    has typed into. Both are asked about, with the same two words. A whole
+    column going off the board is asked about as well — nothing is lost, but a
+    key that moves twelve cards is not a key to press and find out.
+
+    @gui-a-filled-form-asks-before-it-is-thrown-away
+    Scenario: a form somebody typed into is asked about before it goes
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I set the field "title" to "Something else"
+      And I choose "Cancel"
+      Then the panel is headed "Throw away what you typed?"
+      When I choose "Cancel"
+      Then the window is on the form
+
+    @gui-an-untouched-form-asks-nothing
+    Scenario: a form nobody typed into closes without a question
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I choose "Cancel"
+      Then the window is on the board
+
+    @gui-a-whole-column-goes-off-the-board-at-once
+    Scenario: the column a card stands in is archived in one gesture
+      Given I added a task titled "Write the spec" with the state "done"
+      And I added a task titled "Ship it" with the state "done"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "shift+x"
+      Then the panel is headed "Take every task in DONE off the board?"
+      When I choose "Agree"
+      Then "DONE" does not carry "Write the spec"
+      And "DONE" does not carry "Ship it"
 
   Rule: What is on screen says what it is
 

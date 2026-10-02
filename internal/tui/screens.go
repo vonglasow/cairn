@@ -88,6 +88,7 @@ func (b Board) helpKeys() []string {
 		b.says("i", "insert mode"),
 		b.says("a", "add a task"),
 		b.says("⇧A", "show what was archived"),
+		b.says("⇧X", "take every task in this column off the board — it asks first"),
 		b.says("/", "search"),
 		b.says("⇥", "next tab"),
 		b.says(":", "command"),

@@ -219,6 +219,24 @@ of `Answer` that carries it. The field was called `Found` and is now called
 `Matched`: what a search found and what a narrowing kept are one notion — these
 matched, and where each sits is not what was asked — so they are one field.
 
+## A row carries what a decision is made on
+
+`#12  Write the spec` was the whole of a row: no column, no priority, no
+deadline, no labels. Deciding anything meant opening every task one at a time,
+and that listing is what an agent sees through the MCP server as well.
+
+A row is now the number, the title, and then what it carries, each piece behind
+a `·`:
+
+```
+#12  Write the spec  · current  · high  · 2026-10-09  · backend sprint-172
+```
+
+A task carrying none of them is the number and the title and nothing else, so
+the shape does not grow for work that has not been filled in yet. An
+objective's row says where it stands the same way — `reached` and `dropped`
+were invisible in a listing of objectives.
+
 ## The focus is a flag on a task
 
 Which task is being worked on is a flag the task carries, not a fact about the
@@ -235,6 +253,14 @@ caller reading a number it cannot find among the tasks it was handed.
 not answer "there is no task", which would be a lie a caller cannot tell from
 the truth: asked for a column that does not exist, an empty answer reads as an
 empty column.
+
+**A refusal lists the vocabulary.** `"nowhere": not one of the columns —
+backlog, todo, current, done`, and the same for a priority, for a day (`a day
+written 2006-01-02`) and for a duration (`an amount and a unit, as in 2h or
+1h30m`). All four used to say only what was wrong, which leaves the next
+attempt to guesswork; all four are closed sets or one fixed shape, and saying
+so costs one clause. The words come from `domain.States` and
+`domain.Priorities` rather than being written out again beside the refusal.
 
 Held against what the argument itself declares it accepts — `Argument.OneOf`,
 which is already read off `domain.States` — so the closed set stays in the one
@@ -283,6 +309,14 @@ answering the whole of it.
 It reads the narrowed listing and looks in that, rather than reading everything
 and narrowing afterwards — so `--archived` reaches what was taken off the board
 and nothing else does, which is the same rule every other listing follows.
+
+**The boards search the same way.** They narrow what they already hold rather
+than asking the store on every keystroke, but what reaches a card is what
+reaches a row: every fact a task carries, labels, column and priority included,
+and every word typed has to be carried rather than one of them. They used to
+look in six fields with one word, so one word, "search", meant two things
+depending on where it was typed — and searching by label was impossible on
+either board.
 
 ## Where the narrowing happens
 

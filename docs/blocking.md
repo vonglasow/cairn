@@ -62,7 +62,7 @@ or `current`:
 ```
 $ cairn task edit 5 --state current
 ERROR  task 5: it is still blocked, by #3 and by "the client's answer".
-       take them away first: --blocker -3, --because ""
+       take them away first: task 3, the reason it is waiting
 ```
 
 A refusal and not a confirmation. Those two columns say the work is yours to do
@@ -70,9 +70,13 @@ now, and a task waiting on somebody else is not — a column changed anyway woul
 quietly make the record wrong, and the refusal is also the only moment cairn
 gets to say what is in the way.
 
-The refusal names each thing and the flag that clears it. A refusal that said
-only "it is blocked" would leave somebody holding three blockers to work out
-which is which.
+The refusal names each thing that has to go. A refusal that said only "it is
+blocked" would leave somebody holding three blockers to work out which is which.
+
+It names the things and **not the flags that clear them**. The engine is behind
+four surfaces and only one of them has a flag to type: somebody on the board or
+in the window was being told to type `--blocker -3`, which is not something
+either of them can be told.
 
 **Every other column stays reachable.** Deciding a blocked task is done, putting
 it back in the backlog, pausing it, handing it over to watch — all of those are

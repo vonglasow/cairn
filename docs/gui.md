@@ -95,10 +95,31 @@ dropped in silence: `ado:77594  pipelines  release  +1`. `Tagged` cuts the line
 and the scenarios read it, so what is asserted is the decision rather than the
 pixels.
 
+The right-hand end of that third line carries **what is due, what the work has
+cost against what it was reckoned to cost, and what it serves** — `2d  9h/2h
+◇4` — in the faint ink, or in `Skin.Late` when the day has passed or the
+estimate is spent. The window used to know nothing at all about time: no
+deadline, no notion of late, where the terminal has written it on the card all
+along, and deciding what to do without knowing what is due is not deciding. A
+day more than a week out is left off, for the terminal's reason: it will still
+be there tomorrow and in ninety days, and saying so on every card every day
+buys nothing. A blocked card waiting on nothing any more says that instead, and
+crowds the rest out — it is the one thing about it that has to be acted on.
+
+**An objective's card says where it stands**: `▶ active`, `‖ on-hold`,
+`✓ reached`, `✕ dropped`, written where a task writes its labels. Objectives
+were drawn exactly like tasks, so a list mixed what is running with what was
+abandoned and nothing on either said which was which.
+
 It measures with `perSmallGlyph` and not `perGlyph`. Labels are written in the
 small face while the title uses the wide one, and measuring with the title's
 gabarit left a fifth of every label line empty — on a card carrying three, the
 third was dropped for room that was there.
+
+**The spacing is one scale, in steps of four**: 4 inside a frame, 12 between
+two things, 32 from one line of anything to the next. A panel's rows and a
+form's fields used to advance at 26 and 32 — the same text at two rhythms, so
+the help panel and the form beside it read as two pieces of software.
 
 **Every size is a value worked out from the window**, redone on every resize,
 exactly as `LayoutFor` does in the terminal. Nothing carries its own size. That
@@ -110,7 +131,9 @@ the same physical thing.
 
 **Too small**: below a threshold the window says what it needs instead of
 drawing something unreadable — the terminal's answer, for the terminal's
-reason. Imposing a minimum window size was the alternative and hides the
+reason. What was open is remembered rather than closed: a window dragged narrow
+for a moment used to come back as an empty board, taking with it a form
+somebody had been filling in. Imposing a minimum window size was the alternative and hides the
 question rather than answering it; showing fewer columns was turned down as a
 different board.
 
@@ -128,6 +151,21 @@ to be true.
 
 A click chooses a card, or changes tab when it lands on one. A double-click
 opens a card's detail. The wheel scrolls the column under the pointer.
+
+**Only the primary button acts.** A right click, a middle click or a side
+button used to run the same press and release as the left one, so they chose
+cards and pressed offers — and no context menu exists to have meant it.
+
+**What the pointer is resting on is lit.** The window answered nothing before
+it was pressed, which made "Delete" read exactly like a label: the one
+affordance that says a word can be clicked was missing from the whole surface.
+Gio is asked for `Move`, `Enter` and `Leave`, the window keeps which offer the
+pointer is over, and the drawing decides what that looks like — a value, like
+everything else here, so a scenario can ask.
+
+**Every bar can be pulled.** The history's, the description's, the work under a
+task, and the list's: all four have a thumb sized never to be too small to
+grab, and two of them used to ignore a drag entirely.
 
 **A search does not take the window.** It narrows the board in place, so the
 board keeps answering the mouse: a card is chosen by a click and opened by a
@@ -307,6 +345,23 @@ chosen card. On a card already off the board the bar reads *Restore* instead:
 one key both ways, and the bar says which way it goes rather than leaving it to
 be worked out. Unlike *Delete* it asks nothing first — nothing is lost.
 
+**A whole column goes off the board on `⇧X`**, the column the chosen card
+stands in. It asks first and names the column: nothing is lost, but a key that
+moves twelve cards is not a key to press and find out about. It is not on the
+bar — the bar has room for what one card does, and this does what a column
+does — so it lives in the help, under the terminal board's own key. The engine
+has swept by a narrowing since the beginning; only the command line ever asked
+it to.
+
+**One screen asks the questions, and there are three.** Deleting a task and
+throwing away a form somebody has typed into both lose work; taking a column
+off the board does not, and is asked about for its size. *Agree* and *Cancel*
+are the two offers, `⏎` agrees, and the targets are as tall as the bar's — they
+used to be the smallest in the window, for the most destructive act in it.
+Backing out of the question about a form gives the form back with everything
+still in it; a form nobody typed into closes without a question, because there
+is nothing to lose and a question with no stake is noise.
+
 **Archived** is another, under `⇧A`. It puts back on the board what
 was taken off it, and takes it away again — the same key the terminal board
 uses, because the two boards should not have to be learned twice. A card shown
@@ -342,6 +397,18 @@ to scroll, by the same rule the history goes by.
 
 The form is left alone: there the caret drags the window along with it, so what
 does not fit is already reachable.
+
+**The history is written in the reading ink**, with only the timestamp left
+faint. It was thirty lines of the palest grey in the window — a thing somebody
+opened a task to read, written in the ink kept for the things beside what is
+read. A line a long act wrapped onto carries no timestamp and is written whole,
+because splitting one sentence across two inks makes it read as two.
+
+**A refusal gets two lines and the reading size.** The most instructive thing
+cairn says — "it is still blocked, by #3 and by #4. take them away first: task
+3, task 4" — was the smallest text in the window, on one line, cut just before
+the part that says what to do. The line grows upward, so the foot of the window
+stays where it is.
 
 **A wheel keeps what did not come to a line.** `by / lineHigh` threw away every
 turn smaller than a row, which is every turn a trackpad sends — one pixel at a

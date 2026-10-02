@@ -8,8 +8,10 @@
 package tui
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -154,6 +156,22 @@ func (b Board) puttingAway() tea.Cmd {
 	}
 }
 
+// sweeping takes every task in the column the cursor is on off the board. The
+// engine has swept by a narrowing all along and only the command line ever
+// asked it to: archiving twelve finished tasks was one gesture there and
+// twenty-four here.
+func (b Board) sweepingColumn() tea.Cmd {
+	state := reading.StateAt(b.column)
+	return func() tea.Msg {
+		asked := engine.Input{Given: map[string]string{"state": state}}
+		if _, err := b.work.Ask(engine.TaskArchive, asked); err != nil {
+			return Looked{Err: err}
+		}
+		found, err := reading.Look(b.work)
+		return Looked{Snapshot: found, Err: err}
+	}
+}
+
 // removeGoal deletes the objective the cursor is on.
 func (b Board) removeGoal() tea.Cmd {
 	number := b.goal
@@ -249,11 +267,86 @@ func (b Board) accept() (tea.Model, tea.Cmd) {
 // run carries out what was typed at the command prompt. The words are the
 // command line's words, so what is understood here is what is understood
 // there — and what is not understood is said rather than swallowed.
+//
+// The vocabulary is engine.All() and nothing else: the prompt knew two words
+// out of thirty, which made a bar that offers ":" an offer of almost nothing.
+// An operation added to the engine is understood here the day it is added.
 func (b Board) run(line string) (tea.Model, tea.Cmd) {
-	switch line {
-	case "q", "quit":
+	words := strings.Fields(line)
+	if len(words) == 1 && (words[0] == "q" || words[0] == "quit") {
 		return b, tea.Quit
 	}
-	b.err = unknown(line)
-	return b, nil
+	if len(words) < 2 {
+		b.err = unknown(line)
+		return b, nil
+	}
+	op, found := operationCalled(words[0], words[1])
+	if !found {
+		b.err = unknown(line)
+		return b, nil
+	}
+	given, err := readArguments(op, words[2:])
+	if err != nil {
+		b.err = err
+		return b, nil
+	}
+	return b, b.carry(op, engine.Input{Given: given})
+}
+
+// operationCalled finds the operation two words name.
+func operationCalled(thing, verb string) (engine.Operation, bool) {
+	for _, op := range engine.All() {
+		if op.Thing == thing && op.Verb == verb {
+			return op, true
+		}
+	}
+	return engine.Operation{}, false
+}
+
+// readArguments turns what was typed after the two words into what the engine
+// takes: the positional arguments in the order the operation lists them, then
+// --name value for the rest. The same words the command line reads, so what
+// works there works here.
+func readArguments(op engine.Operation, words []string) (map[string]string, error) {
+	given := map[string]string{}
+	var positional []engine.Argument
+	for _, arg := range op.Takes {
+		if arg.Positional {
+			positional = append(positional, arg)
+		}
+	}
+	at := 0
+	for i := 0; i < len(words); i++ {
+		word := words[i]
+		if !strings.HasPrefix(word, "--") {
+			if at >= len(positional) {
+				return nil, fmt.Errorf("%q: %s takes no argument there", word, op.Line())
+			}
+			given[positional[at].Name] = word
+			at++
+			continue
+		}
+		name := strings.TrimPrefix(word, "--")
+		if i+1 >= len(words) {
+			return nil, fmt.Errorf("--%s: nothing was given for it", name)
+		}
+		i++
+		given[name] = words[i]
+	}
+	if err := op.Check(engine.Input{Given: given}); err != nil {
+		return nil, err
+	}
+	return given, nil
+}
+
+// carry runs an operation the prompt named and reads the board back, which is
+// what every other gesture does once it has written.
+func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
+	return func() tea.Msg {
+		if _, err := b.work.Ask(op, in); err != nil {
+			return Looked{Err: err}
+		}
+		found, err := reading.Look(b.work)
+		return Looked{Snapshot: found, Err: err}
+	}
 }

@@ -105,7 +105,6 @@ func ReachesCard(c Card, query string) bool {
 	if query == "" {
 		return false
 	}
-	query = strings.ToLower(query)
 	said := []string{
 		strconv.Itoa(c.Number),
 		c.Title,
@@ -113,12 +112,30 @@ func ReachesCard(c Card, query string) bool {
 		c.Because,
 		c.Estimate,
 		c.Spent,
+		// And the closed sets, which the engine has always reached and the
+		// boards never did: searching by label was impossible in the window
+		// and on the terminal board, and the same word meant two things.
+		c.State,
+		c.Priority,
 	}
+	said = append(said, c.Labels...)
 	if !c.Deadline.IsZero() {
 		said = append(said, domain.FormatDay(c.Deadline))
 	}
+	// Every word, not one: the engine takes as many as were typed and keeps
+	// only what carries all of them, wherever among its facts each one sits.
+	for _, word := range strings.Fields(strings.ToLower(query)) {
+		if !carries(said, word) {
+			return false
+		}
+	}
+	return true
+}
+
+// carries says whether any of a card's facts holds this word.
+func carries(said []string, word string) bool {
 	for _, field := range said {
-		if field != "" && strings.Contains(strings.ToLower(field), query) {
+		if field != "" && strings.Contains(strings.ToLower(field), word) {
 			return true
 		}
 	}

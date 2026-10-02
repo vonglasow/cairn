@@ -48,8 +48,8 @@ func TestTakingTheFocusAndLettingItGo(t *testing.T) {
 func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i")
-	_, cmd := b.pressed("d")
+	b := hit(standing(f), "l", "i", "d")
+	_, cmd := b.pressed("enter")
 	looked, ok := cmd().(Looked)
 	if !ok || looked.Err == nil {
 		t.Fatalf("a deletion that was refused answered %v", looked)
@@ -61,8 +61,8 @@ func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 
 func TestDeleting(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
-	if _, cmd := b.pressed("d"); cmd != nil {
+	b := hit(standing(f), "l", "i", "d")
+	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
 	}
 	if len(f.deleted) != 1 || f.deleted[0] != 1 {
@@ -73,8 +73,8 @@ func TestDeleting(t *testing.T) {
 func TestAFailureIsSaidRatherThanSwallowed(t *testing.T) {
 	f := twoTasks()
 	f.fail = errNope
-	b := hit(standing(f), "l", "i")
-	_, cmd := b.pressed("d")
+	b := hit(standing(f), "l", "i", "d")
+	_, cmd := b.pressed("enter")
 	msg := cmd()
 	looked, ok := msg.(Looked)
 	if !ok || looked.Err == nil {
@@ -572,8 +572,8 @@ func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
 func TestRemovingAnObjective(t *testing.T) {
 	f := newFake()
 	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	b := hit(standing(f), "tab")
-	if _, cmd := b.pressed("d"); cmd != nil {
+	b := hit(standing(f), "tab", "d")
+	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
 	}
 	if len(f.deletedGoal) != 1 || f.deletedGoal[0] != 3 {
@@ -593,8 +593,8 @@ func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := newFake()
 	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
-	b := hit(standing(f), "tab")
-	_, cmd := b.pressed("d")
+	b := hit(standing(f), "tab", "d")
+	_, cmd := b.pressed("enter")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("an objective that could not be deleted was passed over")
 	}
@@ -1667,5 +1667,133 @@ func TestGoesNowhereWhenThereIsNothingToGoTo(t *testing.T) {
 	goals := hit(standing(newFake()), "tab")
 	if after := hit(goals, "shift+g"); after.Where().Goal != 0 {
 		t.Fatalf("G on an empty list took hold of %d", after.Where().Goal)
+	}
+}
+
+// The bar offers ":" and the prompt knew two words out of the whole engine. A
+// command typed there was answered "unknown" however well the command line knew it.
+func TestTheCommandPromptKnowsWhatTheEngineKnows(t *testing.T) {
+	f := twoTasks()
+	b := hit(standing(f), ":")
+	for _, r := range "task focus 1" {
+		b = hit(b, string(r))
+	}
+	if _, cmd := b.pressed("enter"); cmd != nil {
+		cmd()
+	}
+	if len(f.asked) == 0 || f.asked[0].op.Verb != "focus" {
+		t.Fatalf("the prompt asked %v, want a task focus", f.asked)
+	}
+}
+
+// What the prompt refuses, and where it refuses it: a word where no argument
+// goes, and a required one left out. Both are said rather than run.
+func TestTheCommandPromptRefusesWhatTheEngineWouldNotUnderstand(t *testing.T) {
+	for _, c := range []struct {
+		what string
+		line string
+	}{
+		{"a word past the last argument", "task show 1 2"},
+		{"a flag with nothing after it", "task show --number"},
+		{"an argument that does not exist", "task show --nope 1"},
+		{"a required argument left out", "task add"},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			f := twoTasks()
+			b := hit(standing(f), ":")
+			for _, r := range c.line {
+				if r == ' ' {
+					b = hit(b, "space")
+					continue
+				}
+				b = hit(b, string(r))
+			}
+			if _, cmd := b.pressed("enter"); cmd != nil {
+				cmd()
+			}
+			if len(f.asked) != 0 {
+				t.Fatalf("%q was run: %v", c.line, f.asked)
+			}
+		})
+	}
+}
+
+// A sweep the store refuses says so rather than redrawing as though a column
+// had gone off the board.
+func TestASweepTheStoreRefusesIsSaid(t *testing.T) {
+	f := twoTasks()
+	f.failOp = errRefuse
+	b := hit(standing(f), "shift+x")
+	_, cmd := b.pressed("enter")
+	if cmd == nil {
+		t.Fatal("agreeing to the sweep asked for nothing")
+	}
+	looked, ok := cmd().(Looked)
+	if !ok || looked.Err == nil {
+		t.Fatalf("a sweep that was refused answered %v", looked)
+	}
+}
+
+// Two words are a command: the thing and the verb, with nothing after them.
+func TestACommandOfTwoWordsRuns(t *testing.T) {
+	f := twoTasks()
+	b := hit(standing(f), ":")
+	for _, r := range "task list" {
+		if r == ' ' {
+			b = hit(b, "space")
+			continue
+		}
+		b = hit(b, string(r))
+	}
+	if _, cmd := b.pressed("enter"); cmd != nil {
+		cmd()
+	}
+	if len(f.asked) == 0 || f.asked[0].op.Verb != "list" {
+		t.Fatalf("the prompt asked %v, want a task list", f.asked)
+	}
+}
+
+// What the prompt runs and the store refuses is said, the way every other
+// gesture's refusal is.
+func TestACommandTheStoreRefusesIsSaid(t *testing.T) {
+	f := twoTasks()
+	f.failOp = errRefuse
+	b := hit(standing(f), ":")
+	for _, r := range "task focus 1" {
+		if r == ' ' {
+			b = hit(b, "space")
+			continue
+		}
+		b = hit(b, string(r))
+	}
+	_, cmd := b.pressed("enter")
+	if cmd == nil {
+		t.Fatal("the prompt asked for nothing")
+	}
+	looked, ok := cmd().(Looked)
+	if !ok || looked.Err == nil {
+		t.Fatalf("a command that was refused answered %v", looked)
+	}
+}
+
+// A write that went through is what closes the form, and nothing else is
+// closed by a reading coming back: a task open on its detail stays open when
+// the board hears from the store again.
+func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
+	f := twoTasks()
+	b := hit(standing(f), "l", "i", "e")
+	if b.screen != OnForm {
+		t.Fatalf("the form did not open: %v", b.screen)
+	}
+	if after := b.took(Looked{Snapshot: reading.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard {
+		t.Fatalf("a write that went through left the board on %v", after.screen)
+	}
+
+	onDetail := hit(standing(f), "l", "i", "enter")
+	if onDetail.screen != OnDetail {
+		t.Fatalf("the detail did not open: %v", onDetail.screen)
+	}
+	if after := onDetail.took(Looked{Snapshot: reading.Snapshot{Cards: f.cards}}); after.screen != OnDetail {
+		t.Fatalf("a reading coming back closed the detail: %v", after.screen)
 	}
 }

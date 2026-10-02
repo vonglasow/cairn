@@ -3,6 +3,7 @@ package gui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/reading"
 )
@@ -23,8 +24,8 @@ func TestATitleTooLongIsCutAndSaysSo(t *testing.T) {
 	if !strings.HasSuffix(got, "…") {
 		t.Fatalf("a title that was cut does not say so: %q", got)
 	}
-	if len([]rune(got)) != 33 {
-		t.Fatalf("the cut title is %d characters, and the room is 33", len([]rune(got)))
+	if len([]rune(got)) != 32 {
+		t.Fatalf("the cut title is %d characters, and the room is 32", len([]rune(got)))
 	}
 }
 
@@ -119,5 +120,119 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 		if got := Carried(c.card, g); got != c.want {
 			t.Errorf("%s: Carried = %q, want %q", c.what, got, c.want)
 		}
+	}
+}
+
+// The window knew nothing about time: no deadline, no notion of late. Deciding
+// what to do without knowing what is due is not deciding.
+func TestACardSaysWhenItIsDue(t *testing.T) {
+	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	for _, c := range []struct {
+		what string
+		due  time.Time
+		says string
+		late bool
+	}{
+		{"nothing at all", time.Time{}, "", false},
+		{"in two days", now.AddDate(0, 0, 2), "2d", false},
+		{"three days ago", now.AddDate(0, 0, -3), "−2d", true},
+		{"months away", now.AddDate(0, 3, 0), "", false},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			said, late := Due(reading.Card{Deadline: c.due}, now)
+			if said != c.says || late != c.late {
+				t.Fatalf("Due = %q %v, want %q %v", said, late, c.says, c.late)
+			}
+		})
+	}
+}
+
+// Estimated at two hours and nine hours spent is a fact no overview carried.
+func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
+	c := reading.Card{Estimate: "2h", Spent: "9h", Objectives: []int{4}}
+	said, over := Spent(c)
+	if said != "9h/2h" {
+		t.Fatalf("Spent = %q, want 9h/2h", said)
+	}
+	if !over {
+		t.Fatal("nine hours against two is not said to be over")
+	}
+	if Serves(c) != "◇4" {
+		t.Fatalf("Serves = %q", Serves(c))
+	}
+}
+
+// An objective's standing — active, on hold, reached, dropped — was nowhere on
+// its card, so a list mixed what is running with what was abandoned.
+func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
+	for standing, want := range map[string]string{
+		"active":  "▶",
+		"on-hold": "‖",
+		"reached": "✓",
+		"dropped": "✕",
+		"":        "",
+	} {
+		if got := Standing(reading.Goal{State: standing}); got != want {
+			t.Errorf("%q is marked %q, want %q", standing, got, want)
+		}
+	}
+}
+
+// The right-hand end of a card's label row: what is due, what it has cost, and
+// what it serves — the three facts the detail carried and no overview did.
+func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
+	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	if said, warn := Facts(reading.Card{State: "blocked", Freed: true}, now); said != FreedMark || !warn {
+		t.Fatalf("a card waiting on nothing any more says %q %v", said, warn)
+	}
+	said, warn := Facts(reading.Card{}, now)
+	if said != "" || warn {
+		t.Fatalf("a card carrying nothing says %q %v", said, warn)
+	}
+	said, warn = Facts(reading.Card{
+		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Objectives: []int{4},
+	}, now)
+	for _, word := range []string{"2d", "9h/2h", "◇4"} {
+		if !strings.Contains(said, word) {
+			t.Errorf("%q does not say %q", said, word)
+		}
+	}
+	if !warn {
+		t.Error("nine hours against two is not warned about")
+	}
+}
+
+// Each half of what a task cost says something on its own, and neither is the
+// other: an estimate with no time against it is still worth knowing.
+func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
+	for _, c := range []struct {
+		what                  string
+		spent, estimate, says string
+		over                  bool
+	}{
+		{"neither", "", "", "", false},
+		{"only what it cost", "9h", "", "9h", false},
+		{"only what was reckoned", "", "2h", "2h", false},
+		{"exactly what was reckoned", "2h", "2h", "2h/2h", false},
+		{"a minute over", "2h1m", "2h", "2h1m/2h", true},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			said, over := Spent(reading.Card{Spent: c.spent, Estimate: c.estimate})
+			if said != c.says || over != c.over {
+				t.Fatalf("Spent = %q %v, want %q %v", said, over, c.says, c.over)
+			}
+		})
+	}
+}
+
+// An objective with no standing writes nothing where it would write one, rather
+// than an empty mark taking a label's room.
+func TestAnObjectiveWithNoStandingWritesNothing(t *testing.T) {
+	if got := Standings(reading.Goal{}); got != nil {
+		t.Fatalf("an objective standing nowhere says %v", got)
+	}
+	got := Standings(reading.Goal{State: "active"})
+	if len(got) != 1 || !strings.Contains(got[0], "active") {
+		t.Fatalf("an active objective says %v", got)
 	}
 }

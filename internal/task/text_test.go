@@ -318,3 +318,24 @@ func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
 		t.Errorf("Text of one on the board =\n%s\nwant it to say nothing of archiving", got)
 	}
 }
+
+// "#12  Write the spec" is every fact a listing gave: no column, no priority,
+// no deadline, no labels. It is what an agent sees through the MCP server too,
+// so a decision had to be made by opening every task one at a time.
+func TestALineCarriesEnoughToDecideOn(t *testing.T) {
+	var a AsTold
+	a.Numbered(12)
+	a.Titled("Write the spec")
+	a.InColumn(domain.Current)
+	a.Carries(domain.High)
+	a.Due(time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC))
+	a.Labelled("backend")
+	a.Labelled("sprint-172")
+	a.LabelsTold()
+	line := Line(a.Task())
+	for _, said := range []string{"Write the spec", "current", "high", "2026-10-09", "backend", "sprint-172"} {
+		if !strings.Contains(line, said) {
+			t.Errorf("the line does not say %q: %q", said, line)
+		}
+	}
+}

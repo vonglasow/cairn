@@ -3,6 +3,7 @@ package objective
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
 )
@@ -121,5 +122,22 @@ func TestServing_listsTheLinesItIsGiven(t *testing.T) {
 	got := Serving([]string{"#3  Write the tests"})
 	if !strings.Contains(got, "tasks") || !strings.Contains(got, "#3  Write the tests") {
 		t.Errorf("Serving is missing the line:\n%s", got)
+	}
+}
+
+// A listing of objectives said only a number and a title: whether one was
+// reached, abandoned or still running was not in it.
+func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
+	var a AsTold
+	a.Numbered(3)
+	a.Titled("Ship cairn")
+	a.Standing(Reached)
+	a.Carries(domain.High)
+	a.Due(time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC))
+	listed := List([]Objective{a.Objective()})
+	for _, said := range []string{"Ship cairn", "reached", "high", "2026-12-01"} {
+		if !strings.Contains(listed, said) {
+			t.Errorf("the listing does not say %q: %q", said, listed)
+		}
 	}
 }

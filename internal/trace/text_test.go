@@ -192,3 +192,22 @@ func TestLine_showsOnlyTheAttributeWhenNeitherValueIsThere(t *testing.T) {
 		t.Errorf("the line claims a value it does not have: %q", got)
 	}
 }
+
+// A deletion carries what the task held, and a history that printed only the
+// word "deleted" kept it where nobody could read it.
+func TestAHistorySaysWhatADeletionTookWithIt(t *testing.T) {
+	var a AsTold
+	a.On(1)
+	a.Did(Deleted)
+	a.NothingNamed()
+	a.Was("title: Write the spec; priority: high")
+	a.BecameNothing()
+	a.ByHand()
+	a.At(time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC))
+	said := Text([]Act{a.Act()})
+	for _, want := range []string{"deleted", "Write the spec", "high"} {
+		if !strings.Contains(said, want) {
+			t.Errorf("the history does not say %q:\n%s", want, said)
+		}
+	}
+}

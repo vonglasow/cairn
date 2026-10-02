@@ -51,6 +51,10 @@ type Card struct {
 	SubDone     int
 	SubTotal    int
 	InFocus     bool
+	// Freed says this blocked task is waiting on nothing any more: every task
+	// it named is done. It is the one thing about blocking that has to be acted
+	// on, and it used to reach the command line's listing and nowhere else.
+	Freed bool
 }
 
 // Goal is one objective, flattened the same way.
@@ -108,7 +112,7 @@ func Look(w Work) (Snapshot, error) {
 	}
 	found := Snapshot{Focus: held, Version: version}
 	for _, t := range listed.Tasks {
-		card, err := cardOf(w, t, held)
+		card, err := cardOf(w, t, held, listed.NothingBlocks)
 		if err != nil {
 			return Snapshot{}, err
 		}
@@ -132,7 +136,7 @@ func Numbered(n int) engine.Input {
 }
 
 // cardOf turns one task into what a card draws.
-func cardOf(w Work, t task.Task, held []int) (Card, error) {
+func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
 	told := task.OfTask(t)
 	// The deadline crosses the membrane written the way a person reads it, and
 	// the board needs the day itself to say "in two days". Read back with the
@@ -166,6 +170,7 @@ func cardOf(w Work, t task.Task, held []int) (Card, error) {
 		SubDone:     along.Done(),
 		SubTotal:    along.Total(),
 		InFocus:     slices.Contains(held, told.Number),
+		Freed:       slices.Contains(freed, told.Number),
 	}, nil
 }
 

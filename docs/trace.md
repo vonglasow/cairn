@@ -74,6 +74,22 @@ rendering: those acts are laid out **indented under the creation** and share
 its moment, the way a listing indents a sub-task. A history then reads as one
 line for the birth and one line per thing that has happened since.
 
+## A deletion writes down what went with it
+
+The act that says a task was deleted carries what the task held, as one line of
+`field: value` pairs. It used to carry nothing at all: cairn recorded that a
+task had gone and not what had gone with it — no title, no description — so
+even putting it back by hand was impossible.
+
+That is a different thing from not having undo. Reading and undoing are two
+different asks and cairn answers only the first, deliberately; a trace that
+kept no content made the second unanswerable by anybody, which was not a
+decision, only an omission.
+
+It is written on the one act rather than one act per attribute. A deletion is
+one thing that happened, and a history reading as twelve would say a task was
+deleted twelve times.
+
 ## The trace outlives the task
 
 Deleting a task does not take its history. Otherwise **the past changes every

@@ -4,9 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+
 	"strconv"
 	"strings"
 	"testing"
+
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
 	"cairn/internal/reading"
@@ -1169,7 +1173,10 @@ func TestDroppedUnder_takesThePlaceItWasLetGoOn(t *testing.T) {
 	}{
 		{"the third onto the first", 2, 0, map[string]string{"number": "4", "first": "true"}},
 		{"the third onto the second", 2, 1, map[string]string{"number": "4", "after": "2"}},
-		{"the first past the last", 0, 4, map[string]string{"number": "2", "last": "true"}},
+		// Let go on the slot the last tile occupies, which names that tile: the
+		// box is three deep for a task, so a slot past all three is outside it,
+		// and outside is not a place a part can land.
+		{"the first onto the third", 0, 3, map[string]string{"number": "2", "after": "4"}},
 	} {
 		w := openOnAParent(t, 3)
 		from := Point{X: box(w).X + 5, Y: box(w).Y + tc.held*SubHeight + 2}
@@ -1415,5 +1422,662 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	}
 	if got := HeadsOn(open, OnForm); got != "task 7" {
 		t.Errorf("the form under it is headed %q, not its own", got)
+	}
+}
+
+// Let go past every tile there is, the move is to the end. Told with two tiles
+// rather than three: the box holds three slots, so with three tiles there is
+// no slot left past them, and "after the last" is the same gesture.
+func TestDroppedUnder_pastThemAllIsTheEnd(t *testing.T) {
+	w := openOnAParent(t, 2)
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	from := Point{X: box.X + 5, Y: box.Y + 2}
+	to := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
+	w = w.PressAt(from).MoveTo(to).LetGo(to)
+
+	var moved *asked
+	for i, one := range w.work.(*fake).asked {
+		if one.op.Verb == engine.TaskMove.Verb {
+			moved = &w.work.(*fake).asked[i]
+		}
+	}
+	if moved == nil {
+		t.Fatal("no move was asked")
+	}
+	if moved.in.Given["last"] != "true" {
+		t.Errorf("asked %v, want last=true", moved.in.Given)
+	}
+}
+
+// An objective is not a task, and dragging one must not move the other. They
+// are numbered apart — task 1 and objective 1 both exist — so a press that
+// took hold by number alone, on the page where that number names an objective,
+// handed a task number to the move that followed.
+func TestDraggingAnObjectiveMovesNoTask(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: []reading.Card{card(1, "Write the spec", "todo")},
+		Goals: []reading.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
+	}
+	w = w.Key("tab")
+	if w.Tab() != Objectives {
+		t.Fatalf("the window is on %v", w.Tab())
+	}
+	g := GoalAt(w.Layout(), 0, 0)
+	at := Point{X: g.X + g.W/2, Y: g.Y + g.H/2}
+	w = w.PressAt(at).MoveTo(Point{X: at.X + 400, Y: at.Y}).LetGo(Point{X: at.X + 400, Y: at.Y})
+
+	for _, one := range f.asked {
+		if one.op.Thing == "task" && (one.op.Verb == "edit" || one.op.Verb == "move") {
+			t.Errorf("dragging an objective asked %s %s: %v", one.op.Thing, one.op.Verb, one.in.Given)
+		}
+	}
+}
+
+// The wheel stops at a panel. It reached the board behind a form, the help and
+// the question, so turning it over a modal scrolled something nobody could see.
+func TestTheWheelStopsAtAPanel(t *testing.T) {
+	f := newFake()
+	cards := []reading.Card{}
+	for i := 1; i <= 30; i++ {
+		cards = append(cards, card(i, "Une de plus", "backlog"))
+	}
+	w := holding(f, cards...)
+	middle := Point{X: w.width / 2, Y: w.height / 2}
+	for _, what := range []struct {
+		name string
+		on   Window
+	}{
+		{"a form", w.clicked(middleOf(w, 0, 0)).Choose("Edit")},
+		{"the help", w.Choose("Help")},
+		{"the question", w.clicked(middleOf(w, 0, 0)).Choose("Delete")},
+	} {
+		was := what.on.scroll[0]
+		if got := what.on.Scroll(middle, 5*lineHigh).scroll[0]; got != was {
+			t.Errorf("over %s, the wheel moved the column behind it from %d to %d", what.name, was, got)
+		}
+	}
+}
+
+// Only the primary button acts. A right or a middle click arrived as a press
+// and a release like any other, so it chose cards and pressed offers while
+// nothing on screen suggested it would.
+func TestOnlyTheFirstButtonActs(t *testing.T) {
+	if Acts(pointer.ButtonSecondary) || Acts(pointer.ButtonTertiary) {
+		t.Error("a button other than the first was allowed to act")
+	}
+	if !Acts(pointer.ButtonPrimary) {
+		t.Error("the first button was not allowed to act")
+	}
+	// A scroll carries no button at all, and has to go through.
+	if !Acts(0) {
+		t.Error("an event with no button was refused")
+	}
+}
+
+// An offer drawn on a panel answers where it is drawn. The list is drawn in a
+// panel of its own, inset from the one the others use, so its three words were
+// painted in one place and listened for in another — words that look like
+// buttons and answer only somewhere else.
+func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{
+		Cards: []reading.Card{card(1, "Write the spec", "todo"), card(2, "Ship it", "todo")},
+	}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if w.Screen() != OnChoosing {
+		t.Fatalf("the list did not open: %v", w.Screen())
+	}
+
+	box := ChoosingOver(w.width, w.height)
+	for i, offer := range w.Offers() {
+		at := PanelOfferAt(box, i)
+		got, on := w.offerAt(Point{X: at.X + 10, Y: at.Y + at.H/2})
+		if !on || got != offer {
+			t.Errorf("the word %q drawn at %+v answers %q, %v", offer, at, got, on)
+		}
+	}
+}
+
+// A search can be left with the pointer. The box took the whole bar, so the
+// one way out was a key — and the card the search had just found could not be
+// acted on at all.
+func TestASearchCanBeLeftWithThePointer(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo")).Choose("Search")
+	if w.Screen() != OnSearch {
+		t.Fatalf("the window is on %v", w.Screen())
+	}
+	if len(w.Offers()) == 0 {
+		t.Fatal("a search offers nothing, so nothing can be pointed at")
+	}
+	at := OfferAt(w.Layout(), len(w.Offers())-1)
+	got := w.clicked(Point{X: at.X + 10, Y: at.Y + at.H/2})
+	if got.Screen() == OnSearch {
+		t.Error("clicking the last offer left the window in the search")
+	}
+}
+
+// A field holding one of a closed set is answered by the pointer. Its value
+// only ever changed by the left and right arrows, so a column or a priority
+// could not be set with a mouse at all.
+func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	for i, field := range fields {
+		if field.Name != "column" {
+			continue
+		}
+		_, value := FieldRow(box, FieldTop(box, fields, i))
+		was := w.Form().ValueOf("column")
+		got := w.clicked(Point{X: value.X + 10, Y: value.Y + value.H/2})
+		if got.Form().ValueOf("column") == was {
+			t.Errorf("clicking the column field left it on %q", was)
+		}
+		return
+	}
+	t.Fatal("the form has no column field")
+}
+
+// Every bar beside a run of text can be pulled. Two of the four were drawn
+// with a grip sized "never smaller than can be taken hold of" and answered
+// nothing — a handle that invites the hand and does not move.
+func TestEveryBarCanBePulled(t *testing.T) {
+	f := newFake()
+	for range 40 {
+		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
+	}
+	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo",
+		Description: strings.Repeat("une ligne de description de plus ", 40)}}
+	for i := range 6 {
+		cards = append(cards, reading.Card{
+			Number: i + 2, Title: fmt.Sprintf("Part %d", i+1), State: "todo", Parent: 1})
+	}
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: cards}
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
+
+	box := Over(w.width, w.height)
+	at, _ := LongField(w.Shown())
+	for _, c := range []struct {
+		what  string
+		track Box
+		read  func(Window) int
+	}{
+		{"the history", HistoryBar(box), func(w Window) int { return w.History() }},
+		{"the description", SayingBar(box, w.Shown(), at), func(w Window) int { return w.Saying() }},
+		{"what hangs under it", ServingBar(box, w.Shown()), func(w Window) int { return w.ServingAt() }},
+	} {
+		middle := Point{X: c.track.X + c.track.W/2, Y: c.track.Y + 4}
+		far := Point{X: middle.X, Y: c.track.Y + c.track.H + 999}
+		pulled := w.PressAt(middle).MoveTo(far).LetGo(far)
+		if c.read(pulled) == c.read(w) {
+			t.Errorf("pulling the bar beside %s left it at %d", c.what, c.read(w))
+		}
+	}
+}
+
+// A click on a text of several lines lands on the line it was over. It read
+// only how far across the point was, so clicking the third line of a
+// description put the caret on the first.
+func TestAClickOnAWrappedTextLandsOnItsOwnLine(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
+	w = w.Types(strings.Repeat("une ligne de description assez longue pour envelopper ", 5))
+
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	var value Box
+	for i, field := range fields {
+		if field.Arg == "desc" {
+			_, value = FieldRow(box, FieldTop(box, fields, i))
+		}
+	}
+	inside := Inside(Framed(value, longRows))
+	first := w.clicked(Point{X: inside.X + 20, Y: inside.Y + lineHigh/2}).Form().Writing().At
+	third := w.clicked(Point{X: inside.X + 20, Y: inside.Y + 2*lineHigh + lineHigh/2}).Form().Writing().At
+	if third <= first {
+		t.Errorf("a click on the third line gave %d and on the first %d", third, first)
+	}
+}
+
+// The band is walked like the columns. A task that is blocked, watching or
+// paused could not be reached by the arrows at all — and those are the tasks
+// that want a decision.
+func TestTheArrowsReachTheBand(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		card(1, "Write the spec", "todo"),
+		reading.Card{Number: 2, Title: "Waiting on them", State: "blocked"})
+	w = w.clicked(middleOf(w, 1, 0))
+	if w.Chosen() != 1 {
+		t.Fatalf("the board chose %d", w.Chosen())
+	}
+	down := w
+	for range 6 {
+		down = down.Key("down")
+		if down.Chosen() == 2 {
+			return
+		}
+	}
+	t.Errorf("walking down never reached the blocked task; it stopped on %d", down.Chosen())
+}
+
+// A card is moved with the keyboard. The terminal has done it from the start;
+// the window had only the drag, so the central gesture of the product needed a
+// mouse.
+func TestACardIsMovedWithTheKeyboard(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "backlog"), card(2, "Ship it", "backlog"))
+	w = w.clicked(middleOf(w, 0, 0))
+
+	w.Key("shift+right")
+	var edited *asked
+	for i, one := range f.asked {
+		if one.op.Verb == engine.TaskEdit.Verb {
+			edited = &f.asked[i]
+		}
+	}
+	if edited == nil {
+		t.Fatal("shift+right asked for no change of column")
+	}
+	if edited.in.Given["state"] != "todo" {
+		t.Errorf("shift+right asked %v, want the next column", edited.in.Given)
+	}
+}
+
+// Enter agrees to a deletion and d does not. The question was opened by d and
+// agreed to by d, so a quick dd — which is how one deletes in the grammar this
+// product borrows — removed a task before a word of it had been read.
+func TestADeletionIsAgreedToWithEnter(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Key("d")
+	if w.Screen() != OnAsking {
+		t.Fatalf("d left the window on %v", w.Screen())
+	}
+	if again := w.Key("d"); len(f.asked) != 0 {
+		t.Errorf("a second d deleted without being agreed to: %v, screen %v", f.asked, again.Screen())
+	}
+	if agreed := w.Key("enter"); agreed.Screen() != OnTheBoard {
+		t.Errorf("enter left the question on %v", agreed.Screen())
+	}
+}
+
+// Nothing in the window answered the pointer before it was pressed: "Delete"
+// looked exactly like a label, and the one affordance that says a thing can be
+// clicked was missing from the whole surface.
+func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
+	w := New(newFake(), 1200, 800).Wonder()
+	if _, over := w.Hovered(); over {
+		t.Fatal("something is hovered before the pointer has moved")
+	}
+	l := w.Layout()
+	first := OfferAt(l, 0)
+	w = Pointed(w, pointer.Move, Point{X: first.X + first.W/2, Y: first.Y + first.H/2}, 0)
+	said, over := w.Hovered()
+	if !over || said != w.Offers()[0] {
+		t.Fatalf("the pointer is over %q %v, want the first offer", said, over)
+	}
+	w = Pointed(w, pointer.Leave, Point{}, 0)
+	if _, over := w.Hovered(); over {
+		t.Fatal("the pointer left the window and something is still hovered")
+	}
+}
+
+// Shrinking the window below what the board needs used to throw away whatever
+// was open: a form filled in for ten minutes came back as an empty board.
+func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
+	if w.Screen() != OnForm {
+		t.Fatalf("the form did not open: %v", w.Screen())
+	}
+	small := w.Resized(200, 100)
+	if small.Screen() != TooSmallToDraw {
+		t.Fatalf("a window of 200 by 100 drew the board: %v", small.Screen())
+	}
+	back := small.Resized(1200, 800)
+	if back.Screen() != OnForm {
+		t.Fatalf("growing back left the window on %v", back.Screen())
+	}
+	if !back.Form().Changed() {
+		t.Error("what was typed did not come back with the form")
+	}
+}
+
+// The list's scrollbar has a thumb sized never to be too small to grab, and
+// grabbing it did nothing: only two of the four bars in the window answered a
+// drag at all.
+func TestTheListsBarCanBePulled(t *testing.T) {
+	f := newFake()
+	var goals []reading.Goal
+	for i := 1; i <= 40; i++ {
+		goals = append(goals, reading.Goal{Number: i, Title: "Objective " + strconv.Itoa(i)})
+	}
+	w := New(f, 1200, 800)
+	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "One", State: "todo"}}, Goals: goals}
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Arg == "objective" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.Choose("Choose")
+	if w.Screen() != OnChoosing {
+		t.Fatalf("the list did not open: %v", w.Screen())
+	}
+	box := ChoosingOver(w.width, w.height)
+	track := ChoosingBar(box)
+	w = w.PressAt(Point{X: track.X + track.W/2, Y: track.Y + 2}).
+		MoveTo(Point{X: track.X + track.W/2, Y: track.Y + track.H - 2})
+	if w.ChoosingFromRow() == 0 {
+		t.Fatal("pulling the list's bar to the bottom left it at the top")
+	}
+}
+
+// The same gesture as the terminal's: the column the board is on goes off it in
+// one, rather than a card at a time.
+func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "One", State: "done"},
+		reading.Card{Number: 2, Title: "Two", State: "done"})
+	w = w.clicked(middleOf(w, 3, 0))
+	w = Typed(w, "X", key.ModShift)
+	if w.Screen() != OnAsking {
+		t.Fatalf("a whole column went without a question: %v", w.Screen())
+	}
+	w.Choose("Agree")
+	for _, asked := range f.asked {
+		if asked.op.Thing == "task" && asked.op.Verb == "archive" {
+			if asked.in.Given["state"] != "done" {
+				t.Fatalf("the sweep narrowed to %q", asked.in.Given["state"])
+			}
+			return
+		}
+	}
+	t.Fatalf("nothing was swept: %v", f.asked)
+}
+
+// The central gesture of the product — move this card — wanted a mouse in the
+// window: the keyboard walked the board and could not move anything on it.
+func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "One", State: "todo"},
+		reading.Card{Number: 2, Title: "Two", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0))
+
+	// Sideways: the column it lands in is its new state, either way.
+	w.Key("shift+right")
+	asked := askedFor(f, "task", "edit")
+	if asked == nil || asked.Given["state"] != "current" {
+		t.Fatalf("shift+right asked %v", f.asked)
+	}
+	f.asked = nil
+	w.Key("shift+left")
+	back := askedFor(f, "task", "edit")
+	if back == nil || back.Given["state"] != "backlog" {
+		t.Fatalf("shift+left asked %v", f.asked)
+	}
+	// And no further than the two ends.
+	f.asked = nil
+	holding(f, reading.Card{Number: 9, Title: "Last", State: "done"}).
+		clicked(middleOf(w, 3, 0)).Key("shift+right")
+	if askedFor(f, "task", "edit") != nil {
+		t.Fatalf("shift+right off the last column asked %v", f.asked)
+	}
+
+	// Down: its place among the ones it sits with, and no further than the end.
+	f.asked = nil
+	w.Key("shift+down")
+	moved := askedFor(f, "task", "move")
+	if moved == nil || moved.Given["after"] != "2" {
+		t.Fatalf("shift+down asked %v", f.asked)
+	}
+	f.asked = nil
+	w = w.clicked(middleOf(w, 1, 1))
+	w.Key("shift+up")
+	up := askedFor(f, "task", "move")
+	if up == nil || up.Given["first"] != "true" {
+		t.Fatalf("shift+up on the second card asked %v", f.asked)
+	}
+	f.asked = nil
+	w.Key("shift+down")
+	if askedFor(f, "task", "move") != nil {
+		t.Fatalf("shift+down past the end of a column asked %v", f.asked)
+	}
+}
+
+// askedFor finds the first thing asked of the store of a given kind.
+func askedFor(f *fake, thing, verb string) *engine.Input {
+	for _, one := range f.asked {
+		if one.op.Thing == thing && one.op.Verb == verb {
+			in := one.in
+			return &in
+		}
+	}
+	return nil
+}
+
+// The band used to be beyond the arrows altogether, and the tasks in it are
+// exactly the ones waiting for a decision.
+func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "In todo", State: "todo"},
+		reading.Card{Number: 2, Title: "Blocked one", State: "blocked"},
+		reading.Card{Number: 3, Title: "Blocked two", State: "blocked"},
+		reading.Card{Number: 4, Title: "Watched", State: "watching"})
+
+	// Down out of the column lands in the lane beneath it.
+	w = w.clicked(middleOf(w, 1, 0)).Key("down")
+	if w.Chosen() != 2 {
+		t.Fatalf("down out of TODO chose %d, want the first blocked task", w.Chosen())
+	}
+	// Down again walks along the lane, and stops at its end.
+	if got := w.Key("down").Chosen(); got != 3 {
+		t.Fatalf("down in a lane chose %d, want 3", got)
+	}
+	if got := w.Key("down").Key("down").Chosen(); got != 3 {
+		t.Fatalf("down past the end of a lane chose %d, want 3", got)
+	}
+	// Sideways moves to the next lane that holds anything, and stops at the
+	// last one rather than walking off the end of them.
+	if got := w.Key("right").Chosen(); got != 4 {
+		t.Fatalf("right out of the blocked lane chose %d, want 4", got)
+	}
+	if got := w.Key("left").Chosen(); got != 2 {
+		t.Fatalf("left out of the first lane chose %d, want to stay", got)
+	}
+	if got := w.Key("right").Key("right").Chosen(); got != 4 {
+		t.Fatalf("right off the last lane chose %d, want to stay on 4", got)
+	}
+	// And arriving at a shorter lane lands on its last card, not past it.
+	if got := w.Key("down").Key("right").Chosen(); got != 4 {
+		t.Fatalf("right from the second blocked card chose %d, want 4", got)
+	}
+	// Sideways out of a column is not a step down into the lane under it.
+	if got := w.clicked(middleOf(w, 1, 0)).Key("right").Chosen(); got != 1 {
+		t.Fatalf("right out of TODO chose %d, and should not have fallen into the band", got)
+	}
+	// Up from the head of a lane climbs back into the column above it.
+	if got := w.Key("up").Chosen(); got != 1 {
+		t.Fatalf("up out of a lane chose %d, want the task above it", got)
+	}
+}
+
+// Climbing out of the band lands on the last card of the column above, and
+// brings it into sight. A card chosen out of sight is a card whose state
+// somebody is about to change without seeing which one it is.
+func TestClimbingOutOfTheBandBringsTheCardIntoSight(t *testing.T) {
+	f := newFake()
+	var cards []reading.Card
+	for i := 1; i <= 20; i++ {
+		cards = append(cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+	}
+	cards = append(cards, reading.Card{Number: 99, Title: "Stuck", State: "blocked"})
+	w := holding(f, cards...)
+
+	w = w.clicked(middleOf(w, 1, 0))
+	for range 20 {
+		w = w.Key("down")
+	}
+	if w.Chosen() != 99 {
+		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen())
+	}
+	w = w.Key("up")
+	if w.Chosen() != 20 {
+		t.Fatalf("up out of the band chose %d, want the last card of TODO", w.Chosen())
+	}
+	run := w.Layout().Column[1]
+	last := w.Layout().CardAt(1, 19, w.scroll[1])
+	if last.Y < run.Y || last.Y+last.H > run.Y+run.H {
+		t.Fatalf("the card chosen sits at %d..%d, outside the column %d..%d",
+			last.Y, last.Y+last.H, run.Y, run.Y+run.H)
+	}
+}
+
+// Escape closes the search box and widens the board again, by the key as well
+// as by the offer: the two are the same act and were written apart.
+func TestEscapeOutOfTheSearchByTheKey(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.Key("/").Types("spec")
+	if w.Screen() != OnSearch || w.Looking() == "" {
+		t.Fatalf("the search did not open: %v %q", w.Screen(), w.Looking())
+	}
+	w = w.Key("esc")
+	if w.Screen() != OnTheBoard {
+		t.Fatalf("escape left the window on %v", w.Screen())
+	}
+	if w.Looking() != "" {
+		t.Fatalf("escape left the board narrowed to %q", w.Looking())
+	}
+}
+
+// Lighting is what the drawing asks before it lights an offer, so what the
+// pointer is resting on is a question a scenario can put rather than a colour
+// it has to count pixels for.
+func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
+	w := New(newFake(), 1200, 800).Wonder()
+	offers := w.Offers()
+	for _, offer := range offers {
+		if w.Lighting(offer) {
+			t.Fatalf("%q is lit before the pointer has moved", offer)
+		}
+	}
+	first := OfferAt(w.Layout(), 0)
+	w = w.Hovering(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if !w.Lighting(offers[0]) {
+		t.Fatalf("%q is not lit with the pointer on it", offers[0])
+	}
+	if w.Lighting(offers[1]) {
+		t.Fatalf("%q is lit with the pointer elsewhere", offers[1])
+	}
+}
+
+// A keyboard move the store refuses leaves the window saying so, rather than
+// redrawing as though it had worked.
+func TestAKeyboardMoveTheStoreRefusesIsSaid(t *testing.T) {
+	for _, c := range []struct {
+		what string
+		key  string
+	}{
+		{"sideways", "shift+right"},
+		{"up or down", "shift+down"},
+	} {
+		t.Run(c.what, func(t *testing.T) {
+			f := newFake()
+			f.failOp = errNope
+			w := holding(f, reading.Card{Number: 1, Title: "One", State: "todo"},
+				reading.Card{Number: 2, Title: "Two", State: "todo"})
+			w = w.clicked(middleOf(w, 1, 0)).Key(c.key)
+			if w.Wrong() == nil {
+				t.Fatalf("%s was refused and the window says nothing", c.what)
+			}
+		})
+	}
+}
+
+// The backlog stands alone, full height, with no lane under it: walking off the
+// bottom of it goes nowhere rather than into the band.
+func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "One", State: "backlog"},
+		reading.Card{Number: 2, Title: "Stuck", State: "blocked"})
+	w = w.clicked(middleOf(w, 0, 0))
+	if got := w.Key("down").Chosen(); got != 1 {
+		t.Fatalf("down out of the backlog chose %d, want to stay on 1", got)
+	}
+}
+
+// Climbing out of a lane whose column above is empty stays where it is, rather
+// than reaching for a card that is not there.
+func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Stuck", State: "blocked"})
+	w = w.clicked(onLaneCard(w, 0, 0))
+	if w.Chosen() != 1 {
+		t.Fatalf("the blocked card was not chosen: %d", w.Chosen())
+	}
+	if got := w.Key("up").Chosen(); got != 1 {
+		t.Fatalf("up out of a lane with nothing above it chose %d", got)
+	}
+}
+
+// Walking left between lanes reaches the one before, which is the lane sitting
+// at nought — the end a guard written one off would never let it reach.
+func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Stuck", State: "blocked"},
+		reading.Card{Number: 2, Title: "Watched", State: "watching"})
+	w = w.clicked(onLaneCard(w, 1, 0))
+	if w.Chosen() != 2 {
+		t.Fatalf("the watched card was not chosen: %d", w.Chosen())
+	}
+	if got := w.Key("left").Chosen(); got != 1 {
+		t.Fatalf("left out of the watching lane chose %d, want the blocked one", got)
+	}
+}
+
+// onLaneCard is the point a person would click to hit the n-th card of a lane.
+func onLaneCard(w Window, lane, at int) Point {
+	box := w.Layout().LaneCardAt(lane, at, 0)
+	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+}
+
+// The bar beside the work under a task can be pulled, and pulling it to the
+// bottom brings the last tile into the box rather than somewhere near it.
+func TestPullingTheBarUnderATaskReachesTheLastTile(t *testing.T) {
+	f := newFake()
+	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo"}}
+	for i := 2; i <= 30; i++ {
+		cards = append(cards, reading.Card{
+			Number: i, Title: "Part " + strconv.Itoa(i), State: "todo", Parent: 1})
+	}
+	w := holding(f, cards...)
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Cancel()
+	w = w.DoubleClick(middleOf(w, 1, 0))
+	if w.Screen() != OnDetail {
+		t.Fatalf("the task did not open: %v", w.Screen())
+	}
+	last := len(w.Under()) - 1
+	track := ServingBar(Over(w.width, w.height), w.Shown())
+	w = w.PressAt(Point{X: track.X + track.W/2, Y: track.Y + 1}).
+		MoveTo(Point{X: track.X + track.W/2, Y: track.Y + track.H - 1})
+	box := ServingBox(Over(w.width, w.height), w.Shown())
+	tile := w.ServingCardAt(last)
+	if tile.Y+tile.H > box.Y+box.H || tile.Y < box.Y {
+		t.Fatalf("the last tile sits at %d..%d, outside the box %d..%d",
+			tile.Y, tile.Y+tile.H, box.Y, box.Y+box.H)
 	}
 }

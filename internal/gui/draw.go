@@ -7,6 +7,7 @@ package gui
 import (
 	"image"
 	"image/color"
+	"math"
 	"strconv"
 	"strings"
 
@@ -30,8 +31,6 @@ const (
 	reads   = 13
 	plain   = 14
 	heading = 16
-	// apart is how far one line of a panel is from the next.
-	apart = 26
 )
 
 // Skin is every colour the window uses, in one place, so a second theme is a
@@ -40,6 +39,10 @@ type Skin struct {
 	Back, Panel, Edge  color.NRGBA
 	Ink, Faint, Chosen color.NRGBA
 	Wrong              color.NRGBA
+	// Late is what a card writes a day that has passed in, and an estimate
+	// already spent. It is not Wrong: nothing has gone wrong, something is
+	// asking to be looked at.
+	Late color.NRGBA
 	// Ghost is what a card in mid-air is drawn in, which has to be told from
 	// both the board behind it and the card it will land on.
 	Ghost    color.NRGBA
@@ -51,20 +54,52 @@ type Skin struct {
 func Dark() Skin {
 	return Skin{
 		Back:   color.NRGBA{R: 18, G: 18, B: 24, A: 255},
-		Panel:  color.NRGBA{R: 28, G: 28, B: 38, A: 255},
-		Edge:   color.NRGBA{R: 56, G: 56, B: 72, A: 255},
+		Panel:  color.NRGBA{R: 44, G: 44, B: 54, A: 255},
+		Edge:   color.NRGBA{R: 104, G: 104, B: 122, A: 255},
 		Ink:    color.NRGBA{R: 226, G: 226, B: 236, A: 255},
-		Faint:  color.NRGBA{R: 138, G: 138, B: 156, A: 255},
+		Faint:  color.NRGBA{R: 160, G: 160, B: 178, A: 255},
 		Chosen: color.NRGBA{R: 108, G: 158, B: 246, A: 255},
-		Wrong:  color.NRGBA{R: 236, G: 112, B: 112, A: 255},
-		Ghost:  color.NRGBA{R: 64, G: 78, B: 108, A: 255},
+		Wrong:  color.NRGBA{R: 255, G: 110, B: 160, A: 255},
+		Late:   color.NRGBA{R: 240, G: 186, B: 96, A: 255},
+		Ghost:  color.NRGBA{R: 72, G: 88, B: 124, A: 255},
+		// A priority is told from every other one, from the edge a card with
+		// no priority wears, and from the blue that says what is chosen —
+		// which "normal" used to be, at the bit.
 		Priority: map[string]color.NRGBA{
 			"critical": {R: 236, G: 96, B: 96, A: 255},
 			"high":     {R: 236, G: 168, B: 72, A: 255},
-			"normal":   {R: 108, G: 158, B: 246, A: 255},
-			"low":      {R: 120, G: 128, B: 148, A: 255},
+			"normal":   {R: 96, G: 178, B: 146, A: 255},
+			"low":      {R: 140, G: 146, B: 172, A: 255},
 		},
 	}
+}
+
+// Contrast is how far two colours stand apart, by the measure a person reading
+// a screen is held to: 21 at most, 1 when they are the same. Written here
+// rather than judged by eye, because a palette nothing measures is a palette
+// that drifts — this one had a card standing at 1.10 against its own board.
+func Contrast(a, b color.NRGBA) float64 {
+	one, two := lit(a), lit(b)
+	return (max(one, two) + 0.05) / (min(one, two) + 0.05)
+}
+
+// lit is how much light a colour carries, which is not how bright it looks:
+// the three channels are weighted the way an eye weighs them, and each is
+// straightened out of the curve a screen applies.
+func lit(c color.NRGBA) float64 {
+	return 0.2126*straight(c.R) + 0.7152*straight(c.G) + 0.0722*straight(c.B)
+}
+
+// The curve turns at 0.04045 of full, which falls between the tenth and the
+// eleventh of the 256 values a channel can hold. Written as that value and not
+// as the fraction: a comparison whose two sides part company only where no
+// input can reach is a comparison nothing can judge.
+func straight(v uint8) float64 {
+	f := float64(v) / 255
+	if v <= 10 {
+		return f / 12.92
+	}
+	return math.Pow((f+0.055)/1.055, 2.4)
 }
 
 // Theme is the shaper and the sizes Gio needs, built once.
@@ -290,7 +325,7 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
 	for lane, kind := range Lanes {
-		say(gtx, th, skin.Faint, LaneName(l, lane), kind, small)
+		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
 		at := 0
 		for _, c := range stalled {
@@ -313,6 +348,10 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 	parts := PartsOf(box)
 	fill(gtx, parts.Panel, skin.Panel)
 	fill(gtx, parts.Edge, skin.edgeOf(c))
+	// Every card has an edge; the chosen one wears the colour that says so.
+	// Drawn only when chosen, the edge was the one thing telling a card from
+	// the board — and a fill at 1.35 against it is a hint, not a boundary.
+	outline(gtx, parts.Panel, skin.Edge)
 	if chosen {
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
@@ -321,7 +360,16 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 		say(gtx, th, skin.Faint, CountedAt(parts.Number, said), said, small)
 	}
 	say(gtx, th, skin.Writing(c), parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
-	say(gtx, th, skin.Faint, parts.Labels, Tagged(c, parts.Labels.W), small)
+	// What is due, what it has cost and what it serves, hard right on the label
+	// row; the labels take whatever width that leaves. The window used to know
+	// nothing at all about time.
+	said, warn := Facts(c, gtx.Now)
+	ink := skin.Faint
+	if warn {
+		ink = skin.Late
+	}
+	say(gtx, th, ink, CountedAt(parts.Labels, said), said, small)
+	say(gtx, th, skin.Faint, parts.Labels, Tagged(c, LabelsRoom(parts.Labels, said)), small)
 }
 
 // Writing is the ink a card's title is written in. Archived, it is faint: what
@@ -353,6 +401,7 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 		box := GoalAt(l, at, w.goals)
 		drawCard(gtx, th, skin, box, reading.Card{
 			Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority,
+			Labels: Standings(g),
 		}, g.Number == w.Chosen())
 		// How much work it carries and how much is done, on the number line an
 		// objective otherwise leaves half empty: it is the question an
@@ -374,38 +423,44 @@ func drawDragging(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if !dragging {
 		return
 	}
-	body := ghost
-	if w.Screen() == OnDetail {
-		body = SubPanel(ghost)
-	}
+	body := GhostBody(w.Screen(), ghost)
 	fill(gtx, body, skin.Ghost)
 	outline(gtx, body, skin.Chosen)
 	for _, c := range w.Reading().Cards {
 		if c.Number != w.held.Number {
 			continue
 		}
-		// Written where the thing in hand writes it. A card puts its title 28
-		// pixels down and a tile is 22 high, so a card's layout put the
-		// writing past the bottom of the ghost and onto whatever was behind
-		// it. What is carried is drawn the way it is drawn where it came from.
-		if w.Screen() == OnDetail {
-			line := SubWriting(ghost)
-			say(gtx, th, skin.Ink, line, fits(gtx, th, SubLine(c), line.W, small), small)
-			continue
-		}
-		say(gtx, th, skin.Ink, PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain)
+		// Written where the thing in hand writes it, which is where it would
+		// be written once it has landed.
+		line, said, size := GhostSays(w.Screen(), ghost, c)
+		say(gtx, th, skin.Ink, line, fits(gtx, th, said, line.W, size), size)
 	}
 }
 
 // drawBar is what can be done here, each offer a place a pointer can land.
 func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	if w.Wrong() != nil {
-		say(gtx, th, skin.Wrong, l.Bar, w.Wrong().Error(), small)
+		// Read at the size everything else is offered at, over two lines.
+		// The one thing in the window somebody has to read in full was the
+		// smallest text in it, on one line, cut wherever it ran out.
+		sayOver(gtx, th, skin.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
 		return
 	}
 	for i, offer := range w.Offers() {
-		say(gtx, th, skin.Chosen, OfferAt(l, i), said(offer), reads)
+		drawOffer(gtx, th, skin, OfferAt(l, i), offer, w)
 	}
+}
+
+// drawOffer writes one offer, lit when the pointer is resting on it. Lighting
+// it is the one thing that says a word can be clicked, and the window said it
+// nowhere: every offer read exactly like a label until it was pressed.
+func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer string, w Window) {
+	if w.Lighting(offer) {
+		fill(gtx, box, skin.Panel)
+		say(gtx, th, skin.Ink, box, said(offer), reads)
+		return
+	}
+	say(gtx, th, skin.Chosen, box, said(offer), reads)
 }
 
 // drawDetail and drawForm are panels over the board, which stays drawn behind
@@ -504,7 +559,7 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 	clipped := clip.Rect(rect(inside)).Push(gtx.Ops)
 	lines, from, rows := w.Lines(), w.History(), w.Rows()
 	for i := from; i < Lasting(len(lines), from, rows); i++ {
-		say(gtx, th, skin.Faint, LineAt(inside, i, from), lines[i], small)
+		drawTold(gtx, th, skin, LineAt(inside, i, from), lines[i])
 	}
 	clipped.Pop()
 
@@ -513,6 +568,20 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 	track := HistoryBar(box)
 	fill(gtx, track, skin.Back)
 	fill(gtx, Thumb(track, len(lines), rows, w.History()), skin.Edge)
+}
+
+// drawTold writes one line of a history: the time it happened in the ink kept
+// for the things beside what is read, and what happened in the ink that is
+// read. It used to be all one faint grey — the densest, palest region of the
+// window, and the one thing in it somebody opened a task to read.
+func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, said string) {
+	stamp, rest, ok := Stamped(said)
+	if !ok {
+		say(gtx, th, skin.Ink, box, said, small)
+		return
+	}
+	say(gtx, th, skin.Faint, box, stamp, small)
+	say(gtx, th, skin.Ink, PastStamp(box, stamp), rest, small)
 }
 
 // drawField draws one field of a panel: its name beside it, what it holds
@@ -575,7 +644,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 // the same words the bar says, in the panel's own row of places.
 func drawPanelOffers(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
 	for i, offer := range w.Offers() {
-		say(gtx, th, skin.Chosen, PanelOfferAt(box, i), said(offer), reads)
+		drawOffer(gtx, th, skin, PanelOfferAt(box, i), offer, w)
 	}
 }
 
@@ -704,6 +773,13 @@ func wide(gtx layout.Context, th *material.Theme, said string, size int) layout.
 // is beside it. One line and not more: a card is a fixed height, and a title
 // that wrapped would change the shape of the board.
 func say(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int) {
+	sayOver(gtx, th, ink, b, said, size, 1)
+}
+
+// sayOver writes over however many lines it is given. One line is what nearly
+// everything wants — a card, a field, a row of a list, all of which keep their
+// shape whatever they hold — and a refusal is the exception.
+func sayOver(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size, lines int) {
 	if said == "" {
 		return
 	}
@@ -716,7 +792,7 @@ func say(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said st
 	inner.Constraints = layout.Exact(image.Pt(b.W, b.H))
 	label := material.Label(th, unit.Sp(float32(size)), said)
 	label.Color = ink
-	label.MaxLines = 1
+	label.MaxLines = lines
 	label.Layout(inner)
 }
 

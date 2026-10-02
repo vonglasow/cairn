@@ -398,8 +398,10 @@ func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
 
 	marked := RenderText(Operation{}, Answer{Tasks: tasks, InFocus: list(2)})
-	if want := "Second" + task.InFocusMark; !strings.Contains(marked, want) {
-		t.Errorf("the listing does not carry %q:\n%s", want, marked)
+	// The mark goes at the end of the row, and a row carries what a decision
+	// is made on between the title and it.
+	if !strings.Contains(marked, "Second") || !strings.Contains(marked, task.InFocusMark) {
+		t.Errorf("the listing does not mark Second:\n%s", marked)
 	}
 	if got := strings.Count(marked, task.InFocusMark); got != 1 {
 		t.Errorf("%d lines are marked, want exactly one:\n%s", got, marked)

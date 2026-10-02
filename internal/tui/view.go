@@ -289,6 +289,9 @@ func (b Board) foot() string {
 	if b.err != nil {
 		return " " + b.skin.Wrong.Render(b.err.Error())
 	}
+	if b.asking {
+		return b.question()
+	}
 	if b.choosing {
 		return b.kindPopup()
 	}
@@ -345,6 +348,27 @@ func (b Board) promptLine() string {
 		mark = ":"
 	}
 	return " " + b.skin.Prompt.Render(mark+b.typed) + b.skin.Key.Render("▏")
+}
+
+// question is the deletion waiting to be agreed to, said out loud: what would
+// go, and the two keys that answer. Nothing undoes a deletion, so it is named
+// by number rather than left to be guessed at.
+func (b Board) question() string {
+	if b.leaving {
+		return " " + b.skin.Title.Render("throw away what you typed?") + "  " +
+			b.bar(b.offer("⏎", "throw it away"), b.offer("esc", "back to the form"))
+	}
+	if b.sweeping {
+		return " " + b.skin.Title.Render("take every task in "+
+			strings.ToUpper(reading.StateAt(b.column))+" off the board?") + "  " +
+			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
+	}
+	what, number := "task", b.task
+	if b.tab == Objectives {
+		what, number = "objective", b.goal
+	}
+	asked := b.skin.Title.Render("delete " + what + " " + strconv.Itoa(number) + "?")
+	return " " + asked + "  " + b.bar(b.offer("⏎", "delete"), b.offer("esc", "keep"))
 }
 
 // kindPopup asks which of the three kinds of stopped a task is going into.

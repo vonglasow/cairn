@@ -101,6 +101,15 @@ type Board struct {
 	archived bool
 
 	choosing bool
+	// asking says a deletion has been proposed and not yet agreed to. The
+	// command line wants --yes and the window puts a question; this had one
+	// key and no question, and nothing anywhere can undo a deletion.
+	asking bool
+	// leaving says the question is about a form somebody typed into rather
+	// than about a deletion. Both lose work; only one of them is a deletion.
+	leaving bool
+	// sweeping says the question is about taking a whole column off the board.
+	sweeping bool
 	choice   int
 
 	// form is what is being added or edited, when the form has the window.
@@ -182,6 +191,11 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// The form takes the press itself. Help still answers over it, because
 		// help answers everywhere — including from inside a form somebody has
 		// got stuck in.
+		// A question waiting to be agreed to takes the next key, whatever is
+		// open underneath it — the form is still on screen behind it.
+		if b.asking {
+			return b.pressed(key)
+		}
 		if b.screen == OnForm {
 			// Two keys the form never sees: help, which answers everywhere,
 			// and escape, which closes it. Huh binds neither — measured: the
@@ -190,6 +204,18 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return b.pressed(key)
 			}
 			if key == "esc" {
+				// A form somebody typed into is asked about before it goes.
+				// The board guards a deletion of two words and threw ten
+				// minutes of typing away on one key.
+				if b.form.Changed() {
+					// The question is put at the foot, where every other
+					// question is put, so the board is given back while it
+					// waits. The form is still held, and backing out gives it
+					// back with everything in it.
+					b.asking, b.leaving = true, true
+					b.screen = OnTheBoard
+					return b, nil
+				}
 				b.screen = OnTheBoard
 				return b, nil
 			}
@@ -229,6 +255,11 @@ func (b Board) took(l Looked) Board {
 	if l.Err != nil {
 		b.err = l.Err
 		return b
+	}
+	// A write that went through is what closes a form, so a refused one stays
+	// open with everything still in it.
+	if b.screen == OnForm {
+		b.screen, b.form = OnTheBoard, Form{}
 	}
 	was := b.task
 	// Where the task stood has to be worked out before the new reading goes in,
@@ -316,6 +347,9 @@ type Cursor struct {
 	Goal    int
 	Showing int
 }
+
+// Asking says whether a deletion is waiting to be agreed to.
+func (b Board) Asking() bool { return b.asking }
 
 // Where answers it.
 func (b Board) Where() Cursor {

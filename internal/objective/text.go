@@ -111,21 +111,27 @@ func Serving(lines []string) string {
 type listingRow struct {
 	number int
 	title  string
+	// And where it stands, what it carries, and when it is wanted. A listing
+	// that said only a number and a title made somebody open every objective
+	// to find out which of them was reached and which was abandoned.
+	state    State
+	priority domain.Priority
+	due      time.Time
 }
 
-func (r *listingRow) Numbered(n int)          { r.number = n }
-func (r *listingRow) Titled(s string)         { r.title = s }
-func (r *listingRow) Standing(State)          {}
-func (r *listingRow) Carries(domain.Priority) {}
-func (r *listingRow) Described(string)        {}
-func (r *listingRow) NotDescribed()           {}
-func (r *listingRow) Labelled(string)         {}
-func (r *listingRow) NotLabelled()            {}
-func (r *listingRow) LabelsTold()             {}
-func (r *listingRow) Due(time.Time)           {}
-func (r *listingRow) NotDue()                 {}
-func (r *listingRow) Estimated(time.Duration) {}
-func (r *listingRow) NotEstimated()           {}
+func (r *listingRow) Numbered(n int)            { r.number = n }
+func (r *listingRow) Titled(s string)           { r.title = s }
+func (r *listingRow) Standing(s State)          { r.state = s }
+func (r *listingRow) Carries(p domain.Priority) { r.priority = p }
+func (r *listingRow) Described(string)          {}
+func (r *listingRow) NotDescribed()             {}
+func (r *listingRow) Labelled(string)           {}
+func (r *listingRow) NotLabelled()              {}
+func (r *listingRow) LabelsTold()               {}
+func (r *listingRow) Due(d time.Time)           { r.due = d }
+func (r *listingRow) NotDue()                   {}
+func (r *listingRow) Estimated(time.Duration)   {}
+func (r *listingRow) NotEstimated()             {}
 
 // List renders every objective as one row each. No tree: what is under an
 // objective is shown by `objective show`, and a listing that unfolded every
@@ -135,7 +141,15 @@ func List(all []Objective) string {
 	for _, o := range all {
 		var r listingRow
 		o.Tell(&r)
-		_, _ = fmt.Fprintf(&out, "#%d  %s\n", r.number, r.title)
+		line := fmt.Sprintf("#%d  %s", r.number, r.title)
+		for _, said := range []string{
+			string(r.state), string(r.priority), domain.FormatDay(r.due),
+		} {
+			if said != "" {
+				line += "  · " + said
+			}
+		}
+		_, _ = fmt.Fprintf(&out, "%s\n", line)
 	}
 	return out.String()
 }

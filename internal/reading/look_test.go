@@ -144,3 +144,22 @@ func found(t *testing.T, w Work) Snapshot {
 	}
 	return read
 }
+
+// "Nothing blocks it any more" is the one thing about blocking that has to be
+// acted on, and it reached the command line's listing and nowhere else. The
+// boards read the same answer and threw the mark away.
+func TestACardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
+	f := newFake()
+	f.tasks = []task.Task{aTask("Write the spec"), aTask("Ship the board")}
+	f.freed = []int{2}
+
+	found, err := Look(f)
+	if err != nil {
+		t.Fatalf("Look: %v", err)
+	}
+	for _, card := range found.Cards {
+		if card.Freed != (card.Number == 2) {
+			t.Errorf("card %d says Freed = %v", card.Number, card.Freed)
+		}
+	}
+}

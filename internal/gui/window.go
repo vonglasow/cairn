@@ -128,8 +128,14 @@ type Window struct {
 	// past what it wrapped.
 	serving int
 	// draggingSaying says the pointer has taken hold of the bar beside the
-	// description, which is pulled the way the history's is.
-	draggingSaying bool
+	// description, and draggingServing the one beside what hangs under a task.
+	// All of them are pulled the way the history's is.
+	draggingSaying, draggingServing bool
+	// draggingChoosing says the same of the list's own bar. Its thumb is sized
+	// never to be too small to take hold of, and taking hold of it did nothing
+	// at all — two of the window's four bars answered a drag, and two invited
+	// one and stayed where they were.
+	draggingChoosing bool
 	// draggingBar says the pointer has taken hold of the bar beside the
 	// history. Told apart from a held card, because a panel is over the board
 	// and the board's cards are not there to be taken hold of.
@@ -151,6 +157,18 @@ type Window struct {
 	// archived says what was taken off the board is drawn with the rest,
 	// dimmed. Nothing is asked of the store either way.
 	archived bool
+	// over is the offer the pointer is resting on, and whether it is resting
+	// on one at all. Nothing in the window used to answer a pointer before it
+	// was pressed, so "Delete" read exactly like a label — the one thing that
+	// says a word can be clicked was missing from the whole surface.
+	over    string
+	hovered bool
+	// question is which of the two things the one question screen is asking
+	// about. There used to be only one.
+	question Question
+	// wasScreen is what was open when the window became too small to draw it,
+	// so growing back gives it back rather than an empty board.
+	wasScreen Screen
 	// ticked is the objectives the open list has in, by number, and choosing
 	// is where in that list the keyboard sits. They live on the window and not
 	// in the form because the list is a screen of its own; the form is given
@@ -185,11 +203,17 @@ func (w Window) sized() Window {
 	// gives: a switch with no subject puts its conditions outside every block
 	// coverage sees, so a wrong one would go out unjudged.
 	if TooSmall(w.width, w.height) {
+		// What was open is remembered rather than closed. A window dragged
+		// narrow for a moment used to come back as an empty board, taking a
+		// form somebody had been filling in with it.
+		if w.screen != TooSmallToDraw {
+			w.wasScreen = w.screen
+		}
 		w.screen = TooSmallToDraw
 		return w
 	}
 	if w.screen == TooSmallToDraw {
-		w.screen = OnTheBoard
+		w.screen = w.wasScreen
 	}
 	return w
 }
@@ -616,8 +640,13 @@ func (w Window) Click(p Point) Window {
 		if chosenFromAList(w.form.Fields()[at].Arg) {
 			return w.choosingList()
 		}
-		_, value := FieldRow(Over(w.width, w.height), FieldTop(Over(w.width, w.height), w.form.Fields(), at))
-		return w.CaretInto(into(value, p))
+		// A field holding one of a closed set moves to the next of them. Its
+		// value changed by the arrows alone, so a column or a priority could
+		// not be set with a mouse at all.
+		if len(w.form.Fields()[at].Choices) > 0 {
+			return w.cycle(1)
+		}
+		return w.CaretInto(w.reaching(at, p))
 	}
 	// Off a panel is out of it, where getting out costs nothing. A hand on the
 	// mouse should not have to reach for the keyboard to put something away.
@@ -738,6 +767,21 @@ func (w Window) puttingAway() Window {
 	return w.Look()
 }
 
+// LaneSays is what a lane of the band writes above itself: what it is, and how
+// many it holds. The four columns have counted since the beginning; the three
+// lanes did not, so the one run of cards that always wants acting on was the
+// one nobody could count without counting.
+func (w Window) LaneSays(kind string) string {
+	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
+	held := 0
+	for _, c := range stalled {
+		if c.State == kind {
+			held++
+		}
+	}
+	return kind + "  " + strconv.Itoa(held)
+}
+
 // Holds is how much a page holds, which is what its tab says beside its name.
 // Read off what is showing, so a search that narrows the board narrows what the
 // tabs claim as well.
@@ -773,6 +817,12 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
+		if w.question == aboutLeaving {
+			return "Throw away what you typed?"
+		}
+		if w.question == aboutSweeping {
+			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
+		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnDetail:
 		// The whole title, on the line beside the number. It is the one line
@@ -855,6 +905,11 @@ func Shortcut(offer string) string {
 		return "e"
 	case "delete":
 		return "d"
+	case "agree":
+		// Not d, which is what opened the question. A quick dd — which is how
+		// a deletion is typed in the grammar this product borrows — used to
+		// remove a task before a word of the question had been read.
+		return "enter"
 	case "choose":
 		return "enter"
 	case "save":
@@ -902,6 +957,16 @@ func (w Window) Helping() []reading.Field {
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
 		{Name: "d", Value: "delete what is chosen — it asks first"},
 		{Name: "x", Value: "take what is chosen off the board, or put it back"},
+		{Name: "⇧X", Value: "take every task in that card's column off the board — it asks first"},
+		{Name: "←→↑↓", Value: "walk the board, the band included"},
+		{Name: "⇧←→↑↓", Value: "move what is chosen — sideways changes its column"},
+		{Name: "⏎ on the board", Value: "open what is chosen"},
+		{Name: "⏎ on a question", Value: "agree to it"},
+		{Name: "⇧⏎ in a long field", Value: "a new line, since ⏎ saves"},
+		{Name: "⌘⏎ in a form", Value: "save, wherever the keyboard is"},
+		{Name: "⌘A ⌘C ⌘X ⌘V", Value: "hold all of a field, copy, cut, paste"},
+		{Name: "⇧←→ in a field", Value: "hold a run of text — dragging across it does the same"},
+		{Name: "⏎ in a list", Value: "take the row · ⌘⏎ keeps the list · j and k walk it"},
 		{Name: "⇧A", Value: "what was archived, on the board or off it — it reads faintly"},
 		{Name: "⌘N", Value: "add"},
 		{Name: "/ or ⌘F", Value: "search — it reaches the description and the reason"},
@@ -947,13 +1012,14 @@ func (w Window) Offers() []string {
 		}
 		return []string{"Edit", "Close"}
 	case OnAsking:
-		return []string{"Delete", "Cancel"}
+		return []string{"Agree", "Cancel"}
 	case OnHelp:
 		return []string{"Close"}
 	case OnSearch:
-		// Nothing: the whole bar is the search box, and an offer drawn over it
-		// would be a word sitting in the middle of what is being typed.
-		return nil
+		// One word, at the right of the bar, where the box no longer reaches.
+		// Offering nothing left the pointer with no way out of a search and no
+		// way to act on the card it had just found.
+		return []string{"Close"}
 	}
 	offers := []string{"New", "Search", "Archived", "Help"}
 	if !w.looking.Empty() {
@@ -1000,7 +1066,13 @@ func chosenFromAList(arg string) bool { return arg == "objective" || arg == "par
 // because a person clicks what they are looking at.
 func (w Window) offerAt(p Point) (string, bool) {
 	l := w.Layout()
+	// The panel the offers are drawn on, which for a list is its own and not
+	// the one everything else uses: drawn in one place and listened for in
+	// another, three words looked like buttons and answered nowhere.
 	panel := Over(w.width, w.height)
+	if w.screen == OnChoosing {
+		panel = ChoosingOver(w.width, w.height)
+	}
 	for i, offer := range w.Offers() {
 		if OfferAt(l, i).In(p) {
 			return offer, true
@@ -1011,6 +1083,66 @@ func (w Window) offerAt(p Point) (string, bool) {
 	}
 	return "", false
 }
+
+// Question is what the one question screen is asking about.
+type Question int
+
+// The two things worth asking before doing: both lose work, and work lost
+// without being asked is work somebody has to remember they lost.
+const (
+	aboutDeleting Question = iota
+	aboutLeaving
+	aboutSweeping
+)
+
+// sweeps is the column a sweep would take off the board: the one the chosen
+// card stands in. Nothing when nothing is chosen, which is when there is no
+// column to name and so nothing to ask about.
+func (w Window) sweeps() string {
+	if w.chosen == 0 || w.chosenGoal {
+		return ""
+	}
+	state := w.stateOf(w.chosen)
+	if reading.Stopped(state) {
+		return ""
+	}
+	return state
+}
+
+// sweeping takes every task in that column off the board.
+func (w Window) sweeping() Window {
+	state := w.sweeps()
+	w.screen, w.question = OnTheBoard, aboutDeleting
+	if state == "" {
+		return w
+	}
+	_, err := w.work.Ask(engine.TaskArchive, engine.Input{Given: map[string]string{"state": state}})
+	if err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
+// Hovering answers the window the pointer resting at a point leaves behind.
+func (w Window) Hovering(p Point) Window {
+	w.over, w.hovered = w.offerAt(p)
+	return w
+}
+
+// Away is the window the pointer having left it leaves behind.
+func (w Window) Away() Window {
+	w.over, w.hovered = "", false
+	return w
+}
+
+// Hovered is the offer the pointer is resting on.
+func (w Window) Hovered() (string, bool) { return w.over, w.hovered }
+
+// Lighting says whether an offer is the one the pointer is resting on, which
+// is the one thing in the window that says a word can be clicked. Asked here
+// rather than worked out in the drawing, so a scenario can put the question.
+func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offer }
 
 // goalAt says which objective a point lands on in the list.
 func (w Window) goalAt(p Point) int {
@@ -1072,6 +1204,7 @@ func (w Window) PressAt(p Point) Window {
 	w.pressed, w.pressedOn = true, w.screen
 	if w.screen == OnDetail {
 		w.draggingBar = HistoryBar(Over(w.width, w.height)).In(p)
+		w.draggingServing = ServingBar(Over(w.width, w.height), w.Shown()).In(p)
 		if at, long := LongField(w.Shown()); long {
 			w.draggingSaying = SayingBar(Over(w.width, w.height), w.Shown(), at).In(p)
 		}
@@ -1087,17 +1220,25 @@ func (w Window) PressAt(p Point) Window {
 	// A press in a field is where a run of text may be held from, so the caret
 	// goes where the press landed and not to the field's end: the end is where
 	// somebody arriving at a field types, and this one is not arriving.
+	if w.screen == OnChoosing {
+		w.draggingChoosing = ChoosingBar(ChoosingOver(w.width, w.height)).In(p)
+		return w
+	}
 	if w.screen == OnForm {
 		if at, on := w.fieldAt(p); on {
 			w.form = w.form.onto(at)
-			_, value := FieldRow(Over(w.width, w.height),
-				FieldTop(Over(w.width, w.height), w.form.Fields(), at))
-			w.form = w.form.Writes(w.form.Writing().CaretAt(into(value, p)))
+			w.form = w.form.Writes(w.form.Writing().CaretAt(w.reaching(at, p)))
 			w.holdingText = true
 		}
 		return w
 	}
 	if w.screen != OnTheBoard {
+		return w
+	}
+	// Nothing is taken hold of on the objectives page. An objective and a task
+	// can carry the same number, and what is dragged is let go into a column —
+	// which only a task has. Dragging one used to move the other.
+	if w.tab == Objectives {
 		return w
 	}
 	w.held = Held{Number: w.at(p), From: p, At: p}
@@ -1114,9 +1255,7 @@ func (w Window) MoveTo(p Point) Window {
 	// A pointer held down in a field holds a run of its text.
 	if w.holdingText && w.screen == OnForm {
 		if at, on := w.fieldAt(p); on && at == w.form.On() {
-			_, value := FieldRow(Over(w.width, w.height),
-				FieldTop(Over(w.width, w.height), w.form.Fields(), at))
-			w.form = w.form.Writes(w.form.Writing().Selects(into(value, p)))
+			w.form = w.form.Writes(w.form.Writing().Selects(w.reaching(at, p)))
 		}
 		return w
 	}
@@ -1124,6 +1263,20 @@ func (w Window) MoveTo(p Point) Window {
 		at, _ := LongField(w.Shown())
 		track := SayingBar(Over(w.width, w.height), w.Shown(), at)
 		w.saying = w.settledSaying(Reached(track, len(w.SaidLines()), w.SaidRows(), p))
+		return w
+	}
+	if w.draggingChoosing {
+		box := ChoosingOver(w.width, w.height)
+		w.choosingFrom = w.settledChoosing(
+			Reached(ChoosingBar(box), len(w.Choosing()), ChoosingRows(box), p))
+		return w
+	}
+	if w.draggingServing {
+		// Counted in tiles and settled in pixels, since that box is scrolled
+		// by pixels and not by lines.
+		track := ServingBar(Over(w.width, w.height), w.Shown())
+		room := max(1, ServingBox(Over(w.width, w.height), w.Shown()).H/SubHeight)
+		w.serving = w.settledServing(Reached(track, len(w.Under()), room, p) * SubHeight)
 		return w
 	}
 	if w.held.Number == 0 {
@@ -1138,8 +1291,9 @@ func (w Window) MoveTo(p Point) Window {
 
 // LetGo drops the card, or lets a click be a click.
 func (w Window) LetGo(p Point) Window {
-	if w.draggingBar || w.draggingSaying {
+	if w.draggingBar || w.draggingSaying || w.draggingServing || w.draggingChoosing {
 		w.draggingBar, w.draggingSaying = false, false
+		w.draggingServing, w.draggingChoosing = false, false
 		return w
 	}
 	if w.holdingText {
@@ -1196,6 +1350,11 @@ func turning(spare, by int) (lines, left int) {
 
 // Scroll moves the column under the pointer, and no other.
 func (w Window) Scroll(p Point, by int) Window {
+	// A panel stops the wheel. Over a form, the help or the question it used to
+	// reach the board behind, and scrolled something nobody could see.
+	if w.screen == OnForm || w.screen == OnHelp || w.screen == OnAsking {
+		return w
+	}
 	if w.screen == OnChoosing {
 		box := ChoosingOver(w.width, w.height)
 		if ChoosingRun(box).In(p) || ChoosingBar(box).In(p) {
@@ -1263,21 +1422,26 @@ func (w Window) Key(name string) Window {
 	if name == "f" && w.screen == OnTheBoard && w.chosen != 0 && !w.chosenGoal {
 		return w.working()
 	}
+	// The whole column off the board at once. Not on the bar either: the bar
+	// has room for what one card does, and this does what a column does. The
+	// engine has swept by a narrowing all along and only the command line ever
+	// asked it to.
+	if name == "shift+x" && w.screen == OnTheBoard && w.tab == Tasks && w.sweeps() != "" {
+		w.screen, w.question = OnAsking, aboutSweeping
+		return w
+	}
 	// The two spellings of a key the bar has no room to write twice.
 	switch name {
 	case "ctrl+n":
 		return w.Key("cmd+n")
 	case "cmd+f", "ctrl+f":
 		return w.Key("/")
-	case "esc":
-		// Escape out of a search closes it and clears what it narrowed. Out of
-		// anything else the bar offers it as Close or Cancel, and it got there
-		// through the offers above.
-		if w.screen == OnSearch {
-			w.screen, w.looking = OnTheBoard, Written{}
-			return w
-		}
 	}
+	// Escape is not here: every screen that has a way out offers it as Close
+	// or Cancel, and Shortcut maps both to esc — so it is served by the loop
+	// above before it ever reaches this far. The branch that used to close a
+	// search here was unreachable, and the only thing that noticed was
+	// mutation, which found arithmetic no test could run.
 	if w.screen == OnChoosing {
 		return w.inChoosing(name)
 	}
@@ -1298,6 +1462,14 @@ func (w Window) Key(name string) Window {
 			return w.walking(0, 1)
 		case "enter", "return":
 			return w.opening()
+		case "shift+left":
+			return w.shifting(-1, 0)
+		case "shift+right":
+			return w.shifting(1, 0)
+		case "shift+up":
+			return w.shifting(0, -1)
+		case "shift+down":
+			return w.shifting(0, 1)
 		}
 	}
 	if w.screen == OnDetail {
@@ -1441,7 +1613,23 @@ func (w Window) walking(across, down int) Window {
 	if w.tab == Objectives {
 		return w.walkingGoals(across, down)
 	}
+	// The band is walked like the columns. A task that is blocked, watching or
+	// paused used to be beyond the arrows altogether — and those are the ones
+	// that want a decision.
+	if lane, at, inBand := w.whereInBand(); inBand {
+		return w.walkingBand(lane, at, across, down)
+	}
 	column, at := w.whereChosen()
+	if down > 0 {
+		// Off the bottom of a column is into the lane beneath it. The backlog
+		// stands alone, full height, with no lane under it.
+		if here := w.inColumn(column); column > 0 && at == len(here)-1 {
+			if lane := w.inLane(column - 1); len(lane) > 0 {
+				w.chosen, w.chosenGoal = lane[0].Number, false
+				return w
+			}
+		}
+	}
 	if across != 0 {
 		for next := column + across; next >= 0 && next < Columns; next += across {
 			here := w.inColumn(next)
@@ -1461,6 +1649,83 @@ func (w Window) walking(across, down int) Window {
 	at = min(len(here)-1, max(0, at+down))
 	w.chosen, w.chosenGoal = here[at].Number, false
 	return w.following(column, at)
+}
+
+// shifting moves the chosen card itself rather than the choice: sideways it
+// changes column, up and down it changes place among the ones it sits with.
+// The terminal has done this from the beginning; the window had only the drag,
+// so the central gesture of the product wanted a mouse.
+func (w Window) shifting(across, down int) Window {
+	if w.tab == Objectives || w.chosen == 0 {
+		return w
+	}
+	column, at := w.whereChosen()
+	if across != 0 {
+		next := column + across
+		if next < 0 || next >= Columns {
+			return w
+		}
+		dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+		if _, err := w.work.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(w.chosen), "state": dealt[next].State}}); err != nil {
+			w.err = err
+			return w
+		}
+		return w.Look()
+	}
+	here := w.inColumn(column)
+	to := at + down
+	if to < 0 || to >= len(here) {
+		return w
+	}
+	given := map[string]string{"number": strconv.Itoa(w.chosen)}
+	if to == 0 {
+		given["first"] = "true"
+	} else {
+		given["after"] = strconv.Itoa(here[to].Number)
+	}
+	if _, err := w.work.Ask(engine.TaskMove, engine.Input{Given: given}); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
+// whereInBand says which lane the chosen task sits in, and where in it.
+func (w Window) whereInBand() (lane, at int, ok bool) {
+	for i := range Lanes {
+		for j, c := range w.inLane(i) {
+			if c.Number == w.chosen {
+				return i, j, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+// walkingBand moves inside the band, and back up into the column a lane sits
+// under. The lanes are one row, so down walks along a lane and up leaves it.
+func (w Window) walkingBand(lane, at, across, down int) Window {
+	if down < 0 && at == 0 {
+		if here := w.inColumn(lane + 1); len(here) > 0 {
+			last := len(here) - 1
+			w.chosen, w.chosenGoal = here[last].Number, false
+			return w.following(lane+1, last)
+		}
+		return w
+	}
+	if across != 0 {
+		for next := lane + across; next >= 0 && next < len(Lanes); next += across {
+			if here := w.inLane(next); len(here) > 0 {
+				w.chosen, w.chosenGoal = here[min(at, len(here)-1)].Number, false
+				return w
+			}
+		}
+		return w
+	}
+	here := w.inLane(lane)
+	w.chosen, w.chosenGoal = here[min(len(here)-1, max(0, at+down))].Number, false
+	return w
 }
 
 // following moves a column so that the card just chosen is in sight. Walking

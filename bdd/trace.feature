@@ -89,6 +89,17 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released", "deleted"
 
+    @trace-a-deletion-writes-down-what-went-with-it
+    Scenario: what a deleted task carried is written down with the deletion
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the description "the client wants two columns"
+      And I edited task 1 with the priority "high"
+      And I deleted task 1
+      When I run `cairn trace show 1`
+      Then it says the deletion took "Write the spec" with it
+      And it says the deletion took "the client wants two columns" with it
+      And it says the deletion took "high" with it
+
   Rule: What blocks a task is written down like anything else it carries
 
     A blocker and the words beside it are attributes, so they are traced as

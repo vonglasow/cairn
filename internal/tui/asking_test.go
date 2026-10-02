@@ -58,11 +58,11 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 		number string
 	}{
 		{what: "taking the focus", cards: two[:1], keys: []string{"l", "i"}, press: "f", thing: "task", verb: "focus", number: "1"},
-		{what: "deleting a task", cards: two[:1], keys: []string{"l", "i"}, press: "d", thing: "task", verb: "delete", number: "1"},
+		{what: "deleting a task", cards: two[:1], keys: []string{"l", "i", "d"}, press: "enter", thing: "task", verb: "delete", number: "1"},
 		{what: "pushing a task down", cards: two, keys: []string{"l", "i"}, press: "shift+j", thing: "task", verb: "move", number: "1"},
 		{
 			what: "deleting an objective", goals: []reading.Goal{{Number: 3, Title: "Ship"}},
-			keys: []string{"tab"}, press: "d", thing: "objective", verb: "delete", number: "3",
+			keys: []string{"tab", "d"}, press: "enter", thing: "objective", verb: "delete", number: "3",
 		},
 	} {
 		t.Run(c.what, func(t *testing.T) {

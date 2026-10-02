@@ -8,6 +8,7 @@ import (
 	"cairn/internal/engine"
 	"cairn/internal/mcp"
 	"cairn/internal/objective"
+	"cairn/internal/task"
 	"cairn/internal/tui"
 )
 
@@ -44,6 +45,27 @@ var refusals = []error{
 	engine.ErrParentIsSubTask,
 	engine.ErrCarriesSubTasks,
 	engine.ErrNoSuchObjective,
+	engine.ErrBlockerSignAtBirth,
+	engine.ErrBlockerRequired,
+	engine.ErrBlockedByItself,
+	engine.ErrBlockingCycle,
+	engine.ErrBlockersBothWays,
+	engine.ErrStillBlocked,
+	engine.ErrObjectiveRequired,
+	engine.ErrObjectivesBothWays,
+	engine.ErrObjectiveSignAtBirth,
+	engine.ErrNowhereToMove,
+	engine.ErrMoreThanOnePlace,
+	engine.ErrNothingToLabel,
+	engine.ErrNothingToArchive,
+	task.ErrMovedBehindItself,
+	task.ErrOtherColumn,
+	task.ErrNotAmongItsSisters,
+	task.ErrAlreadyArchived,
+	task.ErrNotArchived,
+	task.ErrPartGoesWithItsWork,
+	task.ErrSubTaskHasNoColumn,
+	task.ErrSubTaskStillOpen,
 	engine.ErrSubTaskServesNoObjective,
 	engine.ErrObjectiveCarriesTasks,
 	engine.ErrNoSuchBackup,

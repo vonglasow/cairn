@@ -70,6 +70,17 @@ const (
 	Critical Priority = "critical"
 )
 
+// naming lists a closed set in a refusal. A refusal that says only what was
+// wrong leaves the next attempt to guesswork, and all of these sets are short
+// enough to put in the sentence that refuses.
+func naming[T ~string](of []T) string {
+	words := make([]string, len(of))
+	for i, one := range of {
+		words[i] = string(one)
+	}
+	return strings.Join(words, ", ")
+}
+
 // ParseState reads a column name. Nothing given returns the backlog, which is
 // where a task starts and where clearing the column puts it back.
 func ParseState(name string) (State, error) {
@@ -79,7 +90,7 @@ func ParseState(name string) (State, error) {
 	if slices.Contains(States, State(name)) {
 		return State(name), nil
 	}
-	return "", fmt.Errorf("%q: %w", name, ErrNotAState)
+	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAState, naming(States))
 }
 
 // ParsePriority reads a priority name. Nothing given returns normal, which is
@@ -91,7 +102,7 @@ func ParsePriority(name string) (Priority, error) {
 	if slices.Contains(Priorities, Priority(name)) {
 		return Priority(name), nil
 	}
-	return "", fmt.Errorf("%q: %w", name, ErrNotAPriority)
+	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAPriority, naming(Priorities))
 }
 
 // ParseLabels turns what was given into the set a task carries: lower case, no
@@ -122,7 +133,7 @@ func ParseDeadline(day string) (time.Time, error) {
 	}
 	parsed, err := time.Parse(dayLayout, day)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("%q: %w", day, ErrNotADay)
+		return time.Time{}, fmt.Errorf("%q: %w — a day written %s", day, ErrNotADay, dayLayout)
 	}
 	return parsed, nil
 }
@@ -135,7 +146,7 @@ func ParseEstimate(amount string) (time.Duration, error) {
 	}
 	parsed, err := time.ParseDuration(amount)
 	if err != nil {
-		return 0, fmt.Errorf("%q: %w", amount, ErrNotADuration)
+		return 0, fmt.Errorf("%q: %w — an amount and a unit, as in 2h or 1h30m", amount, ErrNotADuration)
 	}
 	if parsed < 0 {
 		return 0, fmt.Errorf("%q: %w", amount, ErrNegativeAmount)

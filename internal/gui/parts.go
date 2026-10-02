@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"strings"
+	"time"
+
 	"cairn/internal/reading"
 )
 
@@ -62,7 +65,10 @@ func SubPanel(b Box) Box {
 // out any other way is a ghost that lies about where the thing will go.
 func SubWriting(b Box) Box {
 	panel := SubPanel(b)
-	return Row(panel, panel.Y+inset, lineHigh)
+	// Centred in the tile rather than pushed to its top: written an inset down
+	// from a panel of twenty-two, a line of eighteen finished exactly on the
+	// bottom edge.
+	return Row(panel, panel.Y+(panel.H-lineHigh)/2, lineHigh)
 }
 
 // CountedAt is where an objective's count sits on its number line: hard right,
@@ -101,6 +107,22 @@ func Over(width, height int) Box {
 // Row is one line inside a panel.
 func Row(box Box, at, high int) Box {
 	return Box{X: box.X + padding, Y: at, W: box.W - padding - padding, H: high}
+}
+
+// fieldWide is as wide as a field holding one line is drawn. A date, a number
+// or a column in a box the width of the panel says nothing about what it
+// expects; a long field still takes everything there is.
+const fieldWide = 420
+
+// Reaches says which character of a wrapped text a point lands on: the line it
+// is down to, then how far across that line it is. Reading only how far across
+// it was put every click on the first line, so the third line of a description
+// could not be reached with a pointer at all.
+func (l Lines) Reaches(inside Box, p Point, wide int) int {
+	line := (p.Y - inside.Y) / lineHigh
+	line = min(max(0, line), len(l.Said)-1)
+	across := max(0, (p.X-inside.X)/wide)
+	return l.From[line] + min(across, len([]rune(l.Said[line])))
 }
 
 // FieldRow is one line of a form: what the field is called, and what it holds.
@@ -178,11 +200,15 @@ func ChoosingFrom(box Box) int {
 // is drawn — words that look like buttons and answer only somewhere else are
 // worse than no words at all.
 func PanelOfferAt(box Box, at int) Box {
+	// As tall as the bar's, so the screen that asks before losing work does
+	// not hold the smallest targets drawn. It grows upward: the foot of the
+	// panel is where it has always been.
+	high := barHigh
 	return Box{
 		X: box.X + padding + at*offerWide,
-		Y: box.Y + box.H - padding - lineHigh,
+		Y: box.Y + box.H - padding - high,
 		W: offerWide,
-		H: lineHigh,
+		H: high,
 	}
 }
 
@@ -322,7 +348,18 @@ func GoalRows(goals int) int {
 // Along the bottom and not across the middle, which is where a window says it
 // is too small — a place nobody types, and a place that covers the very board
 // a search is narrowing.
-func Searching(l Layout) Box { return l.Bar }
+// It leaves the right of the bar to the offers: taking the whole of it left a
+// search with no way out but a key, and no way at all to act on the card it
+// had just found.
+func Searching(l Layout) Box {
+	b := l.Bar
+	// It begins after the one offer the bar keeps, where every offer is drawn.
+	// Taking the whole bar left a key as the only way out of a search, and no
+	// way at all to act on the card the search had just found.
+	kept := offerWide + padding
+	b.X, b.W = b.X+kept, b.W-kept
+	return b
+}
 
 // searchWide is the room the word "Search" takes at the left of that box.
 const searchWide = 76
@@ -375,7 +412,11 @@ const inset = 4
 // Framed is the box drawn around what a field holds, tall enough for every
 // line that field is given.
 func Framed(value Box, rows int) Box {
-	return Box{X: value.X, Y: value.Y - inset, W: value.W, H: rows*lineHigh + inset + inset}
+	wide := value.W
+	if rows == 1 {
+		wide = min(wide, fieldWide)
+	}
+	return Box{X: value.X, Y: value.Y - inset, W: wide, H: rows*lineHigh + inset + inset}
 }
 
 // The detail panel is two columns: what the task carries on the left, what was
@@ -612,11 +653,26 @@ func Told(acts []string, room int) []string {
 // was drawn around it is room a form no longer has to spend.
 const between = 6
 
+// apart is how far one line of a panel is from the next: the same step a form
+// puts between two fields, which is lineHigh and two insets and the room one
+// field leaves before the next. It was 26 where a field was 32, which is the
+// same text written at two rhythms in one window — the help panel and the form
+// beside it read as two pieces of software.
+//
+// Written as the number and not as that sum. A constant's arithmetic runs on
+// no line, so no test can reach it and nothing would notice it changing; the
+// test beside fieldHigh holds the two together instead.
+const apart = 32
+
 // fieldHigh is what one field takes from the top of its frame to the top of
 // the next: its lines, the room its frame keeps, and what it leaves after it.
 func fieldHigh(field reading.Field) int {
 	return RowsOf(field)*lineHigh + inset + inset + between
 }
+
+// The scale everything is spaced on, in steps of four: 4 inside a frame, 12
+// between two things, 32 from one line of anything to the next. A number that
+// is not on it is a number somebody will have to measure to match.
 
 // Inside is the room for the text within that frame.
 func Inside(b Box) Box {
@@ -746,3 +802,84 @@ func FieldTop(box Box, fields []reading.Field, at int) int {
 
 // room is how many characters a box can show, reckoned the way a title is.
 func room(b Box) int { return (b.W - padding - padding) / perGlyph }
+
+// WrongBox is where a refusal is written: the bar's own line and one more
+// above it, growing upwards so the foot of the window stays where it is.
+//
+// The bar is one line, and the most instructive refusal cairn has runs past it
+// — "it is still blocked, by #3 and by #4. take them away first: task 3, task
+// 4" was cut just before the part that says what to do.
+func WrongBox(l Layout) Box {
+	return Box{X: l.Bar.X, Y: l.Bar.Y - lineHigh, W: l.Bar.W, H: l.Bar.H + lineHigh}
+}
+
+// Stamped splits a history line into the time it happened and what happened,
+// and says whether it is a line that begins with one at all. A line a long act
+// wrapped onto carries no time, and writing part of it in one ink and the rest
+// in another would make one sentence read as two.
+//
+// The history was thirty lines of the faintest ink the window has — a thing to
+// read, written in the ink kept for the things beside it.
+func Stamped(said string) (stamp, rest string, ok bool) {
+	stamp, rest, found := strings.Cut(said, "  ")
+	if !found {
+		return "", said, false
+	}
+	if _, err := time.Parse(time.RFC3339, stamp); err != nil {
+		return "", said, false
+	}
+	return stamp, rest, true
+}
+
+// LabelsRoom is how much of a card's bottom row the labels get: what is left
+// once the facts written hard right have taken theirs, and the padding that
+// keeps the two from touching. Nothing at all when there is nothing left,
+// since a width below zero is not a narrower line but a wider one.
+func LabelsRoom(labels Box, said string) int {
+	if said == "" {
+		return labels.W
+	}
+	return max(0, labels.W-CountedAt(labels, said).W-padding)
+}
+
+// StampedOver is how far across a history line what was done is written: past
+// the time it happened and the two spaces after it. Here rather than in the
+// drawing, for the reason this file opens with.
+func StampedOver(stamp string) int {
+	return (len([]rune(stamp)) + 2) * perSmallGlyph
+}
+
+// GhostBody is the shape a thing in hand is drawn in: a card's own on the
+// board, a tile's under an open task. What is carried is drawn where it would
+// be drawn if it were put down — a ghost laid out any other way is a ghost
+// that lies about where the thing will go.
+func GhostBody(screen Screen, ghost Box) Box {
+	if screen == OnDetail {
+		return SubPanel(ghost)
+	}
+	return ghost
+}
+
+// PastStamp is where what was done is written on a history line: past the time
+// it happened, and no wider than what is left of the line.
+func PastStamp(box Box, stamp string) Box {
+	over := StampedOver(stamp)
+	return Box{X: box.X + over, Y: box.Y, W: box.W - over, H: box.H}
+}
+
+// GhostSays is what a thing in hand writes, where it writes it, and at what
+// size: a card's title in a card's own box, a tile's one line in a tile's.
+//
+// What is carried is drawn the way it is drawn where it came from. A card puts
+// its title 28 points down and a tile is 22 high, so a card's layout put a
+// tile's writing past the bottom of the ghost and onto whatever was behind it.
+//
+// Cutting the tile's line to the room there is happens where it is drawn: the
+// font is proportional, so what fits is measured where there is something to
+// measure with.
+func GhostSays(screen Screen, ghost Box, c reading.Card) (Box, string, int) {
+	if screen == OnDetail {
+		return SubWriting(ghost), SubLine(c), small
+	}
+	return PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain
+}

@@ -172,7 +172,7 @@ func TestMayLeave_saysWhatIsInTheWayAndHowToTakeItAway(t *testing.T) {
 		t.Fatal("it was allowed")
 	}
 	for _, said := range []string{"#2", "#3", "the client's answer",
-		"--blocker -2", "--blocker -3", `--because ""`} {
+		"task 2", "task 3", "the reason it is waiting"} {
 		if !strings.Contains(err.Error(), said) {
 			t.Errorf("the refusal does not say %q: %v", said, err)
 		}
@@ -334,5 +334,26 @@ func TestEdit_writesDownWhichTaskWasInTheWay(t *testing.T) {
 	}
 	if written := trace.List(acts); !strings.Contains(written, blocking) {
 		t.Errorf("the history does not say %s was in the way:\n%s", blocking, written)
+	}
+}
+
+// The engine is behind four surfaces and the refusal spoke to one of them. A
+// person on the board or in the window was told to type --blocker -4, which is
+// not something either of them can be told.
+func TestTheRefusalDoesNotSpeakInCommandLineFlags(t *testing.T) {
+	e := openEngine(t)
+	number := factsOf(add(t, e, "Waiting")).number
+	blocked := string(domain.Blocked)
+	because := "the lawyer"
+	if _, err := e.Edit(number, Changes{State: &blocked, Because: &because}); err != nil {
+		t.Fatal(err)
+	}
+	working := string(domain.Current)
+	_, err := e.Edit(number, Changes{State: &working})
+	if err == nil {
+		t.Fatal("a blocked task left its column")
+	}
+	if strings.Contains(err.Error(), "--") {
+		t.Fatalf("the refusal names a command line flag: %q", err)
 	}
 }

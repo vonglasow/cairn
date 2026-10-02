@@ -63,6 +63,12 @@ func shifted(key string) (string, bool) {
 // answers rather than one switch: what is on screen decides before what mode
 // the board is in, and a prompt taking what is typed decides before either.
 func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
+	if key == "ctrl+c" {
+		// The way out, from anywhere. `:q` was the only one, and the help did
+		// not mention it — whoever had not read the documentation was shut
+		// inside the alt-screen with no way to ask.
+		return b, tea.Quit
+	}
 	if key == "?" {
 		return b.help(), nil
 	}
@@ -73,6 +79,38 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	// it hands back when it did not answer is thrown away, and a pending key
 	// nobody clears is a key that changes the meaning of every press after it.
 	b.pending = ""
+	// A question waiting to be agreed to takes the next key and nothing else
+	// does: enter agrees, anything else backs out. It is asked before the mode
+	// so that no key can slip past it.
+	if b.asking {
+		b.asking = false
+		agreed := key == "enter" || key == "return"
+		if b.leaving {
+			b.leaving = false
+			// Backing out of the question goes back to the form, which is the
+			// whole point of having asked.
+			if !agreed {
+				b.screen = OnForm
+				return b, nil
+			}
+			b.screen = OnTheBoard
+			return b, nil
+		}
+		if b.sweeping {
+			b.sweeping = false
+			if !agreed {
+				return b, nil
+			}
+			return b, b.sweepingColumn()
+		}
+		if !agreed {
+			return b, nil
+		}
+		if b.tab == Objectives {
+			return b, b.removeGoal()
+		}
+		return b, b.remove()
+	}
 	if b.screen != OnTheBoard {
 		return b.onScreen(key)
 	}
@@ -139,11 +177,24 @@ func (b Board) help() Board {
 // and not the name this board gives it.
 func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 	if key == "esc" {
-		b.screen = OnTheBoard
+		// Back to whatever the screen was asked over, form included — which is
+		// what the help promises when it is closed by a second ?.
+		b.screen = b.wasScreen
+		if b.screen == OnHelp {
+			b.screen = OnTheBoard
+		}
 		return b, nil
 	}
-	if way, ok := direction(key); ok && b.screen == OnHelp {
-		return b.readOn(way), nil
+	if way, ok := direction(key); ok {
+		if b.screen == OnHelp {
+			return b.readOn(way), nil
+		}
+		// The detail's bar offers hjkl and the arrows, and offering a key
+		// without serving it makes the bar a thing to distrust. They move
+		// between tasks, and the detail follows the cursor.
+		if b.screen == OnDetail {
+			return b.stepTo(way), nil
+		}
 	}
 	// The detail's own bar offers e and f, and offering a key without serving
 	// it makes the bar a thing to distrust. They do here what they do on the
@@ -167,6 +218,13 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 	}
 	switch key {
 	case "esc":
+		// An accepted search outlives the prompt that typed it, and nothing on
+		// the board says so. Escape widens it again before it does anything
+		// else, so there is always a way back to the whole board.
+		if b.query != "" {
+			b.query = ""
+			return b, nil
+		}
 		// Inside an objective there is somewhere to go back to. On the board
 		// itself there is not, and escape does nothing rather than something
 		// surprising.
@@ -179,6 +237,14 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		return b.addForm()
 	case "shift+a":
 		return b.showingArchived(), nil
+	case "shift+x":
+		// The whole column off the board at once. It asks first: it moves
+		// everything the column holds, and a gesture that moves twelve things
+		// is not a gesture to find out about afterwards.
+		if b.tab != Objectives {
+			b.asking, b.sweeping = true, true
+		}
+		return b, nil
 	case "/":
 		b.prompt, b.typed = Searching, ""
 		return b, nil
@@ -195,8 +261,11 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 			return b.editForm()
 		}
 	case "d":
-		if b.tab == Objectives {
-			return b, b.removeGoal()
+		// Nothing to delete, nothing to ask about: the question is only worth
+		// putting when agreeing to it would take something away.
+		if b.tab == Objectives && b.goal != 0 {
+			b.asking = true
+			return b, nil
 		}
 	}
 	return b, nil
@@ -222,7 +291,10 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 	case "f":
 		return b, b.toggleFocus()
 	case "d":
-		return b, b.remove()
+		if b.task != 0 {
+			b.asking = true
+		}
+		return b, nil
 	case "x":
 		return b, b.puttingAway()
 	case "shift+a":

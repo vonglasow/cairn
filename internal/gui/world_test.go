@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -498,7 +499,11 @@ func (w *world) clickInto(characters int, name string) error {
 			continue
 		}
 		_, value := FieldRow(box, FieldTop(box, fields, i))
-		at := Point{X: value.X + padding + characters*perGlyph, Y: value.Y + value.H/2}
+		// Where the text itself begins, which is the frame's own inset and not
+		// a card's padding: the two happened to be close enough to land on the
+		// right glyph until the spacing scale was put straight.
+		inside := Inside(value)
+		at := Point{X: inside.X + characters*perGlyph, Y: inside.Y + inside.H/2}
 		w.w = w.w.clicked(at)
 		return nil
 	}
@@ -550,6 +555,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.addTask(t, "", d)
 	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
+	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, func(n int, day string) error {
+		_, err := w.other.Ask(engine.TaskEdit, engine.Input{
+			Given: map[string]string{"number": strconv.Itoa(n), "deadline": day},
+		})
+		return err
+	})
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, func(n int, state string) error {
 		_, err := w.other.Edit(n, engine.Changes{State: &state})
 		return err
@@ -720,8 +731,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 				_, value := FieldRow(box, FieldTop(box, fields, i))
 				// Where production reads a character from, not a geometry
 				// worked out beside it.
+				inside := Inside(value)
 				at := func(n int) Point {
-					return Point{X: value.X + padding + n*perGlyph, Y: value.Y + value.H/2}
+					return Point{X: inside.X + n*perGlyph, Y: inside.Y + inside.H/2}
 				}
 				w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
 				return nil

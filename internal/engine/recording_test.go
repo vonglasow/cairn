@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"cairn/internal/domain"
 	"cairn/internal/trace"
 )
 
@@ -504,5 +505,34 @@ func TestRenderText_rendersAPeriodThenWhatItComesTo(t *testing.T) {
 	}
 	if strings.Index(got, "stretches of work") < strings.Index(got, "focus taken") {
 		t.Errorf("what it comes to is above the acts it was worked out from:\n%s", got)
+	}
+}
+
+// The trace recorded that a task was deleted and not what the task was: no
+// title, no description, nothing. Reading and undoing are two different asks and
+// cairn answers only the first — but a trace that keeps no content makes even a
+// manual restore impossible, which is a different thing from not having undo.
+func TestDeletingWritesDownWhatWentWithIt(t *testing.T) {
+	e := openEngine(t)
+	spec := add(t, e, "Write the spec")
+	number := factsOf(spec).number
+	note := "the one that matters"
+	high := string(domain.High)
+	if _, err := e.Edit(number, Changes{Description: &note, Priority: &high}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Delete(number); err != nil {
+		t.Fatal(err)
+	}
+	kept := ""
+	for _, a := range actsOf(t, e, number) {
+		if did, _, was, _ := didOf(a); did == trace.Deleted {
+			kept = was
+		}
+	}
+	for _, want := range []string{"Write the spec", note, high} {
+		if !strings.Contains(kept, want) {
+			t.Errorf("the trace kept %q, which does not carry %q", kept, want)
+		}
 	}
 }

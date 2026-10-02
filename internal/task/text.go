@@ -259,35 +259,43 @@ type listingRow struct {
 	// of one is finished is what the section under it exists to answer.
 	state    domain.State
 	archived bool
+	// And the four facts a decision is actually made on. A listing that said
+	// only "#12  Write the spec" made somebody open every task one at a time to
+	// find out which of them was urgent, late, or in the column they were
+	// working in — and that listing is what an agent sees through the MCP
+	// server as well.
+	priority domain.Priority
+	due      time.Time
+	labels   []string
 }
 
-func (r *listingRow) Numbered(n int)          { r.number = n }
-func (r *listingRow) Titled(s string)         { r.title = s }
-func (r *listingRow) Archived()               { r.archived = true }
-func (r *listingRow) NotArchived()            { r.archived = false }
-func (r *listingRow) InColumn(s domain.State) { r.state = s }
-func (r *listingRow) Carries(domain.Priority) {}
-func (r *listingRow) Described(string)        {}
-func (r *listingRow) NotDescribed()           {}
-func (r *listingRow) Labelled(string)         {}
-func (r *listingRow) NotLabelled()            {}
-func (r *listingRow) LabelsTold()             {}
-func (r *listingRow) BlockedBy(int)           {}
-func (r *listingRow) NotBlocked()             {}
-func (r *listingRow) BlockersTold()           {}
-func (r *listingRow) Because(string)          {}
-func (r *listingRow) NotBecause()             {}
-func (r *listingRow) Due(time.Time)           {}
-func (r *listingRow) NotDue()                 {}
-func (r *listingRow) Estimated(time.Duration) {}
-func (r *listingRow) NotEstimated()           {}
-func (r *listingRow) Spent(time.Duration)     {}
-func (r *listingRow) NothingSpent()           {}
-func (r *listingRow) Under(n int)             { r.parent = n }
-func (r *listingRow) UnderNothing()           { r.parent = NoParent }
-func (r *listingRow) Serves(int)              {}
-func (r *listingRow) ServesNothing()          {}
-func (r *listingRow) ObjectivesTold()         {}
+func (r *listingRow) Numbered(n int)            { r.number = n }
+func (r *listingRow) Titled(s string)           { r.title = s }
+func (r *listingRow) Archived()                 { r.archived = true }
+func (r *listingRow) NotArchived()              { r.archived = false }
+func (r *listingRow) InColumn(s domain.State)   { r.state = s }
+func (r *listingRow) Carries(p domain.Priority) { r.priority = p }
+func (r *listingRow) Described(string)          {}
+func (r *listingRow) NotDescribed()             {}
+func (r *listingRow) Labelled(l string)         { r.labels = append(r.labels, l) }
+func (r *listingRow) NotLabelled()              {}
+func (r *listingRow) LabelsTold()               {}
+func (r *listingRow) BlockedBy(int)             {}
+func (r *listingRow) NotBlocked()               {}
+func (r *listingRow) BlockersTold()             {}
+func (r *listingRow) Because(string)            {}
+func (r *listingRow) NotBecause()               {}
+func (r *listingRow) Due(d time.Time)           { r.due = d }
+func (r *listingRow) NotDue()                   {}
+func (r *listingRow) Estimated(time.Duration)   {}
+func (r *listingRow) NotEstimated()             {}
+func (r *listingRow) Spent(time.Duration)       {}
+func (r *listingRow) NothingSpent()             {}
+func (r *listingRow) Under(n int)               { r.parent = n }
+func (r *listingRow) UnderNothing()             { r.parent = NoParent }
+func (r *listingRow) Serves(int)                {}
+func (r *listingRow) ServesNothing()            {}
+func (r *listingRow) ObjectivesTold()           {}
 
 // rowOf reads back what a listing row needs from a task, without reaching
 // into fields that stopped being exported.
@@ -297,8 +305,20 @@ func rowOf(t Task) listingRow {
 	return r
 }
 
-// Line renders a task as one row of a listing: its number, then its title.
+// Line renders a task as one row of a listing: its number, its title, and what
+// a decision is made on — where it stands, what it carries, when it is wanted,
+// and what it is tagged with. Written as `· fact` pieces, so a row with none of
+// them is still the number and the title and nothing else.
 func Line(t Task) string {
 	r := rowOf(t)
-	return fmt.Sprintf("#%d  %s", r.number, r.title)
+	line := fmt.Sprintf("#%d  %s", r.number, r.title)
+	for _, said := range []string{
+		string(r.state), string(r.priority), domain.FormatDay(r.due),
+		strings.Join(r.labels, " "),
+	} {
+		if said != "" {
+			line += "  · " + said
+		}
+	}
+	return line
 }

@@ -221,6 +221,18 @@ Feature: Tasks
       And it lists task 1 titled "First"
       And it lists task 2 titled "Second"
 
+    @task-list-carries-what-a-decision-is-made-on
+    Scenario: a listed task carries what a decision is made on
+      Given I added a task titled "Write the spec"
+      When I run `cairn task edit 1 --state current --priority high --deadline 2026-10-09 --label backend`
+      And I run `cairn task list`
+      Then it succeeds
+      And the line for task 1 says "Write the spec"
+      And the line for task 1 says "current"
+      And the line for task 1 says "high"
+      And the line for task 1 says "2026-10-09"
+      And the line for task 1 says "backend"
+
     @task-list-order
     Scenario: tasks are listed in the order they were added
       Given I added a task titled "First"

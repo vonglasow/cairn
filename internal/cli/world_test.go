@@ -276,7 +276,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says a task cannot block itself$`:                                    "cannot block itself",
 		`^it says the objectives are either replaced or changed, not both$`:       "either replaced or changed",
 		`^it says an objective is added or taken away only when changing a task$`: "only when changing a task",
-		`^it says what is in the way and how to take it away$`:                    "--blocker -",
+		`^it says what is in the way and how to take it away$`:                    "take them away first: task ",
 		`^it says nothing would ever be able to start$`:                           "nothing would ever be able to start",
 		`^it says a sub-task cannot carry sub-tasks$`:                             "sub-task cannot carry sub-tasks",
 		`^it says the task carries sub-tasks$`:                                    "carries sub-tasks",
@@ -559,6 +559,17 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it lists task (\d+) titled "([^"]*)"$`, func(n int, title string) error {
 		return test.ListsTask(w.Out.Stdout, n, title)
+	})
+
+	sc.Step(`^the line for task (\d+) says "([^"]*)"$`, func(n int, said string) error {
+		row, err := w.listedRow(n)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(row, said) {
+			return fmt.Errorf("the line for task %d reads %q, and says nothing of %q", n, row, said)
+		}
+		return nil
 	})
 
 	sc.Step("^`([^`]*)` says there is no task$", func(line string) error {

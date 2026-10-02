@@ -45,6 +45,7 @@ type Glyphs struct {
 	SubTasks  string
 	Label     string
 	InTheWay  string
+	Archived  string
 }
 
 // nerd is the full set.
@@ -77,6 +78,7 @@ var plain = Glyphs{
 	SubTasks:  "▪",
 	Label:     "⚑",
 	InTheWay:  "↳",
+	Archived:  "▭",
 }
 
 // ErrNotASet is returned when a set is asked for by a name that is not one of

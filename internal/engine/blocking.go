@@ -105,15 +105,18 @@ func inTheWay(f taskFacts) string {
 	return "by " + strings.Join(named, " and by ")
 }
 
-// howToTakeAway spells out the flags that would clear what is in the way, so a
-// refusal is a instruction rather than a complaint.
+// howToTakeAway names what has to go, so a refusal is an instruction rather
+// than a complaint. It names the things and not the flags: the engine is behind
+// four surfaces, and only one of them has a flag to type. Somebody on the board
+// or in the window was being told to type --blocker -4, which is not something
+// either of them can be told.
 func howToTakeAway(f taskFacts) string {
 	how := make([]string, 0, len(f.blockers)+1)
 	for _, one := range f.blockers {
-		how = append(how, fmt.Sprintf("--blocker -%d", one))
+		how = append(how, fmt.Sprintf("task %d", one))
 	}
 	if f.because != "" {
-		how = append(how, `--because ""`)
+		how = append(how, "the reason it is waiting")
 	}
 	return strings.Join(how, ", ")
 }
