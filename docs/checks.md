@@ -217,7 +217,12 @@ make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
 make mutation-changed  # the lines changed since HEAD: what a commit runs
 make mutation          # every package: what a push runs
+make check             # every hook, commit's and push's, on every file
 ```
+
+`prek run -a` is not everything: it runs the commit's hooks, and the commit's
+mutation judges only what changed since `HEAD` — on a clean tree, nothing.
+`make check` is the one command that leaves nothing unchecked.
 
 Mutation is the slow one. Every package, every commit, took fourteen minutes
 and grew with the suite — long enough to be worked around. So it is split, and

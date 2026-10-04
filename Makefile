@@ -17,7 +17,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run red cover cover-check tested-check harness-check mutation mutation-changed clean
+.PHONY: build run red cover cover-check tested-check harness-check mutation mutation-changed check clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -150,6 +150,14 @@ mutation-changed:
 		exit 1; \
 	}
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
+
+## check: every hook prek has, on every file — the commit's, then the push's.
+## `prek run -a` alone runs only the commit's, and the commit's mutation judges
+## the lines changed since HEAD: on a clean tree, none. This is the one command
+## after which nothing is left unchecked.
+check:
+	@prek run -a
+	@prek run -a --stage pre-push
 
 ## clean: remove build and coverage artifacts
 clean:
