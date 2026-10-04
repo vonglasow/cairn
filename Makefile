@@ -17,7 +17,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run red cover cover-check tested-check harness-check mutation clean
+.PHONY: build run red cover cover-check tested-check harness-check mutation mutation-changed clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -55,7 +55,7 @@ red:
 # twice. `-race` costs about a second here and reports two goroutines touching
 # the same variable unsynchronised, which `-covermode=atomic` does not — atomic
 # only keeps the coverage counters themselves honest under concurrency.
-coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature)
+coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*)
 	@go test -race ./... -covermode=atomic -coverprofile=$@
 
 ## cover: print coverage per function, then the total
@@ -139,11 +139,17 @@ mutation:
 		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
 		exit 1; \
 	}
-	@for pkg in $$(go list ./... | sed "s|^cairn|.|"); do \
-		ls $$pkg/*_test.go >/dev/null 2>&1 || continue; \
-		echo "→ $$pkg"; \
-		$(GREMLINS) unleash $$pkg || exit 1; \
-	done
+	@GREMLINS=$(GREMLINS) scripts/mutation.sh
+
+## mutation-changed: the same judgement on the lines changed since HEAD only, in
+## the packages they are in. It is what a commit runs; the full sweep above is
+## what a push runs, so nothing leaves the machine without every package judged.
+mutation-changed:
+	@command -v $(GREMLINS) >/dev/null || { \
+		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
+		exit 1; \
+	}
+	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
 
 ## clean: remove build and coverage artifacts
 clean:

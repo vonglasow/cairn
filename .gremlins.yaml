@@ -19,8 +19,8 @@ unleash:
   #
   # Measured on internal/cli, 30 mutants: coefficient 10 judged 5 and timed out
   # 25 while still printing 100%; coefficient 30 judged all 30. Raised to 30,
-  # with room to spare. The mcover threshold in the Makefile is what makes a
-  # future timeout fail loudly instead of passing quietly.
+  # with room to spare. No threshold sees a timeout — gremlins counts it in
+  # neither column — so scripts/mutation.sh fails the run on one instead.
   timeout-coefficient: 30
 
   # 99.99, not 100, and this is not a lowered threshold. gremlins fails when the

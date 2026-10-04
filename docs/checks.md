@@ -5,7 +5,8 @@ commit.
 
 ## What runs, and when
 
-`prek` runs on its own at every commit. Nothing here has to be remembered.
+`prek` runs on its own at every commit, and once more at every push. Nothing
+here has to be remembered.
 
 | check | what it answers |
 |---|---|
@@ -15,14 +16,16 @@ commit.
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
 | `golangci-lint` | does it hold up to static analysis, comments included? |
 | `no-go-testing` | does non-test code import `testing`? |
-| `go-unit-tests` | does it work? |
 | `tested-check` | does every package have a test file at all? |
-| `cover-check` | did every line at least run — in total, and in each package? |
-| `mutation` | would a test have noticed if a line were wrong? |
+| `cover-check` | does it work — and did every line at least run, in total and in each package? |
+| `mutation` | would a test have noticed if a changed line were wrong? |
 | `commitlint` | is the message conventional? |
+| `mutation-all` | at push only: would a test have noticed if *any* line were wrong? |
 
-The `bdd/` scenarios are Go tests, so `go-unit-tests` already runs them. They
-have no hook of their own — that would run them twice.
+There is no `go-unit-tests` hook. `cover-check` builds its profile from `go
+test -race ./...`, which fails the moment a test does, so a second hook running
+the suite was the same answer paid for twice. The `bdd/` scenarios are Go
+tests, so that one run covers them too.
 
 ## Getting them
 
@@ -31,7 +34,7 @@ Without these, the hooks cannot run and nothing can be committed:
 ```sh
 brew install prek golangci-lint goimports govulncheck
 go install github.com/go-gremlins/gremlins/cmd/gremlins@latest
-prek install -t pre-commit -t commit-msg
+prek install -t pre-commit -t commit-msg -t pre-push
 ```
 
 `gremlins` lands in `$(go env GOPATH)/bin`, which is not always on `PATH` — the
@@ -125,6 +128,17 @@ Both live in `.gremlins.yaml`, because gremlins ignores them when they are
 passed as flags — measured, not assumed. Both read `99.99`, because the tool
 fails on *less than or equal*, so a `100` would refuse a perfect run.
 
+Neither sees a mutant that **timed out**: gremlins counts it in no column.
+Measured, under load, 219 timeouts hid 21 survivors behind a reported 100%. So
+the verdict is not gremlins' exit code but `scripts/mutation.sh`, reading its
+report: any mutant LIVED or NOT COVERED fails the run. A package with a timeout
+is judged again with three times the budget — a mutant that was only slow is
+judged then, and one that still runs out is a hang: a loop whose counter the
+mutant turned around, which the test waiting on it did notice. Measured, the
+full sweep has five, all of that kind. And the baseline test run is never a
+cached one (`-count=1`): read from the cache it takes milliseconds, the budget
+it sets with it, and every mutant times out.
+
 **A threshold is never lowered to get a commit through.** If a mutant survives,
 look at the mutant. When it is genuinely equivalent — a mutation that cannot
 change any observable behaviour, so no test can ever kill it — restructure the
@@ -201,10 +215,26 @@ one to reach for by hand during a red-green loop.
 make cover          # coverage per function, then the total
 make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
-make mutation       # fail below 100% efficacy
+make mutation-changed  # the lines changed since HEAD: what a commit runs
+make mutation          # every package: what a push runs
 ```
 
-`make mutation` is the slow one — tens of seconds per package, and it grows
-with the suite. There is no flag to narrow it: one command, every package,
-every time. A gate you can scope is a gate you scope out of habit, and the
-package you stopped running is the one that rots.
+Mutation is the slow one. Every package, every commit, took fourteen minutes
+and grew with the suite — long enough to be worked around. So it is split, and
+the split is fixed in `prek.toml`, not left to whoever runs it:
+
+- **at commit**, only the mutants on lines changed since `HEAD`, in the
+  packages holding them. Measured: about a minute instead of fourteen. A
+  surviving mutant found here costs one test.
+- **at push**, every package — about twenty minutes. A test weakened without touching the code it
+  guarded changes no production line, so only this one sees it — and nothing
+  leaves the machine before it has run.
+
+Gremlins' own `--diff` never matched a single mutant here: it names a file from
+the repository root and a mutant from its package. The script hands it a diff
+relative to the package, with no context lines — check a run's summary reads
+`KILLED`, not only `SKIPPED`, after touching that script.
+
+Every mutant is a build, and builds land in the Go cache — one full sweep left
+50 to 150 GB in it. Gremlins gets a cache of its own, `$(go env
+GOCACHE)-gremlins`, wiped once it passes 10 GB.
