@@ -521,14 +521,64 @@ Feature: The desktop board
       And I choose "Save"
       Then task 1 is in the column "todo"
 
+    @gui-a-closed-set-is-chosen-from-a-list
+    Scenario: a column is chosen from a list, the way a parent is
+      Given I added a task titled "Write the spec" with the state "backlog"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "column"
+      Then the window is choosing
+      And the list reads "backlog", "todo", "current", "blocked", "watching", "paused", "done"
+      And the row the keyboard is on is "backlog"
+      And the list has taken 1
+      When I press "down"
+      And I press "enter"
+      Then the window is on the form
+      And the field "column" reads "todo"
+
+    @gui-a-priority-is-found-by-typing
+    Scenario: a priority is found by typing, the way a parent is
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "priority"
+      And I type "hi"
+      Then the list reads "high"
+      When I press "enter"
+      Then the field "priority" reads "high"
+
+    @gui-a-closed-set-is-never-emptied
+    Scenario: taking the column a task is already in leaves it there
+      Given I added a task titled "Write the spec" with the state "backlog"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "column"
+      And I press "enter"
+      Then the window is on the form
+      And the field "column" reads "backlog"
+
+    @gui-a-standing-is-chosen-from-a-list
+    Scenario: an objective's standing is chosen from the same list
+      Given I added an objective titled "Ship cairn"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship cairn"
+      And I choose "Edit"
+      And I click the field "standing"
+      Then the window is choosing
+      And the list reads "active", "on-hold", "reached", "dropped"
+
     @gui-clicking-a-field
     Scenario: clicking a field is how the keyboard gets there
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "priority"
-      Then the keyboard is on "priority"
+      And I click the field "deadline"
+      Then the keyboard is on "deadline"
 
     @gui-the-caret-says-where-typing-goes
     Scenario: the form says where what is typed will go
@@ -1198,6 +1248,33 @@ Feature: The desktop board
       And I choose "Edit"
       And I drag across the field "title" from 0 to 5
       Then the field "title" holds "Write"
+
+    @gui-a-run-follows-the-pointer-out-of-its-field
+    Scenario: a run keeps following the pointer once it leaves the field
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I drag across the field "title" from 6 to past its end
+      Then the field "title" holds "the spec"
+
+    @gui-a-double-click-dragged-holds-whole-words
+    Scenario: a double click dragged on holds whole words
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I double-click the field "title" at 2 and drag to 7
+      Then the field "title" holds "Write the"
+
+    @gui-a-triple-click-holds-the-paragraph
+    Scenario: a triple click holds the whole paragraph it lands in
+      Given I added a task titled "Write the spec" with the paragraphs "Deux colonnes et une bande" and "Puis le reste"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I triple-click the first word of "field:description" on the open task
+      And I press "cmd+c"
+      Then the clipboard reads "Deux colonnes et une bande"
 
     @gui-a-held-run-is-typed-over
     Scenario: typing over a held run replaces it, and cutting takes it away

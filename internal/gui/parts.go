@@ -140,14 +140,13 @@ func Row(box Box, at, high int) Box {
 }
 
 // Reaches says which character of a wrapped text a point lands on: the line it
-// is down to, then how far across that line it is. Reading only how far across
-// it was put every click on the first line, so the third line of a description
-// could not be reached with a pointer at all.
-func (l Lines) Reaches(inside Box, p Point, wide int) int {
-	line := (p.Y - inside.Y) / lineHigh
-	line = min(max(0, line), len(l.Said)-1)
-	across := max(0, (p.X-inside.X)/wide)
-	return l.From[line] + min(across, len([]rune(l.Said[line])))
+// is down to, counting the lines scrolled out of sight above the first, then
+// the edge between two characters of that line nearest to it. Reading only how
+// far across it was put every click on the first line, so the third line of a
+// description could not be reached with a pointer at all.
+func (l Lines) Reaches(inside Box, p Point, from int, m Measure, size int) int {
+	line := min(len(l.Said)-1, max(0, from+(p.Y-inside.Y)/lineHigh))
+	return l.From[line] + m.Nearest(l.Said[line], size, p.X-inside.X)
 }
 
 // FieldRow is one line of a form: what the field is called, and what it holds.

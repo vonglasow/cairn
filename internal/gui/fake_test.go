@@ -155,6 +155,26 @@ func tapped(w Window, g Gesture, at Point) (Window, Gesture) {
 	return Pointing(w, g, pointer.Release, at, 0, moment)
 }
 
+// doubleDragged is a double click whose second press is held and dragged on
+// before it is let go.
+func (w Window) doubleDragged(from, to Point) Window {
+	w, g := tapped(w, Gesture{}, from)
+	w, g = Pointing(w, g, pointer.Press, from, 0, moment.Add(time.Millisecond))
+	w, g = Pointing(w, g, pointer.Drag, to, 0, moment.Add(2*time.Millisecond))
+	w, _ = Pointing(w, g, pointer.Release, to, 0, moment.Add(2*time.Millisecond))
+	return w
+}
+
+// tripleClicked is three presses, each soon enough after the one before.
+func (w Window) tripleClicked(at Point) Window {
+	w, g := tapped(w, Gesture{}, at)
+	for i := 1; i <= 2; i++ {
+		w, g = Pointing(w, g, pointer.Press, at, 0, moment.Add(time.Duration(i)*time.Millisecond))
+		w, g = Pointing(w, g, pointer.Release, at, 0, moment.Add(time.Duration(i)*time.Millisecond))
+	}
+	return w
+}
+
 // doubleClicked is the whole of what a mouse sends for one: a click, the
 // second press that makes it a double, and the release that follows it.
 func (w Window) doubleClicked(at Point) Window {

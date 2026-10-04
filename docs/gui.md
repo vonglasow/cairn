@@ -213,7 +213,9 @@ Linux-only fault reproducible on a Mac.
 
 A double-click is worked out here rather than asked of the system: Gio reports
 presses and says nothing about pairs of them. Two presses within 400ms and
-within the same few pixels are one gesture.
+within the same few pixels are one gesture, and a third one more is a triple
+click — unless the double opened something, in which case the third press
+lands on what it opened and is a press there.
 
 **A click that moves becomes a drag.** Past a few pixels the card lifts and
 follows the pointer; below that it is a click. Without the threshold, a shaky
@@ -278,8 +280,8 @@ there is one, the field that wants more than one line, and `Arg` — what the
 engine calls the same thing. An attribute added to the engine and to the
 terminal's form arrives here with no line written.
 
-A field with `Choices` is a dropdown, a `Long` field a multi-line box, the rest
-a line to type in. The field the keyboard is on is lit, and it is the only one:
+A field with `Choices` is chosen from the same list as a parent, a `Long` field
+a multi-line box, the rest a line to type in. The field the keyboard is on is lit, and it is the only one:
 that is the whole of what says where typing would go.
 
 **The objectives a task serves are picked from a list, not typed.** `enter` on
@@ -471,6 +473,15 @@ The field then reads `#1 Ship it` rather than `1` — the number is what the
 engine takes and what a person has to go and look up, which is the whole of why
 the list exists.
 
+**A closed set is chosen from the same list.** A column, a priority and an
+objective's standing open it too — on a click, or on `⏎` — offering the set in
+the domain's order, the value already held ticked and under the keyboard, and
+narrowed the same way by typing. One answer, so `⏎` takes and closes, as for a
+parent; but taking the one already held leaves it held, because a task stands
+in a column whatever is done to a list. The rows say the names alone: the
+number a row is listed under is the list's, not one anybody has seen. `←`/`→`
+on the field still step through the set without opening anything.
+
 **The list is as long as the panel, not as long as what it offers.** A board of
 fifty tasks drew fifty rows, straight past the panel, past the window, and over
 everything behind both. It is cut to the run the panel has and scrolled to for
@@ -494,6 +505,18 @@ once.
 The run is measured with the font, the way the caret is. Measured at so many
 pixels a glyph — the width a card's title uses — it sat a word away from its
 own caret at the far end of a line.
+
+**What a pointer lands on is measured with the same face.** The window is
+given a `Measure` — the edges between a line's characters, shaped by the
+theme's own shaper — and a press lands on the edge nearest to it. Reckoned at
+an average width, the run painted under the pointer and the run held ran apart
+as the pointer moved along a line, and holding text felt like dragging it
+through glue. A test window with no face reckons, so no test depends on a font.
+
+**A run grows by what began it.** A press grows it a character at a time, a
+double click a word, a triple click a paragraph — and once the pointer is down
+it goes on growing wherever the pointer goes, out of the field included: a
+hand overshoots, and a run that stopped at the frame stopped short.
 
 The clipboard goes through the loop. A window is a value and cannot execute
 anything, so it says what it wants: `Copying()` is read and done, `Pasting()`

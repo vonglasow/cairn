@@ -107,6 +107,12 @@ type Window struct {
 	// What a wheel sent that did not come to a whole line, kept until the
 	// turns after it make one.
 	spareHistory, spareSaying, spareChoosing int
+	// measure is the face text is measured with; nil until one is given.
+	measure Measure
+	// growing is what a run held with the pointer grows by, and anchor the run
+	// it grows from: what the press, the double or the triple click held.
+	growing Unit
+	anchor  Picked
 	// choosingFor is the field the open list is choosing for, and filtering
 	// what is being typed into it to narrow that list.
 	choosingFor string
@@ -683,20 +689,16 @@ func (w Window) Click(p Point) Window {
 	// A form's own fields answer, because that is how the keyboard gets to one
 	// with a mouse.
 	if at, on := w.fieldAt(p); on {
+		reached := w.reaching(at, p)
 		w.form = w.form.onto(at)
-		// A field a list answers opens it. There is nothing to type there, so
-		// a click that only moved the keyboard onto it left a pointer with
-		// nowhere to go and nothing saying a list was behind it.
-		if chosenFromAList(w.form.Fields()[at].Arg) {
+		// A field a list answers opens it — a closed set among them. There is
+		// nothing to type there, so a click that only moved the keyboard onto
+		// it left a pointer with nowhere to go and nothing saying a list was
+		// behind it.
+		if chosenFromAList(w.form.Fields()[at]) {
 			return w.choosingList()
 		}
-		// A field holding one of a closed set moves to the next of them. Its
-		// value changed by the arrows alone, so a column or a priority could
-		// not be set with a mouse at all.
-		if len(w.form.Fields()[at].Choices) > 0 {
-			return w.cycle(1)
-		}
-		return w.CaretInto(w.reaching(at, p))
+		return w.CaretInto(reached)
 	}
 	// Off a panel is out of it, where getting out costs nothing. A hand on the
 	// mouse should not have to reach for the keyboard to put something away.
@@ -861,7 +863,7 @@ func HeadsOn(w Window, screen Screen) string {
 		// somebody has to remember the way into.
 		what := "objectives for"
 		if w.OneOnly() {
-			what = "a parent for"
+			what = "a " + w.form.Fields()[w.form.On()].Name + " for"
 		}
 		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
 	case OnHelp:
@@ -1003,7 +1005,7 @@ func (w Window) Helping() []reading.Field {
 		{Name: "wheel", Value: "scroll what is under the pointer — a column, the objectives, a history"},
 		{Name: "↑↓ under a task", Value: "walk what hangs under it — space marks one done, or not"},
 		{Name: "wheel on a history", Value: "scroll it — the bar beside it can be pulled too"},
-		{Name: "on an open task", Value: "every text can be held: drag across it, or double-click a word — ⌘A holds it all, ⌘C copies"},
+		{Name: "on an open task", Value: "every text can be held: drag across it, double-click a word, triple-click a paragraph — ⌘A holds it all, ⌘C copies"},
 		{Name: "^D ^U on an open task", Value: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
@@ -1051,7 +1053,7 @@ func (w Window) Offers() []string {
 		// list answers, and with the keyboard left on that field after the
 		// list closed there was no way to save at all — the one act a form
 		// exists for, unreachable for having chosen something.
-		if chosenFromAList(w.form.Fields()[w.form.On()].Arg) {
+		if chosenFromAList(w.form.Fields()[w.form.On()]) {
 			return []string{"Choose", "Save", "Cancel"}
 		}
 		return []string{"Save", "Cancel"}
@@ -1103,15 +1105,18 @@ func (w Window) clickingList(p Point) Window {
 		return w
 	}
 	if looking := ChoosingLooking(box); looking.In(p) {
-		w.filtering = w.filtering.CaretAt(into(Inside(looking), p))
+		w.filtering = w.filtering.CaretAt(into(Inside(looking), p, w.filtering.Reads(), w.measured()))
 	}
 	return w
 }
 
 // chosenFromAList says whether a field is answered by picking from a list
-// rather than by typing. Both are numbers somebody would otherwise have to go
-// and look up, which is the whole of why the list exists.
-func chosenFromAList(arg string) bool { return arg == "objective" || arg == "parent" }
+// rather than by typing. The objectives and the parent are numbers somebody
+// would otherwise have to go and look up; a column or a priority is one of a
+// closed set, and the list is where that set is read before one is picked.
+func chosenFromAList(field reading.Field) bool {
+	return field.Arg == "objective" || field.Arg == "parent" || len(field.Choices) > 0
+}
 
 // offerAt says which offer a point lands on, in the bar along the bottom or on
 // the panel that has the window. Both say the same things and both answer,
@@ -1244,8 +1249,7 @@ func (w Window) DoubleClick(p Point) Window {
 	}
 	if w.screen == OnForm {
 		if at, on := w.fieldAt(p); on {
-			w.form = w.form.onto(at)
-			w.form = w.form.Writes(w.form.Writing().Word(w.reaching(at, p)))
+			return w.holdingBy(at, p, Words)
 		}
 		return w
 	}
@@ -1260,6 +1264,32 @@ func (w Window) DoubleClick(p Point) Window {
 	}
 	w.chosen, w.chosenGoal = number, w.tab == Objectives
 	return w.opening()
+}
+
+// TripleClick holds the paragraph under the pointer, on an open task and in a
+// field of the form: the third press of the gesture every text answers.
+func (w Window) TripleClick(p Point) Window {
+	if w.screen == OnDetail {
+		return w.paragraph(p)
+	}
+	if at, on := w.fieldAt(p); on {
+		return w.holdingBy(at, p, Paragraphs)
+	}
+	return w
+}
+
+// holdingBy holds the unit of a field a press lands on, puts the keyboard on
+// that field, and keeps the run as the anchor a drag grows from. The character
+// is read before the keyboard moves, off the field as it was on screen.
+func (w Window) holdingBy(at int, p Point, by Unit) Window {
+	reached := w.reaching(at, p)
+	w.form = w.form.onto(at)
+	from, to := runOf(w.form.Writing().Reads(), by, reached)
+	held := w.form.Writing()
+	held.At, held.Held = to, from-to
+	w.form = w.form.Writes(held)
+	w.holdingText, w.growing, w.anchor = true, by, Picked{From: from, To: to}
+	return w
 }
 
 // PressAt takes hold of whatever is under the pointer, without deciding yet
@@ -1303,10 +1333,7 @@ func (w Window) PressAt(p Point) Window {
 			return w
 		}
 		if at, on := w.fieldAt(p); on {
-			w.form = w.form.onto(at)
-			w.form = w.form.Writes(w.form.Writing().CaretAt(w.reaching(at, p)))
-			w.holdingText = true
-			return w.inSightOfTheCaret()
+			return w.holdingBy(at, p, Characters).inSightOfTheCaret()
 		}
 		return w
 	}
@@ -1330,12 +1357,15 @@ func (w Window) MoveTo(p Point) Window {
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
-	// A pointer held down in a field holds a run of its text.
+	// A pointer held down in a field holds a run of its text, and goes on
+	// holding it once the pointer leaves the field: a hand overshoots, and a
+	// run that stopped where the frame did stopped short of where it was going.
 	if w.holdingText && w.screen == OnForm {
-		if at, on := w.fieldAt(p); on && at == w.form.On() {
-			w.form = w.form.Writes(w.form.Writing().Selects(w.reaching(at, p)))
-		}
-		return w
+		held := w.form.Writing()
+		fixed, moving := Stretched(held.Reads(), w.growing, w.anchor, w.reaching(w.form.On(), p))
+		held.At, held.Held = moving, fixed-moving
+		w.form = w.form.Writes(held)
+		return w.inSightOfTheCaret()
 	}
 	if w.draggingSaying {
 		_, track, lines, rows, _ := w.sayingOn()

@@ -706,10 +706,10 @@ func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 // padding from it as well: the caret landed a glyph and a half from the click.
 func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
 	box := Box{X: 100, Y: 0, W: 200, H: lineHigh}
-	if got := into(box, Point{X: box.X}); got != 0 {
+	if got := into(box, Point{X: box.X}, "abcdef", Reckoned); got != 0 {
 		t.Errorf("a click on the first character lands at %d", got)
 	}
-	if got := into(box, Point{X: box.X + 3*perGlyph}); got != 3 {
+	if got := into(box, Point{X: box.X + 3*perGlyph}, "abcdef", Reckoned); got != 3 {
 		t.Errorf("a click three glyphs in lands at %d", got)
 	}
 }
@@ -996,5 +996,33 @@ func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
 	}
 	if w.Form().Writing().At != before {
 		t.Fatalf("a press on the bar moved the caret from %d to %d", before, w.Form().Writing().At)
+	}
+}
+
+// A row of a list says whether it is taken, and a task or an objective by its
+// number too; a column is known by its name alone.
+func TestARowSaysWhatItIsKnownBy(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "column" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.choosingList()
+	got := []string{w.RowSays(w.Choosing()[0]), w.RowSays(w.Choosing()[1])}
+	if want := []string{"   backlog", TickedMark + "  todo"}; got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("the column list says %q, want %q", got, want)
+	}
+	w = w.leaving()
+	for i, field := range w.Form().Fields() {
+		if field.Name == "parent" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.choosingList()
+	if got := w.RowSays(Choice{Number: 7, Title: "Ship it"}); got != "   7  Ship it" {
+		t.Errorf("a task on the parent list would say %q", got)
 	}
 }

@@ -1564,9 +1564,8 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 	}
 }
 
-// A field holding one of a closed set is answered by the pointer. Its value
-// only ever changed by the left and right arrows, so a column or a priority
-// could not be set with a mouse at all.
+// A field holding one of a closed set is answered by the pointer, with the
+// list a parent is chosen from: what it may hold is read before it is picked.
 func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
@@ -1578,10 +1577,10 @@ func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 			continue
 		}
 		_, value := FieldRow(box, FieldTop(box, fields, i))
-		was := w.Form().ValueOf("column")
 		got := w.clicked(Point{X: value.X + 10, Y: value.Y + value.H/2})
-		if got.Form().ValueOf("column") == was {
-			t.Errorf("clicking the column field left it on %q", was)
+		if got.Screen() != OnChoosing || len(got.Choosing()) != len(field.Choices) {
+			t.Errorf("clicking the column field left the window on %v, offering %d",
+				got.Screen(), len(got.Choosing()))
 		}
 		return
 	}

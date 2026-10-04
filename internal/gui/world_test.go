@@ -124,6 +124,24 @@ func (w *world) addTask(title, state, desc string) error {
 	return err
 }
 
+// inField is where the nth character of a field sits: where production reads
+// a character from, not a geometry worked out beside it.
+func (w *world) inField(name string) (func(int) Point, error) {
+	box := Over(w.w.width, w.w.height)
+	fields := w.w.Form().Fields()
+	for i, field := range fields {
+		if field.Name != name {
+			continue
+		}
+		_, value := FieldRow(box, FieldTop(box, fields, i))
+		inside := Inside(value)
+		return func(n int) Point {
+			return Point{X: inside.X + n*perGlyph, Y: inside.Y + inside.H/2}
+		}, nil
+	}
+	return nil, fmt.Errorf("the form has no field called %q", name)
+}
+
 func (w *world) addMany(n int, state string) error {
 	for i := 1; i <= n; i++ {
 		if err := w.addTask(fmt.Sprintf("Task %d", i), state, ""); err != nil {
@@ -554,6 +572,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)" with the description "([^"]*)"$`, func(t, d string) error {
 		return w.addTask(t, "", d)
 	})
+	sc.Step(`^I added a task titled "([^"]*)" with the paragraphs "([^"]*)" and "([^"]*)"$`, func(t, one, two string) error {
+		return w.addTask(t, "", one+"\n"+two)
+	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, func(n int, day string) error {
 		_, err := w.other.Ask(engine.TaskEdit, engine.Input{
@@ -722,23 +743,33 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the field "([^"]*)"$`, w.clickField)
 	sc.Step(`^I drag across the field "([^"]*)" from (\d+) to (\d+)$`,
 		func(name string, from, to int) error {
-			box := Over(w.w.width, w.w.height)
-			fields := w.w.Form().Fields()
-			for i, field := range fields {
-				if field.Name != name {
-					continue
-				}
-				_, value := FieldRow(box, FieldTop(box, fields, i))
-				// Where production reads a character from, not a geometry
-				// worked out beside it.
-				inside := Inside(value)
-				at := func(n int) Point {
-					return Point{X: inside.X + n*perGlyph, Y: inside.Y + inside.H/2}
-				}
-				w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
-				return nil
+			at, err := w.inField(name)
+			if err != nil {
+				return err
 			}
-			return fmt.Errorf("the form has no field called %q", name)
+			w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
+			return nil
+		})
+	sc.Step(`^I drag across the field "([^"]*)" from (\d+) to past its end$`,
+		func(name string, from int) error {
+			at, err := w.inField(name)
+			if err != nil {
+				return err
+			}
+			// Past the frame and past the panel, where no field is: the hand
+			// overshoots, and what it holds should not stop where it left.
+			past := Point{X: w.w.width - 2, Y: at(from).Y}
+			w.w = w.w.PressAt(at(from)).MoveTo(past).LetGo(past)
+			return nil
+		})
+	sc.Step(`^I double-click the field "([^"]*)" at (\d+) and drag to (\d+)$`,
+		func(name string, from, to int) error {
+			at, err := w.inField(name)
+			if err != nil {
+				return err
+			}
+			w.w = w.w.doubleDragged(at(from), at(to))
+			return nil
 		})
 	sc.Step(`^I double-click the list row "([^"]*)"$`, func(title string) error {
 		box := ChoosingOver(w.w.width, w.w.height)

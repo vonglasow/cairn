@@ -133,14 +133,23 @@ func (w Written) Empty() bool { return strings.TrimSpace(w.Value) == "" }
 
 // Word holds the word around a character: the run of it between spaces, the
 // way a double click holds one everywhere else.
-func (w Written) Word(at int) Written {
+func (w Written) Word(at int) Written { return w.around(at, unicode.IsSpace) }
+
+// Paragraph holds the paragraph around a character: the run of it between line
+// breaks, the way a triple click holds one everywhere else.
+func (w Written) Paragraph(at int) Written {
+	return w.around(at, func(r rune) bool { return r == '\n' })
+}
+
+// around holds the run around a character that stops at what ends it.
+func (w Written) around(at int, ends func(rune) bool) Written {
 	said := []rune(w.Value)
 	at = min(max(0, at), len(said))
 	from, to := at, at
-	for from > 0 && !unicode.IsSpace(said[from-1]) {
+	for from > 0 && !ends(said[from-1]) {
 		from--
 	}
-	for to < len(said) && !unicode.IsSpace(said[to]) {
+	for to < len(said) && !ends(said[to]) {
 		to++
 	}
 	return Written{Value: w.Value, At: to, Held: from - to}

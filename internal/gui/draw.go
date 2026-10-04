@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -20,6 +21,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
+	"golang.org/x/image/math/fixed"
 
 	"cairn/internal/reading"
 )
@@ -107,6 +109,34 @@ func Theme() *material.Theme {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	return th
+}
+
+// Measured is the Measure of a theme's face: each line shaped the way a label
+// shapes it, at the same size and in the same dp, and an edge read after every
+// cluster of characters the face draws as one. A cluster's characters all end
+// where it ends — a pointer cannot land inside a glyph the face drew whole.
+//
+// The face accounts for every character it is given, whatever they are: an
+// accent written apart from its letter, an emoji and its skin tone, bytes that
+// are not text at all — measured, each comes back as many characters as went
+// in. So there is one edge per character and nothing to make up.
+func Measured(th *material.Theme) Measure {
+	return func(line string, size int) []int {
+		edges := []int{0}
+		th.Shaper.LayoutString(text.Parameters{
+			Font: font.Font{Typeface: th.Face}, PxPerEm: fixed.I(size),
+			MaxLines: 1, MaxWidth: math.MaxInt32,
+		}, line)
+		for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
+			if g.Flags&text.FlagClusterBreak == 0 {
+				continue
+			}
+			for range g.Runes {
+				edges = append(edges, (g.X + g.Advance).Round())
+			}
+		}
+		return edges
+	}
 }
 
 // Draw puts the whole window on screen.
@@ -209,13 +239,8 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			fill(gtx, row, skin.Back)
 			outline(gtx, row, skin.Chosen)
 		}
-		said := "   "
-		if w.Ticked(one.Number) {
-			said = TickedMark + "  "
-		}
 		line := ChoosingLine(box, at)
-		say(gtx, th, skin.Ink, line,
-			said+Numbered(reading.Card{Number: one.Number})+"  "+one.Title, reads)
+		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
 		// Where it stands, hard right and faint: a list of fifty rows that all
 		// read alike is scanned by something other than the words.
 		if one.State != "" {
@@ -708,7 +733,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		// field a list answers is never typed into, so it says its names even
 		// while the keyboard is on it — the numbers underneath are for the
 		// engine, not for reading.
-		typed := on && !chosenFromAList(fields[i].Arg)
+		typed := on && !chosenFromAList(fields[i])
 		said := Written{Value: w.FieldSays(fields[i])}
 		if typed {
 			said = w.Form().Writing()

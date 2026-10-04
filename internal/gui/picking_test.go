@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
 
 	"cairn/internal/reading"
 	"cairn/internal/trace"
@@ -42,7 +45,7 @@ func readable(t *testing.T, w Window, key string) Readable {
 
 // on is the point over a character of a piece of text, on its first line in sight.
 func on(r Readable, at int) Point {
-	return Point{X: r.Box.X + at*glyphOf(r.Size) + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2}
+	return Point{X: r.Box.X + at*glyphOf(r.Size), Y: r.Box.Y + lineHigh/2}
 }
 
 // TOUT TEXTE ÉCRIT DOIT ÊTRE SÉLECTIONNABLE ET COPIABLE. Every piece of text an
@@ -204,7 +207,7 @@ func TestTheCharacterUnderAPoint(t *testing.T) {
 		{"past the end of a line", at(30, 1), 0, 13},
 	} {
 		r.From = c.from
-		if got := r.At(c.p); got != c.want {
+		if got := r.At(c.p, Reckoned); got != c.want {
 			t.Errorf("%s: character %d, want %d", c.what, got, c.want)
 		}
 	}
@@ -246,5 +249,114 @@ func TestWhereAHeldRunIsPainted(t *testing.T) {
 	box := Box{X: 100, Y: 200, W: 300, H: lineHigh}
 	if got, want := HeldRun(box, 40, 25), (Box{X: 140, Y: 200, W: 25, H: lineHigh}); got != want {
 		t.Fatalf("the run is painted at %+v, want %+v", got, want)
+	}
+}
+
+// What is measured is what is drawn: the edges between the characters of a
+// line fall where the face puts them, and a proportional face puts an i and a W
+// at different widths. Reckoned at one width for all, a run held with the mouse
+// ended a word away from the pointer by the end of a line.
+func TestTheFaceMeasuresWhatItDraws(t *testing.T) {
+	th := Theme()
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+		Constraints: layout.Constraints{Max: image.Pt(1000, lineHigh)}}
+	said := []rune("Write the spec")
+	edges := Measured(th)(string(said), reads)
+	if len(edges) != len(said)+1 || edges[0] != 0 {
+		t.Fatalf("%d characters measured %d edges from %v", len(said), len(edges), edges)
+	}
+	for _, n := range []int{1, 5, len(said)} {
+		want := wide(gtx, th, string(said[:n]), reads).Size.X
+		if got := edges[n]; got < want-1 || got > want+1 {
+			t.Errorf("the edge after %d characters is at %d, drawn at %d", n, got, want)
+		}
+	}
+	thin, broad := Measured(th)("iiii", reads), Measured(th)("WWWW", reads)
+	if thin[4] >= broad[4] {
+		t.Errorf("four i measure %d and four W %d", thin[4], broad[4])
+	}
+}
+
+// A point lands on the edge between two characters nearest to it, and not on
+// the character it is over: a pointer just short of a letter's end is after it.
+func TestAPointLandsOnTheNearestEdge(t *testing.T) {
+	m := Measure(func(string, int) []int { return []int{0, 3, 13, 15} })
+	for x, want := range map[int]int{-5: 0, 1: 0, 2: 1, 7: 1, 9: 2, 14: 3, 100: 3} {
+		if got := m.Nearest("iWi", reads, x); got != want {
+			t.Errorf("x %d lands on %d, want %d", x, got, want)
+		}
+	}
+}
+
+// Text on an open task and in a field is reached with the face it is drawn in.
+func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
+	m := Measure(func(string, int) []int { return []int{0, 3, 13, 15} })
+	r := Readable{Box: Box{X: 10, W: 100, H: lineHigh}, Said: "iWi", Size: reads,
+		Lines: Lines{Said: []string{"iWi"}, From: []int{0}}}
+	if got := r.At(Point{X: 19, Y: 2}, m); got != 2 {
+		t.Errorf("an open task reaches %d, want 2", got)
+	}
+
+	f := newFake()
+	w := holding(f, card(1, "iWi", "todo")).Measuring(m)
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	_, value := FieldRow(box, FieldTop(box, fields, 0))
+	inside := Inside(Framed(value, 1))
+	w = w.PressAt(Point{X: inside.X + 9, Y: inside.Y + 2})
+	if got := w.Form().Writing().At; got != 2 {
+		t.Errorf("a field reaches %d, want 2", got)
+	}
+}
+
+// A run dragged on is grown to whole units from its anchor, and the end that
+// moves is the one the pointer is at: inside the word it began on, that is the
+// word's end, where the caret was left by the double click.
+func TestARunGrowsFromItsAnchorByWholeUnits(t *testing.T) {
+	said := "Write the spec"
+	word := Picked{From: 6, To: 9}
+	for _, c := range []struct {
+		what          string
+		by            Unit
+		anchor        Picked
+		at            int
+		fixed, moving int
+	}{
+		{"a character on", Characters, Picked{From: 2, To: 2}, 7, 2, 7},
+		{"a character back", Characters, Picked{From: 7, To: 7}, 2, 7, 2},
+		{"inside its own word", Words, word, 7, 6, 9},
+		{"into the word after", Words, word, 11, 6, 14},
+		{"into the word before", Words, word, 2, 9, 0},
+		{"a paragraph", Paragraphs, Picked{From: 0, To: 14}, 3, 0, 14},
+	} {
+		fixed, moving := Stretched(said, c.by, c.anchor, c.at)
+		if fixed != c.fixed || moving != c.moving {
+			t.Errorf("%s: %d to %d, want %d to %d", c.what, fixed, moving, c.fixed, c.moving)
+		}
+	}
+}
+
+// A field shows its last line when what it holds is longer than its room and
+// the keyboard is on it, and a press there lands on that line — not on the
+// first, which is out of sight.
+func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
+	f := newFake()
+	title := strings.Repeat("word ", 40) + "end"
+	w := holding(f, card(1, title, "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	// The caret at the end, where somebody arriving at the field types.
+	w.form = w.form.onto(0)
+	box := Over(w.width, w.height)
+	fields := w.Form().Fields()
+	_, value := FieldRow(box, FieldTop(box, fields, 0))
+	inside := Inside(Framed(value, 1))
+	lines := Wrapped(title, room(inside))
+	if len(lines.Said) < 2 {
+		t.Fatalf("the title fits on %d line", len(lines.Said))
+	}
+	w = w.PressAt(Point{X: inside.X, Y: inside.Y + 2})
+	if got, want := w.Form().Writing().At, lines.From[len(lines.From)-1]; got != want {
+		t.Errorf("a press at the start of the line in sight lands on %d, want %d", got, want)
 	}
 }

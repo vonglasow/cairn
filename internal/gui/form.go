@@ -258,23 +258,39 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	return 0, false
 }
 
-// into says how many characters into a field's value a point falls, so that
+// into says how many characters into a line of text a point falls, so that
 // clicking in the middle of a word puts the caret there rather than at the end.
-func into(value Box, p Point) int {
-	return max(0, (p.X-value.X)/perGlyph)
+func into(value Box, p Point, said string, m Measure) int {
+	return m.Nearest(said, reads, p.X-value.X)
 }
 
 // reaching says which character of a field a point lands on, line and column
-// both. It measures inside the frame the words are drawn in, where into()
-// measured from the value box and so sat six points off, and it reads the line
-// the point is down to, which into() never did.
+// both, in the field as it is drawn: from the line in sight at its top, and
+// with the face its words are written in. Asked before the keyboard moves onto
+// the field, because what was pressed is what was on screen.
 func (w Window) reaching(at int, p Point) int {
 	fields := w.form.Fields()
 	box := Over(w.width, w.height)
 	_, value := FieldRow(box, FieldTop(box, fields, at))
-	inside := Inside(Framed(value, RowsOf(box, fields, at)))
-	lines := Wrapped(fields[at].Value, room(inside))
-	return lines.Reaches(inside, p, perGlyph)
+	rows := RowsOf(box, fields, at)
+	inside := Inside(Framed(value, rows))
+	// What drawForm shows of it: the field the keyboard is on from what is
+	// being typed and where the wheel left it, the others from their beginning.
+	on := at == w.form.On()
+	said := Written{Value: fields[at].Value}
+	if on {
+		said = w.form.Writing()
+	}
+	scrolled := Follow
+	if fields[at].Long {
+		scrolled = 0
+		if on {
+			scrolled = w.Saying()
+		}
+	}
+	lines := Wrapped(said.Reads(), room(inside))
+	line, _ := lines.At(said.At)
+	return lines.Reaches(inside, p, StartsAt(lines, rows, line, scrolled), w.measured(), reads)
 }
 
 // Walk moves the keyboard from one field to the next, and stops at both ends
@@ -623,13 +639,23 @@ func (w Window) goalTitle(number int) string {
 // one field a number was typed into, and the only one a list would answer.
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
-	if !chosenFromAList(on.Arg) {
+	if !chosenFromAList(on) {
 		return w
 	}
 	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
 	w.choosingFor, w.filtering = on.Arg, Written{}
 	for _, number := range reading.NumbersIn(on.Value) {
 		w.ticked[number] = true
+	}
+	// A closed set is listed in its own order, and what the field holds is the
+	// one of it already taken.
+	if len(on.Choices) > 0 {
+		w.ticked = map[int]bool{}
+		for i, choice := range on.Choices {
+			if choice == on.Value {
+				w.ticked[i+1] = true
+			}
+		}
 	}
 	w.screen = OnChoosing
 	// Opened on what it already carries, so taking it off is one key rather
@@ -655,12 +681,38 @@ type Choice struct {
 	State string
 }
 
+// RowSays is what a row of the open list reads: whether it is taken, then what
+// it is known by. A task and an objective are known by their number too; a
+// column is known by its name alone, and the number it is listed under is the
+// list's, not anything somebody has seen before.
+func (w Window) RowSays(one Choice) string {
+	said := "   "
+	if w.Ticked(one.Number) {
+		said = TickedMark + "  "
+	}
+	if len(w.closedSet()) == 0 {
+		said += Numbered(reading.Card{Number: one.Number}) + "  "
+	}
+	return said + one.Title
+}
+
 // choices is everything the open list offers, narrowed by what is typed into
 // it. The narrowing is the board's own — a list that matched its own way would
 // answer a different set from the search box two keystrokes away.
 func (w Window) choices() []Choice {
 	looking := w.filtering.Reads()
 	var out []Choice
+	// A closed set is offered in the order the domain gives it, numbered by
+	// where it stands in that order, since what is kept is a name and not a
+	// number anybody has seen.
+	if set := w.closedSet(); len(set) > 0 {
+		for i, choice := range set {
+			if strings.Contains(choice, strings.ToLower(looking)) {
+				out = append(out, Choice{Number: i + 1, Title: choice})
+			}
+		}
+		return out
+	}
 	if w.choosingFor == "parent" {
 		for _, c := range reading.OnTheBoard(w.snap.Cards, false) {
 			// Nothing hangs under itself, and nothing hangs under a part.
@@ -710,7 +762,17 @@ func (w Window) Filtering() Written { return w.filtering }
 
 // OneOnly says whether the open list takes one answer rather than several. A
 // task hangs under one parent; it serves as many objectives as it serves.
-func (w Window) OneOnly() bool { return w.choosingFor == "parent" }
+// A column, a priority or a standing is one of a set, and only one.
+func (w Window) OneOnly() bool { return w.choosingFor == "parent" || len(w.closedSet()) > 0 }
+
+// closedSet is what the field the list is open for may hold, when that is a
+// closed set; empty for a list of tasks or objectives.
+func (w Window) closedSet() []string {
+	if w.screen != OnChoosing {
+		return nil
+	}
+	return w.form.Fields()[w.form.On()].Choices
+}
 
 // inChoosing is what a key does while the list has the window.
 func (w Window) inChoosing(name string) Window {
@@ -747,8 +809,10 @@ func (w Window) taking() Window {
 	number := offered[w.choosing].Number
 	if w.OneOnly() {
 		// Taken again is taken off. One answer is still an answer that can be
-		// withdrawn, and a field a list fills is a field only a list empties.
-		if w.ticked[number] {
+		// withdrawn, and a field a list fills is a field only a list empties —
+		// except a closed set, which has no empty answer: a task stands in a
+		// column whatever is done to the list.
+		if w.ticked[number] && len(w.closedSet()) == 0 {
 			w.ticked = map[int]bool{}
 		} else {
 			w.ticked = map[int]bool{number: true}
@@ -783,6 +847,19 @@ func (w Window) leaving() Window {
 // sent is this, because a surface that made up its own spelling of an argument
 // would be a surface deciding something.
 func (w Window) keeping() Window {
+	// A closed set keeps the name taken, and the one it held when nothing was:
+	// a column is never left empty for a list closed on a narrowing.
+	if set := w.closedSet(); len(set) > 0 {
+		kept := w.form.Fields()[w.form.On()].Value
+		for i, choice := range set {
+			if w.ticked[i+1] {
+				kept = choice
+			}
+		}
+		w.form = w.form.Writes(Ending(kept))
+		w.screen = OnForm
+		return w
+	}
 	var numbers []int
 	for _, g := range w.Choosing() {
 		if w.ticked[g.Number] {

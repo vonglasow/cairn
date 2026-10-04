@@ -545,6 +545,15 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^nothing was asked of the engine$`, w.askedNothing)
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Then(`^the engine was not asked "([^"]*)"$`, w.wasNotAsked)
+	sc.Step(`^I triple-click the first word of "([^"]*)" on the open task$`, func(key string) error {
+		for _, r := range w.w.Readables() {
+			if r.Key == key {
+				w.w = w.w.tripleClicked(Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the open task writes nothing called %q", key)
+	})
 	sc.Step(`^I double-click the first word of "([^"]*)" on the open task$`, func(key string) error {
 		for _, r := range w.w.Readables() {
 			if r.Key == key {

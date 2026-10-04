@@ -29,9 +29,40 @@ func one(key string, box Box, said string, size int) Readable {
 		Lines: Lines{Said: []string{said}, From: []int{0}}}
 }
 
-// glyphOf is how wide a character is reckoned to be at a size. Reckoned, the
-// way the form reckons where a click lands: the face is proportional, and what
-// is painted held is measured with it.
+// Measure says where the edges between the characters of one line fall when it
+// is written at a size: one edge before the first character and one after each,
+// in dp from where the line begins. What a pointer lands on is read off the
+// same face the line is drawn in — reckoned at one width for every character, a
+// run held with the mouse ended a word away from the pointer by the end of a
+// line, because the face is proportional and an i is not a W.
+type Measure func(line string, size int) []int
+
+// Reckoned is a Measure with no face behind it: every character as wide as an
+// average one. It is what a window measures with until it is given a face, so
+// that what a test asks of it does not depend on a font.
+func Reckoned(line string, size int) []int {
+	edges := make([]int, len([]rune(line))+1)
+	for i := range edges {
+		edges[i] = i * glyphOf(size)
+	}
+	return edges
+}
+
+// Nearest is the edge between two characters nearest to a point so far across
+// the line: a pointer just short of a letter's end is after it, not before.
+func (m Measure) Nearest(line string, size, x int) int {
+	edges := m(line, size)
+	at := 0
+	for i := 1; i < len(edges); i++ {
+		if 2*x >= edges[i-1]+edges[i] {
+			at = i
+		}
+	}
+	return at
+}
+
+// glyphOf is how wide a character is reckoned to be at a size, where nothing
+// measures it.
 func glyphOf(size int) int {
 	if size <= small {
 		return perSmallGlyph
@@ -42,12 +73,10 @@ func glyphOf(size int) int {
 	return perGlyph
 }
 
-// At is the character of a piece of text under a point: the line it is down
-// to, counting what is scrolled out of sight above it, then how far across.
-func (r Readable) At(p Point) int {
-	line := min(len(r.Lines.Said)-1, max(0, r.From+(p.Y-r.Box.Y)/lineHigh))
-	across := max(0, (p.X-r.Box.X)/glyphOf(r.Size))
-	return r.Lines.From[line] + min(across, len([]rune(r.Lines.Said[line])))
+// At is the character of a piece of text under a point, measured with the face
+// it is drawn in.
+func (r Readable) At(p Point, m Measure) int {
+	return r.Lines.Reaches(r.Box, p, r.From, m, r.Size)
 }
 
 // inSight is the room a piece of text's lines take on screen.
@@ -95,6 +124,22 @@ func (w Window) Readables() []Readable {
 	return out
 }
 
+// Measuring gives the window the face its text is drawn in, so a pointer lands
+// on the character drawn under it.
+func (w Window) Measuring(m Measure) Window {
+	w.measure = m
+	return w
+}
+
+// measured is what the window measures text with: the face it was given, or the
+// reckoning when it was given none.
+func (w Window) measured() Measure {
+	if w.measure == nil {
+		return Reckoned
+	}
+	return w.measure
+}
+
 // readableAt is the piece of text a point lands on.
 func (w Window) readableAt(p Point) (Readable, bool) {
 	for _, r := range w.Readables() {
@@ -132,6 +177,41 @@ func (w Window) Holding(key, said string) Written {
 	return Written{Value: said, At: w.picked.To, Held: w.picked.From - w.picked.To}
 }
 
+// Unit is what a run held with the pointer grows by: a character for a press,
+// a word for a double click, a paragraph for a triple — dragged on, each grows
+// by whole ones of what it began with, the way text does everywhere else.
+type Unit int
+
+// The three a run grows by.
+const (
+	Characters Unit = iota
+	Words
+	Paragraphs
+)
+
+// runOf is the run of a unit around a character.
+func runOf(said string, by Unit, at int) (from, to int) {
+	switch by {
+	case Words:
+		return Written{Value: said}.Word(at).Run()
+	case Paragraphs:
+		return Written{Value: said}.Paragraph(at).Run()
+	}
+	return at, at
+}
+
+// Stretched is a run held from an anchor to where the pointer is, grown to
+// whole units: the end that stays is the anchor's far side from the pointer,
+// and the end that moves is the far side of the unit the pointer is in. The
+// first is where the run is fixed, the second where it is going.
+func Stretched(said string, by Unit, anchor Picked, at int) (fixed, moving int) {
+	from, to := runOf(said, by, at)
+	if from < anchor.From {
+		return anchor.To, from
+	}
+	return anchor.From, max(to, anchor.To)
+}
+
 // picking starts a run where a press lands on a piece of text, and lets go of
 // whatever was held when it lands on none.
 func (w Window) picking(p Point) Window {
@@ -140,8 +220,15 @@ func (w Window) picking(p Point) Window {
 		w.picked, w.pickingText = Picked{}, false
 		return w
 	}
-	at := r.At(p)
-	w.picked, w.pickingText = Picked{Key: r.Key, From: at, To: at}, true
+	return w.pickingBy(r, p, Characters)
+}
+
+// pickingBy holds the unit of a piece of text a press lands on, and keeps it as
+// the anchor a drag grows from.
+func (w Window) pickingBy(r Readable, p Point, by Unit) Window {
+	from, to := runOf(r.Said, by, r.At(p, w.measured()))
+	w.picked, w.pickingText = Picked{Key: r.Key, From: from, To: to}, true
+	w.growing, w.anchor = by, w.picked
 	return w
 }
 
@@ -149,19 +236,24 @@ func (w Window) picking(p Point) Window {
 // text the press began in and no other.
 func (w Window) draggingText(p Point) Window {
 	if r, on := w.readable(w.picked.Key); on {
-		w.picked.To = r.At(p)
+		w.picked.From, w.picked.To = Stretched(r.Said, w.growing, w.anchor, r.At(p, w.measured()))
 	}
 	return w
 }
 
 // word holds the word a double click lands on: the run of it between spaces.
 func (w Window) word(p Point) Window {
-	r, on := w.readableAt(p)
-	if !on {
-		return w
+	if r, on := w.readableAt(p); on {
+		return w.pickingBy(r, p, Words)
 	}
-	from, to := Written{Value: r.Said}.Word(r.At(p)).Run()
-	w.picked = Picked{Key: r.Key, From: from, To: to}
+	return w
+}
+
+// paragraph holds the paragraph a triple click lands on.
+func (w Window) paragraph(p Point) Window {
+	if r, on := w.readableAt(p); on {
+		return w.pickingBy(r, p, Paragraphs)
+	}
 	return w
 }
 

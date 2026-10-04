@@ -90,6 +90,9 @@ func Acts(b pointer.Buttons) bool { return b == 0 || b == pointer.ButtonPrimary 
 type Gesture struct {
 	At    time.Time
 	Where Point
+	// Clicks is how many presses the gesture has made so far: two once it is
+	// a double click, which is what tells a third press from a first.
+	Clicks int
 }
 
 // Pointing is everything a pointer event does, the double-click included, and
@@ -103,9 +106,18 @@ func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time
 	}
 	if kind == pointer.Press {
 		if Twice(g.At, now, g.Where, at) {
-			return w.DoubleClick(at), Gesture{}
+			if g.Clicks >= 2 {
+				return w.TripleClick(at), Gesture{}
+			}
+			// A double click that opened something ends there: the press after
+			// it lands on what it opened, and is a press on that.
+			after := w.DoubleClick(at)
+			if after.screen != w.screen {
+				return after, Gesture{}
+			}
+			return after, Gesture{At: now, Where: at, Clicks: 2}
 		}
-		g = Gesture{At: now, Where: at}
+		g = Gesture{At: now, Where: at, Clicks: 1}
 	}
 	return Pointed(w, kind, at, by), g
 }
@@ -244,8 +256,8 @@ func loop(work reading.Work, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
 
-	board := New(work, width, height).Look()
 	theme, skin := Theme(), Dark()
+	board := New(work, width, height).Measuring(Measured(theme)).Look()
 
 	var ops op.Ops
 	var pressed time.Time
