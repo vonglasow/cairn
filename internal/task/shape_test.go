@@ -108,3 +108,17 @@ func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 		}
 	}
 }
+
+// TestOfTask_keepsWhatATaskSaysApartFromItsFacts: a listing hands over the
+// facts of every task and leaves what each one says to be shown, so the two
+// are kept apart in the shape rather than cut out of it afterwards.
+func TestOfTask_keepsWhatATaskSaysApartFromItsFacts(t *testing.T) {
+	var a task.AsTold
+	a.Numbered(1)
+	a.Titled("Write the spec")
+	a.Described("in full")
+	shape := task.OfTask(a.Task())
+	if shape.Title != "Write the spec" || shape.Description != "in full" {
+		t.Errorf("the facts say %q and the task says %q", shape.Title, shape.Description)
+	}
+}

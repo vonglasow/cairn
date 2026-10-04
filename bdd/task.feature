@@ -1878,6 +1878,30 @@ Feature: Tasks
       And it says task 2 is the one in focus
       And no task in it carries that on its own
 
+    @task-json-list-leaves-the-description
+    Scenario: a listing names the work and leaves what it says to be shown
+      Given I added a task titled "First" with the description "A long account of everything done so far"
+      And I added a task titled "Second"
+      When I run `cairn task list --json`
+      Then it carries 2 tasks
+      And no task in it carries its description
+      And it says task 1 has a description
+      And it says task 2 has none
+
+    @task-json-search-leaves-the-description
+    Scenario: a search names what it found the same way
+      Given I added a task titled "First" with the description "everything done so far"
+      When I run `cairn task search First --json`
+      Then it carries 1 task
+      And no task in it carries its description
+      And it says task 1 has a description
+
+    @task-json-show-carries-the-description
+    Scenario: showing a task is where its description is read
+      Given I added a task titled "First" with the description "everything done so far"
+      When I run `cairn task show 1 --json`
+      Then it carries the description "everything done so far"
+
     @task-json-show
     Scenario: showing can be read by a machine
       Given I added a task titled "Write the spec"

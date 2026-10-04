@@ -773,6 +773,50 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	// A listing names the work and leaves what each task says to be shown: a
+	// board of a hundred tasks handed over with every description came to more
+	// than an agent can read in one answer.
+	sc.Step(`^no task in it carries its description$`, func() error {
+		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if _, carried := row["description"]; carried {
+				return fmt.Errorf("task %v carries its description in the listing", row["number"])
+			}
+		}
+		return nil
+	})
+
+	sc.Step(`^it says task (\d+) (has a description|has none)$`, func(n int, said string) error {
+		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if number, _ := row["number"].(float64); int(number) != n {
+				continue
+			}
+			if want := said == "has a description"; row["described"] != want {
+				return fmt.Errorf("task %d says described = %v, want %v", n, row["described"], want)
+			}
+			return nil
+		}
+		return fmt.Errorf("the listing carries no task %d", n)
+	})
+
+	sc.Step(`^it carries the description "([^"]*)"$`, func(said string) error {
+		var doc map[string]any
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
+			return err
+		}
+		if doc["description"] != said {
+			return fmt.Errorf("description = %v, want %q", doc["description"], said)
+		}
+		return nil
+	})
+
 	sc.Step(`^it carries (\d+) tasks?$`, func(n int) error {
 		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {

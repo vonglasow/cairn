@@ -153,8 +153,8 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			want any
 		}{
 			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
-			{"a list of tasks", Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
-			{"what a search found, the same shape as a list of tasks", Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Task{OfTask(built, domain.Progress{})}}},
+			{"a list of tasks", Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
+			{"what a search found, the same shape as a list of tasks", Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
 			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
@@ -480,17 +480,43 @@ func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
 	}
 }
 
-// A listing carries no such field: every row would repeat what the rows after
-// it already say, and a listing pays for every line it hands over.
-func TestOfAnswer_leavesSubTasksOffAListing(t *testing.T) {
-	var one task.AsTold
+// TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown: a listing names the work
+// and says whether each task has a description, without handing it over —
+// measured on a real board, 105 tasks with theirs came to 106 000 characters,
+// more than a client hands an agent in one answer. A search lists the same way.
+func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
+	var one, two task.AsTold
 	one.Numbered(1)
 	one.Titled("Ship it")
-	said, ok := Of(Answer{Tasks: []task.Task{one.Task()}}).(Tasks)
-	if !ok {
-		t.Fatalf("OfAnswer gave the wrong shape for a listing")
-	}
-	if len(said.Tasks) != 1 || said.Tasks[0].SubTasks != nil {
-		t.Errorf("a listed task carries %+v under it, want nothing", said.Tasks[0].SubTasks)
+	one.Described("everything done so far")
+	two.Numbered(2)
+	two.Titled("Write the tests")
+	tasks := []task.Task{one.Task(), two.Task()}
+	for name, answer := range map[string]Answer{"listing": {Tasks: tasks}, "search": {Matched: tasks}} {
+		encoded, err := json.Marshal(Of(answer))
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		var doc struct {
+			Tasks []map[string]any `json:"tasks"`
+		}
+		if err := json.Unmarshal(encoded, &doc); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if len(doc.Tasks) != 2 {
+			t.Fatalf("%s carries %d tasks", name, len(doc.Tasks))
+		}
+		for i, want := range []bool{true, false} {
+			row := doc.Tasks[i]
+			if _, carried := row["description"]; carried {
+				t.Errorf("%s: task %v carries its description", name, row["number"])
+			}
+			if _, carried := row["sub_tasks"]; carried {
+				t.Errorf("%s: task %v carries what hangs under it", name, row["number"])
+			}
+			if row["described"] != want || row["title"] == nil {
+				t.Errorf("%s: task %v reads %v", name, row["number"], row)
+			}
+		}
 	}
 }

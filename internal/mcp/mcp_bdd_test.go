@@ -413,13 +413,14 @@ func (w *world) iCallWithTheNumber(tool string, n int) error {
 	return nil
 }
 
-// iAddedATaskTitledWithTheDeadline puts a task in the store through the real
-// command, carrying a deadline — a precondition set through the command line
+// iAddedATaskTitledWith puts a task in the store through the real
+// command, carrying a deadline or a description — a precondition set through the command line
 // rather than the tool under test, so a scenario that later empties the
 // deadline through the tool proves something the tool did, not something the
 // precondition already did.
-func (w *world) iAddedATaskTitledWithTheDeadline(title, deadline string) error {
-	return w.Seed(fmt.Sprintf(`cairn task add "%s" --deadline %s`, title, deadline))
+func (w *world) iAddedATaskTitledWith(title, what, value string) error {
+	flag := map[string]string{"deadline": "--deadline", "description": "--desc"}[what]
+	return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flag, value))
 }
 
 // iCallTaskEditWithTheNumberAndTheDeadlineAsNothing calls `task_edit`,
@@ -528,6 +529,27 @@ func (w *world) itAnswersWithNTasks(n int) error {
 	}
 	if len(tasks) != n {
 		return fmt.Errorf("%d tasks, want %d", len(tasks), n)
+	}
+	return nil
+}
+
+// noRowCarriesADescription is what keeps a listing within what an agent can
+// read: measured on a real board, 105 tasks came to 106 000 characters, past
+// what a client hands an agent in one answer.
+func (w *world) noRowCarriesADescription() error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	tasks, err := carriedUnder(w.result.StructuredContent, "tasks")
+	if err != nil {
+		return err
+	}
+	for _, one := range tasks {
+		if row, _ := one.(map[string]any); row != nil {
+			if _, carried := row["description"]; carried {
+				return fmt.Errorf("task %v carries its description in the listing", row["number"])
+			}
+		}
 	}
 	return nil
 }
@@ -897,13 +919,14 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^it answers with a task carrying both labels$", w.itAnswersWithATaskCarryingBothLabels)
 		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)
 		sc.Step(`^it answers with (\d+) tasks?$`, w.itAnswersWithNTasks)
+		sc.Step(`^no row of it carries a description$`, w.noRowCarriesADescription)
 		sc.Step(`^it answers without an error$`, w.itAnswersWithoutAnError)
 		sc.Step(`^it answers with the task titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
 		sc.Step(`^it answers with the card a person would have read$`, w.itAnswersWithTheCardAPersonWouldHaveRead)
 		sc.Step("^it answers with the shape `--json` would have printed$", w.itAnswersWithTheShapeJSONWouldHavePrinted)
 		sc.Step("^`task_add` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
 		sc.Step("^it says what each thing it takes is for$", w.itSaysWhatEachThingItTakesIsFor)
-		sc.Step(`^I added a task titled "([^"]*)" with the deadline "([^"]*)"$`, w.iAddedATaskTitledWithTheDeadline)
+		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description) "([^"]*)"$`, w.iAddedATaskTitledWith)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
 			w.iCallTaskEditWithThePriority)
 		sc.Step("^the history of task (\\d+) says the change came through the server$",

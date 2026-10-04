@@ -12,22 +12,33 @@ import (
 //
 // How far along a task is has no field here: it is not the task's to say, and
 // wire — the one place that reaches both notions — carries it instead.
+//
+// It is the task's facts and what the task says, kept apart: a listing hands
+// over the facts of every task and leaves what each says to be shown, and a
+// shape that held both in one list of fields could only be cut down after the
+// fact, by a second list kept in step with this one.
 type Shape struct {
+	Facts
+	Description string `json:"description"`
+}
+
+// Facts is everything a task carries but what it says: the part of it a
+// listing hands over for every row.
+type Facts struct {
 	Number int    `json:"number"`
 	Parent int    `json:"parent"`
 	Title  string `json:"title"`
 	State  string `json:"state"`
 	// Archived is beside the state, so a machine is told both.
-	Archived    bool     `json:"archived"`
-	Priority    string   `json:"priority"`
-	Description string   `json:"description"`
-	Labels      []string `json:"labels"`
-	BlockedBy   []int    `json:"blocked_by"`
-	Because     string   `json:"because"`
-	Deadline    string   `json:"deadline"`
-	Estimate    string   `json:"estimate"`
-	TimeSpent   string   `json:"time_spent"`
-	Objectives  []int    `json:"objectives"`
+	Archived   bool     `json:"archived"`
+	Priority   string   `json:"priority"`
+	Labels     []string `json:"labels"`
+	BlockedBy  []int    `json:"blocked_by"`
+	Because    string   `json:"because"`
+	Deadline   string   `json:"deadline"`
+	Estimate   string   `json:"estimate"`
+	TimeSpent  string   `json:"time_spent"`
+	Objectives []int    `json:"objectives"`
 }
 
 // shapeMembrane is a task's membrane for the shape a machine reads: it is
@@ -90,13 +101,15 @@ func OfTask(t Task) Shape {
 	m := &shapeMembrane{}
 	t.Tell(m)
 	return Shape{
-		Number: m.number, Parent: m.parent, Title: m.title,
-		State: m.state, Archived: m.archived, Priority: m.priority,
-		Description: m.description, Labels: m.labels,
-		BlockedBy: m.blockers, Because: m.because,
-		Deadline:   m.deadline,
-		Estimate:   m.estimate,
-		TimeSpent:  m.timeSpent,
-		Objectives: m.objectives,
+		Facts: Facts{
+			Number: m.number, Parent: m.parent, Title: m.title,
+			State: m.state, Archived: m.archived, Priority: m.priority,
+			Labels: m.labels, BlockedBy: m.blockers, Because: m.because,
+			Deadline:   m.deadline,
+			Estimate:   m.estimate,
+			TimeSpent:  m.timeSpent,
+			Objectives: m.objectives,
+		},
+		Description: m.description,
 	}
 }

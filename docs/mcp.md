@@ -24,6 +24,10 @@ every task one at a time to find out which was urgent or late; the row now
 carries the column, the priority, the deadline and the labels, and it does so
 for both of them at once because there is only one place it is written.
 
+It carries whether a task has a description, and not the description: a board
+of 105 tasks listed with theirs came to 106 000 characters, past what a client
+hands an agent in one answer. See [listing.md](listing.md).
+
 ## It is started like every other command
 
 `cairn mcp serve`, because everything else reads `cairn <thing> <verb>` and a

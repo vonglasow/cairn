@@ -31,9 +31,7 @@ type Task struct {
 	task.Shape
 	Progress *domain.ProgressShape `json:"progress"`
 	// SubTasks is what hangs under this one, and only when it is what was
-	// asked about. Omitted from a listing rather than repeated on every row:
-	// the rows after a parent already say what hangs under it, and a listing
-	// pays for every line it hands over.
+	// asked about. A listing carries rows, not this — see Row.
 	SubTasks []SubTask `json:"sub_tasks,omitempty"`
 }
 
@@ -73,6 +71,27 @@ func ofTaskUnder(t task.Task, p domain.Progress, under []task.Task) Task {
 	return said
 }
 
+// Row is a task as a listing carries it: its facts, and whether it says
+// anything — not what it says. Measured on a real board, 105 tasks handed over
+// with their descriptions came to 106 000 characters, past what a client hands
+// an agent in one answer; the descriptions were seven tenths of it. What a
+// task says is read by showing it, the way a person opens a card the board
+// marks as described.
+//
+// No progress and nothing hanging under it either: a listing counts neither,
+// and a field that is always null is a field every row pays for to say
+// nothing. The type says it — a row cannot carry what it has no field for.
+type Row struct {
+	task.Facts
+	Described bool `json:"described"`
+}
+
+// rowOf turns one task into a row of a listing.
+func rowOf(t task.Task) Row {
+	shape := task.OfTask(t)
+	return Row{Facts: shape.Facts, Described: shape.Description != ""}
+}
+
 // Tasks is how a listing of tasks crosses: an object naming what it carries,
 // never a bare list. So is every other listing below, for three reasons, and
 // only the first is somebody else's rule. A client refuses a schema that does
@@ -82,7 +101,7 @@ func ofTaskUnder(t task.Task, p domain.Progress, under []task.Task) Task {
 // either repeated on every row or dropped. And a reader of the JSON can tell
 // one listing from another without inspecting a row.
 type Tasks struct {
-	Tasks []Task `json:"tasks"`
+	Tasks []Row `json:"tasks"`
 	// InFocus is which tasks are being worked on, said once for the whole
 	// listing. Always a list, empty when none are: a machine reads the one
 	// field either way rather than testing for null first.
@@ -309,13 +328,11 @@ func nothingInFocus(numbers []int) Focus {
 	return Focus{Tasks: []Task{}, InFocus: listed(numbers)}
 }
 
-// ofTasks turns a listing of tasks into what crosses, with no progress counted
-// per item: a listing that counted what hangs under each task would ask for it
-// once per task to answer one line each.
+// ofTasks turns a listing of tasks into what crosses, a row each.
 func ofTasks(tasks []task.Task, inFocus *[]int) Tasks {
-	out := make([]Task, 0, len(tasks))
+	out := make([]Row, 0, len(tasks))
 	for _, t := range tasks {
-		out = append(out, OfTask(t, domain.Progress{}))
+		out = append(out, rowOf(t))
 	}
 	// Null when the answer was not asked about the focus at all, and a list —
 	// empty or not — when it was. A listing nobody asked does not get to claim

@@ -204,6 +204,15 @@ Feature: Answering a machine over MCP
       Then it answers with the card a person would have read
       And it answers with the shape `--json` would have printed
 
+    @mcp-a-listing-fits-an-agent
+    Scenario: a listing leaves the descriptions out, so an agent can read it whole
+      Given I added a task titled "Write the spec" with the description "A long account of everything done so far"
+      And a cairn server started with `--access read`
+      When I call `task_list`
+      Then it answers with 1 task
+      And no row of it carries a description
+      And its answer holds to the shape the tool described
+
     @mcp-what-an-agent-does-is-written-down-as-its-own
     Scenario: what an agent changes says it was not the terminal
       Given I added a task titled "Write the spec"

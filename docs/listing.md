@@ -118,6 +118,23 @@ be handed — and `task show --json` carries `sub_tasks`, so reading a parent
 answers what its parts are called and which are done without asking again for
 each number.
 
+## A listing hands over the facts, and leaves what a task says to be shown
+
+A row of `task list --json` and `task search --json` — and of `task_list` and
+`task_search`, which answer the same shape — carries every fact of a task and
+`described`, whether it says anything; never the description itself. That is
+read with `task show`, the way a person opens a card the board marks as
+described.
+
+Measured on a real board: 105 tasks handed over with their descriptions came to
+106 000 characters, more than a client hands an agent in one answer — the
+listing an agent most needs was the one it could not read. The descriptions
+were seven tenths of it, and they grow: a task worked on for weeks carries its
+account. So the shape keeps them apart (`task.Facts`, then `task.Shape` as the
+facts and the description) rather than cutting a listing down after the fact.
+A row carries no `progress` either, since a listing counts none and a field
+that is always null is paid for on every row.
+
 That field has a shape of its own rather than being tasks again, and not only
 for brevity: a sub-task cannot itself carry sub-tasks, and a task holding tasks
 would say it could. The type says the rule. It was found by the schema — a
