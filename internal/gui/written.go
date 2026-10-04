@@ -1,5 +1,10 @@
 package gui
 
+import (
+	"strings"
+	"unicode"
+)
+
 // A piece of text somebody is typing into, and where the caret is in it.
 //
 // One mechanism for every text in this window — the fields of a form and the
@@ -9,8 +14,6 @@ package gui
 // What is drawn is not here: where a caret falls among wrapped lines is a
 // question about a box, and it is answered in parts.go with the rest of the
 // geometry. This is only the text and the place in it.
-
-import "strings"
 
 // Written is a text and the caret in it. The caret is counted in characters,
 // never in bytes: half of a letter is not a place.
@@ -127,3 +130,18 @@ func (w Written) Reads() string { return w.Value }
 
 // Empty says whether anything has been written at all.
 func (w Written) Empty() bool { return strings.TrimSpace(w.Value) == "" }
+
+// Word holds the word around a character: the run of it between spaces, the
+// way a double click holds one everywhere else.
+func (w Written) Word(at int) Written {
+	said := []rune(w.Value)
+	at = min(max(0, at), len(said))
+	from, to := at, at
+	for from > 0 && !unicode.IsSpace(said[from-1]) {
+		from--
+	}
+	for to < len(said) && !unicode.IsSpace(said[to]) {
+		to++
+	}
+	return Written{Value: w.Value, At: to, Held: from - to}
+}

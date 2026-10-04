@@ -2,6 +2,7 @@ package reading
 
 import (
 	"cairn/internal/task"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -198,5 +199,34 @@ func TestACardIsSearchedTheWayTheEngineSearches(t *testing.T) {
 	}
 	if ReachesCard(c, "spec frontend") {
 		t.Error("a word the card does not carry still reached it")
+	}
+}
+
+// What hangs under a task comes what is left first and what is done after, in
+// the order it was put in inside each: what is left is what is looked for, and
+// a done part mixed in among them is a part read as one still to do.
+func TestWhatHangsUnderATaskComesWhatIsLeftFirst(t *testing.T) {
+	cards := []Card{
+		{Number: 1, Title: "Ship it", State: "todo"},
+		{Number: 2, Title: "A", State: "done", Parent: 1},
+		{Number: 3, Title: "B", State: "todo", Parent: 1},
+		{Number: 4, Title: "C", State: "done", Parent: 1},
+		{Number: 5, Title: "D", State: "todo", Parent: 1},
+	}
+	var got []int
+	for _, c := range Hanging(cards, 1) {
+		got = append(got, c.Number)
+	}
+	if fmt.Sprint(got) != "[3 5 2 4]" {
+		t.Fatalf("what hangs under it comes as %v, want what is left first: [3 5 2 4]", got)
+	}
+	if left, done := Tally(Hanging(cards, 1)); left != 2 || done != 2 {
+		t.Fatalf("tallied %d left and %d done, want 2 and 2", left, done)
+	}
+	if said := Tallied(Hanging(cards, 1)); said != "2 to do · 2 done" {
+		t.Fatalf("the tally reads %q", said)
+	}
+	if said := Tallied(nil); said != "" {
+		t.Fatalf("nothing under it reads %q", said)
 	}
 }

@@ -77,13 +77,44 @@ func Hanging(cards []Card, parent int) []Card {
 	if parent == 0 {
 		return nil
 	}
-	var under []Card
+	var left, done []Card
 	for _, c := range cards {
-		if c.Parent == parent {
-			under = append(under, c)
+		if c.Parent != parent {
+			continue
 		}
+		if Finished(c) {
+			done = append(done, c)
+			continue
+		}
+		left = append(left, c)
 	}
-	return under
+	// What is left first, and what is done after it, each in the order it was
+	// put in. What is left is what is looked for, and a done part mixed in
+	// among them was read as one still to do — the difference was the
+	// brightness of the ink, and that was not enough to tell them apart.
+	return append(left, done...)
+}
+
+// Tally counts what of the parts is left and what is done.
+func Tally(parts []Card) (left, done int) {
+	for _, c := range parts {
+		if Finished(c) {
+			done++
+			continue
+		}
+		left++
+	}
+	return left, done
+}
+
+// Tallied is that count as a heading says it, and nothing when there is
+// nothing to count.
+func Tallied(parts []Card) string {
+	if len(parts) == 0 {
+		return ""
+	}
+	left, done := Tally(parts)
+	return fmt.Sprintf("%d to do · %d done", left, done)
 }
 
 // ReachesCard says whether a search reaches a card. It is what both boards ask,

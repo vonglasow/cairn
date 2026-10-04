@@ -383,6 +383,11 @@ right — `┃` where the window is, `│` the rest of the track — and `^D` `^
 it half a box at a time. It used to be drawn whole, and a long one ran off the
 bottom of the terminal with everything under it.
 
+**On an open task the parts left come first**, each with `[ ]` before it and
+the parts done after, `[x]`, faint and struck through; the panel's name counts
+them, `SUB-TASKS   1 to do · 1 done`. The window draws the same thing with a
+box; the marks are the ones the form's field writes.
+
 **The parts of a task are edited in its form**, in a field holding one line
 each — `#2 [x] Relire l'ADR` — and nowhere else. Saving settles them against
 what the task carried: a line with a number is that part, a line without is one

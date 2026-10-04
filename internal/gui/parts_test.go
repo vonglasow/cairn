@@ -1329,3 +1329,58 @@ func TestWhereAFieldsTextStartsInSight(t *testing.T) {
 		t.Errorf("a field the wheel left at 1 starts at %d, want 1", got)
 	}
 }
+
+// A part says whether it is done by a box ticked or not, before its name — a
+// shape, read without comparing two greys. The box sits where the line used to
+// begin, and the line begins after it.
+func TestAPartCarriesABoxBeforeItsName(t *testing.T) {
+	tile := Box{X: 100, Y: 200, W: 400, H: SubHeight}
+	check, line := SubCheck(tile), SubWriting(tile)
+	if check.W != check.H || check.W != checkSide {
+		t.Errorf("the box is %dx%d, want a square of %d", check.W, check.H, checkSide)
+	}
+	if check.X != tile.X+padding {
+		t.Errorf("the box starts at %d, want %d", check.X, tile.X+padding)
+	}
+	if line.X != check.X+check.W+inset+inset {
+		t.Errorf("the line starts at %d, want just past the box at %d", line.X, check.X+check.W+inset+inset)
+	}
+	panel := SubPanel(tile)
+	if check.Y-panel.Y != panel.Y+panel.H-check.Y-check.H {
+		t.Errorf("the box is not centred in its tile: %d above, %d below",
+			check.Y-panel.Y, panel.Y+panel.H-check.Y-check.H)
+	}
+}
+
+// What is left is written in the ink that is read, and what is done in the
+// faint one, struck through. It was the other way round, and the brightness
+// was the only difference: a part to do read as one finished with.
+func TestWhatIsLeftIsWrittenToBeRead(t *testing.T) {
+	skin := Dark()
+	if got := SubInk(skin, reading.Card{State: "todo"}); got != skin.Ink {
+		t.Errorf("a part to do is written in %v, want the reading ink", got)
+	}
+	if got := SubInk(skin, reading.Card{State: "done"}); got != skin.Faint {
+		t.Errorf("a part done is written in %v, want the faint ink", got)
+	}
+}
+
+// Where the tick is written inside a filled box. Pinned to the point: a tick a
+// point too high reads as a mark sitting on the box rather than in it, and
+// nothing but a number held here would notice it moving.
+func TestTheTickSitsInItsBox(t *testing.T) {
+	check := Box{X: 100, Y: 200, W: checkSide, H: checkSide}
+	if got, want := TickAt(check), (Box{X: 100, Y: 199, W: checkSide + 2, H: lineHigh}); got != want {
+		t.Fatalf("the tick is written at %+v, want %+v", got, want)
+	}
+}
+
+// Where the line through a part done is drawn: across its middle, from where
+// its name begins and as long as the name is. Pinned to the point, for the
+// reason this file opens with.
+func TestTheLineThroughAPartDoneCrossesItsMiddle(t *testing.T) {
+	line := Box{X: 132, Y: 202, W: 356, H: lineHigh}
+	if got, want := StruckAt(line, 90), (Box{X: 132, Y: 211, W: 90, H: 1}); got != want {
+		t.Fatalf("the line through it is at %+v, want %+v", got, want)
+	}
+}

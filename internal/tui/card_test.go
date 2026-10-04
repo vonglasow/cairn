@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"charm.land/lipgloss/v2"
 )
 
 var today = time.Date(2026, 9, 1, 15, 30, 0, 0, time.UTC)
@@ -220,5 +222,56 @@ func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
 		if got := LongTitle("description", c.value); got != c.want {
 			t.Errorf("a description of %q is titled %q, want %q", c.value, got, c.want)
 		}
+	}
+}
+
+// The parts on an open task, the window's way: what is left first, a box
+// before each — empty or ticked, the same marks the form's field writes — and
+// the heading counting both.
+func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
+	f := newFake()
+	f.cards = []reading.Card{
+		{Number: 1, Title: "Ship it", State: "todo"},
+		{Number: 2, Title: "Draft the columns", State: "done", Parent: 1},
+		{Number: 3, Title: "Get the client's nod", State: "todo", Parent: 1},
+	}
+	b := standing(f)
+	// What the rows say, and not how they are dressed: the dressing is checked
+	// in the pinned frames, where it is decided.
+	var rows []string
+	for _, row := range b.subTasks(f.cards[0], 60) {
+		rows = append(rows, strip(row))
+	}
+	if len(rows) != 2 {
+		t.Fatalf("%d rows for two parts", len(rows))
+	}
+	if !strings.Contains(rows[0], "[ ]") || !strings.Contains(rows[0], "Get the client's nod") {
+		t.Errorf("the first row is %q, want the part left, with an empty box", rows[0])
+	}
+	if !strings.Contains(rows[1], "[x]") || !strings.Contains(rows[1], "Draft the columns") {
+		t.Errorf("the second row is %q, want the part done, ticked", rows[1])
+	}
+	if head := b.partsHead(f.cards[0]); !strings.Contains(head, "1 to do · 1 done") {
+		t.Errorf("the heading reads %q", head)
+	}
+}
+
+// A part whose name is longer than its panel is cut to the panel, and the panel
+// keeps one row for it: a row cut to the wrong width wraps, and every row that
+// wraps pushes the history and everything under it down a line.
+func TestALongPartIsCutToItsPanel(t *testing.T) {
+	f := newFake()
+	f.cards = []reading.Card{
+		{Number: 1, Title: "Ship it", State: "todo"},
+		{Number: 2, Title: strings.Repeat("a long name for a part ", 10), State: "todo", Parent: 1},
+	}
+	b := standing(f)
+	under := b.detailLeftUnder(f.cards[0], 40)
+	if len(under) != 1 {
+		t.Fatalf("%d panels under the description, want the parts' one", len(under))
+	}
+	// Its border, its name, one row, its border.
+	if got := lipgloss.Height(under[0]); got != 4 {
+		t.Fatalf("a panel holding one long part is %d rows tall, want 4:\n%s", got, under[0])
 	}
 }

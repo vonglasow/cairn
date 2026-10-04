@@ -68,8 +68,37 @@ func SubWriting(b Box) Box {
 	panel := SubPanel(b)
 	// Centred in the tile rather than pushed to its top: written an inset down
 	// from a panel of twenty-two, a line of eighteen finished exactly on the
-	// bottom edge.
-	return Row(panel, panel.Y+(panel.H-lineHigh)/2, lineHigh)
+	// bottom edge. And after the box that says whether it is done.
+	row := Row(panel, panel.Y+(panel.H-lineHigh)/2, lineHigh)
+	past := checkSide + inset + inset
+	return Box{X: row.X + past, Y: row.Y, W: row.W - past, H: row.H}
+}
+
+// checkSide is how big the box before a part is. Big enough to read as a box
+// and not as a stray mark, small enough to sit inside a tile's line.
+const checkSide = 12
+
+// StruckAt is the line through a part done: across the middle of the line its
+// name is written on, from where the name begins and as long as it is.
+func StruckAt(line Box, wide int) Box {
+	return Box{X: line.X, Y: line.Y + line.H/2, W: wide, H: 1}
+}
+
+// TickAt is where the tick is written inside a filled box: a line of text set so
+// the mark sits in the box's middle. One point above the box's top, because a
+// glyph's line carries room above the mark; three put it a touch too high,
+// and two still did. And at the box's own edge across: a point in from it sat
+// right of centre, a point out sat left.
+func TickAt(check Box) Box {
+	return Box{X: check.X, Y: check.Y - 1, W: check.W + 2, H: lineHigh}
+}
+
+// SubCheck is the box before a part's name, ticked when it is done: a shape,
+// read without comparing two greys. That was all there was, and a part to do
+// read as one finished with.
+func SubCheck(b Box) Box {
+	panel := SubPanel(b)
+	return Box{X: panel.X + padding, Y: panel.Y + (panel.H-checkSide)/2, W: checkSide, H: checkSide}
 }
 
 // CountedAt is where an objective's count sits on its number line: hard right,

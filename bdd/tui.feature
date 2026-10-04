@@ -674,6 +674,18 @@ Feature: The board
       Then the board says "The client wants two columns"
       And the board says "created"
 
+    @tui-the-parts-left-come-first
+    Scenario: what is left comes first, ticked or not, and counted
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      And I added a task titled "Get the client's nod" hanging under task 1
+      And I edited task 2 with the state "done"
+      When I open the board
+      And I press "i", "enter"
+      Then the board says "1 to do · 1 done"
+      And the board says "[ ] 3  Get the client's nod"
+      And the board says "[x] 2  Draft the columns"
+
     @tui-the-detail-scrolls-its-description
     Scenario: a long description stays in its box, and ^D walks it to the end
       Given I added a task titled "Write the spec" with a description of 80 lines ending "LA FIN"

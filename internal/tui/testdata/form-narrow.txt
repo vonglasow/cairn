@@ -19,9 +19,9 @@
  │                                    >                               │
  │   labels                                                           │
  │   > spec                           parts · 2 lines                 │
- │                                      1 #11 [x] Draft the columns   │
- │   blockers                           2 #12 [ ] Get the client's    │
- │   >                                    nod                         │
+ │                                      1 #12 [ ] Get the client's    │
+ │   blockers                             nod                         │
+ │   >                                  2 #11 [x] Draft the columns   │
  │                                                                    │
  ╰────────────────────────────────────────────────────────────────────╯
 

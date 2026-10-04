@@ -468,6 +468,11 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := Over(w.width, w.height)
 	drawPanel(gtx, th, skin, box, Heads(w))
+	// Written again with what is held of it, over itself: the panel's heading
+	// is drawn by the one function every panel shares.
+	if held := w.Holding("heading", Heads(w)); held.Holding() {
+		sayHolding(gtx, th, skin, skin.Ink, Heading(box), held, heading)
+	}
 
 	// Everything the task carries, drawn in the boxes a form writes into —
 	// the same task looks the same whether somebody is reading it or changing
@@ -479,7 +484,8 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			continue
 		}
 		drawField(gtx, th, skin, DetailFields(box), fields, i, false, false,
-			Written{Value: w.FieldSays(fields[i])})
+			w.Holding("field:"+fields[i].Name, w.FieldSays(fields[i])),
+			w.Holding("name:"+fields[i].Name, fields[i].Name))
 	}
 	drawUnder(gtx, th, skin, box, fields, w)
 	drawHistory(gtx, th, skin, box, w)
@@ -498,25 +504,49 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 // The strip carries done where a card's carries priority. It is the only fact
 // a part has left that a glance should not have to read the words for, and a
 // sub-task has no priority of its own to put there instead.
-func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, on bool) {
+func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, on bool, held Written) {
 	panel := SubPanel(box)
 	fill(gtx, panel, skin.Panel)
-	edge, ink := skin.Edge, skin.Faint
-	if reading.Finished(c) {
-		edge, ink = skin.Chosen, skin.Ink
-	}
-	fill(gtx, Box{X: panel.X, Y: panel.Y, W: edgeWide, H: panel.H}, edge)
 	// Outlined where the keyboard is, the way a form lights the field it is
 	// on: one place to look for where you are, whatever is open.
 	if on {
 		outline(gtx, panel, skin.Chosen)
 	}
+	// The box says whether it is done, by its shape: empty, or filled and
+	// ticked. The ink and the line through the name say it again, the way
+	// round a list is read — what is left stands out, what is done steps
+	// back. It was the other way round, and brightness was the only
+	// difference.
+	check := SubCheck(box)
+	done := reading.Finished(c)
+	if done {
+		fill(gtx, check, skin.Faint)
+		say(gtx, th, skin.Panel, TickAt(check), TickedMark, small)
+	} else {
+		outline(gtx, check, skin.Ink)
+	}
 	line := SubWriting(box)
-	say(gtx, th, ink, line, fits(gtx, th, SubLine(c), line.W, small), small)
+	said := fits(gtx, th, SubLine(c), line.W, small)
+	held.Value = said
+	sayHolding(gtx, th, skin, SubInk(skin, c), line, held, small)
+	if done {
+		loose := gtx
+		loose.Constraints = layout.Constraints{Max: image.Pt(line.W, lineHigh)}
+		fill(gtx, StruckAt(line, wide(loose, th, said, small).Size.X), skin.Faint)
+	}
+}
+
+// SubInk is the ink a part's name is written in: the reading ink for what is
+// left, the faint one for what is done.
+func SubInk(skin Skin, c reading.Card) color.NRGBA {
+	if reading.Finished(c) {
+		return skin.Faint
+	}
+	return skin.Ink
 }
 
 func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, w Window) {
-	say(gtx, th, skin.Faint, ServingHead(box, fields), w.UnderHead(), small)
+	sayHolding(gtx, th, skin, skin.Faint, ServingHead(box, fields), w.Holding("under", w.UnderHead()), small)
 	frame := ServingBox(box, fields)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
@@ -537,7 +567,8 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 	// for facts a part of the work does not carry.
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
 	for at, c := range under {
-		drawSub(gtx, th, skin, w.ServingCardAt(at), c, at == w.UnderAt())
+		drawSub(gtx, th, skin, w.ServingCardAt(at), c, at == w.UnderAt(),
+			w.Holding("part:"+strconv.Itoa(c.Number), SubLine(c)))
 	}
 	clipped.Pop()
 
@@ -550,7 +581,7 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, field
 }
 
 func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
-	say(gtx, th, skin.Faint, HistoryHead(box), w.PanelHead(), small)
+	sayHolding(gtx, th, skin, skin.Faint, HistoryHead(box), w.Holding("history", w.PanelHead()), small)
 	frame := HistoryBox(box)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
@@ -559,7 +590,7 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 	clipped := clip.Rect(rect(inside)).Push(gtx.Ops)
 	lines, from, rows := w.Lines(), w.History(), w.Rows()
 	for i := from; i < Lasting(len(lines), from, rows); i++ {
-		drawTold(gtx, th, skin, LineAt(inside, i, from), lines[i])
+		drawTold(gtx, th, skin, LineAt(inside, i, from), w.Holding("history:"+strconv.Itoa(i), lines[i]))
 	}
 	clipped.Pop()
 
@@ -574,7 +605,11 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 // for the things beside what is read, and what happened in the ink that is
 // read. It used to be all one faint grey — the densest, palest region of the
 // window, and the one thing in it somebody opened a task to read.
-func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, said string) {
+func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, held Written) {
+	said := held.Value
+	// What is held of the line is painted under the whole of it, before its two
+	// inks are written over it.
+	paintHeld(gtx, th, skin, box, held, small)
 	stamp, rest, ok := Stamped(said)
 	if !ok {
 		say(gtx, th, skin.Ink, box, said, small)
@@ -584,16 +619,40 @@ func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, said s
 	say(gtx, th, skin.Ink, PastStamp(box, stamp), rest, small)
 }
 
+// sayHolding writes one line with whatever run of it is held painted under it,
+// in the ground the form paints a held run with: every piece of text written
+// on an open task can be held, and what is held is shown.
+func sayHolding(gtx layout.Context, th *material.Theme, skin Skin, ink color.NRGBA, box Box, said Written, size int) {
+	paintHeld(gtx, th, skin, box, said, size)
+	say(gtx, th, ink, box, said.Value, size)
+}
+
+// paintHeld paints what is held of one line under where it is written,
+// measured with the face it is written in. Kept to what the line shows: a line
+// cut to its box holds no more than it shows.
+func paintHeld(gtx layout.Context, th *material.Theme, skin Skin, box Box, said Written, size int) {
+	if !said.Holding() {
+		return
+	}
+	kept := []rune(said.Value)
+	from, to := said.Run()
+	from, to = min(from, len(kept)), min(to, len(kept))
+	loose := gtx
+	loose.Constraints = layout.Constraints{Max: image.Pt(box.W, box.H)}
+	fill(gtx, HeldRun(box, wide(loose, th, string(kept[:from]), size).Size.X,
+		wide(loose, th, string(kept[from:to]), size).Size.X), skin.Ghost)
+}
+
 // drawField draws one field of a panel: its name beside it, what it holds
 // inside a box of its own, and the frame lit when the keyboard is on it.
-func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written) {
-	drawFieldAt(gtx, th, skin, box, fields, i, lit, carets, said, Follow)
+func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said, named Written) {
+	drawFieldAt(gtx, th, skin, box, fields, i, lit, carets, said, named, Follow)
 }
 
 // drawFieldAt is drawField with where the text starts in sight given. A long
 // field is drawn with the bar the description carries on an open task, in the
 // same place: the description is the same box on both screens.
-func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said Written, scrolled int) {
+func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said, named Written, scrolled int) {
 	field := fields[i]
 	name, value := FieldRow(box, FieldTop(box, fields, i))
 	rows := RowsOf(box, fields, i)
@@ -606,7 +665,7 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fie
 	if lit {
 		ink, edge = skin.Chosen, skin.Chosen
 	}
-	say(gtx, th, ink, name, field.Name, small)
+	sayHolding(gtx, th, skin, ink, name, named, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
 	writing(gtx, th, skin, Inside(frame), said, carets, reads, rows, scrolled)
@@ -624,10 +683,11 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fie
 func drawSaying(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, at int, w Window) {
 	name, _ := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
 	frame := SayingBox(box, fields, at)
-	say(gtx, th, skin.Faint, name, fields[at].Name, small)
+	sayHolding(gtx, th, skin, skin.Faint, name, w.Holding("name:"+fields[at].Name, fields[at].Name), small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
-	writing(gtx, th, skin, Inside(frame), Written{Value: w.FieldSays(fields[at])}, false, reads, w.SaidRows(), w.Saying())
+	writing(gtx, th, skin, Inside(frame), w.Holding("field:"+fields[at].Name, w.FieldSays(fields[at])),
+		false, reads, w.SaidRows(), w.Saying())
 
 	track := SayingBar(box, fields, at)
 	fill(gtx, track, skin.Back)
@@ -662,7 +722,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 				scrolled = w.Saying()
 			}
 		}
-		drawFieldAt(gtx, th, skin, box, fields, i, on, typed, said, scrolled)
+		drawFieldAt(gtx, th, skin, box, fields, i, on, typed, said, Written{Value: fields[i].Name}, scrolled)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

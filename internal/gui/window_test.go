@@ -2187,3 +2187,20 @@ func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
 		t.Fatalf("a scroll of 40 on a description of one line reads as %d", got)
 	}
 }
+
+// The box under an open task says how many of its parts are left and how many
+// are done, beside what it is.
+func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
+	w := holding(newFake(),
+		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
+		reading.Card{Number: 2, Title: "A", State: "done", Parent: 1},
+		reading.Card{Number: 3, Title: "B", State: "todo", Parent: 1},
+		reading.Card{Number: 4, Title: "C", State: "todo", Parent: 1})
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	if got := w.UnderHead(); !strings.Contains(got, "2 to do · 1 done") {
+		t.Fatalf("the box under the task is headed %q", got)
+	}
+	if got := w.Under()[0].Number; got != 3 {
+		t.Fatalf("the first part shown is %d, want the first one left, 3", got)
+	}
+}

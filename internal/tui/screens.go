@@ -270,8 +270,7 @@ func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
 func (b Board) detailLeftUnder(c reading.Card, width int) []string {
 	var under []string
 	if rows := b.subTasks(c, width-4); len(rows) > 0 {
-		under = append(under, b.named(fmt.Sprintf("SUB-TASKS   %d/%d", c.SubDone, c.SubTotal),
-			strings.Join(rows, "\n"), width))
+		under = append(under, b.named(b.partsHead(c), strings.Join(rows, "\n"), width))
 	}
 	if len(c.Objectives) > 0 {
 		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
@@ -319,18 +318,23 @@ func (b Board) detailBand(c reading.Card) string {
 // subTasks is what hangs under a task, each with where it stands.
 func (b Board) subTasks(c reading.Card, width int) []string {
 	var out []string
-	for _, other := range b.snap.Cards {
-		if other.Parent != c.Number {
-			continue
+	// What is left first, and a box before each, the marks the form's own
+	// field writes: what is left in the reading ink, what is done faint and
+	// struck through. The difference used to be the brightness of the ink, the
+	// other way round, and a part to do read as one finished with.
+	for _, part := range reading.Hanging(b.snap.Cards, c.Number) {
+		box, name := "[ ]", b.skin.Bright.Render(part.Title)
+		if reading.Finished(part) {
+			box, name = "[x]", b.skin.Faint.Strikethrough(true).Render(part.Title)
 		}
-		mark := b.skin.Faint.Render("·")
-		if other.State == "done" {
-			mark = b.skin.Filled.Render(b.glyphs.Reached)
-		}
-		out = append(out, Spread(mark+" "+b.skin.Faint.Render(strconv.Itoa(other.Number))+
-			"  "+b.skin.Bright.Render(other.Title), b.skin.Says.Render(other.State), width))
+		out = append(out, Clip(b.skin.Says.Render(box)+" "+b.skin.Faint.Render(strconv.Itoa(part.Number))+"  "+name, width))
 	}
 	return out
+}
+
+// partsHead is the panel's name, and how many of its parts are left and done.
+func (b Board) partsHead(c reading.Card) string {
+	return "SUB-TASKS   " + reading.Tallied(reading.Hanging(b.snap.Cards, c.Number))
 }
 
 // serves is the objectives a task counts towards.

@@ -545,6 +545,21 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^nothing was asked of the engine$`, w.askedNothing)
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Then(`^the engine was not asked "([^"]*)"$`, w.wasNotAsked)
+	sc.Step(`^I double-click the first word of "([^"]*)" on the open task$`, func(key string) error {
+		for _, r := range w.w.Readables() {
+			if r.Key == key {
+				w.w = w.w.DoubleClick(Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the open task writes nothing called %q", key)
+	})
+	sc.Then(`^the box under the task is headed "([^"]*)"$`, func(want string) error {
+		if got := w.w.UnderHead(); got != want {
+			return fmt.Errorf("the box under the task is headed %q, want %q", got, want)
+		}
+		return nil
+	})
 	sc.Then(`^what hangs under it reads (.+)$`, func(said string) error {
 		var want []string
 		for _, one := range strings.Split(said, ", ") {

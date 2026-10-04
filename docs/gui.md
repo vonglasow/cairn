@@ -619,6 +619,28 @@ One box and one question — what is under this — with the heading saying whic
 was asked, `WHAT SERVES IT` or `WHAT HANGS UNDER IT`. Calling both by one word
 would make the box say less than it knows.
 
+**Every piece of text an open task writes can be held and copied** — its
+heading, the name and the value of every field, the description, the box under
+it and each part in it, the history and each of its lines. A drag across it
+holds a run, a double click holds a word, `⌘A` holds the whole of the text last
+pressed in, and `⌘C` copies. A part is the exception for the drag, which still
+moves it among its sisters; a double click holds a word of it.
+
+A window draws text as shapes, and nothing said where a shape's letters were.
+`Readables` now lists every piece of text an open task writes, once, laid out
+the way it is drawn, and what a pointer lands on and what is painted held are
+both worked out from it. A field of the form holds a word on a double click too.
+
+**What is left reads first, and reads as left.** A part carries a box before
+its name — empty, or filled and ticked — and what is left is written in the
+reading ink while what is done is faint and struck through; what is left comes
+first, what is done after, each in the order it was put in. The heading counts
+both: `WHAT HANGS UNDER IT   2 to do · 1 done`. The ink used to be the only
+difference, and the other way round — done bright, to do faint — so a part to
+do read as one finished with. A box is read by its shape, without comparing two
+greys. The terminal says the same with `[ ]` and `[x]`, the marks the form's
+own field writes.
+
 An objective nothing serves says so; a task nothing hangs under says nothing.
 Most tasks have no sub-tasks, and a line saying so on every one of them stops
 being read by the third time.

@@ -421,7 +421,7 @@ func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 	told.At(today)
 	f.acts = []trace.Act{told.Act()}
 	b := hit(standing(f), "l", "i", "enter")
-	drawn := b.Draw()
+	drawn := strip(b.Draw())
 	for _, want := range []string{"SUB-TASKS", "Child", "HISTORY", "created", "title"} {
 		if !strings.Contains(drawn, want) {
 			t.Fatalf("the detail never says %q:\n%s", want, drawn)

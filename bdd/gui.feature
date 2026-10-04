@@ -1582,6 +1582,26 @@ Feature: The desktop board
     A task nothing hangs under says nothing there: an empty frame reads as a
     box that failed to load, and most tasks have no sub-tasks at all.
 
+
+    @gui-every-text-on-an-open-task-is-copied
+    Scenario: a word of anything an open task writes is held and copied
+      Given I added a task titled "Write the spec" with the description "Deux colonnes et une bande"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I double-click the first word of "field:description" on the open task
+      And I press "cmd+c"
+      Then the clipboard reads "Deux"
+
+    @gui-the-parts-left-come-first
+    Scenario: what is left comes first, and the box counts what is left and done
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      And I added a task titled "Get the client's nod" hanging under task 1
+      And I edited task 2 with the state "done"
+      When I open the window
+      And I double-click the card "Ship it"
+      Then what hangs under it reads "Get the client's nod", "Draft the columns"
+      And the box under the task is headed "WHAT HANGS UNDER IT   1 to do · 1 done"
     @gui-a-task-opens-on-what-hangs-under-it
     Scenario: opening a parent shows the work hanging under it
       Given I added a task titled "Ship it"

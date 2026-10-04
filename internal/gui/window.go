@@ -164,6 +164,10 @@ type Window struct {
 	// says a word can be clicked was missing from the whole surface.
 	over    string
 	hovered bool
+	// picked is the run of text held on an open task, and pickingText that a
+	// press began in a piece of text and is still down.
+	picked      Picked
+	pickingText bool
 	// wheelOn is the screen the turn of the wheel under way began on, and
 	// wheelAt when its last part arrived: the rest of a turn belongs to what it
 	// began on, and never to what opens under it while it is still coming.
@@ -295,6 +299,11 @@ func (w Window) Under() []reading.Card {
 func (w Window) UnderHead() string {
 	if w.chosenGoal {
 		return servingHead
+	}
+	// How many are left and how many are done, beside what the box is: the
+	// question somebody opens a task with parts to ask.
+	if tally := reading.Tallied(w.Under()); tally != "" {
+		return hangingHead + "   " + tally
 	}
 	return hangingHead
 }
@@ -994,6 +1003,7 @@ func (w Window) Helping() []reading.Field {
 		{Name: "wheel", Value: "scroll what is under the pointer — a column, the objectives, a history"},
 		{Name: "↑↓ under a task", Value: "walk what hangs under it — space marks one done, or not"},
 		{Name: "wheel on a history", Value: "scroll it — the bar beside it can be pulled too"},
+		{Name: "on an open task", Value: "every text can be held: drag across it, or double-click a word — ⌘A holds it all, ⌘C copies"},
 		{Name: "^D ^U on an open task", Value: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Name: "e", Value: "edit what is chosen, on the board or on an open task"},
 		{Name: "f", Value: "take up what is chosen, or let it go — several at once is fine"},
@@ -1227,6 +1237,18 @@ func (w Window) DoubleClick(p Point) Window {
 		}
 		return w
 	}
+	// On an open task it holds the word it lands on, and in a field of the
+	// form the same: every piece of text written can be held and copied.
+	if w.screen == OnDetail {
+		return w.word(p)
+	}
+	if w.screen == OnForm {
+		if at, on := w.fieldAt(p); on {
+			w.form = w.form.onto(at)
+			w.form = w.form.Writes(w.form.Writing().Word(w.reaching(at, p)))
+		}
+		return w
+	}
 	// The same two screens a single click answers on, for the same reason: a
 	// search leaves the board showing, so a card under the pointer is a card.
 	if w.screen != OnTheBoard && w.screen != OnSearch {
@@ -1256,8 +1278,15 @@ func (w Window) PressAt(p Point) Window {
 		if at, on := w.tileUnder(p); on {
 			w.held = Held{Number: w.Under()[at].Number, From: p, At: p}
 			w.underAt = at
+			w.picked = Picked{}
+			return w
 		}
-		return w
+		if w.draggingBar || w.draggingServing || w.draggingSaying {
+			return w
+		}
+		// Anywhere else on the panel, a press is where a run of its text may
+		// be held from.
+		return w.picking(p)
 	}
 	// A press in a field is where a run of text may be held from, so the caret
 	// goes where the press landed and not to the field's end: the end is where
@@ -1313,6 +1342,9 @@ func (w Window) MoveTo(p Point) Window {
 		w.saying = w.settledSaying(Reached(track, len(lines.Said), rows, p))
 		return w
 	}
+	if w.pickingText {
+		return w.draggingText(p)
+	}
 	if w.draggingChoosing {
 		box := ChoosingOver(w.width, w.height)
 		w.choosingFrom = w.settledChoosing(
@@ -1339,6 +1371,10 @@ func (w Window) MoveTo(p Point) Window {
 
 // LetGo drops the card, or lets a click be a click.
 func (w Window) LetGo(p Point) Window {
+	if w.pickingText {
+		w.pickingText = false
+		return w
+	}
 	if w.draggingBar || w.draggingSaying || w.draggingServing || w.draggingChoosing {
 		w.draggingBar, w.draggingSaying = false, false
 		w.draggingServing, w.draggingChoosing = false, false
@@ -1494,6 +1530,14 @@ func (w Window) Key(name string) Window {
 	if name == "shift+x" && w.screen == OnTheBoard && w.tab == Tasks && w.sweeps() != "" {
 		w.screen, w.question = OnAsking, aboutSweeping
 		return w
+	}
+	// What is held on an open task is copied, and ⌘A holds the whole of the
+	// text last pressed in.
+	if w.screen == OnDetail && name == "cmd+c" {
+		return w.copyingPicked()
+	}
+	if w.screen == OnDetail && name == "cmd+a" {
+		return w.all()
 	}
 	// Half a box at a time through the description on an open task: the
 	// terminal board's keys for it, taken here too so the same fingers work.
@@ -1968,6 +2012,7 @@ func (w Window) opening() Window {
 	// the form had put it, so a short description opened after a long one had
 	// been read to its end showed an empty box until the wheel moved.
 	w.underAt, w.history, w.serving, w.saying = 0, 0, 0, 0
+	w.picked, w.pickingText = Picked{}, false
 	w.spareHistory, w.spareSaying = 0, 0
 	// An objective is opened on the work under it and not on a history: it has
 	// none of its own, and the number it carries belongs to a task as well —
