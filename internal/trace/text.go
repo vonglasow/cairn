@@ -104,8 +104,8 @@ func (l *line) ByHand()                { l.through = "" }
 func (l *line) At(when time.Time)      { l.at = when }
 
 // columns lays the line out with a tab between each column, so a history can be
-// aligned: the moment, what was done, the change when there was one, and the
-// surface when it was not the terminal.
+// aligned: the moment, what was done, and the change when there was one — with
+// the surface beside it when it was not the terminal.
 //
 // An attribute a task was born carrying is laid out under the creation it
 // belongs to, indented and without a moment of its own. Every other act carries
@@ -132,8 +132,11 @@ func (l *line) columns() string {
 		_, _ = fmt.Fprintf(&out, "\t%s %s %s",
 			domain.OrNothing(l.was), went, domain.OrNothing(l.became))
 	}
+	// Beside the value and not a column after it: a value written over several
+	// lines ended its last line in that column's tab, became a cell, and pushed
+	// the moments of every act after it to the right.
 	if l.through != "" {
-		_, _ = fmt.Fprintf(&out, "\t(%s)", l.through)
+		_, _ = fmt.Fprintf(&out, "  (%s)", l.through)
 	}
 	return out.String()
 }

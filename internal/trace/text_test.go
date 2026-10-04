@@ -211,3 +211,26 @@ func TestAHistorySaysWhatADeletionTookWithIt(t *testing.T) {
 		}
 	}
 }
+
+// A value written over several lines, changed by an agent, leaves the columns
+// of every act after it where they were. The surface used to be a column of its
+// own, so the last line of such a value ended in a tab, became a cell, and
+// widened the first column of every line after it — measured on a real store:
+// the moments of a whole afternoon pushed seventy characters to the right.
+func TestList_aValueOverSeveralLinesLeavesTheColumnsAfterIt(t *testing.T) {
+	said := "first line\nthe last line of the description, far longer than any moment is"
+	for name, render := range map[string]func([]Act) string{"a period": List, "a history": Text} {
+		got := render([]Act{
+			acted(3, Changed, "description", "", said, "mcp", 9, 0),
+			acted(3, Changed, "priority", "normal", "high", "", 9, 30),
+		})
+		lines := strings.Split(got, "\n")
+		last := lines[len(lines)-2]
+		if !strings.Contains(got, "(mcp)") {
+			t.Errorf("%s no longer says the change came through the server:\n%s", name, got)
+		}
+		if gap := strings.Index(last, "  ") + 2; strings.TrimLeft(last[gap:], " ") != last[gap:] {
+			t.Errorf("%s pushed its next line to the right:\n%s", name, got)
+		}
+	}
+}
