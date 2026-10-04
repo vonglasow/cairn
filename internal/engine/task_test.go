@@ -150,8 +150,8 @@ func TestAll_hasThirtyDistinctOperations(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 30 {
-		t.Fatalf("len(All()) = %d, want 30", len(ops))
+	if len(ops) != 32 {
+		t.Fatalf("len(All()) = %d, want 32", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

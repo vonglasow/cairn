@@ -1,148 +1,220 @@
 package trace
 
-// What a period of acts adds up to. It is arithmetic over acts, so it lives
-// with the acts and not with whoever displays it — and it is given raw: how
-// much work, on how many tasks, how often it switched. What counts as a bad day
-// is a judgement, and cairn does not make it.
+// How long the work took, day by day. It is arithmetic over acts, so it lives
+// with the acts and not with whoever displays it — and it is given as it was:
+// every hour of a day, however many. Sorting the time into the kinds of work a
+// timesheet asks for, and bringing a day down to what a sheet accepts, is done
+// afterwards by whoever fills the sheet in.
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
-	"strings"
 	"time"
+
+	"cairn/internal/domain"
 )
 
-// A stretch is one run of work on one task: a focus taken, closed by that task
-// being let go. There is no other definition available, and every duration
-// rests on this one.
-//
-// Stretches overlap. Several tasks are worked on at once — one per agent
-// session — so taking up a second does not close the first, and a day's
-// stretches can add up to more than the day.
-type stretch struct {
-	task  int
-	from  time.Time
-	until time.Time
+// Sheet is how long the work took over some days: every day asked for, in the
+// order they ran — one nothing was done on says so, rather than going missing.
+type Sheet struct {
+	Days []Day
 }
 
-// Work is what a period came to.
-//
-// The total of the stretches is not the length of the day, and nothing here
-// claims it is: nothing is in focus during a meeting, so a day has gaps, and
-// cairn knows neither when it began nor when it ended.
-type Work struct {
-	stretches []stretch
-	switches  int
+// Day is one day of a sheet: the tasks worked on, each rounded, in the order
+// their numbers run, and what those come to.
+type Day struct {
+	Day   time.Time
+	Tasks []Worked
+	Total time.Duration
 }
 
-// AddedUp works out what a period of acts comes to. A stretch still open at the
-// end runs to now: it is work being done, not work that never happened.
-func AddedUp(acts []Act, now time.Time) Work {
-	var w Work
-	// Which stretch is open on each task. Several are open at once, so it is a
-	// stretch per task and not one at a time — kept as an index into the
-	// stretches so the order they were taken up in survives.
-	open := map[int]int{}
+// Worked is how long one task took on one day, rounded to the quarter hour,
+// and whether it was still in focus when the day ended.
+type Worked struct {
+	Task     int
+	Took     time.Duration
+	LeftOpen bool
+}
+
+// quarter is what a sheet is filled in by. A function and not a constant: a
+// constant's arithmetic runs on no line, so nothing would notice it changing.
+func quarter() time.Duration { return 15 * time.Minute }
+
+// span is one run of focus on one task, already stopped where a day stops it.
+type span struct {
+	task     int
+	from, to time.Time
+	leftOpen bool
+}
+
+// Timed works out how long the work took on each day from the first to the
+// last, both counted whole, in the location the first is given in.
+//
+// A run of focus is a task taken up until it is let go. It stops at the first
+// midnight after it began, whatever comes after: a focus left open would
+// otherwise count the night, and every day after it, as work — and a day it
+// crossed says so. One still open today runs to now, since it is work being
+// done. Two tasks in focus at once share the minutes they overlap, so a day
+// never comes to more than the clock. Time added by hand counts on the day it
+// was added for, and less than nothing takes some back, never below nothing.
+func Timed(acts []Act, first, last, now time.Time) Sheet {
+	facts := make([]fact, 0, len(acts))
 	for _, a := range acts {
 		var f fact
 		a.Tell(&f)
+		facts = append(facts, f)
+	}
+	// In the order things happened, not the order they were written down: a
+	// focus put right after the fact is recorded after what followed it.
+	sort.SliceStable(facts, func(i, j int) bool { return facts[i].at.Before(facts[j].at) })
+
+	loc := first.Location()
+	var spans []span
+	open := map[int]time.Time{}
+	byHand := map[time.Time]map[int]time.Duration{}
+	for _, f := range facts {
 		switch f.did {
 		case FocusTaken:
-			if _, already := open[f.task]; already {
-				// Taking up what is already held is not a change, and the
-				// engine does not write it down. Ignored here as well, so a
-				// history written before that rule still adds up.
-				continue
+			if _, already := open[f.task]; !already {
+				open[f.task] = f.at
 			}
-			// Work taken up while other work is already under way is attention
-			// moving. Taken up with nothing else open it is a start.
-			if len(open) > 0 {
-				w.switches++
-			}
-			w.stretches = append(w.stretches, stretch{task: f.task, from: f.at})
-			open[f.task] = len(w.stretches) - 1
 		case FocusReleased:
-			if at, was := open[f.task]; was {
-				w.stretches[at].until = f.at
+			if from, was := open[f.task]; was {
+				spans = append(spans, cutAtMidnight(f.task, from, f.at, loc))
 				delete(open, f.task)
 			}
+		case TimeAdded:
+			day, err := domain.ParseDeadline(f.was)
+			length, bad := time.ParseDuration(f.became)
+			if err != nil || bad != nil {
+				continue
+			}
+			on := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
+			if byHand[on] == nil {
+				byHand[on] = map[int]time.Duration{}
+			}
+			byHand[on][f.task] += length
 		}
 	}
-	// Whatever is still held runs to now: it is work being done, not work that
-	// never happened.
-	for _, at := range open {
-		w.stretches[at].until = now
+	for task, from := range open {
+		spans = append(spans, cutAtMidnight(task, from, now, loc))
 	}
-	return w
+
+	var sheet Sheet
+	for day := first; !day.After(last); day = day.AddDate(0, 0, 1) {
+		took, leftOpen := shared(spans, day, day.AddDate(0, 0, 1))
+		for task, length := range byHand[day] {
+			took[task] += length
+		}
+		worked := rounded(took, leftOpen)
+		worked.Day = day
+		sheet.Days = append(sheet.Days, worked)
+	}
+	return sheet
 }
 
-// Summary renders what a period came to, or nothing at all when no work was
-// done in it: a period with acts but no stretches has nothing to add up.
-func Summary(w Work) string {
-	if len(w.stretches) == 0 {
-		return ""
+// cutAtMidnight is a run of focus cut at the first midnight after it began.
+func cutAtMidnight(task int, from, to time.Time, loc *time.Location) span {
+	start := from.In(loc)
+	midnight := time.Date(start.Year(), start.Month(), start.Day()+1, 0, 0, 0, 0, loc)
+	if to.After(midnight) {
+		return span{task: task, from: from, to: midnight, leftOpen: true}
 	}
-	var out strings.Builder
-	_, _ = fmt.Fprintf(&out, "\n%d stretches of work on %d task(s), switched %d time(s)\n",
-		len(w.stretches), len(w.onTasks()), w.switches)
-	for _, task := range w.onTasks() {
-		_, _ = fmt.Fprintf(&out, "  #%d  %s", task, spent(w.on(task)))
-	}
-	out.WriteString("\n")
-	return out.String()
+	return span{task: task, from: from, to: to}
 }
 
-// onTasks is every task worked on in the period, in the order their numbers
-// run: a summary read twice says the same thing in the same order.
-func (w Work) onTasks() []int {
-	seen := map[int]bool{}
-	tasks := []int{}
-	for _, s := range w.stretches {
-		if !seen[s.task] {
-			seen[s.task] = true
-			tasks = append(tasks, s.task)
+// shared is how long each task was in focus between two moments, the minutes
+// several were in focus at once shared out between them, and which of them
+// were left open on that day.
+func shared(spans []span, from, to time.Time) (map[int]time.Duration, map[int]bool) {
+	took := map[int]time.Duration{}
+	leftOpen := map[int]bool{}
+	var edges []time.Time
+	for _, s := range spans {
+		if s.to.After(from) && s.from.Before(to) {
+			edges = append(edges, maxTime(s.from, from), minTime(s.to, to))
+			leftOpen[s.task] = leftOpen[s.task] || s.leftOpen
 		}
 	}
-	sort.Ints(tasks)
-	return tasks
-}
-
-// on is how long was spent on one task over the period, across every stretch of
-// it.
-func (w Work) on(task int) time.Duration {
-	var total time.Duration
-	for _, s := range w.stretches {
-		if s.task == task {
-			total += s.until.Sub(s.from)
+	sort.Slice(edges, func(i, j int) bool { return edges[i].Before(edges[j]) })
+	for i := 1; i < len(edges); i++ {
+		var in []int
+		for _, s := range spans {
+			if !s.from.After(edges[i-1]) && !s.to.Before(edges[i]) {
+				in = append(in, s.task)
+			}
+		}
+		for _, task := range in {
+			took[task] += edges[i].Sub(edges[i-1]) / time.Duration(len(in))
 		}
 	}
-	return total
+	return took, leftOpen
 }
 
-// spent writes a length of work the way a person reads one, down to the minute:
-// a stretch measured to the second says more than anybody knows.
-func spent(d time.Duration) string {
-	minutes := int(d.Round(time.Minute).Minutes())
-	if minutes < 60 {
-		return fmt.Sprintf("%dm", minutes)
+// rounded is a day's tasks each brought to the nearest quarter hour, half a
+// quarter up and never below nothing, and what those come to. A task that
+// rounds to nothing is not written.
+func rounded(took map[int]time.Duration, leftOpen map[int]bool) Day {
+	var day Day
+	// In the order the numbers run, read off the numbers themselves: a
+	// comparison written out had a boundary no two tasks of a day can reach.
+	for _, task := range slices.Sorted(maps.Keys(took)) {
+		length := took[task]
+		quarters := (max(0, length) + quarter()/2) / quarter()
+		if quarters == 0 {
+			continue
+		}
+		day.Tasks = append(day.Tasks, Worked{Task: task, Took: quarters * quarter(), LeftOpen: leftOpen[task]})
+		day.Total += quarters * quarter()
 	}
-	return fmt.Sprintf("%dh %02dm", minutes/60, minutes%60)
+	return day
+}
+
+func maxTime(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func minTime(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+// Hours writes a length of time the way a sheet is filled in: hours and
+// minutes, the minutes two digits once there are hours, and nothing of a part
+// that is nought — 1h30, 45m, 2h, and 0m for nothing at all.
+func Hours(d time.Duration) string {
+	minutes := int(d / time.Minute)
+	h, m := minutes/60, minutes%60
+	if h == 0 {
+		return fmt.Sprintf("%dm", m)
+	}
+	if m == 0 {
+		return fmt.Sprintf("%dh", h)
+	}
+	return fmt.Sprintf("%dh%02d", h, m)
 }
 
 // fact is an act's membrane for what the arithmetic needs: which task, what was
 // done, and when.
 type fact struct {
-	task   int
-	did    string
-	became string
-	at     time.Time
+	task        int
+	did         string
+	was, became string
+	at          time.Time
 }
 
 func (f *fact) On(n int)          { f.task = n }
 func (f *fact) Did(what string)   { f.did = what }
 func (f *fact) Changing(string)   {}
 func (f *fact) NothingNamed()     {}
-func (f *fact) Was(string)        {}
+func (f *fact) Was(v string)      { f.was = v }
 func (f *fact) WasNothing()       {}
 func (f *fact) Became(v string)   { f.became = v }
 func (f *fact) BecameNothing()    {}

@@ -41,6 +41,8 @@ var groupShort = map[string]string{
 	"backup":    "Make, list, read and put back backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
+	"trace":     "Read what was done to a task, or over a period",
+	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 }
 
 // places is where the store and the notes live, according to the environment,

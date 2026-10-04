@@ -136,42 +136,46 @@ acts, which is not part of this and may never be — and a replay would depend o
 the ordering rules never having changed. A single task, on the other hand,
 comes back exactly, since every change to what it carries is an act of its own.
 
-## What it derives, in the raw
+## How long the work took: the timesheet
 
-A listing of acts over a period ends with what can be worked out from them, the
-same way `cairn migration list` ends with what the store holds. Numbers, not a
-reading of them: how many stretches of work, on how many tasks, how many
-switches, and the time per task.
+A listing of acts over a period used to end with what could be worked out from
+it: how many stretches of work, how many switches, the time per task. It went,
+on a measurement — a week of a real board said 117h45 on each of two tasks,
+because both had been left in focus for days and a stretch ran to whenever it
+was closed. A sum that counts the nights says nothing anybody can put on a
+sheet. What replaced it answers the one question that sum was for: how long the
+work took, day by day. `cairn timesheet show`, and `timesheet_show` for an
+agent. The scenarios are in `bdd/timesheet.feature`.
 
-A **stretch** is a `focus taken` on a task, closed by that task's own `focus
-released`. There is no other definition available, and it is what every
-duration rests on.
+**Focus is what is measured**, and nothing else is: taken when the work starts,
+let go when it stops, at the moment it is done and no other. Placing it after
+the fact was built and taken back out the same day: a focus that can be put at
+any moment past is a timesheet anybody can write, and the time it measures
+says what was typed rather than what was done. What was done without focus — a
+meeting, an afternoon nobody focused — is added by hand (`timesheet add`), and a
+focus left on too long is taken back the same way, with less than nothing. Both
+are acts in the history like any other, read back from there like the rest.
 
-**Stretches overlap.** Amended 2026-09-14. Several tasks are worked on at once
-— one per agent session — so taking up a second does not close the first, and a
-day's stretches can add up to more than the day. That is not a fault in the
-arithmetic: it is what working on three things at once actually costs to
-describe.
+**A run of focus stops at the first midnight after it began.** One left open
+would otherwise count the night, and every day after it; the day it crossed
+says so, task by task. The cost, known and taken: work truly carried on past
+midnight loses what came after it, and is added by hand.
 
-**A switch is work taken up while other work is already open.** It was read off
-the release before: moving the focus straight from one task to another wrote a
-release then a take at the same moment, so the release named what took over and
-a switch was a release that named one. Nothing takes over any more — the first
-task stays held — so what attention moving looks like is a take landing on top
-of something already open, which is what it is now counted as. Taking up the
-first thing of the day is a start, not a switch.
+**Two tasks in focus at once share the minutes they overlap**, so a day comes
+to what the clock says and never to more. Several are often in focus at once,
+one per agent session; counted in full on each, a day of three sessions read as
+three days.
 
-The earlier design rejected that very rule, on a measurement: counting "a take
-while a stretch is open" gave zero for a day of nothing but switching. It gave
-zero because a take never landed on an open stretch — the release always came
-first. Now it always does land on one, and the same count says what it was
-meant to say all along.
+**Each task is rounded to the nearest quarter of an hour**, half a quarter up,
+and a day is the sum of those — the sum of what is written, so the lines add
+up to their total. A task that rounds to nothing is not written; a day nothing
+was done on is, coming to `0m`, so a week reads as a week.
 
-Its limit, before anything is built on it: a stretch left open overnight runs
-all night, and fourteen hours land on a task nobody touched. That is tolerable
-here, and only because the two notions of time were kept apart from the start —
-the total, for a timesheet, stays typed by hand, where `--spent` takes `+30m`
-and `-15m`; the trace says the **shape** of a day, not what it is worth.
+**There is no ceiling and no kind of work.** A sheet may accept eight hours a
+day and sort them into development, fixes, meetings; cairn says the real time,
+every hour of it, and holds no category. Bringing a day down and sorting it out
+is done when the sheet is filled in, by whoever fills it in — the categories
+change, and a task does not know which one it was until it is over.
 
 ## It says who acted, when that is not you
 
@@ -223,12 +227,9 @@ backups is fifty times that. It is also answered by keeping fewer backups.
   at the cut. And choosing a cut policy against a store with no history in it
   would be deciding blind; it is designed the day there are two years of trace
   to look at and a concrete reason to cut.
-- **The longest stretch and the shortest.** They were in the first sketch of
-  what a period says. No scenario asked for them, so they were not written.
-- **A reading of a day or a week.** The numbers are given raw on purpose. What
-  counts as a real interruption, what a good day looks like — those are
-  judgements, and making them before a single day has been traced would be
-  guessing. The raw numbers are what make the judgement possible later.
+- **A reading of a day or a week.** The timesheet gives the hours raw on
+  purpose. What a good day looks like, what counts as an interruption — those
+  are judgements, and cairn does not make them.
 - **The order of the whole list at a past moment.** See above: the act is
   traced, not its consequences.
 - **Putting a task back to how it was.** The history makes it possible to work

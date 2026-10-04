@@ -9,7 +9,6 @@ package engine
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/migration"
@@ -110,6 +109,44 @@ type Tasks struct {
 	// listing. Always a list, empty when none are: a machine reads the one
 	// field either way rather than testing for null first.
 	InFocus []int `json:"in_focus"`
+}
+
+// Timesheet is how long the work took, as it crosses to a machine: every day
+// something was done on, in order, with each task's minutes — rounded to the
+// quarter hour — and the day's, the sum of those. Minutes and not a written
+// length, so whoever fills a sheet in adds them up without reading "1h30".
+type Timesheet struct {
+	Days []TimesheetDay `json:"days"`
+}
+
+// TimesheetDay is one day of it.
+type TimesheetDay struct {
+	Day     string          `json:"day"`
+	Minutes int             `json:"minutes"`
+	Tasks   []TimesheetTask `json:"tasks"`
+}
+
+// TimesheetTask is one task on one day, and whether it was still in focus when
+// the day ended — the time then stopped at midnight, not where the work did.
+type TimesheetTask struct {
+	Number             int    `json:"number"`
+	Title              string `json:"title"`
+	Minutes            int    `json:"minutes"`
+	LeftOpenAtMidnight bool   `json:"left_open_at_midnight"`
+}
+
+// ofSheet turns a sheet into what crosses.
+func ofSheet(s trace.Sheet, titles map[int]string) Timesheet {
+	days := make([]TimesheetDay, 0, len(s.Days))
+	for _, d := range s.Days {
+		day := TimesheetDay{Day: domain.FormatDay(d.Day), Minutes: int(d.Total.Minutes()), Tasks: []TimesheetTask{}}
+		for _, w := range d.Tasks {
+			day.Tasks = append(day.Tasks, TimesheetTask{Number: w.Task, Title: titles[w.Task],
+				Minutes: int(w.Took.Minutes()), LeftOpenAtMidnight: w.LeftOpen})
+		}
+		days = append(days, day)
+	}
+	return Timesheet{Days: days}
 }
 
 // Objectives is how a listing of objectives crosses.
@@ -225,6 +262,9 @@ func Of(a Answer) any {
 	// for one of the branches below.
 	if a.Config != nil {
 		return *a.Config
+	}
+	if a.Sheet != nil {
+		return ofSheet(*a.Sheet, a.Named)
 	}
 	// A task alongside the focus is the focus being told, and nothing else
 	// tells it that way: a card asked for by number says nothing about the
@@ -419,6 +459,9 @@ func contextText(at string) string {
 // conditions outside any covered block, so a mutation of one of them reports
 // as unreachable and the gate cannot judge it.
 func RenderText(op Operation, a Answer) string {
+	if a.Sheet != nil {
+		return trace.SheetText(*a.Sheet, a.Named)
+	}
 	if a.Task != nil {
 		return task.Text(*a.Task, a.Progress) + task.Under(a.Under) + contextText(a.Context)
 	}
@@ -471,7 +514,7 @@ func RenderText(op Operation, a Answer) string {
 		return trace.Text(a.Acts)
 	}
 	if a.Since != nil {
-		return trace.List(a.Since) + trace.Summary(trace.AddedUp(a.Since, time.Now()))
+		return trace.List(a.Since)
 	}
 	if a.Held != nil {
 		return heldText(a.Held, a)

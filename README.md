@@ -153,18 +153,22 @@ task can be read back as it stood at any past moment.
 Looking at a task is not an act. `list`, `show` and `search` add nothing — a
 trace records what changed, never what was read.
 
-A listing over a period ends with what can be worked out from it: how many
-stretches of work, on how many tasks, how often the work switched, and the time
-per task. A **stretch** is a task taken up until it is let go, and stretches
-overlap: taking up a second leaves the first held, so a day's stretches can add
-up to more than the day. A **switch** is work taken up while other work is
-already open — being pulled onto something else rather than starting your
-first thing of the morning.
+How long the work took is the timesheet's to say:
 
-The total of the stretches is not the length of the day, and cairn does not
-pretend otherwise: nothing is in focus during a meeting, so a day has gaps, and
-cairn knows neither when it began nor when it ended. The total time on a task,
-for a timesheet, is still `--spent` and still typed by hand.
+```sh
+cairn timesheet show                              # today, task by task
+cairn timesheet show --since 2026-09-29 --until 2026-10-03
+cairn timesheet add 3 1h --on 2026-10-03          # a meeting nobody focused
+cairn timesheet add 3 --on 2026-10-03 -- -30m     # too much: take some back
+```
+
+Focus is what is measured: take it up when the work starts, let it go when it
+stops — it moves when it is done, never after the fact. Each day says each task's time, rounded to the quarter hour, and the sum
+of those — the real time, every hour of it, with no ceiling and no kind of work:
+sorting a day out and bringing it down to what a sheet accepts is done when the
+sheet is filled in. Two tasks in focus at once share the minutes they overlap,
+and a focus left open stops at midnight and says so. See
+[docs/trace.md](docs/trace.md).
 
 A history outlives the task it describes — deleting a task would otherwise
 change your past — and an act done by an agent over MCP says so, where one done

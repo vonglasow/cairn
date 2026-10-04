@@ -206,17 +206,6 @@ Feature: The trace
       When I run `cairn trace list --since 2099-01-01`
       Then it says nothing was done
 
-    @trace-list-counts-what-it-listed
-    Scenario: it says how much work there was, on how many tasks, and how often it switched
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      And I let the focus go
-      When I run `cairn trace list`
-      Then it says there were 2 stretches of work on 2 tasks
-      And it says the work switched 1 time
-
     @trace-letting-go-of-nothing-is-written-down-nowhere
     Scenario: letting go of nothing is written down nowhere
       Given I added a task titled "Write the spec"

@@ -96,17 +96,6 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says there were (\d+) stretches of work on (\d+) tasks?$`,
-		func(stretches, tasks int) error {
-			return test.WantContains(w.Out.Stdout,
-				fmt.Sprintf("%d stretches of work on %d task", stretches, tasks), "the count")
-		})
-
-	sc.Step(`^it says the work switched (\d+) times?$`, func(switches int) error {
-		return test.WantContains(w.Out.Stdout,
-			fmt.Sprintf("switched %d time", switches), "the count")
-	})
-
 	sc.Step(`^it says nothing was done$`, func() error {
 		return test.WantContains(w.Out.Stdout, "nothing was done", "the answer")
 	})

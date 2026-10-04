@@ -57,6 +57,8 @@ var refusals = []error{
 	engine.ErrMoreThanOnePlace,
 	engine.ErrNothingToLabel,
 	engine.ErrNothingToArchive,
+	engine.ErrDayToCome,
+	engine.ErrNotATime,
 	task.ErrMovedBehindItself,
 	task.ErrOtherColumn,
 	task.ErrNotAmongItsSisters,

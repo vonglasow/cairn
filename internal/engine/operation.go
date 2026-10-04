@@ -358,6 +358,10 @@ type Answer struct {
 	// Config is what `config show` answers: the file read and its two
 	// emplacements, each with what named it.
 	Config *Config
+	// Sheet is how long the work took, day by day, and Named what each task
+	// on it is called — a sheet holds numbers, and a person reads names.
+	Sheet *trace.Sheet
+	Named map[int]string
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands

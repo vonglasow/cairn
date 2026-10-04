@@ -8,18 +8,26 @@ package trace
 // and it is the only reason.
 
 import (
-	"strings"
 	"testing"
 	"time"
 )
 
 // at is a moment on the day these tests take place.
-func at(hour, minute int) time.Time {
-	return time.Date(2026, 3, 3, hour, minute, 0, 0, time.UTC)
+func at(hour, minute int) time.Time { return atOn(3, hour, minute) }
+
+// atOn is a moment on another day of the same month.
+func atOn(day, hour, minute int) time.Time {
+	return time.Date(2026, 3, day, hour, minute, 0, 0, time.UTC)
 }
 
-// took builds an act of the focus being taken on a task.
-func took(task, hour, minute int) Act {
+// dayOf is the start of a day of that month, as a timesheet is asked for.
+func dayOf(day int) time.Time { return atOn(day, 0, 0) }
+
+// took builds an act of the focus being taken on a task, on the day these
+// tests take place; tookOn on another.
+func took(task, hour, minute int) Act { return tookOn(task, 3, hour, minute) }
+
+func tookOn(task, day, hour, minute int) Act {
 	var a AsTold
 	a.On(task)
 	a.Did(FocusTaken)
@@ -27,12 +35,15 @@ func took(task, hour, minute int) Act {
 	a.WasNothing()
 	a.BecameNothing()
 	a.ByHand()
-	a.At(at(hour, minute))
+	a.At(atOn(day, hour, minute))
 	return a.Act()
 }
 
-// stopped builds an act of the focus being let go with nothing taking over.
-func stopped(task, hour, minute int) Act {
+// stopped builds an act of the focus being let go with nothing taking over;
+// stoppedOn on another day.
+func stopped(task, hour, minute int) Act { return stoppedOn(task, 3, hour, minute) }
+
+func stoppedOn(task, day, hour, minute int) Act {
 	var a AsTold
 	a.On(task)
 	a.Did(FocusReleased)
@@ -40,7 +51,7 @@ func stopped(task, hour, minute int) Act {
 	a.WasNothing()
 	a.BecameNothing()
 	a.ByHand()
-	a.At(at(hour, minute))
+	a.At(atOn(day, hour, minute))
 	return a.Act()
 }
 
@@ -58,177 +69,168 @@ func somethingElse(task, hour, minute int) Act {
 	return a.Act()
 }
 
-func TestAddedUp_measuresOneStretchFromItsEnds(t *testing.T) {
-	w := AddedUp([]Act{took(1, 9, 0), stopped(1, 9, 45)}, at(18, 0))
-	if got := len(w.stretches); got != 1 {
-		t.Fatalf("%d stretches, want 1", got)
-	}
-	if got, want := w.on(1), 45*time.Minute; got != want {
-		t.Errorf("time on task 1 = %s, want %s", got, want)
-	}
+// added builds time added by hand for a day, recorded at a moment of its own.
+func added(task int, day, span string, recorded time.Time) Act {
+	var a AsTold
+	a.On(task)
+	a.Did(TimeAdded)
+	a.NothingNamed()
+	a.Was(day)
+	a.Became(span)
+	a.ByHand()
+	a.At(recorded)
+	return a.Act()
 }
 
-// Two stretches on one task add up rather than replacing each other: coming back
-// to a task is the ordinary shape of a day.
-func TestAddedUp_addsUpEveryStretchOnATask(t *testing.T) {
-	w := AddedUp([]Act{
-		took(1, 9, 0), stopped(1, 9, 30),
-		took(1, 14, 0), stopped(1, 14, 20),
-	}, at(18, 0))
-	if got := len(w.stretches); got != 2 {
-		t.Fatalf("%d stretches, want 2", got)
-	}
-	if got, want := w.on(1), 50*time.Minute; got != want {
-		t.Errorf("time on task 1 = %s, want %s", got, want)
-	}
-}
-
-// The total of the stretches is not the length of the day, and this is the
-// assertion that says so: nothing is in focus during a meeting, so a day has
-// gaps, and cairn knows neither when it began nor when it ended.
-func TestAddedUp_doesNotCountTheGapsBetweenStretches(t *testing.T) {
-	w := AddedUp([]Act{
-		took(1, 9, 0), stopped(1, 9, 30),
-		took(1, 11, 0), stopped(1, 11, 30),
-	}, at(18, 0))
-	if got, want := w.on(1), time.Hour; got != want {
-		t.Errorf("time on task 1 = %s, want %s — the 90 minutes between them are not work", got, want)
-	}
-}
-
-// A switch is work taken up while other work was already under way. Taken up
-// with nothing else open it is a start, not a switch.
-//
-// It used to be read off the release instead: a release naming what took over
-// was a cut, one naming nothing was a stop. Nothing names what took over any
-// more — several tasks are worked on at once and their stretches overlap on
-// purpose — so what attention moving looks like is a take landing on top of
-// something already open.
-func TestAddedUp_countsTakingUpWorkOnTopOfWorkAlreadyOpen(t *testing.T) {
-	for _, tc := range []struct {
-		what string
-		acts []Act
-		want int
-	}{
-		{
-			"the second task was taken up while the first was still held",
-			[]Act{took(1, 9, 0), took(2, 9, 30), stopped(1, 10, 0), stopped(2, 10, 30)},
-			1,
-		},
-		{
-			"the work stopped and started again later",
-			[]Act{took(1, 9, 0), stopped(1, 9, 30), took(2, 11, 0), stopped(2, 11, 30)},
-			0,
-		},
-		{
-			"a third was taken up on top of two already held",
-			[]Act{
-				took(1, 9, 0), took(2, 9, 10), took(3, 9, 20),
-				stopped(1, 9, 30), stopped(2, 9, 40), stopped(3, 9, 50),
-			},
-			2,
-		},
-		{
-			"the same task taken up again while it is already held",
-			[]Act{took(1, 9, 0), took(1, 9, 10), stopped(1, 9, 30)},
-			0,
-		},
-	} {
-		if got := AddedUp(tc.acts, at(18, 0)).switches; got != tc.want {
-			t.Errorf("%s: %d switches, want %d", tc.what, got, tc.want)
+// worked reads what a sheet says of one task on one day, and whether it was
+// left in focus that day; nothing when the day or the task is not written.
+func worked(s Sheet, day time.Time, task int) (time.Duration, bool, bool) {
+	for _, d := range s.Days {
+		if !d.Day.Equal(day) {
+			continue
+		}
+		for _, w := range d.Tasks {
+			if w.Task == task {
+				return w.Took, w.LeftOpen, true
+			}
 		}
 	}
+	return 0, false, false
 }
 
-// Stretches on different tasks overlap, and each is measured from its own ends
-// rather than being cut short by the next task being taken up.
-func TestAddedUp_measuresOverlappingStretchesSeparately(t *testing.T) {
-	w := AddedUp([]Act{
-		took(1, 9, 0), took(2, 9, 30), stopped(2, 10, 0), stopped(1, 11, 0),
-	}, at(18, 0))
-	if got, want := w.on(1), 2*time.Hour; got != want {
-		t.Errorf("time on task 1 = %s, want %s", got, want)
-	}
-	if got, want := w.on(2), 30*time.Minute; got != want {
-		t.Errorf("time on task 2 = %s, want %s", got, want)
-	}
-}
-
-// A stretch still open at the end runs to now: it is work being done, not work
-// that never happened.
-func TestAddedUp_runsAnOpenStretchToNow(t *testing.T) {
-	w := AddedUp([]Act{took(1, 9, 0)}, at(9, 25))
-	if got, want := w.on(1), 25*time.Minute; got != want {
-		t.Errorf("time on task 1 = %s, want %s", got, want)
-	}
-}
-
-// Acts that are not about the focus are not work, and do not open or close
-// anything.
-func TestAddedUp_ignoresWhatIsNotAboutTheFocus(t *testing.T) {
-	w := AddedUp([]Act{
-		somethingElse(1, 8, 0),
-		took(1, 9, 0), somethingElse(1, 9, 15), stopped(1, 9, 30),
-		somethingElse(2, 10, 0),
-	}, at(18, 0))
-	if got := len(w.stretches); got != 1 {
-		t.Errorf("%d stretches, want 1", got)
-	}
-	if got, want := w.on(1), 30*time.Minute; got != want {
-		t.Errorf("time on task 1 = %s, want %s", got, want)
-	}
-}
-
-// The tasks come back in the order their numbers run, so a summary read twice
-// says the same thing in the same order.
-func TestAddedUp_namesTheTasksInOneSettledOrder(t *testing.T) {
-	w := AddedUp([]Act{
-		took(7, 9, 0), stopped(7, 9, 10),
-		took(2, 10, 0), stopped(2, 10, 10),
-		took(7, 11, 0), stopped(7, 11, 10),
-	}, at(18, 0))
-	if got := w.onTasks(); len(got) != 2 || got[0] != 2 || got[1] != 7 {
-		t.Errorf("tasks = %v, want [2 7]", got)
-	}
-}
-
-func TestSummary_saysTheCountsAndTheTimePerTask(t *testing.T) {
-	got := Summary(AddedUp([]Act{
-		took(1, 9, 0), took(2, 9, 30),
-		stopped(1, 9, 30), stopped(2, 10, 45),
-	}, at(18, 0)))
-	for _, want := range []string{
-		"2 stretches of work on 2 task(s)", "switched 1 time(s)", "#1  30m", "#2  1h 15m",
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("the summary does not carry %q:\n%s", want, got)
+// totalOf is what a sheet says a day came to, nothing when it is not written.
+func totalOf(s Sheet, day time.Time) time.Duration {
+	for _, d := range s.Days {
+		if d.Day.Equal(day) {
+			return d.Total
 		}
 	}
+	return 0
 }
 
-// A period with acts but no work has nothing to add up, and says nothing rather
-// than saying zero of everything.
-func TestSummary_saysNothingWhenNoWorkWasDone(t *testing.T) {
-	if got := Summary(AddedUp([]Act{somethingElse(1, 9, 0)}, at(18, 0))); got != "" {
-		t.Errorf("Summary = %q, want nothing", got)
+func TestTimed_countsTheTimeATaskWasInFocus(t *testing.T) {
+	s := Timed([]Act{took(1, 9, 0), somethingElse(1, 9, 10), stopped(1, 10, 30)}, dayOf(3), dayOf(3), at(18, 0))
+	if took, _, _ := worked(s, dayOf(3), 1); took != 90*time.Minute || totalOf(s, dayOf(3)) != 90*time.Minute {
+		t.Errorf("task 1 took %s, the day %s; want 1h30 both", took, totalOf(s, dayOf(3)))
 	}
 }
 
-// Written down to the minute, because a stretch measured to the second says
-// more than anybody knows.
-func TestSpent_writesALengthOfWorkAPersonCanRead(t *testing.T) {
-	for _, tc := range []struct {
-		of   time.Duration
-		want string
-	}{
-		{30 * time.Second, "1m"},
-		{45 * time.Minute, "45m"},
-		{time.Hour, "1h 00m"},
-		{90 * time.Minute, "1h 30m"},
-		{9*time.Hour + 5*time.Minute, "9h 05m"},
+// Two tasks in focus at once share the minutes they overlap: a day comes to
+// what the clock says, never to more.
+func TestTimed_sharesTheMinutesTwoTasksOverlap(t *testing.T) {
+	s := Timed([]Act{took(1, 9, 0), took(2, 10, 0), stopped(1, 11, 0), stopped(2, 11, 0)},
+		dayOf(3), dayOf(3), at(18, 0))
+	one, _, _ := worked(s, dayOf(3), 1)
+	two, _, _ := worked(s, dayOf(3), 2)
+	if one != 90*time.Minute || two != 30*time.Minute || totalOf(s, dayOf(3)) != 2*time.Hour {
+		t.Errorf("task 1 %s, task 2 %s, the day %s; want 1h30, 30m and 2h", one, two, totalOf(s, dayOf(3)))
+	}
+	if tasks := s.Days[0].Tasks; tasks[0].Task != 1 || tasks[1].Task != 2 {
+		t.Errorf("a day writes its tasks in the order %+v, want their numbers' order", tasks)
+	}
+}
+
+// Each task is rounded to the nearest quarter of an hour, half a quarter up,
+// and the day is the sum of what was rounded. A task that rounds to nothing is
+// not written; its day still is, coming to nothing.
+func TestTimed_roundsEachTaskToTheQuarterAndAddsThoseUp(t *testing.T) {
+	s := Timed([]Act{
+		took(1, 9, 0), stopped(1, 9, 50),
+		took(2, 10, 0), stopped(2, 10, 53),
+		took(3, 11, 0), stopped(3, 11, 7),
+	}, dayOf(3), dayOf(3), at(18, 0))
+	one, _, _ := worked(s, dayOf(3), 1)
+	two, _, _ := worked(s, dayOf(3), 2)
+	_, _, three := worked(s, dayOf(3), 3)
+	if one != 45*time.Minute || two != time.Hour || three || totalOf(s, dayOf(3)) != 105*time.Minute {
+		t.Errorf("task 1 %s, task 2 %s, task 3 written %v, the day %s", one, two, three, totalOf(s, dayOf(3)))
+	}
+	half := Timed([]Act{took(1, 9, 0), stopped(1, 9, 7), took(1, 9, 30), stopped(1, 9, 30)}, dayOf(3), dayOf(3), at(18, 0))
+	if _, _, written := worked(half, dayOf(3), 1); written || len(half.Days) != 1 || totalOf(half, dayOf(3)) != 0 {
+		t.Errorf("seven minutes were written: %+v", half)
+	}
+	edge := Timed([]Act{took(1, 9, 0)}, dayOf(3), dayOf(3), at(9, 7).Add(30*time.Second))
+	if took, _, _ := worked(edge, dayOf(3), 1); took != 15*time.Minute {
+		t.Errorf("seven and a half minutes round to %s, want a quarter", took)
+	}
+}
+
+// A focus left open stops at the first midnight after it was taken, and says
+// so on the day it was left open; the days after it count nothing of it.
+func TestTimed_stopsAFocusLeftOpenAtMidnight(t *testing.T) {
+	open := Timed([]Act{took(1, 17, 0)}, dayOf(3), dayOf(4), atOn(5, 12, 0))
+	length, left, _ := worked(open, dayOf(3), 1)
+	if length != 7*time.Hour || !left || totalOf(open, dayOf(4)) != 0 || len(open.Days) != 2 || len(open.Days[1].Tasks) != 0 {
+		t.Errorf("a focus left open took %s, left open %v, the next day %s", length, left, totalOf(open, dayOf(4)))
+	}
+	released := Timed([]Act{took(1, 17, 0), stoppedOn(1, 4, 1, 0)}, dayOf(3), dayOf(4), atOn(5, 12, 0))
+	if took, left, _ := worked(released, dayOf(3), 1); took != 7*time.Hour || !left || totalOf(released, dayOf(4)) != 0 {
+		t.Errorf("a focus let go the next morning took %s, left open %v, the next day %s", took, left, totalOf(released, dayOf(4)))
+	}
+}
+
+// A focus still open today runs to now: it is work being done, and nothing
+// says it was forgotten.
+func TestTimed_runsAFocusOpenTodayToNow(t *testing.T) {
+	s := Timed([]Act{took(1, 9, 0)}, dayOf(3), dayOf(3), at(10, 0))
+	if took, left, _ := worked(s, dayOf(3), 1); took != time.Hour || left {
+		t.Errorf("a focus open today took %s, left open %v; want 1h, not left", took, left)
+	}
+}
+
+// Time added by hand counts on the day it was added for, whenever it was
+// recorded; less than nothing takes some back, and never below nothing.
+func TestTimed_countsTimeAddedByHandOnItsDay(t *testing.T) {
+	later := atOn(6, 18, 0)
+	s := Timed([]Act{
+		added(1, "2026-03-03", "1h", later),
+		added(2, "2026-03-03", "1h", later), added(2, "2026-03-03", "-30m", later),
+		added(3, "2026-03-03", "-30m", later),
+		added(4, "2026-03-04", "2h", later),
+	}, dayOf(3), dayOf(3), atOn(6, 19, 0))
+	one, _, _ := worked(s, dayOf(3), 1)
+	two, _, _ := worked(s, dayOf(3), 2)
+	_, _, three := worked(s, dayOf(3), 3)
+	_, _, four := worked(s, dayOf(3), 4)
+	if one != time.Hour || two != 30*time.Minute || three || four {
+		t.Errorf("by hand: task 1 %s, task 2 %s, task 3 written %v, task 4 written %v", one, two, three, four)
+	}
+}
+
+// Acts are read in the order they happened, not the order they were written
+// down: a focus put right after the fact is recorded after what followed it.
+func TestTimed_readsActsInTheOrderTheyHappened(t *testing.T) {
+	s := Timed([]Act{stopped(1, 10, 0), took(1, 9, 0)}, dayOf(3), dayOf(3), at(18, 0))
+	if took, _, _ := worked(s, dayOf(3), 1); took != time.Hour {
+		t.Errorf("a focus written down after its release took %s, want 1h", took)
+	}
+}
+
+// Every day asked for is written and no other, in the order they ran, and
+// taking up what is already in focus opens nothing.
+func TestTimed_writesTheDaysAskedForInOrder(t *testing.T) {
+	s := Timed([]Act{
+		took(1, 9, 0), took(1, 9, 30), stopped(1, 10, 0),
+		tookOn(1, 4, 9, 0), stoppedOn(1, 4, 11, 0),
+		tookOn(1, 5, 9, 0), stoppedOn(1, 5, 12, 0),
+	}, dayOf(3), dayOf(4), atOn(6, 0, 0))
+	if len(s.Days) != 2 || !s.Days[0].Day.Equal(dayOf(3)) || !s.Days[1].Day.Equal(dayOf(4)) {
+		t.Fatalf("the sheet writes %+v", s.Days)
+	}
+	if totalOf(s, dayOf(3)) != time.Hour || totalOf(s, dayOf(4)) != 2*time.Hour {
+		t.Errorf("the days come to %s and %s", totalOf(s, dayOf(3)), totalOf(s, dayOf(4)))
+	}
+}
+
+// Written the way a sheet is filled in: hours and minutes, the minutes always
+// two digits once there are hours, and nothing of a part that is nought.
+func TestHours_writesATimeTheWayASheetIsFilledIn(t *testing.T) {
+	for d, want := range map[time.Duration]string{
+		0: "0m", 45 * time.Minute: "45m", time.Hour: "1h", 90 * time.Minute: "1h30",
+		11*time.Hour + 30*time.Minute: "11h30", 2*time.Hour + 5*time.Minute: "2h05",
 	} {
-		if got := spent(tc.of); got != tc.want {
-			t.Errorf("spent(%s) = %q, want %q", tc.of, got, tc.want)
+		if got := Hours(d); got != want {
+			t.Errorf("Hours(%s) = %q, want %q", d, got, want)
 		}
 	}
 }

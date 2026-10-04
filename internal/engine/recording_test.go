@@ -479,10 +479,10 @@ func TestTraceList_answersWithThePeriodOrRefusesTheDay(t *testing.T) {
 	}
 }
 
-// A period is rendered as its acts and then what they come to, in that order:
-// the numbers underneath are worked out from the lines above them, and reading
-// them the other way round would say nothing.
-func TestRenderText_rendersAPeriodThenWhatItComesTo(t *testing.T) {
+// A period is rendered as its acts and nothing else: how long the work took is
+// the timesheet's to say, worked out day by day, and a second sum under the
+// acts counted a focus left open for days as days of work.
+func TestRenderText_rendersAPeriodAsItsActs(t *testing.T) {
 	e := openEngine(t)
 	first := factsOf(add(t, e, "First")).number
 	second := factsOf(add(t, e, "Second")).number
@@ -500,11 +500,8 @@ func TestRenderText_rendersAPeriodThenWhatItComesTo(t *testing.T) {
 	if !strings.Contains(got, "focus taken") {
 		t.Errorf("the period does not carry its acts:\n%s", got)
 	}
-	if !strings.Contains(got, "stretches of work") {
-		t.Errorf("the period does not carry what it comes to:\n%s", got)
-	}
-	if strings.Index(got, "stretches of work") < strings.Index(got, "focus taken") {
-		t.Errorf("what it comes to is above the acts it was worked out from:\n%s", got)
+	if strings.Contains(got, "stretches of work") {
+		t.Errorf("the period still adds itself up:\n%s", got)
 	}
 }
 

@@ -121,7 +121,11 @@ func (l *line) columns() string {
 		return out.String()
 	}
 	_, _ = fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.at), l.what())
-	if l.field == "" && l.became != "" {
+	// Time added by hand counts for a day of its own, which is not the day it
+	// was added on: the line says both, the moment it was written and the day.
+	if l.did == TimeAdded {
+		_, _ = fmt.Fprintf(&out, "\t%s for %s", l.became, l.was)
+	} else if l.field == "" && l.became != "" {
 		_, _ = fmt.Fprintf(&out, "\t%s", l.became)
 	} else if l.field == "" && l.was != "" {
 		// A deletion names no attribute and became nothing: what it says is
@@ -153,4 +157,32 @@ func (l *line) what() string {
 		return l.field
 	}
 	return l.did
+}
+
+// SheetText writes how long the work took, day by day: each task's time before
+// its title, so a title holding "1h" is never read as one, then what the day
+// came to. A task still in focus when its day ended says so, since that time
+// stopped at midnight rather than where the work did.
+func SheetText(s Sheet, titles map[int]string) string {
+	if len(s.Days) == 0 {
+		return "nothing was in focus\n"
+	}
+	var out strings.Builder
+	for i, day := range s.Days {
+		if i > 0 {
+			out.WriteString("\n")
+		}
+		_, _ = fmt.Fprintf(&out, "%s\n", domain.FormatDay(day.Day))
+		tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
+		for _, w := range day.Tasks {
+			left := ""
+			if w.LeftOpen {
+				left = " — still in focus at midnight"
+			}
+			_, _ = fmt.Fprintf(tw, "  #%d\t%s\t%s%s\n", w.Task, Hours(w.Took), titles[w.Task], left)
+		}
+		_ = tw.Flush()
+		_, _ = fmt.Fprintf(&out, "  total  %s\n", Hours(day.Total))
+	}
+	return out.String()
 }

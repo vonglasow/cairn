@@ -26,6 +26,9 @@ const (
 	// Changed is one attribute of a task taking another value. The attribute
 	// is told alongside.
 	Changed = "changed"
+	// TimeAdded is time spent on a task without it being in focus, added by
+	// hand: the day it was spent is what it was, the length what it became.
+	TimeAdded = "time added"
 )
 
 // Act is one thing that was done to a task.

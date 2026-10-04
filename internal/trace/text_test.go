@@ -234,3 +234,36 @@ func TestList_aValueOverSeveralLinesLeavesTheColumnsAfterIt(t *testing.T) {
 		}
 	}
 }
+
+// Time added by hand says how much, and for which day: the day it was added on
+// is the moment of the line, and is not the day it counts for.
+func TestText_saysTimeAddedForTheDayItCountsFor(t *testing.T) {
+	got := rendered(acted(1, TimeAdded, "", "2026-09-29", "1h", "", 9, 0))
+	if !strings.Contains(got, "time added") || !strings.Contains(got, "1h for 2026-09-29") {
+		t.Errorf("time added reads %q", got)
+	}
+}
+
+// A sheet writes each day, then each task's time before its title — so a title
+// holding "1h" is never read as one — then what the day came to; and says when
+// nothing was in focus at all.
+func TestSheetText_writesEachDayTaskByTask(t *testing.T) {
+	day := time.Date(2026, 9, 29, 0, 0, 0, 0, time.UTC)
+	got := SheetText(Sheet{Days: []Day{{Day: day, Total: 8*time.Hour + 30*time.Minute, Tasks: []Worked{
+		{Task: 1, Took: 90 * time.Minute},
+		{Task: 19, Took: 7 * time.Hour, LeftOpen: true},
+	}}}}, map[int]string{1: "Write the spec", 19: "Stabilise"})
+	for _, want := range []string{"2026-09-29\n", "  #1   1h30  Write the spec\n",
+		"  #19  7h    Stabilise — still in focus at midnight\n", "  total  8h30\n"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the sheet does not read %q:\n%s", want, got)
+		}
+	}
+	two := SheetText(Sheet{Days: []Day{{Day: day}, {Day: day.AddDate(0, 0, 1)}}}, nil)
+	if want := "2026-09-29\n  total  0m\n\n2026-09-30\n  total  0m\n"; two != want {
+		t.Errorf("two days read %q, want %q", two, want)
+	}
+	if got := SheetText(Sheet{}, nil); got != "nothing was in focus\n" {
+		t.Errorf("an empty sheet reads %q", got)
+	}
+}
