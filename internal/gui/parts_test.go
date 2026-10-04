@@ -585,11 +585,12 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 	if four.H <= one.H {
 		t.Errorf("a field of four lines is %d tall and one of a single line %d", four.H, one.H)
 	}
-	// A field of one line is bounded; a long one takes the room there is.
+	// Every frame is as wide as every other, and leaves the room a bar takes
+	// at the end of the line, so a long field's bar sits beside it.
 	if one.X != value.X {
 		t.Errorf("the frame starts at %d and what it holds at %d", one.X, value.X)
 	}
-	if one.W > value.W || four.W != value.W {
+	if one.W != four.W || four.X+four.W+between+barWide != value.X+value.W {
 		t.Errorf("the one-line frame is %d wide, the long one %d, the value %d",
 			one.W, four.W, value.W)
 	}
@@ -1088,28 +1089,29 @@ func TestATileBreathesOnBothSides(t *testing.T) {
 	}
 }
 
-// A field holding one line is as wide as one line needs, not as wide as the
-// panel. A date in a box of seven hundred points says nothing about what it
-// expects.
-func TestAOneLineFieldIsNotAsWideAsThePanel(t *testing.T) {
+// Every field of a form is as wide as every other: a title, a date and the
+// description end on the same line, and the bar of a long one sits beside it
+// rather than inside it.
+func TestEveryFieldOfAFormIsAsWideAsTheOthers(t *testing.T) {
 	box := Over(1200, 800)
-	fields := reading.TaskFields(reading.Card{})
-	var short, long Box
+	fields := editing(reading.Card{}, nil).Fields()
+	var first Box
 	for i, field := range fields {
 		_, value := FieldRow(box, FieldTop(box, fields, i))
+		rows := RowsOf(box, fields, i)
+		frame := Framed(value, rows)
 		if field.Long {
-			long = Framed(value, RowsOf(box, fields, i))
-			continue
+			if saying, _ := Saying(value, rows); saying != frame {
+				t.Errorf("%s is drawn in %v and framed in %v", field.Name, saying, frame)
+			}
 		}
-		if short.W == 0 {
-			short = Framed(value, RowsOf(box, fields, i))
+		if i == 0 {
+			first = frame
 		}
-	}
-	if short.W >= long.W {
-		t.Errorf("a one-line field is %d wide and a long one %d", short.W, long.W)
-	}
-	if short.W < 240 {
-		t.Errorf("a one-line field is %d wide, which is too little to type in", short.W)
+		if frame.X != first.X || frame.W != first.W {
+			t.Errorf("%s runs from %d, %d wide; %s from %d, %d wide",
+				field.Name, frame.X, frame.W, fields[0].Name, first.X, first.W)
+		}
 	}
 }
 

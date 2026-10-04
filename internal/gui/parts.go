@@ -139,11 +139,6 @@ func Row(box Box, at, high int) Box {
 	return Box{X: box.X + padding, Y: at, W: box.W - padding - padding, H: high}
 }
 
-// fieldWide is as wide as a field holding one line is drawn. A date, a number
-// or a column in a box the width of the panel says nothing about what it
-// expects; a long field still takes everything there is.
-const fieldWide = 420
-
 // Reaches says which character of a wrapped text a point lands on: the line it
 // is down to, then how far across that line it is. Reading only how far across
 // it was put every click on the first line, so the third line of a description
@@ -440,13 +435,11 @@ func Ruled(box Box) Box {
 const inset = 4
 
 // Framed is the box drawn around what a field holds, tall enough for every
-// line that field is given.
+// line that field is given. Every field is as wide as every other, and each
+// leaves at the end of its line the room a long one's bar takes: a title and a
+// description end on the same line.
 func Framed(value Box, rows int) Box {
-	wide := value.W
-	if rows == 1 {
-		wide = min(wide, fieldWide)
-	}
-	return Box{X: value.X, Y: value.Y - inset, W: wide, H: rows*lineHigh + inset + inset}
+	return Box{X: value.X, Y: value.Y - inset, W: value.W - barWide - between, H: rows*lineHigh + inset + inset}
 }
 
 // The detail panel is two columns: what the task carries on the left, what was
@@ -534,7 +527,7 @@ func HistoryBox(box Box) Box {
 	}
 }
 
-// Saying is a long field's frame and the bar inside its right edge, given the
+// Saying is a long field's frame and the bar beside its right edge, given the
 // value box its row has and how many lines it is given. One shape for the
 // detail and the form: the description is the same box on both, with the same
 // bar in the same place, and the wheel reaches the same end.
@@ -542,8 +535,7 @@ func HistoryBox(box Box) Box {
 // The bar is drawn whether or not there is anything to scroll — the same rule
 // the history goes by.
 func Saying(value Box, rows int) (frame, bar Box) {
-	whole := Framed(value, rows)
-	frame = Box{X: whole.X, Y: whole.Y, W: whole.W - barWide - between, H: whole.H}
+	frame = Framed(value, rows)
 	bar = Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
 	return frame, bar
 }

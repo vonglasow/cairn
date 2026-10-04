@@ -307,6 +307,12 @@ the lit frame is the only difference between the two. A value floating on the
 panel's own ground looked like something written rather than somewhere to
 write.
 
+**Every box is as wide as every other.** A title, a date and the description
+end on the same line, and a long field's bar sits beside its box, in a margin
+every field keeps. One-line fields used to stop at 420 points while the long
+ones ran the width of the panel: a form of boxes that each ended somewhere
+else.
+
 **Nothing written runs out of its box.** Text wraps — at a space when there is
 one, inside a word when the word is longer than the room — and the box is
 clipped, so even a line of unusually wide characters cannot escape it. Cutting
