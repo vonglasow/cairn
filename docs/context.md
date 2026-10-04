@@ -7,7 +7,8 @@ A task carries more than cairn holds. Meeting notes, a supplier's contract, what
 a working session decided — written elsewhere, in whatever form came to hand.
 This file says how cairn points at that, and why it points rather than reads.
 
-The scenarios are in `bdd/context.feature`. Where cairn finds the root they sit
+The scenarios are in `bdd/context.feature` — all but one run in `internal/cli`,
+and the one about the server in `internal/mcp`. Where cairn finds the root they sit
 under is a separate matter, in [config.md](config.md) and `bdd/config.feature`.
 What is settled here is settled with its reason, because the reason is the part
 a scenario cannot carry.
@@ -221,6 +222,31 @@ attachments — the tree already has.
 
 None of these were ruled out for being remote or for being someone else's. Each
 lost on a requirement that was written down before the comparison started.
+
+## Where it is said, and what it is for
+
+`task show` says it as a line apart from the facts, `context  <notes>/<n>`, and
+`--json` and `task_show` as `"context"`. The boards say it too: a `CONTEXT`
+panel on the terminal's open task, and a line at the foot of the window's,
+beside its offers — not among the fields, where it cost the box of parts a row
+on a window somebody works in.
+
+A surface finds the notes the way it finds the store, and hands both to the
+engine together (`engine.Places`). With no home to put the default under and
+nothing naming them, they are left unsaid: a place relative to wherever a
+command happened to run would send a harness to write where nobody looks.
+
+**This is the journal.** What an agent learns while working — what was tried,
+what was decided, what is left — is a capture: a dated file in this directory,
+added beside the others. For weeks the board's descriptions had been carrying
+it instead, dated paragraph after dated paragraph, eight thousand characters in
+the longest; an edit rewrites a description whole, so every entry was a read and
+a rewrite of all the others, and one careless one lost them. It went there
+because nothing said where else to put it: this contract was written down and
+nothing ran it, so no answer ever carried the place. `task show`'s description,
+which an agent reads as the tool's, now says it in so many words. That does not
+oblige an agent to write there — nothing in a description can — but it is the
+first thing the agent is told, at the moment it looks at the task.
 
 ## Deliberately not there yet
 

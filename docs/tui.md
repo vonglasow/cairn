@@ -448,6 +448,10 @@ have squeezed the board and a popup would never have shown the whole history.
  hjkl ←↓↑→ navigate   e edit   f focus   ⏎ open the sub-task   esc back
 ```
 
+Under the lists, a `CONTEXT` panel says where what was written about the task
+elsewhere lives — the directory a harness writes its dated notes into, said
+whether or not anything is there yet. See [context.md](context.md).
+
 The band carries the short fields; the panels carry the lists. **A field that is
 empty is not shown** — the opposite of a card, where an absence keeps its line to
 hold the height. A full screen has no such constraint.

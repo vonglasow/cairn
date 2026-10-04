@@ -53,7 +53,9 @@ func (w *world) reset() {
 		_ = w.other.Close()
 	}
 	w.path = filepath.Join(w.t.TempDir(), "cairn.db")
-	held, err := engine.Open(w.path)
+	// The notes are named, as a surface finds them, and never made: cairn
+	// only says where they are, so an absolute place nobody writes to is safe.
+	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
 	if err != nil {
 		w.t.Fatalf("opening the store: %v", err)
 	}
@@ -969,3 +971,6 @@ func (w *world) scrollObjectives() error {
 	w.w = w.w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, CardHeight)
 	return nil
 }
+
+// notesRoot is where a scenario's board is told the notes live.
+const notesRoot = "/vault"

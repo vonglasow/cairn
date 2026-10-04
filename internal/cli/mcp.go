@@ -42,14 +42,14 @@ func newMCPServeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			path, err := storePath()
+			at, err := places()
 			if err != nil {
 				return err
 			}
 			// The name comes from the tree and the version from the build, so
 			// an agent and a person are told the same two things by the same
 			// two authorities. Written here, it would be a third.
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Path: path}
+			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Places: at}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}

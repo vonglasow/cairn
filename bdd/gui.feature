@@ -288,6 +288,15 @@ Feature: The desktop board
       And the detail shows the field "priority"
       And the detail shows the field "labels"
 
+    @gui-an-open-task-says-where-its-context-lives
+    Scenario: an open task says where what was written about it elsewhere lives
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the open task says where the context of task 1 lives
+      When I choose "Edit"
+      Then the form asks nothing about "context"
+
     @gui-the-detail-is-closed-by-clicking
     Scenario: the detail is closed without knowing a key
       Given I added a task titled "Write the spec"

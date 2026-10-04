@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"cairn/internal/engine"
 	"context"
 	"errors"
 	"io"
@@ -21,11 +22,11 @@ type Server struct {
 	// whether this particular request was allowed. A tool above the level is
 	// left out of what is offered rather than offered and refused.
 	Access Access
-	// Path is where the store lives. internal/mcp does not read the
-	// environment itself — the surface that starts the server resolves it
-	// and hands it over, the way internal/cli's storePath does for every
-	// other command.
-	Path string
+	// Places is where the store and the notes live. internal/mcp does not
+	// read the environment itself — the surface that starts the server
+	// resolves both and hands them over, the way internal/cli's places does
+	// for every other command.
+	Places engine.Places
 }
 
 // noCloseWriter wraps an io.Writer so closing it is a no-op: the caller owns
@@ -47,7 +48,7 @@ func (noCloseWriter) Close() error { return nil }
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, nil)
 	for _, op := range offered(s.Access) {
-		server.AddTool(toolFor(op), handlerFor(op, s.Path))
+		server.AddTool(toolFor(op), handlerFor(op, s.Places))
 	}
 	transport := &sdk.IOTransport{Reader: io.NopCloser(in), Writer: noCloseWriter{out}}
 	err := server.Run(ctx, transport)

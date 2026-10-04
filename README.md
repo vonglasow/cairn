@@ -329,6 +329,12 @@ replaces the answer rather than queueing behind it, and writes nothing down.
 cairn config show                # which places cairn will use, and what named each
 ```
 
+`task show` says where a task's notes go: `context  ~/.cairn/notes/14`, a
+directory named for its number under `notes`. Cairn never makes it, reads it or
+looks into it — it says where, and a person or an agent writes there. An agent
+keeps its account of the work there, one dated file per entry, rather than in
+the description, which an edit rewrites whole.
+
 It answers with the file it read and, for each place, whether the file, the
 environment or nothing named it. It is the one command that reports a
 configuration it cannot make sense of instead of refusing — you reach for it

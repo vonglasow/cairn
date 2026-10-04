@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -42,20 +43,25 @@ var groupShort = map[string]string{
 	"config":    "Show which places cairn uses, and where it got them",
 }
 
-// storePath is where the store lives, according to the environment, the
-// configuration file, and the default place under the home directory, in
+// places is where the store and the notes live, according to the environment,
+// the configuration file, and the default place under the home directory, in
 // that order. Read by every command that needs it, and by no other: a group
 // and `cairn --version` must never create a file just by being run.
+//
+// The notes are only ever named, never opened, so finding them costs nothing
+// and refuses nothing. With no home to put the default under, and nothing
+// naming them, they are left unsaid: a place relative to wherever the command
+// happened to run would send a harness to write somewhere nobody looks.
 //
 // The home directory is asked for unconditionally, but only required when
 // the environment does not already answer: CAIRN_STORE set with no home to
 // find — a cron entry, a container — still has to work, so a failed
 // os.UserHomeDir is not itself a refusal.
-func storePath() (string, error) {
+func places() (engine.Places, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		if said, ok := os.LookupEnv(config.StoreVariable); !ok || said == "" {
-			return "", fmt.Errorf("%w: %w", engine.ErrStore, err)
+			return engine.Places{}, fmt.Errorf("%w: %w", engine.ErrStore, err)
 		}
 	}
 	places, err := config.Read(home, os.LookupEnv)
@@ -66,12 +72,16 @@ func storePath() (string, error) {
 		// answer an unusable store gives everywhere else.
 		for _, kind := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
 			if errors.Is(err, kind) {
-				return "", err
+				return engine.Places{}, err
 			}
 		}
-		return "", fmt.Errorf("%w: %w", engine.ErrStore, err)
+		return engine.Places{}, fmt.Errorf("%w: %w", engine.ErrStore, err)
 	}
-	return places.Store(), nil
+	notes := places.Notes()
+	if !filepath.IsAbs(notes) {
+		notes = ""
+	}
+	return engine.Places{Store: places.Store(), Notes: notes}, nil
 }
 
 // runReading runs an operation that reads a tolerant configuration instead of
@@ -84,7 +94,7 @@ func storePath() (string, error) {
 // wrong — rather than going through engine.Do just to hand it a path and
 // backups this operation has no use for.
 //
-// The home comes from os.UserHomeDir(), the same as storePath(). A failed
+// The home comes from os.UserHomeDir(), the same as places(). A failed
 // UserHomeDir is not a refusal here either: config.NewReading tolerates an
 // empty home as it tolerates a missing file, so the command answers with
 // what a best-effort reading found rather than joining every other command
@@ -263,11 +273,11 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			}
 			in := inputFrom(cmd, positionals, args, given, listed, asked)
 			// Needs: AConfiguration reads a tolerant configuration instead of
-			// a store — it has to stay reachable exactly when storePath()
+			// a store — it has to stay reachable exactly when places()
 			// would refuse, since that is when it is needed. The five backup
 			// verbs carry Needs: NoStore instead: they still locate backups
 			// beside where the store would be, so they keep going through
-			// storePath() like every operation that opens one.
+			// places() like every operation that opens one.
 			if op.Needs == engine.AConfiguration {
 				answer, err := runReading(op, in)
 				if err != nil {
@@ -275,11 +285,11 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 				}
 				return write(cmd, op, answer)
 			}
-			path, err := storePath()
+			at, err := places()
 			if err != nil {
 				return err
 			}
-			answer, err := engine.Do(op, path, in)
+			answer, err := engine.DoAt(op, at, in, engine.ByHand)
 			if err != nil {
 				return err
 			}

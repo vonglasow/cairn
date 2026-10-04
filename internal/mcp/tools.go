@@ -163,7 +163,7 @@ const throughTheServer = "mcp"
 // docs/mcp.md makes about an agent and a script never seeing two different
 // cairns, and it costs nothing because both renderings already exist in
 // internal/engine.
-func handlerFor(op engine.Operation, path string) sdk.ToolHandler {
+func handlerFor(op engine.Operation, at engine.Places) sdk.ToolHandler {
 	return func(_ context.Context, req *sdk.CallToolRequest) (*sdk.CallToolResult, error) {
 		given := map[string]any{}
 		if len(req.Params.Arguments) > 0 {
@@ -199,7 +199,7 @@ func handlerFor(op engine.Operation, path string) sdk.ToolHandler {
 		}
 		// Named as the server's doing, so a history shows what an agent
 		// changed as something the person reading it did not do themselves.
-		answer, err := engine.DoThrough(op, path, in, throughTheServer)
+		answer, err := engine.DoAt(op, at, in, throughTheServer)
 		if err != nil {
 			// Something cairn understood and turned down — an empty title, a
 			// store this cairn cannot use — is an answer, not a broken tool:

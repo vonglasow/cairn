@@ -43,11 +43,11 @@ func newTuiCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			path, err := storePath()
+			at, err := places()
 			if err != nil {
 				return err
 			}
-			held, err := engine.Open(path)
+			held, err := engine.OpenAt(at)
 			if err != nil {
 				// Told, because this command holds the store itself rather
 				// than asking through an operation: without it a store behind

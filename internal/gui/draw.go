@@ -515,6 +515,11 @@ func drawDetail(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawUnder(gtx, th, skin, box, fields, w)
 	drawHistory(gtx, th, skin, box, w)
 	drawPanelOffers(gtx, th, skin, box, w)
+	// Where what was written about it elsewhere lives, at the foot beside the
+	// offers: a place to go and write, said whether or not anything is there.
+	for _, r := range w.ContextSays() {
+		sayHolding(gtx, th, skin, skin.Faint, r.Box, w.Holding(r.Key, r.Said), r.Size)
+	}
 }
 
 // drawHistory is what was done to the task, beside what the task carries, in a

@@ -55,6 +55,10 @@ type Card struct {
 	// it named is done. It is the one thing about blocking that has to be acted
 	// on, and it used to reach the command line's listing and nowhere else.
 	Freed bool
+	// Context is where what was written about the task elsewhere lives, as
+	// showing it answered; empty when the board was not told where the notes
+	// are. See docs/context.md.
+	Context string
 }
 
 // Goal is one objective, flattened the same way.
@@ -171,6 +175,7 @@ func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
 		SubTotal:    along.Total(),
 		InFocus:     slices.Contains(held, told.Number),
 		Freed:       slices.Contains(freed, told.Number),
+		Context:     shown.Context,
 	}, nil
 }
 

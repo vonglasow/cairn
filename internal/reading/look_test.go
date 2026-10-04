@@ -163,3 +163,18 @@ func TestACardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 		}
 	}
 }
+
+// A card carries where its task's outside context lives, as showing the task
+// answered it: a board draws it without asking again.
+func TestLookCarriesWhereEachTasksContextLives(t *testing.T) {
+	f := newFake()
+	f.tasks = []task.Task{aTask("Write the spec")}
+	f.context = "/vault/1"
+	found, err := Look(f)
+	if err != nil {
+		t.Fatalf("Look: %v", err)
+	}
+	if len(found.Cards) != 1 || found.Cards[0].Context != "/vault/1" {
+		t.Errorf("the card carries %+v", found.Cards)
+	}
+}

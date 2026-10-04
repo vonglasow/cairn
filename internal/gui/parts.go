@@ -314,6 +314,30 @@ func FirstRow(box Box) int {
 // word the bar says, so an offer never moves because another changed length.
 const offerWide = 110
 
+// detailOffers is the most an open task offers at its foot: Done, Edit, Close.
+const detailOffers = 3
+
+// contextNamed is the room the word "context" takes before the place it names.
+const contextNamed = 64
+
+// ContextName is where an open task names what the line beside it says: at its
+// foot, past the last place an offer can take. Not among the fields — the
+// place is not something the task carries, and a thirteenth field took a row
+// from the box of its parts on a window somebody works in, measured: three
+// tiles down to two at 1200 by 800.
+func ContextName(box Box) Box {
+	after := PanelOfferAt(box, detailOffers)
+	return Box{X: after.X + padding, Y: after.Y + (after.H-lineHigh)/2, W: contextNamed, H: lineHigh}
+}
+
+// ContextPath is where it says where what was written about it elsewhere
+// lives: from the end of its name to the panel's edge.
+func ContextPath(box Box) Box {
+	name := ContextName(box)
+	from := name.X + name.W
+	return Box{X: from, Y: name.Y, W: box.X + box.W - padding - from, H: lineHigh}
+}
+
 // OfferAt is where one of the bar's offers sits. They are places a pointer can
 // land, which is what makes anything at all reachable without a shortcut.
 func OfferAt(l Layout, at int) Box {

@@ -648,6 +648,13 @@ One box and one question — what is under this — with the heading saying whic
 was asked, `WHAT SERVES IT` or `WHAT HANGS UNDER IT`. Calling both by one word
 would make the box say less than it knows.
 
+**Where what was written about it elsewhere lives is said at its foot**, beside
+the offers: `context  ~/.cairn/notes/14`, faint, and held and copied like any
+other text. Not among the fields, which is where it was first put: the place is
+not something the task carries, and a thirteenth field took a row from the box
+of its parts — measured at 1200 by 800, three tiles down to two. The foot had
+the room and lost nothing to it. See [context.md](context.md).
+
 **Every piece of text an open task writes can be held and copied** — its
 heading, the name and the value of every field, the description, the box under
 it and each part in it, the history and each of its lines. A drag across it

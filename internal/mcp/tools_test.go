@@ -82,7 +82,7 @@ func storeAt(t *testing.T) string {
 
 func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, path)
+	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"From the handler"}`)}}
 
 	if _, err := handle(context.Background(), req); err != nil {
@@ -100,7 +100,7 @@ func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 
 func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, path)
+	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}}
 
 	// Empty arguments must reach engine.Do as nothing named, and come back as
@@ -125,7 +125,7 @@ func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 
 func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, path)
+	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`not json`)}}
 
 	if _, err := handle(context.Background(), req); err == nil {
@@ -139,7 +139,7 @@ func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 // refused by name rather than guessed at.
 func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, path)
+	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":"spec"}`),
 	}}
@@ -158,7 +158,7 @@ func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 // refused by name rather than turned into one.
 func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, path)
+	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":[1,true]}`),
 	}}
@@ -189,7 +189,7 @@ func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	}
 	number := task.OfTask(*added.Task).Number
 
-	handle := handlerFor(engine.TaskEdit, path)
+	handle := handlerFor(engine.TaskEdit, engine.Places{Store: path})
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(fmt.Sprintf(`{"number":%d,"label":null}`, number)),
 	}}

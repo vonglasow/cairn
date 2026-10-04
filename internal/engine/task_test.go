@@ -3,6 +3,7 @@ package engine
 import (
 	"cairn/internal/domain"
 	"errors"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -566,5 +567,52 @@ func TestSearching_canBeNarrowed(t *testing.T) {
 	if len(all.Matched) != 2 {
 		t.Errorf("with nothing to narrow by, the search answered %d tasks, want 2 including %d",
 			len(all.Matched), kept)
+	}
+}
+
+// TestTaskShow_saysWhereItsContextLives: showing a task answers the directory
+// its outside context lives in, composed from the notes the surface found and
+// the task's number — and touches nothing on disk to say so. A caller that
+// never said where the notes are is told nothing about them.
+func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
+	path := storeAt(t)
+	notes := filepath.Join(t.TempDir(), "vault")
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+	at := Places{Store: path, Notes: notes}
+	answer, err := DoAt(TaskShow, at, Input{Given: map[string]string{"number": "1"}}, ByHand)
+	if err != nil {
+		t.Fatalf("DoAt(TaskShow): %v", err)
+	}
+	if want := filepath.Join(notes, "1"); answer.Context != want {
+		t.Errorf("Context = %q, want %q", answer.Context, want)
+	}
+	if said := Of(answer).(Task); said.Context != answer.Context {
+		t.Errorf("the shape says %q, the answer %q", said.Context, answer.Context)
+	}
+	if !strings.Contains(RenderText(TaskShow, answer), "context  "+answer.Context) {
+		t.Errorf("the card does not say where:\n%s", RenderText(TaskShow, answer))
+	}
+	if _, err := os.Stat(notes); err == nil {
+		t.Errorf("showing a task made %s", notes)
+	}
+
+	held, err := OpenAt(at)
+	if err != nil {
+		t.Fatalf("OpenAt: %v", err)
+	}
+	defer func() { _ = held.Close() }()
+	asked, err := held.Ask(TaskShow, Input{Given: map[string]string{"number": "1"}})
+	if err != nil || asked.Context != answer.Context {
+		t.Errorf("an engine held open says %q (%v), want %q", asked.Context, err, answer.Context)
+	}
+
+	unsaid, err := Do(TaskShow, path, Input{Given: map[string]string{"number": "1"}})
+	if err != nil {
+		t.Fatalf("Do(TaskShow): %v", err)
+	}
+	if unsaid.Context != "" || strings.Contains(RenderText(TaskShow, unsaid), "context") {
+		t.Errorf("a caller that named no notes is told %q", unsaid.Context)
 	}
 }

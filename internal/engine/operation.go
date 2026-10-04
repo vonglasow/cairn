@@ -266,6 +266,9 @@ type On struct {
 	// Path is where the store is. The operations that change its shape set a
 	// backup aside first, and that is what they need it for.
 	Path string
+	// Notes is the root every task's outside context sits under, as the surface
+	// found it; empty when the surface did not say. See docs/context.md.
+	Notes string
 	// Reading is what a configuration read found, for `config show` alone —
 	// the surface fills it, since reading the file is the surface's to do;
 	// the engine only ever reads it back through Tell. Empty for every other
@@ -305,7 +308,12 @@ type On struct {
 // is the same shape as Objectives, for the same reason Matched's is the same
 // shape as Tasks.
 type Answer struct {
-	Task              *task.Task
+	Task *task.Task
+	// Context is where the task shown keeps what was written about it
+	// elsewhere: a directory named for its number under the notes. Composed,
+	// never looked at — see docs/context.md. Empty when the caller did not say
+	// where the notes are.
+	Context           string
 	Tasks             []task.Task
 	Matched           []task.Task
 	Under             []task.Task
@@ -354,9 +362,18 @@ type Answer struct {
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands
 // Run an engine open on it — or none, when nothing was asked for — and closes
-// what it opened on the way out, whatever Run does.
+// what it opened on the way out, whatever Run does. It names the store alone:
+// an operation run this way is told nothing about the notes.
 func Do(op Operation, path string, in Input) (Answer, error) {
-	return DoThrough(op, path, in, ByHand)
+	return DoAt(op, Places{Store: path}, in, ByHand)
+}
+
+// Places is where an operation finds what it reaches: the store, and the root
+// every task's outside context sits under. A surface finds both the same way —
+// the configuration, then the environment — and hands them over together.
+type Places struct {
+	Store string
+	Notes string
 }
 
 // ByHand is the surface a history says nothing about: the person at the
@@ -364,23 +381,24 @@ func Do(op Operation, path string, in Input) (Answer, error) {
 // was not this one.
 const ByHand = ""
 
-// DoThrough runs an operation and says which surface asked, so what it changes
-// is written down as that surface's doing.
+// DoAt runs an operation at the places a surface found, and says which surface
+// asked, so what it changes is written down as that surface's doing.
 //
-// Its own entry point rather than a parameter on Do: seventy callers name no
-// surface because they are the terminal, and threading an empty string through
-// all of them would say nothing seventy times.
-func DoThrough(op Operation, path string, in Input, through string) (Answer, error) {
+// Its own entry point rather than parameters on Do: a hundred callers name no
+// surface and no notes because they are tests about something else, and
+// threading two empty strings through all of them would say nothing a hundred
+// times.
+func DoAt(op Operation, at Places, in Input, through string) (Answer, error) {
 	if err := op.Check(in); err != nil {
 		return Answer{}, err
 	}
 	switch op.Needs {
 	case AStoreBehind:
-		return doWith(OpenBehind, op, path, in, through)
+		return doWith(OpenBehind, op, at, in, through)
 	case AStore:
-		return doWith(Open, op, path, in, through)
+		return doWith(Open, op, at, in, through)
 	default:
-		return op.Run(On{Backups: BackupsAt(path), Path: path}, in)
+		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes}, in)
 	}
 }
 
@@ -388,14 +406,14 @@ func DoThrough(op Operation, path string, in Input, through string) (Answer, err
 // and closes it on the way out — whatever Run does or fails on.
 func doWith(
 	open func(string) (*Engine, error),
-	op Operation, path string, in Input, through string,
+	op Operation, at Places, in Input, through string,
 ) (Answer, error) {
-	eng, err := open(path)
+	eng, err := open(at.Store)
 	if err != nil {
 		return Answer{}, Told(err)
 	}
 	defer func() { _ = eng.Close() }()
-	eng.through = through
+	eng.through, eng.notes = through, at.Notes
 	// Check already ran above, so this takes the door that does not repeat it.
 	return eng.run(op, in)
 }

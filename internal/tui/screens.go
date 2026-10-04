@@ -275,6 +275,11 @@ func (b Board) detailLeftUnder(c reading.Card, width int) []string {
 	if len(c.Objectives) > 0 {
 		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
 	}
+	// Where what was written about it elsewhere lives: a place to go and write,
+	// said whether or not anything is there yet. See docs/context.md.
+	if c.Context != "" {
+		under = append(under, b.named("CONTEXT", b.skin.Faint.Render(c.Context), width))
+	}
 	return under
 }
 

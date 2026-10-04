@@ -30,6 +30,10 @@ import (
 type Task struct {
 	task.Shape
 	Progress *domain.ProgressShape `json:"progress"`
+	// Context is where what was written about this task elsewhere lives, said
+	// when it is the task asked about and the caller said where the notes are.
+	// A harness writes there and reads there; cairn only says where.
+	Context string `json:"context,omitempty"`
 	// SubTasks is what hangs under this one, and only when it is what was
 	// asked about. A listing carries rows, not this — see Row.
 	SubTasks []SubTask `json:"sub_tasks,omitempty"`
@@ -233,7 +237,9 @@ func Of(a Answer) any {
 		return ofFocus(a.Held, domain.Progress{}, *a.InFocus)
 	}
 	if a.Task != nil {
-		return ofTaskUnder(*a.Task, a.Progress, a.Under)
+		said := ofTaskUnder(*a.Task, a.Progress, a.Under)
+		said.Context = a.Context
+		return said
 	}
 	if a.Tasks != nil {
 		return ofTasks(a.Tasks, a.InFocus)
@@ -392,6 +398,16 @@ func ofChanges(all []migration.Migration) []migration.Shape {
 	return out
 }
 
+// contextText is the line of a card that says where a task's outside context
+// lives, apart from the facts above it: the place is not something the task
+// carries but somewhere the task's material is kept.
+func contextText(at string) string {
+	if at == "" {
+		return ""
+	}
+	return "\ncontext  " + at + "\n"
+}
+
 // RenderText turns an answer into what a person reads. It works from which
 // field of the answer was set, the same way Of works out the JSON — with one
 // exception that field cannot resolve on its own: Deleted names three
@@ -404,7 +420,7 @@ func ofChanges(all []migration.Migration) []migration.Shape {
 // as unreachable and the gate cannot judge it.
 func RenderText(op Operation, a Answer) string {
 	if a.Task != nil {
-		return task.Text(*a.Task, a.Progress) + task.Under(a.Under)
+		return task.Text(*a.Task, a.Progress) + task.Under(a.Under) + contextText(a.Context)
 	}
 	if a.Tasks != nil {
 		return tasksText(a.Tasks, a)

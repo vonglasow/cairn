@@ -52,7 +52,9 @@ func (w *world) reset() {
 		_ = w.other.Close()
 	}
 	w.path = filepath.Join(w.t.TempDir(), "cairn.db")
-	held, err := engine.Open(w.path)
+	// The notes are named, as a surface finds them, and never made: cairn
+	// only says where they are, so an absolute place nobody writes to is safe.
+	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
 	if err != nil {
 		w.t.Fatalf("opening the store: %v", err)
 	}
@@ -275,6 +277,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the card for task (\d+) is marked as archived$`, w.cardArchived)
 	sc.Then(`^the card for task (\d+) is drawn as the one in focus$`, w.cardInFocus)
 	sc.Then(`^the board says "([^"]*)"$`, w.boardSays)
+	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
+		if err := w.mustSay("CONTEXT"); err != nil {
+			return err
+		}
+		return w.mustSay(notesRoot + "/" + strconv.Itoa(n))
+	})
 	sc.Then(`^the board does not say "([^"]*)"$`, w.boardDoesNotSay)
 }
 
@@ -825,18 +833,19 @@ func TestTheDetailsDescriptionToTheLine(t *testing.T) {
 	w.press("i")
 	w.press("enter")
 	held, _ := w.b.held()
-	laid, rows := w.b.saidOn(held, w.b.detailWidth(), nil)
-	// Forty-four rows, less the seven around the detail and the three of the
-	// panel's own frame and name.
-	if rows != 34 {
-		t.Fatalf("the description's box holds %d rows in a terminal of %d, want 34", rows, w.high)
+	laid, rows := w.b.saidOn(held, w.b.detailWidth(), w.b.detailLeftUnder(held, w.b.detailWidth()))
+	// Forty-four rows, less the seven around the detail, the three of the
+	// panel's own frame and name, and the four of the one under it saying
+	// where the task's context lives: its frame, its name and the place.
+	if rows != 30 {
+		t.Fatalf("the description's box holds %d rows in a terminal of %d, want 30", rows, w.high)
 	}
 	if len(laid) != 80 {
 		t.Fatalf("eighty short lines laid out as %d", len(laid))
 	}
 	w.press("ctrl+d")
-	if w.b.saying != 17 {
-		t.Fatalf("^D moved the description to %d, want half its box at 17", w.b.saying)
+	if w.b.saying != 15 {
+		t.Fatalf("^D moved the description to %d, want half its box at 15", w.b.saying)
 	}
 	w.press("ctrl+u")
 	if w.b.saying != 0 {
@@ -845,12 +854,12 @@ func TestTheDetailsDescriptionToTheLine(t *testing.T) {
 	for range 10 {
 		w.press("ctrl+d")
 	}
-	if w.b.saying != 46 {
-		t.Fatalf("^D to the end stopped at %d, want the last box of it at 46", w.b.saying)
+	if w.b.saying != 50 {
+		t.Fatalf("^D to the end stopped at %d, want the last box of it at 50", w.b.saying)
 	}
 	w.b.saying = 1000
-	if got := w.b.scrolledSaying(held, laid, rows); got != 46 {
-		t.Fatalf("a scroll past the end reads as %d, want 46", got)
+	if got := w.b.scrolledSaying(held, laid, rows); got != 50 {
+		t.Fatalf("a scroll past the end reads as %d, want 50", got)
 	}
 }
 
@@ -873,3 +882,6 @@ func TestThePanelsUnderTheDescriptionTakeTheirRows(t *testing.T) {
 		t.Fatalf("four rows under the description took %d of its own", alone-shared)
 	}
 }
+
+// notesRoot is where a scenario's board is told the notes live.
+const notesRoot = "/vault"

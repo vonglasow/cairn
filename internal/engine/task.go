@@ -6,6 +6,8 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"cairn/internal/domain"
@@ -104,13 +106,17 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	},
 )
 
-// TaskShow says what a task carries, what hangs under it and how far along it
-// is.
+// TaskShow says what a task carries, what hangs under it, how far along it is,
+// and where its outside context lives.
 var TaskShow = Operation{
-	Thing:   "task",
-	Verb:    "show",
-	Short:   "Show what a task carries",
-	Does:    "Show what a task carries, what hangs under it and how far along it is.",
+	Thing: "task",
+	Verb:  "show",
+	Short: "Show what a task carries",
+	// The last sentence is for an agent, which reads this as the tool's
+	// description: what it learns while working belongs in a dated file in
+	// that directory, added beside the rest, and not in the description,
+	// which is rewritten whole every time it is changed. See docs/context.md.
+	Does:    "Show what a task carries, what hangs under it, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Task{},
@@ -131,8 +137,19 @@ var TaskShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &shown, Under: under, Progress: p}, nil
+		return Answer{Task: &shown, Under: under, Progress: p, Context: on.contextOf(n)}, nil
 	},
+}
+
+// contextOf is where a task's outside context lives: the directory named for
+// its number under the notes, or nothing when nobody said where the notes are.
+// Composed, never looked at: cairn says where and does nothing about it — see
+// docs/context.md.
+func (on On) contextOf(n int) string {
+	if on.Notes == "" {
+		return ""
+	}
+	return filepath.Join(on.Notes, strconv.Itoa(n))
 }
 
 // TaskArchive takes a task off the board. Its own verb rather than a flag on

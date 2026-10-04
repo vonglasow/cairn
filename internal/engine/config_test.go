@@ -76,7 +76,7 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 
 // TestConfigShow_asksForAConfigurationRatherThanAStore is the fiche's named
 // test: ConfigShow does not ask for the store to be opened at all, not even
-// the way a backup does — a backup still needs the path storePath() resolves
+// the way a backup does — a backup still needs the path places() resolves
 // to find itself beside where the store would be, and ConfigShow has no such
 // use for it. The two must not share one value, or the day another operation
 // wants ConfigShow's tolerant reading, nothing will tell them apart.

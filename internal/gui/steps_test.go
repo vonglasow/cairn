@@ -8,7 +8,9 @@ package gui
 import (
 	"fmt"
 	"image/color"
+	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/cucumber/godog"
@@ -591,6 +593,27 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
 	sc.Then(`^the detail shows the field "([^"]*)"$`, w.detailShowsField)
+	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
+		want := filepath.Join(notesRoot, strconv.Itoa(n))
+		// Written where it can be held and copied, like every text it writes.
+		for _, r := range w.w.Readables() {
+			if r.Key == "field:context" {
+				if r.Said != want {
+					return fmt.Errorf("the open task says its context lives at %q, want %q", r.Said, want)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the open task says nothing of where its context lives")
+	})
+	sc.Then(`^the form asks nothing about "([^"]*)"$`, func(name string) error {
+		for _, field := range w.w.Form().Fields() {
+			if field.Name == name {
+				return fmt.Errorf("the form asks about %q", name)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the detail shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
 	sc.Then(`^the card being dragged follows the pointer$`, w.ghostFollows)
 	sc.Then(`^the tile being dragged follows the pointer$`, w.ghostFollows)

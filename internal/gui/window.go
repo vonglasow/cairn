@@ -276,6 +276,34 @@ func (w Window) Shown() []reading.Field {
 	return nil
 }
 
+// Context is where what was written about the open task elsewhere lives, or
+// nothing when no task is open or the window was not told where the notes are.
+func (w Window) Context() string {
+	if w.screen != OnDetail || w.chosenGoal {
+		return ""
+	}
+	for _, c := range w.snap.Cards {
+		if c.Number == w.chosen {
+			return c.Context
+		}
+	}
+	return ""
+}
+
+// ContextSays is what the foot of an open task writes about where its context
+// lives: its name and the place, or nothing when there is no place to say.
+// One list for the drawing and for what a pointer can hold, so what is drawn
+// is what can be copied.
+func (w Window) ContextSays() []Readable {
+	at := w.Context()
+	if at == "" {
+		return nil
+	}
+	box := Over(w.width, w.height)
+	return []Readable{one("name:context", ContextName(box), "context", small),
+		one("field:context", ContextPath(box), at, small)}
+}
+
 // ChosenGoal says whether what is chosen is an objective rather than a task.
 func (w Window) ChosenGoal() bool { return w.chosenGoal }
 

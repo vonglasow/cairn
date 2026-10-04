@@ -360,3 +360,17 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 		t.Errorf("a press at the start of the line in sight lands on %d, want %d", got, want)
 	}
 }
+
+// A task the window was told nowhere about writes nothing at its foot: there
+// is no place to say, and a name over nothing reads as a place that failed.
+func TestAnOpenTaskToldNowhereSaysNoPlace(t *testing.T) {
+	w, _ := openTask(t)
+	if said := w.ContextSays(); said != nil {
+		t.Errorf("an open task told nowhere writes %+v", said)
+	}
+	for _, r := range w.Readables() {
+		if strings.HasSuffix(r.Key, ":context") {
+			t.Errorf("an open task told nowhere holds %q", r.Key)
+		}
+	}
+}

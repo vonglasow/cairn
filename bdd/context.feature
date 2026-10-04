@@ -99,5 +99,6 @@ Feature: Where a task's outside context lives
     Scenario: deleting a task does not take its notes with it
       Given I added a task titled "Write the spec"
       And notes were written under "~/vault/1"
-      When I run `cairn task delete 1`
-      Then what was written under "~/vault/1" is still there
+      When I run `cairn task delete 1 --yes`
+      Then it succeeds
+      And what was written under "~/vault/1" is still there

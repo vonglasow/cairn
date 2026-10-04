@@ -19,6 +19,7 @@ type fake struct {
 	goals   []objective.Objective
 	focus   []int
 	freed   []int
+	context string
 	version int64
 	// fail refuses everything; refuse refuses one operation by name, which is
 	// what a test needs to reach the path that gives up halfway through a
@@ -56,6 +57,8 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		return engine.Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed}, nil
 	case "objective list":
 		return engine.Answer{Objectives: f.goals}, nil
+	case "task show":
+		return engine.Answer{Context: f.context}, nil
 	}
 	return engine.Answer{}, nil
 }

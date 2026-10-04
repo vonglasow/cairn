@@ -115,6 +115,7 @@ func (w Window) Readables() []Readable {
 		}
 		out = append(out, one("part:"+strconv.Itoa(c.Number), line, SubLine(c), small))
 	}
+	out = append(out, w.ContextSays()...)
 	out = append(out, one("history", HistoryHead(box), w.PanelHead(), small))
 	inside := Inside(HistoryBox(box))
 	lines, from := w.Lines(), w.History()

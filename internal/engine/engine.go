@@ -71,6 +71,9 @@ type Engine struct {
 	// is the terminal: a history says who acted only when it was not the person
 	// reading it.
 	through string
+	// notes is the root every task's outside context sits under, when the
+	// surface that opened this engine said where; empty otherwise.
+	notes string
 	// path is where the store was opened. Kept because an operation is handed
 	// what sits beside the store as well as the store itself, and a surface
 	// that stays open runs operations long after whoever opened it has gone.
@@ -106,6 +109,17 @@ func (c Changes) named() bool {
 // Open opens a store that has to be up to date, and refuses one that is not:
 // a command about tasks does not change the shape of the store on the way past.
 func Open(path string) (*Engine, error) { return openWith(path, store.Open) }
+
+// OpenAt opens the store the way Open does, and keeps where the notes are, for
+// a surface that holds an engine open — a board — rather than one per call.
+func OpenAt(at Places) (*Engine, error) {
+	e, err := Open(at.Store)
+	if err != nil {
+		return nil, err
+	}
+	e.notes = at.Notes
+	return e, nil
+}
 
 // OpenBehind opens a store whatever shape it is in, for the commands whose job
 // is to change that shape.

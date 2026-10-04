@@ -156,6 +156,8 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("framed one", Framed(value, 1))
 	say("framed four", Framed(value, 4))
 	say("inside four", Inside(Framed(value, 4)))
+	say("context name", ContextName(over))
+	say("context path", ContextPath(over))
 	say("field top 1", Box{X: over.X, Y: FieldTop(over, reading.TaskFields(reading.Card{}), 1), W: 1, H: 1})
 	goalFields := reading.GoalFields(reading.Goal{})
 	say("sub panel", SubPanel(Box{X: 100, Y: 200, W: 400, H: SubHeight}))
@@ -1384,5 +1386,19 @@ func TestTheLineThroughAPartDoneCrossesItsMiddle(t *testing.T) {
 	line := Box{X: 132, Y: 202, W: 356, H: lineHigh}
 	if got, want := StruckAt(line, 90), (Box{X: 132, Y: 211, W: 90, H: 1}); got != want {
 		t.Fatalf("the line through it is at %+v, want %+v", got, want)
+	}
+}
+
+// The place an open task names sits at its foot past every offer it can make,
+// and inside the panel: beside the buttons, never under one.
+func TestTheContextLineSitsBesideTheOffers(t *testing.T) {
+	box := Over(1200, 800)
+	name, path := ContextName(box), ContextPath(box)
+	last := PanelOfferAt(box, detailOffers-1)
+	if name.X <= last.X+last.W || path.X != name.X+name.W {
+		t.Errorf("the name runs from %d and the path from %d, the last offer ends at %d", name.X, path.X, last.X+last.W)
+	}
+	if path.X+path.W != box.X+box.W-padding || name.Y < last.Y || name.Y+name.H > last.Y+last.H {
+		t.Errorf("the line is %v and %v in a panel %v, beside an offer %v", name, path, box, last)
 	}
 }

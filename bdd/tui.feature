@@ -713,6 +713,13 @@ Feature: The board
       And I press "esc"
       Then the card for task 1 is drawn as the one in focus
 
+    @tui-an-open-task-says-where-its-context-lives
+    Scenario: an open task says where what was written about it elsewhere lives
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "enter"
+      Then the open task says where the context of task 1 lives
+
   Rule: The board follows the store while it stays open
 
     @tui-a-change-made-elsewhere-appears

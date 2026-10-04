@@ -25,5 +25,5 @@ func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
 // opened. One place builds that, so a surface holding an engine and a surface
 // opening one for a single call reach the same things.
 func (e *Engine) run(op Operation, in Input) (Answer, error) {
-	return op.Run(On{Engine: e, Backups: BackupsAt(e.path), Path: e.path}, in)
+	return op.Run(On{Engine: e, Backups: BackupsAt(e.path), Path: e.path, Notes: e.notes}, in)
 }
