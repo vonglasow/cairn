@@ -124,13 +124,18 @@ receipts=$(git rev-parse --git-dir)/mutation-receipts
 mkdir -p "$receipts"
 contentOf() {
   {
-    go list -deps -test -f '{{if not .Standard}}{{.Dir}}{{end}}' "$1" | sort -u | while read -r dir; do
-      find "$dir" -maxdepth 1 -name '*.go' | sort | xargs cat
-      [ -d "$dir/testdata" ] && find "$dir/testdata" -type f | sort | xargs cat
+    # The module's own packages only: a dependency is named by its version
+    # in go.sum, read below, and its source would be hundreds of megabytes
+    # read twice a package for nothing go.sum does not already say.
+    go list -deps -test -f '{{if and .Module .Module.Main}}{{.Dir}}{{end}}' "$1" | sort -u | while read -r dir; do
+      find "$dir" -maxdepth 1 -name '*.go' -exec cat {} +
+      if [ -d "$dir/testdata" ]; then
+        find "$dir/testdata" -type f -exec cat {} +
+      fi
     done
     cat bdd/*.feature go.sum .gremlins.yaml "$0"
     echo "$logical"
-    go version -m "$(command -v "$GREMLINS")" 2>/dev/null | grep -i gremlins
+    go version -m "$(command -v "$GREMLINS")" 2>/dev/null | grep -i gremlins || true
   } | git hash-object --stdin
 }
 receiptOf() { echo "$receipts/$(echo "${1#./}" | tr / _)"; }
@@ -160,7 +165,11 @@ if [ -n "$candidates" ]; then
   judged_packages=$(scripts/packages.sh --tested $candidates)
 fi
 for pkg in $judged_packages; do
-  if ! $changed && [ "$(cat "$(receiptOf "$pkg")" 2>/dev/null)" = "$(contentOf "$pkg")" ]; then
+  # The content is read once, before judging: what is compared and what is
+  # written down are the same reading.
+  content=
+  $changed || content=$(contentOf "$pkg")
+  if ! $changed && [ "$(cat "$(receiptOf "$pkg")" 2>/dev/null)" = "$content" ]; then
     echo "→ $pkg: judged clean already, and unchanged since"
     continue
   fi
@@ -208,7 +217,7 @@ for pkg in $judged_packages; do
   # from one read the same, and the next push looks again rather than
   # trusting what nobody has looked at.
   [ -z "${hangs:-}" ] || continue
-  $changed || contentOf "$pkg" >"$(receiptOf "$pkg")"
+  $changed || echo "$content" >"$(receiptOf "$pkg")"
 done
 
 if $changed && [ "$ran" -eq 0 ]; then

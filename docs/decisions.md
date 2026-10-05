@@ -43,7 +43,6 @@ already said why not.
 | closed sets — a column, a priority — are refused in `domain`, not by a `CHECK` | one place says what a column is, and a `CHECK` would be a second list to keep true | `internal/domain/attributes.go` |
 | no index on the tasks table | a store holds hundreds of tasks; an index is added the day a listing is measured slow | this page |
 | a change that alters data and not the shape is forgotten, not refused, when rolled back | it has nothing to undo, and refusing it would wall off every older shape behind it; what it leaves as it was is said by its `loses`, and applying it again changes nothing | `internal/store/migrate.go`, `RollBack` |
-| `backup restore` is not refused while a board is open | the backup set aside first holds whatever the board wrote, and a board's next beat finds the store it put back; a lock held against boards would be a lock a forgotten window holds for ever | `internal/store/backup.go`, `Restore` |
 | a backup is refused as a restore when SQLite cannot read it whole | a damaged backup put in place trades a store that opens for one that does not | `internal/store/backup.go` |
 
 ## The surfaces
@@ -76,3 +75,19 @@ already said why not.
 | Linux is checked by hand, in a container, before a version | it needs Docker, which no hook may assume | [release.md](release.md) |
 | the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `prek.toml` |
 | a form's commands are raced against five milliseconds in the terminal board's tests | a cursor blink is among them and is a timer nobody can wait out, and a command cannot say what it is before it runs; raising the deadline made the suite twelve times slower, as the test itself says | `internal/tui/fake_test.go`, `quickly` |
+
+## Known and not yet answered
+
+What a review found and nobody has decided yet. It is written here so it is
+not found a second time as news, and it leaves this list when it is fixed or
+decided.
+
+| what | why it matters | where |
+|---|---|---|
+| `backup restore` while a board is open loses what the board writes next | the board's connection still points at the file the restore replaced: measured, its data version does not move, it does not see what was put back, and its writes return without error and never reach the store. This page once said a board's next beat finds the restored store; it does not | `internal/store/backup.go`, `Restore` |
+| looking at a backup, or backing up a store that is not there, opens the file to be written | `heldIn` opens it the shared way: a missing store is made, readable by anybody, and a backup looked at by `backup show` is turned to WAL and its date moves | `internal/store/backup.go`, `heldIn` |
+| `hides` names some invisible characters, not all of them | tag characters, the bidi marks U+200E, U+200F, U+061C, U+2060–2064 and the soft hyphen pass, and an agent reads them | `internal/domain/title.go` |
+| a person's error is printed with its first letter capitalised, quoted value included | `"abc"` reads `"Abc"`, a tab reads `\T`: what was typed is misquoted, and differs from the JSON | the command line's error handler |
+| a closed set refused by a narrowing says `not-one-of`, refused by an edit says `not-a-state` | one mistake, two reasons to branch on | `internal/engine/refusal.go` |
+| `migration rollback` does not read the ledger again inside its transaction, and `migration apply N` applies N with an earlier change missing | two at once both report undoing the same change; a change applied out of order gives a shape no sequence describes | `internal/store/migrate.go` |
+| a SQLite file that is not cairn's, holding no table cairn knows, is given cairn's shape | it is reported as not a store only when it holds something cairn reads | `internal/store/migrate.go`, `isEmpty` |
