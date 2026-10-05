@@ -18,7 +18,7 @@ const sisters = `state = ? AND parent = ?`
 
 // whereItSits reads back the group a task is in and the place it holds there.
 func (s *Store) whereItSits(number int) (state string, parent, place int, err error) {
-	row := s.db.QueryRow(
+	row := s.on.QueryRow(
 		`SELECT state, parent, position FROM tasks WHERE number = ?`, number)
 	// Written with ifs rather than a tagless switch on purpose: a tagless
 	// switch puts its conditions outside any covered block, so a mutation of
@@ -90,7 +90,7 @@ func (s *Store) place(number int, chosen func(from, among int) int) error {
 	if err := s.makeRoom(state, parent, from, to); err != nil {
 		return err
 	}
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = ? WHERE number = ?`, to, number); err != nil {
 		return fmt.Errorf("moving task %d: %w", number, err)
 	}
@@ -101,7 +101,7 @@ func (s *Store) place(number int, chosen func(from, among int) int) error {
 // it.
 func (s *Store) countSisters(state string, parent int) (int, error) {
 	var among int
-	if err := s.db.QueryRow(
+	if err := s.on.QueryRow(
 		`SELECT COUNT(*) FROM tasks WHERE `+sisters, state, parent).Scan(&among); err != nil {
 		return 0, fmt.Errorf("counting what task sits with: %w", err)
 	}
@@ -111,7 +111,7 @@ func (s *Store) countSisters(state string, parent int) (int, error) {
 // closeTheGapLeftIn pulls forward everything that sat behind the place a task
 // has left, so the places there go on running 1..N.
 func (s *Store) closeTheGapLeftIn(state string, parent, left int) error {
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position - 1
 		 WHERE `+sisters+` AND position > ?`, state, parent, left); err != nil {
 		return fmt.Errorf("closing the gap left behind: %w", err)
@@ -128,7 +128,7 @@ func (s *Store) closeTheGapLeftIn(state string, parent, left int) error {
 // place has already turned back when the two places are the same, so a
 // comparison of them would have no boundary any test could stand on.
 func (s *Store) makeRoom(state string, parent, from, to int) error {
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position + CASE WHEN ? < ? THEN -1 ELSE 1 END
 		 WHERE `+sisters+` AND position BETWEEN ? AND ? AND position <> ?`,
 		from, to, state, parent, min(from, to), max(from, to), from); err != nil {

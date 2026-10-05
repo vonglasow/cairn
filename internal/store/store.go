@@ -28,8 +28,35 @@ var ErrNoSuchTask = errors.New("there is no such task")
 
 // Store is a collection of tasks kept on disk.
 type Store struct {
-	db   *sql.DB
+	db *sql.DB
+	// on is what every read and write goes through: the database itself, or
+	// the one transaction an act is being kept whole in.
+	on   runs
 	path string
+}
+
+// Within runs one act against this store as a single transaction: what it
+// wrote is kept if it worked, and none of it is if it failed.
+//
+// An act writes several rows — a task, then its labels, what blocks it, what
+// it serves, the place it leaves and the place it takes, then what was done to
+// it — and a failure between two of them used to leave the first ones written.
+// Two cairns acting at once read and write the same places, and the
+// transaction begins as a write (see shared) so the second waits for the
+// first rather than both reading the same last place.
+func (s *Store) Within(act func(*Store) error) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("beginning an act on the store: %w", err)
+	}
+	if err := act(&Store{db: s.db, on: tx, path: s.path}); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("keeping what an act wrote: %w", err)
+	}
+	return nil
 }
 
 // Unusable says whether an error is the store itself being out of reach
@@ -74,13 +101,15 @@ func waitedOut() time.Duration { return heldFor * time.Millisecond }
 // reader and a writer hold the file together, and the same six take fifty
 // milliseconds.
 //
-// WAL keeps recent writes in a file beside the store. Nothing is lost by it
-// here because a command opens the store in its RunE and closes it on the way
-// out, and closing checkpoints — so between two commands there is only ever
-// the one file, which is what `backup add` copies. A surface that holds the
-// store open, as a server would, has to checkpoint before a backup is taken.
+// A transaction begins as a write — `_txlock=immediate` — rather than as a read
+// that becomes one. Begun as a read, two acts each read the last place in a
+// column and then both tried to write the next: SQLite refuses the second
+// straight away rather than waiting, since waiting could not help it.
+//
+// WAL keeps recent writes in a file beside the store until it is closed, which
+// is why a backup reads the store rather than copying its file — see snapshot.
 func shared(path string) string {
-	return "file:" + path + "?_pragma=busy_timeout(" + strconv.Itoa(heldFor) + ")&_pragma=journal_mode(WAL)"
+	return "file:" + path + "?_pragma=busy_timeout(" + strconv.Itoa(heldFor) + ")&_pragma=journal_mode(WAL)&_txlock=immediate"
 }
 
 // Open opens a store that has to be up to date, and says so when it is not.
@@ -150,7 +179,7 @@ func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening the store: %w", err)
 	}
-	s := &Store{db: db, path: path}
+	s := &Store{db: db, on: db, path: path}
 	if err := s.settle(mustBeCurrent); err != nil {
 		_ = db.Close()
 		// The path goes last, never first: fang capitalises the opening letter of
@@ -270,7 +299,7 @@ func renumbered(t task.Task, number int) task.Task {
 // Keep records a task and hands it back carrying the number it was given.
 func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
-	res, err := s.db.Exec(
+	res, err := s.on.Exec(
 		`INSERT INTO tasks (parent, title, description, state, archived, priority,
 		 because, deadline, estimate, time_spent, position)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
@@ -318,7 +347,7 @@ func (s *Store) Update(t task.Task) error {
 		place = among + 1
 	}
 
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`UPDATE tasks SET parent = ?, title = ?, description = ?, state = ?,
 		 archived = ?, priority = ?, because = ?, deadline = ?, estimate = ?,
 		 time_spent = ?, position = ?
@@ -358,7 +387,7 @@ func (s *Store) Delete(number int) error {
 	if err != nil {
 		return err
 	}
-	if _, err := s.db.Exec(`DELETE FROM tasks WHERE number = ?`, number); err != nil {
+	if _, err := s.on.Exec(`DELETE FROM tasks WHERE number = ?`, number); err != nil {
 		return fmt.Errorf("deleting the task: %w", err)
 	}
 	if err := s.closeTheGapLeftIn(wasIn, wasUnder, held); err != nil {
@@ -379,7 +408,7 @@ func (s *Store) Delete(number int) error {
 		return err
 	}
 	// What it served goes with it too, for the same reason.
-	if _, err := s.db.Exec(clearServing, number); err != nil {
+	if _, err := s.on.Exec(clearServing, number); err != nil {
 		return fmt.Errorf("releasing what task %d served: %w", number, err)
 	}
 	return s.releaseFocusOn(number)
@@ -387,9 +416,9 @@ func (s *Store) Delete(number int) error {
 
 // Find hands back the task carrying number, and says so when there is none.
 func (s *Store) Find(number int) (task.Task, error) {
-	row := s.db.QueryRow(
+	row := s.on.QueryRow(
 		`SELECT `+taskColumns+` FROM tasks WHERE number = ?`, number)
-	t, err := s.scanTask(row)
+	t, err := s.scanTask(row, askedEach{s})
 	if errors.Is(err, sql.ErrNoRows) {
 		return task.Task{}, fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
 	}
@@ -405,13 +434,17 @@ func (s *Store) Find(number int) (task.Task, error) {
 // A read told to keep nothing is a read of everything, so this is Narrowed
 // with nothing named rather than a second loop over the same rows.
 func (s *Store) All() ([]task.Task, error) {
-	return s.Narrowed(&Narrowing{})
+	return s.Narrowed(&domain.Narrowing{})
 }
 
 // Under hands back the tasks hanging directly under a task, each in the place
 // it takes among its sisters.
 func (s *Store) Under(number int) ([]task.Task, error) {
-	rows, err := s.db.Query(
+	every, err := s.everyLink()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.on.Query(
 		`SELECT `+taskColumns+` FROM tasks WHERE parent = ? `+taskOrder, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
@@ -420,7 +453,7 @@ func (s *Store) Under(number int) ([]task.Task, error) {
 
 	tasks := []task.Task{}
 	for rows.Next() {
-		t, err := s.scanTask(rows)
+		t, err := s.scanTask(rows, every)
 		if err != nil {
 			return nil, fmt.Errorf("reading a sub-task: %w", err)
 		}
@@ -442,7 +475,7 @@ type scanner interface {
 // variables and telling them to a builder rather than into a task's fields
 // directly — the membrane Tell uses, the other way round, so this keeps
 // working the day those fields stop being exported.
-func (s *Store) scanTask(row scanner) (task.Task, error) {
+func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 	var (
 		number, parent     int
 		title, description string
@@ -459,15 +492,7 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 	if err != nil {
 		return task.Task{}, err
 	}
-	labels, err := s.labelsOf(taskLabels, number)
-	if err != nil {
-		return task.Task{}, err
-	}
-	blockers, err := s.blockersOn(number)
-	if err != nil {
-		return task.Task{}, err
-	}
-	objectives, err := s.objectivesServedBy(number)
+	labels, blockers, objectives, err := carried.of(number)
 	if err != nil {
 		return task.Task{}, err
 	}
@@ -482,60 +507,19 @@ func (s *Store) scanTask(row scanner) (task.Task, error) {
 		a.NotArchived()
 	}
 	a.Carries(domain.Priority(priority))
-	if description == "" {
-		a.NotDescribed()
-	} else {
-		a.Described(description)
-	}
-	if len(labels) == 0 {
-		a.NotLabelled()
-	} else {
-		for _, label := range labels {
-			a.Labelled(label)
-		}
-	}
-	a.LabelsTold()
-	if len(blockers) == 0 {
-		a.NotBlocked()
-	} else {
-		for _, blocker := range blockers {
-			a.BlockedBy(blocker)
-		}
-	}
-	a.BlockersTold()
-	if because == "" {
-		a.NotBecause()
-	} else {
-		a.Because(because)
-	}
-	if day.IsZero() {
-		a.NotDue()
-	} else {
-		a.Due(day)
-	}
-	if estimate == 0 {
-		a.NotEstimated()
-	} else {
-		a.Estimated(time.Duration(estimate))
-	}
-	if spent == 0 {
-		a.NothingSpent()
-	} else {
-		a.Spent(time.Duration(spent))
-	}
+	domain.TellOrNot(description, a.Described, a.NotDescribed)
+	domain.TellAll(labels, a.Labelled, a.NotLabelled, a.LabelsTold)
+	domain.TellAll(blockers, a.BlockedBy, a.NotBlocked, a.BlockersTold)
+	domain.TellOrNot(because, a.Because, a.NotBecause)
+	domain.TellOrNot(day, a.Due, a.NotDue)
+	domain.TellOrNot(time.Duration(estimate), a.Estimated, a.NotEstimated)
+	domain.TellOrNot(time.Duration(spent), a.Spent, a.NothingSpent)
 	if parent == task.NoParent {
 		a.UnderNothing()
 	} else {
 		a.Under(parent)
 	}
-	if len(objectives) == 0 {
-		a.ServesNothing()
-	} else {
-		for _, objective := range objectives {
-			a.Serves(objective)
-		}
-	}
-	a.ObjectivesTold()
+	domain.TellAll(objectives, a.Serves, a.ServesNothing, a.ObjectivesTold)
 	return a.Task(), nil
 }
 
@@ -556,7 +540,7 @@ var taskLabels = labelStore{
 // keepLabels records the labels one thing carries.
 func (s *Store) keepLabels(in labelStore, number int, labels []string) error {
 	for _, label := range labels {
-		if _, err := s.db.Exec(in.insert, number, label); err != nil {
+		if _, err := s.on.Exec(in.insert, number, label); err != nil {
 			return fmt.Errorf("keeping the labels: %w", err)
 		}
 	}
@@ -566,7 +550,7 @@ func (s *Store) keepLabels(in labelStore, number int, labels []string) error {
 // clearLabels takes away every label one thing carries, so a set given can
 // replace the set that was there.
 func (s *Store) clearLabels(in labelStore, number int) error {
-	if _, err := s.db.Exec(in.clear, number); err != nil {
+	if _, err := s.on.Exec(in.clear, number); err != nil {
 		return fmt.Errorf("clearing the labels: %w", err)
 	}
 	return nil
@@ -574,7 +558,7 @@ func (s *Store) clearLabels(in labelStore, number int) error {
 
 // labelsOf hands back the labels one thing carries, in alphabetical order.
 func (s *Store) labelsOf(in labelStore, number int) ([]string, error) {
-	rows, err := s.db.Query(in.byOwner, number)
+	rows, err := s.on.Query(in.byOwner, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading the labels: %w", err)
 	}

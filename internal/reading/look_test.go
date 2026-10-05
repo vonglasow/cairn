@@ -1,10 +1,13 @@
 package reading
 
 import (
-	"cairn/internal/objective"
-	"cairn/internal/task"
 	"slices"
 	"testing"
+	"time"
+
+	"cairn/internal/domain"
+	"cairn/internal/objective"
+	"cairn/internal/task"
 )
 
 // Reading is asked for the same way as writing, and the focus arrives with the
@@ -60,7 +63,7 @@ func TestLookTurnsTheTwoListingsIntoCardsAndGoals(t *testing.T) {
 }
 
 func TestLookPassesOnAListingItCannotRead(t *testing.T) {
-	for _, refused := range []string{"task list", "objective list", "task show", "objective show"} {
+	for _, refused := range []string{"task list", "objective list"} {
 		t.Run(refused, func(t *testing.T) {
 			f := newFake()
 			f.tasks = []task.Task{aTask("Write the spec")}
@@ -87,10 +90,10 @@ func TestACardIsToldWhetherAnythingIsWrittenAboutIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Look: %v", err)
 	}
-	if found.Cards[0].Described {
+	if found.Cards[0].Described() {
 		t.Error("a task with nothing written about it was said to have a description")
 	}
-	if !found.Cards[1].Described {
+	if !found.Cards[1].Described() {
 		t.Error("a task with something written about it was said to have none")
 	}
 }
@@ -176,5 +179,47 @@ func TestLookCarriesWhereEachTasksContextLives(t *testing.T) {
 	}
 	if len(found.Cards) != 1 || found.Cards[0].Context != "/vault/1" {
 		t.Errorf("the card carries %+v", found.Cards)
+	}
+}
+
+// A card says whether the task has gone past what it was reckoned to take, so
+// no board has to read that back off the lengths it prints.
+func TestLookSaysWhenATaskHasGonePastItsEstimate(t *testing.T) {
+	var a task.AsTold
+	aTask("Write the spec").Tell(&a)
+	a.Estimated(time.Hour)
+	a.Spent(2 * time.Hour)
+	f := newFake()
+	f.tasks = []task.Task{a.Task(), aTask("Ship it")}
+	found, err := Look(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found.Cards[0].Overrun || found.Cards[1].Overrun {
+		t.Errorf("overrun = %v and %v, want only the first", found.Cards[0].Overrun, found.Cards[1].Overrun)
+	}
+}
+
+// A reading is the two listings and nothing else, however many tasks there
+// are: how far along each one is and where its context lives come with them.
+// It used to show every task and every objective in turn to learn those two
+// facts — two hundred questions to draw two hundred cards.
+func TestLookAsksTheTwoListingsWhateverTheyHold(t *testing.T) {
+	var parent task.AsTold
+	aTask("Ship it").Tell(&parent)
+	parent.Numbered(1)
+	f := newFake()
+	f.tasks = []task.Task{parent.Task(), aTask("Write the spec")}
+	f.goals = []objective.Objective{aGoal("Ship cairn")}
+	f.along = map[int]domain.Progress{1: {SubTasks: domain.Tally{Total: 2, Done: 1}}}
+	found, err := Look(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.asked) != 2 {
+		t.Errorf("Look asked %d operations for two tasks and an objective, want the two listings", len(f.asked))
+	}
+	if found.Cards[0].SubTotal != 2 || found.Cards[0].SubDone != 1 {
+		t.Errorf("task 1 is along %d of %d, want 1 of 2", found.Cards[0].SubDone, found.Cards[0].SubTotal)
 	}
 }

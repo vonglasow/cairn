@@ -8,6 +8,8 @@ package engine
 // and does not have to — it is holding the engine already, so all that is left
 // of Do is the operation itself.
 
+import "cairn/internal/store"
+
 // Ask runs an operation against the store this engine is open on.
 //
 // It refuses first, for the reason Do refuses first: a caller that named an
@@ -24,6 +26,27 @@ func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
 // engine, and what sits beside the store, found from where the store was
 // opened. One place builds that, so a surface holding an engine and a surface
 // opening one for a single call reach the same things.
+//
+// An operation that writes runs as one transaction: what it changed and what
+// it wrote down about it are kept together or not at all. The ones that change
+// the shape of the store are left out — they set a backup aside first, which
+// copies the file, and they keep their own transaction for the change itself.
 func (e *Engine) run(op Operation, in Input) (Answer, error) {
-	return op.Run(On{Engine: e, Backups: BackupsAt(e.path), Path: e.path, Notes: e.notes}, in)
+	if op.Level == Read || op.Needs != AStore {
+		return op.Run(e.on(), in)
+	}
+	var answer Answer
+	err := e.store.Within(func(kept *store.Store) error {
+		within := *e
+		within.tasks, within.places, within.history, within.objectives, within.store = kept, kept, kept, kept, kept
+		var err error
+		answer, err = op.Run(within.on(), in)
+		return err
+	})
+	return answer, err
+}
+
+// on is what an operation run against this engine is handed.
+func (e *Engine) on() On {
+	return On{Engine: e, Backups: BackupsAt(e.path), Path: e.path, Notes: e.notes, Home: e.home}
 }

@@ -33,6 +33,15 @@ refuse() {
   exit 0
 }
 
+# Without jq the payload cannot be read, and a gate that cannot read what it
+# guards has to close rather than open: before this, a missing jq left `tool`
+# empty and the catch-all below let every write through. The refusal is
+# written by hand because the usual one needs jq to be built.
+if ! command -v jq >/dev/null; then
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"red-first.sh needs jq to read what is about to be written, and jq is not installed."}}'
+  exit 0
+fi
+
 payload=$(cat)
 tool=$(printf '%s' "$payload" | jq -r '.tool_name // ""')
 
@@ -60,9 +69,19 @@ case $tool in
         # so for those the whole command is read for paths. This is the clause
         # that stays a guess: a path a script builds at runtime is invisible.
         if printf '%s' "$command" |
-          grep -Eq '\btee\b|\bsed +-i\b|\bperl +-[a-z]*i\b|\btruncate\b|\b(python3?|ruby|node|osascript)\b'; then
+          grep -Eq '\btee\b|\bsed +-i\b|\bperl +-[a-z]*i\b|\btruncate\b|\b(python3?|ruby|node|osascript)\b|\bgit +(checkout|restore)\b'; then
           printf '%s' "$command" | grep -oE '[A-Za-z0-9_./-]+[.]go'
         fi
+        # The tools that copy or move write to their last argument and only
+        # read the others, so only that one is a target: copying a production
+        # file aside to keep it is a read. Measured as a hole before this: a
+        # file could be written in /tmp and copied into place unseen.
+        printf '%s' "$command" | tr ';&|' '\n\n\n' |
+          awk '$1 ~ /^(cp|mv|install|rsync|ditto)$/ { print $NF }'
+        # A patch names what it changes inside itself, on its +++ lines.
+        for patch in $(printf '%s' "$command" | grep -oE '[A-Za-z0-9_./-]+[.](patch|diff)'); do
+          [ -f "$patch" ] && sed -nE 's|^\+\+\+ (b/)?([^[:space:]]+).*|\2|p' "$patch"
+        done
       } | grep -E '[.]go$' || true
     )
     ;;

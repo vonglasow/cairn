@@ -33,7 +33,7 @@ const (
 
 // objectivesServedBy reads back what a task said it serves.
 func (s *Store) objectivesServedBy(number int) ([]int, error) {
-	rows, err := s.db.Query(servedBy, number)
+	rows, err := s.on.Query(servedBy, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what task %d serves: %w", number, err)
 	}
@@ -56,11 +56,11 @@ func (s *Store) objectivesServedBy(number int) ([]int, error) {
 // keepServedBy records what a task serves, replacing whatever it served before:
 // a task carries a set, so one left out is one taken away.
 func (s *Store) keepServedBy(number int, objectives []int) error {
-	if _, err := s.db.Exec(clearServing, number); err != nil {
+	if _, err := s.on.Exec(clearServing, number); err != nil {
 		return fmt.Errorf("clearing what task %d serves: %w", number, err)
 	}
 	for _, objective := range objectives {
-		if _, err := s.db.Exec(keepServing, number, objective); err != nil {
+		if _, err := s.on.Exec(keepServing, number, objective); err != nil {
 			return fmt.Errorf("keeping what task %d serves: %w", number, err)
 		}
 	}

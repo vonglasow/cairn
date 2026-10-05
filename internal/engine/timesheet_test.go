@@ -35,10 +35,10 @@ func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 	if answer.Sheet == nil || len(answer.Sheet.Days) != 1 || answer.Sheet.Days[0].Total != 2*time.Hour {
 		t.Fatalf("the sheet is %+v", answer.Sheet)
 	}
-	said, ok := Of(answer).(Timesheet)
+	said, ok := Of(TimesheetShow, answer).(Timesheet)
 	if !ok || said.Days[0].Day != "2026-09-29" || said.Days[0].Minutes != 120 ||
 		said.Days[0].Tasks[0].Number != 1 || said.Days[0].Tasks[0].Title != "one" || said.Days[0].Tasks[0].Minutes != 120 {
-		t.Errorf("a machine reads %+v", Of(answer))
+		t.Errorf("a machine reads %+v", Of(TimesheetShow, answer))
 	}
 	if text := RenderText(TimesheetShow, answer); !strings.Contains(text, "#1  2h  one") || !strings.Contains(text, "total  2h") {
 		t.Errorf("a person reads:\n%s", text)

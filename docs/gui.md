@@ -47,16 +47,17 @@ Gio keeps one language, one static binary, and every line under the gates. It
 is also the most work: scrolling, dragging and text entry are built by hand.
 That is the trade, stated plainly.
 
-**One dependency, and this is its written reason** — `CLAUDE.md` asks for one:
-`gioui.org`. It is the only way to a vector-drawn window that is identical on
-macOS and Linux, in a single binary, with no system webview and no second
-language.
+**Two dependencies, and their written reasons are in
+[dependencies.md](dependencies.md)** — `CLAUDE.md` asks for one: `gioui.org`,
+the only way to a vector-drawn window that is identical on macOS and Linux, in
+a single binary, with no system webview and no second language; and
+`golang.org/x/image`, for the fixed-point numbers Gio measures text in.
 
 ## Where it lives
 
-`internal/gui`, a fourth surface beside `cli`, `mcp` and `board`. `depguard`
-denies it `store`, `database/sql`, `cobra`, `cli`, `mcp` — and `board`: two
-surfaces do not reach each other.
+`internal/gui`, a fourth surface beside `cli`, `mcp` and `tui`. `depguard`
+denies it `store`, `database/sql`, `cobra`, `cli`, `mcp` — and `tui`: two
+surfaces do not reach each other, and `tui` and `mcp` are denied it in return.
 
 **What it does not write again**, because `internal/reading` already carries
 it: `Look` and the two listings turned into cards and goals, `Deal` into
@@ -287,16 +288,17 @@ that is the whole of what says where typing would go.
 **The objectives a task serves are picked from a list, not typed.** `enter` on
 that field opens the objectives over the form — over, and not instead of: a
 choice made with the rest of the form out of sight is a choice made from
-memory. The arrows walk it and so do `j`/`k`; **space** ticks and unticks;
-`esc` closes it and keeps what was ticked. Nothing reaches the store until the
+memory. The arrows walk it and so do `j`/`k`; **enter** takes the row the
+keyboard is on and closes the list, **⌘⏎** takes it and keeps the list open for
+the next; `esc` closes it. Nothing reaches the store until the
 form is saved, the way nothing else in a form does.
 
-`enter` saves everywhere else in a form and here it does not, so the bar says
-`Choose` instead of `Save` while the keyboard is on this field, and `Save`
-comes back the moment it leaves. The rule is the one the rest of the window
-keeps — a key does what the bar offers — and a bar still offering *Save* while
-`enter` opened a list would be a bar that lies, which is the one thing it
-exists not to do.
+`enter` never saves a form: it opens the list a field answers with, and it
+breaks a line in a field with room for more than one. **⌘⏎** (or ⌘S) saves,
+wherever the keyboard is. So the bar offers *Save* on every field, and adds
+*Choose* beside it on a field a list answers — it used to give way to *Choose*
+there, and with the keyboard left on that field after the list closed there
+was no way to save at all. A key does what the bar offers; the bar says both.
 
 **The field carries numbers and is drawn as names.** `1 2` is what the engine
 takes, and a surface inventing its own spelling of an argument would be a
@@ -621,7 +623,7 @@ been true enough to stop the work.
 
 ## The detail
 
-The panel a task opens into, with `s`, `enter` or a double click. Two columns:
+The panel a task opens into, with `enter` or a double click. Two columns:
 what the task carries on the left, in the same boxes the form writes into, and
 its history on the right.
 

@@ -37,15 +37,17 @@ type Card struct {
 	Title  string
 	State  string
 	// Archived says the task is off the board, drawn only when it is asked for.
-	Archived    bool
-	Priority    string
-	Described   bool
-	Labels      []string
-	Blockers    []int
-	Because     string
-	Deadline    time.Time
-	Estimate    string
-	Spent       string
+	Archived bool
+	Priority string
+	Labels   []string
+	Blockers []int
+	Because  string
+	Deadline time.Time
+	Estimate string
+	Spent    string
+	// Overrun says the time spent has gone past the estimate — read off the
+	// lengths, so no board reads it back off how a card writes them.
+	Overrun     bool
 	Objectives  []int
 	Description string
 	SubDone     int
@@ -61,13 +63,15 @@ type Card struct {
 	Context string
 }
 
+// Described says whether anything is written about the task.
+func (c Card) Described() bool { return c.Description != "" }
+
 // Goal is one objective, flattened the same way.
 type Goal struct {
 	Number      int
 	Title       string
 	State       string
 	Priority    string
-	Described   bool
 	Description string
 	Labels      []string
 	Deadline    time.Time
@@ -75,6 +79,9 @@ type Goal struct {
 	Done        int
 	Total       int
 }
+
+// Described says whether anything is written about the objective.
+func (g Goal) Described() bool { return g.Description != "" }
 
 // Snapshot is everything the board draws, read in one go. The board holds one
 // and redraws from it; nothing is fetched while a key is being handled, so what
@@ -115,15 +122,18 @@ func Look(w Work) (Snapshot, error) {
 		held = *listed.InFocus
 	}
 	found := Snapshot{Focus: held, Version: version}
+	// How far along each one is and where its context lives come with the
+	// listings, so drawing two hundred cards is two questions and not two
+	// hundred.
 	for _, t := range listed.Tasks {
-		card, err := cardOf(w, t, held, listed.NothingBlocks)
+		card, err := cardOf(t, held, listed.NothingBlocks, listed.Along, listed.Contexts)
 		if err != nil {
 			return Snapshot{}, err
 		}
 		found.Cards = append(found.Cards, card)
 	}
 	for _, o := range goals.Objectives {
-		goal, err := goalOf(w, o)
+		goal, err := goalOf(o, goals.Along)
 		if err != nil {
 			return Snapshot{}, err
 		}
@@ -140,7 +150,7 @@ func Numbered(n int) engine.Input {
 }
 
 // cardOf turns one task into what a card draws.
-func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
+func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, contexts map[int]string) (Card, error) {
 	told := task.OfTask(t)
 	// The deadline crosses the membrane written the way a person reads it, and
 	// the board needs the day itself to say "in two days". Read back with the
@@ -150,11 +160,7 @@ func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
 	if err != nil {
 		return Card{}, err
 	}
-	shown, err := w.Ask(engine.TaskShow, Numbered(told.Number))
-	along := shown.Progress
-	if err != nil {
-		return Card{}, err
-	}
+	sofar := along[told.Number]
 	return Card{
 		Number:      told.Number,
 		Parent:      told.Parent,
@@ -162,7 +168,6 @@ func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
 		Title:       told.Title,
 		State:       told.State,
 		Priority:    told.Priority,
-		Described:   told.Description != "",
 		Description: told.Description,
 		Labels:      told.Labels,
 		Blockers:    told.BlockedBy,
@@ -170,38 +175,34 @@ func cardOf(w Work, t task.Task, held, freed []int) (Card, error) {
 		Deadline:    due,
 		Estimate:    told.Estimate,
 		Spent:       told.TimeSpent,
+		Overrun:     overrun(told.Estimate, told.TimeSpent),
 		Objectives:  told.Objectives,
-		SubDone:     along.Done(),
-		SubTotal:    along.Total(),
+		SubDone:     sofar.Done(),
+		SubTotal:    sofar.Total(),
 		InFocus:     slices.Contains(held, told.Number),
 		Freed:       slices.Contains(freed, told.Number),
-		Context:     shown.Context,
+		Context:     contexts[told.Number],
 	}, nil
 }
 
 // goalOf turns one objective into what a card draws.
-func goalOf(w Work, o objective.Objective) (Goal, error) {
+func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) {
 	told := objective.OfObjective(o)
 	due, err := domain.ParseDeadline(told.Deadline)
 	if err != nil {
 		return Goal{}, err
 	}
-	shown, err := w.Ask(engine.ObjectiveShow, Numbered(told.Number))
-	along := shown.Progress
-	if err != nil {
-		return Goal{}, err
-	}
+	sofar := along[told.Number]
 	return Goal{
 		Number:      told.Number,
 		Title:       told.Title,
 		State:       told.State,
 		Priority:    told.Priority,
-		Described:   told.Description != "",
 		Description: told.Description,
 		Labels:      told.Labels,
 		Deadline:    due,
 		Estimate:    told.Estimate,
-		Done:        along.Done(),
-		Total:       along.Total(),
+		Done:        sofar.Done(),
+		Total:       sofar.Total(),
 	}, nil
 }

@@ -5,10 +5,10 @@ package engine
 // of the things a caller can ask for.
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
-	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/migration"
 	"cairn/internal/objective"
@@ -30,6 +30,25 @@ const (
 	// Full is level three: also what loses work already done.
 	Full
 )
+
+// ErrNotALevel is the reason a level is refused: what was given spelled none
+// of "read", "write" or "full".
+var ErrNotALevel = errors.New("not one of the access levels")
+
+// ParseLevel reads a level by name, the way a person types it when starting
+// a server. Anything other than "read", "write" or "full" is refused, wrapping
+// ErrNotALevel.
+func ParseLevel(name string) (Level, error) {
+	switch name {
+	case "read":
+		return Read, nil
+	case "write":
+		return Write, nil
+	case "full":
+		return Full, nil
+	}
+	return 0, fmt.Errorf("%q: expected \"read\", \"write\" or \"full\": %w", name, ErrNotALevel)
+}
 
 // Needs says which way the store has to be opened.
 type Needs int
@@ -56,7 +75,8 @@ const (
 )
 
 // Kind is what sort of value an argument carries. It exists so a surface can
-// say so: a schema names a number, a flag takes a string either way.
+// say so, and so whatever reads a caller's words reads them as what they are:
+// a schema names a number, a yes is a flag that carries nothing.
 type Kind int
 
 const (
@@ -99,10 +119,9 @@ type Argument struct {
 // Answered is the one shape an operation's answer takes — an empty value of it,
 // carried so a surface can read the shape off the type.
 //
-// Declared rather than inferred, because nothing else knows it: Of works out
-// which shape to build by looking at which field of an Answer was filled, and
-// that is only knowable once the operation has run. A surface describing itself
-// has to say beforehand.
+// Declared rather than inferred: a surface describing itself has to say
+// beforehand what it will answer, and Of and RenderText build exactly that
+// shape from it rather than working one out from which field was filled.
 //
 // One shape and not a set of them. It used to be a set, so that `task focus`
 // could say "a task, or nothing in focus" — but a description that says "either
@@ -201,10 +220,32 @@ type Operation struct {
 	Answers Answered
 }
 
+// Name is how an operation is named as a command or a tool: "task_add".
+func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
+
+// Line is how an operation reads on the command line: "task add".
+func (o Operation) Line() string { return o.Thing + " " + o.Verb }
+
+// All is everything cairn can be asked to do, in a stable order.
+func All() []Operation {
+	return []Operation{
+		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
+		TaskArchive, TaskUnarchive, TaskLabel,
+		TaskMove, TaskFocus, TaskUnfocus,
+		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
+		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
+		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
+		TraceShow, TraceList,
+		TimesheetShow, TimesheetAdd,
+		ConfigShow,
+	}
+}
+
 // Check refuses what Run could not read anyway, before the store is opened
 // so a refusal never touches the disk:
 //
-//   - a Required argument has to have been named. A caller that named nothing
+//   - a Required argument has to have been named, and a Required list has to
+//     hold something. A caller that named nothing
 //     it needs is told which argument that was, rather than answered as if it
 //     had asked for nothing — an agent can correct a refusal and believes an
 //     answer;
@@ -232,7 +273,13 @@ func (o Operation) Check(in Input) error {
 		if arg.Required && !in.Named(arg.Name) {
 			return fmt.Errorf("%s needs %q, and was not given one", o.Line(), arg.Name)
 		}
+		if listed, named := in.Listed[arg.Name]; arg.Required && named && len(listed) == 0 {
+			return fmt.Errorf("%s needs at least one %q, and was given none", o.Line(), arg.Name)
+		}
 		given, named := in.Given[arg.Name]
+		if arg.Required && arg.Kind == Number && named && given == "" {
+			return fmt.Errorf("%s needs %q, and was given nothing", o.Line(), arg.Name)
+		}
 		if !named || given == "" {
 			continue
 		}
@@ -269,16 +316,15 @@ type On struct {
 	// Notes is the root every task's outside context sits under, as the surface
 	// found it; empty when the surface did not say. See docs/context.md.
 	Notes string
-	// Reading is what a configuration read found, for `config show` alone —
-	// the surface fills it, since reading the file is the surface's to do;
-	// the engine only ever reads it back through Tell. Empty for every other
-	// operation, which has no use for it.
-	Reading config.Reading
+	// Home is what the places were found from, for `config show`, which
+	// answers how they were found rather than where they are.
+	Home Home
 }
 
-// Answer is what an operation answered. Every operation fills the two or
-// three fields that are its own and leaves the rest alone, so both surfaces
-// read one shape rather than sorting fourteen.
+// Answer is what an operation answered. Every operation fills the fields that
+// are its own and leaves the rest alone, and says beforehand — in Answers —
+// which shape they make: Of and RenderText read that declaration, never which
+// field happens to be filled.
 //
 // Deleted and PutBack are numbers rather than entities because what they name
 // is gone, or is a whole store just replaced: there is nothing left to hand
@@ -287,9 +333,7 @@ type On struct {
 // RolledBack is its own field rather than sharing Change: a change shown in
 // full and a change just undone both carry a *migration.Migration, but they
 // are not the same document — a rollback names what was undone and what it
-// cost, where a change shown in full carries its SQL. Keeping them apart here
-// is what lets Of tell the two cases apart by which field is set, rather than
-// a surface guessing from which operation was called.
+// cost, where a change shown in full carries its SQL.
 //
 // Matched is its own field beside Tasks for the same reason: a listing renders
 // as a tree, sub-tasks nested under the task they hang from, but what matched
@@ -355,6 +399,12 @@ type Answer struct {
 	// reading the state of every task that blocks a row, which a narrowed
 	// listing does not carry and a task cannot see at all.
 	NothingBlocks []int
+	// Along is how far along each thing a listing names is, by its number, and
+	// Contexts where each task's outside context lives — said once in the
+	// listing, so a board drawing every card does not show each task in turn
+	// to learn them.
+	Along    map[int]domain.Progress
+	Contexts map[int]string
 	// Config is what `config show` answers: the file read and its two
 	// emplacements, each with what named it.
 	Config *Config
@@ -370,14 +420,6 @@ type Answer struct {
 // an operation run this way is told nothing about the notes.
 func Do(op Operation, path string, in Input) (Answer, error) {
 	return DoAt(op, Places{Store: path}, in, ByHand)
-}
-
-// Places is where an operation finds what it reaches: the store, and the root
-// every task's outside context sits under. A surface finds both the same way —
-// the configuration, then the environment — and hands them over together.
-type Places struct {
-	Store string
-	Notes string
 }
 
 // ByHand is the surface a history says nothing about: the person at the
@@ -396,28 +438,41 @@ func DoAt(op Operation, at Places, in Input, through string) (Answer, error) {
 	if err := op.Check(in); err != nil {
 		return Answer{}, err
 	}
+	return doAt(op, at, in, through)
+}
+
+// doAt is DoAt once the request was checked: it opens what op.Needs says and
+// runs it.
+func doAt(op Operation, at Places, in Input, through string) (Answer, error) {
 	switch op.Needs {
 	case AStoreBehind:
 		return doWith(OpenBehind, op, at, in, through)
 	case AStore:
 		return doWith(Open, op, at, in, through)
 	default:
-		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes}, in)
+		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes, Home: at.Home}, in)
 	}
 }
 
 // doWith opens the store the way open does, hands Run an engine open on it,
 // and closes it on the way out — whatever Run does or fails on.
+//
+// Closing is where the store writes back what it held aside, so a close that
+// fails after Run worked is said rather than dropped.
 func doWith(
 	open func(string) (*Engine, error),
 	op Operation, at Places, in Input, through string,
-) (Answer, error) {
+) (answer Answer, err error) {
 	eng, err := open(at.Store)
 	if err != nil {
 		return Answer{}, Told(err)
 	}
-	defer func() { _ = eng.Close() }()
-	eng.through, eng.notes = through, at.Notes
+	defer func() {
+		if closed := eng.Close(); err == nil && closed != nil {
+			answer, err = Answer{}, storeProblem(closed)
+		}
+	}()
+	eng.through, eng.notes, eng.home = through, at.Notes, at.Home
 	// Check already ran above, so this takes the door that does not repeat it.
 	return eng.run(op, in)
 }

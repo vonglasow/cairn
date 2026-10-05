@@ -113,132 +113,6 @@ func TestMayBlock_handsBackWhatTheStoreCouldNotAnswer(t *testing.T) {
 	}
 }
 
-// blocked builds the facts mayLeave and freedFrom read, without a store.
-func blocked(number int, state domain.State, blockers []int, because string) taskFacts {
-	a := &task.AsTold{}
-	a.Numbered(number)
-	a.InColumn(state)
-	for _, one := range blockers {
-		a.BlockedBy(one)
-	}
-	a.BlockersTold()
-	a.Because(because)
-	return factsOf(a.Task())
-}
-
-// The two columns that claim the work is yours are refused while something is
-// still in the way; every other column stays reachable.
-func TestMayLeave_refusesOnlyTheColumnsThatClaimTheWork(t *testing.T) {
-	for _, tc := range []struct {
-		what    string
-		was     taskFacts
-		becomes taskFacts
-		refused bool
-	}{
-		{"into todo, still blocked",
-			blocked(1, domain.Blocked, []int{2}, ""),
-			blocked(1, domain.Todo, []int{2}, ""), true},
-		{"into current, blocked by words",
-			blocked(1, domain.Blocked, nil, "the client"),
-			blocked(1, domain.Current, nil, "the client"), true},
-		{"into done, still blocked",
-			blocked(1, domain.Blocked, []int{2}, ""),
-			blocked(1, domain.Done, []int{2}, ""), false},
-		{"into todo with nothing recorded",
-			blocked(1, domain.Blocked, nil, ""),
-			blocked(1, domain.Todo, nil, ""), false},
-		{"into todo from somewhere that was never blocked",
-			blocked(1, domain.Backlog, []int{2}, ""),
-			blocked(1, domain.Todo, []int{2}, ""), false},
-	} {
-		err := mayLeave(tc.was, tc.becomes)
-		if tc.refused && err == nil {
-			t.Errorf("%s: it was allowed", tc.what)
-		}
-		if !tc.refused && err != nil {
-			t.Errorf("%s: it was refused: %v", tc.what, err)
-		}
-	}
-}
-
-// A refusal is an instruction: it names what is in the way and the flags that
-// would take each one away. Without that, somebody holding three blockers has
-// to work out which is which.
-func TestMayLeave_saysWhatIsInTheWayAndHowToTakeItAway(t *testing.T) {
-	err := mayLeave(
-		blocked(1, domain.Blocked, []int{2, 3}, "the client's answer"),
-		blocked(1, domain.Todo, []int{2, 3}, "the client's answer"))
-	if err == nil {
-		t.Fatal("it was allowed")
-	}
-	for _, said := range []string{"#2", "#3", "the client's answer",
-		"task 2", "task 3", "the reason it is waiting"} {
-		if !strings.Contains(err.Error(), said) {
-			t.Errorf("the refusal does not say %q: %v", said, err)
-		}
-	}
-}
-
-// Taking the last thing away puts a task back in todo. Taking one of two does
-// not, and neither does anything happening to a task nobody said was blocked.
-func TestFreedFrom_putsATaskBackOnlyWhenTheLastThingGoes(t *testing.T) {
-	for _, tc := range []struct {
-		what    string
-		was     taskFacts
-		becomes taskFacts
-		freed   bool
-	}{
-		{"the last blocker",
-			blocked(1, domain.Blocked, []int{2}, ""),
-			blocked(1, domain.Blocked, nil, ""), true},
-		{"the last words",
-			blocked(1, domain.Blocked, nil, "the client"),
-			blocked(1, domain.Blocked, nil, ""), true},
-		{"one of two",
-			blocked(1, domain.Blocked, []int{2, 3}, ""),
-			blocked(1, domain.Blocked, []int{3}, ""), false},
-		{"the blocker, with words left",
-			blocked(1, domain.Blocked, []int{2}, "the client"),
-			blocked(1, domain.Blocked, nil, "the client"), false},
-		{"a task that was not blocked",
-			blocked(1, domain.Todo, []int{2}, ""),
-			blocked(1, domain.Todo, nil, ""), false},
-		{"a task leaving the column itself",
-			blocked(1, domain.Blocked, []int{2}, ""),
-			blocked(1, domain.Done, nil, ""), false},
-	} {
-		freed, put := freedFrom(tc.was, tc.becomes)
-		if put != tc.freed {
-			t.Errorf("%s: freed = %v, want %v", tc.what, put, tc.freed)
-			continue
-		}
-		if put && freed != domain.Todo {
-			t.Errorf("%s: it landed in %q, want todo", tc.what, freed)
-		}
-	}
-}
-
-// The mark and the return read the words differently, and the difference is who
-// is doing the reading.
-//
-// Cairn never concludes anything from words it cannot check, so a task blocked
-// by words is never marked as having nothing in its way. But somebody erasing
-// those words has said the thing is out of the way, so that erasure takes the
-// task back to todo like any other last thing. One is a guess cairn is not
-// allowed to make; the other is a sentence somebody typed.
-func TestFreedFrom_actsOnTheWordsBeingErasedAndNeverOnTheirMeaning(t *testing.T) {
-	if _, put := freedFrom(
-		blocked(1, domain.Blocked, nil, "the client"),
-		blocked(1, domain.Blocked, nil, "the client")); put {
-		t.Error("a task moved with its words untouched")
-	}
-	if _, put := freedFrom(
-		blocked(1, domain.Blocked, nil, "the client"),
-		blocked(1, domain.Blocked, nil, "")); !put {
-		t.Error("erasing the last thing in its way left it blocked")
-	}
-}
-
 // A blocker naming a task the store does not hold is refused rather than kept:
 // a link to nothing is a fact that was never true.
 func TestCanBeBlocked_refusesATaskTheStoreDoesNotHold(t *testing.T) {
@@ -270,22 +144,22 @@ func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 	number := factsOf(shipIt).number
 
 	one := []string{"1"}
-	if _, err := e.Edit(number, Changes{Blocker: &one}); err != nil {
+	if _, err := e.edit(number, Changes{Blocker: &one}); err != nil {
 		t.Fatalf("naming a blocker: %v", err)
 	}
 	stopped := string(domain.Blocked)
-	if _, err := e.Edit(number, Changes{State: &stopped}); err != nil {
+	if _, err := e.edit(number, Changes{State: &stopped}); err != nil {
 		t.Fatalf("stopping it: %v", err)
 	}
 
 	// Still blocked, so the two columns that claim the work is yours are shut.
 	working := string(domain.Current)
-	if _, err := e.Edit(number, Changes{State: &working}); !errors.Is(err, ErrStillBlocked) {
+	if _, err := e.edit(number, Changes{State: &working}); !errors.Is(err, ErrStillBlocked) {
 		t.Errorf("err = %v, want it to say the task is still blocked", err)
 	}
 
 	taken := []string{fmt.Sprintf("-%d", blocking)}
-	freed, err := e.Edit(number, Changes{Blocker: &taken})
+	freed, err := e.edit(number, Changes{Blocker: &taken})
 	if err != nil {
 		t.Fatalf("taking the last blocker away: %v", err)
 	}
@@ -295,7 +169,7 @@ func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 
 	// And the column cairn chose is written down, so a history says how the
 	// task got there rather than leaving a reader to guess.
-	acts, err := e.History(number)
+	acts, err := e.historyOf(number)
 	if err != nil {
 		t.Fatalf("History: %v", err)
 	}
@@ -310,7 +184,7 @@ func TestEdit_handsBackABlockerItCannotRead(t *testing.T) {
 	e := openEngine(t)
 	one := add(t, e, "Ship it")
 	soon := []string{"soon"}
-	if _, err := e.Edit(factsOf(one).number, Changes{Blocker: &soon}); !errors.Is(err, ErrBlockerRequired) {
+	if _, err := e.edit(factsOf(one).number, Changes{Blocker: &soon}); !errors.Is(err, ErrBlockerRequired) {
 		t.Errorf("err = %v, want it to say a blocker is a task number", err)
 	}
 }
@@ -325,10 +199,10 @@ func TestEdit_writesDownWhichTaskWasInTheWay(t *testing.T) {
 	blocking := fmt.Sprintf("#%d", factsOf(spec).number)
 
 	named := []string{fmt.Sprint(factsOf(spec).number)}
-	if _, err := e.Edit(factsOf(shipIt).number, Changes{Blocker: &named}); err != nil {
+	if _, err := e.edit(factsOf(shipIt).number, Changes{Blocker: &named}); err != nil {
 		t.Fatalf("naming a blocker: %v", err)
 	}
-	acts, err := e.History(factsOf(shipIt).number)
+	acts, err := e.historyOf(factsOf(shipIt).number)
 	if err != nil {
 		t.Fatalf("History: %v", err)
 	}
@@ -345,11 +219,11 @@ func TestTheRefusalDoesNotSpeakInCommandLineFlags(t *testing.T) {
 	number := factsOf(add(t, e, "Waiting")).number
 	blocked := string(domain.Blocked)
 	because := "the lawyer"
-	if _, err := e.Edit(number, Changes{State: &blocked, Because: &because}); err != nil {
+	if _, err := e.edit(number, Changes{State: &blocked, Because: &because}); err != nil {
 		t.Fatal(err)
 	}
 	working := string(domain.Current)
-	_, err := e.Edit(number, Changes{State: &working})
+	_, err := e.edit(number, Changes{State: &working})
 	if err == nil {
 		t.Fatal("a blocked task left its column")
 	}

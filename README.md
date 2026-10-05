@@ -1,7 +1,7 @@
 # cairn
 
-A personal objective and task manager. CLI first, then MCP; the terminal and
-desktop boards come later, once the engine stands on its own.
+A personal objective and task manager: a command line, an MCP server, a board
+in the terminal and the same board in a window — four surfaces over one engine.
 
 ```sh
 cairn task add "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
@@ -32,7 +32,7 @@ cairn task unfocus 3             # done with that one
 cairn task unfocus               # done with all of them
 cairn task archive 1             # off the board, kept whole
 cairn task archive --state done  # the whole column in one go
-cairn task label --state done --label sprint-12   # mark a sprint before sweeping it
+cairn task label sprint-12 --state done  # mark a sprint before sweeping it
 cairn task list --archived       # only what was taken off
 cairn task unarchive 1           # back on the board
 ```
@@ -52,8 +52,8 @@ cairn task unarchive 1           # back on the board
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 | `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
 
-A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. A task carrying sub-tasks is not
-deleted while they are there. Add `--json` to any command to be answered as a
+A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. Deleting a task carrying sub-tasks
+deletes them with it: a part goes with the work it belongs to. Add `--json` to any command to be answered as a
 machine — including when it refuses.
 
 ## The order, and what you are working on
@@ -141,7 +141,7 @@ several cost and bought.
 
 ```sh
 cairn trace show 3               # everything ever done to a task
-cairn trace list                 # what was done today, and what it comes to
+cairn trace list                 # what was done today, across every task
 cairn trace list --since 2026-08-20
 ```
 
@@ -356,16 +356,21 @@ make run ARGS='task list'
 
 The store lives in a temporary folder, so nothing here touches your own.
 
+To look at a board full of believable work rather than build one by hand,
+`scripts/fixtures.sh [folder]` makes a store under `/tmp/cairn-fixtures` (or
+the folder named) and opens the window on it. It only ever deletes a folder it
+made itself.
+
 ```sh
 make build
 export CAIRN_STORE=$(mktemp -d)/cairn.db
-./bin/cairn objective add "Sortir cairn 1.0" --desc "la première vraie" --priority high --label perso --label spec --deadline 2026-12-31 --estimate 40h
+./bin/cairn objective add "Ship cairn 1.0" --desc "the first real one" --priority high --label personal --label spec --deadline 2026-12-31 --estimate 40h
 ./bin/cairn objective list
 ./bin/cairn objective show 1
-./bin/cairn task add "Écrire la spéc" --desc "la toute première" --state todo --priority high --label Spec --label team --deadline 2026-09-01 --estimate 90m
-./bin/cairn task add "Relire" --parent 1
-./bin/cairn task add "Publier" --parent 1
-./bin/cairn task add "Autre chose"
+./bin/cairn task add "Write the spec" --desc "the very first" --state todo --priority high --label Spec --label team --deadline 2026-09-01 --estimate 90m
+./bin/cairn task add "Read it over" --parent 1
+./bin/cairn task add "Publish it" --parent 1
+./bin/cairn task add "Something else"
 ./bin/cairn task list
 ./bin/cairn task show 1
 ./bin/cairn task show 2
@@ -375,7 +380,7 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task edit 1 --label +urgent
 ./bin/cairn task edit 1 --label -spec
 ./bin/cairn task edit 1 --label "+draft,+wip"
-./bin/cairn task add "Liste en un flag" --label a,b,c
+./bin/cairn task add "A list in one flag" --label a,b,c
 ./bin/cairn task edit 1 --spent 2h
 ./bin/cairn task edit 1 --spent +30m
 ./bin/cairn task edit 1 --spent -15m
@@ -390,7 +395,7 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn objective edit 1 --state on-hold
 ./bin/cairn objective edit 1 --label +urgent
 ./bin/cairn objective edit 1 --label -spec
-./bin/cairn objective add "Apprendre Go" --state on-hold
+./bin/cairn objective add "Learn Go" --state on-hold
 ./bin/cairn objective list
 ./bin/cairn objective show 2
 ./bin/cairn objective delete 2 --yes

@@ -5,6 +5,7 @@ package engine
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ import (
 // engine will not say.
 func actsOf(t *testing.T, e *Engine, number int) []trace.Act {
 	t.Helper()
-	acts, err := e.History(number)
+	acts, err := e.historyOf(number)
 	if err != nil {
 		t.Fatalf("History(%d): %v", number, err)
 	}
@@ -56,7 +57,7 @@ func (f *recordedFacts) At(when time.Time)     { f.at = when }
 // the whole reason it is one each.
 func TestRecordCreated_writesOneActPerAttributeItStartedWith(t *testing.T) {
 	e := openEngine(t)
-	added, err := e.Add("Write the spec", Changes{Priority: of("high"), Description: of("the one")})
+	added, err := e.add("Write the spec", Changes{Priority: of("high"), Description: of("the one")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestRecordCreated_writesOneActPerAttributeItStartedWith(t *testing.T) {
 // task started with, not what it started without.
 func TestRecordCreated_writesNothingForWhatItDoesNotCarry(t *testing.T) {
 	e := openEngine(t)
-	added, err := e.Add("Write the spec", Changes{})
+	added, err := e.add("Write the spec", Changes{})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -107,14 +108,14 @@ func TestRecordCreated_writesNothingForWhatItDoesNotCarry(t *testing.T) {
 // an attribute given the value it already held.
 func TestRecordChanges_writesOnlyWhatActuallyMoved(t *testing.T) {
 	e := openEngine(t)
-	added, err := e.Add("Write the spec", Changes{Priority: of("high")})
+	added, err := e.add("Write the spec", Changes{Priority: of("high")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	number := factsOf(added).number
 	born := len(actsOf(t, e, number))
 
-	if _, err := e.Edit(number, Changes{Priority: of("high"), State: of("todo")}); err != nil {
+	if _, err := e.edit(number, Changes{Priority: of("high"), State: of("todo")}); err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
 	changes := actsOf(t, e, number)[born:]
@@ -134,7 +135,7 @@ func TestRecordChanges_writesOnlyWhatActuallyMoved(t *testing.T) {
 func TestHistory_refusesATaskNothingWasEverWrittenAbout(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "The only one")
-	if _, err := e.History(99); !errors.Is(err, ErrNoSuchTask) {
+	if _, err := e.historyOf(99); !errors.Is(err, ErrNoSuchTask) {
 		t.Errorf("History(99) = %v, want %v", err, ErrNoSuchTask)
 	}
 }
@@ -144,7 +145,7 @@ func TestHistory_refusesATaskNothingWasEverWrittenAbout(t *testing.T) {
 func TestHistory_stillAnswersForATaskThatIsGone(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Gone soon")).number
-	if err := e.Delete(number); err != nil {
+	if err := e.delete(number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	acts := actsOf(t, e, number)
@@ -160,7 +161,7 @@ func TestSince_reachesFromADayOnward(t *testing.T) {
 	add(t, e, "First")
 	add(t, e, "Second")
 
-	today, err := e.Since(startOfToday())
+	today, err := e.since(startOfToday())
 	if err != nil {
 		t.Fatalf("Since: %v", err)
 	}
@@ -168,7 +169,7 @@ func TestSince_reachesFromADayOnward(t *testing.T) {
 		t.Error("a period covering today reaches nothing, and two tasks were made in it")
 	}
 
-	later, err := e.Since(time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
+	later, err := e.since(time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("Since: %v", err)
 	}
@@ -231,7 +232,7 @@ func TestMove_isWrittenDownWithWhereItWent(t *testing.T) {
 		second := factsOf(add(t, e, "Second")).number
 		born := len(actsOf(t, e, second))
 
-		if err := e.Move(second, tc.at, first); err != nil {
+		if err := e.move(second, tc.at, first); err != nil {
 			t.Fatalf("%s: Move: %v", tc.what, err)
 		}
 		written := actsOf(t, e, second)[born:]
@@ -259,10 +260,10 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	bornFirst := len(actsOf(t, e, first))
 	bornSecond := len(actsOf(t, e, second))
 
-	if _, err := e.PutInFocus(first); err != nil {
+	if _, err := e.putInFocus(first); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
-	if _, err := e.PutInFocus(second); err != nil {
+	if _, err := e.putInFocus(second); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 
@@ -274,7 +275,7 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 		t.Errorf("the act is %q, want %q", did, trace.FocusTaken)
 	}
 	// And letting it go writes the release, which is what closes its stretch.
-	if err := e.LetGoOf(first); err != nil {
+	if err := e.letGoOf(first); err != nil {
 		t.Fatalf("LetGoOf: %v", err)
 	}
 	released := actsOf(t, e, first)[bornFirst:]
@@ -301,11 +302,11 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 func TestPutInFocus_writesNothingWhenItIsAlreadyThere(t *testing.T) {
 	e := openEngine(t)
 	only := factsOf(add(t, e, "The only one")).number
-	if _, err := e.PutInFocus(only); err != nil {
+	if _, err := e.putInFocus(only); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 	held := len(actsOf(t, e, only))
-	if _, err := e.PutInFocus(only); err != nil {
+	if _, err := e.putInFocus(only); err != nil {
 		t.Fatalf("PutInFocus again: %v", err)
 	}
 	if got := len(actsOf(t, e, only)); got != held {
@@ -321,17 +322,17 @@ func TestLetGo_writesAReleaseOnlyWhenSomethingWasHeld(t *testing.T) {
 	only := factsOf(add(t, e, "The only one")).number
 	born := len(actsOf(t, e, only))
 
-	if err := e.LetGo(); err != nil {
+	if err := e.letGo(); err != nil {
 		t.Fatalf("LetGo with nothing held: %v", err)
 	}
 	if got := len(actsOf(t, e, only)); got != born {
 		t.Errorf("%d acts after letting go of nothing, want the %d already there", got, born)
 	}
 
-	if _, err := e.PutInFocus(only); err != nil {
+	if _, err := e.putInFocus(only); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
-	if err := e.LetGo(); err != nil {
+	if err := e.letGo(); err != nil {
 		t.Fatalf("LetGo: %v", err)
 	}
 	written := actsOf(t, e, only)[born:]
@@ -350,12 +351,12 @@ func TestDelete_closesTheStretchOnlyOnTheTaskThatWasHeld(t *testing.T) {
 	e := openEngine(t)
 	held := factsOf(add(t, e, "Being worked on")).number
 	other := factsOf(add(t, e, "Something else")).number
-	if _, err := e.PutInFocus(held); err != nil {
+	if _, err := e.putInFocus(held); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 
 	bornOther := len(actsOf(t, e, other))
-	if err := e.Delete(other); err != nil {
+	if err := e.delete(other); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	onOther := actsOf(t, e, other)[bornOther:]
@@ -367,7 +368,7 @@ func TestDelete_closesTheStretchOnlyOnTheTaskThatWasHeld(t *testing.T) {
 	}
 
 	bornHeld := len(actsOf(t, e, held))
-	if err := e.Delete(held); err != nil {
+	if err := e.delete(held); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	onHeld := actsOf(t, e, held)[bornHeld:]
@@ -386,7 +387,7 @@ func TestRecordChanges_writesEveryAttributeThatMoved(t *testing.T) {
 	number := factsOf(add(t, e, "Write the spec")).number
 	born := len(actsOf(t, e, number))
 
-	if _, err := e.Edit(number, Changes{State: of("todo"), Priority: of("high")}); err != nil {
+	if _, err := e.edit(number, Changes{State: of("todo"), Priority: of("high")}); err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
 	written := actsOf(t, e, number)[born:]
@@ -409,7 +410,7 @@ func TestRecordChanges_writesEveryAttributeThatMoved(t *testing.T) {
 // not written down at all.
 func TestRecordCreated_writesALengthOfTimeItStartedWith(t *testing.T) {
 	e := openEngine(t)
-	added, err := e.Add("Write the spec", Changes{Estimate: of("90m")})
+	added, err := e.add("Write the spec", Changes{Estimate: of("90m")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -487,11 +488,11 @@ func TestRenderText_rendersAPeriodAsItsActs(t *testing.T) {
 	first := factsOf(add(t, e, "First")).number
 	second := factsOf(add(t, e, "Second")).number
 	for _, one := range []int{first, second} {
-		if _, err := e.PutInFocus(one); err != nil {
+		if _, err := e.putInFocus(one); err != nil {
 			t.Fatalf("PutInFocus: %v", err)
 		}
 	}
-	acts, err := e.Since(startOfToday())
+	acts, err := e.since(startOfToday())
 	if err != nil {
 		t.Fatalf("Since: %v", err)
 	}
@@ -515,10 +516,10 @@ func TestDeletingWritesDownWhatWentWithIt(t *testing.T) {
 	number := factsOf(spec).number
 	note := "the one that matters"
 	high := string(domain.High)
-	if _, err := e.Edit(number, Changes{Description: &note, Priority: &high}); err != nil {
+	if _, err := e.edit(number, Changes{Description: &note, Priority: &high}); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.Delete(number); err != nil {
+	if err := e.delete(number); err != nil {
 		t.Fatal(err)
 	}
 	kept := ""
@@ -531,5 +532,32 @@ func TestDeletingWritesDownWhatWentWithIt(t *testing.T) {
 		if !strings.Contains(kept, want) {
 			t.Errorf("the trace kept %q, which does not carry %q", kept, want)
 		}
+	}
+}
+
+// Taking a task off the board and bringing it back are acts on it like any
+// other, and its history says both. They used to change the task and write
+// nothing down, so a task off the board had no say in how it got there.
+func TestArchiving_isWrittenDown(t *testing.T) {
+	e := openEngine(t)
+	n := factsOf(add(t, e, "Ship it")).number
+	if err := e.archive(n); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.unarchive(n); err != nil {
+		t.Fatal(err)
+	}
+	acts, err := e.historyOf(n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var said []string
+	for _, a := range acts {
+		if did, field, was, became := didOf(a); did == trace.Changed && field == "archived" {
+			said = append(said, was+"→"+became)
+		}
+	}
+	if want := []string{"→yes", "yes→"}; !slices.Equal(said, want) {
+		t.Errorf("the history says %v about archiving, want %v", said, want)
 	}
 }

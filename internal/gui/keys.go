@@ -1,0 +1,522 @@
+package gui
+
+import (
+	"strconv"
+
+	"cairn/internal/engine"
+	"cairn/internal/reading"
+)
+
+// What the keyboard does: the keys the bar offers and the few it does not,
+// walking the board and moving what is chosen, and holding, copying and
+// pasting text.
+
+// Key is the few flat shortcuts this board keeps. There are no modes: what a
+// person points at is what happens, and these are the things a pointer is bad
+// at saying.
+func (w Window) Key(name string) Window {
+	// A key does what the bar offers, where the bar offers it, and nothing
+	// where the bar says nothing. One rule and not a list of guards: the bar
+	// used to offer Edit on an open task while e did nothing there, and a key
+	// that adds used to work over an open form and throw away what was in it.
+	//
+	// Read off the offers rather than written out beside them, so an offer
+	// added to one screen cannot arrive without its key.
+	if name != "ctrl+n" && name != "cmd+f" && name != "ctrl+f" {
+		for _, offer := range w.Offers() {
+			if Shortcut(offer) == name {
+				return w.Choose(offer)
+			}
+		}
+	}
+	// Taking a task up is not offered on the bar: the bar has room for what
+	// changes a task, and this changes what somebody is working on. It is in
+	// the help, under the same key the terminal board uses.
+	if name == "f" && w.screen == OnTheBoard && w.chosen != 0 && !w.chosenGoal {
+		return w.working()
+	}
+	// The whole column off the board at once. Not on the bar either: the bar
+	// has room for what one card does, and this does what a column does. The
+	// engine has swept by a narrowing all along and only the command line ever
+	// asked it to.
+	if name == "shift+x" && w.screen == OnTheBoard && w.tab == Tasks && w.sweeps() != "" {
+		w.screen, w.question = OnAsking, aboutSweeping
+		return w
+	}
+	// What is held on an open task is copied, and ⌘A holds the whole of the
+	// text last pressed in.
+	if w.screen == OnDetail && name == "cmd+c" {
+		return w.copyingPicked()
+	}
+	if w.screen == OnDetail && name == "cmd+a" {
+		return w.all()
+	}
+	// Half a box at a time through the description on an open task: the
+	// terminal board's keys for it, taken here too so the same fingers work.
+	if w.screen == OnDetail && (name == "cmd+d" || name == "cmd+u") {
+		_, _, _, rows, ok := w.sayingOn()
+		if !ok {
+			return w
+		}
+		by := max(1, rows/2)
+		if name == "cmd+u" {
+			by = -by
+		}
+		w.saying = w.settledSaying(w.saying + by)
+		return w
+	}
+	// The two spellings of a key the bar has no room to write twice.
+	switch name {
+	case "ctrl+n":
+		return w.Key("cmd+n")
+	case "cmd+f", "ctrl+f":
+		return w.Key("/")
+	}
+	// Escape is not here: every screen that has a way out offers it as Close
+	// or Cancel, and Shortcut maps both to esc — so it is served by the loop
+	// above before it ever reaches this far. The branch that used to close a
+	// search here was unreachable, and the only thing that noticed was
+	// mutation, which found arithmetic no test could run.
+	if w.screen == OnChoosing {
+		return w.inChoosing(name)
+	}
+	if w.screen == OnForm {
+		return w.inForm(name).inSightOfTheCaret()
+	}
+	if w.screen == OnTheBoard {
+		switch name {
+		case "tab", "shift+tab":
+			return w.other()
+		case "left":
+			return w.walking(-1, 0)
+		case "right":
+			return w.walking(1, 0)
+		case "up":
+			return w.walking(0, -1)
+		case "down":
+			return w.walking(0, 1)
+		case "enter", "return":
+			return w.opening()
+		case "shift+left":
+			return w.shifting(-1, 0)
+		case "shift+right":
+			return w.shifting(1, 0)
+		case "shift+up":
+			return w.shifting(0, -1)
+		case "shift+down":
+			return w.shifting(0, 1)
+		}
+	}
+	if w.screen == OnDetail {
+		// A hand on the keyboard reads a history the same way it reads a
+		// board: with the arrows, without reaching for the mouse. Over an
+		// objective they walk the work under it instead — that is the list
+		// there is to read, and the history column carries one line saying an
+		// objective has none.
+		// The box takes the arrows wherever there is one, because it is what
+		// somebody acts on: a tile is marked done, and a line of history is
+		// read rather than changed. The history keeps the wheel over it and
+		// the bar beside it.
+		if len(w.Under()) > 0 {
+			switch name {
+			case "down":
+				return w.walkingUnder(1)
+			case "up":
+				return w.walkingUnder(-1)
+			case " ", "space":
+				return w.marking()
+			}
+			return w
+		}
+		switch name {
+		case "down":
+			w.history = w.settledHistory(w.history + 1)
+		case "up":
+			w.history = w.settledHistory(w.history - 1)
+		}
+		return w
+	}
+	if w.screen == OnSearch {
+		switch name {
+		case "backspace":
+			w.looking = w.looking.Back()
+		case "left":
+			return w.walks(-1)
+		case "right":
+			return w.walks(1)
+		case "enter", "return":
+			// The box closes and what it narrowed stays narrowed. A search
+			// that vanished the moment it was asked for would be a search
+			// nobody could act on.
+			w.screen = OnTheBoard
+		}
+	}
+	return w
+}
+
+// inForm is what a key does while the form has the window. Everything here is
+// about one field, because a form is a column of fields and the keyboard is on
+// one of them.
+func (w Window) inForm(name string) Window {
+	long := w.form.Fields()[w.form.On()].Long
+	switch name {
+	case "tab":
+		w.form = w.form.onto(w.form.On() + 1)
+	case "shift+tab":
+		w.form = w.form.onto(w.form.On() - 1)
+	case "down", "up":
+		// Inside the description the arrows walk its lines, so every one of
+		// them can be reached. Down used to leave for the next field, and the
+		// only way through a long text was a character at a time — which is
+		// why it read as cut off. Tab is what leaves it.
+		by := 1
+		if name == "up" {
+			by = -1
+		}
+		if long {
+			return w.walksLines(by)
+		}
+		w.form = w.form.onto(w.form.On() + by)
+	case "backspace":
+		return w.back()
+	case "cmd+a":
+		w.form = w.form.Writes(w.form.Writing().All())
+	case "cmd+c":
+		w.copying = w.form.Writing().Holds()
+	case "cmd+x":
+		w.copying = w.form.Writing().Holds()
+		w.form = w.form.Writes(w.form.Writing().Back())
+	case "cmd+v":
+		// Asked for here and answered later: a clipboard is read by the
+		// system, which takes as long as it takes, and the answer comes back
+		// as an event like any other.
+		w.pasting = true
+	case "cmd+s":
+		// The terminal's save, which the window takes too: a terminal cannot
+		// be sent ⌘, so the board saves on ^S, and the same fingers should
+		// work in both.
+		return w.Save()
+	case "shift+left":
+		return w.holding(-1)
+	case "shift+right":
+		return w.holding(1)
+	case "left":
+		return w.walks(-1)
+	case "right":
+		return w.walks(1)
+	case "enter", "return", "shift+enter", "shift+return":
+		// A line where a line can be written, and on to the next field
+		// everywhere else — the same on both boards. It never saves: saving
+		// is a chord of its own, so it cannot happen by reaching for the key
+		// that breaks a line.
+		if long {
+			w.form = w.form.Writes(w.form.Writing().Types("\n"))
+			return w.inSightOfTheCaret()
+		}
+		w.form = w.form.onto(w.form.On() + 1)
+	}
+	return w
+}
+
+// inSightOfTheCaret scrolls the long field the keyboard is on just far enough
+// for the caret's line to be in the box. The wheel moves the box on its own; the
+// caret moving brings it back.
+func (w Window) inSightOfTheCaret() Window {
+	_, _, lines, rows, ok := w.sayingOn()
+	if !ok {
+		return w
+	}
+	line, _ := lines.At(w.form.Writing().At)
+	w.saying = w.settledSaying(inSight(line, 1, rows, w.saying))
+	return w
+}
+
+// holding walks the caret and leaves the anchor, which is how a run is held
+// from the keyboard.
+func (w Window) holding(by int) Window {
+	writing := w.form.Writing()
+	w.form = w.form.Writes(writing.Selects(writing.At + by))
+	return w
+}
+
+// Copying is what the window wants put on the clipboard, and whether it wants
+// anything at all.
+func (w Window) Copying() (string, bool) { return w.copying, w.copying != "" }
+
+// Copied says the loop has done it.
+func (w Window) Copied() Window {
+	w.copying = ""
+	return w
+}
+
+// Pasting says the window has asked for what is on the clipboard.
+func (w Window) Pasting() bool { return w.pasting }
+
+// Pasted hands over what was on it. Empty is still an answer: the clipboard
+// held nothing, and the window has stopped waiting either way.
+func (w Window) Pasted(text string) Window {
+	w.pasting = false
+	if text == "" {
+		return w
+	}
+	if w.screen == OnChoosing {
+		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
+		return w
+	}
+	if w.screen != OnForm {
+		return w
+	}
+	w.form = w.form.Writes(w.form.Writing().Types(text))
+	return w
+}
+
+// walking moves what is chosen by the arrows: across the columns, or down the
+// cards of one. A hand on the keyboard should not have to reach for the mouse
+// to look at the next task.
+//
+// It stops at the edges rather than wrapping round, and walks past a column
+// with nothing in it rather than stopping in one — an empty column is not a
+// place to be.
+func (w Window) walking(across, down int) Window {
+	if w.tab == Objectives {
+		return w.walkingGoals(across, down)
+	}
+	// The band is walked like the columns. A task that is blocked, watching or
+	// paused used to be beyond the arrows altogether — and those are the ones
+	// that want a decision.
+	if lane, at, inBand := w.whereInBand(); inBand {
+		return w.walkingBand(lane, at, across, down)
+	}
+	column, at := w.whereChosen()
+	if down > 0 {
+		// Off the bottom of a column is into the lane beneath it. The backlog
+		// stands alone, full height, with no lane under it.
+		if here := w.inColumn(column); column > 0 && at == len(here)-1 {
+			if lane := w.inLane(column - 1); len(lane) > 0 {
+				w.chosen, w.chosenGoal = lane[0].Number, false
+				return w
+			}
+		}
+	}
+	if across != 0 {
+		for next := column + across; next >= 0 && next < Columns; next += across {
+			here := w.inColumn(next)
+			if len(here) == 0 {
+				continue
+			}
+			at = min(at, len(here)-1)
+			w.chosen, w.chosenGoal = here[at].Number, false
+			return w.following(next, at)
+		}
+		return w
+	}
+	here := w.inColumn(column)
+	if len(here) == 0 {
+		return w
+	}
+	at = min(len(here)-1, max(0, at+down))
+	w.chosen, w.chosenGoal = here[at].Number, false
+	return w.following(column, at)
+}
+
+// shifting moves the chosen card itself rather than the choice: sideways it
+// changes column, up and down it changes place among the ones it sits with.
+// The terminal has done this from the beginning; the window had only the drag,
+// so the central gesture of the product wanted a mouse.
+func (w Window) shifting(across, down int) Window {
+	if w.tab == Objectives || w.chosen == 0 {
+		return w
+	}
+	showing := w.Showing().Cards
+	column, inBand, _, found := reading.Where(showing, w.archived, w.chosen)
+	if !found {
+		return w
+	}
+	if across != 0 {
+		state, ok := reading.Beside(column, inBand, across)
+		if !ok {
+			return w
+		}
+		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(w.chosen), "state": state}})
+	}
+	if inBand {
+		return w
+	}
+	given, ok := reading.Step(w.inColumn(column), w.chosen, down)
+	if !ok {
+		return w
+	}
+	given["number"] = strconv.Itoa(w.chosen)
+	return w.asking(engine.TaskMove, engine.Input{Given: given})
+}
+
+// whereInBand says which lane the chosen task sits in, and where in it.
+func (w Window) whereInBand() (lane, at int, ok bool) {
+	for i := range Lanes {
+		for j, c := range w.inLane(i) {
+			if c.Number == w.chosen {
+				return i, j, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+// walkingBand moves inside the band, and back up into the column a lane sits
+// under. The lanes are one row, so down walks along a lane and up leaves it.
+func (w Window) walkingBand(lane, at, across, down int) Window {
+	if down < 0 && at == 0 {
+		if here := w.inColumn(lane + 1); len(here) > 0 {
+			last := len(here) - 1
+			w.chosen, w.chosenGoal = here[last].Number, false
+			return w.following(lane+1, last)
+		}
+		return w
+	}
+	if across != 0 {
+		for next := lane + across; next >= 0 && next < len(Lanes); next += across {
+			if here := w.inLane(next); len(here) > 0 {
+				w.chosen, w.chosenGoal = here[min(at, len(here)-1)].Number, false
+				return w
+			}
+		}
+		return w
+	}
+	here := w.inLane(lane)
+	w.chosen, w.chosenGoal = here[min(len(here)-1, max(0, at+down))].Number, false
+	return w
+}
+
+// following moves a column so that the card just chosen is in sight. Walking
+// used to move the choice and leave the column where it was, which chose a
+// card nobody could see — and a card chosen out of sight is a card whose
+// title, whose state and whose place are all unknown to whoever chose it.
+func (w Window) following(column, at int) Window {
+	run := w.Layout().Column[column]
+	w.scroll[column] = w.settled(column, inSight(at, CardHeight, run.H, w.scroll[column]))
+	return w
+}
+
+// followingGoal is the same for the objectives, which are one list rather than
+// four columns and so have one number of their own.
+func (w Window) followingGoal(at int) Window {
+	run := GoalsRun(w.Layout())
+	w.goals = w.settledGoals(inSight(at/GoalsAcross(), CardHeight, run.H, w.goals))
+	return w
+}
+
+// settledGoals keeps the objectives between their two ends.
+func (w Window) settledGoals(want int) int {
+	run := GoalsRun(w.Layout())
+	return min(max(0, GoalRows(len(w.Showing().Goals))*CardHeight-run.H), max(0, want))
+}
+
+// walkingGoals is the same down a list, which is what the objectives are.
+func (w Window) walkingGoals(across, down int) Window {
+	here := reading.Sorted(w.Showing().Goals)
+	if len(here) == 0 {
+		return w
+	}
+	at := 0
+	for i, g := range here {
+		if g.Number == w.chosen {
+			at = i
+		}
+	}
+	// Across moves to the next objective, down to the one a row below: the
+	// objectives are a grid, and an arrow means in a grid what it looks like
+	// it means.
+	at = min(len(here)-1, max(0, at+across+down*GoalsAcross()))
+	w.chosen, w.chosenGoal = here[at].Number, true
+	return w.followingGoal(at)
+}
+
+// WhereChosen is where what is chosen is drawn and the run of the window it is
+// drawn in, so that a test can ask whether one is inside the other.
+func (w Window) WhereChosen() (box, run Box, ok bool) {
+	l := w.Layout()
+	if w.tab == Objectives {
+		for i, g := range reading.Sorted(w.Showing().Goals) {
+			if g.Number == w.chosen {
+				return GoalAt(l, i, w.goals), GoalsRun(l), true
+			}
+		}
+		return Box{}, Box{}, false
+	}
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	for i, held := range dealt {
+		for j, c := range held.Cards {
+			if c.Number == w.chosen {
+				return l.CardAt(i, j, w.scroll[i]), l.Column[i], true
+			}
+		}
+	}
+	return Box{}, Box{}, false
+}
+
+// asking runs one operation and reads the board back, the way every gesture
+// that writes ends; a refusal is kept to be said.
+func (w Window) asking(op engine.Operation, in engine.Input) Window {
+	if _, err := w.work.Ask(op, in); err != nil {
+		w.err = err
+		return w
+	}
+	return w.Look()
+}
+
+// whereChosen is which column what is chosen stands in and how far down it, and
+// the first card of the first column that has one when nothing is chosen — an
+// arrow on an untouched board has to begin somewhere.
+func (w Window) whereChosen() (column, at int) {
+	// What is walked is what is showing: under a search, the arrows reach
+	// what the search left and nothing behind it.
+	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	for i, held := range dealt {
+		for j, c := range held.Cards {
+			if c.Number == w.chosen {
+				return i, j
+			}
+		}
+	}
+	for i, held := range dealt {
+		if len(held.Cards) > 0 {
+			return i, 0
+		}
+	}
+	return 0, 0
+}
+
+// opening is what enter does: it opens whatever the arrows walked to, the way a
+// double-click opens whatever the pointer landed on.
+func (w Window) opening() Window {
+	if w.chosen == 0 {
+		return w
+	}
+	w.screen = OnDetail
+	// Whatever is opened is opened at its top: its description, the work under
+	// it, its history. The description's scroll was left where the last task or
+	// the form had put it, so a short description opened after a long one had
+	// been read to its end showed an empty box until the wheel moved.
+	w.underAt, w.history, w.serving, w.saying = 0, 0, 0, 0
+	w.picked, w.pickingText = Picked{}, false
+	w.spareHistory, w.spareSaying = 0, 0
+	// An objective is opened on the work under it and not on a history: it has
+	// none of its own, and the number it carries belongs to a task as well —
+	// asking for the trace of that number answered with a task nobody had
+	// chosen, which is the wrong answer said confidently.
+	if w.chosenGoal {
+		w.acts = nil
+		return w
+	}
+	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
+	if err != nil {
+		w.err = err
+		return w
+	}
+	w.acts = nil
+	for _, act := range shown.Acts {
+		w.acts = append(w.acts, line(act))
+	}
+	return w
+}

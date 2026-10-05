@@ -3,7 +3,6 @@ package gui
 // What a card says, worked out before anything is drawn.
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -107,7 +106,7 @@ func Numbered(c reading.Card) string {
 // the labels written across it.
 func Carried(c reading.Card, g Glyphs) string {
 	said := ""
-	if c.Described {
+	if c.Described() {
 		said = g.Described
 	}
 	if c.SubTotal > 0 {
@@ -141,7 +140,7 @@ func Counted(g reading.Goal) string {
 	if g.Total == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d/%d · %d%%", g.Done, g.Total, g.Done*100/g.Total)
+	return g.Counted() + " · " + strconv.Itoa(g.Percent()) + "%"
 }
 
 // SubLine is what one part of the work reads on its tile: its number, then its
@@ -186,9 +185,7 @@ func Spent(c reading.Card) (said string, over bool) {
 	if c.Spent == "" {
 		return c.Estimate, false
 	}
-	spent, oneErr := time.ParseDuration(c.Spent)
-	reckoned, twoErr := time.ParseDuration(c.Estimate)
-	return c.Spent + "/" + c.Estimate, oneErr == nil && twoErr == nil && spent > reckoned
+	return c.Spent + "/" + c.Estimate, c.Overrun
 }
 
 // FreedMark is what a blocked task wears once every task it waits on is done.
@@ -203,11 +200,7 @@ func Serves(c reading.Card) string {
 	if len(c.Objectives) == 0 {
 		return ""
 	}
-	numbers := make([]string, 0, len(c.Objectives))
-	for _, one := range c.Objectives {
-		numbers = append(numbers, strconv.Itoa(one))
-	}
-	return ServesMark + strings.Join(numbers, " ")
+	return ServesMark + reading.Numbers(c.Objectives)
 }
 
 // Standing is the mark an objective's card wears for where it stands. An

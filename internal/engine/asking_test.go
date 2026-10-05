@@ -2,6 +2,8 @@ package engine
 
 import (
 	"path/filepath"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -59,5 +61,20 @@ func TestAskRefusesAnArgumentTheOperationDoesNotTake(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "nonesuch") {
 		t.Errorf("error = %q, want it to name the argument", err)
+	}
+}
+
+// An engine held open is asked through an operation and nothing else: Ask
+// checks what it is handed and keeps what it writes whole. It used to export
+// thirty-odd methods beside it — Add, Edit, Archive — each a second door that
+// checked nothing, and the boards' own tests went through them.
+func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
+	door := reflect.TypeFor[*Engine]()
+	var exported []string
+	for i := range door.NumMethod() {
+		exported = append(exported, door.Method(i).Name)
+	}
+	if want := []string{"Ask", "Close", "Version"}; !slices.Equal(exported, want) {
+		t.Errorf("an engine exports %v, want only %v", exported, want)
 	}
 }

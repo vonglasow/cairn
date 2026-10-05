@@ -384,7 +384,7 @@ func (w *world) taskCalled(number int, title string) error {
 // tell reads a task back through the second connection, so an assertion never
 // goes through the window it is judging.
 func (w *world) tell(number int) (task.Shape, error) {
-	found, err := w.other.Show(number)
+	found, err := w.givens().Task(number)
 	if err != nil {
 		return task.Shape{}, fmt.Errorf("task %d: %w", number, err)
 	}
@@ -1117,7 +1117,7 @@ func (w *world) objectiveChosen(title string) error {
 }
 
 func (w *world) objectiveCalled(number int, title string) error {
-	found, err := w.other.ShowObjective(number)
+	found, err := w.givens().Objective(number)
 	if err != nil {
 		return fmt.Errorf("objective %d: %w", number, err)
 	}
@@ -1218,7 +1218,7 @@ func (w *world) helpClosed() error {
 
 func (w *world) helpSaysAbout(about string) error {
 	for _, line := range w.w.Helping() {
-		if strings.Contains(line.Name, about) || strings.Contains(line.Value, about) {
+		if strings.Contains(line.Key, about) || strings.Contains(line.Means, about) {
 			return nil
 		}
 	}

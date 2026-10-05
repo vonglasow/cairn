@@ -14,27 +14,6 @@ import (
 	"cairn/internal/task"
 )
 
-// Name is how an operation is named as a command or a tool: "task_add".
-func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
-
-// Line is how an operation reads on the command line: "task add".
-func (o Operation) Line() string { return o.Thing + " " + o.Verb }
-
-// All is everything cairn can be asked to do, in a stable order.
-func All() []Operation {
-	return []Operation{
-		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
-		TaskArchive, TaskUnarchive, TaskLabel,
-		TaskMove, TaskFocus, TaskUnfocus,
-		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
-		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
-		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
-		TraceShow, TraceList,
-		TimesheetShow, TimesheetAdd,
-		ConfigShow,
-	}
-}
-
 // TaskAdd records a new task.
 var TaskAdd = Operation{
 	Thing:   "task",
@@ -56,7 +35,7 @@ var TaskAdd = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		added, err := on.Engine.Add(title, changes)
+		added, err := on.Engine.add(title, changes)
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
@@ -126,15 +105,15 @@ var TaskShow = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		shown, err := on.Engine.Show(n)
+		shown, err := on.Engine.show(n)
 		if err != nil {
 			return Answer{}, err
 		}
-		under, err := on.Engine.Under(n)
+		under, err := on.Engine.under(n)
 		if err != nil {
 			return Answer{}, err
 		}
-		p, err := on.Engine.TaskProgress(n)
+		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -162,16 +141,19 @@ var TaskArchive = Operation{
 	Does:    "Take a task off the board. Everything it carries is kept, and it can be brought back; deleting is the other thing.",
 	Level:   Write,
 	Needs:   AStore,
-	Answers: Task{},
+	Answers: Swept{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
 	}, taskNarrowing...),
 	Run: func(on On, in Input) (Answer, error) {
 		if n, named := in.Whole("number"); named && n != 0 {
-			if err := on.Engine.Archive(n); err != nil {
+			if err := on.Engine.archive(n); err != nil {
 				return Answer{}, err
 			}
-			return shownTask(on, n)
+			shown, err := shownTask(on, n)
+			one := 1
+			shown.Archived = &one
+			return shown, err
 		}
 		kept, err := keeping(in, taskNarrowing)
 		if err != nil {
@@ -182,7 +164,7 @@ var TaskArchive = Operation{
 		if !kept.Narrows() {
 			return Answer{}, ErrNothingToArchive
 		}
-		swept, err := on.Engine.ArchiveEvery(kept)
+		swept, err := on.Engine.archiveEvery(kept)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -201,38 +183,29 @@ var TaskLabel = Operation{
 	Needs:   AStore,
 	Answers: Labelled{},
 	Takes: append([]Argument{
-		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
+		// Named "put" and not "label": the narrowing below already takes a
+		// "label" — the ones a task has to carry to be reached — and an agent
+		// names its arguments in one object, where a name is held once.
+		{Name: "put", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
 	}, taskNarrowing...),
 	Run: func(on On, in Input) (Answer, error) {
 		label := ""
-		if given := in.Change("label"); given != nil {
+		if given := in.Change("put"); given != nil {
 			label = *given
 		}
-		kept, err := keeping(withoutLabel(in), taskNarrowing)
+		kept, err := keeping(in, taskNarrowing)
 		if err != nil {
 			return Answer{}, err
 		}
 		if !kept.Narrows() {
 			return Answer{}, ErrNothingToLabel
 		}
-		put, err := on.Engine.LabelEvery(kept, label)
+		put, err := on.Engine.labelEvery(kept, label)
 		if err != nil {
 			return Answer{}, err
 		}
 		return Answer{Labelled: &put}, nil
 	},
-}
-
-// withoutLabel drops the label being put on, so it is not read as one to
-// narrow by: the two share a name and mean opposite things here.
-func withoutLabel(in Input) Input {
-	given := make(map[string]string, len(in.Given))
-	for name, value := range in.Given {
-		if name != "label" {
-			given[name] = value
-		}
-	}
-	return Input{Given: given}
 }
 
 // ErrNothingToLabel is returned when labelling is given nothing to narrow by.
@@ -256,7 +229,7 @@ var TaskUnarchive = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		if err := on.Engine.Unarchive(n); err != nil {
+		if err := on.Engine.unarchive(n); err != nil {
 			return Answer{}, err
 		}
 		return shownTask(on, n)
@@ -265,7 +238,7 @@ var TaskUnarchive = Operation{
 
 // shownTask answers with the task as it ends up, so nobody has to ask again.
 func shownTask(on On, number int) (Answer, error) {
-	found, err := on.Engine.Show(number)
+	found, err := on.Engine.show(number)
 	if err != nil {
 		return Answer{}, err
 	}
@@ -292,11 +265,11 @@ var TaskEdit = Operation{
 			return Answer{}, err
 		}
 		changes.Title = in.Change("title")
-		edited, err := on.Engine.Edit(n, changes)
+		edited, err := on.Engine.edit(n, changes)
 		if err != nil {
 			return Answer{}, editReason(err)
 		}
-		p, err := on.Engine.TaskProgress(n)
+		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -318,7 +291,7 @@ var TaskDelete = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		if err := on.Engine.Delete(n); err != nil {
+		if err := on.Engine.delete(n); err != nil {
 			return Answer{}, err
 		}
 		return Answer{Deleted: &n}, nil
@@ -347,7 +320,7 @@ var TaskSearch = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		tasks, err := on.Engine.Narrowed(kept)
+		tasks, err := on.Engine.narrowed(kept)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -452,7 +425,7 @@ var TaskMove = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.Move(n, at, target); err != nil {
+		if err := on.Engine.move(n, at, target); err != nil {
 			return Answer{}, err
 		}
 		// A move changes the order and nothing else, so the order is what it
@@ -483,15 +456,15 @@ var TaskFocus = Operation{
 		if !named {
 			return whatIsInFocus(on)
 		}
-		t, err := on.Engine.PutInFocus(n)
+		t, err := on.Engine.putInFocus(n)
 		if err != nil {
 			return Answer{}, err
 		}
-		p, err := on.Engine.TaskProgress(n)
+		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
 		}
-		held, err := on.Engine.Focus()
+		held, err := on.Engine.focus()
 		if err != nil {
 			return Answer{}, err
 		}
@@ -514,10 +487,10 @@ var TaskUnfocus = Operation{
 	Run: func(on On, in Input) (Answer, error) {
 		n, named := in.Whole("number")
 		if named {
-			if err := on.Engine.LetGoOf(n); err != nil {
+			if err := on.Engine.letGoOf(n); err != nil {
 				return Answer{}, err
 			}
-		} else if err := on.Engine.LetGo(); err != nil {
+		} else if err := on.Engine.letGo(); err != nil {
 			return Answer{}, err
 		}
 		return whatIsInFocus(on)
@@ -557,32 +530,44 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	tasks, err := on.Engine.Narrowed(kept)
+	tasks, err := on.Engine.narrowed(kept)
 	if err != nil {
 		return Answer{}, err
 	}
-	inFocus, err := on.Engine.Focus()
+	inFocus, err := on.Engine.focus()
 	if err != nil {
 		return Answer{}, err
 	}
 	held := heldAmong(tasks, inFocus)
-	free, err := on.Engine.NothingBlocks()
+	free, err := on.Engine.nothingBlocks()
 	if err != nil {
 		return Answer{}, err
+	}
+	along, _, err := on.Engine.alongEvery(tasks, !kept.Narrows() && in.Yes("with-archived"))
+	if err != nil {
+		return Answer{}, err
+	}
+	contexts := map[int]string{}
+	for _, t := range tasks {
+		n := factsOf(t).number
+		contexts[n] = on.contextOf(n)
 	}
 	// A narrowed listing is answered flat: what matched is what is shown, and
 	// where each task sits is not what was asked. Which field carries them is
 	// how Of and RenderText tell the two apart.
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts}
 	if kept.Narrows() {
-		return Answer{Matched: tasks, InFocus: &held, NothingBlocks: free}, nil
+		answer.Matched = tasks
+		return answer, nil
 	}
-	return Answer{Tasks: tasks, InFocus: &held, NothingBlocks: free}, nil
+	answer.Tasks = tasks
+	return answer, nil
 }
 
 // whatIsInFocus answers about the task being worked on, and says so plainly
 // when there is none: nothing in focus is an answer, not an absence.
 func whatIsInFocus(on On) (Answer, error) {
-	held, numbers, err := on.Engine.InFocus()
+	held, numbers, err := on.Engine.inFocus()
 	if err != nil {
 		return Answer{}, err
 	}
@@ -603,7 +588,7 @@ var TraceShow = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		acts, err := on.Engine.History(n)
+		acts, err := on.Engine.historyOf(n)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -611,12 +596,12 @@ var TraceShow = Operation{
 	},
 }
 
-// TraceList says what was done over a period, and what that comes to.
+// TraceList says what was done over a period, across every task.
 var TraceList = Operation{
 	Thing:   "trace",
 	Verb:    "list",
 	Short:   "List what was done over a period",
-	Does:    "List what was done from a day onward, today when none is given, and what it comes to.",
+	Does:    "List what was done from a day onward, today when none is given, across every task.",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Acts{},
@@ -628,7 +613,7 @@ var TraceList = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		acts, err := on.Engine.Since(from)
+		acts, err := on.Engine.since(from)
 		if err != nil {
 			return Answer{}, err
 		}

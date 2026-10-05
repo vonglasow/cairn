@@ -18,11 +18,6 @@ type SpentChange struct {
 	moves   bool
 }
 
-// Moves says whether the change works from the time already recorded. A change
-// that sets needs nothing of what came before; one that moves is meaningless
-// without it.
-func (c SpentChange) Moves() bool { return c.moves }
-
 // ParseSpent reads what a caller gave. A duration given plainly says what the
 // tally becomes; one carrying a sign says how far it moves. Nothing given
 // clears it.
@@ -30,7 +25,7 @@ func ParseSpent(given string) (SpentChange, error) {
 	if given == "" {
 		return SpentChange{}, nil
 	}
-	sign, rest := split(given)
+	sign, rest := SplitSign(given)
 	if sign == 0 {
 		total, err := ParseEstimate(given)
 		if err != nil {

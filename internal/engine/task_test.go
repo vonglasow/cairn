@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"cairn/internal/domain"
 	"errors"
 	"os"
 	"path/filepath"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"cairn/internal/domain"
 
 	"cairn/internal/task"
 )
@@ -141,7 +142,7 @@ func TestTaskAdd_addsATask(t *testing.T) {
 	}
 }
 
-func TestAll_hasThirtyDistinctOperations(t *testing.T) {
+func TestAll_namesEachOperationOnce(t *testing.T) {
 	if got := TaskAdd.Name(); got != "task_add" {
 		t.Errorf("TaskAdd.Name() = %q, want %q", got, "task_add")
 	}
@@ -181,20 +182,20 @@ func TestEdit_refusesToFinishAParentWithAnOpenSubTask(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
 	under := factsOf(add(t, e, "Write the spec")).number
-	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+	if _, err := e.edit(under, Changes{Parent: &parent}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
 	}
 
 	finished := string(domain.Done)
-	if _, err := e.Edit(parent, Changes{State: &finished}); !errors.Is(err, task.ErrSubTaskStillOpen) {
+	if _, err := e.edit(parent, Changes{State: &finished}); !errors.Is(err, task.ErrSubTaskStillOpen) {
 		t.Fatalf("err = %v, want it to say something under it is open", err)
 	}
 
 	// Once the sub-task is done, the parent may be.
-	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(under, Changes{State: &finished}); err != nil {
 		t.Fatalf("finishing the sub-task: %v", err)
 	}
-	if _, err := e.Edit(parent, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(parent, Changes{State: &finished}); err != nil {
 		t.Errorf("finishing the parent: %v", err)
 	}
 }
@@ -207,16 +208,16 @@ func TestEdit_leavesAFinishedParentEditableForAnythingElse(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
 	finished := string(domain.Done)
-	if _, err := e.Edit(parent, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(parent, Changes{State: &finished}); err != nil {
 		t.Fatalf("finishing it: %v", err)
 	}
 	under := factsOf(add(t, e, "Write the spec")).number
-	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+	if _, err := e.edit(under, Changes{Parent: &parent}); err != nil {
 		t.Fatalf("hanging an open one under it: %v", err)
 	}
 
 	title := "Ship it properly"
-	if _, err := e.Edit(parent, Changes{Title: &title}); err != nil {
+	if _, err := e.edit(parent, Changes{Title: &title}); err != nil {
 		t.Errorf("editing a finished parent: %v", err)
 	}
 }
@@ -229,22 +230,22 @@ func TestEdit_holdsASubTaskToDoneOrNot(t *testing.T) {
 	under := factsOf(add(t, e, "Write the spec")).number
 
 	working := string(domain.Current)
-	if _, err := e.Edit(under, Changes{State: &working}); err != nil {
+	if _, err := e.edit(under, Changes{State: &working}); err != nil {
 		t.Fatalf("putting it in current while it hangs under nothing: %v", err)
 	}
 	// Hung under a parent, what it was doing on its own stops being true.
-	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+	if _, err := e.edit(under, Changes{Parent: &parent}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
 	}
 	if got := factsOf(shown(t, e, under)).state; got != domain.Todo {
 		t.Errorf("state = %q, want it settled to todo", got)
 	}
 	// And it will not go back.
-	if _, err := e.Edit(under, Changes{State: &working}); !errors.Is(err, task.ErrSubTaskHasNoColumn) {
+	if _, err := e.edit(under, Changes{State: &working}); !errors.Is(err, task.ErrSubTaskHasNoColumn) {
 		t.Errorf("err = %v, want it to say a sub-task is done or it is not", err)
 	}
 	finished := string(domain.Done)
-	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(under, Changes{State: &finished}); err != nil {
 		t.Errorf("finishing a sub-task: %v", err)
 	}
 }
@@ -256,10 +257,10 @@ func TestEdit_keepsAFinishedTaskDoneWhenItIsHungUnderOne(t *testing.T) {
 	parent := factsOf(add(t, e, "Ship it")).number
 	under := factsOf(add(t, e, "Write the spec")).number
 	finished := string(domain.Done)
-	if _, err := e.Edit(under, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(under, Changes{State: &finished}); err != nil {
 		t.Fatalf("finishing it: %v", err)
 	}
-	if _, err := e.Edit(under, Changes{Parent: &parent}); err != nil {
+	if _, err := e.edit(under, Changes{Parent: &parent}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
 	}
 	if got := factsOf(shown(t, e, under)).state; got != domain.Done {
@@ -270,7 +271,7 @@ func TestEdit_keepsAFinishedTaskDoneWhenItIsHungUnderOne(t *testing.T) {
 // shown reads a task back the way anything else does.
 func shown(t *testing.T, e *Engine, number int) task.Task {
 	t.Helper()
-	found, err := e.Show(number)
+	found, err := e.show(number)
 	if err != nil {
 		t.Fatalf("Show(%d): %v", number, err)
 	}
@@ -283,11 +284,11 @@ func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Migration Jenkins")).number
 	finished := string(domain.Done)
-	if _, err := e.Edit(number, Changes{State: &finished}); err != nil {
+	if _, err := e.edit(number, Changes{State: &finished}); err != nil {
 		t.Fatalf("finishing it: %v", err)
 	}
 
-	if err := e.Archive(number); err != nil {
+	if err := e.archive(number); err != nil {
 		t.Fatalf("Archive: %v", err)
 	}
 	found := factsOf(shown(t, e, number))
@@ -299,7 +300,7 @@ func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 	}
 
 	// And it comes back.
-	if err := e.Unarchive(number); err != nil {
+	if err := e.unarchive(number); err != nil {
 		t.Fatalf("Unarchive: %v", err)
 	}
 	if factsOf(shown(t, e, number)).archived {
@@ -312,10 +313,10 @@ func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 func TestArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Migration Jenkins")).number
-	if err := e.Archive(number); err != nil {
+	if err := e.archive(number); err != nil {
 		t.Fatalf("Archive: %v", err)
 	}
-	if err := e.Archive(number); !errors.Is(err, task.ErrAlreadyArchived) {
+	if err := e.archive(number); !errors.Is(err, task.ErrAlreadyArchived) {
 		t.Errorf("err = %v, want it to say the task is already archived", err)
 	}
 }
@@ -330,7 +331,7 @@ func TestListing_leavesArchivedOutUntilAskedFor(t *testing.T) {
 	}
 	away := factsOf(add(t, e, "Migration Jenkins")).number
 	kept := factsOf(add(t, e, "Spike Argo")).number
-	if err := e.Archive(away); err != nil {
+	if err := e.archive(away); err != nil {
 		t.Fatalf("Archive: %v", err)
 	}
 	if err := e.Close(); err != nil {
@@ -369,7 +370,7 @@ func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
 	done := string(domain.Done)
 	for _, title := range []string{"Migration Jenkins", "Dépôt APP"} {
 		n := factsOf(add(t, e, title)).number
-		if _, err := e.Edit(n, Changes{State: &done}); err != nil {
+		if _, err := e.edit(n, Changes{State: &done}); err != nil {
 			t.Fatalf("finishing %q: %v", title, err)
 		}
 	}
@@ -443,21 +444,21 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 	}
 	done := string(domain.Done)
 	first := factsOf(add(t, e, "Migration Jenkins")).number
-	if _, err := e.Edit(first, Changes{State: &done, Labels: &[]string{"backend"}}); err != nil {
+	if _, err := e.edit(first, Changes{State: &done, Labels: &[]string{"backend"}}); err != nil {
 		t.Fatalf("setting it up: %v", err)
 	}
 	add(t, e, "Spike Argo")
 	// A part of the work the narrowing reaches is left out with it, the way a
 	// sweep leaves it out: both read the same world.
 	part := factsOf(add(t, e, "Write the tests")).number
-	if _, err := e.Edit(part, Changes{Parent: &first, State: &done}); err != nil {
+	if _, err := e.edit(part, Changes{Parent: &first, State: &done}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
 	}
 	if err := e.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 
-	answer, err := Do(TaskLabel, path, Input{Given: map[string]string{"label": "sprint-41", "state": done}})
+	answer, err := Do(TaskLabel, path, Input{Given: map[string]string{"put": "sprint-41", "state": done}})
 	if err != nil {
 		t.Fatalf("Do(TaskLabel): %v", err)
 	}
@@ -471,7 +472,7 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 	}
 	defer func() { _ = back.Close() }()
 	var carried labelReader
-	found, err := back.Show(first)
+	found, err := back.show(first)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
 	}
@@ -479,6 +480,52 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 	for _, want := range []string{"backend", "sprint-41"} {
 		if !slices.Contains(carried.labels, want) {
 			t.Errorf("task carries %v, want %q among them", carried.labels, want)
+		}
+	}
+}
+
+// Labelling keeps by everything a listing keeps by, lists included. The labels
+// and the objectives a narrowing names travel apart from the rest, and they
+// used to be dropped on the way: `--objective 3` labelled every task the
+// other filters reached, without a word.
+func TestTaskLabel_keepsByWhatItWasListed(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	backend := factsOf(add(t, e, "Migration Jenkins")).number
+	if _, err := e.edit(backend, Changes{Labels: &[]string{"backend"}}); err != nil {
+		t.Fatalf("setting it up: %v", err)
+	}
+	add(t, e, "Spike Argo")
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	answer, err := Do(TaskLabel, path, Input{
+		Given:  map[string]string{"put": "sprint-41"},
+		Listed: map[string][]string{"label": {"backend"}},
+	})
+	if err != nil {
+		t.Fatalf("Do(TaskLabel): %v", err)
+	}
+	if answer.Labelled == nil || *answer.Labelled != 1 {
+		t.Errorf("Labelled = %v, want 1: only the task labelled backend", answer.Labelled)
+	}
+}
+
+// An operation that took two arguments under one name could only ever be
+// handed one of them by a caller that names its arguments: an agent's call is
+// a JSON object, and an object holds a key once.
+func TestAll_noOperationTakesTwoArgumentsUnderOneName(t *testing.T) {
+	for _, op := range All() {
+		seen := map[string]bool{}
+		for _, arg := range op.Takes {
+			if seen[arg.Name] {
+				t.Errorf("%s takes %q twice", op.Name(), arg.Name)
+			}
+			seen[arg.Name] = true
 		}
 	}
 }
@@ -544,7 +591,7 @@ func TestSearching_canBeNarrowed(t *testing.T) {
 	done := string(domain.Done)
 	kept := factsOf(add(t, e, "Write the spec")).number
 	gone := factsOf(add(t, e, "Rewrite the spec")).number
-	if _, err := e.Edit(gone, Changes{State: &done}); err != nil {
+	if _, err := e.edit(gone, Changes{State: &done}); err != nil {
 		t.Fatalf("finishing it: %v", err)
 	}
 	if err := e.Close(); err != nil {
@@ -588,7 +635,7 @@ func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
 	if want := filepath.Join(notes, "1"); answer.Context != want {
 		t.Errorf("Context = %q, want %q", answer.Context, want)
 	}
-	if said := Of(answer).(Task); said.Context != answer.Context {
+	if said := Of(TaskShow, answer).(Task); said.Context != answer.Context {
 		t.Errorf("the shape says %q, the answer %q", said.Context, answer.Context)
 	}
 	if !strings.Contains(RenderText(TaskShow, answer), "context  "+answer.Context) {
@@ -614,5 +661,74 @@ func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
 	}
 	if unsaid.Context != "" || strings.Contains(RenderText(TaskShow, unsaid), "context") {
 		t.Errorf("a caller that named no notes is told %q", unsaid.Context)
+	}
+}
+
+// A listing says how far along each task is and where its context lives, so a
+// board drawing every card reads them in the one answer rather than showing
+// each task in turn to learn two facts about it.
+func TestTaskList_saysHowFarAlongEachTaskIsAndWhereItsContextLives(t *testing.T) {
+	path := storeAt(t)
+	for _, step := range []Input{
+		given("title", "Ship it"),
+		given("title", "Write it", "parent", "1", "state", "done"),
+		given("title", "Read it", "parent", "1"),
+		given("title", "Alone"),
+	} {
+		if _, err := Do(TaskAdd, path, step); err != nil {
+			t.Fatal(err)
+		}
+	}
+	answer, err := DoAt(TaskList, Places{Store: path, Notes: "/notes"}, given("with-archived", "true"), ByHand)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := answer.Along[1]; p.SubTasks.Total != 2 || p.SubTasks.Done != 1 {
+		t.Errorf("task 1 is along %+v, want one of two", p)
+	}
+	if p := answer.Along[4]; p.Any() {
+		t.Errorf("task 4 is along %+v, want nothing under it", p)
+	}
+	if answer.Contexts[4] != filepath.Join("/notes", "4") {
+		t.Errorf("task 4's context is %q", answer.Contexts[4])
+	}
+	narrowed, err := Do(TaskList, path, given("state", "backlog"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := narrowed.Along[1]; p.SubTasks.Total != 2 {
+		t.Errorf("a narrowed listing says task 1 is along %+v, want its two parts counted", p)
+	}
+}
+
+// The same for objectives: how far along each one is, in the listing.
+func TestObjectiveList_saysHowFarAlongEachObjectiveIs(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(ObjectiveAdd, path, given("title", "Ship cairn")); err != nil {
+		t.Fatal(err)
+	}
+	for _, step := range []Input{
+		{Given: map[string]string{"title": "Write it", "state": "done"}, Listed: map[string][]string{"objective": {"1"}}},
+		{Given: map[string]string{"title": "Read it"}, Listed: map[string][]string{"objective": {"1"}}},
+		given("title", "A part", "parent", "2"),
+	} {
+		if _, err := Do(TaskAdd, path, step); err != nil {
+			t.Fatal(err)
+		}
+	}
+	answer, err := Do(ObjectiveList, path, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := answer.Along[1]
+	if p.Tasks.Total != 2 || p.Tasks.Done != 1 || p.SubTasks.Total != 1 {
+		t.Errorf("objective 1 is along %+v, want one of two tasks and one part", p)
+	}
+	shown, err := Do(ObjectiveShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shown.Progress != p {
+		t.Errorf("the listing says %+v and showing it says %+v", p, shown.Progress)
 	}
 }

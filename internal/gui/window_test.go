@@ -757,7 +757,7 @@ func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 	for _, about := range []string{"drag", "double-click", "/", "e"} {
 		found := false
 		for _, line := range said {
-			found = found || strings.Contains(line.Name, about) || strings.Contains(line.Value, about)
+			found = found || strings.Contains(line.Key, about) || strings.Contains(line.Means, about)
 		}
 		if !found {
 			t.Errorf("the help says nothing about %q", about)
@@ -1857,6 +1857,53 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 	}
 }
 
+// Up from the third card or further goes behind the one two above it: the
+// window asked for "after" the card directly above, which is where it already
+// was, so shift+up did nothing past the second card.
+func TestShiftUpFromFurtherDownGoesBehindTheCardTwoAbove(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "First", State: "todo"},
+		reading.Card{Number: 2, Title: "Second", State: "todo"},
+		reading.Card{Number: 3, Title: "Third", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 2))
+	f.asked = nil
+	w.Key("shift+up")
+	up := askedFor(f, "task", "move")
+	if up == nil || up.Given["after"] != "1" || up.Given["number"] != "3" {
+		t.Fatalf("shift+up on the third card asked %v", f.asked)
+	}
+}
+
+// A card in the band moved sideways goes to the backlog on the left and
+// nowhere on the right — never into a column read off a card it is not.
+func TestShiftSidewaysOutOfTheBand(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		reading.Card{Number: 1, Title: "In todo", State: "todo"},
+		reading.Card{Number: 2, Title: "Blocked", State: "blocked"})
+	w = w.clicked(middleOf(w, 1, 0)).Key("down")
+	if w.Chosen() != 2 {
+		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen())
+	}
+	f.asked = nil
+	w.Key("shift+right")
+	if askedFor(f, "task", "edit") != nil || askedFor(f, "task", "move") != nil {
+		t.Fatalf("shift+right out of the band asked %v", f.asked)
+	}
+	w.Key("shift+left")
+	left := askedFor(f, "task", "edit")
+	if left == nil || left.Given["state"] != "backlog" || left.Given["number"] != "2" {
+		t.Fatalf("shift+left out of the band asked %v", f.asked)
+	}
+	f.asked = nil
+	w.Key("shift+up")
+	w.Key("shift+down")
+	if askedFor(f, "task", "move") != nil {
+		t.Fatalf("shift+up and down in the band asked %v", f.asked)
+	}
+}
+
 // askedFor finds the first thing asked of the store of a given kind.
 func askedFor(f *fake, thing, verb string) *engine.Input {
 	for _, one := range f.asked {
@@ -2201,5 +2248,22 @@ func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
 	}
 	if got := w.Under()[0].Number; got != 3 {
 		t.Fatalf("the first part shown is %d, want the first one left, 3", got)
+	}
+}
+
+// Every key the bar teaches is in the help too. The two are written apart —
+// Shortcut says which key an offer has, Helping says what each key does — so
+// nothing but this keeps the second from forgetting one the first added.
+func TestTheHelpNamesEveryKeyTheBarTeaches(t *testing.T) {
+	var said strings.Builder
+	for _, f := range holding(newFake()).Helping() {
+		said.WriteString(f.Key + " ")
+	}
+	for _, offer := range []string{"new", "search", "help", "archived", "archive", "take", "keep",
+		"edit", "delete", "agree", "save", "done", "close"} {
+		key := Pretty(Shortcut(offer))
+		if !strings.Contains(said.String(), key) {
+			t.Errorf("%s is %q on the bar and the help never names it", offer, key)
+		}
 	}
 }

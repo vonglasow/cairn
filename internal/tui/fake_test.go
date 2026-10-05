@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"time"
 
@@ -94,7 +95,13 @@ func (f *fake) Version() (int64, error) { return f.version, f.fail }
 // person starts rather than at an empty screen.
 func standing(f *fake) Board {
 	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40)
-	b.snap = reading.Snapshot{Cards: f.cards, Goals: f.goals, Focus: f.focus, Version: f.version}
+	// A card carries whether it is in focus, the way reading.Look marks it.
+	cards := make([]reading.Card, 0, len(f.cards))
+	for _, c := range f.cards {
+		c.InFocus = slices.Contains(f.focus, c.Number)
+		cards = append(cards, c)
+	}
+	b.snap = reading.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version}
 	return b
 }
 
@@ -361,4 +368,11 @@ func changesAsked(in engine.Input) engine.Changes {
 		c.State = &v
 	}
 	return c
+}
+
+// heardOf is the board once the history of a task has been read, the way
+// opening the task reads it.
+func heardOf(b Board, number int) Board {
+	model, _ := b.Update(b.hearing(number)())
+	return model.(Board)
 }

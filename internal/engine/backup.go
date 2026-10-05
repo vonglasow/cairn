@@ -27,7 +27,7 @@ var BackupAdd = Operation{
 	Does:    "Back up the store as it stands.",
 	Level:   Write,
 	Needs:   NoStore,
-	Answers: domain.BackupShape{},
+	Answers: BackupShape{},
 	Run: func(on On, _ Input) (Answer, error) {
 		// Counted before backing up, not after: what is announced is what was
 		// taken.
@@ -75,7 +75,7 @@ var BackupShow = Operation{
 	Does:    "Say when a backup was made and what it holds.",
 	Level:   Read,
 	Needs:   NoStore,
-	Answers: domain.BackupShape{},
+	Answers: BackupShape{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},

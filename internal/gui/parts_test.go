@@ -1139,14 +1139,14 @@ func TestAnErrorHasRoomForMoreThanTheBar(t *testing.T) {
 // read written in the ink reserved for metadata. The time stays faint; what was
 // done is read.
 func TestAHistoryLineIsSplitFromItsTimestamp(t *testing.T) {
-	stamp, rest, ok := Stamped("2026-10-01T09:00:00Z  set title → Write the spec")
+	stamp, rest, ok := Stamped("2026-10-01 09:00  changed  title  — → Write the spec")
 	if !ok {
 		t.Fatal("a line beginning with a time was not split")
 	}
-	if stamp != "2026-10-01T09:00:00Z" {
+	if stamp != "2026-10-01 09:00" {
 		t.Errorf("the stamp is %q", stamp)
 	}
-	if rest != "set title → Write the spec" {
+	if rest != "changed  title  — → Write the spec" {
 		t.Errorf("what was done is %q", rest)
 	}
 	if _, _, ok := Stamped("  a line carried on from the one above"); ok {

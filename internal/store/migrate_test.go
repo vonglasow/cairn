@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"cairn/internal/migration"
@@ -78,13 +79,26 @@ func TestOpen_refusesAStoreFromANewerCairn(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 	if _, err := s.db.Exec(
-		`INSERT INTO migrations (name, applied_at) VALUES ('never heard of', '2099-01-01')`); err != nil {
+		`INSERT INTO migrations (name, applied_at) VALUES ('never heard of', '2099-01-01T00:00:00Z')`); err != nil {
 		t.Fatalf("writing a change from the future: %v", err)
 	}
 	_ = s.Close()
 
 	if _, err := Open(path); !errors.Is(err, ErrNewerStore) {
 		t.Errorf("err = %v, want ErrNewerStore", err)
+	}
+}
+
+// When a change was applied is read back as the moment it was written, and a
+// ledger that does not say one is a ledger that cannot be read. It used to be
+// read as the year one, and listed as applied then.
+func TestMigrations_refusesALedgerThatDoesNotSayWhen(t *testing.T) {
+	s := openStore(t)
+	if _, err := s.db.Exec(`UPDATE migrations SET applied_at = 'yesterday'`); err != nil {
+		t.Fatalf("spoiling the ledger: %v", err)
+	}
+	if _, err := s.Migrations(); err == nil || !strings.Contains(err.Error(), "yesterday") {
+		t.Errorf("Migrations = %v, want the moment it could not read named", err)
 	}
 }
 

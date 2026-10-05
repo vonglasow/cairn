@@ -17,7 +17,7 @@ import (
 // titlesHeld reads back the titles the engine lists, in the one order there is.
 func titlesHeld(t *testing.T, e *Engine) []string {
 	t.Helper()
-	all, err := e.List()
+	all, err := e.tasks.All()
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestMove_putsATaskWhereItWasTold(t *testing.T) {
 	} {
 		e := openEngine(t)
 		_, _, third := three(t, e)
-		if err := e.Move(third, tc.at, 0); err != nil {
+		if err := e.move(third, tc.at, 0); err != nil {
 			t.Fatalf("Move %s: %v", tc.what, err)
 		}
 		wantHeld(t, e, tc.want...)
@@ -65,7 +65,7 @@ func TestMove_putsATaskWhereItWasTold(t *testing.T) {
 func TestMove_putsATaskBehindTheOneNamed(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
-	if err := e.Move(first, Behind, second); err != nil {
+	if err := e.move(first, Behind, second); err != nil {
 		t.Fatalf("Move behind: %v", err)
 	}
 	wantHeld(t, e, "Second", "First", "Third")
@@ -76,11 +76,11 @@ func TestMove_putsATaskBehindTheOneNamed(t *testing.T) {
 func TestMove_refusesWhatTheNotionRefuses(t *testing.T) {
 	e := openEngine(t)
 	first, _, _ := three(t, e)
-	toDo, err := e.Edit(factsOf(add(t, e, "Chosen")).number, Changes{State: of("todo")})
+	toDo, err := e.edit(factsOf(add(t, e, "Chosen")).number, Changes{State: of("todo")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	under, err := e.Add("A sister", Changes{Parent: of(first)})
+	under, err := e.add("A sister", Changes{Parent: of(first)})
 	if err != nil {
 		t.Fatalf("Add a sub-task: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestMove_refusesWhatTheNotionRefuses(t *testing.T) {
 		{"behind one in another column", first, factsOf(toDo).number, ErrOtherColumn},
 		{"a sub-task behind a root task", factsOf(under).number, first, ErrNotAmongItsSisters},
 	} {
-		if err := e.Move(tc.moving, Behind, tc.target); !errors.Is(err, tc.want) {
+		if err := e.move(tc.moving, Behind, tc.target); !errors.Is(err, tc.want) {
 			t.Errorf("moving %s = %v, want %v", tc.what, err, tc.want)
 		}
 	}
@@ -111,11 +111,11 @@ func TestMove_refusesATaskThatIsNotThere(t *testing.T) {
 		{"the task moving", 99, first},
 		{"the task named", first, 99},
 	} {
-		if err := e.Move(tc.moving, Behind, tc.target); !errors.Is(err, ErrNoSuchTask) {
+		if err := e.move(tc.moving, Behind, tc.target); !errors.Is(err, ErrNoSuchTask) {
 			t.Errorf("%s is not there: Move = %v, want %v", tc.what, err, ErrNoSuchTask)
 		}
 	}
-	if err := e.Move(99, First, 0); !errors.Is(err, ErrNoSuchTask) {
+	if err := e.move(99, First, 0); !errors.Is(err, ErrNoSuchTask) {
 		t.Errorf("Move first on a task that is not there = %v, want %v", err, ErrNoSuchTask)
 	}
 }
@@ -123,7 +123,7 @@ func TestMove_refusesATaskThatIsNotThere(t *testing.T) {
 func TestFocus_isNothingToBeginWith(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "The only one")
-	held, numbers, err := e.InFocus()
+	held, numbers, err := e.inFocus()
 	if err != nil {
 		t.Fatalf("InFocus: %v", err)
 	}
@@ -135,14 +135,14 @@ func TestFocus_isNothingToBeginWith(t *testing.T) {
 func TestPutInFocus_handsBackTheTaskBeingWorkedOn(t *testing.T) {
 	e := openEngine(t)
 	_, second, _ := three(t, e)
-	put, err := e.PutInFocus(second)
+	put, err := e.putInFocus(second)
 	if err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 	if got := factsOf(put).title; got != "Second" {
 		t.Errorf("PutInFocus handed back %q, want %q", got, "Second")
 	}
-	held, numbers, err := e.InFocus()
+	held, numbers, err := e.inFocus()
 	if err != nil {
 		t.Fatalf("InFocus: %v", err)
 	}
@@ -160,25 +160,25 @@ func TestPutInFocus_holdsSeveralAtOnce(t *testing.T) {
 	e := openEngine(t)
 	first, second, third := three(t, e)
 	for _, n := range []int{third, first} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}
-	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{third, first}) {
+	if got, err := e.focus(); err != nil || !slices.Equal(got, []int{third, first}) {
 		t.Errorf("Focus = %v (%v), want %v", got, err, []int{third, first})
 	}
 	// And taking up what is already held changes nothing at all.
-	if _, err := e.PutInFocus(third); err != nil {
+	if _, err := e.putInFocus(third); err != nil {
 		t.Fatalf("PutInFocus again: %v", err)
 	}
-	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{third, first}) {
+	if got, err := e.focus(); err != nil || !slices.Equal(got, []int{third, first}) {
 		t.Errorf("Focus = %v (%v) after taking up what was held, want %v", got, err, []int{third, first})
 	}
 	_ = second
 }
 
 func TestPutInFocus_refusesATaskThatIsNotThere(t *testing.T) {
-	if _, err := openEngine(t).PutInFocus(99); !errors.Is(err, ErrNoSuchTask) {
+	if _, err := openEngine(t).putInFocus(99); !errors.Is(err, ErrNoSuchTask) {
 		t.Errorf("PutInFocus(99) = %v, want %v", err, ErrNoSuchTask)
 	}
 }
@@ -189,20 +189,20 @@ func TestLetGoOf_releasesOneAndKeepsTheRest(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
 	for _, n := range []int{first, second} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}
-	if err := e.LetGoOf(first); err != nil {
+	if err := e.letGoOf(first); err != nil {
 		t.Fatalf("LetGoOf: %v", err)
 	}
-	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{second}) {
+	if got, err := e.focus(); err != nil || !slices.Equal(got, []int{second}) {
 		t.Errorf("Focus = %v (%v), want %v", got, err, []int{second})
 	}
-	if err := e.LetGoOf(first); err != nil {
+	if err := e.letGoOf(first); err != nil {
 		t.Errorf("LetGoOf a task that was not held = %v, want nothing wrong", err)
 	}
-	if got, err := e.Focus(); err != nil || !slices.Equal(got, []int{second}) {
+	if got, err := e.focus(); err != nil || !slices.Equal(got, []int{second}) {
 		t.Errorf("Focus = %v (%v), want %v", got, err, []int{second})
 	}
 }
@@ -211,14 +211,14 @@ func TestLetGo_leavesNothingInFocus(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
 	for _, n := range []int{first, second} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}
-	if err := e.LetGo(); err != nil {
+	if err := e.letGo(); err != nil {
 		t.Fatalf("LetGo: %v", err)
 	}
-	if got, err := e.Focus(); err != nil || len(got) != 0 {
+	if got, err := e.focus(); err != nil || len(got) != 0 {
 		t.Errorf("Focus = %v (%v), want nothing", got, err)
 	}
 }
@@ -229,14 +229,14 @@ func TestInFocus_dropsATaskOnceItIsDeleted(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
 	for _, n := range []int{first, second} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}
-	if err := e.Delete(first); err != nil {
+	if err := e.delete(first); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	held, numbers, err := e.InFocus()
+	held, numbers, err := e.inFocus()
 	if err != nil {
 		t.Fatalf("InFocus: %v", err)
 	}
@@ -310,7 +310,7 @@ func TestYes_readsOnlyAFlagGivenAsTrue(t *testing.T) {
 func TestListing_carriesTheOrderAndWhatIsInFocus(t *testing.T) {
 	e := openEngine(t)
 	_, second, _ := three(t, e)
-	if _, err := e.PutInFocus(second); err != nil {
+	if _, err := e.putInFocus(second); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 	answer, err := listing(On{Engine: e}, Input{})
@@ -340,7 +340,7 @@ func TestWhatIsInFocus_answersTheTaskOrSaysThereIsNone(t *testing.T) {
 		t.Errorf("InFocus = %v, want nothing", answer.InFocus)
 	}
 
-	if _, err := e.PutInFocus(first); err != nil {
+	if _, err := e.putInFocus(first); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 	answer, err = whatIsInFocus(On{Engine: e})
@@ -426,7 +426,7 @@ func TestTaskFocus_refusesATaskThatIsNotThere(t *testing.T) {
 func TestTaskUnfocus_answersThatNothingIsInFocus(t *testing.T) {
 	e := openEngine(t)
 	first, _, _ := three(t, e)
-	if _, err := e.PutInFocus(first); err != nil {
+	if _, err := e.putInFocus(first); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 	answer, err := TaskUnfocus.Run(On{Engine: e}, Input{})
@@ -469,11 +469,11 @@ func TestLetGo_writesTheReleaseOnEveryTaskHeld(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
 	for _, n := range []int{first, second} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}
-	if err := e.LetGo(); err != nil {
+	if err := e.letGo(); err != nil {
 		t.Fatalf("LetGo: %v", err)
 	}
 	for _, n := range []int{first, second} {
@@ -494,7 +494,7 @@ func TestTaskUnfocus_letsGoOfTheTaskItWasGiven(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
 	for _, n := range []int{first, second} {
-		if _, err := e.PutInFocus(n); err != nil {
+		if _, err := e.putInFocus(n); err != nil {
 			t.Fatalf("PutInFocus(%d): %v", n, err)
 		}
 	}

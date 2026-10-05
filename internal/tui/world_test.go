@@ -20,6 +20,7 @@ import (
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/task"
+	"cairn/test"
 )
 
 // stood is the day every scenario is run on, so a deadline reads the same
@@ -188,41 +189,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	sc.Given(`^a store of my own, somewhere that is not the default place$`, func() error { return nil })
-	sc.Given(`^nothing in it yet$`, func() error { return nil })
+	w.givens().Register(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
-
-	sc.Step(`^I added a task titled "([^"]*)"$`, func(title string) error { return w.addTask(title, "", "", 0) })
-	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, func(title, est string) error {
-		_, err := w.other.Add(title, engine.Changes{Estimate: &est})
-		w.afterAChange()
-		return err
-	})
-	sc.Step(`^I archived task (\d+)$`, func(n int) error {
-		if err := w.other.Archive(n); err != nil {
-			return err
-		}
-		w.afterAChange()
-		return nil
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, func(title, state string) error {
-		return w.addTask(title, state, "", 0)
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the description "([^"]*)"$`, func(title, desc string) error {
-		return w.addTask(title, "", desc, 0)
-	})
-	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, func(title string, n int) error {
-		return w.addTask(title, "", "", n)
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)" serving objective (\d+)$`, func(title, state string, n int) error {
-		return w.addTask(title, state, "", n)
-	})
-	sc.Step(`^I added an objective titled "([^"]*)"$`, w.addObjective)
-	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, w.blockTask)
-	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, w.stateTask)
-	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`, w.labelTask)
-	sc.Step(`^I deleted task (\d+)$`, w.deleteTask)
-	sc.Step(`^I put task (\d+) in focus$`, w.focusTask)
 
 	sc.When(`^I open the board$`, func() error { w.open(); return nil })
 	sc.Step(`^I press (".*")$`, w.pressMany)
@@ -232,14 +200,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^I added a task titled "([^"]*)" with a description of (\d+) lines ending "([^"]*)"$`,
-		func(title string, lines int, end string) error {
-			said := make([]string, 0, lines)
-			for i := range lines - 1 {
-				said = append(said, fmt.Sprintf("line %d of a description long enough to scroll", i+1))
-			}
-			return w.addTask(title, "", strings.Join(append(said, end), "\n"), 0)
-		})
 	sc.Step(`^I type "([^"]*)"$`, w.typeIn)
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
@@ -266,11 +226,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the help is shown$`, w.helpIsShown)
 	sc.Then(`^the board carries (\d+) tasks?$`, w.boardCarries)
 	sc.Then(`^the board says nothing of "([^"]*)"$`, w.boardSaysNothingOf)
-	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, func(title string, under int) error {
-		_, err := w.other.Add(title, engine.Changes{Parent: &under})
-		w.afterAChange()
-		return err
-	})
 	sc.Then(`^the card for task (\d+) says "([^"]*)"$`, w.cardSays)
 	sc.Then(`^the card for objective (\d+) says "([^"]*)"$`, w.goalCardSays)
 	sc.Then(`^the card for task (\d+) is marked as described$`, w.cardDescribed)
@@ -291,57 +246,27 @@ func (w *world) aWindow(width, high int) error {
 	return nil
 }
 
-func say(s string) *string { return &s }
+// givens writes what a scenario says is in the store, as somebody else.
+func (w *world) givens() test.Givens {
+	return test.Givens{Other: func() test.Asker { return w.other }}
+}
 
+// addTask adds a task carrying what a test named about it, as somebody else.
 func (w *world) addTask(title, state, desc string, serving int) error {
-	changes := engine.Changes{}
+	given := map[string]string{"title": title}
 	if state != "" {
-		changes.State = say(state)
+		given["state"] = state
 	}
 	if desc != "" {
-		changes.Description = say(desc)
+		given["desc"] = desc
 	}
+	in := engine.Input{Given: given}
 	if serving != 0 {
-		changes.Objective = &[]string{fmt.Sprint(serving)}
+		in.Listed = map[string][]string{"objective": {fmt.Sprint(serving)}}
 	}
-	_, err := w.other.Add(title, changes)
-	w.afterAChange()
+	_, err := w.other.Ask(engine.TaskAdd, in)
 	return err
 }
-
-func (w *world) addObjective(title string) error {
-	_, err := w.other.AddObjective(title, engine.ObjectiveChanges{})
-	return err
-}
-
-func (w *world) blockTask(number int, blocker string) error {
-	_, err := w.other.Edit(number, engine.Changes{Blocker: &[]string{blocker}})
-	w.afterAChange()
-	return err
-}
-
-func (w *world) stateTask(number int, state string) error {
-	_, err := w.other.Edit(number, engine.Changes{State: say(state)})
-	w.afterAChange()
-	return err
-}
-
-func (w *world) deleteTask(number int) error {
-	err := w.other.Delete(number)
-	w.afterAChange()
-	return err
-}
-
-func (w *world) focusTask(number int) error {
-	_, err := w.other.PutInFocus(number)
-	w.afterAChange()
-	return err
-}
-
-// afterAChange leaves the board alone. A change made while it is open is a
-// change made by somebody else, and noticing it is the board's own business —
-// which is what `the board looks again` is for.
-func (w *world) afterAChange() {}
 
 // pressMany takes a list of keys written the way a scenario writes one.
 func (w *world) pressMany(list string) error {
@@ -372,15 +297,6 @@ func (w *world) choose(kind string) error {
 // setField walks to a field, clears it, and types what the scenario said. The
 // form is Huh's, so moving on is a tab: enter would only add a line to the box
 // the description is written in.
-// labelTask puts two labels on a task, so a scenario can search for one.
-func (w *world) labelTask(number int, one, two string) error {
-	_, err := w.held.Ask(engine.TaskEdit, engine.Input{
-		Given:  map[string]string{"number": strconv.Itoa(number)},
-		Listed: map[string][]string{"label": {one, two}},
-	})
-	return err
-}
-
 func (w *world) setField(name, value string) error {
 	at := -1
 	for i, field := range w.b.form.fields {
@@ -653,8 +569,7 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	if err := w.addTask("Ship it", "", "", 0); err != nil {
 		t.Fatal(err)
 	}
-	under := 1
-	if _, err := w.other.Add("Relire l'ADR", engine.Changes{Parent: &under}); err != nil {
+	if err := w.givens().IAddedATaskHangingUnderTask("Relire l'ADR", 1); err != nil {
 		t.Fatal(err)
 	}
 	w.open()
@@ -730,7 +645,7 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 	if w.b.screen == OnForm {
 		t.Fatal("^S did not save the form")
 	}
-	found, err := w.other.Show(1)
+	found, err := w.givens().Task(1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -762,7 +677,7 @@ func TestTheFormSavesEveryFieldThatWasTyped(t *testing.T) {
 	model, cmd := w.b.save()
 	w.b = model.(Board)
 	w.settle(cmd)
-	found, err := w.other.Show(1)
+	found, err := w.givens().Task(1)
 	if err != nil {
 		t.Fatal(err)
 	}

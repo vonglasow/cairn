@@ -126,6 +126,41 @@ func (w *World) ConfigPath() string {
 	return filepath.Join(w.Defaults, ".config", "cairn", "config.toml")
 }
 
+// WriteConfig poses a configuration file by hand, the way a person would have —
+// never through cairn, so a scenario asserting what cairn does with it is not
+// also asserting that cairn wrote it.
+func (w *World) WriteConfig(content string) error {
+	path := w.ConfigPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(content), 0o600)
+}
+
+// AStoreFromAnOlderCairn turns the store into one an older cairn would have
+// written, holding one task: the task added and the last change to the shape
+// undone, through the real commands. Nothing reaches for SQL — a step that
+// built the older shape by hand would be asserting against a shape cairn never
+// wrote.
+func (w *World) AStoreFromAnOlderCairn(title string) error {
+	if err := w.Seed(fmt.Sprintf(`cairn task add "%s"`, title)); err != nil {
+		return err
+	}
+	if err := w.Seed(`cairn migration rollback --yes`); err != nil {
+		return err
+	}
+	// Undoing set a backup aside, which is right for somebody undoing on
+	// purpose and wrong as a starting point: a scenario counts the backups it
+	// made, and finds none it did not.
+	return w.ForgetBackups()
+}
+
+// ForgetBackups removes every backup beside the store, so a scenario counts
+// only what it caused.
+func (w *World) ForgetBackups() error {
+	return os.RemoveAll(filepath.Join(filepath.Dir(w.StorePath), "backups"))
+}
+
 // setAsideConfig moves the configuration out of the way for the length of a
 // precondition, and hands back what puts it right again. Renaming it away
 // and back — rather than reading it, deleting it and writing it again —

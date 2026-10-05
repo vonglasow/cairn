@@ -113,10 +113,10 @@ func TestTakingUpATaskAsksTaskFocusByNumber(t *testing.T) {
 	}
 }
 
-func TestTheHistoryPanelAsksTraceShow(t *testing.T) {
+func TestReadingTheHistoryAsksTraceShow(t *testing.T) {
 	f := newFake()
 	b := standing(f)
-	b.history(14, 80, 5)
+	_ = heardOf(b, 14)
 	if len(f.asked) != 1 {
 		t.Fatalf("the history asked for %d operations, want 1", len(f.asked))
 	}

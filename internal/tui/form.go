@@ -1,10 +1,11 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"cairn/internal/reading"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -232,16 +233,16 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 // again would be asking something the board already knows.
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		b.form = asking(reading.GoalFields(reading.Goal{State: "active", Priority: "normal"}), b.formWidth(), b.formHeight(), b.skin)
+		b.form = asking(reading.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin)
 		b.form.Adding, b.form.ForObjective = true, true
 		b.screen = OnForm
 		return b.started()
 	}
-	start := reading.Card{State: reading.StateAt(b.column), Priority: "normal"}
+	state := reading.StateAt(b.column)
 	if b.inBand {
-		start.State = kinds[0]
+		state = kinds[0]
 	}
-	b.form = asking(reading.TaskFields(start), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(reading.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -265,13 +266,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	// The parts come with it. They are reachable here and nowhere else: a part
-	// is off the board, so a task that carried one could neither be changed
-	// nor deleted once it did.
-	fields := append(reading.TaskFields(held), reading.Field{
-		Name: "parts", Value: reading.PartsSaid(reading.Hanging(b.snap.Cards, held.Number)), Long: true,
-	})
-	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(reading.EditFields(held, b.snap.Cards), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()

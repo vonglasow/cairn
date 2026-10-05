@@ -8,11 +8,9 @@ package gui
 // to the engine and to the terminal's form arrives here with no line written.
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
@@ -89,22 +87,18 @@ func (f Form) onto(at int) Form {
 	return f
 }
 
-// adding opens an empty form for whichever tab asked.
-func adding(tab Tab) Form {
+// adding opens an empty form for whichever tab asked, a task's on the column
+// it was asked on.
+func adding(tab Tab, state string) Form {
 	if tab == Objectives {
-		return asOpened(Form{Adding: true, ForObjective: true, fields: reading.GoalFields(reading.Goal{})})
+		return asOpened(Form{Adding: true, ForObjective: true, fields: reading.NewGoalFields()})
 	}
-	return asOpened(Form{Adding: true, fields: reading.TaskFields(reading.Card{})})
+	return asOpened(Form{Adding: true, fields: reading.NewTaskFields(state)})
 }
 
 // editing opens a form on what a task already carries, its parts included.
-// They are reachable here and nowhere else: a part is off the board, so a task
-// that carried one could neither be changed nor deleted once it did.
-func editing(c reading.Card, parts []reading.Card) Form {
-	fields := append(reading.TaskFields(c), reading.Field{
-		Name: "parts", Value: reading.PartsSaid(parts), Long: true,
-	})
-	return asOpened(Form{Number: c.Number, fields: fields})
+func editing(c reading.Card, cards []reading.Card) Form {
+	return asOpened(Form{Number: c.Number, fields: reading.EditFields(c, cards)})
 }
 
 // editingGoal is the same for an objective.
@@ -307,19 +301,13 @@ func (w Window) Edit() Window {
 		return w
 	}
 	if w.chosenGoal {
-		for _, g := range w.snap.Goals {
-			if g.Number == w.chosen {
-				w.form, w.screen = editingGoal(g), OnForm
-				return w
-			}
+		if g, found := w.snap.Goal(w.chosen); found {
+			w.form, w.screen = editingGoal(g), OnForm
 		}
 		return w
 	}
-	for _, c := range w.snap.Cards {
-		if c.Number == w.chosen {
-			w.form, w.screen = editing(c, reading.Hanging(w.snap.Cards, c.Number)), OnForm
-			return w
-		}
+	if c, found := w.snap.Card(w.chosen); found {
+		w.form, w.screen = editing(c, w.snap.Cards), OnForm
 	}
 	return w
 }
@@ -347,57 +335,15 @@ func (w Window) Save() Window {
 	return w.Look()
 }
 
-// savingParts settles what hangs under the task with what the form's own field
-// says: a line carrying a number is that part, named and ticked as it reads; a
-// line carrying none is a part nobody has written down yet; a number the field
-// no longer carries is a part that has gone.
-//
-// One operation each, through the engine like everything else. The engine has
-// no argument for a set of parts and should not grow one: what it is asked for
-// here is adding a task, changing a task and deleting a task, which is what
-// these are.
+// savingParts settles what hangs under the task with what the form's parts
+// field says — see reading.SettleParts.
 func (w Window) savingParts() error {
 	if w.form.Adding {
 		return nil
 	}
-	said, holds := "", false
 	for _, field := range w.form.fields {
 		if field.Name == "parts" {
-			said, holds = field.Value, true
-		}
-	}
-	if !holds {
-		return nil
-	}
-	parent := strconv.Itoa(w.form.Number)
-	want := reading.PartsIn(said)
-	kept := map[int]bool{}
-	for _, part := range want {
-		state := string(domain.Todo)
-		if part.Done {
-			state = string(domain.Done)
-		}
-		if part.Number == 0 {
-			if _, err := w.work.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{
-				"title": part.Title, "parent": parent, "state": state,
-			}}); err != nil {
-				return err
-			}
-			continue
-		}
-		kept[part.Number] = true
-		if _, err := w.work.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(part.Number), "title": part.Title, "state": state,
-		}}); err != nil {
-			return err
-		}
-	}
-	for _, was := range reading.Hanging(w.snap.Cards, w.form.Number) {
-		if kept[was.Number] {
-			continue
-		}
-		if _, err := w.work.Ask(engine.TaskDelete, reading.Numbered(was.Number)); err != nil {
-			return err
+			return reading.SettleParts(w.work, w.form.Number, field.Value, w.snap.Cards)
 		}
 	}
 	return nil
@@ -473,7 +419,7 @@ func (w Window) Choose(name string) Window {
 		}
 		return w.Cancel()
 	case "new":
-		w.form, w.screen = adding(w.tab), OnForm
+		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
 		return w
 	case "take":
 		return w.taking()
@@ -527,16 +473,21 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 	if w.form.ForObjective {
 		adding, editing = engine.ObjectiveAdd, engine.ObjectiveEdit
 	}
-	op := editing
-	if w.form.Adding {
-		op = adding
+	return reading.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
+}
+
+// addingOn is the column a task added now belongs to: the one what is chosen
+// stands in, the backlog when nothing is — and the first of the stopped states
+// when what is chosen is in the band, the way the terminal adds there.
+func (w Window) addingOn() string {
+	column, inBand, _, found := reading.Where(w.Showing().Cards, w.archived, w.chosen)
+	if !found {
+		return reading.StateAt(0)
 	}
-	asked := reading.Asked(w.form.fields, op)
-	asked.Given["title"] = strings.TrimSpace(w.form.ValueOf("title"))
-	if !w.form.Adding {
-		asked.Given["number"] = strconv.Itoa(w.form.Number)
+	if inBand {
+		return reading.Stalled[0]
 	}
-	return op, asked
+	return reading.StateAt(column)
 }
 
 // Delete asks first, and deletes the second time. It is the one thing this
@@ -559,11 +510,12 @@ func (w Window) deleting() Window {
 	if w.chosenGoal {
 		op = engine.ObjectiveDelete
 	}
+	w.screen = OnTheBoard
 	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
-		w.err, w.screen = err, OnTheBoard
+		w.err = err
 		return w
 	}
-	w.screen, w.chosen, w.chosenGoal = OnTheBoard, 0, false
+	w.chosen, w.chosenGoal = 0, false
 	return w.Look()
 }
 
@@ -614,10 +566,8 @@ func (w Window) FieldSays(field reading.Field) string {
 // cardTitle is what a task is called, or its number again when the snapshot
 // has never heard of it — the same rule an objective's title goes by.
 func (w Window) cardTitle(number int) string {
-	for _, c := range w.snap.Cards {
-		if c.Number == number {
-			return c.Title
-		}
+	if c, found := w.snap.Card(number); found {
+		return c.Title
 	}
 	return strconv.Itoa(number)
 }
@@ -626,12 +576,8 @@ func (w Window) cardTitle(number int) string {
 // snapshot has never heard of it — a number that names nothing is still truer
 // than an empty space where a name should be.
 func (w Window) goalTitle(number int) string {
-	for _, g := range w.snap.Goals {
-		if g.Number == number {
-			return g.Title
-		}
-	}
-	return ""
+	g, _ := w.snap.Goal(number)
+	return g.Title
 }
 
 // choosing opens the list over the form, with what the field already carries
@@ -714,47 +660,17 @@ func (w Window) choices() []Choice {
 		return out
 	}
 	if w.choosingFor == "parent" {
-		for _, c := range reading.OnTheBoard(w.snap.Cards, false) {
-			// Nothing hangs under itself, and nothing hangs under a part.
-			if c.Number == w.form.Number || c.Parent != 0 {
-				continue
-			}
-			if looking == "" || reading.ReachesCard(c, looking) {
-				out = append(out, Choice{Number: c.Number, Title: c.Title, State: c.State})
-			}
+		for _, c := range reading.Parentable(w.snap.Cards, w.form.Number, looking) {
+			out = append(out, Choice{Number: c.Number, Title: c.Title, State: c.State})
 		}
-		// In the order somebody reaches for them, which is not the order the
-		// board reads. A board goes from what has not been started to what is
-		// finished; work is hung under what is being worked on, and the board's
-		// order put two dozen backlog tasks in front of it.
-		sort.SliceStable(out, func(i, j int) bool {
-			return reachedFor(out[i].State) < reachedFor(out[j].State)
-		})
 		return out
 	}
-	for _, g := range reading.Sorted(w.snap.Goals) {
-		if looking == "" || strings.Contains(strings.ToLower(g.Title), strings.ToLower(looking)) {
-			out = append(out, Choice{Number: g.Number, Title: g.Title})
-		}
+	// The same search the search box makes, so the list and the box beside it
+	// never disagree about what a word reaches.
+	for _, g := range reading.FoundGoals(w.snap.Goals, looking) {
+		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
 	return out
-}
-
-// reachedFor is how soon a column is reached for when something is being hung
-// under it: what is being worked on, then what is next, then what is stopped,
-// then what has not been started, and last what is over.
-func reachedFor(state string) int {
-	switch domain.State(state) {
-	case domain.Current:
-		return 0
-	case domain.Todo:
-		return 1
-	case domain.Blocked, domain.Watching, domain.Paused:
-		return 2
-	case domain.Backlog:
-		return 3
-	}
-	return 4
 }
 
 // Filtering is what has been typed into the open list.

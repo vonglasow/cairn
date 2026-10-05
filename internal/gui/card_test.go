@@ -111,9 +111,9 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 		want string
 	}{
 		{"nothing to say", reading.Card{}, ""},
-		{"a description and no parts", reading.Card{Described: true}, g.Described},
+		{"a description and no parts", reading.Card{Description: "something written"}, g.Described},
 		{"parts and no description", reading.Card{SubDone: 1, SubTotal: 3}, g.SubTasks + " 1/3"},
-		{"both", reading.Card{Described: true, SubDone: 0, SubTotal: 2},
+		{"both", reading.Card{Description: "something written", SubDone: 0, SubTotal: 2},
 			g.Described + " " + g.SubTasks + " 0/2"},
 		{"nothing under it", reading.Card{SubDone: 0, SubTotal: 0}, ""},
 	} {
@@ -149,7 +149,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 
 // Estimated at two hours and nine hours spent is a fact no overview carried.
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
-	c := reading.Card{Estimate: "2h", Spent: "9h", Objectives: []int{4}}
+	c := reading.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
 	said, over := Spent(c)
 	if said != "9h/2h" {
 		t.Fatalf("Spent = %q, want 9h/2h", said)
@@ -190,7 +190,7 @@ func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 		t.Fatalf("a card carrying nothing says %q %v", said, warn)
 	}
 	said, warn = Facts(reading.Card{
-		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Objectives: []int{4},
+		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4},
 	}, now)
 	for _, word := range []string{"2d", "9h/2h", "◇4"} {
 		if !strings.Contains(said, word) {
@@ -203,7 +203,8 @@ func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 }
 
 // Each half of what a task cost says something on its own, and neither is the
-// other: an estimate with no time against it is still worth knowing.
+// other: an estimate with no time against it is still worth knowing. Whether
+// it ran over is the card's to say — reading works it out from the lengths.
 func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
 	for _, c := range []struct {
 		what                  string
@@ -217,7 +218,7 @@ func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
 		{"a minute over", "2h1m", "2h", "2h1m/2h", true},
 	} {
 		t.Run(c.what, func(t *testing.T) {
-			said, over := Spent(reading.Card{Spent: c.spent, Estimate: c.estimate})
+			said, over := Spent(reading.Card{Spent: c.spent, Estimate: c.estimate, Overrun: c.over})
 			if said != c.says || over != c.over {
 				t.Fatalf("Spent = %q %v, want %q %v", said, over, c.says, c.over)
 			}

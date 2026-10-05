@@ -1,11 +1,13 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"cairn/internal/domain"
+	"cairn/internal/reading"
 
 	"charm.land/lipgloss/v2"
 )
@@ -14,21 +16,17 @@ import (
 // the frame. What goes on each row was decided once and holds at every width —
 // what changes with the width is how much of it fits, never which row it is on.
 
-// soon is how close a deadline has to be before a card mentions it. A day three
-// months out is a fact about a task and not information on a board: it will be
-// there tomorrow, and it will be there in ninety days, and saying so on every
-// card every day buys nothing.
 // titleLines is how many rows of a card the title gets.
 const titleLines = 2
 
 // StoppedGlyph answers the mark one of the three stopped states is drawn with.
 func StoppedGlyph(state string, g Glyphs) string {
 	switch state {
-	case "blocked":
+	case string(domain.Blocked):
 		return g.Blocked
-	case "watching":
+	case string(domain.Watching):
 		return g.Watching
-	case "paused":
+	case string(domain.Paused):
 		return g.Paused
 	default:
 		return ""
@@ -49,7 +47,7 @@ func marks(c reading.Card, g Glyphs) string {
 	if c.Archived {
 		found = append(found, g.Archived)
 	}
-	if c.Described {
+	if c.Described() {
 		found = append(found, g.Described)
 	}
 	if glyph := StoppedGlyph(c.State, g); glyph != "" {
@@ -145,11 +143,7 @@ func fit(told []string, width int) int {
 // somebody wrote when it waits on something cairn does not hold.
 func inTheWay(c reading.Card, g Glyphs) string {
 	if len(c.Blockers) > 0 {
-		numbers := make([]string, 0, len(c.Blockers))
-		for _, blocker := range c.Blockers {
-			numbers = append(numbers, strconv.Itoa(blocker))
-		}
-		return g.InTheWay + " " + strings.Join(numbers, " ")
+		return g.InTheWay + " " + reading.Numbers(c.Blockers)
 	}
 	if c.Because != "" {
 		return g.InTheWay + " " + c.Because

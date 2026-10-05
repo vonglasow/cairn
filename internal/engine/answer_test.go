@@ -149,13 +149,14 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 
 		cases := []struct {
 			name string
+			op   Operation
 			in   Answer
 			want any
 		}{
-			{"a task outranks a list", Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
-			{"a list of tasks", Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
-			{"what a search found, the same shape as a list of tasks", Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
-			{"an objective", Answer{Objective: &obj, Progress: progress}, Objective{
+			{"a task", TaskShow, Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
+			{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
+			{"what a search found, the same shape as a list of tasks", TaskSearch, Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
+			{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
 					Description: "", Labels: []string{}, Deadline: "", Estimate: "",
@@ -163,22 +164,23 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 				Tasks:    []int{},
 				Progress: &domain.ProgressShape{SubTasks: &domain.Tally{Total: 4, Done: 1}, Percent: 25},
 			}},
-			{"a list of objectives", Answer{Objectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
-			{"a backup with what it holds", Answer{Backup: &backup, Holds: &held}, domain.OfBackup(backup, &held)},
-			{"a list of backups", Answer{Backups: []domain.Backup{backup}}, Kept{Backups: []domain.BackupShape{domain.OfBackup(backup, nil)}}},
-			{"a change", Answer{Change: &change}, migration.OfMigration(change)},
-			{"a list of changes", Answer{Changes: []migration.Migration{change}}, Ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
-			{"a rollback names what it undid, not a change in full", Answer{RolledBack: &change}, migration.OfRolledBack(change)},
-			{"a number deleted", Answer{Deleted: &one}, Deleted{Deleted: one}},
-			{"a number put back", Answer{PutBack: &putBack}, PutBack{PutBack: putBack}},
-			{"nothing waiting reads as an empty list, not null", Answer{Applied: []string{}}, Applied{Applied: []string{}}},
-			{"names of what was applied", Answer{Applied: []string{"add labels"}}, Applied{Applied: []string{"add labels"}}},
-			{"what the store holds, on its own", Answer{Holds: &held}, held},
-			{"nothing answered at all", Answer{}, nil},
+			{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
+			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
+			{"a backup with what it holds", BackupShow, Answer{Backup: &backup, Holds: &held}, OfBackup(backup, &held)},
+			{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, Kept{Backups: []BackupShape{OfBackup(backup, nil)}}},
+			{"a change", MigrationShow, Answer{Change: &change}, migration.OfMigration(change)},
+			{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}}, Ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
+			{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.OfRolledBack(change)},
+			{"a number deleted", TaskDelete, Answer{Deleted: &one}, Deleted{Deleted: one}},
+			{"a number put back", BackupRestore, Answer{PutBack: &putBack}, PutBack{PutBack: putBack}},
+			{"nothing waiting reads as an empty list, not null", MigrationApply, Answer{Applied: []string{}}, Applied{Applied: []string{}}},
+			{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, Applied{Applied: []string{"add labels"}}},
+			{"a sweep says how many it took off", TaskArchive, Answer{Archived: &one}, Swept{Archived: one}},
+			{"one archived by number is a sweep of one, and says which", TaskArchive, Answer{Archived: of(1), Task: &built}, Swept{Archived: 1, Task: of(OfTask(built, domain.Progress{}))}},
 		}
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
-				got, err := json.Marshal(Of(c.in))
+				got, err := json.Marshal(Of(c.op, c.in))
 				if err != nil {
 					t.Fatalf("Marshal: %v", err)
 				}
@@ -251,7 +253,6 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 
 	deleted := 7
 	putBack := 9
-	deleting := Operation{Thing: "task"}
 
 	cases := []struct {
 		name string
@@ -259,29 +260,32 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		in   Answer
 		want string
 	}{
-		{"a task outranks a list", Operation{}, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
-		{"an empty list of tasks says so", Operation{}, Answer{Tasks: []task.Task{}}, "there is no task\n"},
-		{"a list of tasks", Operation{}, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.Marks{})},
-		{"a search that found nothing says so", Operation{}, Answer{Matched: []task.Task{}}, "there is no task\n"},
+		{"a task", TaskShow, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
+		{"an empty list of tasks says so", TaskList, Answer{Tasks: []task.Task{}}, "there is no task\n"},
+		{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.Marks{})},
+		{"a search that found nothing says so", TaskSearch, Answer{Matched: []task.Task{}}, "there is no task\n"},
 		{
 			"what a search found is listed flat, not as a tree",
-			Operation{}, Answer{Matched: []task.Task{built, sub}},
+			TaskSearch, Answer{Matched: []task.Task{built, sub}},
 			task.Line(built) + "\n" + task.Line(sub) + "\n",
 		},
-		{"an objective", Operation{}, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress) + objective.Serving(nil)},
-		{"an empty list of objectives says so", Operation{}, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
-		{"a list of objectives", Operation{}, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj})},
-		{"a backup with what it holds", Operation{}, Answer{Backup: &backup, Holds: &held}, backupLine(backup, held)},
-		{"an empty list of backups says so", Operation{}, Answer{Backups: []domain.Backup{}}, "there is no backup\n"},
-		{"a list of backups", Operation{}, Answer{Backups: []domain.Backup{backup}}, backupsText([]domain.Backup{backup})},
-		{"a rollback names what it undid, not a change in full", Operation{}, Answer{RolledBack: &change}, migration.RolledBackText(change)},
-		{"a change in full", Operation{}, Answer{Change: &change}, migration.Text(change)},
-		{"a list of changes", Operation{}, Answer{Changes: []migration.Migration{change}, Holds: &held}, migration.List([]migration.Migration{change}, held)},
-		{"a number deleted, named by the operation", deleting, Answer{Deleted: &deleted}, "task 7 was deleted\n"},
-		{"a number put back", Operation{}, Answer{PutBack: &putBack}, "backup 9 was put back\n"},
-		{"nothing waiting says so", Operation{}, Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
-		{"names of what was applied", Operation{}, Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
-		{"nothing answered at all", Operation{}, Answer{}, ""},
+		{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress) + objective.Serving(nil)},
+		{"an empty list of objectives says so", ObjectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
+		{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj})},
+		{"a backup with what it holds", BackupShow, Answer{Backup: &backup, Holds: &held}, backupLine(backup, held)},
+		{"an empty list of backups says so", BackupList, Answer{Backups: []domain.Backup{}}, "there is no backup\n"},
+		{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, backupsText([]domain.Backup{backup})},
+		{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.RolledBackText(change)},
+		{"a change in full", MigrationShow, Answer{Change: &change}, migration.Text(change)},
+		{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}, Holds: &held}, migration.List([]migration.Migration{change}, held)},
+		{"a number deleted, named by the operation", TaskDelete, Answer{Deleted: &deleted}, "task 7 was deleted\n"},
+		{"a number put back", BackupRestore, Answer{PutBack: &putBack}, "backup 9 was put back\n"},
+		{"nothing waiting says so", MigrationApply, Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
+		{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
+		{"a sweep says how many", TaskArchive, Answer{Archived: &deleted}, "7 task(s) archived\n"},
+		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{}) + task.Under(nil)},
+		{"how many were labelled", TaskLabel, Answer{Labelled: &deleted}, "7 task(s) labelled\n"},
+		{"nothing declared, nothing said", Operation{}, Answer{Tasks: []task.Task{built}}, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -296,9 +300,9 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 // in one shape.
 func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
 	one := builtTask(t, 7, "The one")
-	held, ok := Of(Answer{Task: &one, InFocus: list(7)}).(Focus)
+	held, ok := Of(TaskFocus, Answer{Task: &one, InFocus: list(7)}).(Focus)
 	if !ok {
-		t.Fatalf("Of on the focus = %T, want Focus", Of(Answer{Task: &one, InFocus: list(7)}))
+		t.Fatalf("Of on the focus = %T, want Focus", Of(TaskFocus, Answer{Task: &one, InFocus: list(7)}))
 	}
 	if !slices.Equal(held.InFocus, []int{7}) {
 		t.Errorf("in_focus = %v, want [7]", held.InFocus)
@@ -313,7 +317,7 @@ func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
 func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
-	held, ok := Of(Answer{Held: []task.Task{second, first}, InFocus: list(2, 1)}).(Focus)
+	held, ok := Of(TaskFocus, Answer{Held: []task.Task{second, first}, InFocus: list(2, 1)}).(Focus)
 	if !ok {
 		t.Fatal("Of on several in focus did not answer the focus")
 	}
@@ -329,9 +333,9 @@ func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 // one field of one shape either way. A list rather than null: a client that
 // reads a list either way does not have to test for null first.
 func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
-	none, ok := Of(Answer{InFocus: list()}).(Focus)
+	none, ok := Of(TaskUnfocus, Answer{InFocus: list()}).(Focus)
 	if !ok {
-		t.Fatalf("Of with nothing held = %T, want Focus", Of(Answer{InFocus: list()}))
+		t.Fatalf("Of with nothing held = %T, want Focus", Of(TaskUnfocus, Answer{InFocus: list()}))
 	}
 	if none.InFocus == nil || len(none.InFocus) != 0 {
 		t.Errorf("in_focus = %v, want an empty list", none.InFocus)
@@ -347,7 +351,7 @@ func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
 
-	crossed, ok := Of(Answer{Tasks: []task.Task{first, second}, InFocus: list(2)}).(Tasks)
+	crossed, ok := Of(TaskList, Answer{Tasks: []task.Task{first, second}, InFocus: list(2)}).(Tasks)
 	if !ok {
 		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
@@ -362,7 +366,7 @@ func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 // A listing asked for without the focus says none, rather than saying the task
 // numbered zero is being worked on.
 func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
-	crossed, ok := Of(Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).(Tasks)
+	crossed, ok := Of(TaskList, Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).(Tasks)
 	if !ok {
 		t.Fatal("Of on a listing did not answer a listing of tasks")
 	}
@@ -379,14 +383,14 @@ func list(numbers ...int) *[]int { return &numbers }
 // the focus, so it does not answer about it.
 func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 	one := builtTask(t, 7, "The one")
-	if _, ok := Of(Answer{Task: &one}).(Task); !ok {
-		t.Errorf("Of on a card = %T, want Task", Of(Answer{Task: &one}))
+	if _, ok := Of(TaskShow, Answer{Task: &one}).(Task); !ok {
+		t.Errorf("Of on a card = %T, want Task", Of(TaskShow, Answer{Task: &one}))
 	}
 }
 
 // Nothing in focus is an answer a person reads, not an empty one.
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
-	got := RenderText(Operation{}, Answer{InFocus: list()})
+	got := RenderText(TaskUnfocus, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
 	}
@@ -397,7 +401,7 @@ func TestRenderText_saysNothingIsInFocus(t *testing.T) {
 func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
 
-	marked := RenderText(Operation{}, Answer{Tasks: tasks, InFocus: list(2)})
+	marked := RenderText(TaskList, Answer{Tasks: tasks, InFocus: list(2)})
 	// The mark goes at the end of the row, and a row carries what a decision
 	// is made on between the title and it.
 	if !strings.Contains(marked, "Second") || !strings.Contains(marked, task.InFocusMark) {
@@ -407,7 +411,7 @@ func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 		t.Errorf("%d lines are marked, want exactly one:\n%s", got, marked)
 	}
 
-	if plain := RenderText(Operation{}, Answer{Tasks: tasks}); strings.Contains(plain, task.InFocusMark) {
+	if plain := RenderText(TaskList, Answer{Tasks: tasks}); strings.Contains(plain, task.InFocusMark) {
 		t.Errorf("a listing asked for without the focus marks a line:\n%s", plain)
 	}
 }
@@ -429,7 +433,7 @@ func builtTask(t *testing.T, number int, title string) task.Task {
 // tasks or none at all: `task unfocus` hands back what is left, and what is
 // left is often nothing.
 func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
-	got := RenderText(Operation{}, Answer{Held: []task.Task{}, InFocus: list()})
+	got := RenderText(TaskFocus, Answer{Held: []task.Task{}, InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
 	}
@@ -440,7 +444,7 @@ func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
 func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
-	got := RenderText(Operation{}, Answer{Held: []task.Task{first, second}, InFocus: list(1, 2)})
+	got := RenderText(TaskFocus, Answer{Held: []task.Task{first, second}, InFocus: list(1, 2)})
 	for _, want := range []string{"First", "Second"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the answer does not carry %q:\n%s", want, got)
@@ -465,12 +469,12 @@ func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
 	under.InColumn(domain.Done)
 
 	shown := parent.Task()
-	said, ok := Of(Answer{
+	said, ok := Of(TaskShow, Answer{
 		Task:  &shown,
 		Under: []task.Task{under.Task()},
 	}).(Task)
 	if !ok {
-		t.Fatalf("OfAnswer gave %T, want a Task", Of(Answer{Task: &shown}))
+		t.Fatalf("OfAnswer gave %T, want a Task", Of(TaskShow, Answer{Task: &shown}))
 	}
 	if len(said.SubTasks) != 1 {
 		t.Fatalf("SubTasks = %+v, want the one hanging under it", said.SubTasks)
@@ -492,8 +496,11 @@ func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
 	two.Numbered(2)
 	two.Titled("Write the tests")
 	tasks := []task.Task{one.Task(), two.Task()}
-	for name, answer := range map[string]Answer{"listing": {Tasks: tasks}, "search": {Matched: tasks}} {
-		encoded, err := json.Marshal(Of(answer))
+	for name, asked := range map[string]struct {
+		op     Operation
+		answer Answer
+	}{"listing": {TaskList, Answer{Tasks: tasks}}, "search": {TaskSearch, Answer{Matched: tasks}}} {
+		encoded, err := json.Marshal(Of(asked.op, asked.answer))
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}

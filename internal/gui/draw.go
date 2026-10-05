@@ -23,6 +23,7 @@ import (
 	"gioui.org/widget/material"
 	"golang.org/x/image/math/fixed"
 
+	"cairn/internal/domain"
 	"cairn/internal/reading"
 )
 
@@ -68,10 +69,10 @@ func Dark() Skin {
 		// no priority wears, and from the blue that says what is chosen —
 		// which "normal" used to be, at the bit.
 		Priority: map[string]color.NRGBA{
-			"critical": {R: 236, G: 96, B: 96, A: 255},
-			"high":     {R: 236, G: 168, B: 72, A: 255},
-			"normal":   {R: 96, G: 178, B: 146, A: 255},
-			"low":      {R: 140, G: 146, B: 172, A: 255},
+			string(domain.Critical): {R: 236, G: 96, B: 96, A: 255},
+			string(domain.High):     {R: 236, G: 168, B: 72, A: 255},
+			string(domain.Normal):   {R: 96, G: 178, B: 146, A: 255},
+			string(domain.Low):      {R: 140, G: 146, B: 172, A: 255},
 		},
 	}
 }
@@ -258,14 +259,14 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 
 // asking is the one question this window puts, written the way the help is so
 // they are drawn by one piece of code.
-func asking(w Window) []reading.Field {
+func asking(w Window) []Said {
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
 	}
-	return []reading.Field{
-		{Name: "", Value: "This " + what + " cannot be brought back."},
-		{Name: "", Value: "Delete again to agree, or Cancel."},
+	return []Said{
+		{Means: "This " + what + " cannot be brought back."},
+		{Means: "Delete again to agree, or Cancel."},
 	}
 }
 
@@ -286,17 +287,17 @@ func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w W
 // drawSaid is a panel of lines: the help, and the question. Both are read
 // rather than pointed at, and both are two columns of words — the left one a
 // key, drawn on a chip so it reads as a key rather than as another word.
-func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said []reading.Field) {
+func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said []Said) {
 	box := Over(w.width, w.height)
 	drawPanel(gtx, th, skin, box, Heads(w))
 	at := FirstRow(box)
 	for _, line := range said {
 		name, value := FieldRow(box, at)
-		if line.Name != "" {
+		if line.Key != "" {
 			fill(gtx, Chip(name), skin.Back)
 		}
-		say(gtx, th, skin.Chosen, name, line.Name, reads)
-		say(gtx, th, skin.Ink, value, line.Value, reads)
+		say(gtx, th, skin.Chosen, name, line.Key, reads)
+		say(gtx, th, skin.Ink, value, line.Means, reads)
 		at += apart
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
@@ -348,17 +349,11 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
 	for lane, kind := range Lanes {
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
-		at := 0
-		for _, c := range stalled {
-			if c.State != kind {
-				continue
-			}
+		for at, c := range w.inLane(lane) {
 			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, 0), c, c.Number == w.Chosen())
-			at++
 		}
 		clipped.Pop()
 	}
@@ -424,10 +419,7 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	defer clipped.Pop()
 	for at, g := range reading.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
-		drawCard(gtx, th, skin, box, reading.Card{
-			Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority,
-			Labels: Standings(g),
-		}, g.Number == w.Chosen())
+		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen())
 		// How much work it carries and how much is done, on the number line an
 		// objective otherwise leaves half empty: it is the question an
 		// objective exists to ask, and a list that answered it only on opening
@@ -436,6 +428,14 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 			say(gtx, th, skin.Faint, CountedAt(PartsOf(box).Number, said), said, small)
 		}
 	}
+}
+
+// goalFace is an objective in the frame a card is drawn in: its number, title
+// and priority where a task's go, and where it stands in the row a task's labels
+// take. Said once, here, rather than built inline wherever a goal is drawn — a
+// card's frame is the one this board draws, and an objective has no other.
+func goalFace(g reading.Goal) reading.Card {
+	return reading.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g)}
 }
 
 // drawDragging is the card in mid-air and the line it would land on. Without

@@ -18,7 +18,7 @@ func storeAt(t *testing.T, titles ...string) string {
 		t.Fatalf("Open: %v", err)
 	}
 	for _, title := range titles {
-		if _, err := e.Add(title, Changes{}); err != nil {
+		if _, err := e.add(title, Changes{}); err != nil {
 			t.Fatalf("Add: %v", err)
 		}
 	}
@@ -98,7 +98,7 @@ func TestBackups_putsABackupBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	if _, err := e.Add("Ship it", Changes{}); err != nil {
+	if _, err := e.add("Ship it", Changes{}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	if err := e.Close(); err != nil {
@@ -113,7 +113,7 @@ func TestBackups_putsABackupBack(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 	defer func() { _ = back.Close() }()
-	all, err := back.List()
+	all, err := back.tasks.All()
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestBackups_saysThereIsNoBackupToPutBack(t *testing.T) {
 
 func TestEngine_namesEveryChangeAndItsState(t *testing.T) {
 	e := openEngine(t)
-	all, err := e.Migrations()
+	all, err := e.migrations()
 	if err != nil {
 		t.Fatalf("Migrations: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestEngine_namesEveryChangeAndItsState(t *testing.T) {
 }
 
 func TestEngine_saysNothingIsWaitingOnAStoreItJustMade(t *testing.T) {
-	waiting, err := openEngine(t).Waiting()
+	waiting, err := openEngine(t).store.Waiting()
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestEngine_saysNothingIsWaitingOnAStoreItJustMade(t *testing.T) {
 func TestEngine_countsWhatTheStoreHolds(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
-	held, err := e.Held()
+	held, err := e.held()
 	if err != nil {
 		t.Fatalf("Held: %v", err)
 	}
@@ -179,7 +179,7 @@ func behindStore(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	if _, err := e.RollBack(path); err != nil {
+	if _, err := e.rollBack(path); err != nil {
 		t.Fatalf("RollBack: %v", err)
 	}
 	if err := e.Close(); err != nil {
@@ -207,7 +207,7 @@ func TestEngine_appliesWhatIsWaitingAndBackupsFirst(t *testing.T) {
 	}
 	defer func() { _ = e.Close() }()
 
-	made, err := e.ApplyAll(path)
+	made, err := e.applyAll(path)
 	if err != nil {
 		t.Fatalf("ApplyAll: %v", err)
 	}
@@ -224,14 +224,14 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 	}
 	defer func() { _ = e.Close() }()
 
-	waiting, err := e.Waiting()
+	waiting, err := e.store.Waiting()
 	if err != nil {
 		t.Fatalf("Waiting: %v", err)
 	}
 	if len(waiting) != 1 {
 		t.Fatalf("%d changes waiting, want 1", len(waiting))
 	}
-	name, err := e.Apply(path, factsOfChange(waiting[0]).number)
+	name, err := e.apply(path, factsOfChange(waiting[0]).number)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
@@ -255,13 +255,13 @@ func TestEngine_reportsAPlaceItCannotBackupBeforeChanging(t *testing.T) {
 	}
 	nowhere := filepath.Join(blocked, "nested", "cairn.db")
 
-	if _, err := e.RollBack(nowhere); err == nil {
+	if _, err := e.rollBack(nowhere); err == nil {
 		t.Error("RollBack should report a backup it could not make")
 	}
-	if _, err := e.ApplyAll(nowhere); err == nil {
+	if _, err := e.applyAll(nowhere); err == nil {
 		t.Error("ApplyAll should report a backup it could not make")
 	}
-	if _, err := e.Apply(nowhere, 2); err == nil {
+	if _, err := e.apply(nowhere, 2); err == nil {
 		t.Error("Apply should report a backup it could not make")
 	}
 }

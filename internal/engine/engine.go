@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/store"
@@ -36,10 +35,9 @@ var ErrLabelSignAtCreation = errors.New("a label is added or taken away only whe
 // answers with has to live.
 var ErrNoSuchTask = store.ErrNoSuchTask
 
-// The reasons a task cannot hang where it was asked to, or be deleted.
-// Re-exported from domain, which is where a task's own rules live: a surface
-// asks the engine and may not import domain, so the name it recognises has to
-// live here too.
+// The reasons a task cannot hang where it was asked to. Re-exported from task,
+// which is where a task's own rules live, so a surface can recognise every
+// refusal by asking the engine for its name.
 var (
 	ErrParentIsSelf    = task.ErrParentIsSelf
 	ErrParentIsSubTask = task.ErrParentIsSubTask
@@ -54,7 +52,7 @@ type tasks interface {
 	Delete(int) error
 	Find(int) (task.Task, error)
 	All() ([]task.Task, error)
-	Narrowed(*store.Narrowing) ([]task.Task, error)
+	Narrowed(*domain.Narrowing) ([]task.Task, error)
 	NothingBlocks() ([]int, error)
 	Under(int) ([]task.Task, error)
 	Close() error
@@ -74,50 +72,29 @@ type Engine struct {
 	// notes is the root every task's outside context sits under, when the
 	// surface that opened this engine said where; empty otherwise.
 	notes string
+	// home is what the places were found from, for the one operation that
+	// answers how they were found.
+	home Home
 	// path is where the store was opened. Kept because an operation is handed
 	// what sits beside the store as well as the store itself, and a surface
 	// that stays open runs operations long after whoever opened it has gone.
 	path string
 }
 
-// Changes are the attributes an operation was given. A nil field was not
-// named at all; a field pointing at an empty value was named and emptied —
-// which is how an attribute is taken away.
-type Changes struct {
-	Title       *string
-	Description *string
-	State       *string
-	Priority    *string
-	Labels      *[]string
-	Blocker     *[]string
-	Because     *string
-	Deadline    *string
-	Estimate    *string
-	Spent       *string
-	Parent      *int
-	Objective   *[]string
-}
-
-// named says whether anything at all was given to change.
-func (c Changes) named() bool {
-	return c.Title != nil || c.Description != nil || c.State != nil ||
-		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
-		c.Estimate != nil || c.Spent != nil || c.Parent != nil || c.Objective != nil ||
-		c.Blocker != nil || c.Because != nil
-}
-
 // Open opens a store that has to be up to date, and refuses one that is not:
 // a command about tasks does not change the shape of the store on the way past.
 func Open(path string) (*Engine, error) { return openWith(path, store.Open) }
 
-// OpenAt opens the store the way Open does, and keeps where the notes are, for
-// a surface that holds an engine open — a board — rather than one per call.
+// OpenAt opens the store the way Open does, and keeps where the notes are and
+// what they were found from, for a surface that holds an engine open — a
+// board — rather than one per call. A store that cannot be used is Told, as an
+// operation's would be.
 func OpenAt(at Places) (*Engine, error) {
 	e, err := Open(at.Store)
 	if err != nil {
-		return nil, err
+		return nil, Told(err)
 	}
-	e.notes = at.Notes
+	e.notes, e.home = at.Notes, at.Home
 	return e, nil
 }
 
@@ -150,8 +127,8 @@ func (e *Engine) Close() error {
 	return e.tasks.Close()
 }
 
-// Add records a new task carrying what it was given, and nothing else.
-func (e *Engine) Add(title string, c Changes) (task.Task, error) {
+// add records a new task carrying what it was given, and nothing else.
+func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	t, err := task.NewTask(title)
 	if err != nil {
 		return task.Task{}, err
@@ -162,7 +139,7 @@ func (e *Engine) Add(title string, c Changes) (task.Task, error) {
 	// A task added under a parent is a part from the start, so the column
 	// every new task begins in is not one it may keep.
 	t = t.Settled()
-	if err := e.canHang(t); err != nil {
+	if err := t.MayHang(e.tasks.Find); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.canServe(t); err != nil {
@@ -178,27 +155,22 @@ func (e *Engine) Add(title string, c Changes) (task.Task, error) {
 	return kept, nil
 }
 
-// List hands back every task, in the order they were added.
-func (e *Engine) List() ([]task.Task, error) {
-	return e.tasks.All()
-}
-
-// Narrowed hands back the tasks a narrowing keeps. Told nothing, it keeps
+// narrowed hands back the tasks a narrowing keeps. Told nothing, it keeps
 // everything, so this is List with something to say.
-func (e *Engine) Narrowed(kept *store.Narrowing) ([]task.Task, error) {
+func (e *Engine) narrowed(kept *domain.Narrowing) ([]task.Task, error) {
 	return e.tasks.Narrowed(kept)
 }
 
-// Show hands back the task carrying number.
-func (e *Engine) Show(number int) (task.Task, error) {
+// show hands back the task carrying number.
+func (e *Engine) show(number int) (task.Task, error) {
 	return e.tasks.Find(number)
 }
 
-// Archive takes a task off the board, keeping everything it carries.
-func (e *Engine) Archive(number int) error { return e.puttingAway(number, true) }
+// archive takes a task off the board, keeping everything it carries.
+func (e *Engine) archive(number int) error { return e.puttingAway(number, true) }
 
-// Unarchive brings one back.
-func (e *Engine) Unarchive(number int) error { return e.puttingAway(number, false) }
+// unarchive brings one back.
+func (e *Engine) unarchive(number int) error { return e.puttingAway(number, false) }
 
 func (e *Engine) puttingAway(number int, away bool) error {
 	found, err := e.tasks.Find(number)
@@ -219,37 +191,35 @@ func (e *Engine) puttingAway(number int, away bool) error {
 	} else {
 		a.NotArchived()
 	}
-	return e.tasks.Update(a.Task())
+	put := a.Task()
+	if err := e.tasks.Update(put); err != nil {
+		return err
+	}
+	return e.recordChanges(found, put)
 }
 
 // sweeping is what a narrowing reaches with its parts left out. A sweep acts
 // on the work, not on the pieces it is made of, and both sweeps read the same
 // world — one counting parts while the other does not is a pair answering two
 // different boards.
-func (e *Engine) sweeping(kept *store.Narrowing) ([]task.Task, error) {
+func (e *Engine) sweeping(kept *domain.Narrowing) ([]task.Task, error) {
 	found, err := e.tasks.Narrowed(kept)
 	if err != nil {
 		return nil, err
 	}
-	work := make([]task.Task, 0, len(found))
-	for _, one := range found {
-		if factsOf(one).parent == task.NoParent {
-			work = append(work, one)
-		}
-	}
-	return work, nil
+	return task.Work(found), nil
 }
 
-// ArchiveEvery takes off the board every task a narrowing reaches, and says
+// archiveEvery takes off the board every task a narrowing reaches, and says
 // how many. A sweep says what it did rather than refusing what it cannot take.
-func (e *Engine) ArchiveEvery(kept *store.Narrowing) (int, error) {
+func (e *Engine) archiveEvery(kept *domain.Narrowing) (int, error) {
 	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
 	}
 	swept := 0
 	for _, one := range found {
-		if err := e.Archive(factsOf(one).number); err != nil {
+		if err := e.archive(factsOf(one).number); err != nil {
 			// A narrowing asked to keep both reaches what is already off the
 			// board; a sweep passes over it rather than refusing.
 			if errors.Is(err, task.ErrAlreadyArchived) {
@@ -262,9 +232,9 @@ func (e *Engine) ArchiveEvery(kept *store.Narrowing) (int, error) {
 	return swept, nil
 }
 
-// LabelEvery puts one label on every task a narrowing reaches, keeping what
+// labelEvery puts one label on every task a narrowing reaches, keeping what
 // each already carries, and says how many.
-func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
+func (e *Engine) labelEvery(kept *domain.Narrowing, label string) (int, error) {
 	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
@@ -272,7 +242,7 @@ func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
 	put := 0
 	adding := []string{"+" + label}
 	for _, one := range found {
-		if _, err := e.Edit(factsOf(one).number, Changes{Labels: &adding}); err != nil {
+		if _, err := e.edit(factsOf(one).number, Changes{Labels: &adding}); err != nil {
 			return put, err
 		}
 		put++
@@ -280,8 +250,8 @@ func (e *Engine) LabelEvery(kept *store.Narrowing, label string) (int, error) {
 	return put, nil
 }
 
-// Delete removes the task carrying number, and everything hanging under it.
-func (e *Engine) Delete(number int) error {
+// delete removes the task carrying number, and everything hanging under it.
+func (e *Engine) delete(number int) error {
 	hanging, err := e.tasks.Under(number)
 	if err != nil {
 		return err
@@ -291,7 +261,7 @@ func (e *Engine) Delete(number int) error {
 	// form — so a task refused while a part was there could not be deleted at
 	// all. It is the rule archiving already goes by.
 	for _, part := range hanging {
-		if err := e.Delete(factsOf(part).number); err != nil {
+		if err := e.delete(factsOf(part).number); err != nil {
 			return err
 		}
 	}
@@ -324,37 +294,13 @@ func (e *Engine) Delete(number int) error {
 	return e.record(number, trace.Deleted, "", whatItHeld(gone), "")
 }
 
-// Under hands back what hangs directly under a task.
-func (e *Engine) Under(number int) ([]task.Task, error) {
+// under hands back what hangs directly under a task.
+func (e *Engine) under(number int) ([]task.Task, error) {
 	return e.tasks.Under(number)
 }
 
-// canHang says whether a task may hang where it was told to. A parent has to
-// exist, cannot be the task itself, and cannot already hang under something —
-// what hangs under a task is never something with more hanging under it.
-func (e *Engine) canHang(t task.Task) error {
-	parent := factsOf(t).parent
-	if parent == task.NoParent {
-		return nil
-	}
-	if err := t.MayCarryItsColumn(); err != nil {
-		return err
-	}
-	if err := t.MayServeAnObjective(); err != nil {
-		return err
-	}
-	if err := t.MayHangUnderItsParent(); err != nil {
-		return err
-	}
-	found, err := e.tasks.Find(parent)
-	if err != nil {
-		return err
-	}
-	return found.MayCarrySubTasks()
-}
-
-// Edit changes what was named on a task and leaves the rest alone.
-func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
+// edit changes what was named on a task and leaves the rest alone.
+func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
 		return task.Task{}, ErrNothingToChange
 	}
@@ -373,7 +319,7 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if c.Parent != nil && factsOf(was).parent != factsOf(t).parent {
 		t = t.Settled()
 	}
-	if err := e.canHang(t); err != nil {
+	if err := t.MayHang(e.tasks.Find); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.canServe(t); err != nil {
@@ -382,10 +328,10 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 	if err := e.canBeBlocked(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := mayLeave(factsOf(was), factsOf(t)); err != nil {
+	if err := was.MayLeaveFor(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.canFinish(was, t); err != nil {
+	if err := was.MayFinishAs(t, e.tasks.Under); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.tasks.Update(t); err != nil {
@@ -415,7 +361,7 @@ func (e *Engine) Edit(number int, c Changes) (task.Task, error) {
 // pass could not give, since it lays attributes out in the order a card does and
 // a card shows the column first.
 func (e *Engine) freeIfNothingBlocksIt(was, found task.Task) (task.Task, error) {
-	freed, put := freedFrom(factsOf(was), factsOf(found))
+	freed, put := was.FreedBy(found)
 	if !put {
 		return found, nil
 	}
@@ -435,194 +381,4 @@ func (e *Engine) freeIfNothingBlocksIt(was, found task.Task) (task.Task, error) 
 		return task.Task{}, err
 	}
 	return after, nil
-}
-
-// Whether a task is being created or changed. Labels are the only attribute
-// that cares: a sign says how an existing set moves, and there is no set to
-// move at creation.
-const (
-	creating = true
-	changing = false
-)
-
-// changedLabels works out the set that a change leaves behind. A sign says how
-// an existing set moves, and there is no set to move at creation, so one given
-// there is refused rather than read as a label named "+urgent".
-//
-// Shared by tasks and objectives: both carry a set and both move it the same
-// way, and this is the one part of applying a change that is more than a call
-// to a parser.
-func changedLabels(given, current []string, atCreation bool) ([]string, error) {
-	change, err := domain.ParseLabelChange(given)
-	if err != nil {
-		return nil, err
-	}
-	if atCreation && change.Adjusts() {
-		return nil, ErrLabelSignAtCreation
-	}
-	return change.Apply(current)
-}
-
-// taskFacts is a task's membrane for what the engine, or a test on it, has to
-// read back off it — everything else is a rule the task already owns, or a
-// fact only a builder writing a new task needs told to it.
-type taskFacts struct {
-	number, parent      int
-	title, description  string
-	state               domain.State
-	priority            domain.Priority
-	labels              []string
-	blockers            []int
-	objectives          []int
-	because             string
-	deadline            time.Time
-	estimate, timeSpent time.Duration
-	archived            bool
-}
-
-func (f *taskFacts) Numbered(n int)            { f.number = n }
-func (f *taskFacts) Titled(s string)           { f.title = s }
-func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
-func (f *taskFacts) Archived()                 { f.archived = true }
-func (f *taskFacts) NotArchived()              { f.archived = false }
-func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
-func (f *taskFacts) Described(s string)        { f.description = s }
-func (f *taskFacts) NotDescribed()             { f.description = "" }
-func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
-func (f *taskFacts) NotLabelled()              { f.labels = nil }
-func (f *taskFacts) LabelsTold()               {}
-func (f *taskFacts) BlockedBy(n int)           { f.blockers = append(f.blockers, n) }
-func (f *taskFacts) NotBlocked()               { f.blockers = nil }
-func (f *taskFacts) BlockersTold()             {}
-func (f *taskFacts) Because(s string)          { f.because = s }
-func (f *taskFacts) NotBecause()               { f.because = "" }
-func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
-func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
-func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }
-func (f *taskFacts) NotEstimated()             { f.estimate = 0 }
-func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
-func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
-func (f *taskFacts) Under(n int)               { f.parent = n }
-func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
-func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objectives, n) }
-func (f *taskFacts) ServesNothing()            { f.objectives = nil }
-func (f *taskFacts) ObjectivesTold()           {}
-
-// factsOf reads back what the engine needs from a task, without reaching
-// into fields that stopped being exported.
-func factsOf(t task.Task) taskFacts {
-	var f taskFacts
-	t.Tell(&f)
-	return f
-}
-
-// apply lays the changes over a task, refusing any value it cannot make sense
-// of. A field that was not named is left exactly as it was.
-func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
-	current := factsOf(t)
-	a := &task.AsTold{}
-	t.Tell(a)
-
-	if c.Title != nil {
-		retitled, err := task.NewTask(*c.Title)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.Titled(factsOf(retitled).title)
-	}
-	if c.Description != nil {
-		a.Described(*c.Description)
-	}
-	if c.State != nil {
-		state, err := domain.ParseState(*c.State)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.InColumn(state)
-	}
-	if c.Priority != nil {
-		priority, err := domain.ParsePriority(*c.Priority)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.Carries(priority)
-	}
-	if c.Labels != nil {
-		labels, err := changedLabels(*c.Labels, current.labels, atCreation)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.NotLabelled()
-		for _, label := range labels {
-			a.Labelled(label)
-		}
-		a.LabelsTold()
-	}
-	if c.Blocker != nil {
-		blockers, err := changedBlockers(*c.Blocker, current.blockers, atCreation)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.NotBlocked()
-		for _, blocker := range blockers {
-			a.BlockedBy(blocker)
-		}
-		a.BlockersTold()
-	}
-	if c.Because != nil {
-		a.Because(*c.Because)
-	}
-	if c.Deadline != nil {
-		deadline, err := domain.ParseDeadline(*c.Deadline)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.Due(deadline)
-	}
-	if c.Spent != nil {
-		spent, err := domain.ParseSpent(*c.Spent)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.Spent(spent.Apply(current.timeSpent))
-	}
-	if c.Parent != nil {
-		a.Under(*c.Parent)
-	}
-	if c.Objective != nil {
-		served, err := changedNumbers(*c.Objective, current.objectives, atCreation, ErrObjectiveRequired,
-			ErrObjectivesBothWays, ErrObjectiveSignAtBirth)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.ServesNothing()
-		for _, one := range served {
-			a.Serves(one)
-		}
-		a.ObjectivesTold()
-	}
-	if c.Estimate != nil {
-		estimate, err := domain.ParseEstimate(*c.Estimate)
-		if err != nil {
-			return task.Task{}, err
-		}
-		a.Estimated(estimate)
-	}
-	return a.Task(), nil
-}
-
-// canFinish refuses a task moved to done while something hanging under it is
-// not. Asked only when done is where it lands and is not where it was: a task
-// already finished, edited for something else, has nothing to answer for, and
-// asking anyway would make it fail for a reason nobody caused today.
-func (e *Engine) canFinish(was, now task.Task) error {
-	if factsOf(now).state != domain.Done || factsOf(was).state == domain.Done {
-		return nil
-	}
-	number := factsOf(now).number
-	hanging, err := e.tasks.Under(number)
-	if err != nil {
-		return err
-	}
-	return task.MayFinish(number, hanging)
 }

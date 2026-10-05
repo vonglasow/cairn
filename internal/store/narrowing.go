@@ -9,17 +9,17 @@ import (
 	"fmt"
 	"strings"
 
+	"cairn/internal/domain"
 	"cairn/internal/task"
 )
 
-// Narrowing is what a read was told to keep. Facts are named one at a time,
-// and a fact never named narrows nothing — so a Narrowing nobody named
-// anything on reads the store whole.
+// narrowing is what a read was told to keep, turned into SQL: it is told the
+// facts a domain.Narrowing names, one at a time, and keeps each as a clause.
 //
 // It carries the SQL rather than the values because that is where the two can
 // be kept from drifting: every clause below sits beside the placeholder it
 // needs, and a value never reaches the query as text.
-type Narrowing struct {
+type narrowing struct {
 	clauses []string
 	args    []any
 	labels  []string
@@ -29,15 +29,22 @@ type Narrowing struct {
 	both     bool
 }
 
+// readBy turns what a read was told to keep into the clauses that keep it.
+func readBy(kept *domain.Narrowing) *narrowing {
+	n := &narrowing{}
+	kept.Tell(n)
+	return n
+}
+
 // Archived keeps the tasks taken off the board, instead of the ones still on it.
-func (n *Narrowing) Archived() { n.archived = true }
+func (n *narrowing) Archived() { n.archived = true }
 
 // WithArchived keeps both, which is what a board asks for: it draws the two
 // apart rather than reading the store twice.
-func (n *Narrowing) WithArchived() { n.both = true }
+func (n *narrowing) WithArchived() { n.both = true }
 
 // InColumn keeps what sits in one column.
-func (n *Narrowing) InColumn(state string) {
+func (n *narrowing) InColumn(state string) {
 	n.keep(`state = ?`, state)
 }
 
@@ -48,12 +55,12 @@ func (n *Narrowing) InColumn(state string) {
 // What carries no deadline is left out. It is not due by that day — it is not
 // due at all — and a listing of what is coming up that answered every dateless
 // task would answer most of the board.
-func (n *Narrowing) DueBefore(day string) {
+func (n *narrowing) DueBefore(day string) {
 	n.keep(`deadline != '' AND deadline <= ?`, day)
 }
 
 // Carrying keeps what carries one priority.
-func (n *Narrowing) Carrying(priority string) {
+func (n *narrowing) Carrying(priority string) {
 	n.keep(`priority = ?`, priority)
 }
 
@@ -61,7 +68,7 @@ func (n *Narrowing) Carrying(priority string) {
 // serves. An objective nothing serves keeps nothing rather than failing: a
 // filter says what is wanted, and whether it exists is a question about
 // objectives that reading tasks does not ask.
-func (n *Narrowing) Serving(objective int) {
+func (n *narrowing) Serving(objective int) {
 	n.keep(`EXISTS (SELECT 1 FROM task_objectives
 		WHERE task_objectives.task_number = tasks.number
 		  AND task_objectives.objective_number = ?)`, objective)
@@ -73,19 +80,17 @@ func (n *Narrowing) Serving(objective int) {
 // Held aside rather than turned into a clause here, because where labels are
 // kept depends on what is being read and not on what was asked: a task and an
 // objective keep theirs in tables of their own. The read says which.
-func (n *Narrowing) Labelled(labels []string) {
+func (n *narrowing) Labelled(labels []string) {
 	n.labels = labels
 }
 
-// Narrows says whether anything was named at all. What is done with the answer
-// depends on it: a listing nobody narrowed is shown as the tree it is, and a
-// narrowed one is shown flat, since where a task sits is not what was asked.
-func (n *Narrowing) Narrows() bool {
+// narrows says whether anything was named at all.
+func (n *narrowing) narrows() bool {
 	return len(n.clauses)+len(n.labels) > 0 || n.archived
 }
 
 // keep records one clause and the value it holds to.
-func (n *Narrowing) keep(clause string, value any) {
+func (n *narrowing) keep(clause string, value any) {
 	n.clauses = append(n.clauses, clause)
 	n.args = append(n.args, value)
 }
@@ -98,8 +103,8 @@ func (n *Narrowing) keep(clause string, value any) {
 // part of it: each sits behind its own placeholder, which is why naming a label
 // called "' OR 1=1" narrows to the tasks carrying that label and to nothing
 // else.
-func (n *Narrowing) where(labels labelStore) (string, []any) {
-	if !n.Narrows() {
+func (n *narrowing) where(labels labelStore) (string, []any) {
+	if !n.narrows() {
 		return "", nil
 	}
 	clauses, args := n.clauses, n.args
@@ -112,7 +117,7 @@ func (n *Narrowing) where(labels labelStore) (string, []any) {
 
 // whereTasks is the same for tasks, which alone can be taken off the board.
 // Its own method because a narrowing is shared with objectives, which cannot.
-func (n *Narrowing) whereTasks(labels labelStore) (string, []any) {
+func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
 	// Always a clause, named or not — unless both are wanted.
 	var clauses []string
 	var args []any
@@ -132,9 +137,13 @@ func (n *Narrowing) whereTasks(labels labelStore) (string, []any) {
 }
 
 // Narrowed hands back the tasks a narrowing keeps, in the one order there is.
-func (s *Store) Narrowed(narrowing *Narrowing) ([]task.Task, error) {
-	where, args := narrowing.whereTasks(taskLabels)
-	rows, err := s.db.Query(
+func (s *Store) Narrowed(kept *domain.Narrowing) ([]task.Task, error) {
+	every, err := s.everyLink()
+	if err != nil {
+		return nil, err
+	}
+	where, args := readBy(kept).whereTasks(taskLabels)
+	rows, err := s.on.Query(
 		`SELECT `+taskColumns+` FROM tasks`+where+` `+taskOrder, args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the store: %w", err)
@@ -143,7 +152,7 @@ func (s *Store) Narrowed(narrowing *Narrowing) ([]task.Task, error) {
 
 	tasks := []task.Task{}
 	for rows.Next() {
-		t, err := s.scanTask(rows)
+		t, err := s.scanTask(rows, every)
 		if err != nil {
 			return nil, fmt.Errorf("reading a task: %w", err)
 		}

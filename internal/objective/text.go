@@ -3,14 +3,10 @@ package objective
 import (
 	"fmt"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"cairn/internal/domain"
 )
-
-// row is one line of a card: its key, and the value to show for it.
-type row struct{ key, value string }
 
 // textMembrane is an objective's membrane for the text a person reads: it is
 // told every fact and lays each one down as a row, in the order it was told.
@@ -19,33 +15,39 @@ type row struct{ key, value string }
 type textMembrane struct {
 	number int
 	title  string
-	rows   []row
+	rows   []domain.Fact
 	labels []string
 }
 
 func (c *textMembrane) Numbered(n int)  { c.number = n }
 func (c *textMembrane) Titled(s string) { c.title = s }
 func (c *textMembrane) Standing(s State) {
-	c.rows = append(c.rows, row{"state", string(s)})
+	c.rows = append(c.rows, domain.Fact{Key: "state", Value: string(s)})
 }
 func (c *textMembrane) Carries(p domain.Priority) {
-	c.rows = append(c.rows, row{"priority", string(p)})
+	c.rows = append(c.rows, domain.Fact{Key: "priority", Value: string(p)})
 }
-func (c *textMembrane) Described(s string) { c.rows = append(c.rows, row{"description", s}) }
-func (c *textMembrane) NotDescribed()      { c.rows = append(c.rows, row{"description", ""}) }
-func (c *textMembrane) Labelled(s string)  { c.labels = append(c.labels, s) }
-func (c *textMembrane) NotLabelled()       {}
+func (c *textMembrane) Described(s string) {
+	c.rows = append(c.rows, domain.Fact{Key: "description", Value: s})
+}
+func (c *textMembrane) NotDescribed() {
+	c.rows = append(c.rows, domain.Fact{Key: "description", Value: ""})
+}
+func (c *textMembrane) Labelled(s string) { c.labels = append(c.labels, s) }
+func (c *textMembrane) NotLabelled()      {}
 func (c *textMembrane) LabelsTold() {
-	c.rows = append(c.rows, row{"labels", strings.Join(c.labels, ", ")})
+	c.rows = append(c.rows, domain.Fact{Key: "labels", Value: strings.Join(c.labels, ", ")})
 }
 func (c *textMembrane) Due(t time.Time) {
-	c.rows = append(c.rows, row{"deadline", domain.FormatDay(t)})
+	c.rows = append(c.rows, domain.Fact{Key: "deadline", Value: domain.FormatDay(t)})
 }
-func (c *textMembrane) NotDue() { c.rows = append(c.rows, row{"deadline", ""}) }
+func (c *textMembrane) NotDue() { c.rows = append(c.rows, domain.Fact{Key: "deadline", Value: ""}) }
 func (c *textMembrane) Estimated(d time.Duration) {
-	c.rows = append(c.rows, row{"estimate", domain.FormatDuration(d)})
+	c.rows = append(c.rows, domain.Fact{Key: "estimate", Value: domain.FormatDuration(d)})
 }
-func (c *textMembrane) NotEstimated() { c.rows = append(c.rows, row{"estimate", ""}) }
+func (c *textMembrane) NotEstimated() {
+	c.rows = append(c.rows, domain.Fact{Key: "estimate", Value: ""})
+}
 
 // Text renders an objective in full, empty attributes included, the way a
 // person reads it. It is not a task's text with fields removed: an objective
@@ -55,37 +57,7 @@ func Text(o Objective, p domain.Progress) string {
 	m := &textMembrane{}
 	o.Tell(m)
 
-	var out strings.Builder
-	_, _ = fmt.Fprintf(&out, "#%d  %s\n\n", m.number, m.title)
-
-	tw := tabwriter.NewWriter(&out, 0, 2, 2, ' ', 0)
-	for _, f := range append(m.rows, row{"progress", progressLine(p)}) {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\n", f.key, domain.OrNothing(f.value))
-	}
-	_ = tw.Flush()
-	return out.String()
-}
-
-// progressLine says how far along an objective is, and says nothing at all
-// when nothing is under it. Zero of zero is not "none of it done": there is
-// no work to be done, and a share of nothing would read as a standstill.
-//
-// Tasks and sub-tasks are named apart because they are counted apart, while
-// the share is over both — three tasks and four sub-tasks is never seven
-// tasks, but all seven have to happen.
-func progressLine(p domain.Progress) string {
-	if !p.Any() {
-		return ""
-	}
-	var counts []string
-	if p.Tasks.Total > 0 {
-		counts = append(counts, fmt.Sprintf("%d of %d tasks", p.Tasks.Done, p.Tasks.Total))
-	}
-	if p.SubTasks.Total > 0 {
-		counts = append(counts, fmt.Sprintf("%d of %d sub-tasks", p.SubTasks.Done, p.SubTasks.Total))
-	}
-	return fmt.Sprintf("%s are done — the objective is %d%% done",
-		strings.Join(counts, " and "), p.Percent())
+	return domain.Card(m.number, m.title, append(m.rows, domain.Fact{Key: "progress", Value: p.Line("the objective")}))
 }
 
 // Serving renders the tasks put under an objective as the lines already

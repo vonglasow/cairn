@@ -1,11 +1,12 @@
 package reading
 
 import (
-	"cairn/internal/task"
 	"fmt"
 	"slices"
 	"testing"
 	"time"
+
+	"cairn/internal/task"
 
 	"cairn/internal/domain"
 )

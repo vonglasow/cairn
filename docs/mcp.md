@@ -107,10 +107,18 @@ Three things follow, and each would otherwise be a problem of its own:
 
 - The invariant holds. The server is not the one place where "written by one,
   seen by the next" stops being true.
-- Nothing holds a write-ahead log open, so `backup add` still copies a whole
-  store. Holding the store would have meant checkpointing before every backup.
+- Nothing holds a write-ahead log open between two calls. A backup reads the
+  store as it stands either way, but a log nobody holds is a log nothing can
+  lose.
 - Nothing holds the file while `backup_restore` or `migration_rollback` swaps
   it underneath. Under a live handle that is corruption, not staleness.
+
+The places are found at each call too, not once when the server starts: the
+server is handed the home and the environment, and the engine works out where
+the store and the notes are each time it is asked. A configuration changed
+while the server runs is read by the next call, and a configuration every other
+call refuses still lets `config_show` say why — a server that refused to start
+over it would have left an agent nothing to ask.
 
 ## A client that hangs up is not a failure
 
@@ -212,13 +220,14 @@ scenario: without it, every refusal would read as a violation.
 And the declaration bought something that was not the point of it. `Of` works
 out which shape to build by looking at which field of an `Answer` was filled —
 knowable only after the operation has run, and until now comparable to nothing.
-A test now runs nineteen operations and checks that what `Of` builds is what
+A test now runs every operation `All()` names and checks that what `Of` builds is what
 the operation said it answers. The description and the behaviour check each
 other.
 
 ## Why the SDK, written down
 
-`CLAUDE.md` asks for a written reason before a dependency, so here it is.
+`CLAUDE.md` asks for a written reason before a dependency, so here it is — and
+its line in [dependencies.md](dependencies.md), where every one is listed.
 
 `modelcontextprotocol/go-sdk` v1.7.0 carries the protocol and derives each
 tool's JSON schema from its Go argument type. Writing it by hand was measured

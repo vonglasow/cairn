@@ -34,13 +34,15 @@ So every entry carries the field, the value before, the value after, and the
 moment. The two extra columns are the whole difference between a trace you can
 read and a trace you can rebuild from, and rebuilding is what was asked for.
 
-## Seventeen acts, and reading is not one of them
+## Nineteen acts, and reading is not one of them
 
-Twelve of them are the attributes a task carries, one act each: its title, its
+Thirteen of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
 beside them, its deadline, its estimate, the time spent on it, its parent, the
-objectives it serves. Five are not about a field: **created**, **moved**,
-**focus taken**, **focus released**, **deleted**.
+objectives it serves, and whether it was taken off the board — archiving and
+bringing back are changes like any other, written `yes` and nothing. Six are not
+about a field: **created**, **moved**, **focus taken**, **focus released**,
+**deleted**, **time added**.
 
 The number grows when a task gains an attribute, and nothing has to be written
 here for it to: `theAttributes` in `internal/engine/recording.go` is one list,
@@ -63,7 +65,7 @@ written down, and a replay then depends on nothing from that era.
 values were laid out as `title=…, column=…` pairs, and measured: a title
 carrying a comma splits into a pair and a word, so `Écrire la spéc, enfin`
 cannot be read back apart. Nor is there a separator that would save it — a
-description accepts tabs and newlines both. Any one field holding twelve values
+description accepts tabs and newlines both. Any one field holding thirteen values
 needs a format invented for it and a parser to match, and the two disagree
 eventually.
 
@@ -87,8 +89,8 @@ kept no content made the second unanswerable by anybody, which was not a
 decision, only an omission.
 
 It is written on the one act rather than one act per attribute. A deletion is
-one thing that happened, and a history reading as twelve would say a task was
-deleted twelve times.
+one thing that happened, and a history reading as thirteen would say a task was
+deleted thirteen times.
 
 ## The trace outlives the task
 

@@ -7,8 +7,9 @@ package engine
 // shape is their job.
 
 import (
-	"cairn/internal/migration"
 	"errors"
+
+	"cairn/internal/migration"
 )
 
 // MigrationList names every change to the store, applied or waiting.
@@ -21,11 +22,11 @@ var MigrationList = Operation{
 	Needs:   AStoreBehind,
 	Answers: Ledger{},
 	Run: func(on On, _ Input) (Answer, error) {
-		all, err := on.Engine.Migrations()
+		all, err := on.Engine.migrations()
 		if err != nil {
 			return Answer{}, err
 		}
-		held, err := on.Engine.Held()
+		held, err := on.Engine.held()
 		if err != nil {
 			return Answer{}, err
 		}
@@ -47,7 +48,7 @@ var MigrationShow = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		one, err := on.Engine.Change(n)
+		one, err := on.Engine.change(n)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -70,7 +71,7 @@ var MigrationApply = Operation{
 	Run: func(on On, in Input) (Answer, error) {
 		n, named := in.Whole("number")
 		if !named {
-			made, err := on.Engine.ApplyAll(on.Path)
+			made, err := on.Engine.applyAll(on.Path)
 			if errors.Is(err, ErrNothingWaiting) {
 				return Answer{Applied: []string{}}, nil
 			}
@@ -79,7 +80,7 @@ var MigrationApply = Operation{
 			}
 			return Answer{Applied: made}, nil
 		}
-		one, err := on.Engine.Apply(on.Path, n)
+		one, err := on.Engine.apply(on.Path, n)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -97,7 +98,7 @@ var MigrationRollback = Operation{
 	Needs:   AStoreBehind,
 	Answers: migration.RolledBack{},
 	Run: func(on On, _ Input) (Answer, error) {
-		rolled, err := on.Engine.RollBack(on.Path)
+		rolled, err := on.Engine.rollBack(on.Path)
 		if err != nil {
 			return Answer{}, err
 		}

@@ -28,6 +28,47 @@ import (
 // leaves the file and the default to answer on their own.
 func silentEnv(string) (string, bool) { return "", false }
 
+// placesHeard is told where each place resolved to, whatever named it: the
+// only way to read a Places, since it has no accessor to read it by.
+type placesHeard struct{ store, notes string }
+
+func (p *placesHeard) StoreNamedByTheFile(at string)        { p.store = at }
+func (p *placesHeard) StoreNamedByTheEnvironment(at string) { p.store = at }
+func (p *placesHeard) StoreNamedByNothing(at string)        { p.store = at }
+func (p *placesHeard) NotesNamedByTheFile(at string)        { p.notes = at }
+func (p *placesHeard) NotesNamedByTheEnvironment(at string) { p.notes = at }
+func (p *placesHeard) NotesNamedByNothing(at string)        { p.notes = at }
+
+func storeOf(p config.Places) string {
+	heard := &placesHeard{}
+	p.Tell(heard)
+	return heard.store
+}
+
+func notesOf(p config.Places) string {
+	heard := &placesHeard{}
+	p.Tell(heard)
+	return heard.notes
+}
+
+// A place the environment names is read the same way as one the file names:
+// expanded, then judged. Measured before this: CAIRN_STORE=cairn.db wrote a
+// store into whichever directory the command was run from.
+func TestRead_refusesAPlaceTheEnvironmentNamesThatIsNotAbsolute(t *testing.T) {
+	for _, variable := range []string{config.StoreVariable, config.NotesVariable} {
+		env := func(name string) (string, bool) {
+			if name == variable {
+				return "relative/place", true
+			}
+			return "", false
+		}
+		_, err := config.Read(t.TempDir(), env)
+		if !errors.Is(err, config.ErrNotAbsolute) || !strings.Contains(err.Error(), "relative/place") {
+			t.Errorf("%s: Read = %v, want ErrNotAbsolute naming the place", variable, err)
+		}
+	}
+}
+
 func TestRead_takesTheStoreTheFileNames(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -44,8 +85,8 @@ func TestRead_takesTheStoreTheFileNames(t *testing.T) {
 		t.Fatalf("Read returned an error: %v", err)
 	}
 
-	if got := places.Store(); got != "/tmp/quelquepart/cairn.db" {
-		t.Errorf("Store() = %q, want %q", got, "/tmp/quelquepart/cairn.db")
+	if got := storeOf(places); got != "/tmp/quelquepart/cairn.db" {
+		t.Errorf("the store = %q, want %q", got, "/tmp/quelquepart/cairn.db")
 	}
 }
 
@@ -88,8 +129,8 @@ func TestRead_fallsBackToTheHomeWhenNothingNamesTheStore(t *testing.T) {
 			}
 
 			want := filepath.Join(home, ".cairn", "cairn.db")
-			if got := places.Store(); got != want {
-				t.Errorf("Store() = %q, want %q", got, want)
+			if got := storeOf(places); got != want {
+				t.Errorf("the store = %q, want %q", got, want)
 			}
 		})
 	}
@@ -112,8 +153,8 @@ func TestRead_expandsALeadingTildeAgainstTheHome(t *testing.T) {
 	}
 
 	want := filepath.Join(home, "work", "cairn.db")
-	if got := places.Store(); got != want {
-		t.Errorf("Store() = %q, want %q", got, want)
+	if got := storeOf(places); got != want {
+		t.Errorf("the store = %q, want %q", got, want)
 	}
 }
 
@@ -176,8 +217,8 @@ func TestRead_takesWhatTheEnvironmentSaysOverAnythingElse(t *testing.T) {
 				t.Fatalf("Read returned an error: %v", err)
 			}
 
-			if want := c.want(home); places.Store() != want {
-				t.Errorf("Store() = %q, want %q", places.Store(), want)
+			if want := c.want(home); storeOf(places) != want {
+				t.Errorf("the store = %q, want %q", storeOf(places), want)
 			}
 		})
 	}
@@ -357,8 +398,8 @@ func TestRead_resolvesTheNotesTheSameWayAsTheStore(t *testing.T) {
 				t.Fatalf("Read returned an error: %v", err)
 			}
 
-			if want := c.want(home); places.Notes() != want {
-				t.Errorf("Notes() = %q, want %q", places.Notes(), want)
+			if want := c.want(home); notesOf(places) != want {
+				t.Errorf("the notes = %q, want %q", notesOf(places), want)
 			}
 		})
 	}

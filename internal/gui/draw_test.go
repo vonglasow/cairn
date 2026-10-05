@@ -1348,7 +1348,7 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	f := newFake()
 	w := holding(f,
 		reading.Card{Number: 1, Title: "Bare", State: "todo"},
-		reading.Card{Number: 2, Title: "Carries", State: "todo", Described: true, SubDone: 1, SubTotal: 3},
+		reading.Card{Number: 2, Title: "Carries", State: "todo", Description: "something written", SubDone: 1, SubTotal: 3},
 	)
 	shot := drawn(t, w)
 	beside := func(at int) Box {
@@ -1466,5 +1466,8 @@ func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 	}
 	if got := w.LaneSays("paused"); got != "paused  0" {
 		t.Errorf("a lane with nothing in it says %q", got)
+	}
+	if got := w.LaneSays("todo"); got != "todo  0" {
+		t.Errorf("a state with no lane says %q", got)
 	}
 }

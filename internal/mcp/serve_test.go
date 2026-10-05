@@ -48,7 +48,7 @@ func connect(t *testing.T, s Server) *sdk.ClientSession {
 }
 
 func TestServe_answersItsNameAndVersion(t *testing.T) {
-	session := connect(t, Server{Name: "cairn", Version: "1.2.3", Access: Full})
+	session := connect(t, Server{Name: "cairn", Version: "1.2.3", Access: engine.Full})
 
 	info := session.InitializeResult().ServerInfo
 	if info.Name != "cairn" {
@@ -78,7 +78,7 @@ func TestServe_answersNothingWrongWhenTheClientHasGone(t *testing.T) {
 	greeting := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}`
 
 	var out bytes.Buffer
-	err := Serve(context.Background(), Server{Name: "cairn", Version: "1.2.3", Access: Write},
+	err := Serve(context.Background(), Server{Name: "cairn", Version: "1.2.3", Access: engine.Write},
 		strings.NewReader(greeting+"\n"), &out)
 
 	if err != nil {
@@ -95,7 +95,7 @@ func TestServe_stillReturnsASessionErrorThatIsNotThePeerLeaving(t *testing.T) {
 	cancel()
 
 	var out bytes.Buffer
-	err := Serve(ctx, Server{Name: "cairn", Version: "1.2.3", Access: Write},
+	err := Serve(ctx, Server{Name: "cairn", Version: "1.2.3", Access: engine.Write},
 		strings.NewReader(""), &out)
 
 	if err == nil {

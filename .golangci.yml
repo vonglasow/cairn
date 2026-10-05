@@ -75,6 +75,30 @@ linters:
             # a release saying nothing.
             - reflect
 
+        # Where cairn finds its own places: the file, the environment, the home.
+        # It reads a file and knows nobody of ours — the engine is told what it
+        # found, and a surface asks the engine. An allow-list, like domain and
+        # build: what it may reach is short and named, and an import nobody
+        # thought to forbid is exactly the one that would hurt here.
+        config:
+          files: ["**/internal/config/**"]
+          allow:
+            - bytes
+            - errors
+            - fmt
+            - io/fs
+            - os
+            - path/filepath
+            - reflect
+            - strings
+            - github.com/pelletier/go-toml/v2
+            # Only reachable from _test.go: its tests sit in package
+            # config_test and import it back, and `no-go-testing` refuses
+            # `testing` anywhere else.
+            - cairn/internal/config
+            - strconv
+            - testing
+
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the
         # title rule it shares with an objective, and nothing else — a task
@@ -100,6 +124,18 @@ linters:
               desc: a task is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: a task is not a surface
+            - pkg: cairn/internal/objective
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/trace
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/migration
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/reading
+              desc: a task knows nothing of how a board reads it
+            - pkg: cairn/internal/tui
+              desc: a task knows nothing of how it is displayed
+            - pkg: cairn/internal/gui
+              desc: a task knows nothing of how it is displayed
 
         # The objective holds the objective: what it carries, and the rules
         # that keep it valid. It reaches domain, for the attributes an
@@ -128,6 +164,16 @@ linters:
               desc: an objective is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: an objective is not a surface
+            - pkg: cairn/internal/trace
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/migration
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/reading
+              desc: an objective knows nothing of how a board reads it
+            - pkg: cairn/internal/tui
+              desc: an objective knows nothing of how it is displayed
+            - pkg: cairn/internal/gui
+              desc: an objective knows nothing of how it is displayed
 
         # The migration holds the change: what it does to the shape of the
         # store, what undoes it, and what undoing it costs. It reaches domain,
@@ -154,6 +200,18 @@ linters:
               desc: a change is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: a change is not a surface
+            - pkg: cairn/internal/task
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/objective
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/trace
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/reading
+              desc: a change knows nothing of how a board reads it
+            - pkg: cairn/internal/tui
+              desc: a change knows nothing of how it is displayed
+            - pkg: cairn/internal/gui
+              desc: a change knows nothing of how it is displayed
 
         # The act holds one thing that was done to a task: what it was, what it
         # became, when, and through which surface. It reaches domain, for writing
@@ -183,6 +241,14 @@ linters:
               desc: an act is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: an act is not a surface
+            - pkg: cairn/internal/migration
+              desc: a notion never imports another notion; store and engine are what tie them together
+            - pkg: cairn/internal/reading
+              desc: an act knows nothing of how a board reads it
+            - pkg: cairn/internal/tui
+              desc: an act knows nothing of how it is displayed
+            - pkg: cairn/internal/gui
+              desc: an act knows nothing of how it is displayed
 
         # The store is called by the engine and speaks in entities. It is the
         # only package that knows a database exists.
@@ -199,6 +265,12 @@ linters:
               desc: the store is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: the store is not a surface
+            - pkg: cairn/internal/reading
+              desc: the store must not know how anything is displayed
+            - pkg: cairn/internal/tui
+              desc: the store must not know how anything is displayed
+            - pkg: cairn/internal/gui
+              desc: the store must not know how anything is displayed
 
         # The engine is called by surfaces; it never calls them, and it never
         # opens a database itself — that is the whole reason the store exists.
@@ -213,6 +285,12 @@ linters:
               desc: the engine asks the store, it does not reach a database
             - pkg: github.com/spf13/cobra
               desc: the engine is not a surface
+            - pkg: cairn/internal/reading
+              desc: the boards read the engine, it never reads them
+            - pkg: cairn/internal/tui
+              desc: the engine is called by surfaces, it never calls them
+            - pkg: cairn/internal/gui
+              desc: the engine is called by surfaces, it never calls them
 
         # The harness is handed a way to run a command and never learns who
         # answers. Importing a surface would close a cycle, since that surface's
@@ -229,6 +307,10 @@ linters:
               desc: a scenario asks the engine, never the store
             - pkg: database/sql
               desc: a scenario never opens a database
+            - pkg: cairn/internal/tui
+              desc: the harness is handed a runner, it never reaches a surface
+            - pkg: cairn/internal/gui
+              desc: the harness is handed a runner, it never reaches a surface
 
         # A surface asks the engine. Reaching the store directly would put a
         # rule the engine owns into a second place, where it drifts.
@@ -271,6 +353,14 @@ linters:
               desc: this says which fields a form asks about, not what it looks like
             - pkg: github.com/spf13/cobra
               desc: nothing here parses a command line
+            - pkg: cairn/internal/gui
+              desc: the window reads through this, not the other way round
+            - pkg: gioui.org
+              desc: this says what a card carries, never how it is drawn
+            - pkg: golang.org/x/image
+              desc: this says what a card carries, never how it is drawn
+            - pkg: charm.land/bubbles/v2
+              desc: this holds no widget
 
         # The fourth surface: the same board in a window. Held exactly as the
         # terminal one is, and forbidden it as well — two surfaces do not reach
@@ -308,6 +398,8 @@ linters:
               desc: a surface never opens a database
             - pkg: github.com/spf13/cobra
               desc: the board is opened by a command, it does not parse one
+            - pkg: cairn/internal/gui
+              desc: what the two boards share lives in reading, not in each other
 
         # The other surface, held to the same rules, plus one of its own: it may
         # not read the command line. `cli` builds the server, so the arrow runs
@@ -327,6 +419,10 @@ linters:
               desc: a surface changes state through the engine, never behind it
             - pkg: database/sql
               desc: a surface never opens a database
+            - pkg: cairn/internal/tui
+              desc: two surfaces do not reach each other
+            - pkg: cairn/internal/gui
+              desc: two surfaces do not reach each other
 
     revive:
       rules:
@@ -345,7 +441,6 @@ linters:
           - revive
           - godot
 
-formatters:
-  enable:
-    - gofmt
-    - goimports
+# No formatters here. prek's go-fmt and go-imports already judge, and fix, the
+# formatting of every Go file at commit; enabled here too, the same question was
+# asked twice of every commit.

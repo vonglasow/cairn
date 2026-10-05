@@ -7,8 +7,6 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -17,32 +15,6 @@ import (
 	"cairn/internal/migration"
 	"cairn/test"
 )
-
-// olderStore turns the store into one an older cairn would have written, by
-// undoing the last change to its shape through the real command. Nothing here
-// reaches for SQL: a step that built the older shape by hand would be asserting
-// against a shape cairn never actually wrote.
-func (w *world) olderStore(title string) error {
-	if err := w.Seed(fmt.Sprintf(`cairn task add "%s"`, title)); err != nil {
-		return err
-	}
-	if err := w.Seed(`cairn migration rollback --yes`); err != nil {
-		return err
-	}
-	// Undoing set a backup aside, which is right for somebody undoing on purpose
-	// and wrong as a starting point: the scenarios count the backups made from
-	// here on.
-	return w.forgetBackups()
-}
-
-// forgetBackups removes every backup, so a scenario counts only what it caused.
-func (w *world) forgetBackups() error {
-	err := os.RemoveAll(filepath.Join(filepath.Dir(w.StorePath), "backups"))
-	if err != nil {
-		return fmt.Errorf("clearing the backups: %w", err)
-	}
-	return nil
-}
 
 // numberOfRow reads the number a listing row leads with.
 func numberOfRow(row string) (int, bool) {
@@ -129,7 +101,7 @@ func (w *world) isApplied(name string) (bool, error) {
 // a scenario about applying a change checks the backup it set aside, and a
 // scenario about backups needs a store older than this cairn to backup.
 func (w *world) registerStore(sc *godog.ScenarioContext) {
-	sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.olderStore)
+	sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.AStoreFromAnOlderCairn)
 
 	// The number is read from the store, never written here: a scenario that
 	// spelled out "apply 2" would be describing how many migrations cairn has
@@ -275,7 +247,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^I deleted every backup$`, func() error {
-		return w.forgetBackups()
+		return w.ForgetBackups()
 	})
 
 	sc.Step(`^it numbers the backup (\d+)$`, func(n int) error {

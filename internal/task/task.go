@@ -111,60 +111,15 @@ func (t Task) Tell(to Told) {
 		to.NotArchived()
 	}
 	to.Carries(t.priority)
-	if t.description == "" {
-		to.NotDescribed()
-	} else {
-		to.Described(t.description)
-	}
-	if len(t.labels) == 0 {
-		to.NotLabelled()
-	} else {
-		for _, label := range t.labels {
-			to.Labelled(label)
-		}
-	}
-	to.LabelsTold()
-	if len(t.blockers) == 0 {
-		to.NotBlocked()
-	} else {
-		for _, blocker := range t.blockers {
-			to.BlockedBy(blocker)
-		}
-	}
-	to.BlockersTold()
-	if t.because == "" {
-		to.NotBecause()
-	} else {
-		to.Because(t.because)
-	}
-	if t.deadline.IsZero() {
-		to.NotDue()
-	} else {
-		to.Due(t.deadline)
-	}
-	if t.estimate == 0 {
-		to.NotEstimated()
-	} else {
-		to.Estimated(t.estimate)
-	}
-	if t.timeSpent == 0 {
-		to.NothingSpent()
-	} else {
-		to.Spent(t.timeSpent)
-	}
-	if t.parent == NoParent {
-		to.UnderNothing()
-	} else {
-		to.Under(t.parent)
-	}
-	if len(t.objectives) == 0 {
-		to.ServesNothing()
-	} else {
-		for _, objective := range t.objectives {
-			to.Serves(objective)
-		}
-	}
-	to.ObjectivesTold()
+	domain.TellOrNot(t.description, to.Described, to.NotDescribed)
+	domain.TellAll(t.labels, to.Labelled, to.NotLabelled, to.LabelsTold)
+	domain.TellAll(t.blockers, to.BlockedBy, to.NotBlocked, to.BlockersTold)
+	domain.TellOrNot(t.because, to.Because, to.NotBecause)
+	domain.TellOrNot(t.deadline, to.Due, to.NotDue)
+	domain.TellOrNot(t.estimate, to.Estimated, to.NotEstimated)
+	domain.TellOrNot(t.timeSpent, to.Spent, to.NothingSpent)
+	domain.TellOrNot(t.parent, to.Under, to.UnderNothing)
+	domain.TellAll(t.objectives, to.Serves, to.ServesNothing, to.ObjectivesTold)
 }
 
 // MayCarrySubTasks says whether a task may have another hang under it. Only
@@ -292,12 +247,9 @@ func MayFinish(number int, hanging []Task) error {
 
 // NewTask builds a task from a title, refusing one that carries no text.
 // What surrounds the title is not part of it; what sits inside it is.
-func NewTask(title string) (Task, error) {
-	title = strings.TrimSpace(title)
-	if title == "" {
-		return Task{}, fmt.Errorf("a task %w", domain.ErrTitleRequired)
-	}
-	if err := domain.OneLine(title); err != nil {
+func NewTask(raw string) (Task, error) {
+	title, err := domain.Title("a task", raw)
+	if err != nil {
 		return Task{}, err
 	}
 	return Task{title: title, state: domain.Backlog, priority: domain.Normal}, nil

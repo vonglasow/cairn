@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"cairn/internal/engine"
 	"cairn/internal/mcp"
 )
 
@@ -38,18 +39,14 @@ func newMCPServeCmd() *cobra.Command {
 		Short: "Answer an agent over MCP",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			level, err := mcp.ParseAccess(access)
-			if err != nil {
-				return err
-			}
-			at, err := places()
+			level, err := engine.ParseLevel(access)
 			if err != nil {
 				return err
 			}
 			// The name comes from the tree and the version from the build, so
 			// an agent and a person are told the same two things by the same
 			// two authorities. Written here, it would be a third.
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Places: at}
+			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home()}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}

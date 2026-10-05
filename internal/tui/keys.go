@@ -193,7 +193,8 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 		// without serving it makes the bar a thing to distrust. They move
 		// between tasks, and the detail follows the cursor.
 		if b.screen == OnDetail {
-			return b.stepTo(way), nil
+			b = b.stepTo(way)
+			return b, b.hearing(b.task)
 		}
 	}
 	// The detail's own bar offers e and f, and offering a key without serving
@@ -289,7 +290,7 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 		return b, nil
 	case "enter":
 		b.screen = OnDetail
-		return b, nil
+		return b, b.hearing(b.task)
 	case "e":
 		return b.editForm()
 	case "f":

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -119,5 +120,59 @@ func TestMain_writesAReasonToStandardErrorOnly(t *testing.T) {
 func TestMain_rendersErrorsTheWayTheBinaryDoes(t *testing.T) {
 	if got := run(t, "nope").Stderr; !strings.Contains(got, "ERROR") {
 		t.Errorf("stderr = %q, want fang's rendering of the error", got)
+	}
+}
+
+// Asked for JSON however it was spelled, a refusal comes back as JSON too.
+// The flag was looked for as the literal `--json`, so `--json=true` answered
+// a success as JSON and a refusal as prose a machine could not read.
+func TestMain_answersARefusalAsJSONHoweverTheFlagWasSpelled(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	for _, flag := range []string{"--json", "--json=true", "--json=1"} {
+		r := run(t, "task", "show", "1", flag)
+		if r.Code == exitOK || !strings.HasPrefix(strings.TrimSpace(r.Stdout), `{"error":`) {
+			t.Errorf("%s: stdout %q, want the refusal as JSON", flag, r.Stdout)
+		}
+	}
+	r := run(t, "task", "show", "1", "--json=false")
+	if strings.Contains(r.Stdout, `{"error":`) {
+		t.Errorf("--json=false answered as JSON: %q", r.Stdout)
+	}
+}
+
+// Every thing the engine names has the sentence its group is shown with. The
+// sentences stay here, since only the command line groups its verbs, but a
+// thing added without one used to show an empty line and nothing said so.
+func TestEveryThingHasAGroupSentence(t *testing.T) {
+	for _, op := range engine.All() {
+		if groupShort[op.Thing] == "" {
+			t.Errorf("%q has no sentence in groupShort", op.Thing)
+		}
+	}
+}
+
+// A length to take back is typed with a minus, which cobra reads as a flag.
+// Said plainly what to type instead, on the command line where the problem
+// is — the engine's description of the argument is read by agents too, and
+// an agent has no `--` to write.
+func TestMain_saysToWriteALengthUnderZeroAfterTheDoubleDash(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	r := run(t, "timesheet", "add", "1", "-30m")
+	if !strings.Contains(r.Stderr, "after --") || strings.Contains(r.Stderr, "task number") {
+		t.Errorf("stderr %q, want it to say to write -30m after --", r.Stderr)
+	}
+	if r := run(t, "task", "show", "-1"); !strings.Contains(r.Stderr, "a task number is expected") {
+		t.Errorf("stderr %q, want a negative number still read as one", r.Stderr)
+	}
+}
+
+// The description an agent reads names nothing of the command line.
+func TestNoArgumentSpeaksOfTheCommandLine(t *testing.T) {
+	for _, op := range engine.All() {
+		for _, arg := range op.Takes {
+			if strings.Contains(arg.Means, "command line") {
+				t.Errorf("%s %q: %q", op.Name(), arg.Name, arg.Means)
+			}
+		}
 	}
 }

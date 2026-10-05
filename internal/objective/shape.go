@@ -12,7 +12,8 @@ import (
 //
 // Neither the tasks put under it nor how far along it is sit here: both need
 // a task's number to say anything, and an objective may not know of one —
-// wire, the one place that reaches both notions, carries them instead.
+// the engine's answer, the one place that reaches both notions, carries them
+// instead.
 type Shape struct {
 	Number      int      `json:"number"`
 	Title       string   `json:"title"`

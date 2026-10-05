@@ -69,44 +69,41 @@ func (c *Backups) HoldsStore() (domain.Held, error) { return c.vault.HoldsStore(
 // Holds counts what a backup holds, without changing it.
 func (c *Backups) Holds(one domain.Backup) (domain.Held, error) { return c.vault.Holds(one) }
 
-// Migrations hands back every change this cairn knows, applied or not.
-func (e *Engine) Migrations() ([]migration.Migration, error) { return e.store.Migrations() }
+// migrations hands back every change this cairn knows, applied or not.
+func (e *Engine) migrations() ([]migration.Migration, error) { return e.store.Migrations() }
 
-// Change hands back one change by its number.
-func (e *Engine) Change(number int) (migration.Migration, error) { return e.store.Change(number) }
+// change hands back one change by its number.
+func (e *Engine) change(number int) (migration.Migration, error) { return e.store.Change(number) }
 
-// Waiting hands back the changes the store has not had yet.
-func (e *Engine) Waiting() ([]migration.Migration, error) { return e.store.Waiting() }
-
-// Held counts what the store holds, tasks and objectives apart.
-func (e *Engine) Held() (domain.Held, error) { return e.store.Held() }
+// held counts what the store holds, tasks and objectives apart.
+func (e *Engine) held() (domain.Held, error) { return e.store.Held() }
 
 // Version says whether the store has moved since it was last asked. It is
 // passed straight through: a surface that stays open needs it, and the engine
 // has nothing to add to a number it does not interpret.
 func (e *Engine) Version() (int64, error) { return e.store.Version() }
 
-// Apply makes one change, after setting a backup aside: changing the shape of a
+// apply makes one change, after setting a backup aside: changing the shape of a
 // store is not something to discover afterwards.
-func (e *Engine) Apply(path string, number int) (string, error) {
+func (e *Engine) apply(path string, number int) (string, error) {
 	if err := e.backupFirst(path); err != nil {
 		return "", err
 	}
 	return e.store.Apply(number)
 }
 
-// ApplyAll makes every change the store is missing, after setting a backup aside.
-func (e *Engine) ApplyAll(path string) ([]string, error) {
+// applyAll makes every change the store is missing, after setting a backup aside.
+func (e *Engine) applyAll(path string) ([]string, error) {
 	if err := e.backupFirst(path); err != nil {
 		return nil, err
 	}
 	return e.store.ApplyAll()
 }
 
-// RollBack unmakes the last change applied, after setting a backup aside: rolling
+// rollBack unmakes the last change applied, after setting a backup aside: rolling
 // back drops what the older shape cannot hold, and that is worth being able to
 // take back.
-func (e *Engine) RollBack(path string) (migration.Migration, error) {
+func (e *Engine) rollBack(path string) (migration.Migration, error) {
 	if err := e.backupFirst(path); err != nil {
 		return migration.Migration{}, err
 	}

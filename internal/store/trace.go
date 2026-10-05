@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"cairn/internal/domain"
 	"cairn/internal/trace"
 )
 
@@ -42,7 +43,7 @@ func (b *boundAct) At(when time.Time)      { b.at = when }
 func (s *Store) Record(a trace.Act) error {
 	var b boundAct
 	a.Tell(&b)
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`INSERT INTO trace (`+traceColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		b.task, b.did, b.field, b.was, b.became, b.through,
 		b.at.UTC().Format(time.RFC3339)); err != nil {
@@ -56,7 +57,7 @@ func (s *Store) Record(a trace.Act) error {
 // always carries at least its creation: the caller asks about the task itself
 // when it needs to tell them apart.
 func (s *Store) ActsOn(number int) ([]trace.Act, error) {
-	rows, err := s.db.Query(
+	rows, err := s.on.Query(
 		`SELECT `+traceColumns+` FROM trace WHERE task_number = ? ORDER BY id`, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what happened to task %d: %w", number, err)
@@ -82,7 +83,7 @@ func (s *Store) ActsOn(number int) ([]trace.Act, error) {
 // that is no longer there — which is the whole reason a history outlives what it
 // describes.
 func (s *Store) ActsSince(from time.Time) ([]trace.Act, error) {
-	rows, err := s.db.Query(
+	rows, err := s.on.Query(
 		`SELECT `+traceColumns+` FROM trace WHERE at >= ? ORDER BY id`,
 		from.UTC().Format(time.RFC3339))
 	if err != nil {
@@ -124,10 +125,10 @@ func scanAct(row scanner) (trace.Act, error) {
 	var a trace.AsTold
 	a.On(task)
 	a.Did(did)
-	trace.TellOrNot(field, a.Changing, a.NothingNamed)
-	trace.TellOrNot(was, a.Was, a.WasNothing)
-	trace.TellOrNot(became, a.Became, a.BecameNothing)
-	trace.TellOrNot(through, a.Through, a.ByHand)
+	domain.TellOrNot(field, a.Changing, a.NothingNamed)
+	domain.TellOrNot(was, a.Was, a.WasNothing)
+	domain.TellOrNot(became, a.Became, a.BecameNothing)
+	domain.TellOrNot(through, a.Through, a.ByHand)
 	a.At(when)
 	return a.Act(), nil
 }

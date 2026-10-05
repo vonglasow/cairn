@@ -6,7 +6,6 @@ package mcp_test
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -30,11 +29,7 @@ func TestAcceptance_Context_TravelsInTheJSON(t *testing.T) {
 // registerContext declares what that scenario needs beyond the shared steps.
 func (w *world) registerContext(sc *godog.ScenarioContext) {
 	sc.Step(`^a configuration that says the notes live at "([^"]*)"$`, func(place string) error {
-		path := w.ConfigPath()
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			return err
-		}
-		return os.WriteFile(path, fmt.Appendf(nil, "notes = %q\n", place), 0o600)
+		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))
 	})
 
 	sc.Step(`^I ask the server to show task (\d+)$`, func(n int) error {

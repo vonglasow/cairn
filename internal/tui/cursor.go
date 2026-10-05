@@ -368,12 +368,11 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 		return b, nil
 	}
 	here := b.here()
-	at := b.at(here)
-	if at < 0 {
-		return b, nil
+	if where, ok := reading.Step(here, b.task, 1); ok {
+		return b, b.moving(where)
 	}
-	if at < len(here)-1 {
-		return b, b.moveBehind(here[at+1].Number)
+	if b.at(here) < 0 {
+		return b, nil
 	}
 	// Which of the three kinds of stopped this is cannot be worked out, only
 	// asked. Nothing is written until the answer comes back.
@@ -387,35 +386,25 @@ func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
 		return b.land(reading.StateAt(b.cameFrom), b.cameFrom, false)
 	}
-	here := b.here()
-	at := b.at(here)
-	if at < 1 {
-		return b, nil
+	if where, ok := reading.Step(b.here(), b.task, -1); ok {
+		return b, b.moving(where)
 	}
-	if at == 1 {
-		return b, b.moveFirst()
-	}
-	return b, b.moveBehind(here[at-2].Number)
+	return b, nil
 }
 
 // sideways moves a task one column over. Out of the band it reaches the
 // backlog, which the band does not lie under but which is still what is to its
 // left; there is nothing to the band's right, so nothing happens there.
 func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
-	if b.inBand {
-		if way == goRight {
-			return b, nil
-		}
-		return b.land(reading.StateAt(0), 0, false)
-	}
-	to := b.column - 1
+	by := -1
 	if way == goRight {
-		to = b.column + 1
+		by = 1
 	}
-	if to < 0 || to > lastColumn() {
+	state, ok := reading.Beside(b.column, b.inBand, by)
+	if !ok {
 		return b, nil
 	}
-	return b.land(reading.StateAt(to), to, false)
+	return b.land(state, reading.IndexOf(state), false)
 }
 
 // land writes the new state and puts the cursor where the task went.

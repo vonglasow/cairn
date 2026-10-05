@@ -1,17 +1,18 @@
 package engine
 
 import (
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
 	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"cairn/internal/domain"
+	"cairn/internal/migration"
+	"cairn/internal/objective"
+	"cairn/internal/task"
+	"cairn/internal/trace"
 )
 
 // storeAt and behindStore are declared in store_test.go, which needs the same
@@ -45,7 +46,7 @@ func TestDo_opensTheStoreAndClosesItAgain(t *testing.T) {
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
 			}
-			if _, err := on.Engine.Add("hello", Changes{}); err != nil {
+			if _, err := on.Engine.add("hello", Changes{}); err != nil {
 				t.Fatalf("Add: %v", err)
 			}
 			return Answer{}, nil
@@ -71,7 +72,7 @@ func TestDo_needsAStoreBehind_opensTheStoreWhateverShapeItIsIn(t *testing.T) {
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
 			}
-			if _, err := on.Engine.Held(); err != nil {
+			if _, err := on.Engine.held(); err != nil {
 				t.Fatalf("Held: %v", err)
 			}
 			return Answer{}, nil
@@ -153,7 +154,7 @@ func TestDo_closesTheStoreEvenWhenRunFails(t *testing.T) {
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
 			}
-			if _, err := on.Engine.Add("hello", Changes{}); err != nil {
+			if _, err := on.Engine.add("hello", Changes{}); err != nil {
 				t.Fatalf("Add: %v", err)
 			}
 			return Answer{}, failure
@@ -236,54 +237,57 @@ func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
 	}
 }
 
-// What an operation declares it answers is what Of actually builds from what it
-// answered. This is the check the declaration bought: Of works out the shape by
-// looking at which field of an Answer was filled, and until now nothing could
-// compare that to anything.
+// What an operation declares it answers is what Of actually builds from what
+// its Run answers. Read off All() rather than listed: a hand-kept list held 19
+// of 33 operations, and the ones left out — config show among them — were the
+// ones whose answer nothing compared to anything.
 func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
-	for _, tc := range []struct {
-		op       Operation
-		answered Answer
-	}{
-		{TaskShow, Answer{Task: of(task.Task{})}},
-		{TaskList, Answer{Tasks: []task.Task{}}},
-		{TaskSearch, Answer{Matched: []task.Task{}}},
-		{TaskMove, Answer{Tasks: []task.Task{}}},
-		{TaskDelete, Answer{Deleted: of(1)}},
-		{TaskFocus, Answer{Task: of(task.Task{}), InFocus: list(1)}},
-		{TaskUnfocus, Answer{InFocus: list()}},
-		{TraceShow, Answer{Acts: []trace.Act{}}},
-		{TraceList, Answer{Since: []trace.Act{}}},
-		{ObjectiveShow, Answer{Objective: of(objective.Objective{})}},
-		{ObjectiveList, Answer{Objectives: []objective.Objective{}}},
-		{ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{}}},
-		{BackupShow, Answer{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
-		{BackupList, Answer{Backups: []domain.Backup{}}},
-		{BackupRestore, Answer{PutBack: of(1)}},
-		{MigrationShow, Answer{Change: of(migration.Migration{})}},
-		{MigrationList, Answer{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
-		{MigrationApply, Answer{Applied: []string{}}},
-		{MigrationRollback, Answer{RolledBack: of(migration.Migration{})}},
-	} {
-		built := reflect.TypeOf(Of(tc.answered))
-		if declared := reflect.TypeOf(tc.op.Answers); declared != built {
-			t.Errorf("%s builds a %s, and says it answers a %s", tc.op.Name(), built, declared)
+	answered := map[string][]Answer{
+		"task_add":           {{Task: of(task.Task{})}},
+		"task_list":          {{Tasks: []task.Task{}, InFocus: list()}},
+		"task_show":          {{Task: of(task.Task{})}},
+		"task_archive":       {{Archived: of(1), Task: of(task.Task{})}, {Archived: of(2)}},
+		"task_label":         {{Labelled: of(2)}},
+		"task_unarchive":     {{Task: of(task.Task{})}},
+		"task_edit":          {{Task: of(task.Task{})}},
+		"task_delete":        {{Deleted: of(1)}},
+		"task_search":        {{Matched: []task.Task{}}},
+		"task_move":          {{Tasks: []task.Task{}}},
+		"task_focus":         {{Task: of(task.Task{}), InFocus: list(1)}, {Held: []task.Task{}, InFocus: list()}},
+		"task_unfocus":       {{InFocus: list()}},
+		"trace_show":         {{Acts: []trace.Act{}}},
+		"trace_list":         {{Since: []trace.Act{}}},
+		"objective_add":      {{Objective: of(objective.Objective{})}},
+		"objective_list":     {{Objectives: []objective.Objective{}}},
+		"objective_show":     {{Objective: of(objective.Objective{})}},
+		"objective_edit":     {{Objective: of(objective.Objective{})}},
+		"objective_search":   {{MatchedObjectives: []objective.Objective{}}},
+		"objective_delete":   {{Deleted: of(1)}},
+		"backup_add":         {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
+		"backup_list":        {{Backups: []domain.Backup{}}},
+		"backup_show":        {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
+		"backup_delete":      {{Deleted: of(1)}},
+		"backup_restore":     {{PutBack: of(1)}},
+		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
+		"migration_show":     {{Change: of(migration.Migration{})}},
+		"migration_apply":    {{Applied: []string{}}},
+		"migration_rollback": {{RolledBack: of(migration.Migration{})}},
+		"config_show":        {{Config: &Config{}}},
+		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
+		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
+	}
+	for _, op := range All() {
+		samples, known := answered[op.Name()]
+		if !known {
+			t.Errorf("%s: no answer to compare its declaration with — add one here", op.Name())
+			continue
 		}
-	}
-}
-
-// task_focus answers the same shape whether or not a task is being worked on.
-// It used to answer two, and a description could then only say "either of
-// these" — which a client has to resolve at runtime, and at least one refuses
-// outright. So the shape holds and the fields empty out.
-func TestAnswers_taskFocusAnswersOneShapeHeldOrNot(t *testing.T) {
-	held := reflect.TypeOf(Of(Answer{Task: of(task.Task{}), InFocus: list(1)}))
-	none := reflect.TypeOf(Of(Answer{InFocus: list()}))
-	if held != none {
-		t.Fatalf("task_focus answers a %s when one is held and a %s when none is", held, none)
-	}
-	if declared := reflect.TypeOf(TaskFocus.Answers); declared != held {
-		t.Errorf("task_focus answers a %s and says it answers a %s", held, declared)
+		for _, sample := range samples {
+			built := reflect.TypeOf(Of(op, sample))
+			if declared := reflect.TypeOf(op.Answers); declared != built {
+				t.Errorf("%s builds a %v, and says it answers a %s", op.Name(), built, declared)
+			}
+		}
 	}
 }
 
@@ -300,6 +304,31 @@ func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
 	}
 	if len(bare) > 0 {
 		t.Errorf("%d operations do not answer an object: %v", len(bare), bare)
+	}
+}
+
+// A required list has to hold something: being handed an empty one is not
+// being given anything to go on. The command line refused it already, through
+// its own count of arguments; a server handed `{"named": []}` answered the whole
+// board as if everything had matched.
+func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
+	for _, op := range []Operation{TaskSearch, ObjectiveSearch} {
+		if err := op.Check(Input{Listed: map[string][]string{"named": {}}}); err == nil {
+			t.Errorf("%s accepted an empty list of things to look for", op.Name())
+		}
+		if err := op.Check(Input{Listed: map[string][]string{"named": {"spec"}}}); err != nil {
+			t.Errorf("%s refused something to look for: %v", op.Name(), err)
+		}
+	}
+}
+
+// A value outside a closed set is a refusal, whichever operation it was given
+// to — the same sentinel for a listing as for an edit, so it is answered the
+// same way.
+func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
+	e := openEngine(t)
+	if _, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, ErrNotOneOf) {
+		t.Errorf("task list --state bogus = %v, want ErrNotOneOf", err)
 	}
 }
 

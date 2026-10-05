@@ -55,7 +55,7 @@ func (v *Vault) Make() (domain.Backup, error) {
 		return domain.Backup{}, err
 	}
 	path := v.pathOf(number)
-	if err := copyFile(v.store, path); err != nil {
+	if err := snapshot(v.store, path); err != nil {
 		return domain.Backup{}, err
 	}
 	if err := v.rememberNumber(number); err != nil {
@@ -143,7 +143,24 @@ func (v *Vault) Restore(number int) error {
 	if _, err := v.Make(); err != nil {
 		return err
 	}
-	return copyFile(one.Path, v.store)
+	// Copied beside the store, then put in its place in one step, so nothing
+	// ever opens half a store. What sat beside the old one goes first: a log
+	// written for one file would be read on top of the other.
+	arriving := v.store + ".arriving"
+	if err := copyFile(one.Path, arriving); err != nil {
+		return err
+	}
+	for _, beside := range []string{v.store + "-wal", v.store + "-shm"} {
+		if err := os.Remove(beside); err != nil && !errors.Is(err, os.ErrNotExist) {
+			_ = os.Remove(arriving)
+			return fmt.Errorf("clearing what sat beside the store: %w", err)
+		}
+	}
+	if err := os.Rename(arriving, v.store); err != nil {
+		_ = os.Remove(arriving)
+		return fmt.Errorf("putting backup %d in place: %w", number, err)
+	}
+	return nil
 }
 
 // Holds counts what a backup holds, without bringing it up to date: a backup is
@@ -192,7 +209,7 @@ func heldIn(path string) (domain.Held, error) {
 //
 // The table is looked for rather than the error swallowed, so a real failure
 // to read one still comes back as a failure.
-func heldOn(db *sql.DB) (domain.Held, error) {
+func heldOn(db runs) (domain.Held, error) {
 	var held domain.Held
 
 	// Both counts at once. SQLite compiles the whole statement, so a store
@@ -261,7 +278,35 @@ func (v *Vault) rememberNumber(number int) error {
 	return nil
 }
 
-// copyFile backups from one path to another, replacing what is there.
+// snapshot writes the store as it stands to a new file: what is written back
+// to it and what is still held aside in its log alike, read in one go so a
+// write landing halfway is either all in or not at all. A store held open — a
+// board on screen — keeps its latest writes in the log, and a copy of the file
+// alone missed them.
+//
+// A file SQLite cannot read as a database is copied as it lies instead: a
+// backup is most needed exactly when the store is damaged, and putting a
+// backup back first sets the damaged store aside the same way.
+//
+// The store is opened to be read and nothing else: opened the usual way, a
+// store that is not there would be made by being backed up.
+func snapshot(from, to string) error {
+	if _, err := os.Stat(from); err != nil {
+		return fmt.Errorf("reading %s: %w", from, err)
+	}
+	db, err := sql.Open("sqlite", "file:"+from+"?mode=ro&_pragma=busy_timeout("+strconv.Itoa(heldFor)+")")
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", from, err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`VACUUM INTO ?`, to); err != nil {
+		_ = os.Remove(to)
+		return copyFile(from, to)
+	}
+	return nil
+}
+
+// copyFile copies from one path to another, replacing what is there.
 func copyFile(from, to string) error {
 	source, err := os.Open(from)
 	if err != nil {

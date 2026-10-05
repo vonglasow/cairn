@@ -340,3 +340,42 @@ func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
 			now, still, here, had)
 	}
 }
+
+// A store an older cairn wrote is made through the real commands — a task
+// added, the last change to the shape undone — and the backup undoing set
+// aside is forgotten, so a scenario counts only what it caused. The command
+// line and the server each carried a copy of this.
+func TestAStoreFromAnOlderCairn_isMadeThroughTheCommands(t *testing.T) {
+	w, asked := answering(t, Result{})
+	w.StorePath = filepath.Join(t.TempDir(), "cairn.db")
+	backups := filepath.Join(filepath.Dir(w.StorePath), "backups")
+	if err := os.MkdirAll(backups, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.AStoreFromAnOlderCairn("Write the spec"); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(*asked, "; ") != "task add Write the spec; migration rollback --yes" {
+		t.Errorf("asked %#v", *asked)
+	}
+	if _, err := os.Stat(backups); !os.IsNotExist(err) {
+		t.Error("the backup undoing set aside is still there")
+	}
+	refused, _ := answering(t, Result{Code: 1})
+	if err := refused.AStoreFromAnOlderCairn("Write the spec"); err == nil {
+		t.Error("a store that could not be made was reported as made")
+	}
+}
+
+// A configuration is written by hand, the way a person would have, where this
+// scenario's cairn reads it.
+func TestWriteConfig_posesTheFileWhereCairnReadsIt(t *testing.T) {
+	w, _ := answering(t, Result{})
+	w.Defaults = t.TempDir()
+	if err := w.WriteConfig("notes = \"~/vault\"\n"); err != nil {
+		t.Fatal(err)
+	}
+	if read, err := os.ReadFile(w.ConfigPath()); err != nil || string(read) != "notes = \"~/vault\"\n" {
+		t.Errorf("the configuration reads %q, %v", read, err)
+	}
+}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/task"
 	"cairn/internal/trace"
 )
 
@@ -39,24 +38,24 @@ func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	return day, nil
 }
 
-// AddTime writes down time spent on a task without it being in focus, for the
+// addTime writes down time spent on a task without it being in focus, for the
 // day it was spent. Nothing is changed but the history: the time is read back
 // from there, like the rest.
 //
 // The length is kept as it was given, once read: written back from a duration
 // it needed a branch for its sign, and a branch nobody can reach the far side
 // of, since no time at all is refused before this.
-func (e *Engine) AddTime(number int, day time.Time, length string) error {
+func (e *Engine) addTime(number int, day time.Time, length string) error {
 	if _, err := e.tasks.Find(number); err != nil {
 		return err
 	}
 	return e.record(number, trace.TimeAdded, "", domain.FormatDay(day), length)
 }
 
-// Timed is how long the work took from one day to another, both counted whole,
+// timed is how long the work took from one day to another, both counted whole,
 // with what each task worked on is called.
-func (e *Engine) Timed(first, last time.Time) (trace.Sheet, map[int]string, error) {
-	acts, err := e.Since(first)
+func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, error) {
+	acts, err := e.since(first)
 	if err != nil {
 		return trace.Sheet{}, nil, err
 	}
@@ -66,9 +65,14 @@ func (e *Engine) Timed(first, last time.Time) (trace.Sheet, map[int]string, erro
 		for _, w := range day.Tasks {
 			// A task deleted since keeps its time and loses its name: the
 			// number still says which one it was.
-			if t, err := e.tasks.Find(w.Task); err == nil {
-				titles[w.Task] = task.OfTask(t).Title
+			t, err := e.tasks.Find(w.Task)
+			if errors.Is(err, ErrNoSuchTask) {
+				continue
 			}
+			if err != nil {
+				return trace.Sheet{}, nil, err
+			}
+			titles[w.Task] = factsOf(t).title
 		}
 	}
 	return sheet, titles, nil
@@ -97,7 +101,7 @@ var TimesheetShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		sheet, titles, err := on.Engine.Timed(first, last)
+		sheet, titles, err := on.Engine.timed(first, last)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -116,7 +120,7 @@ var TimesheetAdd = Operation{
 	Answers: Timesheet{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the task the time was spent on"},
-		{Name: "time", Kind: Text, Positional: true, Required: true, Means: "how long: 1h, 45m, 1h30m; -30m takes some back, written after -- on the command line"},
+		{Name: "time", Kind: Text, Positional: true, Required: true, Means: "how long: 1h, 45m, 1h30m; a length under zero, -30m, takes some back"},
 		{Name: "on", Kind: Day, Means: "the day it was spent; today when left out"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
@@ -129,10 +133,10 @@ var TimesheetAdd = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.AddTime(n, day, in.Given["time"]); err != nil {
+		if err := on.Engine.addTime(n, day, in.Given["time"]); err != nil {
 			return Answer{}, err
 		}
-		sheet, titles, err := on.Engine.Timed(day, day)
+		sheet, titles, err := on.Engine.timed(day, day)
 		if err != nil {
 			return Answer{}, err
 		}

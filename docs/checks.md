@@ -17,6 +17,7 @@ here has to be remembered.
 | `golangci-lint` | does it hold up to static analysis, comments included? |
 | `no-go-testing` | does non-test code import `testing`? |
 | `tested-check` | does every package have a test file at all? |
+| `harness-check` | is the binary free of the test harness? |
 | `cover-check` | does it work — and did every line at least run, in total and in each package? |
 | `mutation` | would a test have noticed if a changed line were wrong? |
 | `commitlint` | is the message conventional? |
@@ -27,18 +28,51 @@ test -race ./...`, which fails the moment a test does, so a second hook running
 the suite was the same answer paid for twice. The `bdd/` scenarios are Go
 tests, so that one run covers them too.
 
+**A hook is triggered by every file its answer depends on**, not only by Go.
+`cover-check` also runs when a scenario, a pinned frame under `testdata/`, or
+`go.mod` changes; `govulncheck` and `harness-check` when `go.mod` or `go.sum`
+does; `golangci-lint` when `.golangci.yml` does. Each says so with `files` in
+`prek.toml`. Filtered on Go alone they ran nothing at all for a commit that
+changed only a scenario — which the suite executes — or only a dependency.
+
+## Before the commit: a test seen red
+
+Two hooks under `.claude/hooks` hold "scenario, then test, then code" while an
+agent works, before prek ever sees a commit.
+
+- `red-first.sh` refuses any write to a production `.go` file under
+  `internal/` — through Write, Edit, a redirection, an in-place editor, a copy
+  or move into place, a checkout or a patch — unless that package holds a
+  receipt younger than thirty minutes. It needs `jq`, and refuses everything
+  when `jq` is missing rather than letting everything through.
+- `make red PKG=./internal/<package> [RUN=TestName]` is the only thing that
+  mints a receipt, and it mints one only when a test failed, or when a test
+  does not build yet — its error located in a `_test.go` file, the honest
+  first red of a function that does not exist. A package that does not exist,
+  an invalid `RUN` pattern, a suite that passes, or production code that does
+  not compile all mint nothing.
+
+`make red PKG=… MOVING="what moves, and where to"` is the one door that runs no
+test: code moving out of a package asks for no new behaviour, so it has nothing
+to fail. The sentence is kept in the receipt, which says `moving` rather than
+naming a failing test, so a write let through this way is visible to anyone
+reading `.claude/red`. What it owes is that the suite still passes once the
+move is done.
+
 ## Getting them
 
 Without these, the hooks cannot run and nothing can be committed:
 
 ```sh
-brew install prek golangci-lint goimports govulncheck
+brew install prek golangci-lint goimports govulncheck jq
 go install github.com/go-gremlins/gremlins/cmd/gremlins@latest
 prek install -t pre-commit -t commit-msg -t pre-push
 ```
 
 `gremlins` lands in `$(go env GOPATH)/bin`, which is not always on `PATH` — the
 Makefile looks there on its own, so only a direct call needs the full path.
+
+`jq` is read by `scripts/mutation.sh` and by both hooks under `.claude/hooks`.
 
 Two are not installed by hand: prek builds `semgrep` and `commitlint` in
 environments of its own, from the revisions pinned in `prek.toml`. commitlint
@@ -109,14 +143,14 @@ done.
 
 ## Thresholds
 
-- Statement coverage, in total: at least **90%** (`COVERAGE_MIN`).
-- Statement coverage, per package: at least **85%** (`PACKAGE_COVERAGE_MIN`).
-  Lower than the total on purpose: a package may sit honestly under the
+- Statement coverage, in total: at least `COVERAGE_MIN` in the Makefile.
+- Statement coverage, per package: at least `PACKAGE_COVERAGE_MIN`, also in the
+  Makefile — the numbers live there and nowhere else. Lower than the total on
+  purpose: a package may sit honestly under the
   average — measured, the store and the harness both do — and a per-package
   floor set at the total would fail the repository as it stands rather than the
-  code being added to it. `cmd/` is left out, because its only function is
-  `main`, which no test can call without ending the process that runs it; what
-  it does is exercised through the scenarios of `internal/cli`.
+  code being added to it. `cmd/` is left out — see what cannot be reached,
+  below; what it does is exercised through the scenarios of `internal/cli`.
 - Every package has a test file, with no threshold to argue about: it has one
   or it does not.
 - Mutation efficacy: **100%** — of the mutants gremlins judged, all died.
@@ -215,6 +249,7 @@ one to reach for by hand during a red-green loop.
 make cover          # coverage per function, then the total
 make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
+make harness-check  # fail if the binary reaches the test harness
 make mutation-changed  # the lines changed since HEAD: what a commit runs
 make mutation          # every package: what a push runs
 make check             # every hook, commit's and push's, on every file

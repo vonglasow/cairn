@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"cairn/internal/domain"
@@ -78,9 +77,9 @@ type Objective struct {
 // implements this and is told it; nothing reads an objective's insides, and
 // an objective knows none of them.
 //
-// It carries thirteen methods, not the task's nineteen: an objective has no
-// parent, no objective it serves, and no time spent, so there is nothing to
-// tell about any of the three.
+// It carries fewer methods than the task's Told: an objective has no column,
+// no parent, no objective it serves, nothing in its way, no time spent and is
+// never taken off the board, so there is nothing to tell about any of those.
 type Told interface {
 	Numbered(int)
 	Titled(string)
@@ -104,29 +103,10 @@ func (o Objective) Tell(to Told) {
 	to.Titled(o.title)
 	to.Standing(o.state)
 	to.Carries(o.priority)
-	if o.description == "" {
-		to.NotDescribed()
-	} else {
-		to.Described(o.description)
-	}
-	if len(o.labels) == 0 {
-		to.NotLabelled()
-	} else {
-		for _, label := range o.labels {
-			to.Labelled(label)
-		}
-	}
-	to.LabelsTold()
-	if o.deadline.IsZero() {
-		to.NotDue()
-	} else {
-		to.Due(o.deadline)
-	}
-	if o.estimate == 0 {
-		to.NotEstimated()
-	} else {
-		to.Estimated(o.estimate)
-	}
+	domain.TellOrNot(o.description, to.Described, to.NotDescribed)
+	domain.TellAll(o.labels, to.Labelled, to.NotLabelled, to.LabelsTold)
+	domain.TellOrNot(o.deadline, to.Due, to.NotDue)
+	domain.TellOrNot(o.estimate, to.Estimated, to.NotEstimated)
 }
 
 // AsTold builds an objective from what it is told. It is the same membrane
@@ -187,12 +167,9 @@ func (a *AsTold) Objective() Objective { return a.objective }
 
 // NewObjective builds an objective from a title, refusing one that carries no
 // text. What surrounds the title is not part of it; what sits inside it is.
-func NewObjective(title string) (Objective, error) {
-	title = strings.TrimSpace(title)
-	if title == "" {
-		return Objective{}, fmt.Errorf("an objective %w", domain.ErrTitleRequired)
-	}
-	if err := domain.OneLine(title); err != nil {
+func NewObjective(raw string) (Objective, error) {
+	title, err := domain.Title("an objective", raw)
+	if err != nil {
 		return Objective{}, err
 	}
 	return Objective{title: title, state: Active, priority: domain.Normal}, nil

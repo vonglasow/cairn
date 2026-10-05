@@ -6,8 +6,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -18,10 +16,10 @@ import (
 
 // offered is every operation an agent at access may reach: those whose Level
 // sits at or below it, in engine.All()'s order.
-func offered(access Access) []engine.Operation {
+func offered(access engine.Level) []engine.Operation {
 	var ops []engine.Operation
 	for _, op := range engine.All() {
-		if op.Level <= engine.Level(access) {
+		if op.Level <= access {
 			ops = append(ops, op)
 		}
 	}
@@ -113,93 +111,32 @@ func jsonType(kind engine.Kind) string {
 	}
 }
 
-// isList reports whether op declares name as a Kind: List argument, the one
-// case handlerFor reads into engine.Input.Listed rather than Given.
-func isList(op engine.Operation, name string) bool {
-	for _, arg := range op.Takes {
-		if arg.Name == name {
-			return arg.Kind == engine.List
-		}
-	}
-	return false
-}
-
-// asStringList turns what a Kind: List argument was handed into the strings
-// it carries. JSON null empties it, the same as any other kind; anything
-// else that is not a JSON array, or an array holding anything but a string,
-// is refused rather than guessed at — a bare string is not the one-element
-// list it might have meant, and a number among labels is not the label its
-// digits would read as.
-func asStringList(value any) ([]string, error) {
-	if value == nil {
-		return []string{}, nil
-	}
-	items, ok := value.([]any)
-	if !ok {
-		return nil, fmt.Errorf("a list is expected, got %#v", value)
-	}
-	out := make([]string, 0, len(items))
-	for _, item := range items {
-		s, ok := item.(string)
-		if !ok {
-			return nil, fmt.Errorf("a string is expected among the list, got %#v", item)
-		}
-		out = append(out, s)
-	}
-	return out, nil
-}
-
 // throughTheServer is how a history names what an agent did. The same word as
 // the command that starts it, so a line nobody explained still reads.
 const throughTheServer = "mcp"
 
-// handlerFor wires op to engine.Do as thinly as a tool can be. A refusal —
+// handlerFor wires op to engine.DoFrom as thinly as a tool can be. A refusal —
 // an empty title, a store this cairn cannot use — comes back as IsError,
-// with the reason as text; only what json.Unmarshal itself cannot read is a
-// protocol error, since that never reached engine.Do at all.
+// with the reason as text; only what cannot be read as the arguments the
+// operation takes is a protocol error, since that never reached cairn at all.
 //
 // An answer fills both content and structuredContent, byte for byte what the
 // command line would have printed as text and as `--json`: the same claim
 // docs/mcp.md makes about an agent and a script never seeing two different
 // cairns, and it costs nothing because both renderings already exist in
 // internal/engine.
-func handlerFor(op engine.Operation, at engine.Places) sdk.ToolHandler {
+func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 	return func(_ context.Context, req *sdk.CallToolRequest) (*sdk.CallToolResult, error) {
-		given := map[string]any{}
-		if len(req.Params.Arguments) > 0 {
-			if err := json.Unmarshal(req.Params.Arguments, &given); err != nil {
-				return nil, err
-			}
-		}
-		in := engine.Input{Given: map[string]string{}}
-		for name, value := range given {
-			// An argument declared Kind: List belongs in Listed as the strings
-			// it was given, not joined into the one string every other kind
-			// reads as — that is the defect this handler exists to fix.
-			if isList(op, name) {
-				list, err := asStringList(value)
-				if err != nil {
-					return nil, fmt.Errorf("%q: %w", name, err)
-				}
-				if in.Listed == nil {
-					in.Listed = map[string][]string{}
-				}
-				in.Listed[name] = list
-				continue
-			}
-			// JSON null is how a field is named as nothing, which is not the
-			// same request as leaving it out: engine.Input models that as a
-			// name present and holding the empty string, never fmt.Sprint's
-			// "<nil>".
-			if value == nil {
-				in.Given[name] = ""
-				continue
-			}
-			in.Given[name] = fmt.Sprint(value)
+		// What the call sent is read the way the operation takes it, by the
+		// engine: what cannot be read as what an argument carries never
+		// reached cairn, so it is a protocol error rather than a refusal.
+		in, err := op.FromJSON(req.Params.Arguments)
+		if err != nil {
+			return nil, err
 		}
 		// Named as the server's doing, so a history shows what an agent
 		// changed as something the person reading it did not do themselves.
-		answer, err := engine.DoAt(op, at, in, throughTheServer)
+		answer, err := engine.DoFrom(op, home, in, throughTheServer)
 		if err != nil {
 			// Something cairn understood and turned down — an empty title, a
 			// store this cairn cannot use — is an answer, not a broken tool:
@@ -212,7 +149,7 @@ func handlerFor(op engine.Operation, at engine.Places) sdk.ToolHandler {
 		}
 		return &sdk.CallToolResult{
 			Content:           []sdk.Content{&sdk.TextContent{Text: engine.RenderText(op, answer)}},
-			StructuredContent: engine.Of(answer),
+			StructuredContent: engine.Of(op, answer),
 		}, nil
 	}
 }

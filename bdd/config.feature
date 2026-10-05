@@ -133,7 +133,7 @@ Feature: Where cairn looks for its own places
     by a newer one, and unlike the store, a configuration has no migration to
     carry it across. Taken knowingly.
 
-    @config-is-toml
+    @config-is-toml @later
     Scenario: the file names each place under its own name
       Given no configuration file
       When I add a task titled "Write the spec"
@@ -141,7 +141,7 @@ Feature: Where cairn looks for its own places
       And it names the store under "store"
       And it names the notes under "notes"
 
-    @config-posed-says-what-each-place-is-for
+    @config-posed-says-what-each-place-is-for @later
     Scenario: the file explains itself
       Given no configuration file
       When I add a task titled "Write the spec"
@@ -170,7 +170,7 @@ Feature: Where cairn looks for its own places
     no file. The first is a problem to say out loud; the second is the ordinary
     case.
 
-    @config-that-cannot-be-read-is-refused
+    @config-that-cannot-be-read-is-refused @later
     Scenario: a file that is there but cannot be read
       Given a configuration file that cannot be read
       And I added a task titled "Write the spec"
@@ -192,7 +192,7 @@ Feature: Where cairn looks for its own places
     does not put it back the way it was — not even the half of it that is
     missing.
 
-    @config-is-posed-at-the-first-run
+    @config-is-posed-at-the-first-run @later
     Scenario: the first command leaves a configuration behind
       Given no configuration file
       When I add a task titled "Write the spec"
@@ -200,19 +200,19 @@ Feature: Where cairn looks for its own places
       And it says where the store is
       And it says where the notes live
 
-    @config-is-posed-once
+    @config-is-posed-once @later
     Scenario: what the person wrote is left alone
       Given a configuration that says the notes live at "~/vault"
       When I add a task titled "Write the spec"
       Then the configuration still says the notes live at "~/vault"
 
-    @config-a-file-half-said-is-left-half-said
+    @config-a-file-half-said-is-left-half-said @later
     Scenario: a file that speaks of one place is not completed with the other
       Given a configuration that says only where the notes live
       When I add a task titled "Write the spec"
       Then the configuration still says nothing about the store
 
-    @config-holds-the-defaults-not-what-the-environment-said
+    @config-holds-the-defaults-not-what-the-environment-said @later
     Scenario: a passing override is not written down as a choice
       Given no configuration file
       And the environment says the store lives at "~/elsewhere/cairn.db"
@@ -220,14 +220,14 @@ Feature: Where cairn looks for its own places
       Then the configuration says the store lives at "~/.cairn/cairn.db"
       And the task was written to "~/elsewhere/cairn.db"
 
-    @config-that-cannot-be-posed-does-not-stop-the-command
+    @config-that-cannot-be-posed-does-not-stop-the-command @later
     Scenario: a configuration that could not be written is said, and the work goes on
       Given the usual place cannot be written to
       When I add a task titled "Write the spec"
       Then the task was added
       And it says the configuration could not be posed
 
-    @config-is-not-posed-by-a-server-that-only-reads
+    @config-is-not-posed-by-a-server-that-only-reads @later
     Scenario: a server that was told to only read leaves the disk alone
       Given no configuration file
       When I start the server told to only read

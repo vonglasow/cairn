@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"cairn/internal/domain"
 )
-
-// row is one line of a card: its key, and the value to show for it.
-type row struct{ key, value string }
 
 // textMembrane is a task's membrane for the text a person reads: it is told
 // every fact and lays each one down as a row, in the order it was told.
@@ -20,7 +16,7 @@ type row struct{ key, value string }
 type textMembrane struct {
 	number     int
 	title      string
-	rows       []row
+	rows       []domain.Fact
 	labels     []string
 	blockers   []string
 	objectives []string
@@ -28,29 +24,35 @@ type textMembrane struct {
 
 // Archived says so on a row of its own. Nothing is written when it is not:
 // every task in a listing is on the board, so saying it each time reads as noise.
-func (m *textMembrane) Archived()    { m.rows = append(m.rows, row{"archived", "yes"}) }
+func (m *textMembrane) Archived() {
+	m.rows = append(m.rows, domain.Fact{Key: "archived", Value: "yes"})
+}
 func (m *textMembrane) NotArchived() {}
 
 func (c *textMembrane) Numbered(n int)  { c.number = n }
 func (c *textMembrane) Titled(s string) { c.title = s }
 func (c *textMembrane) InColumn(s domain.State) {
-	c.rows = append(c.rows, row{"state", string(s)})
+	c.rows = append(c.rows, domain.Fact{Key: "state", Value: string(s)})
 }
 func (c *textMembrane) Carries(p domain.Priority) {
-	c.rows = append(c.rows, row{"priority", string(p)})
+	c.rows = append(c.rows, domain.Fact{Key: "priority", Value: string(p)})
 }
-func (c *textMembrane) Described(s string) { c.rows = append(c.rows, row{"description", s}) }
-func (c *textMembrane) NotDescribed()      { c.rows = append(c.rows, row{"description", ""}) }
-func (c *textMembrane) Labelled(s string)  { c.labels = append(c.labels, s) }
-func (c *textMembrane) NotLabelled()       {}
+func (c *textMembrane) Described(s string) {
+	c.rows = append(c.rows, domain.Fact{Key: "description", Value: s})
+}
+func (c *textMembrane) NotDescribed() {
+	c.rows = append(c.rows, domain.Fact{Key: "description", Value: ""})
+}
+func (c *textMembrane) Labelled(s string) { c.labels = append(c.labels, s) }
+func (c *textMembrane) NotLabelled()      {}
 func (c *textMembrane) LabelsTold() {
-	c.rows = append(c.rows, row{"labels", strings.Join(c.labels, ", ")})
+	c.rows = append(c.rows, domain.Fact{Key: "labels", Value: strings.Join(c.labels, ", ")})
 }
 
 // A blocker and the words beside it are one row: what blocks this. A number is
 // written as a task is written everywhere else, so a reader can take it
 // straight to `task show`.
-func (c *textMembrane) BlockedBy(n int) { c.blockers = append(c.blockers, fmt.Sprintf("#%d", n)) }
+func (c *textMembrane) BlockedBy(n int) { c.blockers = append(c.blockers, domain.Ref(n)) }
 func (c *textMembrane) NotBlocked()     {}
 func (c *textMembrane) BlockersTold()   {}
 func (c *textMembrane) Because(s string) {
@@ -63,32 +65,38 @@ func (c *textMembrane) NotBecause() { c.blocking() }
 // on the last of them rather than on BlockersTold, because the words come
 // after the numbers and a row closed early would leave them out.
 func (c *textMembrane) blocking() {
-	c.rows = append(c.rows, row{"blocked by", strings.Join(c.blockers, ", ")})
+	c.rows = append(c.rows, domain.Fact{Key: "blocked by", Value: strings.Join(c.blockers, ", ")})
 }
 
 func (c *textMembrane) Due(t time.Time) {
-	c.rows = append(c.rows, row{"deadline", domain.FormatDay(t)})
+	c.rows = append(c.rows, domain.Fact{Key: "deadline", Value: domain.FormatDay(t)})
 }
-func (c *textMembrane) NotDue() { c.rows = append(c.rows, row{"deadline", ""}) }
+func (c *textMembrane) NotDue() { c.rows = append(c.rows, domain.Fact{Key: "deadline", Value: ""}) }
 func (c *textMembrane) Estimated(d time.Duration) {
-	c.rows = append(c.rows, row{"estimate", domain.FormatDuration(d)})
+	c.rows = append(c.rows, domain.Fact{Key: "estimate", Value: domain.FormatDuration(d)})
 }
-func (c *textMembrane) NotEstimated() { c.rows = append(c.rows, row{"estimate", ""}) }
+func (c *textMembrane) NotEstimated() {
+	c.rows = append(c.rows, domain.Fact{Key: "estimate", Value: ""})
+}
 func (c *textMembrane) Spent(d time.Duration) {
-	c.rows = append(c.rows, row{"time spent", domain.FormatDuration(d)})
+	c.rows = append(c.rows, domain.Fact{Key: "time spent", Value: domain.FormatDuration(d)})
 }
-func (c *textMembrane) NothingSpent() { c.rows = append(c.rows, row{"time spent", ""}) }
-func (c *textMembrane) Under(n int)   { c.rows = append(c.rows, row{"parent", fmt.Sprintf("%d", n)}) }
-func (c *textMembrane) UnderNothing() { c.rows = append(c.rows, row{"parent", ""}) }
+func (c *textMembrane) NothingSpent() {
+	c.rows = append(c.rows, domain.Fact{Key: "time spent", Value: ""})
+}
+func (c *textMembrane) Under(n int) {
+	c.rows = append(c.rows, domain.Fact{Key: "parent", Value: fmt.Sprintf("%d", n)})
+}
+func (c *textMembrane) UnderNothing() { c.rows = append(c.rows, domain.Fact{Key: "parent", Value: ""}) }
 
 // A task serves a set, so the card lays out one row naming all of them, each
 // written the way a task is written everywhere else.
 func (c *textMembrane) Serves(n int) {
-	c.objectives = append(c.objectives, fmt.Sprintf("#%d", n))
+	c.objectives = append(c.objectives, domain.Ref(n))
 }
 func (c *textMembrane) ServesNothing() {}
 func (c *textMembrane) ObjectivesTold() {
-	c.rows = append(c.rows, row{"objectives", strings.Join(c.objectives, ", ")})
+	c.rows = append(c.rows, domain.Fact{Key: "objectives", Value: strings.Join(c.objectives, ", ")})
 }
 
 // Text renders a task in full, empty attributes included, the way a person
@@ -98,37 +106,7 @@ func Text(t Task, p domain.Progress) string {
 	m := &textMembrane{}
 	t.Tell(m)
 
-	var out strings.Builder
-	_, _ = fmt.Fprintf(&out, "#%d  %s\n\n", m.number, m.title)
-
-	tw := tabwriter.NewWriter(&out, 0, 2, 2, ' ', 0)
-	for _, f := range append(m.rows, row{"progress", progressLine(p)}) {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\n", f.key, domain.OrNothing(f.value))
-	}
-	_ = tw.Flush()
-	return out.String()
-}
-
-// progressLine says how far along a task is, and says nothing at all when
-// nothing is under it. Zero of zero is not "none of it done": there is no
-// work to be done, and a share of nothing would read as a standstill.
-//
-// Tasks and sub-tasks are named apart because they are counted apart, while
-// the share is over both — three sub-tasks and four more under those is
-// never seven, but all seven have to happen.
-func progressLine(p domain.Progress) string {
-	if !p.Any() {
-		return ""
-	}
-	var counts []string
-	if p.Tasks.Total > 0 {
-		counts = append(counts, fmt.Sprintf("%d of %d tasks", p.Tasks.Done, p.Tasks.Total))
-	}
-	if p.SubTasks.Total > 0 {
-		counts = append(counts, fmt.Sprintf("%d of %d sub-tasks", p.SubTasks.Done, p.SubTasks.Total))
-	}
-	return fmt.Sprintf("%s are done — the task is %d%% done",
-		strings.Join(counts, " and "), p.Percent())
+	return domain.Card(m.number, m.title, append(m.rows, domain.Fact{Key: "progress", Value: p.Line("the task")}))
 }
 
 // DoneMark is what sets apart a sub-task that is finished. Written out rather

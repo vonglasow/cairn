@@ -21,7 +21,7 @@ func openEngine(t *testing.T) *Engine {
 
 func add(t *testing.T, e *Engine, title string) task.Task {
 	t.Helper()
-	added, err := e.Add(title, Changes{})
+	added, err := e.add(title, Changes{})
 	if err != nil {
 		t.Fatalf("Add(%q): %v", title, err)
 	}
@@ -45,13 +45,13 @@ func TestEngine_givesTheNextNumberToTheNextTask(t *testing.T) {
 }
 
 func TestEngine_refusesATaskWithNoTitle(t *testing.T) {
-	if _, err := openEngine(t).Add("  ", Changes{}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := openEngine(t).add("  ", Changes{}); !errors.Is(err, domain.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
 
 func TestEngine_carriesTheAttributesItWasGiven(t *testing.T) {
-	added, err := openEngine(t).Add("Write the spec", Changes{
+	added, err := openEngine(t).add("Write the spec", Changes{
 		Description: of("the one"),
 		State:       of("todo"),
 		Priority:    of("high"),
@@ -85,7 +85,7 @@ func TestEngine_refusesAnAttributeItCannotMakeSenseOf(t *testing.T) {
 		"estimate": {Estimate: of("ages")},
 		"label":    {Labels: of([]string{"  "})},
 	} {
-		if _, err := openEngine(t).Add("Write the spec", c); err == nil {
+		if _, err := openEngine(t).add("Write the spec", c); err == nil {
 			t.Errorf("Add with a bad %s should fail", name)
 		}
 	}
@@ -96,7 +96,7 @@ func TestEngine_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 	add(t, e, "First")
 	add(t, e, "Second")
 
-	got, err := e.List()
+	got, err := e.tasks.All()
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestEngine_showsATaskByItsNumber(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.Show(factsOf(kept).number)
+	got, err := e.show(factsOf(kept).number)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
 	}
@@ -119,19 +119,19 @@ func TestEngine_showsATaskByItsNumber(t *testing.T) {
 }
 
 func TestEngine_saysThereIsNoSuchTask(t *testing.T) {
-	if _, err := openEngine(t).Show(99); err == nil {
+	if _, err := openEngine(t).show(99); err == nil {
 		t.Error("Show(99) should fail")
 	}
 }
 
 func TestEngine_changesOnlyWhatWasNamed(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{Description: of("the one")})
+	kept, err := e.add("Write the spec", Changes{Description: of("the one")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	added, err := e.Edit(factsOf(kept).number, Changes{Priority: of("high")})
+	added, err := e.edit(factsOf(kept).number, Changes{Priority: of("high")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestEngine_changesOnlyWhatWasNamed(t *testing.T) {
 
 func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{
+	kept, err := e.add("Write the spec", Changes{
 		Deadline: of("2026-09-01"), Priority: of("critical"), State: of("current"),
 		Labels: of([]string{"spec", "team"}),
 	})
@@ -157,7 +157,7 @@ func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	added, err := e.Edit(factsOf(kept).number, Changes{
+	added, err := e.edit(factsOf(kept).number, Changes{
 		Deadline: of(""), Priority: of(""), State: of(""), Labels: of([]string{""}),
 	})
 	if err != nil {
@@ -181,7 +181,7 @@ func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 func TestEngine_refusesToEmptyATitle(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(factsOf(kept).number, Changes{Title: of("")}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := e.edit(factsOf(kept).number, Changes{Title: of("")}); !errors.Is(err, domain.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
@@ -189,7 +189,7 @@ func TestEngine_refusesToEmptyATitle(t *testing.T) {
 func TestEngine_saysWhenNothingWasNamedToChange(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(factsOf(kept).number, Changes{}); !errors.Is(err, ErrNothingToChange) {
+	if _, err := e.edit(factsOf(kept).number, Changes{}); !errors.Is(err, ErrNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -199,7 +199,7 @@ func TestEngine_doesNotRenumberATaskItChanges(t *testing.T) {
 	add(t, e, "First")
 	second := add(t, e, "Second")
 
-	got, err := e.Edit(factsOf(second).number, Changes{Title: of("Second, revised")})
+	got, err := e.edit(factsOf(second).number, Changes{Title: of("Second, revised")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -211,16 +211,16 @@ func TestEngine_doesNotRenumberATaskItChanges(t *testing.T) {
 func TestEngine_deletesATask(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if err := e.Delete(factsOf(kept).number); err != nil {
+	if err := e.delete(factsOf(kept).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := e.Show(factsOf(kept).number); err == nil {
+	if _, err := e.show(factsOf(kept).number); err == nil {
 		t.Error("the task should be gone")
 	}
 }
 
 func TestEngine_saysThereIsNoSuchTaskToDelete(t *testing.T) {
-	if err := openEngine(t).Delete(99); err == nil {
+	if err := openEngine(t).delete(99); err == nil {
 		t.Error("Delete(99) should fail")
 	}
 }
@@ -229,7 +229,7 @@ func TestEngine_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
 	second := add(t, e, "Second")
-	if err := e.Delete(factsOf(second).number); err != nil {
+	if err := e.delete(factsOf(second).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	if got := factsOf(add(t, e, "Third")).number; got != 3 {
@@ -248,7 +248,7 @@ func TestEngine_reportsAStoreItCanNoLongerReach(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	kept, err := e.Add("Write the spec", Changes{})
+	kept, err := e.add("Write the spec", Changes{})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -256,25 +256,25 @@ func TestEngine_reportsAStoreItCanNoLongerReach(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	if _, err := e.Add("Nope", Changes{}); err == nil {
+	if _, err := e.add("Nope", Changes{}); err == nil {
 		t.Error("Add on a closed store should fail")
 	}
-	if _, err := e.List(); err == nil {
+	if _, err := e.tasks.All(); err == nil {
 		t.Error("List on a closed store should fail")
 	}
-	if _, err := e.Edit(factsOf(kept).number, Changes{Title: of("Nope")}); err == nil {
+	if _, err := e.edit(factsOf(kept).number, Changes{Title: of("Nope")}); err == nil {
 		t.Error("Edit on a closed store should fail")
 	}
 }
 
 func TestEngine_addsALabelToTheOnesAlreadyThere(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{Labels: of([]string{"spec", "team"})})
+	kept, err := e.add("Write the spec", Changes{Labels: of([]string{"spec", "team"})})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent"})})
+	got, err := e.edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -285,12 +285,12 @@ func TestEngine_addsALabelToTheOnesAlreadyThere(t *testing.T) {
 
 func TestEngine_takesALabelAwayFromTheOnesAlreadyThere(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{Labels: of([]string{"spec", "team"})})
+	kept, err := e.add("Write the spec", Changes{Labels: of([]string{"spec", "team"})})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"-spec"})})
+	got, err := e.edit(factsOf(kept).number, Changes{Labels: of([]string{"-spec"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestEngine_takesALabelAwayFromTheOnesAlreadyThere(t *testing.T) {
 }
 
 func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
-	_, err := openEngine(t).Add("Write the spec", Changes{Labels: of([]string{"+urgent"})})
+	_, err := openEngine(t).add("Write the spec", Changes{Labels: of([]string{"+urgent"})})
 	if !errors.Is(err, ErrLabelSignAtCreation) {
 		t.Errorf("err = %v, want ErrLabelSignAtCreation: a new task has nothing to add to", err)
 	}
@@ -309,7 +309,7 @@ func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
 func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.Edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent", "draft"})}); err == nil {
+	if _, err := e.edit(factsOf(kept).number, Changes{Labels: of([]string{"+urgent", "draft"})}); err == nil {
 		t.Error("Edit should refuse to both replace and change the labels")
 	}
 }
@@ -318,7 +318,7 @@ func TestEngine_hangsATaskUnderAnother(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
 
-	got, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
+	got, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -330,12 +330,12 @@ func TestEngine_hangsATaskUnderAnother(t *testing.T) {
 func TestEngine_setsATaskFreeWhenTheParentIsCleared(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
+	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(factsOf(hung).number, Changes{Parent: of(task.NoParent)})
+	got, err := e.edit(factsOf(hung).number, Changes{Parent: of(task.NoParent)})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -345,7 +345,7 @@ func TestEngine_setsATaskFreeWhenTheParentIsCleared(t *testing.T) {
 }
 
 func TestEngine_refusesAParentThatDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).Add("Write the tests", Changes{Parent: of(99)}); !errors.Is(err, ErrNoSuchTask) {
+	if _, err := openEngine(t).add("Write the tests", Changes{Parent: of(99)}); !errors.Is(err, ErrNoSuchTask) {
 		t.Errorf("err = %v, want ErrNoSuchTask", err)
 	}
 }
@@ -353,7 +353,7 @@ func TestEngine_refusesAParentThatDoesNotExist(t *testing.T) {
 func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
 	e := openEngine(t)
 	alone := add(t, e, "Ship it")
-	if _, err := e.Edit(factsOf(alone).number, Changes{Parent: of(factsOf(alone).number)}); !errors.Is(err, ErrParentIsSelf) {
+	if _, err := e.edit(factsOf(alone).number, Changes{Parent: of(factsOf(alone).number)}); !errors.Is(err, ErrParentIsSelf) {
 		t.Errorf("err = %v, want ErrParentIsSelf", err)
 	}
 }
@@ -361,12 +361,12 @@ func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
 func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
+	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	if _, err := e.Add("Write the first one", Changes{Parent: of(factsOf(hung).number)}); !errors.Is(err, ErrParentIsSubTask) {
+	if _, err := e.add("Write the first one", Changes{Parent: of(factsOf(hung).number)}); !errors.Is(err, ErrParentIsSubTask) {
 		t.Errorf("err = %v, want ErrParentIsSubTask", err)
 	}
 }
@@ -374,15 +374,15 @@ func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
 func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	hung, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)})
+	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if err := e.Delete(factsOf(hung).number); err != nil {
+	if err := e.delete(factsOf(hung).number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 
-	if err := e.Delete(factsOf(under).number); err != nil {
+	if err := e.delete(factsOf(under).number); err != nil {
 		t.Errorf("Delete: %v, want it to go now that nothing hangs under it", err)
 	}
 }
@@ -390,11 +390,11 @@ func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
 func TestEngine_namesWhatHangsUnderATask(t *testing.T) {
 	e := openEngine(t)
 	under := add(t, e, "Ship it")
-	if _, err := e.Add("Write the tests", Changes{Parent: of(factsOf(under).number)}); err != nil {
+	if _, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).number)}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Under(factsOf(under).number)
+	got, err := e.under(factsOf(under).number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
@@ -408,7 +408,7 @@ func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	kept, err := e.Add("Ship it", Changes{})
+	kept, err := e.add("Ship it", Changes{})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -416,10 +416,10 @@ func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	if _, err := e.Under(factsOf(kept).number); err == nil {
+	if _, err := e.under(factsOf(kept).number); err == nil {
 		t.Error("Under on a closed store should fail")
 	}
-	if err := e.Delete(factsOf(kept).number); err == nil {
+	if err := e.delete(factsOf(kept).number); err == nil {
 		t.Error("Delete on a closed store should fail")
 	}
 }
@@ -428,7 +428,7 @@ func TestEngine_writesDownTheTimeSpent(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("2h")})
+	got, err := e.edit(factsOf(kept).number, Changes{Spent: of("2h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -439,12 +439,12 @@ func TestEngine_writesDownTheTimeSpent(t *testing.T) {
 
 func TestEngine_addsToTheTimeAlreadySpent(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{Spent: of("2h")})
+	kept, err := e.add("Write the spec", Changes{Spent: of("2h")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("+30m")})
+	got, err := e.edit(factsOf(kept).number, Changes{Spent: of("+30m")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -455,12 +455,12 @@ func TestEngine_addsToTheTimeAlreadySpent(t *testing.T) {
 
 func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 	e := openEngine(t)
-	kept, err := e.Add("Write the spec", Changes{Spent: of("2h")})
+	kept, err := e.add("Write the spec", Changes{Spent: of("2h")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.Edit(factsOf(kept).number, Changes{Spent: of("-3h")})
+	got, err := e.edit(factsOf(kept).number, Changes{Spent: of("-3h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -470,7 +470,7 @@ func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 }
 
 func TestEngine_refusesATimeItCannotMakeSenseOf(t *testing.T) {
-	if _, err := openEngine(t).Add("Write the spec", Changes{Spent: of("+ages")}); err == nil {
+	if _, err := openEngine(t).add("Write the spec", Changes{Spent: of("+ages")}); err == nil {
 		t.Error("Add with a time it cannot read should fail")
 	}
 }
@@ -490,15 +490,15 @@ func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
 	first := factsOf(add(t, e, "Relire l'ADR")).number
 	second := factsOf(add(t, e, "Trancher")).number
 	for _, part := range []int{first, second} {
-		if _, err := e.Edit(part, Changes{Parent: &parent}); err != nil {
+		if _, err := e.edit(part, Changes{Parent: &parent}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := e.Delete(ship); err != nil {
+	if err := e.delete(ship); err != nil {
 		t.Fatalf("deleting a task carrying parts: %v", err)
 	}
 	for _, gone := range []int{ship, first, second} {
-		if _, err := e.Show(gone); err == nil {
+		if _, err := e.show(gone); err == nil {
 			t.Errorf("task %d is still there", gone)
 		}
 	}

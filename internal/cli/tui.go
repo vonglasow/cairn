@@ -43,17 +43,9 @@ func newTuiCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			at, err := places()
+			held, err := engine.Hold(home())
 			if err != nil {
 				return err
-			}
-			held, err := engine.OpenAt(at)
-			if err != nil {
-				// Told, because this command holds the store itself rather
-				// than asking through an operation: without it a store behind
-				// this cairn says so and leaves somebody to find out what to
-				// type about it.
-				return engine.Told(err)
 			}
 			defer func() { _ = held.Close() }()
 			// The size is asked for by bubbletea the moment the program starts,

@@ -37,7 +37,7 @@ const Columns = reading.Columns
 // Lanes are the three the band holds, in the order it draws them. Naming them
 // is what the terminal needs a glyph for: a card says which kind of stopped it
 // is by which lane it sits in.
-var Lanes = []string{"blocked", "watching", "paused"}
+var Lanes = reading.Stalled
 
 // CardHeight is what every card takes, whatever it carries. Fixed on purpose:
 // it is what lets a column say how many fit and which one is under the pointer

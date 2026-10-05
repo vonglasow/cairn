@@ -22,11 +22,22 @@ func TestCommands_reportAStoreTheyCannotEvenLocate(t *testing.T) {
 		{"migration", "show", "1"},
 		{"migration", "rollback", "--yes"},
 		{"task", "list"},
-		{"mcp", "serve"},
 	} {
 		if got := run(t, args...).Code; got != exitStore {
 			t.Errorf("%v: exit %d, want %d when the store cannot even be located", args, got, exitStore)
 		}
+	}
+}
+
+// The server is not one call but a conversation, and the store is located at
+// each call rather than once at the start: a store nobody can locate is what
+// each call answers, and `config_show` — the one call that says why — is still
+// reachable. It used to refuse to start, which left an agent nothing to ask.
+func TestMCPServe_startsWhereTheStoreCannotBeLocated(t *testing.T) {
+	t.Setenv("HOME", "")
+	t.Setenv("CAIRN_STORE", "")
+	if got := run(t, "mcp", "serve").Code; got != exitOK {
+		t.Errorf("mcp serve: exit %d, want %d: the store is located at each call", got, exitOK)
 	}
 }
 

@@ -11,7 +11,8 @@ import (
 // that knew its wire format would drag a protocol into every test.
 //
 // How far along a task is has no field here: it is not the task's to say, and
-// wire — the one place that reaches both notions — carries it instead.
+// the engine's answer — the one place that reaches both notions — carries it
+// instead.
 //
 // It is the task's facts and what the task says, kept apart: a listing hands
 // over the facts of every task and leaves what each says to be shown, and a

@@ -28,7 +28,7 @@ func TestTaskList_keepsWhatTheFactsNamedHoldFor(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
 	add(t, e, "Ship it")
-	if _, err := e.Edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
+	if _, err := e.edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
 
@@ -72,10 +72,10 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
 	shipIt := add(t, e, "Ship it")
-	if _, err := e.Edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
+	if _, err := e.edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if _, err := e.PutInFocus(task.OfTask(shipIt).Number); err != nil {
+	if _, err := e.putInFocus(task.OfTask(shipIt).Number); err != nil {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 

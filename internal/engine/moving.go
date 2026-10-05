@@ -55,10 +55,10 @@ type places interface {
 	ClearFocus() error
 }
 
-// Move puts a task in a place among the ones it sits with. It never changes
+// move puts a task in a place among the ones it sits with. It never changes
 // the column: that is an edit, and one act with two meanings is an act nobody
 // can undo confidently.
-func (e *Engine) Move(number int, at Place, target int) error {
+func (e *Engine) move(number int, at Place, target int) error {
 	moving, err := e.tasks.Find(number)
 	if err != nil {
 		return err
@@ -101,22 +101,22 @@ func placeNamed(at Place, target int) string {
 	}
 }
 
-// Focus says which tasks are being worked on, oldest first, and nothing when
+// focus says which tasks are being worked on, oldest first, and nothing when
 // none are. A listing asks for the numbers rather than the tasks: it marks
 // lines, and reading every task to mark a few would be a second query per
 // listing.
-func (e *Engine) Focus() ([]int, error) {
+func (e *Engine) focus() ([]int, error) {
 	return e.places.Focus()
 }
 
-// PutInFocus takes up a task alongside whatever else is being worked on, and
+// putInFocus takes up a task alongside whatever else is being worked on, and
 // hands it back so whoever asked sees what they are on.
 //
 // Alongside and not instead. One task at a time is how a person works, and how
 // this read for a long while; but an agent session is started per task, and
 // several run at once — a focus that held one made every other one invisible
 // to whoever asked what was being worked on.
-func (e *Engine) PutInFocus(number int) (task.Task, error) {
+func (e *Engine) putInFocus(number int) (task.Task, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
 		return task.Task{}, err
@@ -140,11 +140,11 @@ func (e *Engine) PutInFocus(number int) (task.Task, error) {
 	return t, nil
 }
 
-// LetGoOf leaves one task and keeps the rest. Letting go of one that was never
+// letGoOf leaves one task and keeps the rest. Letting go of one that was never
 // taken up is not a failure — but it is not an act either, and nothing is
 // written down: a stretch closing that never opened would fault every duration
 // around it.
-func (e *Engine) LetGoOf(number int) error {
+func (e *Engine) letGoOf(number int) error {
 	held, err := e.places.Focus()
 	if err != nil {
 		return err
@@ -158,10 +158,10 @@ func (e *Engine) LetGoOf(number int) error {
 	return e.record(number, trace.FocusReleased, "", "", "")
 }
 
-// LetGo leaves nothing in focus at all, and writes down the release of every
+// letGo leaves nothing in focus at all, and writes down the release of every
 // task that was being worked on. Every one of them: a release that named only
 // the first would leave the others' stretches open for ever.
-func (e *Engine) LetGo() error {
+func (e *Engine) letGo() error {
 	held, err := e.places.Focus()
 	if err != nil {
 		return err
@@ -177,11 +177,11 @@ func (e *Engine) LetGo() error {
 	return nil
 }
 
-// InFocus hands back the tasks being worked on and their numbers, and nothing
+// inFocus hands back the tasks being worked on and their numbers, and nothing
 // at all when none are. The numbers come back alongside so a caller answering
 // about the focus does not have to ask twice for them.
-func (e *Engine) InFocus() ([]task.Task, []int, error) {
-	numbers, err := e.Focus()
+func (e *Engine) inFocus() ([]task.Task, []int, error) {
+	numbers, err := e.focus()
 	if err != nil {
 		return nil, nil, err
 	}

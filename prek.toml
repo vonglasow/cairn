@@ -1,5 +1,5 @@
 # Configuration for `prek` (https://prek.j178.dev), a fast pre-commit runner.
-# Ported from .pre-commit-config.yaml. Install with:
+# Install with:
 #   prek install -t pre-commit -t commit-msg -t pre-push
 #:schema https://www.schemastore.org/prek.json
 
@@ -26,14 +26,19 @@ hooks = [
 ]
 
 # Go vulnerability scan (uses the locally installed govulncheck).
+#
+# Each of these says which files it is about with `files` rather than
+# `types = ["go"]`. Filtered on Go alone, a commit that changed only a
+# scenario, a pinned frame or go.mod ran no suite and no scan at all — yet a
+# scenario is executed by the suite and go.mod is what govulncheck reads.
 [[repos]]
 repo = "local"
 hooks = [
-    { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, types = ["go"] },
+    { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
     # A package with no test file at all. First because it is the cheapest and
     # the one that was missing: mutation skips such a package rather than
     # failing on it, so the newest code was the code the gates said least about.
-    { id = "tested-check", name = "every package has a test file", entry = "make tested-check", language = "system", pass_filenames = false, types = ["go"] },
+    { id = "tested-check", name = "every package has a test file", entry = "make tested-check", language = "system", pass_filenames = false, files = '\.go$' },
     # Coverage floors, in total and per package.
     #
     # This comment used to claim the total caught a package nobody tested. It
@@ -41,10 +46,10 @@ hooks = [
     # floor gave way, and until it did the average absorbed it. The per-package
     # floor is what makes the claim true now, and `tested-check` above catches
     # the worse case first.
-    { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, types = ["go"] },
+    { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, files = '(\.go|\.feature|(^|/)go\.(mod|sum)|/testdata/.+)$' },
     # The binary must not be made of the test harness. Cheap, and it is what
     # replaced `no-go-testing` for `cairn/test` — see the target's comment.
-    { id = "harness-check", name = "the binary does not reach the harness", entry = "make harness-check", language = "system", pass_filenames = false, types = ["go"] },
+    { id = "harness-check", name = "the binary does not reach the harness", entry = "make harness-check", language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
     # Mutation: breaks each line on purpose and checks a test turns red.
     # Coverage only says a line ran. Mutation is the slow gate, and it is split
     # in two on purpose: at commit, the lines that changed, in the packages they
@@ -52,11 +57,11 @@ hooks = [
     # package, so nothing leaves the machine without the whole of it judged.
     # A test weakened without touching the code it guarded is what only the
     # second one sees. See docs/checks.md.
-    { id = "mutation", name = "mutation, what changed (gremlins)", entry = "make mutation-changed", language = "system", pass_filenames = false, types = ["go"] },
+    { id = "mutation", name = "mutation, what changed (gremlins)", entry = "make mutation-changed", language = "system", pass_filenames = false, files = '(\.go|(^|/)\.gremlins\.yaml)$' },
     { id = "mutation-all", name = "mutation, every package (gremlins)", entry = "make mutation", language = "system", pass_filenames = false, always_run = true, stages = ["pre-push"] },
 ]
 
-# Go formatting, imports, and lint/test.
+# Go formatting, imports, and lint.
 [[repos]]
 repo = "https://github.com/dnephin/pre-commit-golang"
 rev = "v0.5.1"
@@ -66,7 +71,8 @@ hooks = [
     # `cairn/test` imports testing outside a _test.go file, deliberately and
     # with nowhere else to go. `make harness-check` is what guards it instead.
     { id = "no-go-testing", exclude = "^test/" },
-    { id = "golangci-lint" },
+    # Its configuration decides what it refuses, so changing it is judged too.
+    { id = "golangci-lint", types = ["text"], files = '(\.go|(^|/)\.golangci\.yml)$' },
     # No go-unit-tests here: cover-check builds its profile from `go test -race
     # ./...`, which fails when a test does, so the suite ran twice for one
     # answer. The profile is rebuilt whenever a Go file, a scenario or a pinned

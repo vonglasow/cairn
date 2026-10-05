@@ -8,6 +8,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/task"
@@ -80,9 +82,65 @@ func storeAt(t *testing.T) string {
 	return path
 }
 
+// homeFor is a home of this test's own whose environment names the store at
+// path — the way a server is started with CAIRN_STORE set.
+func homeFor(t *testing.T, path string) engine.Home {
+	t.Helper()
+	dir := t.TempDir()
+	return engine.Home{Dir: dir, Lookup: func(name string) (string, bool) {
+		if name == config.StoreVariable {
+			return path, true
+		}
+		return "", false
+	}}
+}
+
+// config_show is answered by the engine, so an agent is told the file a
+// person would be told, in both renderings. It used to be read by the command
+// line alone, and an agent was answered an object with every field empty.
+func TestHandlerFor_showsTheConfigurationToAnAgent(t *testing.T) {
+	home := homeFor(t, storeAt(t))
+	dir := filepath.Join(home.Dir, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(file, []byte("notes = \"~/vault\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	handle := handlerFor(engine.ConfigShow, home)
+	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}})
+	if err != nil || result.IsError {
+		t.Fatalf("handle = %+v, %v", result, err)
+	}
+	said, ok := result.StructuredContent.(engine.Config)
+	if !ok || said.File != file || said.Notes.By != "the file" {
+		t.Errorf("structured = %#v, want the file and the notes it named", result.StructuredContent)
+	}
+	text := result.Content[0].(*sdk.TextContent).Text
+	if !strings.Contains(text, file) || !strings.Contains(text, "named by the file") {
+		t.Errorf("text = %q, want the file and what named the notes", text)
+	}
+}
+
+// A number is read as the number it is. It went through fmt.Sprint on a
+// float, so a million arrived as "1e+06" and was refused as not a number —
+// rather than answered as a task nobody numbered that high.
+func TestHandlerFor_readsALargeNumberAsTheNumberItIs(t *testing.T) {
+	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
+	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 1000000}`)}})
+	if err != nil {
+		t.Fatalf("handle: %v", err)
+	}
+	text := result.Content[0].(*sdk.TextContent).Text
+	if strings.Contains(text, "e+06") || !strings.Contains(text, "1000000") {
+		t.Errorf("the answer reads %q, want it about task 1000000", text)
+	}
+}
+
 func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"From the handler"}`)}}
 
 	if _, err := handle(context.Background(), req); err != nil {
@@ -100,7 +158,7 @@ func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 
 func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}}
 
 	// Empty arguments must reach engine.Do as nothing named, and come back as
@@ -125,7 +183,7 @@ func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 
 func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`not json`)}}
 
 	if _, err := handle(context.Background(), req); err == nil {
@@ -139,7 +197,7 @@ func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 // refused by name rather than guessed at.
 func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":"spec"}`),
 	}}
@@ -158,7 +216,7 @@ func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 // refused by name rather than turned into one.
 func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":[1,true]}`),
 	}}
@@ -189,7 +247,7 @@ func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	}
 	number := task.OfTask(*added.Task).Number
 
-	handle := handlerFor(engine.TaskEdit, engine.Places{Store: path})
+	handle := handlerFor(engine.TaskEdit, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(fmt.Sprintf(`{"number":%d,"label":null}`, number)),
 	}}

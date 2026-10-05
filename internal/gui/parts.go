@@ -3,8 +3,8 @@ package gui
 import (
 	"math"
 	"strings"
-	"time"
 
+	"cairn/internal/domain"
 	"cairn/internal/reading"
 )
 
@@ -917,7 +917,7 @@ func Stamped(said string) (stamp, rest string, ok bool) {
 	if !found {
 		return "", said, false
 	}
-	if _, err := time.Parse(time.RFC3339, stamp); err != nil {
+	if _, err := domain.ParseMoment(stamp); err != nil {
 		return "", said, false
 	}
 	return stamp, rest, true

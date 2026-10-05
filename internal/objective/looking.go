@@ -1,7 +1,6 @@
 package objective
 
 import (
-	"strings"
 	"time"
 
 	"cairn/internal/domain"
@@ -14,61 +13,32 @@ import (
 // objective is numbered never contributes, because looking for "1" is not
 // what tells an objective apart from the one numbered 1.
 type looking struct {
-	found map[string]bool
+	*domain.Looking
 }
 
 // Where it stands, the priority and a label are heard and dropped: a listing
 // narrows by those, and looking for them too would be a second way to ask one
 // question. The task side says the same, at greater length.
 
-// consider marks every named thing still missing that sits inside text. An
-// empty name can never be marked found, since an absent fact contributes
-// nothing — nothing named as nothing is a thing looking for it should answer.
-func (l *looking) consider(text string) {
-	text = strings.ToLower(text)
-	for name, already := range l.found {
-		if already || name == "" {
-			continue
-		}
-		if strings.Contains(text, name) {
-			l.found[name] = true
-		}
-	}
-}
-
 func (l *looking) Numbered(int)              {}
-func (l *looking) Titled(s string)           { l.consider(s) }
+func (l *looking) Titled(s string)           { l.Consider(s) }
 func (l *looking) Standing(State)            {}
 func (l *looking) Carries(domain.Priority)   {}
-func (l *looking) Described(s string)        { l.consider(s) }
+func (l *looking) Described(s string)        { l.Consider(s) }
 func (l *looking) NotDescribed()             {}
 func (l *looking) Labelled(string)           {}
 func (l *looking) NotLabelled()              {}
 func (l *looking) LabelsTold()               {}
-func (l *looking) Due(t time.Time)           { l.consider(domain.FormatDay(t)) }
+func (l *looking) Due(t time.Time)           { l.Consider(domain.FormatDay(t)) }
 func (l *looking) NotDue()                   {}
-func (l *looking) Estimated(d time.Duration) { l.consider(domain.FormatDuration(d)) }
+func (l *looking) Estimated(d time.Duration) { l.Consider(domain.FormatDuration(d)) }
 func (l *looking) NotEstimated()             {}
-
-// all reports whether every named thing was found.
-func (l *looking) all() bool {
-	for _, found := range l.found {
-		if !found {
-			return false
-		}
-	}
-	return true
-}
 
 // Matching says whether o carries every one of named, read the way a person
 // reads an objective rather than the way it is stored, case-insensitive,
 // wherever among its facts each one happens to sit.
 func Matching(o Objective, named []string) bool {
-	found := make(map[string]bool, len(named))
-	for _, n := range named {
-		found[strings.ToLower(n)] = false
-	}
-	l := &looking{found: found}
+	l := &looking{domain.LookingFor(named)}
 	o.Tell(l)
-	return l.all()
+	return l.All()
 }

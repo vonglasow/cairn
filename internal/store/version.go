@@ -19,7 +19,7 @@ func (s *Store) Version() (int64, error) {
 	// PRAGMA data_version is not a setting: it is only ever read, and it is
 	// local to this connection, which is exactly why it can be compared with
 	// what this connection saw before.
-	if err := s.db.QueryRow(`PRAGMA data_version`).Scan(&version); err != nil {
+	if err := s.on.QueryRow(`PRAGMA data_version`).Scan(&version); err != nil {
 		return 0, fmt.Errorf("reading whether the store moved: %w", err)
 	}
 	return version, nil

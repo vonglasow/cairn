@@ -6,7 +6,6 @@ import (
 	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/mcp"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 	"cairn/internal/tui"
@@ -75,8 +74,9 @@ var refusals = []error{
 	engine.ErrNothingWaiting,
 	engine.ErrAlreadyApplied,
 	engine.ErrNothingToRollBack,
+	engine.ErrNotOneOf,
 	errNotConfirmed,
-	mcp.ErrNotAnAccess,
+	engine.ErrNotALevel,
 	tui.ErrNotASet,
 	config.ErrNotTOML,
 	config.ErrUnknownKey,

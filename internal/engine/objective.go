@@ -36,7 +36,7 @@ type objectives interface {
 	KeepObjective(objective.Objective) (objective.Objective, error)
 	FindObjective(int) (objective.Objective, error)
 	AllObjectives() ([]objective.Objective, error)
-	NarrowedObjectives(*store.Narrowing) ([]objective.Objective, error)
+	NarrowedObjectives(*domain.Narrowing) ([]objective.Objective, error)
 	UpdateObjective(objective.Objective) error
 	DeleteObjective(int) error
 	TasksServing(int) ([]task.Task, error)
@@ -46,9 +46,10 @@ type objectives interface {
 // A nil field was not named at all; a field pointing at an empty value was
 // named and emptied — which is how an attribute is taken away.
 //
-// It is not Changes: an objective has no parent, no objective of its own and
-// no time spent, and its state is not a task's. A shared struct would offer
-// every surface four fields that mean nothing here.
+// It is not Changes: an objective has no parent, no objective of its own,
+// nothing in its way, no words beside that and no time spent, and its state is
+// not a task's. A shared struct would offer every surface five fields that mean
+// nothing here; what the two carry alike is applied once, by applyCarried.
 type ObjectiveChanges struct {
 	Title       *string
 	Description *string
@@ -65,8 +66,8 @@ func (c ObjectiveChanges) named() bool {
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil
 }
 
-// AddObjective records an objective under the title given.
-func (e *Engine) AddObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
+// addObjective records an objective under the title given.
+func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
 	o, err := objective.NewObjective(title)
 	if err != nil {
 		return objective.Objective{}, err
@@ -77,24 +78,24 @@ func (e *Engine) AddObjective(title string, c ObjectiveChanges) (objective.Objec
 	return e.objectives.KeepObjective(o)
 }
 
-// ListObjectives hands back every objective, in the order they were added.
-func (e *Engine) ListObjectives() ([]objective.Objective, error) {
+// listObjectives hands back every objective, in the order they were added.
+func (e *Engine) listObjectives() ([]objective.Objective, error) {
 	return e.objectives.AllObjectives()
 }
 
-// NarrowedObjectives hands back the objectives a narrowing keeps. Told nothing,
+// narrowedObjectives hands back the objectives a narrowing keeps. Told nothing,
 // it keeps everything, so this is ListObjectives with something to say.
-func (e *Engine) NarrowedObjectives(kept *store.Narrowing) ([]objective.Objective, error) {
+func (e *Engine) narrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
 	return e.objectives.NarrowedObjectives(kept)
 }
 
-// ShowObjective hands back the objective carrying number.
-func (e *Engine) ShowObjective(number int) (objective.Objective, error) {
+// showObjective hands back the objective carrying number.
+func (e *Engine) showObjective(number int) (objective.Objective, error) {
 	return e.objectives.FindObjective(number)
 }
 
-// EditObjective changes what was named and leaves the rest alone.
-func (e *Engine) EditObjective(number int, c ObjectiveChanges) (objective.Objective, error) {
+// editObjective changes what was named and leaves the rest alone.
+func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Objective, error) {
 	if !c.named() {
 		return objective.Objective{}, ErrNothingToChange
 	}
@@ -111,10 +112,10 @@ func (e *Engine) EditObjective(number int, c ObjectiveChanges) (objective.Object
 	return o, nil
 }
 
-// DeleteObjective removes an objective, refusing while tasks are still under
+// deleteObjective removes an objective, refusing while tasks are still under
 // it. Cascading would take work nobody named, and setting those tasks loose
 // silently would leave somebody wondering where their objective went.
-func (e *Engine) DeleteObjective(number int) error {
+func (e *Engine) deleteObjective(number int) error {
 	serving, err := e.objectives.TasksServing(number)
 	if err != nil {
 		return err
@@ -172,15 +173,11 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 	a := &objective.AsTold{}
 	o.Tell(a)
 
-	if c.Title != nil {
-		retitled, err := objective.NewObjective(*c.Title)
-		if err != nil {
-			return objective.Objective{}, err
-		}
-		a.Titled(factsOfObjective(retitled).title)
-	}
-	if c.Description != nil {
-		a.Described(*c.Description)
+	if err := applyCarried(a, "an objective", carriedChanges{
+		title: c.Title, description: c.Description, priority: c.Priority,
+		labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
+	}, current.labels, atCreation); err != nil {
+		return objective.Objective{}, err
 	}
 	if c.State != nil {
 		state, err := objective.ParseObjectiveState(*c.State)
@@ -188,38 +185,6 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 			return objective.Objective{}, err
 		}
 		a.Standing(state)
-	}
-	if c.Priority != nil {
-		priority, err := domain.ParsePriority(*c.Priority)
-		if err != nil {
-			return objective.Objective{}, err
-		}
-		a.Carries(priority)
-	}
-	if c.Labels != nil {
-		labels, err := changedLabels(*c.Labels, current.labels, atCreation)
-		if err != nil {
-			return objective.Objective{}, err
-		}
-		a.NotLabelled()
-		for _, label := range labels {
-			a.Labelled(label)
-		}
-		a.LabelsTold()
-	}
-	if c.Deadline != nil {
-		deadline, err := domain.ParseDeadline(*c.Deadline)
-		if err != nil {
-			return objective.Objective{}, err
-		}
-		a.Due(deadline)
-	}
-	if c.Estimate != nil {
-		estimate, err := domain.ParseEstimate(*c.Estimate)
-		if err != nil {
-			return objective.Objective{}, err
-		}
-		a.Estimated(estimate)
 	}
 	return a.Objective(), nil
 }
@@ -250,17 +215,17 @@ func (e *Engine) canServe(t task.Task) error {
 	return nil
 }
 
-// TasksUnder hands back the tasks put directly under an objective. Sub-tasks
+// tasksUnder hands back the tasks put directly under an objective. Sub-tasks
 // are not among them: they are counted towards the objective, never listed as
 // serving it.
-func (e *Engine) TasksUnder(number int) ([]task.Task, error) {
+func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
 	return e.objectives.TasksServing(number)
 }
 
-// ObjectiveProgress is how far along an objective is: the tasks put under it,
+// objectiveProgress is how far along an objective is: the tasks put under it,
 // and the sub-tasks hanging under those. The two are counted apart because
 // they are not the same thing, and the objective has to exist to be asked.
-func (e *Engine) ObjectiveProgress(number int) (domain.Progress, error) {
+func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
 	if _, err := e.objectives.FindObjective(number); err != nil {
 		return domain.Progress{}, err
 	}
@@ -282,10 +247,52 @@ func (e *Engine) ObjectiveProgress(number int) (domain.Progress, error) {
 	return p, nil
 }
 
-// TaskProgress is how far along a task is, counted over what hangs under it.
+// alongEvery is how far along every task and every objective is, counted from
+// one reading of every task — on the board or off it, the way showing one
+// counts them. Handed what was already read when that was everything.
+func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objectives map[int]domain.Progress, err error) {
+	all := read
+	if !everything {
+		every := domain.Narrowing{}
+		every.WithArchived()
+		if all, err = e.tasks.Narrowed(&every); err != nil {
+			return nil, nil, err
+		}
+	}
+	tasks, objectives = map[int]domain.Progress{}, map[int]domain.Progress{}
+	serves := map[int][]int{}
+	for _, t := range all {
+		f := factsOf(t)
+		serves[f.number] = f.objectives
+		for _, o := range f.objectives {
+			p := objectives[o]
+			p.Tasks = counted(p.Tasks, t)
+			objectives[o] = p
+		}
+	}
+	for _, t := range all {
+		f := factsOf(t)
+		if f.parent == task.NoParent {
+			continue
+		}
+		p := tasks[f.parent]
+		p.SubTasks = counted(p.SubTasks, t)
+		tasks[f.parent] = p
+		// A part counts towards an objective by way of the task it hangs
+		// under, never on its own.
+		for _, o := range serves[f.parent] {
+			p := objectives[o]
+			p.SubTasks = counted(p.SubTasks, t)
+			objectives[o] = p
+		}
+	}
+	return tasks, objectives, nil
+}
+
+// taskProgress is how far along a task is, counted over what hangs under it.
 // A task never counts itself: two sub-tasks of which one is done is one of
 // two, and nobody reads it as one of three.
-func (e *Engine) TaskProgress(number int) (domain.Progress, error) {
+func (e *Engine) taskProgress(number int) (domain.Progress, error) {
 	under, err := e.tasks.Under(number)
 	if err != nil {
 		return domain.Progress{}, err
@@ -323,7 +330,7 @@ var objectiveAttributes = []Argument{
 }
 
 // objectiveChanges turns what was named in in into the changes
-// AddObjective and EditObjective take.
+// addObjective and editObjective take.
 func objectiveChanges(in Input) ObjectiveChanges {
 	var c ObjectiveChanges
 	c.Description = in.Change("desc")
@@ -339,15 +346,15 @@ func objectiveChanges(in Input) ObjectiveChanges {
 // that always travel together, so ObjectiveShow and ObjectiveEdit cannot each
 // remember a different two of them.
 func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain.Progress, error) {
-	o, err := eng.ShowObjective(n)
+	o, err := eng.showObjective(n)
 	if err != nil {
 		return objective.Objective{}, nil, domain.Progress{}, err
 	}
-	under, err := eng.TasksUnder(n)
+	under, err := eng.tasksUnder(n)
 	if err != nil {
 		return objective.Objective{}, nil, domain.Progress{}, err
 	}
-	p, err := eng.ObjectiveProgress(n)
+	p, err := eng.objectiveProgress(n)
 	if err != nil {
 		return objective.Objective{}, nil, domain.Progress{}, err
 	}
@@ -371,7 +378,7 @@ var ObjectiveAdd = Operation{
 		if given := in.Change("title"); given != nil {
 			title = *given
 		}
-		o, err := on.Engine.AddObjective(title, objectiveChanges(in))
+		o, err := on.Engine.addObjective(title, objectiveChanges(in))
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
@@ -397,7 +404,11 @@ var ObjectiveList = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		all, err := on.Engine.NarrowedObjectives(kept)
+		all, err := on.Engine.narrowedObjectives(kept)
+		if err != nil {
+			return Answer{}, err
+		}
+		_, along, err := on.Engine.alongEvery(nil, false)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -406,9 +417,9 @@ var ObjectiveList = Operation{
 		// two read alike either way — but the fields are kept apart so a reader
 		// of the answer can still tell which question was asked.
 		if kept.Narrows() {
-			return Answer{MatchedObjectives: all}, nil
+			return Answer{MatchedObjectives: all, Along: along}, nil
 		}
-		return Answer{Objectives: all}, nil
+		return Answer{Objectives: all, Along: along}, nil
 	},
 }
 
@@ -460,7 +471,7 @@ var ObjectiveEdit = Operation{
 		n, _ := in.Whole("number")
 		changes := objectiveChanges(in)
 		changes.Title = in.Change("title")
-		if _, err := on.Engine.EditObjective(n, changes); err != nil {
+		if _, err := on.Engine.editObjective(n, changes); err != nil {
 			title := ""
 			if changes.Title != nil {
 				title = *changes.Title
@@ -490,7 +501,7 @@ var ObjectiveSearch = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
-		all, err := on.Engine.ListObjectives()
+		all, err := on.Engine.listObjectives()
 		if err != nil {
 			return Answer{}, err
 		}
@@ -518,7 +529,7 @@ var ObjectiveDelete = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		if err := on.Engine.DeleteObjective(n); err != nil {
+		if err := on.Engine.deleteObjective(n); err != nil {
 			return Answer{}, err
 		}
 		return Answer{Deleted: &n}, nil

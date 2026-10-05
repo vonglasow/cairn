@@ -8,7 +8,6 @@ package cli
 // their feature; everything here is claimed by more than one.
 
 import (
-	"cairn/internal/task"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"cairn/internal/task"
 
 	"github.com/cucumber/godog"
 

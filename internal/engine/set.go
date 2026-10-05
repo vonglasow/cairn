@@ -19,8 +19,8 @@ import (
 //
 // The same grammar as the labels, and deliberately: a plain number says what
 // the set becomes, `+3` adds to it, `-3` takes away. Somebody who knows one
-// knows all three, and domain.SplitSign is the one place either sign means
-// anything.
+// knows all three, and domain.ParseSetChange is the one place the grammar is
+// read.
 //
 // The three refusals are handed in rather than decided here, because what a
 // caller reads has to name the thing they were naming: "a blocker is a task
@@ -29,55 +29,20 @@ import (
 func changedNumbers(given []string, current []int, atCreation bool,
 	notANumber, bothWays, signAtBirth error,
 ) ([]int, error) {
-	var added, removed, becomes []int
-	adjusts := false
-	for _, one := range listedNumbers(given) {
-		sign, rest := domain.SplitSign(one)
-		number, err := strconv.Atoi(strings.TrimSpace(rest))
+	change, err := domain.ParseSetChange(given, func(raw, value string, _ bool) (int, error) {
+		number, err := strconv.Atoi(strings.TrimSpace(value))
 		if err != nil || number <= 0 {
-			return nil, fmt.Errorf("%q: %w", one, notANumber)
+			return 0, fmt.Errorf("%q: %w", raw, notANumber)
 		}
-		switch sign {
-		case '+':
-			adjusts = true
-			added = append(added, number)
-		case '-':
-			adjusts = true
-			removed = append(removed, number)
-		default:
-			becomes = append(becomes, number)
-		}
+		return number, nil
+	}, bothWays)
+	if err != nil {
+		return nil, err
 	}
-	if adjusts && len(becomes) > 0 {
-		return nil, bothWays
-	}
-	if adjusts && atCreation {
+	if change.Adjusts() && atCreation {
 		return nil, signAtBirth
 	}
-	if !adjusts {
-		return settled(becomes), nil
-	}
-	kept := make([]int, 0, len(current)+len(added))
-	for _, one := range current {
-		if !slices.Contains(removed, one) {
-			kept = append(kept, one)
-		}
-	}
-	return settled(append(kept, added...)), nil
-}
-
-// listedNumbers drops what was named as nothing. A caller clearing a set says
-// `--objective ""`, which names no objective rather than one called nothing.
-func listedNumbers(given []string) []string {
-	kept := make([]string, 0, len(given))
-	for _, one := range given {
-		for _, part := range strings.Split(one, ",") {
-			if strings.TrimSpace(part) != "" {
-				kept = append(kept, strings.TrimSpace(part))
-			}
-		}
-	}
-	return kept
+	return settled(change.Apply(current)), nil
 }
 
 // settled puts a set of numbers in the one order there is, with nothing twice:

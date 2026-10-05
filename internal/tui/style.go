@@ -3,6 +3,9 @@ package tui
 import (
 	"image/color"
 
+	"cairn/internal/domain"
+	"cairn/internal/objective"
+
 	"charm.land/lipgloss/v2"
 )
 
@@ -145,11 +148,11 @@ var Default = Palette{
 // recognise a word would hide the card and the word at once.
 func (p Palette) Priority(named string) color.Color {
 	switch named {
-	case "low":
+	case string(domain.Low):
 		return p.Low
-	case "high":
+	case string(domain.High):
 		return p.High
-	case "critical":
+	case string(domain.Critical):
 		return p.Critical
 	default:
 		return p.Normal
@@ -159,9 +162,9 @@ func (p Palette) Priority(named string) color.Color {
 // Stopped answers the colour one of the three stopped states is drawn in.
 func (p Palette) Stopped(named string) color.Color {
 	switch named {
-	case "blocked":
+	case string(domain.Blocked):
 		return p.Blocked
-	case "watching":
+	case string(domain.Watching):
 		return p.Watching
 	default:
 		return p.Paused
@@ -171,11 +174,11 @@ func (p Palette) Stopped(named string) color.Color {
 // Standing answers the colour one of an objective's four states is drawn in.
 func (p Palette) Standing(named string) color.Color {
 	switch named {
-	case "active":
+	case string(objective.Active):
 		return p.Accent
-	case "reached":
+	case string(objective.Reached):
 		return p.Reached
-	case "dropped":
+	case string(objective.Dropped):
 		return p.Faint
 	default:
 		return p.Paused

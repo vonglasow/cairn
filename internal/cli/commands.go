@@ -3,19 +3,17 @@ package cli
 // The command tree is built once, from engine.All(), rather than declared by
 // hand for each of the things cairn can be asked to do: one group per
 // distinct Operation.Thing, in the order All() gives them, one verb under it
-// per Operation. A surface here parses, calls engine.Do, and prints — it
+// per Operation. A surface here parses, calls engine.DoFrom, and prints — it
 // decides nothing.
 
 import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/spf13/cobra"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
 )
 
@@ -29,7 +27,8 @@ var errNotConfirmed = errors.New("needs --yes to confirm")
 
 // groupShort is the one sentence cobra shows for each group of commands.
 // Operation carries a Short and a Does for a verb, but nothing for the thing
-// its verbs are grouped under, so the four groups are named here, once.
+// its verbs are grouped under, so the groups are named here, once — every
+// thing engine.All() names has one, which TestEveryThingHasAGroupSentence holds.
 //
 // It stays here rather than moving to engine: a group is a shape the command
 // line needs to hang verbs under, and the MCP server has no such grouping —
@@ -45,72 +44,12 @@ var groupShort = map[string]string{
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 }
 
-// places is where the store and the notes live, according to the environment,
-// the configuration file, and the default place under the home directory, in
-// that order. Read by every command that needs it, and by no other: a group
-// and `cairn --version` must never create a file just by being run.
-//
-// The notes are only ever named, never opened, so finding them costs nothing
-// and refuses nothing. With no home to put the default under, and nothing
-// naming them, they are left unsaid: a place relative to wherever the command
-// happened to run would send a harness to write somewhere nobody looks.
-//
-// The home directory is asked for unconditionally, but only required when
-// the environment does not already answer: CAIRN_STORE set with no home to
-// find — a cron entry, a container — still has to work, so a failed
-// os.UserHomeDir is not itself a refusal.
-func places() (engine.Places, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		if said, ok := os.LookupEnv(config.StoreVariable); !ok || said == "" {
-			return engine.Places{}, fmt.Errorf("%w: %w", engine.ErrStore, err)
-		}
-	}
-	places, err := config.Read(home, os.LookupEnv)
-	if err != nil {
-		// Only what the person wrote is theirs to fix: everything else about
-		// reading the file — permissions, a missing directory, whatever a
-		// driver might raise — stays folded into engine.ErrStore, the same
-		// answer an unusable store gives everywhere else.
-		for _, kind := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
-			if errors.Is(err, kind) {
-				return engine.Places{}, err
-			}
-		}
-		return engine.Places{}, fmt.Errorf("%w: %w", engine.ErrStore, err)
-	}
-	notes := places.Notes()
-	if !filepath.IsAbs(notes) {
-		notes = ""
-	}
-	return engine.Places{Store: places.Store(), Notes: notes}, nil
-}
-
-// runReading runs an operation that reads a tolerant configuration instead of
-// opening a store — config show today — so it stays reachable exactly when a
-// broken store would otherwise turn every command away before it ran.
-//
-// engine.Do never fills On.Reading: nothing it opens needs to, since only this
-// one operation reads it. So this calls op.Run directly, after op.Check — the
-// same refusal engine.Do would have given a caller that named an argument
-// wrong — rather than going through engine.Do just to hand it a path and
-// backups this operation has no use for.
-//
-// The home comes from os.UserHomeDir(), the same as places(). A failed
-// UserHomeDir is not a refusal here either: config.NewReading tolerates an
-// empty home as it tolerates a missing file, so the command answers with
-// what a best-effort reading found rather than joining every other command
-// in refusing.
-func runReading(op engine.Operation, in engine.Input) (engine.Answer, error) {
-	if err := op.Check(in); err != nil {
-		return engine.Answer{}, err
-	}
-	home, _ := os.UserHomeDir()
-	reading, err := config.NewReading(home, os.LookupEnv)
-	if err != nil {
-		return engine.Answer{}, err
-	}
-	return op.Run(engine.On{Reading: reading}, in)
+// home is what this process knows about where it runs: its home directory, or
+// why there is none, and its environment. Where the store and the notes live
+// is worked out from it by the engine, not here.
+func home() engine.Home {
+	dir, err := os.UserHomeDir()
+	return engine.Home{Dir: dir, Missing: err, Lookup: os.LookupEnv}
 }
 
 // exactly says how many arguments a command takes, and says how to use it
@@ -220,8 +159,10 @@ func allRequired(positionals []engine.Argument) bool {
 // as many as it has, at least one when its one positional is a required
 // Kind: List — `task search`, which takes any number of things to look for
 // but has to be given something — or at most one when its one positional is
-// not required — `backup restore` and `migration apply`, where a number left
-// out means "the most recent" or "everything waiting" rather than a mistake.
+// not required — `backup restore`, `migration apply`, `task focus`, `task
+// unfocus` and `task archive`, where a number left out means "the most
+// recent", "everything waiting", "what is in focus" or "what the narrowing
+// reaches" rather than a mistake.
 func argsFor(positionals []engine.Argument) cobra.PositionalArgs {
 	if len(positionals) == 0 {
 		return noneAtAll()
@@ -253,7 +194,8 @@ func useLine(op engine.Operation, positionals []engine.Argument) string {
 // newActionCmd builds one verb: its flags and positional arguments from what
 // the operation takes, a --yes gate when losing work needs one, and a RunE
 // that builds an engine.Input from what cobra says was actually named,
-// resolves the store's path, calls engine.Do, and prints what it answered.
+// and hands it to engine.DoFrom with this process's home, and prints what it
+// answered.
 func newActionCmd(op engine.Operation) *cobra.Command {
 	positionals := positionalsOf(op)
 	given := map[string]*string{}
@@ -274,24 +216,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 				return fmt.Errorf("%s %w", op.Thing, errNotConfirmed)
 			}
 			in := inputFrom(cmd, positionals, args, given, listed, asked)
-			// Needs: AConfiguration reads a tolerant configuration instead of
-			// a store — it has to stay reachable exactly when places()
-			// would refuse, since that is when it is needed. The five backup
-			// verbs carry Needs: NoStore instead: they still locate backups
-			// beside where the store would be, so they keep going through
-			// places() like every operation that opens one.
-			if op.Needs == engine.AConfiguration {
-				answer, err := runReading(op, in)
-				if err != nil {
-					return err
-				}
-				return write(cmd, op, answer)
-			}
-			at, err := places()
-			if err != nil {
-				return err
-			}
-			answer, err := engine.DoAt(op, at, in, engine.ByHand)
+			answer, err := engine.DoFrom(op, home(), in, engine.ByHand)
 			if err != nil {
 				return err
 			}

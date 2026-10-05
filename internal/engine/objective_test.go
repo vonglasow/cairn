@@ -15,7 +15,7 @@ import (
 // addObjective adds an objective, failing the test if it cannot.
 func addObjective(t *testing.T, e *Engine, title string) objective.Objective {
 	t.Helper()
-	o, err := e.AddObjective(title, ObjectiveChanges{})
+	o, err := e.addObjective(title, ObjectiveChanges{})
 	if err != nil {
 		t.Fatalf("AddObjective(%q): %v", title, err)
 	}
@@ -26,7 +26,7 @@ func TestEngine_putsATaskUnderAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 
-	added, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
+	added, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestEngine_putsATaskUnderAnObjective(t *testing.T) {
 
 func TestEngine_refusesAnObjectiveThatDoesNotExist(t *testing.T) {
 	e := openEngine(t)
-	if _, err := e.Add("Write the spec", Changes{Objective: serves(99)}); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := e.add("Write the spec", Changes{Objective: serves(99)}); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -45,11 +45,11 @@ func TestEngine_refusesAnObjectiveThatDoesNotExist(t *testing.T) {
 func TestEngine_setsATaskLooseFromItsObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	added, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
+	added, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	loose, err := e.Edit(factsOf(added).number, Changes{Objective: serves()})
+	loose, err := e.edit(factsOf(added).number, Changes{Objective: serves()})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -65,11 +65,11 @@ func TestEngine_refusesAnObjectiveOnASubTask(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
-	child, err := e.Add("Write the spec", Changes{Parent: of(factsOf(parent).number)})
+	child, err := e.add("Write the spec", Changes{Parent: of(factsOf(parent).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	_, err = e.Edit(factsOf(child).number, Changes{Objective: serves(factsOfObjective(o).number)})
+	_, err = e.edit(factsOf(child).number, Changes{Objective: serves(factsOfObjective(o).number)})
 	if !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("err = %v, want ErrSubTaskServesNoObjective", err)
 	}
@@ -80,7 +80,7 @@ func TestEngine_refusesAParentAndAnObjectiveAtOnce(t *testing.T) {
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
 
-	_, err := e.Add("Write the spec", Changes{
+	_, err := e.add("Write the spec", Changes{
 		Parent:    of(factsOf(parent).number),
 		Objective: serves(factsOfObjective(o).number),
 	})
@@ -93,15 +93,15 @@ func TestEngine_refusesAParentOnATaskServingAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
-	servingTask, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
+	servingTask, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if _, err := e.Edit(factsOf(servingTask).number, Changes{Parent: of(factsOf(parent).number)}); !errors.Is(err, ErrSubTaskServesNoObjective) {
+	if _, err := e.edit(factsOf(servingTask).number, Changes{Parent: of(factsOf(parent).number)}); !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("err = %v, want ErrSubTaskServesNoObjective", err)
 	}
 	// And nothing moved.
-	still, err := e.Show(factsOf(servingTask).number)
+	still, err := e.show(factsOf(servingTask).number)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
 	}
@@ -117,11 +117,11 @@ func TestEngine_lettingGoOfTheObjectiveMakesRoomForAParent(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
 	parent := add(t, e, "Ship it")
-	servingTask, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
+	servingTask, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(o).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	moved, err := e.Edit(factsOf(servingTask).number, Changes{
+	moved, err := e.edit(factsOf(servingTask).number, Changes{
 		Objective: serves(),
 		Parent:    of(factsOf(parent).number),
 	})
@@ -140,11 +140,11 @@ func TestEngine_stillMovesASubTaskThatServesNothing(t *testing.T) {
 	e := openEngine(t)
 	first := add(t, e, "Ship it")
 	second := add(t, e, "Ship it again")
-	child, err := e.Add("Write the spec", Changes{Parent: of(factsOf(first).number)})
+	child, err := e.add("Write the spec", Changes{Parent: of(factsOf(first).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	moved, err := e.Edit(factsOf(child).number, Changes{Parent: of(factsOf(second).number)})
+	moved, err := e.edit(factsOf(child).number, Changes{Parent: of(factsOf(second).number)})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestEngine_stillMovesASubTaskThatServesNothing(t *testing.T) {
 // done marks a task as done, failing the test if it cannot.
 func done(t *testing.T, e *Engine, number int) {
 	t.Helper()
-	if _, err := e.Edit(number, Changes{State: of("done")}); err != nil {
+	if _, err := e.edit(number, Changes{State: of("done")}); err != nil {
 		t.Fatalf("Edit(%d): %v", number, err)
 	}
 }
@@ -164,7 +164,7 @@ func done(t *testing.T, e *Engine, number int) {
 // serving adds a task under an objective, failing the test if it cannot.
 func serving(t *testing.T, e *Engine, title string, objectiveNumber int) task.Task {
 	t.Helper()
-	added, err := e.Add(title, Changes{Objective: serves(objectiveNumber)})
+	added, err := e.add(title, Changes{Objective: serves(objectiveNumber)})
 	if err != nil {
 		t.Fatalf("Add(%q): %v", title, err)
 	}
@@ -174,7 +174,7 @@ func serving(t *testing.T, e *Engine, title string, objectiveNumber int) task.Ta
 // under adds a sub-task, failing the test if it cannot.
 func under(t *testing.T, e *Engine, title string, parent int) task.Task {
 	t.Helper()
-	added, err := e.Add(title, Changes{Parent: of(parent)})
+	added, err := e.add(title, Changes{Parent: of(parent)})
 	if err != nil {
 		t.Fatalf("Add(%q): %v", title, err)
 	}
@@ -188,7 +188,7 @@ func TestEngine_countsTheTasksUnderAnObjective(t *testing.T) {
 	serving(t, e, "Write the tests", factsOfObjective(o).number)
 	done(t, e, factsOf(first).number)
 
-	got, err := e.ObjectiveProgress(factsOfObjective(o).number)
+	got, err := e.objectiveProgress(factsOfObjective(o).number)
 	if err != nil {
 		t.Fatalf("ObjectiveProgress: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestEngine_countsSubTasksApartUnderAnObjective(t *testing.T) {
 	child := under(t, e, "Write the tests", factsOf(parent).number)
 	done(t, e, factsOf(child).number)
 
-	got, err := e.ObjectiveProgress(factsOfObjective(o).number)
+	got, err := e.objectiveProgress(factsOfObjective(o).number)
 	if err != nil {
 		t.Fatalf("ObjectiveProgress: %v", err)
 	}
@@ -238,7 +238,7 @@ func TestEngine_countsOnlyWhatServesTheObjectiveAsked(t *testing.T) {
 	loose := add(t, e, "Nothing to do with it")
 	under(t, e, "Nor this", factsOf(loose).number)
 
-	got, err := e.ObjectiveProgress(factsOfObjective(o).number)
+	got, err := e.objectiveProgress(factsOfObjective(o).number)
 	if err != nil {
 		t.Fatalf("ObjectiveProgress: %v", err)
 	}
@@ -252,7 +252,7 @@ func TestEngine_countsNothingUnderAnEmptyObjective(t *testing.T) {
 	o := addObjective(t, e, "Ship cairn 1.0")
 	add(t, e, "Nothing to do with it")
 
-	got, err := e.ObjectiveProgress(factsOfObjective(o).number)
+	got, err := e.objectiveProgress(factsOfObjective(o).number)
 	if err != nil {
 		t.Fatalf("ObjectiveProgress: %v", err)
 	}
@@ -262,7 +262,7 @@ func TestEngine_countsNothingUnderAnEmptyObjective(t *testing.T) {
 }
 
 func TestEngine_saysWhenTheObjectiveAskedAboutDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).ObjectiveProgress(99); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := openEngine(t).objectiveProgress(99); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -274,7 +274,7 @@ func TestEngine_countsTheSubTasksOfATask(t *testing.T) {
 	under(t, e, "Write the tests", factsOf(parent).number)
 	done(t, e, factsOf(first).number)
 
-	got, err := e.TaskProgress(factsOf(parent).number)
+	got, err := e.taskProgress(factsOf(parent).number)
 	if err != nil {
 		t.Fatalf("TaskProgress: %v", err)
 	}
@@ -290,7 +290,7 @@ func TestEngine_countsTheSubTasksOfATask(t *testing.T) {
 func TestEngine_countsNothingUnderATaskWithNoSubTasks(t *testing.T) {
 	e := openEngine(t)
 	alone := add(t, e, "Ship it")
-	if got, err := e.TaskProgress(factsOf(alone).number); err != nil {
+	if got, err := e.taskProgress(factsOf(alone).number); err != nil {
 		t.Fatalf("TaskProgress: %v", err)
 	} else if got.Any() {
 		t.Errorf("Any() = true for %+v, want false", got)

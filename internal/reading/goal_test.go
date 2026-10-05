@@ -65,3 +65,20 @@ func TestAGoalIsSearchedTheWayACardIs(t *testing.T) {
 		t.Error("a word the objective does not carry still reached it")
 	}
 }
+
+// How much of an objective is done, written one way on both boards, and its
+// share worked out by the domain's rule — which keeps 0 and 100 for nothing
+// done and everything done. The window divided on its own, and called 299 of
+// 300 a hundred per cent finished.
+func TestGoal_saysHowMuchIsDone(t *testing.T) {
+	g := Goal{Done: 299, Total: 300}
+	if g.Counted() != "299/300" {
+		t.Errorf("Counted = %q", g.Counted())
+	}
+	if g.Percent() != 99 {
+		t.Errorf("Percent = %d, want 99: one thing is still left", g.Percent())
+	}
+	if (Goal{}).Percent() != 0 {
+		t.Error("nothing under it is not a share of anything")
+	}
+}

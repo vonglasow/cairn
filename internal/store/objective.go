@@ -80,7 +80,7 @@ func renumberedObjective(o objective.Objective, number int) objective.Objective 
 // their own, so the first of each is number one.
 func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error) {
 	b := bindObjective(o)
-	res, err := s.db.Exec(
+	res, err := s.on.Exec(
 		`INSERT INTO objectives (title, description, state, priority, deadline, estimate)
 		 VALUES (?, ?, ?, ?, ?, ?)`,
 		b.title, b.description, b.state, b.priority, b.deadline, b.estimate)
@@ -102,7 +102,7 @@ func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error
 // out is one removed.
 func (s *Store) UpdateObjective(o objective.Objective) error {
 	b := bindObjective(o)
-	res, err := s.db.Exec(
+	res, err := s.on.Exec(
 		`UPDATE objectives SET title = ?, description = ?, state = ?, priority = ?,
 		 deadline = ?, estimate = ? WHERE number = ?`,
 		b.title, b.description, b.state, b.priority, b.deadline, b.estimate, b.number)
@@ -125,7 +125,7 @@ func (s *Store) UpdateObjective(o objective.Objective) error {
 // DeleteObjective removes an objective, and says so when there was none to
 // remove. What was put under it is the engine's business, not this one's.
 func (s *Store) DeleteObjective(number int) error {
-	res, err := s.db.Exec(`DELETE FROM objectives WHERE number = ?`, number)
+	res, err := s.on.Exec(`DELETE FROM objectives WHERE number = ?`, number)
 	if err != nil {
 		return fmt.Errorf("deleting the objective: %w", err)
 	}
@@ -142,9 +142,9 @@ func (s *Store) DeleteObjective(number int) error {
 // FindObjective hands back the objective carrying number, and says so when
 // there is none.
 func (s *Store) FindObjective(number int) (objective.Objective, error) {
-	row := s.db.QueryRow(
+	row := s.on.QueryRow(
 		`SELECT `+objectiveColumns+` FROM objectives WHERE number = ?`, number)
-	o, err := s.scanObjective(row)
+	o, err := s.scanObjective(row, func(n int) ([]string, error) { return s.labelsOf(objectiveLabels, n) })
 	if errors.Is(err, sql.ErrNoRows) {
 		return objective.Objective{}, fmt.Errorf("objective %d: %w", number, ErrNoSuchObjective)
 	}
@@ -156,14 +156,19 @@ func (s *Store) FindObjective(number int) (objective.Objective, error) {
 
 // AllObjectives hands back every objective, in the order they were added.
 func (s *Store) AllObjectives() ([]objective.Objective, error) {
-	return s.NarrowedObjectives(&Narrowing{})
+	return s.NarrowedObjectives(&domain.Narrowing{})
 }
 
 // NarrowedObjectives hands back the objectives a narrowing keeps, in the order
 // they were added.
-func (s *Store) NarrowedObjectives(narrowing *Narrowing) ([]objective.Objective, error) {
-	where, args := narrowing.where(objectiveLabels)
-	rows, err := s.db.Query(
+func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
+	// Every objective's labels in one read, rather than one read for each.
+	labels, err := pairs[string](s, `SELECT objective_number, label FROM objective_labels ORDER BY objective_number, label`)
+	if err != nil {
+		return nil, fmt.Errorf("reading the labels: %w", err)
+	}
+	where, args := readBy(kept).where(objectiveLabels)
+	rows, err := s.on.Query(
 		`SELECT `+objectiveColumns+` FROM objectives`+where+` ORDER BY number`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the objectives: %w", err)
@@ -172,7 +177,7 @@ func (s *Store) NarrowedObjectives(narrowing *Narrowing) ([]objective.Objective,
 
 	objectives := []objective.Objective{}
 	for rows.Next() {
-		o, err := s.scanObjective(rows)
+		o, err := s.scanObjective(rows, func(n int) ([]string, error) { return labels[n], nil })
 		if err != nil {
 			return nil, fmt.Errorf("reading an objective: %w", err)
 		}
@@ -188,7 +193,7 @@ func (s *Store) NarrowedObjectives(narrowing *Narrowing) ([]objective.Objective,
 // plain variables and telling them to a builder rather than into an
 // objective's fields directly — the membrane Tell uses, the other way round,
 // so this keeps working the day those fields stop being exported.
-func (s *Store) scanObjective(row scanner) (objective.Objective, error) {
+func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error)) (objective.Objective, error) {
 	var (
 		number             int
 		title, description string
@@ -204,7 +209,7 @@ func (s *Store) scanObjective(row scanner) (objective.Objective, error) {
 	if err != nil {
 		return objective.Objective{}, err
 	}
-	labels, err := s.labelsOf(objectiveLabels, number)
+	labels, err := labelled(number)
 	if err != nil {
 		return objective.Objective{}, err
 	}
@@ -214,29 +219,10 @@ func (s *Store) scanObjective(row scanner) (objective.Objective, error) {
 	a.Titled(title)
 	a.Standing(objective.State(state))
 	a.Carries(domain.Priority(priority))
-	if description == "" {
-		a.NotDescribed()
-	} else {
-		a.Described(description)
-	}
-	if len(labels) == 0 {
-		a.NotLabelled()
-	} else {
-		for _, label := range labels {
-			a.Labelled(label)
-		}
-	}
-	a.LabelsTold()
-	if day.IsZero() {
-		a.NotDue()
-	} else {
-		a.Due(day)
-	}
-	if estimate == 0 {
-		a.NotEstimated()
-	} else {
-		a.Estimated(time.Duration(estimate))
-	}
+	domain.TellOrNot(description, a.Described, a.NotDescribed)
+	domain.TellAll(labels, a.Labelled, a.NotLabelled, a.LabelsTold)
+	domain.TellOrNot(day, a.Due, a.NotDue)
+	domain.TellOrNot(time.Duration(estimate), a.Estimated, a.NotEstimated)
 	return a.Objective(), nil
 }
 
@@ -247,7 +233,11 @@ func (s *Store) TasksServing(number int) ([]task.Task, error) {
 	if number == task.NoObjective {
 		return []task.Task{}, nil
 	}
-	rows, err := s.db.Query(`SELECT `+taskColumns+` `+servingOne+taskOrder, number)
+	every, err := s.everyLink()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.on.Query(`SELECT `+taskColumns+` `+servingOne+taskOrder, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what serves objective %d: %w", number, err)
 	}
@@ -255,7 +245,7 @@ func (s *Store) TasksServing(number int) ([]task.Task, error) {
 
 	tasks := []task.Task{}
 	for rows.Next() {
-		t, err := s.scanTask(rows)
+		t, err := s.scanTask(rows, every)
 		if err != nil {
 			return nil, fmt.Errorf("reading a task: %w", err)
 		}

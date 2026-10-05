@@ -6,8 +6,8 @@
  │ ┃ title                                          labels                                        │
  │ ┃ > Ship the desktop board                       > product                                     │
  │                                                                                                │
- │   description                                    deadline                                      │
- │     1                                            > 2026-10-16                                  │
+ │   description · 1 line                           deadline                                      │
+ │     1 something written                          > 2026-10-16                                  │
  │                                                                                                │
  │                                                  estimate                                      │
  │                                                  >                                             │

@@ -1,7 +1,7 @@
 # cairn
 
-A personal objective and task manager. CLI first, then MCP; the terminal and
-desktop boards come later, once the engine stands on its own.
+A personal objective and task manager: a command line, an MCP server, a board
+in the terminal and the same board in a window — four surfaces over one engine.
 
 ## Always
 
@@ -45,6 +45,8 @@ calls it, and prints — it decides nothing.
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |
 | touching the board — its shape, its keys, its modes — or anything a person sees on screen | [docs/tui.md](docs/tui.md) |
 | touching the desktop window, or anything a person sees in one | [docs/gui.md](docs/gui.md) |
+| touching how long the work took, or the timesheet | [docs/trace.md](docs/trace.md) |
+| adding a dependency, or wondering why one is there | [docs/dependencies.md](docs/dependencies.md) |
 
 Those files carry the detail. This one carries what holds regardless of the
 task, because a rule that has to be looked up is a rule that gets skipped.

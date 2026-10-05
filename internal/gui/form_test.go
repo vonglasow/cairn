@@ -160,7 +160,7 @@ func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 // The keyboard walks the fields and stops at both ends: a form that wraps is a
 // form somebody falls off the bottom of.
 func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
-	form := adding(Tasks)
+	form := adding(Tasks, "backlog")
 	if got := form.Walk(-1).On(); got != 0 {
 		t.Errorf("walking up from the first field landed on %d", got)
 	}
@@ -176,7 +176,7 @@ func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
 // Setting a field puts the keyboard on it, because that is where somebody
 // typing is looking.
 func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
-	form := adding(Tasks).Set("priority", "high")
+	form := adding(Tasks, "backlog").Set("priority", "high")
 	if got := form.ValueOf("priority"); got != "high" {
 		t.Fatalf("the field reads %q", got)
 	}
@@ -440,7 +440,7 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 
 // The keyboard lands on a field that exists, whatever it is asked for.
 func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
-	form := adding(Tasks)
+	form := adding(Tasks, "backlog")
 	last := len(form.Fields()) - 1
 	if got := form.onto(-5).On(); got != 0 {
 		t.Errorf("before the first field is %d", got)
@@ -1024,5 +1024,30 @@ func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 	w = w.choosingList()
 	if got := w.RowSays(Choice{Number: 7, Title: "Ship it"}); got != "   7  Ship it" {
 		t.Errorf("a task on the parent list would say %q", got)
+	}
+}
+
+// A task added in the window starts on the column of what is chosen, at normal
+// priority — the way the terminal starts one. It used to start with neither.
+func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "In todo", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0))
+	form := adding(Tasks, w.addingOn())
+	if got := form.ValueOf("column"); got != "todo" {
+		t.Errorf("a task added on todo starts in %q", got)
+	}
+	if got := form.ValueOf("priority"); got != "normal" {
+		t.Errorf("a new task starts at %q, want normal", got)
+	}
+	if got := adding(Tasks, holding(newFake()).addingOn()).ValueOf("column"); got != "backlog" {
+		t.Errorf("a task added with nothing chosen starts in %q, want backlog", got)
+	}
+	band := holding(newFake(),
+		reading.Card{Number: 1, Title: "In todo", State: "todo"},
+		reading.Card{Number: 2, Title: "Blocked", State: "blocked"})
+	band = band.clicked(middleOf(band, 1, 0)).Key("down")
+	if got := adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
+		t.Errorf("a task added on the band starts in %q, want the first stopped state", got)
 	}
 }

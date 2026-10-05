@@ -11,14 +11,11 @@ package store
 
 import "fmt"
 
-// NoFocus is the number no task carries, for a caller that has to name "none".
-const NoFocus = 0
-
 // Focus says which tasks are being worked on, oldest first, and nothing at all
 // when none are. Nothing in focus is an ordinary answer, not a store that
 // failed to answer.
 func (s *Store) Focus() ([]int, error) {
-	rows, err := s.db.Query(`SELECT task_number FROM focused ORDER BY id`)
+	rows, err := s.on.Query(`SELECT task_number FROM focused ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("reading what is in focus: %w", err)
 	}
@@ -42,7 +39,7 @@ func (s *Store) Focus() ([]int, error) {
 // order it had rather than moving to the end: taking up what you already hold
 // is not a change. That the task exists is settled before this is called.
 func (s *Store) AddFocus(number int) error {
-	if _, err := s.db.Exec(
+	if _, err := s.on.Exec(
 		`INSERT OR IGNORE INTO focused (task_number) VALUES (?)`, number); err != nil {
 		return fmt.Errorf("taking up task %d: %w", number, err)
 	}
@@ -53,7 +50,7 @@ func (s *Store) AddFocus(number int) error {
 // that was not being worked on is not a failure, so this says the same either
 // way.
 func (s *Store) DropFocus(number int) error {
-	if _, err := s.db.Exec(`DELETE FROM focused WHERE task_number = ?`, number); err != nil {
+	if _, err := s.on.Exec(`DELETE FROM focused WHERE task_number = ?`, number); err != nil {
 		return fmt.Errorf("letting go of task %d: %w", number, err)
 	}
 	return nil
@@ -61,7 +58,7 @@ func (s *Store) DropFocus(number int) error {
 
 // ClearFocus leaves nothing in focus at all.
 func (s *Store) ClearFocus() error {
-	if _, err := s.db.Exec(`DELETE FROM focused`); err != nil {
+	if _, err := s.on.Exec(`DELETE FROM focused`); err != nil {
 		return fmt.Errorf("letting go of everything in focus: %w", err)
 	}
 	return nil

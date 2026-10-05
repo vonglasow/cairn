@@ -32,33 +32,38 @@ leaves the suite green on its own — not green only once the next commit lands.
 
 ## Writing scenarios
 
-Scenarios live in `bdd/*.feature`, in English, and are executed by godog. One
-scenario is one Go test, selected by tag, so a failure names the scenario it
-belongs to:
+Scenarios live in `bdd/*.feature`, in English, and are executed by godog. A
+feature runs whole, every scenario in it, so one written there is one that runs
+— a scenario that needs a test of its own to be listed is a scenario that can be
+written and never run, and half of `config.feature` once was. godog names each
+scenario as a subtest, so a failure still names the scenario it belongs to:
 
 ```go
-func TestAcceptance_Version_DegradesCleanly(t *testing.T) {
-    runAcceptance(t, "version.feature", initVersion(t), "@version-degraded")
+func TestAcceptance_Config(t *testing.T) {
+    runAcceptance(t, "config.feature", initConfig(t), "~@later")
 }
 ```
 
+A scenario written before what it describes is built carries `@later` in the
+feature, beside its own tag, where whoever reads it sees it, and the run leaves
+it out with `~@later`. It is the only way a scenario goes unrun.
+
 Conventions:
 
-- **The suite is defined once per package.** `runAcceptance` in
-  `internal/cli/cli_test.go` takes the feature file, the initializer and the
-  tag. A new feature adds a `*_bdd_test.go` holding its world, its steps and
-  its tests — never a second backup of the suite. It is an unexported test
-  helper, so a second surface cannot call it; lifting it out is the day that
-  surface exists, not before (see `docs/architecture.md`).
+- **The suite is defined once.** `test.Suite` in `test/harness.go` takes the
+  feature file, the initializer and the tags; each package that holds scenarios
+  has a one-line `runAcceptance` over it, so a failure is that package's own. A
+  new feature adds a `*_bdd_test.go` holding its world and its steps — never a
+  second copy of the suite.
 - **A scenario cleans up after itself, not after the test.** Anything a step
   changes outside its own world — a package-level variable, a file, an
   environment — is put back by a `sc.After` hook. `t.Cleanup` looks like the
   place and is not: it fires when the Go test ends, so the next scenario in the
-  same run starts on the previous one's leftovers. That is invisible while each
-  tag holds one scenario, and wrong from the first `Scenario Outline`.
-- **Steps live in the package they observe.** A single `.feature` shared across
-  two packages fails with undefined steps under `Strict: true`, since each
-  package only implements its own.
+  same run starts on the previous one's leftovers.
+- **Steps live in the package they observe** — unless more than one package
+  claims them, and then they live once in `test`: `test.World` for what a
+  command line runs, `test.Givens` for what both boards say is in the store. A
+  step written twice is a step that will come to mean two things.
 - **Steps drive the real surface**, not the layer below it. The CLI steps go
   through `run(t, …)`, which calls the same `cli.Main` the binary calls — fang's
   error rendering included — so what a step observes is what a user observes.

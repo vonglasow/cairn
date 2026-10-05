@@ -292,3 +292,75 @@ func TestNumberOf_takesNoNameButOurs(t *testing.T) {
 		}
 	}
 }
+
+// A store held open keeps its latest writes beside it, in the write-ahead log,
+// until it is closed. A backup is of the store as it stands, writes held aside
+// included: a copy of the file alone missed them, and a board holds the store
+// open for as long as it is on screen.
+func TestVault_backsUpWhatAStoreHeldOpenHasNotWrittenBack(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	keep(t, s, "Write the spec")
+
+	made, err := NewVault(path).Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	holds, err := NewVault(path).Holds(made)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if holds.Tasks != 1 {
+		t.Errorf("the backup holds %d tasks, want the one written while the store was held", holds.Tasks)
+	}
+}
+
+// What sits beside the store belongs to the store it was written for. Left
+// there when another is put in its place, SQLite would read the old log on top
+// of the new file.
+func TestVault_putsABackupBackWithNothingOfTheOldStoreBesideIt(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, beside := range []string{path + "-wal", path + "-shm"} {
+		if err := os.WriteFile(beside, []byte("left over"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := v.Restore(made.Number); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	for _, beside := range []string{path + "-wal", path + "-shm"} {
+		if _, err := os.Stat(beside); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("%s is still there after a backup was put back", filepath.Base(beside))
+		}
+	}
+	held, err := v.HoldsStore()
+	if err != nil || held.Tasks != 1 {
+		t.Errorf("the store put back holds %+v, %v, want the one task", held, err)
+	}
+}
+
+// A file SQLite cannot read is backed up as it lies: a backup is most needed
+// when the store is damaged, and putting one back first sets the damaged store
+// aside.
+func TestVault_backsUpADamagedStoreAsItLies(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if err := os.WriteFile(path, []byte("not a database at all"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	made, err := NewVault(path).Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	kept, err := os.ReadFile(made.Path)
+	if err != nil || string(kept) != "not a database at all" {
+		t.Errorf("the backup holds %q, %v, want the file as it lay", kept, err)
+	}
+}

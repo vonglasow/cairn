@@ -329,8 +329,10 @@ prompt a `g` is a letter.
 - `⇧H` from the leftmost card in the band sends it to the **backlog**, even
   though the band does not run under the backlog.
 
-Reordering inside a column — `task move` with `first`, `after`, `last` — is not
-here. `⇧J` and `⇧K` are spent on the band, and reordering was not wanted yet.
+Reordering inside a column is `⇧J` and `⇧K` — `task move`, behind the card
+below or at the head of the column — with the band reached only from the last
+card of a column, as above. Where a pushed card goes is worked out once, in
+`reading`, for this board and the window alike.
 
 ## The form
 
@@ -686,6 +688,13 @@ answer is to look again.
 |---|---|
 | **Bubble Tea** | there is no TUI without an event loop and screen state |
 | **Lip Gloss** | already pulled in indirectly by Fang; goes direct for borders and joins |
+| **Huh** | the form: fields, focus, and a text area that wraps |
+| **Bubbles** | a viewport for what is longer than its box, and key bindings |
+
+Every dependency's reason is in [dependencies.md](dependencies.md).
+
+## How the form is laid out
+
 **The fields are dealt into two columns**, under a head that draws the thing
 being changed the way a card draws it: its number, its title, where it stands and
 what priority it carries, in the colours it carries them in. A dozen small facts
@@ -767,12 +776,8 @@ would otherwise lose the whole form.
 
 ## Deliberately not there yet
 
-- **`task move`** — `first`, `after`, `last`. Reordering inside a column has no
-  gesture, and was not asked for.
 - **`mcp serve`** — nobody starts a stdio server from a board. It stays a
   command-line command, and it is the only operation with no place here.
-- **`:` for tasks and objectives.** `e` already does it, and one way in is
-  enough.
 - **What a card shows of its objectives and its parent.** Both were left off:
   an objective is a link to elsewhere and there is a tab for it, and a parent
   belongs to how a column draws its tree rather than repeated on every card.

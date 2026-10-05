@@ -432,7 +432,7 @@ func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 func TestTheDetailSaysWhenAHistoryCannotBeRead(t *testing.T) {
 	f := twoTasks()
 	f.fail = errNope
-	b := standing(f)
+	b := heardOf(standing(f), 1)
 	b.mode, b.task, b.screen = Insert, 1, OnDetail
 	if !strings.Contains(b.Draw(), errNope.Error()) {
 		t.Fatalf("a history that could not be read was passed over:\n%s", b.Draw())
@@ -1172,7 +1172,7 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
-	b := standing(f)
+	b := heardOf(standing(f), 1)
 	b.mode, b.task = Insert, 1
 	// A window with room for three: the three that matter are the last three,
 	// because a history is read from its end.
@@ -1269,7 +1269,7 @@ func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
 	for _, height := range []int{28, 40} {
-		b := standing(f)
+		b := heardOf(standing(f), 1)
 		b.width, b.height = 100, height
 		b.mode, b.task, b.screen = Insert, 1, OnDetail
 		// The panel gets what the window leaves after the tabs, the band and
@@ -1286,7 +1286,7 @@ func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
-	got := standing(f).history(1, 40, 3)
+	got := heardOf(standing(f), 1).history(1, 40, 3)
 	if !strings.Contains(got[0], "6") {
 		t.Fatalf("the first row shown is %q, want the seventh act", got[0])
 	}
@@ -1734,6 +1734,36 @@ func TestASweepTheStoreRefusesIsSaid(t *testing.T) {
 	}
 }
 
+// A list typed at the prompt reaches the list the operation reads, and a yes
+// is named on its own — the words the command line takes. The prompt used to
+// put every --name value into the plain map, so a label given here was
+// dropped without a word and --first asked for a value.
+func TestTheCommandPromptHandsOverListsAndYeses(t *testing.T) {
+	for _, c := range []struct {
+		line  string
+		check func(engine.Input) bool
+	}{
+		{"task edit 1 --label x", func(in engine.Input) bool { return len(in.Listed["label"]) == 1 && in.Listed["label"][0] == "x" }},
+		{"task move 2 --first", func(in engine.Input) bool { return in.Given["first"] == "true" }},
+	} {
+		f := twoTasks()
+		b := hit(standing(f), ":")
+		for _, r := range c.line {
+			if r == ' ' {
+				b = hit(b, "space")
+				continue
+			}
+			b = hit(b, string(r))
+		}
+		if _, cmd := b.pressed("enter"); cmd != nil {
+			cmd()
+		}
+		if len(f.asked) == 0 || !c.check(f.asked[0].in) {
+			t.Errorf("%q asked %+v", c.line, f.asked)
+		}
+	}
+}
+
 // Two words are a command: the thing and the verb, with nothing after them.
 func TestACommandOfTwoWordsRuns(t *testing.T) {
 	f := twoTasks()
@@ -1825,5 +1855,78 @@ func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 				t.Fatalf("a part the store refused to %s answered %v", verb, looked)
 			}
 		})
+	}
+}
+
+// The history of an open task is read once, when it opens, and again when the
+// board is read again — never while it is being drawn. Drawing asked the store
+// every time, so every redraw of the open task was a round trip, against the
+// promise that nothing is fetched while a key is being handled.
+func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
+	f := twoTasks()
+	b := hit(standing(f), "l", "i")
+	b = hit(b, "enter")
+	if b.screen != OnDetail {
+		t.Fatalf("enter left the board on %v", b.screen)
+	}
+	heard := 0
+	for _, a := range f.asked {
+		if a.op.Name() == "trace_show" {
+			heard++
+		}
+	}
+	if heard != 1 {
+		t.Fatalf("opening the task read its history %d times, want once", heard)
+	}
+	for range 3 {
+		_ = b.Draw()
+	}
+	after := 0
+	for _, a := range f.asked {
+		if a.op.Name() == "trace_show" {
+			after++
+		}
+	}
+	if after != heard {
+		t.Errorf("drawing three times read the history %d more times", after-heard)
+	}
+	// Stepping to the next task reads that one's.
+	_ = hit(b, "j")
+	last := f.asked[len(f.asked)-1]
+	if last.op.Name() != "trace_show" || last.in.Given["number"] != "2" {
+		t.Errorf("stepping to task 2 asked %v", last)
+	}
+}
+
+// A line of history says which surface did it when it was not the person
+// reading — and says nothing of the kind when it was.
+func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
+	b := standing(newFake())
+	var told trace.AsTold
+	told.On(1)
+	told.Did("changed")
+	told.Changing("priority")
+	told.Was("normal")
+	told.Became("high")
+	told.Through("mcp")
+	told.At(today)
+	if got := strip(b.line(told.Act())); !strings.HasSuffix(got, "(mcp)") || !strings.Contains(got, "normal → high") {
+		t.Errorf("an agent's change reads %q", got)
+	}
+	if got := strip(b.line(anAct("created", ""))); strings.Contains(got, "(") {
+		t.Errorf("a change made by hand reads %q", got)
+	}
+}
+
+// Reading the board again reads the open task's history again, since what was
+// just written is in it; with no task open there is no history to read.
+func TestReadingTheBoardAgainReadsTheOpenHistoryAgain(t *testing.T) {
+	f := twoTasks()
+	b := hit(standing(f), "l", "i", "enter")
+	if _, cmd := b.Update(Looked{Snapshot: b.snap}); cmd == nil {
+		t.Fatal("reading the board again with a task open read nothing more")
+	}
+	if _, cmd := standing(f).Update(Looked{Snapshot: b.snap}); cmd != nil {
+		t.Error("reading the board again with no task open asked for more")
 	}
 }

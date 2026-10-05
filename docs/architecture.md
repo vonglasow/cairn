@@ -65,20 +65,22 @@ all of them.
 
 | package | holds | knows about |
 |---|---|---|
-| `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like | nobody |
+| `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing | nobody |
 | `internal/build` | which build this is | nobody |
+| `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
 | `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |
-| `internal/objective` | the objective, in the same five shapes | `domain` |
+| `internal/objective` | the objective: its cell, its rules, and its two renderings | `domain` |
 | `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
-| `internal/engine` | the operations, the calculations, and the only door to the store | `domain`, the notions, `store` |
-| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, what a saved form asks the engine for, how the cards deal into columns | `domain`, the notions, `engine` |
-| `internal/cli` | parsing and choosing a rendering | everything below |
+| `internal/engine` | the operations, the calculations, where the places are found, and the only door to the store | `domain`, `config`, the notions, `store` |
+| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, what a saved form asks the engine for, how the cards deal into columns and where a pushed card goes | `domain`, the notions, `engine` |
+| `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
-| `internal/tui` | the board on a terminal | everything below but `cli` and `mcp` |
+| `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |
+| `internal/gui` | the same board in a window | everything below but `cli`, `mcp` and `tui` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
-| `test` | the acceptance world the surfaces share | `engine` |
+| `test` | the acceptance world the surfaces share, and the givens both boards write | `engine`, `config`, the notions |
 
 **`reading` is not a surface, and that is why it exists.** Two boards draw the
 same work — one in a terminal, one in a window — and they differ in how a box
@@ -134,6 +136,13 @@ under it, how far along it is — orchestrated. It does not talk about a task, i
 ties three answers together, and tying things together is what the engine is
 for.
 
+An engine held open exports three methods and no more: `Ask`, `Close` and
+`Version`. Every change goes through an operation, so it is checked the way a
+command line's would be and kept as one transaction; the engine's own methods
+for adding, editing or archiving are its operations' to call, and a test that
+needs a store in a certain state writes it through the operations too — see
+`test.Givens`.
+
 A surface that stays on screen goes through `Engine.Ask` rather than
 `engine.Do`. Same description, same refusals, one difference: `Do` opens the
 store, runs the operation and closes it, and `Ask` runs it against an engine
@@ -163,11 +172,22 @@ mixed reads and writes spent the whole five seconds and still lost five of
 them: in the default journal a reader blocks a writer, so writers starve. In
 WAL the same six take fifty milliseconds.
 
-WAL keeps recent writes beside the store, which matters for `backup add`
-because it copies the file. Nothing is lost today: a command opens the store in
-its RunE and closes it on the way out, and closing checkpoints — so between two
-commands there is only ever one file. A surface that holds the store open, as a
-server would, has to checkpoint before a backup is taken.
+**An operation that writes is one transaction.** A task is several rows — the
+task, its labels, what blocks it, what it serves, its place among its sisters —
+and what was done to it is one more. The engine runs every operation that
+writes inside one transaction, so they are kept together or not at all, and the
+transaction begins as a write: two cairns adding to one column at once take
+their turn rather than both reading the same last place. The operations that
+change the shape of the store are the exception, and keep their own: they copy
+the file first.
+
+WAL keeps recent writes beside the store, in a log, until the store is closed —
+and a board holds it open for as long as it is on screen. So a backup is not a
+copy of the file: it is the store as it stands, log included, read in one go
+with `VACUUM INTO`. Only a file SQLite cannot read at all is copied as it lies,
+because a damaged store is exactly when a backup is wanted. Putting one back
+copies it beside the store, clears the log the old store left, and moves it into
+place in one step.
 
 **Opening reads the shape, it never lays it down.** `migration apply` is what
 changes a store; opening one only looks. The ledger is the single exception,
@@ -262,15 +282,17 @@ them in `.golangci.yml`. A violation fails the commit:
 import 'database/sql' is not allowed from list 'domain' (depguard)
 ```
 
-`domain` and `build` are held differently, by an **allow-list**: each may
-import what its list names and nothing else. A deny-list only forbids what
-somebody thought to name, and the import that would hurt most in something that
-knows nobody is the one nobody thought of. Widening either list is therefore a
-decision, made once, in the open.
+`domain`, `build` and `config` are held differently, by an **allow-list**:
+each may import what its list names and nothing else. A deny-list only forbids
+what somebody thought to name, and the import that would hurt most in something
+that knows nobody is the one nobody thought of. Widening any of those lists is
+therefore a decision, made once, in the open.
 
 The notions are held by deny-lists instead, because what they must never reach
 is a short named list — each other, the store, the engine, the surfaces, a
-database — rather than everything unnamed.
+database — rather than everything unnamed. Each notion names every other
+notion in its list, so "a notion never imports another notion" is held for all
+four, not only for the pair somebody thought of first.
 
 Two things no linter can hold. A surface computing a rule inline instead of
 asking the engine — that one sits in `CLAUDE.md` rather than only here. And a

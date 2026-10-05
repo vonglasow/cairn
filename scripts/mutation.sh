@@ -56,7 +56,7 @@ packages() {
     git diff --name-only "$since" -- '*.go' ':!*_test.go' | xargs -n1 dirname 2>/dev/null | sort -u |
       while read -r dir; do [ -d "$dir" ] && echo "./$dir"; done
   else
-    go list ./... | sed "s|^cairn|.|"
+    scripts/packages.sh
   fi
 }
 
@@ -99,8 +99,16 @@ judged() {
 
 failed=0
 ran=0
-for pkg in $(packages); do
-  ls "$pkg"/*_test.go >/dev/null 2>&1 || continue
+# A package with no test file is tested-check's to refuse, not this gate's to
+# judge: it has no test that could kill a mutant. Nothing changed is nothing to
+# judge — not every package, which is what the lister answers when handed none.
+candidates=$(packages)
+judged_packages=
+if [ -n "$candidates" ]; then
+  # shellcheck disable=SC2086
+  judged_packages=$(scripts/packages.sh --tested $candidates)
+fi
+for pkg in $judged_packages; do
   ran=$((ran + 1))
   echo "→ $pkg"
   args=(unleash -o "$report")

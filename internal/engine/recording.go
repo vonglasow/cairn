@@ -22,8 +22,8 @@ type history interface {
 	ActsSince(time.Time) ([]trace.Act, error)
 }
 
-// theAttributes are the twelve a task carries, in the order a card lays them out,
-// paired with how to read each off a task. Named once: recording a change and
+// theAttributes are the thirteen a task carries, in the order a card lays them
+// out, paired with how to read each off a task. Named once: recording a change and
 // recording what a task started as both walk this list, and two lists would
 // drift the day an attribute is added.
 var theAttributes = []struct {
@@ -37,21 +37,24 @@ var theAttributes = []struct {
 	{"labels", func(f taskFacts) string { return strings.Join(f.labels, ", ") }},
 	{"blockers", func(f taskFacts) string { return numbersOrNothing(f.blockers) }},
 	{"because", func(f taskFacts) string { return f.because }},
-	{"deadline", func(f taskFacts) string { return dayOrNothing(f.deadline) }},
-	{"estimate", func(f taskFacts) string { return spanOrNothing(f.estimate) }},
-	{"time spent", func(f taskFacts) string { return spanOrNothing(f.timeSpent) }},
+	{"deadline", func(f taskFacts) string { return domain.FormatDay(f.deadline) }},
+	{"estimate", func(f taskFacts) string { return domain.FormatDuration(f.estimate) }},
+	{"time spent", func(f taskFacts) string { return domain.FormatDuration(f.timeSpent) }},
 	{"parent", func(f taskFacts) string { return numberOrNothing(f.parent) }},
 	{"objectives", func(f taskFacts) string { return numbersOrNothing(f.objectives) }},
+	// Off the board or on it: "yes" when it was taken off, nothing when it is
+	// on, so taking it off and bringing it back read as any other change.
+	{"archived", func(f taskFacts) string { return yesOrNothing(f.archived) }},
 }
 
-// History hands back everything done to a task, oldest first, and refuses a
+// historyOf hands back everything done to a task, oldest first, and refuses a
 // task nothing was ever written down about.
 //
 // Nothing written down means nothing was ever there: a task always carries at
 // least its creation. And it cannot be mistaken for a task since deleted, since
 // a deletion takes nothing away from a history — which is what lets this be the
 // signal rather than asking whether the task is still around.
-func (e *Engine) History(number int) ([]trace.Act, error) {
+func (e *Engine) historyOf(number int) ([]trace.Act, error) {
 	acts, err := e.history.ActsOn(number)
 	if err != nil {
 		return nil, err
@@ -62,8 +65,8 @@ func (e *Engine) History(number int) ([]trace.Act, error) {
 	return acts, nil
 }
 
-// Since hands back everything done from a day onward, across every task.
-func (e *Engine) Since(day time.Time) ([]trace.Act, error) {
+// since hands back everything done from a day onward, across every task.
+func (e *Engine) since(day time.Time) ([]trace.Act, error) {
 	return e.history.ActsSince(day)
 }
 
@@ -102,8 +105,8 @@ func (e *Engine) recordCreated(t task.Task) error {
 // hand was impossible.
 //
 // On the act itself rather than one act per attribute: a deletion is one thing
-// that happened, and a history that read as twelve would say a task was deleted
-// twelve times.
+// that happened, and a history that read as thirteen would say a task was
+// deleted thirteen times.
 func whatItHeld(t task.Task) string {
 	f := factsOf(t)
 	var held []string
@@ -139,34 +142,26 @@ func (e *Engine) record(number int, did, field, was, became string) error {
 	var a trace.AsTold
 	a.On(number)
 	a.Did(did)
-	trace.TellOrNot(field, a.Changing, a.NothingNamed)
-	trace.TellOrNot(was, a.Was, a.WasNothing)
-	trace.TellOrNot(became, a.Became, a.BecameNothing)
-	trace.TellOrNot(e.through, a.Through, a.ByHand)
+	domain.TellOrNot(field, a.Changing, a.NothingNamed)
+	domain.TellOrNot(was, a.Was, a.WasNothing)
+	domain.TellOrNot(became, a.Became, a.BecameNothing)
+	domain.TellOrNot(e.through, a.Through, a.ByHand)
 	a.At(time.Now())
 	return e.history.Record(a.Act())
 }
 
-// dayOrNothing writes a deadline, or nothing when there is none.
-func dayOrNothing(day time.Time) string {
-	if day.IsZero() {
-		return ""
+// yesOrNothing writes a fact that holds as "yes", and nothing when it does not.
+func yesOrNothing(holds bool) string {
+	if holds {
+		return "yes"
 	}
-	return domain.FormatDay(day)
-}
-
-// spanOrNothing writes a length of time, or nothing when there is none.
-func spanOrNothing(span time.Duration) string {
-	if span == 0 {
-		return ""
-	}
-	return domain.FormatDuration(span)
+	return ""
 }
 
 // numberOrNothing writes the number a task points at, or nothing when it points
 // at none.
 func numberOrNothing(number int) string {
-	if number == 0 {
+	if number == task.NoParent {
 		return ""
 	}
 	return fmt.Sprint(number)
@@ -181,7 +176,7 @@ func numbersOrNothing(numbers []int) string {
 	}
 	written := make([]string, 0, len(numbers))
 	for _, one := range numbers {
-		written = append(written, fmt.Sprintf("#%d", one))
+		written = append(written, domain.Ref(one))
 	}
 	return strings.Join(written, ", ")
 }

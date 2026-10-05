@@ -204,13 +204,22 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 
 	// The environment is not a third rung after the file and the default: it
 	// replaces the answer above outright, rather than taking a turn before it.
-	// Set but empty says nothing, so answer stands as it was worked out.
+	// Set but empty says nothing, so answer stands as it was worked out. What
+	// it names is read the way the file's places are: expanded, then judged.
 	if said, ok := lookupEnv(StoreVariable); ok && said != "" {
-		answer.store = expandTilde(said, home)
+		expanded := expandTilde(said, home)
+		if !filepath.IsAbs(expanded) {
+			return Reading{path: path, err: fmt.Errorf("%s=%q: %w", StoreVariable, said, ErrNotAbsolute)}, nil
+		}
+		answer.store = expanded
 		answer.storeNamedBy = byTheEnvironment
 	}
 	if said, ok := lookupEnv(NotesVariable); ok && said != "" {
-		answer.notes = expandTilde(said, home)
+		expanded := expandTilde(said, home)
+		if !filepath.IsAbs(expanded) {
+			return Reading{path: path, err: fmt.Errorf("%s=%q: %w", NotesVariable, said, ErrNotAbsolute)}, nil
+		}
+		answer.notes = expanded
 		answer.notesNamedBy = byTheEnvironment
 	}
 	return Reading{path: path, places: answer}, nil
@@ -274,18 +283,6 @@ func (p Places) Tell(to Told) {
 	default:
 		to.NotesNamedByNothing(p.notes)
 	}
-}
-
-// Store says where the file puts the tasks, a leading "~/" already expanded
-// against the home Read was given.
-func (p Places) Store() string {
-	return p.store
-}
-
-// Notes says where the file puts free-form notes, a leading "~/" already
-// expanded against the home Read was given.
-func (p Places) Notes() string {
-	return p.notes
 }
 
 // expandTilde replaces a "~" at the very start of value with home. Anywhere

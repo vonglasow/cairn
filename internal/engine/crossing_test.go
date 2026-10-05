@@ -37,14 +37,15 @@ func anAct(task int, did string) trace.Act {
 func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 	for _, tc := range []struct {
 		what string
+		op   Operation
 		in   Answer
 	}{
-		{"a task's history", Answer{Acts: []trace.Act{anAct(1, trace.Created)}}},
-		{"a period", Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
+		{"a task's history", TraceShow, Answer{Acts: []trace.Act{anAct(1, trace.Created)}}},
+		{"a period", TraceList, Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
 	} {
-		crossed, ok := Of(tc.in).(Acts)
+		crossed, ok := Of(tc.op, tc.in).(Acts)
 		if !ok {
-			t.Errorf("%s: Of = %T, want a listing of acts", tc.what, Of(tc.in))
+			t.Errorf("%s: Of = %T, want a listing of acts", tc.what, Of(tc.op, tc.in))
 			continue
 		}
 		if len(crossed.Acts) != 1 || crossed.Acts[0].Task != 1 {
@@ -68,9 +69,9 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 	e := openEngine(t)
 	found := []objective.Objective{addObjective(t, e, "Ship cairn 1.0")}
 
-	crossed, ok := Of(Answer{MatchedObjectives: found}).(Objectives)
+	crossed, ok := Of(ObjectiveSearch, Answer{MatchedObjectives: found}).(Objectives)
 	if !ok {
-		t.Fatalf("Of = %T, want a listing of objectives", Of(Answer{MatchedObjectives: found}))
+		t.Fatalf("Of = %T, want a listing of objectives", Of(ObjectiveSearch, Answer{MatchedObjectives: found}))
 	}
 	if len(crossed.Objectives) != 1 || crossed.Objectives[0].Title != "Ship cairn 1.0" {
 		t.Errorf("crossed %+v, want the objective that was found", crossed.Objectives)
@@ -85,7 +86,7 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	e := openEngine(t)
 	served := addObjective(t, e, "Ship cairn 1.0")
-	under, err := e.Add("Write the spec", Changes{Objective: serves(factsOfObjective(served).number)})
+	under, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(served).number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -139,7 +140,7 @@ func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 func TestEditObjective_retitlesIt(t *testing.T) {
 	e := openEngine(t)
 	added := addObjective(t, e, "Ship cairn 1.0")
-	edited, err := e.EditObjective(factsOfObjective(added).number,
+	edited, err := e.editObjective(factsOfObjective(added).number,
 		ObjectiveChanges{Title: of("Ship cairn 1.1")})
 	if err != nil {
 		t.Fatalf("EditObjective: %v", err)

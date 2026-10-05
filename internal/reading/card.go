@@ -6,12 +6,13 @@ package reading
 // out reads "4d", is the same on both.
 
 import (
-	"cairn/internal/domain"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"cairn/internal/domain"
 )
 
 // soon is how many days ahead a deadline starts being worth a card's width.
@@ -22,7 +23,7 @@ const soon = 7
 // Stopped says whether a state is one of the three that mean "not moving", and
 // therefore whether the task belongs in the band rather than in a column.
 func Stopped(state string) bool {
-	return state == "blocked" || state == "watching" || state == "paused"
+	return slices.Contains(Stalled, state)
 }
 
 // Deadline says how a day is written on a card, and whether it is written at

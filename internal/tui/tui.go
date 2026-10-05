@@ -1,8 +1,10 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"time"
+
+	"cairn/internal/reading"
+	"cairn/internal/trace"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -58,6 +60,14 @@ const (
 type Looked struct {
 	Snapshot reading.Snapshot
 	Err      error
+}
+
+// Heard is the history of the task that is open, read when it opens and again
+// whenever the board is read again — never while it is being drawn.
+type Heard struct {
+	Number int
+	Acts   []trace.Act
+	Err    error
 }
 
 // Beat is the tick that asks whether anything changed.
@@ -117,6 +127,9 @@ type Board struct {
 
 	// form is what is being added or edited, when the form has the window.
 	form Form
+
+	// heard is the history of the open task, as it was last read.
+	heard Heard
 
 	// pending is a key half typed: `g` waiting to see whether a second one
 	// follows. Anything else clears it, the way vim clears a half-typed
@@ -186,7 +199,14 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		b.width, b.height = m.Width, m.Height
 		return b, nil
 	case Looked:
-		return b.took(m), nil
+		b = b.took(m)
+		if b.screen == OnDetail {
+			return b, b.hearing(b.task)
+		}
+		return b, nil
+	case Heard:
+		b.heard = m
+		return b, nil
 	case Beat:
 		return b, tea.Batch(b.wonder(), tick())
 	case tea.KeyPressMsg:
@@ -316,28 +336,14 @@ func (b Board) standingAt(place int) int {
 // cards is every task the board is drawing, narrowed by whatever search is in
 // force and by whichever objective is open.
 func (b Board) cards() []reading.Card {
-	var kept []reading.Card
 	// What a board shows of a search, so that what is counted and what the
 	// arrows walk is the same set as what is drawn — a part that matched
 	// answering as the work it is part of.
-	for _, c := range reading.Found(b.snap.Cards, b.query, b.archived) {
-		if b.inside != 0 && !serves(c, b.inside) {
-			continue
-		}
-		kept = append(kept, c)
+	found := reading.Found(b.snap.Cards, b.query, b.archived)
+	if b.inside == 0 {
+		return found
 	}
-	return kept
-}
-
-// serves says whether a task counts towards an objective in its own right. A
-// sub-task never does: it counts through the task it hangs under.
-func serves(c reading.Card, number int) bool {
-	for _, n := range c.Objectives {
-		if n == number {
-			return true
-		}
-	}
-	return false
+	return reading.Serving(found, b.inside)
 }
 
 // here is the cards the cursor is standing over: a column's, or the band's.

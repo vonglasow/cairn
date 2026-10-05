@@ -122,13 +122,13 @@ func (s *Store) settle(mustBeCurrent bool) error {
 // and a store opened for the first time has no other moment to be given one.
 func (s *Store) makeTheLedgerWhenOpeningFindsNone() error {
 	var kept int
-	if err := s.db.QueryRow(
+	if err := s.on.QueryRow(
 		`SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'migrations'`,
 	).Scan(&kept); err != nil {
 		return fmt.Errorf("reading what was done to the store: %w", err)
 	}
 	if kept == 0 {
-		if _, err := s.db.Exec(ledger); err != nil {
+		if _, err := s.on.Exec(ledger); err != nil {
 			return fmt.Errorf("making room to record what is done to the store: %w", err)
 		}
 	}
@@ -136,7 +136,7 @@ func (s *Store) makeTheLedgerWhenOpeningFindsNone() error {
 }
 
 // isEmpty says whether the file holds nothing of ours at all.
-func (s *Store) isEmpty() (bool, error) { return isEmptyOn(s.db) }
+func (s *Store) isEmpty() (bool, error) { return isEmptyOn(s.on) }
 
 func isEmptyOn(on runs) (bool, error) {
 	var count int
@@ -155,14 +155,11 @@ func isEmptyOn(on runs) (bool, error) {
 	return len(applied) == 0, nil
 }
 
-// layDownTheShapeWhenOpeningFindsNothing writes during a mere opening:
-// making a store is not changing one — a file that held nothing a moment ago
-// has nothing to lose and nobody to warn, so it is created at the shape this
-// cairn knows rather than left for `migration apply` to catch up on later.
 // layDownTheShapeWhenOpeningFindsNothing writes, during a mere opening, and
 // that is said out loud in its name because it is the exception: making a store
 // is not changing one. A file that held nothing a moment ago has nothing to
-// lose and nobody to warn.
+// lose and nobody to warn, so it is created at the shape this cairn knows rather
+// than left for `migration apply` to catch up on later.
 //
 // It is one act, not one per change. Measured: laying the shape down change by
 // change let another command open in the middle, read a ledger with one of the
@@ -249,7 +246,7 @@ func (s *Store) refuseIfBehind() error {
 }
 
 // appliedNames reads what the store says has been done to it.
-func (s *Store) appliedNames() (map[string]time.Time, error) { return appliedNamesOn(s.db) }
+func (s *Store) appliedNames() (map[string]time.Time, error) { return appliedNamesOn(s.on) }
 
 func appliedNamesOn(on runs) (map[string]time.Time, error) {
 	rows, err := on.Query(`SELECT name, applied_at FROM migrations`)
@@ -264,7 +261,10 @@ func appliedNamesOn(on runs) (map[string]time.Time, error) {
 		if err := rows.Scan(&name, &at); err != nil {
 			return nil, fmt.Errorf("reading what was done to the store: %w", err)
 		}
-		made, _ := time.Parse(time.RFC3339, at)
+		made, err := time.Parse(time.RFC3339, at)
+		if err != nil {
+			return nil, fmt.Errorf("reading when %q was applied: %q is not a moment: %w", name, at, err)
+		}
 		applied[name] = made
 	}
 	if err := rows.Err(); err != nil {
@@ -274,7 +274,7 @@ func appliedNamesOn(on runs) (map[string]time.Time, error) {
 }
 
 // record notes that a change has been made, and when.
-func (s *Store) record(name string) error { return recordOn(s.db, name) }
+func (s *Store) record(name string) error { return recordOn(s.on, name) }
 
 func recordOn(on runs, name string) error {
 	if _, err := on.Exec(
@@ -391,7 +391,7 @@ func (s *Store) applyAll() ([]string, error) {
 }
 
 // make runs one change and writes it down.
-func (s *Store) make(raw migration.Migration) error { return s.makeOn(s.db, raw) }
+func (s *Store) make(raw migration.Migration) error { return s.makeOn(s.on, raw) }
 
 // makeOn applies a change against whatever it is given to run on: the store
 // itself when a change is applied on its own, or the one transaction that makes
@@ -427,10 +427,10 @@ func (s *Store) RollBack() (migration.Migration, error) {
 			continue
 		}
 		raw := factsOfChange(migration.Known[i])
-		if _, err := s.db.Exec(raw.undoes); err != nil {
+		if _, err := s.on.Exec(raw.undoes); err != nil {
 			return migration.Migration{}, fmt.Errorf("rolling back %q: %w", raw.name, err)
 		}
-		if _, err := s.db.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
+		if _, err := s.on.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
 			return migration.Migration{}, fmt.Errorf("forgetting %q: %w", raw.name, err)
 		}
 		return all[i], nil
@@ -441,7 +441,7 @@ func (s *Store) RollBack() (migration.Migration, error) {
 // Held counts what a store holds, tasks and objectives apart, without
 // reading any of it.
 func (s *Store) Held() (domain.Held, error) {
-	held, err := heldOn(s.db)
+	held, err := heldOn(s.on)
 	if err != nil {
 		return domain.Held{}, fmt.Errorf("counting what the store holds: %w", err)
 	}

@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"slices"
 	"strings"
 )
 
@@ -39,65 +38,43 @@ func listed(given []string) []string {
 }
 
 // LabelChange is what a caller asked to happen to a task's labels: either what
-// the set becomes, or what joins and leaves it.
+// the set becomes, or what joins and leaves it. The grammar is SetChange's;
+// what is a label, and the order the set is kept in, are the labels' own.
 type LabelChange struct {
-	becomes []string
-	added   []string
-	removed []string
-	adjusts bool
+	set SetChange[string]
 }
 
-// Adjusts says whether the change works from the labels already there. A
-// change that replaces needs nothing of what came before; one that adjusts is
-// meaningless without it.
-func (c LabelChange) Adjusts() bool { return c.adjusts }
+// Adjusts says whether the change works from the labels already there.
+func (c LabelChange) Adjusts() bool { return c.set.Adjusts() }
 
 // ParseLabelChange reads what a caller gave. A label given plainly says what
 // the set becomes; one carrying a sign says how the set changes. Mixing the two
 // is refused rather than resolved.
 func ParseLabelChange(given []string) (LabelChange, error) {
-	var change LabelChange
-	given = listed(given)
-	plain := make([]string, 0, len(given))
-
-	for _, label := range given {
-		if label == "" {
-			continue
-		}
-		sign, name := split(label)
-		if sign == 0 {
-			plain = append(plain, name)
-			continue
-		}
-		if strings.TrimSpace(name) == "" {
-			return LabelChange{}, ErrLabelRequired
-		}
-		change.adjusts = true
-		if sign == joins {
-			change.added = append(change.added, strings.ToLower(strings.TrimSpace(name)))
-			continue
-		}
-		change.removed = append(change.removed, strings.ToLower(strings.TrimSpace(name)))
-	}
-
-	if change.adjusts && len(plain) > 0 {
-		return LabelChange{}, ErrLabelsBothWays
-	}
-	if change.adjusts {
-		return change, nil
-	}
-
-	becomes, err := ParseLabels(plain)
+	set, err := ParseSetChange(given, readLabel, ErrLabelsBothWays)
 	if err != nil {
 		return LabelChange{}, err
 	}
-	change.becomes = becomes
-	return change, nil
+	if !set.Adjusts() {
+		if set.becomes, err = ParseLabels(set.becomes); err != nil {
+			return LabelChange{}, err
+		}
+	}
+	return LabelChange{set: set}, nil
 }
 
-// split takes the sign off a label, if it carries one.
-func split(label string) (rune, string) {
-	return SplitSign(label)
+// readLabel reads one label of a change. A label joining or leaving the set is
+// made lower case here, where it is compared; one saying what the set becomes
+// is left for ParseLabels, which holds every label to the same rule.
+func readLabel(_, value string, signed bool) (string, error) {
+	if !signed {
+		return value, nil
+	}
+	name := strings.ToLower(strings.TrimSpace(value))
+	if name == "" {
+		return "", ErrLabelRequired
+	}
+	return name, nil
 }
 
 // SplitSign takes the leading + or - off a value, if it carries one, and hands
@@ -121,16 +98,8 @@ func SplitSign(value string) (rune, string) {
 // Apply lays the change over the labels a task carries and hands back the set
 // it ends up with: lower case, no duplicate, alphabetical order.
 func (c LabelChange) Apply(current []string) ([]string, error) {
-	if !c.adjusts {
-		return c.becomes, nil
+	if !c.set.Adjusts() {
+		return c.set.becomes, nil
 	}
-	kept := make([]string, 0, len(current)+len(c.added))
-	for _, label := range current {
-		if slices.Contains(c.removed, label) {
-			continue
-		}
-		kept = append(kept, label)
-	}
-	kept = append(kept, c.added...)
-	return ParseLabels(kept)
+	return ParseLabels(c.set.Apply(current))
 }

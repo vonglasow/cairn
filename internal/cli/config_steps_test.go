@@ -24,17 +24,6 @@ func (w *world) configPath() string {
 	return w.ConfigPath()
 }
 
-// writeConfig poses a configuration file by hand, the way a person would have
-// — never through cairn, so a scenario asserting what cairn does with it is
-// not also asserting that cairn wrote it.
-func (w *world) writeConfig(content string) error {
-	path := w.configPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-	return os.WriteFile(path, []byte(content), 0o600)
-}
-
 // appendConfig adds to a configuration already posed, rather than replacing
 // it — a scenario building up a file line by line, the way "that same
 // configuration says something under..." reads.
@@ -102,11 +91,54 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	// an empty file decodes to the same nothing as an absent one, and the two
 	// scenarios would guard one behaviour between them instead of two.
 	sc.Step(`^a configuration that says nothing about the store$`, func() error {
-		return w.writeConfig("notes = \"~/vault\"\n")
+		return w.WriteConfig("notes = \"~/vault\"\n")
+	})
+
+	// The store's twin of the step above, for the same reason: a file that
+	// names the other place, so it is not mistaken for there being none.
+	sc.Step(`^a configuration that says nothing about the notes$`, func() error {
+		return w.WriteConfig("store = \"~/.cairn/cairn.db\"\n")
+	})
+
+	sc.Step(`^no configuration file$`, func() error {
+		if err := os.Remove(w.configPath()); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	})
+
+	// Unreadable rather than absent: the file is there, and its permissions
+	// say nobody may open it.
+	sc.Step(`^a configuration file that cannot be read$`, func() error {
+		if err := w.WriteConfig("notes = \"~/vault\"\n"); err != nil {
+			return err
+		}
+		return os.Chmod(w.configPath(), 0o000)
+	})
+
+	sc.Step(`^it refuses, and names the file it could not read$`, func() error {
+		if err := w.itRefuses(); err != nil {
+			return err
+		}
+		if !mentionsPath(w.Out.Stderr, w.configPath()) {
+			return fmt.Errorf("the reason does not name the file %q:\n%s", w.configPath(), w.Out.Stderr)
+		}
+		return nil
+	})
+
+	sc.Step(`^the configuration still says the notes live at "([^"]*)"$`, func(place string) error {
+		read, err := os.ReadFile(w.configPath())
+		if err != nil {
+			return err
+		}
+		if want := fmt.Sprintf("notes = %q\n", place); string(read) != want {
+			return fmt.Errorf("the configuration reads %q, want %q", read, want)
+		}
+		return nil
 	})
 
 	sc.Step(`^a configuration that says the store lives at "([^"]*)"$`, func(place string) error {
-		return w.writeConfig(fmt.Sprintf("store = %q\n", place))
+		return w.WriteConfig(fmt.Sprintf("store = %q\n", place))
 	})
 
 	// The variable carries what a person would have typed, "~" and all: it is
@@ -139,14 +171,14 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^a configuration that says the notes live at "([^"]*)"$`, func(place string) error {
-		return w.writeConfig(fmt.Sprintf("notes = %q\n", place))
+		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))
 	})
 
 	// Not TOML at all, rather than TOML that says something cairn does not
 	// know: @config-an-unknown-name-is-refused covers the second on its own,
 	// and the two would guard one behaviour between them instead of two.
 	sc.Step(`^a configuration that is not TOML$`, func() error {
-		return w.writeConfig("this is not toml: [[[\n")
+		return w.WriteConfig("this is not toml: [[[\n")
 	})
 
 	// Appended, not written afresh: the scenario reads as one configuration

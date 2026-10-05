@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
@@ -23,7 +24,6 @@ var stamps = build.Read
 
 // NewRootCmd builds the whole command tree. It takes no globals so a test can
 // run the real CLI in-process, against its own state.
-// NewRootCmd builds the command tree cairn answers with.
 func NewRootCmd() *cobra.Command {
 	b := stamps()
 	root := &cobra.Command{
@@ -52,10 +52,18 @@ func NewRootCmd() *cobra.Command {
 	// typed. Said plainly instead, and left as a usage error either way: the
 	// number does not exist, whichever way it was meant.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		if typed, ok := negativeNumber(err); ok {
+		typed, ok := leadingMinus(err)
+		if !ok {
+			return err
+		}
+		if _, number := strconv.Atoi(typed); number == nil {
 			return fmt.Errorf("%q: a task number is expected", typed)
 		}
-		return err
+		// Anything else that starts with a minus — a length to take back —
+		// is a value, and the command line reads values that look like flags
+		// only after `--`. Said here, where the problem is: the description
+		// of the argument is read by agents too, and they have no `--`.
+		return fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed)
 	})
 	// Asked for on any command, so `task add --json` and `task list --json` read
 	// the same way. Declared on the root because the answer's shape is a
@@ -68,17 +76,33 @@ func NewRootCmd() *cobra.Command {
 	return root
 }
 
-// numberLikeFlag matches cobra's complaint about a shorthand that is really a
-// negative number: "unknown shorthand flag: '1' in -12".
-var numberLikeFlag = regexp.MustCompile(`unknown shorthand flag: '\d' in (-\d+)`)
+// minusFlag matches cobra's complaint about a shorthand that is really a value
+// starting with a minus: "unknown shorthand flag: '3' in -30m".
+var minusFlag = regexp.MustCompile(`unknown shorthand flag: '.' in (-\S+)`)
 
-// negativeNumber pulls what somebody actually typed out of that complaint.
-func negativeNumber(err error) (string, bool) {
-	found := numberLikeFlag.FindStringSubmatch(err.Error())
+// leadingMinus pulls what somebody actually typed out of that complaint.
+func leadingMinus(err error) (string, bool) {
+	found := minusFlag.FindStringSubmatch(err.Error())
 	if found == nil {
 		return "", false
 	}
 	return found[1], true
+}
+
+// askedForJSON says whether the arguments ask for JSON, spelled any of the ways
+// the flag itself accepts: `--json`, or `--json=` with a value read as a yes.
+func askedForJSON(args []string) bool {
+	for _, arg := range args {
+		if arg == "--"+jsonFlag {
+			return true
+		}
+		if said, ok := strings.CutPrefix(arg, "--"+jsonFlag+"="); ok {
+			if yes, err := strconv.ParseBool(said); err == nil && yes {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Main runs the command line and returns the code the process should exit with.
@@ -100,7 +124,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	// parse is a refusal it cannot act on. Read from the arguments rather than
 	// from the parsed flags, because a command that failed to parse never got
 	// as far as its flags.
-	asMachine := slices.Contains(args, "--"+jsonFlag)
+	asMachine := askedForJSON(args)
 
 	// fang writes the error itself, to the command's error stream, and returns
 	// it so the caller can still decide what to exit with.

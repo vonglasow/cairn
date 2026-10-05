@@ -18,14 +18,14 @@ func TestEngine_numbersObjectivesApartFromTasks(t *testing.T) {
 }
 
 func TestEngine_refusesAnObjectiveWithNoTitle(t *testing.T) {
-	if _, err := openEngine(t).AddObjective("  ", ObjectiveChanges{}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := openEngine(t).addObjective("  ", ObjectiveChanges{}); !errors.Is(err, domain.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
 
 func TestEngine_givesAnObjectiveWhatItWasNamed(t *testing.T) {
 	e := openEngine(t)
-	o, err := e.AddObjective("Ship cairn 1.0", ObjectiveChanges{
+	o, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{
 		Description: of("the one that unblocks the rest"),
 		State:       of("on-hold"),
 		Priority:    of("high"),
@@ -56,14 +56,14 @@ func TestEngine_givesAnObjectiveWhatItWasNamed(t *testing.T) {
 
 func TestEngine_refusesAnObjectiveStateItCannotMakeSenseOf(t *testing.T) {
 	e := openEngine(t)
-	if _, err := e.AddObjective("Ship cairn 1.0", ObjectiveChanges{State: of("todo")}); !errors.Is(err, objective.ErrNotAnObjectiveState) {
+	if _, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{State: of("todo")}); !errors.Is(err, objective.ErrNotAnObjectiveState) {
 		t.Errorf("err = %v, want ErrNotAnObjectiveState", err)
 	}
 }
 
 func TestEngine_refusesALabelSignWhenCreatingAnObjective(t *testing.T) {
 	e := openEngine(t)
-	_, err := e.AddObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"+urgent"})})
+	_, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"+urgent"})})
 	if !errors.Is(err, ErrLabelSignAtCreation) {
 		t.Errorf("err = %v, want ErrLabelSignAtCreation", err)
 	}
@@ -74,7 +74,7 @@ func TestEngine_listsObjectivesInTheOrderTheyWereAdded(t *testing.T) {
 	addObjective(t, e, "Ship cairn 1.0")
 	addObjective(t, e, "Learn Go properly")
 
-	all, err := e.ListObjectives()
+	all, err := e.listObjectives()
 	if err != nil {
 		t.Fatalf("ListObjectives: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestEngine_listsObjectivesInTheOrderTheyWereAdded(t *testing.T) {
 func TestEngine_showsAnObjectiveByItsNumber(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	got, err := e.ShowObjective(factsOfObjective(o).number)
+	got, err := e.showObjective(factsOfObjective(o).number)
 	if err != nil {
 		t.Fatalf("ShowObjective: %v", err)
 	}
@@ -96,18 +96,18 @@ func TestEngine_showsAnObjectiveByItsNumber(t *testing.T) {
 }
 
 func TestEngine_saysWhenTheObjectiveShownDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).ShowObjective(99); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := openEngine(t).showObjective(99); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
 
 func TestEngine_changesWhatWasNamedOnAnObjective(t *testing.T) {
 	e := openEngine(t)
-	o, err := e.AddObjective("Ship cairn 1.0", ObjectiveChanges{Priority: of("high")})
+	o, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{Priority: of("high")})
 	if err != nil {
 		t.Fatalf("AddObjective: %v", err)
 	}
-	changed, err := e.EditObjective(factsOfObjective(o).number, ObjectiveChanges{State: of("reached")})
+	changed, err := e.editObjective(factsOfObjective(o).number, ObjectiveChanges{State: of("reached")})
 	if err != nil {
 		t.Fatalf("EditObjective: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestEngine_changesWhatWasNamedOnAnObjective(t *testing.T) {
 func TestEngine_refusesAnObjectiveEditThatNamesNothing(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	if _, err := e.EditObjective(factsOfObjective(o).number, ObjectiveChanges{}); !errors.Is(err, ErrNothingToChange) {
+	if _, err := e.editObjective(factsOfObjective(o).number, ObjectiveChanges{}); !errors.Is(err, ErrNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -135,11 +135,11 @@ func TestEngine_refusesAnObjectiveEditThatNamesNothing(t *testing.T) {
 // they are the same code: a set is moved, not replaced.
 func TestEngine_movesAnObjectivesLabelsWithSigns(t *testing.T) {
 	e := openEngine(t)
-	o, err := e.AddObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"perso", "spec"})})
+	o, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"perso", "spec"})})
 	if err != nil {
 		t.Fatalf("AddObjective: %v", err)
 	}
-	moved, err := e.EditObjective(factsOfObjective(o).number, ObjectiveChanges{Labels: of([]string{"+urgent", "-spec"})})
+	moved, err := e.editObjective(factsOfObjective(o).number, ObjectiveChanges{Labels: of([]string{"+urgent", "-spec"})})
 	if err != nil {
 		t.Fatalf("EditObjective: %v", err)
 	}
@@ -151,10 +151,10 @@ func TestEngine_movesAnObjectivesLabelsWithSigns(t *testing.T) {
 func TestEngine_deletesAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	if err := e.DeleteObjective(factsOfObjective(o).number); err != nil {
+	if err := e.deleteObjective(factsOfObjective(o).number); err != nil {
 		t.Fatalf("DeleteObjective: %v", err)
 	}
-	if _, err := e.ShowObjective(factsOfObjective(o).number); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := e.showObjective(factsOfObjective(o).number); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -166,19 +166,19 @@ func TestEngine_refusesToDeleteAnObjectiveCarryingTasks(t *testing.T) {
 	o := addObjective(t, e, "Ship cairn 1.0")
 	task := serving(t, e, "Write the spec", factsOfObjective(o).number)
 
-	if err := e.DeleteObjective(factsOfObjective(o).number); !errors.Is(err, ErrObjectiveCarriesTasks) {
+	if err := e.deleteObjective(factsOfObjective(o).number); !errors.Is(err, ErrObjectiveCarriesTasks) {
 		t.Errorf("err = %v, want ErrObjectiveCarriesTasks", err)
 	}
-	if _, err := e.ShowObjective(factsOfObjective(o).number); err != nil {
+	if _, err := e.showObjective(factsOfObjective(o).number); err != nil {
 		t.Errorf("the objective went away anyway: %v", err)
 	}
-	if _, err := e.Show(factsOf(task).number); err != nil {
+	if _, err := e.show(factsOf(task).number); err != nil {
 		t.Errorf("the task went away with it: %v", err)
 	}
 }
 
 func TestEngine_saysWhenTheObjectiveDeletedDoesNotExist(t *testing.T) {
-	if err := openEngine(t).DeleteObjective(99); !errors.Is(err, ErrNoSuchObjective) {
+	if err := openEngine(t).deleteObjective(99); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -186,10 +186,10 @@ func TestEngine_saysWhenTheObjectiveDeletedDoesNotExist(t *testing.T) {
 func TestEngine_refusesToEmptyAnObjectivesTitle(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	if _, err := e.EditObjective(factsOfObjective(o).number, ObjectiveChanges{Title: of("  ")}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := e.editObjective(factsOfObjective(o).number, ObjectiveChanges{Title: of("  ")}); !errors.Is(err, domain.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
-	if still, err := e.ShowObjective(factsOfObjective(o).number); err != nil {
+	if still, err := e.showObjective(factsOfObjective(o).number); err != nil {
 		t.Fatalf("ShowObjective: %v", err)
 	} else if facts := factsOfObjective(still); facts.title != "Ship cairn 1.0" {
 		t.Errorf("Title = %q, want it untouched", facts.title)

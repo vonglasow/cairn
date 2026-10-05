@@ -1,12 +1,8 @@
 package tui
 
 import (
-	"strconv"
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
@@ -50,81 +46,23 @@ func (b Board) saveTask(form Form) tea.Cmd {
 	}
 }
 
-// savingParts settles what hangs under the task with what the form's own field
-// says: a line carrying a number is that part, named and ticked as it reads; a
-// line carrying none is a part nobody has written down yet; a number the field
-// no longer carries is a part that has gone.
-//
-// One operation each, through the engine like everything else. The engine has
-// no argument for a set of parts and should not grow one: what it is asked for
-// here is adding a task, changing a task and deleting a task.
+// savingParts settles what hangs under the task with what the form's parts
+// field says — see reading.SettleParts.
 func (b Board) savingParts(form Form) error {
 	said, holds := form.held["parts"]
 	if !holds || form.Adding {
 		return nil
 	}
-	parent := strconv.Itoa(form.Number)
-	kept := map[int]bool{}
-	for _, part := range reading.PartsIn(*said) {
-		state := string(domain.Todo)
-		if part.Done {
-			state = string(domain.Done)
-		}
-		if part.Number == 0 {
-			if _, err := b.work.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{
-				"title": part.Title, "parent": parent, "state": state,
-			}}); err != nil {
-				return err
-			}
-			continue
-		}
-		kept[part.Number] = true
-		if _, err := b.work.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(part.Number), "title": part.Title, "state": state,
-		}}); err != nil {
-			return err
-		}
-	}
-	for _, was := range reading.Hanging(b.snap.Cards, form.Number) {
-		if kept[was.Number] {
-			continue
-		}
-		if _, err := b.work.Ask(engine.TaskDelete, reading.Numbered(was.Number)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return reading.SettleParts(b.work, form.Number, *said, b.snap.Cards)
 }
 
-// saving says which operation a saved form means and what it carries. Adding
-// and editing are one form, so they are one function here too: the difference
-// is the operation and the number, and nothing else about a form knows which
-// of the two it is.
-//
-// The title is trimmed on its way out and nowhere else: a title is what a task
-// is called, and what somebody called it does not include the space they left
-// after it.
+// saving says which operation a saved form means and what it carries — see
+// reading.Saved.
 func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Operation, engine.Input) {
-	op := editing
-	if form.Adding {
-		op = adding
-	}
-	asked := reading.Asked(form.typed(), op)
-	asked.Given["title"] = strings.TrimSpace(form.valueOf("title"))
-	if !form.Adding {
-		asked.Given["number"] = strconv.Itoa(form.Number)
-	}
-	return op, asked
+	return reading.Saved(form.typed(), form.Adding, form.Number, adding, editing)
 }
 
 // saveGoal adds or edits an objective from the form.
 func (b Board) saveGoal(form Form) tea.Cmd {
-	op, asked := b.saving(form, engine.ObjectiveAdd, engine.ObjectiveEdit)
-	return func() tea.Msg {
-		if _, err := b.work.Ask(op, asked); err != nil {
-			return Looked{Err: err}
-		}
-		found, err := reading.Look(b.work)
-		return Looked{Snapshot: found, Err: err}
-	}
+	return b.carry(b.saving(form, engine.ObjectiveAdd, engine.ObjectiveEdit))
 }

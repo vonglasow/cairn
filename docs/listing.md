@@ -86,7 +86,13 @@ task they mean.
 
 Archiving takes a number or a narrowing, and `task archive --state done` sweeps
 a column in one go. `task label` puts one label on everything a narrowing
-reaches, which is how a sprint gets marked before it is swept.
+reaches, which is how a sprint gets marked before it is swept. The label it
+puts is its argument `put`, and `label` keeps the name it has in every other
+narrowing — the labels a task already carries to be reached. On the command line
+the first is positional and the second a flag, so the two never met; an agent
+names both in one object, where a name is held once, so they could not share it.
+Archiving answers one shape however many it took off: how many, and — when one
+was named — the task as it ends up.
 
 **A sweep acts on the work, not on its parts.** Both go through `sweeping`,
 which drops what hangs under something before either touches a row. One sweep

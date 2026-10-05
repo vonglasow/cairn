@@ -51,12 +51,7 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 		}
 		return "", false
 	}
-	reading, err := config.NewReading(home, env)
-	if err != nil {
-		t.Fatalf("NewReading returned an error: %v", err)
-	}
-
-	answer, err := ConfigShow.Run(On{Reading: reading}, Input{})
+	answer, err := ConfigShow.Run(On{Home: Home{Dir: home, Lookup: env}}, Input{})
 	if err != nil {
 		t.Fatalf("Run returned an error: %v", err)
 	}

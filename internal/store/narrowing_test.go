@@ -30,7 +30,7 @@ func keepLabelled(t *testing.T, s *Store, title string, labels ...string) task.T
 }
 
 // wantKept fails unless a narrowed read hands back exactly these titles.
-func wantKept(t *testing.T, s *Store, narrowing *Narrowing, want ...string) {
+func wantKept(t *testing.T, s *Store, narrowing *domain.Narrowing, want ...string) {
 	t.Helper()
 	kept, err := s.Narrowed(narrowing)
 	if err != nil {
@@ -51,7 +51,7 @@ func TestNarrowed_keepsTheColumnNamed(t *testing.T) {
 	keepInColumn(t, s, "Write the spec", domain.Todo)
 	keepInColumn(t, s, "Ship it", domain.Backlog)
 
-	narrowing := &Narrowing{}
+	narrowing := &domain.Narrowing{}
 	narrowing.InColumn(string(domain.Todo))
 	wantKept(t, s, narrowing, "Write the spec")
 }
@@ -68,7 +68,7 @@ func TestNarrowed_keepsThePriorityNamed(t *testing.T) {
 	_ = high
 	keep(t, s, "Ship it")
 
-	narrowing := &Narrowing{}
+	narrowing := &domain.Narrowing{}
 	narrowing.Carrying(string(domain.High))
 	wantKept(t, s, narrowing, "Write the spec")
 }
@@ -80,11 +80,11 @@ func TestNarrowed_keepsWhatCarriesEveryLabelNamed(t *testing.T) {
 	keepLabelled(t, s, "Write the spec", "team", "urgent")
 	keepLabelled(t, s, "Ship it", "team", "later")
 
-	narrowing := &Narrowing{}
+	narrowing := &domain.Narrowing{}
 	narrowing.Labelled([]string{"team", "urgent"})
 	wantKept(t, s, narrowing, "Write the spec")
 
-	one := &Narrowing{}
+	one := &domain.Narrowing{}
 	one.Labelled([]string{"team"})
 	wantKept(t, s, one, "Write the spec", "Ship it")
 }
@@ -102,7 +102,7 @@ func TestNarrowed_keepsWhatEveryFactNamedHoldsFor(t *testing.T) {
 	_ = both
 	keepInColumn(t, s, "Ship it", domain.Todo)
 
-	narrowing := &Narrowing{}
+	narrowing := &domain.Narrowing{}
 	narrowing.InColumn(string(domain.Todo))
 	narrowing.Carrying(string(domain.High))
 	wantKept(t, s, narrowing, "Write the spec")
@@ -115,17 +115,17 @@ func TestNarrowed_namingNothingReadsEverything(t *testing.T) {
 	keepInColumn(t, s, "Write the spec", domain.Todo)
 	keepInColumn(t, s, "Ship it", domain.Backlog)
 
-	wantKept(t, s, &Narrowing{}, "Ship it", "Write the spec")
+	wantKept(t, s, &domain.Narrowing{}, "Ship it", "Write the spec")
 }
 
 // A narrowing says whether anything was named at all, because what is done
 // with the answer depends on it: a listing nobody narrowed is shown as the
 // tree it is, and a narrowed one is shown flat.
 func TestNarrowing_narrowsOnlyWhenSomethingWasNamed(t *testing.T) {
-	if (&Narrowing{}).Narrows() {
+	if (&domain.Narrowing{}).Narrows() {
 		t.Error("a narrowing nobody named anything on says it narrows")
 	}
-	named := &Narrowing{}
+	named := &domain.Narrowing{}
 	named.InColumn(string(domain.Todo))
 	if !named.Narrows() {
 		t.Error("a narrowing told a column says it narrows nothing")
@@ -146,11 +146,11 @@ func TestNarrowed_keepsWhatServesTheObjectiveNamed(t *testing.T) {
 	_ = serving
 	keep(t, s, "Ship it")
 
-	one := &Narrowing{}
+	one := &domain.Narrowing{}
 	one.Serving(1)
 	wantKept(t, s, one, "Write the spec")
 
-	nobody := &Narrowing{}
+	nobody := &domain.Narrowing{}
 	nobody.Serving(9)
 	wantKept(t, s, nobody)
 }
@@ -175,14 +175,14 @@ func TestNarrowedObjectives_keepsWhatWasNamed(t *testing.T) {
 
 	for _, tc := range []struct {
 		what  string
-		named func(*Narrowing)
+		named func(*domain.Narrowing)
 		want  []string
 	}{
-		{"a state", func(n *Narrowing) { n.InColumn(string(objective.OnHold)) }, []string{"Ship cairn 1.0"}},
-		{"a label", func(n *Narrowing) { n.Labelled([]string{"urgent"}) }, []string{"Ship cairn 1.0"}},
-		{"nothing", func(*Narrowing) {}, []string{"Ship cairn 1.0", "Ship the docs"}},
+		{"a state", func(n *domain.Narrowing) { n.InColumn(string(objective.OnHold)) }, []string{"Ship cairn 1.0"}},
+		{"a label", func(n *domain.Narrowing) { n.Labelled([]string{"urgent"}) }, []string{"Ship cairn 1.0"}},
+		{"nothing", func(*domain.Narrowing) {}, []string{"Ship cairn 1.0", "Ship the docs"}},
 	} {
-		narrowing := &Narrowing{}
+		narrowing := &domain.Narrowing{}
 		tc.named(narrowing)
 		kept, err := s.NarrowedObjectives(narrowing)
 		if err != nil {
@@ -205,7 +205,7 @@ func TestNarrowedObjectives_keepsWhatWasNamed(t *testing.T) {
 // Even one nobody narrowed: what is off the board is off it whether or not
 // anything else was named.
 func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
-	var plain Narrowing
+	var plain narrowing
 	where, _ := plain.whereTasks(taskLabels)
 	if !strings.Contains(where, "archived") {
 		t.Errorf("a narrowing nobody named gives %q, want it to leave archived out", where)
@@ -214,7 +214,7 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 	// The clause is the same either way; what it holds to is not. Comparing
 	// the two strings says nothing, which is what this asked at first.
 	_, plainArgs := plain.whereTasks(taskLabels)
-	var asked Narrowing
+	var asked narrowing
 	asked.Archived()
 	_, askedArgs := asked.whereTasks(taskLabels)
 	if len(plainArgs) == 0 || len(askedArgs) == 0 {
@@ -226,7 +226,7 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 	}
 
 	// And asking for them says nothing about what else was named.
-	var both Narrowing
+	var both narrowing
 	both.InColumn("done")
 	both.Archived()
 	said, args := both.whereTasks(taskLabels)
@@ -235,20 +235,6 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 	}
 	if len(args) == 0 {
 		t.Errorf("args = %v, want the column it was given", args)
-	}
-}
-
-// Narrows counts what a person named, and not the archived tasks a listing
-// leaves out on its own: a listing nobody narrowed is still shown as a tree.
-func TestNarrowing_countsOnlyWhatWasNamed(t *testing.T) {
-	var plain Narrowing
-	if plain.Narrows() {
-		t.Error("a narrowing nobody named says it narrows")
-	}
-	var asked Narrowing
-	asked.Archived()
-	if !asked.Narrows() {
-		t.Error("asking for archived tasks is something somebody named")
 	}
 }
 
@@ -275,7 +261,7 @@ func TestNarrowed_keepsWhatIsDueByADay(t *testing.T) {
 	due("Ship it", "2026-12-01")
 	keep(t, s, "Someday")
 
-	narrowing := &Narrowing{}
+	narrowing := &domain.Narrowing{}
 	narrowing.DueBefore("2026-10-01")
 	wantKept(t, s, narrowing, "Write the spec", "On the day itself")
 }

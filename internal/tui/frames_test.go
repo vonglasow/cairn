@@ -29,19 +29,19 @@ func fullBoard() *fake {
 		{Number: 1, Title: "Buy a lamp", State: "backlog", Priority: "normal"},
 		{Number: 2, Title: "Read the ADR", State: "backlog", Priority: "normal"},
 		{Number: 3, Title: "Ask legal about the retention clause", State: "backlog", Priority: "critical", Deadline: on("2026-08-29")},
-		{Number: 4, Title: "Write the spec", State: "todo", Priority: "high", Described: true, Description: "The client wants two columns, not three.", Deadline: on("2026-09-03"), SubDone: 1, SubTotal: 2, Labels: []string{"spec"}},
+		{Number: 4, Title: "Write the spec", State: "todo", Priority: "high", Description: "The client wants two columns, not three.", Deadline: on("2026-09-03"), SubDone: 1, SubTotal: 2, Labels: []string{"spec"}},
 		{Number: 11, Title: "Draft the columns", State: "done", Parent: 4},
 		{Number: 12, Title: "Get the client's nod", State: "todo", Parent: 4},
 		{Number: 5, Title: "Fix the hook", State: "todo", Priority: "normal"},
-		{Number: 6, Title: "Spec review", State: "current", Priority: "high", Described: true, InFocus: true, Deadline: on("2026-09-02"), SubDone: 2, SubTotal: 4, Labels: []string{"spec"}},
+		{Number: 6, Title: "Spec review", State: "current", Priority: "high", Description: "something written", InFocus: true, Deadline: on("2026-09-02"), SubDone: 2, SubTotal: 4, Labels: []string{"spec"}},
 		{Number: 7, Title: "Migrate the store", State: "done", Priority: "normal"},
 		{Number: 8, Title: "Client's answer", State: "blocked", Priority: "critical", Blockers: []int{4}, Objectives: []int{1}, Description: "the one that is in the way"},
-		{Number: 9, Title: "Handed to Marie", State: "watching", Priority: "normal", Described: true, Because: "she confirms first"},
+		{Number: 9, Title: "Handed to Marie", State: "watching", Priority: "normal", Description: "something written", Because: "she confirms first"},
 		{Number: 10, Title: "Refactor migrate", State: "paused", Priority: "normal", Because: "your call"},
 		{Number: 13, Title: "Waiting on the lawyer", State: "blocked", Priority: "normal", Because: "the fourth, so the band wraps"},
 	}
 	f.goals = []reading.Goal{
-		{Number: 1, Title: "Ship the desktop board", State: "active", Priority: "high", Described: true, Done: 7, Total: 12, Labels: []string{"product"}, Deadline: on("2026-10-16")},
+		{Number: 1, Title: "Ship the desktop board", State: "active", Priority: "high", Description: "something written", Done: 7, Total: 12, Labels: []string{"product"}, Deadline: on("2026-10-16")},
 		{Number: 2, Title: "Cut the onboarding time in half", State: "on-hold", Priority: "normal", Done: 1, Total: 8},
 	}
 	f.focus = []int{6}

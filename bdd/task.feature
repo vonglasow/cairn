@@ -1252,6 +1252,17 @@ Feature: Tasks
       And task 1 carries the label "backend"
       And task 1 carries the label "sprint-41"
 
+    @task-label-keeps-by-the-labels-named
+    Scenario: labelling reaches only what carries the label it was narrowed by
+      Given I added a task titled "Migration Jenkins"
+      And I edited task 1 with the label "backend"
+      And I added a task titled "Spike Argo"
+      When I run `cairn task label sprint-41 --label backend`
+      Then it succeeds
+      And it says 1 task was labelled
+      And task 1 carries the label "sprint-41"
+      And task 2 does not carry the label "sprint-41"
+
     @task-label-needs-something-to-go-on
     Scenario: labelling with nothing to narrow by is refused
       Given I added a task titled "Spike Argo"
@@ -1430,9 +1441,10 @@ Feature: Tasks
     "blocked" is the parent being blocked, and a part being "current" is the
     parent being worked on.
 
-    A task carrying sub-tasks is not deleted while they are there. What depends
-    on it would go with it, and a deletion that takes more than the number
-    typed is a deletion nobody asked for.
+    A task carrying sub-tasks takes them with it when it is deleted: a part
+    goes with the work it belongs to, and a deletion that refused while a part
+    was there could not be carried out at all once the boards stopped drawing
+    parts. See @task-parent-delete-takes-the-parts.
 
     @task-sub-task-takes-done
     Scenario Outline: a sub-task is done or it is not, and takes nothing else

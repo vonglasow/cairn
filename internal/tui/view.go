@@ -1,11 +1,12 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"cairn/internal/reading"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -253,7 +254,7 @@ func (b Board) insideBand() string {
 		}
 		mark := lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))
 		head := Spread(" "+b.skin.Title.Render(strconv.Itoa(g.Number)+"   "+g.Title), mark+" ", b.width)
-		return head + "\n " + b.progress(g.Done, g.Total, barWidth) + "  " + b.skin.Faint.Render(fmt.Sprintf("%d/%d", g.Done, g.Total))
+		return head + "\n " + b.progress(g.Done, g.Total, barWidth) + "  " + b.skin.Faint.Render(g.Counted())
 	}
 	return ""
 }

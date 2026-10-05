@@ -4,7 +4,11 @@ package store
 // table of its own; the words beside it are a fact of the task, so they live in
 // a column. Both are read and written here.
 
-import "fmt"
+import (
+	"fmt"
+
+	"cairn/internal/domain"
+)
 
 // The queries about what blocks a task, written out for the reason labelStore
 // gives: a table name interpolated into SQL reads as harmless right up to the
@@ -24,7 +28,7 @@ const (
 
 // blockersOn reads back what a task said blocks it.
 func (s *Store) blockersOn(number int) ([]int, error) {
-	rows, err := s.db.Query(blockersOf, number)
+	rows, err := s.on.Query(blockersOf, number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what blocks task %d: %w", number, err)
 	}
@@ -47,11 +51,11 @@ func (s *Store) blockersOn(number int) ([]int, error) {
 // keepBlockersOn records what a task says blocks it, replacing whatever it said
 // before: a task carries a set, so one left out is one taken away.
 func (s *Store) keepBlockersOn(number int, blockers []int) error {
-	if _, err := s.db.Exec(clearWhatBlocks, number); err != nil {
+	if _, err := s.on.Exec(clearWhatBlocks, number); err != nil {
 		return fmt.Errorf("clearing what blocks task %d: %w", number, err)
 	}
 	for _, blocker := range blockers {
-		if _, err := s.db.Exec(keepBlocker, number, blocker); err != nil {
+		if _, err := s.on.Exec(keepBlocker, number, blocker); err != nil {
 			return fmt.Errorf("keeping what blocks task %d: %w", number, err)
 		}
 	}
@@ -62,7 +66,7 @@ func (s *Store) keepBlockersOn(number int, blockers []int) error {
 // hand, for the reason Delete gives about the labels: the foreign keys the
 // schema declares do not fire, because this connection leaves them off.
 func (s *Store) releaseBlockersOn(number int) error {
-	if _, err := s.db.Exec(clearBlockers, number, number); err != nil {
+	if _, err := s.on.Exec(clearBlockers, number, number); err != nil {
 		return fmt.Errorf("releasing what blocked task %d: %w", number, err)
 	}
 	return nil
@@ -79,20 +83,23 @@ func (s *Store) releaseBlockersOn(number int) error {
 // or there is nothing cairn was told about. No words, since "the client's
 // answer" is either in or out and cairn has no way to know which. And every one
 // of them done, not merely one.
+//
+// The two columns are bound rather than spelled, so their names are the ones
+// domain gives them and nowhere else.
 const nothingBlocks = `
 SELECT number FROM tasks
-WHERE state = 'blocked'
+WHERE state = ?
   AND because = ''
   AND EXISTS (SELECT 1 FROM blockers WHERE task_number = tasks.number)
   AND NOT EXISTS (
 	SELECT 1 FROM blockers
 	JOIN tasks AS blocker ON blocker.number = blockers.blocker_number
-	WHERE blockers.task_number = tasks.number AND blocker.state <> 'done')
+	WHERE blockers.task_number = tasks.number AND blocker.state <> ?)
 ORDER BY number`
 
 // NothingBlocks reads which tasks are waiting on nothing any more.
 func (s *Store) NothingBlocks() ([]int, error) {
-	rows, err := s.db.Query(nothingBlocks)
+	rows, err := s.on.Query(nothingBlocks, string(domain.Blocked), string(domain.Done))
 	if err != nil {
 		return nil, fmt.Errorf("reading what is no longer blocked: %w", err)
 	}

@@ -117,7 +117,7 @@ func (w *world) cursorOnTask(title string) error {
 }
 
 func (w *world) taskInColumn(number int, state string) error {
-	found, err := w.other.Show(number)
+	found, err := w.givens().Task(number)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (w *world) taskInColumn(number int, state string) error {
 }
 
 func (w *world) taskTitled(number int, title string) error {
-	found, err := w.other.Show(number)
+	found, err := w.givens().Task(number)
 	if err != nil {
 		return err
 	}

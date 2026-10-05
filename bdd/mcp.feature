@@ -275,6 +275,14 @@ Feature: Answering a machine over MCP
       Then it answers that it failed
       And the answer says what it needed
 
+    @mcp-an-empty-list-is-nothing-to-look-for
+    Scenario: a tool handed an empty list to look for says so
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for nothing
+      Then it answers that it failed
+      And the answer says what it needed
+
     @mcp-an-argument-it-does-not-take
     Scenario: a tool is told the name it did not recognise
       Given a cairn server started with `--access read`

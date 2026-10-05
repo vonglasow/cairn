@@ -1,9 +1,10 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"strings"
 	"testing"
+
+	"cairn/internal/reading"
 )
 
 func TestStandingGlyph(t *testing.T) {
@@ -42,7 +43,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestGoalRows(t *testing.T) {
-	g := reading.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Described: true, State: "active", Labels: []string{"product"}}
+	g := reading.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
 	rows := standing(newFake()).with(plainSkin).goalRows(g, 60)
 	if len(rows) != 4 {
 		t.Fatalf("an objective's card has %d rows, want 4", len(rows))
@@ -93,25 +94,8 @@ func TestABarOfOneColumn(t *testing.T) {
 	}
 }
 
-func TestTheFactsRowKeepsWhatFitsBesideTheBar(t *testing.T) {
-	// The bar takes its width out of the row, and what is left decides how many
-	// facts follow it. A budget two columns out drops a label or keeps one that
-	// should have gone.
-	g := reading.Goal{Number: 1, Title: "One", Done: 1, Total: 2, Labels: []string{"ab"}}
-	gl := GlyphsFor(Unicode)
-	// "1/2  ⚑ ab" is nine columns of facts, and what is left for them is the
-	// width less the bar and the two spaces beside it.
-	const room = barWidth + 2 + 9
-	if got := factsRow(g, gl, room); !strings.Contains(got, "⚑ ab") {
-		t.Fatalf("a row with room for the label reads %q", got)
-	}
-	if got := factsRow(g, gl, room-1); strings.Contains(got, "⚑ ab") {
-		t.Fatalf("a row one column too narrow kept the label: %q", got)
-	}
-}
-
 func TestAGoalWithNothingBesideItsBar(t *testing.T) {
-	if got := factsRow(reading.Goal{Number: 1}, GlyphsFor(Unicode), 40); strings.Contains(got, "  ") {
+	if got := strip(standing(newFake()).goalFacts(reading.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
 		t.Fatalf("a bar with nothing beside it trailed something: %q", got)
 	}
 }

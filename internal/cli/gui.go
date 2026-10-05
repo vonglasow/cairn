@@ -35,17 +35,9 @@ func newGuiCmd() *cobra.Command {
 		Short: "Open the board in a window",
 		Args:  noneAtAll(),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			at, err := places()
+			held, err := engine.Hold(home())
 			if err != nil {
 				return err
-			}
-			held, err := engine.OpenAt(at)
-			if err != nil {
-				// Told, because this command holds the store itself rather
-				// than asking through an operation: without it a store behind
-				// this cairn says so and leaves somebody to find out what to
-				// type about it.
-				return engine.Told(err)
 			}
 			defer func() { _ = held.Close() }()
 			return openGui(held, wide, high)

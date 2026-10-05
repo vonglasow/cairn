@@ -4,12 +4,13 @@ package engine
 // takes, and how what a caller named becomes what the store keeps by.
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/store"
+	"cairn/internal/domain"
 	"cairn/internal/task"
 )
 
@@ -46,13 +47,13 @@ func narrowedBy(attributes []Argument, means map[string]string) []Argument {
 // for a column that does not exist, "there is no task" reads as an empty
 // column. Held against what the argument itself declares it accepts, so the
 // closed set stays in the one place it is written.
-func keeping(in Input, taken []Argument) (*store.Narrowing, error) {
+func keeping(in Input, taken []Argument) (*domain.Narrowing, error) {
 	for _, argument := range taken {
 		if err := accepted(in, argument); err != nil {
 			return nil, err
 		}
 	}
-	kept := &store.Narrowing{}
+	kept := &domain.Narrowing{}
 	if state, named := in.Given["state"]; named {
 		kept.InColumn(state)
 	}
@@ -102,8 +103,13 @@ func accepted(in Input, argument Argument) error {
 	if !named || slices.Contains(argument.OneOf, given) {
 		return nil
 	}
-	return fmt.Errorf("%q: not one of %s", given, strings.Join(argument.OneOf, ", "))
+	return fmt.Errorf("%q: %w %s", given, ErrNotOneOf, strings.Join(argument.OneOf, ", "))
 }
+
+// ErrNotOneOf is returned when a value falls outside the closed set its
+// argument accepts. A sentinel, so that a listing given a column that does not
+// exist is refused the way an edit given one is: understood, and turned down.
+var ErrNotOneOf = errors.New("not one of")
 
 // heldAmong says which task among these is the one being worked on, and none
 // when it is not among them.
@@ -115,7 +121,7 @@ func accepted(in Input, argument Argument) error {
 func heldAmong(tasks []task.Task, inFocus []int) []int {
 	kept := make([]int, 0, len(inFocus))
 	for _, one := range tasks {
-		if number := task.OfTask(one).Number; slices.Contains(inFocus, number) {
+		if number := factsOf(one).number; slices.Contains(inFocus, number) {
 			kept = append(kept, number)
 		}
 	}

@@ -82,8 +82,8 @@ file names. A place is read the same way wherever it was named.
 
 ## TOML, because a person opens this file
 
-Cairn poses this file for someone to read and change, so it has to carry a line
-above each place saying what that place is. That requirement decided the form on
+This file is for someone to read and change, so it has to be able to carry a
+line above each place saying what that place is. That requirement decided the form on
 its own: JSON has no comments and turns paths into escapes, and a hand-rolled
 `key = value` reader means inventing rules for quoting, whitespace and repeats
 that a specification already answers.
@@ -100,40 +100,23 @@ It is paid for: an older cairn refuses a file written by a newer one, and unlike
 the store, a configuration has no ledger to carry it across versions. Taken
 knowingly.
 
-## Posed once, and never put back
+## Not posed yet
 
-The first command leaves a file behind, holding the places cairn would have used
-anyway. Opening it is then enough to see where everything is, without knowing
-anything beforehand.
+Cairn does not write this file. Nothing has to exist for it to work — no file is
+the ordinary case — but nothing leaves one behind either: a person who wants one
+writes it.
 
-| situation | what happens |
-|---|---|
-| no file | posed, with the defaults and their comments |
-| a file that says one place and not the other | left half-said — never completed |
-| the environment says something at the first run | the file still holds the default; the command still obeys the environment |
-| the place cannot be written to | said, and the command carries on |
-| a server told to only read | nothing posed |
-
-The file is posed once. What is in it afterwards is the person's.
-
-Three of those rows are each a way of not being clever. Completing a half-said
-file would rewrite something somebody edited. Writing down what the environment
-happened to say would freeze a passing choice into a permanent one. And a
-command that failed because a convenience file could not be written would fail
-for a reason that has nothing to do with what was asked — so it says so and goes
-on, which is the one place this departs from an unreadable `--state`, and it
-departs because posing is not reading.
-
-A server told to only read poses nothing, and that has a consequence worth
-knowing rather than discovering: on a new machine the first thing to run cairn is
-often the server, so the file appears later, the first time something able to
-write does.
+Posing it at the first run is specified in `bdd/config.feature` — once, never
+completed, never holding what the environment said, never by a server told to
+only read — and every one of those scenarios carries `@later`. They are not run,
+and this page does not describe them as what cairn does, until they are built.
 
 ## Reading is not the same as not being there
 
-A file that is there and cannot be read stops the command, naming the file. A
-file that is there and is not TOML stops it too, and says so differently. No file
-at all is the ordinary case and stops nothing.
+A file that is there and is not TOML stops the command, naming the file. No file
+at all is the ordinary case and stops nothing. A file that is there and cannot be
+read stops the command too, but today as a store that cannot be used (exit 3);
+answering it as a refusal that names the file is specified, and carries `@later`.
 
 Three answers rather than one, because a permission and a typo are not an
 absence, and a caller that cannot tell them apart looks for the wrong problem.

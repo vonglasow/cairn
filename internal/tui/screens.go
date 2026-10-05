@@ -1,15 +1,16 @@
 package tui
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/objective"
 	"cairn/internal/reading"
 )
 
@@ -141,10 +142,10 @@ func (b Board) legend() []string {
 		mark(g.Paused, p.Paused, "paused", "waiting on your decision"),
 	)...)
 	out = append(out, b.group("OBJECTIVES",
-		mark(g.Active, p.Standing("active"), "active", "being worked towards"),
-		mark(g.OnHold, p.Standing("on-hold"), "on-hold", "not for now"),
-		mark(g.Reached, p.Standing("reached"), "reached", "done with"),
-		mark(g.Dropped, p.Standing("dropped"), "dropped", "given up"),
+		mark(g.Active, p.Standing(string(objective.Active)), "active", "being worked towards"),
+		mark(g.OnHold, p.Standing(string(objective.OnHold)), "on-hold", "not for now"),
+		mark(g.Reached, p.Standing(string(objective.Reached)), "reached", "done with"),
+		mark(g.Dropped, p.Standing(string(objective.Dropped)), "dropped", "given up"),
 	)...)
 	return append(out, b.group("ON A CARD",
 		mark(g.Described, p.Faint, "", "a description exists"),
@@ -353,25 +354,28 @@ func (b Board) serves(c reading.Card, width int) string {
 			out = append(out, Spread(
 				lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))+
 					" "+b.skin.Faint.Render(strconv.Itoa(g.Number))+"  "+b.skin.Bright.Render(g.Title),
-				b.skin.Says.Render(fmt.Sprintf("%d/%d", g.Done, g.Total)), width))
+				b.skin.Says.Render(g.Counted()), width))
 		}
 	}
 	return strings.Join(out, "\n")
 }
 
 // history is every act performed on a task, newest last, behind a window of its
-// own so a long life does not push everything else off the screen.
+// own so a long life does not push everything else off the screen. It is drawn
+// from what was heard when the task opened — see hearing.
 //
 // This is the one place the trace is laid out beside the task it belongs to.
 // `:trace show 14` prints the same history the way the command line prints it,
 // and neither is the other's shortcut.
 func (b Board) history(number, width, rows int) []string {
-	shown, err := b.work.Ask(engine.TraceShow, reading.Numbered(number))
-	if err != nil {
-		return []string{b.skin.Wrong.Render(err.Error())}
+	if b.heard.Number != number {
+		return nil
 	}
-	drawn := make([]string, 0, len(shown.Acts))
-	for _, act := range shown.Acts {
+	if b.heard.Err != nil {
+		return []string{b.skin.Wrong.Render(b.heard.Err.Error())}
+	}
+	drawn := make([]string, 0, len(b.heard.Acts))
+	for _, act := range b.heard.Acts {
 		drawn = append(drawn, Clip(b.line(act), width))
 	}
 	if rows < 1 {
@@ -384,6 +388,15 @@ func (b Board) history(number, width, rows int) []string {
 	// get wrong.
 	pane.GotoBottom()
 	return strings.Split(pane.View(), "\n")
+}
+
+// hearing reads the history of a task, to be drawn from until it is read
+// again.
+func (b Board) hearing(number int) tea.Cmd {
+	return func() tea.Msg {
+		shown, err := b.work.Ask(engine.TraceShow, reading.Numbered(number))
+		return Heard{Number: number, Acts: shown.Acts, Err: err}
+	}
 }
 
 // pad puts a string in a fixed width, so a column of names lines up.

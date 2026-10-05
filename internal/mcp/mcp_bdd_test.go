@@ -218,6 +218,14 @@ func (w *world) iCallTaskSearchLookingFor(term string) error {
 	return nil
 }
 
+// iCallTaskSearchLookingForNothing calls `task_search` with the list of
+// things to look for present and empty — which is not the same call as leaving
+// it out, and was answered as if everything had matched.
+func (w *world) iCallTaskSearchLookingForNothing() error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{}})
+	return nil
+}
+
 // iCallNamingAnArgumentItDoesNotTake calls tool with a name among its
 // arguments it does not recognise — the way a typo such as "numbre" for
 // "number" would arrive over the wire.
@@ -467,26 +475,6 @@ func (w *world) theCallItselfFails() error {
 		return fmt.Errorf("the call succeeded, want it to fail before cairn ever saw it")
 	}
 	return nil
-}
-
-// aStoreFromAnOlderCairnHoldingATaskTitled turns the store into one an older
-// cairn would have written, by undoing the last change to its shape through
-// the real command — the same thing internal/cli's own olderStore step does
-// for bdd/migration.feature and bdd/backup.feature, kept as its own copy
-// here rather than reaching into cli's package: cli's step is already green
-// and package mcp_test may not edit it, and neither test.World holds a
-// "forget the backups a rollback set aside" step of its own to build on.
-func (w *world) aStoreFromAnOlderCairnHoldingATaskTitled(title string) error {
-	if err := w.Seed(fmt.Sprintf(`cairn task add "%s"`, title)); err != nil {
-		return err
-	}
-	if err := w.Seed(`cairn migration rollback --yes`); err != nil {
-		return err
-	}
-	// Undoing set a backup aside, which is right for somebody undoing on
-	// purpose and wrong as a starting point: nothing here counts backups, but
-	// leaving it behind would mean the next call sees an old backup on disk.
-	return os.RemoveAll(filepath.Join(filepath.Dir(w.StorePath), "backups"))
 }
 
 // theTaskHasNoDeadline fails unless the last call's structured content names
@@ -916,6 +904,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `task_add` with the title \"([^\"]*)\" and the labels \"([^\"]*)\" and \"([^\"]*)\"$",
 			w.iCallTaskAddWithTheTitleAndTheLabels)
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\"$", w.iCallTaskSearchLookingFor)
+		sc.Step("^I call `task_search` looking for nothing$", w.iCallTaskSearchLookingForNothing)
 		sc.Step("^it answers with a task carrying both labels$", w.itAnswersWithATaskCarryingBothLabels)
 		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)
 		sc.Step(`^it answers with (\d+) tasks?$`, w.itAnswersWithNTasks)
@@ -939,7 +928,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^the answer says (.+)$`, w.theAnswerSays)
 		sc.Step(`^the call itself fails$`, w.theCallItselfFails)
 		sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`,
-			w.aStoreFromAnOlderCairnHoldingATaskTitled)
+			w.AStoreFromAnOlderCairn)
 	}
 }
 

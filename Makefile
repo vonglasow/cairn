@@ -7,17 +7,14 @@ BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PKG      = cairn/internal/build
 # go install puts tools in GOPATH/bin, which is not always on PATH.
 GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins")
-# Minimum statement coverage. Raise it deliberately; never lower it to get a
-# commit through.
+# The two coverage floors, in total and per package. Why each is where it is,
+# and why the second sits below the first, is said once, in docs/checks.md.
+# Raise them deliberately; never lower them to get a commit through.
 COVERAGE_MIN ?= 90
-# What each package owes on its own, below the total. Lower than the total on
-# purpose: a package may sit honestly under the average — measured, the store
-# and the harness both do — and a floor set at the total would fail the
-# repository as it stands rather than the code being added to it.
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run red cover cover-check tested-check harness-check mutation mutation-changed check clean
+.PHONY: build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check clean
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -55,7 +52,7 @@ red:
 # twice. `-race` costs about a second here and reports two goroutines touching
 # the same variable unsynchronised, which `-covermode=atomic` does not — atomic
 # only keeps the coverage counters themselves honest under concurrency.
-coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*)
+coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*) go.mod go.sum
 	@go test -race ./... -covermode=atomic -coverprofile=$@
 
 ## cover: print coverage per function, then the total
@@ -70,10 +67,7 @@ cover: coverage.out
 ## while. Measured — a package added at 0% cost eight points of the total and
 ## only then broke the floor.
 ##
-## `cmd/` is left out, and here is why: its only function is `main`, which no
-## test can call without ending the process that runs it. What it does is
-## exercised through the scenarios of `internal/cli`, which is where the command
-## line actually lives.
+## `cmd/` is left out of the per-package floor — docs/checks.md says why.
 cover-check: coverage.out
 	@failed=0; \
 	total=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$$NF); print $$NF}'); \
@@ -103,13 +97,11 @@ cover-check: coverage.out
 ## missing, and it is the cheapest of the three: a package either has a test
 ## file or it does not.
 tested-check:
-	@missing=0; \
-	for pkg in $$(go list ./... | sed "s|^cairn|.|"); do \
-		ls $$pkg/*_test.go >/dev/null 2>&1 && continue; \
-		echo "✗ $$pkg has no test file"; \
-		missing=1; \
-	done; \
-	if [ $$missing -eq 1 ]; then exit 1; fi; \
+	@untested=$$(scripts/packages.sh --untested); \
+	if [ -n "$$untested" ]; then \
+		for pkg in $$untested; do echo "✗ $$pkg has no test file"; done; \
+		exit 1; \
+	fi; \
 	echo "✓ every package has a test file"
 
 ## harness-check: fail if the binary reaches the test harness
@@ -127,6 +119,13 @@ harness-check:
 	fi
 	@echo "✓ the binary does not reach the test harness"
 
+## gremlins-present: both mutation targets need it, so they ask once here.
+gremlins-present:
+	@command -v $(GREMLINS) >/dev/null || { \
+		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
+		exit 1; \
+	}
+
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%.
@@ -134,21 +133,13 @@ harness-check:
 ## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
 ## they are passed as flags. That is measured, not assumed — see the comment
 ## there before moving them back.
-mutation:
-	@command -v $(GREMLINS) >/dev/null || { \
-		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
-		exit 1; \
-	}
+mutation: gremlins-present
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh
 
 ## mutation-changed: the same judgement on the lines changed since HEAD only, in
 ## the packages they are in. It is what a commit runs; the full sweep above is
 ## what a push runs, so nothing leaves the machine without every package judged.
-mutation-changed:
-	@command -v $(GREMLINS) >/dev/null || { \
-		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
-		exit 1; \
-	}
+mutation-changed: gremlins-present
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
 
 ## check: every hook prek has, on every file — the commit's, then the push's.

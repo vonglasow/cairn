@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -20,6 +19,7 @@ import (
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/task"
+	"cairn/test"
 )
 
 type world struct {
@@ -114,15 +114,20 @@ func (w *world) aWindow(width, high int) error {
 	return nil
 }
 
+// givens writes what a scenario says is in the store, as somebody else.
+func (w *world) givens() test.Givens {
+	return test.Givens{Other: func() test.Asker { return w.other }}
+}
+
 func (w *world) addTask(title, state, desc string) error {
-	changes := engine.Changes{}
+	given := map[string]string{"title": title}
 	if state != "" {
-		changes.State = &state
+		given["state"] = state
 	}
 	if desc != "" {
-		changes.Description = &desc
+		given["desc"] = desc
 	}
-	_, err := w.other.Add(title, changes)
+	_, err := w.other.Ask(engine.TaskAdd, engine.Input{Given: given})
 	return err
 }
 
@@ -142,15 +147,6 @@ func (w *world) inField(name string) (func(int) Point, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("the form has no field called %q", name)
-}
-
-func (w *world) addMany(n int, state string) error {
-	for i := 1; i <= n; i++ {
-		if err := w.addTask(fmt.Sprintf("Task %d", i), state, ""); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (w *world) storeRefuses() error {
@@ -237,11 +233,6 @@ func (w *world) clickTab(name string) error {
 	box := TabAt(w.w.Layout(), int(tab))
 	w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	return nil
-}
-
-func (w *world) addObjective(title string) error {
-	_, err := w.other.AddObjective(title, engine.ObjectiveChanges{})
-	return err
 }
 
 // findGoal is where an objective sits in the list, by the title a scenario
@@ -539,8 +530,7 @@ func (w *world) setField(name, value string) error {
 }
 
 func (w *world) somebodyElseAdds(title string) error {
-	_, err := w.other.Add(title, engine.Changes{})
-	return err
+	return w.givens().IAddedATaskTitled(title)
 }
 
 func (w *world) looksAgain() error {
@@ -554,56 +544,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	sc.Given(`^a store of my own, somewhere that is not the default place$`, func() error { return nil })
-	sc.Given(`^nothing in it yet$`, func() error { return nil })
+	w.givens().Register(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
-	sc.Step(`^I added a task titled "([^"]*)"$`, func(t string) error { return w.addTask(t, "", "") })
-	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
-		func(n int, first, second string) error {
-			_, err := w.other.Edit(n, engine.Changes{Labels: &[]string{first, second}})
-			return err
-		})
-	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, func(title, est string) error {
-		_, err := w.other.Add(title, engine.Changes{Estimate: &est})
-		return err
-	})
-	sc.Step(`^I archived task (\d+)$`, func(n int) error { return w.other.Archive(n) })
-	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, func(t, s string) error {
-		return w.addTask(t, s, "")
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the description "([^"]*)"$`, func(t, d string) error {
-		return w.addTask(t, "", d)
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the paragraphs "([^"]*)" and "([^"]*)"$`, func(t, one, two string) error {
-		return w.addTask(t, "", one+"\n"+two)
-	})
-	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, w.addMany)
-	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, func(n int, day string) error {
-		_, err := w.other.Ask(engine.TaskEdit, engine.Input{
-			Given: map[string]string{"number": strconv.Itoa(n), "deadline": day},
-		})
-		return err
-	})
-	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, func(n int, state string) error {
-		_, err := w.other.Edit(n, engine.Changes{State: &state})
-		return err
-	})
-	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, func(title string, n int) error {
-		_, err := w.other.Add(title, engine.Changes{Objective: &[]string{fmt.Sprint(n)}})
-		return err
-	})
-	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)" serving objective (\d+)$`, func(title, state string, n int) error {
-		_, err := w.other.Add(title, engine.Changes{State: &state, Objective: &[]string{fmt.Sprint(n)}})
-		return err
-	})
-	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, func(title string, under int) error {
-		_, err := w.other.Add(title, engine.Changes{Parent: &under})
-		return err
-	})
-	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
-		_, err := w.other.PutInFocus(n)
-		return err
-	})
 	sc.Step(`^the store refuses what it is asked to change$`, w.storeRefuses)
 
 	sc.When(`^I open the window$`, w.open)
@@ -622,7 +564,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
-	sc.Step(`^I added an objective titled "([^"]*)"$`, w.addObjective)
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
 	// Pressed and let go, which is how a click reaches this window. Calling
 	// Click straight misses everything a release decides on the way — and it
@@ -696,9 +637,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I added (\d+) tasks serving objective (\d+)$`, func(n, serving int) error {
 		for i := range n {
-			_, err := w.other.Add(fmt.Sprintf("Task %d", i+1),
-				engine.Changes{Objective: &[]string{fmt.Sprint(serving)}})
-			if err != nil {
+			if err := w.givens().IAddedATaskServingObjective(fmt.Sprintf("Task %d", i+1), serving); err != nil {
 				return err
 			}
 		}
@@ -829,7 +768,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 // workedOn edits the last task added over and over, so it carries more history
 // than any panel could hold.
 func (w *world) workedOn(times int) error {
-	found, err := w.other.List()
+	found, err := w.givens().Tasks()
 	if err != nil {
 		return err
 	}
@@ -838,8 +777,7 @@ func (w *world) workedOn(times int) error {
 	}
 	number := task.OfTask(found[len(found)-1]).Number
 	for i := range times {
-		state := []string{"todo", "current", "backlog"}[i%3]
-		if _, err := w.other.Edit(number, engine.Changes{State: &state}); err != nil {
+		if err := w.givens().IEditedTaskWithTheState(number, []string{"todo", "current", "backlog"}[i%3]); err != nil {
 			return err
 		}
 	}
@@ -958,7 +896,7 @@ func (w *world) dragHistoryBar() error {
 
 func (w *world) addManyObjectives(n int) error {
 	for i := 1; i <= n; i++ {
-		if err := w.addObjective(fmt.Sprintf("Objective %d", i)); err != nil {
+		if err := w.givens().IAddedAnObjectiveTitled(fmt.Sprintf("Objective %d", i)); err != nil {
 			return err
 		}
 	}

@@ -4,7 +4,11 @@
 // moment the way a person reads one.
 package trace
 
-import "time"
+import (
+	"time"
+
+	"cairn/internal/domain"
+)
 
 // The acts that are not about an attribute a task carries. Named here because
 // both the engine that records them and the text that renders them have to say
@@ -64,46 +68,14 @@ type Told interface {
 	At(time.Time)
 }
 
-// TellOrNot tells a value to a membrane, or tells its absence when there is
-// none.
-//
-// It lives here rather than in each caller because four facts of an act are
-// absent in the same way, and everyone who builds an act has the same four ifs
-// to write. It was written twice before this — once in the store reading a row,
-// once in the engine recording something — and two copies of one rule is one
-// place for it to start saying something different.
-func TellOrNot(value string, told func(string), absent func()) {
-	if value == "" {
-		absent()
-		return
-	}
-	told(value)
-}
-
 // Tell says every fact this act carries to the given membrane, absence
 // included, in the order a line lays them out.
 func (a Act) Tell(to Told) {
 	to.On(a.task)
 	to.Did(a.did)
-	if a.field == "" {
-		to.NothingNamed()
-	} else {
-		to.Changing(a.field)
-	}
-	if a.was == "" {
-		to.WasNothing()
-	} else {
-		to.Was(a.was)
-	}
-	if a.became == "" {
-		to.BecameNothing()
-	} else {
-		to.Became(a.became)
-	}
-	if a.through == "" {
-		to.ByHand()
-	} else {
-		to.Through(a.through)
-	}
+	domain.TellOrNot(a.field, to.Changing, to.NothingNamed)
+	domain.TellOrNot(a.was, to.Was, to.WasNothing)
+	domain.TellOrNot(a.became, to.Became, to.BecameNothing)
+	domain.TellOrNot(a.through, to.Through, to.ByHand)
 	to.At(a.at)
 }

@@ -1,10 +1,11 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"strings"
 	"testing"
 	"time"
+
+	"cairn/internal/reading"
 
 	"charm.land/lipgloss/v2"
 )
@@ -38,7 +39,7 @@ func TestMarks(t *testing.T) {
 	if got := marks(reading.Card{}, g); got != "" {
 		t.Fatalf("a card carrying nothing is marked %q", got)
 	}
-	if got := marks(reading.Card{Described: true}, g); got != g.Described {
+	if got := marks(reading.Card{Description: "something written"}, g); got != g.Described {
 		t.Fatalf("a described card is marked %q", got)
 	}
 	if got := marks(reading.Card{State: "blocked"}, g); got != g.Blocked {
@@ -46,7 +47,7 @@ func TestMarks(t *testing.T) {
 	}
 	// The state anchors the right-hand end, so the eye finds it in the same
 	// place whether or not there is a description beside it.
-	both := marks(reading.Card{Described: true, State: "paused"}, g)
+	both := marks(reading.Card{Description: "something written", State: "paused"}, g)
 	if !strings.HasSuffix(both, g.Paused) {
 		t.Fatalf("the state is not last: %q", both)
 	}
@@ -117,7 +118,7 @@ func TestCardIsAlwaysSixRows(t *testing.T) {
 	l := LayoutFor(100, 40)
 	for _, c := range []reading.Card{
 		{Number: 1, Title: "Short"},
-		{Number: 2, Title: "A title long enough to run over two whole lines and then some", Described: true, SubDone: 1, SubTotal: 2, Labels: []string{"a", "b"}, Deadline: on("2026-09-02")},
+		{Number: 2, Title: "A title long enough to run over two whole lines and then some", Description: "something written", SubDone: 1, SubTotal: 2, Labels: []string{"a", "b"}, Deadline: on("2026-09-02")},
 		{Number: 3, Title: "In focus", InFocus: true},
 	} {
 		drawn := standing(newFake()).with(plainSkin).card(c, l)

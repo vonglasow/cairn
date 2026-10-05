@@ -6,6 +6,8 @@ package reading
 // backlog, which runs the whole height: the backlog is the heap everything
 // lands in, and it holds more than the other three together.
 
+import "cairn/internal/domain"
+
 // Column is one of the four, named as the board writes it.
 type Column struct {
 	State string
@@ -13,20 +15,26 @@ type Column struct {
 	Cards []Card
 }
 
-// columns are the four, left to right, in the order work goes through them.
+// columns are the four, left to right, in the order work goes through them —
+// domain's states, named the way a board writes them.
 var columns = []struct{ state, name string }{
-	{"backlog", "BACKLOG"},
-	{"todo", "TODO"},
-	{"current", "CURRENT"},
-	{"done", "DONE"},
+	{string(domain.Backlog), "BACKLOG"},
+	{string(domain.Todo), "TODO"},
+	{string(domain.Current), "CURRENT"},
+	{string(domain.Done), "DONE"},
 }
 
 // Columns is how many columns stand side by side: backlog, todo, current,
 // done. The band underneath is not one of them — it lies across the last
 // three.
 //
-// Read off the list rather than written again, so the two cannot disagree.
+// A constant rather than len(columns), so a board can size what it keeps per
+// column by it; TestTheBoardIsLaidOutFromDomainsStates holds the two together.
 const Columns = 4
+
+// Stalled are the three states the band holds, in the order it lays them out:
+// domain's three that mean a task is not moving.
+var Stalled = []string{string(domain.Blocked), string(domain.Watching), string(domain.Paused)}
 
 // Band is the name the three stopped states share. Not "waiting", because one
 // of the three is called watching and two seven-letter words that contain one

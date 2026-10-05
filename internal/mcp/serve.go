@@ -1,10 +1,11 @@
 package mcp
 
 import (
-	"cairn/internal/engine"
 	"context"
 	"errors"
 	"io"
+
+	"cairn/internal/engine"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -21,12 +22,14 @@ type Server struct {
 	// server starts, and never per call — so nothing later has to work out
 	// whether this particular request was allowed. A tool above the level is
 	// left out of what is offered rather than offered and refused.
-	Access Access
-	// Places is where the store and the notes live. internal/mcp does not
-	// read the environment itself — the surface that starts the server
-	// resolves both and hands them over, the way internal/cli's places does
-	// for every other command.
-	Places engine.Places
+	Access engine.Level
+	// Home is what the server runs in: the home directory and the
+	// environment. internal/mcp does not read either itself — the surface that
+	// starts the server hands them over — and it does not work out the places
+	// from them either: the engine does, at each call, so a configuration
+	// changed while the server runs is read by the next call, and `config
+	// show` is answered even when the file stands in every other call's way.
+	Home engine.Home
 }
 
 // noCloseWriter wraps an io.Writer so closing it is a no-op: the caller owns
@@ -48,7 +51,7 @@ func (noCloseWriter) Close() error { return nil }
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, nil)
 	for _, op := range offered(s.Access) {
-		server.AddTool(toolFor(op), handlerFor(op, s.Places))
+		server.AddTool(toolFor(op), handlerFor(op, s.Home))
 	}
 	transport := &sdk.IOTransport{Reader: io.NopCloser(in), Writer: noCloseWriter{out}}
 	err := server.Run(ctx, transport)

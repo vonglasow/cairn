@@ -9,7 +9,7 @@ import (
 // counted apart for the same reason they are everywhere else: they are not the
 // same thing, and one total would hide which of the two somebody is about to
 // overwrite. The tags are the wire as much as the fields are: a machine reads
-// this shape directly, on its own or nested under a BackupShape.
+// this shape directly, on its own or nested under a backup's.
 type Held struct {
 	Tasks      int `json:"tasks"`
 	Objectives int `json:"objectives"`
@@ -35,23 +35,14 @@ type Backup struct {
 // minute. A backup and a change to the store are both dated with it, so the
 // format lives here once rather than in each place that reads one.
 func FormatMoment(t time.Time) string {
-	return t.Local().Format("2006-01-02 15:04")
+	return t.Local().Format(momentLayout)
 }
 
-// BackupShape is how a backup crosses to a machine.
-type BackupShape struct {
-	Number int    `json:"number"`
-	Made   string `json:"made"`
-	Holds  *Held  `json:"holds,omitempty"`
-}
+// momentLayout is how a moment is written for a person: local time, to the
+// minute.
+const momentLayout = "2006-01-02 15:04"
 
-// OfBackup turns a backup into what crosses, holding what it held when that
-// was counted, and nothing when it was not: making a backup does not open it,
-// and a zero nobody measured would read as an empty store.
-func OfBackup(b Backup, held *Held) BackupShape {
-	out := BackupShape{Number: b.Number, Made: FormatMoment(b.Made)}
-	if held != nil {
-		out.Holds = &Held{Tasks: held.Tasks, Objectives: held.Objectives}
-	}
-	return out
+// ParseMoment reads back a moment FormatMoment wrote, in local time.
+func ParseMoment(s string) (time.Time, error) {
+	return time.ParseInLocation(momentLayout, s, time.Local)
 }

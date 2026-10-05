@@ -67,16 +67,16 @@ func TestSpent_knowsWhetherItMovesOrSets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseSpent: %v", err)
 	}
-	if !moving.Moves() {
-		t.Error("a signed duration moves what is there")
+	if got := moving.Apply(time.Hour); got != 90*time.Minute {
+		t.Errorf("a signed duration moves what is there: an hour became %v", got)
 	}
 
 	setting, err := ParseSpent("2h")
 	if err != nil {
 		t.Fatalf("ParseSpent: %v", err)
 	}
-	if setting.Moves() {
-		t.Error("a plain duration sets the total, it does not move it")
+	if got := setting.Apply(time.Hour); got != 2*time.Hour {
+		t.Errorf("a plain duration sets the total: an hour became %v", got)
 	}
 }
 

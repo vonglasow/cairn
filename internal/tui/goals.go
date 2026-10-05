@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
 	"cairn/internal/reading"
 )
 
@@ -20,13 +20,13 @@ import (
 // StandingGlyph answers the mark an objective's state is drawn with.
 func StandingGlyph(state string, g Glyphs) string {
 	switch state {
-	case "active":
+	case string(objective.Active):
 		return g.Active
-	case "on-hold":
+	case string(objective.OnHold):
 		return g.OnHold
-	case "reached":
+	case string(objective.Reached):
 		return g.Reached
-	case "dropped":
+	case string(objective.Dropped):
 		return g.Dropped
 	default:
 		return ""
@@ -47,7 +47,7 @@ func (b Board) goalFacts(g reading.Goal, width int) string {
 	told := []string{}
 	dressed := []string{}
 	if g.Total > 0 {
-		count := fmt.Sprintf("%d/%d", g.Done, g.Total)
+		count := g.Counted()
 		told = append(told, count)
 		dressed = append(dressed, b.skin.Bright.Render(count))
 	}
@@ -103,30 +103,13 @@ func (b Board) goalRows(g reading.Goal, width int) []string {
 // goalMarks is the right-hand end of an objective's first row.
 func goalMarks(g reading.Goal, gl Glyphs) string {
 	var found []string
-	if g.Described {
+	if g.Described() {
 		found = append(found, gl.Described)
 	}
 	if glyph := StandingGlyph(g.State, gl); glyph != "" {
 		found = append(found, glyph)
 	}
 	return strings.Join(found, " ")
-}
-
-// factsRow is the bar, the count, and whatever else the width allows.
-func factsRow(g reading.Goal, gl Glyphs, width int) string {
-	bar := Bar(g.Done, g.Total, min(barWidth, width))
-	told := []string{}
-	if g.Total > 0 {
-		told = append(told, fmt.Sprintf("%d/%d", g.Done, g.Total))
-	}
-	for _, label := range g.Labels {
-		told = append(told, gl.Label+" "+label)
-	}
-	rest := Join("  ", width-lipgloss.Width(bar)-2, told...)
-	if rest == "" {
-		return bar
-	}
-	return bar + "  " + rest
 }
 
 // Written is a day as a person reads it, or nothing when there is none.

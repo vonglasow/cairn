@@ -136,28 +136,3 @@ func TestAsTold_losesNothingOnTheWayThroughWhenNothingIsThere(t *testing.T) {
 		t.Errorf("told twice differs:\n  %+v\n  %+v", told(first), told(again.Act()))
 	}
 }
-
-// TellOrNot is what everyone who builds an act uses for the four facts that can
-// be absent. Tested on plain recorders rather than through a fixture that uses
-// it: a fixture calling the function under test moves with it, so breaking one
-// breaks both and every assertion still holds — measured, in this repository,
-// on this very helper.
-func TestTellOrNot_tellsTheValueOrTellsThereIsNone(t *testing.T) {
-	for _, tc := range []struct {
-		value        string
-		wantTold     string
-		wantedAbsent bool
-	}{
-		{"high", "high", false},
-		{"", "", true},
-	} {
-		told, absent := "", false
-		TellOrNot(tc.value, func(v string) { told = v }, func() { absent = true })
-		if told != tc.wantTold {
-			t.Errorf("TellOrNot(%q) told %q, want %q", tc.value, told, tc.wantTold)
-		}
-		if absent != tc.wantedAbsent {
-			t.Errorf("TellOrNot(%q) told absence = %v, want %v", tc.value, absent, tc.wantedAbsent)
-		}
-	}
-}

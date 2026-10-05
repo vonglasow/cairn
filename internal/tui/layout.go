@@ -16,11 +16,6 @@ const (
 	Shortest  = 26
 )
 
-// Columns is how many columns stand side by side: backlog, todo, current,
-// done. The band underneath is not one of them — it lies across the last
-// three.
-const Columns = 4
-
 // CardHeight is the six rows every card takes, whatever it carries. Fixed on
 // purpose: it makes moving the cursor arithmetic rather than measurement, and
 // it lets a column say how much of itself is off screen without drawing one.

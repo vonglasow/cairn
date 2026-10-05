@@ -12,11 +12,12 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
 )
 
 // Standings are the four an objective can be in, in the order a list keeps
 // them: what is being worked towards first, what was finished with last.
-var Standings = []string{"active", "on-hold", "reached", "dropped"}
+var Standings = []string{string(objective.Active), string(objective.OnHold), string(objective.Reached), string(objective.Dropped)}
 
 // standingAt answers where a state stands in the order. Anything unrecognised
 // sorts last rather than first: a word nobody planned for should not push what
@@ -71,4 +72,13 @@ func ReachesGoal(g Goal, query string) bool {
 		}
 	}
 	return true
+}
+
+// Counted is how much of an objective is done, the way a board writes it.
+func (g Goal) Counted() string { return strconv.Itoa(g.Done) + "/" + strconv.Itoa(g.Total) }
+
+// Percent is the share of it done, by the domain's rule: 0 and 100 are kept for
+// nothing done and everything done.
+func (g Goal) Percent() int {
+	return domain.Progress{Tasks: domain.Tally{Total: g.Total, Done: g.Done}}.Percent()
 }

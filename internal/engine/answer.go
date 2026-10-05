@@ -157,7 +157,7 @@ type Objectives struct {
 // Kept is how a listing of backups crosses — named for what is kept beside the
 // store, since Backups already names the way to reach them.
 type Kept struct {
-	Backups []domain.BackupShape `json:"backups"`
+	Backups []BackupShape `json:"backups"`
 }
 
 // Ledger is how a listing of changes to the shape of the store crosses, with
@@ -201,7 +201,7 @@ type Objective struct {
 func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Objective {
 	numbers := make([]int, 0, len(under))
 	for _, t := range under {
-		numbers = append(numbers, task.OfTask(t).Number)
+		numbers = append(numbers, factsOf(t).number)
 	}
 	return Objective{
 		Shape:    objective.OfObjective(o),
@@ -215,9 +215,13 @@ type Labelled struct {
 	Labelled int `json:"labelled"`
 }
 
-// Swept is how a sweep answers: how many were taken off the board.
+// Swept is how archiving answers: how many were taken off the board and, when
+// one was named by its number, that task as it ends up. One shape whether one
+// was named or a narrowing reached several, because a description that says
+// "either of these" is one a client has to resolve at runtime.
 type Swept struct {
-	Archived int `json:"archived"`
+	Archived int   `json:"archived"`
+	Task     *Task `json:"task,omitempty"`
 }
 
 // Deleted confirms an act on something numbered — a task deleted, an
@@ -247,96 +251,72 @@ type Refusal struct {
 	Error string `json:"error"`
 }
 
-// Of turns what an operation answered into the shape a machine reads. Answer
-// carries every field an operation might fill but only the two or three that
-// are its own, so the fields are checked in turn, the most specific first: a
-// single entity outranks a list of them, and a list outranks the bookkeeping
-// shapes that carry no entity at all.
+// Of turns what an operation answered into the shape a machine reads — the
+// shape the operation declared it answers, and no other.
 //
-// Written with ifs rather than a switch on purpose: a tagless switch puts its
-// conditions outside any covered block, so a mutation of one of them reports
-// as unreachable and the gate cannot judge it.
-func Of(a Answer) any {
-	// Config is its own answer, sharing no field with any other operation's —
-	// checked first for that reason alone, not because it could be mistaken
-	// for one of the branches below.
-	if a.Config != nil {
+// Read off the declaration rather than worked out from which field of the
+// Answer happened to be filled. Worked out, the order of the checks decided the
+// answer: a task beside the focus had to be checked before a plain task, a sweep
+// answered one shape when it took one task off and another when it took two,
+// and the schema an agent was handed described only one of them.
+func Of(op Operation, a Answer) any {
+	switch op.Answers.(type) {
+	case Config:
 		return *a.Config
-	}
-	if a.Sheet != nil {
+	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named)
-	}
-	// A task alongside the focus is the focus being told, and nothing else
-	// tells it that way: a card asked for by number says nothing about the
-	// focus, and a listing carries its rows too. Checked first, because the
-	// plain-task branch below would otherwise swallow it.
-	if a.Task != nil && a.InFocus != nil {
-		return ofFocus([]task.Task{*a.Task}, a.Progress, *a.InFocus)
-	}
-	if a.Held != nil && a.InFocus != nil {
-		return ofFocus(a.Held, domain.Progress{}, *a.InFocus)
-	}
-	if a.Task != nil {
+	case Focus:
+		held := a.Held
+		if a.Task != nil {
+			held = []task.Task{*a.Task}
+		}
+		return ofFocus(held, a.Progress, heldOr(a.InFocus))
+	case Task:
 		said := ofTaskUnder(*a.Task, a.Progress, a.Under)
 		said.Context = a.Context
 		return said
-	}
-	if a.Tasks != nil {
+	case Swept:
+		swept := Swept{Archived: *a.Archived}
+		if a.Task != nil {
+			one := OfTask(*a.Task, a.Progress)
+			swept.Task = &one
+		}
+		return swept
+	case Tasks:
+		if a.Matched != nil {
+			return ofTasks(a.Matched, a.InFocus)
+		}
 		return ofTasks(a.Tasks, a.InFocus)
-	}
-	if a.Matched != nil {
-		return ofTasks(a.Matched, a.InFocus)
-	}
-	if a.Objective != nil {
+	case Objective:
 		return OfObjective(*a.Objective, a.Under, a.Progress)
-	}
-	if a.Objectives != nil {
+	case Objectives:
+		if a.MatchedObjectives != nil {
+			return Objectives{Objectives: ofObjectives(a.MatchedObjectives)}
+		}
 		return Objectives{Objectives: ofObjectives(a.Objectives)}
-	}
-	if a.MatchedObjectives != nil {
-		return Objectives{Objectives: ofObjectives(a.MatchedObjectives)}
-	}
-	if a.Backup != nil {
-		return domain.OfBackup(*a.Backup, a.Holds)
-	}
-	if a.Backups != nil {
+	case BackupShape:
+		return OfBackup(*a.Backup, a.Holds)
+	case Kept:
 		return Kept{Backups: ofBackups(a.Backups)}
-	}
-	if a.Change != nil {
+	case migration.Shape:
 		return migration.OfMigration(*a.Change)
-	}
-	if a.Changes != nil {
+	case Ledger:
 		return Ledger{Changes: ofChanges(a.Changes), Holds: a.Holds}
-	}
-	if a.RolledBack != nil {
+	case migration.RolledBack:
 		return migration.OfRolledBack(*a.RolledBack)
-	}
-	if a.Archived != nil {
-		return Swept{Archived: *a.Archived}
-	}
-	if a.Labelled != nil {
+	case Labelled:
 		return Labelled{Labelled: *a.Labelled}
-	}
-	if a.Deleted != nil {
+	case Deleted:
 		return Deleted{Deleted: *a.Deleted}
-	}
-	if a.PutBack != nil {
+	case PutBack:
 		return PutBack{PutBack: *a.PutBack}
-	}
-	if a.Applied != nil {
+	case Applied:
 		return Applied{Applied: a.Applied}
-	}
-	if a.Holds != nil {
-		return *a.Holds
-	}
-	if a.Acts != nil {
+	case Acts:
+		if a.Since != nil {
+			return Acts{Acts: ofActs(a.Since)}
+		}
 		return Acts{Acts: ofActs(a.Acts)}
-	}
-	if a.Since != nil {
-		return Acts{Acts: ofActs(a.Since)}
-	}
-	if a.InFocus != nil {
-		return nothingInFocus(*a.InFocus)
 	}
 	return nil
 }
@@ -370,9 +350,6 @@ func ofFocus(held []task.Task, p domain.Progress, numbers []int) Focus {
 // nothingInFocus turns "nothing is being worked on" into what crosses — the
 // same shape as ofFocus with both lists empty, so a machine reads one field of
 // one shape whether or not anything is held.
-func nothingInFocus(numbers []int) Focus {
-	return Focus{Tasks: []Task{}, InFocus: listed(numbers)}
-}
 
 // ofTasks turns a listing of tasks into what crosses, a row each.
 func ofTasks(tasks []task.Task, inFocus *[]int) Tasks {
@@ -421,10 +398,10 @@ func ofObjectives(all []objective.Objective) []Objective {
 
 // ofBackups turns every backup into what crosses, with nothing said about
 // what each held: listing them does not open any of them to count.
-func ofBackups(all []domain.Backup) []domain.BackupShape {
-	out := make([]domain.BackupShape, 0, len(all))
+func ofBackups(all []domain.Backup) []BackupShape {
+	out := make([]BackupShape, 0, len(all))
 	for _, b := range all {
-		out = append(out, domain.OfBackup(b, nil))
+		out = append(out, OfBackup(b, nil))
 	}
 	return out
 }
@@ -448,81 +425,70 @@ func contextText(at string) string {
 	return "\ncontext  " + at + "\n"
 }
 
-// RenderText turns an answer into what a person reads. It works from which
-// field of the answer was set, the same way Of works out the JSON — with one
-// exception that field cannot resolve on its own: Deleted names three
-// different things (a task, an objective, a backup), and only the operation
-// says which. A change shown in full and a change just rolled back need no
-// such help — Answer keeps them apart itself, in Change and RolledBack.
-//
-// Written with ifs rather than a switch on purpose: a tagless switch puts its
-// conditions outside any covered block, so a mutation of one of them reports
-// as unreachable and the gate cannot judge it.
+// RenderText turns an answer into what a person reads: the rendering of the
+// shape the operation declared it answers, the way Of builds the JSON. The
+// operation also names what Deleted counts — a task, an objective, a backup.
 func RenderText(op Operation, a Answer) string {
-	if a.Sheet != nil {
+	switch op.Answers.(type) {
+	case Config:
+		return configText(*a.Config)
+	case Timesheet:
 		return trace.SheetText(*a.Sheet, a.Named)
-	}
-	if a.Task != nil {
-		return task.Text(*a.Task, a.Progress) + task.Under(a.Under) + contextText(a.Context)
-	}
-	if a.Tasks != nil {
-		return tasksText(a.Tasks, a)
-	}
-	if a.Matched != nil {
-		return foundText(a.Matched, a)
-	}
-	if a.Objective != nil {
-		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
-	}
-	if a.Objectives != nil {
-		return objectivesText(a.Objectives)
-	}
-	if a.MatchedObjectives != nil {
-		return objectivesText(a.MatchedObjectives)
-	}
-	if a.Backup != nil {
-		return backupLine(*a.Backup, *a.Holds)
-	}
-	if a.Backups != nil {
-		return backupsText(a.Backups)
-	}
-	if a.RolledBack != nil {
-		return migration.RolledBackText(*a.RolledBack)
-	}
-	if a.Change != nil {
-		return migration.Text(*a.Change)
-	}
-	if a.Changes != nil {
-		return migration.List(a.Changes, *a.Holds)
-	}
-	if a.Archived != nil {
+	case Focus:
+		if a.Task != nil {
+			return cardText(a)
+		}
+		return heldText(a.Held, a)
+	case Task:
+		return cardText(a)
+	case Swept:
+		if a.Task != nil {
+			return cardText(a)
+		}
 		return fmt.Sprintf("%d %s(s) archived\n", *a.Archived, op.Thing)
-	}
-	if a.Labelled != nil {
+	case Tasks:
+		if a.Matched != nil {
+			return foundText(a.Matched, a)
+		}
+		return tasksText(a.Tasks, a)
+	case Objective:
+		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
+	case Objectives:
+		if a.MatchedObjectives != nil {
+			return objectivesText(a.MatchedObjectives)
+		}
+		return objectivesText(a.Objectives)
+	case BackupShape:
+		return backupLine(*a.Backup, *a.Holds)
+	case Kept:
+		return backupsText(a.Backups)
+	case migration.RolledBack:
+		return migration.RolledBackText(*a.RolledBack)
+	case migration.Shape:
+		return migration.Text(*a.Change)
+	case Ledger:
+		return migration.List(a.Changes, *a.Holds)
+	case Labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
-	}
-	if a.Deleted != nil {
+	case Deleted:
 		return fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
-	}
-	if a.PutBack != nil {
+	case PutBack:
 		return fmt.Sprintf("backup %d was put back\n", *a.PutBack)
-	}
-	if a.Applied != nil {
+	case Applied:
 		return appliedText(a.Applied)
-	}
-	if a.Acts != nil {
+	case Acts:
+		if a.Since != nil {
+			return trace.List(a.Since)
+		}
 		return trace.Text(a.Acts)
 	}
-	if a.Since != nil {
-		return trace.List(a.Since)
-	}
-	if a.Held != nil {
-		return heldText(a.Held, a)
-	}
-	if a.InFocus != nil {
-		return "nothing is in focus\n"
-	}
 	return ""
+}
+
+// cardText is one task in full, what hangs under it, and where its context
+// lives.
+func cardText(a Answer) string {
+	return task.Text(*a.Task, a.Progress) + task.Under(a.Under) + contextText(a.Context)
 }
 
 // heldText renders the tasks being worked on, saying so plainly when there are
@@ -608,4 +574,22 @@ func appliedText(made []string) string {
 		_, _ = fmt.Fprintf(&out, "applied %q\n", name)
 	}
 	return out.String()
+}
+
+// BackupShape is how a backup crosses to a machine.
+type BackupShape struct {
+	Number int          `json:"number"`
+	Made   string       `json:"made"`
+	Holds  *domain.Held `json:"holds,omitempty"`
+}
+
+// OfBackup turns a backup into what crosses, holding what it held when that
+// was counted, and nothing when it was not: making a backup does not open it,
+// and a zero nobody measured would read as an empty store.
+func OfBackup(b domain.Backup, held *domain.Held) BackupShape {
+	out := BackupShape{Number: b.Number, Made: domain.FormatMoment(b.Made)}
+	if held != nil {
+		out.Holds = &domain.Held{Tasks: held.Tasks, Objectives: held.Objectives}
+	}
+	return out
 }

@@ -1,9 +1,10 @@
 package tui
 
 import (
-	"cairn/internal/reading"
 	"strings"
 	"testing"
+
+	"cairn/internal/reading"
 )
 
 func TestHeader(t *testing.T) {
