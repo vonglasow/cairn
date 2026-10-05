@@ -15,14 +15,14 @@ import (
 // the engine's answer, the one place that reaches both notions, carries them
 // instead.
 type Shape struct {
-	Number      int      `json:"number"`
-	Title       string   `json:"title"`
-	State       string   `json:"state"`
-	Priority    string   `json:"priority"`
-	Description string   `json:"description"`
-	Labels      []string `json:"labels"`
-	Deadline    string   `json:"deadline"`
-	Estimate    string   `json:"estimate"`
+	Number      int      `json:"number" jsonschema:"the objective's number, never handed out twice"`
+	Title       string   `json:"title" jsonschema:"what the objective is called"`
+	State       string   `json:"state" jsonschema:"where it stands: active, on-hold, reached or dropped"`
+	Priority    string   `json:"priority" jsonschema:"low, normal, high or critical"`
+	Description string   `json:"description" jsonschema:"what is written about it; empty when nothing is"`
+	Labels      []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
+	Deadline    string   `json:"deadline" jsonschema:"the day it is due, as 2026-12-01; empty when it has none"`
+	Estimate    string   `json:"estimate" jsonschema:"how long it was expected to take, as 40h; empty when nobody said"`
 }
 
 // shapeMembrane is an objective's membrane for the shape a machine reads: it

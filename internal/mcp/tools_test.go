@@ -182,13 +182,9 @@ func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 }
 
 func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
-	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`not json`)}}
-
-	if _, err := handle(context.Background(), req); err == nil {
-		t.Fatal("handle = nil, want an error reading arguments that are not valid JSON")
-	}
+	refusedAsNotUnderstood(t, handle, req, "")
 }
 
 // TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne pins the decision
@@ -196,37 +192,39 @@ func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 // bare string is not the one-element list it might have meant, so it is
 // refused by name rather than guessed at.
 func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
-	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":"spec"}`),
 	}}
-
-	_, err := handle(context.Background(), req)
-	if err == nil {
-		t.Fatal(`handle = nil, want an error: "label" was handed a string, not a list`)
-	}
-	if !strings.Contains(err.Error(), `"label"`) {
-		t.Fatalf("err = %v, want it to name %q", err, "label")
-	}
+	refusedAsNotUnderstood(t, handle, req, `"label"`)
 }
 
 // TestHandlerFor_refusesAListElementThatIsNotAString pins the decision this
 // slice made for {"label": [1, true]}: an element that is not a string is
 // refused by name rather than turned into one.
 func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
-	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":[1,true]}`),
 	}}
+	refusedAsNotUnderstood(t, handle, req, `"label"`)
+}
 
-	_, err := handle(context.Background(), req)
-	if err == nil {
-		t.Fatal(`handle = nil, want an error: an element of "label" is not a string`)
+// refusedAsNotUnderstood calls a tool with arguments it cannot read, and fails
+// unless the answer is a refusal like any other — IsError, the reason as text
+// naming what it could not read, and its kind under _meta — rather than a
+// call that failed: an agent branches on one shape for every refusal.
+func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallToolRequest, naming string) {
+	t.Helper()
+	result, err := handle(context.Background(), req)
+	if err != nil || result == nil || !result.IsError {
+		t.Fatalf("handle = %+v, %v; want a refusal answered", result, err)
 	}
-	if !strings.Contains(err.Error(), `"label"`) {
-		t.Fatalf("err = %v, want it to name %q", err, "label")
+	if text := result.Content[0].(*sdk.TextContent).Text; !strings.Contains(text, naming) {
+		t.Errorf("text = %q, want it to name %s", text, naming)
+	}
+	if said, ok := result.Meta[refusalKey].(engine.Refusal); !ok || said.Kind != engine.KindUsage {
+		t.Errorf("_meta = %#v, want a refusal of kind usage", result.Meta)
 	}
 }
 

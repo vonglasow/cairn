@@ -6,6 +6,8 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"cairn/internal/domain"
@@ -60,20 +62,25 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, erro
 		return trace.Sheet{}, nil, err
 	}
 	sheet := trace.Timed(acts, first, last, time.Now())
-	titles := map[int]string{}
+	// Each task worked on is read once, however many days it was worked on.
+	worked := map[int]bool{}
 	for _, day := range sheet.Days {
 		for _, w := range day.Tasks {
-			// A task deleted since keeps its time and loses its name: the
-			// number still says which one it was.
-			t, err := e.tasks.Find(w.Task)
-			if errors.Is(err, ErrNoSuchTask) {
-				continue
-			}
-			if err != nil {
-				return trace.Sheet{}, nil, err
-			}
-			titles[w.Task] = factsOf(t).title
+			worked[w.Task] = true
 		}
+	}
+	titles := map[int]string{}
+	for _, number := range slices.Sorted(maps.Keys(worked)) {
+		// A task deleted since keeps its time and loses its name: the number
+		// still says which one it was.
+		t, err := e.tasks.Find(number)
+		if errors.Is(err, ErrNoSuchTask) {
+			continue
+		}
+		if err != nil {
+			return trace.Sheet{}, nil, err
+		}
+		titles[number] = factsOf(t).title
 	}
 	return sheet, titles, nil
 }

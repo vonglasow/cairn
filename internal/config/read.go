@@ -185,44 +185,55 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		storeNamedBy: byNothing,
 		notesNamedBy: byNothing,
 	}
-	if f.Store != nil {
-		expanded := expandTilde(*f.Store, home)
-		if !filepath.IsAbs(expanded) {
-			return Reading{path: path, err: fmt.Errorf("%q: %w", *f.Store, ErrNotAbsolute)}, nil
+	// The file first, then the environment, which is not a third rung after
+	// the file and the default: it replaces the answer outright, rather than
+	// taking a turn before it. Set but empty says nothing, so the answer
+	// stands as it was worked out. Every place is read the same way —
+	// expanded, then judged — and it was written out four times.
+	for _, c := range []claim{
+		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},
+		{f.Notes, &answer.notes, &answer.notesNamedBy, byTheFile, ""},
+		{fromEnv(lookupEnv, StoreVariable), &answer.store, &answer.storeNamedBy, byTheEnvironment, StoreVariable},
+		{fromEnv(lookupEnv, NotesVariable), &answer.notes, &answer.notesNamedBy, byTheEnvironment, NotesVariable},
+	} {
+		if c.said == nil {
+			continue
 		}
-		answer.store = expanded
-		answer.storeNamedBy = byTheFile
-	}
-	if f.Notes != nil {
-		expanded := expandTilde(*f.Notes, home)
+		expanded := expandTilde(*c.said, home)
 		if !filepath.IsAbs(expanded) {
-			return Reading{path: path, err: fmt.Errorf("%q: %w", *f.Notes, ErrNotAbsolute)}, nil
+			return Reading{path: path, err: fmt.Errorf("%s: %w", c.quoted(), ErrNotAbsolute)}, nil
 		}
-		answer.notes = expanded
-		answer.notesNamedBy = byTheFile
-	}
-
-	// The environment is not a third rung after the file and the default: it
-	// replaces the answer above outright, rather than taking a turn before it.
-	// Set but empty says nothing, so answer stands as it was worked out. What
-	// it names is read the way the file's places are: expanded, then judged.
-	if said, ok := lookupEnv(StoreVariable); ok && said != "" {
-		expanded := expandTilde(said, home)
-		if !filepath.IsAbs(expanded) {
-			return Reading{path: path, err: fmt.Errorf("%s=%q: %w", StoreVariable, said, ErrNotAbsolute)}, nil
-		}
-		answer.store = expanded
-		answer.storeNamedBy = byTheEnvironment
-	}
-	if said, ok := lookupEnv(NotesVariable); ok && said != "" {
-		expanded := expandTilde(said, home)
-		if !filepath.IsAbs(expanded) {
-			return Reading{path: path, err: fmt.Errorf("%s=%q: %w", NotesVariable, said, ErrNotAbsolute)}, nil
-		}
-		answer.notes = expanded
-		answer.notesNamedBy = byTheEnvironment
+		*c.place, *c.namedBy = expanded, c.by
 	}
 	return Reading{path: path, places: answer}, nil
+}
+
+// claim is one source naming one place: what it said, nothing when it said
+// nothing, where the answer keeps it, and who it is.
+type claim struct {
+	said     *string
+	place    *string
+	namedBy  *namedBy
+	by       namedBy
+	variable string
+}
+
+// quoted is what a refusal quotes: the place as written in the file, or the
+// variable and what it was set to.
+func (c claim) quoted() string {
+	if c.variable == "" {
+		return fmt.Sprintf("%q", *c.said)
+	}
+	return fmt.Sprintf("%s=%q", c.variable, *c.said)
+}
+
+// fromEnv is what a variable said of a place: nothing when it is unset or
+// set to nothing.
+func fromEnv(lookupEnv func(string) (string, bool), name string) *string {
+	if said, ok := lookupEnv(name); ok && said != "" {
+		return &said
+	}
+	return nil
 }
 
 // readGate is a ReadingTold that captures whichever single fact a Reading

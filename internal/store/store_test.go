@@ -804,3 +804,23 @@ func (r *told) UnderNothing()           {}
 func (r *told) Serves(int)              {}
 func (r *told) ServesNothing()          {}
 func (r *told) ObjectivesTold()         {}
+
+func TestWithin_letsGoOfTheStoreWhenAnActPanics(t *testing.T) {
+	s := openStore(t)
+	func() {
+		defer func() { _ = recover() }()
+		_ = s.Within(func(*Store) error { panic("an act that went wrong") })
+	}()
+	if err := s.Within(func(kept *Store) error { _, err := kept.Keep(mustTask(t, "after")); return err }); err != nil {
+		t.Errorf("Within after a panic = %v, want the store free again", err)
+	}
+}
+
+func mustTask(t *testing.T, title string) task.Task {
+	t.Helper()
+	built, err := task.NewTask(title)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return built
+}

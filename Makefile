@@ -12,6 +12,11 @@ GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins"
 # gate that changed under a commit nobody made would pass or fail for a reason
 # that is not in this repository.
 GREMLINS_VERSION ?= v0.6.0
+# The linter and the vulnerability scanner, named for the same reason. What
+# govulncheck finds stays current — its database is read on the day — and what
+# it is does not move under a commit nobody made (docs/checks.md).
+GOLANGCI_VERSION ?= 2.13.2
+GOVULNCHECK_VERSION ?= v1.8.0
 # The two coverage floors, in total and per package. Why each is where it is,
 # and why the second sits below the first, is said once, in docs/checks.md.
 # Raise them deliberately; never lower them to get a commit through.
@@ -19,7 +24,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
+.PHONY: release tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -145,6 +150,15 @@ gremlins-present:
 		exit 1; \
 	}
 
+## tools-present: refuse to judge with a linter or a scanner other than the one named here
+## brew upgrades both on its own, and a lint rule that appeared overnight would
+## fail — or pass — a commit for a reason that is not in this repository.
+tools-present:
+	@golangci-lint --version 2>/dev/null | grep -q "version $(GOLANGCI_VERSION) " || { \
+		echo "golangci-lint is not $(GOLANGCI_VERSION) — see docs/checks.md, Getting them"; exit 1; }
+	@govulncheck -version 2>/dev/null | grep -q "govulncheck@$(GOVULNCHECK_VERSION)" || { \
+		echo "govulncheck is not $(GOVULNCHECK_VERSION) — go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)"; exit 1; }
+
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%.
@@ -174,6 +188,20 @@ check:
 ## it runs on; this is what checks that half. It needs Docker. See the script.
 linux:
 	@scripts/linux.sh
+
+## release: check that this is a version, check everything, then build it and what travels with it
+## A version is a tag on a clean main, and nothing else; this refuses to build
+## one from anything else, then runs what docs/release.md lists, in its order,
+## and writes the binary's checksum beside it.
+release:
+	@[ "$$(git rev-parse --abbrev-ref HEAD)" = main ] || { echo "a version is made on main"; exit 1; }
+	@[ -z "$$(git status --porcelain)" ] || { echo "a version is made from a clean tree"; exit 1; }
+	@git describe --tags --exact-match >/dev/null 2>&1 || { echo "a version is a tag on this commit — see docs/release.md"; exit 1; }
+	@$(MAKE) check
+	@$(MAKE) linux
+	@$(MAKE) build
+	@$(MAKE) notices
+	@cd bin && shasum -a 256 cairn > cairn.sha256 && cat cairn.sha256
 
 ## notices: write the licences of what the binary is built from, beside it
 ## What travels with a binary handed to somebody — see docs/release.md.

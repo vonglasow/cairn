@@ -229,22 +229,14 @@ func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
 	if _, err := e.objectives.FindObjective(number); err != nil {
 		return domain.Progress{}, err
 	}
-	serving, err := e.objectives.TasksServing(number)
+	// Counted the way every listing counts: one reading of every task, then
+	// arithmetic. Asking for the parts of each task it serves read every link
+	// of the store once per task — four queries a task, for one number.
+	_, objectives, err := e.alongEvery(nil, false)
 	if err != nil {
 		return domain.Progress{}, err
 	}
-	var p domain.Progress
-	for _, t := range serving {
-		p.Tasks = counted(p.Tasks, t)
-		under, err := e.tasks.Under(factsOf(t).number)
-		if err != nil {
-			return domain.Progress{}, err
-		}
-		for _, sub := range under {
-			p.SubTasks = counted(p.SubTasks, sub)
-		}
-	}
-	return p, nil
+	return objectives[number], nil
 }
 
 // alongEvery is how far along every task and every objective is, counted from

@@ -2,6 +2,7 @@ package objective_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -78,5 +79,23 @@ func TestOfObjective_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	}
 	if got := string(encoded); !strings.Contains(got, `"labels":[]`) {
 		t.Errorf("labels should be an empty list, got %s", got)
+	}
+}
+
+// Every field that crosses to a machine says what it holds, and what its empty
+// value means: an agent reading a 0 or an empty string cannot otherwise tell
+// "none" from a value.
+func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
+	for _, shape := range []any{objective.Shape{}} {
+		of := reflect.TypeOf(shape)
+		for i := range of.NumField() {
+			field := of.Field(i)
+			if field.Anonymous {
+				continue
+			}
+			if field.Tag.Get("jsonschema") == "" {
+				t.Errorf("%s.%s says nothing of what it holds", of.Name(), field.Name)
+			}
+		}
 	}
 }

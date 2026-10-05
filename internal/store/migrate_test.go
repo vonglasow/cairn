@@ -606,3 +606,19 @@ func TestRollBack_leavesTheChangeWholeWhenUndoingItFailsHalfWay(t *testing.T) {
 		t.Errorf("%d changes waiting, want the change still applied", len(waiting))
 	}
 }
+
+func TestMake_saysAChangeAnotherCairnAppliedFirstIsApplied(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+	if _, err := s.Apply(2); err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+	// What a second cairn does when it read the change as waiting a moment
+	// before the first applied it.
+	if err := s.make(migration.Known[1]); !errors.Is(err, ErrAlreadyApplied) {
+		t.Errorf("make of a change already applied = %v, want ErrAlreadyApplied", err)
+	}
+}

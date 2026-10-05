@@ -402,7 +402,10 @@ type Answer struct {
 	Progress          domain.Progress
 	Holds             *domain.Held
 	Deleted           *int
-	PutBack           *int
+	// Unblocked names the tasks a deleted task was in the way of: the link
+	// goes with it, and afterwards nothing would say they once waited on it.
+	Unblocked []int
+	PutBack   *int
 	// Archived is how many a sweep took off the board, Labelled how many it
 	// put a label on.
 	Archived *int

@@ -1155,6 +1155,18 @@ Feature: Tasks
       And I run `cairn task show 2`
       Then it says nothing blocks it
 
+    @task-delete-names-what-it-was-blocking
+    Scenario: deleting a task says which tasks it was in the way of
+      The link goes with the task, and nothing would say a task once waited on
+      it: the deletion is the one moment that can.
+
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn task delete 1 --yes`
+      Then it succeeds
+      And it says task 2 was waiting on it
+
   Rule: A task can be deleted
 
     @task-delete

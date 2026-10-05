@@ -32,8 +32,11 @@ func (s *Store) Within(act func(*Store) error) error {
 	if err != nil {
 		return fmt.Errorf("beginning an act on the store: %w", err)
 	}
+	// Undone however the act ends — an error, or a panic that would
+	// otherwise leave the write lock held for as long as the process lives.
+	// After a commit, there is nothing left to undo and this does nothing.
+	defer func() { _ = tx.Rollback() }()
 	if err := act(&Store{db: s.db, on: tx, path: s.path}); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 	if err := tx.Commit(); err != nil {

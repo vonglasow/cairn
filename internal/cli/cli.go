@@ -121,8 +121,10 @@ func askedForJSON(args []string) bool {
 		if arg == "--"+jsonFlag {
 			return true
 		}
+		// Any spelling but a plain no is a request: one the flag cannot read
+		// still says the caller wanted a machine's answer.
 		if said, ok := strings.CutPrefix(arg, "--"+jsonFlag+"="); ok {
-			if yes, err := strconv.ParseBool(said); err == nil && yes {
+			if yes, err := strconv.ParseBool(said); err != nil || yes {
 				return true
 			}
 		}
@@ -150,14 +152,29 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	// from the parsed flags, because a command that failed to parse never got
 	// as far as its flags.
 	asMachine := askedForJSON(args)
+	// Whether the flags could be read at all. When they could, what they say
+	// decides; when they could not, the words are all there is to go on.
+	flagsRead := true
+	refusing := root.FlagErrorFunc()
+	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
+		flagsRead = false
+		return refusing(c, err)
+	})
 
 	// fang writes the error itself, to the command's error stream, and returns
 	// it so the caller can still decide what to exit with.
 	err := fang.Execute(ctx, root, fang.WithErrorHandler(
 		func(w io.Writer, styles fang.Styles, err error) {
+			// Once the flags were read, what they say decides: "--json"
+			// given as the value of another flag asked for nothing. The words
+			// are only looked at when the flags could not be read at all.
+			machine := asMachine
+			if c, _, found := root.Find(args); found == nil && flagsRead && c.Flags().Parsed() {
+				machine = wantsJSON(c)
+			}
 			// A refusal that cannot be written as JSON is said where a
 			// person reads instead: an empty stream tells a machine nothing.
-			if asMachine && writeRefusal(stdout, err) == nil {
+			if machine && writeRefusal(stdout, err) == nil {
 				return
 			}
 			fang.DefaultErrorHandler(w, styles, err)

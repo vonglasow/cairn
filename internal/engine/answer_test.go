@@ -527,3 +527,16 @@ func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
 		}
 	}
 }
+
+// What was kept before cairn refused escapes is printed shown, never obeyed:
+// the command line and an agent's text both come from here.
+func TestRenderText_showsWhatATerminalWouldObey(t *testing.T) {
+	var a task.AsTold
+	a.Numbered(1)
+	a.Titled("look \x1b[8m here")
+	a.Described("bell\x07 and \x1b]52;c;aGk=\x07")
+	kept := a.Task()
+	if got := RenderText(TaskShow, Answer{Task: &kept}); strings.ContainsAny(got, "\x1b\x07") {
+		t.Errorf("RenderText = %q, want nothing a terminal would obey", got)
+	}
+}

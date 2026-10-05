@@ -57,7 +57,7 @@ func TestOrNothing_showsAnAbsenceAsAnAbsence(t *testing.T) {
 
 // What is written about a thing runs over several lines and may line things up
 // with a tab, but it is printed straight to a terminal: an escape among it is
-// an instruction to that terminal, not text — hidden text, a link that lies
+// an instruction to that terminal, not text \u2014 hidden text, a link that lies
 // about where it goes, a write to the clipboard.
 func TestProse_refusesWhatATerminalWouldReadAsAnInstruction(t *testing.T) {
 	for what, said := range map[string]string{
@@ -77,11 +77,11 @@ func TestProse_refusesWhatATerminalWouldReadAsAnInstruction(t *testing.T) {
 
 func TestProse_keepsLinesAndTabs(t *testing.T) {
 	for said, want := range map[string]string{
-		"two\nparagraphs":       "two\nparagraphs",
-		"lined\tup":             "lined\tup",
-		"written on\r\nwindows": "written on\nwindows",
-		"Écrire — enfin":        "Écrire — enfin",
-		"":                      "",
+		"two\nparagraphs":          "two\nparagraphs",
+		"lined\tup":                "lined\tup",
+		"written on\r\nwindows":    "written on\nwindows",
+		"\u00C9crire \u2014 enfin": "\u00C9crire \u2014 enfin",
+		"":                         "",
 	} {
 		got, err := Prose(said)
 		if err != nil || got != want {
@@ -98,6 +98,54 @@ func TestParseLabels_refusesALabelThatIsNotOneLine(t *testing.T) {
 		}
 		if _, err := ParseLabelChange([]string{"+" + label}); !errors.Is(err, ErrLabelNotOneLine) {
 			t.Errorf("ParseLabelChange(+%q) = %v, want it refused", label, err)
+		}
+	}
+}
+
+// A character that turns text around or hides in it says one thing on screen
+// and keeps another: a title shown backwards is a title somebody acts on
+// believing it says what it does not.
+func TestOneLineAndProse_refuseWhatTurnsTextAroundOrHides(t *testing.T) {
+	for what, said := range map[string]string{
+		"a right-to-left override": "pay \u202Eevil\u202C now",
+		"an isolate":               "a \u2066b\u2069",
+		"a zero-width space":       "spec\u200Bial",
+		"a byte-order mark":        "\uFEFFtitle",
+	} {
+		if err := OneLine(said); !errors.Is(err, ErrTitleNotOneLine) {
+			t.Errorf("%s: OneLine = %v, want it refused", what, err)
+		}
+		if _, err := Prose(said); !errors.Is(err, ErrNotText) {
+			t.Errorf("%s: Prose = %v, want it refused", what, err)
+		}
+	}
+}
+
+// What was kept before the refusals existed is shown with what a terminal
+// would obey replaced, and everything else as it was.
+func TestShown_replacesWhatATerminalWouldObey(t *testing.T) {
+	for kept, want := range map[string]string{
+		"look \x1b]52;c;aGk=\x07 here": "look \uFFFD]52;c;aGk=\uFFFD here",
+		"pay \u202Eevil\u202C now":     "pay \uFFFDevil\uFFFD now",
+		"two\nparagraphs\twith a tab":  "two\nparagraphs\twith a tab",
+		"\u00C9crire \u2014 enfin":     "\u00C9crire \u2014 enfin",
+	} {
+		if got := Shown(kept); got != want {
+			t.Errorf("Shown(%q) = %q, want %q", kept, got, want)
+		}
+	}
+}
+
+// The ranges that hide, at both of their ends and just past them.
+func TestHides_takesEachRangeToItsEnds(t *testing.T) {
+	for r, want := range map[rune]bool{
+		'\u2029': false, '\u202A': true, '\u202E': true, '\u202F': false,
+		'\u2065': false, '\u2066': true, '\u2069': true, '\u206A': false,
+		'\u200A': false, '\u200B': true, '\u200D': true, '\u200E': false,
+		'\uFEFE': false, '\uFEFF': true, 'a': false,
+	} {
+		if got := hides(r); got != want {
+			t.Errorf("hides(%U) = %v, want %v", r, got, want)
 		}
 	}
 }

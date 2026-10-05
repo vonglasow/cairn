@@ -63,8 +63,8 @@ func TestRead_refusesAPlaceTheEnvironmentNamesThatIsNotAbsolute(t *testing.T) {
 			return "", false
 		}
 		_, err := config.Read(t.TempDir(), env)
-		if !errors.Is(err, config.ErrNotAbsolute) || !strings.Contains(err.Error(), "relative/place") {
-			t.Errorf("%s: Read = %v, want ErrNotAbsolute naming the place", variable, err)
+		if !errors.Is(err, config.ErrNotAbsolute) || !strings.Contains(err.Error(), variable+`="relative/place"`) {
+			t.Errorf("%s: Read = %v, want ErrNotAbsolute naming the variable and what it was set to", variable, err)
 		}
 	}
 }
@@ -313,8 +313,10 @@ func TestRead_refusesAPlaceThatIsNotAbsolute(t *testing.T) {
 				if !errors.Is(err, config.ErrNotAbsolute) {
 					t.Errorf("err = %v, want it to be config.ErrNotAbsolute", err)
 				}
-				if !strings.Contains(err.Error(), place) {
-					t.Errorf("err = %q, want it to name %q", err.Error(), place)
+				// Quoted as the file wrote it, and nothing before it: no
+				// variable set it.
+				if !strings.HasPrefix(err.Error(), strconv.Quote(place)) {
+					t.Errorf("err = %q, want it to begin with %q", err.Error(), strconv.Quote(place))
 				}
 			})
 		}

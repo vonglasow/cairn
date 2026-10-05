@@ -20,6 +20,12 @@ The number reads `vMAJOR.MINOR.PATCH`. What moves it:
 
 ## The steps
 
+`make release` is the steps below, in their order, after refusing anything
+that is not a version: a branch other than `main`, a tree with something
+uncommitted, a commit no tag names. It ends by writing the binary's checksum
+beside it, `bin/cairn.sha256`. The steps are written out all the same, so a
+failure says which one it was.
+
 1. **Everything checked, on both systems.**
 
    ```sh
@@ -52,7 +58,8 @@ The number reads `vMAJOR.MINOR.PATCH`. What moves it:
    tree says `-dirty`, and is not a version. The notices go wherever the binary
    goes — most of what it is built from asks for its licence to travel with it,
    and `scripts/notices.sh` reads them from the module cache, for the modules the
-   binary actually links.
+   binary actually links, with Go's own; every licence and notice file of a
+   module is kept, and a module with none fails it.
 
 4. **The other system.** A binary for Linux is built on Linux: the window needs
    cgo and the system's graphics headers there, which a cross-compile from a Mac

@@ -62,6 +62,15 @@ to the task above it and is counted towards that task's objectives through it â€
 an objective it served alone would be one its parent might have nothing to do
 with.
 
+## What was taken off the board still counts
+
+Archiving a task keeps it whole, and what it did for an objective is part of
+it: a task archived done is still a task done towards what it served, and one
+archived open is still open. Sweeping the done column at the end of a sprint
+leaves every objective exactly as far along as it was; `objective show` still
+lists them. Counting only what is on the board would make an objective go
+backwards every time somebody tidied up.
+
 ## Where it lives, and what the migration does
 
 In a table of its own, `task_objectives`, the same shape as the labels and the

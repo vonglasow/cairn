@@ -20,26 +20,26 @@ import (
 // fact, by a second list kept in step with this one.
 type Shape struct {
 	Facts
-	Description string `json:"description"`
+	Description string `json:"description" jsonschema:"what is written about the task; empty when nothing is"`
 }
 
 // Facts is everything a task carries but what it says: the part of it a
 // listing hands over for every row.
 type Facts struct {
-	Number int    `json:"number"`
-	Parent int    `json:"parent"`
-	Title  string `json:"title"`
-	State  string `json:"state"`
+	Number int    `json:"number" jsonschema:"the task's number, never handed out twice"`
+	Parent int    `json:"parent" jsonschema:"the number of the task this one is a part of; 0 when it is a task in its own right"`
+	Title  string `json:"title" jsonschema:"what the task is called"`
+	State  string `json:"state" jsonschema:"the column it stands in: backlog, todo, current, blocked, watching, paused or done"`
 	// Archived is beside the state, so a machine is told both.
-	Archived   bool     `json:"archived"`
-	Priority   string   `json:"priority"`
-	Labels     []string `json:"labels"`
-	BlockedBy  []int    `json:"blocked_by"`
-	Because    string   `json:"because"`
-	Deadline   string   `json:"deadline"`
-	Estimate   string   `json:"estimate"`
-	TimeSpent  string   `json:"time_spent"`
-	Objectives []int    `json:"objectives"`
+	Archived   bool     `json:"archived" jsonschema:"true when it was taken off the board and kept"`
+	Priority   string   `json:"priority" jsonschema:"low, normal, high or critical"`
+	Labels     []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
+	BlockedBy  []int    `json:"blocked_by" jsonschema:"the numbers of the tasks in its way; empty or null when none is"`
+	Because    string   `json:"because" jsonschema:"what is in its way that is not a task cairn holds; empty when nothing is said"`
+	Deadline   string   `json:"deadline" jsonschema:"the last day it may be done, as 2026-09-01; empty when it has none"`
+	Estimate   string   `json:"estimate" jsonschema:"how long it was expected to take, as 1h30m; empty when nobody said"`
+	TimeSpent  string   `json:"time_spent" jsonschema:"how long has been spent on it, as 1h30m; empty when nothing has"`
+	Objectives []int    `json:"objectives" jsonschema:"the numbers of the objectives it serves; empty or null when it serves none"`
 }
 
 // shapeMembrane is a task's membrane for the shape a machine reads: it is

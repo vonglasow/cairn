@@ -248,7 +248,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		}
 		var v string
 		given[arg.Name] = &v
-		cmd.Flags().StringVar(&v, arg.Name, "", arg.Means)
+		cmd.Flags().StringVar(&v, arg.Name, "", helpOf(arg))
 	}
 	if op.Level == engine.Full {
 		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work")
@@ -260,6 +260,17 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 // in everything under a heading.
 func indented(examples string) string {
 	return "  " + strings.ReplaceAll(examples, "\n", "\n  ")
+}
+
+// helpOf is what a flag's help says: the argument's own sentence, and for
+// free text that it can come from standard input — said where it is used,
+// since the help is where somebody looks for how to hand over three
+// paragraphs. A value from a closed set is never three paragraphs.
+func helpOf(arg engine.Argument) string {
+	if arg.Kind != engine.Text || len(arg.OneOf) > 0 {
+		return arg.Means
+	}
+	return arg.Means + "; " + fromStandardInput + " reads it from standard input"
 }
 
 // fromStandardInput is how a text says it is to be read from standard input.

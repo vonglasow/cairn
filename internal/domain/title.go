@@ -33,7 +33,17 @@ var ErrTitleNotOneLine = errors.New("a title is one line, with nothing but text 
 // the two Unicode separators are named: U+2028 breaks a line and U+2029 a
 // paragraph, and both split a listing row in two exactly like a newline.
 func breaksALine(r rune) bool {
-	return unicode.IsControl(r) || r == '\u2028' || r == '\u2029'
+	return unicode.IsControl(r) || r == '\u2028' || r == '\u2029' || hides(r)
+}
+
+// hides says whether a rune turns the text around it, or sits in it unseen:
+// the bidirectional overrides and isolates, the zero-width spaces and joiners,
+// and the byte-order mark. None of them is a control character, and every one
+// makes text show something other than what it holds — a title drawn
+// backwards, a word with an invisible break in it.
+func hides(r rune) bool {
+	return r >= '\u202A' && r <= '\u202E' || r >= '\u2066' && r <= '\u2069' ||
+		r >= '\u200B' && r <= '\u200D' || r == '\uFEFF'
 }
 
 // OneLine says whether a title is text and nothing else. It is shared by a
@@ -60,7 +70,21 @@ var ErrNotText = errors.New("only text, line breaks and tabs can be written here
 // instructs says whether a rune, among prose, would be read as an instruction
 // rather than shown: every control character but the line break and the tab.
 func instructs(r rune) bool {
-	return unicode.IsControl(r) && r != '\n' && r != '\t'
+	return unicode.IsControl(r) && r != '\n' && r != '\t' || hides(r)
+}
+
+// Shown is text as it is safe to put on a screen: every rune a terminal would
+// obey, or that would turn the text around, replaced by the one that says
+// something was there. What is written is refused such runes; what was kept
+// before that refusal existed — or comes back with an older backup — is
+// shown this way instead of obeyed.
+func Shown(kept string) string {
+	return strings.Map(func(r rune) rune {
+		if instructs(r) {
+			return '\uFFFD'
+		}
+		return r
+	}, kept)
 }
 
 // Prose is what is written about a thing as it is kept: several lines and tabs

@@ -2,6 +2,7 @@ package task_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -120,5 +121,23 @@ func TestOfTask_keepsWhatATaskSaysApartFromItsFacts(t *testing.T) {
 	shape := task.OfTask(a.Task())
 	if shape.Title != "Write the spec" || shape.Description != "in full" {
 		t.Errorf("the facts say %q and the task says %q", shape.Title, shape.Description)
+	}
+}
+
+// Every field that crosses to a machine says what it holds, and what its empty
+// value means: an agent reading a 0 or an empty string cannot otherwise tell
+// "none" from a value.
+func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
+	for _, shape := range []any{task.Shape{}, task.Facts{}} {
+		of := reflect.TypeOf(shape)
+		for i := range of.NumField() {
+			field := of.Field(i)
+			if field.Anonymous {
+				continue
+			}
+			if field.Tag.Get("jsonschema") == "" {
+				t.Errorf("%s.%s says nothing of what it holds", of.Name(), field.Name)
+			}
+		}
 	}
 }

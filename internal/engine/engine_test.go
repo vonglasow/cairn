@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"cairn/internal/domain"
@@ -517,5 +518,50 @@ func TestEngine_refusesProseATerminalWouldObey(t *testing.T) {
 	}
 	if _, err := openEngine(t).addObjective("Ship cairn", ObjectiveChanges{Description: of("bell\x07")}); !errors.Is(err, domain.ErrNotText) {
 		t.Errorf("objective: err = %v, want ErrNotText", err)
+	}
+}
+
+// A deletion names the tasks it was in the way of: the link goes with it,
+// and afterwards nothing says a task once waited on it.
+func TestDelete_namesWhatItWasBlocking(t *testing.T) {
+	path := storeAt(t, "Write the spec", "Ship it", "Unrelated")
+	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "2"}, Listed: map[string][]string{"blocker": {"1"}}}); err != nil {
+		t.Fatal(err)
+	}
+	answer, err := Do(TaskDelete, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(answer.Unblocked) != 1 || answer.Unblocked[0] != 2 {
+		t.Errorf("Unblocked = %v, want [2]", answer.Unblocked)
+	}
+	if got := RenderText(TaskDelete, answer); !strings.Contains(got, "task 2 was waiting on it") {
+		t.Errorf("RenderText = %q", got)
+	}
+	if said := Of(TaskDelete, answer).(Deleted); len(said.WasBlocking) != 1 || said.WasBlocking[0] != 2 {
+		t.Errorf("Of = %+v, want what it was blocking named", said)
+	}
+}
+
+// The version a board watches moves when somebody else writes, and only then.
+func TestVersion_movesWhenAnotherWrites(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	watching, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = watching.Close() })
+	before, err := watching.Version()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := watching.Version(); again != before {
+		t.Errorf("the version moved from %d to %d with nobody writing", before, again)
+	}
+	if _, err := Do(TaskAdd, path, given("title", "from elsewhere")); err != nil {
+		t.Fatal(err)
+	}
+	if after, _ := watching.Version(); after == before {
+		t.Error("the version stayed put though another wrote to the store")
 	}
 }

@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"cairn/internal/store"
 )
 
 // engineOn gives an open engine and the path it was opened on, because what is
@@ -76,5 +78,29 @@ func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
 	}
 	if want := []string{"Ask", "Close", "Version"}; !slices.Equal(exported, want) {
 		t.Errorf("an engine exports %v, want only %v", exported, want)
+	}
+}
+
+// Every field of the engine that reaches the store is handed the one it is
+// kept by, in a single place: an act runs as one transaction only when every
+// door it can reach the store through is that transaction, and a field added
+// tomorrow and forgotten would write beside it without a word.
+func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
+	kept, err := store.Open(filepath.Join(t.TempDir(), "cairn.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = kept.Close() })
+	e := (&Engine{}).keptBy(kept)
+	value := reflect.ValueOf(*e)
+	for i := range value.NumField() {
+		field := value.Type().Field(i)
+		kind := field.Type.Kind()
+		if kind != reflect.Interface && kind != reflect.Pointer {
+			continue
+		}
+		if value.Field(i).IsNil() {
+			t.Errorf("Engine.%s is left out of keptBy: an act would reach the store beside its transaction", field.Name)
+		}
 	}
 }

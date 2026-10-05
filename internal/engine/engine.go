@@ -44,8 +44,9 @@ var (
 )
 
 // tasks is what the engine needs from whatever keeps its tasks. Declared here,
-// by the consumer, so the rules stay testable and a second backing can arrive
-// without the engine noticing.
+// by the consumer, so the rules stay testable against a fake and the engine
+// names only what it uses. It is not what would let a second backing arrive
+// unnoticed: transactions, migrations and backups still reach the store itself.
 type tasks interface {
 	Keep(task.Task) (task.Task, error)
 	Update(task.Task) error
@@ -108,7 +109,16 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return &Engine{tasks: kept, places: kept, history: kept, objectives: kept, store: kept, path: path}, nil
+	return (&Engine{path: path}).keptBy(kept), nil
+}
+
+// keptBy is this engine with every door it reaches the store through handed
+// the one given — the store itself when it is opened, the one transaction an
+// act runs in when it writes. Written once, for both: a door added and left out
+// of one of them would write beside the transaction, and nothing would say so.
+func (e Engine) keptBy(s *store.Store) *Engine {
+	e.tasks, e.places, e.history, e.objectives, e.store = s, s, s, s, s
+	return &e
 }
 
 // storeProblem marks an error as being about the store itself rather than about
@@ -297,6 +307,26 @@ func (e *Engine) delete(number int) error {
 // under hands back what hangs directly under a task.
 func (e *Engine) under(number int) ([]task.Task, error) {
 	return e.tasks.Under(number)
+}
+
+// waitingOn names the tasks a task is in the way of, in the order their
+// numbers run.
+func (e *Engine) waitingOn(number int) ([]int, error) {
+	every := domain.Narrowing{}
+	every.WithArchived()
+	all, err := e.tasks.Narrowed(&every)
+	if err != nil {
+		return nil, err
+	}
+	var waiting []int
+	for _, t := range all {
+		f := factsOf(t)
+		if slices.Contains(f.blockers, number) {
+			waiting = append(waiting, f.number)
+		}
+	}
+	slices.Sort(waiting)
+	return waiting, nil
 }
 
 // edit changes what was named on a task and leaves the rest alone.

@@ -112,12 +112,27 @@ timedOut() {
     done
 }
 
-# What the full sweep found clean, by the content of the package it judged:
-# a package whose files have not changed since is not judged again at the
-# next push. Kept in the repository's own git directory, out of the tree.
+# What the full sweep found clean, by the content of everything its verdict
+# rests on: a package left unchanged since is not judged again at the next
+# push. Everything means more than the package's own files — the code its
+# tests reach in other packages, the scenarios and pinned files its tests read,
+# the shared harness, and what decides how it is judged: this script, the
+# mutators, the version of gremlins. A scenario weakened elsewhere is exactly
+# what the push is there to catch, and a receipt keyed on the package alone
+# let it through as judged. Kept in the repository's own git directory.
 receipts=$(git rev-parse --git-dir)/mutation-receipts
 mkdir -p "$receipts"
-contentOf() { cat "$1"/*.go go.sum | git hash-object --stdin; }
+contentOf() {
+  {
+    go list -deps -test -f '{{if not .Standard}}{{.Dir}}{{end}}' "$1" | sort -u | while read -r dir; do
+      find "$dir" -maxdepth 1 -name '*.go' | sort | xargs cat
+      [ -d "$dir/testdata" ] && find "$dir/testdata" -type f | sort | xargs cat
+    done
+    cat bdd/*.feature go.sum .gremlins.yaml "$0"
+    echo "$logical"
+    go version -m "$(command -v "$GREMLINS")" 2>/dev/null | grep -i gremlins
+  } | git hash-object --stdin
+}
 receiptOf() { echo "$receipts/$(echo "${1#./}" | tr / _)"; }
 
 # Where a hang caught is written down: each one is either a loop a test did
@@ -134,6 +149,7 @@ logical=" internal/domain internal/engine internal/task internal/objective inter
 
 failed=0
 ran=0
+caught=0
 # A package with no test file is tested-check's to refuse, not this gate's to
 # judge: it has no test that could kill a mutant. Nothing changed is nothing to
 # judge — not every package, which is what the lister answers when handed none.
@@ -149,6 +165,7 @@ for pkg in $judged_packages; do
     continue
   fi
   ran=$((ran + 1))
+  hangs=
   echo "→ $pkg"
   args=(unleash -o "$report")
   $changed && args+=(--diff "$since")
@@ -162,13 +179,23 @@ for pkg in $judged_packages; do
     echo "  timeouts: judging those again, with three times the budget"
     retry=$shim/retry.diff
     timedOut >"$retry"
-    RETRYING=$retry unleash "$pkg" "${args[@]}" --diff "$since" --timeout-coefficient 90
+    again=("${args[@]}")
+    $changed || again+=(--diff "$since")
+    RETRYING=$retry unleash "$pkg" "${again[@]}" --timeout-coefficient 90
+    # A retry that judged nothing wrote no report; that is a gate that did
+    # not run, said as one rather than read as a pass or a crash.
+    if [ ! -f "$report" ]; then
+      echo "  the timeouts could not be judged again: gremlins wrote no report"
+      failed=1
+      continue
+    fi
     bad=$(printf '%s\n%s' "$bad" "$(judged "LIVED" "NOT COVERED")" | sed '/^$/d')
     hangs=$(judged "TIMED OUT")
     if [ -n "$hangs" ]; then
       echo "${hangs//TIMED OUT/HANGS (caught)}"
       echo "${hangs//TIMED OUT/$(date +%F) $pkg}" >>"$hanged"
       echo "  written down in $hanged"
+      caught=$((caught + $(printf '%s\n' "$hangs" | wc -l)))
     fi
     jq -r '"  again: " + ([.files[]?.mutations[] | select(.status != "SKIPPED") | .status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
   fi
@@ -177,10 +204,15 @@ for pkg in $judged_packages; do
     failed=1
     continue
   fi
+  # No receipt for a package with a hang: a hang and a test too slow to tell
+  # from one read the same, and the next push looks again rather than
+  # trusting what nobody has looked at.
+  [ -z "${hangs:-}" ] || continue
   $changed || contentOf "$pkg" >"$(receiptOf "$pkg")"
 done
 
 if $changed && [ "$ran" -eq 0 ]; then
   echo "no production code changed: nothing to mutate"
 fi
+[ "$caught" -eq 0 ] || echo "$caught hang(s) caught — each one is a loop a test noticed or a test too slow to tell from one; see $hanged"
 exit $failed

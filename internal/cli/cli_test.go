@@ -209,3 +209,29 @@ func TestMain_refusesTwoTextsNamedAsADash(t *testing.T) {
 		t.Errorf("exit %d, want %d: only one text can come from standard input", r.Code, exitUsage)
 	}
 }
+
+// Asked for JSON in a spelling the flag cannot read, the refusal is still
+// JSON: the caller asked for it, and a machine reads one stream.
+func TestMain_answersAJSONFlagItCannotReadAsJSON(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	r := run(t, "task", "list", "--json=maybe")
+	if r.Code == exitOK || !strings.HasPrefix(strings.TrimSpace(r.Stdout), `{"error":`) {
+		t.Errorf("stdout %q, stderr %q: want the refusal as JSON", r.Stdout, r.Stderr)
+	}
+}
+
+// "--json" given as the value of a flag is that value: nothing asked for JSON.
+func TestMain_readsJSONGivenAsAValueAsTheValue(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	r := run(t, "task", "edit", "1", "--title", "--json")
+	if strings.Contains(r.Stdout, `{"error":`) || r.Stderr == "" {
+		t.Errorf("stdout %q, stderr %q: want the refusal said to a person", r.Stdout, r.Stderr)
+	}
+}
+
+// Every argument that takes text says it can come from standard input.
+func TestHelp_saysATextCanComeFromStandardInput(t *testing.T) {
+	if got := mustRun(t, "task", "edit", "--help").Stdout; !strings.Contains(got, "standard input") {
+		t.Errorf("task edit --help does not say a text can come from standard input:\n%s", got)
+	}
+}

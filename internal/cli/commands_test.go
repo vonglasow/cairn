@@ -90,8 +90,8 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 				t.Errorf("%s: no --%s flag, and %q takes it", op.Line(), arg.Name, arg.Name)
 				continue
 			}
-			if flag.Usage != arg.Means {
-				t.Errorf("%s --%s: help = %q, want %q (its Means)", op.Line(), arg.Name, flag.Usage, arg.Means)
+			if flag.Usage != helpOf(arg) {
+				t.Errorf("%s --%s: help = %q, want %q (its Means)", op.Line(), arg.Name, flag.Usage, helpOf(arg))
 			}
 			wantType := "string"
 			if arg.Kind == engine.List {

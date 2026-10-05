@@ -43,9 +43,9 @@ func (h *saying) On(int)                {}
 func (h *saying) Did(what string)       { h.said.Did = what }
 func (h *saying) Changing(field string) { h.said.Field = field }
 func (h *saying) NothingNamed()         {}
-func (h *saying) Was(value string)      { h.said.Was = value }
+func (h *saying) Was(value string)      { h.said.Was = domain.Shown(value) }
 func (h *saying) WasNothing()           {}
-func (h *saying) Became(value string)   { h.said.Became = value }
+func (h *saying) Became(value string)   { h.said.Became = domain.Shown(value) }
 func (h *saying) BecameNothing()        {}
 func (h *saying) Through(who string)    { h.said.Through = who }
 func (h *saying) ByHand()               {}

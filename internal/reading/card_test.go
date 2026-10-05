@@ -3,8 +3,11 @@ package reading
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
+
+	"cairn/internal/trace"
 
 	"cairn/internal/task"
 
@@ -229,5 +232,41 @@ func TestWhatHangsUnderATaskComesWhatIsLeftFirst(t *testing.T) {
 	}
 	if said := Tallied(nil); said != "" {
 		t.Fatalf("nothing under it reads %q", said)
+	}
+}
+
+// What was kept before cairn refused escapes reaches a board shown, never
+// obeyed: the terminal board draws these strings straight to the screen.
+func TestCardOf_showsWhatATerminalWouldObey(t *testing.T) {
+	var told task.AsTold
+	told.Numbered(1)
+	told.Titled("look \x1b[8m here")
+	told.Described("bell\x07")
+	told.Because("\u202Eevil")
+	told.Labelled("odd\x1b")
+	told.LabelsTold()
+	card, err := cardOf(told.Task(), nil, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for what, said := range map[string]string{"title": card.Title, "description": card.Description, "because": card.Because, "label": card.Labels[0]} {
+		if strings.ContainsAny(said, "\x1b\x07\u202E") {
+			t.Errorf("the %s reaches the board as %q", what, said)
+		}
+	}
+}
+
+// A line of history read before the refusals is shown the same way.
+func TestSaidOf_showsWhatATerminalWouldObey(t *testing.T) {
+	var a trace.AsTold
+	a.On(1)
+	a.Did(trace.Changed)
+	a.Changing("description")
+	a.Was("old\x1b]52;c;aGk=\x07")
+	a.Became("new")
+	a.ByHand()
+	a.At(time.Now())
+	if line := SaidOf(a.Act()).Line(); strings.ContainsAny(line, "\x1b\x07") {
+		t.Errorf("the history line reaches the board as %q", line)
 	}
 }

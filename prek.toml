@@ -30,6 +30,15 @@ hooks = [
 ]
 
 
+# The linter and the scanner are the versions the Makefile names, asked before
+# either runs: it says nothing about the code, only about the tools about to
+# judge it, and a rule that appeared overnight would otherwise read as a fault.
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "tools-present", name = "the checks are the versions named", entry = "make tools-present", language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum)|(^|/)\.golangci\.yml|(^|/)Makefile)$' },
+]
+
 # Go formatting, imports, and lint.
 [[repos]]
 repo = "https://github.com/dnephin/pre-commit-golang"

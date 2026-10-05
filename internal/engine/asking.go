@@ -38,10 +38,8 @@ func (e *Engine) run(op Operation, in Input) (Answer, error) {
 	}
 	var answer Answer
 	err := e.store.Within(func(kept *store.Store) error {
-		within := *e
-		within.tasks, within.places, within.history, within.objectives, within.store = kept, kept, kept, kept, kept
 		var err error
-		answer, err = op.Run(within.on(), in)
+		answer, err = op.Run(e.keptBy(kept).on(), in)
 		return err
 	})
 	return answer, err

@@ -1,11 +1,19 @@
 {
   "backup_add": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Back up the store as it stands"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {},
       "required": [],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -43,6 +51,13 @@
     }
   },
   "backup_delete": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Delete a backup"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -56,11 +71,21 @@
       ],
       "type": "object"
     },
+    "level": 3,
     "output": {
       "type": "object",
       "properties": {
         "deleted": {
           "type": "integer"
+        },
+        "was_blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
         }
       },
       "required": [
@@ -70,12 +95,20 @@
     }
   },
   "backup_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List every backup"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {},
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -128,6 +161,13 @@
     }
   },
   "backup_restore": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Put a backup back, the most recent one unless told otherwise"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -139,6 +179,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 3,
     "output": {
       "type": "object",
       "properties": {
@@ -153,6 +194,13 @@
     }
   },
   "backup_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Say when a backup was made and what it holds"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -166,6 +214,7 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -203,12 +252,20 @@
     }
   },
   "config_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Show which places cairn will use, and where it got them"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {},
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -260,6 +317,13 @@
     }
   },
   "migration_apply": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Make the changes the store is missing, or one of them"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -271,6 +335,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -291,12 +356,20 @@
     }
   },
   "migration_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Name every change to the store, applied or waiting"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {},
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -357,12 +430,20 @@
     }
   },
   "migration_rollback": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Unmake the last change applied to the store"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {},
       "required": [],
       "type": "object"
     },
+    "level": 3,
     "output": {
       "type": "object",
       "properties": {
@@ -381,6 +462,13 @@
     }
   },
   "migration_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Say what a change does, and what undoing it does"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -394,6 +482,7 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -419,6 +508,13 @@
     }
   },
   "objective_add": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Add an objective"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -471,23 +567,29 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the objective's number, never handed out twice"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the objective is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "where it stands: active, on-hold, reached or dropped"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about it; empty when nothing is"
         },
         "labels": {
           "type": [
@@ -496,13 +598,16 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the day it is due, as 2026-12-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 40h; empty when nobody said"
         },
         "tasks": {
           "type": [
@@ -583,6 +688,13 @@
     }
   },
   "objective_delete": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Delete an objective"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -596,11 +708,21 @@
       ],
       "type": "object"
     },
+    "level": 3,
     "output": {
       "type": "object",
       "properties": {
         "deleted": {
           "type": "integer"
+        },
+        "was_blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
         }
       },
       "required": [
@@ -610,6 +732,13 @@
     }
   },
   "objective_edit": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Change what an objective carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -666,23 +795,29 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the objective's number, never handed out twice"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the objective is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "where it stands: active, on-hold, reached or dropped"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about it; empty when nothing is"
         },
         "labels": {
           "type": [
@@ -691,13 +826,16 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the day it is due, as 2026-12-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 40h; empty when nobody said"
         },
         "tasks": {
           "type": [
@@ -778,6 +916,13 @@
     }
   },
   "objective_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List objectives, all of them or only some"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -812,6 +957,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -824,19 +970,24 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the objective's number, never handed out twice"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the objective is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "where it stands: active, on-hold, reached or dropped"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "description": {
-                "type": "string"
+                "type": "string",
+                "description": "what is written about it; empty when nothing is"
               },
               "labels": {
                 "type": [
@@ -845,13 +996,16 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the day it is due, as 2026-12-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 40h; empty when nobody said"
               },
               "tasks": {
                 "type": [
@@ -939,6 +1093,13 @@
     }
   },
   "objective_search": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Look for an objective by anything it carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -955,6 +1116,7 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -967,19 +1129,24 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the objective's number, never handed out twice"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the objective is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "where it stands: active, on-hold, reached or dropped"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "description": {
-                "type": "string"
+                "type": "string",
+                "description": "what is written about it; empty when nothing is"
               },
               "labels": {
                 "type": [
@@ -988,13 +1155,16 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the day it is due, as 2026-12-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 40h; empty when nobody said"
               },
               "tasks": {
                 "type": [
@@ -1082,6 +1252,13 @@
     }
   },
   "objective_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Show what an objective carries, and how far along it is"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -1095,23 +1272,29 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the objective's number, never handed out twice"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the objective is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "where it stands: active, on-hold, reached or dropped"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about it; empty when nothing is"
         },
         "labels": {
           "type": [
@@ -1120,13 +1303,16 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the day it is due, as 2026-12-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 40h; empty when nobody said"
         },
         "tasks": {
           "type": [
@@ -1207,6 +1393,13 @@
     }
   },
   "task_add": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Add a task"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -1288,26 +1481,33 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
         },
         "parent": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the task is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
         },
         "archived": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "true when it was taken off the board and kept"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "labels": {
           "type": [
@@ -1316,7 +1516,8 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "blocked_by": {
           "type": [
@@ -1325,19 +1526,24 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
         },
         "because": {
-          "type": "string"
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
         },
         "time_spent": {
-          "type": "string"
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
         },
         "objectives": {
           "type": [
@@ -1346,10 +1552,12 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
         },
         "progress": {
           "type": [
@@ -1461,6 +1669,13 @@
     }
   },
   "task_archive": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Take a task off the board, keeping everything it carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -1521,6 +1736,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -1534,22 +1750,28 @@
           ],
           "properties": {
             "number": {
-              "type": "integer"
+              "type": "integer",
+              "description": "the task's number, never handed out twice"
             },
             "parent": {
-              "type": "integer"
+              "type": "integer",
+              "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
             },
             "title": {
-              "type": "string"
+              "type": "string",
+              "description": "what the task is called"
             },
             "state": {
-              "type": "string"
+              "type": "string",
+              "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
             },
             "archived": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "true when it was taken off the board and kept"
             },
             "priority": {
-              "type": "string"
+              "type": "string",
+              "description": "low, normal, high or critical"
             },
             "labels": {
               "type": [
@@ -1558,7 +1780,8 @@
               ],
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
             },
             "blocked_by": {
               "type": [
@@ -1567,19 +1790,24 @@
               ],
               "items": {
                 "type": "integer"
-              }
+              },
+              "description": "the numbers of the tasks in its way; empty or null when none is"
             },
             "because": {
-              "type": "string"
+              "type": "string",
+              "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
             },
             "deadline": {
-              "type": "string"
+              "type": "string",
+              "description": "the last day it may be done, as 2026-09-01; empty when it has none"
             },
             "estimate": {
-              "type": "string"
+              "type": "string",
+              "description": "how long it was expected to take, as 1h30m; empty when nobody said"
             },
             "time_spent": {
-              "type": "string"
+              "type": "string",
+              "description": "how long has been spent on it, as 1h30m; empty when nothing has"
             },
             "objectives": {
               "type": [
@@ -1588,10 +1816,12 @@
               ],
               "items": {
                 "type": "integer"
-              }
+              },
+              "description": "the numbers of the objectives it serves; empty or null when it serves none"
             },
             "description": {
-              "type": "string"
+              "type": "string",
+              "description": "what is written about the task; empty when nothing is"
             },
             "progress": {
               "type": [
@@ -1709,6 +1939,13 @@
     }
   },
   "task_delete": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Delete a task"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -1722,11 +1959,21 @@
       ],
       "type": "object"
     },
+    "level": 3,
     "output": {
       "type": "object",
       "properties": {
         "deleted": {
           "type": "integer"
+        },
+        "was_blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
         }
       },
       "required": [
@@ -1736,6 +1983,13 @@
     }
   },
   "task_edit": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Change what a task carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -1821,26 +2075,33 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
         },
         "parent": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the task is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
         },
         "archived": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "true when it was taken off the board and kept"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "labels": {
           "type": [
@@ -1849,7 +2110,8 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "blocked_by": {
           "type": [
@@ -1858,19 +2120,24 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
         },
         "because": {
-          "type": "string"
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
         },
         "time_spent": {
-          "type": "string"
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
         },
         "objectives": {
           "type": [
@@ -1879,10 +2146,12 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
         },
         "progress": {
           "type": [
@@ -1994,6 +2263,13 @@
     }
   },
   "task_focus": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Put a task in focus, or say which ones are"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2005,6 +2281,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -2017,22 +2294,28 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the task's number, never handed out twice"
               },
               "parent": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the task is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
               },
               "archived": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "true when it was taken off the board and kept"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "labels": {
                 "type": [
@@ -2041,7 +2324,8 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "blocked_by": {
                 "type": [
@@ -2050,19 +2334,24 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the tasks in its way; empty or null when none is"
               },
               "because": {
-                "type": "string"
+                "type": "string",
+                "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the last day it may be done, as 2026-09-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 1h30m; empty when nobody said"
               },
               "time_spent": {
-                "type": "string"
+                "type": "string",
+                "description": "how long has been spent on it, as 1h30m; empty when nothing has"
               },
               "objectives": {
                 "type": [
@@ -2071,10 +2360,12 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the objectives it serves; empty or null when it serves none"
               },
               "description": {
-                "type": "string"
+                "type": "string",
+                "description": "what is written about the task; empty when nothing is"
               },
               "progress": {
                 "type": [
@@ -2203,6 +2494,13 @@
     }
   },
   "task_label": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Put a label on every task a narrowing reaches"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2265,6 +2563,7 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -2279,6 +2578,13 @@
     }
   },
   "task_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List tasks, all of them or only some"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2335,6 +2641,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -2347,22 +2654,28 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the task's number, never handed out twice"
               },
               "parent": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the task is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
               },
               "archived": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "true when it was taken off the board and kept"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "labels": {
                 "type": [
@@ -2371,7 +2684,8 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "blocked_by": {
                 "type": [
@@ -2380,19 +2694,24 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the tasks in its way; empty or null when none is"
               },
               "because": {
-                "type": "string"
+                "type": "string",
+                "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the last day it may be done, as 2026-09-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 1h30m; empty when nobody said"
               },
               "time_spent": {
-                "type": "string"
+                "type": "string",
+                "description": "how long has been spent on it, as 1h30m; empty when nothing has"
               },
               "objectives": {
                 "type": [
@@ -2401,7 +2720,8 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the objectives it serves; empty or null when it serves none"
               },
               "described": {
                 "type": "boolean"
@@ -2444,6 +2764,13 @@
     }
   },
   "task_move": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Move a task in the order"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2469,6 +2796,7 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -2481,22 +2809,28 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the task's number, never handed out twice"
               },
               "parent": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the task is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
               },
               "archived": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "true when it was taken off the board and kept"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "labels": {
                 "type": [
@@ -2505,7 +2839,8 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "blocked_by": {
                 "type": [
@@ -2514,19 +2849,24 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the tasks in its way; empty or null when none is"
               },
               "because": {
-                "type": "string"
+                "type": "string",
+                "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the last day it may be done, as 2026-09-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 1h30m; empty when nobody said"
               },
               "time_spent": {
-                "type": "string"
+                "type": "string",
+                "description": "how long has been spent on it, as 1h30m; empty when nothing has"
               },
               "objectives": {
                 "type": [
@@ -2535,7 +2875,8 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the objectives it serves; empty or null when it serves none"
               },
               "described": {
                 "type": "boolean"
@@ -2578,6 +2919,13 @@
     }
   },
   "task_search": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Look for a task by anything it carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2643,6 +2991,7 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -2655,22 +3004,28 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the task's number, never handed out twice"
               },
               "parent": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the task is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
               },
               "archived": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "true when it was taken off the board and kept"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "labels": {
                 "type": [
@@ -2679,7 +3034,8 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "blocked_by": {
                 "type": [
@@ -2688,19 +3044,24 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the tasks in its way; empty or null when none is"
               },
               "because": {
-                "type": "string"
+                "type": "string",
+                "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the last day it may be done, as 2026-09-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 1h30m; empty when nobody said"
               },
               "time_spent": {
-                "type": "string"
+                "type": "string",
+                "description": "how long has been spent on it, as 1h30m; empty when nothing has"
               },
               "objectives": {
                 "type": [
@@ -2709,7 +3070,8 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the objectives it serves; empty or null when it serves none"
               },
               "described": {
                 "type": "boolean"
@@ -2752,6 +3114,13 @@
     }
   },
   "task_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Show what a task carries"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2765,26 +3134,33 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
         },
         "parent": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the task is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
         },
         "archived": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "true when it was taken off the board and kept"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "labels": {
           "type": [
@@ -2793,7 +3169,8 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "blocked_by": {
           "type": [
@@ -2802,19 +3179,24 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
         },
         "because": {
-          "type": "string"
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
         },
         "time_spent": {
-          "type": "string"
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
         },
         "objectives": {
           "type": [
@@ -2823,10 +3205,12 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
         },
         "progress": {
           "type": [
@@ -2938,6 +3322,13 @@
     }
   },
   "task_unarchive": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Bring a task back onto the board"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -2951,26 +3342,33 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
         "number": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
         },
         "parent": {
-          "type": "integer"
+          "type": "integer",
+          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "what the task is called"
         },
         "state": {
-          "type": "string"
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
         },
         "archived": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "true when it was taken off the board and kept"
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "description": "low, normal, high or critical"
         },
         "labels": {
           "type": [
@@ -2979,7 +3377,8 @@
           ],
           "items": {
             "type": "string"
-          }
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
         },
         "blocked_by": {
           "type": [
@@ -2988,19 +3387,24 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
         },
         "because": {
-          "type": "string"
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
         },
         "deadline": {
-          "type": "string"
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
         },
         "estimate": {
-          "type": "string"
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
         },
         "time_spent": {
-          "type": "string"
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
         },
         "objectives": {
           "type": [
@@ -3009,10 +3413,12 @@
           ],
           "items": {
             "type": "integer"
-          }
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
         },
         "progress": {
           "type": [
@@ -3124,6 +3530,13 @@
     }
   },
   "task_unfocus": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Let go of a task in focus, or of them all"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -3135,6 +3548,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -3147,22 +3561,28 @@
             "type": "object",
             "properties": {
               "number": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the task's number, never handed out twice"
               },
               "parent": {
-                "type": "integer"
+                "type": "integer",
+                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "what the task is called"
               },
               "state": {
-                "type": "string"
+                "type": "string",
+                "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
               },
               "archived": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "true when it was taken off the board and kept"
               },
               "priority": {
-                "type": "string"
+                "type": "string",
+                "description": "low, normal, high or critical"
               },
               "labels": {
                 "type": [
@@ -3171,7 +3591,8 @@
                 ],
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
               },
               "blocked_by": {
                 "type": [
@@ -3180,19 +3601,24 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the tasks in its way; empty or null when none is"
               },
               "because": {
-                "type": "string"
+                "type": "string",
+                "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
               },
               "deadline": {
-                "type": "string"
+                "type": "string",
+                "description": "the last day it may be done, as 2026-09-01; empty when it has none"
               },
               "estimate": {
-                "type": "string"
+                "type": "string",
+                "description": "how long it was expected to take, as 1h30m; empty when nobody said"
               },
               "time_spent": {
-                "type": "string"
+                "type": "string",
+                "description": "how long has been spent on it, as 1h30m; empty when nothing has"
               },
               "objectives": {
                 "type": [
@@ -3201,10 +3627,12 @@
                 ],
                 "items": {
                   "type": "integer"
-                }
+                },
+                "description": "the numbers of the objectives it serves; empty or null when it serves none"
               },
               "description": {
-                "type": "string"
+                "type": "string",
+                "description": "what is written about the task; empty when nothing is"
               },
               "progress": {
                 "type": [
@@ -3333,6 +3761,13 @@
     }
   },
   "timesheet_add": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Add time spent on a task without it being in focus"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -3355,6 +3790,7 @@
       ],
       "type": "object"
     },
+    "level": 2,
     "output": {
       "type": "object",
       "properties": {
@@ -3419,6 +3855,13 @@
     }
   },
   "timesheet_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Say how long the work took, day by day"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -3434,6 +3877,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -3498,6 +3942,13 @@
     }
   },
   "trace_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List what was done over a period"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -3509,6 +3960,7 @@
       "required": [],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {
@@ -3558,6 +4010,13 @@
     }
   },
   "trace_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Show what has been done to a task"
+    },
     "input": {
       "additionalProperties": false,
       "properties": {
@@ -3571,6 +4030,7 @@
       ],
       "type": "object"
     },
+    "level": 1,
     "output": {
       "type": "object",
       "properties": {

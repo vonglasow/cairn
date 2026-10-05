@@ -11,6 +11,7 @@ here has to be remembered.
 | check | what it answers |
 |---|---|
 | `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files` | is the file well formed? |
+| `tools-present` | are the linter and the scanner the versions the Makefile names? |
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
 | `no-go-testing` | does non-test code import `testing`? |
 | `golangci-lint` | does it hold up to static analysis, comments included? |
@@ -98,8 +99,12 @@ different things used to be said as one:
   than chosen by `--config auto`, which reported home to choose them.
 - the tools themselves are not. Each hook repository in `prek.toml` is named by
   the commit it was at, never by a tag a maintainer can move; commitlint's
-  configuration carries its version; gremlins is the version the Makefile names
-  (`GREMLINS_VERSION`), and `gremlins-present` refuses another. A tool that
+  configuration carries its version; gremlins, golangci-lint and govulncheck
+  are the versions the Makefile names (`GREMLINS_VERSION`, `GOLANGCI_VERSION`,
+  `GOVULNCHECK_VERSION`), and `gremlins-present` and `tools-present` refuse
+  another. brew upgrades the last two on its own; a lint rule that appeared
+  overnight then failed a commit for a reason no commit made. Moving them is
+  installing the new version and changing the Makefile's line, in one commit. A tool that
   changed its own behaviour found nothing that was true yesterday — what
   `scripts/mutation.sh` works around was read in one version's source, and
   another can quietly undo it. They move when somebody moves them:
@@ -196,7 +201,9 @@ and one that still runs out is a hang: a loop whose counter the mutant turned
 around, which the test waiting on it did notice. Each hang caught is written
 to `.git/mutation-hangs.log` with the day and the package, because a hang and
 a test so slow it looks like one read the same to the gate, and only a person
-can tell them apart. And the baseline test run is never a cached one
+can tell them apart; the run ends by counting them, and a package with one gets
+no receipt, so the next push looks again. A retry that judged nothing is said
+as a gate that did not run, never read as a pass. And the baseline test run is never a cached one
 (`-count=1`): read from the cache it takes milliseconds, the budget it sets
 with it, and every mutant times out.
 
@@ -293,8 +300,9 @@ make linux             # build and run the suite on Linux, in a container
 make help              # every target, and what it is for
 ```
 
-**Linux is checked by `make linux`**, which builds cairn and runs the suite in
-a container, as a user who is not root, with the graphics headers the window
+**Linux is checked by `make linux`**, which builds cairn and runs the suite —
+with `-race`, as the profile here does — in a container, as a user who is not
+root and has the uid of whoever ran it, with the graphics headers the window
 needs there. It needs Docker, so it is not a hook; it is run before a version
 is made (see [release.md](release.md)). The first run found what nothing on a
 Mac could: frames pinned in one time zone, and tests that make a store
@@ -317,8 +325,13 @@ the split is fixed in `prek.toml`, not left to whoever runs it:
 - **at push**, every package — about twenty minutes. A test weakened without touching the code it
   guarded changes no production line, so only this one sees it — and nothing
   leaves the machine before it has run. A package the sweep found clean is
-  not judged again while none of its files — nor `go.sum` — has changed: its
-  receipt, the hash of its content, is kept in `.git/mutation-receipts`.
+  not judged again while nothing its verdict rests on has changed: its own
+  files, the code its tests reach in other packages, the scenarios and pinned
+  files, `go.sum`, this script, the mutators and the version of gremlins. The
+  receipt is the hash of all of it, kept in `.git/mutation-receipts`. It was
+  first the package's own files and nothing else — and a scenario weakened
+  elsewhere, which is exactly what the push is there to catch, went through
+  as judged.
 
 Inside a package the tests run one after another, and `t.Parallel` is
 nearly absent on purpose: most of the suite names its store through

@@ -317,10 +317,15 @@ var TaskDelete = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
+		// Read before it goes: afterwards the link is gone with it.
+		waiting, err := on.Engine.waitingOn(n)
+		if err != nil {
+			return Answer{}, err
+		}
 		if err := on.Engine.delete(n); err != nil {
 			return Answer{}, err
 		}
-		return Answer{Deleted: &n}, nil
+		return Answer{Deleted: &n, Unblocked: waiting}, nil
 	},
 }
 

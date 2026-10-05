@@ -482,3 +482,70 @@ func TestOpen_makesAStoreForItsOwnerAlone(t *testing.T) {
 	held(t, path, "Write the spec")
 	ownerOnly(t, path)
 }
+
+func TestVault_leavesNoBackupBehindWhenMakingOneFails(t *testing.T) {
+	v := NewVault(filepath.Join(t.TempDir(), "nowhere", "cairn.db"))
+	if _, err := v.Make(); err == nil {
+		t.Fatal("Make succeeded with no store to back up")
+	}
+	if all, _ := v.All(); len(all) != 0 {
+		t.Errorf("%d backups listed, want none: a backup that failed is not a backup", len(all))
+	}
+}
+
+func TestVault_refusesToPutBackABackupThatHoldsNoTasks(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(made.Path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := v.Restore(made.Number); !errors.Is(err, ErrDamagedBackup) {
+		t.Fatalf("Restore of an empty file = %v, want ErrDamagedBackup", err)
+	}
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	if held, _ := s.Held(); held.Tasks != 1 {
+		t.Errorf("%d tasks, want the store left as it was", held.Tasks)
+	}
+}
+
+func TestSnapshot_saysWhyAReadableStoreWasNotBackedUp(t *testing.T) {
+	_, path := vaultOn(t, "Write the spec")
+	taken := filepath.Join(t.TempDir(), "taken.db")
+	if err := os.WriteFile(taken, []byte("somebody else's"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := snapshot(path, taken); err == nil {
+		t.Error("snapshot copied a readable store by hand rather than saying why it could not read it")
+	}
+	if got, _ := os.ReadFile(taken); string(got) != "somebody else's" {
+		t.Error("what was in the way was overwritten")
+	}
+}
+
+func TestVault_putsBackThroughNoLinkLeftInItsWay(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	elsewhere := filepath.Join(t.TempDir(), "somebody's file")
+	if err := os.WriteFile(elsewhere, []byte("keep me"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(elsewhere, path+".arriving"); err != nil {
+		t.Fatal(err)
+	}
+	if err := v.Restore(made.Number); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if got, _ := os.ReadFile(elsewhere); string(got) != "keep me" {
+		t.Error("the restore wrote through a link somebody left beside the store")
+	}
+}

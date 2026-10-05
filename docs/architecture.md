@@ -231,9 +231,14 @@ in, and the store tells a builder a row's facts on the way out — the same
 membrane, run both directions. That is what lets a cell keep its insides to
 itself while still being written to disk.
 
-A second backing is a real prospect, not an imagined one — a file, a remote,
-something that is not SQLite — so the engine talks to a **storage interface it
-declares itself**, and `store` satisfies it. That is `docs/design-
+The engine talks to a **storage interface it declares itself** for what it
+reads and writes of the notions, and `store` satisfies it. What that buys is
+said exactly: the rules are tested against what the engine names, and the
+engine names only what it uses. It does not yet make a second backing — a
+file, a remote — arrive unnoticed: the one transaction an act runs in, the
+migrations and the backups still reach the store itself, and its refusals are
+named after it. That door is opened the day a second backing is wanted, not
+before. That is `docs/design-
 principles.md` applied as written: accept interfaces, and let the consumer
 define them. Go needs no import for that, so `store` still knows nothing of
 `engine`.

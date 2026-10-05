@@ -265,3 +265,14 @@ func TestNarrowed_keepsWhatIsDueByADay(t *testing.T) {
 	narrowing.DueBefore("2026-10-01")
 	wantKept(t, s, narrowing, "Write the spec", "On the day itself")
 }
+
+// Asked for both, what is on the board and what is off it are held to
+// nothing: the clause that leaves the archived out is not there at all.
+func TestNarrowing_withArchivedHoldsToNeither(t *testing.T) {
+	var both narrowing
+	both.WithArchived()
+	where, args := both.whereTasks(taskLabels)
+	if strings.Contains(where, "archived") || len(args) != 0 {
+		t.Errorf("where = %q, args = %v, want nothing held about being off the board", where, args)
+	}
+}

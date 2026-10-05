@@ -72,7 +72,10 @@ func (v *Vault) Make() (domain.Backup, error) {
 		return domain.Backup{}, fmt.Errorf("making backup %d: %w", number, err)
 	}
 	path := v.pathOf(number)
+	// A backup that failed is not a backup: the file claimed for it goes,
+	// or it is listed, taken for the latest, and put back as an empty store.
 	if err := snapshot(v.store, path); err != nil {
+		_ = os.Remove(path)
 		return domain.Backup{}, err
 	}
 	if err := v.rememberNumber(number); err != nil {
@@ -164,20 +167,25 @@ func (v *Vault) Restore(number int) error {
 		return err
 	}
 	// Copied beside the store, then put in its place in one step, so nothing
-	// ever opens half a store. What sat beside the old one goes first: a log
-	// written for one file would be read on top of the other.
-	arriving := v.store + ".arriving"
-	if err := copyFile(one.Path, arriving); err != nil {
+	// ever opens half a store. Into a file made for the purpose, under a name
+	// nobody could have chosen beforehand: a fixed name was opened through
+	// whatever link somebody had left there. What sat beside the old store
+	// goes before the swap — a log written for one file would be read on top
+	// of the other — and the backup just made holds whatever that log held.
+	arriving, err := os.CreateTemp(filepath.Dir(v.store), filepath.Base(v.store)+".arriving-*")
+	if err != nil {
+		return fmt.Errorf("making room for backup %d: %w", number, err)
+	}
+	defer func() { _ = os.Remove(arriving.Name()) }()
+	if err := copyInto(one.Path, arriving); err != nil {
 		return err
 	}
 	for _, beside := range []string{v.store + "-wal", v.store + "-shm"} {
 		if err := os.Remove(beside); err != nil && !errors.Is(err, os.ErrNotExist) {
-			_ = os.Remove(arriving)
 			return fmt.Errorf("clearing what sat beside the store: %w", err)
 		}
 	}
-	if err := os.Rename(arriving, v.store); err != nil {
-		_ = os.Remove(arriving)
+	if err := os.Rename(arriving.Name(), v.store); err != nil {
 		return fmt.Errorf("putting backup %d in place: %w", number, err)
 	}
 	return nil
@@ -320,8 +328,14 @@ func snapshot(from, to string) error {
 	}
 	defer func() { _ = db.Close() }()
 	// Written into the empty file Make claimed, which SQLite accepts and which
-	// keeps the permissions it was made with.
+	// keeps the permissions it was made with. Copied as it lies only when
+	// SQLite cannot read the store: a readable one that could not be written
+	// out — a disk full, a lock held too long — copied by hand would leave
+	// behind what its log still held, and say nothing.
 	if _, err := db.Exec(`VACUUM INTO ?`, to); err != nil {
+		if whole(from) == nil {
+			return fmt.Errorf("backing up %s: %w", from, err)
+		}
 		return copyFile(from, to)
 	}
 	return nil
@@ -349,24 +363,40 @@ func whole(path string) error {
 	if said != "ok" {
 		return errors.New(said)
 	}
+	// An empty file is a database SQLite reads whole, with nothing in it:
+	// put back, it is a store emptied. A store holds tasks.
+	if _, err := heldOn(db); err != nil {
+		return fmt.Errorf("it holds no tasks: %w", err)
+	}
 	return nil
 }
 
-// copyFile copies from one path to another, replacing what is there.
+// copyFile copies from one path to another, into the file Make claimed.
 func copyFile(from, to string) error {
-	source, err := os.Open(from)
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", from, err)
-	}
-	defer func() { _ = source.Close() }()
-
-	target, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	target, err := os.OpenFile(to, os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("writing %s: %w", to, err)
 	}
+	return copyInto(from, target)
+}
+
+// copyInto copies a file into one already open, makes sure it reached the
+// disk, and closes it: a copy the system still held in memory when the
+// machine went down is a backup that was never written.
+func copyInto(from string, target *os.File) error {
+	source, err := os.Open(from)
+	if err != nil {
+		_ = target.Close()
+		return fmt.Errorf("reading %s: %w", from, err)
+	}
+	defer func() { _ = source.Close() }()
 	if _, err := io.Copy(target, source); err != nil {
 		_ = target.Close()
-		return fmt.Errorf("backing up to %s: %w", to, err)
+		return fmt.Errorf("copying to %s: %w", target.Name(), err)
+	}
+	if err := target.Sync(); err != nil {
+		_ = target.Close()
+		return fmt.Errorf("copying to %s: %w", target.Name(), err)
 	}
 	return target.Close()
 }

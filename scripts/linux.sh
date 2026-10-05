@@ -15,14 +15,19 @@
 set -euo pipefail
 
 version=$(awk '/^toolchain go/ {sub("go", "", $2); print $2}' go.mod)
+# The image is named by its tag and the Debian release under it, not by a
+# digest: this is a check run by hand before a version, not a gate, and a
+# digest would have to be moved by hand at every Go release for nothing a
+# person running it would notice. The user inside has the uid of the one
+# outside, so the tree mounted in is theirs to write on a Linux host too.
 docker run --rm -v "$PWD":/src -w /src \
-  -e CAIRN_WINDOWLESS=1 -e GOFLAGS=-buildvcs=false \
-  "golang:$version" bash -c '
+  -e CAIRN_WINDOWLESS=1 -e GOFLAGS=-buildvcs=false -e OUTSIDE="$(id -u)" \
+  "golang:$version-bookworm" bash -c '
     apt-get update -qq >/dev/null &&
     apt-get install -qq -y --no-install-recommends \
       libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
       libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev >/dev/null &&
-    useradd -m tester &&
+    useradd -m -o -u "$OUTSIDE" tester &&
     runuser -u tester -- env HOME=/home/tester PATH="$PATH" GOPATH=/home/tester/go \
       GOCACHE=/home/tester/.cache/go-build CAIRN_WINDOWLESS=1 GOFLAGS=-buildvcs=false \
-      bash -c "go build -o /tmp/cairn ./cmd/cairn && go test ./..."'
+      bash -c "go build -o /tmp/cairn ./cmd/cairn && go test -race ./..."'

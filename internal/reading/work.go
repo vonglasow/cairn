@@ -149,7 +149,19 @@ func Numbered(n int) engine.Input {
 	return engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}}
 }
 
-// cardOf turns one task into what a card draws.
+// shownAll is every label as it is safe to draw. What was written before
+// cairn refused escapes, or comes back with an older backup, is shown and
+// never obeyed — the terminal board draws these strings straight to a screen.
+func shownAll(kept []string) []string {
+	shown := make([]string, 0, len(kept))
+	for _, k := range kept {
+		shown = append(shown, domain.Shown(k))
+	}
+	return shown
+}
+
+// cardOf turns one task into what a card draws. What it says is shown, never
+// obeyed: see shownAll.
 func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, contexts map[int]string) (Card, error) {
 	told := task.OfTask(t)
 	// The deadline crosses the membrane written the way a person reads it, and
@@ -165,13 +177,13 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		Number:      told.Number,
 		Parent:      told.Parent,
 		Archived:    told.Archived,
-		Title:       told.Title,
+		Title:       domain.Shown(told.Title),
 		State:       told.State,
 		Priority:    told.Priority,
-		Description: told.Description,
-		Labels:      told.Labels,
+		Description: domain.Shown(told.Description),
+		Labels:      shownAll(told.Labels),
 		Blockers:    told.BlockedBy,
-		Because:     told.Because,
+		Because:     domain.Shown(told.Because),
 		Deadline:    due,
 		Estimate:    told.Estimate,
 		Spent:       told.TimeSpent,
@@ -195,11 +207,11 @@ func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) 
 	sofar := along[told.Number]
 	return Goal{
 		Number:      told.Number,
-		Title:       told.Title,
+		Title:       domain.Shown(told.Title),
 		State:       told.State,
 		Priority:    told.Priority,
-		Description: told.Description,
-		Labels:      told.Labels,
+		Description: domain.Shown(told.Description),
+		Labels:      shownAll(told.Labels),
 		Deadline:    due,
 		Estimate:    told.Estimate,
 		Done:        sofar.Done(),

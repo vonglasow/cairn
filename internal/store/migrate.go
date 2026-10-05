@@ -394,8 +394,22 @@ func (s *Store) applyAll() ([]string, error) {
 // often several statements, and one failing half way used to leave the first
 // ones made and the ledger silent about them — a store the next `apply` could
 // only refuse, with nothing saying where it had stopped.
+//
+// Whether it is already applied is asked again inside: read before, it may
+// have been applied since by another cairn, which then answered with the
+// SQL refusing a column made twice rather than with what happened.
 func (s *Store) make(raw migration.Migration) error {
-	return s.Within(func(kept *Store) error { return kept.makeOn(kept.on, raw) })
+	return s.Within(func(kept *Store) error {
+		applied, err := appliedNamesOn(kept.on)
+		if err != nil {
+			return err
+		}
+		name := factsOfChange(raw).name
+		if _, done := applied[name]; done {
+			return fmt.Errorf("%q: %w", name, ErrAlreadyApplied)
+		}
+		return kept.makeOn(kept.on, raw)
+	})
 }
 
 // makeOn applies a change against whatever it is given to run on: the store
@@ -432,6 +446,12 @@ func (s *Store) RollBack() (migration.Migration, error) {
 			continue
 		}
 		raw := factsOfChange(migration.Known[i])
+		// A change with no undoing changed data and not the shape: rolling it
+		// back forgets it in the ledger and nothing else, which is what lets a
+		// store go back past it to an older shape at all. What that leaves as
+		// it was is said by its Loses, which the answer carries; applying it
+		// again later runs an update that changes nothing the second time.
+		//
 		// Undone and forgotten together: a ledger that still lists a change
 		// whose shape is gone, or forgets one whose shape is still there, is a
 		// store no later command can reason about.

@@ -80,6 +80,16 @@ answer rather than taking a turn before it — see the order above — and what 
 name goes through the same expansion and the same absoluteness rule as what the
 file names. A place is read the same way wherever it was named.
 
+## The store wants a disk of its own
+
+The store keeps its latest writes in a log beside it (`-wal`, `-shm`) until it
+is closed — the journal that lets a board read while a command writes. That
+log is shared through the machine's own memory, which a network share does not
+offer and a synchronised folder does not respect: put `store` on NFS, SMB, or
+in a folder iCloud or Dropbox keeps in step, and two machines can each see
+half a write. The store goes on a local disk; what travels between machines is
+a backup, which is one file written whole.
+
 ## TOML, because a person opens this file
 
 This file is for someone to read and change, so it has to be able to carry a

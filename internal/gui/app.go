@@ -266,9 +266,20 @@ func loop(work reading.Work, width, height int) error {
 	var pressedAt Point
 	var looked time.Time
 
+	// The beat asks for a frame every so often, and stops when the window
+	// does: one left running outlived every window it was started for.
+	beating := time.NewTicker(Beat())
+	defer beating.Stop()
+	gone := make(chan struct{})
+	defer close(gone)
 	go func() {
-		for range time.Tick(Beat()) {
-			window.Invalidate()
+		for {
+			select {
+			case <-beating.C:
+				window.Invalidate()
+			case <-gone:
+				return
+			}
 		}
 	}()
 
@@ -293,6 +304,43 @@ func loop(work reading.Work, width, height int) error {
 // it is the one decision inside Run, and Run is the only thing here no test can
 // reach — a decision left in there is a decision nothing judges.
 func due(looked, now time.Time) bool { return now.Sub(looked) >= Beat() }
+
+// listening is everything the window asks to hear, in one list: the pointer,
+// the keys the system would otherwise keep, what an input method sends, and
+// what a clipboard hands back.
+func listening() []event.Filter {
+	return []event.Filter{
+		pointer.Filter{
+			Target: tag,
+			Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Scroll |
+				// And what the pointer does before it is pressed, which
+				// is the whole of the window's hovering.
+				pointer.Move | pointer.Enter | pointer.Leave,
+			// A range, and not the zero one: Gio delivers a scroll only
+			// when it falls inside what was asked for, and the zero range
+			// asks for scrolls of nothing. Found by a test that scrolled a
+			// column and watched it stay where it was.
+			ScrollY: pointer.ScrollRange{Min: -reach, Max: reach},
+		},
+		key.Filter{Focus: tag, Optional: key.ModCommand | key.ModCtrl | key.ModShift},
+		// Named explicitly, because Gio hands a filter that names no key
+		// everything the system has not already spoken for — and tab is
+		// one of the ones it has.
+		key.Filter{Focus: tag, Name: key.NameTab},
+		key.Filter{Focus: tag, Name: key.NameTab, Required: key.ModShift},
+		key.Filter{Focus: tag, Name: key.NameDeleteBackward},
+		key.Filter{Focus: tag, Name: key.NameReturn},
+		key.Filter{Focus: tag, Name: key.NameEscape},
+		key.Filter{Focus: tag, Name: key.NameLeftArrow},
+		key.Filter{Focus: tag, Name: key.NameRightArrow},
+		key.Filter{Focus: tag, Name: key.NameUpArrow},
+		key.Filter{Focus: tag, Name: key.NameDownArrow},
+		// And what an input method sends, which is how text actually
+		// arrives: a letter is not a key press with a name, it is an edit.
+		key.FocusFilter{Target: tag},
+		transfer.TargetFilter{Target: tag, Type: "application/text"},
+	}
+}
 
 // heard takes everything that has happened since the last frame and answers the
 // window it leaves behind.
@@ -325,37 +373,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 	}
 
 	for {
-		raw, ok := gtx.Event(
-			pointer.Filter{
-				Target: tag,
-				Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Scroll |
-					// And what the pointer does before it is pressed, which
-					// is the whole of the window's hovering.
-					pointer.Move | pointer.Enter | pointer.Leave,
-				// A range, and not the zero one: Gio delivers a scroll only
-				// when it falls inside what was asked for, and the zero range
-				// asks for scrolls of nothing. Found by a test that scrolled a
-				// column and watched it stay where it was.
-				ScrollY: pointer.ScrollRange{Min: -reach, Max: reach},
-			},
-			key.Filter{Focus: tag, Optional: key.ModCommand | key.ModCtrl | key.ModShift},
-			// Named explicitly, because Gio hands a filter that names no key
-			// everything the system has not already spoken for — and tab is
-			// one of the ones it has.
-			key.Filter{Focus: tag, Name: key.NameTab},
-			key.Filter{Focus: tag, Name: key.NameTab, Required: key.ModShift},
-			key.Filter{Focus: tag, Name: key.NameDeleteBackward},
-			key.Filter{Focus: tag, Name: key.NameReturn},
-			key.Filter{Focus: tag, Name: key.NameEscape},
-			key.Filter{Focus: tag, Name: key.NameLeftArrow},
-			key.Filter{Focus: tag, Name: key.NameRightArrow},
-			key.Filter{Focus: tag, Name: key.NameUpArrow},
-			key.Filter{Focus: tag, Name: key.NameDownArrow},
-			// And what an input method sends, which is how text actually
-			// arrives: a letter is not a key press with a name, it is an edit.
-			key.FocusFilter{Target: tag},
-			transfer.TargetFilter{Target: tag, Type: "application/text"},
-		)
+		raw, ok := gtx.Event(listening()...)
 		if !ok {
 			return w, pressed, pressedAt
 		}

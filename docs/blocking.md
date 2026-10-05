@@ -183,6 +183,8 @@ consequence before its cause.
   work — it is what work is for.
 - **Being told when a blocker finishes.** That is a notification, which cairn
   has none of. The mark is what stands in for it.
-- **Deleting a blocker silently unmarks.** Measured and accepted: delete task 3
-  and the link goes with it, so a task that was marked stops being marked with
-  nothing saying why. The trace keeps the deletion; the listing does not.
+- **Deleting a blocker unmarks, and says so once.** Delete task 3 and the link
+  goes with it, so a task that was marked stops being marked. The deletion is
+  the one moment that can say it: `task delete` answers `task 5 was waiting on
+  it` for each task it was in the way of (`was_blocking` to a machine). After
+  that, the trace keeps the deletion; the listing does not.

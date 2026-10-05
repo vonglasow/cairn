@@ -14,13 +14,19 @@ import (
 var updateSchemas = os.Getenv("UPDATE_SCHEMAS") != ""
 
 // An agent holds on to the shape of what a tool takes and answers, so every
-// tool's two schemas are pinned, and a change to either is one somebody meant
+// tool's two schemas, its annotations and its level are pinned, and a change to either is one somebody meant
 // — see docs/mcp.md, on what changes in an answer and what does not.
 func TestSchemas_changeOnlyWhenSomebodyMeantThemTo(t *testing.T) {
 	said := map[string]map[string]any{}
 	for _, op := range engine.All() {
 		tool := toolFor(op)
-		said[tool.Name] = map[string]any{"input": tool.InputSchema, "output": tool.OutputSchema}
+		// What a client decides on is pinned with what it sends and reads:
+		// whether to ask a person first, and from which level a tool is
+		// offered at all.
+		said[tool.Name] = map[string]any{
+			"input": tool.InputSchema, "output": tool.OutputSchema,
+			"annotations": tool.Annotations, "level": int(op.Level),
+		}
 	}
 	got, err := json.MarshalIndent(said, "", "  ")
 	if err != nil {

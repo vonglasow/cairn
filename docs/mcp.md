@@ -373,15 +373,31 @@ An agent holds on to the shape of an answer the way a script holds on to a
 column. So the answers change by one rule:
 
 - **adding a field breaks nothing** — a reader that does not know it ignores
-  it, and every field that may be absent says so with `omitempty`;
+  it;
 - **renaming or removing one, or changing what it holds, is a break** — it is
   said in the commit that makes it, under `BREAKING CHANGE`, and the scenarios
   that pin the old shape are changed in the same commit, on purpose;
 - **an argument is the same**: a new optional one breaks nothing, a renamed or
   newly required one does.
 
+**A field that has nothing to say is there, empty.** A task's row carries all
+its fields every time; one that names nothing says so with its empty value —
+`0` for a parent when the task is its own, an empty string for a deadline or an
+estimate, an empty list or `null` for labels, blockers and objectives — and
+each field's description in the schema says which. What a whole answer may
+leave out — the context, the sub-tasks, since when a task has stood in its
+column — is left out entirely.
+
+**Arguments are named the way the command line names them, answers the way
+JSON does.** An argument is `due-before`, `with-archived`: it is the same
+description the command line reads its flags from, and a second spelling
+would be a second list to keep true. A field of an answer is `time_spent`,
+`blocked_by`, `in_focus`. The rule is written here so it is a rule and not an
+accident; changing either would be a break.
+
 The schemas themselves are pinned: `internal/mcp/testdata/schemas.json` holds
-every tool's input and output schema as the server hands them out, and a test
+every tool's input and output schema, its annotations and the level it is
+offered from, as the server hands them out, and a test
 fails when what the server says differs from it. A difference is either the
 break the commit meant — and the file is rewritten with it, by running the
 test with `UPDATE_SCHEMAS=1` — or one nobody meant, found before an agent did.

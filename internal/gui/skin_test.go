@@ -65,11 +65,11 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			if near(said, skin.Chosen) {
 				t.Errorf("%s: priority %q is the colour of what is chosen", skin.what, name)
 			}
-			if close(said, skin.Edge) {
+			if alike(said, skin.Edge) {
 				t.Errorf("%s: priority %q is the colour of no priority at all", skin.what, name)
 			}
 			for other, also := range skin.Priority {
-				if other != name && close(said, also) {
+				if other != name && alike(said, also) {
 					t.Errorf("%s: priority %q and %q are the same colour", skin.what, name, other)
 				}
 			}
@@ -89,7 +89,7 @@ func TestEverySkinCanBeRead(t *testing.T) {
 // Sixty between a priority and what is chosen, where the fault was; forty-five
 // between two things that merely have to be told apart.
 func near(a, b color.NRGBA) bool  { return howFar(a, b) < 60 }
-func close(a, b color.NRGBA) bool { return howFar(a, b) < 45 }
+func alike(a, b color.NRGBA) bool { return howFar(a, b) < 45 }
 
 func howFar(a, b color.NRGBA) float64 {
 	dr, dg, db := float64(a.R)-float64(b.R), float64(a.G)-float64(b.G), float64(a.B)-float64(b.B)

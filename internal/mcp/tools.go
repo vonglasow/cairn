@@ -131,9 +131,9 @@ const refusalKey = "cairn/refusal"
 const throughTheServer = "mcp"
 
 // handlerFor wires op to engine.DoFrom as thinly as a tool can be. A refusal —
-// an empty title, a store this cairn cannot use — comes back as IsError,
-// with the reason as text; only what cannot be read as the arguments the
-// operation takes is a protocol error, since that never reached cairn at all.
+// an empty title, a store this cairn cannot use, arguments that cannot be read
+// as what the operation takes — comes back as IsError, with the reason as text
+// and its kind under _meta. Only a tool that was never offered fails as a call.
 //
 // An answer fills both content and structuredContent, byte for byte what the
 // command line would have printed as text and as `--json`: the same claim
@@ -150,11 +150,12 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 			return nil, err
 		}
 		// What the call sent is read the way the operation takes it, by the
-		// engine: what cannot be read as what an argument carries never
-		// reached cairn, so it is a protocol error rather than a refusal.
+		// engine. What cannot be read is refused like a name the operation
+		// does not take: both are a request not understood, and an agent
+		// handed two shapes for one kind of mistake could branch on only one.
 		in, err := op.FromJSON(req.Params.Arguments)
 		if err != nil {
-			return nil, err
+			return refused(err), nil
 		}
 		// Named as the server's doing, so a history shows what an agent
 		// changed as something the person reading it did not do themselves.
@@ -170,15 +171,21 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 			// the sentence is reworded. Not as structuredContent: the client
 			// measures that against the answer's shape even on a refusal,
 			// and a refusal is not an answer of that shape (docs/mcp.md).
-			return &sdk.CallToolResult{
-				Meta:    sdk.Meta{refusalKey: engine.RefusalOf(err)},
-				Content: []sdk.Content{&sdk.TextContent{Text: err.Error()}},
-				IsError: true,
-			}, nil
+			return refused(err), nil
 		}
 		return &sdk.CallToolResult{
 			Content:           []sdk.Content{&sdk.TextContent{Text: engine.RenderText(op, answer)}},
 			StructuredContent: engine.Of(op, answer),
 		}, nil
+	}
+}
+
+// refused is how a refusal is answered: IsError, the sentence as text, and
+// its kind and reason under _meta.
+func refused(err error) *sdk.CallToolResult {
+	return &sdk.CallToolResult{
+		Meta:    sdk.Meta{refusalKey: engine.RefusalOf(err)},
+		Content: []sdk.Content{&sdk.TextContent{Text: err.Error()}},
+		IsError: true,
 	}
 }

@@ -28,7 +28,16 @@ func contextText(at string) string {
 // RenderText turns an answer into what a person reads: the rendering of the
 // shape the operation declared it answers, the way Of builds the JSON. The
 // operation also names what Deleted counts — a task, an objective, a backup.
+//
+// It is shown, never obeyed: what was written before cairn refused escapes,
+// or comes back with an older backup, reaches a terminal with every rune it
+// would obey replaced (domain.Shown).
 func RenderText(op Operation, a Answer) string {
+	return domain.Shown(rendered(op, a))
+}
+
+// rendered is the text of an answer, as it was kept.
+func rendered(op Operation, a Answer) string {
 	switch op.Answers.(type) {
 	case Config:
 		return configText(*a.Config)
@@ -71,7 +80,11 @@ func RenderText(op Operation, a Answer) string {
 	case Labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	case Deleted:
-		return fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
+		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
+		for _, n := range a.Unblocked {
+			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
+		}
+		return said
 	case PutBack:
 		return fmt.Sprintf("backup %d was put back\n", *a.PutBack)
 	case Applied:

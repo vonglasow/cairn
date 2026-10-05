@@ -709,6 +709,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says task (\d+) was waiting on it$`, func(n int) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d was waiting on it", n), "the deletion")
+	})
+
 	sc.Step(`^it names task (\d+)$`, func(n int) error {
 		return test.WantContains(strings.ToLower(w.Out.Stderr), fmt.Sprintf("task %d", n), "the refusal")
 	})
