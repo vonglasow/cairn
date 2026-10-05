@@ -25,7 +25,8 @@ const (
 // is found and handed over, and a window that needs a screen is not something a
 // test should need.
 var openGui = func(work reading.Work, width, height int) error {
-	return gui.Run(work, width, height)
+	gui.Run(work, width, height)
+	return nil
 }
 
 // newGuiCmd builds the `gui` command.

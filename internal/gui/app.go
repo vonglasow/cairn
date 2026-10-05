@@ -9,6 +9,7 @@ package gui
 // anything wrong quietly.
 
 import (
+	"fmt"
 	"image"
 	"io"
 	"os"
@@ -232,23 +233,24 @@ var tag = new(int)
 // it, which is exactly the kind of thing only the built binary says.
 //
 // It follows that this never returns on a desktop, and the process ends from
-// inside — which is why leave exists rather than an exit code handed back.
-func Run(work reading.Work, width, height int) error {
-	go func() { leave(code(loop(work, width, height))) }()
+// inside — which is why it hands nothing back, and why ended says what went
+// wrong itself rather than leaving it to a caller that is never returned to.
+func Run(work reading.Work, width, height int) {
+	go func() { ended(loop(work, width, height), os.Stderr, os.Exit) }()
 	app.Main()
-	return nil
 }
 
-// leave is how the process ends once the window is gone. A variable because a
-// test that called the real one would take the suite with it.
-var leave = os.Exit
-
-// code is what closing the window exits with. Closing it is not a failure.
-func code(err error) int {
+// ended is how the process ends once the window is gone: quietly when it was
+// closed on purpose, saying why and exiting 1 when it failed. What exits is
+// handed in because a test that called the real one would take the suite
+// with it.
+func ended(err error, said io.Writer, exit func(int)) {
 	if err == nil {
-		return 0
+		exit(0)
+		return
 	}
-	return 1
+	_, _ = fmt.Fprintf(said, "cairn: the window failed: %v\n", err)
+	exit(1)
 }
 
 // loop is the window itself: the only code in this package no test runs.

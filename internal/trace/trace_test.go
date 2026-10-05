@@ -136,3 +136,19 @@ func TestAsTold_losesNothingOnTheWayThroughWhenNothingIsThere(t *testing.T) {
 		t.Errorf("told twice differs:\n  %+v\n  %+v", told(first), told(again.Act()))
 	}
 }
+
+// The moment a field last changed is the last act that named it, the
+// creation included; a field nothing ever named has no such moment.
+func TestLastNamed_isTheLastActThatNamedTheField(t *testing.T) {
+	acts := []Act{
+		acted(1, Created, "column", "", "backlog", "", 9, 0),
+		acted(1, Changed, "column", "backlog", "todo", "", 10, 0),
+		acted(1, Changed, "priority", "normal", "high", "", 11, 0),
+	}
+	if got := LastNamed(acts, "column"); !got.Equal(acts[1].at) {
+		t.Errorf("LastNamed = %v, want the 10:00 change", got)
+	}
+	if got := LastNamed(acts, "deadline"); !got.IsZero() {
+		t.Errorf("LastNamed of a field never named = %v, want nothing", got)
+	}
+}

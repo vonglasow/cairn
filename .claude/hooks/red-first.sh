@@ -112,7 +112,10 @@ for target in $targets; do
     owed="$owed $package"
     continue
   fi
-  age=$(( $(date +%s) - $(stat -f %m "$receipt" 2>/dev/null || stat -c %Y "$receipt") ))
+  # GNU's spelling first: on Linux `stat -f` succeeds and answers about the
+  # file system rather than the file, so the BSD spelling tried first was
+  # never the one that failed over. On macOS `-c` fails, and BSD answers.
+  age=$(( $(date +%s) - $(stat -c %Y "$receipt" 2>/dev/null || stat -f %m "$receipt") ))
   if [ "$age" -gt "$keeps" ]; then
     owed="$owed $package"
   fi

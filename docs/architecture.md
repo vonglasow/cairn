@@ -97,6 +97,22 @@ lifted out of `internal/tui` the day the second board was specified and not
 before: a package made for one consumer is a boundary guessed rather than
 measured.
 
+**It reads, and it builds what a board asks for — both, on purpose.** Half of
+`reading` turns what the engine answered into cards and columns; the other half
+turns a saved form or a pushed card into the operation and input the engine
+takes. The second half needs the engine's description of its operations, which
+the first does not, and splitting them was weighed: both boards use both
+halves, neither half is used without the other, and a package made of one of
+them would be a boundary with nobody on the far side of it.
+
+**Where a card goes is shared; how the cursor walks is not.** `reading.Step`,
+`Beside` and `Where` say where a pushed card lands and which column is beside
+it, once, for both boards. The cursor is each board's own, because the two
+draw the stalled band differently — the terminal as a grid of three across,
+the window as three lanes under the columns they belong to — and the same key
+is a different journey across a different shape. A cursor shared between them
+would make one of the two drawings walk like the other.
+
 **A label is not a notion.** Neither is a priority, nor a column, nor a
 deadline. None of them has an identity: you cannot list one, show one or delete
 one — they exist only on a task or an objective. So they are carried, they live
@@ -159,6 +175,16 @@ way out. A command that has no use for it never opens it, which is why `cairn
 before anything is written. One invocation opens one connection, so nothing
 survives between two runs — which is what makes "a task added by one command is
 found by the next" a claim about the disk rather than about a cache.
+
+**The engine is one package, split into files by notion.** It is the one door
+— `Ask`, and nothing else a surface calls to change something — so it holds
+every operation and every rule a surface must not hold. Grown past ten
+thousand lines, it is split by what each file is about — `task.go` for what is
+done to a task, `moving.go` for its place and the focus, `trace.go` for its
+history, `answer.go` for the shapes that cross to a machine and `render.go`
+for the text a person reads, `refusal.go` for what kind of answer a failure
+is — and not into sub-packages: a sub-package would need a door of its own, and
+two doors is how a rule comes to be checked at one and not the other.
 
 ## More than one cairn at a time
 
@@ -245,6 +271,14 @@ this cairn knows is reported and left alone — `store.Open` refuses it, and onl
 the commands whose job is to change the shape use `store.OpenBehind`. Migrating
 on the way past would mean `cairn task list` rewriting somebody's database as a
 side effect of listing their tasks.
+
+**A change is made whole or not at all.** Each one — the SQL that makes it and
+the line in the ledger that records it — runs as one transaction, and so does
+undoing one. A change of several statements failing half way used to leave the
+first statements made and the ledger silent about them: a store the next
+`migration apply` could only refuse, with nothing saying where it had stopped.
+The backup set aside first was a way back, by hand; the transaction is the way
+not to need it.
 
 **Every change carries its own undoing.** A migration holds the SQL that makes
 it and the SQL that unmakes it, and both are printable — `migration show`
@@ -349,7 +383,7 @@ four kinds of answer it got:
 | | |
 |---|---|
 | `0` | it worked |
-| `1` | the request was understood, and could not be satisfied |
+| `1` | the request was understood, and could not be satisfied — or something nobody foresaw went wrong |
 | `2` | the request was not understood at all |
 | `3` | the store could not be used |
 
@@ -358,13 +392,29 @@ only knew "it failed" would have to read the message to decide whether to fix
 its arguments or to wait and retry. A refusal answered with 2 says "I did not
 understand you" about a request that was understood perfectly well.
 
-`refusals` in `internal/cli/exit.go` is the list of errors that are kind 1, and
-a refusal left out of it quietly becomes kind 2. Nineteen of them were. The
-list is now held true by a test rather than by care: `TestEveryRefusalHasItsCode`
-reads the source of every package that can refuse, and every `Err…` it declares
-has to be in the list or named in `notARefusal` beside the reason it is not. An
-error added anywhere now fails that test until somebody has said which kind of
-answer it is.
+**What kind of answer a failure is, is the engine's to say.**
+`engine.RefusalOf` reads an error and answers its kind — `refused`, `usage`
+(not understood), `store`, or `failed` (nobody foresaw it) — and a reason, a
+word like `no-such-task` that stays the same when the sentence is reworded. The
+command line turns the kind into an exit code; the MCP server puts both under
+`_meta`; `--json` prints them beside the message. The list used to live in
+`internal/cli/exit.go`, and a script and an agent were answered from two
+places.
+
+Two things changed with the move. **What is not understood is marked, not
+guessed**: the engine's readers and `Check` mark their refusals with
+`engine.Misread`, and so does the command line for cobra's own — so a failure
+nobody foresaw is no longer answered as a request somebody mistyped, and gets
+1, not 2. And **a surface's own refusal is made with `engine.Refusing`**, a
+reason and a sentence — a deletion not confirmed, a set of glyphs that is not
+one — so it is answered like any refusal the engine listed.
+
+The list is held true by a test rather than by care:
+`TestEveryFailureCairnForesawHasAReason` reads the source of every package
+below the surfaces, and every `Err…` it declares has to be in `reasons`. An
+error added anywhere fails that test until somebody has said which kind of
+answer it is. Nineteen were missing from the old list the day it was first
+checked.
 
 ## A part of the work is not work in its own right
 

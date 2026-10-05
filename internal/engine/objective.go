@@ -367,8 +367,10 @@ var ObjectiveAdd = Operation{
 	Verb:    "add",
 	Short:   "Add an objective",
 	Does:    "Add an objective, carrying whatever of its attributes were given.",
+	Example: "cairn objective add \"Ship cairn 1.0\" --deadline 2026-12-01",
 	Level:   Write,
 	Needs:   AStore,
+	Again:   DoesItAgain,
 	Answers: Objective{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
@@ -391,10 +393,12 @@ var ObjectiveAdd = Operation{
 // ObjectiveList names every objective, or only the ones carrying what was
 // named.
 var ObjectiveList = Operation{
-	Thing:   "objective",
-	Verb:    "list",
-	Short:   "List objectives, all of them or only some",
-	Does:    "List every objective, or only the ones carrying everything named. An objective has to carry all of it, not one of it.",
+	Thing: "objective",
+	Verb:  "list",
+	Short: "List objectives, all of them or only some",
+	Does:  "List every objective, or only the ones carrying everything named. An objective has to carry all of it, not one of it.",
+	Example: `cairn objective list
+cairn objective list --state reached`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Objectives{},
@@ -438,6 +442,7 @@ var ObjectiveShow = Operation{
 	Verb:    "show",
 	Short:   "Show what an objective carries, and how far along it is",
 	Does:    "Show what an objective carries, what tasks serve it and how far along it is.",
+	Example: "cairn objective show 1",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Objective{},
@@ -456,13 +461,16 @@ var ObjectiveShow = Operation{
 
 // ObjectiveEdit changes what an objective carries.
 var ObjectiveEdit = Operation{
-	Thing:   "objective",
-	Verb:    "edit",
-	Short:   "Change what an objective carries",
-	Does:    "Change what an objective carries.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Objective{},
+	Thing:      "objective",
+	Verb:       "edit",
+	Short:      "Change what an objective carries",
+	Does:       "Change what an objective carries.",
+	Example:    "cairn objective edit 1 --state reached",
+	Level:      Write,
+	Needs:      AStore,
+	Again:      ChangesNothingMore,
+	Overwrites: true,
+	Answers:    Objective{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
@@ -493,6 +501,7 @@ var ObjectiveSearch = Operation{
 	Verb:    "search",
 	Short:   "Look for an objective by anything it carries",
 	Does:    "List every objective carrying everything named, wherever among its facts each one sits.",
+	Example: "cairn objective search ship",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Objectives{},
@@ -521,8 +530,10 @@ var ObjectiveDelete = Operation{
 	Verb:    "delete",
 	Short:   "Delete an objective",
 	Does:    "Delete an objective.",
+	Example: "cairn objective delete 1 --yes",
 	Level:   Full,
 	Needs:   AStore,
+	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},

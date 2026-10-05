@@ -285,3 +285,17 @@ func TestARefusalSaysWhatWouldHaveBeenTaken(t *testing.T) {
 
 // refusedBy drops the value a parser returned and keeps what it refused with.
 func refusedBy[T any](_ T, err error) error { return err }
+
+// A label named as nothing says none, and the labels after it are still read.
+func TestParseLabels_readsOnPastALabelNamedAsNothing(t *testing.T) {
+	if got, err := ParseLabels([]string{"", "spec"}); err != nil || len(got) != 1 || got[0] != "spec" {
+		t.Errorf("ParseLabels = %v, %v; want [spec]", got, err)
+	}
+	change, err := ParseLabelChange([]string{"", "+spec"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := change.Apply(nil); len(got) != 1 || got[0] != "spec" {
+		t.Errorf("Apply = %v, want [spec]: the change after the empty piece was dropped", got)
+	}
+}

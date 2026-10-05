@@ -27,11 +27,14 @@ func offered(access engine.Level) []engine.Operation {
 }
 
 // toolFor describes what calling op would cost. readOnlyHint says it only
-// looks; destructiveHint says it can lose work already done; openWorldHint
-// is always false, because cairn is a store on this machine and goes looking
-// nowhere else — the protocol assumes the opposite until told otherwise.
+// looks; destructiveHint says it can lose work already done or replace what
+// was written — the protocol's sense of the word, wider than the access
+// level's; idempotentHint says a second call does nothing more than the
+// first; openWorldHint is always false, because cairn is a store on this
+// machine and goes looking nowhere else — the protocol assumes the opposite
+// until told otherwise.
 func toolFor(op engine.Operation) *sdk.Tool {
-	destructive := op.Level == engine.Full
+	destructive := op.Level == engine.Full || op.Overwrites
 	openWorld := false
 	return &sdk.Tool{
 		Name:         op.Name(),
@@ -39,8 +42,10 @@ func toolFor(op engine.Operation) *sdk.Tool {
 		InputSchema:  schemaFor(op),
 		OutputSchema: answerSchemaFor(op),
 		Annotations: &sdk.ToolAnnotations{
+			Title:           op.Short,
 			ReadOnlyHint:    op.Level == engine.Read,
 			DestructiveHint: &destructive,
+			IdempotentHint:  op.Level == engine.Read || op.Again == engine.ChangesNothingMore,
 			OpenWorldHint:   &openWorld,
 		},
 	}
@@ -85,15 +90,21 @@ func schemaFor(op engine.Operation) map[string]any {
 		if len(arg.OneOf) > 0 {
 			prop["enum"] = arg.OneOf
 		}
+		if arg.Kind == engine.List {
+			prop["items"] = map[string]any{"type": "string"}
+		}
 		properties[arg.Name] = prop
 		if arg.Required {
 			required = append(required, arg.Name)
 		}
 	}
+	// A name the operation does not take is refused by the engine either
+	// way; said here, a client knows before it calls.
 	return map[string]any{
-		"type":       "object",
-		"properties": properties,
-		"required":   required,
+		"type":                 "object",
+		"properties":           properties,
+		"required":             required,
+		"additionalProperties": false,
 	}
 }
 
@@ -111,6 +122,10 @@ func jsonType(kind engine.Kind) string {
 	}
 }
 
+// refusalKey is where a refusal's kind and reason travel, under _meta. The
+// protocol reserves unprefixed names for itself, so the key carries cairn's.
+const refusalKey = "cairn/refusal"
+
 // throughTheServer is how a history names what an agent did. The same word as
 // the command that starts it, so a line nobody explained still reads.
 const throughTheServer = "mcp"
@@ -126,7 +141,14 @@ const throughTheServer = "mcp"
 // cairns, and it costs nothing because both renderings already exist in
 // internal/engine.
 func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
-	return func(_ context.Context, req *sdk.CallToolRequest) (*sdk.CallToolResult, error) {
+	return func(ctx context.Context, req *sdk.CallToolRequest) (*sdk.CallToolResult, error) {
+		// A call the client gave up on before it ran is not run. One that
+		// has started runs to its end: it is one transaction of a few
+		// milliseconds, and stopping it half way is what the transaction is
+		// there to prevent.
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		// What the call sent is read the way the operation takes it, by the
 		// engine: what cannot be read as what an argument carries never
 		// reached cairn, so it is a protocol error rather than a refusal.
@@ -142,7 +164,14 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 			// store this cairn cannot use — is an answer, not a broken tool:
 			// it comes back as IsError, with the reason as text an agent can
 			// read and correct itself from, rather than a protocol error.
+			//
+			// The kind and the reason travel beside the sentence, under
+			// _meta, so a program branches on words that do not change when
+			// the sentence is reworded. Not as structuredContent: the client
+			// measures that against the answer's shape even on a refusal,
+			// and a refusal is not an answer of that shape (docs/mcp.md).
 			return &sdk.CallToolResult{
+				Meta:    sdk.Meta{refusalKey: engine.RefusalOf(err)},
 				Content: []sdk.Content{&sdk.TextContent{Text: err.Error()}},
 				IsError: true,
 			}, nil

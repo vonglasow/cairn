@@ -41,7 +41,9 @@ unleash:
   # Mutators. The defaults are kept; the ones off by default stay off because
   # they produce a lot of equivalent mutants (a mutant that cannot change
   # observable behaviour, so no test can ever kill it) and would drag the score
-  # down without pointing at a single weak test.
+  # down without pointing at a single weak test. Two of them, invert-logical
+  # and invert-loopctrl, are turned on by scripts/mutation.sh for the core
+  # packages, where the rules are written in && and || — see docs/checks.md.
   arithmetic-base: true
   conditionals-boundary: true
   conditionals-negation: true

@@ -706,7 +706,7 @@ func (w Window) inChoosing(name string) Window {
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Back(), 0, 0
 	case "esc":
 		return w.leaving()
-	case "enter", "return":
+	case "enter":
 		return w.taking()
 	case "cmd+enter":
 		return w.keeping()

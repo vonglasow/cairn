@@ -296,11 +296,22 @@ func TestAFrameOfEventsScrollsBackUp(t *testing.T) {
 // process exits with, and it is a function because the loop that calls it is
 // the one thing here no test can reach.
 func TestWhatClosingTheWindowExitsWith(t *testing.T) {
-	if got := code(nil); got != 0 {
-		t.Errorf("a window closed on purpose exits %d", got)
-	}
-	if got := code(errNope); got != 1 {
-		t.Errorf("a window that failed exits %d", got)
+	for _, c := range []struct {
+		err  error
+		code int
+		said string
+	}{{nil, 0, ""}, {errNope, 1, errNope.Error()}} {
+		var said strings.Builder
+		exited := -1
+		ended(c.err, &said, func(code int) { exited = code })
+		if exited != c.code {
+			t.Errorf("%v: exited %d, want %d", c.err, exited, c.code)
+		}
+		// A window that failed says why: the process ends from inside, so
+		// nothing above it is left to.
+		if !strings.Contains(said.String(), c.said) || (c.err == nil && said.Len() > 0) {
+			t.Errorf("%v: said %q", c.err, said.String())
+		}
 	}
 }
 

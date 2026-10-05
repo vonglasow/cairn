@@ -73,7 +73,7 @@ func Serving(lines []string) string {
 	var out strings.Builder
 	out.WriteString("\ntasks\n")
 	for _, l := range lines {
-		_, _ = fmt.Fprintf(&out, "  %s\n", l)
+		fmt.Fprintf(&out, "  %s\n", l)
 	}
 	return out.String()
 }
@@ -121,7 +121,7 @@ func List(all []Objective) string {
 				line += "  · " + said
 			}
 		}
-		_, _ = fmt.Fprintf(&out, "%s\n", line)
+		fmt.Fprintf(&out, "%s\n", line)
 	}
 	return out.String()
 }

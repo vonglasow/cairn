@@ -11,10 +11,25 @@ import (
 // walking the board and moving what is chosen, and holding, copying and
 // pasting text.
 
+// spellings are the keys that arrive under more than one name, each read as
+// the one the bar's shortcuts are written in — said once, before anything
+// looks at the key, so no screen has to know there were two.
+var spellings = map[string]string{
+	"ctrl+n":       "cmd+n",
+	"cmd+f":        "/",
+	"ctrl+f":       "/",
+	"return":       "enter",
+	"shift+return": "shift+enter",
+	" ":            "space",
+}
+
 // Key is the few flat shortcuts this board keeps. There are no modes: what a
 // person points at is what happens, and these are the things a pointer is bad
 // at saying.
 func (w Window) Key(name string) Window {
+	if said, ok := spellings[name]; ok {
+		name = said
+	}
 	// A key does what the bar offers, where the bar offers it, and nothing
 	// where the bar says nothing. One rule and not a list of guards: the bar
 	// used to offer Edit on an open task while e did nothing there, and a key
@@ -22,38 +37,85 @@ func (w Window) Key(name string) Window {
 	//
 	// Read off the offers rather than written out beside them, so an offer
 	// added to one screen cannot arrive without its key.
-	if name != "ctrl+n" && name != "cmd+f" && name != "ctrl+f" {
-		for _, offer := range w.Offers() {
-			if Shortcut(offer) == name {
-				return w.Choose(offer)
-			}
+	for _, offer := range w.Offers() {
+		if Shortcut(offer) == name {
+			return w.Choose(offer)
 		}
 	}
-	// Taking a task up is not offered on the bar: the bar has room for what
-	// changes a task, and this changes what somebody is working on. It is in
-	// the help, under the same key the terminal board uses.
-	if name == "f" && w.screen == OnTheBoard && w.chosen != 0 && !w.chosenGoal {
-		return w.working()
+	// Escape is not here: every screen that has a way out offers it as Close
+	// or Cancel, and Shortcut maps both to esc — so it is served by the loop
+	// above before it ever reaches a screen.
+	if on, ok := screens[w.screen]; ok {
+		return on(w, name)
 	}
-	// The whole column off the board at once. Not on the bar either: the bar
-	// has room for what one card does, and this does what a column does. The
-	// engine has swept by a narrowing all along and only the command line ever
-	// asked it to.
-	if name == "shift+x" && w.screen == OnTheBoard && w.tab == Tasks && w.sweeps() != "" {
-		w.screen, w.question = OnAsking, aboutSweeping
-		return w
+	return w
+}
+
+// screens is what a key the bar does not offer does, by the screen it lands
+// on. One table rather than a guard per key on which screen it is: each
+// screen's keys are read together, in one place.
+var screens = map[Screen]func(Window, string) Window{
+	OnTheBoard: Window.onBoard,
+	OnDetail:   Window.onDetail,
+	OnForm:     func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
+	OnSearch:   Window.onSearch,
+	OnChoosing: Window.inChoosing,
+}
+
+// onBoard is what a key does on the board itself.
+func (w Window) onBoard(name string) Window {
+	switch name {
+	case "f":
+		// Taking a task up is not offered on the bar: the bar has room for
+		// what changes a task, and this changes what somebody is working on.
+		// It is in the help, under the same key the terminal board uses.
+		if w.chosen != 0 && !w.chosenGoal {
+			return w.working()
+		}
+	case "shift+x":
+		// The whole column off the board at once. Not on the bar either: the
+		// bar has room for what one card does, and this does what a column
+		// does. The engine has swept by a narrowing all along and only the
+		// command line ever asked it to.
+		if w.tab == Tasks && w.sweeps() != "" {
+			w.screen, w.question = OnAsking, aboutSweeping
+		}
+	case "tab", "shift+tab":
+		return w.other()
+	case "left":
+		return w.walking(-1, 0)
+	case "right":
+		return w.walking(1, 0)
+	case "up":
+		return w.walking(0, -1)
+	case "down":
+		return w.walking(0, 1)
+	case "enter":
+		return w.opening()
+	case "shift+left":
+		return w.shifting(-1, 0)
+	case "shift+right":
+		return w.shifting(1, 0)
+	case "shift+up":
+		return w.shifting(0, -1)
+	case "shift+down":
+		return w.shifting(0, 1)
 	}
-	// What is held on an open task is copied, and ⌘A holds the whole of the
-	// text last pressed in.
-	if w.screen == OnDetail && name == "cmd+c" {
+	return w
+}
+
+// onDetail is what a key does on an open task or objective.
+func (w Window) onDetail(name string) Window {
+	switch name {
+	case "cmd+c":
+		// What is held is copied, and ⌘A holds the whole of the text last
+		// pressed in.
 		return w.copyingPicked()
-	}
-	if w.screen == OnDetail && name == "cmd+a" {
+	case "cmd+a":
 		return w.all()
-	}
-	// Half a box at a time through the description on an open task: the
-	// terminal board's keys for it, taken here too so the same fingers work.
-	if w.screen == OnDetail && (name == "cmd+d" || name == "cmd+u") {
+	case "cmd+d", "cmd+u":
+		// Half a box at a time through the description: the terminal board's
+		// keys for it, taken here too so the same fingers work.
 		_, _, _, rows, ok := w.sayingOn()
 		if !ok {
 			return w
@@ -65,91 +127,48 @@ func (w Window) Key(name string) Window {
 		w.saying = w.settledSaying(w.saying + by)
 		return w
 	}
-	// The two spellings of a key the bar has no room to write twice.
-	switch name {
-	case "ctrl+n":
-		return w.Key("cmd+n")
-	case "cmd+f", "ctrl+f":
-		return w.Key("/")
-	}
-	// Escape is not here: every screen that has a way out offers it as Close
-	// or Cancel, and Shortcut maps both to esc — so it is served by the loop
-	// above before it ever reaches this far. The branch that used to close a
-	// search here was unreachable, and the only thing that noticed was
-	// mutation, which found arithmetic no test could run.
-	if w.screen == OnChoosing {
-		return w.inChoosing(name)
-	}
-	if w.screen == OnForm {
-		return w.inForm(name).inSightOfTheCaret()
-	}
-	if w.screen == OnTheBoard {
-		switch name {
-		case "tab", "shift+tab":
-			return w.other()
-		case "left":
-			return w.walking(-1, 0)
-		case "right":
-			return w.walking(1, 0)
-		case "up":
-			return w.walking(0, -1)
-		case "down":
-			return w.walking(0, 1)
-		case "enter", "return":
-			return w.opening()
-		case "shift+left":
-			return w.shifting(-1, 0)
-		case "shift+right":
-			return w.shifting(1, 0)
-		case "shift+up":
-			return w.shifting(0, -1)
-		case "shift+down":
-			return w.shifting(0, 1)
-		}
-	}
-	if w.screen == OnDetail {
-		// A hand on the keyboard reads a history the same way it reads a
-		// board: with the arrows, without reaching for the mouse. Over an
-		// objective they walk the work under it instead — that is the list
-		// there is to read, and the history column carries one line saying an
-		// objective has none.
-		// The box takes the arrows wherever there is one, because it is what
-		// somebody acts on: a tile is marked done, and a line of history is
-		// read rather than changed. The history keeps the wheel over it and
-		// the bar beside it.
-		if len(w.Under()) > 0 {
-			switch name {
-			case "down":
-				return w.walkingUnder(1)
-			case "up":
-				return w.walkingUnder(-1)
-			case " ", "space":
-				return w.marking()
-			}
-			return w
-		}
+	// A hand on the keyboard reads a history the same way it reads a board:
+	// with the arrows, without reaching for the mouse. Over an objective they
+	// walk the work under it instead — that is the list there is to read, and
+	// the history column carries one line saying an objective has none.
+	// The box takes the arrows wherever there is one, because it is what
+	// somebody acts on: a tile is marked done, and a line of history is read
+	// rather than changed. The history keeps the wheel over it and the bar
+	// beside it.
+	if len(w.Under()) > 0 {
 		switch name {
 		case "down":
-			w.history = w.settledHistory(w.history + 1)
+			return w.walkingUnder(1)
 		case "up":
-			w.history = w.settledHistory(w.history - 1)
+			return w.walkingUnder(-1)
+		case "space":
+			return w.marking()
 		}
 		return w
 	}
-	if w.screen == OnSearch {
-		switch name {
-		case "backspace":
-			w.looking = w.looking.Back()
-		case "left":
-			return w.walks(-1)
-		case "right":
-			return w.walks(1)
-		case "enter", "return":
-			// The box closes and what it narrowed stays narrowed. A search
-			// that vanished the moment it was asked for would be a search
-			// nobody could act on.
-			w.screen = OnTheBoard
-		}
+	switch name {
+	case "down":
+		w.history = w.settledHistory(w.history + 1)
+	case "up":
+		w.history = w.settledHistory(w.history - 1)
+	}
+	return w
+}
+
+// onSearch is what a key does while the search box is open.
+func (w Window) onSearch(name string) Window {
+	switch name {
+	case "backspace":
+		w.looking = w.looking.Back()
+	case "left":
+		return w.walks(-1)
+	case "right":
+		return w.walks(1)
+	case "enter":
+		// The box closes and what it narrowed stays narrowed. A search that
+		// vanished the moment it was asked for would be a search nobody
+		// could act on.
+		w.screen = OnTheBoard
 	}
 	return w
 }
@@ -204,7 +223,7 @@ func (w Window) inForm(name string) Window {
 		return w.walks(-1)
 	case "right":
 		return w.walks(1)
-	case "enter", "return", "shift+enter", "shift+return":
+	case "enter", "shift+enter":
 		// A line where a line can be written, and on to the next field
 		// everywhere else — the same on both boards. It never saves: saving
 		// is a chord of its own, so it cannot happen by reaching for the key

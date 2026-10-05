@@ -78,3 +78,17 @@ func TestRef_writesANumberAsANameFor(t *testing.T) {
 		t.Errorf("Ref(4) = %q, want #4", got)
 	}
 }
+
+// Every named thing is looked for in every text considered, whatever was found
+// before it: a search that stopped at the first thing already found would
+// leave the rest unlooked-for, depending on the order a map is walked in.
+func TestLooking_looksForEverythingInEveryText(t *testing.T) {
+	named := []string{"a1", "b2", "c3", "d4", "e5", "f6", "g7", "h8"}
+	l := LookingFor(named)
+	for _, n := range named {
+		l.Consider("here is " + n)
+	}
+	if !l.All() {
+		t.Error("a thing named was left unfound after a text holding it was considered")
+	}
+}

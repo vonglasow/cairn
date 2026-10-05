@@ -316,7 +316,9 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	// own — except finished, which stays finished. Settled before the rules
 	// are asked, so that hanging a task under one never fails for the column
 	// it happened to be in a moment ago.
-	if c.Parent != nil && factsOf(was).parent != factsOf(t).parent {
+	// Asked of the parent itself rather than of whether one was named: one
+	// named as the same is no change, and one not named cannot have changed.
+	if factsOf(was).parent != factsOf(t).parent {
 		t = t.Settled()
 	}
 	if err := t.MayHang(e.tasks.Find); err != nil {

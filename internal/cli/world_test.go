@@ -8,6 +8,8 @@ package cli
 // their feature; everything here is claimed by more than one.
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,7 +20,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"cairn/internal/engine"
 	"cairn/internal/task"
 
 	"github.com/cucumber/godog"
@@ -42,6 +46,12 @@ func newWorld(t *testing.T) *world {
 }
 
 // field reads a value out of the card a command printed.
+// daysToday is today as a step sees it, and as the command it checks may have
+// seen it a moment before midnight turned it into yesterday.
+func daysToday() []string {
+	return []string{domain.FormatDay(time.Now()), domain.FormatDay(time.Now().Add(-time.Minute))}
+}
+
 func (w *world) field(key string) string {
 	for _, l := range strings.Split(w.Out.Stdout, "\n") {
 		if rest, ok := strings.CutPrefix(strings.TrimSpace(l), key); ok {
@@ -686,6 +696,70 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return fmt.Errorf("stdout is not JSON (%w):\n%s", err, w.Out.Stdout)
 		}
 		return nil
+	})
+
+	sc.Step(`^it says in JSON the refusal is "([^"]*)", because "([^"]*)"$`, func(kind, reason string) error {
+		var said engine.Refusal
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+			return fmt.Errorf("stdout is not a refusal in JSON (%w):\n%s", err, w.Out.Stdout)
+		}
+		if said.Kind != kind || said.Reason != reason {
+			return fmt.Errorf("refusal = %+v, want %s because %s", said, kind, reason)
+		}
+		return nil
+	})
+
+	sc.Step(`^it names task (\d+)$`, func(n int) error {
+		return test.WantContains(strings.ToLower(w.Out.Stderr), fmt.Sprintf("task %d", n), "the refusal")
+	})
+
+	sc.Step("^I run `([^`]*)` with \"([^\"]*)\" and \"([^\"]*)\" on standard input$", func(line, first, second string) error {
+		var out, errs bytes.Buffer
+		stdin := strings.NewReader(first + "\n\n" + second + "\n")
+		code := Main(context.Background(), test.SplitArgs(line)[1:], stdin, &out, &errs)
+		w.Line, w.Out = line, test.Result{Stdout: out.String(), Stderr: errs.String(), Code: code}
+		return nil
+	})
+
+	sc.Step("^`([^`]*)` shows \"([^\"]*)\"$", func(line, said string) error {
+		r := run(w.T, test.SplitArgs(line)[1:]...)
+		return test.WantContains(r.Stdout, said, line)
+	})
+
+	sc.Step(`^I add a task whose description carries an escape$`, func() error {
+		w.Out = run(w.T, "task", "add", "Write the spec", "--desc", "look \x1b]52;c;aGk=\x07 here")
+		return nil
+	})
+
+	sc.Step(`^it says only text, line breaks and tabs can be written there$`, func() error {
+		return test.WantContains(strings.ToLower(w.Out.Stderr), "only text, line breaks and tabs", "the refusal")
+	})
+
+	sc.Step(`^it says the task has stood in "([^"]*)" since today$`, func(column string) error {
+		for _, day := range daysToday() {
+			if strings.Contains(w.Out.Stdout, "in "+column+" since "+day) {
+				return nil
+			}
+		}
+		return fmt.Errorf("it does not say the task has stood in %q since today:\n%s", column, w.Out.Stdout)
+	})
+
+	sc.Step(`^it says in JSON the task has stood in its column since today$`, func() error {
+		var doc map[string]any
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
+			return err
+		}
+		said, _ := doc["in_column_since"].(string)
+		since, err := time.Parse(time.RFC3339Nano, said)
+		if err != nil {
+			return fmt.Errorf("in_column_since = %v: %w", doc["in_column_since"], err)
+		}
+		for _, day := range daysToday() {
+			if domain.FormatDay(since) == day {
+				return nil
+			}
+		}
+		return fmt.Errorf("in_column_since = %s, want today", said)
 	})
 
 	sc.Step(`^it carries the title "([^"]*)"$`, func(title string) error {

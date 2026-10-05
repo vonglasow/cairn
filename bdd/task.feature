@@ -441,6 +441,40 @@ Feature: Tasks
       When I run `cairn task show 1`
       Then the task is in the "todo" column
 
+    @task-description-from-standard-input
+    Scenario: a description too long to type is read from standard input
+      Several paragraphs are written in an editor or piped in, not typed between
+      quotes, and `-` is how every other tool on the machine says so.
+
+      When I run `cairn task add "Write the spec" --desc -` with "first paragraph" and "second paragraph" on standard input
+      Then it succeeds
+      And `cairn task show 1` shows "second paragraph"
+
+    @task-description-not-text
+    Scenario: a description a terminal would obey is refused
+      A description is printed straight to a terminal, by more than one surface;
+      an escape in it is an instruction to that terminal, not text.
+
+      When I add a task whose description carries an escape
+      Then it fails
+      And it says only text, line breaks and tabs can be written there
+
+    @task-show-since
+    Scenario: showing a task says since when it has stood in its column
+      How long a task has sat where it is is the one date nothing else a task
+      carries implies. It is read off what was done to the task, never kept
+      beside it: the day the column last changed, or the day the task was made.
+
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I run `cairn task show 1`
+      Then it says the task has stood in "todo" since today
+
+    @task-show-since-json
+    Scenario: a machine is told since when a task has stood in its column
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I run `cairn task show 1 --json`
+      Then it says in JSON the task has stood in its column since today
+
     @task-number-negative
     Scenario: a number that starts with a minus is still a number
       When I run `cairn task show -1`
@@ -452,6 +486,15 @@ Feature: Tasks
       When I run `cairn task show 99`
       Then it fails
       And it says there is no such task
+
+    @task-show-unknown-as-json
+    Scenario: a refusal asked for as JSON says what kind it is, and which
+      A script branches on a word that stays the same when the sentence is
+      reworded, not on the sentence.
+
+      When I run `cairn task show 99 --json`
+      Then it fails
+      And it says in JSON the refusal is "refused", because "no-such-task"
 
     @task-show-not-a-number
     Scenario: showing something that is not a number says so
@@ -1129,6 +1172,13 @@ Feature: Tasks
       Then it fails
       And it says how to confirm
       And `cairn task show 1` still reports a task titled "Write the spec"
+
+    @task-delete-unconfirmed-names-it
+    Scenario: a deletion refused for want of confirming names what it would take
+      Given I added a task titled "Write the spec"
+      When I run `cairn task delete 1`
+      Then it fails
+      And it names task 1
 
     @task-delete-unknown
     Scenario: deleting a task that does not exist says so

@@ -629,7 +629,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		// counted — measured, it was, and this passed with the writing landing
 		// entirely outside the ghost.
 		inside := Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
-		if inked(drawn(w.t, w.w), inside, Dark().Ghost) == 0 {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		if inked(shot, inside, Dark().Ghost) == 0 {
 			return fmt.Errorf("nothing is written on what is in hand, at %+v", ghost)
 		}
 		return nil
@@ -713,7 +717,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	// not show it has not shown it.
 	sc.Then(`^the tile the keyboard is on is lit$`, func() error {
 		at := w.w.UnderAt()
-		shot := drawn(w.t, w.w)
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
 		on := w.w.ServingCardAt(at)
 		if painted(shot, on, Dark().Chosen) == 0 {
 			return fmt.Errorf("the tile at %d is not lit", at)
@@ -740,7 +747,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		// and would ink every column asked about. Measured — it did, and this
 		// read as a full line of writing where there was a lone ellipsis.
 		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
-		shot := drawn(w.t, w.w)
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
 		var reached int
 		for x := band.X; x < band.X+band.W; x++ {
 			if inked(shot, Box{X: x, Y: band.Y, W: 1, H: band.H}, Dark().Panel) > 0 {
@@ -762,7 +772,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		// the very edge this asks about. Measured — it counted that.
 		tile := w.w.ServingCardAt(1)
 		edge := Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
-		shot := drawn(w.t, w.w)
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
 		for what, ink := range map[string]color.NRGBA{"faint": Dark().Faint, "ink": Dark().Ink} {
 			if got := painted(shot, edge, ink); got != 0 {
 				return fmt.Errorf("%d pixels of %s writing reach the tile's last %d", got, what, padding)
@@ -1522,7 +1535,11 @@ func (w *world) formBehindTheList() error {
 	// Its outline, and not its fill: the fill is the same colour as the ground
 	// the whole window is painted on, so counting that would pass even with no
 	// form drawn at all. Measured — it did.
-	if painted(drawn(w.t, w.w), frame, Dark().Edge) == 0 {
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	if painted(shot, frame, Dark().Edge) == 0 {
 		return fmt.Errorf("the form's first field is gone: the list covered it rather than sitting on it")
 	}
 	return nil
@@ -1557,7 +1574,11 @@ func (w *world) fieldDrawnByName(field string) error {
 		inside := Inside(frame)
 		from := inside.X + (len(f.Value)+2)*perGlyph
 		far := Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
-		if inked(drawn(w.t, w.w), far, Dark().Back) == 0 {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		if inked(shot, far, Dark().Back) == 0 {
 			return fmt.Errorf("the field %q draws nothing past where %q would have ended", field, f.Value)
 		}
 		return nil

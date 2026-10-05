@@ -281,6 +281,7 @@ func TestPlaceFrom_refusesWhatNamesNoPlaceOrSeveral(t *testing.T) {
 	}{
 		{"nothing at all", Input{Given: map[string]string{}}, ErrNowhereToMove},
 		{"a flag given as false", Input{Given: map[string]string{"first": "false"}}, ErrNowhereToMove},
+		{"behind a task named as nothing", Input{Given: map[string]string{"after": ""}}, ErrNowhereToMove},
 		{"first and last at once", Input{Given: map[string]string{"first": "true", "last": "true"}}, ErrMoreThanOnePlace},
 		{"first and behind at once", Input{Given: map[string]string{"first": "true", "after": "2"}}, ErrMoreThanOnePlace},
 	} {

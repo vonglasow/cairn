@@ -80,10 +80,12 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, erro
 
 // TimesheetShow says how long the work took, day by day.
 var TimesheetShow = Operation{
-	Thing:   "timesheet",
-	Verb:    "show",
-	Short:   "Say how long the work took, day by day",
-	Does:    "Say how long the work took, day by day and task by task: the time each task was in focus, the minutes several shared split between them, and what was added by hand — each rounded to the quarter hour, the day the sum of those, with no ceiling.",
+	Thing: "timesheet",
+	Verb:  "show",
+	Short: "Say how long the work took, day by day",
+	Does:  "Say how long the work took, day by day and task by task: the time each task was in focus, the minutes several shared split between them, and what was added by hand — each rounded to the quarter hour, the day the sum of those, with no ceiling.",
+	Example: `cairn timesheet show
+cairn timesheet show --since 2026-09-01 --until 2026-09-07`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Timesheet{},
@@ -111,12 +113,15 @@ var TimesheetShow = Operation{
 
 // TimesheetAdd adds time spent on a task without it being in focus.
 var TimesheetAdd = Operation{
-	Thing:   "timesheet",
-	Verb:    "add",
-	Short:   "Add time spent on a task without it being in focus",
-	Does:    "Add time spent on a task without it being in focus — a meeting, an afternoon nobody focused — to the day it was spent. Less than nothing takes some back. Answers that day's timesheet.",
+	Thing: "timesheet",
+	Verb:  "add",
+	Short: "Add time spent on a task without it being in focus",
+	Does:  "Add time spent on a task without it being in focus — a meeting, an afternoon nobody focused — to the day it was spent. Less than nothing takes some back. Answers that day's timesheet.",
+	Example: `cairn timesheet add 3 1h30m
+cairn timesheet add 3 --on 2026-09-01 -- -30m`,
 	Level:   Write,
 	Needs:   AStore,
+	Again:   DoesItAgain,
 	Answers: Timesheet{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the task the time was spent on"},

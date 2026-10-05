@@ -11,17 +11,22 @@ here has to be remembered.
 | check | what it answers |
 |---|---|
 | `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files` | is the file well formed? |
-| `semgrep` | is there a known bad pattern? |
-| `govulncheck` | does anything we call have a known vulnerability? |
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
-| `golangci-lint` | does it hold up to static analysis, comments included? |
 | `no-go-testing` | does non-test code import `testing`? |
+| `golangci-lint` | does it hold up to static analysis, comments included? |
+| `semgrep` | is there a known bad pattern, or a secret written into a file? |
 | `tested-check` | does every package have a test file at all? |
 | `harness-check` | is the binary free of the test harness? |
+| `govulncheck` | does anything we call have a known vulnerability? |
 | `cover-check` | does it work — and did every line at least run, in total and in each package? |
 | `mutation` | would a test have noticed if a changed line were wrong? |
 | `commitlint` | is the message conventional? |
 | `mutation-all` | at push only: would a test have noticed if *any* line were wrong? |
+
+**They run in that order, and the first to fail stops the rest** (`fail_fast`
+in `prek.toml`). Cheapest first: a missing import is reported in a second,
+rather than after semgrep, the suite and the mutation gate have run for
+nothing.
 
 There is no `go-unit-tests` hook. `cover-check` builds its profile from `go
 test -race ./...`, which fails the moment a test does, so a second hook running
@@ -59,13 +64,18 @@ naming a failing test, so a write let through this way is visible to anyone
 reading `.claude/red`. What it owes is that the suite still passes once the
 move is done.
 
+**On a fresh clone there are no receipts**: `.claude/red` is ignored by git,
+and a receipt says a failure was seen on this machine, which no clone can
+inherit. The first piece of work starts like every other — a failing test,
+then `make red PKG=…` — and nothing has to be set up first.
+
 ## Getting them
 
 Without these, the hooks cannot run and nothing can be committed:
 
 ```sh
 brew install prek golangci-lint goimports govulncheck jq
-go install github.com/go-gremlins/gremlins/cmd/gremlins@latest
+go install github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0
 prek install -t pre-commit -t commit-msg -t pre-push
 ```
 
@@ -78,10 +88,22 @@ Two are not installed by hand: prek builds `semgrep` and `commitlint` in
 environments of its own, from the revisions pinned in `prek.toml`. commitlint
 needs Node on `PATH` for that.
 
-Nothing here is pinned to a version. Latest is deliberate: it keeps semgrep's
-rules and govulncheck's advisories current, and the cost is that a commit which
-passed yesterday can fail today without the code having moved. That is the
-right way round — the finding was already true yesterday.
+**What the tools find stays current; what the tools are is pinned.** Two
+different things used to be said as one:
+
+- semgrep's rules and govulncheck's advisories are fetched as they stand on
+  the day. A commit which passed yesterday can fail today without the code
+  having moved, and that is the right way round — the finding was already true
+  yesterday. The rules are the registry's Go and secrets packs, named rather
+  than chosen by `--config auto`, which reported home to choose them.
+- the tools themselves are not. Each hook repository in `prek.toml` is named by
+  the commit it was at, never by a tag a maintainer can move; commitlint's
+  configuration carries its version; gremlins is the version the Makefile names
+  (`GREMLINS_VERSION`), and `gremlins-present` refuses another. A tool that
+  changed its own behaviour found nothing that was true yesterday — what
+  `scripts/mutation.sh` works around was read in one version's source, and
+  another can quietly undo it. They move when somebody moves them:
+  `prek update --freeze`, and the Makefile's line.
 
 ### When Go itself moves
 
@@ -165,13 +187,27 @@ fails on *less than or equal*, so a `100` would refuse a perfect run.
 Neither sees a mutant that **timed out**: gremlins counts it in no column.
 Measured, under load, 219 timeouts hid 21 survivors behind a reported 100%. So
 the verdict is not gremlins' exit code but `scripts/mutation.sh`, reading its
-report: any mutant LIVED or NOT COVERED fails the run. A package with a timeout
-is judged again with three times the budget — a mutant that was only slow is
-judged then, and one that still runs out is a hang: a loop whose counter the
-mutant turned around, which the test waiting on it did notice. Measured, the
-full sweep has five, all of that kind. And the baseline test run is never a
-cached one (`-count=1`): read from the cache it takes milliseconds, the budget
-it sets with it, and every mutant times out.
+report: any mutant LIVED or NOT COVERED fails the run. The mutants that timed
+out are judged again with three times the budget — those alone, on the lines
+they sit on, handed to gremlins as a diff naming those lines and nothing else;
+a whole package judged a second time for one slow mutant is what made a large
+commit's gate outlast two hours. A mutant that was only slow is judged then,
+and one that still runs out is a hang: a loop whose counter the mutant turned
+around, which the test waiting on it did notice. Each hang caught is written
+to `.git/mutation-hangs.log` with the day and the package, because a hang and
+a test so slow it looks like one read the same to the gate, and only a person
+can tell them apart. And the baseline test run is never a cached one
+(`-count=1`): read from the cache it takes milliseconds, the budget it sets
+with it, and every mutant times out.
+
+**Two mutators are on for the core only.** `invert-logical` (`&&` for `||`) and
+`invert-loopctrl` (`continue` for `break`) are off in `.gremlins.yaml` and
+turned on by `scripts/mutation.sh` for the packages where the rules are —
+domain, engine, task, objective, store, trace, migration, config, build. What
+blocks, orders and narrows is written in `&&` and `||`, so a 100% without them
+said least exactly there. The surfaces keep them off: their conditions are
+about what is on screen, and measured, they gave more mutants no test could
+tell from the original than ones pointing at a weak test.
 
 **A threshold is never lowered to get a commit through.** If a mutant survives,
 look at the mutant. When it is genuinely equivalent — a mutation that cannot
@@ -253,7 +289,19 @@ make harness-check  # fail if the binary reaches the test harness
 make mutation-changed  # the lines changed since HEAD: what a commit runs
 make mutation          # every package: what a push runs
 make check             # every hook, commit's and push's, on every file
+make linux             # build and run the suite on Linux, in a container
+make help              # every target, and what it is for
 ```
+
+**Linux is checked by `make linux`**, which builds cairn and runs the suite in
+a container, as a user who is not root, with the graphics headers the window
+needs there. It needs Docker, so it is not a hook; it is run before a version
+is made (see [release.md](release.md)). The first run found what nothing on a
+Mac could: frames pinned in one time zone, and tests that make a store
+read-only failing for root. Drawing off screen needs a GPU the container does
+not have, so the machine says so with `CAIRN_WINDOWLESS=1` and the tests that
+draw are skipped; anywhere that is not set, a test that cannot draw fails
+rather than skipping itself.
 
 `prek run -a` is not everything: it runs the commit's hooks, and the commit's
 mutation judges only what changed since `HEAD` — on a clean tree, nothing.
@@ -268,7 +316,21 @@ the split is fixed in `prek.toml`, not left to whoever runs it:
   surviving mutant found here costs one test.
 - **at push**, every package — about twenty minutes. A test weakened without touching the code it
   guarded changes no production line, so only this one sees it — and nothing
-  leaves the machine before it has run.
+  leaves the machine before it has run. A package the sweep found clean is
+  not judged again while none of its files — nor `go.sum` — has changed: its
+  receipt, the hash of its content, is kept in `.git/mutation-receipts`.
+
+Inside a package the tests run one after another, and `t.Parallel` is
+nearly absent on purpose: most of the suite names its store through
+`CAIRN_STORE`, which `t.Setenv` sets and `t.Parallel` refuses, or swaps a
+package-level seam — the window that opens, the terminal program — that two
+tests at once would fight over. `go test` already runs the packages side by
+side.
+
+The packages are judged one after another, and that is not a lost chance to
+go faster: gremlins already runs one worker per core inside a package, and two
+packages at once only made each mutant wait for a core — which is how timeouts
+are made.
 
 Gremlins' own `--diff` never matched a single mutant here: it names a file from
 the repository root and a mutant from its package. The script hands it a diff

@@ -104,7 +104,7 @@ func applyVCS(b Info, settings []debug.BuildSetting) Info {
 // version first.
 func (b Info) String() string {
 	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "cairn %s\n", b.Version)
+	fmt.Fprintf(&sb, "cairn %s\n", b.Version)
 
 	tw := tabwriter.NewWriter(&sb, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintf(tw, "commit\t%s\n", b.Commit)

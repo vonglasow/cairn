@@ -41,7 +41,7 @@ func writeJSON(cmd *cobra.Command, v any) error {
 // asked for JSON gets JSON, on the one stream it reads, even when the answer is
 // a refusal it cannot otherwise parse.
 func writeRefusal(out interface{ Write([]byte) (int, error) }, err error) error {
-	encoded, marshalErr := json.Marshal(engine.Refusal{Error: err.Error()})
+	encoded, marshalErr := json.Marshal(engine.RefusalOf(err))
 	if marshalErr != nil {
 		return marshalErr
 	}

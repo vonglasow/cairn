@@ -94,7 +94,11 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		a.BlockersTold()
 	}
 	if c.Because != nil {
-		a.Because(*c.Because)
+		said, err := domain.Prose(*c.Because)
+		if err != nil {
+			return task.Task{}, err
+		}
+		a.Because(said)
 	}
 	if c.Spent != nil {
 		spent, err := domain.ParseSpent(*c.Spent)
@@ -152,7 +156,11 @@ func applyCarried(a carried, of string, c carriedChanges, labels []string, atCre
 		a.Titled(title)
 	}
 	if c.description != nil {
-		a.Described(*c.description)
+		said, err := domain.Prose(*c.description)
+		if err != nil {
+			return err
+		}
+		a.Described(said)
 	}
 	if c.priority != nil {
 		priority, err := domain.ParsePriority(*c.priority)

@@ -10,3 +10,15 @@ coverage.out
 
 # personal overrides, not the team's
 /.claude/settings.local.json
+
+# what must never be committed by accident: a store or its backups pointed
+# into the tree by CAIRN_STORE, an environment file, a key — the secrets
+# packs semgrep runs at commit catch what slips past these
+*.db
+*.db-wal
+*.db-shm
+*.db.arriving
+.env
+.env.*
+*.pem
+*.key

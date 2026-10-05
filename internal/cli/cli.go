@@ -5,16 +5,18 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"cairn/internal/build"
+	"cairn/internal/engine"
 )
 
 // stamps is how this surface asks which build it is. It is a variable so a
@@ -54,16 +56,16 @@ func NewRootCmd() *cobra.Command {
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		typed, ok := leadingMinus(err)
 		if !ok {
-			return err
+			return engine.Misread(err)
 		}
 		if _, number := strconv.Atoi(typed); number == nil {
-			return fmt.Errorf("%q: a task number is expected", typed)
+			return engine.Misread(fmt.Errorf("%q: a task number is expected", typed))
 		}
 		// Anything else that starts with a minus — a length to take back —
 		// is a value, and the command line reads values that look like flags
 		// only after `--`. Said here, where the problem is: the description
 		// of the argument is read by agents too, and they have no `--`.
-		return fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed)
+		return engine.Misread(fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed))
 	})
 	// Asked for on any command, so `task add --json` and `task list --json` read
 	// the same way. Declared on the root because the answer's shape is a
@@ -73,26 +75,49 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())
+	markMisreads(root)
 	return root
 }
 
-// minusFlag matches cobra's complaint about a shorthand that is really a value
-// starting with a minus: "unknown shorthand flag: '3' in -30m".
-var minusFlag = regexp.MustCompile(`unknown shorthand flag: '.' in (-\S+)`)
+// markMisreads marks what every command's arguments refuse as not having been
+// understood. Cobra says so in sentences of its own, and a failure is
+// otherwise answered as one nobody foresaw — so the shell was told "could not
+// do it" for a command it could not even read.
+func markMisreads(c *cobra.Command) {
+	if args := c.Args; args != nil {
+		c.Args = func(cmd *cobra.Command, given []string) error {
+			if err := args(cmd, given); err != nil {
+				return engine.Misread(err)
+			}
+			return nil
+		}
+	}
+	for _, sub := range c.Commands() {
+		markMisreads(sub)
+	}
+}
 
-// leadingMinus pulls what somebody actually typed out of that complaint.
+// leadingMinus pulls what somebody actually typed out of the parser's
+// complaint about a shorthand that is really a value starting with a minus —
+// `-30m` read as the flags 3, 0 and m. Read off the parser's own error rather
+// than out of its sentence, which an upgrade is free to reword.
 func leadingMinus(err error) (string, bool) {
-	found := minusFlag.FindStringSubmatch(err.Error())
-	if found == nil {
+	var unknown *pflag.NotExistError
+	if !errors.As(err, &unknown) || unknown.GetSpecifiedShortnames() == "" {
 		return "", false
 	}
-	return found[1], true
+	return "-" + unknown.GetSpecifiedShortnames(), true
 }
 
 // askedForJSON says whether the arguments ask for JSON, spelled any of the ways
 // the flag itself accepts: `--json`, or `--json=` with a value read as a yes.
 func askedForJSON(args []string) bool {
 	for _, arg := range args {
+		// What follows `--` is a value, whatever it reads like: a title
+		// that happens to read "--json" asks for nothing.
+		if arg == "--" {
+			return false
+		}
 		if arg == "--"+jsonFlag {
 			return true
 		}
@@ -130,8 +155,9 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	// it so the caller can still decide what to exit with.
 	err := fang.Execute(ctx, root, fang.WithErrorHandler(
 		func(w io.Writer, styles fang.Styles, err error) {
-			if asMachine {
-				_ = writeRefusal(stdout, err)
+			// A refusal that cannot be written as JSON is said where a
+			// person reads instead: an empty stream tells a machine nothing.
+			if asMachine && writeRefusal(stdout, err) == nil {
 				return
 			}
 			fang.DefaultErrorHandler(w, styles, err)

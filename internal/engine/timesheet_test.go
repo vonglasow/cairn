@@ -59,13 +59,16 @@ func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
 	if _, err := Do(TaskAdd, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
+	// Today read on both sides of the call: midnight may fall between them,
+	// and either day is the one the call meant.
+	before := startOfToday()
 	answer, err := Do(TimesheetShow, path, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-	if answer.Sheet == nil || len(answer.Sheet.Days) != 1 || !answer.Sheet.Days[0].Day.Equal(today) {
+	after := startOfToday()
+	if answer.Sheet == nil || len(answer.Sheet.Days) != 1 ||
+		!answer.Sheet.Days[0].Day.Equal(before) && !answer.Sheet.Days[0].Day.Equal(after) {
 		t.Errorf("today's sheet is %+v", answer.Sheet)
 	}
 }

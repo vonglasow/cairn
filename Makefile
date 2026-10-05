@@ -7,6 +7,11 @@ BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PKG      = cairn/internal/build
 # go install puts tools in GOPATH/bin, which is not always on PATH.
 GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins")
+# The version the mutation gate is judged with. Named, never @latest: what
+# scripts/mutation.sh works around was read in this version's source, and a
+# gate that changed under a commit nobody made would pass or fail for a reason
+# that is not in this repository.
+GREMLINS_VERSION ?= v0.6.0
 # The two coverage floors, in total and per package. Why each is where it is,
 # and why the second sits below the first, is said once, in docs/checks.md.
 # Raise them deliberately; never lower them to get a commit through.
@@ -14,7 +19,17 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check clean
+.PHONY: help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
+
+## help: say what every target here does, read off the comment above it
+## The first line of each `## target:` comment, so a target added with one is
+## listed without anything else to keep true. The first target, so a bare
+## `make` answers this rather than building.
+help:
+	@awk 'NR == FNR { if (match($$0, /^[a-z-]+:/)) target[substr($$0, 1, RLENGTH - 1)] = 1; next } \
+		/^## [a-z-]+:/ { sub(/^## /, ""); split($$0, said, ": "); \
+			if (said[1] in target) printf "  %-17s %s\n", said[1], substr($$0, length(said[1]) + 3) }' \
+		$(firstword $(MAKEFILE_LIST)) $(firstword $(MAKEFILE_LIST))
 
 # Make keeps a target whose recipe failed, and a half-written profile is newer
 # than its sources — so the next run would grade it as though it were whole.
@@ -122,7 +137,11 @@ harness-check:
 ## gremlins-present: both mutation targets need it, so they ask once here.
 gremlins-present:
 	@command -v $(GREMLINS) >/dev/null || { \
-		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@latest"; \
+		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@$(GREMLINS_VERSION)"; \
+		exit 1; \
+	}
+	@go version -m $$(command -v $(GREMLINS)) | grep -q "gremlins[[:space:]]*$(GREMLINS_VERSION)" || { \
+		echo "gremlins is not $(GREMLINS_VERSION) — go install github.com/go-gremlins/gremlins/cmd/gremlins@$(GREMLINS_VERSION)"; \
 		exit 1; \
 	}
 
@@ -149,6 +168,17 @@ mutation-changed: gremlins-present
 check:
 	@prek run -a
 	@prek run -a --stage pre-push
+
+## linux: build cairn and run its suite on Linux, in a container
+## macOS is where cairn is written and Linux is the other half of what it says
+## it runs on; this is what checks that half. It needs Docker. See the script.
+linux:
+	@scripts/linux.sh
+
+## notices: write the licences of what the binary is built from, beside it
+## What travels with a binary handed to somebody — see docs/release.md.
+notices:
+	@mkdir -p bin && scripts/notices.sh > bin/THIRD_PARTY_NOTICES
 
 ## clean: remove build and coverage artifacts
 clean:

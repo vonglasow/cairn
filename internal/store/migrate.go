@@ -390,8 +390,13 @@ func (s *Store) applyAll() ([]string, error) {
 	return made, nil
 }
 
-// make runs one change and writes it down.
-func (s *Store) make(raw migration.Migration) error { return s.makeOn(s.on, raw) }
+// make runs one change and writes it down, as one transaction: a change is
+// often several statements, and one failing half way used to leave the first
+// ones made and the ledger silent about them — a store the next `apply` could
+// only refuse, with nothing saying where it had stopped.
+func (s *Store) make(raw migration.Migration) error {
+	return s.Within(func(kept *Store) error { return kept.makeOn(kept.on, raw) })
+}
 
 // makeOn applies a change against whatever it is given to run on: the store
 // itself when a change is applied on its own, or the one transaction that makes
@@ -427,11 +432,20 @@ func (s *Store) RollBack() (migration.Migration, error) {
 			continue
 		}
 		raw := factsOfChange(migration.Known[i])
-		if _, err := s.on.Exec(raw.undoes); err != nil {
-			return migration.Migration{}, fmt.Errorf("rolling back %q: %w", raw.name, err)
-		}
-		if _, err := s.on.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
-			return migration.Migration{}, fmt.Errorf("forgetting %q: %w", raw.name, err)
+		// Undone and forgotten together: a ledger that still lists a change
+		// whose shape is gone, or forgets one whose shape is still there, is a
+		// store no later command can reason about.
+		err := s.Within(func(kept *Store) error {
+			if _, err := kept.on.Exec(raw.undoes); err != nil {
+				return fmt.Errorf("rolling back %q: %w", raw.name, err)
+			}
+			if _, err := kept.on.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
+				return fmt.Errorf("forgetting %q: %w", raw.name, err)
+			}
+			return nil
+		})
+		if err != nil {
+			return migration.Migration{}, err
 		}
 		return all[i], nil
 	}

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/task"
@@ -16,12 +15,16 @@ import (
 
 // TaskAdd records a new task.
 var TaskAdd = Operation{
-	Thing:   "task",
-	Verb:    "add",
-	Short:   "Add a task",
-	Does:    "Add a task, carrying whatever of its attributes were given.",
+	Thing: "task",
+	Verb:  "add",
+	Short: "Add a task",
+	Does:  "Add a task, carrying whatever of its attributes were given.",
+	Example: `cairn task add "Write the spec" --state todo --priority high --label spec --deadline 2026-09-01
+cairn task add "Write the tests" --parent 1 --objective 2
+cairn task add "Write the spec" --desc - < notes.md`,
 	Level:   Write,
 	Needs:   AStore,
+	Again:   DoesItAgain,
 	Answers: Task{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
@@ -47,10 +50,13 @@ var TaskAdd = Operation{
 
 // TaskList names every task, or only the ones carrying what was named.
 var TaskList = Operation{
-	Thing:   "task",
-	Verb:    "list",
-	Short:   "List tasks, all of them or only some",
-	Does:    "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it.",
+	Thing: "task",
+	Verb:  "list",
+	Short: "List tasks, all of them or only some",
+	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it.",
+	Example: `cairn task list
+cairn task list --state todo --priority high
+cairn task list --label team --archived`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
@@ -97,6 +103,7 @@ var TaskShow = Operation{
 	// that directory, added beside the rest, and not in the description,
 	// which is rewritten whole every time it is changed. See docs/context.md.
 	Does:    "Show what a task carries, what hangs under it, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
+	Example: "cairn task show 1",
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Task{},
@@ -117,7 +124,11 @@ var TaskShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &shown, Under: under, Progress: p, Context: on.contextOf(n)}, nil
+		since, err := on.Engine.stoodSince(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &shown, Under: under, Progress: p, Context: on.contextOf(n), StoodSince: since}, nil
 	},
 }
 
@@ -135,12 +146,15 @@ func (on On) contextOf(n int) string {
 // TaskArchive takes a task off the board. Its own verb rather than a flag on
 // edit: it is done to a task, not carried by one.
 var TaskArchive = Operation{
-	Thing:   "task",
-	Verb:    "archive",
-	Short:   "Take a task off the board, keeping everything it carries",
-	Does:    "Take a task off the board. Everything it carries is kept, and it can be brought back; deleting is the other thing.",
+	Thing: "task",
+	Verb:  "archive",
+	Short: "Take a task off the board, keeping everything it carries",
+	Does:  "Take a task off the board. Everything it carries is kept, and it can be brought back; deleting is the other thing.",
+	Example: `cairn task archive 1
+cairn task archive --state done`,
 	Level:   Write,
 	Needs:   AStore,
+	Again:   ChangesNothingMore,
 	Answers: Swept{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
@@ -175,13 +189,16 @@ var TaskArchive = Operation{
 // TaskLabel puts one label on every task a narrowing reaches. Marking a sprint
 // one task at a time is not marking it at all.
 var TaskLabel = Operation{
-	Thing:   "task",
-	Verb:    "label",
-	Short:   "Put a label on every task a narrowing reaches",
-	Does:    "Put a label on every task the narrowing reaches, keeping the ones each already carries.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Labelled{},
+	Thing:      "task",
+	Verb:       "label",
+	Short:      "Put a label on every task a narrowing reaches",
+	Does:       "Put a label on every task the narrowing reaches, keeping the ones each already carries.",
+	Example:    "cairn task label sprint-12 --state done",
+	Level:      Write,
+	Needs:      AStore,
+	Again:      ChangesNothingMore,
+	Overwrites: true,
+	Answers:    Labelled{},
 	Takes: append([]Argument{
 		// Named "put" and not "label": the narrowing below already takes a
 		// "label" — the ones a task has to carry to be reached — and an agent
@@ -221,8 +238,10 @@ var TaskUnarchive = Operation{
 	Verb:    "unarchive",
 	Short:   "Bring a task back onto the board",
 	Does:    "Bring a task back onto the board.",
+	Example: "cairn task unarchive 1",
 	Level:   Write,
 	Needs:   AStore,
+	Again:   ChangesNothingMore,
 	Answers: Task{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
@@ -247,13 +266,18 @@ func shownTask(on On, number int) (Answer, error) {
 
 // TaskEdit changes what a task carries.
 var TaskEdit = Operation{
-	Thing:   "task",
-	Verb:    "edit",
-	Short:   "Change what a task carries",
-	Does:    "Change what a task carries.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Task{},
+	Thing: "task",
+	Verb:  "edit",
+	Short: "Change what a task carries",
+	Does:  "Change what a task carries.",
+	Example: `cairn task edit 1 --state current --estimate 2h
+cairn task edit 1 --label +urgent --label -spec
+cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
+	Level:      Write,
+	Needs:      AStore,
+	Again:      ChangesNothingMore,
+	Overwrites: true,
+	Answers:    Task{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
@@ -283,8 +307,10 @@ var TaskDelete = Operation{
 	Verb:    "delete",
 	Short:   "Delete a task",
 	Does:    "Delete a task.",
+	Example: "cairn task delete 1 --yes",
 	Level:   Full,
 	Needs:   AStore,
+	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
@@ -301,10 +327,12 @@ var TaskDelete = Operation{
 // TaskSearch names every task carrying everything named, wherever among its
 // facts each one happens to sit.
 var TaskSearch = Operation{
-	Thing:   "task",
-	Verb:    "search",
-	Short:   "Look for a task by anything it carries",
-	Does:    "List every task carrying everything named, wherever among its facts each one sits.",
+	Thing: "task",
+	Verb:  "search",
+	Short: "Look for a task by anything it carries",
+	Does:  "List every task carrying everything named, wherever among its facts each one sits.",
+	Example: `cairn task search spec
+cairn task search spec team --state todo`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
@@ -404,125 +432,6 @@ func taskChanges(in Input) (Changes, error) {
 	return c, nil
 }
 
-// TaskMove changes where a task sits in the order.
-var TaskMove = Operation{
-	Thing:   "task",
-	Verb:    "move",
-	Short:   "Move a task in the order",
-	Does:    "Move a task to another place among the ones it sits with. It never changes the column.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Tasks{},
-	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
-		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
-		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
-		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
-	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
-		at, target, err := placeFrom(in)
-		if err != nil {
-			return Answer{}, err
-		}
-		if err := on.Engine.move(n, at, target); err != nil {
-			return Answer{}, err
-		}
-		// A move changes the order and nothing else, so the order is what it
-		// answers with: the card of the task moved would not show what moved.
-		//
-		// Answered as a listing nobody narrowed, and told so with an empty
-		// Input rather than handed the move's own: what a move was given says
-		// where to put a task, and reading it as facts to keep by would narrow
-		// the answer by whatever a later argument happened to be called.
-		return listing(on, Input{})
-	},
-}
-
-// TaskFocus says which task is being worked on, or puts one there.
-var TaskFocus = Operation{
-	Thing:   "task",
-	Verb:    "focus",
-	Short:   "Put a task in focus, or say which ones are",
-	Does:    "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Focus{},
-	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to take up, or nothing to name every task in focus"},
-	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, named := in.Whole("number")
-		if !named {
-			return whatIsInFocus(on)
-		}
-		t, err := on.Engine.putInFocus(n)
-		if err != nil {
-			return Answer{}, err
-		}
-		p, err := on.Engine.taskProgress(n)
-		if err != nil {
-			return Answer{}, err
-		}
-		held, err := on.Engine.focus()
-		if err != nil {
-			return Answer{}, err
-		}
-		return Answer{Task: &t, Progress: p, InFocus: &held}, nil
-	},
-}
-
-// TaskUnfocus leaves nothing in focus.
-var TaskUnfocus = Operation{
-	Thing:   "task",
-	Verb:    "unfocus",
-	Short:   "Let go of a task in focus, or of them all",
-	Does:    "Let go of one task and keep the rest, or of every task in focus when no number is given. Letting go of nothing is not a failure.",
-	Level:   Write,
-	Needs:   AStore,
-	Answers: Focus{},
-	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to let go of, or nothing to let go of them all"},
-	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, named := in.Whole("number")
-		if named {
-			if err := on.Engine.letGoOf(n); err != nil {
-				return Answer{}, err
-			}
-		} else if err := on.Engine.letGo(); err != nil {
-			return Answer{}, err
-		}
-		return whatIsInFocus(on)
-	},
-}
-
-// placeFrom reads where a move was told to put a task. Naming nothing and
-// naming several are both refused: one is a command that asked for nothing,
-// the other a command that asked for two things, and picking either quietly
-// would move a task somewhere nobody said.
-func placeFrom(in Input) (Place, int, error) {
-	named := make([]Place, 0, 3)
-	target := 0
-	if in.Yes("first") {
-		named = append(named, First)
-	}
-	if in.Named("after") {
-		named = append(named, Behind)
-		target, _ = in.Whole("after")
-	}
-	if in.Yes("last") {
-		named = append(named, Last)
-	}
-	if len(named) == 0 {
-		return 0, 0, ErrNowhereToMove
-	}
-	if len(named) > 1 {
-		return 0, 0, ErrMoreThanOnePlace
-	}
-	return named[0], target, nil
-}
-
 // listing is what every listing answers: every task in the one order there is,
 // and which of them is in focus, since a listing marks it.
 func listing(on On, in Input) (Answer, error) {
@@ -543,7 +452,10 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	along, _, err := on.Engine.alongEvery(tasks, !kept.Narrows() && in.Yes("with-archived"))
+	// Unnarrowed, the listing holds every part of every task it shows — a
+	// part is never taken off the board without its task — so it is all the
+	// counting needs. Narrowed, it does not, and every task is read.
+	along, _, err := on.Engine.alongEvery(tasks, !kept.Narrows())
 	if err != nil {
 		return Answer{}, err
 	}
@@ -562,73 +474,4 @@ func listing(on On, in Input) (Answer, error) {
 	}
 	answer.Tasks = tasks
 	return answer, nil
-}
-
-// whatIsInFocus answers about the task being worked on, and says so plainly
-// when there is none: nothing in focus is an answer, not an absence.
-func whatIsInFocus(on On) (Answer, error) {
-	held, numbers, err := on.Engine.inFocus()
-	if err != nil {
-		return Answer{}, err
-	}
-	return Answer{Held: held, InFocus: &numbers}, nil
-}
-
-// TraceShow says what has been done to a task.
-var TraceShow = Operation{
-	Thing:   "trace",
-	Verb:    "show",
-	Short:   "Show what has been done to a task",
-	Does:    "Show everything done to a task, oldest first, with what each change went from and to.",
-	Level:   Read,
-	Needs:   AStore,
-	Answers: Acts{},
-	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
-	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
-		acts, err := on.Engine.historyOf(n)
-		if err != nil {
-			return Answer{}, err
-		}
-		return Answer{Acts: acts}, nil
-	},
-}
-
-// TraceList says what was done over a period, across every task.
-var TraceList = Operation{
-	Thing:   "trace",
-	Verb:    "list",
-	Short:   "List what was done over a period",
-	Does:    "List what was done from a day onward, today when none is given, across every task.",
-	Level:   Read,
-	Needs:   AStore,
-	Answers: Acts{},
-	Takes: []Argument{
-		{Name: "since", Kind: Day, Means: "the first day to look at; today when left out"},
-	},
-	Run: func(on On, in Input) (Answer, error) {
-		from, err := sinceWhen(in)
-		if err != nil {
-			return Answer{}, err
-		}
-		acts, err := on.Engine.since(from)
-		if err != nil {
-			return Answer{}, err
-		}
-		return Answer{Since: acts}, nil
-	},
-}
-
-// sinceWhen reads the day a period starts at: the one given, or the start of
-// today when none was. Today rather than everything, because a listing of every
-// act cairn ever recorded is not a question anybody asked.
-func sinceWhen(in Input) (time.Time, error) {
-	given := in.Given["since"]
-	if given == "" {
-		now := time.Now()
-		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()), nil
-	}
-	return domain.ParseDeadline(given)
 }

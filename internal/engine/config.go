@@ -80,6 +80,7 @@ var ConfigShow = Operation{
 	Verb:    "show",
 	Short:   "Show which places cairn will use, and where it got them",
 	Does:    "Show which places cairn will use — the store and the notes — the file read, and what named each place.",
+	Example: "cairn config show",
 	Level:   Read,
 	Needs:   AConfiguration,
 	Answers: Config{},

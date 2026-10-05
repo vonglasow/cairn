@@ -5,8 +5,10 @@ Feature: Answering a machine over MCP
   not already decide, and the rules live where they have always lived.
 
   What an agent may do is settled when the server starts, not per call:
-  `--access read` looks and never writes, `--access write` is the default and
-  also adds and changes, `--access full` also does what loses work.
+  `--access read` is the default and looks and never writes, `--access write`
+  also adds and changes, `--access full` also does what loses work. An agent
+  is handed only what it was given on purpose: one talked into writing by what
+  it read writes nothing it was not trusted to.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -72,7 +74,7 @@ Feature: Answering a machine over MCP
 
     @mcp-sees-what-the-terminal-did
     Scenario: what was done at the terminal is there on the next call
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       And I asked it to add a task titled "From the agent"
       When I run `cairn task add "From the terminal"`
       And I call `task_list`
@@ -80,7 +82,7 @@ Feature: Answering a machine over MCP
 
     @mcp-what-it-did-is-on-disk
     Scenario: what the server did is there for the terminal
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I call `task_add` with the title "From the agent"
       Then `cairn task list` lists 1 task
 
@@ -91,16 +93,16 @@ Feature: Answering a machine over MCP
     another attempt; an absence does not.
 
     @mcp-read-offers-reading
-    Scenario: reading only
-      Given a cairn server started with `--access read`
+    Scenario: reading only, which is the default
+      Given a cairn server started with no access given
       When I ask it what it can do
       Then it offers `task_list`
       And it does not offer `task_add`
       And it does not offer `task_delete`
 
     @mcp-write-offers-changing
-    Scenario: reading and changing, which is the default
-      Given a cairn server started with no access given
+    Scenario: reading and changing
+      Given a cairn server started with `--access write`
       When I ask it what it can do
       Then it offers `task_list`
       And it offers `task_add`
@@ -184,7 +186,7 @@ Feature: Answering a machine over MCP
 
     @mcp-add-a-task
     Scenario: adding a task
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I call `task_add` with the title "Write the spec"
       Then it answers without an error
       And `cairn task list` lists 1 task
@@ -216,25 +218,25 @@ Feature: Answering a machine over MCP
     @mcp-what-an-agent-does-is-written-down-as-its-own
     Scenario: what an agent changes says it was not the terminal
       Given I added a task titled "Write the spec"
-      And a cairn server started with no access given
+      And a cairn server started with `--access write`
       When I call `task_edit` with the number 1 and the priority "high"
       Then the history of task 1 says the change came through the server
 
     @mcp-says-what-it-answers
     Scenario: every tool says what shape its answer takes
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I ask it what it can do
       Then every tool describes the shape of its answer
 
     @mcp-every-tool-answers-an-object
     Scenario: every tool answers something a machine reads as one thing
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I ask it what it can do
       Then every tool says it answers one object
 
     @mcp-says-what-one-thing-it-answers
     Scenario: a tool says which fields its one answer carries
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I ask it what it can do
       Then `task_list` says its answer carries the tasks
       And `task_show` says its answer carries a title
@@ -242,21 +244,28 @@ Feature: Answering a machine over MCP
     @mcp-what-it-answers-has-the-shape-it-said
     Scenario: what a tool answers is measured against what it said
       Given I added a task titled "Write the spec"
-      And a cairn server started with no access given
+      And a cairn server started with `--access write`
       When I call `task_list`
       Then its answer holds to the shape the tool described
 
     @mcp-a-refusal-is-not-measured-against-that-shape
     Scenario: a refusal is not an answer of that shape
       Given I added a task titled "Write the spec"
-      And a cairn server started with no access given
+      And a cairn server started with `--access write`
       When I call `task_show` with the number 99
       Then it answers that it failed
       And it carries nothing for a machine to measure
 
+    @mcp-a-refusal-says-its-kind
+    Scenario: a refusal says what kind it is, for a machine to branch on
+      Given a cairn server started with `--access read`
+      When I call `task_show` with the number 99
+      Then it answers that it failed
+      And it says the refusal is "refused", because "no-such-task"
+
     @mcp-labels-arrive-whole
     Scenario: labels given to a tool arrive as labels
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I call `task_add` with the title "From the agent" and the labels "spec" and "team"
       Then it answers with a task carrying both labels
 
@@ -292,7 +301,7 @@ Feature: Answering a machine over MCP
 
     @mcp-says-what-it-accepts
     Scenario: a tool names what it takes
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I ask it what it can do
       Then `task_add` names every state cairn accepts
       And it says what each thing it takes is for
@@ -300,7 +309,7 @@ Feature: Answering a machine over MCP
     @mcp-empties-a-field
     Scenario: handed nothing a field is emptied, left out it is untouched
       Given I added a task titled "Write the spec" with the deadline "2026-09-01"
-      And a cairn server started with no access given
+      And a cairn server started with `--access write`
       When I call `task_edit` with the number 1 and the deadline as nothing
       Then the task has no deadline
       And it is still titled "Write the spec"
@@ -318,7 +327,7 @@ Feature: Answering a machine over MCP
 
     @mcp-refusal-is-answered
     Scenario: a refusal comes back as the reason it was refused
-      Given a cairn server started with no access given
+      Given a cairn server started with `--access write`
       When I call `task_add` with the title ""
       Then it answers that it failed
       And the answer says a task needs a title

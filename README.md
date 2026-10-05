@@ -3,6 +3,27 @@
 A personal objective and task manager: a command line, an MCP server, a board
 in the terminal and the same board in a window — four surfaces over one engine.
 
+## The first five minutes
+
+```sh
+make build && export PATH="$PWD/bin:$PATH"   # needs Go 1.26 — see "Build" below
+cairn task add "Write the spec"                # a task, numbered 1, in the backlog
+cairn task edit 1 --state todo --priority high # what it carries changes by name
+cairn task focus 1                             # what you are working on now
+cairn task list                                # the board, column by column
+cairn tui                                      # the same board, in the terminal
+```
+
+Three ideas carry the rest. **A task stands in a column** — `backlog`, `todo`,
+`current`, `done`, and three for work that is stopped — and inside a column
+the order is the one you set. **An objective is what work is for**: a task
+serves it, and it counts how far along its tasks are. **Nothing done is
+forgotten**: every change is written down, so `cairn trace show 1` says what
+happened to a task and `cairn timesheet show` how long the day's work took.
+`cairn <thing> <verb> --help` says the rest, with examples.
+
+## Everything a task carries
+
 ```sh
 cairn task add "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
 cairn task edit 1 --title "Write the other spec" --desc "" --state current --priority critical --deadline 2026-09-15 --estimate 2h
@@ -52,7 +73,7 @@ cairn task unarchive 1           # back on the board
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 | `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
 
-A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. Given empty, an option clears what was there. Deleting a task carrying sub-tasks
+A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. A description is several lines if it likes, but nothing a terminal would read as an instruction — an escape, a bell — gets in, and a label is one line like a title. A description too long to type is read from standard input, named as `-`: `cairn task add "Write the spec" --desc - < notes.md`. Given empty, an option clears what was there. `task show` says since when a task has stood in its column — `in todo since 2026-09-26 · 9 days`, `in_column_since` to a machine — read off what was done to it. Deleting a task carrying sub-tasks
 deletes them with it: a part goes with the work it belongs to. Add `--json` to any command to be answered as a
 machine — including when it refuses.
 
@@ -268,9 +289,10 @@ cairn mcp serve --access full    # also what loses work
 ```
 
 A client starts it as a child process of its own — no port is opened, ever. What
-an agent may reach is settled when the server starts, not per call: `read` looks,
-`write` also adds and changes and is the default, `full` also does what loses
-work. An access it cannot make sense of is refused, naming the three it expected.
+an agent may reach is settled when the server starts, not per call: `read` looks
+and is the default, `write` also adds and changes, `full` also does what loses
+work. Anything past looking is a level somebody typed. An access it cannot make
+sense of is refused, naming the three it expected.
 
 ```json
 {
@@ -289,28 +311,37 @@ both surfaces are built from one description, so a command added tomorrow is a
 tool the same day.
 
 Each tool also says what calling it would cost, so a client can ask a person
-first: the eight that only look are marked read-only, the five that can lose
-work already done are marked as such, and every one of them says it reaches
-nothing outside cairn.
+first: what only looks is marked read-only; what can lose work, or replace what
+was written, is marked destructive; what a second call would not change again is
+marked idempotent; and every one says it reaches nothing outside cairn.
 
 **An agent and a script are told the same thing.** A tool answers twice over:
 the card a person would have read at the terminal, and the very shape `--json`
 prints. A refusal comes back as an answer too — an empty title, a state that is
 not one, a store this cairn cannot use — with the reason in it, so an agent can
-read it and correct itself. Only a tool the access level left out fails as a
-call, because an absence ends the matter where a refusal invites another try.
+read it and correct itself, and with its kind and a reason that does not change
+when the sentence does, under `_meta`. Only a tool the access level left out
+fails as a call, because an absence ends the matter where a refusal invites
+another try.
 
 ## What cairn answers a script
 
 | code | what it means |
 |---|---|
 | `0` | it worked |
-| `1` | understood, and refused — a title that is empty, a state that is not one |
+| `1` | understood, and refused — a title that is empty, a state that is not one — or something nobody foresaw went wrong |
 | `2` | not understood at all — a flag that does not exist, a number that is not one |
 | `3` | the store could not be used — unreadable, out of date, or nothing may write to it |
 
 Code 3 is the one worth branching on: nothing was wrong with the command, so
 the same command may well work once the store is reachable again.
+
+Asked for `--json`, a refusal says the same as a document a machine reads:
+`{"error": "task 4: there is no such task", "kind": "refused", "reason":
+"no-such-task"}`. The kind is `refused`, `usage`, `store` or `failed`, and the
+reason is a word that stays the same when the sentence is reworded — the thing
+to branch on. A deletion refused for want of `--yes` names what it would have
+taken.
 
 ## Where your tasks live
 
@@ -347,10 +378,19 @@ wrong and warns that everything else will refuse until you fix it.
 
 ## Build
 
+Go 1.26 or later, and nothing else for the binary: the store is SQLite written
+in Go, so there is no C toolchain to install — except for the window on Linux,
+which needs the system's graphics headers (`scripts/linux.sh` names them).
+
 ```sh
 make build                      # ./bin/cairn
 make run ARGS='task list'
+make help                       # every target, and what it is for
 ```
+
+Working on cairn rather than with it needs the checks too — prek, golangci-lint,
+govulncheck, gremlins and jq; [docs/checks.md](docs/checks.md) says how to get
+each. Making a version is [docs/release.md](docs/release.md).
 
 ## Trying it by hand
 

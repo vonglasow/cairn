@@ -30,7 +30,8 @@ func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
 // An operation that writes runs as one transaction: what it changed and what
 // it wrote down about it are kept together or not at all. The ones that change
 // the shape of the store are left out — they set a backup aside first, which
-// copies the file, and they keep their own transaction for the change itself.
+// copies the file, and the store keeps each change in a transaction of its
+// own (see store.make).
 func (e *Engine) run(op Operation, in Input) (Answer, error) {
 	if op.Level == Read || op.Needs != AStore {
 		return op.Run(e.on(), in)

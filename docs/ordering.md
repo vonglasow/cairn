@@ -334,9 +334,10 @@ go of it.
 
 ## Deliberately not here yet
 
-- **When a task last changed column.** No longer a column at all. It is derived
-  from the trace, which records every act performed on a task, so the date comes
-  from the last entry that changed the column. See [trace.md](trace.md).
+- **When a task last changed column, kept anywhere.** It is not a column, and
+  it is shown all the same: `task show` reads it off the trace — the last act
+  that named the column, or the creation — and says `in todo since 2026-09-26 ·
+  9 days`, `in_column_since` to a machine. See [trace.md](trace.md).
 - **What makes a task doable right now.** Two properties were found — being
   stoppable at any moment without leaving anything half-done, and being a short
   action followed by waiting — and the list plainly does not close. Each

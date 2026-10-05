@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"os"
 	"strings"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
+	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
 	"cairn/internal/reading"
@@ -25,15 +27,54 @@ import (
 // What these ask is the one thing numbers cannot: that something was actually
 // drawn, where it was supposed to be.
 
+// windowless is how a machine with no way to draw off screen says so. Asked
+// for, never assumed: a drawing test that skipped itself quietly was a test
+// that passed on every machine where nothing was checked.
+const windowless = "CAIRN_WINDOWLESS"
+
+// offScreen makes a window with no screen, or stops the test: skipped when
+// the machine said it cannot draw, failed when it did not say so.
+func offScreen(t *testing.T, wide, high int) *headless.Window {
+	t.Helper()
+	window, err := headless.NewWindow(wide, high)
+	if err == nil {
+		return window
+	}
+	if os.Getenv(windowless) != "" {
+		t.Skipf("no headless window here: %v", err)
+	}
+	t.Fatalf("no headless window here: %v — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
+	return nil
+}
+
 // drawn renders a window with no screen and answers the pixels.
 func drawn(t *testing.T, w Window) *image.RGBA {
 	t.Helper()
+	shot, err := rendered(offScreen(t, w.width, w.height), w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return shot
+}
+
+// drawnInAStep is drawn for a scenario's step, which must return what went
+// wrong rather than stop the test from inside godog: a machine that said it
+// cannot draw skips the scenario, one that did not say so fails it.
+func drawnInAStep(w Window) (*image.RGBA, error) {
 	window, err := headless.NewWindow(w.width, w.height)
 	if err != nil {
-		t.Skipf("no headless window here: %v", err)
+		if os.Getenv(windowless) != "" {
+			return nil, godog.ErrSkip
+		}
+		return nil, fmt.Errorf("no headless window here: %w — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
 	}
-	t.Cleanup(window.Release)
+	return rendered(window, w)
+}
 
+// rendered draws a window into one with no screen, releases it, and answers
+// the pixels.
+func rendered(window *headless.Window, w Window) (*image.RGBA, error) {
+	defer window.Release()
 	var ops op.Ops
 	gtx := layout.Context{
 		Ops:         &ops,
@@ -42,13 +83,13 @@ func drawn(t *testing.T, w Window) *image.RGBA {
 	}
 	Draw(gtx, Theme(), Dark(), w)
 	if err := window.Frame(gtx.Ops); err != nil {
-		t.Fatalf("drawing: %v", err)
+		return nil, fmt.Errorf("drawing: %w", err)
 	}
 	shot := image.NewRGBA(image.Rect(0, 0, w.width, w.height))
 	if err := window.Screenshot(shot); err != nil {
-		t.Fatalf("reading the pixels back: %v", err)
+		return nil, fmt.Errorf("reading the pixels back: %w", err)
 	}
-	return shot
+	return shot, nil
 }
 
 // ink counts the pixels in a box that are not the background.
@@ -360,10 +401,7 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	window, err := headless.NewWindow(w.width*2, w.height*2)
-	if err != nil {
-		t.Skipf("no headless window here: %v", err)
-	}
+	window := offScreen(t, w.width*2, w.height*2)
 	t.Cleanup(window.Release)
 
 	var ops op.Ops
@@ -521,10 +559,7 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 
 	density := func(perDp float32) float64 {
 		wide, high := int(float32(w.width)*perDp), int(float32(w.height)*perDp)
-		window, err := headless.NewWindow(wide, high)
-		if err != nil {
-			t.Skipf("no headless window here: %v", err)
-		}
+		window := offScreen(t, wide, high)
 		defer window.Release()
 
 		var ops op.Ops

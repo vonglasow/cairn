@@ -13,6 +13,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -55,7 +57,7 @@ func (o Operation) Read(words []string) (Input, error) {
 		word := words[i]
 		if !strings.HasPrefix(word, "--") {
 			if at >= len(positional) {
-				return Input{}, fmt.Errorf("%q: %s takes no argument there", word, o.Line())
+				return Input{}, Misread(fmt.Errorf("%q: %s takes no argument there", word, o.Line()))
 			}
 			if positional[at].Kind == List {
 				in.Listed[positional[at].Name] = append(in.Listed[positional[at].Name], word)
@@ -72,14 +74,14 @@ func (o Operation) Read(words []string) (Input, error) {
 				value = "true"
 			}
 			if _, err := strconv.ParseBool(value); err != nil {
-				return Input{}, fmt.Errorf("--%s=%s: true or false is expected", name, value)
+				return Input{}, Misread(fmt.Errorf("--%s=%s: true or false is expected", name, value))
 			}
 			in.Given[name] = value
 			continue
 		}
 		if !said {
 			if i+1 >= len(words) {
-				return Input{}, fmt.Errorf("--%s: nothing was given for it", name)
+				return Input{}, Misread(fmt.Errorf("--%s: nothing was given for it", name))
 			}
 			i++
 			value = words[i]
@@ -115,17 +117,20 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 	decoder.UseNumber()
 	values := map[string]any{}
 	if err := decoder.Decode(&values); err != nil {
-		return Input{}, err
+		return Input{}, Misread(err)
 	}
 	// Written with ifs rather than a switch on purpose: a tagless switch puts
 	// its conditions outside any covered block, so a mutation of one of them
 	// reports as unreachable and the gate cannot judge it.
-	for name, value := range values {
+	// In the order of the names rather than the map's: what is read the same
+	// way every time is what a test can tell apart from reading it wrong.
+	for _, name := range slices.Sorted(maps.Keys(values)) {
+		value := values[name]
 		arg, _ := o.argument(name)
 		if arg.Kind == List {
 			list, err := stringsOf(value)
 			if err != nil {
-				return Input{}, fmt.Errorf("%q: %w", name, err)
+				return Input{}, Misread(fmt.Errorf("%q: %w", name, err))
 			}
 			in.Listed[name] = list
 			continue
@@ -137,7 +142,7 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 		if arg.Kind == Bool {
 			yes, ok := value.(bool)
 			if !ok {
-				return Input{}, fmt.Errorf("%q: true or false is expected, got %#v", name, value)
+				return Input{}, Misread(fmt.Errorf("%q: true or false is expected, got %#v", name, value))
 			}
 			in.Given[name] = strconv.FormatBool(yes)
 			continue

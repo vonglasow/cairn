@@ -337,3 +337,81 @@ func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
 		t.Errorf("answerSchemaFor on a shape no schema can describe = %v, want nothing", got)
 	}
 }
+
+// What a client is told a call costs: whether it only looks, whether calling it
+// twice does more than calling it once, and whether it can replace what was
+// written — an edit empties a description as surely as a deletion does.
+func TestToolFor_saysWhatACallCosts(t *testing.T) {
+	for _, c := range []struct {
+		op                    engine.Operation
+		destructive, repeated bool
+	}{
+		{engine.TaskList, false, true},
+		{engine.TaskAdd, false, false},
+		{engine.TaskEdit, true, true},
+		{engine.TaskLabel, true, true},
+		{engine.TimesheetAdd, false, false},
+		{engine.TaskDelete, true, true},
+		{engine.MigrationRollback, true, false},
+	} {
+		said := toolFor(c.op).Annotations
+		if *said.DestructiveHint != c.destructive {
+			t.Errorf("%s: destructiveHint = %v, want %v", c.op.Name(), *said.DestructiveHint, c.destructive)
+		}
+		if said.IdempotentHint != c.repeated {
+			t.Errorf("%s: idempotentHint = %v, want %v", c.op.Name(), said.IdempotentHint, c.repeated)
+		}
+		if said.Title != c.op.Short {
+			t.Errorf("%s: title = %q, want the operation's own short sentence", c.op.Name(), said.Title)
+		}
+	}
+}
+
+// A client reads the schema before it calls: a name the operation does not
+// take, or a list holding something other than words, is refused there.
+func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
+	schema := schemaFor(engine.TaskAdd)
+	if schema["additionalProperties"] != false {
+		t.Errorf("additionalProperties = %v, want false", schema["additionalProperties"])
+	}
+	label := schema["properties"].(map[string]any)["label"].(map[string]any)
+	if items, _ := label["items"].(map[string]any); items["type"] != "string" {
+		t.Errorf("label items = %v, want strings", label["items"])
+	}
+}
+
+// A refusal carries what kind it is and which, so an agent branches on words
+// that do not change when the sentence is reworded.
+func TestHandlerFor_answersARefusalWithItsKindAndReason(t *testing.T) {
+	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
+	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 4}`)}})
+	if err != nil || !result.IsError {
+		t.Fatalf("handle = %+v, %v; want a refusal", result, err)
+	}
+	said, ok := result.Meta[refusalKey].(engine.Refusal)
+	if !ok || said.Kind != engine.KindRefused || said.Reason != "no-such-task" {
+		t.Errorf("_meta = %#v, want refused/no-such-task", result.Meta)
+	}
+	if result.StructuredContent != nil {
+		t.Errorf("structured = %#v, want nothing a client would measure against the answer's shape", result.StructuredContent)
+	}
+}
+
+// A call the client gave up on before it ran is not run.
+func TestHandlerFor_runsNothingTheClientGaveUpOn(t *testing.T) {
+	path := storeAt(t)
+	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	gone, cancel := context.WithCancel(context.Background())
+	cancel()
+	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"Too late"}`)}}
+	if _, err := handle(gone, req); err == nil {
+		t.Error("handle = nil, want the cancellation said")
+	}
+	answer, err := engine.Do(engine.TaskList, path, engine.Input{})
+	if err != nil {
+		t.Fatalf("Do(TaskList): %v", err)
+	}
+	if len(answer.Tasks) != 0 {
+		t.Errorf("%d tasks, want none: the call was given up on", len(answer.Tasks))
+	}
+}

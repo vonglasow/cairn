@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"cairn/internal/engine"
 )
 
 func TestGlyphsFor(t *testing.T) {
@@ -59,6 +61,9 @@ func TestParseSet(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "nerdfonts") {
 		t.Fatalf("the refusal does not name what was typed: %v", err)
+	}
+	if said := engine.RefusalOf(err); said.Kind != engine.KindRefused || said.Reason != "not-a-glyph-set" {
+		t.Fatalf("RefusalOf = %s/%s, want it answered as a refusal like any other", said.Kind, said.Reason)
 	}
 	if !strings.Contains(err.Error(), "unicode") {
 		t.Fatalf("the refusal does not say what it takes: %v", err)

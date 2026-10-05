@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -174,5 +175,37 @@ func TestNoArgumentSpeaksOfTheCommandLine(t *testing.T) {
 				t.Errorf("%s %q: %q", op.Name(), arg.Name, arg.Means)
 			}
 		}
+	}
+}
+
+// What somebody typed is read off the parser's own error, never out of its
+// sentence: a sentence is reworded by an upgrade nobody reads the notes of.
+func TestLeadingMinus_readsNothingOutOfASentence(t *testing.T) {
+	if typed, ok := leadingMinus(errors.New("unknown shorthand flag: '3' in -30m")); ok {
+		t.Errorf("leadingMinus read %q out of a sentence, want only the parser's own error read", typed)
+	}
+}
+
+// A description too long to type on one line is read from standard input,
+// named as `-` — the convention every other tool on the machine follows.
+func TestMain_readsATextNamedAsADashFromStandardInput(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	var out, errs bytes.Buffer
+	stdin := strings.NewReader("first paragraph\n\nsecond paragraph\n")
+	if code := Main(context.Background(), []string{"task", "add", "Write the spec", "--desc", "-"}, stdin, &out, &errs); code != exitOK {
+		t.Fatalf("exit %d: %s", code, errs.String())
+	}
+	shown := mustRun(t, "task", "show", "1").Stdout
+	if !strings.Contains(shown, "first paragraph") || !strings.Contains(shown, "second paragraph") {
+		t.Errorf("task show = %q, want the description read from standard input", shown)
+	}
+}
+
+// Standard input is read once: two texts cannot both come from it.
+func TestMain_refusesTwoTextsNamedAsADash(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	r := run(t, "task", "add", "-", "--desc", "-")
+	if r.Code != exitUsage {
+		t.Errorf("exit %d, want %d: only one text can come from standard input", r.Code, exitUsage)
 	}
 }

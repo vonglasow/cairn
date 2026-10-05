@@ -7,7 +7,9 @@ package cli
 // is that check.
 
 import (
+	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -126,4 +128,71 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Every example `--help` shows is a command the tree reads: an example that
+// no longer parses teaches the wrong thing to whoever copies it.
+func TestEveryExampleIsACommandTheTreeReads(t *testing.T) {
+	for _, op := range engine.All() {
+		cmd, _, err := NewRootCmd().Find([]string{op.Thing, op.Verb})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(cmd.Example, "cairn "+op.Line()) {
+			t.Errorf("%s: --help shows no example: %q", op.Line(), cmd.Example)
+		}
+		for _, line := range strings.Split(op.Example, "\n") {
+			words, err := shellWords(strings.TrimSpace(strings.Split(line, " < ")[0]))
+			if err != nil {
+				t.Fatalf("%q: %v", line, err)
+			}
+			root := NewRootCmd()
+			found, rest, err := root.Find(words[1:])
+			if err != nil {
+				t.Errorf("%q: %v", line, err)
+				continue
+			}
+			if err := found.ParseFlags(rest); err != nil {
+				t.Errorf("%q: %v", line, err)
+				continue
+			}
+			if err := found.ValidateArgs(found.Flags().Args()); err != nil {
+				t.Errorf("%q: %v", line, err)
+			}
+		}
+	}
+}
+
+// shellWords splits a line the way a shell would for the examples above:
+// words, and double-quoted words with their escapes.
+func shellWords(line string) ([]string, error) {
+	var words []string
+	var word strings.Builder
+	quoted, started := false, false
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		switch {
+		case c == '\\' && quoted && i+1 < len(line):
+			i++
+			word.WriteByte(line[i])
+		case c == '"':
+			quoted, started = !quoted, true
+		case c == ' ' && !quoted:
+			if started {
+				words = append(words, word.String())
+				word.Reset()
+				started = false
+			}
+		default:
+			word.WriteByte(c)
+			started = true
+		}
+	}
+	if quoted {
+		return nil, errors.New("a quote is left open")
+	}
+	if started {
+		words = append(words, word.String())
+	}
+	return words, nil
 }

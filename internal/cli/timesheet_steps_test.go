@@ -74,6 +74,11 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^it says today$`, func() error {
+		// Today as the command saw it, which midnight may have just turned
+		// into yesterday as this step sees it.
+		if was := domain.FormatDay(time.Now().Add(-time.Minute)); strings.Contains(w.Out.Stdout, was) {
+			return nil
+		}
 		return test.WantContains(w.Out.Stdout, domain.FormatDay(time.Now()), "the timesheet")
 	})
 

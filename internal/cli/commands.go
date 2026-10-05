@@ -7,10 +7,11 @@ package cli
 // decides nothing.
 
 import (
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,12 +19,11 @@ import (
 )
 
 // errNotConfirmed is returned when something that loses work was asked for
-// without saying so out loud. What it was is said by naming op.Thing at the
-// point it is returned, not by the sentinel itself: every scenario that
-// checks this only looks for "--yes" in the reason, so one sentinel serves
-// a task deleted, a backup deleted, a backup put back and a change rolled
-// back alike.
-var errNotConfirmed = errors.New("needs --yes to confirm")
+// without saying so out loud. What it was is said by naming the thing and
+// what was typed after the verb at the point it is returned, not by the
+// sentinel itself, so one sentinel serves a task deleted, a backup deleted, a
+// backup put back and a change rolled back alike.
+var errNotConfirmed = engine.Refusing("not-confirmed", "needs --yes to confirm")
 
 // groupShort is the one sentence cobra shows for each group of commands.
 // Operation carries a Short and a Does for a verb, but nothing for the thing
@@ -115,7 +115,7 @@ func newGroupCmd(thing string) *cobra.Command {
 		// Without a RunE the group would accept a stray argument, print its
 		// help and exit zero — so a typo would look like a success.
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return fmt.Errorf("%s needs a command — usage: %s", thing, cmd.UseLine())
+			return engine.Misread(fmt.Errorf("%s needs a command — usage: %s", thing, cmd.UseLine()))
 		},
 	}
 }
@@ -204,18 +204,23 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 	var confirmed bool
 
 	cmd := &cobra.Command{
-		Use:   useLine(op, positionals),
-		Short: op.Short,
-		Long:  op.Does,
-		Args:  argsFor(positionals),
+		Use:     useLine(op, positionals),
+		Short:   op.Short,
+		Long:    op.Does,
+		Example: indented(op.Example),
+		Args:    argsFor(positionals),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Checked before the store is opened: removing work on a typo is
 			// not something to be helpful about, and a request refused for
 			// lack of confirmation has no business touching anything first.
 			if op.Level == engine.Full && !confirmed {
-				return fmt.Errorf("%s %w", op.Thing, errNotConfirmed)
+				target := strings.TrimSpace(op.Thing + " " + strings.Join(args, " "))
+				return fmt.Errorf("%s %w", target, errNotConfirmed)
 			}
 			in := inputFrom(cmd, positionals, args, given, listed, asked)
+			if err := readDash(op, in, cmd.InOrStdin()); err != nil {
+				return err
+			}
 			answer, err := engine.DoFrom(op, home(), in, engine.ByHand)
 			if err != nil {
 				return err
@@ -249,6 +254,41 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work")
 	}
 	return cmd
+}
+
+// indented sets examples in from the margin, the way cobra's own help sets
+// in everything under a heading.
+func indented(examples string) string {
+	return "  " + strings.ReplaceAll(examples, "\n", "\n  ")
+}
+
+// fromStandardInput is how a text says it is to be read from standard input.
+const fromStandardInput = "-"
+
+// readDash reads the one text named as `-` from standard input, the way every
+// other tool on the machine reads it: a description of several paragraphs is
+// written in an editor or piped in, not typed between quotes. Standard input
+// is read once, so two texts cannot both come from it.
+func readDash(op engine.Operation, in engine.Input, stdin io.Reader) error {
+	named := ""
+	for _, arg := range op.Takes {
+		if arg.Kind != engine.Text || in.Given[arg.Name] != fromStandardInput {
+			continue
+		}
+		if named != "" {
+			return engine.Misread(fmt.Errorf("%q and %q: only one text can be read from standard input", named, arg.Name))
+		}
+		named = arg.Name
+	}
+	if named == "" {
+		return nil
+	}
+	read, err := io.ReadAll(stdin)
+	if err != nil {
+		return fmt.Errorf("reading %q from standard input: %w", named, err)
+	}
+	in.Given[named] = strings.TrimSuffix(string(read), "\n")
+	return nil
 }
 
 // inputFrom builds what an operation was actually asked for: its positional

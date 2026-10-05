@@ -352,3 +352,32 @@ func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
 		t.Errorf("an empty day was refused: %v", err)
 	}
 }
+
+// A client deciding whether to ask before a call needs to know what a second
+// call does, and whether the first one can replace what was written. Every
+// operation that writes says so; one added without saying is caught here.
+func TestEveryWriteSaysWhatCallingItAgainDoes(t *testing.T) {
+	for _, op := range All() {
+		if op.Level != Read && op.Again == 0 {
+			t.Errorf("%s writes and does not say what calling it again does", op.Name())
+		}
+	}
+	for op, want := range map[*Operation]Again{&TaskAdd: DoesItAgain, &TaskEdit: ChangesNothingMore, &TimesheetAdd: DoesItAgain} {
+		if op.Again != want {
+			t.Errorf("%s: Again = %v, want %v", op.Name(), op.Again, want)
+		}
+	}
+	if !TaskEdit.Overwrites || TaskAdd.Overwrites {
+		t.Error("an edit replaces what was written and an addition does not")
+	}
+}
+
+// A person reads how a command is typed faster than what it takes, so every
+// operation carries at least one example of itself, typed as it is typed.
+func TestEveryOperationShowsHowItIsTyped(t *testing.T) {
+	for _, op := range All() {
+		if !strings.Contains(op.Example, "cairn "+op.Line()) {
+			t.Errorf("%s carries no example of itself: %q", op.Name(), op.Example)
+		}
+	}
+}

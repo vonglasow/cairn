@@ -1,13 +1,16 @@
 package cli
 
 import (
+	"bytes"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
+	"cairn/internal/engine"
 	"cairn/internal/tui"
 )
 
@@ -124,5 +127,47 @@ func TestTui_isTheNameTheCommandGoesBy(t *testing.T) {
 	}
 	if named["board"] {
 		t.Error("cairn still offers board among its commands")
+	}
+}
+
+// The board is drawn in a terminal; asked for anywhere else, it says so
+// rather than drawing escapes into a file or a pipe.
+func TestNeedsATerminal_refusesWhatIsNotOne(t *testing.T) {
+	var out bytes.Buffer
+	err := needsATerminal(strings.NewReader(""), &out)
+	if said := engine.RefusalOf(err); said.Reason != "not-a-terminal" {
+		t.Errorf("needsATerminal = %v, want it refused as not a terminal", err)
+	}
+}
+
+// A board asked for outside a terminal stops before a program is started on
+// streams it cannot draw to.
+func TestRunTui_stopsWhereThereIsNoTerminal(t *testing.T) {
+	cmd := NewRootCmd()
+	cmd.SetIn(strings.NewReader(""))
+	cmd.SetOut(&bytes.Buffer{})
+	if err := runTui(cmd, nil); engine.RefusalOf(err).Reason != "not-a-terminal" {
+		t.Errorf("runTui = %v, want it refused as not a terminal", err)
+	}
+}
+
+// A file is not a terminal, and a character device is taken for one: the
+// question asked is the one a terminal answers yes to.
+func TestNeedsATerminal_readsWhatAFileIs(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "out")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = file.Close() }()
+	if err := needsATerminal(file, file); engine.RefusalOf(err).Reason != "not-a-terminal" {
+		t.Errorf("a file: %v, want it refused", err)
+	}
+	device, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = device.Close() }()
+	if err := needsATerminal(device, device); err != nil {
+		t.Errorf("a character device: %v, want it taken", err)
 	}
 }

@@ -50,7 +50,7 @@ on one machine.
 
 ## What an agent may do is settled when the server starts
 
-One flag, three levels, `write` by default:
+One flag, three levels, `read` by default:
 
 | `--access` | what it reaches |
 |---|---|
@@ -63,6 +63,14 @@ The line between `write` and `full` is not "destructive" in the technical sense
 it sits in `write`; rolling a migration back drops what that migration carried,
 so it sits in `full`. `migration_apply` is in `write` for the same reason: it
 changes the shape but sets a backup aside first.
+
+**Nothing given is looking and nothing else.** The default was `write`, and an
+agent reads what it is handed — a description, a label, a note — before it
+acts; one talked into a write by what it read reached as far as nobody had
+decided it should. A server started without a word now reaches no further than
+listing and showing, and every level above that is one somebody typed. The
+configuration above names `full` because that is a decision its owner made,
+not one the server made for them.
 
 **A tool above the level is not exposed at all**, rather than exposed and
 refused. A refusal invites another attempt, and an agent that has been told no
@@ -84,6 +92,25 @@ question goes to a human, asked by the client, at the moment of the call.
 But an annotation is a hint. Nothing obliges a client to honour it. So the
 access level is enforced server-side, where no client can talk it away. The two
 are not redundant: the annotation asks, the level forbids.
+
+What the annotations say is read off the operation, never written per tool:
+
+| annotation | said when |
+|---|---|
+| `title` | always — the operation's own short sentence |
+| `readOnlyHint` | the operation is at `read` |
+| `destructiveHint` | it loses work (`full`), **or it can replace what was written** — `task_edit` empties a description as surely as a deletion does, which is the protocol's sense of the word and wider than the access level's |
+| `idempotentHint` | a second call with the same arguments does nothing more than the first, or is refused for having nothing left to do: every read, an edit, a move, a focus — never an addition, a backup made, time added |
+| `openWorldHint` | never: cairn reaches nothing outside the store |
+
+The last two facts are the engine's — `Again` and `Overwrites` on an
+operation, beside its level — since whether a second call costs anything is a
+property of what the operation does, not of the surface that offers it.
+
+Each tool's input schema says what it takes and nothing else
+(`additionalProperties: false`), with the type of what a list holds. The engine
+refused a name an operation does not take all along; said in the schema, a
+client knows before it calls.
 
 ## The store is opened for each call and closed again
 
@@ -212,10 +239,25 @@ what it answers — `Answers: Tasks{}` — and the schema is inferred from that
 type. The same struct that crosses the wire is the one the description is taken
 from, so the two cannot drift: change the struct and the schema changes with it.
 
+**A refusal says what kind it is, beside the sentence.** Under `_meta`, at
+`cairn/refusal`, a refusal carries `{"error", "kind", "reason"}`: the kind is
+`refused`, `usage`, `store` or `failed`, and the reason is a word that does not
+change when the sentence is reworded — `no-such-task`, `title-required`,
+`not-understood`. An agent branching on "is this a typo or a missing task"
+read prose until then. The kinds and reasons are the engine's
+(`engine.RefusalOf`), the same ones the command line's exit code and its JSON
+refusal are read off, so a script and an agent are told the same thing.
+
+**A call the client gave up on is not run.** A cancellation that arrives
+before a call starts stops it there. One that arrives after has nothing to
+stop: a call is one transaction of a few milliseconds, and stopping it half way
+is what the transaction is there to prevent.
+
 **A refusal is not an answer of that shape.** It comes back as `IsError` with
-the reason as text and carries nothing for a machine, so nothing measures it
+the reason as text and carries no `structuredContent`, so nothing measures it
 against a schema it was never meant to satisfy. Measured, then frozen in a
-scenario: without it, every refusal would read as a violation.
+scenario: without it, every refusal would read as a violation. That is why its
+kind travels under `_meta` and not there.
 
 And the declaration bought something that was not the point of it. `Of` works
 out which shape to build by looking at which field of an `Answer` was filled —
@@ -324,3 +366,22 @@ read by both surfaces through `build.Read`.
 What settled both is the same thing: the question "which surface owns this?"
 had no good answer because neither did. A build is not the command line's, and
 the shape of a task is not the server's.
+
+## What changes in a tool's answer, and what does not
+
+An agent holds on to the shape of an answer the way a script holds on to a
+column. So the answers change by one rule:
+
+- **adding a field breaks nothing** — a reader that does not know it ignores
+  it, and every field that may be absent says so with `omitempty`;
+- **renaming or removing one, or changing what it holds, is a break** — it is
+  said in the commit that makes it, under `BREAKING CHANGE`, and the scenarios
+  that pin the old shape are changed in the same commit, on purpose;
+- **an argument is the same**: a new optional one breaks nothing, a renamed or
+  newly required one does.
+
+The schemas themselves are pinned: `internal/mcp/testdata/schemas.json` holds
+every tool's input and output schema as the server hands them out, and a test
+fails when what the server says differs from it. A difference is either the
+break the commit meant — and the file is rewritten with it, by running the
+test with `UPDATE_SCHEMAS=1` — or one nobody meant, found before an agent did.

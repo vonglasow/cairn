@@ -39,7 +39,9 @@ func TestText_showsWhatAChangeDoesAndWhatUndoingItDoes(t *testing.T) {
 
 func TestText_saysWhenAChangeWasApplied(t *testing.T) {
 	got := Text(builtChange(true))
-	if !strings.Contains(got, "applied 2026-01-02") {
+	// The moment as this machine's zone writes it: 15:04 UTC on the 2nd is
+	// already the 3rd east of UTC+9.
+	if want := "applied " + domain.FormatMoment(time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)); !strings.Contains(got, want) {
 		t.Errorf("Text() = %q, want it to say when the change was applied", got)
 	}
 }

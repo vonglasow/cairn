@@ -117,30 +117,30 @@ func (l *line) At(when time.Time)      { l.at = when }
 func (l *line) columns() string {
 	var out strings.Builder
 	if l.did == Created && l.field != "" {
-		_, _ = fmt.Fprintf(&out, "%s\t%s\t%s", nest, l.field, l.became)
+		fmt.Fprintf(&out, "%s\t%s\t%s", nest, l.field, l.became)
 		return out.String()
 	}
-	_, _ = fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.at), l.what())
+	fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.at), l.what())
 	// Time added by hand counts for a day of its own, which is not the day it
 	// was added on: the line says both, the moment it was written and the day.
 	if l.did == TimeAdded {
-		_, _ = fmt.Fprintf(&out, "\t%s for %s", l.became, l.was)
+		fmt.Fprintf(&out, "\t%s for %s", l.became, l.was)
 	} else if l.field == "" && l.became != "" {
-		_, _ = fmt.Fprintf(&out, "\t%s", l.became)
+		fmt.Fprintf(&out, "\t%s", l.became)
 	} else if l.field == "" && l.was != "" {
 		// A deletion names no attribute and became nothing: what it says is
 		// what the task held when it went. Printed, because a history that
 		// keeps it and does not show it keeps it where nobody can read it.
-		_, _ = fmt.Fprintf(&out, "\t%s", l.was)
+		fmt.Fprintf(&out, "\t%s", l.was)
 	} else if l.field != "" && (l.was != "" || l.became != "") {
-		_, _ = fmt.Fprintf(&out, "\t%s %s %s",
+		fmt.Fprintf(&out, "\t%s %s %s",
 			domain.OrNothing(l.was), went, domain.OrNothing(l.became))
 	}
 	// Beside the value and not a column after it: a value written over several
 	// lines ended its last line in that column's tab, became a cell, and pushed
 	// the moments of every act after it to the right.
 	if l.through != "" {
-		_, _ = fmt.Fprintf(&out, "  (%s)", l.through)
+		fmt.Fprintf(&out, "  (%s)", l.through)
 	}
 	return out.String()
 }
@@ -172,7 +172,7 @@ func SheetText(s Sheet, titles map[int]string) string {
 		if i > 0 {
 			out.WriteString("\n")
 		}
-		_, _ = fmt.Fprintf(&out, "%s\n", domain.FormatDay(day.Day))
+		fmt.Fprintf(&out, "%s\n", domain.FormatDay(day.Day))
 		tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
 		for _, w := range day.Tasks {
 			left := ""
@@ -182,7 +182,7 @@ func SheetText(s Sheet, titles map[int]string) string {
 			_, _ = fmt.Fprintf(tw, "  #%d\t%s\t%s%s\n", w.Task, Hours(w.Took), titles[w.Task], left)
 		}
 		_ = tw.Flush()
-		_, _ = fmt.Fprintf(&out, "  total  %s\n", Hours(day.Total))
+		fmt.Fprintf(&out, "  total  %s\n", Hours(day.Total))
 	}
 	return out.String()
 }

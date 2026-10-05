@@ -15,6 +15,7 @@ import (
 var (
 	ErrNoSuchBackup      = store.ErrNoSuchBackup
 	ErrNoBackup          = store.ErrNoBackup
+	ErrDamagedBackup     = store.ErrDamagedBackup
 	ErrNotAStore         = store.ErrNotAStore
 	ErrNewerStore        = store.ErrNewerStore
 	ErrStoreBehind       = store.ErrStoreBehind

@@ -12,9 +12,11 @@
 #     coverage, and no threshold sees it: measured on this repository, 219
 #     timeouts under load hid 21 survivors behind a reported 100%. Yet some
 #     timeouts are real — a mutant that turns a loop's counter around never
-#     ends, and the test that waits on it did notice. So a package with a
-#     timeout is run again with three times the budget: a mutant that was only
-#     slow is judged that time, and one that still runs out is a hang, caught.
+#     ends, and the test that waits on it did notice. So the mutants that
+#     timed out are run again with three times the budget — those alone, on
+#     the lines they sit on, not the whole package a second time: a mutant that
+#     was only slow is judged that time, and one that still runs out is a
+#     hang, caught, and written down for somebody to look at.
 #   - in --diff mode the mutants off the changed lines are kept as SKIPPED, so a
 #     package whose diff reaches no mutable line reports 0 killed out of 0 and
 #     fails its own threshold for having had nothing to judge.
@@ -70,8 +72,11 @@ shim=$(mktemp -d)
 report=$shim/report.json
 trap 'rm -rf "$shim"' EXIT
 git=$(command -v git)
+# A second run names its own lines: RETRYING points at a diff written below,
+# naming only the lines whose mutants timed out, and gremlins mutates those.
 cat >"$shim/git" <<EOF
 #!/bin/sh
+[ "\$1" = diff ] && [ -n "\$RETRYING" ] && exec cat "\$RETRYING"
 [ "\$1" = diff ] && shift && exec "$git" diff --relative="\$MUTATING" -U0 "\$@"
 exec "$git" "\$@"
 EOF
@@ -97,6 +102,36 @@ judged() {
     | "  \(.status) \(.type) at \($f.file_name):\(.line):\(.column)"' "$@" <"$report"
 }
 
+# timedOut writes a diff naming each line a mutant timed out on, one hunk a
+# line: the shape gremlins reads a changed line from.
+timedOut() {
+  jq -r '.files[]? as $f | $f.mutations[] | select(.status == "TIMED OUT") | "\($f.file_name) \(.line)"' <"$report" |
+    sort -u | while read -r file line; do
+      printf 'diff --git a/%s b/%s\n--- a/%s\n+++ b/%s\n@@ -%s,0 +%s,1 @@\n+\n' \
+        "$file" "$file" "$file" "$file" "$line" "$line"
+    done
+}
+
+# What the full sweep found clean, by the content of the package it judged:
+# a package whose files have not changed since is not judged again at the
+# next push. Kept in the repository's own git directory, out of the tree.
+receipts=$(git rev-parse --git-dir)/mutation-receipts
+mkdir -p "$receipts"
+contentOf() { cat "$1"/*.go go.sum | git hash-object --stdin; }
+receiptOf() { echo "$receipts/$(echo "${1#./}" | tr / _)"; }
+
+# Where a hang caught is written down: each one is either a loop a test did
+# notice, or a test so slow it looks like one, and only a person can tell.
+hanged=$(git rev-parse --git-dir)/mutation-hangs.log
+
+# The packages judged with && and || swapped and continue turned into break as
+# well: the core, where the rules are. Those two are off in .gremlins.yaml for
+# the surfaces, whose conditions are about what is on screen and give more
+# mutants no test can tell from the original than ones pointing at a weak
+# test. Every rule of what blocks, orders and narrows is written in && and ||,
+# so the core is where a 100% without them meant least.
+logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
+
 failed=0
 ran=0
 # A package with no test file is tested-check's to refuse, not this gate's to
@@ -109,25 +144,40 @@ if [ -n "$candidates" ]; then
   judged_packages=$(scripts/packages.sh --tested $candidates)
 fi
 for pkg in $judged_packages; do
+  if ! $changed && [ "$(cat "$(receiptOf "$pkg")" 2>/dev/null)" = "$(contentOf "$pkg")" ]; then
+    echo "→ $pkg: judged clean already, and unchanged since"
+    continue
+  fi
   ran=$((ran + 1))
   echo "→ $pkg"
   args=(unleash -o "$report")
   $changed && args+=(--diff "$since")
+  [[ $logical == *" ${pkg#./} "* ]] && args+=(--invert-logical --invert-loopctrl)
   unleash "$pkg" "${args[@]}"
   # A package with nothing to mutate gets no report at all.
   [ -f "$report" ] || continue
-  if [ -n "$(judged "TIMED OUT")" ]; then
-    echo "  timeouts: judging again with three times the budget"
-    unleash "$pkg" "${args[@]}" --timeout-coefficient 90
-  fi
   bad=$(judged "LIVED" "NOT COVERED")
+  jq -r '"  " + ([.files[]?.mutations[].status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
+  if [ -n "$(judged "TIMED OUT")" ]; then
+    echo "  timeouts: judging those again, with three times the budget"
+    retry=$shim/retry.diff
+    timedOut >"$retry"
+    RETRYING=$retry unleash "$pkg" "${args[@]}" --diff "$since" --timeout-coefficient 90
+    bad=$(printf '%s\n%s' "$bad" "$(judged "LIVED" "NOT COVERED")" | sed '/^$/d')
+    hangs=$(judged "TIMED OUT")
+    if [ -n "$hangs" ]; then
+      echo "${hangs//TIMED OUT/HANGS (caught)}"
+      echo "${hangs//TIMED OUT/$(date +%F) $pkg}" >>"$hanged"
+      echo "  written down in $hanged"
+    fi
+    jq -r '"  again: " + ([.files[]?.mutations[] | select(.status != "SKIPPED") | .status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
+  fi
   if [ -n "$bad" ]; then
     echo "$bad"
     failed=1
+    continue
   fi
-  hangs=$(judged "TIMED OUT")
-  [ -z "$hangs" ] || echo "${hangs//TIMED OUT/HANGS (caught)}"
-  jq -r '"  " + ([.files[]?.mutations[].status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
+  $changed || contentOf "$pkg" >"$(receiptOf "$pkg")"
 done
 
 if $changed && [ "$ran" -eq 0 ]; then

@@ -12,6 +12,39 @@ is the port.
 This says what it is and why, including what was turned down — because the
 reason is the part the code cannot carry.
 
+## Read this first
+
+The whole file in eight lines, for whoever has a change to make and not an
+afternoon to spend:
+
+- **The same board as the terminal's**, in a window: where the two disagree
+  about what a board means, [tui.md](tui.md) is right.
+- **The mouse comes first**: no modes, no cursor to learn. A key does what the
+  bar offers, where the bar offers it, and a few flat shortcuts stay.
+- **A drag is an edit**: dropped in another column it changes the state,
+  among its sisters it changes the place — the engine's two operations.
+- **Sub-tasks are not on the board**; they are lines of the form of the task
+  they belong to, and deleting a task takes them with it.
+- **Every size is worked out from the window** and pinned as a number in
+  `parts*.go`, never in a drawing, where no test could judge it.
+- **What a board reads and asks is shared** with the terminal in
+  `internal/reading`; the window only draws and points.
+- **It is tested without a screen**, by gestures on a `Window` value; the few
+  tests that draw need a GPU, and a machine without one says so with
+  `CAIRN_WINDOWLESS=1`.
+
+## Contents
+
+- [What it is for](#what-it-is-for)
+- [Why Gio](#why-gio)
+- [Where it lives](#where-it-lives)
+- [The window](#the-window)
+- [The mouse](#the-mouse)
+- [The form](#the-form)
+- [The detail](#the-detail)
+- [How it is tested](#how-it-is-tested)
+- [Deliberately not there yet](#deliberately-not-there-yet)
+
 ## What it is for
 
 Three things, in the order they matter: **range, search, open**. The engine

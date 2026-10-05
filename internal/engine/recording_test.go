@@ -561,3 +561,49 @@ func TestArchiving_isWrittenDown(t *testing.T) {
 		t.Errorf("the history says %v about archiving, want %v", said, want)
 	}
 }
+
+// How long a task has sat where it is is read off what was done to it: the
+// moment its column last changed, or the moment it was made.
+func TestShow_saysSinceWhenATaskHasStoodInItsColumn(t *testing.T) {
+	path := storeAt(t, "Write the spec")
+	made, err := Do(TaskShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if made.StoodSince.IsZero() {
+		t.Fatal("a task just made says nothing of since when it has stood where it is")
+	}
+	if _, err := Do(TaskEdit, path, given("number", "1", "priority", "high")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Do(TaskEdit, path, given("number", "1", "state", "current")); err != nil {
+		t.Fatal(err)
+	}
+	moved, err := Do(TaskShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	acts, err := Do(TraceShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var last time.Time
+	for _, a := range acts.Acts {
+		var f momentOf
+		a.Tell(&f)
+		if f.field == "column" {
+			last = f.at
+		}
+	}
+	if !moved.StoodSince.Equal(last) {
+		t.Errorf("StoodSince = %v, want %v, the moment the column last changed", moved.StoodSince, last)
+	}
+}
+
+// momentOf reads what an act changed and when.
+type momentOf struct {
+	actFacts
+	at time.Time
+}
+
+func (m *momentOf) At(t time.Time) { m.at = t }

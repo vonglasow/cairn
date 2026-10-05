@@ -195,3 +195,143 @@ func (e *Engine) inFocus() ([]task.Task, []int, error) {
 	}
 	return held, numbers, nil
 }
+
+// TaskMove changes where a task sits in the order.
+var TaskMove = Operation{
+	Thing: "task",
+	Verb:  "move",
+	Short: "Move a task in the order",
+	Does:  "Move a task to another place among the ones it sits with. It never changes the column.",
+	Example: `cairn task move 3 --first
+cairn task move 3 --after 1`,
+	Level:   Write,
+	Needs:   AStore,
+	Again:   ChangesNothingMore,
+	Answers: Tasks{},
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
+		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
+		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
+		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, _ := in.Whole("number")
+		at, target, err := placeFrom(in)
+		if err != nil {
+			return Answer{}, err
+		}
+		if err := on.Engine.move(n, at, target); err != nil {
+			return Answer{}, err
+		}
+		// A move changes the order and nothing else, so the order is what it
+		// answers with: the card of the task moved would not show what moved.
+		//
+		// Answered as a listing nobody narrowed, and told so with an empty
+		// Input rather than handed the move's own: what a move was given says
+		// where to put a task, and reading it as facts to keep by would narrow
+		// the answer by whatever a later argument happened to be called.
+		return listing(on, Input{})
+	},
+}
+
+// TaskFocus says which task is being worked on, or puts one there.
+var TaskFocus = Operation{
+	Thing: "task",
+	Verb:  "focus",
+	Short: "Put a task in focus, or say which ones are",
+	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once.",
+	Example: `cairn task focus 3
+cairn task focus`,
+	Level:   Write,
+	Needs:   AStore,
+	Again:   ChangesNothingMore,
+	Answers: Focus{},
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to take up, or nothing to name every task in focus"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, named := in.Whole("number")
+		if !named {
+			return whatIsInFocus(on)
+		}
+		t, err := on.Engine.putInFocus(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		p, err := on.Engine.taskProgress(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		held, err := on.Engine.focus()
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &t, Progress: p, InFocus: &held}, nil
+	},
+}
+
+// TaskUnfocus leaves nothing in focus.
+var TaskUnfocus = Operation{
+	Thing: "task",
+	Verb:  "unfocus",
+	Short: "Let go of a task in focus, or of them all",
+	Does:  "Let go of one task and keep the rest, or of every task in focus when no number is given. Letting go of nothing is not a failure.",
+	Example: `cairn task unfocus 3
+cairn task unfocus`,
+	Level:   Write,
+	Needs:   AStore,
+	Again:   ChangesNothingMore,
+	Answers: Focus{},
+	Takes: []Argument{
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to let go of, or nothing to let go of them all"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		n, named := in.Whole("number")
+		if named {
+			if err := on.Engine.letGoOf(n); err != nil {
+				return Answer{}, err
+			}
+		} else if err := on.Engine.letGo(); err != nil {
+			return Answer{}, err
+		}
+		return whatIsInFocus(on)
+	},
+}
+
+// placeFrom reads where a move was told to put a task. Naming nothing and
+// naming several are both refused: one is a command that asked for nothing,
+// the other a command that asked for two things, and picking either quietly
+// would move a task somewhere nobody said.
+func placeFrom(in Input) (Place, int, error) {
+	named := make([]Place, 0, 3)
+	target := 0
+	if in.Yes("first") {
+		named = append(named, First)
+	}
+	// Behind a task named as nothing names no place: read as a number, it
+	// was task zero, and the refusal spoke of a task nobody asked about.
+	if in.Given["after"] != "" {
+		named = append(named, Behind)
+		target, _ = in.Whole("after")
+	}
+	if in.Yes("last") {
+		named = append(named, Last)
+	}
+	if len(named) == 0 {
+		return 0, 0, ErrNowhereToMove
+	}
+	if len(named) > 1 {
+		return 0, 0, ErrMoreThanOnePlace
+	}
+	return named[0], target, nil
+}
+
+// whatIsInFocus answers about the task being worked on, and says so plainly
+// when there is none: nothing in focus is an answer, not an absence.
+func whatIsInFocus(on On) (Answer, error) {
+	held, numbers, err := on.Engine.inFocus()
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Held: held, InFocus: &numbers}, nil
+}

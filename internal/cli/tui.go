@@ -10,6 +10,8 @@ package cli
 // one you were opening.
 
 import (
+	"io"
+	"os"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -22,13 +24,40 @@ import (
 // openTui is how this command starts a bubbletea program. It is a variable so a
 // scenario can drive the board without a terminal: what is worth testing is the
 // board, and a program that needs a tty is not something a test should need.
-var openTui = func(cmd *cobra.Command, model tea.Model) error {
+var openTui = runTui
+
+// runTui starts the board on the command's own streams, once they are a
+// terminal.
+func runTui(cmd *cobra.Command, model tea.Model) error {
+	if err := needsATerminal(cmd.InOrStdin(), cmd.OutOrStdout()); err != nil {
+		return err
+	}
 	program := tea.NewProgram(model,
 		tea.WithContext(cmd.Context()),
 		tea.WithInput(cmd.InOrStdin()),
 		tea.WithOutput(cmd.OutOrStdout()))
 	_, err := program.Run()
 	return err
+}
+
+// errNotATerminal is the board asked for where it cannot be drawn.
+var errNotATerminal = engine.Refusing("not-a-terminal", "the board is drawn in a terminal, and this is not one")
+
+// needsATerminal refuses streams that are not a terminal: a board drawn into
+// a file or a pipe is a screenful of escapes nobody can read, and a program
+// waiting for keys on a closed input waits for ever.
+func needsATerminal(in io.Reader, out io.Writer) error {
+	for _, stream := range []any{in, out} {
+		file, ok := stream.(*os.File)
+		if !ok {
+			return errNotATerminal
+		}
+		info, err := file.Stat()
+		if err != nil || info.Mode()&os.ModeCharDevice == 0 {
+			return errNotATerminal
+		}
+	}
+	return nil
 }
 
 // newTuiCmd builds the `tui` command.

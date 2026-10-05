@@ -135,7 +135,7 @@ func Under(tasks []Task) string {
 		if rowOf(t).state == domain.Done {
 			mark = DoneMark
 		}
-		_, _ = fmt.Fprintf(&out, "  %s  %s\n", mark, Line(t))
+		fmt.Fprintf(&out, "  %s  %s\n", mark, Line(t))
 	}
 	return out.String()
 }

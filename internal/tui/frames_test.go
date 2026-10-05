@@ -84,6 +84,13 @@ func crowded() *fake {
 	return f
 }
 
+// The frames were pinned where they were written, at UTC+2 in September, and
+// a moment is drawn in the zone of the machine drawing it: run anywhere else
+// — a Linux container keeps UTC — every line of a history moved by two hours
+// and every frame that shows one went red for nothing. The zone they were
+// pinned in is the zone the whole package's tests draw in.
+func init() { time.Local = time.FixedZone("UTC+2", 2*60*60) }
+
 func TestFramesOfACrowdedBoard(t *testing.T) {
 	f := crowded()
 	for _, c := range []struct {

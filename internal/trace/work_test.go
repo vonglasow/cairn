@@ -234,3 +234,39 @@ func TestHours_writesATimeTheWayASheetIsFilledIn(t *testing.T) {
 		}
 	}
 }
+
+// Time added by hand that cannot be read — a day that is not one, or a length
+// that is not one — counts nothing, and what comes after it still counts.
+func TestTimed_readsOnPastTimeAddedThatCannotBeRead(t *testing.T) {
+	later := atOn(6, 18, 0)
+	s := Timed([]Act{
+		added(1, "someday", "1h", later),
+		added(2, "2026-03-03", "ages", later.Add(time.Minute)),
+		added(3, "2026-03-03", "1h", later.Add(2*time.Minute)),
+	}, dayOf(3), dayOf(3), atOn(6, 19, 0))
+	_, _, one := worked(s, dayOf(3), 1)
+	_, _, two := worked(s, dayOf(3), 2)
+	three, _, _ := worked(s, dayOf(3), 3)
+	if one || two || three != time.Hour {
+		t.Errorf("task 1 written %v, task 2 written %v, task 3 %s; want only task 3, an hour", one, two, three)
+	}
+}
+
+// A day says a task was left open only when it was left open that day: a
+// focus left open the evening before is not the next day's.
+func TestTimed_saysLeftOpenOnlyOfTheDayItWasLeft(t *testing.T) {
+	s := Timed([]Act{took(1, 17, 0), stoppedOn(1, 4, 1, 0), tookOn(1, 4, 9, 0), stoppedOn(1, 4, 10, 0)},
+		dayOf(3), dayOf(4), atOn(5, 12, 0))
+	if _, left, _ := worked(s, dayOf(4), 1); left {
+		t.Error("the day after says the task was left open on it")
+	}
+}
+
+// A task whose time rounds to nothing is not written, and the tasks after it
+// are.
+func TestTimed_writesWhatComesAfterATaskRoundedToNothing(t *testing.T) {
+	s := Timed([]Act{took(1, 9, 0), stopped(1, 9, 5), took(2, 10, 0), stopped(2, 11, 0)}, dayOf(3), dayOf(3), at(12, 0))
+	if took, _, _ := worked(s, dayOf(3), 2); took != time.Hour {
+		t.Errorf("task 2 took %s, want the hour after task 1's five minutes", took)
+	}
+}

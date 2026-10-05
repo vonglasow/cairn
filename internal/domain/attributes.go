@@ -16,6 +16,7 @@ const dayLayout = "2006-01-02"
 // them with errors.Is rather than by matching a message.
 var (
 	ErrLabelRequired    = errors.New("a label needs a name")
+	ErrLabelNotOneLine  = errors.New("a label is one word or a few, on one line")
 	ErrNotAState        = errors.New("not one of the columns")
 	ErrNotAPriority     = errors.New("not one of the priorities")
 	ErrNotADay          = errors.New("not a date")
@@ -115,14 +116,28 @@ func ParseLabels(given []string) ([]string, error) {
 		if label == "" {
 			continue
 		}
-		trimmed := strings.TrimSpace(label)
-		if trimmed == "" {
-			return nil, ErrLabelRequired
+		name, err := labelNamed(label)
+		if err != nil {
+			return nil, err
 		}
-		kept = append(kept, strings.ToLower(trimmed))
+		kept = append(kept, name)
 	}
 	slices.Sort(kept)
 	return slices.Compact(kept), nil
+}
+
+// labelNamed is one label as it is kept: trimmed, lower case, and refused when
+// nothing is left or when it would not sit on one line among the others. One
+// rule for a label named in a set and one joining or leaving it.
+func labelNamed(raw string) (string, error) {
+	name := strings.ToLower(strings.TrimSpace(raw))
+	if name == "" {
+		return "", ErrLabelRequired
+	}
+	if strings.ContainsFunc(name, breaksALine) {
+		return "", fmt.Errorf("%q: %w", raw, ErrLabelNotOneLine)
+	}
+	return name, nil
 }
 
 // ParseDeadline reads a day. Nothing given is no deadline, which is also how a
@@ -169,15 +184,15 @@ func FormatDuration(d time.Duration) string {
 	}
 	var out strings.Builder
 	if h := int(d.Hours()); h > 0 {
-		_, _ = fmt.Fprintf(&out, "%dh", h)
+		fmt.Fprintf(&out, "%dh", h)
 		d -= time.Duration(h) * time.Hour
 	}
 	if m := int(d.Minutes()); m > 0 {
-		_, _ = fmt.Fprintf(&out, "%dm", m)
+		fmt.Fprintf(&out, "%dm", m)
 		d -= time.Duration(m) * time.Minute
 	}
 	if s := int(d.Seconds()); s > 0 {
-		_, _ = fmt.Fprintf(&out, "%ds", s)
+		fmt.Fprintf(&out, "%ds", s)
 	}
 	return out.String()
 }

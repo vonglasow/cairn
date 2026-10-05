@@ -22,7 +22,7 @@ func newMCPCmd() *cobra.Command {
 		// Without a RunE the group would accept a stray argument, print its help
 		// and exit zero — so a typo would look like a success.
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return fmt.Errorf("mcp needs a command — usage: %s", cmd.UseLine())
+			return engine.Misread(fmt.Errorf("mcp needs a command — usage: %s", cmd.UseLine()))
 		},
 	}
 	group.AddCommand(newMCPServeCmd())
@@ -50,6 +50,9 @@ func newMCPServeCmd() *cobra.Command {
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}
-	cmd.Flags().StringVar(&access, "access", "write", "how far the agent may reach: read, write or full")
+	// Looking only, unless told otherwise: an agent can be talked into a
+	// write by what it reads, and one started without a word reaches no
+	// further than whoever started it decided on purpose.
+	cmd.Flags().StringVar(&access, "access", "read", "how far the agent may reach: read, write or full")
 	return cmd
 }

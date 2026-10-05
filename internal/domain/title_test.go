@@ -54,3 +54,50 @@ func TestOrNothing_showsAnAbsenceAsAnAbsence(t *testing.T) {
 		t.Errorf("OrNothing = %q, want it untouched", got)
 	}
 }
+
+// What is written about a thing runs over several lines and may line things up
+// with a tab, but it is printed straight to a terminal: an escape among it is
+// an instruction to that terminal, not text — hidden text, a link that lies
+// about where it goes, a write to the clipboard.
+func TestProse_refusesWhatATerminalWouldReadAsAnInstruction(t *testing.T) {
+	for what, said := range map[string]string{
+		"an escape":              "look \x1b]52;c;aGk=\x07 here",
+		"a bell":                 "ring\x07",
+		"a lone carriage return": "over\rwritten",
+		"a backspace":            "erased\b",
+		"a C1 control":           "two\u009blines",
+		"a NUL":                  "cut\x00short",
+	} {
+		_, err := Prose(said)
+		if !errors.Is(err, ErrNotText) {
+			t.Errorf("%s: Prose(%q) = %v, want it refused", what, said, err)
+		}
+	}
+}
+
+func TestProse_keepsLinesAndTabs(t *testing.T) {
+	for said, want := range map[string]string{
+		"two\nparagraphs":       "two\nparagraphs",
+		"lined\tup":             "lined\tup",
+		"written on\r\nwindows": "written on\nwindows",
+		"Écrire — enfin":        "Écrire — enfin",
+		"":                      "",
+	} {
+		got, err := Prose(said)
+		if err != nil || got != want {
+			t.Errorf("Prose(%q) = %q, %v; want %q", said, got, err, want)
+		}
+	}
+}
+
+// A label is shown on one line among others, so it is held to the title's rule.
+func TestParseLabels_refusesALabelThatIsNotOneLine(t *testing.T) {
+	for _, label := range []string{"two\nlines", "esc\x1b[2J", "tab\tbed"} {
+		if _, err := ParseLabels([]string{label}); !errors.Is(err, ErrLabelNotOneLine) {
+			t.Errorf("ParseLabels(%q) = %v, want it refused", label, err)
+		}
+		if _, err := ParseLabelChange([]string{"+" + label}); !errors.Is(err, ErrLabelNotOneLine) {
+			t.Errorf("ParseLabelChange(+%q) = %v, want it refused", label, err)
+		}
+	}
+}

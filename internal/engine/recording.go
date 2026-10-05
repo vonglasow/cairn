@@ -65,6 +65,16 @@ func (e *Engine) historyOf(number int) ([]trace.Act, error) {
 	return acts, nil
 }
 
+// stoodSince is the moment a task last changed column, or was made when it
+// never has: how long it has sat where it is.
+func (e *Engine) stoodSince(number int) (time.Time, error) {
+	acts, err := e.historyOf(number)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return trace.LastNamed(acts, "column"), nil
+}
+
 // since hands back everything done from a day onward, across every task.
 func (e *Engine) since(day time.Time) ([]trace.Act, error) {
 	return e.history.ActsSince(day)

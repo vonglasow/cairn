@@ -33,3 +33,22 @@ func TestMCPServe_refusesAnAccessItCannotMakeSenseOf(t *testing.T) {
 		t.Errorf("stderr = %q, want it to name \"sideways\"", r.Stderr)
 	}
 }
+
+// An agent reaches only as far as it was trusted to on purpose: nothing given
+// is looking and nothing else.
+func TestMCPServe_looksOnlyUnlessToldOtherwise(t *testing.T) {
+	serve, _, err := NewRootCmd().Find([]string{"mcp", "serve"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := serve.Flags().Lookup("access").DefValue; got != "read" {
+		t.Errorf("--access defaults to %q, want read", got)
+	}
+}
+
+// `mcp` on its own was not understood, exactly as `task` on its own is not.
+func TestMCP_groupWithoutAVerbIsNotUnderstood(t *testing.T) {
+	if r := run(t, "mcp"); r.Code != exitUsage {
+		t.Errorf("exit = %d, want %d", r.Code, exitUsage)
+	}
+}

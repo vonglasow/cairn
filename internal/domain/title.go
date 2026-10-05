@@ -50,6 +50,31 @@ func OneLine(title string) error {
 	return nil
 }
 
+// ErrNotText is returned when what is written about a thing carries a
+// character a terminal reads as an instruction rather than as text. A
+// description is printed straight to the screen by more than one surface, and
+// an escape among it hides text, draws a link that lies about where it goes,
+// or writes to the clipboard — and an agent can be talked into writing one.
+var ErrNotText = errors.New("only text, line breaks and tabs can be written here")
+
+// instructs says whether a rune, among prose, would be read as an instruction
+// rather than shown: every control character but the line break and the tab.
+func instructs(r rune) bool {
+	return unicode.IsControl(r) && r != '\n' && r != '\t'
+}
+
+// Prose is what is written about a thing as it is kept: several lines and tabs
+// allowed, a line ending written the Windows way kept as a line break, and
+// anything a terminal would read as an instruction refused. Nothing is trimmed:
+// what somebody wrote is what is kept, or it is refused.
+func Prose(raw string) (string, error) {
+	said := strings.ReplaceAll(raw, "\r\n", "\n")
+	if strings.ContainsFunc(said, instructs) {
+		return "", fmt.Errorf("%q: %w", raw, ErrNotText)
+	}
+	return said, nil
+}
+
 // Absent is what an attribute a thing does not carry looks like. A blank would
 // read as a value nobody typed rather than as an absence.
 //

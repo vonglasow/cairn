@@ -12,6 +12,47 @@ somebody pressed, calls `internal/engine`, and draws what comes back. It decides
 nothing. It breaks one assumption the other two never did — **it stays open**,
 and the store can change underneath it. That is dealt with at the end.
 
+## Read this first
+
+The whole file in eight lines, for whoever has a change to make and not an
+afternoon to spend:
+
+- **Two tabs**, tasks and objectives; four columns and a band of three stopped
+  states under the last three, and the backlog full height.
+- **Modes**: normal stands on a column, insert holds a task, edit is the form.
+  The bar shows only what works where it is.
+- **The cursor holds a task's number**, never a place on screen — a redraw can
+  move it, a keystroke cannot land on the wrong task.
+- **`hjkl` moves the cursor; `⇧hjkl` moves the task.** Sideways is a change of
+  column, which is an edit; up and down is a place among its sisters.
+- **It decides nothing**: every change goes through the engine, and what a
+  board reads and asks is shared with the window in `internal/reading`.
+- **It stays true while the store changes**: a beat reads `data_version` and
+  redraws when another connection wrote.
+- Frames are pinned in `internal/tui/testdata`; a change that moves one is
+  written again with `UPDATE_FRAMES=1`, on purpose.
+
+## Contents
+
+- [Two tabs](#two-tabs)
+- [The board's shape](#the-boards-shape)
+- [Width](#width)
+- [A card is six lines](#a-card-is-six-lines)
+- [Colour carries what a glyph would cost width for](#colour-carries-what-a-glyph-would-cost-width-for)
+- [Glyphs](#glyphs)
+- [The modes](#the-modes)
+- [Every key](#every-key)
+- [The form](#the-form)
+- [The detail](#the-detail)
+- [Searching](#searching)
+- [Help, and the command line](#help-and-the-command-line)
+- [Objectives](#objectives)
+- [Staying true while the store changes](#staying-true-while-the-store-changes)
+- [What it is built from](#what-it-is-built-from)
+- [How the form is laid out](#how-the-form-is-laid-out)
+- [How it reaches the engine](#how-it-reaches-the-engine)
+- [Deliberately not there yet](#deliberately-not-there-yet)
+
 ## Two tabs
 
 **tasks** — the kanban, where the work is. **objectives** — the list of what the

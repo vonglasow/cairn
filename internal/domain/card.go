@@ -24,9 +24,9 @@ func Card(number int, title string, facts []Fact) string {
 		wide = max(wide, len([]rune(f.Key)))
 	}
 	var out strings.Builder
-	_, _ = fmt.Fprintf(&out, "#%d  %s\n\n", number, title)
+	fmt.Fprintf(&out, "#%d  %s\n\n", number, title)
 	for _, f := range facts {
-		_, _ = fmt.Fprintf(&out, "%s%s  %s\n", f.Key, strings.Repeat(" ", wide-len([]rune(f.Key))), OrNothing(f.Value))
+		fmt.Fprintf(&out, "%s%s  %s\n", f.Key, strings.Repeat(" ", wide-len([]rune(f.Key))), OrNothing(f.Value))
 	}
 	return out.String()
 }

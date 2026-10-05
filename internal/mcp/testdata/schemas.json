@@ -1,0 +1,3622 @@
+{
+  "backup_add": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "made": {
+          "type": "string"
+        },
+        "holds": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "made"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "backup_delete": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the backup",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "deleted": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "deleted"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "backup_list": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "backups": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "made": {
+                "type": "string"
+              },
+              "holds": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": "integer"
+                  },
+                  "objectives": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "tasks",
+                  "objectives"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "number",
+              "made"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "backups"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "backup_restore": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the backup",
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "put back": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "put back"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "backup_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the backup",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "made": {
+          "type": "string"
+        },
+        "holds": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "made"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "config_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "store": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "string"
+            },
+            "named_by": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "at",
+            "named_by"
+          ],
+          "additionalProperties": false
+        },
+        "notes": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "string"
+            },
+            "named_by": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "at",
+            "named_by"
+          ],
+          "additionalProperties": false
+        },
+        "problem": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "store",
+        "notes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "migration_apply": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the change",
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "applied"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "migration_list": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "applied": {
+                "type": "boolean"
+              },
+              "made": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "name",
+              "applied"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "holds": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "changes",
+        "holds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "migration_rollback": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "rolled_back": {
+          "type": "string"
+        },
+        "lost": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "rolled_back",
+        "lost"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "migration_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the change",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "made": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "name",
+        "applied"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_add": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the objective is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "where the objective stands",
+          "enum": [
+            "active",
+            "on-hold",
+            "reached",
+            "dropped"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the objective is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "priority",
+        "description",
+        "labels",
+        "deadline",
+        "estimate",
+        "tasks",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_delete": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the objective",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "deleted": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "deleted"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_edit": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the objective is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "number": {
+          "description": "the number of the objective",
+          "type": "integer"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "where the objective stands",
+          "enum": [
+            "active",
+            "on-hold",
+            "reached",
+            "dropped"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the objective is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "priority",
+        "description",
+        "labels",
+        "deadline",
+        "estimate",
+        "tasks",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_list": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "keep only the objectives carrying this label; named twice, only those carrying both",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "keep only the objectives carrying this priority",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the objectives standing here",
+          "enum": [
+            "active",
+            "on-hold",
+            "reached",
+            "dropped"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "progress": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "sub_tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "percent": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "percent"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "priority",
+              "description",
+              "labels",
+              "deadline",
+              "estimate",
+              "tasks",
+              "progress"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "objectives"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_search": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "named": {
+          "description": "what to look for, read the way it is shown",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "named"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "progress": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "sub_tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "percent": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "percent"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "priority",
+              "description",
+              "labels",
+              "deadline",
+              "estimate",
+              "tasks",
+              "progress"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "objectives"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "objective_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the objective",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "priority",
+        "description",
+        "labels",
+        "deadline",
+        "estimate",
+        "tasks",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_add": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "because": {
+          "description": "what is in its way and is not a task cairn holds",
+          "type": "string"
+        },
+        "blocker": {
+          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the task is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objective": {
+          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "description": "the number of the task it hangs under",
+          "type": "integer"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "spent": {
+          "description": "the time already spent on it; +30m adds, -15m takes off",
+          "type": "string"
+        },
+        "state": {
+          "description": "the column it sits in",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the task is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "parent": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "because": {
+          "type": "string"
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "time_spent": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sub_tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "number",
+        "parent",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_archive": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "archived": {
+          "description": "keep only the tasks taken off the board, instead of the ones still on it",
+          "type": "boolean"
+        },
+        "due-before": {
+          "description": "keep only the tasks due on or before this day",
+          "type": "string"
+        },
+        "label": {
+          "description": "keep only the tasks carrying this label; named twice, only those carrying both",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        },
+        "objective": {
+          "description": "keep only the tasks serving this objective",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "keep only the tasks carrying this priority",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the tasks sitting in this column",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "with-archived": {
+          "description": "keep both the tasks on the board and the ones taken off it",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "archived": {
+          "type": "integer"
+        },
+        "task": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "number": {
+              "type": "integer"
+            },
+            "parent": {
+              "type": "integer"
+            },
+            "title": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "priority": {
+              "type": "string"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "blocked_by": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            },
+            "because": {
+              "type": "string"
+            },
+            "deadline": {
+              "type": "string"
+            },
+            "estimate": {
+              "type": "string"
+            },
+            "time_spent": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            },
+            "description": {
+              "type": "string"
+            },
+            "progress": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "tasks": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "sub_tasks": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "percent": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "percent"
+              ],
+              "additionalProperties": false
+            },
+            "context": {
+              "type": "string"
+            },
+            "in_column_since": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "number",
+                  "title",
+                  "state"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "number",
+            "parent",
+            "title",
+            "state",
+            "archived",
+            "priority",
+            "labels",
+            "blocked_by",
+            "because",
+            "deadline",
+            "estimate",
+            "time_spent",
+            "objectives",
+            "description",
+            "progress"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "archived"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_delete": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "deleted": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "deleted"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_edit": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "because": {
+          "description": "what is in its way and is not a task cairn holds",
+          "type": "string"
+        },
+        "blocker": {
+          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the task is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        },
+        "objective": {
+          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "description": "the number of the task it hangs under",
+          "type": "integer"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "spent": {
+          "description": "the time already spent on it; +30m adds, -15m takes off",
+          "type": "string"
+        },
+        "state": {
+          "description": "the column it sits in",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the task is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "parent": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "because": {
+          "type": "string"
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "time_spent": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sub_tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "number",
+        "parent",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_focus": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the task to take up, or nothing to name every task in focus",
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "parent": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "because": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "time_spent": {
+                "type": "string"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "description": {
+                "type": "string"
+              },
+              "progress": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "sub_tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "percent": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "percent"
+                ],
+                "additionalProperties": false
+              },
+              "context": {
+                "type": "string"
+              },
+              "in_column_since": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "sub_tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "parent",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "description",
+              "progress"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "in_focus": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "tasks",
+        "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_label": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "archived": {
+          "description": "keep only the tasks taken off the board, instead of the ones still on it",
+          "type": "boolean"
+        },
+        "due-before": {
+          "description": "keep only the tasks due on or before this day",
+          "type": "string"
+        },
+        "label": {
+          "description": "keep only the tasks carrying this label; named twice, only those carrying both",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objective": {
+          "description": "keep only the tasks serving this objective",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "keep only the tasks carrying this priority",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "put": {
+          "description": "the label to put on them",
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the tasks sitting in this column",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "with-archived": {
+          "description": "keep both the tasks on the board and the ones taken off it",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "put"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "labelled": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "labelled"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_list": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "archived": {
+          "description": "keep only the tasks taken off the board, instead of the ones still on it",
+          "type": "boolean"
+        },
+        "due-before": {
+          "description": "keep only the tasks due on or before this day",
+          "type": "string"
+        },
+        "label": {
+          "description": "keep only the tasks carrying this label; named twice, only those carrying both",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objective": {
+          "description": "keep only the tasks serving this objective",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "keep only the tasks carrying this priority",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the tasks sitting in this column",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "with-archived": {
+          "description": "keep both the tasks on the board and the ones taken off it",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "parent": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "because": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "time_spent": {
+                "type": "string"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "described": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "number",
+              "parent",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "described"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "in_focus": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "tasks",
+        "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_move": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "description": "put it directly behind this task",
+          "type": "integer"
+        },
+        "first": {
+          "description": "put it at the head of the ones it sits with",
+          "type": "boolean"
+        },
+        "last": {
+          "description": "put it behind all the ones it sits with",
+          "type": "boolean"
+        },
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "parent": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "because": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "time_spent": {
+                "type": "string"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "described": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "number",
+              "parent",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "described"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "in_focus": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "tasks",
+        "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_search": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "archived": {
+          "description": "keep only the tasks taken off the board, instead of the ones still on it",
+          "type": "boolean"
+        },
+        "due-before": {
+          "description": "keep only the tasks due on or before this day",
+          "type": "string"
+        },
+        "label": {
+          "description": "keep only the tasks carrying this label; named twice, only those carrying both",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "named": {
+          "description": "what to look for, read the way it is shown",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objective": {
+          "description": "keep only the tasks serving this objective",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "keep only the tasks carrying this priority",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the tasks sitting in this column",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "with-archived": {
+          "description": "keep both the tasks on the board and the ones taken off it",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "named"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "parent": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "because": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "time_spent": {
+                "type": "string"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "described": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "number",
+              "parent",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "described"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "in_focus": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "tasks",
+        "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "parent": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "because": {
+          "type": "string"
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "time_spent": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sub_tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "number",
+        "parent",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_unarchive": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "parent": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "because": {
+          "type": "string"
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "estimate": {
+          "type": "string"
+        },
+        "time_spent": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sub_tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "number",
+        "parent",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_unfocus": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the task to let go of, or nothing to let go of them all",
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "parent": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "because": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "estimate": {
+                "type": "string"
+              },
+              "time_spent": {
+                "type": "string"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "description": {
+                "type": "string"
+              },
+              "progress": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "sub_tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "percent": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "percent"
+                ],
+                "additionalProperties": false
+              },
+              "context": {
+                "type": "string"
+              },
+              "in_column_since": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "sub_tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "state"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "parent",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "description",
+              "progress"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "in_focus": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "tasks",
+        "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "timesheet_add": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the task the time was spent on",
+          "type": "integer"
+        },
+        "on": {
+          "description": "the day it was spent; today when left out",
+          "type": "string"
+        },
+        "time": {
+          "description": "how long: 1h, 45m, 1h30m; a length under zero, -30m, takes some back",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "time"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "minutes": {
+                "type": "integer"
+              },
+              "tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "minutes": {
+                      "type": "integer"
+                    },
+                    "left_open_at_midnight": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "minutes",
+                    "left_open_at_midnight"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "day",
+              "minutes",
+              "tasks"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "timesheet_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "since": {
+          "description": "the first day to say; today when left out",
+          "type": "string"
+        },
+        "until": {
+          "description": "the last day to say; today when left out",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "minutes": {
+                "type": "integer"
+              },
+              "tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "minutes": {
+                      "type": "integer"
+                    },
+                    "left_open_at_midnight": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "minutes",
+                    "left_open_at_midnight"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "day",
+              "minutes",
+              "tasks"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "trace_list": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "since": {
+          "description": "the first day to look at; today when left out",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "integer"
+              },
+              "did": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "task",
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "acts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "trace_show": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "integer"
+              },
+              "did": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "task",
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "acts"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

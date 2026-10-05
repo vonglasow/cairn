@@ -503,3 +503,19 @@ func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
 		}
 	}
 }
+
+// What is written about a task reaches a terminal as it was written, from
+// more than one surface, so an escape among it is refused before it is kept.
+func TestEngine_refusesProseATerminalWouldObey(t *testing.T) {
+	for name, c := range map[string]Changes{
+		"description": {Description: of("look \x1b]52;c;aGk=\x07 here")},
+		"because":     {State: of("blocked"), Because: of("waiting\x1b[8m on legal")},
+	} {
+		if _, err := openEngine(t).add("Write the spec", c); !errors.Is(err, domain.ErrNotText) {
+			t.Errorf("%s: err = %v, want ErrNotText", name, err)
+		}
+	}
+	if _, err := openEngine(t).addObjective("Ship cairn", ObjectiveChanges{Description: of("bell\x07")}); !errors.Is(err, domain.ErrNotText) {
+		t.Errorf("objective: err = %v, want ErrNotText", err)
+	}
+}

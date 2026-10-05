@@ -267,3 +267,16 @@ func TestSheetText_writesEachDayTaskByTask(t *testing.T) {
 		t.Errorf("an empty sheet reads %q", got)
 	}
 }
+
+// What a task was born with is left out, and what was done to it afterwards
+// is not: the listing reads on past a birth.
+func TestList_readsOnPastABirth(t *testing.T) {
+	got := List([]Act{
+		acted(1, Created, "", "", "", "", 9, 0),
+		acted(1, Created, "title", "", "Write the spec", "", 9, 0),
+		acted(1, Changed, "priority", "normal", "high", "", 10, 0),
+	})
+	if !strings.Contains(got, "high") {
+		t.Errorf("what was done after the birth is gone:\n%s", got)
+	}
+}

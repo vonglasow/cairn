@@ -70,11 +70,7 @@ func readLabel(_, value string, signed bool) (string, error) {
 	if !signed {
 		return value, nil
 	}
-	name := strings.ToLower(strings.TrimSpace(value))
-	if name == "" {
-		return "", ErrLabelRequired
-	}
-	return name, nil
+	return labelNamed(value)
 }
 
 // SplitSign takes the leading + or - off a value, if it carries one, and hands

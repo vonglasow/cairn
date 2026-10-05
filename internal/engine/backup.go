@@ -25,8 +25,10 @@ var BackupAdd = Operation{
 	Verb:    "add",
 	Short:   "Back up the store as it stands",
 	Does:    "Back up the store as it stands.",
+	Example: "cairn backup add",
 	Level:   Write,
 	Needs:   NoStore,
+	Again:   DoesItAgain,
 	Answers: BackupShape{},
 	Run: func(on On, _ Input) (Answer, error) {
 		// Counted before backing up, not after: what is announced is what was
@@ -49,6 +51,7 @@ var BackupList = Operation{
 	Verb:    "list",
 	Short:   "List every backup",
 	Does:    "List every backup.",
+	Example: "cairn backup list",
 	Level:   Read,
 	Needs:   NoStore,
 	Answers: Kept{},
@@ -73,6 +76,7 @@ var BackupShow = Operation{
 	Verb:    "show",
 	Short:   "Say when a backup was made and what it holds",
 	Does:    "Say when a backup was made and what it holds.",
+	Example: "cairn backup show 3",
 	Level:   Read,
 	Needs:   NoStore,
 	Answers: BackupShape{},
@@ -99,8 +103,10 @@ var BackupDelete = Operation{
 	Verb:    "delete",
 	Short:   "Delete a backup",
 	Does:    "Delete a backup.",
+	Example: "cairn backup delete 3 --yes",
 	Level:   Full,
 	Needs:   NoStore,
+	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
@@ -116,12 +122,15 @@ var BackupDelete = Operation{
 
 // BackupRestore puts a backup back, the most recent one unless told otherwise.
 var BackupRestore = Operation{
-	Thing:   "backup",
-	Verb:    "restore",
-	Short:   "Put a backup back, the most recent one unless told otherwise",
-	Does:    "Put a backup back, the most recent one unless told otherwise.",
+	Thing: "backup",
+	Verb:  "restore",
+	Short: "Put a backup back, the most recent one unless told otherwise",
+	Does:  "Put a backup back, the most recent one unless told otherwise.",
+	Example: `cairn backup restore --yes
+cairn backup restore 3 --yes`,
 	Level:   Full,
 	Needs:   NoStore,
+	Again:   DoesItAgain,
 	Answers: PutBack{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},

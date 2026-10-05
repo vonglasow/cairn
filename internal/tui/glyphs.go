@@ -1,8 +1,9 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
+
+	"cairn/internal/engine"
 )
 
 // The two sets of glyphs the board may draw with, and nothing between them.
@@ -84,7 +85,7 @@ var plain = Glyphs{
 // ErrNotASet is returned when a set is asked for by a name that is not one of
 // the two. Named, so a surface can tell a request it understood and refused
 // from one it could not read at all.
-var ErrNotASet = errors.New("glyphs are drawn from one of two sets")
+var ErrNotASet = engine.Refusing("not-a-glyph-set", "glyphs are drawn from one of two sets")
 
 // ParseSet reads which set was asked for, and refuses anything else by name.
 // Written here rather than at the surface: which sets exist is the board's to

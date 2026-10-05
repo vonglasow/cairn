@@ -185,6 +185,22 @@ func (w *world) iAskedItToAddATaskTitled(title string) error {
 	return w.callTool("task_add", map[string]any{"title": title})
 }
 
+// itSaysTheRefusalIs reads the kind and the reason a refusal carries beside
+// its sentence, as a client receives them: under _meta, over the wire.
+func (w *world) itSaysTheRefusalIs(kind, reason string) error {
+	if w.result == nil {
+		return fmt.Errorf("nothing came back")
+	}
+	said, ok := w.result.Meta["cairn/refusal"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("_meta = %v, want the refusal under cairn/refusal", w.result.Meta)
+	}
+	if said["kind"] != kind || said["reason"] != reason {
+		return fmt.Errorf("refusal = %v, want %s because %s", said, kind, reason)
+	}
+	return nil
+}
+
 // iCallTaskList calls `task_list`, keeping what it answered for the next
 // step to read.
 // A tool asked for by name and nothing else. One step for every tool that
@@ -925,6 +941,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^the task has no deadline$`, w.theTaskHasNoDeadline)
 		sc.Step(`^it is still titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
 		sc.Step(`^it answers that it failed$`, w.itAnswersThatItFailed)
+		sc.Step(`^it says the refusal is "([^"]*)", because "([^"]*)"$`, w.itSaysTheRefusalIs)
 		sc.Step(`^the answer says (.+)$`, w.theAnswerSays)
 		sc.Step(`^the call itself fails$`, w.theCallItselfFails)
 		sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`,

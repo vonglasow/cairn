@@ -38,6 +38,22 @@ type Worked struct {
 	LeftOpen bool
 }
 
+// LastNamed is the moment the last of these acts naming a field was done, the
+// creation included, or nothing when none named it. How long a task has sat
+// in its column is this, asked of the column: the one date nothing a task
+// carries implies, read off what was done to it rather than kept beside it.
+func LastNamed(acts []Act, field string) time.Time {
+	var last time.Time
+	for _, a := range acts {
+		var f fact
+		a.Tell(&f)
+		if f.field == field {
+			last = f.at
+		}
+	}
+	return last
+}
+
 // quarter is what a sheet is filled in by. A function and not a constant: a
 // constant's arithmetic runs on no line, so nothing would notice it changing.
 func quarter() time.Duration { return 15 * time.Minute }
@@ -86,16 +102,12 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 				delete(open, f.task)
 			}
 		case TimeAdded:
-			day, err := domain.ParseDeadline(f.was)
-			length, bad := time.ParseDuration(f.became)
-			if err != nil || bad != nil {
-				continue
+			if on, length, read := addedOn(f, loc); read {
+				if byHand[on] == nil {
+					byHand[on] = map[int]time.Duration{}
+				}
+				byHand[on][f.task] += length
 			}
-			on := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
-			if byHand[on] == nil {
-				byHand[on] = map[int]time.Duration{}
-			}
-			byHand[on][f.task] += length
 		}
 	}
 	for task, from := range open {
@@ -113,6 +125,22 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 		sheet.Days = append(sheet.Days, worked)
 	}
 	return sheet
+}
+
+// addedOn reads time added by hand: the day it was added for, how long, and
+// whether both could be read at all. Each refusal is its own: joined, one of
+// them could be read the other way round and nothing would tell — a length
+// nobody can read counted as nothing looks the same as one not counted.
+func addedOn(f fact, loc *time.Location) (time.Time, time.Duration, bool) {
+	day, err := domain.ParseDeadline(f.was)
+	if err != nil {
+		return time.Time{}, 0, false
+	}
+	length, err := time.ParseDuration(f.became)
+	if err != nil {
+		return time.Time{}, 0, false
+	}
+	return time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc), length, true
 }
 
 // cutAtMidnight is a run of focus cut at the first midnight after it began.
@@ -206,14 +234,15 @@ func Hours(d time.Duration) string {
 type fact struct {
 	task        int
 	did         string
+	field       string
 	was, became string
 	at          time.Time
 }
 
 func (f *fact) On(n int)          { f.task = n }
 func (f *fact) Did(what string)   { f.did = what }
-func (f *fact) Changing(string)   {}
-func (f *fact) NothingNamed()     {}
+func (f *fact) Changing(s string) { f.field = s }
+func (f *fact) NothingNamed()     { f.field = "" }
 func (f *fact) Was(v string)      { f.was = v }
 func (f *fact) WasNothing()       {}
 func (f *fact) Became(v string)   { f.became = v }

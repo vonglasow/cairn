@@ -364,3 +364,121 @@ func TestVault_backsUpADamagedStoreAsItLies(t *testing.T) {
 		t.Errorf("the backup holds %q, %v, want the file as it lay", kept, err)
 	}
 }
+
+// ownerOnly fails the test when a file can be read by anybody but its owner.
+func ownerOnly(t *testing.T, path string) {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	if mode := info.Mode().Perm(); mode&0o077 != 0 {
+		t.Errorf("%s is %v, want readable by its owner alone: the folder it sits in is", filepath.Base(path), mode)
+	}
+}
+
+func TestVault_keepsABackupForItsOwnerAlone(t *testing.T) {
+	v, _ := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	ownerOnly(t, made.Path)
+}
+
+func TestVault_keepsABackupOfADamagedStoreForItsOwnerAlone(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if err := os.WriteFile(path, []byte("not a database at all"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	made, err := NewVault(path).Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	ownerOnly(t, made.Path)
+}
+
+func TestVault_keepsARestoredStoreForItsOwnerAlone(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if err := v.Restore(made.Number); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	ownerOnly(t, path)
+}
+
+func TestVault_skipsANumberAnotherCairnTookMeanwhile(t *testing.T) {
+	v, _ := vaultOn(t, "Write the spec")
+	if _, err := v.Make(); err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	// Another cairn read the same last number and made its backup first.
+	theirs := v.pathOf(2)
+	if err := os.WriteFile(theirs, []byte("theirs"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	made, err := v.Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if made.Number != 3 {
+		t.Errorf("Number = %d, want 3: a number another cairn took is not taken again", made.Number)
+	}
+	if got, _ := os.ReadFile(theirs); string(got) != "theirs" {
+		t.Errorf("the other cairn's backup was overwritten")
+	}
+}
+
+func TestVault_refusesToPutBackADamagedBackup(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if err := os.WriteFile(made.Path, []byte("not a database at all"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if err := v.Restore(made.Number); !errors.Is(err, ErrDamagedBackup) {
+		t.Fatalf("Restore = %v, want ErrDamagedBackup", err)
+	}
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v — the store was replaced by what could not be read", err)
+	}
+	defer func() { _ = s.Close() }()
+	if held, _ := s.Held(); held.Tasks != 1 {
+		t.Errorf("%d tasks, want the store left as it was", held.Tasks)
+	}
+}
+
+func TestOpen_keepsAStoreWhosePathReadsLikeAnAddress(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "odd?mode=ro#and 100%.db")
+	held(t, path, "Write the spec")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("the store is not where it was asked to be: %v", err)
+	}
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+	if held, _ := s.Held(); held.Tasks != 1 {
+		t.Errorf("%d tasks, want the one kept", held.Tasks)
+	}
+	made, err := NewVault(path).Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if got, _ := NewVault(path).Holds(made); got.Tasks != 1 {
+		t.Errorf("the backup holds %d tasks, want 1", got.Tasks)
+	}
+}
+
+func TestOpen_makesAStoreForItsOwnerAlone(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	held(t, path, "Write the spec")
+	ownerOnly(t, path)
+}

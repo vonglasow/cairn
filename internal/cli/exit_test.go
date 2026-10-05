@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -41,51 +41,76 @@ func TestCodeFor_tellsARequestItUnderstoodAndRefused(t *testing.T) {
 }
 
 func TestCodeFor_tellsARequestItDidNotUnderstand(t *testing.T) {
-	if got := codeFor(errors.New("unknown flag: --colour")); got != exitUsage {
+	if got := codeFor(engine.Misread(errors.New("unknown flag: --colour"))); got != exitUsage {
 		t.Errorf("codeFor = %d, want %d for something it could not parse", got, exitUsage)
 	}
 }
 
-// everyRefusalIsListed walks the source of every package that can refuse a
-// request and checks each error it declares is either in the refusals list or
-// named here as something else. A refusal left out of the list leaves the shell
-// with code 2 — "I did not understand you" — for a request that was understood
-// perfectly well and simply could not be granted.
-var notARefusal = map[string]string{
-	"ErrStore":       "the store itself is unusable: code 3",
-	"ErrStoreBehind": "the store itself is unusable: code 3",
-	"ErrNewerStore":  "the store itself is unusable: code 3",
-	"ErrNotAStore":   "the store itself is unusable: code 3",
+// Kept for a request understood and still refused, and for whatever nobody
+// foresaw: a failure is "could not do it" unless something said it was not
+// understood — a parse error that has to be guessed at is a guess.
+func TestCodeFor_tellsAFailureNobodyForesawAsOne(t *testing.T) {
+	if got := codeFor(errors.New("the disk is on fire")); got != exitRefused {
+		t.Errorf("codeFor = %d, want %d for a failure nobody foresaw", got, exitRefused)
+	}
 }
 
-func TestEveryRefusalHasItsCode(t *testing.T) {
-	listed, err := os.ReadFile("exit.go")
-	if err != nil {
-		t.Fatal(err)
+func TestMain_tellsEveryRequestItDidNotUnderstand(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	for _, args := range [][]string{
+		{"nope"},
+		{"task", "nope"},
+		{"task", "show"},
+		{"task", "show", "1", "2"},
+		{"task", "list", "--colour"},
+		{"task", "show", "four"},
+	} {
+		if got := run(t, args...).Code; got != exitUsage {
+			t.Errorf("%v: exit code = %d, want %d", args, got, exitUsage)
+		}
 	}
-	named := regexp.MustCompile(`(?m)^(?:var )?\t?(Err[A-Za-z]+) += +(?:errors\.New|fmt\.Errorf)`)
-	for _, where := range []string{"domain", "engine", "objective", "task", "store", "config", "mcp", "tui"} {
-		files, err := filepath.Glob(filepath.Join("..", where, "*.go"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, file := range files {
-			if strings.HasSuffix(file, "_test.go") {
-				continue
-			}
-			source, err := os.ReadFile(file)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, found := range named.FindAllStringSubmatch(string(source), -1) {
-				name := found[1]
-				if _, fine := notARefusal[name]; fine {
-					continue
-				}
-				if !strings.Contains(string(listed), "."+name+",") {
-					t.Errorf("%s declares %s and exit.go does not say what code it is", file, name)
-				}
-			}
-		}
+}
+
+func TestMain_answersARefusalAsJSONWithItsKindAndReason(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	var got engine.Refusal
+	if err := json.Unmarshal([]byte(run(t, "task", "show", "1", "--json").Stdout), &got); err != nil {
+		t.Fatalf("not JSON: %v", err)
+	}
+	if got.Kind != engine.KindRefused || got.Reason != "no-such-task" {
+		t.Errorf("refusal = %+v, want refused/no-such-task", got)
+	}
+}
+
+// What is written after `--` is a value, whatever it reads like.
+func TestAskedForJSON_readsNothingAfterTheDoubleDash(t *testing.T) {
+	if askedForJSON([]string{"task", "add", "--", "--json"}) {
+		t.Error("a title written after -- was read as asking for JSON")
+	}
+}
+
+// failing is a stream nothing can be written to.
+type failing struct{}
+
+func (failing) Write([]byte) (int, error) { return 0, errors.New("the pipe is closed") }
+
+// A refusal that cannot be written as JSON is still said, where a person
+// reads: a machine reading an empty stream learns nothing either way.
+func TestMain_saysARefusalItCouldNotWriteAsJSON(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	var stderr bytes.Buffer
+	code := Main(context.Background(), []string{"task", "show", "1", "--json"}, strings.NewReader(""), failing{}, &stderr)
+	if code == exitOK || !strings.Contains(stderr.String(), "no such task") {
+		t.Errorf("exit %d, stderr %q: want the refusal said on standard error", code, stderr.String())
+	}
+}
+
+// A deletion refused for want of --yes names what it would have deleted.
+func TestMain_namesWhatAnUnconfirmedDeletionWouldTake(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	mustRun(t, "task", "add", "Write the spec")
+	r := run(t, "task", "delete", "1")
+	if r.Code != exitRefused || !strings.Contains(strings.ToLower(r.Stderr), "task 1") || !strings.Contains(r.Stderr, "--yes") {
+		t.Errorf("exit %d, stderr %q: want the task named and --yes asked for", r.Code, r.Stderr)
 	}
 }

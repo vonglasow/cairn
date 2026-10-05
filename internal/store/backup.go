@@ -22,6 +22,11 @@ var (
 	// Backing it up anyway would answer "backup made, 0 tasks", which turns a
 	// stranger's file into an empty store of yours.
 	ErrNotAStore = errors.New("the store cannot be read")
+
+	// ErrDamagedBackup: the backup asked for is not a database SQLite can
+	// read whole. Putting it in place would swap a store that works for one
+	// that does not; it stays where it is, for somebody to look at by hand.
+	ErrDamagedBackup = errors.New("the backup cannot be read whole")
 )
 
 // backupFolder sits beside the store rather than inside it, so a backup is never
@@ -53,6 +58,18 @@ func (v *Vault) Make() (domain.Backup, error) {
 	number, err := v.nextNumber()
 	if err != nil {
 		return domain.Backup{}, err
+	}
+	// The number is taken by making its file, and a file somebody else made
+	// first means somebody else took it: two cairns reading the same last
+	// number wrote their backups to the same name, and the second replaced
+	// the first without a word.
+	err = claim(v.pathOf(number))
+	for errors.Is(err, os.ErrExist) {
+		number++
+		err = claim(v.pathOf(number))
+	}
+	if err != nil {
+		return domain.Backup{}, fmt.Errorf("making backup %d: %w", number, err)
 	}
 	path := v.pathOf(number)
 	if err := snapshot(v.store, path); err != nil {
@@ -139,6 +156,9 @@ func (v *Vault) Restore(number int) error {
 	one, err := v.Find(number)
 	if err != nil {
 		return err
+	}
+	if err := whole(one.Path); err != nil {
+		return fmt.Errorf("backup %d: %w: %w — backup: %s", number, ErrDamagedBackup, err, one.Path)
 	}
 	if _, err := v.Make(); err != nil {
 		return err
@@ -294,14 +314,40 @@ func snapshot(from, to string) error {
 	if _, err := os.Stat(from); err != nil {
 		return fmt.Errorf("reading %s: %w", from, err)
 	}
-	db, err := sql.Open("sqlite", "file:"+from+"?mode=ro&_pragma=busy_timeout("+strconv.Itoa(heldFor)+")")
+	db, err := readOnly(from)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", from, err)
 	}
 	defer func() { _ = db.Close() }()
+	// Written into the empty file Make claimed, which SQLite accepts and which
+	// keeps the permissions it was made with.
 	if _, err := db.Exec(`VACUUM INTO ?`, to); err != nil {
-		_ = os.Remove(to)
 		return copyFile(from, to)
+	}
+	return nil
+}
+
+// readOnly opens a file to be read and nothing else, waiting out a writer.
+func readOnly(path string) (*sql.DB, error) {
+	return sql.Open("sqlite", addressOf(path, "mode=ro&_pragma=busy_timeout("+strconv.Itoa(heldFor)+")"))
+}
+
+// whole says whether a file is a database SQLite reads from end to end. Asked
+// of a backup before it replaces the store: a backup of a damaged store is
+// kept as it lay, and putting one back would trade a store that opens for
+// one that does not.
+func whole(path string) error {
+	db, err := readOnly(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+	// One verdict, whichever way it failed: a file SQLite cannot read at all
+	// answers no row, and the verdict stays what it was set to.
+	said := "it is not a database SQLite can read"
+	_ = db.QueryRow(`PRAGMA quick_check`).Scan(&said)
+	if said != "ok" {
+		return errors.New(said)
 	}
 	return nil
 }
@@ -314,7 +360,7 @@ func copyFile(from, to string) error {
 	}
 	defer func() { _ = source.Close() }()
 
-	target, err := os.Create(to)
+	target, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("writing %s: %w", to, err)
 	}

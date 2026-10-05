@@ -18,6 +18,7 @@ var MigrationList = Operation{
 	Verb:    "list",
 	Short:   "Name every change to the store, applied or waiting",
 	Does:    "Name every change to the store, applied or waiting.",
+	Example: "cairn migration list",
 	Level:   Read,
 	Needs:   AStoreBehind,
 	Answers: Ledger{},
@@ -40,6 +41,7 @@ var MigrationShow = Operation{
 	Verb:    "show",
 	Short:   "Say what a change does, and what undoing it does",
 	Does:    "Say what a change does, and what undoing it does.",
+	Example: "cairn migration show 4",
 	Level:   Read,
 	Needs:   AStoreBehind,
 	Answers: migration.Shape{},
@@ -58,12 +60,15 @@ var MigrationShow = Operation{
 
 // MigrationApply makes the changes the store is missing, or one of them.
 var MigrationApply = Operation{
-	Thing:   "migration",
-	Verb:    "apply",
-	Short:   "Make the changes the store is missing, or one of them",
-	Does:    "Make the changes the store is missing, or one of them.",
+	Thing: "migration",
+	Verb:  "apply",
+	Short: "Make the changes the store is missing, or one of them",
+	Does:  "Make the changes the store is missing, or one of them.",
+	Example: `cairn migration apply
+cairn migration apply 4`,
 	Level:   Write,
 	Needs:   AStoreBehind,
+	Again:   ChangesNothingMore,
 	Answers: Applied{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a migration", Means: "the number of the change"},
@@ -94,8 +99,10 @@ var MigrationRollback = Operation{
 	Verb:    "rollback",
 	Short:   "Unmake the last change applied to the store",
 	Does:    "Unmake the last change applied to the store.",
+	Example: "cairn migration rollback --yes",
 	Level:   Full,
 	Needs:   AStoreBehind,
+	Again:   DoesItAgain,
 	Answers: migration.RolledBack{},
 	Run: func(on On, _ Input) (Answer, error) {
 		rolled, err := on.Engine.rollBack(on.Path)

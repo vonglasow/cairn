@@ -536,3 +536,73 @@ func TestOpen_reportsAStoreItCannotCreateTheLedgerIn(t *testing.T) {
 		t.Error("Open on a read-only empty file returned no error")
 	}
 }
+
+// knowing swaps the changes this cairn knows for the first shape and one more,
+// for as long as a test runs.
+func knowing(t *testing.T, does, undoes string) {
+	t.Helper()
+	was := migration.Known
+	t.Cleanup(func() { migration.Known = was })
+	var a migration.AsTold
+	a.Named("a change written to fail half way")
+	a.Does(does)
+	a.Undoes(undoes)
+	migration.Known = []migration.Migration{was[0], a.Migration()}
+}
+
+func TestApply_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
+	knowing(t, `CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	if _, err := s.Apply(2); err == nil {
+		t.Fatal("Apply succeeded, want the second statement refused")
+	}
+	if holdsTable(t, s, "half") {
+		t.Error("the first statement was kept: a change is made whole or not at all")
+	}
+	if waiting, _ := s.Waiting(); len(waiting) != 1 {
+		t.Errorf("%d changes waiting, want the failed one still waiting", len(waiting))
+	}
+}
+
+func TestApplyAll_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
+	knowing(t, `CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	if _, err := s.ApplyAll(); err == nil {
+		t.Fatal("ApplyAll succeeded, want the second statement refused")
+	}
+	if holdsTable(t, s, "half") {
+		t.Error("the first statement was kept: a change is made whole or not at all")
+	}
+}
+
+func TestRollBack_leavesTheChangeWholeWhenUndoingItFailsHalfWay(t *testing.T) {
+	knowing(t, `CREATE TABLE half (x)`, `DROP TABLE half; DROP TABLE nowhere;`)
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+	if _, err := s.Apply(2); err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+
+	if _, err := s.RollBack(); err == nil {
+		t.Fatal("RollBack succeeded, want the second statement refused")
+	}
+	if !holdsTable(t, s, "half") {
+		t.Error("the table was dropped though the rollback failed: undone whole or not at all")
+	}
+	if waiting, _ := s.Waiting(); len(waiting) != 0 {
+		t.Errorf("%d changes waiting, want the change still applied", len(waiting))
+	}
+}

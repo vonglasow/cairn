@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/migration"
@@ -49,6 +50,21 @@ func ParseLevel(name string) (Level, error) {
 	}
 	return 0, fmt.Errorf("%q: expected \"read\", \"write\" or \"full\": %w", name, ErrNotALevel)
 }
+
+// Again is what calling an operation a second time, with the same arguments,
+// does to the store. A client that retries a call it is unsure went through
+// needs to know whether the retry costs anything.
+type Again int
+
+const (
+	_ Again = iota // the zero value: never said.
+	// ChangesNothingMore is a second call leaving the store as the first did —
+	// or being refused for having nothing left to do.
+	ChangesNothingMore
+	// DoesItAgain is a second call adding again — another task, another backup,
+	// more time spent, one more change undone.
+	DoesItAgain
+)
 
 // Needs says which way the store has to be opened.
 type Needs int
@@ -207,10 +223,20 @@ type Operation struct {
 	Short string
 	// Does is one or two sentences: cobra's Long and the tool's description.
 	Does string
+	// Example is how it is typed, a line per example: cobra's Example. A
+	// person reads one faster than a list of what the operation takes.
+	Example string
 	// Level is how far an agent may reach to call it.
 	Level Level
 	// Needs says which way the store has to be opened for it.
 	Needs Needs
+	// Again says what calling it a second time does. Every operation that
+	// writes says it; one that only reads changes nothing however often.
+	Again Again
+	// Overwrites says it can replace what was already written — a
+	// description emptied, a set of labels replaced — rather than only add
+	// to it. Losing work outright is said by its Level.
+	Overwrites bool
 	// Takes is what it accepts.
 	Takes []Argument
 	// Run carries out the operation against whatever it was given to work on.
@@ -261,24 +287,24 @@ func (o Operation) Check(in Input) error {
 	}
 	for name := range in.Given {
 		if !takes[name] {
-			return fmt.Errorf("%q: %s takes no argument by that name", name, o.Line())
+			return Misread(fmt.Errorf("%q: %s takes no argument by that name", name, o.Line()))
 		}
 	}
 	for name := range in.Listed {
 		if !takes[name] {
-			return fmt.Errorf("%q: %s takes no argument by that name", name, o.Line())
+			return Misread(fmt.Errorf("%q: %s takes no argument by that name", name, o.Line()))
 		}
 	}
 	for _, arg := range o.Takes {
 		if arg.Required && !in.Named(arg.Name) {
-			return fmt.Errorf("%s needs %q, and was not given one", o.Line(), arg.Name)
+			return Misread(fmt.Errorf("%s needs %q, and was not given one", o.Line(), arg.Name))
 		}
 		if listed, named := in.Listed[arg.Name]; arg.Required && named && len(listed) == 0 {
-			return fmt.Errorf("%s needs at least one %q, and was given none", o.Line(), arg.Name)
+			return Misread(fmt.Errorf("%s needs at least one %q, and was given none", o.Line(), arg.Name))
 		}
 		given, named := in.Given[arg.Name]
 		if arg.Required && arg.Kind == Number && named && given == "" {
-			return fmt.Errorf("%s needs %q, and was given nothing", o.Line(), arg.Name)
+			return Misread(fmt.Errorf("%s needs %q, and was given nothing", o.Line(), arg.Name))
 		}
 		if !named || given == "" {
 			continue
@@ -286,7 +312,7 @@ func (o Operation) Check(in Input) error {
 		switch arg.Kind {
 		case Number:
 			if _, err := strconv.Atoi(given); err != nil {
-				return fmt.Errorf("%q: %s number is expected", given, arg.Of)
+				return Misread(fmt.Errorf("%q: %s number is expected", given, arg.Of))
 			}
 		case Day:
 			// A narrowing reads a day and compares it against a column of
@@ -357,7 +383,11 @@ type Answer struct {
 	// elsewhere: a directory named for its number under the notes. Composed,
 	// never looked at — see docs/context.md. Empty when the caller did not say
 	// where the notes are.
-	Context           string
+	Context string
+	// StoodSince is the moment the task shown last changed column, or was
+	// made: how long it has sat where it is. Read off its history, never
+	// kept beside it — see docs/ordering.md.
+	StoodSince        time.Time
 	Tasks             []task.Task
 	Matched           []task.Task
 	Under             []task.Task

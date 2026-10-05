@@ -231,11 +231,21 @@ backups is fifty times that. It is also answered by keeping fewer backups.
   to look at and a concrete reason to cut.
 - **A reading of a day or a week.** The timesheet gives the hours raw on
   purpose. What a good day looks like, what counts as an interruption — those
-  are judgements, and cairn does not make them.
+  are judgements, and cairn does not make them. Hours gathered by objective or
+  by label are not a judgement, and they are not here either: nothing has asked
+  for them, and a sheet is filled in from the raw hours by whoever fills it.
 - **The order of the whole list at a past moment.** See above: the act is
   traced, not its consequences.
 - **Putting a task back to how it was.** The history makes it possible to work
   out; nothing here does it. Reading and undoing are two different asks.
+
+## How long a task has sat where it is
+
+The one date nothing a task carries implies is read from here, not kept beside
+the task: `task show` says `in todo since 2026-09-26 · 9 days`, the moment of
+the last act that named the column, or of the creation when none has. The rule
+is `trace.LastNamed`, arithmetic over acts like the timesheet's, so it lives
+with them; the engine only asks it of a task's history.
 
 ## One thing a restore takes with it
 
