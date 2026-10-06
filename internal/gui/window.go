@@ -88,6 +88,11 @@ type Window struct {
 	chosenGoal bool
 
 	scroll [Columns]int
+	// lanes is the same for the three lanes of the band. They were left
+	// unscrolled once, on the grounds that a third stopped task is a sign to
+	// go and unblock something — and a lane holding more than two then hid
+	// the rest where neither the wheel nor the arrows could reach them.
+	lanes [3]int
 	// goals is how far down the objectives somebody is. Its own number and not
 	// a column's: the objectives are one list across the whole board, and the
 	// four columns are four.
@@ -355,6 +360,9 @@ func (w Window) Look() Window {
 	for i := range Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}
+	for i := range w.lanes {
+		w.lanes[i] = w.settledLane(i, w.lanes[i])
+	}
 	return w
 }
 
@@ -381,6 +389,12 @@ func (w Window) stateOf(number int) string {
 func (w Window) settled(column, want int) int {
 	l := w.Layout()
 	most := max(0, len(w.inColumn(column))*CardHeight-l.Column[column].H)
+	return min(most, max(0, want))
+}
+
+// settledLane is the same for a lane of the band.
+func (w Window) settledLane(lane, want int) int {
+	most := max(0, len(w.inLane(lane))*CardHeight-w.Layout().Lane[lane].H)
 	return min(most, max(0, want))
 }
 

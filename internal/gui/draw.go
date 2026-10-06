@@ -353,7 +353,7 @@ func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
 		for at, c := range w.inLane(lane) {
-			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, 0), c, c.Number == w.Chosen())
+			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, w.lanes[lane]), c, c.Number == w.Chosen())
 		}
 		clipped.Pop()
 	}

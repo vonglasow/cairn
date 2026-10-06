@@ -310,6 +310,28 @@ func (w *world) isScrolled(column string) error {
 	return nil
 }
 
+func (w *world) laneIsScrolled(kind string) error {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	if w.w.lanes[lane] == w.laneScrolled[lane] {
+		return fmt.Errorf("the lane %q did not move", kind)
+	}
+	return nil
+}
+
+func (w *world) laneIsNotScrolled(kind string) error {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	if w.w.lanes[lane] != w.laneScrolled[lane] {
+		return fmt.Errorf("the lane %q moved and should not have", kind)
+	}
+	return nil
+}
+
 func (w *world) isNotScrolled(column string) error {
 	at := reading.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] != w.scrolled[at] {
@@ -544,6 +566,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail is closed$`, w.detailClosed)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
+	sc.Then(`^the lane "([^"]*)" is scrolled$`, w.laneIsScrolled)
+	sc.Then(`^the lane "([^"]*)" is not scrolled$`, w.laneIsNotScrolled)
 	sc.Then(`^nothing was asked of the engine$`, w.askedNothing)
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Then(`^the engine was not asked "([^"]*)"$`, w.wasNotAsked)

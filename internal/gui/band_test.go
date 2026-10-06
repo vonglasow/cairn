@@ -203,6 +203,33 @@ func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 	}
 }
 
+// A lane of the band is scrolled the same way, between the same two ends, and
+// leaves the columns above it where they were.
+func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
+	f := newFake()
+	var many []reading.Card
+	for i := 1; i <= 7; i++ {
+		many = append(many, reading.Card{Number: i, Title: "Task", State: "watching"})
+	}
+	w := holding(f, many...)
+
+	l := w.Layout()
+	most := len(many)*CardHeight - l.Lane[1].H
+	over := Point{X: l.Lane[1].X + l.Lane[1].W/2, Y: l.Lane[1].Y + l.Lane[1].H/2}
+
+	w = w.Scroll(over, CardHeight*100)
+	if w.lanes[1] != most {
+		t.Errorf("the lane scrolled to %d, and its end is %d", w.lanes[1], most)
+	}
+	if w.scroll != [Columns]int{} {
+		t.Errorf("scrolling a lane moved the columns: %v", w.scroll)
+	}
+	w = w.Scroll(over, -CardHeight*100)
+	if w.lanes[1] != 0 {
+		t.Errorf("the lane scrolled back to %d", w.lanes[1])
+	}
+}
+
 // A point in no column at all scrolls nothing.
 func TestScrollingOverNothingScrollsNothing(t *testing.T) {
 	f := newFake()

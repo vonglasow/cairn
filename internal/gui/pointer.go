@@ -415,6 +415,9 @@ func (w Window) Scroll(p Point, by int) Window {
 		w.scroll[i] = w.settled(i, w.scroll[i]+by)
 		return w
 	}
+	if lane, found := l.LaneUnder(p); found {
+		w.lanes[lane] = w.settledLane(lane, w.lanes[lane]+by)
+	}
 	return w
 }
 
@@ -438,10 +441,7 @@ func (w Window) at(p Point) int {
 	}
 	if lane, found := l.LaneUnder(p); found {
 		here := w.inLane(lane)
-		// A lane is not scrolled: it holds what is not moving, two rows of it,
-		// and a third row is a sign to go and unblock something rather than a
-		// sign to scroll.
-		index := (p.Y - l.Lane[lane].Y) / CardHeight
+		index := (p.Y - l.Lane[lane].Y + w.lanes[lane]) / CardHeight
 		if index < len(here) {
 			return here[index].Number
 		}

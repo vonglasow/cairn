@@ -184,7 +184,8 @@ to be true.
 ## The mouse
 
 A click chooses a card, or changes tab when it lands on one. A double-click
-opens a card's detail. The wheel scrolls the column under the pointer.
+opens a card's detail. The wheel scrolls the column, or the lane, under the
+pointer.
 
 **Only the primary button acts.** A right click, a middle click or a side
 button used to run the same press and release as the left one, so they chose
@@ -283,6 +284,12 @@ terminal asks with a popup because a terminal band has no room for three named
 lanes; a window does. It also means a stopped card says which kind it is by
 where it sits, which the terminal needs a glyph for.
 
+**A lane scrolls, on a number of its own.** It was left still on purpose — two
+rows of stopped work, and a third read as a sign to go and unblock something
+rather than to scroll. What a lane held past its second card was then out of
+reach: the wheel did nothing over it and the arrows chose cards nobody could
+see. It now scrolls the way a column does, between the same two ends.
+
 ## The form
 
 **A part of the work is reached in the form of the task it belongs to, and
@@ -367,7 +374,8 @@ whole wrapped label it lands on the last line whatever was typed.
 choice and leave the column where it was, so a card could be chosen below the
 bottom of its column — and a card chosen out of sight is a card whose title,
 whose state and whose place are all unknown to whoever chose it. Walking down a
-column and walking across into one somebody had scrolled both follow.
+column and walking across into one somebody had scrolled both follow, and so
+does walking along a lane of the band.
 
 **The objectives are a grid**, filled across and then down, each one the width
 of a card. One to a row and the width of the whole board, an objective was a

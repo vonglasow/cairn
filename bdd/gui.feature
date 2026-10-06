@@ -323,6 +323,23 @@ Feature: The desktop board
       Then "BACKLOG" is scrolled
       And "TODO" is not scrolled
 
+    @gui-the-wheel-scrolls-one-lane
+    Scenario: the wheel scrolls the lane of the band under the pointer and no other
+      Given I added 6 tasks to "watching"
+      And I added 6 tasks to "blocked"
+      When I open the window
+      And I scroll down over the lane "watching"
+      Then the lane "watching" is scrolled
+      And the lane "blocked" is not scrolled
+
+    @gui-a-click-in-a-scrolled-lane
+    Scenario: a click in a scrolled lane chooses the card drawn under the pointer
+      Given I added 6 tasks to "watching"
+      When I open the window
+      And I scroll down over the lane "watching"
+      And I click the top of the lane "watching"
+      Then the card "Task 2" is chosen
+
   Rule: The arrows do what the pointer does
 
     A hand on the keyboard should not have to reach for the mouse to look at
@@ -1005,6 +1022,16 @@ Feature: The desktop board
       When I open the window
       And I scroll down over "TODO"
       And I press "right"
+      Then what is chosen is in sight
+
+    @gui-the-arrows-bring-a-lane-card-into-sight
+    Scenario: walking along a lane past what it shows brings the next card into sight
+      Given I added 6 tasks to "watching"
+      When I open the window
+      And I click the card "Task 1"
+      And I press "down" 5 times
+      Then what is chosen is in sight
+      When I press "up" 5 times
       Then what is chosen is in sight
 
     @gui-the-arrows-bring-an-objective-into-sight

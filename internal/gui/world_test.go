@@ -38,6 +38,8 @@ type world struct {
 	// scrolled is what each column stood at before the last gesture, so a
 	// scenario can say which one moved.
 	scrolled [Columns]int
+	// laneScrolled is the same for the three lanes of the band.
+	laneScrolled [3]int
 	// was is where the history stood before a step moved it, so a step after
 	// it can say whether it moved at all.
 	was int
@@ -72,6 +74,7 @@ func (w *world) reset() {
 	w.w = Window{}
 	w.width, w.high = 1200, 800
 	w.scrolled = [Columns]int{}
+	w.laneScrolled = [3]int{}
 }
 
 // refusing is the store the window talks to. It is the real engine, with one
@@ -187,7 +190,7 @@ func (w *world) find(title string) (Point, error) {
 				continue
 			}
 			if c.Title == title {
-				box := l.LaneCardAt(lane, at, 0)
+				box := l.LaneCardAt(lane, at, w.w.lanes[lane])
 				return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 			}
 			at++
@@ -387,14 +390,9 @@ func (w *world) dragToLane(title, kind string) error {
 	if err != nil {
 		return err
 	}
-	lane := -1
-	for i, name := range Lanes {
-		if name == kind {
-			lane = i
-		}
-	}
-	if lane < 0 {
-		return fmt.Errorf("no lane called %q", kind)
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
 	}
 	box := w.w.Layout().Lane[lane]
 	onto := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
@@ -461,6 +459,39 @@ func (w *world) scrollOver(column string) error {
 	w.scrolled = w.w.scroll
 	box := w.w.Layout().Column[at]
 	w.w = w.w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, CardHeight)
+	return nil
+}
+
+// laneNamed is which of the band's lanes holds the kind of stopped named.
+func laneNamed(kind string) (int, error) {
+	for i, name := range Lanes {
+		if name == kind {
+			return i, nil
+		}
+	}
+	return 0, fmt.Errorf("no lane called %q", kind)
+}
+
+func (w *world) scrollOverLane(kind string) error {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	w.laneScrolled = w.w.lanes
+	box := w.w.Layout().Lane[lane]
+	w.w = w.w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, CardHeight)
+	return nil
+}
+
+// clickTopOfLane clicks just inside the top of a lane, where whichever card the
+// lane has been scrolled to is drawn.
+func (w *world) clickTopOfLane(kind string) error {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	box := w.w.Layout().Lane[lane]
+	w.w = w.w.Click(Point{X: box.X + box.W/2, Y: box.Y + 1})
 	return nil
 }
 
@@ -596,6 +627,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)" above "([^"]*)"$`, w.dragAbove)
 	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)"$`, w.dragToLane)
 	sc.Step(`^I scroll down over "([^"]*)"$`, w.scrollOver)
+	sc.Step(`^I scroll down over the lane "([^"]*)"$`, w.scrollOverLane)
+	sc.Step(`^I click the top of the lane "([^"]*)"$`, w.clickTopOfLane)
 	sc.Step(`^it was worked on (\d+) times$`, w.workedOn)
 	sc.Step(`^I scroll down over the description$`, func() error { return w.scrollSaying(1) })
 	sc.Step(`^I scroll up over the description$`, func() error { return w.scrollSaying(-1) })

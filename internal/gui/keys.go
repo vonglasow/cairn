@@ -396,14 +396,23 @@ func (w Window) walkingBand(lane, at, across, down int) Window {
 	if across != 0 {
 		for next := lane + across; next >= 0 && next < len(Lanes); next += across {
 			if here := w.inLane(next); len(here) > 0 {
-				w.chosen, w.chosenGoal = here[min(at, len(here)-1)].Number, false
-				return w
+				landed := min(at, len(here)-1)
+				w.chosen, w.chosenGoal = here[landed].Number, false
+				return w.followingLane(next, landed)
 			}
 		}
 		return w
 	}
 	here := w.inLane(lane)
-	w.chosen, w.chosenGoal = here[min(len(here)-1, max(0, at+down))].Number, false
+	landed := min(len(here)-1, max(0, at+down))
+	w.chosen, w.chosenGoal = here[landed].Number, false
+	return w.followingLane(lane, landed)
+}
+
+// followingLane is following for a lane of the band.
+func (w Window) followingLane(lane, at int) Window {
+	run := w.Layout().Lane[lane]
+	w.lanes[lane] = w.settledLane(lane, inSight(at, CardHeight, run.H, w.lanes[lane]))
 	return w
 }
 
@@ -468,6 +477,13 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {
 				return l.CardAt(i, j, w.scroll[i]), l.Column[i], true
+			}
+		}
+	}
+	for lane := range Lanes {
+		for j, c := range w.inLane(lane) {
+			if c.Number == w.chosen {
+				return l.LaneCardAt(lane, j, w.lanes[lane]), l.Lane[lane], true
 			}
 		}
 	}

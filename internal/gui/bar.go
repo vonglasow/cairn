@@ -176,7 +176,7 @@ func (w Window) Helping() []Said {
 		{Key: "double-click", Means: "open it, and see everything it carries"},
 		{Key: "drag", Means: "move it — the column it lands in is its new state"},
 		{Key: "drag into a lane", Means: "blocked, watching or paused"},
-		{Key: "wheel", Means: "scroll what is under the pointer — a column, the objectives, a history"},
+		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a history"},
 		{Key: "↑↓ under a task", Means: "walk what hangs under it"},
 		{Key: "space under a task", Means: "mark the part the keyboard is on done, or not"},
 		{Key: "wheel on a history", Means: "scroll it — the bar beside it can be pulled too"},
