@@ -213,17 +213,19 @@ func TestTheCharacterUnderAPoint(t *testing.T) {
 	}
 }
 
-// The room a piece of text takes to be pressed in: the lines in sight, or its
-// own box when that is taller.
+// The room a piece of text takes to be pressed in is the box it is drawn in,
+// and no more. It used to be every line from the first in sight, drawn or not:
+// a long description reached past its frame to the foot of the panel, and took
+// the presses meant for the place of the notes and for what the panel offers.
 func TestTheRoomAPieceOfTextTakes(t *testing.T) {
 	r := Readable{Box: Box{X: 100, Y: 200, W: 300, H: lineHigh}, Size: reads,
 		Lines: Wrapped("1\n2\n3\n4\n5", 40), From: 2}
-	if got := r.inSight().H; got != 3*lineHigh {
-		t.Errorf("five lines scrolled two down take %d, want three lines", got)
+	if got := r.inSight(); got != r.Box {
+		t.Errorf("five lines in a box one line high take %v, want the box %v", got, r.Box)
 	}
 	r.Box.H, r.From = 10*lineHigh, 0
-	if got := r.inSight().H; got != 10*lineHigh {
-		t.Errorf("a box taller than its lines takes %d, want the box", got)
+	if got := r.inSight(); got != r.Box {
+		t.Errorf("a box taller than its lines takes %v, want the box %v", got, r.Box)
 	}
 }
 

@@ -79,11 +79,11 @@ func (r Readable) At(p Point, m Measure) int {
 	return r.Lines.Reaches(r.Box, p, r.From, m, r.Size)
 }
 
-// inSight is the room a piece of text's lines take on screen.
-func (r Readable) inSight() Box {
-	rows := len(r.Lines.Said) - r.From
-	return Box{X: r.Box.X, Y: r.Box.Y, W: r.Box.W, H: max(r.Box.H, rows*lineHigh)}
-}
+// inSight is the room a piece of text takes on screen: the box it is drawn in.
+// Not its lines from the first in sight: a text that scrolls is cut to its box,
+// and the lines past it, undrawn, reached down over whatever lay below — the
+// place of the notes and what the panel offers among them.
+func (r Readable) inSight() Box { return r.Box }
 
 // Readables is every piece of text an open task writes, and nothing on any
 // other screen: the form holds its own text in its fields.

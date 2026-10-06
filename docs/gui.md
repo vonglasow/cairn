@@ -710,6 +710,12 @@ A window draws text as shapes, and nothing said where a shape's letters were.
 the way it is drawn, and what a pointer lands on and what is painted held are
 both worked out from it. A field of the form holds a word on a double click too.
 
+A piece of text answers the pointer inside the box it is drawn in, and nowhere
+else. It used to answer over every line from the first in sight, drawn or not,
+so a long description reached down to the foot of the panel: the place of the
+notes could not be held, and `Edit` and `Close` took a press as the start of a
+run rather than as a click.
+
 **What is left reads first, and reads as left.** A part carries a box before
 its name — empty, or filled and ticked — and what is left is written in the
 reading ink while what is done is faint and struck through; what is left comes

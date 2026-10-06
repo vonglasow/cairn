@@ -297,6 +297,23 @@ Feature: The desktop board
       When I choose "Edit"
       Then the form asks nothing about "context"
 
+    @gui-the-context-is-held-past-a-long-description
+    Scenario: the place an open task names is held however long its description runs
+      Given I added a task titled "Write the spec" with a description of 80 lines ending "the end"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I triple-click the first word of "field:context" on the open task
+      And I press "cmd+c"
+      Then the clipboard reads "/vault/1"
+
+    @gui-the-offers-answer-past-a-long-description
+    Scenario: what an open task offers answers a click however long its description runs
+      Given I added a task titled "Write the spec" with a description of 80 lines ending "the end"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I click "Close"
+      Then the detail is closed
+
     @gui-the-detail-is-closed-by-clicking
     Scenario: the detail is closed without knowing a key
       Given I added a task titled "Write the spec"
