@@ -167,8 +167,8 @@ func (w Window) sayingOn() (frame, bar Box, lines Lines, rows int, ok bool) {
 		if !fields[at].Long {
 			return Box{}, Box{}, Lines{}, 0, false
 		}
-		_, value := FieldRow(box, FieldTop(box, fields, at))
-		rows = RowsOf(box, fields, at)
+		var value Box
+		_, value, rows = FormPlace(box, fields, at)
 		frame, bar = Saying(value, rows)
 		return frame, bar, Wrapped(w.form.Writing().Reads(), room(Inside(frame))), rows, true
 	}

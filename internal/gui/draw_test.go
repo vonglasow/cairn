@@ -401,7 +401,7 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	box := Over(w.width, w.height)
 	lit := Dark().Chosen
 	rowOf := func(i int) Box {
-		name, _ := FieldRow(box, FieldTop(box, w.Form().Fields(), i))
+		name := formName(box, w.Form().Fields(), i)
 		return name
 	}
 
@@ -755,7 +755,7 @@ func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
 	valueOf := func(i int) Box {
-		_, value := FieldRow(box, FieldTop(box, fields, i))
+		value := formValue(box, fields, i)
 		return value
 	}
 
@@ -786,19 +786,19 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
-	_, value := FieldRow(box, FieldTop(box, fields, 1))
-	value.H = lineHigh * RowsOf(box, fields, 1)
+	value := formValue(box, fields, 1)
+	value.H = lineHigh * formRows(box, fields, 1)
 
 	shot := drawn(t, w)
 	rows := 0
-	for row := range RowsOf(box, fields, 1) {
+	for row := range formRows(box, fields, 1) {
 		line := Box{X: value.X, Y: value.Y + row*lineHigh, W: value.W, H: lineHigh}
 		if painted(shot, line, Dark().Ink) > 0 {
 			rows++
 		}
 	}
 	if rows < 2 {
-		t.Errorf("a long description was drawn on %d of its %d rows", rows, RowsOf(box, fields, 1))
+		t.Errorf("a long description was drawn on %d of its %d rows", rows, formRows(box, fields, 1))
 	}
 }
 
@@ -940,8 +940,8 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	frameOf := func(name string) Box {
 		for i, field := range fields {
 			if field.Name == name {
-				_, value := FieldRow(box, FieldTop(box, fields, i))
-				return Framed(value, RowsOf(box, fields, i))
+				value := formValue(box, fields, i)
+				return Framed(value, formRows(box, fields, i))
 			}
 		}
 		t.Fatalf("the form has no field %q", name)
@@ -974,8 +974,8 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	var frame Box
 	for i, field := range fields {
 		if field.Name == "description" {
-			_, value := FieldRow(box, FieldTop(box, fields, i))
-			frame = Framed(value, RowsOf(box, fields, i))
+			value := formValue(box, fields, i)
+			frame = Framed(value, formRows(box, fields, i))
 		}
 	}
 	long := "This description is far longer than one line of this form can hold, so it has to go somewhere"
@@ -1485,7 +1485,7 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	var value Box
 	for i, field := range fields {
 		if field.Name == "title" {
-			_, value = FieldRow(box, FieldTop(box, fields, i))
+			value = formValue(box, fields, i)
 		}
 	}
 	inside := Inside(Framed(value, 1))

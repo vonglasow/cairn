@@ -2093,6 +2093,18 @@ Feature: The desktop board
       Then the field "description" is written on more than one line
       And no line of the field "description" runs out of it
 
+    @gui-the-form-keeps-its-offers-on-a-line-of-their-own
+    Scenario: the form of a task with parts fits above its offers, even in the smallest window
+      Given a window of 1024 by 640
+      And I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      When I open the window
+      And I click the card "Ship it"
+      And I choose "Edit"
+      Then no field of the form reaches what it offers
+      And no two fields of the form overlap
+      And the fields "description" and "parts" stand beside the others
+
     @gui-the-bar-teaches-the-key
     Scenario: the bar says what to press, not only what can be done
       When I open the window

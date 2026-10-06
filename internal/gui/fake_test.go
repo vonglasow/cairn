@@ -185,3 +185,20 @@ func (w Window) doubleClicked(at Point) Window {
 	w, _ = Pointing(w, g, pointer.Release, at, 0, moment.Add(time.Millisecond))
 	return w
 }
+
+// formName, formValue and formRows are where a field of a form is drawn, one
+// answer of FormPlace at a time, for a test that wants only one of them.
+func formName(box Box, fields []reading.Field, at int) Box {
+	name, _, _ := FormPlace(box, fields, at)
+	return name
+}
+
+func formValue(box Box, fields []reading.Field, at int) Box {
+	_, value, _ := FormPlace(box, fields, at)
+	return value
+}
+
+func formRows(box Box, fields []reading.Field, at int) int {
+	_, _, rows := FormPlace(box, fields, at)
+	return rows
+}

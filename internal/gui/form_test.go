@@ -338,7 +338,7 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 
 	box := Over(w.width, w.height)
 	at := 3
-	name, _ := FieldRow(box, FieldTop(box, w.Form().Fields(), at))
+	name := formName(box, w.Form().Fields(), at)
 	w = w.clicked(Point{X: name.X + 10, Y: name.Y + name.H/2})
 	if got := w.Form().On(); got != at {
 		t.Fatalf("clicking field %d put the keyboard on %d", at, got)
@@ -422,10 +422,10 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	if !fields[at].Long {
 		t.Fatalf("field %d is %q, which is not the long one", at, fields[at].Name)
 	}
-	_, value := FieldRow(box, FieldTop(box, fields, at))
+	value := formValue(box, fields, at)
 
-	name, _ := FieldRow(box, FieldTop(box, fields, at))
-	for _, row := range []int{0, RowsOf(box, fields, at) - 1} {
+	name := formName(box, fields, at)
+	for _, row := range []int{0, formRows(box, fields, at) - 1} {
 		down := row*lineHigh + lineHigh/2
 		if got := w.clicked(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d of the description put the keyboard on %d", row, got)

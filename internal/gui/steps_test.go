@@ -310,6 +310,73 @@ func (w *world) isScrolled(column string) error {
 	return nil
 }
 
+// formFrames is where every field of the open form is drawn: its name and its
+// frame, the bar beside a long one included.
+func (w *world) formFrames() ([]Box, []Box) {
+	over := Over(w.w.width, w.w.height)
+	fields := w.w.Form().Fields()
+	var names, frames []Box
+	for i := range fields {
+		name, value, rows := FormPlace(over, fields, i)
+		frame := Framed(value, rows)
+		if fields[i].Long {
+			var bar Box
+			frame, bar = Saying(value, rows)
+			frame.W = bar.X + bar.W - frame.X
+		}
+		names, frames = append(names, name), append(frames, frame)
+	}
+	return names, frames
+}
+
+func (w *world) formFitsAboveItsOffers() error {
+	over := Over(w.w.width, w.w.height)
+	foot := PanelOfferAt(over, 0).Y
+	names, frames := w.formFrames()
+	for i, frame := range frames {
+		if bottom := max(frame.Y+frame.H, names[i].Y+names[i].H); bottom >= foot {
+			return fmt.Errorf("field %q ends at %d and the offers start at %d", w.w.Form().Fields()[i].Name, bottom, foot)
+		}
+	}
+	return nil
+}
+
+func overlap(a, b Box) bool {
+	return a.X < b.X+b.W && b.X < a.X+a.W && a.Y < b.Y+b.H && b.Y < a.Y+a.H
+}
+
+func (w *world) formFieldsApart() error {
+	names, frames := w.formFrames()
+	fields := w.w.Form().Fields()
+	all := append(append([]Box{}, names...), frames...)
+	for i := range all {
+		for j := i + 1; j < len(all); j++ {
+			if overlap(all[i], all[j]) {
+				return fmt.Errorf("%q and %q overlap: %v and %v",
+					fields[i%len(fields)].Name, fields[j%len(fields)].Name, all[i], all[j])
+			}
+		}
+	}
+	return nil
+}
+
+func (w *world) longFieldsBeside(first, second string) error {
+	_, frames := w.formFrames()
+	fields := w.w.Form().Fields()
+	edge := 0
+	for i, field := range fields {
+		if field.Name != first && field.Name != second {
+			edge = max(edge, frames[i].X+frames[i].W)
+		}
+	}
+	for i, field := range fields {
+		if (field.Name == first || field.Name == second) && frames[i].X <= edge {
+			return fmt.Errorf("%q starts at %d, and the other fields run to %d", field.Name, frames[i].X, edge)
+		}
+	}
+	return nil
+}
+
 func (w *world) laneIsScrolled(kind string) error {
 	lane, err := laneNamed(kind)
 	if err != nil {
@@ -566,6 +633,9 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail is closed$`, w.detailClosed)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
+	sc.Then(`^no field of the form reaches what it offers$`, w.formFitsAboveItsOffers)
+	sc.Then(`^no two fields of the form overlap$`, w.formFieldsApart)
+	sc.Then(`^the fields "([^"]*)" and "([^"]*)" stand beside the others$`, w.longFieldsBeside)
 	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
 		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
 			return fmt.Errorf("the bar under the board reads %v, want %v", got, want)
@@ -1324,7 +1394,7 @@ func (w *world) rowsOfField(name string) (int, error) {
 	fields := w.w.Form().Fields()
 	for i := range fields {
 		if fields[i].Name == name {
-			return RowsOf(Over(w.w.width, w.w.height), fields, i), nil
+			return formRows(Over(w.w.width, w.w.height), fields, i), nil
 		}
 	}
 	return 0, fmt.Errorf("the form has no field called %q", name)
@@ -1337,8 +1407,8 @@ func (w *world) fieldShowsTheEnd(name string) error {
 		if field.Name != name {
 			continue
 		}
-		_, value := FieldRow(box, FieldTop(box, fields, i))
-		rows := RowsOf(box, fields, i)
+		value := formValue(box, fields, i)
+		rows := formRows(box, fields, i)
 		lines := Wrapped(field.Value, room(Inside(Framed(value, rows))))
 		if len(lines.Said) < 2 {
 			return fmt.Errorf("%q is not longer than its room, so this proves nothing", name)
@@ -1433,8 +1503,8 @@ func (w *world) wrapping(name string) (Lines, int, error) {
 			continue
 		}
 		box := Over(w.w.width, w.w.height)
-		_, value := FieldRow(box, FieldTop(box, fields, i))
-		fits := room(Inside(Framed(value, RowsOf(box, fields, i))))
+		value := formValue(box, fields, i)
+		fits := room(Inside(Framed(value, formRows(box, fields, i))))
 		return Wrapped(field.Value, fits), fits, nil
 	}
 	return Lines{}, 0, fmt.Errorf("the form has no field %q", name)
@@ -1565,8 +1635,8 @@ func (w *world) formBehindTheList() error {
 	// first field's own frame lies outside the list's panel, so if the list
 	// were a page of its own that frame would have been painted over.
 	fields := w.w.Form().Fields()
-	_, value := FieldRow(over, FieldTop(over, fields, 0))
-	frame := Framed(value, RowsOf(over, fields, 0))
+	value := formValue(over, fields, 0)
+	frame := Framed(value, formRows(over, fields, 0))
 	if frame.Y+frame.H > list.Y {
 		return fmt.Errorf("the first field reaches %d and the list starts at %d: they overlap, so this proves nothing",
 			frame.Y+frame.H, list.Y)
@@ -1603,8 +1673,8 @@ func (w *world) fieldDrawnByName(field string) error {
 		fields := w.w.Form().Fields()
 		at := slices.IndexFunc(fields, func(x reading.Field) bool { return x.Name == field })
 		box := Over(w.w.width, w.w.height)
-		_, value := FieldRow(box, FieldTop(box, fields, at))
-		frame := Framed(value, RowsOf(box, fields, at))
+		value := formValue(box, fields, at)
+		frame := Framed(value, formRows(box, fields, at))
 		// Past where the numbers themselves could have ended, and inside the
 		// frame rather than on it: the frame's own outline is not the field's
 		// writing, and a fraction of the width would only say the text is

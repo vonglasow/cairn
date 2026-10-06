@@ -351,11 +351,20 @@ the lit frame is the only difference between the two. A value floating on the
 panel's own ground looked like something written rather than somewhere to
 write.
 
-**Every box is as wide as every other.** A title, a date and the description
-end on the same line, and a long field's bar sits beside its box, in a margin
-every field keeps. One-line fields used to stop at 420 points while the long
-ones ran the width of the panel: a form of boxes that each ended somewhere
-else.
+**A form is two columns, and its offers a line of their own.** The short
+fields run down the left, each name beside its box; the long ones — the
+description, and the parts of a task being edited — share the right, each name
+above its box, down to a rule across the foot. Under the rule, and nowhere
+else, is what the form offers. It was one column, and once the parts became a
+second long field a window under eight hundred points drew them over *Save*
+and *Cancel* and out of the panel. `FormPlace` says where every field of a form
+goes, and everything that draws, clicks or measures a form asks it.
+
+**Every box in a column is as wide as the others in it.** A title and a date
+end on the same line, the description and the parts on another, and a long
+field's bar sits beside its box, in a margin every field keeps. One-line fields
+used to stop at 420 points while the long ones ran the width of the panel: a
+form of boxes that each ended somewhere else.
 
 **Nothing written runs out of its box.** Text wraps — at a space when there is
 one, inside a word when the word is longer than the room — and the box is

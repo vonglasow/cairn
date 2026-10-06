@@ -682,19 +682,17 @@ func paintHeld(gtx layout.Context, th *material.Theme, skin Skin, box Box, said 
 // drawField draws one field of a panel: its name beside it, what it holds
 // inside a box of its own, and the frame lit when the keyboard is on it.
 func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said, named Written) {
-	drawFieldAt(gtx, th, skin, box, fields, i, lit, carets, said, named, Follow)
+	name, value := FieldRow(box, FieldTop(box, fields, i))
+	drawFieldAt(gtx, th, skin, name, value, RowsOf(box, fields, i), false, lit, carets, said, named, Follow)
 }
 
-// drawFieldAt is drawField with where the text starts in sight given. A long
-// field is drawn with the bar the description carries on an open task, in the
-// same place: the description is the same box on both screens.
-func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said, named Written, scrolled int) {
-	field := fields[i]
-	name, value := FieldRow(box, FieldTop(box, fields, i))
-	rows := RowsOf(box, fields, i)
+// drawFieldAt is drawField where the field is put and where its text starts in
+// sight are given. A long field is drawn with the bar the description carries
+// on an open task.
+func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, name, value Box, rows int, long, lit, carets bool, said, named Written, scrolled int) {
 	frame := Framed(value, rows)
 	var bar Box
-	if field.Long {
+	if long {
 		frame, bar = Saying(value, rows)
 	}
 	ink, edge := skin.Faint, skin.Edge
@@ -705,7 +703,7 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, box Box, fie
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
 	writing(gtx, th, skin, Inside(frame), said, carets, reads, rows, scrolled)
-	if field.Long {
+	if long {
 		lines := Wrapped(said.Reads(), room(Inside(frame)))
 		line, _ := lines.At(said.At)
 		fill(gtx, bar, skin.Back)
@@ -758,8 +756,10 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 				scrolled = w.Saying()
 			}
 		}
-		drawFieldAt(gtx, th, skin, box, fields, i, on, typed, said, Written{Value: fields[i].Name}, scrolled)
+		name, value, rows := FormPlace(box, fields, i)
+		drawFieldAt(gtx, th, skin, name, value, rows, fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)
 	}
+	fill(gtx, FormRule(box), skin.Edge)
 	drawPanelOffers(gtx, th, skin, box, w)
 }
 

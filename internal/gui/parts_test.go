@@ -193,6 +193,17 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("caret", CaretAt(Inside(HistoryBox(over)), 1, 0, 40))
 	say("panel offer 0", PanelOfferAt(over, 0))
 	say("panel offer 1", PanelOfferAt(over, 1))
+	// The form of a task being edited: a short field before the description,
+	// one after it, the description and the parts, with the rows each is
+	// given written as the height of a box, and the rule over the offers.
+	edited := reading.EditFields(reading.Card{Number: 1}, nil)
+	for _, at := range []int{0, 1, 2, len(edited) - 1} {
+		name, value, rows := FormPlace(over, edited, at)
+		say("form name "+edited[at].Name, name)
+		say("form value "+edited[at].Name, value)
+		say("form rows "+edited[at].Name, Box{H: rows})
+	}
+	say("form rule", FormRule(over))
 	say("message", Message(400, 300))
 
 	got := out.String()
@@ -609,18 +620,28 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 // grew a frame around them, and a frame is height: the last field of the
 // longest form is the one that goes off the bottom first, and going off the
 // bottom is a field somebody cannot fill in.
+//
+// Every field, and not the last: the fields are two columns, and it was the
+// parts of a task being edited — a field the test did not ask about — that
+// ran over the offers.
 func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 	box := Over(Narrowest, Shortest)
+	rule := FormRule(box)
+	if offers := PanelOfferAt(box, 0); rule.Y+rule.H > offers.Y {
+		t.Errorf("the rule at %d runs into the offers at %d", rule.Y, offers.Y)
+	}
 	for _, fields := range [][]reading.Field{
 		reading.TaskFields(reading.Card{}),
+		reading.EditFields(reading.Card{Number: 1}, nil),
 		reading.GoalFields(reading.Goal{}),
 	} {
-		last := len(fields) - 1
-		_, value := FieldRow(box, FieldTop(box, fields, last))
-		bottom := Framed(value, RowsOf(box, fields, last))
-		if got, want := bottom.Y+bottom.H, PanelOfferAt(box, 0).Y; got >= want {
-			t.Errorf("the last of %d fields ends at %d and the offers start at %d",
-				len(fields), got, want)
+		for i := range fields {
+			_, value, rows := FormPlace(box, fields, i)
+			bottom := Framed(value, rows)
+			if got := bottom.Y + bottom.H; got >= rule.Y {
+				t.Errorf("%q of %d fields ends at %d and the rule over the offers is at %d",
+					fields[i].Name, len(fields), got, rule.Y)
+			}
 		}
 	}
 }
@@ -1091,29 +1112,64 @@ func TestATileBreathesOnBothSides(t *testing.T) {
 	}
 }
 
-// Every field of a form is as wide as every other: a title, a date and the
-// description end on the same line, and the bar of a long one sits beside it
-// rather than inside it.
-func TestEveryFieldOfAFormIsAsWideAsTheOthers(t *testing.T) {
+// A long field of a form takes the whole of its share of the right column and
+// no more: its frame ends before the next one's name, or before the rule over
+// the offers, and one row more would not. At every height, because a row is a
+// whole number and a height is not a multiple of it.
+func TestALongFieldOfAFormTakesItsShareAndNoMore(t *testing.T) {
+	fields := reading.EditFields(reading.Card{Number: 1}, nil)
+	for high := Shortest; high <= 1000; high++ {
+		over := Over(1200, high)
+		ends := []int{}
+		for i := range fields {
+			if !fields[i].Long {
+				continue
+			}
+			name, _, _ := FormPlace(over, fields, i)
+			ends = append(ends, name.Y-between)
+		}
+		ends = append(ends[1:], FormRule(over).Y-between)
+		next := 0
+		for i := range fields {
+			if !fields[i].Long {
+				continue
+			}
+			_, value, rows := FormPlace(over, fields, i)
+			bottom := Framed(value, rows)
+			end := bottom.Y + bottom.H
+			if end > ends[next] || end+lineHigh <= ends[next] {
+				t.Fatalf("at %d high %q ends at %d, and its share ends at %d", high, fields[i].Name, end, ends[next])
+			}
+			next++
+		}
+	}
+}
+
+// Every field of a column of a form is as wide as the others in it: a title
+// and a date end on the same line on the left, the description and the parts
+// on the right, and the bar of a long one sits beside it rather than inside it.
+func TestEveryFieldOfAFormIsAsWideAsTheOthersInItsColumn(t *testing.T) {
 	box := Over(1200, 800)
 	fields := editing(reading.Card{}, nil).Fields()
-	var first Box
+	first := map[bool]Box{}
 	for i, field := range fields {
-		_, value := FieldRow(box, FieldTop(box, fields, i))
-		rows := RowsOf(box, fields, i)
+		_, value, rows := FormPlace(box, fields, i)
 		frame := Framed(value, rows)
 		if field.Long {
 			if saying, _ := Saying(value, rows); saying != frame {
 				t.Errorf("%s is drawn in %v and framed in %v", field.Name, saying, frame)
 			}
 		}
-		if i == 0 {
-			first = frame
+		if _, seen := first[field.Long]; !seen {
+			first[field.Long] = frame
 		}
-		if frame.X != first.X || frame.W != first.W {
-			t.Errorf("%s runs from %d, %d wide; %s from %d, %d wide",
-				field.Name, frame.X, frame.W, fields[0].Name, first.X, first.W)
+		if was := first[field.Long]; frame.X != was.X || frame.W != was.W {
+			t.Errorf("%s runs from %d, %d wide; the first of its column from %d, %d wide",
+				field.Name, frame.X, frame.W, was.X, was.W)
 		}
+	}
+	if len(first) != 2 {
+		t.Fatalf("the form of a task fills %d columns, want two", len(first))
 	}
 }
 

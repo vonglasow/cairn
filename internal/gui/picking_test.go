@@ -131,8 +131,8 @@ func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
-	_, value := FieldRow(box, FieldTop(box, fields, 0))
-	inside := Inside(Framed(value, RowsOf(box, fields, 0)))
+	value := formValue(box, fields, 0)
+	inside := Inside(Framed(value, formRows(box, fields, 0)))
 	at := Point{X: inside.X + 11*perGlyph + perGlyph/2, Y: inside.Y + lineHigh/2}
 	w, _ = Pointing(w, Gesture{}, pointer.Press, at, 0, moment)
 	if got := w.DoubleClick(at).Form().Writing().Holds(); got != "spec" {
@@ -304,7 +304,7 @@ func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
-	_, value := FieldRow(box, FieldTop(box, fields, 0))
+	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
 	w = w.PressAt(Point{X: inside.X + 9, Y: inside.Y + 2})
 	if got := w.Form().Writing().At; got != 2 {
@@ -351,7 +351,7 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	w.form = w.form.onto(0)
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
-	_, value := FieldRow(box, FieldTop(box, fields, 0))
+	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
 	lines := Wrapped(title, room(inside))
 	if len(lines.Said) < 2 {

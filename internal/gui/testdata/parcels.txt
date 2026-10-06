@@ -64,4 +64,17 @@ line 3 of 2    x=706   y=162   w=312   h=18
 caret          x=746   y=162   w=2     h=18
 panel offer 0  x=162   y=688   w=110   h=32
 panel offer 1  x=272   y=688   w=110   h=32
+form name title x=162   y=116   w=158   h=18
+form value title x=320   y=116   w=358   h=18
+form rows title x=0     y=0     w=0     h=1
+form name description x=702   y=116   w=336   h=18
+form value description x=702   y=144   w=336   h=18
+form rows description x=0     y=0     w=0     h=13
+form name column x=162   y=148   w=158   h=18
+form value column x=320   y=148   w=358   h=18
+form rows column x=0     y=0     w=0     h=1
+form name parts x=702   y=399   w=336   h=18
+form value parts x=702   y=427   w=336   h=18
+form rows parts x=0     y=0     w=0     h=13
+form rule      x=162   y=682   w=876   h=1
 message        x=12    y=132   w=376   h=22

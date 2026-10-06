@@ -240,11 +240,9 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	box := Over(w.width, w.height)
 	fields := w.form.Fields()
 	for i := range fields {
-		top := FieldTop(box, fields, i)
-		name, value := FieldRow(box, top)
+		name, value, rows := FormPlace(box, fields, i)
 		// A field that wants several rows is answered anywhere in them.
-		rows := RowsOf(box, fields, i)
-		name.H, value.H = lineHigh*rows, lineHigh*rows
+		value.H = lineHigh * rows
 		if name.In(p) || value.In(p) {
 			return i, true
 		}
@@ -265,8 +263,7 @@ func into(value Box, p Point, said string, m Measure) int {
 func (w Window) reaching(at int, p Point) int {
 	fields := w.form.Fields()
 	box := Over(w.width, w.height)
-	_, value := FieldRow(box, FieldTop(box, fields, at))
-	rows := RowsOf(box, fields, at)
+	_, value, rows := FormPlace(box, fields, at)
 	inside := Inside(Framed(value, rows))
 	// What drawForm shows of it: the field the keyboard is on from what is
 	// being typed and where the wheel left it, the others from their beginning.

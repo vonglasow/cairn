@@ -788,7 +788,7 @@ func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 		if field.Name != "column" {
 			continue
 		}
-		_, value := FieldRow(box, FieldTop(box, fields, i))
+		value := formValue(box, fields, i)
 		got := w.clicked(Point{X: value.X + 10, Y: value.Y + value.H/2})
 		if got.Screen() != OnChoosing || len(got.Choosing()) != len(field.Choices) {
 			t.Errorf("clicking the column field left the window on %v, offering %d",
@@ -851,7 +851,7 @@ func TestAClickOnAWrappedTextLandsOnItsOwnLine(t *testing.T) {
 	var value Box
 	for i, field := range fields {
 		if field.Arg == "desc" {
-			_, value = FieldRow(box, FieldTop(box, fields, i))
+			value = formValue(box, fields, i)
 		}
 	}
 	inside := Inside(Framed(value, longRows))

@@ -143,7 +143,7 @@ func (w *world) inField(name string) (func(int) Point, error) {
 		if field.Name != name {
 			continue
 		}
-		_, value := FieldRow(box, FieldTop(box, fields, i))
+		value := formValue(box, fields, i)
 		inside := Inside(value)
 		return func(n int) Point {
 			return Point{X: inside.X + n*perGlyph, Y: inside.Y + inside.H/2}
@@ -533,7 +533,7 @@ func (w *world) clickField(name string) error {
 		if field.Name != name {
 			continue
 		}
-		row, _ := FieldRow(box, FieldTop(box, fields, i))
+		row := formName(box, fields, i)
 		w.w = w.w.clicked(Point{X: row.X + 10, Y: row.Y + row.H/2})
 		return nil
 	}
@@ -549,7 +549,7 @@ func (w *world) clickInto(characters int, name string) error {
 		if field.Name != name {
 			continue
 		}
-		_, value := FieldRow(box, FieldTop(box, fields, i))
+		value := formValue(box, fields, i)
 		// Where the text itself begins, which is the frame's own inset and not
 		// a card's padding: the two happened to be close enough to land on the
 		// right glyph until the spacing scale was put straight.
