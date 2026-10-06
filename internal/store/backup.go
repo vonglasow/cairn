@@ -219,8 +219,12 @@ func (v *Vault) HoldsStore() (domain.Held, error) {
 // not a damaged backup: it is an older shape, and it holds no objectives. The
 // table is looked for rather than the error swallowed, so a real failure to
 // read one still comes back as a failure.
+//
+// Opened to be read and nothing else. Opened the shared way, it was written
+// to: a store that was not there was made — readable by anybody — and a
+// backup looked at was turned to WAL and its date moved.
 func heldIn(path string) (domain.Held, error) {
-	db, err := sql.Open("sqlite", shared(path))
+	db, err := readOnly(path)
 	if err != nil {
 		return domain.Held{}, err
 	}

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 
 	"cairn/internal/domain"
 	"cairn/internal/store"
@@ -80,6 +81,17 @@ type Engine struct {
 	// what sits beside the store as well as the store itself, and a surface
 	// that stays open runs operations long after whoever opened it has gone.
 	path string
+	// turn keeps one caller at a time on an engine held open: a board asks
+	// for the version on its beat while an act it started is still running,
+	// and following a store put back under it swaps every door at once. A
+	// pointer, so the copies an act runs on share it; nil for an engine made
+	// by hand in a test.
+	turn *sync.Mutex
+	// followed counts the stores put back under this engine that it has
+	// followed. A version is a connection's own counter, and a new connection
+	// may start where the old one stood: counted into the version, a store
+	// followed always reads as one that moved.
+	followed int64
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not:
@@ -109,7 +121,36 @@ func openWith(path string, open func(string) (*store.Store, error)) (*Engine, er
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return (&Engine{path: path}).keptBy(kept), nil
+	return (&Engine{path: path, turn: &sync.Mutex{}}).keptBy(kept), nil
+}
+
+// taking waits for this engine's turn and hands back what ends it.
+func (e *Engine) taking() func() {
+	e.turn.Lock()
+	return e.turn.Unlock
+}
+
+// following reopens the store when the file this engine was opened on has
+// been put away for another — a backup put back while a board held it open.
+// The connection it had still reads and writes the file that was replaced,
+// which nobody reads again: measured, its version did not move, it did not
+// see what was put back, and what it wrote went nowhere without an error.
+// A store put back that is behind this cairn is refused the way opening it
+// would be.
+func (e *Engine) following() error {
+	replaced, err := e.store.Replaced()
+	if err != nil || !replaced {
+		return err
+	}
+	fresh, err := store.Open(e.path)
+	if err != nil {
+		return storeProblem(err)
+	}
+	stale := e.store
+	*e = *e.keptBy(fresh)
+	e.followed++
+	_ = stale.Close()
+	return nil
 }
 
 // keptBy is this engine with every door it reaches the store through handed
@@ -134,6 +175,7 @@ func storeProblem(err error) error {
 
 // Close releases the store.
 func (e *Engine) Close() error {
+	defer e.taking()()
 	return e.tasks.Close()
 }
 

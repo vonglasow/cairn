@@ -19,6 +19,10 @@ func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
 	if err := op.Check(in); err != nil {
 		return Answer{}, err
 	}
+	defer e.taking()()
+	if err := e.following(); err != nil {
+		return Answer{}, Told(err)
+	}
 	return e.run(op, in)
 }
 

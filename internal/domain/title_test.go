@@ -136,13 +136,18 @@ func TestShown_replacesWhatATerminalWouldObey(t *testing.T) {
 	}
 }
 
-// The ranges that hide, at both of their ends and just past them.
-func TestHides_takesEachRangeToItsEnds(t *testing.T) {
+// Every character Unicode says formats text rather than shows it hides: the
+// bidirectional marks and overrides, the zero-width ones, the soft hyphen,
+// the invisible operators, and the tag characters a person cannot see and a
+// model reads. A list of the ones somebody thought of left the rest through.
+func TestHides_takesEveryFormatCharacter(t *testing.T) {
 	for r, want := range map[rune]bool{
 		'\u2029': false, '\u202A': true, '\u202E': true, '\u202F': false,
-		'\u2065': false, '\u2066': true, '\u2069': true, '\u206A': false,
-		'\u200A': false, '\u200B': true, '\u200D': true, '\u200E': false,
-		'\uFEFE': false, '\uFEFF': true, 'a': false,
+		'\u2066': true, '\u2069': true, '\u206A': true,
+		'\u200A': false, '\u200B': true, '\u200D': true, '\u200E': true, '\u200F': true,
+		'\u061C': true, '\u00AD': true, '\u2060': true, '\u2064': true,
+		'\U000E0041': true, '\U000E007F': true,
+		'\uFEFE': false, '\uFEFF': true, 'a': false, '\u00E9': false,
 	} {
 		if got := hides(r); got != want {
 			t.Errorf("hides(%U) = %v, want %v", r, got, want)

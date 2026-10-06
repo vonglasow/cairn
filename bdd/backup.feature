@@ -163,6 +163,20 @@ Feature: Backups of the store
       Then it succeeds
       And `cairn task list` lists 1 task
 
+    @backup-restore-under-an-open-board
+    Scenario: a board open while a backup is put back writes to what was put back
+      A board holds the store open for as long as it is on screen. Putting a
+      backup back replaces the file under it, and a board still writing to the
+      file that was replaced loses what it writes without a word.
+
+      Given I added a task titled "Write the spec"
+      And I made a backup of the store
+      And a board is open on the store
+      When I run `cairn backup restore 1 --yes`
+      And the board adds a task titled "Added on the board"
+      Then `cairn task list` lists 2 tasks
+      And `cairn task list` lists task 2 titled "Added on the board"
+
     @backup-restore-latest
     Scenario: with no number, the most recent backup comes back
       Given I added a task titled "Write the spec"

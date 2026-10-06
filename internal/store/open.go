@@ -184,7 +184,28 @@ func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
 		// nobody can paste back into a shell.
 		return nil, fmt.Errorf("%w — store: %s", err, path)
 	}
+	opened, err := os.Stat(path)
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("reading the store just opened: %w — store: %s", err, path)
+	}
+	s.opened = opened
 	return s, nil
+}
+
+// Replaced says whether the file at this store's path is no longer the one it
+// was opened on: a backup put back under a store held open puts another file
+// in its place, and a connection still on the first one writes where nobody
+// reads again. A store whose file is gone has been replaced by nothing.
+func (s *Store) Replaced() (bool, error) {
+	now, err := os.Stat(s.path)
+	if errors.Is(err, os.ErrNotExist) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("looking at the store: %w", err)
+	}
+	return !os.SameFile(s.opened, now), nil
 }
 
 // claim makes an empty file at path that its owner alone may read, and says

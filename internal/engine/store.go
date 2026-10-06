@@ -82,7 +82,17 @@ func (e *Engine) held() (domain.Held, error) { return e.store.Held() }
 // Version says whether the store has moved since it was last asked. It is
 // passed straight through: a surface that stays open needs it, and the engine
 // has nothing to add to a number it does not interpret.
-func (e *Engine) Version() (int64, error) { return e.store.Version() }
+//
+// A store put back under it is followed first, so the version a board reads
+// is the one of the store everyone else reads.
+func (e *Engine) Version() (int64, error) {
+	defer e.taking()()
+	if err := e.following(); err != nil {
+		return 0, Told(err)
+	}
+	moved, err := e.store.Version()
+	return moved + e.followed<<32, err
+}
 
 // apply makes one change, after setting a backup aside: changing the shape of a
 // store is not something to discover afterwards.

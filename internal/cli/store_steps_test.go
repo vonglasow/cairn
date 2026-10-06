@@ -12,6 +12,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/engine"
 	"cairn/internal/migration"
 	"cairn/test"
 )
@@ -236,6 +237,21 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 
 	sc.Step("^it says to run `([^`]*)`$", func(what string) error {
 		return test.WantContains(w.Out.Stderr, what, "the reason")
+	})
+
+	sc.Step(`^a board is open on the store$`, func() error {
+		held, err := engine.Hold(home())
+		if err != nil {
+			return err
+		}
+		w.board = held
+		w.OnEnd(func() { _ = held.Close() })
+		return nil
+	})
+
+	sc.Step(`^the board adds a task titled "([^"]*)"$`, func(title string) error {
+		_, err := w.board.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{"title": title}})
+		return err
 	})
 
 	sc.Step(`^I made a backup of the store$`, func() error {

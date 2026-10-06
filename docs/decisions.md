@@ -44,6 +44,8 @@ already said why not.
 | no index on the tasks table | a store holds hundreds of tasks; an index is added the day a listing is measured slow | this page |
 | a change that alters data and not the shape is forgotten, not refused, when rolled back | it has nothing to undo, and refusing it would wall off every older shape behind it; what it leaves as it was is said by its `loses`, and applying it again changes nothing | `internal/store/migrate.go`, `RollBack` |
 | a backup is refused as a restore when SQLite cannot read it whole | a damaged backup put in place trades a store that opens for one that does not | `internal/store/backup.go` |
+| an engine held open follows a store put back under it, rather than a restore being refused while a board is open | measured: a board's connection stayed on the file the restore replaced, did not see what came back, and wrote where nobody reads, without an error; the engine now sees its file was replaced before every act and every beat, and reopens. A lock held against boards would be a lock a forgotten window holds for ever | `internal/engine/engine.go`, `following` |
+| looking at a backup, or at the store before backing it up, opens the file to be read and nothing else | opened the shared way, a store that was not there was made readable by anybody, and a backup looked at was rewritten and its date moved | `internal/store/backup.go`, `heldIn` |
 
 ## The surfaces
 
@@ -53,7 +55,7 @@ already said why not.
 | what kind of answer a failure is — refused, not understood, store, unforeseen — is the engine's | a script's exit code and an agent's refusal are read off the same list | `internal/engine/refusal.go` |
 | `--json` is a flag of every command, including those that never answer in JSON | one flag at the root reads the same everywhere; on `completion` or `gui` it changes nothing and costs nothing | `internal/cli/cli.go` |
 | no `--dry-run` on what loses work | without `--yes` it is refused before anything is touched, and the refusal names what would have gone — that is the dry run | the command line's `newActionCmd` |
-| what a terminal would obey, or what turns text around, is refused when written and replaced when shown | the refusal keeps it out from now on; showing it replaced covers what was kept before the refusal existed, or comes back with an older backup | `internal/domain/title.go`, `Prose`, `Shown` |
+| what a terminal would obey, or what formats text rather than shows it — every Unicode Cf character, emoji joiners included — is refused when written and replaced when shown | the category is the rule, since a list of the characters somebody thought of let the rest through, tag characters an agent reads included; the refusal keeps it out from now on; showing it replaced covers what was kept before the refusal existed, or comes back with an older backup | `internal/domain/title.go`, `Prose`, `Shown` |
 | no limit on a listing | a row carries facts and never what a task says, which is what made a listing too long for a client; a limit comes the day a board that large is measured | [listing.md](listing.md#a-listing-hands-over-the-facts-and-leaves-what-a-task-says-to-be-shown) |
 | the contract with an agent is versioned by its commits until the first tag | a break says `BREAKING CHANGE` in the commit that makes it, and the schemas are pinned so it cannot be made without one; a version number with nothing tagged would number nothing | [mcp.md](mcp.md#what-changes-in-a-tools-answer-and-what-does-not) |
 | the MCP server looks only, unless told otherwise | an agent can be talked into a write by what it reads | [mcp.md](mcp.md#what-an-agent-may-do-is-settled-when-the-server-starts) |
@@ -84,9 +86,6 @@ decided.
 
 | what | why it matters | where |
 |---|---|---|
-| `backup restore` while a board is open loses what the board writes next | the board's connection still points at the file the restore replaced: measured, its data version does not move, it does not see what was put back, and its writes return without error and never reach the store. This page once said a board's next beat finds the restored store; it does not | `internal/store/backup.go`, `Restore` |
-| looking at a backup, or backing up a store that is not there, opens the file to be written | `heldIn` opens it the shared way: a missing store is made, readable by anybody, and a backup looked at by `backup show` is turned to WAL and its date moves | `internal/store/backup.go`, `heldIn` |
-| `hides` names some invisible characters, not all of them | tag characters, the bidi marks U+200E, U+200F, U+061C, U+2060–2064 and the soft hyphen pass, and an agent reads them | `internal/domain/title.go` |
 | a person's error is printed with its first letter capitalised, quoted value included | `"abc"` reads `"Abc"`, a tab reads `\T`: what was typed is misquoted, and differs from the JSON | the command line's error handler |
 | a closed set refused by a narrowing says `not-one-of`, refused by an edit says `not-a-state` | one mistake, two reasons to branch on | `internal/engine/refusal.go` |
 | `migration rollback` does not read the ledger again inside its transaction, and `migration apply N` applies N with an earlier change missing | two at once both report undoing the same change; a change applied out of order gives a shape no sequence describes | `internal/store/migrate.go` |

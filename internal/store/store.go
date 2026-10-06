@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	// The pure-Go SQLite driver. Registered for its side effect, as database/sql
@@ -27,6 +28,9 @@ type Store struct {
 	// the one transaction an act is being kept whole in.
 	on   runs
 	path string
+	// opened is the file this store was opened on, to tell it apart from one
+	// put in its place since.
+	opened os.FileInfo
 }
 
 // taskColumns is the reading order every query below hands to scanTask,

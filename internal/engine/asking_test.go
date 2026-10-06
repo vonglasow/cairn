@@ -95,12 +95,51 @@ func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
 	value := reflect.ValueOf(*e)
 	for i := range value.NumField() {
 		field := value.Type().Field(i)
-		kind := field.Type.Kind()
-		if kind != reflect.Interface && kind != reflect.Pointer {
+		if field.Type.Kind() != reflect.Interface && field.Type != reflect.TypeOf(kept) {
 			continue
 		}
 		if value.Field(i).IsNil() {
 			t.Errorf("Engine.%s is left out of keptBy: an act would reach the store beside its transaction", field.Name)
 		}
+	}
+}
+
+// An engine held open follows a store put back under it: what it writes next
+// reaches the store everyone else reads, and its version moves.
+func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	held, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = held.Close() })
+	if _, err := held.Ask(TaskAdd, given("title", "Write the spec")); err != nil {
+		t.Fatal(err)
+	}
+	made, err := BackupsAt(path).Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := held.Version()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := BackupsAt(path).Restore(made.Number); err != nil {
+		t.Fatal(err)
+	}
+	// Higher, not only different: a version only ever grows, so a board that
+	// keeps the highest it has seen is never told a store moved back.
+	if after, err := held.Version(); err != nil || after <= before {
+		t.Errorf("Version = %d, %v after a backup was put back, want it above %d", after, err, before)
+	}
+	if _, err := held.Ask(TaskAdd, given("title", "Added on the board")); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := Do(TaskList, path, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Tasks) != 2 {
+		t.Errorf("%d tasks in the store, want the one put back and the one added after", len(listed.Tasks))
 	}
 }

@@ -549,3 +549,62 @@ func TestVault_putsBackThroughNoLinkLeftInItsWay(t *testing.T) {
 		t.Error("the restore wrote through a link somebody left beside the store")
 	}
 }
+
+// A store held open knows when the file it was opened on has been put away
+// for another — a backup put back under it.
+func TestStore_saysWhenItsFileWasReplaced(t *testing.T) {
+	v, path := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	if replaced, err := s.Replaced(); err != nil || replaced {
+		t.Fatalf("Replaced = %v, %v before anything happened", replaced, err)
+	}
+	if err := v.Restore(made.Number); err != nil {
+		t.Fatal(err)
+	}
+	if replaced, err := s.Replaced(); err != nil || !replaced {
+		t.Errorf("Replaced = %v, %v after a backup was put back under it", replaced, err)
+	}
+}
+
+// Looking at a backup leaves it exactly as it was: not a byte written, not
+// its date moved — a backup read by an agent that only looks is a backup
+// nobody changed.
+func TestVault_looksAtABackupWithoutTouchingIt(t *testing.T) {
+	v, _ := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(made.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stamp, _ := os.Stat(made.Path)
+	if _, err := v.Holds(made); err != nil {
+		t.Fatal(err)
+	}
+	after, _ := os.ReadFile(made.Path)
+	again, _ := os.Stat(made.Path)
+	if string(after) != string(before) || !again.ModTime().Equal(stamp.ModTime()) {
+		t.Error("looking at a backup changed it")
+	}
+}
+
+// Asked about a store that is not there, the vault says so and makes nothing.
+func TestVault_makesNoStoreByLookingForOne(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	if _, err := NewVault(path).HoldsStore(); err == nil {
+		t.Error("HoldsStore answered about a store that is not there")
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a store was made by looking for one: %v", err)
+	}
+}

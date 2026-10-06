@@ -36,14 +36,16 @@ func breaksALine(r rune) bool {
 	return unicode.IsControl(r) || r == '\u2028' || r == '\u2029' || hides(r)
 }
 
-// hides says whether a rune turns the text around it, or sits in it unseen:
-// the bidirectional overrides and isolates, the zero-width spaces and joiners,
-// and the byte-order mark. None of them is a control character, and every one
-// makes text show something other than what it holds — a title drawn
-// backwards, a word with an invisible break in it.
+// hides says whether a rune formats text rather than shows it: every
+// character of Unicode's Cf category — the bidirectional marks, overrides and
+// isolates, the zero-width spaces and joiners, the soft hyphen, the invisible
+// operators, the byte-order mark and the tag characters. None of them is a
+// control character, and every one makes text hold something other than what
+// it shows: a title drawn backwards, a word with an invisible break in it, an
+// instruction a person cannot see and a model reads. Naming the ones somebody
+// thought of left the rest through; the category is the rule.
 func hides(r rune) bool {
-	return r >= '\u202A' && r <= '\u202E' || r >= '\u2066' && r <= '\u2069' ||
-		r >= '\u200B' && r <= '\u200D' || r == '\uFEFF'
+	return unicode.Is(unicode.Cf, r)
 }
 
 // OneLine says whether a title is text and nothing else. It is shared by a

@@ -37,6 +37,9 @@ import (
 type world struct {
 	*test.World
 	long string
+	// board is an engine held open the way a board holds one, for the
+	// scenarios that need somebody else at the store while a command runs.
+	board *engine.Engine
 }
 
 // newWorld builds the state one scenario works against, reaching the command
