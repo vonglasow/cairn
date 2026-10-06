@@ -1446,6 +1446,19 @@ Feature: Tasks
       And task 1 is archived
       And task 2 is not archived
 
+    @task-list-leaves-parts-of-archived-work-out
+    Scenario: the parts of work taken off the board go off it with the work
+      A part keeps its own mark as it was; it is off the board because the
+      work it belongs to is, and comes back when that work does.
+
+      Given I added a task titled "Dépôt APP" with the state "done"
+      And I added a task titled "Préparation" with the parent "1"
+      And I edited task 2 with the state "done"
+      And I archived task 1
+      When I run `cairn task list`
+      Then it says nothing of task 2
+      And `cairn task list --archived` lists task 2 titled "Préparation"
+
     @task-archive-a-part-on-its-own
     Scenario: archiving a part on its own is refused, naming the work it belongs to
       Given I added a task titled "Dépôt APP"

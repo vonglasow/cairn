@@ -276,3 +276,52 @@ func TestNarrowing_withArchivedHoldsToNeither(t *testing.T) {
 		t.Errorf("where = %q, args = %v, want nothing held about being off the board", where, args)
 	}
 }
+
+// A part is off the board when the work it belongs to is: it keeps its own
+// mark as it was, and every listing reads the two together.
+func TestNarrowed_takesAPartOffTheBoardWithItsWork(t *testing.T) {
+	s := openStore(t)
+	work := keep(t, s, "Dépôt APP")
+	built, err := task.NewTask("Préparation")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var p task.AsTold
+	built.Tell(&p)
+	p.Under(1)
+	if _, err := s.Keep(p.Task()); err != nil {
+		t.Fatal(err)
+	}
+	var a task.AsTold
+	work.Tell(&a)
+	a.Archived()
+	if err := s.Update(a.Task()); err != nil {
+		t.Fatal(err)
+	}
+
+	numbers := func(kept *domain.Narrowing) []int {
+		t.Helper()
+		found, err := s.Narrowed(kept)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []int
+		for _, one := range found {
+			out = append(out, factsOf(one).number)
+		}
+		return out
+	}
+	if got := numbers(&domain.Narrowing{}); len(got) != 0 {
+		t.Errorf("on the board: %v, want nothing — the part went with its work", got)
+	}
+	off := domain.Narrowing{}
+	off.Archived()
+	if got := numbers(&off); len(got) != 2 {
+		t.Errorf("off the board: %v, want the work and its part", got)
+	}
+	both := domain.Narrowing{}
+	both.WithArchived()
+	if got := numbers(&both); len(got) != 2 {
+		t.Errorf("both: %v, want the work and its part", got)
+	}
+}

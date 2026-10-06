@@ -115,6 +115,14 @@ func (n *narrowing) where(labels labelStore) (string, []any) {
 	return ` WHERE ` + strings.Join(clauses, ` AND `), args
 }
 
+// offTheBoard is whether a task is off the board: taken off itself, or a part
+// of work that was. A part keeps its own mark as it was — it is never archived
+// on its own — and goes off the board with the work it belongs to, coming
+// back when that work does. Read here, for every listing at once: a part left
+// on the board under work taken off it was a line nobody could act on, since
+// archiving it alone is refused.
+const offTheBoard = `(archived = 1 OR parent IN (SELECT whole.number FROM tasks AS whole WHERE whole.archived = 1))`
+
 // whereTasks is the same for tasks, which alone can be taken off the board.
 // Its own method because a narrowing is shared with objectives, which cannot.
 func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
@@ -122,7 +130,7 @@ func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
 	var clauses []string
 	var args []any
 	if !n.both {
-		clauses, args = []string{`archived = ?`}, []any{n.archived}
+		clauses, args = []string{offTheBoard + ` = ?`}, []any{n.archived}
 	}
 	clauses = append(clauses, n.clauses...)
 	args = append(args, n.args...)

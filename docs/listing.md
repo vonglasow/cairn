@@ -101,6 +101,13 @@ boards, and it showed: archiving a finished column took 120 tasks where
 labelling the same narrowing took 167. A part still goes off the board — with
 the work it belongs to, and archiving one on its own is refused by name.
 
+**A part is off the board when its work is**, read that way by every listing:
+it keeps its own mark as it was, and the clause that leaves the archived out
+asks about the task and about the task it hangs under. Archiving the work used
+to mark the work alone, and its parts stayed on the board with no way off it —
+they could not be archived on their own. `--archived` answers them beside
+their work, and bringing the work back brings them back.
+
 Both directions refuse a task already in the state asked for. Archiving twice
 was refused first, because a sweep counts what it actually took and skips the
 rest on that error; bringing back what never went away was not, for a while,
