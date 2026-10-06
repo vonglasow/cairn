@@ -172,6 +172,9 @@ func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
 	if err := claim(path); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, fmt.Errorf("making the store: %w", err)
 	}
+	if err := refuseAnotherDatabase(path); err != nil {
+		return nil, fmt.Errorf("%w — store: %s", err, path)
+	}
 	db, err := sql.Open("sqlite", shared(path))
 	if err != nil {
 		return nil, fmt.Errorf("opening the store: %w", err)
@@ -179,9 +182,8 @@ func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
 	s := &Store{db: db, on: db, path: path}
 	if err := s.settle(mustBeCurrent); err != nil {
 		_ = db.Close()
-		// The path goes last, never first: fang capitalises the opening letter of
-		// a message, and a path that came back as /Var/Folders/… is a path
-		// nobody can paste back into a shell.
+		// The path goes last: a message says what went wrong first, and where
+		// after, so the path is whole at the end of the line, ready to paste.
 		return nil, fmt.Errorf("%w — store: %s", err, path)
 	}
 	opened, err := os.Stat(path)
@@ -206,6 +208,34 @@ func (s *Store) Replaced() (bool, error) {
 		return false, fmt.Errorf("looking at the store: %w", err)
 	}
 	return !os.SameFile(s.opened, now), nil
+}
+
+// refuseAnotherDatabase refuses a database that holds tables and none of a
+// store's: another application's, named as the store by mistake. Asked before
+// the store is opened the way it is used, and asked read-only — opening it the
+// usual way switches its journal and lays cairn's ledger down, which is
+// writing into somebody else's file before saying it is not ours. An empty
+// file is a store with nothing in it yet, and is left to be made.
+func refuseAnotherDatabase(path string) error {
+	db, err := readOnly(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+	var theirs, ours int
+	err = db.QueryRow(`SELECT
+		count(*) FILTER (WHERE name NOT LIKE 'sqlite_%'),
+		count(*) FILTER (WHERE name IN ('tasks', 'migrations'))
+		FROM sqlite_master WHERE type = 'table'`).Scan(&theirs, &ours)
+	if err != nil {
+		// What SQLite cannot read at all is refused further on, the way it
+		// always was; this only answers the question it can.
+		return nil
+	}
+	if theirs > 0 && ours == 0 {
+		return fmt.Errorf("%w: it holds tables, and none of a cairn store's", ErrNotAStore)
+	}
+	return nil
 }
 
 // claim makes an empty file at path that its owner alone may read, and says

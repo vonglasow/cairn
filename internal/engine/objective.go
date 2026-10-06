@@ -314,8 +314,8 @@ func counted(tally domain.Tally, t task.Task) domain.Tally {
 // refused.
 var objectiveAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the objective is about"},
-	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Means: "where the objective stands"},
-	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Means: "the priority it carries"},
+	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
+	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},

@@ -59,6 +59,17 @@ Feature: Changes to the shape of the store
       Then it succeeds
       And it names the change it applied
 
+    @migration-apply-in-order
+    Scenario: a change is never made before one it was written after
+      Each change was written on the shape the ones before it leave, so one
+      applied ahead of an earlier one gives a shape no sequence describes.
+
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      And I rolled the last change back
+      When I apply the last change waiting, past the one before it
+      Then it fails
+      And it says an earlier change is still waiting
+
     @migration-apply-keeps
     Scenario: what the store held is still there afterwards
       Given a store from an older cairn, holding a task titled "Write the spec"

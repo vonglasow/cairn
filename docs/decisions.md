@@ -53,6 +53,9 @@ already said why not.
 |---|---|---|
 | every change goes through the engine; a surface decides nothing | the rules live once | [architecture.md](architecture.md) |
 | what kind of answer a failure is — refused, not understood, store, unforeseen — is the engine's | a script's exit code and an agent's refusal are read off the same list | `internal/engine/refusal.go` |
+| a refusal quotes what a person typed exactly as typed, with what a terminal would act on written out | what somebody typed is theirs and is never changed — not even its case, which fang's style used to change — and it reaches a screen shown, never obeyed | the command line's `saidToAPerson` |
+| changes to the shape of a store are made in order, and a rollback reads the ledger again inside its transaction | each change was written on the shape the ones before it leave; two rollbacks read before either ran both said they undid the same change | `internal/store/migrate.go` |
+| a database holding tables, and none of a store's, is refused before anything is written into it | a path named by mistake can lead to somebody else's database, and opening it the usual way already writes into it | `internal/store/open.go`, `refuseAnotherDatabase` |
 | `--json` is a flag of every command, including those that never answer in JSON | one flag at the root reads the same everywhere; on `completion` or `gui` it changes nothing and costs nothing | `internal/cli/cli.go` |
 | no `--dry-run` on what loses work | without `--yes` it is refused before anything is touched, and the refusal names what would have gone — that is the dry run | the command line's `newActionCmd` |
 | what a terminal would obey, or what formats text rather than shows it — every Unicode Cf character, emoji joiners included — is refused when written and replaced when shown | the category is the rule, since a list of the characters somebody thought of let the rest through, tag characters an agent reads included; the refusal keeps it out from now on; showing it replaced covers what was kept before the refusal existed, or comes back with an older backup | `internal/domain/title.go`, `Prose`, `Shown` |
@@ -84,9 +87,4 @@ What a review found and nobody has decided yet. It is written here so it is
 not found a second time as news, and it leaves this list when it is fixed or
 decided.
 
-| what | why it matters | where |
-|---|---|---|
-| a person's error is printed with its first letter capitalised, quoted value included | `"abc"` reads `"Abc"`, a tab reads `\T`: what was typed is misquoted, and differs from the JSON | the command line's error handler |
-| a closed set refused by a narrowing says `not-one-of`, refused by an edit says `not-a-state` | one mistake, two reasons to branch on | `internal/engine/refusal.go` |
-| `migration rollback` does not read the ledger again inside its transaction, and `migration apply N` applies N with an earlier change missing | two at once both report undoing the same change; a change applied out of order gives a shape no sequence describes | `internal/store/migrate.go` |
-| a SQLite file that is not cairn's, holding no table cairn knows, is given cairn's shape | it is reported as not a store only when it holds something cairn reads | `internal/store/migrate.go`, `isEmpty` |
+Nothing, at the moment.

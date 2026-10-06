@@ -55,6 +55,16 @@ Feature: The store
       Then it exits with code 3
       And it writes the reason to standard error
 
+    @store-another-applications-database
+    Scenario: another application's database named as the store is refused and left alone
+      A path named by mistake can lead to a database that is somebody else's.
+      Cairn says it is not a store of its own before it writes anything into it.
+
+      Given the store is another application's database
+      When I run `cairn task list`
+      Then it exits with code 3
+      And the other application's database holds nothing of cairn's
+
     @store-nowhere-to-live
     Scenario: nowhere to put the default store is reported
       Given the environment says nothing about where anything lives

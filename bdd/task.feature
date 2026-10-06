@@ -496,6 +496,21 @@ Feature: Tasks
       Then it fails
       And it says in JSON the refusal is "refused", because "no-such-task"
 
+    @task-refusal-quotes-as-typed
+    Scenario: a refusal quotes what was typed exactly as it was typed
+      What a person typed is theirs: a refusal quotes it back unchanged, and
+      writes out whatever in it a terminal would act on rather than obeying it.
+
+      When I run `cairn task show abc`
+      Then it fails
+      And it quotes "abc" back as it was typed
+
+    @task-list-refuses-a-column-like-an-edit
+    Scenario: a column that does not exist is refused for the same reason everywhere
+      When I run `cairn task list --state bogus --json`
+      Then it fails
+      And it says in JSON the refusal is "refused", because "not-a-state"
+
     @task-show-not-a-number
     Scenario: showing something that is not a number says so
       When I run `cairn task show spec`

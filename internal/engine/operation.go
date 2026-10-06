@@ -125,6 +125,10 @@ type Argument struct {
 	Required bool
 	// OneOf is the values it accepts, when there is a closed set.
 	OneOf []string
+	// Outside is what a value outside OneOf is refused with: the same
+	// sentinel the attribute is refused with when it is given, so one mistake
+	// has one reason whether a listing narrows by it or an edit gives it.
+	Outside error
 	// Means is one sentence: cobra's flag help and the schema's description.
 	Means string
 	// Of is what a Kind: Number argument names, written the way the refusal

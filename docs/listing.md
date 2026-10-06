@@ -297,6 +297,12 @@ which is already read off `domain.States` — so the closed set stays in the one
 place it is written, and a listing of objectives is held to the objective
 states rather than to a task's columns.
 
+**One mistake, one reason.** The refusal wraps the sentinel the attribute is
+refused with when it is given — `Argument.Outside`: a column that does not
+exist is `not-a-state` to a machine whether a listing narrows by it or an
+edit gives it, where it used to be `not-one-of` from one and `not-a-state`
+from the other.
+
 An objective nobody added is a different case: `--objective 9` succeeds and
 answers nothing. There is no closed set to fall outside of, and whether an
 objective exists is a question about objectives that reading tasks does not

@@ -23,6 +23,8 @@ var (
 	ErrNothingWaiting    = store.ErrNothingWaiting
 	ErrAlreadyApplied    = store.ErrAlreadyApplied
 	ErrNothingToRollBack = store.ErrNothingToRollBack
+	ErrUndoneMeanwhile   = store.ErrUndoneMeanwhile
+	ErrEarlierWaiting    = store.ErrEarlierWaiting
 )
 
 // StoreUnusable says whether an error is the store being out of reach rather

@@ -124,3 +124,25 @@ func TestEveryFailureCairnForesawHasAReason(t *testing.T) {
 		}
 	}
 }
+
+// One mistake, one reason: a value outside a closed set is refused in the
+// same words whether a listing narrows by it or an edit gives it.
+func TestRefusalOf_givesOneReasonForAValueOutsideItsSet(t *testing.T) {
+	path := storeAt(t, "Write the spec")
+	for _, c := range []struct {
+		op     Operation
+		in     Input
+		reason string
+	}{
+		{TaskList, given("state", "bogus"), "not-a-state"},
+		{TaskEdit, given("number", "1", "state", "bogus"), "not-a-state"},
+		{TaskList, given("priority", "urgent"), "not-a-priority"},
+		{TaskEdit, given("number", "1", "priority", "urgent"), "not-a-priority"},
+		{ObjectiveList, given("state", "bogus"), "not-an-objective-state"},
+	} {
+		_, err := Do(c.op, path, c.in)
+		if got := RefusalOf(err).Reason; got != c.reason {
+			t.Errorf("%s %v: reason %q, want %q (%v)", c.op.Line(), c.in.Given, got, c.reason, err)
+		}
+	}
+}

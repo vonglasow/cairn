@@ -622,3 +622,56 @@ func TestMake_saysAChangeAnotherCairnAppliedFirstIsApplied(t *testing.T) {
 		t.Errorf("make of a change already applied = %v, want ErrAlreadyApplied", err)
 	}
 }
+
+func TestApply_refusesAChangeWithAnEarlierOneWaiting(t *testing.T) {
+	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	if err != nil {
+		t.Fatalf("OpenBehind: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+	if _, err := s.Apply(3); !errors.Is(err, ErrEarlierWaiting) {
+		t.Fatalf("Apply(3) with change 2 waiting = %v, want ErrEarlierWaiting", err)
+	}
+	if _, err := s.Apply(2); err != nil {
+		t.Errorf("Apply(2) = %v, want the next change applied", err)
+	}
+}
+
+func TestRollBack_saysAChangeAnotherCairnUndidFirstWasUndone(t *testing.T) {
+	s := openStore(t)
+	// What a second cairn read a moment before the first one rolled back.
+	stale, err := s.Migrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.RollBack(); err != nil {
+		t.Fatalf("RollBack: %v", err)
+	}
+	if _, err := s.rollBackFrom(stale); !errors.Is(err, ErrUndoneMeanwhile) {
+		t.Errorf("a rollback read before another one = %v, want ErrUndoneMeanwhile", err)
+	}
+}
+
+func TestOpen_refusesAnotherApplicationsDatabase(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "theirs.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE invoices (id INTEGER PRIMARY KEY, total REAL)`); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	if _, err := Open(path); !errors.Is(err, ErrNotAStore) {
+		t.Fatalf("Open = %v, want ErrNotAStore", err)
+	}
+	check, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = check.Close() }()
+	var n int
+	if err := check.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type = 'table'`).Scan(&n); err != nil || n != 1 {
+		t.Errorf("%d tables, %v: want the other application's one table and nothing of cairn's", n, err)
+	}
+}

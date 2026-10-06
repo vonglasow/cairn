@@ -235,3 +235,32 @@ func TestHelp_saysATextCanComeFromStandardInput(t *testing.T) {
 		t.Errorf("task edit --help does not say a text can come from standard input:\n%s", got)
 	}
 }
+
+// What a person typed is quoted back as it was typed: a refusal that changed
+// the case of the value it names would be quoting something nobody wrote.
+func TestMain_quotesWhatWasTypedAsItWasTyped(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	for _, args := range [][]string{
+		{"task", "edit", "abc"},
+		{"task", "list", "--state", "bogus"},
+	} {
+		r := run(t, args...)
+		typed := args[2]
+		if args[2] == "--state" {
+			typed = args[3]
+		}
+		if !strings.Contains(r.Stderr, `"`+typed+`"`) {
+			t.Errorf("%v: stderr %q, want %q quoted as typed", args, r.Stderr, typed)
+		}
+	}
+}
+
+// What a person typed reaches the screen shown, never obeyed: a value carrying
+// an escape is quoted with it written out, not handed to the terminal.
+func TestMain_neverHandsAnEscapeToTheTerminal(t *testing.T) {
+	t.Setenv("CAIRN_STORE", storeFor(t))
+	r := run(t, "task", "list", "--state", "x\x1b]52;c;aGk=\x07y")
+	if strings.ContainsAny(r.Stderr, "\x1b\x07") {
+		t.Errorf("stderr %q hands an escape to the terminal", r.Stderr)
+	}
+}

@@ -669,6 +669,39 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	// A database another application wrote, kept as a file rather than made
+	// here: a surface never opens a database, its tests included.
+	sc.Step(`^the store is another application's database$`, func() error {
+		theirs, err := os.ReadFile(filepath.Join("testdata", "another-application.db"))
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+			return err
+		}
+		return os.WriteFile(w.StorePath, theirs, 0o600)
+	})
+
+	sc.Step(`^the other application's database holds nothing of cairn's$`, func() error {
+		theirs, err := os.ReadFile(filepath.Join("testdata", "another-application.db"))
+		if err != nil {
+			return err
+		}
+		held, err := os.ReadFile(w.StorePath)
+		if err != nil {
+			return err
+		}
+		if string(held) != string(theirs) {
+			return fmt.Errorf("the other application's database was written to")
+		}
+		for _, beside := range []string{"-wal", "-shm"} {
+			if _, err := os.Stat(w.StorePath + beside); err == nil {
+				return fmt.Errorf("cairn left its %s beside the other application's database", beside)
+			}
+		}
+		return nil
+	})
+
 	sc.Step(`^the store holds something that is not a cairn store$`, func() error {
 		if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
 			return err
@@ -714,6 +747,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it says task (\d+) was waiting on it$`, func(n int) error {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d was waiting on it", n), "the deletion")
+	})
+
+	sc.Step(`^it quotes "([^"]*)" back as it was typed$`, func(typed string) error {
+		return test.WantContains(w.Out.Stderr, `"`+typed+`"`, "the refusal")
 	})
 
 	sc.Step(`^it names task (\d+)$`, func(n int) error {

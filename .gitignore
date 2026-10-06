@@ -15,6 +15,8 @@ coverage.out
 # into the tree by CAIRN_STORE, an environment file, a key — the secrets
 # packs semgrep runs at commit catch what slips past these
 *.db
+# a database a scenario reads as somebody else's, kept on purpose
+!internal/cli/testdata/*.db
 *.db-wal
 *.db-shm
 *.db.arriving

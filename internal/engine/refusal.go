@@ -107,6 +107,8 @@ var reasons = []reason{
 	{ErrNothingWaiting, KindRefused, "nothing-waiting"},
 	{ErrAlreadyApplied, KindRefused, "already-applied"},
 	{ErrNothingToRollBack, KindRefused, "nothing-to-roll-back"},
+	{ErrUndoneMeanwhile, KindRefused, "undone-meanwhile"},
+	{ErrEarlierWaiting, KindRefused, "earlier-change-waiting"},
 	{ErrNotOneOf, KindRefused, "not-one-of"},
 	{ErrNotALevel, KindRefused, "not-a-level"},
 	{config.ErrNotTOML, KindRefused, "config-not-toml"},

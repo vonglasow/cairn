@@ -39,6 +39,16 @@ var (
 	// that one is not a change on top of something else — undoing it would mean
 	// throwing the store away, which is what deleting the file is for.
 	ErrNothingToRollBack = errors.New("there is nothing left to roll back")
+
+	// ErrUndoneMeanwhile: the change read as the last applied was undone by
+	// another cairn between the reading and the rollback.
+	ErrUndoneMeanwhile = errors.New("the change was rolled back by somebody else meanwhile")
+
+	// ErrEarlierWaiting: a change was asked for while one before it is still
+	// waiting. Changes are made in order — each was written on the shape the
+	// ones before it leave — and one applied out of order gives a shape no
+	// sequence of changes describes.
+	ErrEarlierWaiting = errors.New("an earlier change is still waiting")
 )
 
 // ledger is where the store records what has been done to it.
@@ -358,6 +368,13 @@ func (s *Store) Apply(number int) (string, error) {
 	if facts.applied {
 		return "", fmt.Errorf("change %d: %w", number, ErrAlreadyApplied)
 	}
+	waiting, err := s.Waiting()
+	if err != nil {
+		return "", err
+	}
+	if first := factsOfChange(waiting[0]).number; first < number {
+		return "", fmt.Errorf("change %d: %w — apply %d first", number, ErrEarlierWaiting, first)
+	}
 	return facts.name, s.make(migration.Known[number-1])
 }
 
@@ -441,6 +458,14 @@ func (s *Store) RollBack() (migration.Migration, error) {
 	if err != nil {
 		return migration.Migration{}, err
 	}
+	return s.rollBackFrom(all)
+}
+
+// rollBackFrom unmakes the last change of all that is applied. What was read
+// as applied is asked again inside the transaction: read before, it may have
+// been undone since by another cairn, and two rollbacks then both said they
+// had undone the same change.
+func (s *Store) rollBackFrom(all []migration.Migration) (migration.Migration, error) {
 	for i := len(all) - 1; i >= 1; i-- {
 		if !factsOfChange(all[i]).applied {
 			continue
@@ -456,6 +481,13 @@ func (s *Store) RollBack() (migration.Migration, error) {
 		// whose shape is gone, or forgets one whose shape is still there, is a
 		// store no later command can reason about.
 		err := s.Within(func(kept *Store) error {
+			applied, err := appliedNamesOn(kept.on)
+			if err != nil {
+				return err
+			}
+			if _, still := applied[raw.name]; !still {
+				return fmt.Errorf("%q: %w", raw.name, ErrUndoneMeanwhile)
+			}
 			if _, err := kept.on.Exec(raw.undoes); err != nil {
 				return fmt.Errorf("rolling back %q: %w", raw.name, err)
 			}

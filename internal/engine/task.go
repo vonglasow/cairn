@@ -371,8 +371,8 @@ cairn task search spec team --state todo`,
 // taken as a positional argument where it can be given at all.
 var taskAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the task is about"},
-	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Means: "the column it sits in"},
-	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Means: "the priority it carries"},
+	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column it sits in"},
+	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries"},
 	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; +3 adds one, -3 takes one away"},
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},

@@ -327,8 +327,8 @@ func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 // same way.
 func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 	e := openEngine(t)
-	if _, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, ErrNotOneOf) {
-		t.Errorf("task list --state bogus = %v, want ErrNotOneOf", err)
+	if _, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, domain.ErrNotAState) {
+		t.Errorf("task list --state bogus = %v, want ErrNotAState, as an edit answers", err)
 	}
 }
 

@@ -127,6 +127,28 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return fmt.Errorf("nothing is waiting:\n%s", listing)
 	})
 
+	sc.Step(`^I apply the last change waiting, past the one before it$`, func() error {
+		before := w.Out
+		w.Run(`cairn migration list`)
+		listing := w.Out.Stdout
+		w.Out = before
+		last := 0
+		for _, row := range strings.Split(listing, "\n") {
+			if number, ok := numberOfRow(row); ok && strings.Contains(row, "waiting") {
+				last = number
+			}
+		}
+		if last == 0 {
+			return fmt.Errorf("nothing is waiting:\n%s", listing)
+		}
+		w.Run(fmt.Sprintf(`cairn migration apply %d`, last))
+		return nil
+	})
+
+	sc.Step(`^it says an earlier change is still waiting$`, func() error {
+		return test.WantContains(w.Out.Stderr, "an earlier change is still waiting", "the reason")
+	})
+
 	sc.Step(`^I rolled the last change back$`, func() error {
 		return w.Seed(`cairn migration rollback --yes`)
 	})

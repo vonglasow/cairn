@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/build"
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -109,6 +110,25 @@ func leadingMinus(err error) (string, bool) {
 	return "-" + unknown.GetSpecifiedShortnames(), true
 }
 
+// saidToAPerson writes a refusal the way fang does, with two things taken
+// back. fang's style capitalises the text, and a refusal opens on the value
+// that was typed: "abc" was quoted back as "Abc", a tab as \T — something
+// nobody wrote, and not what the JSON says. And what reaches the screen is
+// shown, never obeyed: a value is quoted with its escapes written out, and
+// whatever a message carries that a terminal would act on is replaced
+// (domain.Shown) rather than handed to it.
+func saidToAPerson(w io.Writer, styles fang.Styles, err error) {
+	styles.ErrorText = styles.ErrorText.UnsetTransform()
+	fang.DefaultErrorHandler(w, styles, shownError{err})
+}
+
+// shownError is an error as it is safe to print, still answering to what it
+// wraps.
+type shownError struct{ err error }
+
+func (s shownError) Error() string { return domain.Shown(s.err.Error()) }
+func (s shownError) Unwrap() error { return s.err }
+
 // askedForJSON says whether the arguments ask for JSON, spelled any of the ways
 // the flag itself accepts: `--json`, or `--json=` with a value read as a yes.
 func askedForJSON(args []string) bool {
@@ -177,7 +197,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			if machine && writeRefusal(stdout, err) == nil {
 				return
 			}
-			fang.DefaultErrorHandler(w, styles, err)
+			saidToAPerson(w, styles, err)
 		}))
 	return codeFor(err)
 }

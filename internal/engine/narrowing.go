@@ -103,6 +103,9 @@ func accepted(in Input, argument Argument) error {
 	if !named || slices.Contains(argument.OneOf, given) {
 		return nil
 	}
+	if argument.Outside != nil {
+		return fmt.Errorf("%q: %w — %s", given, argument.Outside, strings.Join(argument.OneOf, ", "))
+	}
 	return fmt.Errorf("%q: %w %s", given, ErrNotOneOf, strings.Join(argument.OneOf, ", "))
 }
 
