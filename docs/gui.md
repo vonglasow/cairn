@@ -420,6 +420,12 @@ nothing about it. Two defects came from the older shape: the bar offered *Edit*
 on an open task while `e` did nothing there, and the key that adds worked over
 an open form and threw away what had been typed into it.
 
+**A panel offers what can be done at its own foot; the bar under the board
+stays the board's.** Under a panel it is drawn faint and answers nothing — it
+says what the board will offer again once the panel is put away. It used to
+change to repeat the panel's offers, which read as the board itself having
+changed underneath, and made two places to click for one thing.
+
 **Archive** is one of those offers, under `x`, beside *Edit* and *Delete* on a
 chosen card. On a card already off the board the bar reads *Restore* instead:
 one key both ways, and the bar says which way it goes rather than leaving it to

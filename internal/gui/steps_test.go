@@ -566,6 +566,21 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the detail is closed$`, w.detailClosed)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
+	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
+		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
+			return fmt.Errorf("the bar under the board reads %v, want %v", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the bar under the board answers nothing$`, func() error {
+		for i := range w.w.BoardOffers() {
+			box := OfferAt(w.w.Layout(), i)
+			if offer, on := w.w.offerAt(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); on {
+				return fmt.Errorf("the bar under the board answers %q under a panel", offer)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the lane "([^"]*)" is scrolled$`, w.laneIsScrolled)
 	sc.Then(`^the lane "([^"]*)" is not scrolled$`, w.laneIsNotScrolled)
 	sc.Then(`^nothing was asked of the engine$`, w.askedNothing)

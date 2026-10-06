@@ -251,6 +251,13 @@ func (w Window) Offers() []string {
 		// way to act on the card it had just found.
 		return []string{"Close"}
 	}
+	return w.BoardOffers()
+}
+
+// BoardOffers is what the bar under the board says, whatever is open over it.
+// A panel offers its own at its foot; the bar under the board used to change
+// to say the same, which read as the board itself having changed underneath.
+func (w Window) BoardOffers() []string {
 	offers := []string{"New", "Search", "Archived", "Help"}
 	if !w.looking.Empty() {
 		offers = append(offers, "Clear")
@@ -294,9 +301,9 @@ func chosenFromAList(field reading.Field) bool {
 	return field.Arg == "objective" || field.Arg == "parent" || len(field.Choices) > 0
 }
 
-// offerAt says which offer a point lands on, in the bar along the bottom or on
-// the panel that has the window. Both say the same things and both answer,
-// because a person clicks what they are looking at.
+// offerAt says which offer a point lands on: in the bar along the bottom while
+// the board has the window, on the panel's own foot while a panel has it. A
+// person clicks what they are looking at, and that is where it is drawn.
 func (w Window) offerAt(p Point) (string, bool) {
 	l := w.Layout()
 	// The panel the offers are drawn on, which for a list is its own and not
@@ -306,11 +313,15 @@ func (w Window) offerAt(p Point) (string, bool) {
 	if w.screen == OnChoosing {
 		panel = ChoosingOver(w.width, w.height)
 	}
+	// The bar under the board answers only while nothing is over it: under a
+	// panel it is drawn faint, saying what the board will offer again, and
+	// what can be done now is on the panel.
+	alone := w.screen == OnTheBoard || w.screen == OnSearch
 	for i, offer := range w.Offers() {
-		if OfferAt(l, i).In(p) {
+		if alone && OfferAt(l, i).In(p) {
 			return offer, true
 		}
-		if w.screen != OnTheBoard && PanelOfferAt(panel, i).In(p) {
+		if !alone && PanelOfferAt(panel, i).In(p) {
 			return offer, true
 		}
 	}

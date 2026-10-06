@@ -2100,6 +2100,17 @@ Feature: The desktop board
       And the bar offers "Search" under "/"
       And the bar offers "Help" under "?"
 
+    @gui-the-board-keeps-its-bar-under-a-panel
+    Scenario: opening a task leaves the bar under the board as it was, and the panel offers its own
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I double-click the card "Write the spec"
+      Then the bar under the board reads "New", "Search", "Archived", "Help", "Edit", "Archive", "Delete"
+      And the bar under the board answers nothing
+      When I click "Edit"
+      Then the bar under the board reads "New", "Search", "Archived", "Help", "Edit", "Archive", "Delete"
+
     @gui-a-search-says-it-is-a-search
     Scenario: a search says it is one, and the key that opened it is not typed
       When I open the window

@@ -185,6 +185,40 @@ func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 	return count
 }
 
+// The bar under the board is written in the ink of what can be pressed while
+// the board, or a search over it, has the window — and faint under a panel,
+// which offers its own.
+func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	skin := Dark()
+	first := OfferAt(w.Layout(), 0)
+	for _, c := range []struct {
+		what   string
+		screen Screen
+		lit    bool
+	}{
+		{"the board", OnTheBoard, true},
+		{"a search", OnSearch, true},
+		{"an open task", OnDetail, false},
+		{"a form", OnForm, false},
+	} {
+		v := w
+		v.chosen, v.screen = 1, c.screen
+		if c.screen == OnForm {
+			v = v.Edit()
+		}
+		shot := drawn(t, v)
+		lit, faint := painted(shot, first, skin.Chosen), painted(shot, first, skin.Faint)
+		if c.lit && (lit == 0 || faint != 0) {
+			t.Errorf("over %s the bar has %d lit and %d faint", c.what, lit, faint)
+		}
+		if !c.lit && (lit != 0 || faint == 0) {
+			t.Errorf("under %s the bar has %d lit and %d faint", c.what, lit, faint)
+		}
+	}
+}
+
 func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})

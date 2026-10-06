@@ -471,6 +471,12 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		sayOver(gtx, th, skin.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
 		return
 	}
+	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
+		for i, offer := range w.BoardOffers() {
+			say(gtx, th, skin.Faint, OfferAt(l, i), said(offer), reads)
+		}
+		return
+	}
 	for i, offer := range w.Offers() {
 		drawOffer(gtx, th, skin, OfferAt(l, i), offer, w)
 	}

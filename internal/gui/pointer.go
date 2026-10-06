@@ -14,8 +14,8 @@ import (
 // Click chooses whatever is under the pointer, and nothing when there is
 // nothing there.
 func (w Window) Click(p Point) Window {
-	// The bar answers whatever is on screen: it is what closes a panel, so it
-	// is the one thing a panel does not swallow.
+	// What is offered answers first, wherever it is drawn: it is what closes
+	// a panel, so it is the one thing a panel does not swallow.
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}
