@@ -139,8 +139,12 @@ func Shortcut(offer string) string {
 		return "cmd+enter"
 	case "done":
 		return "space"
-	case "close", "cancel", "clear":
+	case "close", "cancel", "clear", "throw away":
 		return "esc"
+	case "back":
+		return "enter"
+	case "recover":
+		return "cmd+z"
 	}
 	return ""
 }
@@ -156,6 +160,8 @@ func Pretty(key string) string {
 		return "⌘⏎"
 	case "shift+a":
 		return "⇧A"
+	case "cmd+z":
+		return "⌘Z"
 	case "enter":
 		return "⏎"
 	}
@@ -194,6 +200,7 @@ func (w Window) Helping() []Said {
 		{Key: "⏎ in a form", Means: "a new line in the description, the next field anywhere else — it never saves"},
 		{Key: "↑↓ in the description", Means: "walk its lines — tab leaves it, and the wheel and the bar scroll it"},
 		{Key: "⌘⏎ or ⌘S in a form", Means: "save, wherever the keyboard is"},
+		{Key: "esc esc in a form", Means: "throw it away — set aside: ⌘Z on the same form brings it back"},
 		{Key: "⌘A ⌘C ⌘X ⌘V", Means: "hold all of a field, copy, cut, paste"},
 		{Key: "⇧←→ in a field", Means: "hold a run of text — dragging across it does the same"},
 		{Key: "⏎ in a list", Means: "take the row · ⌘⏎ keeps the list · j and k walk it"},
@@ -229,10 +236,14 @@ func (w Window) Offers() []string {
 		// list answers, and with the keyboard left on that field after the
 		// list closed there was no way to save at all — the one act a form
 		// exists for, unreachable for having chosen something.
+		offers := []string{"Save", "Cancel"}
 		if chosenFromAList(w.form.Fields()[w.form.On()]) {
-			return []string{"Choose", "Save", "Cancel"}
+			offers = []string{"Choose", "Save", "Cancel"}
 		}
-		return []string{"Save", "Cancel"}
+		if w.recoverable() {
+			offers = append(offers, "Recover")
+		}
+		return offers
 	case OnDetail:
 		// Done only where there is a part to mark. The bar is where a key is
 		// looked for, so it says what space does exactly where space does it,
@@ -242,6 +253,11 @@ func (w Window) Offers() []string {
 		}
 		return []string{"Edit", "Close"}
 	case OnAsking:
+		// Leaving a form is answered the way a hand leaving it answers: esc
+		// again throws it away — set aside, not lost — and enter goes back.
+		if w.question == aboutLeaving {
+			return []string{"Throw away", "Back"}
+		}
 		return []string{"Agree", "Cancel"}
 	case OnHelp:
 		return []string{"Close"}
@@ -309,13 +325,7 @@ func (w Window) offerAt(p Point) (string, bool) {
 	// The panel the offers are drawn on, which for a list is its own and not
 	// the one everything else uses: drawn in one place and listened for in
 	// another, three words looked like buttons and answered nowhere.
-	panel := Over(w.width, w.height)
-	if w.screen == OnForm {
-		panel = FormOver(w.width, w.height, w.form.Fields())
-	}
-	if w.screen == OnChoosing {
-		panel = ChoosingOver(w.width, w.height)
-	}
+	panel := w.panel()
 	// The bar under the board answers only while nothing is over it: under a
 	// panel it is drawn faint, saying what the board will offer again, and
 	// what can be done now is on the panel.
@@ -329,6 +339,30 @@ func (w Window) offerAt(p Point) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// Asks is what the question says, a sentence to a line.
+func (w Window) Asks() []Said {
+	if w.question == aboutLeaving {
+		return []Said{
+			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
+		}
+	}
+	what := "task"
+	if w.ChosenGoal() {
+		what = "objective"
+	}
+	return []Said{
+		{Means: "This " + what + " cannot be brought back."},
+		{Means: "Delete again to agree, or Cancel."},
+	}
+}
+
+// QuestionBox is the box a question is asked in: as wide as its sentences
+// want and as tall as they are, not the panel a form is drawn in. Asked in
+// the whole panel, two lines and two words sat in a box nine tenths empty.
+func (w Window) QuestionBox() Box {
+	return AskingOver(w.width, w.height, len(w.Asks()))
 }
 
 // Question is what the one question screen is asking about.

@@ -26,6 +26,19 @@ func PanelOfferAt(box Box, at int) Box {
 	}
 }
 
+// AskingOver is a box asking a question of a few lines: centred across the
+// window, a third of the way down, and as tall as its heading, its lines and
+// its offers.
+func AskingOver(width, height, lines int) Box {
+	top := FirstRow(Box{})
+	return Box{X: (width - askingWide) / 2, Y: height / 4, W: askingWide, H: top + lines*apart + barHigh + padding}
+}
+
+// askingWide is what a question takes across: room for a sentence of sixty
+// characters and the two offers under it, and less than the narrowest window
+// this board draws in.
+const askingWide = 560
+
 // FirstRow is where the first line inside a panel begins: under its heading.
 func FirstRow(box Box) int {
 	ruled := Ruled(box)

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -390,9 +391,8 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
-	box := Over(w.width, w.height)
 	press := func(from Window, at int) Window {
-		button := PanelOfferAt(box, at)
+		button := PanelOfferAt(from.panel(), at)
 		return from.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
@@ -694,7 +694,7 @@ func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 	if !strings.Contains(Heads(asked), "typed") {
 		t.Errorf("the question does not say what is being lost: %q", Heads(asked))
 	}
-	if back := asked.Choose("Cancel"); back.Screen() != OnForm {
+	if back := asked.Choose("Back"); back.Screen() != OnForm {
 		t.Fatalf("backing out of the question did not go back to the form: %v", back.Screen())
 	}
 	if gone := asked.Choose("Agree"); gone.Screen() != OnTheBoard {
@@ -1112,5 +1112,37 @@ func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	reckoned := Wrapped(act, room(Inside(HistoryBox(Over(w.width, w.height)))))
 	if got := w.Lines(); len(got) >= len(reckoned.Said) {
 		t.Errorf("the history takes %d lines, as many as the reckoning's %d", len(got), len(reckoned.Said))
+	}
+}
+
+// What a form set aside is offered back on the form it came from, and on no
+// other: not on another task's, not on a new one, and not once something has
+// been typed into the form since, which bringing it back would write over.
+func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
+	w := holding(newFake(), card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types(" again").Key("esc").Key("esc")
+	if w.Screen() != OnTheBoard {
+		t.Fatalf("esc twice left the window on %v", w.Screen())
+	}
+	offered := func(v Window) bool { return slices.Contains(v.Offers(), "Recover") }
+	if again := w.Choose("Edit"); !offered(again) {
+		t.Errorf("the form it came from offers %v", again.Offers())
+	} else if typed := again.Types("x"); offered(typed) {
+		t.Errorf("a form typed into since still offers %v", typed.Offers())
+	}
+	if other := w.clicked(middleOf(w, 1, 1)).Choose("Edit"); offered(other) {
+		t.Errorf("another task's form offers %v", other.Offers())
+	}
+	if fresh := w.Choose("New"); offered(fresh) {
+		t.Errorf("a new task's form offers %v", fresh.Offers())
+	}
+	// Answered by a click off it, the question sets aside the same way.
+	clickedOff := w.Choose("Edit").Types(" once more").Key("esc").clicked(Point{X: 1, Y: 1})
+	recovered := clickedOff.Choose("Edit").Key("cmd+z").Form().Fields()[0].Value
+	if clickedOff.Screen() != OnTheBoard || !strings.Contains(recovered, "once more") {
+		t.Errorf("a click off the question left %v, and the form brought back %q", clickedOff.Screen(), recovered)
+	}
+	if says := w.Choose("Edit").Types("x").Key("esc").Asks(); len(says) != 1 || !strings.Contains(says[0].Means, "brings it back") {
+		t.Errorf("the question about leaving says %+v", says)
 	}
 }

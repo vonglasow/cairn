@@ -270,14 +270,8 @@ func (w *world) clickOffer(name string) error {
 		// Where it is drawn: on the panel when one is open, and on the bar
 		// under the board otherwise. A person clicks what they are looking at.
 		box := OfferAt(w.w.Layout(), i)
-		switch w.w.screen {
-		case OnTheBoard, OnSearch:
-		case OnChoosing:
-			box = PanelOfferAt(ChoosingOver(w.w.width, w.w.height), i)
-		case OnForm:
-			box = PanelOfferAt(FormOver(w.w.width, w.w.height, w.w.Form().Fields()), i)
-		default:
-			box = PanelOfferAt(Over(w.w.width, w.w.height), i)
+		if s := w.w.screen; s != OnTheBoard && s != OnSearch {
+			box = PanelOfferAt(w.w.panel(), i)
 		}
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()

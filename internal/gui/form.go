@@ -397,12 +397,35 @@ func (w Window) Cancel() Window {
 		w.screen, w.question = OnAsking, aboutLeaving
 		return w
 	}
+	// And the question answered the way it was reached — esc, or a click off
+	// it — throws the form away, setting what was typed aside.
+	if w.screen == OnAsking && w.question == aboutLeaving {
+		return w.throwingAway()
+	}
 	// Anywhere else it closes what is open and nothing more. A search
 	// narrowing the board is not what was opened: a task found by searching,
 	// opened, changed and put away used to give back the whole board, leaving
 	// somebody to type their search again to carry on where they were.
 	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 	return w
+}
+
+// throwingAway closes a form somebody typed into, setting what they typed
+// aside rather than losing it.
+func (w Window) throwingAway() Window {
+	w.draft = w.form
+	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	return w
+}
+
+// recoverable says whether the form open is the one a form was thrown away
+// from — the same task or objective, or a new one of the same kind — and
+// nothing has been typed into it since: what was set aside can be brought
+// back without writing over anything.
+func (w Window) recoverable() bool {
+	d := w.draft
+	return d.fields != nil && !w.form.Changed() &&
+		d.Adding == w.form.Adding && d.ForObjective == w.form.ForObjective && d.Number == w.form.Number
 }
 
 // Choose is a button pressed by name, which is how a scenario says it and how
@@ -429,12 +452,6 @@ func (w Window) Choose(name string) Window {
 		// is what Cancel on a form means.
 		if w.screen == OnChoosing {
 			return w.leaving()
-		}
-		// Backing out of the question about leaving a form goes back to the
-		// form, which is the whole point of having asked.
-		if w.question == aboutLeaving {
-			w.screen, w.question = OnForm, aboutDeleting
-			return w
 		}
 		if w.question == aboutSweeping {
 			w.screen, w.question = OnTheBoard, aboutDeleting
@@ -473,10 +490,18 @@ func (w Window) Choose(name string) Window {
 			return w.sweeping()
 		}
 		if w.question == aboutLeaving {
-			w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
-			return w
+			return w.throwingAway()
 		}
 		return w.Delete()
+	case "throw away":
+		return w.throwingAway()
+	case "back":
+		// Going back to the form is what the question was there for.
+		w.screen, w.question = OnForm, aboutDeleting
+		return w
+	case "recover":
+		w.form, w.draft = w.draft, Form{}
+		return w
 	case "archive", "restore":
 		return w.puttingAway()
 	}

@@ -184,10 +184,10 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 	}
 	if w.Screen() == OnHelp {
-		drawSaid(gtx, th, skin, w, w.Helping())
+		drawSaid(gtx, th, skin, w, w.Helping(), Over(w.width, w.height))
 	}
 	if w.Screen() == OnAsking {
-		drawSaid(gtx, th, skin, w, asking(w))
+		drawSaid(gtx, th, skin, w, w.Asks(), w.QuestionBox())
 	}
 	if w.Screen() == OnChoosing {
 		// The form first, and the list on top of it: what is being filled in
@@ -259,16 +259,6 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 
 // asking is the one question this window puts, written the way the help is so
 // they are drawn by one piece of code.
-func asking(w Window) []Said {
-	what := "task"
-	if w.ChosenGoal() {
-		what = "objective"
-	}
-	return []Said{
-		{Means: "This " + what + " cannot be brought back."},
-		{Means: "Delete again to agree, or Cancel."},
-	}
-}
 
 // drawSearch is the box along the bottom that says what is being looked for.
 //
@@ -287,11 +277,16 @@ func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w W
 // drawSaid is a panel of lines: the help, and the question. Both are read
 // rather than pointed at, and both are two columns of words — the left one a
 // key, drawn on a chip so it reads as a key rather than as another word.
-func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said []Said) {
-	box := Over(w.width, w.height)
+func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said []Said, box Box) {
 	drawPanel(gtx, th, skin, box, Heads(w))
 	at := FirstRow(box)
 	for _, line := range said {
+		// A line with no key is a sentence, and runs the width of the box.
+		if line.Key == "" {
+			say(gtx, th, skin.Ink, Row(box, at, lineHigh), line.Means, reads)
+			at += apart
+			continue
+		}
 		name, value := FieldRow(box, at)
 		if line.Key != "" {
 			fill(gtx, Chip(name), skin.Back)

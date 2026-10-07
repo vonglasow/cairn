@@ -280,6 +280,20 @@ func (w Window) landingUnder() (Box, bool) {
 // the help, the question about deleting, the list of objectives.
 //
 // Not the form, and not the board or a search, which have nothing to close.
+// panel is the box the screen that has the window is drawn in: what its
+// offers sit along the foot of, and what a click off it lands outside of.
+func (w Window) panel() Box {
+	switch w.screen {
+	case OnForm:
+		return FormOver(w.width, w.height, w.form.Fields())
+	case OnChoosing:
+		return ChoosingOver(w.width, w.height)
+	case OnAsking:
+		return w.QuestionBox()
+	}
+	return Over(w.width, w.height)
+}
+
 func (w Window) closesOnAClickOff() bool {
 	switch w.screen {
 	case OnDetail, OnHelp, OnAsking, OnChoosing:

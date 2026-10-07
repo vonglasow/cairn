@@ -182,6 +182,10 @@ type Window struct {
 	// question is which of the two things the one question screen is asking
 	// about. There used to be only one.
 	question Question
+	// draft is the last form thrown away with something typed in it, set
+	// aside so the form of the same task can bring it back. esc twice leaves
+	// a form without a question, and this is what keeps that from losing work.
+	draft Form
 	// wasScreen is what was open when the window became too small to draw it,
 	// so growing back gives it back rather than an empty board.
 	wasScreen Screen

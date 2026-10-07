@@ -205,6 +205,8 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 		say("form rows "+edited[at].Name, Box{H: rows})
 	}
 	say("form rule", FormRule(over))
+	say("asking over 1", AskingOver(1200, 800, 1))
+	say("asking over 2", AskingOver(1200, 800, 2))
 	say("message", Message(400, 300))
 
 	got := out.String()

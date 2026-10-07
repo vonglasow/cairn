@@ -697,6 +697,33 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^task (\d+) is titled "([^"]*)"$`, func(n int, want string) error {
+		found, err := w.givens().Tasks()
+		if err != nil {
+			return err
+		}
+		for _, t := range found {
+			if shape := task.OfTask(t); shape.Number == n {
+				if shape.Title != want {
+					return fmt.Errorf("task %d is titled %q, want %q", n, shape.Title, want)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("there is no task %d", n)
+	})
+	sc.Then(`^the question is no bigger than what it asks$`, func() error {
+		box, over := w.w.QuestionBox(), Over(w.w.width, w.w.height)
+		if box.W >= over.W || box.H >= over.H/2 {
+			return fmt.Errorf("the question is %v in a window whose panels are %v", box, over)
+		}
+		for i := range w.w.Offers() {
+			if offer := PanelOfferAt(box, i); offer.X+offer.W > box.X+box.W || offer.Y+offer.H > box.Y+box.H {
+				return fmt.Errorf("offer %d at %v runs out of the question %v", i, offer, box)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
 		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
 			return fmt.Errorf("the bar under the board reads %v, want %v", got, want)

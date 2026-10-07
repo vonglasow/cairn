@@ -474,9 +474,18 @@ throwing away a form somebody has typed into both lose work; taking a column
 off the board does not, and is asked about for its size. *Agree* and *Cancel*
 are the two offers, `⏎` agrees, and the targets are as tall as the bar's — they
 used to be the smallest in the window, for the most destructive act in it.
-Backing out of the question about a form gives the form back with everything
-still in it; a form nobody typed into closes without a question, because there
-is nothing to lose and a question with no stake is noise.
+A question is asked in a box as big as its sentences and its offers, not in
+the panel a form is drawn in: two lines and two words used to sit in a box
+nine tenths empty.
+
+The question about a form is answered the way a hand leaving a form answers.
+`esc` again throws it away and `⏎` goes back to it (*Throw away* and *Back*):
+a second `esc` that sent somebody back into the form they were leaving was a
+guard they had to fight. Nothing is lost for all that — what was typed is set
+aside, and the form of the same task, opened untouched, offers *Recover*
+under `⌘Z`. It is kept while the window is open, one form at a time. A form
+nobody typed into closes without a question, because there is nothing to lose
+and a question with no stake is noise.
 
 **Archived** is another, under `⇧A`. It puts back on the board what
 was taken off it, and takes it away again — the same key the terminal board

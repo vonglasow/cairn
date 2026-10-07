@@ -2048,9 +2048,15 @@ Feature: The desktop board
   Rule: Losing work is asked about first
 
     Two gestures lose work: deleting a task, and throwing away a form somebody
-    has typed into. Both are asked about, with the same two words. A whole
-    column going off the board is asked about as well — nothing is lost, but a
-    key that moves twelve cards is not a key to press and find out.
+    has typed into. Both are asked about, in a box no bigger than the question.
+    A whole column going off the board is asked about as well — nothing is
+    lost, but a key that moves twelve cards is not a key to press and find out.
+
+    A form is left with esc, and esc again throws it away: that is what a hand
+    leaving a form does, and a question that sent the second esc back to the
+    form kept somebody in a form they were leaving. What was typed is not lost
+    for all that — it is set aside, and the form of the same task offers to
+    bring it back.
 
     @gui-a-filled-form-asks-before-it-is-thrown-away
     Scenario: a form somebody typed into is asked about before it goes
@@ -2061,8 +2067,27 @@ Feature: The desktop board
       And I set the field "title" to "Something else"
       And I choose "Cancel"
       Then the panel is headed "Throw away what you typed?"
-      When I choose "Cancel"
+      And the question is no bigger than what it asks
+      When I choose "Back"
       Then the window is on the form
+
+    @gui-esc-twice-sets-what-was-typed-aside
+    Scenario: esc twice throws a form away, and its form brings what was typed back
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I set the field "title" to "Write the whole spec"
+      And I press "esc"
+      And I press "esc"
+      Then the window is on the board
+      And task 1 is titled "Write the spec"
+      When I choose "Edit"
+      Then the bar offers "Recover" under "⌘Z"
+      When I press "cmd+z"
+      Then the field "title" reads "Write the whole spec"
+      When I choose "Save"
+      Then task 1 is titled "Write the whole spec"
 
     @gui-an-untouched-form-asks-nothing
     Scenario: a form nobody typed into closes without a question

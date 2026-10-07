@@ -45,7 +45,7 @@ func (w Window) Click(p Point) Window {
 	// A form is the exception and the only one: it holds what somebody typed
 	// and has not saved, and a click landing anywhere outside would throw that
 	// away without asking. esc is still there, and the bar offers it.
-	if w.closesOnAClickOff() && !Over(w.width, w.height).In(p) {
+	if w.closesOnAClickOff() && !w.panel().In(p) {
 		return w.Choose("Close")
 	}
 	// A search is not a panel over the board: the board is still there, still
