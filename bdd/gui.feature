@@ -1731,6 +1731,19 @@ Feature: The desktop board
       Then the engine was asked "task delete" for task 3
       And task 2 hangs under task 1, titled "Draft"
 
+    @gui-the-wheel-scrolls-the-parts
+    Scenario: the wheel scrolls the parts, wherever the keyboard is
+      Given a window of 1024 by 640
+      And I added a task titled "Ship it"
+      And I added 12 tasks hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      Then the parts are at their beginning
+      When I scroll down over the parts
+      Then the parts have moved
+      When I scroll down over the parts 99 times
+      Then the last part is in sight
+
     @gui-a-part-in-hand-shows-where-it-lands
     Scenario: a part in hand follows the pointer, and says where it would land
       Given I added a task titled "Ship it"

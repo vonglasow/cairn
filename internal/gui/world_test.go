@@ -262,6 +262,21 @@ func (w *world) clickGoal(title string) error {
 	return nil
 }
 
+// scrollParts turns the wheel over the parts of the open form, a notch at a
+// time.
+func (w *world) scrollParts(times int) error {
+	tiles := w.w.partTiles()
+	if len(tiles) < 2 {
+		return fmt.Errorf("the form shows no part")
+	}
+	w.was = w.w.partsFrom()
+	over := Point{X: tiles[0].X + tiles[0].W/2, Y: tiles[0].Y + tiles[0].H/2}
+	for range times {
+		w.w = w.w.Scroll(over, SubHeight)
+	}
+	return nil
+}
+
 // partPoint is the middle of a part's tile in the open form.
 func (w *world) partPoint(title string) (Point, error) {
 	for i, c := range w.w.PartsTicked() {
@@ -669,6 +684,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the top of the lane "([^"]*)"$`, w.clickTopOfLane)
 	sc.Step(`^it was worked on (\d+) times$`, w.workedOn)
 	sc.Step(`^I scroll down over the description$`, func() error { return w.scrollSaying(1) })
+	sc.Step(`^I added (\d+) tasks hanging under task (\d+)$`, func(n, parent int) error {
+		for i := 1; i <= n; i++ {
+			if err := w.givens().IAddedATaskHangingUnderTask(fmt.Sprintf("Part %d", i), parent); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I scroll down over the parts$`, func() error { return w.scrollParts(1) })
+	sc.Step(`^I scroll down over the parts (\d+) times$`, w.scrollParts)
 	sc.Step(`^I scroll up over the description$`, func() error { return w.scrollSaying(-1) })
 	sc.Step(`^I scroll down over the description (\d+) times$`, func(n int) error {
 		for range n {

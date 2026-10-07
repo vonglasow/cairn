@@ -760,6 +760,25 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the parts are at their beginning$`, func() error {
+		if from := w.w.partsFrom(); from != 0 {
+			return fmt.Errorf("the parts are shown from %d", from)
+		}
+		return nil
+	})
+	sc.Then(`^the parts have moved$`, func() error {
+		if from := w.w.partsFrom(); from == w.was {
+			return fmt.Errorf("the parts are still shown from %d", from)
+		}
+		return nil
+	})
+	sc.Then(`^the last part is in sight$`, func() error {
+		parts, tiles := w.w.PartsTicked(), w.w.partTiles()
+		if last := w.w.partsFrom() + len(tiles) - 2; last != len(parts)-1 {
+			return fmt.Errorf("the last part in sight is %d of %d", last+1, len(parts))
+		}
+		return nil
+	})
 	sc.Then(`^a part is in hand, under the pointer$`, func() error {
 		ghost, ok := w.w.PartGhost()
 		if !ok || !ghost.In(w.pointer) {

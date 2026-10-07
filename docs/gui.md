@@ -780,7 +780,10 @@ tile is dragged to another place the way a card is: the part in hand follows
 the pointer, and a line says where it would land — over the tile it takes the
 place of when carried up, under it when carried down, drawn over the part in
 hand so the thing aimed never hides the aim. A click on its box ticks it. The last
-line adds one: enter, a title, enter, and the next is already waiting.
+line adds one: enter, a title, enter, and the next is already waiting. A list
+longer than its frame is scrolled the way a column is: by the wheel over it,
+wherever the keyboard is, with a bar beside it saying how much is in sight;
+the arrows move it only as far as keeps the line they reach in sight.
 
 **A tick is done at once**, and asks nothing of the form: a box ticked on a
 part says it is done, and a part done only once its task's form was saved was

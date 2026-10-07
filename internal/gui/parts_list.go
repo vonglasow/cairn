@@ -322,26 +322,49 @@ func (w Window) partTiles() []Box {
 	return append(tiles, adding)
 }
 
-// partsFrom is the first line of the list in sight: where it was left, moved
-// only as far as keeps the line the keyboard is on in sight — the way a column
-// follows the arrows. Worked out afresh from the line alone, a click on a tile
-// of a list scrolled down scrolled it back to the top under the pointer, and
-// the release landed on another part.
-func (w Window) partsFrom() int {
+// partsFrame is the frame the list of parts is drawn in, and whether the form
+// has one.
+func (w Window) partsFrame() (Box, bool) {
 	at, ok := w.form.partsField()
-	if !ok || !w.form.onParts() {
-		return 0
+	if !ok {
+		return Box{}, false
 	}
 	_, value, rows := FormPlace(w.formBox(), w.form.Fields(), at)
-	shown := max(1, ticksFit(Framed(value, rows)))
-	line := max(0, min(w.form.partAt, w.form.lines()-2))
-	return min(line, max(w.form.partsTop, line-shown+1))
+	return Framed(value, rows), true
 }
 
-// keepingPartInSight keeps where the list was left, for the next line the
-// keyboard goes to.
+// partsShown is how many parts the frame shows at once: one at the least.
+func (w Window) partsShown() int {
+	frame, _ := w.partsFrame()
+	return max(1, ticksFit(frame))
+}
+
+// partsFrom is the first part in sight: where the wheel or the keyboard left
+// the list, kept between its two ends — the way a column is scrolled. It once
+// followed the keyboard and nothing else: with the keyboard elsewhere the
+// list stood at its top and the wheel could not move it.
+func (w Window) partsFrom() int { return w.partsWithin(w.form.partsTop) }
+
+// partsWithin keeps where the list starts between its two ends: never above
+// its first part, never past the last screenful of it.
+func (w Window) partsWithin(top int) int {
+	return max(0, min(top, len(w.form.parts())-w.partsShown()))
+}
+
+// keepingPartInSight moves the list as far as brings the line the keyboard is
+// on into sight, and no further — the way a column follows the arrows.
 func (w Window) keepingPartInSight() Window {
-	w.form.partsTop = w.partsFrom()
+	line := w.form.partAt
+	w.form.partsTop = w.partsWithin(min(line, max(w.partsFrom(), line-w.partsShown()+1)))
+	return w
+}
+
+// scrollingParts turns the list of parts by the wheel, a tile at a time and
+// keeping what did not come to one for the next turn.
+func (w Window) scrollingParts(by int) Window {
+	total := w.form.spareParts + by
+	w.form.partsTop = w.partsWithin(w.partsFrom() + total/SubHeight)
+	w.form.spareParts = total % SubHeight
 	return w
 }
 

@@ -659,6 +659,14 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 		}
 		drawSub(gtx, th, skin, tile, parts[at], on && f.partAt == at, Written{})
 	}
+	// The bar beside the list, in the margin every long field keeps: how much
+	// of it is in sight, and which part.
+	if field, ok := f.partsField(); ok {
+		_, value, rows := FormPlace(w.formBox(), f.Fields(), field)
+		_, bar := Saying(value, rows)
+		fill(gtx, bar, skin.Back)
+		fill(gtx, Thumb(bar, len(parts), w.partsShown(), from), skin.Edge)
+	}
 	adding := places[len(places)-1]
 	onAdding := on && f.partAt == f.lines()-1
 	if onAdding && f.writingPart {

@@ -44,6 +44,7 @@ type Form struct {
 	// counted from one.
 	partAt      int
 	partsTop    int
+	spareParts  int
 	writingPart bool
 	named       Written
 	struck      []int

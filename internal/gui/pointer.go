@@ -367,6 +367,9 @@ func (w Window) Scroll(p Point, by int) Window {
 	// column beside a form opened on something already there: a task's
 	// history, or the work serving an objective.
 	if w.screen == OnForm {
+		if frame, ok := w.partsFrame(); ok && frame.In(p) {
+			return w.scrollingParts(by)
+		}
 		if !w.form.Adding && BesideBox(w.formPanel()).In(p) {
 			if w.form.ForObjective {
 				w.serving = w.settledServing(w.serving + by)

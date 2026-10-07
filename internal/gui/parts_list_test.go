@@ -148,7 +148,12 @@ func TestTheListFollowsTheKeyboard(t *testing.T) {
 	_, value, rows := FormPlace(w.formBox(), w.form.Fields(), at)
 	frame := Inside(Framed(value, rows))
 	for line := range w.form.lines() {
-		w.form.partAt = line
+		if line > 0 {
+			w = w.Key("down")
+		}
+		if w.form.partAt != line {
+			t.Fatalf("down went to line %d, want %d", w.form.partAt, line)
+		}
 		tiles, from := w.partTiles(), w.partsFrom()
 		shown := tiles[len(tiles)-1]
 		if line < 12 {
@@ -158,7 +163,6 @@ func TestTheListFollowsTheKeyboard(t *testing.T) {
 			t.Errorf("line %d is drawn at %v, out of %v", line, shown, frame)
 		}
 		if from > 0 {
-			w.form.partAt = line
 			earlier, _ := TickedPlaces(Framed(value, rows), 12, from-1)
 			if line < 12 && line-from+1 < len(earlier) {
 				t.Errorf("line %d would show from %d as well, and the list starts at %d", line, from-1, from)
@@ -316,5 +320,86 @@ func TestAPartLandsInAScrolledList(t *testing.T) {
 	held := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Grip + 1}).MoveTo(middle(tiles[1]))
 	if line, ok := held.PartLanding(); !ok || line.Y != tiles[1].Y+tiles[1].H-landingHigh {
 		t.Errorf("carried down onto the second tile in sight, it lands at %v (%v), want the bottom of %v", line, ok, tiles[1])
+	}
+}
+
+// The wheel over the parts moves them, between their two ends, wherever the
+// keyboard is; the arrows on the list then bring the line they reach back in
+// sight.
+func TestTheWheelScrollsTheParts(t *testing.T) {
+	titles := make([]string, 12)
+	for i := range titles {
+		titles[i] = fmt.Sprintf("Part %d", i+1)
+	}
+	w := onTheList(t, Shortest, titles...)
+	w.form = w.form.onto(0)
+	tiles := w.partTiles()
+	shown := len(tiles) - 1
+	over := Point{X: tiles[0].X + 4, Y: tiles[0].Y + 4}
+	once := w.Scroll(over, SubHeight)
+	if once.partsFrom() != 1 {
+		t.Errorf("a notch over the parts shows them from %d", once.partsFrom())
+	}
+	far := once
+	for range 99 {
+		far = far.Scroll(over, SubHeight)
+	}
+	if got := far.partsFrom(); got != 12-shown {
+		t.Errorf("turned to the end, the parts show from %d, want %d", got, 12-shown)
+	}
+	for range 99 {
+		far = far.Scroll(over, -SubHeight)
+	}
+	if got := far.partsFrom(); got != 0 {
+		t.Errorf("turned back, the parts show from %d", got)
+	}
+	walked := once.On("parts")
+	if walked.partsFrom() != once.partsFrom() {
+		t.Errorf("putting the keyboard on the list moved it from %d to %d", once.partsFrom(), walked.partsFrom())
+	}
+	if walked = walked.Key("down"); walked.form.partAt < walked.partsFrom() || walked.form.partAt >= walked.partsFrom()+shown {
+		t.Errorf("down put the keyboard on line %d, out of sight from %d", walked.form.partAt, walked.partsFrom())
+	}
+}
+
+// The list moves exactly as far as the keyboard needs and the wheel asks: a
+// line further down shows from one further only once it would be out of
+// sight; the line that adds shows the end; two half notches are one.
+func TestTheListMovesExactlyAsFarAsAsked(t *testing.T) {
+	titles := make([]string, 12)
+	for i := range titles {
+		titles[i] = fmt.Sprintf("Part %d", i+1)
+	}
+	w := onTheList(t, 720, titles...)
+	shown := w.partsShown()
+	if shown < 3 || shown >= 12 {
+		t.Fatalf("this proves nothing: %d parts are shown", shown)
+	}
+	for line := 1; line <= 12; line++ {
+		w = w.Key("down")
+		if want := max(0, min(line, 11)-shown+1); w.partsFrom() != want {
+			t.Errorf("down to line %d shows from %d, want %d", line, w.partsFrom(), want)
+		}
+	}
+	for line := 11; line >= 0; line-- {
+		w = w.Key("up")
+		if want := min(12-shown, line); w.partsFrom() != want {
+			t.Errorf("up to line %d shows from %d, want %d", line, w.partsFrom(), want)
+		}
+	}
+	tiles := w.partTiles()
+	over := Point{X: tiles[0].X + 4, Y: tiles[0].Y + 4}
+	half := w.Scroll(over, SubHeight/2)
+	if half.partsFrom() != 0 || half.Scroll(over, SubHeight-SubHeight/2).partsFrom() != 1 {
+		t.Errorf("half a notch showed from %d, and the rest of it from %d", half.partsFrom(), half.Scroll(over, SubHeight-SubHeight/2).partsFrom())
+	}
+	for notches := 1; notches <= 12; notches++ {
+		turned := w
+		for range notches {
+			turned = turned.Scroll(over, SubHeight)
+		}
+		if want := min(notches, 12-shown); turned.partsFrom() != want {
+			t.Errorf("%d notches show from %d, want %d", notches, turned.partsFrom(), want)
+		}
 	}
 }
