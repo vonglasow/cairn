@@ -289,7 +289,9 @@ func (w *world) partPoint(title string) (Point, error) {
 }
 
 // clickWith clicks what is titled with a key held down, the way a hand holds
-// ⌘ or ⇧ while it clicks: down before the press, up after the release.
+// ⌘ or ⇧ while it clicks: down before the press, up after the release. ⌘ is
+// the shortcut key, which is Ctrl on Linux — named as the shortcut, so the
+// scenario holds the key the window listens for wherever it runs.
 func (w *world) clickWith(held key.Modifiers, find func(string) (Point, error), title string) error {
 	at, err := find(title)
 	if err != nil {
@@ -628,13 +630,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the card "([^"]*)"$`, w.click)
 	sc.Step(`^I click the tab "([^"]*)"$`, w.clickTab)
 	sc.Step(`^I ⌘-click the card "([^"]*)"$`, func(title string) error {
-		return w.clickWith(key.ModCommand, w.find, title)
+		return w.clickWith(key.ModShortcut, w.find, title)
 	})
 	sc.Step(`^I ⇧-click the card "([^"]*)"$`, func(title string) error {
 		return w.clickWith(key.ModShift, w.find, title)
 	})
 	sc.Step(`^I ⌘-click the objective "([^"]*)"$`, func(title string) error {
-		return w.clickWith(key.ModCommand, w.findGoal, title)
+		return w.clickWith(key.ModShortcut, w.findGoal, title)
 	})
 	sc.Step(`^I click the objective "([^"]*)"$`, func(title string) error {
 		if err := w.clickGoal(title); err != nil {

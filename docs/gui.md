@@ -828,7 +828,8 @@ history for one sitting.
 
 ## Several at once
 
-**`⌘`-click gathers cards, `⇧`-click takes every card between.** `⌘` and a
+**`⌘`-click gathers cards, `⇧`-click takes every card between** — `⌘` on
+macOS, `Ctrl` on Linux: the shortcut key either way. `⌘` and a
 click add a card to what is taken, or take it back out; `⇧` and a click take
 every card from the one chosen to the one clicked, in the column, the lane or
 the list of objectives they share. A plain click, `esc`, or another tab starts
