@@ -386,6 +386,14 @@ a value down to one line was the alternative and is what this used to do; it
 said nothing about what was lost, and a description is the field it lost most
 of.
 
+**A line ends where the face runs out of room**, measured in the face it is
+drawn in, and not after a number of characters reckoned for the widest of
+them: counted, a description stopped two thirds of the way across its box.
+`Window.wrapping` is the one answer for drawing a text, scrolling it, putting a
+caret in it and holding a run of it, so the four agree on where a line ends.
+How many rows a description asks for is still reckoned — the form is laid out
+with no face — which can leave it a line or two longer than it needs.
+
 **The caret is a shape, not a character.** Written into the text it took a
 letter's place and pushed everything after it along, so typing looked like the
 text was being rewritten under the hand. It is drawn between two letters, at a

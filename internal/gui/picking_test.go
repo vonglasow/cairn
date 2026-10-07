@@ -353,7 +353,7 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	fields := w.Form().Fields()
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
-	lines := Wrapped(title, room(inside))
+	lines := w.wrapping(title, inside, FormSize(fields[0]))
 	if len(lines.Said) < 2 {
 		t.Fatalf("the title fits on %d line", len(lines.Said))
 	}

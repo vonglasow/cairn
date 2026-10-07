@@ -93,46 +93,69 @@ type Lines struct {
 	From []int
 }
 
-// Wrapped breaks a text into the lines it takes in a given room, at a space
-// when there is one to break at, and inside a word when the word is longer
-// than the room.
+// Wrapped breaks a text into the lines it takes in a given room, counted in
+// characters: what Measure.Wrapped does in a face where every character is
+// one wide.
+func Wrapped(said string, room int) Lines {
+	return Measure(characters).Wrapped(said, room, 0)
+}
+
+// characters measures a line as one per character, whatever it is.
+func characters(line string, _ int) []int {
+	edges := make([]int, len([]rune(line))+1)
+	for i := range edges {
+		edges[i] = i
+	}
+	return edges
+}
+
+// Wrapped breaks a text into the lines it takes in a given width, measured in
+// the face it is written in, at a space when there is one to break at, and
+// inside a word when the word is wider than the room.
 //
 // Broken rather than cut: a description that runs out of its box is a
 // description nobody can read back, and cutting it says nothing about what was
-// lost. A word longer than the room is broken inside itself, because the only
+// lost. A word wider than the room is broken inside itself, because the only
 // other answer is a line that runs out of the box — the very thing this
 // prevents.
-func Wrapped(said string, room int) Lines {
+//
+// Measured, and not counted: a line counted at so many characters to a width
+// reckoned for the widest stopped two thirds of the way across its box in the
+// face it was drawn in.
+func (m Measure) Wrapped(said string, wide, size int) Lines {
 	kept := []rune(said)
 	// No room is answered whole rather than one character at a time, and
 	// nothing is answered as one empty line — a text of no length would
 	// otherwise come back as no lines at all, and the caret has to fall
 	// somewhere.
-	if room < 1 || len(kept) == 0 {
+	if wide < 1 || len(kept) == 0 {
 		return Lines{Said: []string{said}, From: []int{0}}
 	}
 	lines := Lines{}
 	from := 0
 	for from < len(kept) {
-		end := min(len(kept), from+room)
 		// A line break is a line, before the width is ever consulted. Answered
 		// only by the width, a description written in paragraphs came back as
 		// one run of words with the breaks still in it, drawn as squares.
-		if at := next(kept, from, end); at >= 0 {
-			lines.Said = append(lines.Said, string(kept[from:at]))
+		stop := next(kept, from, len(kept))
+		if stop < 0 {
+			stop = len(kept)
+		}
+		edges := m(string(kept[from:stop]), size)
+		if edges[len(edges)-1] <= wide {
+			lines.Said = append(lines.Said, string(kept[from:stop]))
 			lines.From = append(lines.From, from)
-			from = at + 1
+			from = stop + 1
 			continue
 		}
-		if end < len(kept) {
-			// Back to the last space there is room for — but never as far as
-			// the line's own beginning, which would give an empty line and a
-			// text that never gets any shorter.
-			for i := end - 1; i > from; i-- {
-				if kept[i] == ' ' {
-					end = i
-					break
-				}
+		// What does not fit whole is broken: back to the last space there is
+		// room for — but never as far as the line's own beginning, which
+		// would give an empty line and a text that never gets any shorter.
+		end := from + fitting(edges, wide)
+		for i := end - 1; i > from; i-- {
+			if kept[i] == ' ' {
+				end = i
+				break
 			}
 		}
 		lines.Said = append(lines.Said, string(kept[from:end]))
@@ -152,6 +175,18 @@ func Wrapped(said string, room int) Lines {
 		lines.From = append(lines.From, len(kept))
 	}
 	return lines
+}
+
+// fitting is how many characters of a line, measured, fit in a width: one at
+// the least, so a text always gets shorter.
+func fitting(edges []int, wide int) int {
+	fit := 1
+	for i := 2; i < len(edges); i++ {
+		if edges[i] <= wide {
+			fit = i
+		}
+	}
+	return fit
 }
 
 // next is where the first line break between two places is, or that there is

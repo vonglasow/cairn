@@ -190,17 +190,17 @@ func HistoryBar(box Box) Box {
 // HistoryRows is how many lines of history the frame can show at once.
 func HistoryRows(box Box) int { return max(1, Inside(HistoryBox(box)).H/lineHigh) }
 
-// Told is the history as the lines it takes in the room there is, one act
-// after another with a blank line between two of them — an act that wrapped
-// onto three lines and the next act beginning straight after it read as one
-// act nobody could tell the end of.
-func Told(acts []string, room int) []string {
+// Told is the history as the lines it takes, each act wrapped the way it is
+// drawn, one act after another with a blank line between two of them — an act
+// that wrapped onto three lines and the next act beginning straight after it
+// read as one act nobody could tell the end of.
+func Told(acts []string, wrap func(string) Lines) []string {
 	var lines []string
 	for i, act := range acts {
 		if i > 0 {
 			lines = append(lines, "")
 		}
-		lines = append(lines, Wrapped(act, room).Said...)
+		lines = append(lines, wrap(act).Said...)
 	}
 	return lines
 }

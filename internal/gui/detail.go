@@ -79,16 +79,17 @@ func (w Window) Acts() []string { return w.acts }
 // Lines is the history as the lines it is drawn on, wrapped to the room the
 // panel gives it.
 func (w Window) Lines() []string {
-	wide := room(Inside(HistoryBox(Over(w.width, w.height))))
+	inside := Inside(HistoryBox(Over(w.width, w.height)))
+	wrap := func(said string) Lines { return w.wrapping(said, inside, small) }
 	// An objective has no history of its own — the trace is kept of tasks. It
 	// says so rather than leaving the frame empty, which reads as a panel that
 	// failed to load. The column itself stays the history's: it is what a task
 	// opens onto, and taking it for an objective would cost every task the
 	// thing this panel was built for.
 	if w.chosenGoal {
-		return Wrapped("an objective has no history of its own", wide).Said
+		return wrap("an objective has no history of its own").Said
 	}
-	return Told(w.acts, wide)
+	return Told(w.acts, wrap)
 }
 
 // servingHead names the box under the fields, where an objective says what
@@ -160,7 +161,7 @@ func (w Window) sayingOn() (frame, bar Box, lines Lines, rows int, ok bool) {
 		}
 		frame, bar = SayingBox(box, fields, at), SayingBar(box, fields, at)
 		rows = LongRows(box, fields)
-		return frame, bar, Wrapped(w.FieldSays(fields[at]), room(Inside(frame))), rows, true
+		return frame, bar, w.wrapping(w.FieldSays(fields[at]), Inside(frame), reads), rows, true
 	case OnForm:
 		fields := w.form.Fields()
 		at := w.form.On()
@@ -170,7 +171,7 @@ func (w Window) sayingOn() (frame, bar Box, lines Lines, rows int, ok bool) {
 		var value Box
 		_, value, rows = FormPlace(box, fields, at)
 		frame, bar = Saying(value, rows)
-		return frame, bar, Wrapped(w.form.Writing().Reads(), room(Inside(frame))), rows, true
+		return frame, bar, w.wrapping(w.form.Writing().Reads(), Inside(frame), reads), rows, true
 	}
 	return Box{}, Box{}, Lines{}, 0, false
 }

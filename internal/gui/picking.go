@@ -104,7 +104,7 @@ func (w Window) Readables() []Readable {
 			inside, from = Inside(SayingBox(box, fields, i)), w.Saying()
 		}
 		out = append(out, Readable{Key: "field:" + field.Name, Box: inside, Said: said,
-			Lines: Wrapped(said, room(inside)), From: from, Size: reads})
+			Lines: w.wrapping(said, inside, reads), From: from, Size: reads})
 	}
 	out = append(out, one("under", ServingHead(box, fields), w.UnderHead(), small))
 	frame := ServingBox(box, fields)
@@ -130,6 +130,19 @@ func (w Window) Readables() []Readable {
 func (w Window) Measuring(m Measure) Window {
 	w.measure = m
 	return w
+}
+
+// wrapping is a text broken into the lines it takes in a box, measured in the
+// face it is drawn in — the one answer for drawing it, scrolling it, putting a
+// caret in it and holding a run of it, so the four agree on where a line ends.
+func (w Window) wrapping(said string, b Box, size int) Lines {
+	return wrapIn(w.measured(), said, b, size)
+}
+
+// wrapIn is a text broken into the lines it takes in a box: the box's width
+// less the padding either side of its words.
+func wrapIn(m Measure, said string, b Box, size int) Lines {
+	return m.Wrapped(said, b.W-padding-padding, size)
 }
 
 // measured is what the window measures text with: the face it was given, or the

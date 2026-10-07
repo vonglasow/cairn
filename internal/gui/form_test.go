@@ -1077,3 +1077,40 @@ func TestThePartsAreTicksUntilTheKeyboardIsOnThem(t *testing.T) {
 		t.Errorf("with the keyboard on them the parts are still drawn as %+v", got)
 	}
 }
+
+// The description is wrapped with the face it is drawn in, wherever its lines
+// are counted: in the form and on the open task alike. Wrapped by a reckoned
+// width, a line of narrow letters stopped two thirds of the way across its box.
+func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
+	text := strings.Repeat("iiii ", 120)
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo", Description: text}).Measuring(narrow)
+	w = w.clicked(middleOf(w, 1, 0))
+	for _, open := range []Window{w.DoubleClick(middleOf(w, 1, 0)), w.Choose("Edit").On("description")} {
+		frame, _, lines, _, ok := open.sayingOn()
+		if !ok {
+			t.Fatalf("on %v the description has no box", open.Screen())
+		}
+		wide := Inside(frame).W - padding - padding
+		reckoned := Wrapped(text, room(Inside(frame)))
+		if len(lines.Said) >= len(reckoned.Said) {
+			t.Errorf("on %v the description takes %d lines, as many as the reckoning's %d", open.Screen(), len(lines.Said), len(reckoned.Said))
+		}
+		for _, line := range lines.Said {
+			if edges := narrow(line, reads); edges[len(edges)-1] > wide {
+				t.Errorf("on %v %q is %d wide in a room of %d", open.Screen(), line, edges[len(edges)-1], wide)
+			}
+		}
+	}
+}
+
+// The history is wrapped with the face it is drawn in, the way the description
+// is: an act of narrow letters runs across the whole of its box.
+func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
+	act := strings.Repeat("iiii ", 120)
+	w := holding(newFake(), card(1, "Write the spec", "todo")).Measuring(narrow)
+	w.chosen, w.screen, w.acts = 1, OnDetail, []string{act}
+	reckoned := Wrapped(act, room(Inside(HistoryBox(Over(w.width, w.height)))))
+	if got := w.Lines(); len(got) >= len(reckoned.Said) {
+		t.Errorf("the history takes %d lines, as many as the reckoning's %d", len(got), len(reckoned.Said))
+	}
+}

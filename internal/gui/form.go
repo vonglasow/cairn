@@ -280,7 +280,7 @@ func (w Window) reaching(at int, p Point) int {
 			scrolled = w.Saying()
 		}
 	}
-	lines := Wrapped(said.Reads(), room(inside))
+	lines := w.wrapping(said.Reads(), inside, FormSize(fields[at]))
 	line, _ := lines.At(said.At)
 	return lines.Reaches(inside, p, StartsAt(lines, rows, line, scrolled), w.measured(), FormSize(fields[at]))
 }

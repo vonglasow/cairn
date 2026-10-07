@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -747,7 +748,7 @@ func TestWhereAPointOnTheBarFallsInTheHistory(t *testing.T) {
 // it, read as one act nobody could tell the end of.
 func TestTheHistoryIsToldOneActAfterAnother(t *testing.T) {
 	acts := []string{"30 Aug  moved column → current", "29 Aug  added"}
-	lines := Told(acts, 12)
+	lines := Told(acts, inTwelve)
 	if len(lines) < 4 {
 		t.Fatalf("two acts too long for the room came to %d lines: %q", len(lines), lines)
 	}
@@ -763,10 +764,10 @@ func TestTheHistoryIsToldOneActAfterAnother(t *testing.T) {
 	if lines[0] == "" || lines[len(lines)-1] == "" {
 		t.Errorf("the history begins or ends on nothing: %q", lines)
 	}
-	if got := Told(nil, 12); len(got) != 0 {
+	if got := Told(nil, inTwelve); len(got) != 0 {
 		t.Errorf("no acts at all came to %q", got)
 	}
-	if got := Told([]string{"one"}, 12); len(got) != 1 {
+	if got := Told([]string{"one"}, inTwelve); len(got) != 1 {
 		t.Errorf("one act came to %q", got)
 	}
 }
@@ -1589,5 +1590,56 @@ func TestTheTicksAreAsManyAsTheFrameHolds(t *testing.T) {
 func TestALongFieldTakesItsNameItsFrameAndAGap(t *testing.T) {
 	if want := lineHigh + between + inset + inset + padding; longHigh != want {
 		t.Errorf("a long field takes %d besides its rows, and its parts come to %d", longHigh, want)
+	}
+}
+
+// narrow is a face in which an i is three wide and anything else nine: far
+// enough from the reckoning that a text wrapped by one is not wrapped by the
+// other.
+func narrow(line string, _ int) []int {
+	edges := []int{0}
+	for _, r := range line {
+		wide := 9
+		if r == 'i' {
+			wide = 3
+		}
+		edges = append(edges, edges[len(edges)-1]+wide)
+	}
+	return edges
+}
+
+// A line is broken where the face it is written in runs out of room, not where
+// a reckoned number of characters does: eight i's and a space are narrower
+// than three W's, and a word wider than the room is broken inside itself.
+func TestALineIsBrokenWhereItsFaceRunsOut(t *testing.T) {
+	m := Measure(narrow)
+	for _, c := range []struct {
+		said string
+		want []string
+		from []int
+	}{
+		{"iiiiiiii WWW", []string{"iiiiiiii", "WWW"}, []int{0, 9}},
+		{"WWWW", []string{"WWW", "W"}, []int{0, 3}},
+		{"ii\nWW", []string{"ii", "WW"}, []int{0, 3}},
+		{"iiiiiiiiii\nWW", []string{"iiiiiiiiii", "WW"}, []int{0, 11}},
+		{"", []string{""}, []int{0}},
+	} {
+		got := m.Wrapped(c.said, 30, reads)
+		if !slices.Equal(got.Said, c.want) || !slices.Equal(got.From, c.from) {
+			t.Errorf("%q wrapped as %q from %v, want %q from %v", c.said, got.Said, got.From, c.want, c.from)
+		}
+	}
+}
+
+// inTwelve wraps a text in twelve characters, which is what a history is told
+// in by the tests that count its lines.
+func inTwelve(said string) Lines { return Wrapped(said, 12) }
+
+// A text in a box is wrapped in the box's width less the padding either side
+// of its words — the one rule for every text a box holds.
+func TestATextInABoxIsWrappedInsideItsPadding(t *testing.T) {
+	got := wrapIn(Measure(characters), "abc def", Box{W: padding + 3 + padding}, reads)
+	if !slices.Equal(got.Said, []string{"abc", "def"}) {
+		t.Errorf("wrapped as %q", got.Said)
 	}
 }
