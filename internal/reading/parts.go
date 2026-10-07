@@ -1,11 +1,26 @@
 package reading
 
 import (
+	"errors"
 	"strconv"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/task"
 )
+
+// Added is the number of the task an add answered with: the parent the parts
+// written in its form are added under. Nothing for an answer with no task.
+func Added(answer engine.Answer) int {
+	if answer.Task == nil {
+		return 0
+	}
+	return task.OfTask(*answer.Task).Number
+}
+
+// errNoParent is what settling parts under no task says: something upstream
+// lost the number of the task they belong to, and nothing is touched.
+var errNoParent = errors.New("the parts belong to no task: nothing was saved under it")
 
 // PartState is the state a part is put in: done when ticked, todo when not —
 // the only two a part may stand in.
@@ -27,6 +42,11 @@ func PartState(done bool) string {
 // here is adding a task, changing a task and deleting a task, which is what
 // these are. Both boards save a task's form, so this is written once.
 func SettleParts(work Work, parent int, said string, had []Card) error {
+	// Number 0 is no task: under it, every task with no parent would read as
+	// a part the field no longer names, and be deleted.
+	if parent == 0 {
+		return errNoParent
+	}
 	kept := map[int]bool{}
 	for _, part := range PartsIn(said) {
 		if part.Number == 0 {

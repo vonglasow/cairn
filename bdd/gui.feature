@@ -2142,6 +2142,15 @@ Feature: The desktop board
       And the description runs the width of the form, under the title
       And the form groups its fields under "STATE", "TIME", "BLOCKED", "LINKS"
 
+    @gui-a-new-task-goes-in-with-its-parts
+    Scenario: a new task is added with the parts already written down for it
+      When I open the window
+      And I choose "New"
+      And I set the field "title" to "Ship it"
+      And I set the field "parts" to "Draft the columns"
+      And I choose "Save"
+      Then task 2 hangs under task 1, titled "Draft the columns"
+
     @gui-the-parts-read-as-a-list-to-tick
     Scenario: the parts of a task being edited read as a list to tick, and as lines while they are typed
       Given I added a task titled "Ship it"

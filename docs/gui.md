@@ -375,6 +375,13 @@ a line saying another is added by typing one. With the keyboard on them they
 are the lines being typed, `#2 [x] Relire l'ADR`, which is where a part is
 ticked, renamed, added and taken away.
 
+**A new task goes in with its parts.** The form that adds a task carries the
+same parts field as the one that edits it, empty: a task whose parts were
+written down beforehand is added with them, each line a part under the task
+just added. The terminal's form does not carry it yet. Parts are never settled
+under number 0, which is no task — every task with no parent would read as a
+part the field no longer names.
+
 **Every box in a row ends where the others do.** The title, the description,
 the last field of each section and the parts end on the same line, and a long
 field's bar sits beside its box, in a margin every field keeps.

@@ -52,3 +52,14 @@ func TestPartState_isDoneOrTodo(t *testing.T) {
 		t.Errorf("PartState = %q, %q", PartState(true), PartState(false))
 	}
 }
+
+// Parts are settled under a task, and number 0 is no task: every task with no
+// parent would read as a part the field no longer names, and be deleted. So a
+// parent of nothing asks the engine for nothing at all, whatever the field says.
+func TestSettleParts_underNoTaskAsksNothing(t *testing.T) {
+	f := newFake()
+	had := []Card{{Number: 1, Title: "Ship it"}, {Number: 2, Title: "Write the spec"}}
+	if err := SettleParts(f, 0, "A part", had); err == nil || len(f.asked) != 0 {
+		t.Errorf("settling under no task answered %v and asked %d things", err, len(f.asked))
+	}
+}

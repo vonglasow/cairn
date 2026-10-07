@@ -697,6 +697,21 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^task (\d+) hangs under task (\d+), titled "([^"]*)"$`, func(n, parent int, want string) error {
+		found, err := w.givens().Tasks()
+		if err != nil {
+			return err
+		}
+		for _, t := range found {
+			if shape := task.OfTask(t); shape.Number == n {
+				if shape.Parent != parent || shape.Title != want {
+					return fmt.Errorf("task %d hangs under %d, titled %q", n, shape.Parent, shape.Title)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("there is no task %d", n)
+	})
 	sc.Then(`^task (\d+) is titled "([^"]*)"$`, func(n int, want string) error {
 		found, err := w.givens().Tasks()
 		if err != nil {

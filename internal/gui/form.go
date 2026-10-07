@@ -94,7 +94,7 @@ func adding(tab Tab, state string) Form {
 	if tab == Objectives {
 		return asOpened(Form{Adding: true, ForObjective: true, fields: reading.NewGoalFields()})
 	}
-	return asOpened(Form{Adding: true, fields: reading.NewTaskFields(state)})
+	return asOpened(Form{Adding: true, fields: reading.AddingFields(state)})
 }
 
 // editing opens a form on what a task already carries, its parts included.
@@ -346,11 +346,18 @@ func (w Window) Save() Window {
 		return w
 	}
 	op, asked := w.saving()
-	if _, err := w.work.Ask(op, asked); err != nil {
+	answer, err := w.work.Ask(op, asked)
+	if err != nil {
 		w.err = err
 		return w
 	}
-	if err := w.savingParts(); err != nil {
+	// The parts go under the task the form was over — or, when it added one,
+	// under the task it has just added.
+	parent := w.form.Number
+	if w.form.Adding {
+		parent = reading.Added(answer)
+	}
+	if err := w.savingParts(parent); err != nil {
 		w.err = err
 		return w
 	}
@@ -358,15 +365,12 @@ func (w Window) Save() Window {
 	return w.Look()
 }
 
-// savingParts settles what hangs under the task with what the form's parts
+// savingParts settles what hangs under a task with what the form's parts
 // field says — see reading.SettleParts.
-func (w Window) savingParts() error {
-	if w.form.Adding {
-		return nil
-	}
+func (w Window) savingParts(parent int) error {
 	for _, field := range w.form.fields {
 		if field.Name == "parts" {
-			return reading.SettleParts(w.work, w.form.Number, field.Value, w.snap.Cards)
+			return reading.SettleParts(w.work, parent, field.Value, w.snap.Cards)
 		}
 	}
 	return nil

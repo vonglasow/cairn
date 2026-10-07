@@ -32,7 +32,19 @@ func NewGoalFields() []Field {
 // reachable here and nowhere else: a part is off the board, so a task that
 // carried one could neither be changed nor deleted once it did.
 func EditFields(c Card, cards []Card) []Field {
-	return append(TaskFields(c), Field{Name: "parts", Value: PartsSaid(Hanging(cards, c.Number)), Long: true})
+	return append(TaskFields(c), partsField(PartsSaid(Hanging(cards, c.Number))))
+}
+
+// AddingFields is the form of a task about to be added in a window: the new
+// task's fields and, last, its parts — empty, and the same field its edit form
+// has — so a task whose parts were already written down goes in with them.
+func AddingFields(state string) []Field {
+	return append(NewTaskFields(state), partsField(""))
+}
+
+// partsField is the field a task's parts are written in, a line each.
+func partsField(said string) Field {
+	return Field{Name: "parts", Value: said, Long: true}
 }
 
 // Saved is what a saved form asks for: adding or editing — one form, so the

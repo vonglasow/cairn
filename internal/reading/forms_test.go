@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
+	"cairn/internal/task"
 )
 
 // A new task's form starts in the column it was opened on and at normal
@@ -50,5 +51,32 @@ func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	op, in = Saved(fields, false, 7, engine.ObjectiveAdd, engine.ObjectiveEdit)
 	if op.Name() != "objective_edit" || in.Given["number"] != "7" {
 		t.Errorf("editing saved %s %v", op.Name(), in.Given)
+	}
+}
+
+// A new task added in a window carries a parts field, empty, last — the same
+// field its edit form has — so parts written down beforehand go in with it.
+func TestAddingFields_carryAnEmptyPartsField(t *testing.T) {
+	fields := AddingFields("todo")
+	if last := fields[len(fields)-1]; last.Name != "parts" || last.Value != "" || !last.Long {
+		t.Errorf("the last field of a new task is %+v", last)
+	}
+	if state, _ := valueOf(fields, "column"); state != "todo" {
+		t.Errorf("a new task starts in %q, want todo", state)
+	}
+}
+
+// Added is the number of the task an add answered with, and nothing for an
+// answer that carries no task.
+func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
+	var told task.AsTold
+	aTask("Ship it").Tell(&told)
+	told.Numbered(7)
+	added := told.Task()
+	if got := Added(engine.Answer{Task: &added}); got != 7 {
+		t.Errorf("an add of task 7 answered %d", got)
+	}
+	if got := Added(engine.Answer{}); got != 0 {
+		t.Errorf("an answer with no task answered %d", got)
 	}
 }
