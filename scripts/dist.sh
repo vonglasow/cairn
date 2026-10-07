@@ -21,8 +21,14 @@ notices=${3:-}
 
 cd "$(dirname "$0")/.."
 
-tree=$(git stash create)
-tree=${tree:-HEAD}
+# Asked of a clean tree, git stash create can fail outright: in a container
+# the repository is mounted into, the index still carries the stat of the
+# machine it came from, and git 2.39 gives up on it rather than refresh it.
+# git status refreshes it, and says whether there is anything to stash.
+tree=HEAD
+if [ -n "$(git status --porcelain)" ]; then
+  tree=$(git stash create)
+fi
 commit=$(git rev-parse HEAD)
 name="cairn-$version"
 
