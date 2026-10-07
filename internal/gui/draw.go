@@ -633,19 +633,71 @@ func paintHeld(gtx layout.Context, th *material.Theme, skin Skin, box Box, said 
 		wide(loose, th, string(kept[from:to]), size).Size.X), skin.Ghost)
 }
 
-// drawTicked is the parts of a task being edited while the keyboard is
-// elsewhere: a tile for each, ticked or not, in the field's own frame, and a
-// line saying another is added by typing. As many tiles as the frame holds
-// above that line; the rest are reached by putting the keyboard on the field.
-func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame Box, parts []reading.Card) {
+// drawTicked is the parts of a task in its form: a tile for each, ticked or
+// not, and one struck out for each taken away until the form is saved; the
+// line the keyboard is on outlined; a line being written drawn as it is
+// written; and last the line that adds another.
+func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame Box, w Window) {
+	f := w.Form()
 	sayHolding(gtx, th, skin, skin.Faint, name, Written{Value: "parts"}, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
-	tiles, adding := TickedPlaces(frame, len(parts))
-	for at, tile := range tiles {
-		drawSub(gtx, th, skin, tile, parts[at], false, Written{})
+	parts, from := w.PartsTicked(), w.partsFrom()
+	on := f.onParts() && w.screen == OnForm
+	places := w.partTiles()
+	for k, tile := range places[:len(places)-1] {
+		at := from + k
+		if f.isStruck(reading.Part{Number: parts[at].Number}) {
+			drawStruck(gtx, th, skin, tile, parts[at], on && f.partAt == at)
+			continue
+		}
+		if on && f.writingPart && f.partAt == at {
+			fill(gtx, SubPanel(tile), skin.Panel)
+			outline(gtx, SubPanel(tile), skin.Chosen)
+			writing(gtx, th, skin, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
+			continue
+		}
+		drawSub(gtx, th, skin, tile, parts[at], on && f.partAt == at, Written{})
 	}
-	say(gtx, th, skin.Faint, adding, AddingAPart, small)
+	adding := places[len(places)-1]
+	onAdding := on && f.partAt == f.lines()-1
+	if onAdding && f.writingPart {
+		writing(gtx, th, skin, w.measured(), adding, f.named, true, small, 1, Follow)
+	} else {
+		ink := skin.Faint
+		if onAdding {
+			ink = skin.Chosen
+		}
+		say(gtx, th, ink, adding, AddingAPart, small)
+	}
+	// What is in hand, over the list: the part itself under the pointer,
+	// written the way its tile writes it, and over it where it would land —
+	// drawn under the part, the line was hidden by the very thing it aims.
+	if ghost, ok := w.PartGhost(); ok {
+		fill(gtx, ghost, skin.Ghost)
+		outline(gtx, ghost, skin.Chosen)
+		line := SubWriting(ghost)
+		say(gtx, th, skin.Ink, line, fits(gtx, th, SubLine(parts[f.carried-1]), line.W, small), small)
+	}
+	if line, ok := w.PartLanding(); ok {
+		fill(gtx, line, skin.Chosen)
+	}
+}
+
+// drawStruck is a part struck out of the form: faint, crossed through, and
+// waiting for the form to be saved before it goes — or for backspace again.
+func drawStruck(gtx layout.Context, th *material.Theme, skin Skin, box Box, part reading.Card, on bool) {
+	panel := SubPanel(box)
+	fill(gtx, panel, skin.Panel)
+	if on {
+		outline(gtx, panel, skin.Chosen)
+	}
+	line := SubWriting(box)
+	said := fits(gtx, th, SubLine(part), line.W, small)
+	say(gtx, th, skin.Faint, line, said, small)
+	loose := gtx
+	loose.Constraints = layout.Constraints{Max: image.Pt(line.W, lineHigh)}
+	fill(gtx, StruckAt(line, wide(loose, th, said, small).Size.X), skin.Faint)
 }
 
 // drawFieldAt is drawField where the field is put and where its text starts in
@@ -694,8 +746,8 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		scrolled := w.scrolledOf(i)
 		name, value, rows := FormPlace(box, fields, i)
-		if fields[i].Name == "parts" && !on {
-			drawTicked(gtx, th, skin, name, Framed(value, rows), w.PartsTicked())
+		if fields[i].Name == "parts" {
+			drawTicked(gtx, th, skin, name, Framed(value, rows), w)
 			continue
 		}
 		drawFieldAt(gtx, th, skin, w.measured(), name, value, rows, FormSize(fields[i]), fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)

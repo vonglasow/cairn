@@ -2,6 +2,7 @@ package reading
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 
 	"cairn/internal/domain"
@@ -69,6 +70,58 @@ func SettleParts(work Work, parent int, said string, had []Card) error {
 			continue
 		}
 		if _, err := work.Ask(engine.TaskDelete, Numbered(was.Number)); err != nil {
+			return err
+		}
+	}
+	return ordering(work, PartsIn(said), Hanging(had, parent))
+}
+
+// ordering puts the parts already there in the order the field says, column
+// by column: a task moves among the ones it sits with, so the parts done are
+// ordered among themselves and those left among theirs — one done put behind
+// one to do is a move the engine refuses, and the board shows what is left
+// first whatever the order. A column moves nothing when its order is the one
+// it had and none of it changed column, or holds a single part; a part ticked
+// or unticked on the way
+// lands where the engine puts it, so its column is ordered again. A part
+// added on the way past goes in behind them, where an add puts it.
+func ordering(work Work, said []Part, had []Card) error {
+	for _, done := range []bool{false, true} {
+		var wanted, was []int
+		moved := false
+		for _, part := range said {
+			if part.Number != 0 && part.Done == done {
+				wanted = append(wanted, part.Number)
+			}
+		}
+		for _, c := range had {
+			if slices.Contains(wanted, c.Number) {
+				was = append(was, c.Number)
+				moved = moved || Finished(c) != done
+			}
+		}
+		// One alone in its column has no order to keep.
+		if len(wanted) < 2 || !moved && slices.Equal(wanted, was) {
+			continue
+		}
+		if err := movingInto(work, wanted); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// movingInto puts parts of one column in the order given: the first at its
+// head, each next directly behind the one before it.
+func movingInto(work Work, order []int) error {
+	for i, n := range order {
+		in := Numbered(n)
+		if i == 0 {
+			in.Given["first"] = "true"
+		} else {
+			in.Given["after"] = strconv.Itoa(order[i-1])
+		}
+		if _, err := work.Ask(engine.TaskMove, in); err != nil {
 			return err
 		}
 	}

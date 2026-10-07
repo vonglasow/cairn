@@ -43,6 +43,8 @@ type world struct {
 	// was is where the history stood before a step moved it, so a step after
 	// it can say whether it moved at all.
 	was int
+	// pointer is where the pointer holding a part was last put down.
+	pointer Point
 }
 
 func newWorld(t *testing.T) *world { return &world{t: t, width: 1200, high: 800} }
@@ -258,6 +260,17 @@ func (w *world) clickGoal(title string) error {
 	}
 	w.w = w.w.clicked(at)
 	return nil
+}
+
+// partPoint is the middle of a part's tile in the open form.
+func (w *world) partPoint(title string) (Point, error) {
+	for i, c := range w.w.PartsTicked() {
+		if c.Title == title {
+			tile := w.w.partTiles()[i-w.w.partsFrom()]
+			return Point{X: tile.X + tile.W/2, Y: tile.Y + tile.H/2}, nil
+		}
+	}
+	return Point{}, fmt.Errorf("no part is titled %q", title)
 }
 
 // clickWith clicks what is titled with a key held down, the way a hand holds
@@ -728,6 +741,40 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I put the keyboard on "([^"]*)"$`, w.keyboardOn)
+	sc.Step(`^I take hold of the part "([^"]*)" and hold it over the part "([^"]*)"$`, func(from, onto string) error {
+		a, err := w.partPoint(from)
+		if err != nil {
+			return err
+		}
+		b, err := w.partPoint(onto)
+		if err != nil {
+			return err
+		}
+		w.pointer = b
+		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b)
+		return nil
+	})
+	sc.Step(`^I drag the part "([^"]*)" onto the part "([^"]*)"$`, func(from, onto string) error {
+		at := func(title string) (Point, error) {
+			for i, c := range w.w.PartsTicked() {
+				if c.Title == title {
+					tile := w.w.partTiles()[i]
+					return Point{X: tile.X + tile.W/2, Y: tile.Y + tile.H/2}, nil
+				}
+			}
+			return Point{}, fmt.Errorf("no part is titled %q", title)
+		}
+		a, err := at(from)
+		if err != nil {
+			return err
+		}
+		b, err := at(onto)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b).LetGo(b)
+		return nil
+	})
 	// Both halves of one keystroke, in the order a keyboard sends them and
 	// through Gio's own router: the name first, then the text an input method
 	// made of it. This is what Linux does and macOS does not, and driving it

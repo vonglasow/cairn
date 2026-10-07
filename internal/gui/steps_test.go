@@ -760,6 +760,48 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^a part is in hand, under the pointer$`, func() error {
+		ghost, ok := w.w.PartGhost()
+		if !ok || !ghost.In(w.pointer) {
+			return fmt.Errorf("the part in hand is drawn at %v (%v), and the pointer is at %v", ghost, ok, w.pointer)
+		}
+		return nil
+	})
+	sc.Then(`^it would land below "([^"]*)"$`, func(title string) error {
+		line, ok := w.w.PartLanding()
+		at := slices.IndexFunc(w.w.PartsTicked(), func(c reading.Card) bool { return c.Title == title })
+		tile := w.w.partTiles()[at-w.w.partsFrom()]
+		if !ok || line.Y != tile.Y+tile.H-landingHigh {
+			return fmt.Errorf("it would land at %v (%v), and %q ends at %d", line, ok, title, tile.Y+tile.H)
+		}
+		return nil
+	})
+	sc.Then(`^the part the keyboard is on is "([^"]*)"$`, func(want string) error {
+		if got, on := w.w.PartOn(); !on || got != want {
+			return fmt.Errorf("the keyboard is on the part %q (%v), want %q", got, on, want)
+		}
+		return nil
+	})
+	sc.Then(`^the part "([^"]*)" is ticked$`, func(title string) error {
+		for _, c := range w.w.PartsTicked() {
+			if c.Title == title && reading.Finished(c) {
+				return nil
+			}
+		}
+		return fmt.Errorf("the parts are %+v, and %q is not ticked", w.w.PartsTicked(), title)
+	})
+	sc.Then(`^the part "([^"]*)" is struck out$`, func(title string) error {
+		if !slices.ContainsFunc(w.w.PartsGone(), func(p reading.Part) bool { return p.Title == title }) {
+			return fmt.Errorf("struck out are %+v, and not %q", w.w.PartsGone(), title)
+		}
+		return nil
+	})
+	sc.Then(`^the part "([^"]*)" is not struck out$`, func(title string) error {
+		if slices.ContainsFunc(w.w.PartsGone(), func(p reading.Part) bool { return p.Title == title }) {
+			return fmt.Errorf("%q is struck out", title)
+		}
+		return nil
+	})
 	sc.Then(`^the cards taken together are (.+)$`, func(list string) error {
 		var got []string
 		for _, n := range w.w.Taken() {

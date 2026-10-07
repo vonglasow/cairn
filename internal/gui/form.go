@@ -34,6 +34,20 @@ type Form struct {
 	caret int
 	// held is how far a run's anchor lies from the caret, nought for none.
 	held int
+	// partAt is which line of the list of parts the keyboard is on: a part,
+	// one struck out, or the line that adds. writingPart says a line is being
+	// written on — a part renamed, or a new one — and named is what is
+	// written there. partsTop is the first line of the list in sight, moved
+	// only as far as keeps the keyboard's line in sight. struck is the parts
+	// struck out, by number, which stay in
+	// their place until the form is saved; carried is the part being dragged,
+	// counted from one.
+	partAt      int
+	partsTop    int
+	writingPart bool
+	named       Written
+	struck      []int
+	carried     int
 	// opened is what the fields held when the form was opened, so leaving it
 	// can tell a form somebody typed into from one they only looked at. Ten
 	// minutes of typing used to go on an esc without a question, while a
@@ -45,6 +59,9 @@ type Form struct {
 func (f Form) Changed() bool {
 	if len(f.opened) != len(f.fields) {
 		return false
+	}
+	if len(f.struck) > 0 {
+		return true
 	}
 	for i := range f.fields {
 		if f.fields[i].Value != f.opened[i] {
@@ -83,6 +100,14 @@ func (f Form) Writes(written Written) Form {
 
 // onto moves the keyboard to a field and puts the caret at its end.
 func (f Form) onto(at int) Form {
+	// What was being written on the list of parts is kept on the way out.
+	if f.writingPart {
+		f = f.committing()
+		f.writingPart = false
+	}
+	if at != f.at {
+		f.partAt = 0
+	}
 	f.at = min(len(f.fields)-1, max(0, at))
 	f.caret, f.held = len([]rune(f.fields[f.at].Value)), 0
 	return f
@@ -156,6 +181,14 @@ func (w Window) Types(text string) Window {
 		return w
 	}
 	if w.screen != OnForm {
+		return w
+	}
+	// On the list of parts, what is typed is a part's name — and nothing at
+	// all while no line is being written: space ticks there.
+	if w.form.onParts() {
+		if w.form.writingPart {
+			w.form.named = w.form.named.Types(text)
+		}
 		return w
 	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
@@ -343,16 +376,15 @@ func (w Window) beside() Window {
 // Form is what the modal holds, for whoever draws it.
 func (w Window) Form() Form { return w.form }
 
-// PartsTicked is what the parts field of an open form is drawn as while the
-// keyboard is elsewhere: a tile for each part it says now, done or not. Nothing
-// while the keyboard is on it — it is then the lines being typed — and nothing
-// on a form with no parts field.
+// PartsTicked is what the parts field of an open form is drawn as: a tile for
+// each part it says now, done or not, unsaved lines included. Nothing on a
+// form with no parts field.
 func (w Window) PartsTicked() []reading.Card {
 	if w.screen != OnForm {
 		return nil
 	}
-	for i, field := range w.form.Fields() {
-		if field.Name != "parts" || i == w.form.On() {
+	for _, field := range w.form.Fields() {
+		if field.Name != "parts" {
 			continue
 		}
 		var cards []reading.Card
@@ -375,6 +407,11 @@ func (w Window) Save() Window {
 	if w.screen != OnForm {
 		return w
 	}
+	if w.form.writingPart {
+		w.form = w.form.committing()
+		w.form.writingPart = false
+	}
+	w.form = w.form.withoutStruck()
 	op, asked := w.saving()
 	answer, err := w.work.Ask(op, asked)
 	if err != nil {
@@ -422,6 +459,12 @@ func (w Window) Cancel() Window {
 	// about what it does.
 	if w.screen == OnSearch {
 		w.screen, w.looking = OnTheBoard, Written{}
+		return w
+	}
+	// A line of the list of parts being written is put down, and nothing
+	// else: it is the nearer thing to back out of.
+	if w.screen == OnForm && w.form.writingPart {
+		w.form.writingPart, w.form.named = false, Written{}
 		return w
 	}
 	// A form somebody typed into is asked about before it goes. The window

@@ -144,13 +144,28 @@ type Part struct {
 // read, ticked, renamed, added to and taken away: in the form of the task they
 // belong to, and nowhere else.
 func PartsSaid(parts []Card) string {
-	lines := make([]string, 0, len(parts))
+	said := make([]Part, 0, len(parts))
 	for _, c := range parts {
+		said = append(said, Part{Number: c.Number, Title: c.Title, Done: Finished(c)})
+	}
+	return PartsWritten(said)
+}
+
+// PartsWritten writes parts the way PartsIn reads them: a number when the part
+// has one, its box, its title. A part nobody has saved yet has no number, and
+// is written the way it is typed.
+func PartsWritten(parts []Part) string {
+	lines := make([]string, 0, len(parts))
+	for _, part := range parts {
 		mark := " "
-		if Finished(c) {
+		if part.Done {
 			mark = "x"
 		}
-		lines = append(lines, fmt.Sprintf("#%d [%s] %s", c.Number, mark, c.Title))
+		line := fmt.Sprintf("[%s] %s", mark, part.Title)
+		if part.Number != 0 {
+			line = fmt.Sprintf("#%d %s", part.Number, line)
+		}
+		lines = append(lines, line)
 	}
 	return strings.Join(lines, "\n")
 }

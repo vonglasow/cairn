@@ -1052,11 +1052,10 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	}
 }
 
-// While the keyboard is elsewhere, the parts of a task being edited are drawn
-// as tiles to tick, read from what the field says now — a part typed and not
-// yet saved among them, under its title alone. While the keyboard is on them
-// they are the lines being typed, and no tile is drawn.
-func TestThePartsAreTicksUntilTheKeyboardIsOnThem(t *testing.T) {
+// The parts of a task being edited are drawn as tiles to tick, read from what
+// the field says now — a part typed and not yet saved among them, under its
+// title alone — wherever the keyboard is.
+func TestThePartsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Ship it", "todo"),
 		reading.Card{Number: 2, Title: "Draft the columns", State: "done", Parent: 1})
@@ -1073,8 +1072,8 @@ func TestThePartsAreTicksUntilTheKeyboardIsOnThem(t *testing.T) {
 		t.Errorf("a part not yet saved reads %q", line)
 	}
 	w.form = w.form.onto(at)
-	if got := w.PartsTicked(); got != nil {
-		t.Errorf("with the keyboard on them the parts are still drawn as %+v", got)
+	if again := w.PartsTicked(); len(again) != 2 {
+		t.Errorf("with the keyboard on them the parts are drawn as %+v", again)
 	}
 }
 

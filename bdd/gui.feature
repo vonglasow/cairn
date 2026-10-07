@@ -1659,11 +1659,141 @@ Feature: The desktop board
     everything one has left — whether it is done, its number, its title.
     What is left comes first, and what is done after it.
 
-    A part is changed through its task's form and nowhere else: ticked,
-    renamed, added and taken away on its lines, and saved with the rest. The
-    arrows, the space bar and the drag that worked on an open task went with
-    the screen they worked on: an open task is now its form, and a second way
-    of changing a part beside the first was a second thing to get wrong.
+    A part is changed through its task's form, with the keyboard on its list:
+    the arrows walk the tiles, space ticks the one the keyboard is on, enter
+    renames it, backspace strikes it out — and again brings it back — and a
+    tile is dragged to another place. The last line adds one: enter, a title,
+    enter, and the next is already waiting.
+
+    A tick is done at once: a box ticked on a part says it is done, and a part
+    done only once its task's form was saved is a box that lies until then.
+    Everything else — a name, a part added, one struck out, the order — waits
+    for the form to be saved, and goes with a form thrown away.
+
+    @gui-the-arrows-walk-the-parts
+    Scenario: the arrows walk the parts, and space ticks the one they are on
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      And I added a task titled "Get the nod" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      Then the part the keyboard is on is "Draft the columns"
+      When I press "down"
+      Then the part the keyboard is on is "Get the nod"
+      When I press "space"
+      Then the part "Get the nod" is ticked
+      And task 3 is in the column "done"
+
+    @gui-a-part-is-renamed-in-its-tile
+    Scenario: enter renames the part the keyboard is on, in its tile
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      And I press "enter"
+      And I type " the columns"
+      And I press "enter"
+      And I choose "Save"
+      Then task 2 hangs under task 1, titled "Draft the columns"
+
+    @gui-parts-are-added-one-after-another
+    Scenario: the last line adds a part, and the next is waiting behind it
+      Given I added a task titled "Ship it"
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      And I press "enter"
+      And I type "Draft the columns"
+      And I press "enter"
+      And I type "Get the nod"
+      And I press "enter"
+      And I choose "Save"
+      Then task 2 hangs under task 1, titled "Draft the columns"
+      And task 3 hangs under task 1, titled "Get the nod"
+
+    @gui-a-part-is-struck-out-and-back
+    Scenario: backspace strikes a part out until the form is saved, and again brings it back
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft" hanging under task 1
+      And I added a task titled "Keep" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      And I press "backspace"
+      Then the part "Draft" is struck out
+      When I press "backspace"
+      Then the part "Draft" is not struck out
+      When I press "down"
+      And I press "backspace"
+      And I choose "Save"
+      Then the engine was asked "task delete" for task 3
+      And task 2 hangs under task 1, titled "Draft"
+
+    @gui-a-part-in-hand-shows-where-it-lands
+    Scenario: a part in hand follows the pointer, and says where it would land
+      Given I added a task titled "Ship it"
+      And I added a task titled "First" hanging under task 1
+      And I added a task titled "Second" hanging under task 1
+      And I added a task titled "Third" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I take hold of the part "First" and hold it over the part "Third"
+      Then a part is in hand, under the pointer
+      And it would land below "Third"
+
+    @gui-a-part-is-dragged-to-its-place
+    Scenario: a part dragged onto another takes its place
+      Given I added a task titled "Ship it"
+      And I added a task titled "First" hanging under task 1
+      And I added a task titled "Second" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I drag the part "Second" onto the part "First"
+      Then the parts are drawn as a list to tick, "Second" first
+      When I choose "Save"
+      Then the engine was asked "task move" for task 3
+
+    @gui-parts-done-and-left-in-turn-are-saved
+    Scenario: parts done and left in turn are saved, each kept among its own
+      Given I added a task titled "Ship it"
+      And I added a task titled "One" hanging under task 1
+      And I added a task titled "Two" hanging under task 1
+      And I added a task titled "Three" hanging under task 1
+      And I added a task titled "Four" hanging under task 1
+      And I added a task titled "Five" hanging under task 1
+      And I edited task 2 with the state "done"
+      And I edited task 3 with the state "done"
+      And I edited task 5 with the state "done"
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      And I press "down"
+      And I press "space"
+      And I choose "Save"
+      Then the window is on the board
+      And task 6 is in the column "done"
+
+    @gui-a-tick-is-kept-whatever-becomes-of-the-form
+    Scenario: a part ticked is done at once, and nothing is left to save for it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "parts"
+      And I press "space"
+      Then task 2 is in the column "done"
+      When I press "esc"
+      Then the window is on the board
+      And task 2 is in the column "done"
+
+    @gui-an-open-task-says-its-title-in-its-heading
+    Scenario: an open task says its title on the line beside its number
+      Given I added a task titled "Ship it"
+      When I open the window
+      And I double-click the card "Ship it"
+      Then the panel is headed "task 1 · Ship it"
 
     @gui-every-text-on-an-open-task-is-copied
     Scenario: a word of anything an open task writes is held and copied
@@ -1957,7 +2087,7 @@ Feature: The desktop board
       Then task 2 hangs under task 1, titled "Draft the columns"
 
     @gui-the-parts-read-as-a-list-to-tick
-    Scenario: the parts of a task being edited read as a list to tick, and as lines while they are typed
+    Scenario: the parts of a task being edited read as a list to tick, written as lines underneath
       Given I added a task titled "Ship it"
       And I added a task titled "Draft the columns" hanging under task 1
       When I open the window

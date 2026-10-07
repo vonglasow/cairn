@@ -50,7 +50,15 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.form.Adding {
 			return "New " + w.formKind()
 		}
-		return w.formKind() + " " + strconv.Itoa(w.form.Number)
+		// The title as it was saved, beside the number: what was opened,
+		// said where it is read first. Not as it is being typed — the field
+		// below says that, and a heading following every keystroke would be
+		// a second copy of it.
+		head := w.formKind() + " " + strconv.Itoa(w.form.Number)
+		if saved := w.savedTitle(); saved != "" {
+			head += " · " + saved
+		}
+		return head
 	}
 	return ""
 }
@@ -318,6 +326,16 @@ func (w Window) offerAt(p Point) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// savedTitle is the title of what a form is open on, as it was saved.
+func (w Window) savedTitle() string {
+	if w.form.ForObjective {
+		g, _ := w.snap.Goal(w.form.Number)
+		return g.Title
+	}
+	c, _ := w.snap.Card(w.form.Number)
+	return c.Title
 }
 
 // Asks is what the question says, a sentence to a line.

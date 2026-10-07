@@ -1423,7 +1423,7 @@ func TestTheTicksAreAsManyAsTheFrameHolds(t *testing.T) {
 	frame := Box{X: 100, Y: 200, W: 400, H: 8 + 6*lineHigh}
 	inside := Inside(frame)
 	for _, c := range []struct{ parts, shown int }{{0, 0}, {2, 2}, {30, (6*lineHigh - lineHigh) / SubHeight}} {
-		tiles, adding := TickedPlaces(frame, c.parts)
+		tiles, adding := TickedPlaces(frame, c.parts, 0)
 		if len(tiles) != c.shown {
 			t.Errorf("%d parts: %d tiles, want %d", c.parts, len(tiles), c.shown)
 		}
@@ -1527,6 +1527,33 @@ func TestHowManyShortFieldsALineHolds(t *testing.T) {
 	for _, c := range []struct{ full, want int }{{0, 1}, {two - 1, 1}, {two, 2}, {two + formNamed + formValueFewest + padding, 3}} {
 		if got := fieldsAcross(c.full); got != c.want {
 			t.Errorf("a line %d wide holds %d, want %d", c.full, got, c.want)
+		}
+	}
+}
+
+// The rows of two long fields: the first keeps its fewest while the second can
+// keep its own, and gives way to it where it cannot.
+func TestTheDescriptionGivesWayToThePartsFewest(t *testing.T) {
+	wanted := map[int]int{0: 10, 1: 10}
+	for _, c := range []struct{ room, said, listed int }{{8, 4, 4}, {5, 2, 3}} {
+		got := shared([]int{0, 1}, wanted, c.room)
+		if got[0] != c.said || got[1] != c.listed {
+			t.Errorf("in %d rows the description has %d and the parts %d, want %d and %d", c.room, got[0], got[1], c.said, c.listed)
+		}
+	}
+}
+
+// In the smallest window, a task with many parts still shows one of them and
+// the line that adds: the description gives way down to a line for it, since
+// a list nothing of which is in sight is a list nobody can work.
+func TestThePartsKeepALineInTheSmallestWindow(t *testing.T) {
+	for _, box := range []Box{Over(Narrowest, Shortest), FormFields(Over(Narrowest, Shortest))} {
+		fields := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+		at := len(fields) - 1
+		fields[at].Value = strings.Repeat("#2 [ ] a part\n", 12)
+		_, value, rows := FormPlace(box, fields, at)
+		if tiles, _ := TickedPlaces(Framed(value, rows), 12, 0); len(tiles) == 0 {
+			t.Errorf("in a box %d wide the parts have %d rows, and no tile in sight", box.W, rows)
 		}
 	}
 }

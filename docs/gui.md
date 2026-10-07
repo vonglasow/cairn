@@ -767,14 +767,36 @@ so a long description reached down to the foot of the panel: the place of the
 notes could not be held, and the offers took a press as the start of a run
 rather than as a click.
 
-**What hangs under a task is the last thing its form holds**, drawn as tiles
-to tick while the keyboard is elsewhere. A part carries a box before its name
-— empty, or filled and ticked — and what is left is written in the reading ink
-while what is done is faint and struck through; what is left comes first, what
-is done after, each in the order it was put in. A box is read by its shape,
-without comparing two greys. The arrows, the space bar and the drag that
-changed a part on the reading panel went with it: a part is changed on its
-lines, and saved with the rest.
+**What hangs under a task is the last thing its form holds**, as a list of
+tiles. A part carries a box before its name — empty, or filled and ticked —
+and what is left is written in the reading ink while what is done is faint and
+struck through; what is left comes first, what is done after. A box is read by
+its shape, without comparing two greys.
+
+With the keyboard on the list, the arrows walk the tiles, space ticks the one
+it is on, enter renames it in its tile, and backspace strikes it out — in its
+place, faint and crossed through — or, struck out already, brings it back. A
+tile is dragged to another place the way a card is: the part in hand follows
+the pointer, and a line says where it would land — over the tile it takes the
+place of when carried up, under it when carried down, drawn over the part in
+hand so the thing aimed never hides the aim. A click on its box ticks it. The last
+line adds one: enter, a title, enter, and the next is already waiting.
+
+**A tick is done at once**, and asks nothing of the form: a box ticked on a
+part says it is done, and a part done only once its task's form was saved was
+a box that lied until then. A tick the engine refuses leaves the box as it
+was. Everything else — a name, a part added, one struck out, the order — waits
+for the form to be saved and goes with a form thrown away. Saving moves the
+parts into the order the list says, column by column, and moves nothing when
+the order is the one they had.
+
+The list writes the field's own lines underneath — `#2 [x] Relire l'ADR`, a
+new one without a number — and those lines are what is saved, the way they
+were when the list was a text to edit. A form being added carries the same
+list, so a task goes in with the parts already written down for it.
+
+The heading says what was opened: `task 7 · Ship it`, the title as it was
+saved and not as it is being typed, which the field below says.
 
 **An objective opens on the work that serves it**, beside its form, headed
 `WHAT SERVES IT`: an objective has no history of its own — the trace is kept

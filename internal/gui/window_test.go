@@ -500,10 +500,9 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
 	on := w.clicked(middleOf(w, 1, 0))
-	// An open task is being edited, and its heading is its number: the title
-	// is in the field being typed into, and a heading repeating it would go
-	// stale between two keystrokes.
-	if got := Heads(on.Key("enter")); got != "task 7" {
+	// An open task is headed by its number and its title as it was saved —
+	// not as it is being typed, which the field below says.
+	if got := Heads(on.Key("enter").Types("x")); got != "task 7 · Write the spec" {
 		t.Errorf("a task being edited is headed %q", got)
 	}
 	if got := Heads(on.Choose("Delete")); got != "Delete task 7?" {
@@ -696,7 +695,7 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	if got := Heads(open); got != "a parent for task 7" {
 		t.Errorf("the list is headed %q", got)
 	}
-	if got := HeadsOn(open, OnForm); got != "task 7" {
+	if got := HeadsOn(open, OnForm); got != "task 7 · Write the spec" {
 		t.Errorf("the form under it is headed %q, not its own", got)
 	}
 }

@@ -125,6 +125,11 @@ func (w Window) onSearch(name string) Window {
 // about one field, because a form is a column of fields and the keyboard is on
 // one of them.
 func (w Window) inForm(name string) Window {
+	if w.form.onParts() {
+		if done, took := w.onParts(name); took {
+			return done.keepingPartInSight()
+		}
+	}
 	long := w.form.Fields()[w.form.On()].Long
 	switch name {
 	case "tab":
@@ -240,6 +245,9 @@ func (w Window) Pasted(text string) Window {
 	}
 	if w.screen != OnForm {
 		return w
+	}
+	if w.form.onParts() {
+		return w.Types(text)
 	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
 	return w

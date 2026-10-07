@@ -75,16 +75,20 @@ func FormSize(field reading.Field) int {
 }
 
 // TickedPlaces is where the parts of a task being edited are drawn as tiles in
-// their frame: one under the other from its top, as many as fit above the
-// line that says another is added, and that line under the last of them.
-func TickedPlaces(frame Box, parts int) (tiles []Box, adding Box) {
+// their frame: one under the other from its top, from the first in sight, as
+// many as fit above the line that adds another, and that line under the last
+// of them.
+func TickedPlaces(frame Box, parts, from int) (tiles []Box, adding Box) {
 	inside := Inside(frame)
-	shown := min(parts, max(0, (inside.H-lineHigh)/SubHeight))
+	shown := min(parts-from, ticksFit(frame))
 	for at := range shown {
 		tiles = append(tiles, Box{X: inside.X, Y: inside.Y + at*SubHeight, W: inside.W, H: SubHeight})
 	}
 	return tiles, Box{X: inside.X + padding, Y: inside.Y + shown*SubHeight, W: inside.W - padding, H: lineHigh}
 }
+
+// ticksFit is how many tiles a frame holds above the line that adds.
+func ticksFit(frame Box) int { return max(0, (Inside(frame).H-lineHigh)/SubHeight) }
 
 // AddingAPart is what the parts of a task being edited say under their tiles:
 // another is added by typing a line, which is where the keyboard goes.
@@ -228,20 +232,22 @@ func rowsWanted(field reading.Field, wide int) int {
 }
 
 // shared gives the long fields the rows the form has for them. The first — the
-// description — keeps its fewest; the others are given what they want of the
-// rest, in turn, so a part is never hidden to make a paragraph longer; the
-// first then takes what is left, up to what it wants. One row at the least for
-// every one of them, the way every frame keeps one.
+// description — keeps its fewest while the others can keep theirs, and gives
+// way down to a line where they cannot: a list of parts nothing of which is in
+// sight is a list nobody can work. The others are then given what they want
+// of the rest, in turn, and the first takes what is left, up to what it wants.
+// One row at the least for every one of them, the way every frame keeps one.
 func shared(long []int, wanted map[int]int, room int) map[int]int {
 	given := make(map[int]int, len(long))
 	if len(long) == 0 {
 		return given
 	}
-	left := room - min(saidFewest, wanted[long[0]])
+	kept := min(saidFewest, wanted[long[0]], max(1, room-(len(long)-1)*listedFewest))
+	left := room - kept
 	for _, i := range long[1:] {
 		given[i] = max(1, min(wanted[i], left))
 		left -= given[i]
 	}
-	given[long[0]] = max(1, min(wanted[long[0]], left+min(saidFewest, wanted[long[0]])))
+	given[long[0]] = max(1, min(wanted[long[0]], left+kept))
 	return given
 }

@@ -130,6 +130,14 @@ func (w Window) DoubleClick(p Point) Window {
 		}
 		return w
 	}
+	// On a part it renames it, the way enter does.
+	if at, on := w.partUnder(p); on && w.screen == OnForm {
+		field, _ := w.form.partsField()
+		w.form = w.form.onto(field)
+		w.form.partAt = at
+		w.form = w.form.naming()
+		return w
+	}
 	// In a field of the form it holds the word it lands on, and beside the
 	// form the same: every piece of text written can be held and copied.
 	if w.screen == OnForm {
@@ -193,6 +201,16 @@ func (w Window) PressAt(p Point) Window {
 		// and a press on it is not a press in the text.
 		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
 			w.draggingSaying = true
+			return w
+		}
+		// A part is taken hold of, the way a card is: let go where it was
+		// pressed it is a click, let go elsewhere it is carried there.
+		if at, on := w.partUnder(p); on {
+			field, _ := w.form.partsField()
+			w = w.keepingPartInSight()
+			w.form = w.form.onto(field)
+			w.form.partAt, w.form.carried = at, at+1
+			w.held = Held{From: p, At: p}
 			return w
 		}
 		if at, on := w.fieldAt(p); on {
@@ -260,7 +278,7 @@ func (w Window) MoveTo(p Point) Window {
 		w.serving = w.settledServing(Reached(track, len(w.Under()), room, p) * SubHeight)
 		return w
 	}
-	if w.held.Number == 0 {
+	if w.held.Number == 0 && w.form.carried == 0 {
 		return w
 	}
 	w.held.At = p
@@ -300,6 +318,9 @@ func (w Window) LetGo(p Point) Window {
 	if !waiting || was != w.screen {
 		w.held = Held{}
 		return w
+	}
+	if w.form.carried != 0 {
+		return w.lettingGoOfAPart(p)
 	}
 	held := w.held
 	w.held = Held{}
