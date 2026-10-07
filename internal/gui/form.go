@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
@@ -281,7 +282,7 @@ func (w Window) reaching(at int, p Point) int {
 	}
 	lines := Wrapped(said.Reads(), room(inside))
 	line, _ := lines.At(said.At)
-	return lines.Reaches(inside, p, StartsAt(lines, rows, line, scrolled), w.measured(), reads)
+	return lines.Reaches(inside, p, StartsAt(lines, rows, line, scrolled), w.measured(), FormSize(fields[at]))
 }
 
 // Walk moves the keyboard from one field to the next, and stops at both ends
@@ -311,6 +312,31 @@ func (w Window) Edit() Window {
 
 // Form is what the modal holds, for whoever draws it.
 func (w Window) Form() Form { return w.form }
+
+// PartsTicked is what the parts field of an open form is drawn as while the
+// keyboard is elsewhere: a tile for each part it says now, done or not. Nothing
+// while the keyboard is on it — it is then the lines being typed — and nothing
+// on a form with no parts field.
+func (w Window) PartsTicked() []reading.Card {
+	if w.screen != OnForm {
+		return nil
+	}
+	for i, field := range w.form.Fields() {
+		if field.Name != "parts" || i == w.form.On() {
+			continue
+		}
+		var cards []reading.Card
+		for _, part := range reading.PartsIn(field.Value) {
+			state := domain.Todo
+			if part.Done {
+				state = domain.Done
+			}
+			cards = append(cards, reading.Card{Number: part.Number, Title: part.Title, State: string(state)})
+		}
+		return cards
+	}
+	return nil
+}
 
 // Save writes what the form holds and closes it. One act in the history per
 // save, which is the whole reason this is a modal and not twelve fields edited

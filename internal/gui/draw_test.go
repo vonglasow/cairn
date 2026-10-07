@@ -400,9 +400,10 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 
 	box := Over(w.width, w.height)
 	lit := Dark().Chosen
+	// The frame and not the name: the title is written under no name, as the
+	// heading of what is being edited.
 	rowOf := func(i int) Box {
-		name := formName(box, w.Form().Fields(), i)
-		return name
+		return Framed(formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i))
 	}
 
 	shot := drawn(t, w)
@@ -978,7 +979,7 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 			frame = Framed(value, formRows(box, fields, i))
 		}
 	}
-	long := "This description is far longer than one line of this form can hold, so it has to go somewhere"
+	long := strings.Repeat("This description is far longer than one line of this form can hold. ", 3)
 	shot := drawn(t, w.Types(long))
 
 	inside := Inside(frame)
@@ -1538,5 +1539,24 @@ func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 	}
 	if got := w.LaneSays("todo"); got != "todo  0" {
 		t.Errorf("a state with no lane says %q", got)
+	}
+}
+
+// A form writes what each field says while the keyboard is elsewhere: the
+// parts are the only field drawn as something other than its words.
+func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	shot := drawn(t, w)
+	box := FormOver(w.width, w.height, w.Form().Fields())
+	for i, field := range w.Form().Fields() {
+		if field.Name != "labels" && field.Name != "column" {
+			continue
+		}
+		value, rows := formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i)
+		if painted(shot, Inside(Framed(value, rows)), Dark().Ink) == 0 {
+			t.Errorf("%q writes nothing", field.Name)
+		}
 	}
 }

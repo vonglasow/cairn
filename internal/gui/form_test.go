@@ -367,7 +367,7 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	box := Over(opened.width, opened.height)
+	box := FormOver(opened.width, opened.height, opened.Form().Fields())
 	press := func(at int) Window {
 		button := PanelOfferAt(box, at)
 		return opened.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
@@ -932,7 +932,7 @@ func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 	for range len(lines.Said) {
 		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
 	}
-	if last := lines.Said[min(len(lines.Said)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "LA FIN") {
+	if last := lines.Said[min(len(lines.Said)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "FIN") {
 		t.Fatalf("scrolled to the end, the last line in sight is %q", last)
 	}
 	// And the wheel over it does not move the keyboard off it.
@@ -1049,5 +1049,31 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	band = band.clicked(middleOf(band, 1, 0)).Key("down")
 	if got := adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
 		t.Errorf("a task added on the band starts in %q, want the first stopped state", got)
+	}
+}
+
+// While the keyboard is elsewhere, the parts of a task being edited are drawn
+// as tiles to tick, read from what the field says now — a part typed and not
+// yet saved among them, under its title alone. While the keyboard is on them
+// they are the lines being typed, and no tile is drawn.
+func TestThePartsAreTicksUntilTheKeyboardIsOnThem(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Ship it", "todo"),
+		reading.Card{Number: 2, Title: "Draft the columns", State: "done", Parent: 1})
+	w.chosen = 1
+	w = w.Edit()
+	fields := w.form.Fields()
+	at := len(fields) - 1
+	w.form.fields[at].Value += "\nGet the nod"
+	got := w.PartsTicked()
+	if len(got) != 2 || got[0].Number != 2 || !reading.Finished(got[0]) || got[1].Title != "Get the nod" || reading.Finished(got[1]) {
+		t.Fatalf("the parts are drawn as %+v", got)
+	}
+	if line := SubLine(got[1]); line != "Get the nod" {
+		t.Errorf("a part not yet saved reads %q", line)
+	}
+	w.form = w.form.onto(at)
+	if got := w.PartsTicked(); got != nil {
+		t.Errorf("with the keyboard on them the parts are still drawn as %+v", got)
 	}
 }

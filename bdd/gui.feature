@@ -2103,7 +2103,20 @@ Feature: The desktop board
       And I choose "Edit"
       Then no field of the form reaches what it offers
       And no two fields of the form overlap
-      And the fields "description" and "parts" stand beside the others
+      And the title runs the width of the form, above everything else
+      And the description runs the width of the form, under the title
+      And the form groups its fields under "STATE", "TIME", "BLOCKED", "LINKS"
+
+    @gui-the-parts-read-as-a-list-to-tick
+    Scenario: the parts of a task being edited read as a list to tick, and as lines while they are typed
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      When I open the window
+      And I click the card "Ship it"
+      And I choose "Edit"
+      Then the parts are drawn as a list to tick, "Draft the columns" among them
+      When I click the field "parts"
+      Then the field "parts" reads "#2 [ ] Draft the columns"
 
     @gui-the-bar-teaches-the-key
     Scenario: the bar says what to press, not only what can be done

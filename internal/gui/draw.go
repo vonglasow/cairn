@@ -683,13 +683,28 @@ func paintHeld(gtx layout.Context, th *material.Theme, skin Skin, box Box, said 
 // inside a box of its own, and the frame lit when the keyboard is on it.
 func drawField(gtx layout.Context, th *material.Theme, skin Skin, box Box, fields []reading.Field, i int, lit bool, carets bool, said, named Written) {
 	name, value := FieldRow(box, FieldTop(box, fields, i))
-	drawFieldAt(gtx, th, skin, name, value, RowsOf(box, fields, i), false, lit, carets, said, named, Follow)
+	drawFieldAt(gtx, th, skin, name, value, RowsOf(box, fields, i), reads, false, lit, carets, said, named, Follow)
+}
+
+// drawTicked is the parts of a task being edited while the keyboard is
+// elsewhere: a tile for each, ticked or not, in the field's own frame, and a
+// line saying another is added by typing. As many tiles as the frame holds
+// above that line; the rest are reached by putting the keyboard on the field.
+func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame Box, parts []reading.Card) {
+	sayHolding(gtx, th, skin, skin.Faint, name, Written{Value: "parts"}, small)
+	fill(gtx, frame, skin.Back)
+	outline(gtx, frame, skin.Edge)
+	tiles, adding := TickedPlaces(frame, len(parts))
+	for at, tile := range tiles {
+		drawSub(gtx, th, skin, tile, parts[at], false, Written{})
+	}
+	say(gtx, th, skin.Faint, adding, AddingAPart, small)
 }
 
 // drawFieldAt is drawField where the field is put and where its text starts in
 // sight are given. A long field is drawn with the bar the description carries
 // on an open task.
-func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, name, value Box, rows int, long, lit, carets bool, said, named Written, scrolled int) {
+func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, name, value Box, rows, size int, long, lit, carets bool, said, named Written, scrolled int) {
 	frame := Framed(value, rows)
 	var bar Box
 	if long {
@@ -702,7 +717,7 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, name, value 
 	sayHolding(gtx, th, skin, ink, name, named, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, edge)
-	writing(gtx, th, skin, Inside(frame), said, carets, reads, rows, scrolled)
+	writing(gtx, th, skin, Inside(frame), said, carets, size, rows, scrolled)
 	if long {
 		lines := Wrapped(said.Reads(), room(Inside(frame)))
 		line, _ := lines.At(said.At)
@@ -729,7 +744,7 @@ func drawSaying(gtx layout.Context, th *material.Theme, skin Skin, box Box, fiel
 }
 
 func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	box := Over(w.width, w.height)
+	box := FormOver(w.width, w.height, w.Form().Fields())
 	drawPanel(gtx, th, skin, box, HeadsOn(w, OnForm))
 	// Every field is a box, whether or not the keyboard is on it, and the one
 	// it is on is the one whose frame is lit. A place somebody types should
@@ -757,7 +772,14 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			}
 		}
 		name, value, rows := FormPlace(box, fields, i)
-		drawFieldAt(gtx, th, skin, name, value, rows, fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)
+		if fields[i].Name == "parts" && !on {
+			drawTicked(gtx, th, skin, name, Framed(value, rows), w.PartsTicked())
+			continue
+		}
+		drawFieldAt(gtx, th, skin, name, value, rows, FormSize(fields[i]), fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)
+	}
+	for _, head := range FormHeads(box, fields) {
+		say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
 	}
 	fill(gtx, FormRule(box), skin.Edge)
 	drawPanelOffers(gtx, th, skin, box, w)

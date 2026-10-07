@@ -152,7 +152,13 @@ func Counted(g reading.Goal) string {
 // Cutting it to the tile is not done here. The font is proportional, so what
 // fits is measured where there is something to measure with, and a count of
 // runes would only be close.
+//
+// A part typed into a form and not yet saved has no number, and reads as its
+// title alone: a "#0" would be a number nobody gave it.
 func SubLine(c reading.Card) string {
+	if c.Number == 0 {
+		return c.Title
+	}
 	return "#" + strconv.Itoa(c.Number) + "  " + c.Title
 }
 

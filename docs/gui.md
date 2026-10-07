@@ -351,20 +351,33 @@ the lit frame is the only difference between the two. A value floating on the
 panel's own ground looked like something written rather than somewhere to
 write.
 
-**A form is two columns, and its offers a line of their own.** The short
-fields run down the left, each name beside its box; the long ones — the
-description, and the parts of a task being edited — share the right, each name
-above its box, down to a rule across the foot. Under the rule, and nowhere
-else, is what the form offers. It was one column, and once the parts became a
-second long field a window under eight hundred points drew them over *Save*
-and *Cancel* and out of the panel. `FormPlace` says where every field of a form
-goes, and everything that draws, clicks or measures a form asks it.
+**A form reads from the top, and its offers keep a line of their own.** The
+title first, across the whole width and as large as a panel's heading; the
+description under it, across the width, a line for each it says — four at the
+least, ten at the most; the short fields grouped a section to a row, the head
+of the section first and each field's name before its box — `STATE`, `TIME`,
+`BLOCKED`, `LINKS`, by what each field asks the engine for; then the parts.
+Under a rule at the foot, and nowhere else, is what the form offers. The panel
+is as tall as what it holds, up to the panel every other screen uses: it
+stops under the parts rather than under a floor of empty ground. `FormPlace`
+says where every field of a form goes, and everything that draws, clicks or
+measures a form asks it.
 
-**Every box in a column is as wide as the others in it.** A title and a date
-end on the same line, the description and the parts on another, and a long
-field's bar sits beside its box, in a margin every field keeps. One-line fields
-used to stop at 420 points while the long ones ran the width of the panel: a
-form of boxes that each ended somewhere else.
+It was one column, and the parts — a second long field — ran over *Save* and
+*Cancel* in a window under eight hundred points. Then two columns, which left a
+hole under eleven fields and two frames as tall as the panel with three lines
+in them. When the window is short, the parts are given their room before the
+description grows past four lines: a part out of sight is a part nobody ticks.
+
+**The parts read as a list to tick while the keyboard is elsewhere** — a tile
+each, ticked or not, from what the field says now, unsaved lines included, and
+a line saying another is added by typing one. With the keyboard on them they
+are the lines being typed, `#2 [x] Relire l'ADR`, which is where a part is
+ticked, renamed, added and taken away.
+
+**Every box in a row ends where the others do.** The title, the description,
+the last field of each section and the parts end on the same line, and a long
+field's bar sits beside its box, in a margin every field keeps.
 
 **Nothing written runs out of its box.** Text wraps — at a space when there is
 one, inside a word when the word is longer than the room — and the box is

@@ -1,66 +1,235 @@
 package gui
 
-import "cairn/internal/reading"
+import (
+	"slices"
 
-// Where the fields of a form go: the short ones down the left, the long ones
-// down the right, and what the form offers on a line of its own at its foot.
+	"cairn/internal/reading"
+)
+
+// Where the fields of a form go, read from the top: the title across the whole
+// width, the description under it, the short fields grouped a section to a
+// row, then the parts — and what the form offers on a line of its own, under a
+// rule at its foot.
 //
-// It was one column, every field under the last. The form of a task grew a
-// second long field — its parts — and in a window under eight hundred points
-// the parts ran over what the form offers and out of the panel, the two
-// buttons written across a field somebody was typing into.
+// It was one column, every field under the last, and then two: the short
+// fields down the left, the long ones sharing the right. The first ran the
+// parts over Save and Cancel once they became a second long field; the second
+// left a hole under eleven fields and two frames as tall as the panel with
+// three lines in them.
+
+// formSections are the rows the short fields are grouped in, by what each
+// field asks the engine for: a column and a standing are both a state.
+var formSections = []struct {
+	head string
+	args []string
+}{
+	{"STATE", []string{"state", "priority", "label"}},
+	{"TIME", []string{"deadline", "estimate", "spent"}},
+	{"BLOCKED", []string{"blocker", "because"}},
+	{"LINKS", []string{"parent", "objective"}},
+}
+
+// sectionWide is the room a section's head takes before its fields; formNamed
+// is what a field's name takes before its box, inside a section.
+const (
+	sectionWide = 96
+	formNamed   = 76
+)
+
+// The rows a long field is given: the description a line for each it says,
+// between four and ten; the parts a line for each tile and one to add another,
+// three at the least.
+const (
+	saidFewest   = 4
+	saidMost     = 10
+	listedFewest = 3
+)
 
 // FormPlace is where one field of a form is drawn: the name it is written
 // under, the line its value starts on, and how many rows it is given.
-//
-// A short field is a row of the left column, its name beside it, as on an open
-// task. A long one is a block of the right column, its name above it; the long
-// fields share that column between them, all the way down to the rule over the
-// offers, so a description has the room the history has on an open task.
 func FormPlace(over Box, fields []reading.Field, at int) (name, value Box, rows int) {
-	left, right := DetailFields(over), DetailHistory(over)
-	top := FirstRow(over)
-	if !fields[at].Long {
-		short := 0
-		for i := range fields[:at] {
-			if !fields[i].Long {
-				short++
-			}
-		}
-		name, value = FieldRow(left, top+short*apart)
-		return name, value, 1
-	}
-	long, before := 0, 0
-	for i := range fields {
-		if fields[i].Long {
-			long++
-			if i < at {
-				before++
-			}
-		}
-	}
-	// Each block ends with the gap before what follows it: the next one's
-	// name, or the rule — and the last runs to the rule itself, so what the
-	// share left over when it was divided is not lost under it.
-	rule := FormRule(over).Y
-	block := (rule - top) / long
-	from := top + before*block
-	till := from + block
-	if before == long-1 {
-		till = rule
-	}
-	name = Box{X: right.X + padding, Y: from, W: right.W - padding - padding, H: lineHigh}
-	value = Box{X: name.X, Y: from + lineHigh + between + inset, W: name.W, H: lineHigh}
-	// What the block has left once the name, the frame's own room and the gap
-	// before the next are taken — and one row at least, the way every frame
-	// keeps one.
-	rows = max(1, (till-from-lineHigh-between-inset-inset-between)/lineHigh)
-	return name, value, rows
+	places, _, _ := formLayout(over, fields)
+	p := places[at]
+	return p.name, p.value, p.rows
 }
+
+// FormHeads are the heads of the sections a form groups its short fields in,
+// each where it is written: a section none of the form's fields belong to has
+// no head.
+func FormHeads(over Box, fields []reading.Field) []Readable {
+	_, heads, _ := formLayout(over, fields)
+	return heads
+}
+
+// FormSize is the size a field of a form is written at: the title as large as
+// a panel's heading, since it is what the task is called and the first thing
+// read; everything else at the size the board reads at.
+func FormSize(field reading.Field) int {
+	if field.Arg == "title" {
+		return heading
+	}
+	return reads
+}
+
+// TickedPlaces is where the parts of a task being edited are drawn as tiles in
+// their frame: one under the other from its top, as many as fit above the
+// line that says another is added, and that line under the last of them.
+func TickedPlaces(frame Box, parts int) (tiles []Box, adding Box) {
+	inside := Inside(frame)
+	shown := min(parts, max(0, (inside.H-lineHigh)/SubHeight))
+	for at := range shown {
+		tiles = append(tiles, Box{X: inside.X, Y: inside.Y + at*SubHeight, W: inside.W, H: SubHeight})
+	}
+	return tiles, Box{X: inside.X + padding, Y: inside.Y + shown*SubHeight, W: inside.W - padding, H: lineHigh}
+}
+
+// AddingAPart is what the parts of a task being edited say under their tiles:
+// another is added by typing a line, which is where the keyboard goes.
+const AddingAPart = "+ add a part — a line of its own"
 
 // FormRule is the line across the foot of a form, above what it offers: what
 // says the offers are a line of their own and not one more field.
 func FormRule(over Box) Box {
 	offers := PanelOfferAt(over, 0)
 	return Box{X: over.X + padding, Y: offers.Y - between, W: over.W - padding - padding, H: 1}
+}
+
+type placed struct {
+	name, value Box
+	rows        int
+}
+
+// sectionOf is which section a field is grouped in, and false for one in none.
+func sectionOf(field reading.Field) (int, bool) {
+	for i, s := range formSections {
+		if slices.Contains(s.args, field.Arg) {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// longHigh is what a long field takes besides its rows: its name above it, the
+// room its frame keeps, and the gap before what follows.
+//
+// Written as the number and not as that sum, for the reason apart is: a
+// constant's arithmetic runs on no line, so no test reaches it. It is lineHigh
+// + between + inset + inset + padding, which is 18 + 6 + 4 + 4 + 12, and the
+// test beside FormPlace holds the two together.
+const longHigh = 44
+
+// FormOver is the panel a form is drawn in: the one every other screen uses,
+// cut to what the form holds. Its top stays where it was, and so does every
+// field; what rises is the rule and the offers under it, so a tall window
+// does not put a floor of empty ground between the parts and Save.
+func FormOver(width, height int, fields []reading.Field) Box {
+	over := Over(width, height)
+	_, _, end := formLayout(over, fields)
+	over.H = min(over.H, end-over.Y+between+barHigh+padding)
+	return over
+}
+
+// formLayout lays every field of a form out, and the heads of its sections,
+// and says where what it laid out ends.
+func formLayout(over Box, fields []reading.Field) ([]placed, []Readable, int) {
+	places := make([]placed, len(fields))
+	left, full := over.X+padding, over.W-padding-padding
+	top := FirstRow(over)
+
+	// What is laid out, in the order it is read: the short fields in no
+	// section, the first long field, the sections, the other long fields.
+	var alone, long []int
+	rows := make([][]int, len(formSections))
+	for i, field := range fields {
+		section, in := sectionOf(field)
+		switch {
+		case field.Long:
+			long = append(long, i)
+		case in:
+			rows[section] = append(rows[section], i)
+		default:
+			alone = append(alone, i)
+		}
+	}
+	sections := 0
+	for _, row := range rows {
+		if len(row) > 0 {
+			sections++
+		}
+	}
+	wanted := make(map[int]int, len(long))
+	for _, i := range long {
+		wanted[i] = rowsWanted(fields[i], full)
+	}
+	fixed := len(alone)*apart + sections*apart + between + len(long)*longHigh
+	given := shared(long, wanted, (FormRule(over).Y-top-fixed)/lineHigh)
+
+	y := top
+	for _, i := range alone {
+		places[i] = placed{name: Box{X: left, Y: y, H: lineHigh}, value: Box{X: left, Y: y, W: full, H: lineHigh}, rows: 1}
+		y += apart
+	}
+	placeLong := func(i int) {
+		places[i] = placed{
+			name:  Box{X: left, Y: y, W: full, H: lineHigh},
+			value: Box{X: left, Y: y + lineHigh + between + inset, W: full, H: lineHigh},
+			rows:  given[i],
+		}
+		y += longHigh + given[i]*lineHigh
+	}
+	if len(long) > 0 {
+		placeLong(long[0])
+	}
+	var heads []Readable
+	for s, row := range rows {
+		if len(row) == 0 {
+			continue
+		}
+		heads = append(heads, one("head:"+formSections[s].head, Box{X: left, Y: y, W: sectionWide, H: lineHigh}, formSections[s].head, small))
+		x := left + sectionWide
+		cell := (full - sectionWide - (len(row)-1)*padding) / len(row)
+		for _, i := range row {
+			places[i] = placed{
+				name:  Box{X: x, Y: y, W: formNamed, H: lineHigh},
+				value: Box{X: x + formNamed, Y: y, W: cell - formNamed, H: lineHigh},
+				rows:  1,
+			}
+			x += cell + padding
+		}
+		y += apart
+	}
+	y += between
+	for _, i := range long[min(1, len(long)):] {
+		placeLong(i)
+	}
+	return places, heads, y
+}
+
+// rowsWanted is how many rows a long field asks for, from what it holds now.
+func rowsWanted(field reading.Field, wide int) int {
+	if field.Name == "parts" {
+		tiles := len(reading.PartsIn(field.Value))*SubHeight + lineHigh
+		return max(listedFewest, (tiles+lineHigh-1)/lineHigh)
+	}
+	inside := Inside(Framed(Box{W: wide, H: lineHigh}, 1))
+	return min(saidMost, max(saidFewest, len(Wrapped(field.Value, room(inside)).Said)))
+}
+
+// shared gives the long fields the rows the form has for them. The first — the
+// description — keeps its fewest; the others are given what they want of the
+// rest, in turn, so a part is never hidden to make a paragraph longer; the
+// first then takes what is left, up to what it wants. One row at the least for
+// every one of them, the way every frame keeps one.
+func shared(long []int, wanted map[int]int, room int) map[int]int {
+	given := make(map[int]int, len(long))
+	if len(long) == 0 {
+		return given
+	}
+	left := room - min(saidFewest, wanted[long[0]])
+	for _, i := range long[1:] {
+		given[i] = max(1, min(wanted[i], left))
+		left -= given[i]
+	}
+	given[long[0]] = max(1, min(wanted[long[0]], left+min(saidFewest, wanted[long[0]])))
+	return given
 }

@@ -625,22 +625,27 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 // parts of a task being edited — a field the test did not ask about — that
 // ran over the offers.
 func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
-	box := Over(Narrowest, Shortest)
-	rule := FormRule(box)
-	if offers := PanelOfferAt(box, 0); rule.Y+rule.H > offers.Y {
-		t.Errorf("the rule at %d runs into the offers at %d", rule.Y, offers.Y)
-	}
-	for _, fields := range [][]reading.Field{
-		reading.TaskFields(reading.Card{}),
-		reading.EditFields(reading.Card{Number: 1}, nil),
-		reading.GoalFields(reading.Goal{}),
-	} {
-		for i := range fields {
-			_, value, rows := FormPlace(box, fields, i)
-			bottom := Framed(value, rows)
-			if got := bottom.Y + bottom.H; got >= rule.Y {
-				t.Errorf("%q of %d fields ends at %d and the rule over the offers is at %d",
-					fields[i].Name, len(fields), got, rule.Y)
+	many := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	many[len(many)-1].Value = strings.Repeat("#2 [ ] a part\n", 30)
+	for high := Shortest; high <= 1000; high += 7 {
+		box := Over(Narrowest, high)
+		rule := FormRule(box)
+		if offers := PanelOfferAt(box, 0); rule.Y+rule.H > offers.Y {
+			t.Errorf("the rule at %d runs into the offers at %d", rule.Y, offers.Y)
+		}
+		for _, fields := range [][]reading.Field{
+			reading.TaskFields(reading.Card{}),
+			reading.EditFields(reading.Card{Number: 1}, nil),
+			many,
+			reading.GoalFields(reading.Goal{}),
+		} {
+			for i := range fields {
+				_, value, rows := FormPlace(box, fields, i)
+				bottom := Framed(value, rows)
+				if got := bottom.Y + bottom.H; got >= rule.Y {
+					t.Errorf("at %d high %q of %d fields ends at %d and the rule over the offers is at %d",
+						high, fields[i].Name, len(fields), got, rule.Y)
+				}
 			}
 		}
 	}
@@ -1112,64 +1117,63 @@ func TestATileBreathesOnBothSides(t *testing.T) {
 	}
 }
 
-// A long field of a form takes the whole of its share of the right column and
-// no more: its frame ends before the next one's name, or before the rule over
-// the offers, and one row more would not. At every height, because a row is a
-// whole number and a height is not a multiple of it.
-func TestALongFieldOfAFormTakesItsShareAndNoMore(t *testing.T) {
+// A form reads from the top: the title, the description, the fields grouped a
+// section to a row, then the parts. The fields of one section share a line.
+func TestAFormReadsTitleDescriptionSectionsThenParts(t *testing.T) {
+	over := Over(1200, 800)
 	fields := reading.EditFields(reading.Card{Number: 1}, nil)
-	for high := Shortest; high <= 1000; high++ {
-		over := Over(1200, high)
-		ends := []int{}
-		for i := range fields {
-			if !fields[i].Long {
-				continue
-			}
-			name, _, _ := FormPlace(over, fields, i)
-			ends = append(ends, name.Y-between)
+	top := map[string]int{}
+	for i, field := range fields {
+		_, value, _ := FormPlace(over, fields, i)
+		top[field.Name] = value.Y
+	}
+	order := []string{"title", "description", "column", "deadline", "blockers", "parent", "parts"}
+	for i := 1; i < len(order); i++ {
+		if top[order[i-1]] >= top[order[i]] {
+			t.Errorf("%q is at %d and %q at %d", order[i-1], top[order[i-1]], order[i], top[order[i]])
 		}
-		ends = append(ends[1:], FormRule(over).Y-between)
-		next := 0
-		for i := range fields {
-			if !fields[i].Long {
-				continue
+	}
+	for _, row := range [][]string{{"column", "priority", "labels"}, {"deadline", "estimate", "time spent"},
+		{"blockers", "because"}, {"parent", "objectives"}} {
+		for _, name := range row[1:] {
+			if top[name] != top[row[0]] {
+				t.Errorf("%q is at %d and %q, in the same section, at %d", name, top[name], row[0], top[row[0]])
 			}
-			_, value, rows := FormPlace(over, fields, i)
-			bottom := Framed(value, rows)
-			end := bottom.Y + bottom.H
-			if end > ends[next] || end+lineHigh <= ends[next] {
-				t.Fatalf("at %d high %q ends at %d, and its share ends at %d", high, fields[i].Name, end, ends[next])
-			}
-			next++
 		}
+	}
+	heads := FormHeads(over, fields)
+	if len(heads) != 4 || heads[0].Box.Y != top["column"] || heads[3].Box.Y != top["parent"] {
+		t.Errorf("the heads are %v, the sections at %d and %d", heads, top["column"], top["parent"])
 	}
 }
 
-// Every field of a column of a form is as wide as the others in it: a title
-// and a date end on the same line on the left, the description and the parts
-// on the right, and the bar of a long one sits beside it rather than inside it.
-func TestEveryFieldOfAFormIsAsWideAsTheOthersInItsColumn(t *testing.T) {
-	box := Over(1200, 800)
-	fields := editing(reading.Card{}, nil).Fields()
-	first := map[bool]Box{}
-	for i, field := range fields {
-		_, value, rows := FormPlace(box, fields, i)
-		frame := Framed(value, rows)
-		if field.Long {
-			if saying, _ := Saying(value, rows); saying != frame {
-				t.Errorf("%s is drawn in %v and framed in %v", field.Name, saying, frame)
-			}
-		}
-		if _, seen := first[field.Long]; !seen {
-			first[field.Long] = frame
-		}
-		if was := first[field.Long]; frame.X != was.X || frame.W != was.W {
-			t.Errorf("%s runs from %d, %d wide; the first of its column from %d, %d wide",
-				field.Name, frame.X, frame.W, was.X, was.W)
-		}
+// The description is given a line for each it says, four at the least and ten
+// at the most; the parts a line for each tile and one to add another, three at
+// the least. Neither is given room it has nothing to put in.
+func TestTheLongFieldsOfAFormAreAsTallAsWhatTheyHold(t *testing.T) {
+	over := Over(1200, 900)
+	rowsOf := func(description, parts string) (int, int) {
+		fields := reading.EditFields(reading.Card{Number: 1, Description: description}, nil)
+		fields[len(fields)-1].Value = parts
+		_, _, said := FormPlace(over, fields, 1)
+		_, _, listed := FormPlace(over, fields, len(fields)-1)
+		return said, listed
 	}
-	if len(first) != 2 {
-		t.Fatalf("the form of a task fills %d columns, want two", len(first))
+	for _, c := range []struct {
+		what                 string
+		description, parts   string
+		wantSaid, wantListed int
+	}{
+		{"nothing at all", "", "", 4, 3},
+		{"six lines and six parts", strings.TrimSuffix(strings.Repeat("a line\n", 6), "\n"), strings.Repeat("#2 [ ] a part\n", 6), 6, (6*SubHeight + lineHigh + lineHigh - 1) / lineHigh},
+		{"forty lines", strings.Repeat("a line\n", 40), "", 10, 3},
+		{"nine parts, which come to whole lines", "", strings.Repeat("#2 [ ] a part\n", 9), 4, (9*SubHeight + lineHigh) / lineHigh},
+	} {
+		said, listed := rowsOf(c.description, c.parts)
+		if said != c.wantSaid || listed != c.wantListed {
+			t.Errorf("%s: the description has %d rows and the parts %d, want %d and %d",
+				c.what, said, listed, c.wantSaid, c.wantListed)
+		}
 	}
 }
 
@@ -1456,5 +1460,134 @@ func TestTheContextLineSitsBesideTheOffers(t *testing.T) {
 	}
 	if path.X+path.W != box.X+box.W-padding || name.Y < last.Y || name.Y+name.H > last.Y+last.H {
 		t.Errorf("the line is %v and %v in a panel %v, beside an offer %v", name, path, box, last)
+	}
+}
+
+// In the smallest window, every part of a task being edited is drawn before
+// its description is given more than its fewest lines: a part out of sight is
+// a part nobody ticks, and a paragraph is read just as well by scrolling.
+func TestThePartsAreGivenTheirRoomBeforeTheDescriptionGrows(t *testing.T) {
+	over := Over(Narrowest, Shortest)
+	fields := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	at := len(fields) - 1
+	fields[at].Value = "#2 [ ] one\n#3 [x] two"
+	_, _, said := FormPlace(over, fields, 1)
+	_, _, listed := FormPlace(over, fields, at)
+	if want := rowsWanted(fields[at], 0); listed < want {
+		t.Errorf("the parts have %d rows of the %d they want, and the description %d", listed, want, said)
+	}
+	if said < saidFewest {
+		t.Errorf("the description has %d rows, fewer than %d", said, saidFewest)
+	}
+}
+
+// A form's panel is as tall as what it holds, up to the panel every other
+// screen uses: on a tall window it stops under the parts, rather than under a
+// floor of empty ground, and every field stays where the taller panel put it.
+func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
+	fields := reading.EditFields(reading.Card{Number: 1}, nil)
+	at := len(fields) - 1
+	tall, short := Over(1512, 945), FormOver(1512, 945, fields)
+	if short.X != tall.X || short.Y != tall.Y || short.W != tall.W || short.H >= tall.H {
+		t.Fatalf("the form is %v in a panel of %v", short, tall)
+	}
+	_, value, rows := FormPlace(short, fields, at)
+	if bottom, rule := Framed(value, rows).Y+Framed(value, rows).H, FormRule(short).Y; rule-bottom > padding+between {
+		t.Errorf("the parts end at %d and the rule is at %d", bottom, rule)
+	}
+	for i := range fields {
+		a, b, c := FormPlace(tall, fields, i)
+		d, e, f := FormPlace(short, fields, i)
+		if a != d || b != e || c != f {
+			t.Errorf("%q moved when the panel shrank", fields[i].Name)
+		}
+	}
+	// And a form that wants more than the panel has takes all of it, but for
+	// less than a line: rows are whole.
+	fields[1].Value = strings.Repeat("a line\n", 40)
+	fields[at].Value = strings.Repeat("#2 [ ] a part\n", 30)
+	if got, whole := FormOver(Narrowest, Shortest, fields), Over(Narrowest, Shortest); got.H > whole.H || whole.H-got.H >= lineHigh {
+		t.Errorf("in the smallest window a long form is %v, in a panel of %v", got, whole)
+	}
+}
+
+// The title is written as large as a panel's heading, and nothing else is.
+func TestOnlyTheTitleOfAFormIsWrittenLarge(t *testing.T) {
+	for _, field := range reading.EditFields(reading.Card{Number: 1}, nil) {
+		want := reads
+		if field.Name == "title" {
+			want = heading
+		}
+		if got := FormSize(field); got != want {
+			t.Errorf("%q is written at %d, want %d", field.Name, got, want)
+		}
+	}
+}
+
+// A form that wants more room than its panel has fills it: what it lays out
+// ends less than a line short of the rule, whatever the panel and whichever
+// form. A row counted too many or too few takes a line from it.
+func TestAFormThatWantsMoreThanItHasFillsItsPanel(t *testing.T) {
+	goal := reading.GoalFields(reading.Goal{Description: strings.Repeat("a line\n", 40)})
+	task := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	task[len(task)-1].Value = strings.Repeat("#2 [ ] a part\n", 30)
+	for _, fields := range [][]reading.Field{goal, task} {
+		for high := 420; high <= 640; high += 5 {
+			over := Box{X: 0, Y: 0, W: 900, H: high}
+			places, _, end := formLayout(over, fields)
+			short := false
+			for i, field := range fields {
+				short = short || field.Long && places[i].rows < rowsWanted(field, over.W-padding-padding)
+			}
+			if !short {
+				continue
+			}
+			if gap := FormRule(over).Y - end; gap < 0 || gap >= lineHigh {
+				t.Fatalf("%d fields in a panel %d high: %d between the last frame and the rule", len(fields), high, gap)
+			}
+		}
+	}
+}
+
+// A form with no long field at all is laid out all the same.
+func TestAFormWithNoLongFieldIsLaidOut(t *testing.T) {
+	fields := []reading.Field{{Name: "title", Arg: "title"}, {Name: "column", Arg: "state"}}
+	over := Over(1200, 800)
+	_, title, _ := FormPlace(over, fields, 0)
+	_, column, _ := FormPlace(over, fields, 1)
+	if title.Y >= column.Y || FormOver(1200, 800, fields).H >= over.H {
+		t.Errorf("the title is at %d, the column at %d, the panel %v", title.Y, column.Y, FormOver(1200, 800, fields))
+	}
+}
+
+// The parts drawn as tiles: one under the other from the top of the frame,
+// as many as fit above the line that says another is added, and that line
+// under the last of them — inside the frame, however many parts there are.
+func TestTheTicksAreAsManyAsTheFrameHolds(t *testing.T) {
+	frame := Box{X: 100, Y: 200, W: 400, H: 8 + 6*lineHigh}
+	inside := Inside(frame)
+	for _, c := range []struct{ parts, shown int }{{0, 0}, {2, 2}, {30, (6*lineHigh - lineHigh) / SubHeight}} {
+		tiles, adding := TickedPlaces(frame, c.parts)
+		if len(tiles) != c.shown {
+			t.Errorf("%d parts: %d tiles, want %d", c.parts, len(tiles), c.shown)
+		}
+		for i, tile := range tiles {
+			if want := (Box{X: inside.X, Y: inside.Y + i*SubHeight, W: inside.W, H: SubHeight}); tile != want {
+				t.Errorf("%d parts: tile %d is %v, want %v", c.parts, i, tile, want)
+			}
+		}
+		want := Box{X: inside.X + padding, Y: inside.Y + c.shown*SubHeight, W: inside.W - padding, H: lineHigh}
+		if adding != want || adding.Y+adding.H > inside.Y+inside.H {
+			t.Errorf("%d parts: the line to add one is %v, want %v inside %v", c.parts, adding, want, inside)
+		}
+	}
+}
+
+// What a long field of a form takes besides its rows is its name, the gap under
+// it, the room its frame keeps and the gap after it: the number is written out,
+// and this is the sum it stands for.
+func TestALongFieldTakesItsNameItsFrameAndAGap(t *testing.T) {
+	if want := lineHigh + between + inset + inset + padding; longHigh != want {
+		t.Errorf("a long field takes %d besides its rows, and its parts come to %d", longHigh, want)
 	}
 }

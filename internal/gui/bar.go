@@ -310,6 +310,9 @@ func (w Window) offerAt(p Point) (string, bool) {
 	// the one everything else uses: drawn in one place and listened for in
 	// another, three words looked like buttons and answered nowhere.
 	panel := Over(w.width, w.height)
+	if w.screen == OnForm {
+		panel = FormOver(w.width, w.height, w.form.Fields())
+	}
 	if w.screen == OnChoosing {
 		panel = ChoosingOver(w.width, w.height)
 	}

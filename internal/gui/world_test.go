@@ -146,7 +146,7 @@ func (w *world) inField(name string) (func(int) Point, error) {
 		value := formValue(box, fields, i)
 		inside := Inside(value)
 		return func(n int) Point {
-			return Point{X: inside.X + n*perGlyph, Y: inside.Y + inside.H/2}
+			return Point{X: inside.X + n*glyphOf(FormSize(field)), Y: inside.Y + inside.H/2}
 		}, nil
 	}
 	return nil, fmt.Errorf("the form has no field called %q", name)
@@ -274,6 +274,8 @@ func (w *world) clickOffer(name string) error {
 		case OnTheBoard, OnSearch:
 		case OnChoosing:
 			box = PanelOfferAt(ChoosingOver(w.w.width, w.w.height), i)
+		case OnForm:
+			box = PanelOfferAt(FormOver(w.w.width, w.w.height, w.w.Form().Fields()), i)
 		default:
 			box = PanelOfferAt(Over(w.w.width, w.w.height), i)
 		}
@@ -554,7 +556,7 @@ func (w *world) clickInto(characters int, name string) error {
 		// a card's padding: the two happened to be close enough to land on the
 		// right glyph until the spacing scale was put straight.
 		inside := Inside(value)
-		at := Point{X: inside.X + characters*perGlyph, Y: inside.Y + inside.H/2}
+		at := Point{X: inside.X + characters*glyphOf(FormSize(field)), Y: inside.Y + inside.H/2}
 		w.w = w.w.clicked(at)
 		return nil
 	}

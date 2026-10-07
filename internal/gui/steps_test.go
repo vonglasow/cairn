@@ -330,8 +330,7 @@ func (w *world) formFrames() ([]Box, []Box) {
 }
 
 func (w *world) formFitsAboveItsOffers() error {
-	over := Over(w.w.width, w.w.height)
-	foot := PanelOfferAt(over, 0).Y
+	foot := FormRule(FormOver(w.w.width, w.w.height, w.w.Form().Fields())).Y
 	names, frames := w.formFrames()
 	for i, frame := range frames {
 		if bottom := max(frame.Y+frame.H, names[i].Y+names[i].H); bottom >= foot {
@@ -360,18 +359,37 @@ func (w *world) formFieldsApart() error {
 	return nil
 }
 
-func (w *world) longFieldsBeside(first, second string) error {
-	_, frames := w.formFrames()
+// acrossTheForm says a field's frame runs from the left of the form to its
+// right, as far as any frame does, and that only the fields named are above it.
+func (w *world) acrossTheForm(name string, above []string) error {
+	over := Over(w.w.width, w.w.height)
 	fields := w.w.Form().Fields()
-	edge := 0
-	for i, field := range fields {
-		if field.Name != first && field.Name != second {
-			edge = max(edge, frames[i].X+frames[i].W)
+	// The frames alone, without a long field's bar: it sits in a margin every
+	// field keeps, which is what lines the frames up.
+	frames := make([]Box, len(fields))
+	for i := range fields {
+		_, value, rows := FormPlace(over, fields, i)
+		frames[i] = Framed(value, rows)
+	}
+	left, right, at := frames[0].X, 0, -1
+	for i, frame := range frames {
+		left, right = min(left, frame.X), max(right, frame.X+frame.W)
+		if fields[i].Name == name {
+			at = i
 		}
 	}
-	for i, field := range fields {
-		if (field.Name == first || field.Name == second) && frames[i].X <= edge {
-			return fmt.Errorf("%q starts at %d, and the other fields run to %d", field.Name, frames[i].X, edge)
+	if at < 0 {
+		return fmt.Errorf("the form has no field called %q", name)
+	}
+	if frame := frames[at]; frame.X != left || frame.X+frame.W != right {
+		return fmt.Errorf("%q runs from %d to %d, and the form from %d to %d", name, frame.X, frame.X+frame.W, left, right)
+	}
+	for i, frame := range frames {
+		if i == at || slices.Contains(above, fields[i].Name) {
+			continue
+		}
+		if frame.Y <= frames[at].Y {
+			return fmt.Errorf("%q is at %d, not under %q at %d", fields[i].Name, frame.Y, name, frames[at].Y)
 		}
 	}
 	return nil
@@ -635,7 +653,30 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
 	sc.Then(`^no field of the form reaches what it offers$`, w.formFitsAboveItsOffers)
 	sc.Then(`^no two fields of the form overlap$`, w.formFieldsApart)
-	sc.Then(`^the fields "([^"]*)" and "([^"]*)" stand beside the others$`, w.longFieldsBeside)
+	sc.Then(`^the title runs the width of the form, above everything else$`, func() error {
+		return w.acrossTheForm("title", nil)
+	})
+	sc.Then(`^the description runs the width of the form, under the title$`, func() error {
+		return w.acrossTheForm("description", []string{"title"})
+	})
+	sc.Then(`^the form groups its fields under (.+)$`, func(list string) error {
+		var got []string
+		for _, head := range FormHeads(Over(w.w.width, w.w.height), w.w.Form().Fields()) {
+			got = append(got, head.Said)
+		}
+		if want := quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
+			return fmt.Errorf("the form groups its fields under %v, want %v", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the parts are drawn as a list to tick, "([^"]*)" among them$`, func(title string) error {
+		for _, c := range w.w.PartsTicked() {
+			if c.Title == title {
+				return nil
+			}
+		}
+		return fmt.Errorf("the parts are drawn as %v, and %q is not among them", w.w.PartsTicked(), title)
+	})
 	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
 		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
 			return fmt.Errorf("the bar under the board reads %v, want %v", got, want)
