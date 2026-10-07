@@ -184,6 +184,11 @@ type Window struct {
 	// aside so the form of the same task can bring it back. esc twice leaves
 	// a form without a question, and this is what keeps that from losing work.
 	draft Form
+	// taken is what is taken together, gathered with ⌘ and stretched with ⇧,
+	// in the order it was taken; gathering and stretching say which of the
+	// two keys is held while the pointer acts.
+	taken                 []int
+	gathering, stretching bool
 	// wasScreen is what was open when the window became too small to draw it,
 	// so growing back gives it back rather than an empty board.
 	wasScreen Screen

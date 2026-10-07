@@ -760,6 +760,33 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the cards taken together are (.+)$`, func(list string) error {
+		var got []string
+		for _, n := range w.w.Taken() {
+			if c, found := w.w.Reading().Card(n); found {
+				got = append(got, c.Title)
+			}
+		}
+		if want := quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
+			return fmt.Errorf("the cards taken together are %v, want %v", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^no card is taken with another$`, func() error {
+		if taken := w.w.Taken(); len(taken) > 1 {
+			return fmt.Errorf("%v are taken together", taken)
+		}
+		return nil
+	})
+	sc.Then(`^the question says of (task|objective) (\d+) "([^"]*)"$`, func(kind string, n int, want string) error {
+		named := kind + " " + strconv.Itoa(n)
+		for _, line := range w.w.Asks() {
+			if line.Key == named && strings.Contains(line.Means, want) {
+				return nil
+			}
+		}
+		return fmt.Errorf("the question says %+v, and nothing of %s saying %q", w.w.Asks(), named, want)
+	})
 	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
 		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
 			return fmt.Errorf("the bar under the board reads %v, want %v", got, want)

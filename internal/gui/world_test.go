@@ -260,6 +260,17 @@ func (w *world) clickGoal(title string) error {
 	return nil
 }
 
+// clickWith clicks what is titled with a key held down, the way a hand holds
+// ⌘ or ⇧ while it clicks: down before the press, up after the release.
+func (w *world) clickWith(held key.Modifiers, find func(string) (Point, error), title string) error {
+	at, err := find(title)
+	if err != nil {
+		return err
+	}
+	w.w = w.w.KeysDown(held).clicked(at).KeysDown(0)
+	return nil
+}
+
 // clickOffer presses one of the bar's offers, which is how a person reaches
 // anything here without knowing a shortcut.
 func (w *world) clickOffer(name string) error {
@@ -588,6 +599,15 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
 	sc.Step(`^I click the card "([^"]*)"$`, w.click)
 	sc.Step(`^I click the tab "([^"]*)"$`, w.clickTab)
+	sc.Step(`^I ⌘-click the card "([^"]*)"$`, func(title string) error {
+		return w.clickWith(key.ModCommand, w.find, title)
+	})
+	sc.Step(`^I ⇧-click the card "([^"]*)"$`, func(title string) error {
+		return w.clickWith(key.ModShift, w.find, title)
+	})
+	sc.Step(`^I ⌘-click the objective "([^"]*)"$`, func(title string) error {
+		return w.clickWith(key.ModCommand, w.findGoal, title)
+	})
 	sc.Step(`^I click the objective "([^"]*)"$`, func(title string) error {
 		if err := w.clickGoal(title); err != nil {
 			return err

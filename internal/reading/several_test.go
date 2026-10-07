@@ -1,0 +1,95 @@
+package reading
+
+import (
+	"slices"
+	"testing"
+)
+
+// What a deletion of several tasks names first: the parts that go with one,
+// the tasks waiting on one that is not going too, the task in focus. Nothing
+// is refused: any task can be deleted.
+func TestDeletingTasks_namesWhatGoesWithThem(t *testing.T) {
+	snap := Snapshot{
+		Cards: []Card{
+			{Number: 1, Title: "Ship it"},
+			{Number: 2, Title: "Part", Parent: 1},
+			{Number: 3, Title: "Blocked", Blockers: []int{1}},
+			{Number: 4, Title: "Plain"},
+			{Number: 5, Title: "Waits on four", Blockers: []int{4}},
+			{Number: 6, Title: "Both", Parent: 7},
+			{Number: 7, Title: "Two parts"},
+			{Number: 8, Title: "Second part", Parent: 7},
+		},
+		Focus: []int{4},
+	}
+	got := DeletingTasks(snap, []int{1, 4, 5, 7})
+	want := []Flag{
+		{Number: 1, Says: "its 1 part goes with it"},
+		{Number: 1, Says: "task 3 waits on it"},
+		{Number: 4, Says: "it is in focus"},
+		{Number: 7, Says: "its 2 parts go with it"},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("DeletingTasks = %+v, want %+v", got, want)
+	}
+}
+
+// What an archiving of several names first: a task already off the board
+// cannot go again, and the parts and the focus go as they do on a deletion.
+func TestArchivingTasks_namesWhatCannotGo(t *testing.T) {
+	snap := Snapshot{
+		Cards: []Card{
+			{Number: 1, Title: "Gone", Archived: true},
+			{Number: 2, Title: "Ship it"},
+			{Number: 3, Title: "Part", Parent: 2},
+		},
+		Focus: []int{2},
+	}
+	got := ArchivingTasks(snap, []int{1, 2})
+	want := []Flag{
+		{Number: 1, Says: "it is already off the board", Refused: true},
+		{Number: 2, Says: "its 1 part goes with it"},
+		{Number: 2, Says: "it is in focus"},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("ArchivingTasks = %+v, want %+v", got, want)
+	}
+}
+
+// An objective work still serves cannot be deleted, and says how much does.
+func TestDeletingGoals_namesWhatWorkStillServes(t *testing.T) {
+	snap := Snapshot{Cards: []Card{
+		{Number: 1, Objectives: []int{2}},
+		{Number: 2, Objectives: []int{2}},
+		{Number: 3, Objectives: []int{3}},
+	}}
+	got := DeletingGoals(snap, []int{1, 2, 3})
+	want := []Flag{
+		{Number: 2, Says: "2 tasks serve it: it cannot go", Refused: true},
+		{Number: 3, Says: "1 task serves it: it cannot go", Refused: true},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("DeletingGoals = %+v, want %+v", got, want)
+	}
+}
+
+// What is left once what was named is left out: everything flagged, or only
+// what cannot go at all.
+func TestLeavingOut_isEitherEveryFlagOrOnlyTheRefused(t *testing.T) {
+	flags := []Flag{{Number: 1, Says: "x"}, {Number: 2, Says: "y", Refused: true}}
+	if got := LeavingOut([]int{1, 2, 3}, flags, false); !slices.Equal(got, []int{3}) {
+		t.Errorf("leaving out every flag = %v, want [3]", got)
+	}
+	if got := LeavingOut([]int{1, 2, 3}, flags, true); !slices.Equal(got, []int{1, 3}) {
+		t.Errorf("leaving out only the refused = %v, want [1 3]", got)
+	}
+}
+
+// Several taken together are asked of the engine as one: the first as the
+// number, the rest beside it.
+func TestSeveral_isTheFirstAndTheRestBesideIt(t *testing.T) {
+	in := Several([]int{4, 7, 9})
+	if in.Given["number"] != "4" || !slices.Equal(in.Listed["also"], []string{"7", "9"}) {
+		t.Errorf("Several = %+v", in)
+	}
+}

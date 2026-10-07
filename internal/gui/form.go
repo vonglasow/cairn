@@ -512,12 +512,25 @@ func (w Window) Choose(name string) Window {
 		w.screen = OnHelp
 		return w
 	case "clear":
+		// What is taken together is let go of first: it is the nearer of
+		// the two, and the search is still there for the esc after.
+		if len(w.taken) > 0 {
+			w.taken = nil
+			return w
+		}
 		w.looking = Written{}
 		return w
 	case "archived":
 		w.archived = !w.archived
 		return w
+	case "all possible":
+		return w.actingOnSeveral(true)
+	case "skip flagged":
+		return w.actingOnSeveral(false)
 	case "delete", "agree":
+		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
+			return w.askingSeveral(aboutDeletingSeveral)
+		}
 		if w.question == aboutSweeping {
 			return w.sweeping()
 		}
@@ -535,6 +548,9 @@ func (w Window) Choose(name string) Window {
 		w.form, w.draft = w.draft, Form{}
 		return w
 	case "archive", "restore":
+		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
+			return w.askingSeveral(aboutArchivingSeveral)
+		}
 		return w.puttingAway()
 	}
 	return w

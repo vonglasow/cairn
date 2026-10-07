@@ -1998,3 +1998,108 @@ Feature: The desktop board
       When I open the window
       And I click "Help"
       Then the help is headed "What everything does"
+
+  Rule: Several cards are taken at once
+
+    A board that deletes or archives one card at a time makes a clear-out a
+    chore. ⌘-click gathers cards, a card at a time; ⇧-click takes every card
+    between the one chosen and the one clicked, in their column; a plain click
+    starts again. ⇧ and the arrows already move a card, so the keyboard gathers
+    nothing — the pointer does.
+
+    What is gathered is deleted or archived in one act, all of it or none, and
+    asked about first. The question names what would take more with it — the
+    parts of a task, a task waiting on it, the task in focus — and what cannot
+    go at all — an objective work still serves, a task already off the board.
+    The answer is one of three: nothing; all but what was named; or all that
+    can go.
+
+    @gui-several-are-gathered-with-cmd
+    Scenario: ⌘-clicking gathers cards, and a plain click starts again
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I open the window
+      And I click the card "First"
+      And I ⌘-click the card "Third"
+      Then the cards taken together are "First", "Third"
+      When I click the card "Second"
+      Then no card is taken with another
+
+    @gui-a-run-is-gathered-with-shift
+    Scenario: ⇧-clicking takes every card between, in their column
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I open the window
+      And I click the card "First"
+      And I ⇧-click the card "Third"
+      Then the cards taken together are "First", "Second", "Third"
+
+    @gui-several-are-deleted-at-once
+    Scenario: several tasks are deleted in one act, once asked
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I open the window
+      And I click the card "First"
+      And I ⌘-click the card "Third"
+      And I press "d"
+      Then the panel is headed "Delete 2 tasks?"
+      When I choose "All possible"
+      Then "BACKLOG" does not carry "First"
+      And "BACKLOG" does not carry "Third"
+      And "BACKLOG" carries "Second"
+
+    @gui-what-takes-more-can-be-left-out
+    Scenario: what would take more with it is named, and can be left out
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      And I added a task titled "Other"
+      When I open the window
+      And I click the card "Ship it"
+      And I ⌘-click the card "Other"
+      And I press "d"
+      Then the question says of task 1 "its 1 part goes with it"
+      When I choose "Skip flagged"
+      Then "BACKLOG" carries "Ship it"
+      And "BACKLOG" does not carry "Other"
+
+    @gui-nothing-goes-when-nothing-is-chosen
+    Scenario: nothing goes when the answer is nothing
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      When I open the window
+      And I click the card "First"
+      And I ⌘-click the card "Second"
+      And I press "d"
+      And I choose "Cancel"
+      Then "BACKLOG" carries "First"
+      And "BACKLOG" carries "Second"
+
+    @gui-several-are-archived-at-once
+    Scenario: several tasks are archived in one act, once asked
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      When I open the window
+      And I click the card "First"
+      And I ⌘-click the card "Second"
+      And I press "x"
+      Then the panel is headed "Archive 2 tasks?"
+      When I choose "All possible"
+      Then "BACKLOG" does not carry "First"
+      And "BACKLOG" does not carry "Second"
+
+    @gui-what-cannot-go-is-left-out
+    Scenario: an objective work still serves is left out, and the rest goes
+      Given I added an objective titled "Ship cairn"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship cairn"
+      And I ⌘-click the objective "Keep it honest"
+      And I press "d"
+      Then the question says of objective 1 "1 task serves it: it cannot go"
+      When I choose "All possible"
+      Then the objectives read "Ship cairn"

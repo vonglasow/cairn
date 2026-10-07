@@ -42,6 +42,7 @@ afternoon to spend:
 - [The mouse](#the-mouse)
 - [The form](#the-form)
 - [An open task](#an-open-task)
+- [Several at once](#several-at-once)
 - [How it is tested](#how-it-is-tested)
 - [Deliberately not there yet](#deliberately-not-there-yet)
 
@@ -799,6 +800,31 @@ Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field
 touched is its own `task edit`, and twelve fields touched is twelve lines of
 history for one sitting.
+
+## Several at once
+
+**`⌘`-click gathers cards, `⇧`-click takes every card between.** `⌘` and a
+click add a card to what is taken, or take it back out; `⇧` and a click take
+every card from the one chosen to the one clicked, in the column, the lane or
+the list of objectives they share. A plain click, `esc`, or another tab starts
+again. What is taken is drawn the way what is chosen is. The keyboard gathers
+nothing: `⇧` and the arrows already move a card, and the pointer is the hand
+that picks several things out of a board.
+
+**What is taken goes in one act**, deleted or archived, all of it or none: the
+engine is asked once, the first by its number and the rest under `also`, and
+an act is one transaction. Three deletions asked one after another left, when
+the third was refused, two gone and somebody to work out which.
+
+**It is asked about first, and the question names what would cost more** —
+the parts of a task, a task waiting on it, the task in focus — and **what
+cannot go at all** — an objective work still serves, a task already off the
+board. Read off what the board holds, the facts the engine goes by, so the
+question says before what the engine would only refuse after. The answer is
+one of three: *All possible* (`⏎`) leaves out only what cannot go; *Skip
+flagged* (`s`) leaves out everything named; *Cancel* (`esc`) takes nothing.
+*Skip flagged* is offered only when something named could go all the same —
+otherwise it is the first answer again.
 
 ## How it is tested
 

@@ -63,11 +63,10 @@ func (w Window) Click(p Point) Window {
 		return w
 	}
 	if tab, on := w.tabAt(p); on {
-		w.tab, w.chosen, w.chosenGoal = tab, 0, false
+		w.tab, w.chosen, w.chosenGoal, w.taken = tab, 0, false, nil
 		return w
 	}
-	w.chosen, w.chosenGoal = w.at(p), w.tab == Objectives
-	return w
+	return w.choosingAt(w.at(p))
 }
 
 // Hovering answers the window the pointer resting at a point leaves behind.

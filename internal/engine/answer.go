@@ -231,6 +231,8 @@ type Swept struct {
 // any of the three answers the same shape.
 type Deleted struct {
 	Deleted int `json:"deleted"`
+	// Also names what was deleted in the same act, when more than one was.
+	Also []int `json:"also,omitempty"`
 	// WasBlocking names the tasks a deleted task was in the way of, when it
 	// was; their link to it went with it.
 	WasBlocking []int `json:"was_blocking,omitempty"`
@@ -309,7 +311,7 @@ func Of(op Operation, a Answer) any {
 	case Labelled:
 		return Labelled{Labelled: *a.Labelled}
 	case Deleted:
-		return Deleted{Deleted: *a.Deleted, WasBlocking: a.Unblocked}
+		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
 	case PutBack:
 		return PutBack{PutBack: *a.PutBack}
 	case Applied:

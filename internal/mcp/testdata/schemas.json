@@ -78,6 +78,15 @@
         "deleted": {
           "type": "integer"
         },
+        "also": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
         "was_blocking": {
           "type": [
             "null",
@@ -698,6 +707,13 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "also": {
+          "description": "another one taken in the same act as the number — every one of them, or none",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "number": {
           "description": "the number of the objective",
           "type": "integer"
@@ -714,6 +730,15 @@
       "properties": {
         "deleted": {
           "type": "integer"
+        },
+        "also": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
         },
         "was_blocking": {
           "type": [
@@ -1679,6 +1704,13 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "also": {
+          "description": "another one taken in the same act as the number — every one of them, or none",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "archived": {
           "description": "keep only the tasks taken off the board, instead of the ones still on it",
           "type": "boolean"
@@ -1949,6 +1981,13 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "also": {
+          "description": "another one taken in the same act as the number — every one of them, or none",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "number": {
           "description": "the number of the task",
           "type": "integer"
@@ -1965,6 +2004,15 @@
       "properties": {
         "deleted": {
           "type": "integer"
+        },
+        "also": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
         },
         "was_blocking": {
           "type": [

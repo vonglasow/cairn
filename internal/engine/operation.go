@@ -406,6 +406,8 @@ type Answer struct {
 	Progress          domain.Progress
 	Holds             *domain.Held
 	Deleted           *int
+	// Also names what was deleted in the same act as Deleted.
+	Also []int
 	// Unblocked names the tasks a deleted task was in the way of: the link
 	// goes with it, and afterwards nothing would say they once waited on it.
 	Unblocked []int

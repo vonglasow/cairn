@@ -81,6 +81,9 @@ func rendered(op Operation, a Answer) string {
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	case Deleted:
 		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
+		for _, n := range a.Also {
+			said += fmt.Sprintf("%s %d was deleted\n", op.Thing, n)
+		}
 		for _, n := range a.Unblocked {
 			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
 		}

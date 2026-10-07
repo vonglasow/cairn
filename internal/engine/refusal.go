@@ -88,6 +88,7 @@ var reasons = []reason{
 	{ErrMoreThanOnePlace, KindRefused, "more-than-one-place"},
 	{ErrNothingToLabel, KindRefused, "nothing-to-label"},
 	{ErrNothingToArchive, KindRefused, "nothing-to-archive"},
+	{ErrAlsoWithoutNumber, KindRefused, "also-without-number"},
 	{ErrDayToCome, KindRefused, "day-to-come"},
 	{ErrNotATime, KindRefused, "not-a-time"},
 	{task.ErrMovedBehindItself, KindRefused, "moved-behind-itself"},

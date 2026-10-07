@@ -529,12 +529,18 @@ var ObjectiveDelete = Operation{
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
+		alsoOf("an objective"),
 	},
 	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
-		if err := on.Engine.deleteObjective(n); err != nil {
+		numbers, err := together(in)
+		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Deleted: &n}, nil
+		for _, n := range numbers {
+			if err := on.Engine.deleteObjective(n); err != nil {
+				return Answer{}, err
+			}
+		}
+		return Answer{Deleted: &numbers[0], Also: numbers[1:]}, nil
 	},
 }

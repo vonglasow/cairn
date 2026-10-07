@@ -331,7 +331,7 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
 		clipped := clip.Rect(rect(l.Column[i])).Push(gtx.Ops)
 		for at, c := range column.Cards {
-			drawCard(gtx, th, skin, l.CardAt(i, at, w.scroll[i]), c, c.Number == w.Chosen())
+			drawCard(gtx, th, skin, l.CardAt(i, at, w.scroll[i]), c, c.Number == w.Chosen() || w.isTaken(c.Number))
 		}
 		clipped.Pop()
 	}
@@ -342,7 +342,7 @@ func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
 		for at, c := range w.inLane(lane) {
-			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, w.lanes[lane]), c, c.Number == w.Chosen())
+			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, w.lanes[lane]), c, c.Number == w.Chosen() || w.isTaken(c.Number))
 		}
 		clipped.Pop()
 	}
@@ -408,7 +408,7 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	defer clipped.Pop()
 	for at, g := range reading.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
-		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen())
+		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen() || w.isTaken(g.Number))
 		// How much work it carries and how much is done, on the number line an
 		// objective otherwise leaves half empty: it is the question an
 		// objective exists to ask, and a list that answered it only on opening

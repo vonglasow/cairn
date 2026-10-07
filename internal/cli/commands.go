@@ -215,6 +215,13 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			// lack of confirmation has no business touching anything first.
 			if op.Level == engine.Full && !confirmed {
 				target := strings.TrimSpace(op.Thing + " " + strings.Join(args, " "))
+				// What is named beside it goes in the same act, so it is
+				// named in the refusal as well.
+				if also, ok := listed["also"]; ok {
+					for _, more := range *also {
+						target += ", " + op.Thing + " " + more
+					}
+				}
 				return fmt.Errorf("%s %w", target, errNotConfirmed)
 			}
 			in := inputFrom(cmd, positionals, args, given, listed, asked)

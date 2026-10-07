@@ -1240,6 +1240,33 @@ Feature: Tasks
       When I run `cairn task add "Third"`
       Then it numbers the task 3
 
+    @task-delete-several
+    Scenario: several tasks are deleted in one act
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I run `cairn task delete 1 --also 3 --yes`
+      Then it succeeds
+      And `cairn task list` lists 1 tasks
+      And `cairn task list` lists task 2 titled "Second"
+
+    @task-delete-several-or-none
+    Scenario: several tasks are deleted all together, or none of them is
+      Given I added a task titled "First"
+      When I run `cairn task delete 1 --also 99 --yes`
+      Then it fails
+      And it says there is no such task
+      And `cairn task show 1` still reports a task titled "First"
+
+    @task-delete-several-unconfirmed-names-them
+    Scenario: a deletion of several refused for want of confirming names every one
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      When I run `cairn task delete 1 --also 2`
+      Then it fails
+      And it names task 1
+      And it names task 2
+
   Rule: Time spent on a task can be written down
 
     A task carries the time already spent on it, and that time accumulates.
@@ -1503,6 +1530,24 @@ Feature: Tasks
       When I run `cairn task archive 1`
       Then it fails
       And it says the task is already archived
+
+    @task-archive-several
+    Scenario: several tasks are archived in one act
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      When I run `cairn task archive 1 --also 2`
+      Then it succeeds
+      And `cairn task list` says there is no task
+
+    @task-archive-several-or-none
+    Scenario: several tasks are archived all together, or none of them is
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I archived task 2
+      When I run `cairn task archive 1 --also 2`
+      Then it fails
+      And it says the task is already archived
+      And `cairn task list` lists task 1 titled "First"
 
     @task-unarchive-what-is-on-the-board
     Scenario: bringing back what never went away is refused, the way archiving twice is

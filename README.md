@@ -44,6 +44,7 @@ cairn task search spec    # looks in the title, description, deadline, estimate,
                           # time spent — not in what --state and friends narrow by
 cairn task show 1
 cairn task delete 1 --yes
+cairn task delete 1 --also 4 --yes   # several in one act: all of them, or none
 cairn task move 3 --first        # to the head of the ones it sits with
 cairn task move 3 --after 1      # directly behind another
 cairn task move 3 --last

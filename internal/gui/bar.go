@@ -39,6 +39,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutLeaving {
 			return "Throw away what you typed?"
 		}
+		if w.asksAboutSeveral() {
+			return w.severalHead()
+		}
 		if w.question == aboutSweeping {
 			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
 		}
@@ -113,8 +116,10 @@ func Shortcut(offer string) string {
 		return "cmd+enter"
 	case "close", "cancel", "clear", "throw away":
 		return "esc"
-	case "back":
+	case "back", "all possible":
 		return "enter"
+	case "skip flagged":
+		return "s"
 	case "recover":
 		return "cmd+z"
 	}
@@ -220,6 +225,9 @@ func (w Window) Offers() []string {
 		if w.question == aboutLeaving {
 			return []string{"Throw away", "Back"}
 		}
+		if w.asksAboutSeveral() {
+			return w.severalOffers()
+		}
 		return []string{"Agree", "Cancel"}
 	case OnHelp:
 		return []string{"Close"}
@@ -237,8 +245,17 @@ func (w Window) Offers() []string {
 // to say the same, which read as the board itself having changed underneath.
 func (w Window) BoardOffers() []string {
 	offers := []string{"New", "Search", "Archived", "Help"}
-	if !w.looking.Empty() {
+	// Clear lets go of what is taken together, and then of a search.
+	if !w.looking.Empty() || len(w.Taken()) > 0 {
 		offers = append(offers, "Clear")
+	}
+	// What is taken together is archived or deleted, and not edited: a form
+	// is one task.
+	if len(w.Taken()) > 0 {
+		if w.chosenGoal {
+			return append(offers, "Delete")
+		}
+		return append(offers, "Archive", "Delete")
 	}
 	if w.chosen != 0 {
 		// Archive and Restore are the same key on the same card: the bar names
@@ -305,6 +322,9 @@ func (w Window) offerAt(p Point) (string, bool) {
 
 // Asks is what the question says, a sentence to a line.
 func (w Window) Asks() []Said {
+	if w.asksAboutSeveral() {
+		return w.severalSays()
+	}
 	if w.question == aboutLeaving {
 		return []Said{
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
@@ -336,6 +356,8 @@ const (
 	aboutDeleting Question = iota
 	aboutLeaving
 	aboutSweeping
+	aboutDeletingSeveral
+	aboutArchivingSeveral
 )
 
 // sweeps is the column a sweep would take off the board: the one the chosen

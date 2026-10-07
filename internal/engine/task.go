@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"cairn/internal/domain"
@@ -158,16 +159,26 @@ cairn task archive --state done`,
 	Answers: Swept{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
+		alsoOf("a task"),
 	}, taskNarrowing...),
 	Run: func(on On, in Input) (Answer, error) {
 		if n, named := in.Whole("number"); named && n != 0 {
-			if err := on.Engine.archive(n); err != nil {
+			numbers, err := together(in)
+			if err != nil {
 				return Answer{}, err
 			}
+			for _, n := range numbers {
+				if err := on.Engine.archive(n); err != nil {
+					return Answer{}, err
+				}
+			}
 			shown, err := shownTask(on, n)
-			one := 1
-			shown.Archived = &one
+			count := len(numbers)
+			shown.Archived = &count
 			return shown, err
+		}
+		if len(in.Listed["also"]) > 0 {
+			return Answer{}, ErrAlsoWithoutNumber
 		}
 		kept, err := keeping(in, taskNarrowing)
 		if err != nil {
@@ -231,6 +242,11 @@ var ErrNothingToLabel = errors.New("labelling needs something to narrow by")
 // ErrNothingToArchive is returned when archiving is given neither a number nor
 // a narrowing.
 var ErrNothingToArchive = errors.New("archiving needs a number or something to narrow by")
+
+// ErrAlsoWithoutNumber is returned when archiving names more tasks beside a
+// first, and no first: a narrowing already takes many, and "also" said beside
+// one is a question about which.
+var ErrAlsoWithoutNumber = errors.New("--also names tasks beside a number, and no number was given")
 
 // TaskUnarchive brings one back onto the board.
 var TaskUnarchive = Operation{
@@ -303,29 +319,40 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 
 // TaskDelete removes a task.
 var TaskDelete = Operation{
-	Thing:   "task",
-	Verb:    "delete",
-	Short:   "Delete a task",
-	Does:    "Delete a task.",
-	Example: "cairn task delete 1 --yes",
+	Thing: "task",
+	Verb:  "delete",
+	Short: "Delete a task",
+	Does:  "Delete a task.",
+	Example: `cairn task delete 1 --yes
+cairn task delete 1 --also 4 --also 7 --yes`,
 	Level:   Full,
 	Needs:   AStore,
 	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
+		alsoOf("a task"),
 	},
 	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
-		// Read before it goes: afterwards the link is gone with it.
-		waiting, err := on.Engine.waitingOn(n)
+		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.delete(n); err != nil {
-			return Answer{}, err
+		var waiting []int
+		for _, n := range numbers {
+			// Read before it goes: afterwards the link is gone with it.
+			was, err := on.Engine.waitingOn(n)
+			if err != nil {
+				return Answer{}, err
+			}
+			if err := on.Engine.delete(n); err != nil {
+				return Answer{}, err
+			}
+			waiting = append(waiting, was...)
 		}
-		return Answer{Deleted: &n, Unblocked: waiting}, nil
+		// A task deleted in the same act is not one left waiting.
+		waiting = slices.DeleteFunc(waiting, func(n int) bool { return slices.Contains(numbers, n) })
+		return Answer{Deleted: &numbers[0], Also: numbers[1:], Unblocked: waiting}, nil
 	},
 }
 

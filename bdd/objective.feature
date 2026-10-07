@@ -554,6 +554,24 @@ Feature: Objectives
       And it says the objective carries tasks
       And `cairn objective show 1` still reports an objective titled "Ship cairn 1.0"
 
+    @objective-delete-several
+    Scenario: several objectives are deleted in one act
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Keep it honest"
+      When I run `cairn objective delete 1 --also 2 --yes`
+      Then it succeeds
+      And `cairn objective list` says there is no objective
+
+    @objective-delete-several-or-none
+    Scenario: several objectives are deleted all together, or none of them is
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec" with the objective "2"
+      When I run `cairn objective delete 1 --also 2 --yes`
+      Then it fails
+      And it says the objective carries tasks
+      And `cairn objective show 1` still reports an objective titled "Ship cairn 1.0"
+
   Rule: An objective outlives the command that created it
 
     @objective-survives

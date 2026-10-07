@@ -383,7 +383,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 				continue
 			}
 			var g Gesture
-			w, g = Pointing(w, Gesture{At: pressed, Where: pressedAt}, e.Kind,
+			w, g = Pointing(w.KeysDown(e.Modifiers), Gesture{At: pressed, Where: pressedAt}, e.Kind,
 				Dp(e.Position, gtx.Metric.PxPerDp),
 				Turned(e.Scroll.Y, gtx.Metric.PxPerDp), gtx.Now)
 			pressed, pressedAt = g.At, g.Where
