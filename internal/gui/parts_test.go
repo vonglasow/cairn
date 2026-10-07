@@ -1557,3 +1557,12 @@ func TestThePartsKeepALineInTheSmallestWindow(t *testing.T) {
 		}
 	}
 }
+
+// In a room narrower than one character, every character is a line of its
+// own, the last one included, and nothing is read past the end of the text.
+func TestARoomNarrowerThanOneCharacterTakesOneAtATime(t *testing.T) {
+	got := Measure(narrow).Wrapped("WW", 5, reads)
+	if !slices.Equal(got.Said, []string{"W", "W"}) {
+		t.Errorf("two wide letters in a narrow room wrapped as %q", got.Said)
+	}
+}

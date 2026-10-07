@@ -1198,3 +1198,26 @@ func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 		t.Error("pulling the bar beside the work serving an objective moved nothing")
 	}
 }
+
+// Pulling the bar beside the work serving an objective scrolls it by whole
+// tiles, as far as the point pulled to means: to its end when pulled past it,
+// and to the tile the middle of the track names when pulled there.
+func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
+	var cards []reading.Card
+	for i := range 30 {
+		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
+	}
+	w := New(newFake(), 1200, 800)
+	w.snap = reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}}
+	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
+	track, frame := BesideBar(w.formPanel()), BesideBox(w.formPanel())
+	grip := Point{X: track.X + track.W/2, Y: track.Y + 4}
+	pull := func(to Point) Window { return w.PressAt(grip).MoveTo(to).LetGo(to) }
+	if got, want := pull(Point{X: grip.X, Y: track.Y + track.H + 999}).ServingAt(), 30*SubHeight-frame.H; got != want {
+		t.Errorf("pulled past its end, the work is at %d, want its end %d", got, want)
+	}
+	middle := Point{X: grip.X, Y: track.Y + track.H/2}
+	if got, want := pull(middle).ServingAt(), Reached(track, 30, w.ServingRows(), middle)*SubHeight; got != want || want == 0 {
+		t.Errorf("pulled to the middle, the work is at %d, want %d", got, want)
+	}
+}

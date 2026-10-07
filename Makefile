@@ -29,7 +29,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
 
-.PHONY: release next-version dist stamps tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
+.PHONY: release release-check next-version dist stamps tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -191,6 +191,14 @@ mutation-changed: gremlins-present
 check:
 	@prek run -a
 	@prek run -a --stage pre-push
+
+## release-check: every check a release runs — all of check's, but the mutation sweep
+## The sweep is judged on its own, with `make mutation`, now and then: it is
+## the longest check by far, and a release that waited on it took the better
+## part of an hour. What it last found is in mutation-report/summary.md.
+release-check:
+	@prek run -a --skip mutation
+	@prek run -a --stage pre-push --skip mutation-all
 
 ## linux: build cairn and run its suite on Linux, in a container
 ## macOS is where cairn is written and Linux is the other half of what it says

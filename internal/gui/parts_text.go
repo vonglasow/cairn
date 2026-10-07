@@ -161,7 +161,9 @@ func (m Measure) Wrapped(said string, wide, size int) Lines {
 		lines.Said = append(lines.Said, string(kept[from:end]))
 		lines.From = append(lines.From, from)
 		from = end
-		// The space a line was broken at belongs to neither line.
+		// The space a line was broken at belongs to neither line. In a room
+		// narrower than one character the break can fall at the very end of
+		// the text, with nothing after it to look at.
 		if from < len(kept) && kept[from] == ' ' {
 			from++
 		}

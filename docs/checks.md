@@ -223,6 +223,23 @@ code so the mutant does not exist, rather than arguing for it. The commit
 truncation in `internal/cli` is there for exactly that reason: slicing on a
 `min` has no branch to mutate, where `if len > n` had an untestable boundary.
 
+## The report a sweep leaves
+
+A full sweep runs for a long while, and its verdict used to live only in the
+terminal it ran in: scrolled away, or gone with the window, it had to be run
+again to be read. `make mutation` now leaves it in `mutation-report/`, which is
+ignored by git and rewritten by every full sweep:
+
+- `summary.md` — package by package, every mutant that lived or that no test
+  reached, at its file, line and column, with the line of code it sits on;
+  every hang caught; and a package judged clean, or clean already and
+  unchanged since, as one line. It is what fixing a survivor starts from.
+- `json/` — what gremlins said about each package, in full.
+
+The commit's run, on the lines it changed, leaves the report alone. A release
+does not run the sweep — see [release.md](release.md) — and says instead when
+the last one ran and whether it left anything to fix.
+
 ## What the last few per cent are, and why they stay there
 
 Coverage sits in the mid-nineties and will not reach a hundred. That is not a
@@ -294,8 +311,9 @@ make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make mutation-changed  # the lines changed since HEAD: what a commit runs
-make mutation          # every package: what a push runs
+make mutation          # every package: what a push runs, and the report it leaves
 make check             # every hook, commit's and push's, on every file
+make release-check     # the same, but the mutation sweep: what a release runs
 make linux             # build and run the suite on Linux, in a container
 make help              # every target, and what it is for
 ```

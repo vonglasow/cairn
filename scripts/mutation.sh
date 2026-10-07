@@ -152,6 +152,34 @@ hanged=$(git rev-parse --git-dir)/mutation-hangs.log
 # so the core is where a 100% without them meant least.
 logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
 
+# What the full sweep found, kept where it can be read again: a sweep runs for
+# a long while, and a verdict that lived only in its terminal had to be run
+# again to be read. mutation-report/summary.md says, package by package, what
+# lived or was not reached and the line it sits on — see mutation-report.sh —
+# and mutation-report/json/ keeps what gremlins said in full. Rewritten by
+# every full sweep; the commit's run, on the lines it changed, leaves it alone.
+kept=mutation-report
+if ! $changed; then
+  rm -rf "$kept"
+  mkdir -p "$kept/json"
+  {
+    echo "# Mutation sweep"
+    echo
+    echo "$(date '+%F %T') on $(git rev-parse --short HEAD)$( [ -z "$(git status --porcelain)" ] || echo ', with changes not committed')"
+    echo
+  } >"$kept/summary.md"
+fi
+# keep writes one package's verdict into the report, from the report gremlins
+# wrote last.
+keep() {
+  $changed && return 0
+  local pkg=$1 said=$2
+  cp "$said" "$kept/json/$(echo "${pkg#./}" | tr / _).json"
+  scripts/mutation-report.sh "$pkg" . <"$said" >>"$kept/summary.md"
+}
+# said writes a line of its own into the report.
+said() { $changed || echo "$*" >>"$kept/summary.md"; }
+
 failed=0
 ran=0
 caught=0
@@ -171,6 +199,7 @@ for pkg in $judged_packages; do
   $changed || content=$(contentOf "$pkg")
   if ! $changed && [ "$(cat "$(receiptOf "$pkg")" 2>/dev/null)" = "$content" ]; then
     echo "→ $pkg: judged clean already, and unchanged since"
+    said "- \`$pkg\` — clean already, and unchanged since it was judged"
     continue
   fi
   ran=$((ran + 1))
@@ -181,7 +210,12 @@ for pkg in $judged_packages; do
   [[ $logical == *" ${pkg#./} "* ]] && args+=(--invert-logical --invert-loopctrl)
   unleash "$pkg" "${args[@]}"
   # A package with nothing to mutate gets no report at all.
-  [ -f "$report" ] || continue
+  if [ ! -f "$report" ]; then
+    said "- \`$pkg\` — nothing to mutate"
+    continue
+  fi
+  first=$shim/first.json
+  cp "$report" "$first"
   bad=$(judged "LIVED" "NOT COVERED")
   jq -r '"  " + ([.files[]?.mutations[].status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
   if [ -n "$(judged "TIMED OUT")" ]; then
@@ -195,9 +229,18 @@ for pkg in $judged_packages; do
     # not run, said as one rather than read as a pass or a crash.
     if [ ! -f "$report" ]; then
       echo "  the timeouts could not be judged again: gremlins wrote no report"
+      said "## \`$pkg\` — its timeouts could not be judged again"
+      keep "$pkg" "$first"
       failed=1
       continue
     fi
+    # The first verdict, with each mutant that timed out given the one the
+    # second run reached.
+    jq -s '.[1] as $again | .[0] | .files |= map(.file_name as $name | .mutations |= map(. as $m
+      | if .status == "TIMED OUT" then .status = ([$again.files[]? | select(.file_name == $name) | .mutations[]
+          | select(.line == $m.line and .column == $m.column and .type == $m.type and .status != "SKIPPED")
+          | .status][0] // "TIMED OUT") else . end))' "$first" "$report" >"$shim/merged.json"
+    mv "$shim/merged.json" "$first"
     bad=$(printf '%s\n%s' "$bad" "$(judged "LIVED" "NOT COVERED")" | sed '/^$/d')
     hangs=$(judged "TIMED OUT")
     if [ -n "$hangs" ]; then
@@ -208,6 +251,7 @@ for pkg in $judged_packages; do
     fi
     jq -r '"  again: " + ([.files[]?.mutations[] | select(.status != "SKIPPED") | .status] | group_by(.) | map("\(.[0]): \(length)") | join(", "))' "$report"
   fi
+  keep "$pkg" "$first"
   if [ -n "$bad" ]; then
     echo "$bad"
     failed=1
@@ -224,4 +268,12 @@ if $changed && [ "$ran" -eq 0 ]; then
   echo "no production code changed: nothing to mutate"
 fi
 [ "$caught" -eq 0 ] || echo "$caught hang(s) caught — each one is a loop a test noticed or a test too slow to tell from one; see $hanged"
+if ! $changed; then
+  if [ "$failed" -eq 0 ]; then
+    said "" && said "**Nothing to fix.**"
+  else
+    said "" && said "**Something to fix**: each section headed above names it."
+  fi
+  echo "the report is in $kept/summary.md"
+fi
 exit $failed

@@ -5,6 +5,7 @@ coverage.out
 # build output
 /bin/
 /dist/
+/mutation-report/
 
 # red receipts: proof a test failed, not history worth keeping
 /.claude/red/
