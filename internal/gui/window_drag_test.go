@@ -1,10 +1,7 @@
 package gui
 
 import (
-	"errors"
 	"fmt"
-	"slices"
-	"strconv"
 	"testing"
 
 	"cairn/internal/engine"
@@ -194,74 +191,10 @@ func TestWhereACardWouldLandIsSnappedToTheGrid(t *testing.T) {
 	}
 }
 
-// Where a point falls in the box under the fields, and where it does not.
-func TestTileUnder_saysWhichPartAPointIsOn(t *testing.T) {
-	w := openOnAParent(t, 3)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	for _, tc := range []struct {
-		what string
-		at   Point
-		want int
-		on   bool
-	}{
-		{"the first tile", Point{X: box.X + 5, Y: box.Y + 2}, 0, true},
-		{"the second", Point{X: box.X + 5, Y: box.Y + SubHeight + 2}, 1, true},
-		{"above the box", Point{X: box.X + 5, Y: box.Y - 1}, 0, false},
-		{"below the box", Point{X: box.X + 5, Y: box.Y + box.H + 1}, 0, false},
-		{"left of it", Point{X: box.X - 1, Y: box.Y + 2}, 0, false},
-		{"in the box, past the last tile", Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}, 0, false},
-	} {
-		at, on := w.tileUnder(tc.at)
-		if on != tc.on || (on && at != tc.want) {
-			t.Errorf("%s: tileUnder = %d, %v, want %d, %v", tc.what, at, on, tc.want, tc.on)
-		}
-	}
-}
-
-// Where a tile lands when it is let go, which is the slot the pointer is over.
-func TestDroppedUnder_takesThePlaceItWasLetGoOn(t *testing.T) {
-	box := func(w Window) Box { return ServingBox(Over(w.width, w.height), w.Shown()) }
-	// Every slot is inside the box. Past its bottom is not a place a part can
-	// land — it has no column to fall into — so that is the other test.
-	for _, tc := range []struct {
-		what       string
-		held, slot int
-		want       map[string]string
-	}{
-		{"the third onto the first", 2, 0, map[string]string{"number": "4", "first": "true"}},
-		{"the third onto the second", 2, 1, map[string]string{"number": "4", "after": "2"}},
-		// Let go on the slot the last tile occupies, which names that tile: the
-		// box is three deep for a task, so a slot past all three is outside it,
-		// and outside is not a place a part can land.
-		{"the first onto the third", 0, 3, map[string]string{"number": "2", "after": "4"}},
-	} {
-		w := openOnAParent(t, 3)
-		from := Point{X: box(w).X + 5, Y: box(w).Y + tc.held*SubHeight + 2}
-		to := Point{X: box(w).X + 5, Y: box(w).Y + tc.slot*SubHeight + 2}
-		w = w.PressAt(from).MoveTo(to).LetGo(to)
-		// The move among what was asked, and not the last of them: a move that
-		// went through is followed by the reading that redraws the board.
-		var moved *asked
-		for i, one := range w.work.(*fake).asked {
-			if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
-				moved = &w.work.(*fake).asked[i]
-			}
-		}
-		if moved == nil {
-			t.Fatalf("%s: no move was asked", tc.what)
-		}
-		for name, value := range tc.want {
-			if moved.in.Given[name] != value {
-				t.Errorf("%s: asked %v, want %s=%s", tc.what, moved.in.Given, name, value)
-			}
-		}
-	}
-}
-
 // A tile let go on its own place asks nothing: it is already there.
 func TestDroppedUnder_asksNothingForAPartAlreadyThere(t *testing.T) {
 	w := openOnAParent(t, 3)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
+	box := BesideBox(Over(w.width, w.height))
 	at := Point{X: box.X + 5, Y: box.Y + SubHeight + 2}
 	past := Point{X: at.X + Grip + 2, Y: at.Y}
 	w = w.PressAt(at).MoveTo(past).LetGo(at)
@@ -288,199 +221,16 @@ func openOnAParent(t *testing.T, parts int) Window {
 	return w.clicked(middleOf(w, 1, 0)).Key("enter")
 }
 
-// What a tile in hand looks like, and where it would land. Pinned because the
-// arithmetic that places them is the arithmetic a drop is aimed by: a ghost
-// half a tile out or a line on the wrong slot makes the gesture lie.
-func TestGhostAndLanding_areTheTilesOwnWhileOneIsHeld(t *testing.T) {
-	w := openOnAParent(t, 3)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	from := Point{X: box.X + 5, Y: box.Y + 2*SubHeight + 2}
-	to := Point{X: box.X + 5, Y: box.Y + SubHeight + 4}
-	w = w.PressAt(from).MoveTo(to)
-
-	ghost, dragging := w.Ghost()
-	if !dragging {
-		t.Fatal("nothing is in hand")
-	}
-	// A whole tile: its body is derived the way a tile's is, so that what is
-	// carried is laid out exactly as it will be once it is put down.
-	want := Box{X: box.X, Y: to.Y - SubHeight/2, W: box.W, H: SubHeight}
-	if ghost != want {
-		t.Errorf("Ghost = %+v, want %+v", ghost, want)
-	}
-	if !ghost.In(to) {
-		t.Errorf("Ghost = %+v does not hold the pointer at %+v", ghost, to)
-	}
-
-	landing, somewhere := w.Landing()
-	if !somewhere {
-		t.Fatal("nothing says where it would land")
-	}
-	// Snapped to the slot the hand is over, which is the second.
-	wantLanding := Box{X: box.X, Y: box.Y + SubHeight, W: box.W, H: landingHigh}
-	if landing != wantLanding {
-		t.Errorf("Landing = %+v, want %+v", landing, wantLanding)
-	}
-}
-
 // Nothing is in hand, and nothing says where it would land, once a tile is let
 // go outside the box.
 func TestLanding_saysNothingOutsideTheBox(t *testing.T) {
 	w := openOnAParent(t, 3)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
+	box := BesideBox(Over(w.width, w.height))
 	from := Point{X: box.X + 5, Y: box.Y + 2}
 	out := Point{X: box.X + 5, Y: box.Y + box.H + CardHeight}
 	w = w.PressAt(from).MoveTo(out)
 	if landing, somewhere := w.Landing(); somewhere {
 		t.Errorf("it says a tile would land at %+v, outside its box", landing)
-	}
-}
-
-// The box follows the cursor out of sight, and comes back with it.
-func TestWalkingUnder_bringsWhatItLandsOnIntoSight(t *testing.T) {
-	w := openOnAParent(t, 20)
-	rows := w.ServingRows()
-	if w.ServingAt() != 0 {
-		t.Fatalf("it starts at %d, not at the top", w.ServingAt())
-	}
-	// Walked to the last tile the box can show, nothing has scrolled yet.
-	for range rows - 1 {
-		w = w.walkingUnder(1)
-	}
-	if w.ServingAt() != 0 {
-		t.Errorf("it scrolled to %d before the cursor left the box", w.ServingAt())
-	}
-	// One more, and it follows by exactly one tile.
-	w = w.walkingUnder(1)
-	if got := w.ServingAt(); got != SubHeight {
-		t.Errorf("it scrolled to %d, want one tile (%d)", got, SubHeight)
-	}
-	// Back up to the top, and it comes back.
-	for range rows + 2 {
-		w = w.walkingUnder(-1)
-	}
-	if got := w.ServingAt(); got != 0 {
-		t.Errorf("it is at %d after walking back to the first, want the top", got)
-	}
-}
-
-// A move the store refuses leaves the window saying so, and the parts where
-// they were: a board that reordered itself on a refusal would be a board
-// showing something nobody's store holds.
-func TestDroppedUnder_saysSoWhenTheStoreRefuses(t *testing.T) {
-	w := openOnAParent(t, 3)
-	w.work.(*fake).failOp = errors.New("the store said no")
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	from := Point{X: box.X + 5, Y: box.Y + 2*SubHeight + 2}
-	to := Point{X: box.X + 5, Y: box.Y + 2}
-	w = w.PressAt(from).MoveTo(to).LetGo(to)
-	if w.Wrong() == nil {
-		t.Error("a refused move said nothing")
-	}
-	if got := titles(w.Under()); !slices.Equal(got, []string{"Part 1", "Part 2", "Part 3"}) {
-		t.Errorf("the parts read %v, want them where they were", got)
-	}
-}
-
-// Where a point falls, and where a tile lands, once the box has been scrolled.
-//
-// Every other test of these leaves the box at its top, where the scroll adds
-// nothing — so the reckoning could have dropped it entirely and none of them
-// would have noticed. A part let go on the fourth tile of a scrolled box must
-// name the fourth, not whichever one happens to sit there on screen.
-func TestUnderAScrolledBox_reckonsWithWhatIsOutOfSight(t *testing.T) {
-	w := openOnAParent(t, 20)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	// Walked far enough that the box has followed the cursor down.
-	for range w.ServingRows() + 2 {
-		w = w.walkingUnder(1)
-	}
-	if w.ServingAt() == 0 {
-		t.Fatal("the box did not scroll")
-	}
-	scrolled := w.ServingAt() / SubHeight
-
-	// The tile under the top of the box is the one the scroll put there.
-	at, on := w.tileUnder(Point{X: box.X + 5, Y: box.Y + 2})
-	if !on || at != scrolled {
-		t.Errorf("the top of a scrolled box is tile %d (%v), want %d", at, on, scrolled)
-	}
-
-	// And a part let go there takes that tile's place, not the first one's.
-	// Read before the drop: the window reads the store again once a move goes
-	// through, and this one is answered by a fake that holds no tasks.
-	want := strconv.Itoa(w.Under()[scrolled].Number)
-	from := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
-	to := Point{X: box.X + 5, Y: box.Y + SubHeight + 2}
-	w = w.PressAt(from).MoveTo(to).LetGo(to)
-	var moved *asked
-	for i, one := range w.work.(*fake).asked {
-		if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
-			moved = &w.work.(*fake).asked[i]
-		}
-	}
-	if moved == nil {
-		t.Fatal("nothing was moved")
-	}
-	// Behind the tile above where it was let go, counted from the top of the
-	// listing and not from the top of what is showing.
-	if got := moved.in.Given["after"]; got != want {
-		t.Errorf("it was put after %s, want %s — the scroll was not counted", got, want)
-	}
-}
-
-// A part let go just below the last one is put after it, and the window says
-// which one it is going after.
-//
-// This is the slot that tells the reckoning apart: one below the last is still
-// inside the box, and naming the last part is not the same as asking for the
-// end of the list — both put it in the same place, and only one of them says
-// what it is measuring from.
-func TestDroppedUnder_namesTheLastPartWhenItGoesBelowIt(t *testing.T) {
-	w := openOnAParent(t, 3)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	last := strconv.Itoa(w.Under()[2].Number)
-	from := Point{X: box.X + 5, Y: box.Y + 2}
-	to := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
-	w = w.PressAt(from).MoveTo(to).LetGo(to)
-	var moved *asked
-	for i, one := range w.work.(*fake).asked {
-		if one.op.Thing == engine.TaskMove.Thing && one.op.Verb == engine.TaskMove.Verb {
-			moved = &w.work.(*fake).asked[i]
-		}
-	}
-	if moved == nil {
-		t.Fatal("nothing was moved")
-	}
-	if got := moved.in.Given["after"]; got != last {
-		t.Errorf("it was put after %q, want after the last part (%s)", got, last)
-	}
-	if _, asLast := moved.in.Given["last"]; asLast {
-		t.Error("it asked for the end of the list rather than naming what it goes after")
-	}
-}
-
-// Let go past every tile there is, the move is to the end. Told with two tiles
-// rather than three: the box holds three slots, so with three tiles there is
-// no slot left past them, and "after the last" is the same gesture.
-func TestDroppedUnder_pastThemAllIsTheEnd(t *testing.T) {
-	w := openOnAParent(t, 2)
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	from := Point{X: box.X + 5, Y: box.Y + 2}
-	to := Point{X: box.X + 5, Y: box.Y + 3*SubHeight + 2}
-	w = w.PressAt(from).MoveTo(to).LetGo(to)
-
-	var moved *asked
-	for i, one := range w.work.(*fake).asked {
-		if one.op.Verb == engine.TaskMove.Verb {
-			moved = &w.work.(*fake).asked[i]
-		}
-	}
-	if moved == nil {
-		t.Fatal("no move was asked")
-	}
-	if moved.in.Given["last"] != "true" {
-		t.Errorf("asked %v, want last=true", moved.in.Given)
 	}
 }
 

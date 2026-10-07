@@ -181,14 +181,14 @@ Feature: The desktop board
   Rule: A click outside a panel closes it, where closing loses nothing
 
     A hand on the mouse should not have to reach for the keyboard to put
-    something away. Clicking off a panel does what esc does — the detail, the
-    help, the question about deleting, the list of objectives — because in each
-    of those the way out costs nothing.
+    something away. Clicking off a panel does what esc does — an open task
+    nobody typed into, the help, the question about deleting, the list of
+    objectives — because in each of those the way out costs nothing.
 
-    A form is the exception, and the only one. It holds what somebody has typed
-    and not saved, and a click landing anywhere outside it would throw that
-    away without asking. Losing work without being asked is how work is lost;
-    esc is still there, and it is offered on the bar as Cancel.
+    A form somebody typed into is the exception, and the only one. It holds
+    what was typed and not saved, and a click landing anywhere outside it would
+    throw that away without asking. Losing work without being asked is how
+    work is lost; esc is still there, and it is offered on the panel as Cancel.
 
     Closing a panel closes the panel and nothing else. A search that was
     narrowing the board stays in force, because it is not what was opened: a
@@ -201,16 +201,16 @@ Feature: The desktop board
       Given I added a task titled "Write the spec"
       When I open the window
       And I double-click the card "Write the spec"
-      Then the detail is open on "Write the spec"
+      Then "Write the spec" is open to be edited
 
-    @gui-clicking-off-the-detail-closes-it
-    Scenario: clicking off an open task puts it away
+    @gui-clicking-off-an-open-task-closes-it
+    Scenario: clicking off an open task nobody typed into puts it away
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
       And I click outside the panel
-      Then the detail is closed
+      Then the window is on the board
 
     @gui-clicking-off-the-help-closes-it
     Scenario: clicking off the help puts it away
@@ -242,7 +242,7 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I press "enter"
       And I press "esc"
-      Then the detail is closed
+      Then the window is on the board
       And the search is still in force
       And "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
@@ -272,21 +272,21 @@ Feature: The desktop board
       And the card "Write the spec" is not chosen
 
     @gui-a-double-click-opens
-    Scenario: double-clicking a card opens its detail
+    Scenario: double-clicking a card opens it to be edited
       Given I added a task titled "Write the spec" with the description "Two columns"
       When I open the window
       And I double-click the card "Write the spec"
-      Then the detail is open on "Write the spec"
-      And the detail shows "Two columns"
+      Then "Write the spec" is open to be edited
+      And the form shows "Two columns"
 
-    @gui-the-detail-shows-the-whole-task
-    Scenario: the detail shows everything a task carries, not only what was done to it
+    @gui-an-open-task-shows-the-whole-task
+    Scenario: an open task shows everything it carries, not only what was done to it
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the window
       And I double-click the card "Write the spec"
-      Then the detail shows the field "column" reading "todo"
-      And the detail shows the field "priority"
-      And the detail shows the field "labels"
+      Then the form shows the field "column" reading "todo"
+      And the form shows the field "priority"
+      And the form shows the field "labels"
 
     @gui-an-open-task-says-where-its-context-lives
     Scenario: an open task says where what was written about it elsewhere lives
@@ -294,8 +294,7 @@ Feature: The desktop board
       When I open the window
       And I double-click the card "Write the spec"
       Then the open task says where the context of task 1 lives
-      When I choose "Edit"
-      Then the form asks nothing about "context"
+      And the form asks nothing about "context"
 
     @gui-the-context-is-held-past-a-long-description
     Scenario: the place an open task names is held however long its description runs
@@ -311,24 +310,24 @@ Feature: The desktop board
       Given I added a task titled "Write the spec" with a description of 80 lines ending "the end"
       When I open the window
       And I double-click the card "Write the spec"
-      And I click "Close"
-      Then the detail is closed
+      And I click "Cancel"
+      Then the window is on the board
 
-    @gui-the-detail-is-closed-by-clicking
-    Scenario: the detail is closed without knowing a key
+    @gui-an-open-task-is-put-away-by-clicking
+    Scenario: an open task is put away without knowing a key
       Given I added a task titled "Write the spec"
       When I open the window
       And I double-click the card "Write the spec"
-      And I click "Close"
-      Then the detail is closed
+      And I click "Cancel"
+      Then the window is on the board
 
-    @gui-the-detail-closes
-    Scenario: the detail closes and leaves the board as it was
+    @gui-an-open-task-closes
+    Scenario: an open task closes and leaves the board as it was
       Given I added a task titled "Write the spec"
       When I open the window
       And I double-click the card "Write the spec"
       And I press "esc"
-      Then the detail is closed
+      Then the window is on the board
       And the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
     @gui-the-wheel-scrolls-one-column
@@ -390,7 +389,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      Then the detail is open on "Write the spec"
+      Then "Write the spec" is open to be edited
 
   Rule: Dragging a card moves the work
 
@@ -465,7 +464,7 @@ Feature: The desktop board
     without knowing what is due is not deciding.
 
     Beside it, what the work has cost against what it was reckoned to cost, and
-    what it serves — three facts the detail carried and no overview summarised.
+    what it serves — three facts an open task carried and no overview summarised.
 
     @gui-a-card-says-when-it-is-due
     Scenario: a day close enough to matter is written on the card
@@ -844,7 +843,7 @@ Feature: The desktop board
       And I press "/"
       And I type "spec"
       And I double-click the card "Write the spec"
-      Then the detail is open on "Write the spec"
+      Then "Write the spec" is open to be edited
 
     @gui-clicking-the-search-box-lets-go-of-nothing
     Scenario: clicking the box being typed into does not let go of the card
@@ -881,7 +880,7 @@ Feature: The desktop board
       And I press "down"
       Then the card "Write the spec" is chosen
       And I press "enter"
-      Then the detail is open on "Write the spec"
+      Then "Write the spec" is open to be edited
 
     @gui-two-ways-into-the-search
     Scenario: the search opens the way a person expects
@@ -937,6 +936,27 @@ Feature: The desktop board
     A task worked on for a while carries more history than any panel can hold.
     It was drawn down the panel and out of the bottom of the window — a history
     nobody can read, and nothing on screen saying it is there at all.
+
+    @gui-opening-a-task-opens-it-to-be-edited
+    Scenario: opening a task opens it to be edited, its history beside what it carries
+      Given I added a task titled "Write the spec"
+      And it was worked on 3 times
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the window is on the form
+      And every field of the form stands left of the history
+      And the history begins with the last thing done to task 1
+
+    @gui-opening-an-objective-opens-it-to-be-edited
+    Scenario: opening an objective opens it to be edited, the work serving it beside it
+      Given I added an objective titled "Ship the board"
+      And I added a task titled "Write the spec" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the board"
+      And I press "enter"
+      Then the window is on the form
+      And the work beside the form reads "Write the spec"
 
     @gui-the-history-has-its-own-place
     Scenario: the history is beside what the task carries, not under it
@@ -1002,18 +1022,6 @@ Feature: The desktop board
       When I scroll down over the history 99 times
       Then the history is at its end
       And the history stays inside the panel
-
-    @gui-the-arrows-scroll-the-history
-    Scenario: the arrows scroll the history while a task is open
-      Given I added a task titled "Write the spec"
-      And it was worked on 20 times
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      And I press "down"
-      Then the history has moved
-      When I press "up"
-      Then the history is at its beginning
 
     @gui-the-bar-beside-the-history-is-dragged
     Scenario: the bar beside the history is taken hold of and moved
@@ -1137,14 +1145,10 @@ Feature: The desktop board
     under it. Opening one shows them by name and by where each stands, because
     a count alone says how far along it is and never what is left.
 
-    They sit under the fields, in what the left column has left, and they are
-    cards — the same cards the board draws, at the same height, scrolled the
-    same way. A run of text lines would make the one place that lists tasks the
-    one place a task does not look like a task.
-
-    The right column stays the history: it is what a task opens onto, and
-    moving it aside for an objective would cost every task the thing it was
-    built for.
+    They sit beside the form, in the column a task's history has: an objective
+    has no history of its own — the trace is kept of tasks — and the question
+    it is opened to answer is what serves it. Each is a tile of one line,
+    scrolled by the wheel over the column and by the bar beside it.
 
     @gui-an-objective-opens-on-what-serves-it
     Scenario: opening an objective shows the work that serves it
@@ -1155,11 +1159,11 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship the desktop board"
       And I press "enter"
-      Then the detail is open on "Ship the desktop board"
-      And the detail draws a card for "Write the spec" under its fields
-      And the detail draws no card for "Buy a lamp"
+      Then "Ship the desktop board" is open to be edited
+      And the work beside the form carries "Write the spec"
+      And the work beside the form does not carry "Buy a lamp"
       And what hangs under it is drawn one line to a tile
-      And the right column is still headed "HISTORY"
+      And the column beside the form is headed "WHAT SERVES IT"
 
     @gui-the-work-under-an-objective-scrolls
     Scenario: more work than the box holds scrolls, and stops at both ends
@@ -1178,20 +1182,6 @@ Feature: The desktop board
       When I scroll down over the work under it 99 times
       Then the work under it is at its end
 
-    @gui-the-arrows-scroll-the-work-under-an-objective
-    Scenario: the arrows walk the work, and the box follows them out of sight
-      Given I added an objective titled "Ship the desktop board"
-      And I added 30 tasks serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the desktop board"
-      And I press "enter"
-      Then the work under it is at its beginning
-      When I press "down" 20 times
-      Then the work under it has moved
-      When I press "up" 20 times
-      Then the work under it is at its beginning
-
     @gui-an-objective-card-says-how-much-is-done
     Scenario: an objective says how much work it carries and how much is done
       Given I added an objective titled "Ship the desktop board"
@@ -1209,15 +1199,15 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       Then the card for objective 1 says nothing of how far along it is
 
-    @gui-an-objective-detail-is-its-own
-    Scenario: an objective's detail is its own, not that of the task sharing its number
+    @gui-an-open-objective-is-its-own
+    Scenario: an open objective is its own, not the task sharing its number
       Given I added an objective titled "Ship the desktop board"
       And I added a task titled "Write the spec" serving objective 1
       When I open the window
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship the desktop board"
       And I press "enter"
-      Then the detail is open on "Ship the desktop board"
+      Then "Ship the desktop board" is open to be edited
 
     @gui-an-objective-with-nothing-under-it-says-so
     Scenario: an objective nothing serves yet says so rather than showing an empty space
@@ -1226,8 +1216,8 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship the desktop board"
       And I press "enter"
-      Then the detail is open on "Ship the desktop board"
-      And the detail says nothing serves it yet
+      Then "Ship the desktop board" is open to be edited
+      And the work beside the form says nothing serves it yet
 
   Rule: The window takes work up
 
@@ -1588,23 +1578,6 @@ Feature: The desktop board
       And the field "parent" names "Ship it"
       And the field "parent" reads "1"
 
-    @gui-an-open-task-is-headed-by-its-whole-title
-    Scenario: an open task says its whole title on the line beside its number
-      Given I added a task titled "install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
-      When I open the window
-      And I click the card "install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
-      And I press "enter"
-      Then the panel is headed "task 1 · install-argonos-root-ca : la sonde teste /readyz au lieu du quorum etcd"
-
-    @gui-an-open-objective-is-headed-by-its-title-too
-    Scenario: an objective says its title there as well
-      Given I added an objective titled "Ship cairn"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship cairn"
-      And I press "enter"
-      Then the panel is headed "objective 1 · Ship cairn"
-
     @gui-a-card-says-it-carries-more-than-it-shows
     Scenario: a card says a description exists and how far its parts have got
       Given I added a task titled "Write the spec" with the description "Two columns"
@@ -1651,7 +1624,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      Then the detail is open on "Write the spec"
+      Then "Write the spec" is open to be edited
       When I press "e"
       Then the form is open on task 1
 
@@ -1676,52 +1649,21 @@ Feature: The desktop board
   Rule: A task opens on the work hanging under it
 
     A parent is a question the same way an objective is — is this finished —
-    and the answer is the tasks under it. They sit in the box under the fields,
-    because it is the same question asked of a different thing.
+    and the answer is the tasks under it. They are the last thing its form
+    holds: a list to tick while the keyboard is elsewhere, and the lines being
+    typed while it is on them.
 
     They are drawn as tiles of one line and not as the cards a board draws. A
     card is 96 pixels high and uses 50 of them: the rest was room for a
     deadline and a progress bar a sub-task no longer carries. One line holds
-    everything one has left — whether it is done, its number, its title — and
-    fits five in the box where a card fit one.
+    everything one has left — whether it is done, its number, its title.
+    What is left comes first, and what is done after it.
 
-    The strip down the left says done or not, where a card's says its priority.
-    It is the only fact a part carries that a glance should not have to read
-    the words for.
-
-    A title too long for its tile is cut with an ellipsis, measured rather than
-    reckoned: the font is proportional, so counting an average glyph width left
-    a title that ran to the frame's edge and was clipped there, against the bar
-    beside it.
-
-    The arrows walk the tiles, and space marks the one they are on done or not
-    done. They used to scroll the history: the box takes them because it is
-    what somebody acts on, and a line of history is read rather than changed.
-    The history keeps the wheel over it and the bar beside it.
-
-    The bar says so. `Done` appears on it while a task with parts is open, the
-    way `Edit` and `Close` do, because the bar is where a key is looked for —
-    and the arrows are in the help, where the board's own arrows are, since the
-    bar carries what changes a task and not how to get about.
-
-    Nothing reaches the store until space is pressed, and then at once — this
-    is not a form, and a tile is one fact somebody is either changing or not.
-
-    A tile is dragged to reorder it. Solidary with its parent does not mean
-    fixed among its sisters: a part can be wanted before another, and the order
-    is what says which. It moves within its box and nowhere else — there is no
-    column to land in, and its parent is where it belongs.
-
-    Dragged the way everything on this window is dragged: the same hold, the
-    same ghost following the pointer, the same line where it would land. What
-    changes is where it may land, not how a hand does it. A second mechanism
-    written beside the first drew no ghost and no line, so a drop was aimed by
-    hope — and it left the board's own landing line drawn underneath the panel,
-    because the board was still being asked where a point over it would land.
-
-    A task nothing hangs under says nothing there: an empty frame reads as a
-    box that failed to load, and most tasks have no sub-tasks at all.
-
+    A part is changed through its task's form and nowhere else: ticked,
+    renamed, added and taken away on its lines, and saved with the rest. The
+    arrows, the space bar and the drag that worked on an open task went with
+    the screen they worked on: an open task is now its form, and a second way
+    of changing a part beside the first was a second thing to get wrong.
 
     @gui-every-text-on-an-open-task-is-copied
     Scenario: a word of anything an open task writes is held and copied
@@ -1733,151 +1675,14 @@ Feature: The desktop board
       Then the clipboard reads "Deux"
 
     @gui-the-parts-left-come-first
-    Scenario: what is left comes first, and the box counts what is left and done
+    Scenario: what is left comes first
       Given I added a task titled "Ship it"
       And I added a task titled "Draft the columns" hanging under task 1
       And I added a task titled "Get the client's nod" hanging under task 1
       And I edited task 2 with the state "done"
       When I open the window
       And I double-click the card "Ship it"
-      Then what hangs under it reads "Get the client's nod", "Draft the columns"
-      And the box under the task is headed "WHAT HANGS UNDER IT   1 to do · 1 done"
-    @gui-a-task-opens-on-what-hangs-under-it
-    Scenario: opening a parent shows the work hanging under it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      And I added a task titled "Something else"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the detail is open on "Ship it"
-      And the detail draws a card for "Write the spec" under its fields
-      And the detail draws no card for "Something else"
-      And the right column is still headed "HISTORY"
-
-    @gui-a-part-in-hand-shows-where-it-would-land
-    Scenario: a tile in hand follows the pointer and says where it would go
-      Given I added a task titled "Ship it"
-      And I added a task titled "First" hanging under task 1
-      And I added a task titled "Second" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      And I take hold of the tile "Second" and move it over the tile "First"
-      Then the tile being dragged follows the pointer
-      And what is in hand says what it carries
-      And it shows where the tile would land
-      And the board behind shows no landing
-
-    @gui-a-part-is-dragged-to-reorder-it
-    Scenario: dragging a tile onto another puts it there
-      Given I added a task titled "Ship it"
-      And I added a task titled "First" hanging under task 1
-      And I added a task titled "Second" hanging under task 1
-      And I added a task titled "Third" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      And I drag the tile "Third" onto the tile "First"
-      Then the engine was asked "task move" for task 4
-      And what hangs under it reads "Third", "First", "Second"
-
-    @gui-a-part-dragged-nowhere-moves-nothing
-    Scenario: a tile let go outside its box asks nothing
-      Given I added a task titled "Ship it"
-      And I added a task titled "First" hanging under task 1
-      And I added a task titled "Second" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      And I drag the tile "Second" out of its box
-      Then the engine was not asked "task move"
-      And what hangs under it reads "First", "Second"
-
-    @gui-a-long-part-is-cut-before-the-edge
-    Scenario: a title too long for its tile stops before the frame
-      Given I added a task titled "Ship it"
-      And I added a task titled "Court" hanging under task 1
-      And I added a task titled "T090f · Ajouter une étape pour réouvrir (puis refermer) les droits avant intervention" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the second tile says what it holds
-      And the second tile leaves room before its frame
-
-    @gui-the-arrows-walk-what-hangs-under-a-task
-    Scenario: the arrows walk the tiles, and stop at both ends
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      And I added a task titled "Draw the band" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the tile the keyboard is on is "Write the spec"
-      And the tile the keyboard is on is lit
-      When I press "down"
-      Then the tile the keyboard is on is "Draw the band"
-      And the tile the keyboard is on is lit
-      When I press "down"
-      Then the tile the keyboard is on is "Draw the band"
-      When I press "up"
-      Then the tile the keyboard is on is "Write the spec"
-      When I press "up"
-      Then the tile the keyboard is on is "Write the spec"
-
-    @gui-the-bar-offers-marking-a-part-done
-    Scenario: the bar says what space does, where space does it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the bar offers "Done" under "space"
-
-    @gui-the-bar-offers-nothing-to-mark-where-nothing-hangs
-    Scenario: a task nothing hangs under is offered nothing to mark
-      Given I added a task titled "Ship it"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the bar does not offer "Done"
-
-    @gui-the-help-says-what-the-arrows-do-in-the-box
-    Scenario: the help says what the arrows walk
-      When I open the window
-      And I press "?"
-      Then the help says what "↑↓ under a task" does
-
-    @gui-space-marks-a-part-done
-    Scenario: space marks the part the keyboard is on done, and undone again
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      And I press "space"
-      Then the engine was asked "task edit" for task 2
-      And task 2 is in the column "done"
-      When I press "space"
-      Then task 2 is in the column "todo"
-
-    @gui-space-does-nothing-where-nothing-hangs
-    Scenario: space asks nothing of a task nothing hangs under
-      Given I added a task titled "Ship it"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      And I press "space"
-      Then nothing was asked of the engine
-
-    @gui-a-task-with-nothing-under-it-says-nothing
-    Scenario: a task nothing hangs under says nothing where the list would be
-      Given I added a task titled "Ship it"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "enter"
-      Then the detail is open on "Ship it"
-      And the box under the fields is empty
+      Then the parts are drawn as a list to tick, "Get the client's nod" first
 
   Rule: The objectives a task serves are picked from a list, not typed
 
@@ -2177,8 +1982,7 @@ Feature: The desktop board
       And I double-click the card "Write the spec"
       Then the bar under the board reads "New", "Search", "Archived", "Help", "Edit", "Archive", "Delete"
       And the bar under the board answers nothing
-      When I click "Edit"
-      Then the bar under the board reads "New", "Search", "Archived", "Help", "Edit", "Archive", "Delete"
+      And the bar offers "Save" under "⌘⏎"
 
     @gui-a-search-says-it-is-a-search
     Scenario: a search says it is one, and the key that opened it is not typed

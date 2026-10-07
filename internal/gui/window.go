@@ -23,8 +23,6 @@ type Screen int
 const (
 	// OnTheBoard is the board itself, which is where a window opens.
 	OnTheBoard Screen = iota
-	// OnDetail is one task, opened to read what a card only marked.
-	OnDetail
 	// OnForm is the modal over the board, adding or editing.
 	OnForm
 	// OnSearch is the board narrowed to what a search reaches, while it is
@@ -195,11 +193,6 @@ type Window struct {
 	// what they came to only when the list closes.
 	ticked   map[int]bool
 	choosing int
-	// underAt is which part of the work the keyboard is on in the box beneath
-	// an open task's fields. Put back to the first whenever another thing is
-	// opened: a cursor kept from the last one would point at a part of it that
-	// is not there any more.
-	underAt int
 
 	err error
 }
@@ -257,32 +250,14 @@ func (w Window) Dragging() bool { return w.held.Number != 0 && w.held.Moved }
 // Tab is which of the two is being looked at.
 func (w Window) Tab() Tab { return w.tab }
 
-// Shown is everything the task the detail is open on carries, read off the same
-// description a form asks from. A card has room for a title and a number; this
-// is the rest of it, which is what a detail is for.
-func (w Window) Shown() []reading.Field {
-	if w.screen != OnDetail {
-		return nil
-	}
-	if w.chosenGoal {
-		if g, found := w.snap.Goal(w.chosen); found {
-			return reading.GoalFields(g)
-		}
-		return nil
-	}
-	if c, found := w.snap.Card(w.chosen); found {
-		return reading.TaskFields(c)
-	}
-	return nil
-}
-
-// Context is where what was written about the open task elsewhere lives, or
-// nothing when no task is open or the window was not told where the notes are.
+// Context is where what was written about the task a form is open on lives
+// elsewhere, or nothing: no form, a new task, an objective, or a window not
+// told where the notes are.
 func (w Window) Context() string {
-	if w.screen != OnDetail || w.chosenGoal {
+	if w.screen != OnForm || w.form.Adding || w.form.ForObjective {
 		return ""
 	}
-	c, _ := w.snap.Card(w.chosen)
+	c, _ := w.snap.Card(w.form.Number)
 	return c.Context
 }
 

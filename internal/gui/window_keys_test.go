@@ -2,7 +2,6 @@ package gui
 
 import (
 	"strconv"
-	"strings"
 	"testing"
 
 	"gioui.org/io/key"
@@ -124,7 +123,7 @@ func TestEnterOpensWhatIsChosen(t *testing.T) {
 		t.Error("enter with nothing chosen opened something")
 	}
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("enter left the window on %v", w.Screen())
 	}
 	if w.Chosen() != 1 {
@@ -502,30 +501,5 @@ func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
 	}
 	if got := w.Key("left").Chosen(); got != 1 {
 		t.Fatalf("left out of the watching lane chose %d, want the blocked one", got)
-	}
-}
-
-// ^D and ^U walk the description on an open task, half its box at a time —
-// the terminal board's keys for it, taken here too so the same fingers work.
-func TestHalfABoxAtATimeOnTheDescription(t *testing.T) {
-	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
-		Description: text})
-	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
-	_, _, lines, rows, _ := w.sayingOn()
-	if w = w.Key("cmd+d"); w.saying != rows/2 {
-		t.Fatalf("^D moved the description to %d, want %d", w.saying, rows/2)
-	}
-	for range len(lines.Said) {
-		w = w.Key("cmd+d")
-	}
-	if w.saying != len(lines.Said)-rows {
-		t.Fatalf("^D to the end left the description at %d, want %d", w.saying, len(lines.Said)-rows)
-	}
-	for range len(lines.Said) {
-		w = w.Key("cmd+u")
-	}
-	if w.saying != 0 {
-		t.Fatalf("^U to the top left the description at %d", w.saying)
 	}
 }

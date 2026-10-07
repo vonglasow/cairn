@@ -159,8 +159,6 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("inside four", Inside(Framed(value, 4)))
 	say("context name", ContextName(over))
 	say("context path", ContextPath(over))
-	say("field top 1", Box{X: over.X, Y: FieldTop(over, reading.TaskFields(reading.Card{}), 1), W: 1, H: 1})
-	goalFields := reading.GoalFields(reading.Goal{})
 	say("sub panel", SubPanel(Box{X: 100, Y: 200, W: 400, H: SubHeight}))
 	say("sub writing", SubWriting(Box{X: 100, Y: 200, W: 400, H: SubHeight}))
 	choosing := ChoosingOver(1200, 800)
@@ -173,25 +171,16 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("choosing bar", ChoosingBar(choosing))
 	say("choosing thumb at the top", Thumb(ChoosingBar(choosing), 44, 15, 0))
 	say("choosing thumb at the end", Thumb(ChoosingBar(choosing), 44, 15, 29))
-	say("serving head", ServingHead(over, goalFields))
-	say("serving box", ServingBox(over, goalFields))
-	say("serving bar", ServingBar(over, goalFields))
 	say("counted at", CountedAt(parts.Number, "7/12 · 58%"))
-	taskFields := reading.TaskFields(reading.Card{})
-	long, _ := LongField(taskFields)
-	say("saying box", SayingBox(over, taskFields, long))
-	say("saying bar", SayingBar(over, taskFields, long))
-	say("saying thumb at the top", Thumb(SayingBar(over, taskFields, long), 100, 4, 0))
-	say("saying thumb at the end", Thumb(SayingBar(over, taskFields, long), 100, 4, 96))
-	say("history head", HistoryHead(over))
-	say("history box", HistoryBox(over))
-	say("history bar", HistoryBar(over))
-	say("thumb at the top", Thumb(HistoryBar(over), 100, 10, 0))
-	say("thumb halfway", Thumb(HistoryBar(over), 100, 10, 45))
-	say("thumb at the end", Thumb(HistoryBar(over), 100, 10, 90))
-	say("line 0", LineAt(Inside(HistoryBox(over)), 0, 0))
-	say("line 3 of 2", LineAt(Inside(HistoryBox(over)), 3, 2))
-	say("caret", CaretAt(Inside(HistoryBox(over)), 1, 0, 40))
+	say("beside head", BesideHead(over))
+	say("beside box", BesideBox(over))
+	say("beside bar", BesideBar(over))
+	say("thumb at the top", Thumb(BesideBar(over), 100, 10, 0))
+	say("thumb halfway", Thumb(BesideBar(over), 100, 10, 45))
+	say("thumb at the end", Thumb(BesideBar(over), 100, 10, 90))
+	say("line 0", LineAt(Inside(BesideBox(over)), 0, 0))
+	say("line 3 of 2", LineAt(Inside(BesideBox(over)), 3, 2))
+	say("caret", CaretAt(Inside(BesideBox(over)), 1, 0, 40))
 	say("panel offer 0", PanelOfferAt(over, 0))
 	say("panel offer 1", PanelOfferAt(over, 1))
 	// The form of a task being edited: a short field before the description,
@@ -414,40 +403,6 @@ func TestAPanelsOwnOffersSitAlongItsBottom(t *testing.T) {
 	}
 }
 
-// A field that wants more than one line gets more than one, and the fields
-// under it move down by what it took. Without that a description is a slot the
-// size of a word.
-func TestAFieldThatWantsMoreThanOneLineGetsIt(t *testing.T) {
-	fields := []reading.Field{
-		{Name: "title"},
-		{Name: "description", Long: true},
-		{Name: "column"},
-	}
-	box := Over(1200, 800)
-	if got := RowsOf(box, fields, 0); got != 1 {
-		t.Errorf("a plain field takes %d rows", got)
-	}
-	if got := RowsOf(box, fields, 1); got <= 1 {
-		t.Errorf("a long field takes %d rows", got)
-	}
-
-	first := FieldTop(box, fields, 0)
-	second := FieldTop(box, fields, 1)
-	third := FieldTop(box, fields, 2)
-	// A field takes its rows, the room its frame keeps around them, and what it
-	// leaves before the next one.
-	if second-first != fieldHigh(box, fields, 0) {
-		t.Errorf("the second field is %d below the first, want %d", second-first, fieldHigh(box, fields, 0))
-	}
-	if third-second != fieldHigh(box, fields, 1) {
-		t.Errorf("the third field is %d below the second, which takes %d rows",
-			third-second, RowsOf(box, fields, 1))
-	}
-	if third-second <= second-first {
-		t.Error("a field of four lines is no further from the next than a field of one")
-	}
-}
-
 // A value longer than the room a one-line field has shows its end, because the
 // end is where typing is happening — and it shows it whole, wrapped onto a
 // line of its own rather than cut down to fit.
@@ -484,12 +439,6 @@ func TestWhereAValueStartsShowingItsEndInstead(t *testing.T) {
 	}
 	if line, _ := got.At(room + 1); got.Window(1, line) != 1 {
 		t.Error("with the caret past the first line, the first line is still what is shown")
-	}
-	// And asking past the end of a list of fields is the whole list.
-	fields := []reading.Field{{Name: "one"}, {Name: "two"}}
-	box := Over(1200, 800)
-	if past, last := FieldTop(box, fields, 9), FieldTop(box, fields, len(fields)); past != last {
-		t.Errorf("past the last field is %d and the end is %d", past, last)
 	}
 }
 
@@ -659,7 +608,7 @@ func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 func TestTheHistoryHasItsOwnColumnOfThePanel(t *testing.T) {
 	for _, size := range [][2]int{{Narrowest, Shortest}, {1280, 840}, {1920, 1200}} {
 		box := Over(size[0], size[1])
-		fields, history := DetailFields(box), DetailHistory(box)
+		fields, history := FormFields(box), FormBeside(box)
 		if fields.X+fields.W != history.X {
 			t.Errorf("at %v the fields end at %d and the history starts at %d", size, fields.X+fields.W, history.X)
 		}
@@ -669,7 +618,7 @@ func TestTheHistoryHasItsOwnColumnOfThePanel(t *testing.T) {
 		if fields.W <= history.W {
 			t.Errorf("at %v the fields have %d and the history %d: the fields are the longer column", size, fields.W, history.W)
 		}
-		frame, track := HistoryBox(box), HistoryBar(box)
+		frame, track := BesideBox(box), BesideBar(box)
 		if frame.X+frame.W > track.X {
 			t.Errorf("at %v the history runs to %d and its bar starts at %d", size, frame.X+frame.W, track.X)
 		}
@@ -679,11 +628,11 @@ func TestTheHistoryHasItsOwnColumnOfThePanel(t *testing.T) {
 		if bottom, offers := frame.Y+frame.H, PanelOfferAt(box, 0).Y; bottom > offers {
 			t.Errorf("at %v the history ends at %d and what the panel offers starts at %d", size, bottom, offers)
 		}
-		if frame.Y <= HistoryHead(box).Y {
-			t.Errorf("at %v the history starts at %d and its heading at %d", size, frame.Y, HistoryHead(box).Y)
+		if frame.Y <= BesideHead(box).Y {
+			t.Errorf("at %v the history starts at %d and its heading at %d", size, frame.Y, BesideHead(box).Y)
 		}
-		if HistoryRows(box) < 1 {
-			t.Errorf("at %v the history has room for %d lines", size, HistoryRows(box))
+		if BesideRows(box) < 1 {
+			t.Errorf("at %v the history has room for %d lines", size, BesideRows(box))
 		}
 	}
 }
@@ -992,9 +941,9 @@ func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 		Cards: []reading.Card{{Number: 1, Title: "Write the spec", Objectives: []int{1}}},
 		Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}},
 	}
-	w.chosen, w.chosenGoal, w.screen = 1, true, OnDetail
+	w.chosen, w.chosenGoal, w.screen = 1, true, OnForm
 
-	box := ServingBox(Over(w.width, w.height), w.Shown())
+	box := BesideBox(Over(w.width, w.height))
 	for _, tc := range []struct {
 		what       string
 		at, scroll int
@@ -1211,18 +1160,11 @@ func TestOneFieldToTheNextIsOneStep(t *testing.T) {
 	// Written as numbers and not as the sum they come from: an expression
 	// repeated on both sides of a comparison agrees with itself however it is
 	// mutated, and says nothing at all.
-	box := Over(1200, 800)
-	fields := []reading.Field{{Name: "title"}, {Name: "description", Long: true}}
-	if one := fieldHigh(box, fields, 0); one != 32 {
+	if one := lineHigh + inset + inset + between; one != 32 {
 		t.Fatalf("a one-line field takes %d, want 32", one)
 	}
 	if apart != 32 {
 		t.Fatalf("a panel's rows are %d apart, want the 32 a field is high", apart)
-	}
-	// A long field takes the room the panel has left, so what is pinned is the
-	// frame around its lines and not a number of them.
-	if long, rows := fieldHigh(box, fields, 1), LongRows(box, fields); long != rows*lineHigh+14 {
-		t.Fatalf("a long field of %d lines takes %d", rows, long)
 	}
 }
 
@@ -1254,19 +1196,6 @@ func TestWhatWasDoneIsWrittenPastTheTime(t *testing.T) {
 	}
 }
 
-// What is in hand is drawn as what it will become: a card on the board, a tile
-// in the box under an open task. Decided here rather than in the drawing, so a
-// scenario can ask what shape a ghost takes.
-func TestWhatIsInHandTakesTheShapeItWillLandAs(t *testing.T) {
-	ghost := Box{X: 10, Y: 20, W: 200, H: 80}
-	if got := GhostBody(OnTheBoard, ghost); got != ghost {
-		t.Fatalf("a card in hand on the board is %v, want %v", got, ghost)
-	}
-	if got := GhostBody(OnDetail, ghost); got != SubPanel(ghost) {
-		t.Fatalf("a tile in hand is %v, want %v", got, SubPanel(ghost))
-	}
-}
-
 // Where what was done is written, as a box: past the time it happened, and no
 // wider than what is left of the line.
 func TestWhatWasDoneIsBoxedPastTheTime(t *testing.T) {
@@ -1280,31 +1209,6 @@ func TestWhatWasDoneIsBoxedPastTheTime(t *testing.T) {
 	}
 	if got.Y != box.Y || got.H != box.H {
 		t.Errorf("it moved off its line: %v", got)
-	}
-}
-
-// What is in hand writes what it carries where it would write it once it has
-// landed: a card puts its title 28 points down and a tile is 22 high, so a
-// card's layout put a tile's writing past the bottom of the ghost and onto
-// whatever was behind it.
-func TestWhatIsInHandWritesWhereItWillWrite(t *testing.T) {
-	ghost := Box{X: 10, Y: 20, W: 200, H: 80}
-	c := reading.Card{Number: 7, Title: "Write the spec"}
-
-	box, said, size := GhostSays(OnTheBoard, ghost, c)
-	if box != PartsOf(ghost).Title {
-		t.Errorf("a card in hand writes at %v, want its title's own box", box)
-	}
-	if said != TitleOf(c.Title, ghost.W) || size != plain {
-		t.Errorf("a card in hand says %q at %d", said, size)
-	}
-
-	box, said, size = GhostSays(OnDetail, ghost, c)
-	if box != SubWriting(ghost) {
-		t.Errorf("a tile in hand writes at %v, want a tile's own line", box)
-	}
-	if said != SubLine(c) || size != small {
-		t.Errorf("a tile in hand says %q at %d", said, size)
 	}
 }
 
@@ -1330,44 +1234,6 @@ func TestATextEndingInABreakKeepsALineForTheCaret(t *testing.T) {
 	// A text that does not end in one is unchanged.
 	if plain := Wrapped("abc", 20); len(plain.Said) != 1 {
 		t.Fatalf("a text with no break came back as %q", plain.Said)
-	}
-}
-
-// A description is what somebody opens a task to read, and it had four lines
-// of thirty-nine columns whatever the window was — a task of 2800 characters
-// came to seventy-eight lines, read a hundred and fifty characters at a time.
-// It takes the room the panel has left once everything else has taken its own.
-func TestADescriptionTakesTheRoomThePanelHasLeft(t *testing.T) {
-	fields := reading.TaskFields(reading.Card{})
-	for _, c := range []struct {
-		what          string
-		width, height int
-		rows          int
-	}{
-		// Three heights and not one: the room left over is a sum of half a
-		// dozen terms, and a single height lets one of them be wrong by
-		// exactly what the division then throws away.
-		{"a tall screen", 1200, 1400, 30},
-		{"a screen half again as tall", 1200, 1000, 11},
-		{"a window somebody works in", 1200, 800, longRows},
-		{"the smallest window there is", Narrowest, Shortest, longRows},
-	} {
-		t.Run(c.what, func(t *testing.T) {
-			box := Over(c.width, c.height)
-			if rows := LongRows(box, fields); rows != c.rows {
-				t.Errorf("a description gets %d lines, want %d", rows, c.rows)
-			}
-			// And what the box under the fields had, it keeps.
-			if under := ServingBox(box, fields); under.H < lineHigh {
-				t.Errorf("the box under the fields is %d, too small to read", under.H)
-			}
-			// Nothing runs past the offers at the foot.
-			last := FieldTop(box, fields, len(fields)-1) + fieldHigh(box, fields, len(fields)-1)
-			if last > PanelOfferAt(box, 0).Y {
-				t.Errorf("the last field ends at %d, past the offers at %d",
-					last, PanelOfferAt(box, 0).Y)
-			}
-		})
 	}
 }
 
@@ -1630,5 +1496,37 @@ func TestATextInABoxIsWrappedInsideItsPadding(t *testing.T) {
 	got := wrapIn(Measure(characters), "abc def", Box{W: padding + 3 + padding}, reads)
 	if !slices.Equal(got.Said, []string{"abc", "def"}) {
 		t.Errorf("wrapped as %q", got.Said)
+	}
+}
+
+// Every short field of a form keeps room to read what it holds, in the
+// narrowest column a form is laid out in: a section with more fields than its
+// row has room for goes on over a second row, under the same head. Three to a
+// row in the left column of an opened task left a column four letters wide.
+func TestEveryShortFieldOfAFormHasRoomToBeRead(t *testing.T) {
+	for _, box := range []Box{FormFields(Over(Narrowest, Shortest)), Over(Narrowest, Shortest), FormFields(Over(1920, 1200))} {
+		fields := reading.EditFields(reading.Card{Number: 1}, nil)
+		for i, field := range fields {
+			if field.Long || field.Arg == "title" {
+				continue
+			}
+			if _, value, _ := FormPlace(box, fields, i); value.W < formValueFewest {
+				t.Errorf("in a box %d wide %q has %d, fewer than %d", box.W, field.Name, value.W, formValueFewest)
+			}
+		}
+		if heads := FormHeads(box, fields); len(heads) != len(formSections) {
+			t.Errorf("in a box %d wide the form has %d heads, want one a section", box.W, len(heads))
+		}
+	}
+}
+
+// How many short fields a line of a form holds: as many as leave each its
+// name and the least a box is given, and one at the least.
+func TestHowManyShortFieldsALineHolds(t *testing.T) {
+	two := sectionWide - padding + 2*(formNamed+formValueFewest+padding)
+	for _, c := range []struct{ full, want int }{{0, 1}, {two - 1, 1}, {two, 2}, {two + formNamed + formValueFewest + padding, 3}} {
+		if got := fieldsAcross(c.full); got != c.want {
+			t.Errorf("a line %d wide holds %d, want %d", c.full, got, c.want)
+		}
 	}
 }

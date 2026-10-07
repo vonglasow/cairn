@@ -157,8 +157,9 @@ const chipAt = 3
 // ground looked like something written rather than something to write in.
 const inset = 4
 
-// The detail panel is two columns: what the task carries on the left, what was
-// done to it on the right.
+// A form opened on something already there is two columns: what it carries on
+// the left, and beside it what was done to a task or the work serving an
+// objective.
 //
 // Two columns and not one above the other, because the history is the part
 // that never fits. Stacked, twelve framed fields take nearly the whole panel
@@ -166,9 +167,12 @@ const inset = 4
 // left — which is nothing. Beside them it gets the panel's full height at
 // every size.
 const (
-	// fieldsPart is how much of the panel's width the fields take.
-	fieldsPart = 3
-	ofPanel    = 5
+	// fieldsPart is how much of the panel's width the fields take: five
+	// eighths, which in the narrowest window this board draws in is room for
+	// two short fields to a line. Three fifths left room for one, and a form
+	// of one field to a line ran over what it offers.
+	fieldsPart = 5
+	ofPanel    = 8
 	// barWide is the bar beside the history, which says how much of it is
 	// showing and where in it somebody is.
 	barWide = 10

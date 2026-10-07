@@ -238,7 +238,7 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	if w.screen != OnForm {
 		return 0, false
 	}
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	fields := w.form.Fields()
 	for i := range fields {
 		name, value, rows := FormPlace(box, fields, i)
@@ -263,8 +263,7 @@ func into(value Box, p Point, said string, m Measure) int {
 // the field, because what was pressed is what was on screen.
 func (w Window) reaching(at int, p Point) int {
 	fields := w.form.Fields()
-	box := Over(w.width, w.height)
-	_, value, rows := FormPlace(box, fields, at)
+	_, value, rows := FormPlace(w.formBox(), fields, at)
 	inside := Inside(Framed(value, rows))
 	// What drawForm shows of it: the field the keyboard is on from what is
 	// being typed and where the wheel left it, the others from their beginning.
@@ -273,16 +272,23 @@ func (w Window) reaching(at int, p Point) int {
 	if on {
 		said = w.form.Writing()
 	}
-	scrolled := Follow
-	if fields[at].Long {
-		scrolled = 0
-		if on {
-			scrolled = w.Saying()
-		}
-	}
 	lines := w.wrapping(said.Reads(), inside, FormSize(fields[at]))
 	line, _ := lines.At(said.At)
-	return lines.Reaches(inside, p, StartsAt(lines, rows, line, scrolled), w.measured(), FormSize(fields[at]))
+	return lines.Reaches(inside, p, StartsAt(lines, rows, line, w.scrolledOf(at)), w.measured(), FormSize(fields[at]))
+}
+
+// scrolledOf is where a field of the form shows its text from: a one-line
+// field wherever its caret is, the long field the wheel moves wherever the
+// wheel left it, and any other long field from its beginning, which is where
+// a text is read from.
+func (w Window) scrolledOf(at int) int {
+	if !w.form.Fields()[at].Long {
+		return Follow
+	}
+	if moved, _ := w.sayingAt(); moved == at {
+		return w.Saying()
+	}
+	return 0
 }
 
 // Walk moves the keyboard from one field to the next, and stops at both ends
@@ -302,10 +308,34 @@ func (w Window) Edit() Window {
 		if g, found := w.snap.Goal(w.chosen); found {
 			w.form, w.screen = editingGoal(g), OnForm
 		}
-		return w
+		return w.beside()
 	}
 	if c, found := w.snap.Card(w.chosen); found {
 		w.form, w.screen = editing(c, w.snap.Cards), OnForm
+	}
+	return w.beside()
+}
+
+// beside reads what the column beside an opened form shows, and puts it at
+// its top: the history of a task, or the work serving an objective, which is
+// already on the board. An objective has no history of its own — the trace is
+// kept of tasks — and the number it carries belongs to a task as well: asking
+// for the trace of that number answered with a task nobody had chosen.
+func (w Window) beside() Window {
+	w.history, w.serving, w.saying = 0, 0, 0
+	w.spareHistory, w.spareSaying = 0, 0
+	w.picked, w.pickingText = Picked{}, false
+	w.acts = nil
+	if w.chosenGoal || w.screen != OnForm {
+		return w
+	}
+	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
+	if err != nil {
+		w.err = err
+		return w
+	}
+	for _, act := range shown.Acts {
+		w.acts = append(w.acts, line(act))
 	}
 	return w
 }
@@ -448,8 +478,6 @@ func (w Window) Choose(name string) Window {
 		// said "Open a list" would be naming the mechanism rather than what
 		// somebody came to do.
 		return w.choosingList()
-	case "done":
-		return w.marking()
 	case "cancel":
 		// Backing out of a list is backing out of the list, not of the form
 		// under it: the form holds what somebody typed, and throwing that away

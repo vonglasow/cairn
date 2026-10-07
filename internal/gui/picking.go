@@ -85,44 +85,33 @@ func (r Readable) At(p Point, m Measure) int {
 // place of the notes and what the panel offers among them.
 func (r Readable) inSight() Box { return r.Box }
 
-// Readables is every piece of text an open task writes, and nothing on any
-// other screen: the form holds its own text in its fields.
+// Readables is every piece of text the column beside an opened form writes: a
+// task's history and the place of its notes, or the work serving an
+// objective. The form holds its own text in its fields.
 func (w Window) Readables() []Readable {
-	if w.screen != OnDetail {
+	if w.screen != OnForm || w.form.Adding {
 		return nil
 	}
 	box := Over(w.width, w.height)
-	column := DetailFields(box)
-	fields := w.Shown()
-	out := []Readable{one("heading", Heading(box), Heads(w), heading)}
-	for i, field := range fields {
-		name, value := FieldRow(column, FieldTop(column, fields, i))
-		out = append(out, one("name:"+field.Name, name, field.Name, small))
-		said := w.FieldSays(field)
-		inside, from := Inside(Framed(value, RowsOf(column, fields, i))), 0
-		if field.Long {
-			inside, from = Inside(SayingBox(box, fields, i)), w.Saying()
+	if w.form.ForObjective {
+		out := []Readable{one("under", BesideHead(box), w.UnderHead(), small)}
+		frame := BesideBox(box)
+		for at, c := range w.Under() {
+			line := SubWriting(w.ServingCardAt(at))
+			if !Within(line, frame) {
+				continue
+			}
+			out = append(out, one("part:"+strconv.Itoa(c.Number), line, SubLine(c), small))
 		}
-		out = append(out, Readable{Key: "field:" + field.Name, Box: inside, Said: said,
-			Lines: w.wrapping(said, inside, reads), From: from, Size: reads})
+		return out
 	}
-	out = append(out, one("under", ServingHead(box, fields), w.UnderHead(), small))
-	frame := ServingBox(box, fields)
-	for at, c := range w.Under() {
-		line := SubWriting(w.ServingCardAt(at))
-		if !Within(line, frame) {
-			continue
-		}
-		out = append(out, one("part:"+strconv.Itoa(c.Number), line, SubLine(c), small))
-	}
-	out = append(out, w.ContextSays()...)
-	out = append(out, one("history", HistoryHead(box), w.PanelHead(), small))
-	inside := Inside(HistoryBox(box))
+	out := []Readable{one("history", BesideHead(box), w.PanelHead(), small)}
+	inside := Inside(BesideBox(box))
 	lines, from := w.Lines(), w.History()
 	for i := from; i < Lasting(len(lines), from, w.Rows()); i++ {
 		out = append(out, one("history:"+strconv.Itoa(i), LineAt(inside, i, from), lines[i], small))
 	}
-	return out
+	return append(out, w.ContextSays()...)
 }
 
 // Measuring gives the window the face its text is drawn in, so a pointer lands

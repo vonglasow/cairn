@@ -90,7 +90,7 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	if got := Typed(opened, string(key.NameEscape), 0); got.Screen() != OnTheBoard {
 		t.Errorf("escape left the window on %v", got.Screen())
 	}
-	if got := Typed(w, "Q", 0); got.Screen() != OnTheBoard || len(f.asked) != 0 {
+	if got := Typed(w, "Q", 0); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("a key nobody bound did something")
 	}
 	// Gio names the key "A" and says shift apart from it, so a window that
@@ -348,14 +348,13 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: strings.Join(said, "\n")})
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
 	}
-	at, long := LongField(w.Shown())
+	box, _, _, _, long := w.sayingOn()
 	if !long {
 		t.Fatal("the open task shows no description")
 	}
-	box := SayingBox(Over(w.width, w.height), w.Shown(), at)
 	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 
 	if got := Pointed(w, pointer.Scroll, over, lineHigh); got.Saying() == 0 {
@@ -391,7 +390,7 @@ func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 
 	two, g := Pointing(one, g, pointer.Press, at, 0, now.Add(time.Millisecond))
 	two, _ = Pointing(two, g, pointer.Release, at, 0, now.Add(time.Millisecond))
-	if two.Screen() != OnDetail {
+	if two.Screen() != OnForm {
 		t.Errorf("the second click left the window on %v, not the task it opened", two.Screen())
 	}
 
@@ -425,7 +424,7 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 		t.Error("a release did not finish the click it belonged to")
 	}
 	open := w.doubleClicked(at)
-	box := SayingBox(Over(open.width, open.height), open.Shown(), 1)
+	box, _, _, _, _ := open.sayingOn()
 	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 	if got := Pointed(open, pointer.Scroll, over, 5*lineHigh); got.Saying() == 0 {
 		t.Error("a scroll moved nothing")
@@ -480,8 +479,8 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, _, _, _ := w.sayingOn()
-	over := Point{X: frame.X + 10, Y: frame.Y + 10}
-	if !w.Layout().Column[1].In(over) {
+	over := Point{X: max(frame.X, w.Layout().Column[1].X) + 10, Y: frame.Y + 10}
+	if !w.Layout().Column[1].In(over) || !frame.In(over) {
 		t.Fatal("this proves nothing: there is no column under the description")
 	}
 	start := moment
@@ -515,7 +514,7 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	// And the other way round: the rest of a turn of the board does not scroll
 	// the task opened while it was still coming.
 	w = w.DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
 	}
 	w = turn(w, fresh+16*time.Millisecond)

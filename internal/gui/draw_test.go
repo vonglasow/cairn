@@ -15,7 +15,6 @@ import (
 	"gioui.org/unit"
 	"github.com/cucumber/godog"
 
-	"cairn/internal/engine"
 	"cairn/internal/reading"
 )
 
@@ -200,7 +199,7 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 	}{
 		{"the board", OnTheBoard, true},
 		{"a search", OnSearch, true},
-		{"an open task", OnDetail, false},
+		{"an open task", OnForm, false},
 		{"a form", OnForm, false},
 	} {
 		v := w
@@ -398,7 +397,7 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	lit := Dark().Chosen
 	// The frame and not the name: the title is written under no name, as the
 	// heading of what is being edited.
@@ -554,28 +553,6 @@ func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 	landing, _ := w.Landing()
 	if got := painted(shot, landing, Dark().Chosen); got == 0 {
 		t.Error("where the card would land is not drawn")
-	}
-}
-
-// The detail draws the task's fields, not only what was done to it.
-func TestTheDetailDrawsTheTasksFields(t *testing.T) {
-	f := newFake()
-	w := holding(f, reading.Card{
-		Number: 1, Title: "Write the spec", State: "todo", Priority: "high",
-	})
-	w = w.doubleClicked(middleOf(w, 1, 0))
-
-	box := Over(w.width, w.height)
-	shown := len(w.Shown())
-	rows := 0
-	for i := range shown {
-		name, _ := FieldRow(box, FieldTop(box, w.Shown(), i))
-		if painted(drawn(t, w), name, Dark().Faint) > 0 {
-			rows++
-		}
-	}
-	if rows < shown/2 {
-		t.Errorf("the detail drew %d of its %d fields", rows, shown)
 	}
 }
 
@@ -1012,12 +989,12 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	}
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the window is on %v, not the detail", w.Screen())
 	}
 
 	box := Over(w.width, w.height)
-	frame, track := HistoryBox(box), HistoryBar(box)
+	frame, track := BesideBox(box), BesideBar(box)
 	shot := drawn(t, w)
 
 	if painted(shot, Inside(frame), Dark().Faint) == 0 {
@@ -1098,26 +1075,26 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	}
 	w = w.Key("tab")
 	w = w.clicked(goalMiddle(w, 1)).Key("enter")
-	if w.Screen() != OnDetail || !w.ChosenGoal() {
+	if w.Screen() != OnForm || !w.ChosenGoal() {
 		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
 	}
 
-	frame := ServingBox(Over(w.width, w.height), w.Shown())
-	track := ServingBar(Over(w.width, w.height), w.Shown())
+	frame := BesideBox(Over(w.width, w.height))
+	track := BesideBar(Over(w.width, w.height))
 	shot := drawn(t, w)
 
-	// The strip down a tile's left, which says done: three pixels wide at the
-	// box's own X, where nothing else on this panel draws that colour. The
-	// tile's body is the panel's colour and counting that would count the
-	// panel behind it — measured, it did.
-	strip := func(b Box) Box { return Box{X: b.X, Y: b.Y, W: edgeWide, H: b.H} }
-	if painted(shot, strip(frame), Dark().Chosen) == 0 {
-		t.Error("no tile was drawn in the box under the fields")
+	// The box down a tile's left, filled when the work is done: the tile's
+	// body is the panel's colour, and counting that would count the panel
+	// behind it — measured, it did.
+	check := SubCheck(w.ServingCardAt(0))
+	strip := func(b Box) Box { return Box{X: check.X, Y: b.Y, W: check.W, H: b.H} }
+	if painted(shot, strip(frame), Dark().Faint) == 0 {
+		t.Error("no tile was drawn in the box beside the form")
 	}
 	// Nothing below the box: thirty tiles are far more than it holds, and they
 	// must be cut to it the way a column's cards are.
 	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: SubHeight}
-	if got := painted(shot, strip(under), Dark().Chosen); got != 0 {
+	if got := painted(shot, strip(under), Dark().Faint); got != 0 {
 		t.Errorf("%d pixels of tile ran out of the bottom of the box", got)
 	}
 
@@ -1126,11 +1103,10 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	if painted(shot, high, Dark().Edge) == 0 {
 		t.Error("the grip is not at the top of a list nobody has scrolled")
 	}
-	// Past the last tile the box can show, since the arrows walk the cursor
-	// and the box only follows it out of sight. Ten fit where two cards did.
+	// Turned past what the box shows, by the wheel over it.
 	walked := w
 	for range w.ServingRows() + 2 {
-		walked = walked.Key("down")
+		walked = walked.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, SubHeight)
 	}
 	scrolled := drawn(t, walked)
 	if painted(scrolled, high, Dark().Edge) == painted(shot, high, Dark().Edge) {
@@ -1149,7 +1125,7 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 	w = w.Key("tab")
 	w = w.clicked(goalMiddle(w, 1)).Key("enter")
 
-	frame := ServingBox(Over(w.width, w.height), w.Shown())
+	frame := BesideBox(Over(w.width, w.height))
 	shot := drawn(t, w)
 	if painted(shot, Inside(frame), Dark().Faint) == 0 {
 		t.Error("the box says nothing where an objective nothing serves should say so")
@@ -1352,65 +1328,6 @@ func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
 	}
 }
 
-// The last part can be marked done, which is the far end of the cursor's walk.
-func TestMarking_reachesTheLastPart(t *testing.T) {
-	w := openOnAParent(t, 3)
-	for range 5 {
-		w = w.walkingUnder(1)
-	}
-	w = w.Key("space")
-	var asked *asked
-	for i, one := range w.work.(*fake).asked {
-		if one.op.Thing == engine.TaskEdit.Thing && one.op.Verb == engine.TaskEdit.Verb {
-			asked = &w.work.(*fake).asked[i]
-		}
-	}
-	if asked == nil {
-		t.Fatal("marking the last part asked nothing")
-	}
-	if got := asked.in.Given["number"]; got != "4" {
-		t.Errorf("it marked task %s, want the last part", got)
-	}
-}
-
-// Scrolling a description changes what is drawn in its box. Asked of the
-// pixels and not of a pure function: what the scenarios read is the decision,
-// and a detail that stopped drawing the description through drawSaying would
-// leave every one of them green.
-func TestADescriptionDrawsWhereItWasScrolledTo(t *testing.T) {
-	f := newFake()
-	said := make([]string, 30)
-	for i := range said {
-		said[i] = fmt.Sprintf("Ligne %d de ce que la tâche raconte, assez longue", i+1)
-	}
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo",
-		Description: strings.Join(said, "\n")})
-	w = w.doubleClicked(middleOf(w, 1, 0))
-	at, long := LongField(w.Shown())
-	if !long {
-		t.Fatal("the open task shows no description")
-	}
-	box := Inside(SayingBox(Over(w.width, w.height), w.Shown(), at))
-
-	first := drawn(t, w)
-	moved := drawn(t, w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, 5*lineHigh))
-	if same(first, moved, box) {
-		t.Error("scrolled by five lines, the description drew the same thing")
-	}
-}
-
-// same says whether two shots carry the same pixels inside a box.
-func same(a, b *image.RGBA, in Box) bool {
-	for y := in.Y; y < in.Y+in.H; y++ {
-		for x := in.X; x < in.X+in.W; x++ {
-			if a.RGBAAt(x, y) != b.RGBAAt(x, y) {
-				return false
-			}
-		}
-	}
-	return true
-}
-
 // The marks are drawn, and only where there are marks. Asked of the pixels in
 // the room beside a card's number: a card carrying nothing leaves it empty,
 // and one carrying something does not.
@@ -1549,7 +1466,7 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	shot := drawn(t, w)
-	box := FormOver(w.width, w.height, w.Form().Fields())
+	box := w.formBox()
 	for i, field := range w.Form().Fields() {
 		if field.Name != "labels" && field.Name != "column" {
 			continue

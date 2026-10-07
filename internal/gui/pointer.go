@@ -131,16 +131,13 @@ func (w Window) DoubleClick(p Point) Window {
 		}
 		return w
 	}
-	// On an open task it holds the word it lands on, and in a field of the
+	// In a field of the form it holds the word it lands on, and beside the
 	// form the same: every piece of text written can be held and copied.
-	if w.screen == OnDetail {
-		return w.word(p)
-	}
 	if w.screen == OnForm {
 		if at, on := w.fieldAt(p); on {
 			return w.holdingBy(at, p, Words)
 		}
-		return w
+		return w.word(p)
 	}
 	// The same two screens a single click answers on, for the same reason: a
 	// search leaves the board showing, so a card under the pointer is a card.
@@ -158,11 +155,11 @@ func (w Window) DoubleClick(p Point) Window {
 // TripleClick holds the paragraph under the pointer, on an open task and in a
 // field of the form: the third press of the gesture every text answers.
 func (w Window) TripleClick(p Point) Window {
-	if w.screen == OnDetail {
-		return w.paragraph(p)
-	}
 	if at, on := w.fieldAt(p); on {
 		return w.holdingBy(at, p, Paragraphs)
+	}
+	if w.screen == OnForm {
+		return w.paragraph(p)
 	}
 	return w
 }
@@ -185,28 +182,6 @@ func (w Window) holdingBy(at int, p Point, by Unit) Window {
 // whether this is a click or a drag.
 func (w Window) PressAt(p Point) Window {
 	w.pressed, w.pressedOn = true, w.screen
-	if w.screen == OnDetail {
-		w.draggingBar = HistoryBar(Over(w.width, w.height)).In(p)
-		w.draggingServing = ServingBar(Over(w.width, w.height), w.Shown()).In(p)
-		if at, long := LongField(w.Shown()); long {
-			w.draggingSaying = SayingBar(Over(w.width, w.height), w.Shown(), at).In(p)
-		}
-		// A tile is taken hold of the way a card is: solidary with its parent
-		// does not mean fixed among its sisters, and the order is what says
-		// which part is wanted first.
-		if at, on := w.tileUnder(p); on {
-			w.held = Held{Number: w.Under()[at].Number, From: p, At: p}
-			w.underAt = at
-			w.picked = Picked{}
-			return w
-		}
-		if w.draggingBar || w.draggingServing || w.draggingSaying {
-			return w
-		}
-		// Anywhere else on the panel, a press is where a run of its text may
-		// be held from.
-		return w.picking(p)
-	}
 	// A press in a field is where a run of text may be held from, so the caret
 	// goes where the press landed and not to the field's end: the end is where
 	// somebody arriving at a field types, and this one is not arriving.
@@ -222,9 +197,17 @@ func (w Window) PressAt(p Point) Window {
 			return w
 		}
 		if at, on := w.fieldAt(p); on {
+			w.picked = Picked{}
 			return w.holdingBy(at, p, Characters).inSightOfTheCaret()
 		}
-		return w
+		// Beside a form opened on something already there: the bar of that
+		// column is taken hold of, and anywhere else is where a run of what it
+		// writes may be held from.
+		if !w.form.Adding && BesideBar(w.formPanel()).In(p) {
+			w.draggingBar, w.draggingServing = !w.form.ForObjective, w.form.ForObjective
+			return w
+		}
+		return w.picking(p)
 	}
 	if w.screen != OnTheBoard {
 		return w
@@ -242,7 +225,7 @@ func (w Window) PressAt(p Point) Window {
 // MoveTo follows the pointer, and past Grip says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
 	if w.draggingBar {
-		track := HistoryBar(Over(w.width, w.height))
+		track := BesideBar(Over(w.width, w.height))
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
@@ -273,8 +256,8 @@ func (w Window) MoveTo(p Point) Window {
 	if w.draggingServing {
 		// Counted in tiles and settled in pixels, since that box is scrolled
 		// by pixels and not by lines.
-		track := ServingBar(Over(w.width, w.height), w.Shown())
-		room := max(1, ServingBox(Over(w.width, w.height), w.Shown()).H/SubHeight)
+		track := BesideBar(Over(w.width, w.height))
+		room := max(1, BesideBox(Over(w.width, w.height)).H/SubHeight)
 		w.serving = w.settledServing(Reached(track, len(w.Under()), room, p) * SubHeight)
 		return w
 	}
@@ -319,17 +302,6 @@ func (w Window) LetGo(p Point) Window {
 		w.held = Held{}
 		return w
 	}
-	if w.screen == OnDetail {
-		if w.held.Moved {
-			return w.droppedUnder(p)
-		}
-		// Nothing was dragged, so this is a click, and it goes where every
-		// other click goes. Answered here instead, it left the panel deaf to
-		// the mouse — which is the fault the comment below was written about,
-		// made again on a screen it did not name.
-		w.held = Held{}
-		return w.Click(p)
-	}
 	held := w.held
 	w.held = Held{}
 	if held.Number != 0 && held.Moved {
@@ -371,9 +343,19 @@ func (w Window) wheeling(by int, p Point, now time.Time) Window {
 func (w Window) Scroll(p Point, by int) Window {
 	// A panel stops the wheel. Over a form, the help or the question it used to
 	// reach the board behind, and scrolled something nobody could see. What
-	// it reaches on a form is the long field the keyboard is on, the way it
-	// reaches the description on an open task.
+	// it reaches on a form is the long field the keyboard is on, and the
+	// column beside a form opened on something already there: a task's
+	// history, or the work serving an objective.
 	if w.screen == OnForm {
+		if !w.form.Adding && BesideBox(w.formPanel()).In(p) {
+			if w.form.ForObjective {
+				w.serving = w.settledServing(w.serving + by)
+				return w
+			}
+			lines, left := turning(w.spareHistory, by)
+			w.history, w.spareHistory = w.settledHistory(w.history+lines), left
+			return w
+		}
 		return w.scrollingSaying(p, by)
 	}
 	if w.screen == OnHelp || w.screen == OnAsking {
@@ -386,18 +368,6 @@ func (w Window) Scroll(p Point, by int) Window {
 			w.choosingFrom, w.spareChoosing = w.settledChoosing(w.choosingFrom+lines), left
 		}
 		return w
-	}
-	if w.screen == OnDetail {
-		// The panel is over the board, so the wheel over it moves the history
-		// and never a column behind it.
-		if HistoryBox(Over(w.width, w.height)).In(p) {
-			lines, left := turning(w.spareHistory, by)
-			w.history, w.spareHistory = w.settledHistory(w.history+lines), left
-		}
-		if ServingBox(Over(w.width, w.height), w.Shown()).In(p) {
-			w.serving = w.settledServing(w.serving + by)
-		}
-		return w.scrollingSaying(p, by)
 	}
 	l := w.Layout()
 	if w.tab == Objectives {

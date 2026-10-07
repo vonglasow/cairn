@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
 )
 
 // Where the parts of the board itself go: the tabs, the lanes, the
@@ -193,37 +192,9 @@ func StampedOver(stamp string) int {
 	return (len([]rune(stamp)) + 2) * perSmallGlyph
 }
 
-// GhostBody is the shape a thing in hand is drawn in: a card's own on the
-// board, a tile's under an open task. What is carried is drawn where it would
-// be drawn if it were put down — a ghost laid out any other way is a ghost
-// that lies about where the thing will go.
-func GhostBody(screen Screen, ghost Box) Box {
-	if screen == OnDetail {
-		return SubPanel(ghost)
-	}
-	return ghost
-}
-
 // PastStamp is where what was done is written on a history line: past the time
 // it happened, and no wider than what is left of the line.
 func PastStamp(box Box, stamp string) Box {
 	over := StampedOver(stamp)
 	return Box{X: box.X + over, Y: box.Y, W: box.W - over, H: box.H}
-}
-
-// GhostSays is what a thing in hand writes, where it writes it, and at what
-// size: a card's title in a card's own box, a tile's one line in a tile's.
-//
-// What is carried is drawn the way it is drawn where it came from. A card puts
-// its title 28 points down and a tile is 22 high, so a card's layout put a
-// tile's writing past the bottom of the ghost and onto whatever was behind it.
-//
-// Cutting the tile's line to the room there is happens where it is drawn: the
-// font is proportional, so what fits is measured where there is something to
-// measure with.
-func GhostSays(screen Screen, ghost Box, c reading.Card) (Box, string, int) {
-	if screen == OnDetail {
-		return SubWriting(ghost), SubLine(c), small
-	}
-	return PartsOf(ghost).Title, TitleOf(c.Title, ghost.W), plain
 }

@@ -41,7 +41,7 @@ afternoon to spend:
 - [The window](#the-window)
 - [The mouse](#the-mouse)
 - [The form](#the-form)
-- [The detail](#the-detail)
+- [An open task](#an-open-task)
 - [How it is tested](#how-it-is-tested)
 - [Deliberately not there yet](#deliberately-not-there-yet)
 
@@ -184,7 +184,7 @@ to be true.
 ## The mouse
 
 A click chooses a card, or changes tab when it lands on one. A double-click
-opens a card's detail. The wheel scrolls the column, or the lane, under the
+opens it to be edited. The wheel scrolls the column, or the lane, under the
 pointer.
 
 **Only the primary button acts.** A right click, a middle click or a side
@@ -222,8 +222,8 @@ nothing. That is the whole of the exception — everywhere else on the board a
 click does what it always did.
 
 The guard that swallowed them was right about panels and wrong about this:
-a detail, a form or the help is drawn *over* the board, and a click reaching
-through one is how an open detail came to show something nobody asked it for.
+a form, a question or the help is drawn *over* the board, and a click reaching
+through one is how an open task came to show something nobody asked it for.
 A search is not drawn over anything. Reading "not the board" as "a panel over
 the board" is what made one rule cover two unlike things.
 
@@ -519,10 +519,10 @@ What a key is *called* and how the bar *writes* it are two functions.
 it into `⌘N`, because a bar reading out `cmd+n` is reading out a name meant for
 a program.
 
-**The description scrolls, and says so.** On the detail it is read rather than
-written, so nothing follows a caret and the four rows its box holds were the
-whole of what a long description could ever show — the rest was clipped, with
-nothing on screen saying it was there. It now takes the wheel and carries a bar
+**The description scrolls, and says so.** Read rather than written, nothing
+follows a caret, and the rows its box holds were the whole of what a long
+description could ever show — the rest was clipped, with nothing on screen
+saying it was there. It now takes the wheel and carries a bar
 beside it, reusing the history's `Thumb` and window rather than growing a
 second scrolling mechanism. The bar is drawn whether or not there is anything
 to scroll, by the same rule the history goes by.
@@ -714,22 +714,26 @@ be embedded. Drawn and looked at, nine of the ten render; only `⚑` comes out a
 empty box, and a window has no use for it. Measurements go stale — this one had
 been true enough to stop the work.
 
-## The detail
+## An open task
 
-The panel a task opens into, with `enter` or a double click. Two columns:
-what the task carries on the left, in the same boxes the form writes into, and
-its history on the right.
+A task opens to be edited, with `enter` or a double click: its form, and
+beside the form what was done to it. There used to be a panel to read a task
+in and a form to change it, one gesture apart; a task is opened to be worked
+on, and the second gesture was a gesture spent for nothing. A form nobody typed
+into is put away by `esc` or a click off it, the way the reading panel was.
 
-**Two columns and not one above the other.** Stacked, twelve framed fields take
-nearly the whole panel at the smallest window this board draws in, and the
-history gets what is left — which is nothing. Beside them it has the panel's
-full height at every size.
+**Two columns and not one above the other.** The fields take the left five
+eighths — in the narrowest window this board draws in, room for two short
+fields to a line — and the column beside them has the panel's full height at
+every size. Stacked, the history got what twelve framed fields left, which is
+nothing. A form being *added* has no history and takes the whole width, cut to
+what it holds.
 
-The history **scrolls**, by the wheel over it, by `↑↓`, or by pulling the bar
-beside it. It is counted in lines and not in acts, because an act wraps onto as
-many lines as it needs and a history that jumped an act at a time would skip
-past what it wrapped. Acts are told **the last done first**, one straight
-after another: each begins with when it was done, which is what says where it
+The history **scrolls**, by the wheel over it or by pulling the bar beside
+it. It is counted in lines and not in acts, because an act wraps onto as many
+lines as it needs and a history that jumped an act at a time would skip past
+what it wrapped. Acts are told **the last done first**, one straight after
+another: each begins with when it was done, which is what says where it
 starts. They used to be told oldest first with a blank line between two of
 them, which put what was just done at the bottom of a box opened at its top,
 and read as an empty line between every line of a history whose acts each fit
@@ -740,71 +744,46 @@ and goes is a bar somebody reaches for and does not find. Its grip says two
 things at once — how tall it is, how much of the history is showing; where it
 sits, which part — and it is never drawn smaller than can be taken hold of.
 
-**What is under a thing is drawn in one box**, under the fields of whatever is
-open: the tasks that serve an objective, or the tasks hanging under a parent.
-One box and one question — what is under this — with the heading saying which
-was asked, `WHAT SERVES IT` or `WHAT HANGS UNDER IT`. Calling both by one word
-would make the box say less than it knows.
+**The description takes the wheel wherever the keyboard is.** It is what a
+task is opened to read, and a description reached only once the keyboard had
+been put on it was one somebody reading could not scroll.
 
 **Where what was written about it elsewhere lives is said at its foot**, beside
 the offers: `context  ~/.cairn/notes/14`, faint, and held and copied like any
-other text. Not among the fields, which is where it was first put: the place is
-not something the task carries, and a thirteenth field took a row from the box
-of its parts — measured at 1200 by 800, three tiles down to two. The foot had
-the room and lost nothing to it. See [context.md](context.md).
+other text. Not among the fields: the place is not something the task carries.
+See [context.md](context.md).
 
-**Every piece of text an open task writes can be held and copied** — its
-heading, the name and the value of every field, the description, the box under
-it and each part in it, the history and each of its lines. A drag across it
-holds a run, a double click holds a word, `⌘A` holds the whole of the text last
-pressed in, and `⌘C` copies. A part is the exception for the drag, which still
-moves it among its sisters; a double click holds a word of it.
-
-A window draws text as shapes, and nothing said where a shape's letters were.
-`Readables` now lists every piece of text an open task writes, once, laid out
-the way it is drawn, and what a pointer lands on and what is painted held are
-both worked out from it. A field of the form holds a word on a double click too.
+**Every piece of text beside the form can be held and copied**, the way what is
+in its fields can — the history's head and each of its lines, and the place of
+the notes. A drag across it holds a run, a double click holds a word, `⌘A`
+holds the whole of the text last pressed in, and `⌘C` copies. `Readables` lists
+every piece of it, once, laid out the way it is drawn, and what a pointer lands
+on and what is painted held are both worked out from it.
 
 A piece of text answers the pointer inside the box it is drawn in, and nowhere
 else. It used to answer over every line from the first in sight, drawn or not,
 so a long description reached down to the foot of the panel: the place of the
-notes could not be held, and `Edit` and `Close` took a press as the start of a
-run rather than as a click.
+notes could not be held, and the offers took a press as the start of a run
+rather than as a click.
 
-**What is left reads first, and reads as left.** A part carries a box before
-its name — empty, or filled and ticked — and what is left is written in the
-reading ink while what is done is faint and struck through; what is left comes
-first, what is done after, each in the order it was put in. The heading counts
-both: `WHAT HANGS UNDER IT   2 to do · 1 done`. The ink used to be the only
-difference, and the other way round — done bright, to do faint — so a part to
-do read as one finished with. A box is read by its shape, without comparing two
-greys. The terminal says the same with `[ ]` and `[x]`, the marks the form's
-own field writes.
+**What hangs under a task is the last thing its form holds**, drawn as tiles
+to tick while the keyboard is elsewhere. A part carries a box before its name
+— empty, or filled and ticked — and what is left is written in the reading ink
+while what is done is faint and struck through; what is left comes first, what
+is done after, each in the order it was put in. A box is read by its shape,
+without comparing two greys. The arrows, the space bar and the drag that
+changed a part on the reading panel went with it: a part is changed on its
+lines, and saved with the rest.
 
-An objective nothing serves says so; a task nothing hangs under says nothing.
-Most tasks have no sub-tasks, and a line saying so on every one of them stops
-being read by the third time.
+**An objective opens on the work that serves it**, beside its form, headed
+`WHAT SERVES IT`: an objective has no history of its own — the trace is kept
+of tasks — and what serves it is the question it is opened to answer. Each is
+a tile of one line, scrolled by the wheel over the column or by the bar beside
+it. An objective nothing serves yet says so in as many words — an empty frame
+reads as a box that failed to load rather than as a question nobody has
+answered yet.
 
-A task's twelve fields leave that box far less room than an objective's seven:
-120 pixels against 280 at the smallest window this board draws in, which is one
-card against two. It grows with the window, and the remedy if it proves too
-tight is to move the list rather than to shrink what it holds.
-
-**An objective opens on the work that serves it**, in that box, headed
-`WHAT SERVES IT`. They are drawn as **cards** — the same cards the board
-draws, at the same height, scrolled a card at a time by the wheel over them or
-by `↑↓`, with a bar beside them. A run of text lines was what it did first, and
-it made the one place that lists tasks the one place a task does not look like
-a task.
-
-The right column stays the history's. Taking it for an objective was the other
-way round, and it cost every task the thing that column was built for; an
-objective carries one line there saying it has no history of its own, because
-the trace is kept of tasks. An objective nothing serves yet says so in the box
-in as many words — an empty frame reads as a box that failed to load rather
-than as a question nobody has answered yet.
-
-It opened on a history before, and on the wrong one: the panel asked for the
+It once opened on a history, and on the wrong one: the panel asked for the
 trace of the chosen number without asking which kind of thing carried it, so
 opening objective 1 showed whatever had happened to *task* 1 — a stranger's
 history, presented as the objective's. Measured, not reasoned about.
@@ -865,5 +844,5 @@ would become the one the gates cannot reach.
 
 ## Deliberately not there yet
 
-- **A permanent detail panel**, which the extra room would allow and which
-  would stop this being the same board.
+- **A task open beside the board for good**, which the extra room would allow
+  and which would stop this being the same board.

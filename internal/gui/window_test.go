@@ -48,7 +48,7 @@ func TestADoubleClickOpensTheDetail(t *testing.T) {
 	w := holding(f, card(1, "Write the spec", "todo"))
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the window is on %v, want the detail", w.Screen())
 	}
 	if w.Chosen() != 1 {
@@ -252,7 +252,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 	})
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	shown := w.Shown()
+	shown := w.Form().Fields()
 	if len(shown) == 0 {
 		t.Fatal("the detail shows nothing of the task")
 	}
@@ -277,7 +277,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.Shown(); len(got) != 0 {
+	if got := w.Form().Fields(); len(got) != 0 {
 		t.Errorf("a board with no detail open shows %d fields", len(got))
 	}
 }
@@ -299,7 +299,7 @@ func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 	for at, want := range map[int]int{0: 3, 1: 4} {
 		box := GoalAt(w.Layout(), at, 0)
 		got := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
-		if got.Screen() != OnDetail {
+		if got.Screen() != OnForm {
 			t.Fatalf("double-clicking objective %d left the window on %v", at, got.Screen())
 		}
 		if got.Chosen() != want {
@@ -332,16 +332,16 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen())
 	}
 
-	// The bar still answers: it is what closes the panel.
+	// The panel's own offers answer: they are what closes it.
 	for i, offer := range w.Offers() {
-		if offer != "Close" {
+		if offer != "Cancel" {
 			continue
 		}
-		box := OfferAt(w.Layout(), i)
+		box := PanelOfferAt(w.panel(), i)
 		w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	}
 	if w.Screen() != OnTheBoard {
-		t.Fatalf("Close left the window on %v", w.Screen())
+		t.Fatalf("Cancel left the window on %v", w.Screen())
 	}
 }
 
@@ -369,7 +369,7 @@ func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	box := GoalAt(w.Layout(), 0, 0)
 	w = w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 
-	shown := w.Shown()
+	shown := w.Form().Fields()
 	if len(shown) == 0 {
 		t.Fatal("an objective's detail shows nothing")
 	}
@@ -398,7 +398,7 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	w.tab = Objectives
 	box := GoalAt(w.Layout(), 0, 0)
 	goal := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
-	if got := goal.Shown(); len(got) == 0 || got[0].Value != "Ship cairn" {
+	if got := goal.Form().Fields(); len(got) == 0 || got[0].Value != "Ship cairn" {
 		t.Errorf("the detail of objective 1 shows %v", got)
 	}
 	if goal.Edit().Form().ForObjective != true {
@@ -408,7 +408,7 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	// On the tasks tab, the task.
 	w.tab = Tasks
 	task := w.doubleClicked(middleOf(w, 0, 0))
-	if got := task.Shown(); len(got) == 0 || got[0].Value != "Write the spec" {
+	if got := task.Form().Fields(); len(got) == 0 || got[0].Value != "Write the spec" {
 		t.Errorf("the detail of task 1 shows %v", got)
 	}
 	if task.Edit().Form().ForObjective {
@@ -500,15 +500,10 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
 	on := w.clicked(middleOf(w, 1, 0))
-	// The title goes with the number on an open task: the line was empty, it
-	// holds ninety-nine characters at the smallest window, and the field below
-	// it cuts a title at thirty.
-	if got := Heads(on.Key("enter")); got != "task 7 · Write the spec" {
-		t.Errorf("an open task is headed %q", got)
-	}
-	// Not while it is being edited: the title is in the field being typed
-	// into, and a heading repeating it would go stale between two keystrokes.
-	if got := Heads(on.Choose("Edit")); got != "task 7" {
+	// An open task is being edited, and its heading is its number: the title
+	// is in the field being typed into, and a heading repeating it would go
+	// stale between two keystrokes.
+	if got := Heads(on.Key("enter")); got != "task 7" {
 		t.Errorf("a task being edited is headed %q", got)
 	}
 	if got := Heads(on.Choose("Delete")); got != "Delete task 7?" {
@@ -590,7 +585,7 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	}
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	over := HistoryBox(Over(w.width, w.height))
+	over := BesideBox(Over(w.width, w.height))
 	at := Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
 
 	if got := w.Scroll(at, 3*lineHigh).History(); got != 3 {
@@ -818,15 +813,14 @@ func TestEveryBarCanBePulled(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 
 	box := Over(w.width, w.height)
-	at, _ := LongField(w.Shown())
+	_, saying, _, _, _ := w.sayingOn()
 	for _, c := range []struct {
 		what  string
 		track Box
 		read  func(Window) int
 	}{
-		{"the history", HistoryBar(box), func(w Window) int { return w.History() }},
-		{"the description", SayingBar(box, w.Shown(), at), func(w Window) int { return w.Saying() }},
-		{"what hangs under it", ServingBar(box, w.Shown()), func(w Window) int { return w.ServingAt() }},
+		{"the history", BesideBar(box), func(w Window) int { return w.History() }},
+		{"the description", saying, func(w Window) int { return w.Saying() }},
 	} {
 		middle := Point{X: c.track.X + c.track.W/2, Y: c.track.Y + 4}
 		far := Point{X: middle.X, Y: c.track.Y + c.track.H + 999}
@@ -972,33 +966,6 @@ func onLaneCard(w Window, lane, at int) Point {
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-// The bar beside the work under a task can be pulled, and pulling it to the
-// bottom brings the last tile into the box rather than somewhere near it.
-func TestPullingTheBarUnderATaskReachesTheLastTile(t *testing.T) {
-	f := newFake()
-	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo"}}
-	for i := 2; i <= 30; i++ {
-		cards = append(cards, reading.Card{
-			Number: i, Title: "Part " + strconv.Itoa(i), State: "todo", Parent: 1})
-	}
-	w := holding(f, cards...)
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Cancel()
-	w = w.DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
-		t.Fatalf("the task did not open: %v", w.Screen())
-	}
-	last := len(w.Under()) - 1
-	track := ServingBar(Over(w.width, w.height), w.Shown())
-	w = w.PressAt(Point{X: track.X + track.W/2, Y: track.Y + 1}).
-		MoveTo(Point{X: track.X + track.W/2, Y: track.Y + track.H - 1})
-	box := ServingBox(Over(w.width, w.height), w.Shown())
-	tile := w.ServingCardAt(last)
-	if tile.Y+tile.H > box.Y+box.H || tile.Y < box.Y {
-		t.Fatalf("the last tile sits at %d..%d, outside the box %d..%d",
-			tile.Y, tile.Y+tile.H, box.Y, box.Y+box.H)
-	}
-}
-
 // Scrolling a description to the end shows its last line. It did not: the end
 // of the scroll was worked out from the text laid out on one width and the text
 // was drawn on another, a few points narrower — so what was drawn ran longer
@@ -1010,7 +977,7 @@ func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
 	}
 	frame, _, lines, rows, ok := w.sayingOn()
@@ -1038,9 +1005,9 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 		reading.Card{Number: 2, Title: "Short", State: "todo", Description: "PREMIERE LIGNE"})
 	// Read the long one to its end, and put it away.
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
-	_, _, lines, _, _ := w.sayingOn()
+	frame, _, lines, _, _ := w.sayingOn()
 	for range len(lines.Said) {
-		w = w.Key("cmd+d")
+		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
 	}
 	if w.Saying() == 0 {
 		t.Fatal("this proves nothing: the long description was not scrolled")
@@ -1048,7 +1015,7 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	w = w.Cancel()
 	// The short one opens on its first line.
 	w = w.clicked(middleOf(w, 1, 1)).DoubleClick(middleOf(w, 1, 1))
-	if w.Screen() != OnDetail || w.Chosen() != 2 {
+	if w.Screen() != OnForm || w.Chosen() != 2 {
 		t.Fatalf("the short task did not open: %v on %d", w.Screen(), w.Chosen())
 	}
 	if got := w.Saying(); got != 0 {

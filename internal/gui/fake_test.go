@@ -202,3 +202,16 @@ func formRows(box Box, fields []reading.Field, at int) int {
 	_, _, rows := FormPlace(box, fields, at)
 	return rows
 }
+
+// wrote is what the window asked that changes something. Opening a form reads
+// the history of what it is opened on, and a test asking whether a gesture
+// wrote anything is not asking whether it read.
+func (f *fake) wrote() []asked {
+	var changed []asked
+	for _, a := range f.asked {
+		if a.op.Level != engine.Read {
+			changed = append(changed, a)
+		}
+	}
+	return changed
+}

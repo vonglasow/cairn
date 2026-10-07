@@ -43,12 +43,6 @@ func HeadsOn(w Window, screen Screen) string {
 			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
 		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
-	case OnDetail:
-		// The whole title, on the line beside the number. It is the one line
-		// on the panel that was empty, it holds ninety-nine characters at the
-		// smallest window this board draws in, and the title is what somebody
-		// opened the task to read — the field below it cuts at thirty.
-		return headed(w.kind()+" "+strconv.Itoa(w.chosen), w.titled())
 	case OnForm:
 		if w.form.Adding {
 			return "New " + w.formKind()
@@ -65,26 +59,6 @@ func (w Window) kind() string {
 		return "objective"
 	}
 	return "task"
-}
-
-// titled is the title of whatever is open, read off the fields it shows so a
-// task and an objective answer the same way.
-func (w Window) titled() string {
-	for _, field := range w.Shown() {
-		if field.Arg == "title" {
-			return field.Value
-		}
-	}
-	return ""
-}
-
-// headed joins a head to what it is about, and is the head alone when there is
-// nothing to join.
-func headed(head, about string) string {
-	if about == "" {
-		return head
-	}
-	return head + " · " + about
 }
 
 func (w Window) formKind() string {
@@ -137,8 +111,6 @@ func Shortcut(offer string) string {
 		// line in a field with room for one. ⌘⏎ saves wherever the keyboard
 		// is, which is what the bar says.
 		return "cmd+enter"
-	case "done":
-		return "space"
 	case "close", "cancel", "clear", "throw away":
 		return "esc"
 	case "back":
@@ -183,8 +155,6 @@ func (w Window) Helping() []Said {
 		{Key: "drag", Means: "move it — the column it lands in is its new state"},
 		{Key: "drag into a lane", Means: "blocked, watching or paused"},
 		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a history"},
-		{Key: "↑↓ under a task", Means: "walk what hangs under it"},
-		{Key: "space under a task", Means: "mark the part the keyboard is on done, or not"},
 		{Key: "wheel on a history", Means: "scroll it — the bar beside it can be pulled too"},
 		{Key: "on an open task", Means: "every text can be held: drag across it, double-click a word, triple-click a paragraph — ⌘A holds it all, ⌘C copies"},
 		{Key: "^D ^U on an open task", Means: "walk its description half a box at a time — the wheel and the bar do too"},
@@ -244,14 +214,6 @@ func (w Window) Offers() []string {
 			offers = append(offers, "Recover")
 		}
 		return offers
-	case OnDetail:
-		// Done only where there is a part to mark. The bar is where a key is
-		// looked for, so it says what space does exactly where space does it,
-		// and says nothing of it on a task nothing hangs under.
-		if len(w.Under()) > 0 && !w.chosenGoal {
-			return []string{"Done", "Edit", "Close"}
-		}
-		return []string{"Edit", "Close"}
 	case OnAsking:
 		// Leaving a form is answered the way a hand leaving it answers: esc
 		// again throws it away — set aside, not lost — and enter goes back.

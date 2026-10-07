@@ -33,7 +33,6 @@ framed four    x=320   y=74    w=702   h=80
 inside four    x=324   y=78    w=694   h=72
 context name   x=504   y=695   w=64    h=18
 context path   x=568   y=695   w=470   h=18
-field top 1    x=150   y=148   w=1     h=1
 sub panel      x=100   y=200   w=400   h=22
 sub writing    x=132   y=202   w=356   h=18
 choosing over  x=262   y=149   w=675   h=499
@@ -45,23 +44,16 @@ choosing run   x=274   y=223   w=635   h=369
 choosing bar   x=915   y=223   w=10    h=369
 choosing thumb at the top x=915   y=223   w=10    h=125
 choosing thumb at the end x=915   y=467   w=10    h=125
-serving head   x=162   y=520   w=516   h=18
-serving box    x=162   y=544   w=500   h=132
-serving bar    x=668   y=544   w=10    h=132
 counted at     x=502   y=98    w=80    h=18
-saying box     x=320   y=144   w=342   h=80
-saying bar     x=668   y=144   w=10    h=80
-saying thumb at the top x=668   y=144   w=10    h=24
-saying thumb at the end x=668   y=200   w=10    h=24
-history head   x=702   y=116   w=336   h=18
-history box    x=702   y=140   w=320   h=536
-history bar    x=1028  y=140   w=10    h=536
+beside head    x=724   y=116   w=314   h=18
+beside box     x=724   y=140   w=298   h=536
+beside bar     x=1028  y=140   w=10    h=536
 thumb at the top x=1028  y=140   w=10    h=53
 thumb halfway  x=1028  y=381   w=10    h=53
 thumb at the end x=1028  y=623   w=10    h=53
-line 0         x=706   y=144   w=312   h=18
-line 3 of 2    x=706   y=162   w=312   h=18
-caret          x=746   y=162   w=2     h=18
+line 0         x=728   y=144   w=290   h=18
+line 3 of 2    x=728   y=162   w=290   h=18
+caret          x=768   y=162   w=2     h=18
 panel offer 0  x=162   y=688   w=110   h=32
 panel offer 1  x=272   y=688   w=110   h=32
 form name title x=162   y=116   w=0     h=18
@@ -70,8 +62,8 @@ form rows title x=0     y=0     w=0     h=1
 form name description x=162   y=148   w=876   h=18
 form value description x=162   y=176   w=876   h=18
 form rows description x=0     y=0     w=0     h=4
-form name column x=258   y=264   w=76    h=18
-form value column x=334   y=264   w=176   h=18
+form name column x=234   y=264   w=76    h=18
+form value column x=310   y=264   w=184   h=18
 form rows column x=0     y=0     w=0     h=1
 form name parts x=162   y=398   w=876   h=18
 form value parts x=162   y=426   w=876   h=18

@@ -14,24 +14,24 @@ import (
 	"cairn/internal/trace"
 )
 
-// openTask is a task opened on its detail, carrying something in every place a
-// detail writes: a title, fields, a description, a part, and a history.
+// openTask is a task opened to be edited, carrying something in every place
+// the column beside its form writes: a history, and the place of its notes.
 func openTask(t *testing.T) (Window, *fake) {
 	t.Helper()
 	f := newFake()
 	f.acts = []trace.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
 		reading.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
-			Description: "Deux colonnes et une bande"},
+			Description: "Deux colonnes et une bande", Context: "/vault/1"},
 		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnDetail {
+	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
 	}
 	return w, f
 }
 
-// readable finds a piece of text the detail writes, by what it is.
+// readable finds a piece of text the column beside a form writes, by what it is.
 func readable(t *testing.T, w Window, key string) Readable {
 	t.Helper()
 	for _, r := range w.Readables() {
@@ -39,7 +39,7 @@ func readable(t *testing.T, w Window, key string) Readable {
 			return r
 		}
 	}
-	t.Fatalf("the detail writes nothing called %q", key)
+	t.Fatalf("the column beside the form writes nothing called %q", key)
 	return Readable{}
 }
 
@@ -48,22 +48,17 @@ func on(r Readable, at int) Point {
 	return Point{X: r.Box.X + at*glyphOf(r.Size), Y: r.Box.Y + lineHigh/2}
 }
 
-// TOUT TEXTE ÉCRIT DOIT ÊTRE SÉLECTIONNABLE ET COPIABLE. Every piece of text an
-// open task writes can be held, a word at a time by a double click, and copied.
-// None of it could: a window draws text as shapes, and nothing had said where
-// a shape's letters were.
+// TOUT TEXTE ÉCRIT DOIT ÊTRE SÉLECTIONNABLE ET COPIABLE. Every piece of text
+// beside an open task's form can be held, a word at a time by a double click,
+// and copied, the way what is in its fields can. None of it could: a window
+// draws text as shapes, and nothing had said where a shape's letters were.
 func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 	w, _ := openTask(t)
 	for _, c := range []struct {
 		key, word string
 	}{
-		{"heading", "task"},
-		{"name:labels", "labels"},
-		{"field:title", "Write"},
-		{"field:labels", "backend"},
-		{"field:description", "Deux"},
-		{"under", "WHAT"},
-		{"part:2", "#2"},
+		{"history", "HISTORY"},
+		{"name:context", "context"},
 	} {
 		t.Run(c.key, func(t *testing.T) {
 			r := readable(t, w, c.key)
@@ -88,10 +83,10 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 // copied with ⌘C.
 func TestARunOfAnOpenTasksTextIsHeldByDraggingAcrossIt(t *testing.T) {
 	w, _ := openTask(t)
-	r := readable(t, w, "field:title")
-	w = w.PressAt(on(r, 0)).MoveTo(on(r, 5)).LetGo(on(r, 5))
-	if got, _ := w.Key("cmd+c").Copying(); got != "Write" {
-		t.Fatalf("dragging across the first five letters copied %q", got)
+	r := readable(t, w, "field:context")
+	w = w.PressAt(on(r, 0)).MoveTo(on(r, 6)).LetGo(on(r, 6))
+	if got, _ := w.Key("cmd+c").Copying(); got != "/vault" {
+		t.Fatalf("dragging across the first six letters copied %q", got)
 	}
 	// A press that goes nowhere holds nothing, and copies nothing.
 	w = w.PressAt(on(r, 2)).LetGo(on(r, 2))
@@ -100,13 +95,13 @@ func TestARunOfAnOpenTasksTextIsHeldByDraggingAcrossIt(t *testing.T) {
 	}
 }
 
-// ⌘A holds the whole of the text last pressed in, so a description of eighty
-// lines is copied without being dragged across.
+// ⌘A holds the whole of the text last pressed in, so a line of history is
+// copied without being dragged across.
 func TestAllOfATextIsHeldAtOnce(t *testing.T) {
 	w, _ := openTask(t)
-	r := readable(t, w, "field:description")
+	r := readable(t, w, "history:0")
 	w = w.PressAt(on(r, 0)).LetGo(on(r, 0))
-	if got, _ := w.Key("cmd+a").Key("cmd+c").Copying(); got != "Deux colonnes et une bande" {
+	if got, _ := w.Key("cmd+a").Key("cmd+c").Copying(); got != r.Said {
 		t.Fatalf("⌘A then ⌘C copied %q", got)
 	}
 }
@@ -115,13 +110,13 @@ func TestAllOfATextIsHeldAtOnce(t *testing.T) {
 // shows held, on the text it belongs to and no other.
 func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 	w, _ := openTask(t)
-	r := readable(t, w, "field:labels")
+	r := readable(t, w, "name:context")
 	w = w.DoubleClick(on(r, 0))
-	if held := w.Holding("field:labels", r.Said); held.Holds() != "backend" {
-		t.Fatalf("the labels are drawn holding %q", held.Holds())
+	if held := w.Holding("name:context", r.Said); held.Holds() != "context" {
+		t.Fatalf("the name of the context is drawn holding %q", held.Holds())
 	}
-	if held := w.Holding("field:title", "Write the spec"); held.Holding() {
-		t.Fatalf("the title is drawn holding %q, though nothing was picked in it", held.Holds())
+	if held := w.Holding("history", "HISTORY"); held.Holding() {
+		t.Fatalf("the history's head is drawn holding %q, though nothing was picked in it", held.Holds())
 	}
 }
 
@@ -129,7 +124,7 @@ func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	fields := w.Form().Fields()
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, formRows(box, fields, 0)))
@@ -143,7 +138,7 @@ func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 // What is held is painted, on both ways a line is written: a field's value,
 // laid out on lines, and a line of the history, written whole.
 func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
-	for _, key := range []string{"field:labels", "history:0"} {
+	for _, key := range []string{"field:context", "history:0"} {
 		t.Run(key, func(t *testing.T) {
 			w, _ := openTask(t)
 			r := readable(t, w, key)
@@ -302,7 +297,7 @@ func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "iWi", "todo")).Measuring(m)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	fields := w.Form().Fields()
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
@@ -349,7 +344,7 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	// The caret at the end, where somebody arriving at the field types.
 	w.form = w.form.onto(0)
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	fields := w.Form().Fields()
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
@@ -366,7 +361,11 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 // A task the window was told nowhere about writes nothing at its foot: there
 // is no place to say, and a name over nothing reads as a place that failed.
 func TestAnOpenTaskToldNowhereSaysNoPlace(t *testing.T) {
-	w, _ := openTask(t)
+	w := holding(newFake(), card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	if w.Screen() != OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen())
+	}
 	if said := w.ContextSays(); said != nil {
 		t.Errorf("an open task told nowhere writes %+v", said)
 	}

@@ -56,7 +56,6 @@ func (w Window) Key(name string) Window {
 // screen's keys are read together, in one place.
 var screens = map[Screen]func(Window, string) Window{
 	OnTheBoard: Window.onBoard,
-	OnDetail:   Window.onDetail,
 	OnForm:     func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
 	OnSearch:   Window.onSearch,
 	OnChoosing: Window.inChoosing,
@@ -100,57 +99,6 @@ func (w Window) onBoard(name string) Window {
 		return w.shifting(0, -1)
 	case "shift+down":
 		return w.shifting(0, 1)
-	}
-	return w
-}
-
-// onDetail is what a key does on an open task or objective.
-func (w Window) onDetail(name string) Window {
-	switch name {
-	case "cmd+c":
-		// What is held is copied, and ⌘A holds the whole of the text last
-		// pressed in.
-		return w.copyingPicked()
-	case "cmd+a":
-		return w.all()
-	case "cmd+d", "cmd+u":
-		// Half a box at a time through the description: the terminal board's
-		// keys for it, taken here too so the same fingers work.
-		_, _, _, rows, ok := w.sayingOn()
-		if !ok {
-			return w
-		}
-		by := max(1, rows/2)
-		if name == "cmd+u" {
-			by = -by
-		}
-		w.saying = w.settledSaying(w.saying + by)
-		return w
-	}
-	// A hand on the keyboard reads a history the same way it reads a board:
-	// with the arrows, without reaching for the mouse. Over an objective they
-	// walk the work under it instead — that is the list there is to read, and
-	// the history column carries one line saying an objective has none.
-	// The box takes the arrows wherever there is one, because it is what
-	// somebody acts on: a tile is marked done, and a line of history is read
-	// rather than changed. The history keeps the wheel over it and the bar
-	// beside it.
-	if len(w.Under()) > 0 {
-		switch name {
-		case "down":
-			return w.walkingUnder(1)
-		case "up":
-			return w.walkingUnder(-1)
-		case "space":
-			return w.marking()
-		}
-		return w
-	}
-	switch name {
-	case "down":
-		w.history = w.settledHistory(w.history + 1)
-	case "up":
-		w.history = w.settledHistory(w.history - 1)
 	}
 	return w
 }
@@ -199,8 +147,16 @@ func (w Window) inForm(name string) Window {
 	case "backspace":
 		return w.back()
 	case "cmd+a":
+		// What was last pressed in: a field, or what the column beside the
+		// form writes, which holds no caret and is held all the same.
+		if w.picked.Key != "" {
+			return w.all()
+		}
 		w.form = w.form.Writes(w.form.Writing().All())
 	case "cmd+c":
+		if w.picked.Key != "" {
+			return w.copyingPicked()
+		}
 		w.copying = w.form.Writing().Holds()
 	case "cmd+x":
 		w.copying = w.form.Writing().Holds()
@@ -523,35 +479,8 @@ func (w Window) whereChosen() (column, at int) {
 }
 
 // opening is what enter does: it opens whatever the arrows walked to, the way a
-// double-click opens whatever the pointer landed on.
-func (w Window) opening() Window {
-	if w.chosen == 0 {
-		return w
-	}
-	w.screen = OnDetail
-	// Whatever is opened is opened at its top: its description, the work under
-	// it, its history. The description's scroll was left where the last task or
-	// the form had put it, so a short description opened after a long one had
-	// been read to its end showed an empty box until the wheel moved.
-	w.underAt, w.history, w.serving, w.saying = 0, 0, 0, 0
-	w.picked, w.pickingText = Picked{}, false
-	w.spareHistory, w.spareSaying = 0, 0
-	// An objective is opened on the work under it and not on a history: it has
-	// none of its own, and the number it carries belongs to a task as well —
-	// asking for the trace of that number answered with a task nobody had
-	// chosen, which is the wrong answer said confidently.
-	if w.chosenGoal {
-		w.acts = nil
-		return w
-	}
-	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
-	if err != nil {
-		w.err = err
-		return w
-	}
-	w.acts = nil
-	for _, act := range shown.Acts {
-		w.acts = append(w.acts, line(act))
-	}
-	return w
-}
+// double-click opens whatever the pointer landed on — to be edited: reading a
+// task and changing it are one screen, because a task is opened to be worked
+// on and a second gesture to start writing in it was a gesture spent for
+// nothing.
+func (w Window) opening() Window { return w.Edit() }

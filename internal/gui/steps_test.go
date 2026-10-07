@@ -216,7 +216,7 @@ func (w *world) isNotChosen(title string) error {
 }
 
 func (w *world) detailOpenOn(title string) error {
-	if w.w.Screen() != OnDetail {
+	if w.w.Screen() != OnForm {
 		return fmt.Errorf("the window is on %v", w.w.Screen())
 	}
 	return w.isChosen(title)
@@ -281,7 +281,11 @@ func titles(cards []reading.Card) []string {
 // rightColumnHead is the assertion that the history keeps its column: it is
 // what a task opens onto, and an objective must not take it away.
 func (w *world) rightColumnHead(head string) error {
-	if got := w.w.PanelHead(); got != head {
+	got := w.w.PanelHead()
+	if w.w.ChosenGoal() {
+		got = w.w.UnderHead()
+	}
+	if got != head {
 		return fmt.Errorf("the right column is headed %q, not %q", got, head)
 	}
 	return nil
@@ -296,13 +300,6 @@ func (w *world) detailShows(text string) error {
 	return fmt.Errorf("the detail does not show %q", text)
 }
 
-func (w *world) detailClosed() error {
-	if w.w.Screen() != OnTheBoard {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
-	}
-	return nil
-}
-
 func (w *world) isScrolled(column string) error {
 	at := reading.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] == w.scrolled[at] {
@@ -314,7 +311,7 @@ func (w *world) isScrolled(column string) error {
 // formFrames is where every field of the open form is drawn: its name and its
 // frame, the bar beside a long one included.
 func (w *world) formFrames() ([]Box, []Box) {
-	over := Over(w.w.width, w.w.height)
+	over := w.w.formBox()
 	fields := w.w.Form().Fields()
 	var names, frames []Box
 	for i := range fields {
@@ -331,7 +328,7 @@ func (w *world) formFrames() ([]Box, []Box) {
 }
 
 func (w *world) formFitsAboveItsOffers() error {
-	foot := FormRule(FormOver(w.w.width, w.w.height, w.w.Form().Fields())).Y
+	foot := FormRule(w.w.formPanel()).Y
 	names, frames := w.formFrames()
 	for i, frame := range frames {
 		if bottom := max(frame.Y+frame.H, names[i].Y+names[i].H); bottom >= foot {
@@ -363,7 +360,7 @@ func (w *world) formFieldsApart() error {
 // acrossTheForm says a field's frame runs from the left of the form to its
 // right, as far as any frame does, and that only the fields named are above it.
 func (w *world) acrossTheForm(name string, above []string) error {
-	over := Over(w.w.width, w.w.height)
+	over := w.w.formBox()
 	fields := w.w.Form().Fields()
 	// The frames alone, without a long field's bar: it sits in a margin every
 	// field keeps, which is what lines the frames up.
@@ -641,15 +638,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^it says what size it needs$`, w.saysWhatItNeeds)
 	sc.Then(`^the card "([^"]*)" is chosen$`, w.isChosen)
 	sc.Then(`^the card "([^"]*)" is not chosen$`, w.isNotChosen)
-	sc.Then(`^the detail is open on "([^"]*)"$`, w.detailOpenOn)
-	sc.Then(`^the detail shows "([^"]*)"$`, w.detailShows)
-	sc.Then(`^the detail draws a card for "([^"]*)" under its fields$`, w.detailLists)
-	sc.Then(`^the detail draws no card for "([^"]*)"$`, w.detailDoesNotList)
-	sc.Then(`^the box under the fields is empty$`, w.detailSaysNothingServes)
+	sc.Then(`^"([^"]*)" is open to be edited$`, w.detailOpenOn)
+	sc.Then(`^the form shows "([^"]*)"$`, w.detailShows)
+	sc.Then(`^the work beside the form carries "([^"]*)"$`, w.detailLists)
+	sc.Then(`^the work beside the form does not carry "([^"]*)"$`, w.detailDoesNotList)
 	sc.Then(`^what hangs under it is drawn one line to a tile$`, w.servingCardsAreCards)
-	sc.Then(`^the right column is still headed "([^"]*)"$`, w.rightColumnHead)
-	sc.Then(`^the detail says nothing serves it yet$`, w.detailSaysNothingServes)
-	sc.Then(`^the detail is closed$`, w.detailClosed)
+	sc.Then(`^the column beside the form is headed "([^"]*)"$`, w.rightColumnHead)
+	sc.Then(`^the work beside the form says nothing serves it yet$`, w.detailSaysNothingServes)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
 	sc.Then(`^no field of the form reaches what it offers$`, w.formFitsAboveItsOffers)
@@ -662,11 +657,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the form groups its fields under (.+)$`, func(list string) error {
 		var got []string
-		for _, head := range FormHeads(Over(w.w.width, w.w.height), w.w.Form().Fields()) {
+		for _, head := range FormHeads(w.w.formBox(), w.w.Form().Fields()) {
 			got = append(got, head.Said)
 		}
 		if want := quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
 			return fmt.Errorf("the form groups its fields under %v, want %v", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the parts are drawn as a list to tick, "([^"]*)" first$`, func(title string) error {
+		if parts := w.w.PartsTicked(); len(parts) == 0 || parts[0].Title != title {
+			return fmt.Errorf("the parts are drawn as %v, and %q is not first", parts, title)
 		}
 		return nil
 	})
@@ -694,6 +695,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			if strings.TrimSpace(said) == "" {
 				return fmt.Errorf("line %d of the history is empty: %q", i, w.w.Lines())
 			}
+		}
+		return nil
+	})
+	sc.Then(`^every field of the form stands left of the history$`, func() error {
+		history := BesideBox(Over(w.w.width, w.w.height))
+		_, frames := w.formFrames()
+		for i, frame := range frames {
+			if frame.X+frame.W > history.X {
+				return fmt.Errorf("%q runs to %d and the history starts at %d", w.w.Form().Fields()[i].Name, frame.X+frame.W, history.X)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the work beside the form reads "([^"]*)"$`, func(want string) error {
+		var got []string
+		for _, c := range w.w.Under() {
+			got = append(got, c.Title)
+		}
+		if strings.Join(got, "|") != want {
+			return fmt.Errorf("the work beside the form reads %q, want %q", got, want)
 		}
 		return nil
 	})
@@ -760,22 +781,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Then(`^the engine was not asked "([^"]*)"$`, w.wasNotAsked)
 	sc.Step(`^I triple-click the first word of "([^"]*)" on the open task$`, func(key string) error {
-		for _, r := range w.w.Readables() {
-			if r.Key == key {
-				w.w = w.w.tripleClicked(Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2})
-				return nil
-			}
+		at, err := w.firstWordOf(key)
+		if err == nil {
+			w.w = w.w.tripleClicked(at)
 		}
-		return fmt.Errorf("the open task writes nothing called %q", key)
+		return err
 	})
 	sc.Step(`^I double-click the first word of "([^"]*)" on the open task$`, func(key string) error {
-		for _, r := range w.w.Readables() {
-			if r.Key == key {
-				w.w = w.w.DoubleClick(Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2})
-				return nil
-			}
+		at, err := w.firstWordOf(key)
+		if err == nil {
+			w.w = w.w.DoubleClick(at)
 		}
-		return fmt.Errorf("the open task writes nothing called %q", key)
+		return err
 	})
 	sc.Then(`^the box under the task is headed "([^"]*)"$`, func(want string) error {
 		if got := w.w.UnderHead(); got != want {
@@ -804,7 +821,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
-	sc.Then(`^the detail shows the field "([^"]*)"$`, w.detailShowsField)
+	sc.Then(`^the form shows the field "([^"]*)"$`, w.detailShowsField)
 	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
 		want := filepath.Join(notesRoot, strconv.Itoa(n))
 		// Written where it can be held and copied, like every text it writes.
@@ -826,7 +843,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the detail shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
+	sc.Then(`^the form shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
 	sc.Then(`^the card being dragged follows the pointer$`, w.ghostFollows)
 	sc.Then(`^the tile being dragged follows the pointer$`, w.ghostFollows)
 	// Inside the ghost and not merely somewhere: a ghost drawn with a card's
@@ -856,7 +873,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !somewhere {
 			return fmt.Errorf("nothing says where the tile would land")
 		}
-		box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+		box := BesideBox(Over(w.w.width, w.w.height))
 		if landing.X != box.X || landing.W != box.W {
 			return fmt.Errorf("it lands at %+v, and the box is %+v", landing, box)
 		}
@@ -914,39 +931,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the caret is on the second field$`, w.caretOnTheSecondField)
 	sc.Then(`^the tab "([^"]*)" says it holds (\d+)$`, w.tabHolds)
 	sc.Then(`^the form is open on task (\d+)$`, w.formOpenOnTask)
-	sc.Then(`^the tile the keyboard is on is "([^"]*)"$`, func(title string) error {
-		under, at := w.w.Under(), w.w.UnderAt()
-		if at < 0 || at >= len(under) {
-			return fmt.Errorf("the keyboard is on nothing, at %d of %d", at, len(under))
-		}
-		if under[at].Title != title {
-			return fmt.Errorf("the keyboard is on %q, not %q", under[at].Title, title)
-		}
-		return nil
-	})
-
-	// Asked of the pixels: a window that knows where the keyboard is and does
-	// not show it has not shown it.
-	sc.Then(`^the tile the keyboard is on is lit$`, func() error {
-		at := w.w.UnderAt()
-		shot, err := drawnInAStep(w.w)
-		if err != nil {
-			return err
-		}
-		on := w.w.ServingCardAt(at)
-		if painted(shot, on, Dark().Chosen) == 0 {
-			return fmt.Errorf("the tile at %d is not lit", at)
-		}
-		for other := range w.w.Under() {
-			if other == at {
-				continue
-			}
-			if got := painted(shot, w.w.ServingCardAt(other), Dark().Chosen); got != 0 {
-				return fmt.Errorf("the tile at %d is lit too, by %d pixels", other, got)
-			}
-		}
-		return nil
-	})
 
 	// Asked before the one below it, and for the same reason it exists: that
 	// one asks whether writing reaches the frame's edge, which is trivially
@@ -1189,7 +1173,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		// Asked first, because the end of a description nobody is showing is
 		// zero — and zero is where an untouched window already sits, so the
 		// question would answer yes to a gesture that did nothing at all.
-		if _, long := LongField(w.w.Shown()); !long {
+		if _, _, _, _, long := w.w.sayingOn(); !long {
 			return fmt.Errorf("no description is open: the window is on %v", w.w.Screen())
 		}
 		want := max(0, len(w.w.SaidLines())-w.w.SaidRows())
@@ -1212,12 +1196,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^a bar sits beside the description$`, func() error {
-		at, long := LongField(w.w.Shown())
+		frame, track, _, _, long := w.w.sayingOn()
 		if !long {
 			return fmt.Errorf("the open task shows no description")
 		}
-		box := Over(w.w.width, w.w.height)
-		frame, track := SayingBox(box, w.w.Shown(), at), SayingBar(box, w.w.Shown(), at)
 		if track.W <= 0 || track.H <= 0 {
 			return fmt.Errorf("the bar beside the description is %dx%d", track.W, track.H)
 		}
@@ -1275,8 +1257,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 				return fmt.Errorf("the keyboard is on %q, not on %q", fields[at].Name, name)
 			}
 			said := w.w.Form().Writing()
-			box := Inside(SayingBox(Over(w.w.width, w.w.height), fields, at))
-			line, _ := Wrapped(said.Reads(), room(box)).At(said.At)
+			_, _, lines, _, _ := w.w.sayingOn()
+			line, _ := lines.At(said.At)
 			if line+1 != want {
 				return fmt.Errorf("the caret is on line %d of %q, want line %d", line+1, name, want)
 			}
@@ -1353,7 +1335,7 @@ func (w *world) objectiveCalled(number int, title string) error {
 }
 
 func (w *world) detailShowsField(name string) error {
-	for _, field := range w.w.Shown() {
+	for _, field := range w.w.Form().Fields() {
 		if field.Name == name {
 			return nil
 		}
@@ -1362,7 +1344,7 @@ func (w *world) detailShowsField(name string) error {
 }
 
 func (w *world) detailFieldReads(name, value string) error {
-	for _, field := range w.w.Shown() {
+	for _, field := range w.w.Form().Fields() {
 		if field.Name != name {
 			continue
 		}
@@ -1497,7 +1479,7 @@ func (w *world) rowsOfField(name string) (int, error) {
 	fields := w.w.Form().Fields()
 	for i := range fields {
 		if fields[i].Name == name {
-			return formRows(Over(w.w.width, w.w.height), fields, i), nil
+			return formRows(w.w.formBox(), fields, i), nil
 		}
 	}
 	return 0, fmt.Errorf("the form has no field called %q", name)
@@ -1605,7 +1587,7 @@ func (w *world) wrapping(name string) (Lines, int, error) {
 		if field.Name != name {
 			continue
 		}
-		box := Over(w.w.width, w.w.height)
+		box := w.w.formBox()
 		value := formValue(box, fields, i)
 		fits := room(Inside(Framed(value, formRows(box, fields, i))))
 		return Wrapped(field.Value, fits), fits, nil
@@ -1639,7 +1621,7 @@ func (w *world) noLineRunsOut(name string) error {
 
 func (w *world) historyBesideTheFields() error {
 	box := Over(w.w.width, w.w.height)
-	fields, history := DetailFields(box), HistoryBox(box)
+	fields, history := FormFields(box), BesideBox(box)
 	if history.X < fields.X+fields.W {
 		return fmt.Errorf("the history starts at %d and the fields end at %d: it is under them, not beside them",
 			history.X, fields.X+fields.W)
@@ -1649,7 +1631,7 @@ func (w *world) historyBesideTheFields() error {
 
 func (w *world) historyInsideThePanel() error {
 	box := Over(w.w.width, w.w.height)
-	for what, part := range map[string]Box{"the history": HistoryBox(box), "its bar": HistoryBar(box)} {
+	for what, part := range map[string]Box{"the history": BesideBox(box), "its bar": BesideBar(box)} {
 		if part.X < box.X || part.X+part.W > box.X+box.W {
 			return fmt.Errorf("%s runs from %d to %d in a panel from %d to %d",
 				what, part.X, part.X+part.W, box.X, box.X+box.W)
@@ -1697,7 +1679,7 @@ func (w *world) servingAtTheBeginning() error {
 }
 
 func (w *world) servingAtTheEnd() error {
-	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+	box := BesideBox(Over(w.w.width, w.w.height))
 	last := len(w.w.Under())*SubHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
@@ -1775,7 +1757,7 @@ func (w *world) fieldDrawnByName(field string) error {
 		// frame; two names do.
 		fields := w.w.Form().Fields()
 		at := slices.IndexFunc(fields, func(x reading.Field) bool { return x.Name == field })
-		box := Over(w.w.width, w.w.height)
+		box := w.w.formBox()
 		value := formValue(box, fields, at)
 		frame := Framed(value, formRows(box, fields, at))
 		// Past where the numbers themselves could have ended, and inside the
@@ -1881,7 +1863,7 @@ func (w *world) formOpenOnTask(number int) error {
 // key does, so a key that does something else makes the bar a lie.
 func (w *world) everyKeyTheBarOffers() error {
 	from := w.w
-	for _, screen := range []Screen{OnTheBoard, OnDetail, OnForm, OnHelp, OnAsking} {
+	for _, screen := range []Screen{OnTheBoard, OnForm, OnHelp, OnAsking} {
 		at, err := onScreen(from, screen)
 		if err != nil {
 			return err
@@ -1910,10 +1892,8 @@ func onScreen(w Window, screen Screen) (Window, error) {
 	switch screen {
 	case OnTheBoard:
 		return w, nil
-	case OnDetail:
-		return w.Key("enter"), nil
 	case OnForm:
-		return w.Choose("Edit"), nil
+		return w.Key("enter"), nil
 	case OnHelp:
 		return w.Choose("Help"), nil
 	case OnAsking:
@@ -2079,4 +2059,21 @@ func (w *world) cardSaysInFocus(title string) error {
 			title, Numbered(c))
 	}
 	return nil
+}
+
+// firstWordOf is the point over the first character of a piece of text an open
+// task writes: one beside its form, or one of the fields it is edited in —
+// "field:description" is the description, wherever it is written.
+func (w *world) firstWordOf(key string) (Point, error) {
+	for _, r := range w.w.Readables() {
+		if r.Key == key {
+			return Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2}, nil
+		}
+	}
+	if name, ok := strings.CutPrefix(key, "field:"); ok {
+		if at, err := w.inField(name); err == nil {
+			return at(0), nil
+		}
+	}
+	return Point{}, fmt.Errorf("the open task writes nothing called %q", key)
 }

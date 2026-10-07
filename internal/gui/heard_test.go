@@ -106,7 +106,7 @@ func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	got, _, _ := framesAt(t, w, now, Point{X: int(where.X), Y: int(where.Y)}, now.Add(time.Millisecond),
 		pointer.Event{Kind: pointer.Press, Position: where, Buttons: pointer.ButtonPrimary},
 	)
-	if got.Screen() != OnDetail {
+	if got.Screen() != OnForm {
 		t.Fatalf("a second press left the window on %v", got.Screen())
 	}
 }
@@ -269,7 +269,7 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Types(" properly")
 
-	button := PanelOfferAt(FormOver(w.width, w.height, w.Form().Fields()), 0)
+	button := PanelOfferAt(w.formPanel(), 0)
 	on := f32.Pt(float32(button.X+button.W/2), float32(button.Y+button.H/2))
 
 	w, _, _ = frames(t, w,

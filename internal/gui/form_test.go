@@ -119,8 +119,8 @@ func TestCancellingWritesNothing(t *testing.T) {
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("cancelling left the window on %v", w.Screen())
 	}
-	if len(f.asked) != 0 {
-		t.Errorf("cancelling asked the store %d things", len(f.asked))
+	if len(f.wrote()) != 0 {
+		t.Errorf("cancelling asked the store %d things", len(f.wrote()))
 	}
 }
 
@@ -134,8 +134,8 @@ func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 			t.Errorf("%q left the window on %v", name, got.Screen())
 		}
 	}
-	if len(f.asked) != 0 {
-		t.Errorf("the store was asked %d things", len(f.asked))
+	if len(f.wrote()) != 0 {
+		t.Errorf("the store was asked %d things", len(f.wrote()))
 	}
 }
 
@@ -200,8 +200,8 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("escape left the window on %v", w.Screen())
 	}
-	if len(f.asked) != 0 {
-		t.Errorf("escape asked the store %d things", len(f.asked))
+	if len(f.wrote()) != 0 {
+		t.Errorf("escape asked the store %d things", len(f.wrote()))
 	}
 }
 
@@ -209,7 +209,7 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.Key("q"); got.Screen() != OnTheBoard || len(f.asked) != 0 {
+	if got := w.Key("q"); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("an unbound key did something")
 	}
 }
@@ -368,7 +368,7 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	box := FormOver(opened.width, opened.height, opened.Form().Fields())
+	box := opened.formPanel()
 	press := func(at int) Window {
 		button := PanelOfferAt(box, at)
 		return opened.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
@@ -379,9 +379,9 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 			got.Screen(), f.what("task", "edit"))
 	}
 	f.asked = nil
-	if got := press(1); got.Screen() != OnTheBoard || len(f.asked) != 0 {
+	if got := press(1); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
 		t.Errorf("Cancel on the form left the window on %v having asked %d things",
-			got.Screen(), len(f.asked))
+			got.Screen(), len(f.wrote()))
 	}
 }
 
@@ -725,8 +725,8 @@ func TestEnterDoesNotSaveTheForm(t *testing.T) {
 	if after := w.Key("enter"); after.Screen() != OnForm {
 		t.Fatalf("enter left the form: %v", after.Screen())
 	}
-	if len(f.asked) != 0 {
-		t.Fatalf("enter wrote to the store: %v", f.asked)
+	if len(f.wrote()) != 0 {
+		t.Fatalf("enter wrote to the store: %v", f.wrote())
 	}
 	if after := w.Key("cmd+enter"); after.Screen() == OnForm {
 		t.Fatal("⌘⏎ did not save the form")
@@ -850,7 +850,7 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
 		t.Fatalf("the description reads %q", said)
 	}
-	if w.Screen() != OnForm || len(f.asked) != 0 {
+	if w.Screen() != OnForm || len(f.wrote()) != 0 {
 		t.Fatalf("enter left the form on %v having asked %v", w.Screen(), f.asked)
 	}
 	// Both chords save, from anywhere in it.
@@ -1108,8 +1108,8 @@ func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	act := strings.Repeat("iiii ", 120)
 	w := holding(newFake(), card(1, "Write the spec", "todo")).Measuring(narrow)
-	w.chosen, w.screen, w.acts = 1, OnDetail, []string{act}
-	reckoned := Wrapped(act, room(Inside(HistoryBox(Over(w.width, w.height)))))
+	w.chosen, w.screen, w.acts = 1, OnForm, []string{act}
+	reckoned := Wrapped(act, room(Inside(BesideBox(Over(w.width, w.height)))))
 	if got := w.Lines(); len(got) >= len(reckoned.Said) {
 		t.Errorf("the history takes %d lines, as many as the reckoning's %d", len(got), len(reckoned.Said))
 	}
@@ -1144,5 +1144,58 @@ func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	}
 	if says := w.Choose("Edit").Types("x").Key("esc").Asks(); len(says) != 1 || !strings.Contains(says[0].Means, "brings it back") {
 		t.Errorf("the question about leaving says %+v", says)
+	}
+}
+
+// The description shows where the wheel left it while the keyboard is on
+// another field, and every other long field shows its beginning.
+func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
+	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
+	w := holding(newFake(), reading.Card{Number: 1, Title: "Ship it", State: "todo", Description: text},
+		reading.Card{Number: 2, Title: "Part", State: "todo", Parent: 1})
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	frame, _, _, _, _ := w.sayingOn()
+	w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, 3*lineHigh)
+	fields := w.Form().Fields()
+	if w.Saying() == 0 || w.scrolledOf(1) != w.Saying() || w.scrolledOf(len(fields)-1) != 0 || w.scrolledOf(0) != Follow {
+		t.Errorf("scrolled to %d, the fields show from %d, %d and %d",
+			w.Saying(), w.scrolledOf(0), w.scrolledOf(1), w.scrolledOf(len(fields)-1))
+	}
+}
+
+// Beside an open task, a triple click holds the whole of a line of history,
+// the way it holds a paragraph in a field.
+func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
+	w, _ := openTask(t)
+	r := readable(t, w, "history:0")
+	if got, _ := w.tripleClicked(on(r, 3)).Key("cmd+c").Copying(); got != r.Said {
+		t.Errorf("a triple click on a line of history copied %q, want %q", got, r.Said)
+	}
+}
+
+// Beside an open objective, the work serving it is held and copied like any
+// text, and its bar is pulled like the history's.
+func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
+	var cards []reading.Card
+	for i := range 30 {
+		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
+	}
+	w := New(newFake(), 1200, 800)
+	w.snap = reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}}
+	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
+	var parts []string
+	for _, r := range w.Readables() {
+		if strings.HasPrefix(r.Key, "part:") {
+			parts = append(parts, r.Key)
+		}
+	}
+	if len(parts) == 0 || len(parts) >= len(cards) {
+		t.Errorf("beside the objective %d of %d tiles can be held", len(parts), len(cards))
+	}
+	track := BesideBar(w.formPanel())
+	middle := Point{X: track.X + track.W/2, Y: track.Y + 4}
+	far := Point{X: middle.X, Y: track.Y + track.H + 999}
+	if pulled := w.PressAt(middle).MoveTo(far).LetGo(far); pulled.ServingAt() == 0 {
+		t.Error("pulling the bar beside the work serving an objective moved nothing")
 	}
 }

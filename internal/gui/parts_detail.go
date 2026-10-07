@@ -1,9 +1,5 @@
 package gui
 
-import (
-	"cairn/internal/reading"
-)
-
 // Where the parts of an open task or objective go: its fields, what it
 // serves, its description and its history.
 
@@ -92,61 +88,29 @@ func Framed(value Box, rows int) Box {
 	return Box{X: value.X, Y: value.Y - inset, W: value.W - barWide - between, H: rows*lineHigh + inset + inset}
 }
 
-// DetailFields is the left column of the detail panel.
-func DetailFields(box Box) Box {
+// FormFields is the left column of a form opened on something already there.
+func FormFields(box Box) Box {
 	return Box{X: box.X, Y: box.Y, W: box.W * fieldsPart / ofPanel, H: box.H}
 }
 
-// DetailHistory is the right column, which the history has to itself.
-func DetailHistory(box Box) Box {
-	left := DetailFields(box)
+// FormBeside is the right column, beside the fields.
+func FormBeside(box Box) Box {
+	left := FormFields(box)
 	return Box{X: left.X + left.W, Y: box.Y, W: box.W - left.W, H: box.H}
 }
 
-// ServingHead is where the box under the fields says what it is: the left
-// column, below the last field, in the room the fields did not take.
-func ServingHead(box Box, fields []reading.Field) Box {
-	left := DetailFields(box)
-	return Box{
-		X: left.X + padding,
-		Y: FieldTop(box, fields, len(fields)),
-		W: left.W - padding - padding,
-		H: lineHigh,
-	}
-}
-
-// ServingBox is the frame the work under an objective is drawn in: from under
-// its own heading down to just above what the panel offers, so it reaches
-// neither. Never smaller than one line, the way the history's frame is not —
-// a frame that collapses is a frame somebody reads as missing.
-func ServingBox(box Box, fields []reading.Field) Box {
-	head := ServingHead(box, fields)
-	top := head.Y + head.H + between
-	return Box{
-		X: head.X,
-		Y: top,
-		W: head.W - barWide - between,
-		H: max(lineHigh, PanelOfferAt(box, 0).Y-padding-top),
-	}
-}
-
-// ServingBar is the track beside that box, in the room its frame gave up for
-// it — the same shape the history's bar has.
-func ServingBar(box Box, fields []reading.Field) Box {
-	frame := ServingBox(box, fields)
-	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
-}
-
-// HistoryHead is where that column says what it is.
-func HistoryHead(box Box) Box {
-	right := DetailHistory(box)
+// BesideHead is where the column beside a form says what it is: what was done
+// to a task, or the work serving an objective. One column for both: it is what
+// was opened that decides what the column beside it has to say.
+func BesideHead(box Box) Box {
+	right := FormBeside(box)
 	return Box{X: right.X + padding, Y: FirstRow(box), W: right.W - padding - padding, H: lineHigh}
 }
 
-// HistoryBox is the frame the history is drawn in: from under its own heading
+// BesideBox is the frame that column is drawn in: from under its own heading
 // down to just above what the panel offers, so it never reaches either.
-func HistoryBox(box Box) Box {
-	head := HistoryHead(box)
+func BesideBox(box Box) Box {
+	head := BesideHead(box)
 	top := head.Y + head.H + between
 	return Box{
 		X: head.X,
@@ -169,39 +133,14 @@ func Saying(value Box, rows int) (frame, bar Box) {
 	return frame, bar
 }
 
-// SayingBox is where a task's description is read on the detail.
-func SayingBox(box Box, fields []reading.Field, at int) Box {
-	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
-	frame, _ := Saying(value, LongRows(box, fields))
-	return frame
-}
-
-// SayingBar is the track of the bar beside it.
-func SayingBar(box Box, fields []reading.Field, at int) Box {
-	_, value := FieldRow(DetailFields(box), FieldTop(DetailFields(box), fields, at))
-	_, bar := Saying(value, LongRows(box, fields))
-	return bar
-}
-
-// LongField says which of a panel's fields is the one read in that box, and
-// whether there is one at all.
-func LongField(fields []reading.Field) (int, bool) {
-	for i, field := range fields {
-		if field.Long {
-			return i, true
-		}
-	}
-	return 0, false
-}
-
-// HistoryBar is the track of the bar beside it.
-func HistoryBar(box Box) Box {
-	frame := HistoryBox(box)
+// BesideBar is the track of the bar beside that frame.
+func BesideBar(box Box) Box {
+	frame := BesideBox(box)
 	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
 }
 
-// HistoryRows is how many lines of history the frame can show at once.
-func HistoryRows(box Box) int { return max(1, Inside(HistoryBox(box)).H/lineHigh) }
+// BesideRows is how many lines the frame beside a form shows at once.
+func BesideRows(box Box) int { return max(1, Inside(BesideBox(box)).H/lineHigh) }
 
 // Told is the history as the lines it takes, each act wrapped the way it is
 // drawn, the last done first and one straight after another. Each act begins
@@ -233,12 +172,6 @@ const between = 6
 // test beside fieldHigh holds the two together instead.
 const apart = 32
 
-// fieldHigh is what one field takes from the top of its frame to the top of
-// the next: its lines, the room its frame keeps, and what it leaves after it.
-func fieldHigh(box Box, fields []reading.Field, at int) int {
-	return RowsOf(box, fields, at)*lineHigh + inset + inset + between
-}
-
 // The scale everything is spaced on, in steps of four: 4 inside a frame, 12
 // between two things, 32 from one line of anything to the next. A number that
 // is not on it is a number somebody will have to measure to match.
@@ -247,52 +180,3 @@ func fieldHigh(box Box, fields []reading.Field, at int) int {
 // description is a paragraph, and a paragraph in one line is a slot the size of
 // a word.
 const longRows = 4
-
-// RowsOf is how many rows a field takes.
-func RowsOf(box Box, fields []reading.Field, at int) int {
-	if fields[at].Long {
-		return LongRows(box, fields)
-	}
-	return 1
-}
-
-// LongRows is how many lines the one field that wants more than one gets: four
-// at least, and every line the panel has room for beyond that.
-//
-// It used to be four whatever the window was. A description of 2800 characters
-// comes to seventy-eight lines once wrapped, so it was read a hundred and fifty
-// characters at a time through a box the panel had two hundred unused points
-// underneath — which reads as a text cut off rather than one to scroll.
-//
-// What it leaves behind is what the box under the fields needs to be worth
-// drawing: its heading and four tiles. Below that the window is too short to
-// give anything away, and the four lines stand.
-//
-// On a window somebody works in it leaves the four as they were: twelve fields
-// take two thirds of the column and the parts box the rest. It is on a tall
-// screen that it gives anything, and reading a description of eighty lines is
-// what opening it on the whole panel is for.
-func LongRows(box Box, fields []reading.Field) int {
-	taken := 0
-	for i := range fields {
-		if !fields[i].Long {
-			taken += lineHigh + inset + inset + between
-		}
-	}
-	under := lineHigh + between + 4*SubHeight + padding
-	room := PanelOfferAt(box, 0).Y - padding - FirstRow(box) - taken - under - inset - inset - between
-	return max(longRows, room/lineHigh)
-}
-
-// FieldTop is where a field begins, counting what the fields above it took. A
-// form is not a grid of equal rows once one of them wants four.
-func FieldTop(box Box, fields []reading.Field, at int) int {
-	top := FirstRow(box)
-	// One guard and not two: a second condition on the same loop has a
-	// boundary nothing can reach, since what is counted is only ever the
-	// fields that exist.
-	for i := range fields[:min(at, len(fields))] {
-		top += fieldHigh(box, fields, i)
-	}
-	return top
-}

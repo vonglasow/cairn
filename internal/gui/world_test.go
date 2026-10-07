@@ -137,7 +137,7 @@ func (w *world) addTask(title, state, desc string) error {
 // inField is where the nth character of a field sits: where production reads
 // a character from, not a geometry worked out beside it.
 func (w *world) inField(name string) (func(int) Point, error) {
-	box := Over(w.w.width, w.w.height)
+	box := w.w.formBox()
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
 		if field.Name != name {
@@ -523,7 +523,7 @@ func (w *world) clickField(name string) error {
 	// The box production looks in, not one worked back out of the layout: a
 	// helper that reckons its own geometry clicks where nothing is, and says
 	// so by failing somewhere else entirely.
-	box := Over(w.w.width, w.w.height)
+	box := w.w.formBox()
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
 		if field.Name != name {
@@ -825,7 +825,7 @@ func (w *world) workedOn(times int) error {
 // middleOfHistory is a point over the history's box, which is what the wheel
 // has to be over for the history and not a column to move.
 func (w *world) middleOfHistory() Point {
-	box := HistoryBox(Over(w.w.width, w.w.height))
+	box := BesideBox(Over(w.w.width, w.w.height))
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
@@ -860,7 +860,7 @@ func (w *world) dragTileOut(what string) error {
 	if err != nil {
 		return err
 	}
-	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+	box := BesideBox(Over(w.w.width, w.w.height))
 	out := Point{X: from.X, Y: box.Y + box.H + CardHeight}
 	w.w = w.w.PressAt(from).MoveTo(out).LetGo(out)
 	return nil
@@ -876,14 +876,13 @@ func (w *world) scrollServing(by int) error {
 // middleOfServing is a point inside the box the work under an objective is
 // drawn in, which is where a wheel has to be for it to scroll that box.
 func (w *world) middleOfServing() Point {
-	box := ServingBox(Over(w.w.width, w.w.height), w.w.Shown())
+	box := BesideBox(Over(w.w.width, w.w.height))
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
 // middleOfSaying is a point over the description on an open task.
 func (w *world) middleOfSaying() Point {
-	at, _ := LongField(w.w.Shown())
-	b := SayingBox(Over(w.w.width, w.w.height), w.w.Shown(), at)
+	b, _, _, _, _ := w.w.sayingOn()
 	return Point{X: b.X + b.W/2, Y: b.Y + b.H/2}
 }
 
@@ -910,8 +909,7 @@ func (w *world) scrollHistory(by int) error {
 // dragSayingBar pulls the bar beside a description past the bottom of its
 // track, the way the history's is pulled.
 func (w *world) dragSayingBar() error {
-	at, _ := LongField(w.w.Shown())
-	track := SayingBar(Over(w.w.width, w.w.height), w.w.Shown(), at)
+	_, track, _, _, _ := w.w.sayingOn()
 	thumb := Thumb(track, len(w.w.SaidLines()), w.w.SaidRows(), w.w.saying)
 	w.was = w.w.saying
 	w.w = w.w.PressAt(Point{X: thumb.X + thumb.W/2, Y: thumb.Y + thumb.H/2})
@@ -923,7 +921,7 @@ func (w *world) dragSayingBar() error {
 // dragHistoryBar takes hold of the bar beside the history and pulls it past
 // the bottom of its track, which is as far as it goes.
 func (w *world) dragHistoryBar() error {
-	track := HistoryBar(Over(w.w.width, w.w.height))
+	track := BesideBar(Over(w.w.width, w.w.height))
 	thumb := Thumb(track, w.w.Told(), w.w.Rows(), w.w.history)
 	w.was = w.w.history
 	w.w = w.w.PressAt(Point{X: thumb.X + thumb.W/2, Y: thumb.Y + thumb.H/2})

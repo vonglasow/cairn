@@ -32,8 +32,11 @@ var formSections = []struct {
 // sectionWide is the room a section's head takes before its fields; formNamed
 // is what a field's name takes before its box, inside a section.
 const (
-	sectionWide = 96
+	sectionWide = 72
 	formNamed   = 76
+	// formValueFewest is the least a short field's box is given: a date, a
+	// column's name, a few labels.
+	formValueFewest = 110
 )
 
 // The rows a long field is given: the description a line for each it says,
@@ -151,17 +154,18 @@ func formLayout(over Box, fields []reading.Field) ([]placed, []Readable, int) {
 			alone = append(alone, i)
 		}
 	}
-	sections := 0
+	// A section with more fields than a line holds goes on over another
+	// line, under the same head.
+	across := fieldsAcross(full)
+	lines := 0
 	for _, row := range rows {
-		if len(row) > 0 {
-			sections++
-		}
+		lines += (len(row) + across - 1) / across
 	}
 	wanted := make(map[int]int, len(long))
 	for _, i := range long {
 		wanted[i] = rowsWanted(fields[i], full)
 	}
-	fixed := len(alone)*apart + sections*apart + between + len(long)*longHigh
+	fixed := len(alone)*apart + lines*apart + between + len(long)*longHigh
 	given := shared(long, wanted, (FormRule(over).Y-top-fixed)/lineHigh)
 
 	y := top
@@ -186,23 +190,31 @@ func formLayout(over Box, fields []reading.Field) ([]placed, []Readable, int) {
 			continue
 		}
 		heads = append(heads, one("head:"+formSections[s].head, Box{X: left, Y: y, W: sectionWide, H: lineHigh}, formSections[s].head, small))
-		x := left + sectionWide
-		cell := (full - sectionWide - (len(row)-1)*padding) / len(row)
-		for _, i := range row {
+		wide := min(across, len(row))
+		cell := (full - sectionWide - (wide-1)*padding) / wide
+		for at, i := range row {
+			x := left + sectionWide + at%wide*(cell+padding)
 			places[i] = placed{
 				name:  Box{X: x, Y: y, W: formNamed, H: lineHigh},
 				value: Box{X: x + formNamed, Y: y, W: cell - formNamed, H: lineHigh},
 				rows:  1,
 			}
-			x += cell + padding
+			if at%wide == wide-1 || at == len(row)-1 {
+				y += apart
+			}
 		}
-		y += apart
 	}
 	y += between
 	for _, i := range long[min(1, len(long)):] {
 		placeLong(i)
 	}
 	return places, heads, y
+}
+
+// fieldsAcross is how many short fields a line of a form holds: as many as
+// leave each its name and the least a box is given, and one at the least.
+func fieldsAcross(full int) int {
+	return max(1, (full-sectionWide+padding)/(formNamed+formValueFewest+padding))
 }
 
 // rowsWanted is how many rows a long field asks for, from what it holds now.
