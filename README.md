@@ -391,7 +391,9 @@ make help                       # every target, and what it is for
 
 Working on cairn rather than with it needs the checks too — prek, golangci-lint,
 govulncheck, gremlins and jq; [docs/checks.md](docs/checks.md) says how to get
-each. Making a version is [docs/release.md](docs/release.md).
+each. Making a version — the source archive colleagues build with `make
+build`, and [INSTALL.md](INSTALL.md) inside it — is
+[docs/release.md](docs/release.md).
 
 ## Trying it by hand
 

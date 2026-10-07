@@ -1,12 +1,12 @@
 # Making a version
 
-Read this before handing a binary to anybody, including yourself on another
+Read this before handing cairn to anybody, including yourself on another
 machine. Nothing here runs on its own: a version is made rarely, by hand, and
 this is the list that keeps it from being made from memory.
 
 ## What a version is
 
-A tag on a commit of `main`, and the binary built from it. There are no tags
+A tag on a commit of `main`, and the source archive made from it. There are no tags
 yet: every build so far says the commit it came from (`git describe --always`),
 which is what the Makefile stamps when there is no tag to name.
 
@@ -20,50 +20,74 @@ The number reads `vMAJOR.MINOR.PATCH`. What moves it:
 
 ## The steps
 
-`make release` is the steps below, in their order, after refusing anything
-that is not a version: a branch other than `main`, a tree with something
-uncommitted, a commit no tag names. It ends by writing the binary's checksum
-beside it, `bin/cairn.sha256`. The steps are written out all the same, so a
-failure says which one it was.
+A version is made with one command, on `main`, with nothing uncommitted:
 
-1. **Everything checked, on both systems.**
+```sh
+make next-version   # what it would be tagged — says it, and does nothing
+make release        # makes it
+```
+
+`make release` runs `scripts/release.sh`, and it is the one way a version is
+made: there is no tag typed by hand anywhere in this. It does, in this order:
+
+1. **Refuses what is not a version.** A branch other than `main`, a tree with
+   something uncommitted.
+
+2. **Reads the number off the commits.** [svu](https://github.com/caarlos0/svu)
+   reads the commits since the last version and answers the next one: a `fix`
+   moves the patch, a `feat` the minor, a `BREAKING CHANGE` the major — the
+   table above, kept by the commit messages commitlint already holds to. While
+   cairn is under 1.0 a break moves the minor (`--v0`): 1.0 is a decision, not
+   something a commit message makes by accident. The first version is
+   `v0.1.0`. A history since the last version with no `feat`, no `fix` and no
+   break is refused: there is nothing to give a number to. svu is named at the
+   version the Makefile pins and run with `go run`, so there is nothing to
+   install first.
+
+3. **Checks everything, on both systems.**
 
    ```sh
    make check     # every hook, the commit's and the push's, on every file
    make linux     # the suite on Linux, in a container — needs Docker
+   make build     # and it builds here
    ```
 
    `make check` is what a push runs and more; `make linux` is the half of
-   "macOS and Linux" no hook can check from a Mac. A version is not made past
-   a red one of either.
+   "macOS and Linux" no hook can check from a Mac.
 
-2. **The tag.** On `main`, with nothing uncommitted:
+4. **Tags it**, an annotated tag named by the number, and only now: a version
+   whose checks failed was never a version, and a tag made before them would
+   say it was. The repository has no remote today; the day it has one, the tag
+   is pushed with the commit it names. Run again on a commit tagged already,
+   the release checks it again and makes its archive again, under that tag.
 
-   ```sh
-   git tag -a v1.2.0 -m "v1.2.0"
-   ```
-
-   The repository has no remote today; the day it has one, the tag is pushed
-   with the commit it names.
-
-3. **The binary, and what travels with it.**
+5. **Makes the archive.**
 
    ```sh
-   make build     # bin/cairn, stamped with the tag, the commit and the time
-   make notices   # bin/THIRD_PARTY_NOTICES: the licences of what it is built from
-   bin/cairn --version
+   make dist      # dist/cairn-v1.2.0-src.tar.gz and dist/SHA256SUMS
    ```
 
-   `--version` has to name the tag, not a commit: a binary built from a dirty
-   tree says `-dirty`, and is not a version. The notices go wherever the binary
-   goes — most of what it is built from asks for its licence to travel with it,
-   and `scripts/notices.sh` reads them from the module cache, for the modules the
-   binary actually links, with Go's own; every licence and notice file of a
-   module is kept, and a module with none fails it.
+   A version is handed over as **its sources**, built where they are with
+   `make build` — the same archive on macOS and on Linux, with nothing hosted
+   anywhere: the archive and its checksum go wherever colleagues fetch things
+   from. It holds the tree the tag names and three files git would not give:
 
-4. **The other system.** A binary for Linux is built on Linux: the window needs
-   cgo and the system's graphics headers there, which a cross-compile from a Mac
-   cannot reach. `scripts/linux.sh` is where those headers are named.
+   - `VERSION` and `COMMIT`, what `git describe` and the commit would have
+     said. An archive has no history to ask, so the Makefile reads them first
+     — without them a build from it called itself `dev`, made from `none`.
+     `make stamps` says what a build would be stamped with.
+   - `THIRD_PARTY_NOTICES`, the licences of what cairn is built from, read by
+     `scripts/notices.sh` from the module cache for the modules the binary
+     actually links, with Go's own; every licence and notice file of a module
+     is kept, and a module with none fails it.
+
+   `INSTALL.md`, at the root of the tree and so of the archive, says what a
+   build needs — Go, make, a C compiler, and on Linux the graphics headers
+   `scripts/linux.sh` installs — and how to put the binary on a `PATH`.
+
+A binary built for another system is not part of a version: the window needs
+cgo, and the system's graphics headers on Linux, which a cross-compile from a
+Mac cannot reach. Whoever needs one builds it from the archive, where they are.
 
 ## What a version is not
 

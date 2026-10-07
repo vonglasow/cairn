@@ -4,6 +4,7 @@ coverage.out
 
 # build output
 /bin/
+/dist/
 
 # red receipts: proof a test failed, not history worth keeping
 /.claude/red/
