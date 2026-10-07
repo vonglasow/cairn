@@ -975,6 +975,16 @@ Feature: The desktop board
       Then a bar sits beside the description
       And the description is at its beginning
 
+    @gui-the-history-reads-newest-first
+    Scenario: the history reads from the last thing done, with no blank line between two acts
+      Given I added a task titled "Write the spec"
+      And it was worked on 3 times
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "enter"
+      Then the history begins with the last thing done to task 1
+      And no line of the history is empty
+
     @gui-the-history-scrolls
     Scenario: a history longer than its box scrolls, and stops at both ends
       Given I added a task titled "Write the spec"

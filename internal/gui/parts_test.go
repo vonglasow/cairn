@@ -743,32 +743,19 @@ func TestWhereAPointOnTheBarFallsInTheHistory(t *testing.T) {
 	}
 }
 
-// Acts are told one after another with a blank line between two of them: an
-// act that wrapped onto three lines, with the next beginning straight after
-// it, read as one act nobody could tell the end of.
-func TestTheHistoryIsToldOneActAfterAnother(t *testing.T) {
-	acts := []string{"30 Aug  moved column → current", "29 Aug  added"}
+// Acts are told the last first, one straight after another: each begins with
+// when it was done, which is what says where it starts. A blank line between
+// two of them read as an empty line between every line of a history whose
+// acts each fit on one.
+func TestTheHistoryIsToldTheLastActFirst(t *testing.T) {
+	acts := []string{"29 Aug  added", "30 Aug  moved column → current"}
 	lines := Told(acts, inTwelve)
-	if len(lines) < 4 {
-		t.Fatalf("two acts too long for the room came to %d lines: %q", len(lines), lines)
-	}
-	blank := 0
-	for _, line := range lines {
-		if line == "" {
-			blank++
-		}
-	}
-	if blank != 1 {
-		t.Errorf("two acts are told with %d blank lines between them: %q", blank, lines)
-	}
-	if lines[0] == "" || lines[len(lines)-1] == "" {
-		t.Errorf("the history begins or ends on nothing: %q", lines)
+	want := append(inTwelve(acts[1]).Said, inTwelve(acts[0]).Said...)
+	if !slices.Equal(lines, want) {
+		t.Errorf("two acts are told as %q, want %q", lines, want)
 	}
 	if got := Told(nil, inTwelve); len(got) != 0 {
 		t.Errorf("no acts at all came to %q", got)
-	}
-	if got := Told([]string{"one"}, inTwelve); len(got) != 1 {
-		t.Errorf("one act came to %q", got)
 	}
 }
 

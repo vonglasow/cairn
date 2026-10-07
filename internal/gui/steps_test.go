@@ -15,6 +15,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/engine"
 	"cairn/internal/objective"
 	"cairn/internal/reading"
 	"cairn/internal/task"
@@ -676,6 +677,25 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the parts are drawn as %v, and %q is not among them", w.w.PartsTicked(), title)
+	})
+	sc.Then(`^the history begins with the last thing done to task (\d+)$`, func(n int) error {
+		shown, err := w.held.Ask(engine.TraceShow, reading.Numbered(n))
+		if err != nil {
+			return err
+		}
+		last, lines := line(shown.Acts[len(shown.Acts)-1]), w.w.Lines()
+		if len(lines) == 0 || !strings.HasPrefix(last, lines[0]) {
+			return fmt.Errorf("the history begins %q, and the last thing done was %q", lines, last)
+		}
+		return nil
+	})
+	sc.Then(`^no line of the history is empty$`, func() error {
+		for i, said := range w.w.Lines() {
+			if strings.TrimSpace(said) == "" {
+				return fmt.Errorf("line %d of the history is empty: %q", i, w.w.Lines())
+			}
+		}
+		return nil
 	})
 	sc.Then(`^the bar under the board reads (.+)$`, func(list string) error {
 		if got, want := w.w.BoardOffers(), quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {

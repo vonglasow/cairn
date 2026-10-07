@@ -191,16 +191,15 @@ func HistoryBar(box Box) Box {
 func HistoryRows(box Box) int { return max(1, Inside(HistoryBox(box)).H/lineHigh) }
 
 // Told is the history as the lines it takes, each act wrapped the way it is
-// drawn, one act after another with a blank line between two of them — an act
-// that wrapped onto three lines and the next act beginning straight after it
-// read as one act nobody could tell the end of.
+// drawn, the last done first and one straight after another. Each act begins
+// with when it was done, which is what says where it starts: a blank line
+// between two of them read as an empty line between every line of a history
+// whose acts each fit on one, and the oldest first put what was just done at
+// the bottom of a box opened at its top.
 func Told(acts []string, wrap func(string) Lines) []string {
 	var lines []string
-	for i, act := range acts {
-		if i > 0 {
-			lines = append(lines, "")
-		}
-		lines = append(lines, wrap(act).Said...)
+	for i := range acts {
+		lines = append(lines, wrap(acts[len(acts)-1-i]).Said...)
 	}
 	return lines
 }

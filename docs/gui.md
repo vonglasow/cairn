@@ -712,9 +712,12 @@ full height at every size.
 The history **scrolls**, by the wheel over it, by `↑↓`, or by pulling the bar
 beside it. It is counted in lines and not in acts, because an act wraps onto as
 many lines as it needs and a history that jumped an act at a time would skip
-past what it wrapped. Acts are told one after another with a blank line
-between two of them: without it, a wrapped act and the next one beginning
-straight after read as one act nobody could tell the end of.
+past what it wrapped. Acts are told **the last done first**, one straight
+after another: each begins with when it was done, which is what says where it
+starts. They used to be told oldest first with a blank line between two of
+them, which put what was just done at the bottom of a box opened at its top,
+and read as an empty line between every line of a history whose acts each fit
+on one.
 
 The bar is drawn whether or not there is anything to scroll. A bar that comes
 and goes is a bar somebody reaches for and does not find. Its grip says two
