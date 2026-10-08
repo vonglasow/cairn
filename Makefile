@@ -2,9 +2,11 @@
 
 BIN     ?= bin/cairn
 # A source archive has no git history to ask, so it carries what git would have
-# said in VERSION and COMMIT, and those are read first — see scripts/dist.sh.
+# said in VERSION, COMMIT and COMMIT_DATE, and those are read first — see
+# scripts/dist.sh. The date is the commit's, in UTC, the way Go embeds it.
 VERSION ?= $(shell cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell cat COMMIT 2>/dev/null || git rev-parse HEAD 2>/dev/null || echo none)
+COMMIT_DATE ?= $(shell cat COMMIT_DATE 2>/dev/null || TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD 2>/dev/null)
 BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PKG      = cairn/internal/build
 # go install puts tools in GOPATH/bin, which is not always on PATH.
@@ -27,7 +29,7 @@ SVU_VERSION ?= v3.4.1
 # Raise them deliberately; never lower them to get a commit through.
 COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
-LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT)
+LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
 .PHONY: release release-check next-version dist stamps tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
 
@@ -49,9 +51,9 @@ help:
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/cairn
 
-## stamps: say the version and the commit a build here would be stamped with
+## stamps: say the version, the commit and its date a build here would be stamped with
 stamps:
-	@echo $(VERSION) $(COMMIT)
+	@echo $(VERSION) $(COMMIT) $(COMMIT_DATE)
 
 ## run: run cairn with ARGS, e.g. `make run ARGS="task add 'write the spec'"`
 run:

@@ -6,9 +6,9 @@
 # A version goes to colleagues as its sources, built where they are with
 # `make build` — on macOS and on Linux alike, with nothing to host anywhere.
 # An archive has no git history, so it carries what git would have said: the
-# version in VERSION and the commit in COMMIT, which the Makefile reads when
-# there is no repository to ask. Without them a build from the archive called
-# itself "dev", made from "none".
+# version in VERSION, the commit in COMMIT and its date in COMMIT_DATE, which
+# the Makefile reads when there is no repository to ask. Without them a build
+# from the archive called itself "dev", made from "none", on a date "unknown".
 #
 # The tree archived is the one as it stands: on a release that is the tagged
 # commit, since make release refuses anything else, and while this is worked
@@ -30,6 +30,7 @@ if [ -n "$(git status --porcelain)" ]; then
   tree=$(git stash create)
 fi
 commit=$(git rev-parse HEAD)
+committed=$(TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD)
 name="cairn-$version"
 
 extra=()
@@ -41,6 +42,7 @@ mkdir -p "$out"
 git archive --format=tar.gz --prefix="$name/" \
   --add-virtual-file="$name/VERSION:$version" \
   --add-virtual-file="$name/COMMIT:$commit" \
+  --add-virtual-file="$name/COMMIT_DATE:$committed" \
   ${extra[@]+"${extra[@]}"} \
   -o "$out/$name-src.tar.gz" "$tree"
 

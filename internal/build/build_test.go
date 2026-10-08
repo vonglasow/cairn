@@ -52,6 +52,25 @@ func TestApplyVCS_leavesAStampedCommitAlone(t *testing.T) {
 	}
 }
 
+// A build from a source archive has no VCS stamp to fall back on, so the date
+// it says comes from the linker — and a linker stamp is the more deliberate of
+// the two wherever both are there.
+func TestApplyVCS_leavesAStampedCommitDateAlone(t *testing.T) {
+	got := applyVCS(Info{CommitDate: "2026-10-07T21:00:00Z"}, []debug.BuildSetting{
+		{Key: "vcs.time", Value: "2026-08-15T13:59:37Z"},
+	})
+	if got.CommitDate != "2026-10-07T21:00:00Z" {
+		t.Errorf("CommitDate = %q, want the linker stamp to win", got.CommitDate)
+	}
+}
+
+func TestRead_saysTheStampedCommitDate(t *testing.T) {
+	stampFor(t, &committed, "2026-10-07T21:00:00Z")
+	if got := Read().CommitDate; got != "2026-10-07T21:00:00Z" {
+		t.Errorf("CommitDate = %q, want the linker stamp", got)
+	}
+}
+
 func TestApplyVCS_ignoresUnrelatedSettings(t *testing.T) {
 	got := applyVCS(Info{}, []debug.BuildSetting{{Key: "GOARCH", Value: "arm64"}})
 	if got.Commit != "" || got.CommitDate != "" {

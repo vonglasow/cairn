@@ -19,10 +19,12 @@ Feature: Version
     Given a binary stamped with version "26-2-preview2-65-g4c5a15f70"
     And stamped with commit "4c5a15f700dcabcdef0123"
     And stamped with build time "2026-08-15T13:59:48Z"
+    And stamped with commit date "2026-08-15T13:59:37Z"
     When I run `cairn --version`
     Then it reports the version as "26-2-preview2-65-g4c5a15f70"
     And it reports the commit as "4c5a15f700dc"
     And it reports the build time as "2026-08-15T13:59:48Z"
+    And it reports the commit date as "2026-08-15T13:59:37Z"
     And it reports a real Go toolchain
     And it reports a real platform
 
@@ -32,6 +34,7 @@ Feature: Version
     When I unpack it somewhere git has never been
     Then a build there would be stamped with version "v9.9.9"
     And a build there would be stamped with the commit the archive was made from
+    And a build there would be stamped with the date of that commit
     And the archive says how to build and install it
 
   @version-is-made-on-main

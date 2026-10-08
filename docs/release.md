@@ -75,11 +75,12 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    A version is handed over as **its sources**, built where they are with
    `make build` — the same archive on macOS and on Linux, with nothing hosted
    anywhere: the archive and its checksum go wherever colleagues fetch things
-   from. It holds the tree the tag names and three files git would not give:
+   from. It holds the tree the tag names and four files git would not give:
 
-   - `VERSION` and `COMMIT`, what `git describe` and the commit would have
-     said. An archive has no history to ask, so the Makefile reads them first
-     — without them a build from it called itself `dev`, made from `none`.
+   - `VERSION`, `COMMIT` and `COMMIT_DATE`, what `git describe`, the commit
+     and its date would have said. An archive has no history to ask, so the
+     Makefile reads them first — without them a build from it called itself
+     `dev`, made from `none`, on a date `unknown`.
      `make stamps` says what a build would be stamped with.
    - `THIRD_PARTY_NOTICES`, the licences of what cairn is built from, read by
      `scripts/notices.sh` from the module cache for the modules the binary

@@ -35,6 +35,7 @@ type versionWorld struct {
 	version                 string
 	commit                  string
 	built                   string
+	committed               string
 	restores                []func()
 }
 
@@ -50,7 +51,7 @@ func newVersionWorld(t *testing.T) *versionWorld {
 
 // reading is what the surface answers while this scenario runs.
 func (w *versionWorld) reading() build.Info {
-	return build.Stamped(w.version, w.commit, w.built)
+	return build.Stamped(w.version, w.commit, w.built, w.committed)
 }
 
 // stamp decides what the binary claims to be for the length of the scenario.
@@ -69,13 +70,13 @@ func (w *versionWorld) endScenario() {
 }
 
 // stampedThere asks make, where the archive was unpacked, what a build there
-// would be stamped with, and compares one of the two words it answers.
+// would be stamped with, and compares one of the three words it answers.
 func (w *versionWorld) stampedThere(at int, want string) error {
 	said, err := exec.Command("make", "-s", "-C", w.unpacked, "stamps").Output()
 	if err != nil {
 		return fmt.Errorf("make stamps: %w", err)
 	}
-	if got := strings.Fields(string(said)); len(got) != 2 || got[at] != want {
+	if got := strings.Fields(string(said)); len(got) != 3 || got[at] != want {
 		return fmt.Errorf("make stamps answered %q, want %q in place %d", said, want, at)
 	}
 	return nil
@@ -117,6 +118,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			w.stamp(&w.version, "")
 			w.stamp(&w.commit, "")
 			w.stamp(&w.built, "")
+			w.stamp(&w.committed, "")
 			return nil
 		})
 
@@ -132,6 +134,11 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 
 		sc.Step(`^stamped with build time "([^"]*)"$`, func(v string) error {
 			w.stamp(&w.built, v)
+			return nil
+		})
+
+		sc.Step(`^stamped with commit date "([^"]*)"$`, func(v string) error {
+			w.stamp(&w.committed, v)
 			return nil
 		})
 
@@ -176,6 +183,17 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 				return err
 			}
 			return w.stampedThere(1, strings.TrimSpace(string(head)))
+		})
+
+		sc.Step(`^a build there would be stamped with the date of that commit$`, func() error {
+			ask := exec.Command("git", "-C", root(), "show", "-s", "--format=%cd",
+				"--date=format-local:%Y-%m-%dT%H:%M:%SZ", "HEAD")
+			ask.Env = append(os.Environ(), "TZ=UTC")
+			when, err := ask.Output()
+			if err != nil {
+				return err
+			}
+			return w.stampedThere(2, strings.TrimSpace(string(when)))
 		})
 
 		sc.Step(`^the archive says how to build and install it$`, func() error {
@@ -273,6 +291,10 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 
 		sc.Step(`^it reports the build time as "([^"]*)"$`, func(want string) error {
 			return wantLine(w, "built", want)
+		})
+
+		sc.Step(`^it reports the commit date as "([^"]*)"$`, func(want string) error {
+			return wantLine(w, "commit date", want)
 		})
 
 		sc.Step(`^it reports a real Go toolchain$`, func() error {

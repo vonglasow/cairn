@@ -23,6 +23,10 @@ var (
 	version = ""
 	commit  = ""
 	built   = ""
+	// committed is when the commit was made. Go embeds it on its own in a
+	// build made inside a repository; a build from a source archive has no
+	// repository to read it from, and is told it instead.
+	committed = ""
 )
 
 // shortCommitLen is how much of a SHA is enough to identify a commit while
@@ -30,7 +34,8 @@ var (
 const shortCommitLen = 12
 
 // Info is everything a build reports about itself. Three fields come from the
-// linker, one from the VCS stamp Go embeds on its own, two from the runtime —
+// linker, one from the linker or else the VCS stamp Go embeds on its own, two
+// from the runtime —
 // so a binary built without any stamping still tells the truth about itself
 // instead of pretending.
 type Info struct {
@@ -43,22 +48,22 @@ type Info struct {
 }
 
 // Read answers what this build is, from the stamps the linker left behind.
-func Read() Info { return Stamped(version, commit, built) }
+func Read() Info { return Stamped(version, commit, built, committed) }
 
-// Stamped answers what a build carrying these three stamps would report,
+// Stamped answers what a build carrying these four stamps would report,
 // falling back through the VCS information Go embeds automatically, then to
 // placeholders. `go run` gets neither stamps nor VCS data, and must still print
 // something honest.
 //
-// Read calls it with what the linker left behind. It takes the three rather
+// Read calls it with what the linker left behind. It takes the four rather
 // than reading them so that what a build says can be worked out without being
 // that build.
-func Stamped(version, commit, built string) Info {
+func Stamped(version, commit, built, committed string) Info {
 	b := Info{
 		Version:    version,
 		Commit:     commit,
 		Built:      built,
-		CommitDate: "",
+		CommitDate: committed,
 		Go:         runtime.Version(),
 		Platform:   runtime.GOOS + "/" + runtime.GOARCH,
 	}
@@ -94,7 +99,9 @@ func applyVCS(b Info, settings []debug.BuildSetting) Info {
 				b.Commit = s.Value
 			}
 		case "vcs.time":
-			b.CommitDate = s.Value
+			if b.CommitDate == "" {
+				b.CommitDate = s.Value
+			}
 		}
 	}
 	return b
