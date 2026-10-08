@@ -35,7 +35,8 @@ then reads, from the task's notes directory (`task show` gives it):
 A session that is a short aside attaches to nothing, and nothing is written.
 
 **The external ticket is optional, and on demand.** Only when the person asks
-does Claude read the ticket named by the task's `ado:<id>` label, through
+does Claude read the ticket named by the task's labels — `ado`, and its id as a
+label of digits alone (docs/labels.md) — through
 whatever Azure DevOps access is there, and rewrite `ticket.md` from it. When
 that fails, the copy already there is read and the failure is said. No ticket
 tool is required for anything else to work. Azure DevOps only, for now.

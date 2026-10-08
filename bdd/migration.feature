@@ -117,6 +117,22 @@ Feature: Changes to the shape of the store
 
 
 
+  Rule: A label is written one way, and has no family
+
+    @migration-labels-split-at-their-family
+    Scenario: the change splits every label with a family into labels of its own
+      Given a store from before labels were written one way
+      When I run `cairn migration apply`
+      Then task 1 carries exactly the labels "77594, ado, chantier, proxmox"
+      And objective 1 carries exactly the labels "chantier, doc-infra"
+
+    @migration-labels-written-one-way
+    Scenario: the change writes every label the one way, and once
+      Given a store from before labels were written one way
+      When I run `cairn migration apply`
+      Then task 2 carries exactly the labels "a, ado, b, c, dette-config, obj-modularite-helm, sp26-20"
+      And objective 2 carries exactly the labels "ete-2026"
+
   Rule: What a change will do can be read before it is made
 
     @migration-show

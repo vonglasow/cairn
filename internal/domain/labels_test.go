@@ -147,3 +147,72 @@ func TestParseLabelChange_refusesAListThatMixesTheTwoForms(t *testing.T) {
 		t.Errorf("err = %v, want ErrLabelsBothWays", err)
 	}
 }
+
+// One word is one label however it was typed: two spellings of it would be two
+// labels, and a narrowing by one would miss every task carrying the other.
+func TestParseLabels_writesALabelOneWay(t *testing.T) {
+	for typed, kept := range map[string]string{
+		"Sp26 20":           "sp26-20",
+		"Modularité/Helm":   "modularite-helm",
+		"dette__config":     "dette-config",
+		"Release__26.1.6--": "release-26.1.6",
+		"  ÉTÉ  2026 ":      "ete-2026",
+	} {
+		got, err := ParseLabels([]string{typed})
+		if err != nil || len(got) != 1 || got[0] != kept {
+			t.Errorf("ParseLabels(%q) = %v, %v; want [%s]", typed, got, err, kept)
+		}
+	}
+}
+
+func TestParseLabelChange_writesALabelJoiningOneWay(t *testing.T) {
+	if got := applied(t, nil, "+Sp26 20"); len(got) != 1 || got[0] != "sp26-20" {
+		t.Errorf("+Sp26 20 joins as %v, want [sp26-20]", got)
+	}
+}
+
+func TestParseLabels_refusesAFamily(t *testing.T) {
+	_, err := ParseLabels([]string{"ado:77594"})
+	if !errors.Is(err, ErrLabelHasNoFamily) {
+		t.Errorf("ParseLabels(ado:77594) = %v, want it refused for its family", err)
+	}
+	if err != nil && !strings.Contains(err.Error(), "two labels") {
+		t.Errorf("the refusal %q does not say to write two labels", err)
+	}
+}
+
+func TestParseLabels_refusesWhatNoLabelMayHold(t *testing.T) {
+	for _, typed := range []string{"#urgent", "a+b", "ça,va"[0:3] + "!"} {
+		if _, err := ParseLabels([]string{typed}); !errors.Is(err, ErrLabelHolds) {
+			t.Errorf("ParseLabels(%q) = %v, want it refused for what it holds", typed, err)
+		}
+	}
+}
+
+// A label nothing is left of once written is a label with no name.
+func TestParseLabels_refusesALabelWrittenToNothing(t *testing.T) {
+	if _, err := ParseLabels([]string{"--__--"}); !errors.Is(err, ErrLabelRequired) {
+		t.Errorf("ParseLabels(--__--) = %v, want it refused for having no name", err)
+	}
+}
+
+// A label kept from before the rule was written is carried as it is: it does
+// not stop another label joining the task, or one leaving it.
+func TestLabelChange_leavesALabelFromBeforeTheRuleAlone(t *testing.T) {
+	if got := applied(t, []string{"c++"}, "+spec"); len(got) != 2 || got[0] != "c++" || got[1] != "spec" {
+		t.Errorf("+spec over [c++] gives %v, want [c++ spec]", got)
+	}
+}
+
+// The ends of what a label may hold are held too: a z and a 9 are a label's,
+// and what sits just past them is not.
+func TestParseLabels_holdsTheEndsOfWhatALabelMayHold(t *testing.T) {
+	if got, err := ParseLabels([]string{"az09"}); err != nil || len(got) != 1 || got[0] != "az09" {
+		t.Errorf("ParseLabels(az09) = %v, %v; want [az09]", got, err)
+	}
+	for _, typed := range []string{"a{", "a`", "a@", "a;"} {
+		if _, err := ParseLabels([]string{typed}); !errors.Is(err, ErrLabelHolds) {
+			t.Errorf("ParseLabels(%q) = %v, want it refused for what it holds", typed, err)
+		}
+	}
+}

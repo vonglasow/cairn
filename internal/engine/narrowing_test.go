@@ -159,3 +159,22 @@ func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
 		}
 	}
 }
+
+// A label is looked for the way it is written, so a narrowing typed another way
+// finds the tasks carrying it rather than nothing.
+func TestTaskList_looksForALabelWrittenTheOneWay(t *testing.T) {
+	e := openEngine(t)
+	spec := add(t, e, "Write the spec")
+	add(t, e, "Ship it")
+	if _, err := e.edit(task.OfTask(spec).Number, Changes{Labels: of([]string{"sp26-20"})}); err != nil {
+		t.Fatalf("Edit: %v", err)
+	}
+
+	answer, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"label": {"SP26_20"}}})
+	if err != nil {
+		t.Fatalf("TaskList: %v", err)
+	}
+	if got := titlesOf(answer); len(got) != 1 || got[0] != "Write the spec" {
+		t.Errorf("it listed %v, want the one task labelled sp26-20", got)
+	}
+}

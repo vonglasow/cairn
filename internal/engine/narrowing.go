@@ -78,8 +78,14 @@ func keeping(in Input, taken []Argument) (*domain.Narrowing, error) {
 			kept.Serving(number)
 		}
 	}
+	// A label is looked for written the one way it is kept, so `SP26_20` finds
+	// what carries sp26-20 rather than nothing.
 	if labels := in.Changed("label"); labels != nil {
-		kept.Labelled(*labels)
+		written, err := domain.ParseLabels(*labels)
+		if err != nil {
+			return nil, err
+		}
+		kept.Labelled(written)
 	}
 	// Naming it keeps what is off the board and nothing else; a board asks for
 	// both and draws them apart.

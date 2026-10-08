@@ -278,6 +278,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says a title is one line$`:                                           "a title is one line",
 		`^it says a task needs a title$`:                                          "a task needs a title",
 		`^it says a label needs a name$`:                                          "a label needs a name",
+		`^it says a label has no family$`:                                         "a label has no family",
+		`^it says what a label may hold$`:                                         "a label holds only",
 		`^it says there is no such task$`:                                         "there is no such task",
 		`^it says a task number is expected$`:                                     "a task number is expected",
 		`^it says how to confirm$`:                                                "--yes",

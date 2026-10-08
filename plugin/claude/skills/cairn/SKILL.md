@@ -37,7 +37,8 @@ yet.
 ## The ticket — only when asked
 
 Read the external ticket only when the person asks for it ("charge le
-ticket"). Its id is the task's `ado:<id>` label. Read it through whatever
+ticket"). A task tied to Azure DevOps carries the label `ado`, and each work
+item's id as a label of digits alone (`77594`). Read it through whatever
 Azure DevOps access there is — its MCP server, or `az boards work-item show
 --id <id>` — and rewrite `ticket.md` with its title, state and description.
 When that fails, read the copy already there, and say it may be stale. No

@@ -29,6 +29,9 @@ func HeadsOn(w Window, screen Screen) string {
 		// What is being chosen, and what for. A list with no heading is a list
 		// somebody has to remember the way into.
 		what := "objectives for"
+		if w.choosingFor == "label" {
+			what = "labels for"
+		}
 		if w.OneOnly() {
 			what = "a " + w.form.Fields()[w.form.On()].Name + " for"
 		}
@@ -301,7 +304,7 @@ func (w Window) clickingList(p Point) Window {
 // would otherwise have to go and look up; a column or a priority is one of a
 // closed set, and the list is where that set is read before one is picked.
 func chosenFromAList(field reading.Field) bool {
-	return field.Arg == "objective" || field.Arg == "parent" || len(field.Choices) > 0
+	return field.Arg == "objective" || field.Arg == "parent" || field.Arg == "label" || len(field.Choices) > 0
 }
 
 // offerAt says which offer a point lands on: in the bar along the bottom while

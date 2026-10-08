@@ -126,7 +126,7 @@ shows the moment a card is dragged from one to the other.
 The third fills room the fixed height already paid for and left empty, and it
 answers the question a board is asked most — which sprint, which chantier, which
 ADO ticket — without opening anything. What does not fit is counted rather than
-dropped in silence: `ado:77594  pipelines  release  +1`. `Tagged` cuts the line
+dropped in silence: `77594  ado  pipelines  +1`. `Tagged` cuts the line
 and the scenarios read it, so what is asserted is the decision rather than the
 pixels.
 
@@ -568,6 +568,12 @@ many objectives as it serves, so `⏎` ticks and the list stays open until `esc`
 The field then reads `#1 Ship it` rather than `1` — the number is what the
 engine takes and what a person has to go and look up, which is the whole of why
 the list exists.
+
+**Labels are chosen from the same list**, by name: every label some task
+carries, the task's own ticked, a row that creates what was typed under the
+name the rule will keep it by, and `⏎` that ticks and stays open, as for
+objectives. [labels.md](labels.md) says how a label is written and what the
+list offers.
 
 **A closed set is chosen from the same list.** A column, a priority and an
 objective's standing open it too — on a click, or on `⏎` — offering the set in

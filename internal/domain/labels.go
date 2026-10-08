@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"slices"
 	"strings"
 )
 
@@ -92,10 +93,15 @@ func SplitSign(value string) (rune, string) {
 }
 
 // Apply lays the change over the labels a task carries and hands back the set
-// it ends up with: lower case, no duplicate, alphabetical order.
+// it ends up with: no duplicate, alphabetical order. What joins was written by
+// the rule as it was read; what the task already carries is kept as it is — a
+// label from before the rule, which the migration could not write, would
+// otherwise stop every change to the task it sits on.
 func (c LabelChange) Apply(current []string) ([]string, error) {
 	if !c.set.Adjusts() {
 		return c.set.becomes, nil
 	}
-	return ParseLabels(c.set.Apply(current))
+	kept := c.set.Apply(current)
+	slices.Sort(kept)
+	return slices.Compact(kept), nil
 }

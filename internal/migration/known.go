@@ -176,4 +176,63 @@ ALTER TABLE tasks ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;`,
 ALTER TABLE tasks DROP COLUMN archived;`,
 		loses: "which tasks had been taken off the board",
 	},
+	{
+		// docs/labels.md: a label has no family, so one carrying a colon is
+		// split at every colon into labels of its own; then every label is
+		// written the one way — accents off, spaces, underscores and slashes
+		// made dashes, a run of dashes made one, none at either end — and a
+		// task or an objective left carrying one twice carries it once.
+		name: "a label is written one way, and has no family",
+		does: `
+WITH RECURSIVE pieces(owner, piece, rest) AS (
+	SELECT task_number, '', label || ':' FROM labels WHERE instr(label, ':') > 0
+	UNION ALL
+	SELECT owner, substr(rest, 1, instr(rest, ':') - 1), substr(rest, instr(rest, ':') + 1)
+	FROM pieces WHERE rest <> ''
+)
+INSERT OR IGNORE INTO labels (task_number, label) SELECT owner, piece FROM pieces WHERE piece <> '';
+DELETE FROM labels WHERE instr(label, ':') > 0;
+WITH RECURSIVE pieces(owner, piece, rest) AS (
+	SELECT objective_number, '', label || ':' FROM objective_labels WHERE instr(label, ':') > 0
+	UNION ALL
+	SELECT owner, substr(rest, 1, instr(rest, ':') - 1), substr(rest, instr(rest, ':') + 1)
+	FROM pieces WHERE rest <> ''
+)
+INSERT OR IGNORE INTO objective_labels (objective_number, label) SELECT owner, piece FROM pieces WHERE piece <> '';
+DELETE FROM objective_labels WHERE instr(label, ':') > 0;
+CREATE TEMP TABLE written AS
+	SELECT label AS was, lower(label) AS becomes FROM labels
+	UNION SELECT label, lower(label) FROM objective_labels;
+UPDATE written SET becomes =
+	replace(replace(replace(replace(replace(replace(becomes, 'à', 'a'), 'á', 'a'), 'â', 'a'), 'ã', 'a'), 'ä', 'a'), 'å', 'a');
+UPDATE written SET becomes =
+	replace(replace(replace(replace(replace(becomes, 'è', 'e'), 'é', 'e'), 'ê', 'e'), 'ë', 'e'), 'ç', 'c');
+UPDATE written SET becomes =
+	replace(replace(replace(replace(replace(becomes, 'ì', 'i'), 'í', 'i'), 'î', 'i'), 'ï', 'i'), 'ñ', 'n');
+UPDATE written SET becomes =
+	replace(replace(replace(replace(replace(becomes, 'ò', 'o'), 'ó', 'o'), 'ô', 'o'), 'õ', 'o'), 'ö', 'o');
+UPDATE written SET becomes =
+	replace(replace(replace(replace(replace(replace(becomes, 'ù', 'u'), 'ú', 'u'), 'û', 'u'), 'ü', 'u'), 'ý', 'y'), 'ÿ', 'y');
+UPDATE written SET becomes = replace(replace(replace(becomes, ' ', '-'), '_', '-'), '/', '-');
+UPDATE written SET becomes = replace(becomes, '--', '-') WHERE becomes LIKE '%--%';
+UPDATE written SET becomes = replace(becomes, '--', '-') WHERE becomes LIKE '%--%';
+UPDATE written SET becomes = replace(becomes, '--', '-') WHERE becomes LIKE '%--%';
+UPDATE written SET becomes = replace(becomes, '--', '-') WHERE becomes LIKE '%--%';
+UPDATE written SET becomes = replace(becomes, '--', '-') WHERE becomes LIKE '%--%';
+UPDATE written SET becomes = trim(becomes, '-');
+INSERT OR IGNORE INTO labels (task_number, label)
+	SELECT labels.task_number, written.becomes FROM labels JOIN written ON labels.label = written.was
+	WHERE written.becomes <> written.was AND written.becomes <> '';
+DELETE FROM labels WHERE label IN (SELECT was FROM written WHERE becomes <> was);
+INSERT OR IGNORE INTO objective_labels (objective_number, label)
+	SELECT objective_labels.objective_number, written.becomes FROM objective_labels JOIN written ON objective_labels.label = written.was
+	WHERE written.becomes <> written.was AND written.becomes <> '';
+DELETE FROM objective_labels WHERE label IN (SELECT was FROM written WHERE becomes <> was);
+DROP TABLE written;`,
+		// Nothing to undo: which spellings were one word is gone once they
+		// are one label, and the shape is unchanged, so an older cairn reads
+		// this store as it always did.
+		undoes: "",
+		loses:  "how each label was spelt before, and which labels had a family",
+	},
 }

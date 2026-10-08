@@ -118,6 +118,10 @@ type Window struct {
 	// choosingFrom is the first row of the list in sight. A list of everything
 	// a task may hang under is as long as the board, and a panel is not.
 	choosingFrom int
+	// labelsOffered is every label the open list of labels offers, numbered by
+	// where it stands here: those some task or objective carries, and those
+	// created since the list opened, last.
+	labelsOffered []string
 	// copying is what the window has been asked to put on the clipboard, and
 	// pasting that it has asked for what is on it. The window is a value and
 	// cannot execute anything: it says what it wants and the loop does it.

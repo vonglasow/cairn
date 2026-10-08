@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // dayLayout is how a deadline is written and read back: a day, never an
@@ -17,6 +18,8 @@ const dayLayout = "2006-01-02"
 var (
 	ErrLabelRequired    = errors.New("a label needs a name")
 	ErrLabelNotOneLine  = errors.New("a label is one word or a few, on one line")
+	ErrLabelHasNoFamily = errors.New("a label has no family: write two labels, one each side of the colon")
+	ErrLabelHolds       = errors.New("a label holds only a to z, 0 to 9, dashes and dots")
 	ErrNotAState        = errors.New("not one of the columns")
 	ErrNotAPriority     = errors.New("not one of the priorities")
 	ErrNotADay          = errors.New("not a date")
@@ -126,18 +129,58 @@ func ParseLabels(given []string) ([]string, error) {
 	return slices.Compact(kept), nil
 }
 
-// labelNamed is one label as it is kept: trimmed, lower case, and refused when
-// nothing is left or when it would not sit on one line among the others. One
-// rule for a label named in a set and one joining or leaving it.
+// labelNamed is one label as it is kept, and the one way it is written, so
+// that one word is one label however it was typed (docs/labels.md): lower
+// case, its accents taken off, spaces, underscores and slashes made dashes, a
+// run of dashes made one and none kept at either end. What is left holds
+// a to z, 0 to 9, - and . — anything else is refused, a colon with a word of
+// its own. One rule for a label named in a set and one joining or leaving it.
 func labelNamed(raw string) (string, error) {
 	name := strings.ToLower(strings.TrimSpace(raw))
-	if name == "" {
-		return "", ErrLabelRequired
-	}
 	if strings.ContainsFunc(name, breaksALine) {
 		return "", fmt.Errorf("%q: %w", raw, ErrLabelNotOneLine)
 	}
+	name = dashed(unaccented(name))
+	if name == "" {
+		return "", ErrLabelRequired
+	}
+	if strings.ContainsRune(name, ':') {
+		return "", fmt.Errorf("%q: %w", raw, ErrLabelHasNoFamily)
+	}
+	if strings.ContainsFunc(name, notInALabel) {
+		return "", fmt.Errorf("%q: %w", raw, ErrLabelHolds)
+	}
 	return name, nil
+}
+
+// unaccented takes the accents off a word: é is e, and ç is c. The letters
+// are named rather than decomposed: the domain leans on the standard library
+// alone, and the migration that wrote the labels before the rule knew the
+// same letters and no others — a word written one way here and another there
+// would be two labels again (docs/labels.md).
+var unaccented = strings.NewReplacer(
+	"à", "a", "á", "a", "â", "a", "ã", "a", "ä", "a", "å", "a",
+	"ç", "c",
+	"è", "e", "é", "e", "ê", "e", "ë", "e",
+	"ì", "i", "í", "i", "î", "i", "ï", "i",
+	"ñ", "n",
+	"ò", "o", "ó", "o", "ô", "o", "õ", "o", "ö", "o",
+	"ù", "u", "ú", "u", "û", "u", "ü", "u",
+	"ý", "y", "ÿ", "y",
+).Replace
+
+// dashed makes every space, underscore and slash a dash, a run of dashes one,
+// and keeps none at either end.
+func dashed(word string) string {
+	pieces := strings.FieldsFunc(word, func(r rune) bool {
+		return r == '-' || r == '_' || r == '/' || unicode.IsSpace(r)
+	})
+	return strings.Join(pieces, "-")
+}
+
+// notInALabel says whether a character has no place in a label once written.
+func notInALabel(r rune) bool {
+	return (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' && r != '.'
 }
 
 // ParseDeadline reads a day. Nothing given is no deadline, which is also how a

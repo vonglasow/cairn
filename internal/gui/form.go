@@ -735,8 +735,13 @@ func (w Window) choosingList() Window {
 	}
 	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
 	w.choosingFor, w.filtering = on.Arg, Written{}
-	for _, number := range reading.NumbersIn(on.Value) {
-		w.ticked[number] = true
+	if on.Arg == "label" {
+		// A label is named, not numbered: one made of digits is a name too.
+		w = w.openingLabels(on.Value)
+	} else {
+		for _, number := range reading.NumbersIn(on.Value) {
+			w.ticked[number] = true
+		}
 	}
 	// A closed set is listed in its own order, and what the field holds is the
 	// one of it already taken.
@@ -770,6 +775,9 @@ type Choice struct {
 	// State is the column the task sits in, said on the row. Empty for an
 	// objective, which sits in no column a list has any use for.
 	State string
+	// Creates is the label taking this row creates: the row that offers a
+	// label nobody carries yet, under the name it will have.
+	Creates string
 }
 
 // RowSays is what a row of the open list reads: whether it is taken, then what
@@ -781,7 +789,7 @@ func (w Window) RowSays(one Choice) string {
 	if w.Ticked(one.Number) {
 		said = TickedMark + "  "
 	}
-	if len(w.closedSet()) == 0 {
+	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
 		said += Numbered(reading.Card{Number: one.Number}) + "  "
 	}
 	return said + one.Title
@@ -791,6 +799,9 @@ func (w Window) RowSays(one Choice) string {
 // it. The narrowing is the board's own — a list that matched its own way would
 // answer a different set from the search box two keystrokes away.
 func (w Window) choices() []Choice {
+	if w.choosingFor == "label" {
+		return w.labelChoices()
+	}
 	looking := w.filtering.Reads()
 	var out []Choice
 	// A closed set is offered in the order the domain gives it, numbered by
@@ -863,6 +874,9 @@ func (w Window) inChoosing(name string) Window {
 // the list with it, since there is nothing left to say; several stay open,
 // because taking them one at a time is what the list is for.
 func (w Window) taking() Window {
+	if w.choosingFor == "label" {
+		return w.takingLabel()
+	}
 	offered := w.Choosing()
 	if w.choosing >= len(offered) {
 		return w
@@ -908,6 +922,9 @@ func (w Window) leaving() Window {
 // sent is this, because a surface that made up its own spelling of an argument
 // would be a surface deciding something.
 func (w Window) keeping() Window {
+	if w.choosingFor == "label" {
+		return w.keepingLabels()
+	}
 	// A closed set keeps the name taken, and the one it held when nothing was:
 	// a column is never left empty for a list closed on a narrowing.
 	if set := w.closedSet(); len(set) > 0 {

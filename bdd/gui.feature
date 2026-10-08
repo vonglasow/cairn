@@ -1937,6 +1937,97 @@ Feature: The desktop board
       And the field "objectives" names "Keep it honest"
       And the field "objectives" is drawn by name and not by number
 
+    @gui-the-labels-field-opens-a-list
+    Scenario: the labels field opens a list of every label, those the task carries ticked
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 1 with the labels "backend" and "sp26-20"
+      And I edited task 2 with the labels "release" and "sp26-20"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      Then the window is choosing
+      And the panel is headed "labels for task 1"
+      And the list reads "backend", "release", "sp26-20"
+      And the label "backend" is ticked
+      And the label "release" is not ticked
+
+    @gui-labels-are-created-several-at-a-time
+    Scenario: a label nobody carries is created under the name it will have, and the list stays open for the next
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the labels "backend" and "release"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      And I type "Sp26 21"
+      Then the list offers to create "sp26-21"
+      When I press "enter"
+      And I type "front"
+      And I press "enter"
+      And I press "cmd+enter"
+      Then the field "labels" reads "front sp26-21"
+      When I choose "Save"
+      Then task 1 carries the labels "front, sp26-21"
+
+    @gui-a-label-spelt-otherwise-is-the-one-there-is
+    Scenario: a label typed another way is the label there is, and nothing is created
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the labels "backend" and "sp26-20"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      And I type "SP26_20"
+      Then the list reads "sp26-20"
+      And the list offers to create nothing
+      When I press "enter"
+      And I press "cmd+enter"
+      And I choose "Save"
+      Then task 1 carries the labels "sp26-20"
+
+    @gui-a-label-the-rule-refuses-is-not-created
+    Scenario: a label no label may be is said why, and not created
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      And I type "ado:77594"
+      Then the list says a label has no family
+      And the list offers to create nothing
+      When I press "enter"
+      And I press "cmd+enter"
+      Then the field "labels" reads ""
+
+    @gui-a-label-taken-off-is-offered-no-more
+    Scenario: a label taken off its last task is offered no more
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 1 with the labels "backend" and "sp26-20"
+      And I edited task 2 with the labels "release" and "sp26-20"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      And I press "enter"
+      And I press "cmd+enter"
+      And I choose "Save"
+      Then task 1 carries the labels "sp26-20"
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      Then the list reads "release", "sp26-20"
+
     @gui-backing-out-of-a-list-keeps-nothing
     Scenario: backing out of a list puts nothing in the field, and keeps the form
       Given I added an objective titled "Ship the desktop board"

@@ -197,6 +197,31 @@ Feature: Tasks
       Then the task carries exactly 1 label
       And the task carries the label "spec"
 
+    @task-labels-written-one-way
+    Scenario Outline: a label is written one way, whatever way it was typed
+      When I run `cairn task add "Write the spec" --label "<typed>"`
+      Then the task carries exactly 1 label
+      And the task carries the label "<kept>"
+
+      Examples:
+        | typed             | kept            |
+        | Sp26 20           | sp26-20         |
+        | Modularité/Helm   | modularite-helm |
+        | dette__config     | dette-config    |
+        | Release__26.1.6-- | release-26.1.6  |
+
+    @task-labels-no-family
+    Scenario: a label with a family is refused, and says to write two
+      When I run `cairn task add "Write the spec" --label "ado:77594"`
+      Then it fails
+      And it says a label has no family
+
+    @task-labels-what-a-label-holds
+    Scenario: a label holding what no label may hold is refused, saying what one may hold
+      When I run `cairn task add "Write the spec" --label "#urgent"`
+      Then it fails
+      And it says what a label may hold
+
     @task-attributes-together
     Scenario: attributes do not interfere with each other
       When I run `cairn task add "Write the spec" --priority high --state todo --label spec`
@@ -330,6 +355,14 @@ Feature: Tasks
       Given I added a task titled "Write the spec" with the labels "team" and "urgent"
       And I added a task titled "Ship it" with the labels "team" and "later"
       When I run `cairn task list --label urgent`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
+    @task-list-narrowed-by-a-label-however-typed
+    Scenario: a label is looked for written the one way, however it was typed
+      Given I added a task titled "Write the spec" with the labels "sp26-20" and "team"
+      And I added a task titled "Ship it" with the labels "team" and "later"
+      When I run `cairn task list --label "SP26_20"`
       Then it lists 1 task
       And it lists task 1 titled "Write the spec"
 

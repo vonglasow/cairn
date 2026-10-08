@@ -30,8 +30,8 @@ func factsOf(m Migration) facts {
 }
 
 func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
-	if len(Known) != 10 {
-		t.Fatalf("len(Known) = %d, want 10", len(Known))
+	if len(Known) != 11 {
+		t.Fatalf("len(Known) = %d, want 11", len(Known))
 	}
 	for i, m := range Known {
 		f := factsOf(m)

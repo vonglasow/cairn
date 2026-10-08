@@ -7,6 +7,8 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -103,6 +105,36 @@ func (w *world) isApplied(name string) (bool, error) {
 // scenario about backups needs a store older than this cairn to backup.
 func (w *world) registerStore(sc *godog.ScenarioContext) {
 	sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.AStoreFromAnOlderCairn)
+	// A store from before labels were written one way, kept as a file rather
+	// than made here: no command writes a label that way any more, which is the
+	// rule's whole point, and a scenario never opens a database. It was made
+	// with the cairn of the change before, then labelled with sqlite3 — task 1
+	// "chantier:proxmox", "ado:77594", "proxmox"; task 2 "obj-modularité/helm",
+	// "dette_config", "dette-config", "a:b:c", "ado:", "sp26   20", "--";
+	// objective 1 "chantier:doc-infra"; objective 2 "été 2026".
+	sc.Step(`^a store from before labels were written one way$`, func() error {
+		before, err := os.ReadFile(filepath.Join("testdata", "labels-before-the-rule.db"))
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+			return err
+		}
+		return os.WriteFile(w.StorePath, before, 0o600)
+	})
+	sc.Step(`^(task|objective) (\d+) carries exactly the labels "([^"]*)"$`, func(kind string, n int, want string) error {
+		w.Run(fmt.Sprintf("cairn %s show %d --json", kind, n))
+		var shown struct {
+			Labels []string `json:"labels"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &shown); err != nil {
+			return fmt.Errorf("reading %s %d: %w\n%s%s", kind, n, err, w.Out.Stdout, w.Out.Stderr)
+		}
+		if got := strings.Join(shown.Labels, ", "); got != want {
+			return fmt.Errorf("%s %d carries %q, want %q", kind, n, got, want)
+		}
+		return nil
+	})
 
 	// The number is read from the store, never written here: a scenario that
 	// spelled out "apply 2" would be describing how many migrations cairn has

@@ -61,6 +61,8 @@ var reasons = []reason{
 	{domain.ErrNotText, KindRefused, "not-text"},
 	{domain.ErrLabelRequired, KindRefused, "label-required"},
 	{domain.ErrLabelNotOneLine, KindRefused, "label-not-one-line"},
+	{domain.ErrLabelHasNoFamily, KindRefused, "label-has-no-family"},
+	{domain.ErrLabelHolds, KindRefused, "label-holds"},
 	{domain.ErrLabelsBothWays, KindRefused, "labels-both-ways"},
 	{domain.ErrNotAState, KindRefused, "not-a-state"},
 	{objective.ErrNotAnObjectiveState, KindRefused, "not-an-objective-state"},

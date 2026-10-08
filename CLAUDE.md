@@ -39,6 +39,7 @@ calls it, and prints — it decides nothing.
 | touching the Claude Code plugin — its hook, its skill, how it is installed | [docs/claude-code.md](docs/claude-code.md) |
 | touching the order of tasks, a task's place, or the focus | [docs/ordering.md](docs/ordering.md) |
 | narrowing a listing, or changing what a search reaches | [docs/listing.md](docs/listing.md) |
+| touching how a label is written, or how one is put on a task | [docs/labels.md](docs/labels.md) |
 | touching what stops a task, or what starts it again | [docs/blocking.md](docs/blocking.md) |
 | touching what a task serves, or how an objective is counted | [docs/objectives.md](docs/objectives.md) |
 | touching what showing a task says about its outside context, or where that context is looked for | [docs/context.md](docs/context.md) |

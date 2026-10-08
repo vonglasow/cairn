@@ -214,7 +214,7 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	at := ChoosingFrom(box)
 	offered := w.Choosing()
 	if len(offered) == 0 {
-		say(gtx, th, skin.Faint, ChoosingLine(box, at), ChoosingSays, reads)
+		say(gtx, th, skin.Faint, ChoosingLine(box, at), w.EmptyListSays(), reads)
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
 	}

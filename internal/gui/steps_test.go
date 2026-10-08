@@ -1079,6 +1079,51 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the label "([^"]*)" is (not )?ticked$`, func(label, not string) error {
+		for _, one := range w.w.Choosing() {
+			if one.Title == label {
+				if w.w.Ticked(one.Number) == (not == "") {
+					return nil
+				}
+				return fmt.Errorf("the label %q ticked is %v", label, not != "")
+			}
+		}
+		return fmt.Errorf("the list offers %v, and not %q", goalTitles(w.w.Choosing()), label)
+	})
+	sc.Then(`^the list offers to create "([^"]*)"$`, func(label string) error {
+		for _, one := range w.w.Choosing() {
+			if one.Creates == label {
+				return nil
+			}
+		}
+		return fmt.Errorf("the list offers %v, and does not offer to create %q", goalTitles(w.w.Choosing()), label)
+	})
+	sc.Then(`^the list offers to create nothing$`, func() error {
+		for _, one := range w.w.Choosing() {
+			if one.Creates != "" {
+				return fmt.Errorf("the list offers to create %q", one.Creates)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the list says a label has no family$`, func() error {
+		for _, one := range w.w.Choosing() {
+			if strings.Contains(one.Title, "a label has no family") {
+				return nil
+			}
+		}
+		return fmt.Errorf("the list reads %v, saying nothing of a family", goalTitles(w.w.Choosing()))
+	})
+	sc.Then(`^task (\d+) carries the labels "([^"]*)"$`, func(n int, want string) error {
+		shape, err := w.tell(n)
+		if err != nil {
+			return err
+		}
+		if got := strings.Join(shape.Labels, ", "); got != want {
+			return fmt.Errorf("task %d carries %q, want %q", n, got, want)
+		}
+		return nil
+	})
 	sc.Then(`^the list reads (".*")$`, func(said string) error {
 		var want []string
 		for _, one := range strings.Split(said, ",") {
