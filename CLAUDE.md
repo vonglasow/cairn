@@ -36,6 +36,7 @@ calls it, and prints — it decides nothing.
 | writing code | [docs/design-principles.md](docs/design-principles.md) |
 | adding a tool, changing a threshold, unblocking a hook | [docs/checks.md](docs/checks.md) |
 | touching the MCP server, or adding a command an agent will see | [docs/mcp.md](docs/mcp.md) |
+| touching the Claude Code plugin — its hook, its skill, how it is installed | [docs/claude-code.md](docs/claude-code.md) |
 | touching the order of tasks, a task's place, or the focus | [docs/ordering.md](docs/ordering.md) |
 | narrowing a listing, or changing what a search reaches | [docs/listing.md](docs/listing.md) |
 | touching what stops a task, or what starts it again | [docs/blocking.md](docs/blocking.md) |

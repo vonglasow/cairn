@@ -57,6 +57,15 @@ hooks = [
     # frame changes. See docs/checks.md.
 ]
 
+# Shell scripts: the release, the checks, and the hook Claude Code runs on
+# every message — where a quoting slip is a fault on somebody else's machine.
+[[repos]]
+repo = "https://github.com/shellcheck-py/shellcheck-py"
+rev = "745eface02aef23e168a8afb6b5737818efbea95" # frozen: v0.11.0.1
+hooks = [
+    { id = "shellcheck" },
+]
+
 # Static analysis / SAST, and secrets written into a file by mistake.
 #
 # The rules are the registry's Go and secrets packs, named rather than left to
@@ -99,7 +108,7 @@ hooks = [
     # floor gave way, and until it did the average absorbed it. The per-package
     # floor is what makes the claim true now, and `tested-check` above catches
     # the worse case first.
-    { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, files = '(\.go|\.feature|(^|/)go\.(mod|sum)|/testdata/.+)$' },
+    { id = "cover-check", name = "coverage floor", entry = "make cover-check", language = "system", pass_filenames = false, files = '(\.go|\.feature|\.sh|(^|/)go\.(mod|sum)|/testdata/.+|^plugin/.+|^\.claude-plugin/.+)$' },
     # Mutation: breaks each line on purpose and checks a test turns red.
     # Coverage only says a line ran. Mutation is the slow gate, and it is split
     # in two on purpose: at commit, the lines that changed, in the packages they

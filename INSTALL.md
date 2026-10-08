@@ -58,3 +58,29 @@ setting a backup aside first.
 
 `THIRD_PARTY_NOTICES`, beside this file, holds the licences of what cairn is
 built from; it goes wherever the binary goes.
+
+## With Claude Code
+
+The `cairn` plugin ties a Claude Code session to the cairn task it serves: it
+loads the task's notes when you say `on travaille sur cairn#12`, lists what to
+work on when you ask, holds the task in focus while you work and lets it go
+when you stop. [docs/claude-code.md](docs/claude-code.md) says how.
+
+It needs `cairn` and `jq` on your `PATH`. In Claude Code:
+
+```text
+/plugin marketplace add /path/to/cairn
+/plugin install cairn@cairn
+```
+
+The marketplace is this repository — a local copy, or its git URL. Restart
+Claude Code afterwards.
+
+The plugin declares cairn's MCP server itself. If you already declared one,
+declare it with the same command, or Claude Code loads both and every cairn
+tool appears twice:
+
+```sh
+claude mcp remove cairn
+claude mcp add --scope user cairn -- cairn mcp serve --access full
+```

@@ -1,0 +1,14 @@
+{
+  "name": "cairn",
+  "owner": {
+    "name": "Alexis von Glasow"
+  },
+  "description": "cairn, the personal objective and task manager, for Claude Code.",
+  "plugins": [
+    {
+      "name": "cairn",
+      "source": "./plugin/claude",
+      "description": "Ties a Claude Code session to the cairn task it serves."
+    }
+  ]
+}

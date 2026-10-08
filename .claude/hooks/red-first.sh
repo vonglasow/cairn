@@ -76,6 +76,7 @@ case $tool in
         # read the others, so only that one is a target: copying a production
         # file aside to keep it is a read. Measured as a hole before this: a
         # file could be written in /tmp and copied into place unseen.
+        # shellcheck disable=SC2020 # one character for one: sets, on purpose
         printf '%s' "$command" | tr ';&|' '\n\n\n' |
           awk '$1 ~ /^(cp|mv|install|rsync|ditto)$/ { print $NF }'
         # A patch names what it changes inside itself, on its +++ lines.

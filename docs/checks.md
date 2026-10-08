@@ -13,6 +13,7 @@ here has to be remembered.
 | `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files` | is the file well formed? |
 | `tools-present` | are the linter and the scanner the versions the Makefile names? |
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
+| `shellcheck` | does a shell script hold up to static analysis? |
 | `no-go-testing` | does non-test code import `testing`? |
 | `golangci-lint` | does it hold up to static analysis, comments included? |
 | `semgrep` | is there a known bad pattern, or a secret written into a file? |
@@ -35,8 +36,9 @@ the suite was the same answer paid for twice. The `bdd/` scenarios are Go
 tests, so that one run covers them too.
 
 **A hook is triggered by every file its answer depends on**, not only by Go.
-`cover-check` also runs when a scenario, a pinned frame under `testdata/`, or
-`go.mod` changes; `govulncheck` and `harness-check` when `go.mod` or `go.sum`
+`cover-check` also runs when a scenario, a pinned frame under `testdata/`, a
+shell script, the Claude Code plugin, or `go.mod` changes — the suite runs the
+scripts and the plugin's hook; `govulncheck` and `harness-check` when `go.mod` or `go.sum`
 does; `golangci-lint` when `.golangci.yml` does. Each says so with `files` in
 `prek.toml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.

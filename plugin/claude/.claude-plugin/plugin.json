@@ -1,0 +1,5 @@
+{
+  "name": "cairn",
+  "description": "Ties a Claude Code session to the cairn task it serves: its notes as context, its focus held while the work goes on.",
+  "author": { "name": "Alexis von Glasow" }
+}
