@@ -1685,6 +1685,16 @@ Feature: The desktop board
       Then the part "Get the nod" is ticked
       And task 3 is in the column "done"
 
+    @gui-a-task-with-parts-chooses-from-a-list
+    Scenario: a task with parts opens a list from its form, and the form stays drawn under it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Draft the columns" hanging under task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the field "column"
+      Then the window is choosing
+      And the list reads "backlog", "todo", "current", "blocked", "watching", "paused", "done"
+
     @gui-a-part-is-renamed-in-its-tile
     Scenario: enter renames the part the keyboard is on, in its tile
       Given I added a task titled "Ship it"

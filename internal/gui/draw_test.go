@@ -13,6 +13,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
+	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
 
 	"cairn/internal/reading"
@@ -68,6 +69,26 @@ func drawnInAStep(w Window) (*image.RGBA, error) {
 		return nil, fmt.Errorf("no headless window here: %w — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
 	}
 	return rendered(window, w)
+}
+
+// drawsWithoutFault lays out a window the way a frame does, without a screen
+// to send it to, and says whether laying it out panicked. Only the layout is
+// asked: a panic is raised while the frame is being described, before any
+// pixel exists, so no headless window is needed and none is skipped.
+func drawsWithoutFault(th *material.Theme, w Window) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("drawing the window panicked on screen %v: %v", w.Screen(), r)
+		}
+	}()
+	var ops op.Ops
+	gtx := layout.Context{
+		Ops:         &ops,
+		Constraints: layout.Exact(image.Pt(w.width, w.height)),
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	Draw(gtx, th, Dark(), w)
+	return nil
 }
 
 // rendered draws a window into one with no screen, releases it, and answers

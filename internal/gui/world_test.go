@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"gioui.org/io/key"
+	"gioui.org/widget/material"
 
 	"github.com/cucumber/godog"
 
@@ -45,6 +46,9 @@ type world struct {
 	was int
 	// pointer is where the pointer holding a part was last put down.
 	pointer Point
+	// theme is the one every step's window is laid out with: made once, since
+	// shaping a font collection costs more than laying out a frame.
+	theme *material.Theme
 }
 
 func newWorld(t *testing.T) *world { return &world{t: t, width: 1200, high: 800} }
@@ -619,6 +623,21 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		w.reset()
 		return ctx, nil
+	})
+
+	// Every step leaves a window that can be drawn. A window can reach a state
+	// no scenario draws — a list opened over the form of a task with parts
+	// panicked in the hands of the person using it, while every step that led
+	// there passed. Drawn after each step, a state that cannot be drawn fails
+	// the scenario that reached it, whatever the scenario was about.
+	sc.StepContext().After(func(ctx context.Context, _ *godog.Step, _ godog.StepResultStatus, err error) (context.Context, error) {
+		if err != nil || w.w.width == 0 {
+			return ctx, err
+		}
+		if w.theme == nil {
+			w.theme = Theme()
+		}
+		return ctx, drawsWithoutFault(w.theme, w.w)
 	})
 
 	w.givens().Register(sc)

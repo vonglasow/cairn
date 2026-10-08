@@ -39,6 +39,8 @@ type world struct {
 	// formAt is which field of the form the last step left the cursor on, so
 	// the next one knows how far it still has to walk.
 	formAt int
+	// opened says a board stands, so a step after it can draw it.
+	opened bool
 }
 
 func newWorld(t *testing.T) *world {
@@ -84,6 +86,7 @@ func (w *world) reset() {
 // nothing. What the beat does is checked on its own, in model_test.go.
 func (w *world) open() {
 	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high)
+	w.opened = true
 	w.refresh()
 }
 
@@ -186,7 +189,19 @@ func strip(s string) string {
 func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		w.reset()
+		w.opened = false
 		return ctx, nil
+	})
+
+	// Every step leaves a board that can be drawn — the window's scenarios
+	// learnt it from a list opened over a form that panicked in somebody's
+	// hands while every step leading there passed. Drawn after each step, a
+	// state that cannot be drawn fails whichever scenario reached it.
+	sc.StepContext().After(func(ctx context.Context, _ *godog.Step, _ godog.StepResultStatus, err error) (context.Context, error) {
+		if err != nil || !w.opened {
+			return ctx, err
+		}
+		return ctx, drawsWithoutFault(w.b)
 	})
 
 	w.givens().Register(sc)
@@ -800,3 +815,14 @@ func TestThePanelsUnderTheDescriptionTakeTheirRows(t *testing.T) {
 
 // notesRoot is where a scenario's board is told the notes live.
 const notesRoot = "/vault"
+
+// drawsWithoutFault renders a board and says whether rendering it panicked.
+func drawsWithoutFault(b Board) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("drawing the board panicked: %v", r)
+		}
+	}()
+	_ = b.View()
+	return nil
+}

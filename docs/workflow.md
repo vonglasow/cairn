@@ -70,6 +70,11 @@ Conventions:
 - **The two streams stay apart.** `run` returns stdout, stderr and the exit code
   separately, because a scenario that says a reason goes to standard error can
   only be checked if standard error is a thing on its own.
+- **Every step leaves a board that can be drawn.** The window's and the
+  terminal's scenarios draw what they hold after each step, whatever the step
+  was about, and a panic fails the scenario that reached it. A list opened over
+  the form of a task with parts once brought the window down in somebody's
+  hands, though every step leading there passed: nothing had drawn it.
 - **A step returns its error**; it never calls `t.Fatalf`. A Goexit from inside
   godog wrecks its subtest bookkeeping and surfaces as an unreadable
   "test executed panic(nil) or runtime.Goexit".

@@ -380,8 +380,13 @@ func (w Window) Form() Form { return w.form }
 // PartsTicked is what the parts field of an open form is drawn as: a tile for
 // each part it says now, done or not, unsaved lines included. Nothing on a
 // form with no parts field.
+//
+// The form is open under a list being chosen from as much as on its own, and
+// is drawn there too. Answered on the form alone, a task with parts opened a
+// list and the window fell over: its tiles counted the parts, and this said
+// there were none.
 func (w Window) PartsTicked() []reading.Card {
-	if w.screen != OnForm {
+	if w.screen != OnForm && w.screen != OnChoosing {
 		return nil
 	}
 	for _, field := range w.form.Fields() {
