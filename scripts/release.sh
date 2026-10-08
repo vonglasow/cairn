@@ -55,8 +55,10 @@ make build
 
 # The tag carries the version's own notes — what changed since the last one —
 # so `git show v1.2.0` answers what a person upgrading wants to know.
+# Verbatim: git strips every line starting with # from a tag's message, and
+# took every heading of the notes with it.
 if $fresh; then
-  scripts/changelog.sh "$tag" | awk '/^## / { n++ } n == 1' | git tag -a "$tag" -F -
+  scripts/changelog.sh "$tag" | awk '/^## / { n++ } n == 1' | git tag -a --cleanup=verbatim "$tag" -F -
   echo "tagged $tag"
 fi
 
