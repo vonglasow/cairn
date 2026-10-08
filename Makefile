@@ -31,7 +31,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version dist stamps tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
+.PHONY: release release-check next-version changelog dist stamps tools-present help build run red cover cover-check tested-check harness-check gremlins-present mutation mutation-changed check linux notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -50,6 +50,10 @@ help:
 ## build: build the binary into ./bin, stamped with version, commit and time
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/cairn
+
+## changelog: say what changed, version by version, and what the next version would bring
+changelog:
+	@scripts/changelog.sh "$$(go run github.com/caarlos0/svu/v3@$(SVU_VERSION) next --v0)"
 
 ## stamps: say the version, the commit and its date a build here would be stamped with
 stamps:

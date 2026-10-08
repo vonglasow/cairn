@@ -51,3 +51,24 @@ Feature: Version
     When I make a release there
     Then it refuses, saying "a version is made from a clean tree"
     And no tag was made
+
+  @version-archive-says-what-changed
+  Scenario: a version's archive says what changed, version by version
+    Given a repository on a branch called "main"
+    And a version "v0.1.0" made there
+    And the commits "fix: keep the focus", "feat(gui): choose a label", "feat!: drop families" and "docs: say how"
+    When I make its source archive as version "v0.2.0"
+    Then the archive's changelog says, under "v0.2.0", "choose a label" among the features
+    And the archive's changelog says, under "v0.2.0", "drop families" among the breaking changes
+    And the archive's changelog says, under "v0.2.0", "keep the focus" among the fixes
+    And the archive's changelog says nothing of "say how"
+    And the archive's changelog says, under "v0.1.0", "begin" among the features
+
+  @version-sums-kept
+  Scenario: the checksums of every version made are kept beside each other
+    Given a repository on a branch called "main"
+    And a version "v0.1.0" made there
+    And its source archive made as version "v0.1.0"
+    And the commits "feat: more", "fix: less" and "docs: words"
+    When I make its source archive as version "v0.2.0"
+    Then the checksums name "cairn-v0.1.0-src.tar.gz" and "cairn-v0.2.0-src.tar.gz"

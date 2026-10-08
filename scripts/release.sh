@@ -53,8 +53,10 @@ make release-check
 make linux
 make build
 
+# The tag carries the version's own notes — what changed since the last one —
+# so `git show v1.2.0` answers what a person upgrading wants to know.
 if $fresh; then
-  git tag -a "$tag" -m "$tag"
+  scripts/changelog.sh "$tag" | awk '/^## / { n++ } n == 1' | git tag -a "$tag" -F -
   echo "tagged $tag"
 fi
 

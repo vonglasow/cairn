@@ -69,19 +69,23 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 5. **Makes the archive.**
 
    ```sh
-   make dist      # dist/cairn-v1.2.0-src.tar.gz and dist/SHA256SUMS
+   make dist      # dist/cairn-v1.2.0-src.tar.gz, dist/CHANGELOG.md, dist/SHA256SUMS
    ```
 
    A version is handed over as **its sources**, built where they are with
    `make build` — the same archive on macOS and on Linux, with nothing hosted
    anywhere: the archive and its checksum go wherever colleagues fetch things
-   from. It holds the tree the tag names and four files git would not give:
+   from. `SHA256SUMS` keeps a line for every archive made in the folder: the
+   one just made is written again, the others are left as they were — written
+   whole, it lost the sum of every earlier version the moment a later one was
+   made. It holds the tree the tag names and five files git would not give:
 
    - `VERSION`, `COMMIT` and `COMMIT_DATE`, what `git describe`, the commit
      and its date would have said. An archive has no history to ask, so the
      Makefile reads them first — without them a build from it called itself
      `dev`, made from `none`, on a date `unknown`.
      `make stamps` says what a build would be stamped with.
+   - `CHANGELOG.md`, what changed, version by version — below.
    - `THIRD_PARTY_NOTICES`, the licences of what cairn is built from, read by
      `scripts/notices.sh` from the module cache for the modules the binary
      actually links, with Go's own; every licence and notice file of a module
@@ -99,8 +103,26 @@ Mac cannot reach. Whoever needs one builds it from the archive, where they are.
 
 - **A changelog written afterwards.** The commits say why each change was made;
   a version is read as the commits since the last tag. A breaking change says
-  so in its own commit, under `BREAKING CHANGE`, which is where somebody
-  reading the log between two tags will look.
+  so in its own commit, under `BREAKING CHANGE` or with a `!`, which is where
+  somebody reading the log between two tags will look.
+
+## The changelog
+
+`scripts/changelog.sh` reads it off the history every time, and no file in the
+repository keeps it: every version is a tag, and what it brought is the
+conventional commits between it and the one before, which commitlint already
+holds to their shape. Newest first, each version says what breaks, what is new
+and what was fixed — a `feat`, a `fix`, and either with a `!` or a
+`BREAKING CHANGE`. The rest, docs and tests and chores, is in the history for
+whoever wants it, and not in what somebody upgrading reads.
+
+It goes three places: into the archive and beside it in `dist/`, and into the
+annotated tag, which carries its own version's part — `git show v1.2.0` says
+what that version brought. `make changelog` prints it with what the next
+version would bring, and makes nothing.
+
+Kept as a file it would be one more thing to write in every commit, or a
+release that commits on its own; read off the tags it cannot drift from them.
 - **A migration run for somebody.** A store behind the new binary is refused
   until `cairn migration apply` — which sets a backup aside first. A version
   that changed the store's shape on the way past would be changing somebody's

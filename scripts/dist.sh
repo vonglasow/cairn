@@ -33,19 +33,30 @@ commit=$(git rev-parse HEAD)
 committed=$(TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD)
 name="cairn-$version"
 
-extra=()
+# What changed, version by version, read off the tags rather than kept in a
+# file: the archive carries it, and so does the folder it is made in.
+mkdir -p "$out"
+scripts/changelog.sh "$version" >"$out/CHANGELOG.md"
+
+extra=(--add-file="$out/CHANGELOG.md")
 if [ -n "$notices" ]; then
   extra+=(--add-file="$notices")
 fi
 
-mkdir -p "$out"
 git archive --format=tar.gz --prefix="$name/" \
   --add-virtual-file="$name/VERSION:$version" \
   --add-virtual-file="$name/COMMIT:$commit" \
   --add-virtual-file="$name/COMMIT_DATE:$committed" \
-  ${extra[@]+"${extra[@]}"} \
+  "${extra[@]}" \
   -o "$out/$name-src.tar.gz" "$tree"
 
+# Every archive made here keeps its sum: the line of the one just made is
+# written again, the others are left as they were. Rewritten whole, the file
+# lost the sums of every earlier version the moment a later one was made.
 cd "$out"
-shasum -a 256 "$name-src.tar.gz" > SHA256SUMS
+{
+  grep -v "  $name-src.tar.gz\$" SHA256SUMS 2>/dev/null || true
+  shasum -a 256 "$name-src.tar.gz"
+} | sort -k2 >SHA256SUMS.new
+mv SHA256SUMS.new SHA256SUMS
 cat SHA256SUMS

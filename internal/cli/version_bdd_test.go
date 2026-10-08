@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -214,12 +215,14 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			if err := os.MkdirAll(filepath.Join(w.repo, "scripts"), 0o755); err != nil {
 				return err
 			}
-			script, err := os.ReadFile(filepath.Join(root(), "scripts", "release.sh"))
-			if err != nil {
-				return err
-			}
-			if err := os.WriteFile(filepath.Join(w.repo, "scripts", "release.sh"), script, 0o755); err != nil {
-				return err
+			for _, name := range []string{"release.sh", "dist.sh", "changelog.sh"} {
+				script, err := os.ReadFile(filepath.Join(root(), "scripts", name))
+				if err != nil {
+					return err
+				}
+				if err := os.WriteFile(filepath.Join(w.repo, "scripts", name), script, 0o755); err != nil {
+					return err
+				}
 			}
 			for _, args := range [][]string{
 				{"init", "-q", "-b", branch},
@@ -228,6 +231,64 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			} {
 				if err := command(w.repo, "git", args...); err != nil {
 					return err
+				}
+			}
+			return nil
+		})
+
+		sc.Step(`^a version "([^"]*)" made there$`, func(version string) error {
+			return command(w.repo, "git", "-c", "user.name=t", "-c", "user.email=t@t", "tag", "-a", version, "-m", version)
+		})
+
+		sc.Step(`^the commits (".*")$`, func(said string) error {
+			for _, message := range quoted.FindAllStringSubmatch(said, -1) {
+				if err := command(w.repo, "git", "-c", "user.name=t", "-c", "user.email=t@t",
+					"commit", "-q", "--allow-empty", "-m", message[1]); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+		sc.Step(`^(?:I make )?its source archive(?: made)? as version "([^"]*)"$`, func(version string) error {
+			if w.archive == "" {
+				w.archive = filepath.Join(w.t.TempDir(), "dist")
+			}
+			return command(w.repo, "bash", filepath.Join("scripts", "dist.sh"), version, w.archive)
+		})
+
+		sc.Step(`^the archive's changelog says, under "([^"]*)", "([^"]*)" among the (features|fixes|breaking changes)$`, func(version, what, kind string) error {
+			section, err := w.changelogSection(version, map[string]string{
+				"features": "### Features", "fixes": "### Fixes", "breaking changes": "### Breaking changes",
+			}[kind])
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(section, what) {
+				return fmt.Errorf("the %s of %s say nothing of %q:\n%s", kind, version, what, section)
+			}
+			return nil
+		})
+
+		sc.Step(`^the archive's changelog says nothing of "([^"]*)"$`, func(what string) error {
+			said, err := w.changelog()
+			if err != nil {
+				return err
+			}
+			if strings.Contains(said, what) {
+				return fmt.Errorf("the changelog speaks of %q:\n%s", what, said)
+			}
+			return nil
+		})
+
+		sc.Step(`^the checksums name "([^"]*)" and "([^"]*)"$`, func(first, second string) error {
+			sums, err := os.ReadFile(filepath.Join(w.archive, "SHA256SUMS"))
+			if err != nil {
+				return err
+			}
+			for _, name := range []string{first, second} {
+				if !strings.Contains(string(sums), "  "+name+"\n") {
+					return fmt.Errorf("the checksums say nothing of %s:\n%s", name, sums)
 				}
 			}
 			return nil
@@ -358,4 +419,46 @@ func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {
 	runAcceptance(t, "version.feature", initVersion(t), "@version-is-made-on-main,@version-is-made-from-a-clean-tree")
+}
+
+// changelog is what the last source archive made says changed.
+func (w *versionWorld) changelog() (string, error) {
+	found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
+	if err != nil {
+		return "", err
+	}
+	if len(found) == 0 {
+		return "", fmt.Errorf("no source archive was made")
+	}
+	slices.Sort(found)
+	last := found[len(found)-1]
+	inside := strings.TrimSuffix(filepath.Base(last), "-src.tar.gz") + "/CHANGELOG.md"
+	said, err := exec.Command("tar", "-xzOf", last, inside).Output()
+	if err != nil {
+		return "", fmt.Errorf("the archive holds no changelog: %w", err)
+	}
+	return string(said), nil
+}
+
+// changelogSection is one heading's part of one version's notes.
+func (w *versionWorld) changelogSection(version, heading string) (string, error) {
+	said, err := w.changelog()
+	if err != nil {
+		return "", err
+	}
+	_, notes, found := strings.Cut(said, "## "+version)
+	if !found {
+		return "", fmt.Errorf("the changelog has no %s:\n%s", version, said)
+	}
+	notes, _, _ = strings.Cut(notes, "\n## ")
+	_, part, found := strings.Cut(notes, heading)
+	if !found {
+		return "", fmt.Errorf("%s has no %q:\n%s", version, heading, notes)
+	}
+	part, _, _ = strings.Cut(part, "\n### ")
+	return part, nil
+}
+
+func TestAcceptance_Version_SaysWhatChangedAndKeepsEverySum(t *testing.T) {
+	runAcceptance(t, "version.feature", initVersion(t), "@version-archive-says-what-changed,@version-sums-kept")
 }
