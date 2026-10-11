@@ -279,6 +279,27 @@ func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
 	}
 }
 
+// What went wrong is said above the bar and not over it: it used to take the
+// bar's place, and every offer went with it until the next good read.
+func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	f.fail = errNope
+	w = w.Wonder()
+	if w.Wrong() == nil {
+		t.Fatal("nothing went wrong to be drawn")
+	}
+	shot := drawn(t, w)
+	if got := ink(shot, WrongBox(w.Layout()), Dark().Back); got == 0 {
+		t.Error("what went wrong is not drawn")
+	}
+	for i := range w.Offers() {
+		if got := ink(shot, OfferAt(w.Layout(), i), Dark().Back); got == 0 {
+			t.Errorf("offer %d is not drawn while something went wrong", i)
+		}
+	}
+}
+
 // A lane with nothing of its kind in it is empty, and a board that drew a card
 // in the wrong lane would be a board that lied about what is in the way.
 func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {

@@ -457,6 +457,36 @@ Feature: The desktop board
       Then it says what went wrong
       And "BACKLOG" carries "Write the spec"
 
+    @gui-what-went-wrong-leaves-the-bar
+    Scenario: what went wrong is said above the bar, and the bar still offers
+      Given I added a task titled "Write the spec" with the state "backlog"
+      And the store refuses what it is asked to change
+      When I open the window
+      And I drag the card "Write the spec" onto "TODO"
+      Then it says what went wrong
+      And what went wrong is drawn clear of the bar
+
+    @gui-what-went-wrong-stays-on-its-page
+    Scenario: what went wrong on one page is not carried to the other
+      Given I added a task titled "Write the spec" with the state "backlog"
+      And the store refuses what it is asked to change
+      When I open the window
+      And I drag the card "Write the spec" onto "TODO"
+      And I press "tab"
+      Then the tab is "OBJECTIVES"
+      And it says nothing went wrong
+
+    @gui-what-went-wrong-fades
+    Scenario: what went wrong goes on its own once it has been read
+      Given I added a task titled "Write the spec" with the state "backlog"
+      And the store refuses what it is asked to change
+      When I open the window
+      And I drag the card "Write the spec" onto "TODO"
+      And the window has looked at the store 3 times
+      Then it says what went wrong
+      When the window has looked at the store 1 time
+      Then it says nothing went wrong
+
   Rule: A card says when it is wanted and what it has cost
 
     The window knew nothing about time: no deadline, no notion of late, where

@@ -44,7 +44,9 @@ func (w Window) Searched() Written { return w.looking }
 // would need this rewritten rather than extended.
 //
 // Changing page lets go of what was chosen: a card chosen on the page you left
-// is a card the arrows would walk from on the page you are on.
+// is a card the arrows would walk from on the page you are on. It lets go of
+// what went wrong too: said on one page, it is about that page, and read on
+// the other it would be about nothing there.
 func (w Window) other() Window {
 	if w.tab == Tasks {
 		w.tab = Objectives
@@ -52,6 +54,7 @@ func (w Window) other() Window {
 		w.tab = Tasks
 	}
 	w.chosen, w.chosenGoal = 0, false
+	w.err, w.wrongFor = nil, 0
 	return w
 }
 

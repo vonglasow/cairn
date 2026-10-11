@@ -146,14 +146,16 @@ func SearchInto(b Box) Box {
 	return Box{X: b.X + padding + searchWide, Y: b.Y + (b.H-lineHigh)/2, W: b.W - padding - padding - searchWide, H: lineHigh}
 }
 
-// WrongBox is where a refusal is written: the bar's own line and one more
-// above it, growing upwards so the foot of the window stays where it is.
+// WrongBox is where a refusal is written: two lines just above the bar,
+// growing upwards so the foot of the window stays where it is.
 //
-// The bar is one line, and the most instructive refusal cairn has runs past it
-// — "it is still blocked, by #3 and by #4. take them away first: task 3, task
-// 4" was cut just before the part that says what to do.
+// Two, because the most instructive refusal cairn has runs past one — "it is
+// still blocked, by #3 and by #4. take them away first: task 3, task 4" was cut
+// just before the part that says what to do. Above the bar and not over it: it
+// used to take the bar's place, and every offer went with it until the next
+// good read.
 func WrongBox(l Layout) Box {
-	return Box{X: l.Bar.X, Y: l.Bar.Y - lineHigh, W: l.Bar.W, H: l.Bar.H + lineHigh}
+	return Box{X: l.Bar.X, Y: l.Bar.Y - 2*lineHigh, W: l.Bar.W, H: 2 * lineHigh}
 }
 
 // Stamped splits a history line into the time it happened and what happened,

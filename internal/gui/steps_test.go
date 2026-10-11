@@ -909,6 +909,29 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
+	sc.Then(`^it says nothing went wrong$`, func() error {
+		if wrong := w.w.Wrong(); wrong != nil {
+			return fmt.Errorf("the window still says: %w", wrong)
+		}
+		return nil
+	})
+	sc.Then(`^what went wrong is drawn clear of the bar$`, func() error {
+		l := w.w.Layout()
+		said, bar := WrongBox(l), l.Bar
+		if said.Y < bar.Y+bar.H && bar.Y < said.Y+said.H {
+			return fmt.Errorf("what went wrong, at %+v, lies over the bar at %+v", said, bar)
+		}
+		if len(w.w.Offers()) == 0 {
+			return fmt.Errorf("the bar offers nothing while something went wrong")
+		}
+		return nil
+	})
+	sc.Step(`^the window has looked at the store (\d+) times?$`, func(n int) error {
+		for range n {
+			w.w = w.w.Wonder()
+		}
+		return nil
+	})
 	sc.Then(`^the form shows the field "([^"]*)"$`, w.detailShowsField)
 	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
 		want := filepath.Join(notesRoot, strconv.Itoa(n))

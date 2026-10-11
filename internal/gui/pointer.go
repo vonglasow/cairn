@@ -461,7 +461,7 @@ func (w Window) dropped(number int, p Point) Window {
 			"state":  state,
 		}}
 		if _, err := w.work.Ask(engine.TaskEdit, asked); err != nil {
-			w.err = err
+			w.err, w.wrongFor = err, 0
 			return w
 		}
 	}

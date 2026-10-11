@@ -458,7 +458,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 // that writes ends; a refusal is kept to be said.
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
 	if _, err := w.work.Ask(op, in); err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	return w.Look()

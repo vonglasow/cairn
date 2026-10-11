@@ -455,9 +455,10 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 	if w.Wrong() != nil {
 		// Read at the size everything else is offered at, over two lines.
 		// The one thing in the window somebody has to read in full was the
-		// smallest text in it, on one line, cut wherever it ran out.
+		// smallest text in it, on one line, cut wherever it ran out. On a
+		// ground of its own, since it lies over the foot of the board.
+		fill(gtx, WrongBox(l), skin.Back)
 		sayOver(gtx, th, skin.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
-		return
 	}
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		for i, offer := range w.BoardOffers() {

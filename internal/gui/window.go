@@ -204,7 +204,15 @@ type Window struct {
 	choosing int
 
 	err error
+	// wrongFor is how many times the window has looked at the store since err
+	// was said: what went wrong goes on its own once it has been there long
+	// enough to read, see Lingers.
+	wrongFor int
 }
+
+// Lingers is how many beats what went wrong stays: long enough to read two
+// lines, and gone before it is mistaken for something still true.
+func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work.
 func New(work reading.Work, width, height int) Window {
@@ -326,9 +334,10 @@ func (w Window) UnderHead() string {
 // whole thing again only when the answer has moved. Every listing is two
 // questions and a redraw; the version is one integer.
 func (w Window) Wonder() Window {
+	w = w.aged()
 	version, err := w.work.Version()
 	if err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	if version == w.version {
@@ -337,11 +346,24 @@ func (w Window) Wonder() Window {
 	return w.Look()
 }
 
+// aged counts one more beat on what went wrong, and forgets it once it has
+// lingered its time.
+func (w Window) aged() Window {
+	if w.err == nil {
+		return w
+	}
+	w.wrongFor++
+	if w.wrongFor >= Lingers() {
+		w.err, w.wrongFor = nil, 0
+	}
+	return w
+}
+
 // Look reads the work again and draws from what came back.
 func (w Window) Look() Window {
 	found, err := reading.Look(w.work)
 	if err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	w.snap, w.version, w.err = found, found.Version, nil

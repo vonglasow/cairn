@@ -541,8 +541,17 @@ because splitting one sentence across two inks makes it read as two.
 **A refusal gets two lines and the reading size.** The most instructive thing
 cairn says — "it is still blocked, by #3 and by #4. take them away first: task
 3, task 4" — was the smallest text in the window, on one line, cut just before
-the part that says what to do. The line grows upward, so the foot of the window
-stays where it is.
+the part that says what to do. The two lines sit just above the bar, on a
+ground of their own, so the foot of the window stays where it is.
+
+**What went wrong never hides the bar, and does not stay.** It used to take
+the bar's place until the next good read, and every offer went with it. Now
+the bar keeps offering under it (`@gui-what-went-wrong-leaves-the-bar`), it
+goes on its own after `Lingers` beats — four, eight seconds, time to read two
+lines (`@gui-what-went-wrong-fades`) — and it belongs to the page it was said
+on: changing tab lets go of it (`@gui-what-went-wrong-stays-on-its-page`). The
+terminal does the same with the one line it has: the next key gives the bar
+back.
 
 **A wheel keeps what did not come to a line.** `by / lineHigh` threw away every
 turn smaller than a row, which is every turn a trackpad sends — one pixel at a

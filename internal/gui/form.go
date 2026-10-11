@@ -365,7 +365,7 @@ func (w Window) beside() Window {
 	}
 	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
 	if err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	for _, act := range shown.Acts {
@@ -421,7 +421,7 @@ func (w Window) Save() Window {
 	op, asked := w.saving()
 	answer, err := w.work.Ask(op, asked)
 	if err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	// The parts go under the task the form was over — or, when it added one,
@@ -431,7 +431,7 @@ func (w Window) Save() Window {
 		parent = reading.Added(answer)
 	}
 	if err := w.savingParts(parent); err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	w.screen, w.form = OnTheBoard, Form{}
@@ -657,7 +657,7 @@ func (w Window) deleting() Window {
 	}
 	w.screen = OnTheBoard
 	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
-		w.err = err
+		w.err, w.wrongFor = err, 0
 		return w
 	}
 	w.chosen, w.chosenGoal = 0, false

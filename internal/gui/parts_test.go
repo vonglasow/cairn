@@ -1125,12 +1125,10 @@ func TestAnErrorHasRoomForMoreThanTheBar(t *testing.T) {
 	if wrong.H < 2*lineHigh {
 		t.Errorf("an error gets %d, which is less than two lines", wrong.H)
 	}
-	if wrong.Y+wrong.H != l.Bar.Y+l.Bar.H {
-		t.Errorf("an error does not end where the bar does: %d against %d",
-			wrong.Y+wrong.H, l.Bar.Y+l.Bar.H)
-	}
-	if wrong.Y >= l.Bar.Y {
-		t.Error("an error has no more room than the bar it replaces")
+	// It ends where the bar begins: the bar is still there under it, offering.
+	if wrong.Y+wrong.H != l.Bar.Y {
+		t.Errorf("an error does not end where the bar begins: %d against %d",
+			wrong.Y+wrong.H, l.Bar.Y)
 	}
 }
 

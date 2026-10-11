@@ -7,6 +7,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -359,6 +360,26 @@ func (w *world) saveForm() error {
 func (w *world) lookAgain() error {
 	w.refresh()
 	return nil
+}
+
+// What went wrong took the bar's place and kept it until the next good read,
+// so every offer was gone while it stood. It has been read by the time a key
+// is pressed: that key gives the bar back, and still does what it does.
+func TestAKeyGivesTheBarBackOverWhatWentWrong(t *testing.T) {
+	w := newWorld(t)
+	w.reset()
+	if err := w.addTask("Write the spec", "", "", 0); err != nil {
+		t.Fatal(err)
+	}
+	w.open()
+	w.b.err = errors.New("that cannot be done")
+	if !strings.Contains(w.b.foot(), "that cannot be done") {
+		t.Fatalf("the foot does not say what went wrong: %q", w.b.foot())
+	}
+	w.press("l")
+	if w.b.err != nil || strings.Contains(w.b.foot(), "that cannot be done") {
+		t.Errorf("a key left what went wrong in the bar's place: %q", w.b.foot())
+	}
 }
 
 // A form refused keeps what was typed. It closed before the write was tried,

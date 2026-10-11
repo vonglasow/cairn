@@ -211,6 +211,10 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return b, tea.Batch(b.wonder(), tick())
 	case tea.KeyPressMsg:
 		key := keyName(m)
+		// What went wrong takes the bar's place, and has been read by the time
+		// a key is pressed: the key gives the bar back, and still does what it
+		// does. A refusal it causes is said again, by the key itself.
+		b.err = nil
 		// The form takes the press itself. Help still answers over it, because
 		// help answers everywhere — including from inside a form somebody has
 		// got stuck in.
