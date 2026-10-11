@@ -1,7 +1,10 @@
 package gui
 
 import (
+	"bytes"
 	"image"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,9 +31,25 @@ func frames(t *testing.T, w Window, events ...event.Event) (Window, time.Time, P
 	return framesAt(t, w, time.Time{}, Point{}, time.Now(), events...)
 }
 
+// framesTraced is frames with every pointer event written down where it says.
+func framesTraced(t *testing.T, w Window, traced io.Writer, events ...event.Event) Window {
+	t.Helper()
+	w, _, _ = framesInto(t, w, time.Time{}, Point{}, time.Now(), traced, events...)
+	return w
+}
+
 func framesAt(
 	t *testing.T, w Window,
 	pressed time.Time, pressedAt Point, now time.Time,
+	events ...event.Event,
+) (Window, time.Time, Point) {
+	t.Helper()
+	return framesInto(t, w, pressed, pressedAt, now, nil, events...)
+}
+
+func framesInto(
+	t *testing.T, w Window,
+	pressed time.Time, pressedAt Point, now time.Time, traced io.Writer,
 	events ...event.Event,
 ) (Window, time.Time, Point) {
 	t.Helper()
@@ -49,12 +68,12 @@ func framesAt(
 	}
 
 	first := gtx()
-	w, pressed, pressedAt = heard(first, w, pressed, pressedAt)
+	w, pressed, pressedAt = heard(first, w, pressed, pressedAt, traced)
 	router.Frame(first.Ops)
 	router.Queue(events...)
 
 	second := gtx()
-	w, pressed, pressedAt = heard(second, w, pressed, pressedAt)
+	w, pressed, pressedAt = heard(second, w, pressed, pressedAt, traced)
 	router.Frame(second.Ops)
 	return w, pressed, pressedAt
 }
@@ -285,5 +304,22 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	}
 	if in.Given["title"] != "Write the spec properly" {
 		t.Errorf("it saved the title as %q", in.Given["title"])
+	}
+}
+
+// Asked to, the loop writes down every pointer event as it read it, and only
+// the pointer's: a key says nothing about where a card is drawn.
+func TestTheLoopWritesDownEachPointerEventWhenAsked(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	var traced bytes.Buffer
+	framesTraced(t, w, &traced,
+		pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonPrimary},
+		key.Event{Name: "?", State: key.Press},
+	)
+	// The router says the pointer came in before it says it pressed.
+	lines := strings.Split(strings.TrimSpace(traced.String()), "\n")
+	if len(lines) != 2 || !strings.HasPrefix(lines[1], "pointer Press ") || !strings.Contains(lines[1], "held=1") {
+		t.Errorf("the loop wrote %q, want the pointer coming in and its press", traced.String())
 	}
 }

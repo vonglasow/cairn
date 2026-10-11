@@ -257,6 +257,7 @@ func ended(err error, said io.Writer, exit func(int)) {
 func loop(work reading.Work, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
+	traced := tracing(os.Getenv, os.Stderr)
 
 	theme, skin := Theme(), Dark()
 	board := New(work, width, height).Measuring(Measured(theme)).Look()
@@ -293,7 +294,7 @@ func loop(work reading.Work, width, height int) error {
 			if due(looked, gtx.Now) {
 				board, looked = board.Wonder(), gtx.Now
 			}
-			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt)
+			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt, traced)
 			Draw(gtx, theme, skin, board)
 			e.Frame(gtx.Ops)
 		}
@@ -344,7 +345,10 @@ func listening() []event.Filter {
 
 // heard takes everything that has happened since the last frame and answers the
 // window it leaves behind.
-func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Window, time.Time, Point) {
+//
+// traced is where each pointer event is written down, and nil for nowhere: see
+// trace.go.
+func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, traced io.Writer) (Window, time.Time, Point) {
 	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, tag)
 	area.Pop()
@@ -387,6 +391,9 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point) (Wi
 				Dp(e.Position, gtx.Metric.PxPerDp),
 				Turned(e.Scroll.Y, gtx.Metric.PxPerDp), gtx.Now)
 			pressed, pressedAt = g.At, g.Where
+			if traced != nil {
+				_, _ = fmt.Fprintln(traced, PointerTrace(e, gtx.Metric.PxPerDp, w))
+			}
 		case key.Event:
 			if e.State == key.Press {
 				w = Typed(w, string(e.Name), e.Modifiers)

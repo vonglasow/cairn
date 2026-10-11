@@ -538,6 +538,17 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A drag on Windows is not yet understood.** On Windows the card in hand was
+drawn at the top left of the window rather than under the pointer. Read
+through, nothing between the system and the drawing differs by system: Gio
+turns a move with a button held into a drag on every one, the pointer is read
+in dp with the ratio the drawing is scaled by, and the card in hand is drawn
+where the last drag put it. Rather than a fix guessed at from a Mac,
+`CAIRN_GUI_TRACE=1 cairn gui` writes every pointer event to standard error —
+what the system sent in pixels, the ratio, the point in dp, and where the card
+in hand stands after it (`PointerTrace`). A drag recorded on the machine that
+misbehaves says which of those steps went wrong.
+
 **A key is written the way the keyboard in front of the person writes it.**
 The window was written on a Mac and said ⌘ everywhere, so on Windows the help
 told somebody to press a key their keyboard does not have. What arrives was
