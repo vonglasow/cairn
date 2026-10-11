@@ -210,6 +210,21 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
+		sc.Step(`^the archive's install guide is written in ASCII alone$`, func() error {
+			said, err := os.ReadFile(filepath.Join(w.unpacked, "INSTALL.md"))
+			if err != nil {
+				return err
+			}
+			for i, line := range strings.Split(string(said), "\n") {
+				for _, r := range line {
+					if r > 127 {
+						return fmt.Errorf("INSTALL.md line %d carries %q: %s", i+1, r, line)
+					}
+				}
+			}
+			return nil
+		})
+
 		sc.Step(`^a repository on a branch called "([^"]*)"$`, func(branch string) error {
 			w.repo = w.t.TempDir()
 			if err := os.MkdirAll(filepath.Join(w.repo, "scripts"), 0o755); err != nil {
@@ -414,7 +429,7 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 }
 
 func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere")
 }
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {

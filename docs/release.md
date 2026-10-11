@@ -95,6 +95,11 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    build needs — Go, make, a C compiler, and on Linux the graphics headers
    `scripts/linux.sh` installs — and how to put the binary on a `PATH`.
 
+   It is written in ASCII alone (`@version-install-reads-anywhere`). It is read
+   before anything is installed, in whatever the machine has, and on Windows
+   a tool that takes a file with no mark of its encoding for the system's code
+   page wrote every dash as `â€”`.
+
 A binary built for another system is not part of a version: the window needs
 cgo, and the system's graphics headers on Linux, which a cross-compile from a
 Mac cannot reach. Whoever needs one builds it from the archive, where they are.

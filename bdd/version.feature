@@ -37,6 +37,15 @@ Feature: Version
     And a build there would be stamped with the date of that commit
     And the archive says how to build and install it
 
+  @version-install-reads-anywhere
+  Scenario: the archive's install guide reads the same in any tool, on any system
+    The guide is read before anything is installed, in whatever the machine
+    has — on Windows, a tool that takes a file with no mark of its encoding for
+    the system's own code page, and wrote every dash as "â€”".
+    Given the source archive of this repository made as version "v9.9.9"
+    When I unpack it somewhere git has never been
+    Then the archive's install guide is written in ASCII alone
+
   @version-is-made-on-main
   Scenario: a version is made from main and nowhere else
     Given a repository on a branch called "work"

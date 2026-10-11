@@ -17,7 +17,7 @@ The same archive builds on macOS and on Linux.
     libxcursor-dev libvulkan-dev
   ```
 
-  On another distribution, the same libraries under its own names — Gio, the
+  On another distribution, the same libraries under its own names: Gio, the
   toolkit the window is drawn with, lists them at
   <https://gioui.org/doc/install/linux>.
 - **On macOS, the command line tools** (`xcode-select --install`), for the C
@@ -45,16 +45,16 @@ install -m 755 bin/cairn ~/.local/bin/cairn     # or /usr/local/bin, with sudo
 cairn --help
 ```
 
-cairn keeps its work in `~/.cairn` unless told otherwise — `cairn config
+cairn keeps its work in `~/.cairn` unless told otherwise; `cairn config
 show` says where. Installing a newer version leaves it where it is; a version
 that changes how it is kept says so, and `cairn migration apply` moves it on,
 setting a backup aside first.
 
 ## Using it
 
-- `cairn task add "Write the spec"`, `cairn task list` — the command line.
-- `cairn tui` — the board, in the terminal.
-- `cairn gui` — the same board, in a window.
+- `cairn task add "Write the spec"`, `cairn task list`: the command line.
+- `cairn tui`: the board, in the terminal.
+- `cairn gui`: the same board, in a window.
 
 `THIRD_PARTY_NOTICES`, beside this file, holds the licences of what cairn is
 built from; it goes wherever the binary goes.
@@ -73,7 +73,7 @@ It needs `cairn` and `jq` on your `PATH`. In Claude Code:
 /plugin install cairn@cairn
 ```
 
-The marketplace is this repository — a local copy, or its git URL. Restart
+The marketplace is this repository: a local copy, or its git URL. Restart
 Claude Code afterwards.
 
 The plugin declares cairn's MCP server itself. If you already declared one,
