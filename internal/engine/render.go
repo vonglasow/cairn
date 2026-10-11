@@ -113,7 +113,7 @@ func stoodText(t task.Task, since time.Time) string {
 	if since.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).state, domain.FormatDay(since), daysSince(since, time.Now()))
+	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).state, domain.FormatDay(since.Local()), daysSince(since, time.Now()))
 }
 
 // daysSince is how many days lie between a moment and now, counted as a

@@ -801,7 +801,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return fmt.Errorf("in_column_since = %v: %w", doc["in_column_since"], err)
 		}
 		for _, day := range daysToday() {
-			if domain.FormatDay(since) == day {
+			if domain.FormatDay(since.Local()) == day {
 				return nil
 			}
 		}

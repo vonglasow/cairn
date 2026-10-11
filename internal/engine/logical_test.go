@@ -225,3 +225,17 @@ func TestStoodText_saysSinceWhenOnlyWhenItKnows(t *testing.T) {
 		t.Errorf("stoodText = %q", got)
 	}
 }
+
+// The day is the one on the person's calendar, not the store's: a moment is
+// kept in UTC, and read as it is, a task taken up just after midnight in Paris
+// said it had stood there since the day before.
+func TestStoodText_saysTheDayOnTheLocalCalendar(t *testing.T) {
+	kept := time.Local
+	time.Local = time.FixedZone("UTC+2", 2*60*60)
+	t.Cleanup(func() { time.Local = kept })
+	task := add(t, openEngine(t), "Write the spec")
+	justAfterMidnight := time.Date(2026, 10, 11, 22, 30, 0, 0, time.UTC)
+	if got := stoodText(task, justAfterMidnight); !strings.Contains(got, "since 2026-10-12") {
+		t.Errorf("stoodText = %q, want the local day, 2026-10-12", got)
+	}
+}
