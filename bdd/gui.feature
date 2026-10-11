@@ -950,6 +950,21 @@ Feature: The desktop board
       And I press "esc"
       Then the help is closed
 
+    @gui-the-help-names-the-keys-of-the-system
+    Scenario: away from a Mac the help and the bar say Ctrl where a Mac says ⌘
+      Given the window runs on "windows"
+      When I open the window
+      And I click "Help"
+      Then the help says what "Ctrl+N" does
+      And the help says nothing of "⌘"
+
+    @gui-a-mac-keeps-its-own-keys
+    Scenario: on a Mac the help says ⌘
+      Given the window runs on "darwin"
+      When I open the window
+      And I click "Help"
+      Then the help says what "⌘N" does
+
     @gui-the-help-scrolls
     Scenario: a help longer than the window scrolls, and says so
       Given a window of 1024 by 640

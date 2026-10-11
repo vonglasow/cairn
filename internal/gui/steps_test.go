@@ -1011,6 +1011,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)
+	sc.Then(`^the help says nothing of "([^"]*)"$`, func(about string) error {
+		if w.helpSaysAbout(about) == nil {
+			return fmt.Errorf("the help still says %q", about)
+		}
+		return nil
+	})
 	sc.Then(`^the help shows some of its lines and not all$`, func() error {
 		if shown, all := w.w.HelpRoom(), len(w.w.HelpRows()); shown < 1 || shown >= all {
 			return fmt.Errorf("the help shows %d of its %d lines", shown, all)

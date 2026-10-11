@@ -32,6 +32,10 @@ type world struct {
 	w     Window
 
 	width, high int
+	// system is what the window is told it runs on. Every scenario runs on a
+	// Mac unless it says otherwise, so the keys it reads are the same keys
+	// whatever machine runs the suite.
+	system string
 	// clipboard is what the system's would hold, kept here because a scenario
 	// has no system: the window asks and the loop does, so the world plays the
 	// loop's part.
@@ -79,6 +83,7 @@ func (w *world) reset() {
 	w.work = &refusing{held: held}
 	w.w = Window{}
 	w.width, w.high = 1200, 800
+	w.system = "darwin"
 	w.scrolled = [Columns]int{}
 	w.laneScrolled = [3]int{}
 }
@@ -166,7 +171,7 @@ func (w *world) storeRefuses() error {
 // ── what a person does ────────────────────────────────────────────────────
 
 func (w *world) open() error {
-	w.w = New(w.work, w.width, w.high)
+	w.w = New(w.work, w.width, w.high).OnSystem(w.system)
 	w.w = w.w.Look()
 	return w.w.Wrong()
 }
@@ -646,6 +651,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.When(`^I open the window$`, w.open)
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
+	sc.Given(`^the window runs on "([^"]*)"$`, func(system string) error {
+		w.system = system
+		return nil
+	})
 	sc.Step(`^I click the card "([^"]*)"$`, w.click)
 	sc.Step(`^I click the tab "([^"]*)"$`, w.clickTab)
 	sc.Step(`^I ⌘-click the card "([^"]*)"$`, func(title string) error {

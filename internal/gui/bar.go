@@ -165,6 +165,16 @@ type Said struct {
 
 // Helping is what everything does, as a person reads it.
 func (w Window) Helping() []Said {
+	lines := helping()
+	for i, line := range lines {
+		lines[i] = Said{Key: w.keyboard.Spelled(line.Key), Means: w.keyboard.Spelled(line.Means)}
+	}
+	return lines
+}
+
+// helping is the help as a Mac writes it, spelled for the keyboard in front of
+// the person by Helping.
+func helping() []Said {
 	return []Said{
 		{Key: "click", Means: "choose a card"},
 		{Key: "double-click", Means: "open it, and see everything it carries"},

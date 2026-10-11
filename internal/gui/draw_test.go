@@ -939,10 +939,10 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 	if got := Pretty("esc"); got != "esc" {
 		t.Errorf("the bar writes esc as %q", got)
 	}
-	if got := said("New"); !strings.Contains(got, "⌘N") || !strings.Contains(got, "New") {
+	if got := New(newFake(), 1200, 800).OnSystem("darwin").Said("New"); !strings.Contains(got, "⌘N") || !strings.Contains(got, "New") {
 		t.Errorf("the bar writes New as %q", got)
 	}
-	if got := said("nothing at all"); got != "nothing at all" {
+	if got := New(newFake(), 1200, 800).Said("nothing at all"); got != "nothing at all" {
 		t.Errorf("an offer with no key is written %q, with a gap in front of it", got)
 	}
 }

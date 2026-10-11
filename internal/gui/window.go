@@ -109,6 +109,8 @@ type Window struct {
 	helpFrom int
 	// measure is the face text is measured with; nil until one is given.
 	measure Measure
+	// keyboard is what keys are written for, see keyboard.go.
+	keyboard Keyboard
 	// growing is what a run held with the pointer grows by, and anchor the run
 	// it grows from: what the press, the double or the triple click held.
 	growing Unit
@@ -218,7 +220,7 @@ func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work.
 func New(work reading.Work, width, height int) Window {
-	w := Window{work: work, width: width, height: height}
+	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard()}
 	return w.sized()
 }
 

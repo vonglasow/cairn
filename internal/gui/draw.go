@@ -483,7 +483,7 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 	}
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		for i, offer := range w.BoardOffers() {
-			say(gtx, th, skin.Faint, OfferAt(l, i), said(offer), reads)
+			say(gtx, th, skin.Faint, OfferAt(l, i), w.Said(offer), reads)
 		}
 		return
 	}
@@ -498,10 +498,10 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer string, w Window) {
 	if w.Lighting(offer) {
 		fill(gtx, box, skin.Panel)
-		say(gtx, th, skin.Ink, box, said(offer), reads)
+		say(gtx, th, skin.Ink, box, w.Said(offer), reads)
 		return
 	}
-	say(gtx, th, skin.Chosen, box, said(offer), reads)
+	say(gtx, th, skin.Chosen, box, w.Said(offer), reads)
 }
 
 // drawHistory is what was done to the task, beside what the task carries, in a
@@ -951,14 +951,4 @@ func sayOver(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 	label.Color = ink
 	label.MaxLines = lines
 	label.Layout(inner)
-}
-
-// said is an offer as the bar writes it: the key beside the word. An offer
-// with no key is written alone rather than with a gap in front of it.
-func said(offer string) string {
-	key := Shortcut(offer)
-	if key == "" {
-		return offer
-	}
-	return Pretty(key) + "  " + offer
 }

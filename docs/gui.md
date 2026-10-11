@@ -538,6 +538,15 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A key is written the way the keyboard in front of the person writes it.**
+The window was written on a Mac and said ⌘ everywhere, so on Windows the help
+told somebody to press a key their keyboard does not have. What arrives was
+never the problem — `Typed` reads ⌘ and Ctrl alike — so the help and the bar
+are still written once, the Mac's way, and `Keyboard.Spelled` writes `Ctrl+`
+and `Shift+` for ⌘ and ⇧ away from one
+(`@gui-the-help-names-the-keys-of-the-system`). Scenarios run as on a Mac
+unless they say otherwise, so what they read does not depend on the machine.
+
 **The help fits the window it is opened in.** It was drawn line after line
 from the top of a panel of fixed height: on a short window its foot ran under
 the panel's edge, and a line longer than its column was cut where it ran out.
