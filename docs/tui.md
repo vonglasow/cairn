@@ -215,6 +215,11 @@ appears when it is close or gone. A date three months out is not information on 
 board. It carries no clock glyph: the glyph rendered badly and said nothing the
 `d` did not.
 
+**A task that is done counts no day down.** It is wanted on no day any more,
+and a `−3d` in red on it would call for an act nobody has left to do. The open
+task still says the day it was due, without the count. The window reads the
+same rule, `reading.CardDeadline`.
+
 ## Glyphs
 
 Nerd Font by default, plain Unicode when the terminal cannot. Which one is said

@@ -171,7 +171,7 @@ func SubLine(c reading.Card) string {
 // boards saying different things about the same day would be worse than one
 // board saying nothing.
 func Due(c reading.Card, now time.Time) (said string, late bool) {
-	text, show, over := reading.Deadline(c.Deadline, now)
+	text, show, over := reading.CardDeadline(c, now)
 	if !show {
 		return "", false
 	}

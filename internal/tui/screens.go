@@ -297,13 +297,18 @@ func (b Board) detailBand(c reading.Card) string {
 	for _, label := range c.Labels {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
+	// The day stays once the task is done — it is a fact about the task — and
+	// only its count goes: see reading.CardDeadline.
 	if day := domain.FormatDay(c.Deadline); day != "" {
-		text, _, late := reading.Deadline(c.Deadline, b.now())
+		text, show, late := reading.CardDeadline(c, b.now())
 		style := b.skin.Bright
 		if late {
 			style = b.skin.Late
 		}
-		told = append(told, b.skin.Says.Render("due ")+style.Render(day+" · "+text))
+		if show {
+			day += " · " + text
+		}
+		told = append(told, b.skin.Says.Render("due ")+style.Render(day))
 	}
 	if c.Estimate != "" {
 		told = append(told, b.skin.Bright.Render(c.Estimate)+b.skin.Says.Render(" estimated"))

@@ -75,7 +75,7 @@ func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
-	if text, show, late := reading.Deadline(c.Deadline, now); show {
+	if text, show, late := reading.CardDeadline(c, now); show {
 		told = append(told, text)
 		if late {
 			dressed = append(dressed, s.Late.Render(text))

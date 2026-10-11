@@ -64,6 +64,21 @@ func TestDeadline(t *testing.T) {
 	}
 }
 
+// A task that is done is wanted on no day any more: its deadline is not
+// counted down, nor drawn as late, on either board. Any other column still
+// counts it.
+func TestCardDeadline_saysNothingOnceTheTaskIsDone(t *testing.T) {
+	gone := on("2026-08-29")
+	if text, show, late := CardDeadline(Card{State: "done", Deadline: gone}, today); text != "" || show || late {
+		t.Errorf("a done task's deadline reads %q %v %v, want nothing", text, show, late)
+	}
+	for _, state := range []string{"backlog", "todo", "current", "blocked"} {
+		if text, show, late := CardDeadline(Card{State: state, Deadline: gone}, today); text != "−3d" || !show || !late {
+			t.Errorf("a task in %s reads %q %v %v, want its day gone by three", state, text, show, late)
+		}
+	}
+}
+
 func TestDeadlineIgnoresTheTimeOfDay(t *testing.T) {
 	// The answer to "how many days" must not depend on what o'clock it is when
 	// the board is opened.

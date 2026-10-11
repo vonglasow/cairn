@@ -67,6 +67,34 @@ func TestFactsInAColumn(t *testing.T) {
 	}
 }
 
+// A task that is done says nothing of the day it was wanted: a countdown,
+// drawn late, would call for an act nobody has left to do.
+func TestFactsOfADoneTaskSayNothingOfItsDay(t *testing.T) {
+	g := GlyphsFor(Unicode)
+	c := reading.Card{State: "done", Deadline: on("2026-08-29"), Labels: []string{"spec"}}
+	got := facts(c, g, plainSkin, today, 40)
+	if strings.Contains(got, "3d") {
+		t.Fatalf("a done task still counts its day down: %q", got)
+	}
+	if !strings.Contains(got, "spec") {
+		t.Fatalf("the rest of the row went with the day: %q", got)
+	}
+}
+
+// The open task keeps the day it was wanted on once it is done — it is a fact
+// about the task — but no longer counts it down nor draws it late.
+func TestDetailBandOfADoneTaskKeepsTheDayWithoutCountingIt(t *testing.T) {
+	b := Board{skin: plainSkin, glyphs: GlyphsFor(Unicode), clock: func() time.Time { return today }}
+	done := b.detailBand(reading.Card{Number: 1, Title: "Shipped", State: "done", Priority: "normal", Deadline: on("2026-08-29")})
+	if !strings.Contains(done, "2026-08-29") || strings.Contains(done, "3d") {
+		t.Fatalf("a done task's band reads %q, want its day and no count", done)
+	}
+	open := b.detailBand(reading.Card{Number: 1, Title: "Late", State: "todo", Priority: "normal", Deadline: on("2026-08-29")})
+	if !strings.Contains(open, "2026-08-29 · −3d") {
+		t.Fatalf("an open task's band reads %q, want its day and its count", open)
+	}
+}
+
 func TestFactsDropWhatWillNotFit(t *testing.T) {
 	g := GlyphsFor(Unicode)
 	c := reading.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}

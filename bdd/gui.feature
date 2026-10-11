@@ -480,6 +480,14 @@ Feature: The desktop board
       When I open the window
       Then the card "Write the spec" says nothing of "2027"
 
+    @gui-a-finished-card-says-nothing-of-its-day
+    Scenario: a task that is done says nothing of the day it was wanted
+      Given I added a task titled "Shipped" with the state "done"
+      And I edited task 1 with the deadline "2026-09-20"
+      When I open the window
+      Then "DONE" carries "Shipped"
+      And the card "Shipped" says nothing of "9d"
+
     @gui-a-card-says-what-it-has-cost
     Scenario: what a task has cost is written beside what it was reckoned to cost
       Given I added a task titled "Write the spec" with the estimate "2h"

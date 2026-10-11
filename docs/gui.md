@@ -138,7 +138,8 @@ deadline, no notion of late, where the terminal has written it on the card all
 along, and deciding what to do without knowing what is due is not deciding. A
 day more than a week out is left off, for the terminal's reason: it will still
 be there tomorrow and in ninety days, and saying so on every card every day
-buys nothing. A blocked card waiting on nothing any more says that instead, and
+buys nothing. So is the day of a task that is done, which is wanted on no day
+any more (`@gui-a-finished-card-says-nothing-of-its-day`). A blocked card waiting on nothing any more says that instead, and
 crowds the rest out — it is the one thing about it that has to be acted on.
 
 **An objective's card says where it stands**: `▶ active`, `‖ on-hold`,

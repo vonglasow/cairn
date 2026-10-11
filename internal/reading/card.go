@@ -43,6 +43,17 @@ func Deadline(due, now time.Time) (text string, show, late bool) {
 	return fmt.Sprintf("%dd", days), true, false
 }
 
+// CardDeadline is what a card says of its day: Deadline's answer, and nothing
+// once the task is done. A finished task is wanted on no day any more, and a
+// countdown on it — drawn late, most often — would call for an act nobody has
+// left to do.
+func CardDeadline(c Card, now time.Time) (text string, show, late bool) {
+	if Finished(c) {
+		return "", false, false
+	}
+	return Deadline(c.Deadline, now)
+}
+
 // startOfDay throws away the time of day. A deadline is a day, so the answer to
 // "how many days" must not depend on what o'clock it is when the board is
 // opened.
