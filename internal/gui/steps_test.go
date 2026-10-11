@@ -1011,6 +1011,56 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)
+	sc.Then(`^the help shows some of its lines and not all$`, func() error {
+		if shown, all := w.w.HelpRoom(), len(w.w.HelpRows()); shown < 1 || shown >= all {
+			return fmt.Errorf("the help shows %d of its %d lines", shown, all)
+		}
+		return nil
+	})
+	sc.Then(`^the help shows every line$`, func() error {
+		if shown, all := w.w.HelpRoom(), len(w.w.HelpRows()); shown < all {
+			return fmt.Errorf("the help shows %d of its %d lines", shown, all)
+		}
+		return nil
+	})
+	sc.Then(`^the help draws a bar to scroll it by$`, func() error {
+		if _, ok := w.w.HelpBar(); !ok {
+			return fmt.Errorf("the help draws no bar")
+		}
+		return nil
+	})
+	sc.Then(`^the help starts (\d+) lines down$`, func(n int) error {
+		if got := w.w.HelpFrom(); got != n {
+			return fmt.Errorf("the help starts %d lines down, want %d", got, n)
+		}
+		return nil
+	})
+	sc.Then(`^the help shows its last line$`, func() error {
+		if last := w.w.HelpFrom() + w.w.HelpRoom(); last != len(w.w.HelpRows()) {
+			return fmt.Errorf("the help ends at line %d of %d", last, len(w.w.HelpRows()))
+		}
+		return nil
+	})
+	sc.Then(`^the help is no taller than what it says$`, func() error {
+		box, over := w.w.HelpBox(), Over(w.width, w.high)
+		if box.H >= over.H {
+			return fmt.Errorf("the help is %d high, as tall as the room it was given", box.H)
+		}
+		if _, ok := w.w.HelpBar(); ok {
+			return fmt.Errorf("the help draws a bar with nothing to scroll")
+		}
+		return nil
+	})
+	sc.Then(`^every line of the help fits inside its panel$`, func() error {
+		box := w.w.HelpBox()
+		for i, row := range w.w.HelpRows() {
+			_, value := HelpRowAt(box, i)
+			if wide := Reckoned(row.Means, reads); wide[len(wide)-1] > value.W {
+				return fmt.Errorf("line %d, %q, is %d wide in a column of %d", i, row.Means, wide[len(wide)-1], value.W)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the bar does not offer "([^"]*)"$`, func(offer string) error {
 		for _, on := range w.w.Offers() {
 			if on == offer {

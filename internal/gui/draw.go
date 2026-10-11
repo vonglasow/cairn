@@ -178,7 +178,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 	}
 	if w.Screen() == OnHelp {
-		drawSaid(gtx, th, skin, w, w.Helping(), Over(w.width, w.height))
+		drawHelp(gtx, th, skin, w)
 	}
 	if w.Screen() == OnAsking {
 		drawSaid(gtx, th, skin, w, w.Asks(), w.QuestionBox())
@@ -288,6 +288,27 @@ func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said 
 		say(gtx, th, skin.Chosen, name, line.Key, reads)
 		say(gtx, th, skin.Ink, value, line.Means, reads)
 		at += apart
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
+}
+
+// drawHelp is the help: the lines in sight, each key on a chip, and the bar
+// beside them when there are more than are in sight. See help.go.
+func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box, rows, from := w.HelpBox(), w.HelpRows(), w.HelpFrom()
+	drawPanel(gtx, th, skin, box, Heads(w))
+	for i := range Lasting(len(rows), from, w.HelpRoom()) - from {
+		line := rows[from+i]
+		name, value := HelpRowAt(box, i)
+		if line.Key != "" {
+			fill(gtx, Chip(name), skin.Back)
+			say(gtx, th, skin.Chosen, name, line.Key, reads)
+		}
+		say(gtx, th, skin.Ink, value, line.Means, reads)
+	}
+	if bar, ok := w.HelpBar(); ok {
+		fill(gtx, bar, skin.Back)
+		fill(gtx, Thumb(bar, len(rows), w.HelpRoom(), from), skin.Edge)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

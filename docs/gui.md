@@ -538,6 +538,15 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**The help fits the window it is opened in.** It was drawn line after line
+from the top of a panel of fixed height: on a short window its foot ran under
+the panel's edge, and a line longer than its column was cut where it ran out.
+Each line now wraps into its column, the panel is as tall as what it says up to
+the room there is (`@gui-the-help-fits-what-it-says`), and on a window too short
+for it the wheel, `↑↓` and `j k` walk it, with a bar beside it saying where the
+reading stands (`@gui-the-help-scrolls`). See `help.go`. The terminal's help
+already read on with `↓↑`.
+
 **A refusal gets two lines and the reading size.** The most instructive thing
 cairn says — "it is still blocked, by #3 and by #4. take them away first: task
 3, task 4" — was the smallest text in the window, on one line, cut just before

@@ -226,6 +226,8 @@ func (w Window) panel() Box {
 		return ChoosingOver(w.width, w.height)
 	case OnAsking:
 		return w.QuestionBox()
+	case OnHelp:
+		return w.HelpBox()
 	}
 	return Over(w.width, w.height)
 }

@@ -558,7 +558,7 @@ func (w Window) Choose(name string) Window {
 		w.screen = OnSearch
 		return w
 	case "help":
-		w.screen = OnHelp
+		w.screen, w.helpFrom, w.spareHelp = OnHelp, 0, 0
 		return w
 	case "clear":
 		// What is taken together is let go of first: it is the nearer of

@@ -59,6 +59,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnForm:     func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
 	OnSearch:   Window.onSearch,
 	OnChoosing: Window.inChoosing,
+	OnHelp:     Window.inHelp,
 }
 
 // onBoard is what a key does on the board itself.

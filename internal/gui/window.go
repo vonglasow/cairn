@@ -104,7 +104,9 @@ type Window struct {
 	saying int
 	// What a wheel sent that did not come to a whole line, kept until the
 	// turns after it make one.
-	spareHistory, spareSaying, spareChoosing int
+	spareHistory, spareSaying, spareChoosing, spareHelp int
+	// helpFrom is the first line of the help in sight, see help.go.
+	helpFrom int
 	// measure is the face text is measured with; nil until one is given.
 	measure Measure
 	// growing is what a run held with the pointer grows by, and anchor the run

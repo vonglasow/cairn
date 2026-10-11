@@ -950,6 +950,33 @@ Feature: The desktop board
       And I press "esc"
       Then the help is closed
 
+    @gui-the-help-scrolls
+    Scenario: a help longer than the window scrolls, and says so
+      Given a window of 1024 by 640
+      When I open the window
+      And I click "Help"
+      Then the help shows some of its lines and not all
+      And the help draws a bar to scroll it by
+      When I press "down" 3 times
+      Then the help starts 3 lines down
+      When I press "down" 200 times
+      Then the help shows its last line
+
+    @gui-the-help-fits-what-it-says
+    Scenario: a help on a tall window is as tall as what it says
+      Given a window of 1600 by 2000
+      When I open the window
+      And I click "Help"
+      Then the help shows every line
+      And the help is no taller than what it says
+
+    @gui-the-help-keeps-its-words-inside
+    Scenario: no line of the help runs past its panel
+      Given a window of 1024 by 640
+      When I open the window
+      And I click "Help"
+      Then every line of the help fits inside its panel
+
   Rule: The window follows the store
 
     Somebody else at a command line, or an agent over MCP, is working in the
