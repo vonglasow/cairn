@@ -10,6 +10,10 @@ coverage.out
 # red receipts: proof a test failed, not history worth keeping
 /.claude/red/
 
+# the store cairn's own development is planned in, and its notes: one
+# person's board, not the project's
+/.cairn/
+
 # personal overrides, not the team's
 /.claude/settings.local.json
 
