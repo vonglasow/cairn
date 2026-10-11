@@ -216,26 +216,28 @@ func startOfToday() time.Time {
 
 // Every kind of move is written down, and says where it went. Asserted for all
 // three because each takes its own path through the store, and a recording
-// forgotten on one of them would be invisible on the others.
+// forgotten on one of them would be invisible on the others. Each moves a task
+// somewhere it was not: a move to where it stands is not written down.
 func TestMove_isWrittenDownWithWhereItWent(t *testing.T) {
 	for _, tc := range []struct {
-		what string
-		at   Place
-		want string
+		what   string
+		at     Place
+		moving int
+		want   string
 	}{
-		{"to the first place", First, "first"},
-		{"to the last place", Last, "last"},
-		{"behind another", Behind, "behind task"},
+		{"to the first place", First, 2, "first"},
+		{"to the last place", Last, 0, "last"},
+		{"behind another", Behind, 2, "behind task"},
 	} {
 		e := openEngine(t)
-		first := factsOf(add(t, e, "First")).number
-		second := factsOf(add(t, e, "Second")).number
-		born := len(actsOf(t, e, second))
+		first, second, third := three(t, e)
+		moving := []int{first, second, third}[tc.moving]
+		born := len(actsOf(t, e, moving))
 
-		if err := e.move(second, tc.at, first); err != nil {
+		if err := e.move(moving, tc.at, first); err != nil {
 			t.Fatalf("%s: Move: %v", tc.what, err)
 		}
-		written := actsOf(t, e, second)[born:]
+		written := actsOf(t, e, moving)[born:]
 		if len(written) != 1 {
 			t.Fatalf("%s: %d acts written, want 1", tc.what, len(written))
 		}

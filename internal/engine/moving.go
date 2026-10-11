@@ -46,9 +46,9 @@ const (
 // places is what the engine needs from whatever keeps the order and the focus.
 // Declared beside tasks, by the consumer, for the same reason.
 type places interface {
-	MoveFirst(int) error
-	MoveLast(int) error
-	MoveAfter(int, int) error
+	MoveFirst(int) (bool, error)
+	MoveLast(int) (bool, error)
+	MoveAfter(int, int) (bool, error)
 	Focus() ([]int, error)
 	AddFocus(int) error
 	DropFocus(int) error
@@ -58,33 +58,37 @@ type places interface {
 // move puts a task in a place among the ones it sits with. It never changes
 // the column: that is an edit, and one act with two meanings is an act nobody
 // can undo confidently.
+//
+// A move to the place a task already holds is not written down: the history
+// says what changed, and a card dropped back where it stood changed nothing.
 func (e *Engine) move(number int, at Place, target int) error {
-	moving, err := e.tasks.Find(number)
-	if err != nil {
+	moved, err := e.moveTo(number, at, target)
+	if err != nil || !moved {
 		return err
 	}
-	switch at {
-	case Behind:
-		sits, err := e.tasks.Find(target)
-		if err != nil {
-			return err
-		}
-		if err := moving.MayMoveBehind(sits); err != nil {
-			return err
-		}
-		if err := e.places.MoveAfter(number, target); err != nil {
-			return err
-		}
-	case First:
-		if err := e.places.MoveFirst(number); err != nil {
-			return err
-		}
-	default:
-		if err := e.places.MoveLast(number); err != nil {
-			return err
-		}
-	}
 	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
+}
+
+// moveTo asks for the place itself, and says whether the task went anywhere.
+func (e *Engine) moveTo(number int, at Place, target int) (bool, error) {
+	moving, err := e.tasks.Find(number)
+	if err != nil {
+		return false, err
+	}
+	if at == First {
+		return e.places.MoveFirst(number)
+	}
+	if at != Behind {
+		return e.places.MoveLast(number)
+	}
+	sits, err := e.tasks.Find(target)
+	if err != nil {
+		return false, err
+	}
+	if err := moving.MayMoveBehind(sits); err != nil {
+		return false, err
+	}
+	return e.places.MoveAfter(number, target)
 }
 
 // placeNamed is how a place reads in a history. A move records where it went

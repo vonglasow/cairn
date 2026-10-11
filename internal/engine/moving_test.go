@@ -71,6 +71,38 @@ func TestMove_putsATaskBehindTheOneNamed(t *testing.T) {
 	wantHeld(t, e, "Second", "First", "Third")
 }
 
+// A move to the place a task already holds writes nothing down, and a move
+// that went somewhere does: the history says what changed, and only that.
+func TestMove_writesDownOnlyAMoveThatWentSomewhere(t *testing.T) {
+	for _, tc := range []struct {
+		what   string
+		at     Place
+		moving int
+		want   int
+	}{
+		{"the head to the head", First, 0, 0},
+		{"the tail to the tail", Last, 2, 0},
+		{"behind the one it is behind", Behind, 1, 0},
+		{"the tail to the head", First, 2, 1},
+	} {
+		e := openEngine(t)
+		first, second, third := three(t, e)
+		moving := []int{first, second, third}[tc.moving]
+		if err := e.move(moving, tc.at, first); err != nil {
+			t.Fatalf("moving %s: %v", tc.what, err)
+		}
+		moves := 0
+		for _, a := range actsOf(t, e, moving) {
+			if did, _, _, _ := didOf(a); did == trace.Moved {
+				moves++
+			}
+		}
+		if moves != tc.want {
+			t.Errorf("moving %s writes down %d moves, want %d", tc.what, moves, tc.want)
+		}
+	}
+}
+
 // The rule lives in the task and is asked before the store is: every refusal
 // here comes back from the notion rather than from a failed statement.
 func TestMove_refusesWhatTheNotionRefuses(t *testing.T) {

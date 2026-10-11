@@ -130,10 +130,10 @@ func TestThePlaces_runOneToNAfterEveryAct(t *testing.T) {
 		what string
 		do   func() error
 	}{
-		{"moving a task to the head", func() error { return s.MoveFirst(factsOf(second).number) }},
-		{"moving a task to the tail", func() error { return s.MoveLast(factsOf(first).number) }},
+		{"moving a task to the head", func() error { return onlyErr(s.MoveFirst(factsOf(second).number)) }},
+		{"moving a task to the tail", func() error { return onlyErr(s.MoveLast(factsOf(first).number)) }},
 		{"moving a task behind another", func() error {
-			return s.MoveAfter(factsOf(second).number, factsOf(first).number)
+			return onlyErr(s.MoveAfter(factsOf(second).number, factsOf(first).number))
 		}},
 		{"changing a task's column", func() error {
 			return s.Update(changed(second, func(a *task.AsTold) { a.InColumn(domain.Todo) }))
@@ -177,7 +177,7 @@ func TestMoveFirst_putsATaskAtTheHeadOfItsColumn(t *testing.T) {
 	keep(t, s, "First")
 	keep(t, s, "Second")
 	third := keep(t, s, "Third")
-	if err := s.MoveFirst(factsOf(third).number); err != nil {
+	if _, err := s.MoveFirst(factsOf(third).number); err != nil {
 		t.Fatalf("MoveFirst: %v", err)
 	}
 	wantOrder(t, s, "Third", "First", "Second")
@@ -188,7 +188,7 @@ func TestMoveLast_putsATaskBehindTheRest(t *testing.T) {
 	first := keep(t, s, "First")
 	keep(t, s, "Second")
 	keep(t, s, "Third")
-	if err := s.MoveLast(factsOf(first).number); err != nil {
+	if _, err := s.MoveLast(factsOf(first).number); err != nil {
 		t.Fatalf("MoveLast: %v", err)
 	}
 	wantOrder(t, s, "Second", "Third", "First")
@@ -202,7 +202,7 @@ func TestMoveAfter_landsBehindTheTargetFromEitherSide(t *testing.T) {
 		first := keep(t, s, "First")
 		second := keep(t, s, "Second")
 		keep(t, s, "Third")
-		if err := s.MoveAfter(factsOf(first).number, factsOf(second).number); err != nil {
+		if _, err := s.MoveAfter(factsOf(first).number, factsOf(second).number); err != nil {
 			t.Fatalf("MoveAfter: %v", err)
 		}
 		wantOrder(t, s, "Second", "First", "Third")
@@ -212,11 +212,43 @@ func TestMoveAfter_landsBehindTheTargetFromEitherSide(t *testing.T) {
 		first := keep(t, s, "First")
 		keep(t, s, "Second")
 		third := keep(t, s, "Third")
-		if err := s.MoveAfter(factsOf(third).number, factsOf(first).number); err != nil {
+		if _, err := s.MoveAfter(factsOf(third).number, factsOf(first).number); err != nil {
 			t.Fatalf("MoveAfter: %v", err)
 		}
 		wantOrder(t, s, "First", "Third", "Second")
 	})
+}
+
+// onlyErr keeps what went wrong from a move and drops whether it moved, for
+// the tests that ask only the first.
+func onlyErr(_ bool, err error) error { return err }
+
+// A move says whether the task went anywhere: one asked to go where it already
+// stands did not, and the engine writes down only a move that happened.
+func TestMove_saysWhetherTheTaskWentAnywhere(t *testing.T) {
+	s := openStore(t)
+	first := keep(t, s, "First")
+	second := keep(t, s, "Second")
+	for _, tc := range []struct {
+		what string
+		move func() (bool, error)
+		want bool
+	}{
+		{"the head to the head", func() (bool, error) { return s.MoveFirst(factsOf(first).number) }, false},
+		{"the tail to the tail", func() (bool, error) { return s.MoveLast(factsOf(second).number) }, false},
+		{"behind the one it is behind", func() (bool, error) {
+			return s.MoveAfter(factsOf(second).number, factsOf(first).number)
+		}, false},
+		{"the tail to the head", func() (bool, error) { return s.MoveFirst(factsOf(second).number) }, true},
+	} {
+		moved, err := tc.move()
+		if err != nil {
+			t.Fatalf("moving %s: %v", tc.what, err)
+		}
+		if moved != tc.want {
+			t.Errorf("moving %s says it moved = %v, want %v", tc.what, moved, tc.want)
+		}
+	}
 }
 
 // Moving a task to where it already is changes nothing, and says nothing went
@@ -225,7 +257,7 @@ func TestMove_toWhereItAlreadyIsChangesNothing(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
 	keep(t, s, "Second")
-	if err := s.MoveFirst(factsOf(first).number); err != nil {
+	if _, err := s.MoveFirst(factsOf(first).number); err != nil {
 		t.Fatalf("MoveFirst: %v", err)
 	}
 	wantOrder(t, s, "First", "Second")
@@ -239,7 +271,7 @@ func TestMoveAfter_behindItselfLeavesTheOrderAlone(t *testing.T) {
 	first := keep(t, s, "First")
 	keep(t, s, "Second")
 	keep(t, s, "Third")
-	if err := s.MoveAfter(factsOf(first).number, factsOf(first).number); err != nil {
+	if _, err := s.MoveAfter(factsOf(first).number, factsOf(first).number); err != nil {
 		t.Fatalf("MoveAfter behind itself: %v", err)
 	}
 	wantOrder(t, s, "First", "Second", "Third")
@@ -252,10 +284,10 @@ func TestMove_refusesATaskThatIsNotThere(t *testing.T) {
 		what string
 		move func() error
 	}{
-		{"first", func() error { return s.MoveFirst(99) }},
-		{"last", func() error { return s.MoveLast(99) }},
-		{"after another", func() error { return s.MoveAfter(99, 1) }},
-		{"after one that is not there", func() error { return s.MoveAfter(1, 99) }},
+		{"first", func() error { return onlyErr(s.MoveFirst(99)) }},
+		{"last", func() error { return onlyErr(s.MoveLast(99)) }},
+		{"after another", func() error { return onlyErr(s.MoveAfter(99, 1)) }},
+		{"after one that is not there", func() error { return onlyErr(s.MoveAfter(1, 99)) }},
 	} {
 		if err := tc.move(); !errors.Is(err, ErrNoSuchTask) {
 			t.Errorf("moving %s = %v, want %v", tc.what, err, ErrNoSuchTask)
@@ -272,7 +304,7 @@ func TestMove_countsASubTaskAmongItsSisters(t *testing.T) {
 	second := keepUnder(t, s, "Second sister", factsOf(parent).number)
 	other := keep(t, s, "Another root task")
 
-	if err := s.MoveFirst(factsOf(second).number); err != nil {
+	if _, err := s.MoveFirst(factsOf(second).number); err != nil {
 		t.Fatalf("MoveFirst on a sub-task: %v", err)
 	}
 	under, err := s.Under(factsOf(parent).number)
@@ -283,7 +315,7 @@ func TestMove_countsASubTaskAmongItsSisters(t *testing.T) {
 		t.Errorf("the first sister is %q, want %q", got, "Second sister")
 	}
 
-	if err := s.MoveFirst(factsOf(other).number); err != nil {
+	if _, err := s.MoveFirst(factsOf(other).number); err != nil {
 		t.Fatalf("MoveFirst on a root task: %v", err)
 	}
 	if got := factsOf(under[0]).title; got != "Second sister" {

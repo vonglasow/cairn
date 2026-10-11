@@ -132,6 +132,11 @@ are noise, and the one line that says what a person did buried among them.
 So an entry records the act: *moved to the first place*. What that did to the
 places of its sisters is not written down.
 
+A move to the place a task already holds is no act at all, and nothing is
+written: a card dropped back where it stood, or the only card of a column moved
+to the head of it, changed nothing — like an edit giving a field the value it
+holds (`@trace-a-move-to-where-it-stands-is-not-an-act`).
+
 What is given up with it, said plainly: the order of the whole list as it stood
 on a past day cannot be read back. It could be recomputed by replaying the
 acts, which is not part of this and may never be — and a replay would depend on

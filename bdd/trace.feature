@@ -171,6 +171,14 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it carries 1 act
 
+    @trace-a-move-to-where-it-stands-is-not-an-act
+    Scenario: moving a task to the place it already holds is not a move
+      Given I added a task titled "Alone in its column"
+      And I moved task 1 to the first place
+      And I moved task 1 to the last place
+      When I run `cairn trace show 1`
+      Then it carries 1 act
+
   Rule: An act that is not about an attribute says what it did
 
     @trace-moved-says-where-it-went
