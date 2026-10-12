@@ -26,6 +26,11 @@ const (
 // Weekdays is the head of the calendar's columns, Monday first.
 var Weekdays = [7]string{"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
 
+// calendarState is what the calendar keeps: the day its keyboard is on.
+type calendarState struct {
+	day time.Time
+}
+
 // At is the window told what moment it is: the day a calendar opens on when
 // the field holds none, and the day it marks as today.
 func (w Window) At(now time.Time) Window {

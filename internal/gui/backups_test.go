@@ -40,7 +40,7 @@ func TestNoBackupYetIsSaid(t *testing.T) {
 
 // The list is walked both ways and stops at its ends; esc closes it.
 func TestTheBackupsAreWalkedBothWays(t *testing.T) {
-	w := Window{screen: OnBackups, backups: []domain.Backup{{Number: 2}, {Number: 1}}}
+	w := Window{screen: OnBackups, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
 	if got := w.onBackups("up").BackupOn(); got != 0 {
 		t.Errorf("up from the first is on %d", got)
 	}
@@ -80,7 +80,7 @@ func TestWhatIsToldGoes(t *testing.T) {
 // what the window tells is drawn above the bar.
 func TestTheBackupsAreDrawn(t *testing.T) {
 	made := time.Date(2026, 10, 12, 10, 0, 0, 0, time.UTC)
-	w := Window{screen: OnBackups, width: 1200, height: 800, backups: []domain.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}}
 	shot := drawn(t, w)
 	box := w.BackupsBox()
 	corner := func(i int) Box {
@@ -107,7 +107,7 @@ func TestTheBackupsAreLaidOut(t *testing.T) {
 // The question says what agreeing costs: nothing, since the store is backed
 // up first — and names the backup it would put back.
 func TestPuttingBackAsksWhatItCosts(t *testing.T) {
-	w := Window{screen: OnAsking, question: aboutPuttingBack, backups: []domain.Backup{{Number: 7}}}
+	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []domain.Backup{{Number: 7}}}}
 	asks := w.Asks()
 	if len(asks) != 2 || asks[0].Means != "What the store holds now is backed up first." {
 		t.Errorf("the question says %+v", asks)
@@ -119,7 +119,7 @@ func TestPuttingBackAsksWhatItCosts(t *testing.T) {
 
 // A click on a backup asks to put it back; a click off the list closes it.
 func TestTheBackupsAnswerThePointer(t *testing.T) {
-	w := Window{screen: OnBackups, width: 1200, height: 800, backups: []domain.Backup{{Number: 2}, {Number: 1}}}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
 	row := BackupRowAt(w.BackupsBox(), 1)
 	asked := w.Click(Point{X: row.X + 5, Y: row.Y + 5})
 	if asked.Screen() != OnAsking || asked.question != aboutPuttingBack || asked.BackupOn() != 1 {
@@ -137,7 +137,7 @@ func TestManyBackupsScroll(t *testing.T) {
 	for i := range many {
 		many[i] = domain.Backup{Number: 40 - i}
 	}
-	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many}}
 	room := w.BackupsRoom()
 	if room < 1 || room >= len(many) {
 		t.Fatalf("the list has room for %d of 40", room)
@@ -165,7 +165,7 @@ func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 	for i := range many {
 		many[i] = domain.Backup{Number: 40 - i}
 	}
-	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many, backupsFrom: 5}}
 	if got := w.BackupsRoom(); got != 19 {
 		t.Errorf("the list has room for %d, want 19", got)
 	}
@@ -190,7 +190,7 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	for i := range many {
 		many[i] = domain.Backup{Number: 20 - i}
 	}
-	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5, backupOn: 6}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many, backupsFrom: 5, backupOn: 6}}
 	shot := drawn(t, w)
 	corner := func(i int) Box {
 		row := BackupRowAt(w.BackupsBox(), i)

@@ -57,10 +57,10 @@ func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 // The page says the week's longest stretch, and how many tasks were worked
 // on, each counted once however many days it was worked on.
 func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
-	w := Window{week: dayNamed("2026-09-28"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{
+	w := Window{timeState: timeState{week: dayNamed("2026-09-28"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{
 		{Day: "2026-09-29", Minutes: 135, Tasks: []engine.TimesheetTask{{Number: 1, Minutes: 90}, {Number: 2, Minutes: 45}}},
 		{Day: "2026-10-02", Minutes: 120, Tasks: []engine.TimesheetTask{{Number: 2, Minutes: 120}}},
-	}}}
+	}}}}
 	if got := w.longest(); got != 120 {
 		t.Errorf("the longest stretch is %d, want 120", got)
 	}
@@ -73,7 +73,7 @@ func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
 	if got := w.timeOn(0); got.Day != "2026-09-28" || len(got.Tasks) != 0 {
 		t.Errorf("a day nothing was done on reads %+v", got)
 	}
-	shot := drawn(t, Window{tab: Time, width: 1200, height: 800, week: w.week, sheet: w.sheet})
+	shot := drawn(t, Window{tab: Time, width: 1200, height: 800, timeState: timeState{week: w.week, sheet: w.sheet}})
 	l := LayoutFor(1200, 800)
 	if got := ink(shot, WeekBar(WeekRowAt(WeekDayAt(l, 4), 0), 120, 120), Dark().Panel); got == 0 {
 		t.Error("Friday's bar is not drawn")

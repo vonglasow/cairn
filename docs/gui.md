@@ -101,6 +101,16 @@ the `Work` interface — `Ask` and `Version`, two methods.
 
 What is its own: geometry in pixels, drawing, and the mouse.
 
+**What a panel keeps lives with the panel.** `Window` is one value, and every
+panel added over the board used to lay its fields flat into it, so seventy
+fields read as one list and a panel's own state was found by grepping. The
+calendar's day, the menu's lines, the list of backups, the system's file
+dialog and the time page's week are each a small struct in the panel's own
+file (`calendarState`, `menuState`, `backupsState`, `filesState`,
+`timeState`), embedded in `Window`. What is not split yet: each panel still
+answers through the same four switches — `Choose`, `Offers`, `Click`,
+`panel` — so a new panel touches all four.
+
 `cairn gui` is a command in `internal/cli`, built like `cairn tui`, with the
 same seam (`var openGui = func(…)`) so a test never needs a window.
 

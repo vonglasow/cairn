@@ -13,8 +13,6 @@ package gui
 import (
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
@@ -121,42 +119,22 @@ type Window struct {
 	measure Measure
 	// keyboard is what keys are written for, see keyboard.go.
 	keyboard Keyboard
-	// now is the moment the window was last told it is, and day the day the
-	// calendar's keyboard is on: see calendar.go.
+	// now is the moment the window was last told it is.
 	now time.Time
-	day time.Time
-	// menu is what a right click offered, menuAt where it was clicked and
-	// menuOn the line the keyboard is on: see menu.go.
-	menu   []string
-	menuAt Point
-	menuOn int
 	// told is what the window last said that is not something gone wrong,
-	// and toldFor how many beats it has been said for; backups and backupOn
-	// are the list of backups and the line the keyboard is on: backups.go.
-	told        string
-	toldFor     int
-	backups     []domain.Backup
-	backupOn    int
-	backupsFrom int
-	// fileAsk is the system's dialog the window wants opened, until the loop
-	// takes it; bringing is the window's copy of a store chosen there, and
-	// bringingName the name of the file it was chosen as.
-	// menuSets is the field of the chosen task the menu offers values for,
-	// when it does: a column or a priority.
-	menuSets string
+	// and toldFor how many beats it has been said for.
+	told    string
+	toldFor int
 	// native says the system gave the window a menu bar of its own.
-	native       bool
-	fileAsk      *FileAsk
-	bringing     string
-	bringingName string
-	// week is the Monday of the week the time page shows, and sheet the time
-	// spent over it: see week.go.
-	week  time.Time
-	sheet engine.Timesheet
-	// monthly says the time page shows a month, and dayFrom is how far down
-	// each day of a week its tasks are scrolled.
-	monthly bool
-	dayFrom [7]int
+	native bool
+	// What each panel added over the board keeps of its own, each with the
+	// panel it belongs to: the calendar's day, the menu's lines, the list of
+	// backups, the system's file dialog, the time page's week.
+	calendarState
+	menuState
+	backupsState
+	filesState
+	timeState
 	// born is the moment of the window's first frame, and introOver says the
 	// cairn it opens on was ended by a key or a click: see cairn.go.
 	born      time.Time

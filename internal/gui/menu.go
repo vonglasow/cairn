@@ -14,6 +14,16 @@ import (
 	"cairn/internal/reading"
 )
 
+// menuState is what the menu keeps: its lines, the point it was opened at,
+// the line the keyboard is on, and the field of the chosen task its lines
+// are values for, when they are.
+type menuState struct {
+	menu     []string
+	menuAt   Point
+	menuOn   int
+	menuSets string
+}
+
 const (
 	// menuWide is how wide the menu is, and menuRow how high one line of it.
 	menuWide = 180

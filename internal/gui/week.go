@@ -26,6 +26,16 @@ const (
 	rangeWide = 72
 )
 
+// timeState is what the time page keeps: the Monday of the week it shows,
+// or the first day of the month, the time spent over it, whether a month is
+// shown, and how far down each day of a week its tasks are scrolled.
+type timeState struct {
+	week    time.Time
+	sheet   engine.Timesheet
+	monthly bool
+	dayFrom [7]int
+}
+
 // Week is the Monday of the week the time page shows, or the first day of
 // the month it shows.
 func (w Window) Week() time.Time { return w.week }

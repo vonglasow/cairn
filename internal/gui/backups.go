@@ -39,6 +39,14 @@ func (w Window) backingUp() Window {
 // Backups is what the list of backups holds, as the engine listed them.
 func (w Window) Backups() []domain.Backup { return w.backups }
 
+// backupsState is what the list of backups keeps: the backups, the line the
+// keyboard is on, and the first line in sight.
+type backupsState struct {
+	backups     []domain.Backup
+	backupOn    int
+	backupsFrom int
+}
+
 // backupSays is how a line of the list of backups reads.
 func backupSays(one domain.Backup) string {
 	return "backup " + strconv.Itoa(one.Number) + "   " + domain.FormatMoment(one.Made)

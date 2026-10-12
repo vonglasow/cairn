@@ -12,7 +12,7 @@ import (
 // The menu opens down and to the right of the point clicked, and is kept
 // inside the window near an edge.
 func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
-	w := Window{width: 1200, height: 800, menu: []string{"Edit", "Take up", "Archive", "Delete"}}
+	w := Window{width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Take up", "Archive", "Delete"}}}
 	w.menuAt = Point{X: 300, Y: 200}
 	if got, want := w.MenuBox(), (Box{X: 300, Y: 200, W: 180, H: 124}); got != want {
 		t.Errorf("the menu is at %+v, want %+v", got, want)
@@ -28,7 +28,7 @@ func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
 
 // The keys walk the menu both ways and stop at its ends.
 func TestTheMenuIsWalkedBothWays(t *testing.T) {
-	w := Window{screen: OnMenu, menu: []string{"Edit", "Delete"}}
+	w := Window{screen: OnMenu, menuState: menuState{menu: []string{"Edit", "Delete"}}}
 	if got := w.onMenu("up").MenuOn(); got != 0 {
 		t.Errorf("up from the first line is on %d", got)
 	}
@@ -53,7 +53,7 @@ func TestTheSecondButtonOpensTheMenu(t *testing.T) {
 
 // The menu is drawn, the line the keyboard is on lit.
 func TestTheMenuIsDrawn(t *testing.T) {
-	w := Window{screen: OnMenu, width: 1200, height: 800, menu: []string{"Edit", "Delete"}, menuAt: Point{X: 300, Y: 200}}
+	w := Window{screen: OnMenu, width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Delete"}, menuAt: Point{X: 300, Y: 200}}}
 	shot := drawn(t, w)
 	corner := func(i int) Box {
 		row := MenuRowAt(w.MenuBox(), i)

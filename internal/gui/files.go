@@ -47,6 +47,15 @@ type Filed struct {
 	Err      error
 }
 
+// filesState is what the window keeps of the system's file dialog: the
+// dialog it wants opened, until the loop takes it, and its own copy of a
+// store chosen there with the name of the file it was chosen as.
+type filesState struct {
+	fileAsk      *FileAsk
+	bringing     string
+	bringingName string
+}
+
 // FileAsked is the dialog the window wants opened, if any.
 func (w Window) FileAsked() (FileAsk, bool) {
 	if w.fileAsk == nil {

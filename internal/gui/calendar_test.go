@@ -99,7 +99,7 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 // The arrows in the heading walk a month either way, and so does the wheel
 // over the calendar, a notch a month; off the calendar it does nothing.
 func TestThePointerWalksTheMonths(t *testing.T) {
-	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
@@ -129,7 +129,7 @@ func TestThePointerWalksTheMonths(t *testing.T) {
 
 // The arrows walk back as they walk on: a day, and a week.
 func TestTheCalendarWalksBack(t *testing.T) {
-	w := Window{screen: OnCalendar, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	if got := domain.FormatDay(w.onCalendar("left").day); got != "2026-10-11" {
 		t.Errorf("a day back is %s", got)
 	}
@@ -144,7 +144,7 @@ func TestTheCalendarWalksBack(t *testing.T) {
 // A month on from the last day of a longer month is the last day of the
 // shorter one, never a day into the month after it.
 func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
-	w := Window{screen: OnCalendar, day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
 	if got := domain.FormatDay(w.onCalendar("shift+right").day); got != "2026-02-28" {
 		t.Errorf("a month on from 2026-01-31 is %s, want 2026-02-28", got)
 	}
@@ -157,7 +157,7 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 // The calendar is drawn over the form: the day the keyboard is on carries the
 // outline the chosen card does.
 func TestTheCalendarIsDrawn(t *testing.T) {
-	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(reading.Card{Number: 1, Title: "Write the spec"}, nil)
 	shot := drawn(t, w)
 	for i, day := range MonthGrid(w.day) {
@@ -175,7 +175,7 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 // A form adding names what it adds as new, never as number nought: the list
 // and the calendar it opens say so in their heading.
 func TestAFormAddingIsNamedNew(t *testing.T) {
-	w := Window{screen: OnCalendar, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = adding(Tasks, "backlog")
 	if got := Heads(w); got != "a deadline for the new task — October 2026" {
 		t.Errorf("the calendar of a task being added is headed %q", got)
@@ -270,7 +270,7 @@ func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
 
 // With no form to hang from, the calendar is across the middle of the window.
 func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
-	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	box := w.CalendarBox()
 	if box.X != (1200-box.W)/2 || box.Y != (800-box.H)/2 {
 		t.Errorf("the calendar is at %+v", box)
@@ -280,7 +280,7 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 // Each arrow of the heading sits on a chip two pixels inside its room, so the
 // two read as two things to press and not one bar.
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
-	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
 	shot, skin := drawn(t, w), Dark()
 	for _, arrow := range []Box{MonthBefore(w.CalendarBox()), MonthAfter(w.CalendarBox())} {
