@@ -37,6 +37,21 @@ Feature: Version
     And a build there would be stamped with the date of that commit
     And the archive says how to build and install it
 
+  @version-brew-formula
+  Scenario: the archive comes with a Homebrew formula that builds it
+    Homebrew installs from a tap, and a tap needs a formula: one naming the
+    archive, its checksum and how to build it. Made with the archive, it can
+    never name another.
+    Given the source archive of this repository made as version "v9.9.9"
+    Then beside the archive is a Homebrew formula for version "9.9.9"
+    And the formula names the archive's checksum
+    And the formula fetches the archive from where it was made
+
+  @version-brew-formula-hosted
+  Scenario: the formula fetches the archive from where it is hosted, when told
+    Given the source archive of this repository made as version "v9.9.9" to be fetched from "https://files.example.org/cairn"
+    Then the formula fetches "https://files.example.org/cairn/cairn-v9.9.9-src.tar.gz"
+
   @version-install-reads-anywhere
   Scenario: the archive's install guide reads the same in any tool, on any system
     The guide is read before anything is installed, in whatever the machine

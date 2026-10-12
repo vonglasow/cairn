@@ -95,6 +95,14 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    build needs — Go, make, a C compiler, and on Linux the graphics headers
    `scripts/linux.sh` installs — and how to put the binary on a `PATH`.
 
+   `Formula/cairn.rb`, beside the archive, is the Homebrew formula that
+   builds it: its version, its checksum, and `make build` with Go as a build
+   dependency (`@version-brew-formula`). It fetches the archive from where it
+   was made, a `file://` address on that machine, unless `FORMULA_URL` names
+   the place archives are hosted (`@version-brew-formula-hosted`). Homebrew
+   installs only from a tap, so `INSTALL.md` says how to make a local one.
+   Made with the archive, it can never name another archive or another sum.
+
    It is written in ASCII alone (`@version-install-reads-anywhere`). It is read
    before anything is installed, in whatever the machine has, and on Windows
    a tool that takes a file with no mark of its encoding for the system's code

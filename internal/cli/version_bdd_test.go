@@ -148,6 +148,70 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return command(root(), "scripts/dist.sh", version, w.archive)
 		})
 
+		sc.Step(`^the source archive of this repository made as version "([^"]*)" to be fetched from "([^"]*)"$`, func(version, from string) error {
+			w.archive = filepath.Join(w.t.TempDir(), "dist")
+			made := exec.Command("scripts/dist.sh", version, w.archive)
+			made.Dir = root()
+			made.Env = append(os.Environ(), "FORMULA_URL="+from)
+			if out, err := made.CombinedOutput(); err != nil {
+				return fmt.Errorf("%w\n%s", err, out)
+			}
+			return nil
+		})
+
+		formula := func() (string, error) {
+			said, err := os.ReadFile(filepath.Join(w.archive, "Formula", "cairn.rb"))
+			return string(said), err
+		}
+		sc.Step(`^beside the archive is a Homebrew formula for version "([^"]*)"$`, func(version string) error {
+			said, err := formula()
+			if err != nil {
+				return err
+			}
+			for _, must := range []string{"class Cairn < Formula", `version "` + version + `"`, `depends_on "go" => :build`, `system "make", "build"`, `bin.install "bin/cairn"`} {
+				if !strings.Contains(said, must) {
+					return fmt.Errorf("the formula says nothing of %q:\n%s", must, said)
+				}
+			}
+			return nil
+		})
+		sc.Step(`^the formula names the archive's checksum$`, func() error {
+			said, err := formula()
+			if err != nil {
+				return err
+			}
+			sums, err := os.ReadFile(filepath.Join(w.archive, "SHA256SUMS"))
+			if err != nil {
+				return err
+			}
+			sum := strings.Fields(string(sums))[0]
+			if !strings.Contains(said, `sha256 "`+sum+`"`) {
+				return fmt.Errorf("the formula does not name %s:\n%s", sum, said)
+			}
+			return nil
+		})
+		sc.Step(`^the formula fetches the archive from where it was made$`, func() error {
+			said, err := formula()
+			if err != nil {
+				return err
+			}
+			want := `url "file://` + filepath.Join(w.archive, "cairn-v9.9.9-src.tar.gz") + `"`
+			if !strings.Contains(said, want) {
+				return fmt.Errorf("the formula does not say %s:\n%s", want, said)
+			}
+			return nil
+		})
+		sc.Step(`^the formula fetches "([^"]*)"$`, func(url string) error {
+			said, err := formula()
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(said, `url "`+url+`"`) {
+				return fmt.Errorf("the formula does not fetch %s:\n%s", url, said)
+			}
+			return nil
+		})
+
 		sc.Step(`^I unpack it somewhere git has never been$`, func() error {
 			found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
 			if err != nil {
@@ -429,7 +493,7 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 }
 
 func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-hosted")
 }
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {

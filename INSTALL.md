@@ -52,6 +52,23 @@ go build -o cairn.exe ./cmd/cairn
 A build made this way does not know its version: it says `dev`, because the
 version is stamped by `make`. Put `cairn.exe` in a folder on your `PATH`.
 
+### With Homebrew
+
+Beside every archive, `Formula/cairn.rb` builds it with Homebrew. Homebrew
+installs only from a tap, so make a local one once, put the formula in it, and
+install from it:
+
+```sh
+brew tap-new --no-git "$USER/cairn"
+cp Formula/cairn.rb "$(brew --repository)/Library/Taps/$USER/homebrew-cairn/Formula/"
+brew install "$USER/cairn/cairn"
+```
+
+The formula fetches the archive from the path it was made at, or from where
+archives are hosted when it was made with `FORMULA_URL`. For a newer version,
+copy its formula over the old one and `brew upgrade cairn`. Then `cairn plugin
+write`, below, gives Claude Code the plugin this cairn carries.
+
 ## Installing it
 
 Put the binary somewhere on your `PATH`:
