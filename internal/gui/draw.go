@@ -274,6 +274,15 @@ func drawMenu(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.CalendarBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
+	// On a chip each, so they read as something to press rather than as
+	// marks closing the heading.
+	for _, arrow := range []struct {
+		at   Box
+		says string
+	}{{MonthBefore(box), "‹"}, {MonthAfter(box), "›"}} {
+		fill(gtx, Box{X: arrow.at.X + 2, Y: arrow.at.Y, W: arrow.at.W - 4, H: arrow.at.H}, skin.Back)
+		say(gtx, th, skin.Chosen, Inside(arrow.at), arrow.says, heading)
+	}
 	for i, name := range Weekdays {
 		say(gtx, th, skin.Faint, WeekdayAt(box, i), name, reads)
 	}

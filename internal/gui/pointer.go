@@ -35,6 +35,9 @@ func (w Window) Click(p Point) Window {
 		return w.clickingList(p)
 	}
 	if w.screen == OnCalendar {
+		if walked, on := w.monthClicked(p); on {
+			return walked
+		}
 		w, _ = w.dayClicked(p)
 		return w
 	}
@@ -49,6 +52,10 @@ func (w Window) Click(p Point) Window {
 		// behind it.
 		if chosenFromAList(w.form.Fields()[at]) {
 			return w.choosingList()
+		}
+		// And so does a day, on a calendar hung under its field.
+		if chosenOnACalendar(w.form.Fields()[at]) {
+			return w.openingCalendar()
 		}
 		return w.CaretInto(reached)
 	}
@@ -402,8 +409,11 @@ func (w Window) Scroll(p Point, by int) Window {
 	}
 	// The calendar, the menu and a question have nothing to scroll, and the
 	// board behind them is out of reach as much as behind any panel.
-	if w.screen == OnAsking || w.screen == OnCalendar || w.screen == OnMenu {
+	if w.screen == OnAsking || w.screen == OnMenu {
 		return w
+	}
+	if w.screen == OnCalendar {
+		return w.scrollingMonths(p, by)
 	}
 	if w.screen == OnBackups {
 		return w.scrollingBackups(p, by)

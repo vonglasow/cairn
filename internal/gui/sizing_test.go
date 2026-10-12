@@ -122,12 +122,6 @@ func TestAnOpenFormIsTheHeightOfItsFields(t *testing.T) {
 	}
 }
 
-// fieldFrame is the frame of the field the keyboard is on.
-func fieldFrame(w Window) Box {
-	_, value, rows := FormPlace(w.formBox(), w.Form().Fields(), w.Form().On())
-	return Framed(value, rows)
-}
-
 // A list with no room under its field opens above it, ending a gap over it;
 // one too tall for that too starts at the panel's top. A list wider than the
 // room right of its field ends at the panel's right edge.

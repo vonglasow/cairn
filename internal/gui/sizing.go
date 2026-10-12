@@ -26,8 +26,7 @@ func (w Window) ChoosingBox() Box {
 	rows := min(max(1, len(w.listed())), most)
 	wide := min(over.W, w.choosingWide())
 	high := ChoosingFor(0, 0, wide, rows).H
-	_, value, held := FormPlace(w.formBox(), w.form.Fields(), w.form.On())
-	at := Hung(Framed(value, held), over, wide, high)
+	at := w.hung(wide, high)
 	return ChoosingFor(at.X, at.Y, wide, rows)
 }
 

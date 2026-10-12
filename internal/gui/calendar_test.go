@@ -27,23 +27,103 @@ func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
 }
 
 // The calendar's panel and its days, to the pixel: a sum gone wrong by a
-// padding puts a click on the day beside the one drawn.
+// padding puts a click on the day beside the one drawn. The days share the
+// width of the panel between them.
 func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
-	box := CalendarOver(1200, 800)
-	if want := (Box{X: 378, Y: 191, W: 444, H: 418}); box != want {
+	box := CalendarFor(100, 50, 400)
+	if want := (Box{X: 100, Y: 50, W: 400, H: 322}); box != want {
 		t.Errorf("the calendar is %+v, want %+v", box, want)
 	}
-	if got, want := DayAt(box, 0), (Box{X: 390, Y: 265, W: 56, H: 44}); got != want {
+	if got, want := DayAt(box, 0), (Box{X: 112, Y: 124, W: 49, H: 28}); got != want {
 		t.Errorf("the first day is at %+v, want %+v", got, want)
 	}
-	if got, want := DayAt(box, 9), (Box{X: 510, Y: 313, W: 56, H: 44}); got != want {
+	if got, want := DayAt(box, 9), (Box{X: 218, Y: 156, W: 49, H: 28}); got != want {
 		t.Errorf("the tenth day is at %+v, want %+v", got, want)
 	}
-	if got, want := WeekdayAt(box, 2), (Box{X: 510, Y: 241, W: 56, H: 18}); got != want {
+	if got, want := WeekdayAt(box, 2), (Box{X: 218, Y: 100, W: 49, H: 18}); got != want {
 		t.Errorf("Wednesday is written at %+v, want %+v", got, want)
+	}
+	if got, want := MonthAfter(box), (Box{X: 460, Y: 62, W: monthWide, H: titleHi}); got != want {
+		t.Errorf("the next month is offered at %+v, want %+v", got, want)
+	}
+	if got, want := MonthBefore(box), (Box{X: 460 - monthWide, Y: 62, W: monthWide, H: titleHi}); got != want {
+		t.Errorf("the month before is offered at %+v, want %+v", got, want)
 	}
 	if got := len(MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
 		t.Errorf("a month is shown as %d days, want six weeks", got)
+	}
+}
+
+// The calendar hangs under the field it answers, the way a list does, as wide
+// as its heading with the arrows beside it, its offers, or a week of days.
+func TestTheCalendarHangsUnderItsField(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	box, frame := w.CalendarBox(), fieldFrame(w)
+	if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+		t.Errorf("the calendar is at %+v, under a field at %+v", box, frame)
+	}
+	september := w
+	september.day = time.Date(2026, time.September, 30, 0, 0, 0, 0, time.UTC)
+	want := max(september.headWide()+2*monthWide, w.offersWide())
+	if box.W != want || box.H != CalendarFor(0, 0, want).H {
+		t.Errorf("the calendar is %dx%d, want %d wide", box.W, box.H, want)
+	}
+}
+
+// A click on the deadline opens the calendar, as one on a field a list
+// answers opens the list; on any other field it only puts the keyboard there.
+func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for _, c := range []struct {
+		arg    string
+		screen Screen
+	}{{"deadline", OnCalendar}, {"estimate", OnForm}} {
+		for i, field := range w.Form().Fields() {
+			if field.Arg != c.arg {
+				continue
+			}
+			_, value, _ := FormPlace(w.formBox(), w.Form().Fields(), i)
+			if got := w.clicked(Point{X: value.X + 4, Y: value.Y + 4}); got.Screen() != c.screen || got.Form().On() != i {
+				t.Errorf("a click on the %s left the window on %v, on field %d", c.arg, got.Screen(), got.Form().On())
+			}
+		}
+	}
+}
+
+// The arrows in the heading walk a month either way, and so does the wheel
+// over the calendar, a notch a month; off the calendar it does nothing.
+func TestThePointerWalksTheMonths(t *testing.T) {
+	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}
+	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
+	box := w.CalendarBox()
+	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
+	if got := domain.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
+		t.Errorf("the next month is %s", got)
+	}
+	if got := domain.FormatDay(w.Click(middle(MonthBefore(box))).day); got != "2025-12-31" {
+		t.Errorf("the month before is %s", got)
+	}
+	if got := w.Click(middle(MonthAfter(box))).Screen(); got != OnCalendar {
+		t.Errorf("walking a month left the window on %v", got)
+	}
+	in := middle(box)
+	if got := domain.FormatDay(w.Scroll(in, lineHigh).day); got != "2026-02-28" {
+		t.Errorf("a notch down is %s", got)
+	}
+	if got := domain.FormatDay(w.Scroll(in, -2*lineHigh).day); got != "2025-11-30" {
+		t.Errorf("two notches up is %s", got)
+	}
+	if got := w.Scroll(in, lineHigh/2); !got.day.Equal(w.day) || got.spareChoosing != lineHigh/2 {
+		t.Errorf("half a notch walked to %s, keeping %d", domain.FormatDay(got.day), got.spareChoosing)
+	}
+	if got := w.Scroll(Point{X: 1, Y: 1}, lineHigh); !got.day.Equal(w.day) {
+		t.Errorf("the wheel off the calendar walked to %s", domain.FormatDay(got.day))
 	}
 }
 
@@ -185,5 +265,33 @@ func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
 	}
 	if path.X != name.X+name.W || path.X+path.W != w.formPanel().X+w.formPanel().W-padding {
 		t.Errorf("the path runs %+v after a name %+v", path, name)
+	}
+}
+
+// With no form to hang from, the calendar is across the middle of the window.
+func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
+	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	box := w.CalendarBox()
+	if box.X != (1200-box.W)/2 || box.Y != (800-box.H)/2 {
+		t.Errorf("the calendar is at %+v", box)
+	}
+}
+
+// Each arrow of the heading sits on a chip two pixels inside its room, so the
+// two read as two things to press and not one bar.
+func TestTheMonthArrowsAreOnChips(t *testing.T) {
+	w := Window{screen: OnCalendar, width: 1200, height: 800, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
+	shot, skin := drawn(t, w), Dark()
+	for _, arrow := range []Box{MonthBefore(w.CalendarBox()), MonthAfter(w.CalendarBox())} {
+		chip := Box{X: arrow.X + 2, Y: arrow.Y, W: arrow.W - 4, H: 1}
+		if got := painted(shot, chip, skin.Back); got != chip.W {
+			t.Errorf("the chip at %+v has %d of %d pixels", chip, got, chip.W)
+		}
+		for _, edge := range []Box{{X: arrow.X + 1, Y: arrow.Y, W: 1, H: 1}, {X: arrow.X + arrow.W - 2, Y: arrow.Y, W: 1, H: 1}} {
+			if painted(shot, edge, skin.Back) != 0 {
+				t.Errorf("the chip reaches %+v, past its room", edge)
+			}
+		}
 	}
 }

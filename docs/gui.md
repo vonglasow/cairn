@@ -211,7 +211,8 @@ has ended.
 
 **A panel keeps the wheel.** Over the calendar, the right-click menu or the
 list of backups, the wheel scrolled the column hidden behind them. Nothing
-under a panel moves now; the list of backups scrolls itself, a line a notch
+under a panel moves now; the list of backups scrolls itself, a line a notch,
+and the calendar walks its months, a notch a month
 (`@gui-the-wheel-stays-inside-a-panel`).
 
 **Every bar can be pulled.** The history's, the description's, the work under a
@@ -597,8 +598,15 @@ an offer the bar already makes, done the way the bar does it. The arrows and
 nothing else.
 
 **A deadline is chosen on a calendar.** It was typed as a date, which meant
-knowing what date next Friday falls on. `⏎` on the field, or Choose, opens a
-month at a time over the form (`calendar.go`): six weeks from the Monday on or
+knowing what date next Friday falls on. A click on the field, `⏎` on it, or
+Choose, opens a month at a time hung under the field, the way a list is — it
+first opened in the middle of the window, far from the field it fills in, and
+only by a key (`calendar.go`, `@gui-a-click-on-a-deadline-opens-the-calendar`).
+Its days share its width, a week at least seven of them at their narrowest; it
+is measured on the longest month's heading, so it and the `‹ ›` arrows at the
+end of its heading do not move from one month to the next. Those arrows and the
+wheel walk the months for a hand on the mouse
+(`@gui-the-pointer-walks-the-months`). Six weeks from the Monday on or
 before the first, so no row moves from one month to the next; the arrows walk
 days and weeks, `⇧←→` months — the last day of a longer month landing on the
 last of a shorter one, never in the month after — `t` today, `⏎` or a click

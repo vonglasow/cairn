@@ -721,6 +721,37 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the calendar does not show %s", day)
 	})
+	sc.Then(`^the calendar hangs under the field "([^"]*)"$`, func(name string) error {
+		box := w.w.CalendarBox()
+		fields := w.w.Form().Fields()
+		for i, field := range fields {
+			if field.Name != name {
+				continue
+			}
+			_, value, rows := FormPlace(w.w.formBox(), fields, i)
+			frame := Framed(value, rows)
+			if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+				return fmt.Errorf("the calendar is at %d,%d and the field %q ends at %d,%d", box.X, box.Y, name, frame.X, frame.Y+frame.H)
+			}
+			return nil
+		}
+		return fmt.Errorf("the form has no field %q", name)
+	})
+	sc.Step(`^I click the next month on the calendar$`, func() error {
+		box := MonthAfter(w.w.CalendarBox())
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Step(`^I click the month before on the calendar$`, func() error {
+		box := MonthBefore(w.w.CalendarBox())
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Step(`^I scroll down over the calendar$`, func() error {
+		box := w.w.CalendarBox()
+		w.w = w.w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, lineHigh)
+		return nil
+	})
 	sc.Given(`^the window runs on "([^"]*)"$`, func(system string) error {
 		w.system = system
 		return nil

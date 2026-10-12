@@ -697,8 +697,8 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "deadline"
-      Then the keyboard is on "deadline"
+      And I click the field "estimate"
+      Then the keyboard is on "estimate"
 
     @gui-the-caret-says-where-typing-goes
     Scenario: the form says where what is typed will go
@@ -1115,6 +1115,35 @@ Feature: The desktop board
     A deadline was typed as a date, which means knowing what day of the week
     the twentieth is, or what date next Friday falls on. Enter on the field
     opens a calendar, a month at a time; the field still takes a date typed.
+    A click on the field opens it too, hung under the field rather than in the
+    middle of the window, and the pointer walks its months as the keys do.
+
+    @gui-a-click-on-a-deadline-opens-the-calendar
+    Scenario: a click on the deadline opens the calendar under it
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      Then the calendar is open on "2026-10-12"
+      And the calendar hangs under the field "deadline"
+
+    @gui-the-pointer-walks-the-months
+    Scenario: the arrows of its heading and the wheel walk the calendar's months
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I click the next month on the calendar
+      Then the calendar is open on "2026-11-12"
+      When I click the month before on the calendar
+      And I click the month before on the calendar
+      Then the calendar is open on "2026-09-12"
+      When I scroll down over the calendar
+      Then the calendar is open on "2026-10-12"
 
     @gui-a-deadline-is-chosen-on-a-calendar
     Scenario: the calendar walks the days and the months, and enter takes one
