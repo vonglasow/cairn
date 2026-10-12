@@ -141,6 +141,8 @@ type Window struct {
 	// fileAsk is the system's dialog the window wants opened, until the loop
 	// takes it; bringing is the window's copy of a store chosen there, and
 	// bringingName the name of the file it was chosen as.
+	// native says the system gave the window a menu bar of its own.
+	native       bool
 	fileAsk      *FileAsk
 	bringing     string
 	bringingName string

@@ -589,13 +589,19 @@ says what it wants (`FileAsked`), the loop opens the dialog on the side
 reaches is the call to the system, and the scenarios play the dialog the way
 they play the clipboard (`files.go`, `@gui-a-store-is-imported`).
 
-**Nothing of cairn's is in the system's menu bar.** Gio builds the macOS
-menu itself — Hide and Quit, in its own Objective-C — and offers no way to add
-to it, nor any menu at all on Windows or Linux. One of cairn's would be
-Objective-C on one system, Win32 on another and nothing on the third, none of
-which a test here can drive; what it would hold is in the window already, on
-the bar, in the help and in the menu below. See
-[decisions.md](decisions.md).
+**Every act is in the window's menu bar.** The window had none of its own, and
+a person at a window looks for what it does in its menus. File, Edit, View and
+Help hold every act the window has (`MenuBar`), each line an offer the bar, the
+help or a key already makes, done the same way (`Picked`) — from the board
+only: over a form it does nothing, as a key the form does not take does
+nothing. Gio builds the macOS menu itself and offers no way to add to it, so
+cairn adds its menus to Gio's from a few lines of Objective-C, the ⌘ chords as
+the menu's own keys (`menu_darwin.m`); on Windows the menu is a Win32 one set on
+the window Gio made, its commands caught in front of Gio's window procedure and
+the keys written beside each line (`menu_windows.go`). Neither call to the
+system is driven by a test; what each line does is. Where the system gives a
+window no menu bar — Linux — a `☰` button at the end of the tabs opens the same
+lines as one menu (`MenuButton`).
 
 **A right click says what can be done to what is under it.** What a card can
 have done to it was on the bar once the card was chosen, so a hand on the

@@ -782,6 +782,21 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Step(`^I pick "([^"]*)" in the menu bar$`, func(item string) error {
+		w.w = w.w.Picked(item)
+		return w.w.Wrong()
+	})
+	sc.Step(`^I click the menu button$`, func() error {
+		button := MenuButton(w.w.Layout())
+		w.w = w.w.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
+		return nil
+	})
+	sc.Then(`^the window is on the page "([^"]*)"$`, func(page string) error {
+		if got := Pages[w.w.Tab()]; got != page {
+			return fmt.Errorf("the window is on %q", got)
+		}
+		return nil
+	})
 	sc.Given(`^the window runs on "([^"]*)"$`, func(system string) error {
 		w.system = system
 		return nil

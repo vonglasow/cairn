@@ -1062,6 +1062,30 @@ Feature: The desktop board
       Then the bar offers "Export" under "⌘E"
       And the bar offers "Import" under "⌘O"
 
+  Rule: Every act is in the window's menu bar
+
+    A person at a window looks for what it does in its menus. File, Edit, View
+    and Help hold every act the window has, each line doing from the board what
+    its key does. Where the system gives the window no menu bar, a button at
+    the end of the tabs opens the same lines.
+
+    @gui-the-menu-bar-acts-from-the-board
+    Scenario: a line of the menu bar does what its key does
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I pick "New" in the menu bar
+      Then the window is on the form
+      When I press "esc"
+      And I pick "Objectives" in the menu bar
+      Then the window is on the page "OBJECTIVES"
+
+    @gui-the-menu-button-stands-in-for-a-menu-bar
+    Scenario: with no menu bar of the system's, a button opens the same lines
+      Given the window runs on "linux"
+      When I open the window
+      And I click the menu button
+      Then the menu offers "New", "Back up", "Backups", "Export", "Import", "Edit", "Take up", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+
   Rule: The store is backed up, and put back, from the window
 
     Backing the store up, and putting a backup back, were the command line's:

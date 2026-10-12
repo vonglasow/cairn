@@ -163,6 +163,10 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	l := w.Layout()
 	drawTabs(gtx, th, skin, l, w)
+	// Where the system gives the window no menu bar, a button stands in.
+	if !w.native {
+		say(gtx, th, skin.Chosen, Inside(MenuButton(l)), "☰", heading)
+	}
 	if w.Tab() == Objectives {
 		drawGoals(gtx, th, skin, l, w)
 	} else if w.Tab() == Time {

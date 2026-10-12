@@ -306,6 +306,9 @@ func loop(work reading.Work, width, height int) error {
 	// is chosen, and the window never waits.
 	dialog := explorer.NewExplorer(window)
 	filed := make(chan Filed, 1)
+	// A line picked in the system's menu bar, handed over from the system's
+	// own thread.
+	picks := make(chan string, 8)
 
 	var ops op.Ops
 	var pressed time.Time
@@ -332,6 +335,9 @@ func loop(work reading.Work, width, height int) error {
 	for {
 		event := window.Event()
 		dialog.ListenEvents(event)
+		if installMenu(event, picks, window.Invalidate) {
+			board = board.Native(true)
+		}
 		switch e := event.(type) {
 		case app.DestroyEvent:
 			return e.Err
@@ -340,6 +346,8 @@ func loop(work reading.Work, width, height int) error {
 			select {
 			case got := <-filed:
 				board = board.Filed(got)
+			case item := <-picks:
+				board = board.Picked(item)
 			default:
 			}
 			board = board.Resized(Sized(gtx.Constraints.Max, gtx.Metric.PxPerDp)).At(gtx.Now)

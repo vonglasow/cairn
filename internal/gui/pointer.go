@@ -14,6 +14,9 @@ import (
 // Click chooses whatever is under the pointer, and nothing when there is
 // nothing there.
 func (w Window) Click(p Point) Window {
+	if w.screen == OnTheBoard && !w.native && MenuButton(w.Layout()).In(p) {
+		return w.openingMenuBar()
+	}
 	if w.screen == OnMenu {
 		return w.clickingMenu(p)
 	}

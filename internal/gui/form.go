@@ -617,6 +617,12 @@ func (w Window) Choose(name string) Window {
 	case "archived":
 		w.archived = !w.archived
 		return w
+	case "tasks":
+		return w.onPage(Tasks)
+	case "objectives":
+		return w.onPage(Objectives)
+	case "time":
+		return w.onPage(Time)
 	case "export":
 		return w.exportingStore()
 	case "import":
