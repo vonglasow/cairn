@@ -326,3 +326,27 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 		t.Errorf("a click off a form typed into left the window on %v, %d edits asked", left.Screen(), f.what("task", "edit"))
 	}
 }
+
+// The form stays drawn under its calendar, parts and all: answered for the
+// form alone, a task with parts opened its deadline's calendar and the
+// window fell over, its tiles counting the parts and the parts said to be
+// none.
+func TestACalendarOverATaskWithPartsIsDrawn(t *testing.T) {
+	w := holding(newFake(), card(1, "Ship it", "todo"),
+		reading.Card{Number: 2, Title: "Draft the columns", State: "todo", Parent: 1})
+	w.chosen = 1
+	w = w.Edit()
+	for i, field := range w.Form().Fields() {
+		if field.Arg == "deadline" {
+			_, value, _ := FormPlace(w.formBox(), w.Form().Fields(), i)
+			w = w.clicked(Point{X: value.X + 4, Y: value.Y + 4})
+		}
+	}
+	if w.Screen() != OnCalendar {
+		t.Fatalf("the deadline left the window on %v", w.Screen())
+	}
+	if parts := w.PartsTicked(); len(parts) != 1 {
+		t.Fatalf("under the calendar the parts are drawn as %+v", parts)
+	}
+	drawn(t, w)
+}

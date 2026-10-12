@@ -394,16 +394,20 @@ func (w Window) readingActs() Window {
 // Form is what the modal holds, for whoever draws it.
 func (w Window) Form() Form { return w.form }
 
+// formShown says whether a screen draws the form: its own, and the list and
+// the calendar that hang over it.
+func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
+
 // PartsTicked is what the parts field of an open form is drawn as: a tile for
 // each part it says now, done or not, unsaved lines included. Nothing on a
 // form with no parts field.
 //
-// The form is open under a list being chosen from as much as on its own, and
-// is drawn there too. Answered on the form alone, a task with parts opened a
-// list and the window fell over: its tiles counted the parts, and this said
-// there were none.
+// Answered wherever the form is drawn, which formShown says once: answered
+// on the form alone, then on the form and its list, a task with parts opened
+// a list, then its calendar, and the window fell over each time — its tiles
+// counted the parts, and this said there were none.
 func (w Window) PartsTicked() []reading.Card {
-	if w.screen != OnForm && w.screen != OnChoosing {
+	if !formShown(w.screen) {
 		return nil
 	}
 	for _, field := range w.form.Fields() {

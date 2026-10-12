@@ -193,7 +193,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnSearch {
 		drawSearch(gtx, th, skin, l, w)
 	}
-	if w.Screen() == OnForm {
+	if formShown(w.Screen()) {
 		drawForm(gtx, th, skin, w)
 	}
 	if w.Screen() == OnHelp {
@@ -203,14 +203,12 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawSaid(gtx, th, skin, w, w.Asks(), w.QuestionBox())
 	}
 	if w.Screen() == OnChoosing {
-		// The form first, and the list on top of it: what is being filled in
+		// The list on top of the form, drawn above: what is being filled in
 		// stays on screen, because a choice made with the rest of the form out
 		// of sight is a choice made from memory.
-		drawForm(gtx, th, skin, w)
 		drawChoosing(gtx, th, skin, w)
 	}
 	if w.Screen() == OnCalendar {
-		drawForm(gtx, th, skin, w)
 		drawCalendar(gtx, th, skin, w)
 	}
 	if w.Screen() == OnMenu {
