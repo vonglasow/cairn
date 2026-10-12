@@ -370,6 +370,13 @@ func (w Window) beside() Window {
 	w.history, w.serving, w.saying = 0, 0, 0
 	w.spareHistory, w.spareSaying = 0, 0
 	w.picked, w.pickingText = Picked{}, false
+	return w.readingActs()
+}
+
+// readingActs reads the history of the task the form is open on: when it
+// opens, and again each time the form saves itself, whose acts would
+// otherwise be missing from beside it until it was opened again.
+func (w Window) readingActs() Window {
 	w.acts = nil
 	if w.chosenGoal || w.screen != OnForm {
 		return w

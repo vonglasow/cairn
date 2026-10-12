@@ -94,5 +94,5 @@ func (w Window) savedInPlace() Window {
 	w.form.opened[kept.at] = typed
 	w.form.partAt, w.form.partsTop = kept.partAt, kept.partsTop
 	w.paused = w.form.values()
-	return w
+	return w.readingActs()
 }

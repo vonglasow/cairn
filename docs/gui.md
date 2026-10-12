@@ -603,7 +603,9 @@ and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at
 the beat before, is saved where it stands and opened again over what it saved,
 read back from the store: the keyboard and the caret where they were, a part
-just added with its number (`autosave.go`). Waiting for a beat with no typing
+just added with its number, and the history beside it read again, since it
+otherwise lacked the very act just saved
+(`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
 (`@gui-typing-holds-the-save-off`). A task being added is made once it has a
 title, and the form goes on over it; with no title there is nothing to make

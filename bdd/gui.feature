@@ -1198,6 +1198,17 @@ Feature: The desktop board
       Then task 1 is called "Write the spec now"
       And the window is on the form
 
+    @gui-a-form-that-saved-itself-shows-it
+    Scenario: the history beside a form that saved itself says what it saved
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " now"
+      And the window has looked at the store 2 times
+      Then the history begins with the last thing done to task 1
+
     @gui-typing-holds-the-save-off
     Scenario: nothing is saved while the typing goes on
       Given I added a task titled "Write the spec"
