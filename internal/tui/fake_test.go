@@ -322,9 +322,9 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		f.deleted = append(f.deleted, number)
 	case "objective delete":
 		f.deletedGoal = append(f.deletedGoal, number)
-	case "task add":
+	case "task new":
 		f.added = append(f.added, in.Given["title"])
-	case "objective add":
+	case "objective new":
 		f.addedGoal = append(f.addedGoal, in.Given["title"])
 	case "objective edit":
 		f.editedGoal[number] = goalChangesAsked(in)

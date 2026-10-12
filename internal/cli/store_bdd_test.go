@@ -85,7 +85,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	sc.Step(`^(\d+) commands add a task at the same time$`, func(n int) error {
 		lines := make([][]string, 0, n)
 		for i := 1; i <= n; i++ {
-			lines = append(lines, []string{"task", "add", fmt.Sprintf("At once %d", i)})
+			lines = append(lines, []string{"task", "new", fmt.Sprintf("At once %d", i)})
 		}
 		code, said := atOnce(lines)
 		if code != exitOK {
@@ -101,7 +101,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		lines := make([][]string, 0, n)
 		for i := 1; i <= n; i++ {
 			if i%2 == 0 {
-				lines = append(lines, []string{"task", "add", fmt.Sprintf("Written %d", i)})
+				lines = append(lines, []string{"task", "new", fmt.Sprintf("Written %d", i)})
 				continue
 			}
 			lines = append(lines, []string{"task", "list"})

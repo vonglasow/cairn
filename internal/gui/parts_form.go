@@ -92,7 +92,7 @@ func ticksFit(frame Box) int { return max(0, (Inside(frame).H-lineHigh)/SubHeigh
 
 // AddingAPart is what the parts of a task being edited say under their tiles:
 // another is added by typing a line, which is where the keyboard goes.
-const AddingAPart = "+ add a part — a line of its own"
+const AddingAPart = "+ new part — a line of its own"
 
 // FormRule is the line across the foot of a form, above what it offers: what
 // says the offers are a line of their own and not one more field.

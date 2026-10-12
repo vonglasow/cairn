@@ -158,7 +158,7 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	// The behaviour under test, not a precondition: it goes through the real
 	// command, the same as `I run`.
 	sc.Step(`^I add a task titled "([^"]*)"$`, func(title string) error {
-		w.Run(fmt.Sprintf(`cairn task add "%s"`, title))
+		w.Run(fmt.Sprintf(`cairn task new "%s"`, title))
 		return nil
 	})
 

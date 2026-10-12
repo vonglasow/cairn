@@ -184,8 +184,8 @@ func anAct(did, field, became, through string) trace.Act {
 // it is the only place a typo could hide.
 func TestTheWindowNamesOperationsTheEngineDescribes(t *testing.T) {
 	for _, op := range []engine.Operation{
-		engine.TaskEdit, engine.TaskMove, engine.TaskAdd,
-		engine.ObjectiveAdd, engine.ObjectiveEdit, engine.TraceShow,
+		engine.TaskEdit, engine.TaskMove, engine.TaskNew,
+		engine.ObjectiveNew, engine.ObjectiveEdit, engine.TraceShow,
 	} {
 		if op.Thing == "" || op.Verb == "" {
 			t.Errorf("%+v names nothing", op)

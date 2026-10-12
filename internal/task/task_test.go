@@ -126,7 +126,7 @@ func TestNewTask_refusesATitleOfSpaces(t *testing.T) {
 }
 
 // The sentinel is shared with an objective, the wording is not: a person told
-// "an objective needs a title" after typing `task add` learns nothing.
+// "an objective needs a title" after typing `task new` learns nothing.
 func TestNewTask_saysItIsATaskThatNeedsATitle(t *testing.T) {
 	_, err := NewTask("")
 	if got := err.Error(); !strings.Contains(got, "a task needs a title") {

@@ -20,7 +20,7 @@ func given(pairs ...string) Input {
 // becomes time is pinned in internal/trace, where moments can be chosen.
 func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, given("title", "one")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
 	for _, length := range []string{"90m", "30m"} {
@@ -56,7 +56,7 @@ func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 // nothing was done on it.
 func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, given("title", "one")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
 	// Today read on both sides of the call: midnight may fall between them,
@@ -77,7 +77,7 @@ func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
 // read or that is no time at all, and for a task that is not there.
 func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, given("title", "one")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range []struct {
@@ -112,7 +112,7 @@ func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
 // same way: the history keeps the length as it was given, minus and all.
 func TestTimesheetAdd_answersItsDayAndTakesBack(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, given("title", "one")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Do(TimesheetAdd, path, given("number", "1", "time", "1h", "on", "2026-09-29")); err != nil {

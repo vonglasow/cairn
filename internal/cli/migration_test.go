@@ -11,7 +11,7 @@ import (
 func TestMigrationRollback_saysWhatItRolledBack(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 
 	out := mustRun(t, "migration", "rollback", "--yes").Stdout
 	if !strings.Contains(out, "rolled back") {
@@ -28,7 +28,7 @@ func TestMigrationRollback_saysWhatItRolledBack(t *testing.T) {
 func TestMigrationList_countsWhatIsWaitingExactly(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 
 	if out := mustRun(t, "migration", "list").Stdout; !strings.Contains(out, "0 change(s) waiting") {
 		t.Errorf("stdout = %q, want nothing waiting on a store made today", out)
@@ -49,7 +49,7 @@ func TestMigrationList_countsWhatIsWaitingExactly(t *testing.T) {
 func TestMigrationShow_showsTheFirstChange(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 
 	out := mustRun(t, "migration", "show", "1").Stdout
 	if !strings.Contains(out, "the shape a store starts with") {

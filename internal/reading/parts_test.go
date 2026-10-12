@@ -21,7 +21,7 @@ func TestSettleParts_asksForEachPartWhatTheFieldSays(t *testing.T) {
 	for _, a := range f.asked {
 		did = append(did, a.op.Name()+" "+a.in.Given["number"]+a.in.Given["title"]+" "+a.in.Given["state"]+a.in.Given["parent"])
 	}
-	want := []string{"task_edit 2Write it done", "task_add Read it first todo1", "task_delete 3 "}
+	want := []string{"task_edit 2Write it done", "task_new Read it first todo1", "task_delete 3 "}
 	if len(did) != len(want) {
 		t.Fatalf("asked %v, want %v", did, want)
 	}

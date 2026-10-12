@@ -7,7 +7,7 @@
  │   hjkl ←↓↑→   change objective              │ │   ▌ low                                     │
  │   gg / G      first / last                  │ │   ▌ normal                                  │
  │   ⏎           open it                       │ │   ▌ high                                    │
- │   a           add an objective              │ │   ▌ critical                                │
+ │   a           a new objective               │ │   ▌ critical                                │
  │   e           the form                      │ │                                             │
  │   d           delete                        │ │ STALLED — the top right of a card           │
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │

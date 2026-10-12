@@ -558,7 +558,7 @@ func TestVersion_movesWhenAnotherWrites(t *testing.T) {
 	if again, _ := watching.Version(); again != before {
 		t.Errorf("the version moved from %d to %d with nobody writing", before, again)
 	}
-	if _, err := Do(TaskAdd, path, given("title", "from elsewhere")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "from elsewhere")); err != nil {
 		t.Fatal(err)
 	}
 	if after, _ := watching.Version(); after == before {
@@ -614,7 +614,7 @@ func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	path := storeAt(t)
 	for _, title := range []string{"One", "Two"} {
-		if _, err := Do(ObjectiveAdd, path, given("title", title)); err != nil {
+		if _, err := Do(ObjectiveNew, path, given("title", title)); err != nil {
 			t.Fatal(err)
 		}
 	}

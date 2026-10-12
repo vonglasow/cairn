@@ -104,7 +104,7 @@ func TestTheCommandPromptRefusesWhatTheEngineWouldNotUnderstand(t *testing.T) {
 		{"a word past the last argument", "task show 1 2"},
 		{"a flag with nothing after it", "task show --number"},
 		{"an argument that does not exist", "task show --nope 1"},
-		{"a required argument left out", "task add"},
+		{"a required argument left out", "task new"},
 	} {
 		t.Run(c.what, func(t *testing.T) {
 			f := twoTasks()

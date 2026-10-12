@@ -43,7 +43,7 @@ func TestBinary_handsItsExitCodeToTheShell(t *testing.T) {
 	}{
 		{"a command that worked", []string{"--version"}, 0},
 		{"a command it did not understand", []string{"nope"}, 2},
-		{"a request it understood and refused", []string{"task", "add", ""}, 1},
+		{"a request it understood and refused", []string{"task", "new", ""}, 1},
 	} {
 		// Not `go run`: it collapses every non-zero code to 1, which is precisely
 		// the thing this test exists to check.

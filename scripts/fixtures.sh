@@ -38,34 +38,34 @@ cairn() { go run "$here/cmd/cairn" "$@" >/dev/null; }
 # after they were written. BSD date spells it -v, GNU date -d.
 day() { date -v"$1"d +%F 2>/dev/null || date -d "$1 days" +%F; }
 
-cairn objective add "Ship cairn 1.0" --state active --priority high --deadline "$(day +71)" --label product
-cairn objective add "Make the store dependable" --state active --priority normal --label technical
-cairn objective add "Redesign the board" --state on-hold --priority low
-cairn objective add "Move to Postgres" --state reached --priority normal
-cairn objective add "Port to mobile" --state dropped --priority low
+cairn objective new "Ship cairn 1.0" --state active --priority high --deadline "$(day +71)" --label product
+cairn objective new "Make the store dependable" --state active --priority normal --label technical
+cairn objective new "Redesign the board" --state on-hold --priority low
+cairn objective new "Move to Postgres" --state reached --priority normal
+cairn objective new "Port to mobile" --state dropped --priority low
 
-cairn task add "Write the packaging spec" --state current --priority high --deadline "$(day -1)" --estimate 8h --spent 3h --label backend --label sprint-172 --objective 1 --desc "Three ADRs to read before starting."
-cairn task add "Read ADR 0014" --parent 1 --state todo --estimate 2h --spent 1h
-cairn task add "Settle the multi-chart question" --parent 1 --state "done" --estimate 1h --spent 4h
-cairn task add "Write the Flows section" --parent 1 --state todo
+cairn task new "Write the packaging spec" --state current --priority high --deadline "$(day -1)" --estimate 8h --spent 3h --label backend --label sprint-172 --objective 1 --desc "Three ADRs to read before starting."
+cairn task new "Read ADR 0014" --parent 1 --state todo --estimate 2h --spent 1h
+cairn task new "Settle the multi-chart question" --parent 1 --state "done" --estimate 1h --spent 4h
+cairn task new "Write the Flows section" --parent 1 --state todo
 
-cairn task add "Rework the migrations" --state current --priority critical --deadline "$(day -7)" --estimate 2h --spent 9h --label store --objective 2
-cairn task add "Back up before rolling back" --parent 5 --state "done"
-cairn task add "Test a rollback on an empty store" --parent 5 --state todo
+cairn task new "Rework the migrations" --state current --priority critical --deadline "$(day -7)" --estimate 2h --spent 9h --label store --objective 2
+cairn task new "Back up before rolling back" --parent 5 --state "done"
+cairn task new "Test a rollback on an empty store" --parent 5 --state todo
 
-cairn task add "The client's answer on quotas" --state blocked --because "waiting on the client" --priority high --label product --objective 1
-cairn task add "Review PR 31745" --state watching --blocker 1 --priority normal --label backend
-cairn task add "Decide on naming" --state paused --because "team call" --priority low
+cairn task new "The client's answer on quotas" --state blocked --because "waiting on the client" --priority high --label product --objective 1
+cairn task new "Review PR 31745" --state watching --blocker 1 --priority normal --label backend
+cairn task new "Decide on naming" --state paused --because "team call" --priority low
 
-cairn task add "Clean the lockfiles" --state todo --priority low --label technical --objective 2
-cairn task add "Update the README" --state todo --deadline "$(day +1)" --label doc
-cairn task add "Encrypt the backups" --state backlog --priority normal --objective 2
-cairn task add "Draw the columns" --state backlog --priority low --objective 3
-cairn task add "Benchmark the store" --state backlog --label technical
+cairn task new "Clean the lockfiles" --state todo --priority low --label technical --objective 2
+cairn task new "Update the README" --state todo --deadline "$(day +1)" --label doc
+cairn task new "Encrypt the backups" --state backlog --priority normal --objective 2
+cairn task new "Draw the columns" --state backlog --priority low --objective 3
+cairn task new "Benchmark the store" --state backlog --label technical
 
-cairn task add "Switch to Postgres 16" --state "done" --priority high --label store --objective 4
-cairn task add "Drop the old schema" --state "done" --label store --objective 4
-cairn task add "iOS prototype" --state "done" --priority low --objective 5
+cairn task new "Switch to Postgres 16" --state "done" --priority high --label store --objective 4
+cairn task new "Drop the old schema" --state "done" --label store --objective 4
+cairn task new "iOS prototype" --state "done" --priority low --objective 5
 
 cairn task archive 17
 cairn task archive 18

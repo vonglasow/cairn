@@ -14,7 +14,7 @@ Feature: Backups of the store
     @backup-add
     Scenario: a backup can be made whenever I want one
       Given I added a task titled "Write the spec"
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it succeeds
       And it numbers the backup 1
 
@@ -22,14 +22,14 @@ Feature: Backups of the store
     Scenario: the next backup gets the next number
       Given I added a task titled "Write the spec"
       And I made a backup of the store
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it numbers the backup 2
 
     @backup-add-says-what-it-copied
     Scenario: a backup says how much it took, and says the same later
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it says the backup holds 2 tasks and 0 objectives
       And `cairn backup show 1` says the backup holds 2 tasks and 0 objectives
 
@@ -37,13 +37,13 @@ Feature: Backups of the store
     Scenario: a backup counts the objectives it holds
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec"
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it says the backup holds 1 task and 1 objective
 
     @backup-holds-an-older-shape
     Scenario: a backup of a store one change behind holds no objectives
       Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it says the backup holds 1 task and 0 objectives
 
     @backup-holds-json
@@ -58,7 +58,7 @@ Feature: Backups of the store
     @backup-add-not-a-store
     Scenario: backing up what is not a cairn store is refused
       Given the store holds something that is not a cairn store
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it exits with code 3
       And it names the store
       And `cairn backup list` says there is no backup
@@ -146,7 +146,7 @@ Feature: Backups of the store
       Given I added a task titled "Write the spec"
       And I made a backup of the store
       And I deleted backup 1
-      When I run `cairn backup add`
+      When I run `cairn backup new`
       Then it numbers the backup 2
 
 

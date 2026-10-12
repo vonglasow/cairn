@@ -135,7 +135,7 @@ func (w *sessionWorld) event(session, name string) {
 func (w *sessionWorld) aTask(n int) error {
 	for w.tasks < n {
 		w.tasks++
-		if _, err := w.cairn("task", "add", "Task "+strconv.Itoa(w.tasks)); err != nil {
+		if _, err := w.cairn("task", "new", "Task "+strconv.Itoa(w.tasks)); err != nil {
 			return err
 		}
 	}

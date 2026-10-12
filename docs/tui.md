@@ -97,7 +97,7 @@ A gesture on the board says nothing: what it did is on the board.
                           ┃ ↳ 12                 │ │ ↳ she confirms first │ │ ↳ your call          │
                           ┃──────────────────────┘ └──────────────────────┘ └──────────────────────┘
 
- hjkl ←↓↑→ columns   i insert   a add   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command
 ```
 
 Four columns side by side, left to right: **backlog, todo, current, done**. The
@@ -572,7 +572,7 @@ because with two hundred tasks what is highlighted is usually off screen.
  │ NORMAL — cursor on a column         │ PRIORITY — the left border                │
  │   hjkl ←↓↑→  change column          │   ▏ blue   low       ▏ amber   high       │
  │   i          insert mode            │   ▏ grey   normal    ▏ red     critical   │
- │   a          add a task             │                                           │
+ │   a          a new task             │                                           │
  │   /          search                 │ STALLED — top right of the card           │
  │   ⇥          next tab               │   ⊘  blocked    waiting on somebody else  │
  │   :          command                │   ◉  watching   handed over, needs a look │
@@ -613,7 +613,7 @@ here is a help screen that has to be second-guessed.
  ...                                     ( dimmed )
 
  ┌────────────────────────────────────────────────────────────────────────────┐
- │   backup add             take a backup now                                 │
+ │   backup new             take a backup now                                 │
  │   backup list            the backups taken                                 │
  │ ▸ backup show      <n>   what a backup holds                               │
  │   backup restore   <n>   put the store back in that state                  │
@@ -630,7 +630,7 @@ be learnt twice.
 
 | | |
 |---|---|
-| `:backup` | `add` `list` `show <n>` `restore <n>` `delete <n>` |
+| `:backup` | `new` `list` `show <n>` `restore <n>` `delete <n>` |
 | `:migration` | `apply` `list` `show <n>` `rollback <n>` |
 | `:trace` | `list`, `show <n>` |
 | `:q` | quit |
@@ -690,7 +690,7 @@ tasks that serve it, with the objective's card flattened into a band on top.
  ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────
  ...
 
- hjkl ←↓↑→ columns   i insert   a add to this objective   / search   esc back   ? help
+ hjkl ←↓↑→ columns   i insert   a new here   / search   esc back   ? help
 ```
 
 Same columns, same band, same keys, same `⇧hjkl`. Nothing new to learn. Two
@@ -712,7 +712,7 @@ something would be a key that looked broken.
 
 ## Staying true while the store changes
 
-The board stays open while a `cairn task add` in another terminal, or an agent
+The board stays open while a `cairn task new` in another terminal, or an agent
 over MCP, changes the store underneath it.
 
 - A slow beat — two seconds — reads **`PRAGMA data_version`**. That is one

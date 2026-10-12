@@ -76,11 +76,11 @@ func TestReasons_areEachWrittenOnceAndSpelledAlike(t *testing.T) {
 
 func TestRefusalOf_readsWhatTheReadersRefuseAsNotUnderstood(t *testing.T) {
 	_, typed := TaskShow.Read([]string{"4", "5"})
-	_, flag := TaskAdd.Read([]string{"x", "--title"})
+	_, flag := TaskNew.Read([]string{"x", "--title"})
 	_, yes := TaskMove.Read([]string{"4", "--first=maybe"})
-	_, sent := TaskAdd.FromJSON([]byte(`{"label": "one"}`))
+	_, sent := TaskNew.FromJSON([]byte(`{"label": "one"}`))
 	_, yesSent := TaskMove.FromJSON([]byte(`{"first": "yes"}`))
-	_, broken := TaskAdd.FromJSON([]byte(`{"title": `))
+	_, broken := TaskNew.FromJSON([]byte(`{"title": `))
 	for what, err := range map[string]error{
 		"a word too many": typed, "a flag given nothing": flag, "a yes that is not": yes,
 		"a list sent as a string": sent, "a yes sent as a string": yesSent, "JSON that is not": broken,

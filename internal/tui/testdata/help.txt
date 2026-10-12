@@ -6,7 +6,7 @@
  │ NORMAL — the cursor on a column             │ │ PRIORITY — the left edge of a card          │
  │   hjkl ←↓↑→   columns, and the band         │ │   ▌ low                                     │
  │   i           insert mode                   │ │   ▌ normal                                  │
- │   a           add a task                    │ │   ▌ high                                    │
+ │   a           a new task                    │ │   ▌ high                                    │
  │   ⇧A          show what was archived        │ │   ▌ critical                                │
  │   ⇧X          take every task in this       │ │                                             │
  │ column off the board — it asks first        │ │ STALLED — the top right of a card           │

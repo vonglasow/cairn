@@ -8,7 +8,7 @@
  │   hjkl ←↓↑→   columns, and    │ │   ▌ low                       │
  │ the band                      │ │   ▌ normal                    │
  │   i           insert mode     │ │   ▌ high                      │
- │   a           add a task      │ │   ▌ critical                  │
+ │   a           a new task      │ │   ▌ critical                  │
  │   ⇧A          show what was   │ │                               │
  │ archived                      │ │ STALLED — the top right of a  │
  │   ⇧X          take every task │ │ card                          │

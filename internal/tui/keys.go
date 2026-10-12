@@ -279,7 +279,7 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		}
 		return b, nil
 	case "b":
-		return b, b.telling(engine.BackupAdd, engine.Input{})
+		return b, b.telling(engine.BackupNew, engine.Input{})
 	case "B", "shift+b":
 		return b, b.telling(engine.BackupList, engine.Input{})
 	case "e":

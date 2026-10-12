@@ -51,7 +51,7 @@ Feature: The store
     Scenario: a store nothing may write to is reported
       Given I added a task titled "Write the spec"
       And the store cannot be written to
-      When I run `cairn task add "Ship it"`
+      When I run `cairn task new "Ship it"`
       Then it exits with code 3
       And it writes the reason to standard error
 

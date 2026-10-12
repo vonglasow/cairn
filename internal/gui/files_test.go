@@ -220,7 +220,7 @@ func TestCarryingTheStoreIsOffered(t *testing.T) {
 	// counted is that each was asked for.
 	f := newFake()
 	f.fail = errors.New("refused")
-	if New(f, 1200, 800).Choose("Back up"); f.what("backup", "add") != 1 {
+	if New(f, 1200, 800).Choose("Back up"); f.what("backup", "new") != 1 {
 		t.Error("Back up made no backup")
 	}
 	if New(f, 1200, 800).Choose("Backups"); f.what("backup", "list") != 1 {

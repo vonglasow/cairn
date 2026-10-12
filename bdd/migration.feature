@@ -111,7 +111,7 @@ Feature: Changes to the shape of the store
 
     @migration-apply-new-store
     Scenario: a store made today needs nothing applied to it
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then it succeeds
       And it writes nothing to standard error
 

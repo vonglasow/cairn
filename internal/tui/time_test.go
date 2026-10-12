@@ -48,7 +48,7 @@ func TestBackupsAreReachedFromTheBoard(t *testing.T) {
 	b := hit(standing(f), "b")
 	added := false
 	for _, a := range f.asked {
-		added = added || a.op.Name() == engine.BackupAdd.Name()
+		added = added || a.op.Name() == engine.BackupNew.Name()
 	}
 	if !added {
 		t.Error("b made no backup")

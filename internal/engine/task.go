@@ -14,15 +14,15 @@ import (
 	"cairn/internal/task"
 )
 
-// TaskAdd records a new task.
-var TaskAdd = Operation{
+// TaskNew records a new task.
+var TaskNew = Operation{
 	Thing: "task",
-	Verb:  "add",
-	Short: "Add a task",
-	Does:  "Add a task, carrying whatever of its attributes were given.",
-	Example: `cairn task add "Write the spec" --state todo --priority high --label spec --deadline 2026-09-01
-cairn task add "Write the tests" --parent 1 --objective 2
-cairn task add "Write the spec" --desc - < notes.md`,
+	Verb:  "new",
+	Short: "Make a new task",
+	Does:  "Make a new task, carrying whatever of its attributes were given.",
+	Example: `cairn task new "Write the spec" --state todo --priority high --label spec --deadline 2026-09-01
+cairn task new "Write the tests" --parent 1 --objective 2
+cairn task new "Write the spec" --desc - < notes.md`,
 	Level:   Write,
 	Needs:   AStore,
 	Again:   DoesItAgain,

@@ -27,4 +27,4 @@
 
 
 
- hjkl ←↓↑→ objectives   ⏎ open   a add   e edit   d delete   / search
+ hjkl ←↓↑→ objectives   ⏎ open   a new   e edit   d delete   / search

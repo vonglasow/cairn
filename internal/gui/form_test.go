@@ -96,10 +96,10 @@ func TestAddingSavesWithoutANumber(t *testing.T) {
 	w.form = w.form.Set("title", "Write the spec")
 	w = w.Choose("Save")
 
-	if f.what("task", "add") != 1 {
-		t.Fatalf("adding asked for %d adds", f.what("task", "add"))
+	if f.what("task", "new") != 1 {
+		t.Fatalf("adding asked for %d adds", f.what("task", "new"))
 	}
-	in, _ := f.gave("task", "add")
+	in, _ := f.gave("task", "new")
 	if _, named := in.Given["number"]; named {
 		t.Error("a task being added was given a number it does not have yet")
 	}
@@ -777,7 +777,7 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	var added, edited, deleted []engine.Input
 	for _, one := range f.asked {
 		switch {
-		case one.op.Thing == "task" && one.op.Verb == "add":
+		case one.op.Thing == "task" && one.op.Verb == "new":
 			added = append(added, one.in)
 		case one.op.Thing == "task" && one.op.Verb == "edit" && one.in.Given["number"] != "1":
 			edited = append(edited, one.in)

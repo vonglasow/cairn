@@ -29,7 +29,7 @@ func (w Window) telling(said string) Window {
 
 // backingUp backs the store up and says where the backup lies.
 func (w Window) backingUp() Window {
-	made, err := w.work.Ask(engine.BackupAdd, engine.Input{})
+	made, err := w.work.Ask(engine.BackupNew, engine.Input{})
 	if err != nil {
 		return w.failing(err)
 	}

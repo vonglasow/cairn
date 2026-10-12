@@ -128,7 +128,7 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 	if op.Level != engine.Read && r.refuse != nil {
 		return engine.Answer{}, r.refuse
 	}
-	if r.refuseParts && op.Thing == "task" && op.Verb == "add" && in.Given["parent"] != "" {
+	if r.refuseParts && op.Thing == "task" && op.Verb == "new" && in.Given["parent"] != "" {
 		return engine.Answer{}, fmt.Errorf("that part cannot be added")
 	}
 	if op.Thing == "task" && op.Verb == "list" {
@@ -159,7 +159,7 @@ func (w *world) addTask(title, state, desc string) error {
 	if desc != "" {
 		given["desc"] = desc
 	}
-	_, err := w.other.Ask(engine.TaskAdd, engine.Input{Given: given})
+	_, err := w.other.Ask(engine.TaskNew, engine.Input{Given: given})
 	return err
 }
 
@@ -770,7 +770,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return err
 		}
 		defer func() { _ = other.Close() }()
-		_, err = other.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{"title": title}})
+		_, err = other.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": title}})
 		return err
 	})
 	sc.Then(`^that file is a store holding the task "([^"]*)"$`, func(title string) error {

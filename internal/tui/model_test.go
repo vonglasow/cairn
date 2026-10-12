@@ -328,7 +328,7 @@ func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
 	}), 80, 20, plainSkin)
 	form.Number = 1
 
-	_, in := (Board{}).saving(form, engine.TaskAdd, engine.TaskEdit)
+	_, in := (Board{}).saving(form, engine.TaskNew, engine.TaskEdit)
 	for _, argument := range engine.TaskEdit.Takes {
 		if !in.Named(argument.Name) {
 			t.Errorf("%s was not named, so emptying it would do nothing", argument.Name)
@@ -513,11 +513,11 @@ func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
 	b := standing(twoTasks())
 	b.skin = plainSkin
 	b.width = 47
-	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a add" {
+	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a new" {
 		t.Fatalf("at 47 the bar reads %q", got)
 	}
 	b.width = 48
-	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a add   / search" {
+	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a new   / search" {
 		t.Fatalf("at 48 the bar reads %q", got)
 	}
 }
@@ -871,7 +871,7 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 // them may be refused. What the store refuses is said rather than swallowed,
 // whichever of them it was.
 func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
-	for _, verb := range []string{"add", "delete"} {
+	for _, verb := range []string{"new", "delete"} {
 		t.Run("a part the store will not "+verb, func(t *testing.T) {
 			f := newFake()
 			f.cards = []reading.Card{

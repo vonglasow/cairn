@@ -24,7 +24,7 @@ Feature: Ordering
     Scenario: a task arrives behind the ones already there
       Given I added a task titled "First"
       And I added a task titled "Second"
-      When I run `cairn task add "Third"`
+      When I run `cairn task new "Third"`
       Then it lists the tasks in the order "First", "Second", "Third"
 
     @ordering-outlives-the-command
@@ -41,13 +41,13 @@ Feature: Ordering
       And I added a task titled "Second"
       And I added a task titled "Third"
       And I deleted task 2
-      When I run `cairn task add "Fourth"`
+      When I run `cairn task new "Fourth"`
       Then it lists the tasks in the order "First", "Third", "Fourth"
 
     @ordering-last-means-last-in-its-column
     Scenario: last means last in the backlog, not last of all
       Given I added a task titled "Already done" with the state "done"
-      When I run `cairn task add "Just arrived"`
+      When I run `cairn task new "Just arrived"`
       Then it lists the tasks in the order "Just arrived", "Already done"
 
   Rule: The column gives the coarse order, and a list is never four lists
@@ -287,7 +287,7 @@ Feature: Ordering
       Given I added a task titled "The parent"
       And I added a task titled "First sister" with the parent "1"
       And I added a task titled "Second sister" with the parent "1"
-      When I run `cairn task add "Third sister" --parent 1`
+      When I run `cairn task new "Third sister" --parent 1`
       Then it lists the sub-tasks of task 1 in the order "First sister", "Second sister", "Third sister"
 
     @ordering-sub-task-moved-among-its-sisters

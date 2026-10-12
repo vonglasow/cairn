@@ -14,11 +14,11 @@ import (
 
 func TestBackupList_listsEveryBackup(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(BackupAdd, path, Input{}); err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+	if _, err := Do(BackupNew, path, Input{}); err != nil {
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
-	if _, err := Do(BackupAdd, path, Input{}); err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+	if _, err := Do(BackupNew, path, Input{}); err != nil {
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
 	answer, err := Do(BackupList, path, Input{})
@@ -44,12 +44,12 @@ func TestBackupList_answersAnEmptySetNotNilWhenNoBackupWasEverMade(t *testing.T)
 
 func TestBackupShow_saysWhenABackupWasMadeAndWhatItHolds(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
-	made, err := Do(BackupAdd, path, Input{})
+	made, err := Do(BackupNew, path, Input{})
 	if err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
 	answer, err := Do(BackupShow, path, Input{Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
@@ -66,9 +66,9 @@ func TestBackupShow_saysWhenABackupWasMadeAndWhatItHolds(t *testing.T) {
 
 func TestBackupDelete_deletesABackup(t *testing.T) {
 	path := storeAt(t)
-	made, err := Do(BackupAdd, path, Input{})
+	made, err := Do(BackupNew, path, Input{})
 	if err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
 	answer, err := Do(BackupDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
@@ -90,12 +90,12 @@ func TestBackupDelete_deletesABackup(t *testing.T) {
 
 func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(BackupAdd, path, Input{}); err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+	if _, err := Do(BackupNew, path, Input{}); err != nil {
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
-	latest, err := Do(BackupAdd, path, Input{})
+	latest, err := Do(BackupNew, path, Input{})
 	if err != nil {
-		t.Fatalf("Do(BackupAdd): %v", err)
+		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
 	// A number nothing carries is refused before anything else is touched.
@@ -127,11 +127,11 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 
 func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
-	answer, err := Do(BackupAdd, path, Input{})
+	answer, err := Do(BackupNew, path, Input{})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 	// Counted before backing up, not after: a file that cannot be counted is
 	// refused before any backup of it is made.
 	garbage := garbageStore(t)
-	if _, err := Do(BackupAdd, garbage, Input{}); err == nil {
+	if _, err := Do(BackupNew, garbage, Input{}); err == nil {
 		t.Fatalf("Do: want an error, got none: %q is not a store", garbage)
 	}
 	list, err := Do(BackupList, garbage, Input{})
@@ -190,8 +190,8 @@ func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
 // this one held; a file already there is refused.
 func TestBackupExport_writesTheStoreToTheFileNamed(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	to := filepath.Join(t.TempDir(), "elsewhere.db")
 	answer, err := Do(BackupExport, path, Input{Given: map[string]string{"to": to}})
@@ -220,12 +220,12 @@ func TestBackupExport_writesTheStoreToTheFileNamed(t *testing.T) {
 // is left where it was.
 func TestBackupImport_putsTheStoreFromAFileInPlace(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "here"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "here"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	from := storeAt(t)
-	if _, err := Do(TaskAdd, from, Input{Given: map[string]string{"title": "from elsewhere"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, from, Input{Given: map[string]string{"title": "from elsewhere"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	answer, err := Do(BackupImport, path, Input{Given: map[string]string{"from": from}})
 	if err != nil {

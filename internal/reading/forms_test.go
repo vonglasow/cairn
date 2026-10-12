@@ -41,14 +41,14 @@ func TestEditFields_bringTheParts(t *testing.T) {
 // number when it is an edit.
 func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	fields := []Field{{Name: "title", Arg: "title", Value: "  Ship it  "}}
-	op, in := Saved(fields, true, 0, engine.TaskAdd, engine.TaskEdit)
-	if op.Name() != "task_add" || in.Given["title"] != "Ship it" {
+	op, in := Saved(fields, true, 0, engine.TaskNew, engine.TaskEdit)
+	if op.Name() != "task_new" || in.Given["title"] != "Ship it" {
 		t.Errorf("adding saved %s %v", op.Name(), in.Given)
 	}
 	if _, numbered := in.Given["number"]; numbered {
 		t.Error("adding named a number")
 	}
-	op, in = Saved(fields, false, 7, engine.ObjectiveAdd, engine.ObjectiveEdit)
+	op, in = Saved(fields, false, 7, engine.ObjectiveNew, engine.ObjectiveEdit)
 	if op.Name() != "objective_edit" || in.Given["number"] != "7" {
 		t.Errorf("editing saved %s %v", op.Name(), in.Given)
 	}

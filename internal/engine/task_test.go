@@ -16,11 +16,11 @@ import (
 
 func TestTaskList_listsEveryTask(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "two"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "two"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(TaskList, path, Input{})
@@ -34,13 +34,13 @@ func TestTaskList_listsEveryTask(t *testing.T) {
 
 func TestTaskShow_showsATaskItsChildrenAndProgress(t *testing.T) {
 	path := storeAt(t)
-	parent, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "parent"}})
+	parent, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "parent"}})
 	if err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	number := strconv.Itoa(factsOf(*parent.Task).number)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "child", "parent": number}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "child", "parent": number}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(TaskShow, path, Input{Given: map[string]string{"number": number}})
@@ -60,19 +60,19 @@ func TestTaskShow_showsATaskItsChildrenAndProgress(t *testing.T) {
 
 func TestTaskEdit_editsATask(t *testing.T) {
 	path := storeAt(t)
-	parent, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "parent"}})
+	parent, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "parent"}})
 	if err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
-	child, err := Do(TaskAdd, path, Input{Given: map[string]string{
+	child, err := Do(TaskNew, path, Input{Given: map[string]string{
 		"title": "child", "parent": strconv.Itoa(factsOf(*parent.Task).number),
 	}})
 	if err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	number := strconv.Itoa(factsOf(*child.Task).number)
 
-	// An empty --parent sets a task free — the same translation task_add uses.
+	// An empty --parent sets a task free — the same translation task_new uses.
 	answer, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": number, "parent": ""}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
@@ -89,9 +89,9 @@ func TestTaskEdit_editsATask(t *testing.T) {
 
 func TestTaskDelete_deletesATask(t *testing.T) {
 	path := storeAt(t)
-	added, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "gone soon"}})
+	added, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "gone soon"}})
 	if err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(factsOf(*added.Task).number)}})
@@ -113,11 +113,11 @@ func TestTaskDelete_deletesATask(t *testing.T) {
 
 func TestTaskSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "Write the spec"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "Write the spec"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "Ship it"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "Ship it"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(TaskSearch, path, Input{Listed: map[string][]string{"named": {"spec"}}})
@@ -133,7 +133,7 @@ func TestTaskAdd_addsATask(t *testing.T) {
 	path := storeAt(t)
 	in := Input{Given: map[string]string{"title": "write the report"}}
 
-	answer, err := Do(TaskAdd, path, in)
+	answer, err := Do(TaskNew, path, in)
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -143,11 +143,11 @@ func TestTaskAdd_addsATask(t *testing.T) {
 }
 
 func TestAll_namesEachOperationOnce(t *testing.T) {
-	if got := TaskAdd.Name(); got != "task_add" {
-		t.Errorf("TaskAdd.Name() = %q, want %q", got, "task_add")
+	if got := TaskNew.Name(); got != "task_new" {
+		t.Errorf("TaskNew.Name() = %q, want %q", got, "task_new")
 	}
-	if got := TaskAdd.Line(); got != "task add" {
-		t.Errorf("TaskAdd.Line() = %q, want %q", got, "task add")
+	if got := TaskNew.Line(); got != "task new" {
+		t.Errorf("TaskNew.Line() = %q, want %q", got, "task new")
 	}
 
 	ops := All()
@@ -624,8 +624,8 @@ func TestSearching_canBeNarrowed(t *testing.T) {
 func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
 	path := storeAt(t)
 	notes := filepath.Join(t.TempDir(), "vault")
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	at := Places{Store: path, Notes: notes}
 	answer, err := DoAt(TaskShow, at, Input{Given: map[string]string{"number": "1"}}, ByHand)
@@ -675,7 +675,7 @@ func TestTaskList_saysHowFarAlongEachTaskIsAndWhereItsContextLives(t *testing.T)
 		given("title", "Read it", "parent", "1"),
 		given("title", "Alone"),
 	} {
-		if _, err := Do(TaskAdd, path, step); err != nil {
+		if _, err := Do(TaskNew, path, step); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -704,7 +704,7 @@ func TestTaskList_saysHowFarAlongEachTaskIsAndWhereItsContextLives(t *testing.T)
 // The same for objectives: how far along each one is, in the listing.
 func TestObjectiveList_saysHowFarAlongEachObjectiveIs(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(ObjectiveAdd, path, given("title", "Ship cairn")); err != nil {
+	if _, err := Do(ObjectiveNew, path, given("title", "Ship cairn")); err != nil {
 		t.Fatal(err)
 	}
 	for _, step := range []Input{
@@ -712,7 +712,7 @@ func TestObjectiveList_saysHowFarAlongEachObjectiveIs(t *testing.T) {
 		{Given: map[string]string{"title": "Read it"}, Listed: map[string][]string{"objective": {"1"}}},
 		given("title", "A part", "parent", "2"),
 	} {
-		if _, err := Do(TaskAdd, path, step); err != nil {
+		if _, err := Do(TaskNew, path, step); err != nil {
 			t.Fatal(err)
 		}
 	}

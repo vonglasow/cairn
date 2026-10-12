@@ -67,8 +67,8 @@ Feature: Answering a machine over MCP
     @mcp-a-backup-taken-through-it-holds-everything
     Scenario: a backup taken through the server holds what was just added
       Given a cairn server started with `--access full`
-      When I call `task_add` with the title "Added just now"
-      And I call `backup_add`
+      When I call `task_new` with the title "Added just now"
+      And I call `backup_new`
       And I call `backup_restore` with the number 1
       Then `cairn task list` lists 1 task
 
@@ -76,14 +76,14 @@ Feature: Answering a machine over MCP
     Scenario: what was done at the terminal is there on the next call
       Given a cairn server started with `--access write`
       And I asked it to add a task titled "From the agent"
-      When I run `cairn task add "From the terminal"`
+      When I run `cairn task new "From the terminal"`
       And I call `task_list`
       Then it answers with 2 tasks
 
     @mcp-what-it-did-is-on-disk
     Scenario: what the server did is there for the terminal
       Given a cairn server started with `--access write`
-      When I call `task_add` with the title "From the agent"
+      When I call `task_new` with the title "From the agent"
       Then `cairn task list` lists 1 task
 
   Rule: What the server offers is what it was allowed to do
@@ -97,7 +97,7 @@ Feature: Answering a machine over MCP
       Given a cairn server started with no access given
       When I ask it what it can do
       Then it offers `task_list`
-      And it does not offer `task_add`
+      And it does not offer `task_new`
       And it does not offer `task_delete`
 
     @mcp-write-offers-changing
@@ -105,7 +105,7 @@ Feature: Answering a machine over MCP
       Given a cairn server started with `--access write`
       When I ask it what it can do
       Then it offers `task_list`
-      And it offers `task_add`
+      And it offers `task_new`
       And it does not offer `task_delete`
 
     @mcp-full-offers-everything
@@ -187,7 +187,7 @@ Feature: Answering a machine over MCP
     @mcp-add-a-task
     Scenario: adding a task
       Given a cairn server started with `--access write`
-      When I call `task_add` with the title "Write the spec"
+      When I call `task_new` with the title "Write the spec"
       Then it answers without an error
       And `cairn task list` lists 1 task
 
@@ -266,7 +266,7 @@ Feature: Answering a machine over MCP
     @mcp-labels-arrive-whole
     Scenario: labels given to a tool arrive as labels
       Given a cairn server started with `--access write`
-      When I call `task_add` with the title "From the agent" and the labels "spec" and "team"
+      When I call `task_new` with the title "From the agent" and the labels "spec" and "team"
       Then it answers with a task carrying both labels
 
     @mcp-looks-for-what-it-was-told
@@ -303,7 +303,7 @@ Feature: Answering a machine over MCP
     Scenario: a tool names what it takes
       Given a cairn server started with `--access write`
       When I ask it what it can do
-      Then `task_add` names every state cairn accepts
+      Then `task_new` names every state cairn accepts
       And it says what each thing it takes is for
 
     @mcp-empties-a-field
@@ -328,7 +328,7 @@ Feature: Answering a machine over MCP
     @mcp-refusal-is-answered
     Scenario: a refusal comes back as the reason it was refused
       Given a cairn server started with `--access write`
-      When I call `task_add` with the title ""
+      When I call `task_new` with the title ""
       Then it answers that it failed
       And the answer says a task needs a title
 

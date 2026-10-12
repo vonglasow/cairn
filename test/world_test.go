@@ -29,8 +29,8 @@ func answering(t *testing.T, answer Result) (*World, *[]string) {
 
 func TestRun_handsOverWhatAShellWouldHaveHandedOver(t *testing.T) {
 	w, asked := answering(t, Result{Stdout: "done"})
-	w.Run(`cairn task add "Write the spec"`)
-	if want := []string{`task add Write the spec`}; len(*asked) != 1 || (*asked)[0] != want[0] {
+	w.Run(`cairn task new "Write the spec"`)
+	if want := []string{`task new Write the spec`}; len(*asked) != 1 || (*asked)[0] != want[0] {
 		t.Errorf("asked %#v, want %#v — the leading `cairn` is the reader's, not the surface's", *asked, want)
 	}
 	if w.Out.Stdout != "done" {
@@ -41,7 +41,7 @@ func TestRun_handsOverWhatAShellWouldHaveHandedOver(t *testing.T) {
 func TestSeed_putsBackWhatThePreconditionAnswered(t *testing.T) {
 	w, _ := answering(t, Result{Stdout: "seeded"})
 	w.Out = Result{Stdout: "what the scenario is asserting against"}
-	if err := w.Seed(`cairn task add "One"`); err != nil {
+	if err := w.Seed(`cairn task new "One"`); err != nil {
 		t.Fatalf("Seed = %v, want it to succeed", err)
 	}
 	if w.Out.Stdout != "what the scenario is asserting against" {
@@ -52,11 +52,11 @@ func TestSeed_putsBackWhatThePreconditionAnswered(t *testing.T) {
 func TestSeed_reportsAPreconditionThatCouldNotBeMet(t *testing.T) {
 	w, _ := answering(t, Result{Code: 1, Stderr: "a task needs a title"})
 	w.Out = Result{Stdout: "untouched"}
-	err := w.Seed(`cairn task add ""`)
+	err := w.Seed(`cairn task new ""`)
 	if err == nil {
 		t.Fatal("Seed = nil: a precondition that failed would leave the scenario asserting nothing")
 	}
-	for _, want := range []string{"cairn task add", "exit 1", "a task needs a title"} {
+	for _, want := range []string{"cairn task new", "exit 1", "a task needs a title"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("%q does not carry %q", err, want)
 		}
@@ -138,7 +138,7 @@ func TestIAddedATaskTitled_goesThroughTheRealCommand(t *testing.T) {
 	if err := w.IAddedATaskTitled("Write the spec"); err != nil {
 		t.Fatalf("IAddedATaskTitled = %v", err)
 	}
-	if len(*asked) != 1 || (*asked)[0] != "task add Write the spec" {
+	if len(*asked) != 1 || (*asked)[0] != "task new Write the spec" {
 		t.Errorf("asked %#v, want the task added through the command", *asked)
 	}
 }
@@ -355,7 +355,7 @@ func TestAStoreFromAnOlderCairn_isMadeThroughTheCommands(t *testing.T) {
 	if err := w.AStoreFromAnOlderCairn("Write the spec"); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(*asked, "; ") != "task add Write the spec; migration rollback --yes" {
+	if strings.Join(*asked, "; ") != "task new Write the spec; migration rollback --yes" {
 		t.Errorf("asked %#v", *asked)
 	}
 	if _, err := os.Stat(backups); !os.IsNotExist(err) {

@@ -11,7 +11,7 @@ Feature: Objectives
 
     @objective-add
     Scenario: an objective is added and numbered
-      When I run `cairn objective add "Ship cairn 1.0"`
+      When I run `cairn objective new "Ship cairn 1.0"`
       Then it succeeds
       And it numbers the objective 1
 
@@ -29,7 +29,7 @@ Feature: Objectives
 
     @objective-title-empty
     Scenario: an empty title is no title
-      When I run `cairn objective add ""`
+      When I run `cairn objective new ""`
       Then it fails
       And it says an objective needs a title
       And it shows the title I typed
@@ -39,13 +39,13 @@ Feature: Objectives
     @objective-number-next
     Scenario: the next objective gets the next number
       Given I added an objective titled "Ship cairn 1.0"
-      When I run `cairn objective add "Learn Go properly"`
+      When I run `cairn objective new "Learn Go properly"`
       Then it numbers the objective 2
 
     @objective-number-apart-from-tasks
     Scenario: objectives and tasks are numbered apart
       Given I added a task titled "Write the spec"
-      When I run `cairn objective add "Ship cairn 1.0"`
+      When I run `cairn objective new "Ship cairn 1.0"`
       Then it numbers the objective 1
 
   Rule: A task can be put under an objective
@@ -53,12 +53,12 @@ Feature: Objectives
     @objective-task-added-under
     Scenario: a task can be added under an objective
       Given I added an objective titled "Ship cairn 1.0"
-      When I run `cairn task add "Write the spec" --objective 1`
+      When I run `cairn task new "Write the spec" --objective 1`
       Then the task carries the objective "1"
 
     @objective-task-none
     Scenario: a task belongs to no objective unless it is told to
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then the task has no objective
 
     @objective-task-attached-later
@@ -90,7 +90,7 @@ Feature: Objectives
     Scenario: a task can be given two objectives at once
       Given I added an objective titled "Ship cairn 1.0"
       And I added an objective titled "Ship the docs"
-      When I run `cairn task add "Write the spec" --objective 1 --objective 2`
+      When I run `cairn task new "Write the spec" --objective 1 --objective 2`
       Then it succeeds
       And `cairn task show 1` says it serves objectives 1 and 2
 
@@ -121,7 +121,7 @@ Feature: Objectives
     @objective-task-serves-it-once
     Scenario: the same objective named twice is served once
       Given I added an objective titled "Ship cairn 1.0"
-      When I run `cairn task add "Write the spec" --objective 1 --objective 1`
+      When I run `cairn task new "Write the spec" --objective 1 --objective 1`
       Then `cairn task show 1` says it serves objective 1 alone
 
     @objective-counts-a-task-it-shares
@@ -181,7 +181,7 @@ Feature: Objectives
     Scenario: a task cannot be given a parent and an objective in one go
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Ship it"
-      When I run `cairn task add "Write the spec" --parent 1 --objective 1`
+      When I run `cairn task new "Write the spec" --parent 1 --objective 1`
       Then it fails
       And it says a sub-task serves no objective
 
@@ -304,7 +304,7 @@ Feature: Objectives
 
     @objective-unknown
     Scenario: putting a task under an objective that does not exist is refused
-      When I run `cairn task add "Write the spec" --objective 99`
+      When I run `cairn task new "Write the spec" --objective 99`
       Then it fails
       And it says there is no such objective
 
@@ -317,7 +317,7 @@ Feature: Objectives
 
       Examples: everywhere a number is read
         | command                                          |
-        | cairn task add "Write the spec" --objective spec |
+        | cairn task new "Write the spec" --objective spec |
         | cairn objective show spec                        |
         | cairn objective edit spec --title "Nope"         |
         | cairn objective delete spec --yes                |
@@ -351,7 +351,7 @@ Feature: Objectives
     @objective-sign-at-creation-refused
     Scenario: a sign says how a set moves, and a new task has none
       Given I added an objective titled "Ship cairn 1.0"
-      When I run `cairn task add "Write the spec" --objective +1`
+      When I run `cairn task new "Write the spec" --objective +1`
       Then it fails
       And it says an objective is added or taken away only when changing a task
 
@@ -390,7 +390,7 @@ Feature: Objectives
 
     @objective-label-list
     Scenario: several labels can be given in one flag
-      When I run `cairn objective add "Ship cairn 1.0" --label "perso,spec"`
+      When I run `cairn objective new "Ship cairn 1.0" --label "perso,spec"`
       Then the objective carries exactly 2 labels
       And the objective carries the label "perso"
 
@@ -469,7 +469,7 @@ Feature: Objectives
 
     @objective-defaults
     Scenario: a new objective carries nothing else
-      When I run `cairn objective add "Ship cairn 1.0"`
+      When I run `cairn objective new "Ship cairn 1.0"`
       Then the objective has no description
       And the objective has no labels
       And the objective has no deadline
@@ -479,7 +479,7 @@ Feature: Objectives
 
     @objective-attribute-accepted
     Scenario Outline: an attribute given is an attribute carried
-      When I run `cairn objective add "Ship cairn 1.0" <flag> <value>`
+      When I run `cairn objective new "Ship cairn 1.0" <flag> <value>`
       Then the objective carries the <attribute> "<stored>"
 
       Examples: each attribute, and how it comes back
@@ -491,7 +491,7 @@ Feature: Objectives
 
     @objective-attribute-refused
     Scenario Outline: an attribute it cannot make sense of is refused
-      When I run `cairn objective add "Ship cairn 1.0" <flag> <value>`
+      When I run `cairn objective new "Ship cairn 1.0" <flag> <value>`
       Then it fails
       And it says what it expects instead of "<value>"
 
@@ -506,7 +506,7 @@ Feature: Objectives
 
     @objective-priorities
     Scenario Outline: every priority an objective can carry
-      When I run `cairn objective add "Ship cairn 1.0" --priority <priority>`
+      When I run `cairn objective new "Ship cairn 1.0" --priority <priority>`
       Then the objective carries the priority "<priority>"
 
       Examples: the four, and no others
@@ -518,7 +518,7 @@ Feature: Objectives
 
     @objective-states
     Scenario Outline: every state an objective can be in
-      When I run `cairn objective add "Ship cairn 1.0" --state <state>`
+      When I run `cairn objective new "Ship cairn 1.0" --state <state>`
       Then the objective is <state>
 
       Examples: the four, and no others
@@ -647,7 +647,7 @@ Feature: Objectives
 
     @objective-json-failure
     Scenario: a refusal is reported the same way it is asked for
-      When I run `cairn objective add "" --json`
+      When I run `cairn objective new "" --json`
       Then it exits with code 1
       And it writes JSON to standard output
       And the JSON carries the reason
@@ -669,7 +669,7 @@ Feature: Objectives
 
       Examples: what someone types the first time
         | command                    | what is wrong             |
-        | cairn objective add        | no title at all           |
+        | cairn objective new        | no title at all           |
         | cairn objective show       | no number given           |
         | cairn objective            | the group with no command |
         | cairn objective addd "x"   | a typo in the subcommand  |

@@ -59,7 +59,7 @@ changelog:
 stamps:
 	@echo $(VERSION) $(COMMIT) $(COMMIT_DATE)
 
-## run: run cairn with ARGS, e.g. `make run ARGS="task add 'write the spec'"`
+## run: run cairn with ARGS, e.g. `make run ARGS="task new 'write the spec'"`
 run:
 	go run -ldflags "$(LDFLAGS)" ./cmd/cairn $(ARGS)
 

@@ -353,13 +353,13 @@ func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain
 	return o, under, p, nil
 }
 
-// ObjectiveAdd records a new objective.
-var ObjectiveAdd = Operation{
+// ObjectiveNew records a new objective.
+var ObjectiveNew = Operation{
 	Thing:   "objective",
-	Verb:    "add",
-	Short:   "Add an objective",
-	Does:    "Add an objective, carrying whatever of its attributes were given.",
-	Example: "cairn objective add \"Ship cairn 1.0\" --deadline 2026-12-01",
+	Verb:    "new",
+	Short:   "Make a new objective",
+	Does:    "Make a new objective, carrying whatever of its attributes were given.",
+	Example: "cairn objective new \"Ship cairn 1.0\" --deadline 2026-12-01",
 	Level:   Write,
 	Needs:   AStore,
 	Again:   DoesItAgain,

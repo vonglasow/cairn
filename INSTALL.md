@@ -85,7 +85,7 @@ setting a backup aside first.
 
 ## Using it
 
-- `cairn task add "Write the spec"`, `cairn task list`: the command line.
+- `cairn task new "Write the spec"`, `cairn task list`: the command line.
 - `cairn tui`: the board, in the terminal.
 - `cairn gui`: the same board, in a window.
 

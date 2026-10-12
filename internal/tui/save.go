@@ -33,7 +33,7 @@ func (b Board) save() (tea.Model, tea.Cmd) {
 
 // saveTask adds or edits a task from the form.
 func (b Board) saveTask(form Form) tea.Cmd {
-	op, asked := b.saving(form, engine.TaskAdd, engine.TaskEdit)
+	op, asked := b.saving(form, engine.TaskNew, engine.TaskEdit)
 	return func() tea.Msg {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}
@@ -64,5 +64,5 @@ func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Opera
 
 // saveGoal adds or edits an objective from the form.
 func (b Board) saveGoal(form Form) tea.Cmd {
-	return b.carry(b.saving(form, engine.ObjectiveAdd, engine.ObjectiveEdit))
+	return b.carry(b.saving(form, engine.ObjectiveNew, engine.ObjectiveEdit))
 }

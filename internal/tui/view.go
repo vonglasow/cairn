@@ -326,7 +326,7 @@ func (b Board) offer(key, does string) string {
 func (b Board) offers() []string {
 	if b.tab == Objectives {
 		return []string{
-			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("a", "add"),
+			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("d", "delete"), b.offer("/", "search"),
 			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"),
 		}
@@ -342,11 +342,11 @@ func (b Board) offers() []string {
 		b.offer("hjkl ←↓↑→", "columns"), b.offer("i", "insert"),
 	}
 	if b.inside != 0 {
-		out = append(out, b.offer("a", "add here"), b.offer("/", "search"),
+		out = append(out, b.offer("a", "new here"), b.offer("/", "search"),
 			b.offer("?", "help"), b.offer("esc", "objectives"))
 		return out
 	}
-	return append(out, b.offer("a", "add"), b.offer("/", "search"),
+	return append(out, b.offer("a", "new"), b.offer("/", "search"),
 		b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"))
 }
 

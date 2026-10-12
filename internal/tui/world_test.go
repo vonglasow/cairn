@@ -280,7 +280,7 @@ func (w *world) addTask(title, state, desc string, serving int) error {
 	if serving != 0 {
 		in.Listed = map[string][]string{"objective": {fmt.Sprint(serving)}}
 	}
-	_, err := w.other.Ask(engine.TaskAdd, in)
+	_, err := w.other.Ask(engine.TaskNew, in)
 	return err
 }
 

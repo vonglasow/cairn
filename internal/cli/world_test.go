@@ -179,7 +179,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^I add(?:ed)? a task with it$`, func() error {
-		w.Run(fmt.Sprintf(`cairn task add "%s"`, w.long))
+		w.Run(fmt.Sprintf(`cairn task new "%s"`, w.long))
 		return nil
 	})
 
@@ -187,12 +187,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	// holds of both, so its scenarios have to be able to put an objective
 	// in the store.
 	sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
-		return w.Seed(fmt.Sprintf(`cairn objective add "%s"`, title))
+		return w.Seed(fmt.Sprintf(`cairn objective new "%s"`, title))
 	})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent|objective) "([^"]*)"$`,
 		func(title, attribute, value string) error {
-			return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flagFor(attribute), value))
+			return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flagFor(attribute), value))
 		})
 
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
@@ -202,13 +202,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^I added a task titled "([^"]*)" with the objectives "([^"]*)" and "([^"]*)"$`,
 		func(title, first, second string) error {
-			return w.Seed(fmt.Sprintf(`cairn task add "%s" --objective "%s" --objective "%s"`,
+			return w.Seed(fmt.Sprintf(`cairn task new "%s" --objective "%s" --objective "%s"`,
 				title, first, second))
 		})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
 		func(title, first, second string) error {
-			return w.Seed(fmt.Sprintf(`cairn task add "%s" --label "%s" --label "%s"`, title, first, second))
+			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
 	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because|objective|label) "([^"]*)"$`,
@@ -777,7 +777,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^I add a task whose description carries an escape$`, func() error {
-		w.Out = run(w.T, "task", "add", "Write the spec", "--desc", "look \x1b]52;c;aGk=\x07 here")
+		w.Out = run(w.T, "task", "new", "Write the spec", "--desc", "look \x1b]52;c;aGk=\x07 here")
 		return nil
 	})
 

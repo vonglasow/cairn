@@ -100,7 +100,7 @@ func TestRead_readsPastAYes(t *testing.T) {
 
 // Every field sent is read, past a list, a null and a yes.
 func TestFromJSON_readsPastEveryKindOfField(t *testing.T) {
-	in, err := TaskAdd.FromJSON([]byte(`{"desc": null, "label": ["spec"], "title": "Write the spec"}`))
+	in, err := TaskNew.FromJSON([]byte(`{"desc": null, "label": ["spec"], "title": "Write the spec"}`))
 	if err != nil || in.Given["title"] != "Write the spec" {
 		t.Errorf("FromJSON = %+v, %v; want the title read past the list and the null", in, err)
 	}
@@ -117,7 +117,7 @@ func TestListing_countsPartsTheNarrowingLeftOut(t *testing.T) {
 	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Do(TaskAdd, path, given("title", "a part", "parent", "1")); err != nil {
+	if _, err := Do(TaskNew, path, given("title", "a part", "parent", "1")); err != nil {
 		t.Fatal(err)
 	}
 	listed, err := Do(TaskList, path, Input{Listed: map[string][]string{"label": {"x"}}})

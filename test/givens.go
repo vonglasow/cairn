@@ -46,7 +46,7 @@ func (g Givens) addTask(title string, with map[string]string, objectives ...stri
 	}
 	// Named always, empty or not: a task added serving nothing is a task
 	// added with no objective named, and the engine reads the two alike.
-	_, err := g.ask(engine.TaskAdd, given, map[string][]string{"objective": objectives})
+	_, err := g.ask(engine.TaskNew, given, map[string][]string{"objective": objectives})
 	return err
 }
 
@@ -121,7 +121,7 @@ func (g Givens) IAddedTasksTo(n int, state string) error {
 
 // IAddedAnObjectiveTitled adds an objective carrying nothing but its title.
 func (g Givens) IAddedAnObjectiveTitled(title string) error {
-	_, err := g.ask(engine.ObjectiveAdd, map[string]string{"title": title}, nil)
+	_, err := g.ask(engine.ObjectiveNew, map[string]string{"title": title}, nil)
 	return err
 }
 

@@ -216,7 +216,7 @@ func TestNewObjective_refusesATitleOfSpaces(t *testing.T) {
 }
 
 // The sentinel is shared with a task, the wording is not: a person told "a
-// task needs a title" after typing `objective add` learns nothing. The task
+// task needs a title" after typing `objective new` learns nothing. The task
 // side of that sharing is task.TestNewTask_saysItIsATaskThatNeedsATitle.
 func TestNewObjective_saysItIsAnObjectiveThatNeedsATitle(t *testing.T) {
 	_, err := NewObjective("")

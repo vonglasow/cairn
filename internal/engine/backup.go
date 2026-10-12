@@ -19,13 +19,13 @@ func resolveBackup(vault *Backups, in Input) (domain.Backup, error) {
 	return vault.Find(n)
 }
 
-// BackupAdd backs up the store as it stands.
-var BackupAdd = Operation{
+// BackupNew backs up the store as it stands.
+var BackupNew = Operation{
 	Thing:   "backup",
-	Verb:    "add",
-	Short:   "Back up the store as it stands",
-	Does:    "Back up the store as it stands.",
-	Example: "cairn backup add",
+	Verb:    "new",
+	Short:   "Make a new backup of the store as it stands",
+	Does:    "Make a new backup of the store as it stands.",
+	Example: "cairn backup new",
 	Level:   Write,
 	Needs:   NoStore,
 	Again:   DoesItAgain,

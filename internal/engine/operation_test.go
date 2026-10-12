@@ -243,7 +243,7 @@ func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
 // ones whose answer nothing compared to anything.
 func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 	answered := map[string][]Answer{
-		"task_add":           {{Task: of(task.Task{})}},
+		"task_new":           {{Task: of(task.Task{})}},
 		"task_list":          {{Tasks: []task.Task{}, InFocus: list()}},
 		"task_show":          {{Task: of(task.Task{})}},
 		"task_archive":       {{Archived: of(1), Task: of(task.Task{})}, {Archived: of(2)}},
@@ -257,13 +257,13 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"task_unfocus":       {{InFocus: list()}},
 		"trace_show":         {{Acts: []trace.Act{}}},
 		"trace_list":         {{Since: []trace.Act{}}},
-		"objective_add":      {{Objective: of(objective.Objective{})}},
+		"objective_new":      {{Objective: of(objective.Objective{})}},
 		"objective_list":     {{Objectives: []objective.Objective{}}},
 		"objective_show":     {{Objective: of(objective.Objective{})}},
 		"objective_edit":     {{Objective: of(objective.Objective{})}},
 		"objective_search":   {{MatchedObjectives: []objective.Objective{}}},
 		"objective_delete":   {{Deleted: of(1)}},
-		"backup_add":         {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
+		"backup_new":         {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
 		"backup_list":        {{Backups: []domain.Backup{}}},
 		"backup_show":        {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
 		"backup_delete":      {{Deleted: of(1)}},
@@ -365,12 +365,12 @@ func TestEveryWriteSaysWhatCallingItAgainDoes(t *testing.T) {
 			t.Errorf("%s writes and does not say what calling it again does", op.Name())
 		}
 	}
-	for op, want := range map[*Operation]Again{&TaskAdd: DoesItAgain, &TaskEdit: ChangesNothingMore, &TimesheetAdd: DoesItAgain} {
+	for op, want := range map[*Operation]Again{&TaskNew: DoesItAgain, &TaskEdit: ChangesNothingMore, &TimesheetAdd: DoesItAgain} {
 		if op.Again != want {
 			t.Errorf("%s: Again = %v, want %v", op.Name(), op.Again, want)
 		}
 	}
-	if !TaskEdit.Overwrites || TaskAdd.Overwrites {
+	if !TaskEdit.Overwrites || TaskNew.Overwrites {
 		t.Error("an edit replaces what was written and an addition does not")
 	}
 }

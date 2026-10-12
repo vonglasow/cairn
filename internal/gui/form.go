@@ -679,9 +679,9 @@ func (w Window) Choose(name string) Window {
 // is called, and what somebody called it does not include the space they left
 // after it.
 func (w Window) saving() (engine.Operation, engine.Input) {
-	adding, editing := engine.TaskAdd, engine.TaskEdit
+	adding, editing := engine.TaskNew, engine.TaskEdit
 	if w.form.ForObjective {
-		adding, editing = engine.ObjectiveAdd, engine.ObjectiveEdit
+		adding, editing = engine.ObjectiveNew, engine.ObjectiveEdit
 	}
 	return reading.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
 }

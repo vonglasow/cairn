@@ -37,4 +37,4 @@
  ┃ █████████████████████░░░░░░░  7/9                                                              ┃
  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
- hjkl ←↓↑→ objectives   ⏎ open   a add   e edit   d delete   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ objectives   ⏎ open   a new   e edit   d delete   / search   ⇥ tab   ? help   : command

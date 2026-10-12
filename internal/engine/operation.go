@@ -250,20 +250,20 @@ type Operation struct {
 	Answers Answered
 }
 
-// Name is how an operation is named as a command or a tool: "task_add".
+// Name is how an operation is named as a command or a tool: "task_new".
 func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
 
-// Line is how an operation reads on the command line: "task add".
+// Line is how an operation reads on the command line: "task new".
 func (o Operation) Line() string { return o.Thing + " " + o.Verb }
 
 // All is everything cairn can be asked to do, in a stable order.
 func All() []Operation {
 	return []Operation{
-		TaskAdd, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
+		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
 		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus,
-		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
-		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore, BackupExport, BackupImport,
+		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
+		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore, BackupExport, BackupImport,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,

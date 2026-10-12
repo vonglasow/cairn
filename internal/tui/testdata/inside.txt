@@ -37,4 +37,4 @@
 
 
 
- hjkl ←↓↑→ columns   i insert   a add here   / search   ? help   esc objectives
+ hjkl ←↓↑→ columns   i insert   a new here   / search   ? help   esc objectives

@@ -55,7 +55,7 @@ One flag, three levels, `read` by default:
 | `--access` | what it reaches |
 |---|---|
 | `read` | listing and showing, nothing else |
-| `write` | also adding, changing, `backup_add`, `backup_export`, `migration_apply` |
+| `write` | also adding, changing, `backup_new`, `backup_export`, `migration_apply` |
 | `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `backup_import`, `migration_rollback` |
 
 The line between `write` and `full` is not "destructive" in the technical sense
@@ -173,7 +173,7 @@ that turns red here instead of going quiet in somebody's terminal.
 
 ## One tool per command, named after it
 
-`task_add`, `objective_show`, `migration_rollback` — the same grammar as the
+`task_new`, `objective_show`, `migration_rollback` — the same grammar as the
 command line, so anybody who knows one knows the other.
 
 The count is never written down. A scenario saying how many tools there are
@@ -304,7 +304,7 @@ internal/mcp/  keeps its own, in package mcp_test
 `internal/mcp`'s scenarios are in a **package of their own** — `mcp_test`, not
 `mcp` — and that is forced, not stylistic. The `mcp serve` command lives in
 `internal/cli`, so `cli` imports `mcp`; a scenario file in `package mcp` that
-imported `cli` to run `cairn task add` would close the cycle. An external test
+imported `cli` to run `cairn task new` would close the cycle. An external test
 package may import both, and still counts toward `internal/mcp`'s coverage.
 
 It also settles where the parity proof goes. Walking the cobra tree needs `cli`

@@ -37,4 +37,4 @@
                 ┃ ↳ the fou… ┃
                 ┗━━━━━━━━━━━━┛
 
- hjkl ←↓↑→ columns   i insert   a add   / search   ⇥ tab
+ hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab

@@ -51,7 +51,7 @@ func SettleParts(work Work, parent int, said string, had []Card) error {
 	kept := map[int]bool{}
 	for _, part := range PartsIn(said) {
 		if part.Number == 0 {
-			if _, err := work.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{
+			if _, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{
 				"title": part.Title, "parent": strconv.Itoa(parent), "state": PartState(part.Done),
 			}}); err != nil {
 				return err

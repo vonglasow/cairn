@@ -79,7 +79,7 @@ func TestConfigShow_asksForAConfigurationRatherThanAStore(t *testing.T) {
 	if ConfigShow.Needs != AConfiguration {
 		t.Errorf("ConfigShow.Needs = %v, want AConfiguration", ConfigShow.Needs)
 	}
-	for _, op := range []Operation{BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore} {
+	for _, op := range []Operation{BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore} {
 		if op.Needs != NoStore {
 			t.Errorf("%s %s: Needs = %v, want NoStore unchanged", op.Thing, op.Verb, op.Needs)
 		}

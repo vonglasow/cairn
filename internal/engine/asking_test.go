@@ -42,8 +42,8 @@ func TestAskGivesAnOperationThePathItWasOpenedOn(t *testing.T) {
 	e, _ := engineOn(t)
 	add(t, e, "Write the spec")
 
-	if _, err := e.Ask(BackupAdd, Input{}); err != nil {
-		t.Fatalf("Ask(BackupAdd): %v", err)
+	if _, err := e.Ask(BackupNew, Input{}); err != nil {
+		t.Fatalf("Ask(BackupNew): %v", err)
 	}
 	answer, err := e.Ask(BackupList, Input{})
 	if err != nil {
@@ -113,7 +113,7 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = held.Close() })
-	if _, err := held.Ask(TaskAdd, given("title", "Write the spec")); err != nil {
+	if _, err := held.Ask(TaskNew, given("title", "Write the spec")); err != nil {
 		t.Fatal(err)
 	}
 	made, err := BackupsAt(path).Make()
@@ -132,7 +132,7 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	if after, err := held.Version(); err != nil || after <= before {
 		t.Errorf("Version = %d, %v after a backup was put back, want it above %d", after, err, before)
 	}
-	if _, err := held.Ask(TaskAdd, given("title", "Added on the board")); err != nil {
+	if _, err := held.Ask(TaskNew, given("title", "Added on the board")); err != nil {
 		t.Fatal(err)
 	}
 	listed, err := Do(TaskList, path, Input{})

@@ -7,7 +7,7 @@ in the terminal and the same board in a window — four surfaces over one engine
 
 ```sh
 make build && export PATH="$PWD/bin:$PATH"   # needs Go 1.26 — see "Build" below
-cairn task add "Write the spec"                # a task, numbered 1, in the backlog
+cairn task new "Write the spec"                # a task, numbered 1, in the backlog
 cairn task edit 1 --state todo --priority high # what it carries changes by name
 cairn task focus 1                             # what you are working on now
 cairn task list                                # the board, column by column
@@ -25,15 +25,15 @@ happened to a task and `cairn timesheet show` how long the day's work took.
 ## Everything a task carries
 
 ```sh
-cairn task add "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
+cairn task new "Write the spec" --desc "the one that unblocks the rest" --state todo --priority high --label spec --label team --deadline 2026-09-01 --estimate 90m
 cairn task edit 1 --title "Write the other spec" --desc "" --state current --priority critical --deadline 2026-09-15 --estimate 2h
 cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"
 cairn task edit 5 --blocker -3   # the last thing out of its way puts it in todo
-cairn task add "Read the spec" --label spec,team
-cairn task add "Write the tests" --parent 1
-cairn task add "Write the docs" --objective 1
-cairn task add "Write the spec" --objective 1 --objective 2   # it serves both
+cairn task new "Read the spec" --label spec,team
+cairn task new "Write the tests" --parent 1
+cairn task new "Write the docs" --objective 1
+cairn task new "Write the spec" --objective 1 --objective 2   # it serves both
 cairn task edit 1 --objective +3   # one more, without naming the others
 cairn task list      # each row says its column, priority, deadline and labels
                      # sub-tasks are listed under the task they hang from
@@ -61,7 +61,7 @@ cairn task unarchive 1           # back on the board
 
 | option | what it takes |
 |---|---|
-| `--title` | on `edit` only; `add` takes the title as its argument |
+| `--title` | on `edit` only; `new` takes the title as its argument |
 | `--desc` | any text |
 | `--state` | `backlog` `todo` `current` `blocked` `watching` `paused` `done` — a new task starts in `backlog` |
 | `--blocker` | the number of a task in its way; `+3` adds one, `-3` takes one away |
@@ -74,7 +74,7 @@ cairn task unarchive 1           # back on the board
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 | `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
 
-A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. A description is several lines if it likes, but nothing a terminal would read as an instruction — an escape, a bell — gets in, and a label is one line like a title. A description too long to type is read from standard input, named as `-`: `cairn task add "Write the spec" --desc - < notes.md`. Given empty, an option clears what was there. `task show` says since when a task has stood in its column — `in todo since 2026-09-26 · 9 days`, `in_column_since` to a machine — read off what was done to it. Deleting a task carrying sub-tasks
+A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. A description is several lines if it likes, but nothing a terminal would read as an instruction — an escape, a bell — gets in, and a label is one line like a title. A description too long to type is read from standard input, named as `-`: `cairn task new "Write the spec" --desc - < notes.md`. Given empty, an option clears what was there. `task show` says since when a task has stood in its column — `in todo since 2026-09-26 · 9 days`, `in_column_since` to a machine — read off what was done to it. Deleting a task carrying sub-tasks
 deletes them with it: a part goes with the work it belongs to. Add `--json` to any command to be answered as a
 machine — including when it refuses.
 
@@ -114,7 +114,7 @@ number beside the one a task already carries would only mislead. See
 ## Objectives
 
 ```sh
-cairn objective add "Ship cairn 1.0" --priority high --deadline 2026-12-31
+cairn objective new "Ship cairn 1.0" --priority high --deadline 2026-12-31
 cairn objective list
 cairn objective list --state on-hold --label urgent   # only what carries all of it
 cairn objective show 1           # what it carries, what is under it, how far along
@@ -200,7 +200,7 @@ settled this way.
 ## Backups and versions
 
 ```sh
-cairn backup add                 # backup the store as it stands
+cairn backup new                 # backup the store as it stands
 cairn backup list                # every backup, with its number and date
 cairn backup show 2              # when it was made, and what it holds
                                  # `holds 4 task(s) and 2 objective(s)`
@@ -307,7 +307,7 @@ sense of is refused, naming the three it expected.
 }
 ```
 
-**One tool per command, under the name the command has.** `task_add`,
+**One tool per command, under the name the command has.** `task_new`,
 `objective_show`, `migration_rollback` — the same grammar as the terminal, so
 anybody who knows one knows the other. The list is never written down anywhere:
 both surfaces are built from one description, so a command added tomorrow is a
@@ -409,13 +409,13 @@ made itself.
 ```sh
 make build
 export CAIRN_STORE=$(mktemp -d)/cairn.db
-./bin/cairn objective add "Ship cairn 1.0" --desc "the first real one" --priority high --label personal --label spec --deadline 2026-12-31 --estimate 40h
+./bin/cairn objective new "Ship cairn 1.0" --desc "the first real one" --priority high --label personal --label spec --deadline 2026-12-31 --estimate 40h
 ./bin/cairn objective list
 ./bin/cairn objective show 1
-./bin/cairn task add "Write the spec" --desc "the very first" --state todo --priority high --label Spec --label team --deadline 2026-09-01 --estimate 90m
-./bin/cairn task add "Read it over" --parent 1
-./bin/cairn task add "Publish it" --parent 1
-./bin/cairn task add "Something else"
+./bin/cairn task new "Write the spec" --desc "the very first" --state todo --priority high --label Spec --label team --deadline 2026-09-01 --estimate 90m
+./bin/cairn task new "Read it over" --parent 1
+./bin/cairn task new "Publish it" --parent 1
+./bin/cairn task new "Something else"
 ./bin/cairn task list
 ./bin/cairn task show 1
 ./bin/cairn task show 2
@@ -425,7 +425,7 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task edit 1 --label +urgent
 ./bin/cairn task edit 1 --label -spec
 ./bin/cairn task edit 1 --label "+draft,+wip"
-./bin/cairn task add "A list in one flag" --label a,b,c
+./bin/cairn task new "A list in one flag" --label a,b,c
 ./bin/cairn task edit 1 --spent 2h
 ./bin/cairn task edit 1 --spent +30m
 ./bin/cairn task edit 1 --spent -15m
@@ -440,19 +440,19 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn objective edit 1 --state on-hold
 ./bin/cairn objective edit 1 --label +urgent
 ./bin/cairn objective edit 1 --label -spec
-./bin/cairn objective add "Learn Go" --state on-hold
+./bin/cairn objective new "Learn Go" --state on-hold
 ./bin/cairn objective list
 ./bin/cairn objective show 2
 ./bin/cairn objective delete 2 --yes
 ./bin/cairn objective delete 1 --yes
-./bin/cairn objective add ""
+./bin/cairn objective new ""
 ./bin/cairn objective show 99
-./bin/cairn objective add "z" --state todo
+./bin/cairn objective new "z" --state todo
 ./bin/cairn task edit 2 --objective 1
-./bin/cairn task add "w" --parent 1 --objective 1
+./bin/cairn task new "w" --parent 1 --objective 1
 ./bin/cairn objective show spec
 ./bin/cairn objective
-./bin/cairn backup add
+./bin/cairn backup new
 ./bin/cairn backup list
 ./bin/cairn backup show 1
 ./bin/cairn backup list --json
@@ -468,15 +468,15 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task list
 ./bin/cairn migration apply
 ./bin/cairn task list
-./bin/cairn task add ""
+./bin/cairn task new ""
 ./bin/cairn task show 99
 ./bin/cairn task edit 1
-./bin/cairn task add "y" --priority urgent
+./bin/cairn task new "y" --priority urgent
 ./bin/cairn task show spec
-./bin/cairn task add "x" --colour red
-./bin/cairn task add "y" --estimate 500ms
+./bin/cairn task new "x" --colour red
+./bin/cairn task new "y" --estimate 500ms
 ./bin/cairn task edit 1 --label "+urgent,spec"
-./bin/cairn task add
+./bin/cairn task new
 ./bin/cairn task addd "z"
 ```
 

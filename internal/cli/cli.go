@@ -68,7 +68,7 @@ func NewRootCmd() *cobra.Command {
 		// of the argument is read by agents too, and they have no `--`.
 		return engine.Misread(fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed))
 	})
-	// Asked for on any command, so `task add --json` and `task list --json` read
+	// Asked for on any command, so `task new --json` and `task list --json` read
 	// the same way. Declared on the root because the answer's shape is a
 	// property of the whole conversation, not of one subcommand.
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")

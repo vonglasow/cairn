@@ -63,7 +63,7 @@ type world struct {
 	*test.World
 	session *sdk.ClientSession
 	tools   []*sdk.Tool
-	// result and callErr are what the last `task_add`/`task_list`/`task_show`
+	// result and callErr are what the last `task_new`/`task_list`/`task_show`
 	// call answered, kept apart because a call that fails still has to be
 	// told apart from one that answered nothing.
 	result  *sdk.CallToolResult
@@ -180,9 +180,9 @@ func (w *world) callTool(name string, args map[string]any) error {
 
 // iAskedItToAddATaskTitled puts a task in the server's store through the
 // tool itself, the way a precondition through the command line goes through
-// `cairn task add`.
+// `cairn task new`.
 func (w *world) iAskedItToAddATaskTitled(title string) error {
-	return w.callTool("task_add", map[string]any{"title": title})
+	return w.callTool("task_new", map[string]any{"title": title})
 }
 
 // itSaysTheRefusalIs reads the kind and the reason a refusal carries beside
@@ -212,18 +212,18 @@ func (w *world) iCall(tool string) error {
 	return nil
 }
 
-// iCallTaskAddWithTheTitle calls `task_add` with title, keeping what it
+// iCallTaskAddWithTheTitle calls `task_new` with title, keeping what it
 // answered for the next step to read.
 func (w *world) iCallTaskAddWithTheTitle(title string) error {
-	_ = w.callTool("task_add", map[string]any{"title": title})
+	_ = w.callTool("task_new", map[string]any{"title": title})
 	return nil
 }
 
-// iCallTaskAddWithTheTitleAndTheLabels calls `task_add` with title and a
+// iCallTaskAddWithTheTitleAndTheLabels calls `task_new` with title and a
 // label list carrying both labels, the way a client sends a JSON array
 // rather than the string that array would read as when joined.
 func (w *world) iCallTaskAddWithTheTitleAndTheLabels(title, first, second string) error {
-	_ = w.callTool("task_add", map[string]any{"title": title, "label": []any{first, second}})
+	_ = w.callTool("task_new", map[string]any{"title": title, "label": []any{first, second}})
 	return nil
 }
 
@@ -444,7 +444,7 @@ func (w *world) iCallWithTheNumber(tool string, n int) error {
 // precondition already did.
 func (w *world) iAddedATaskTitledWith(title, what, value string) error {
 	flag := map[string]string{"deadline": "--deadline", "description": "--desc"}[what]
-	return w.Seed(fmt.Sprintf(`cairn task add "%s" %s "%s"`, title, flag, value))
+	return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flag, value))
 }
 
 // iCallTaskEditWithTheNumberAndTheDeadlineAsNothing calls `task_edit`,
@@ -677,12 +677,12 @@ func schemaProperty(tool *sdk.Tool, name string) (map[string]any, error) {
 	return prop, nil
 }
 
-// taskAddNamesEveryStateCairnAccepts fails unless task_add's "state" argument
+// taskAddNamesEveryStateCairnAccepts fails unless task_new's "state" argument
 // enumerates exactly the states domain.States holds, read off the schema
 // rather than a literal list, so the scenario cannot drift from what cairn
 // accepts.
 func (w *world) taskAddNamesEveryStateCairnAccepts() error {
-	prop, err := schemaProperty(w.tool("task_add"), "state")
+	prop, err := schemaProperty(w.tool("task_new"), "state")
 	if err != nil {
 		return err
 	}
@@ -701,7 +701,7 @@ func (w *world) taskAddNamesEveryStateCairnAccepts() error {
 	// "title" has no closed set of its own: an enum named here regardless
 	// would forbid every value JSON schema's empty enum forbids, rather than
 	// leaving it open the way a plain string is meant to be.
-	title, err := schemaProperty(w.tool("task_add"), "title")
+	title, err := schemaProperty(w.tool("task_new"), "title")
 	if err != nil {
 		return err
 	}
@@ -711,12 +711,12 @@ func (w *world) taskAddNamesEveryStateCairnAccepts() error {
 	return nil
 }
 
-// itSaysWhatEachThingItTakesIsFor fails unless every argument task_add's
+// itSaysWhatEachThingItTakesIsFor fails unless every argument task_new's
 // schema names carries a non-empty description.
 func (w *world) itSaysWhatEachThingItTakesIsFor() error {
-	tool := w.tool("task_add")
+	tool := w.tool("task_new")
 	if tool == nil {
-		return fmt.Errorf("tool %q was not offered", "task_add")
+		return fmt.Errorf("tool %q was not offered", "task_new")
 	}
 	schema, ok := tool.InputSchema.(map[string]any)
 	if !ok {
@@ -916,8 +916,8 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `([a-z_]+)`$", w.iCall)
 		sc.Step("^I call `([a-z_]+)` with nothing at all$", w.iCall)
 		sc.Step("^I call `([a-z_]+)` naming an argument it does not take$", w.iCallNamingAnArgumentItDoesNotTake)
-		sc.Step("^I call `task_add` with the title \"([^\"]*)\"$", w.iCallTaskAddWithTheTitle)
-		sc.Step("^I call `task_add` with the title \"([^\"]*)\" and the labels \"([^\"]*)\" and \"([^\"]*)\"$",
+		sc.Step("^I call `task_new` with the title \"([^\"]*)\"$", w.iCallTaskAddWithTheTitle)
+		sc.Step("^I call `task_new` with the title \"([^\"]*)\" and the labels \"([^\"]*)\" and \"([^\"]*)\"$",
 			w.iCallTaskAddWithTheTitleAndTheLabels)
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\"$", w.iCallTaskSearchLookingFor)
 		sc.Step("^I call `task_search` looking for nothing$", w.iCallTaskSearchLookingForNothing)
@@ -929,7 +929,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^it answers with the task titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
 		sc.Step(`^it answers with the card a person would have read$`, w.itAnswersWithTheCardAPersonWouldHaveRead)
 		sc.Step("^it answers with the shape `--json` would have printed$", w.itAnswersWithTheShapeJSONWouldHavePrinted)
-		sc.Step("^`task_add` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
+		sc.Step("^`task_new` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
 		sc.Step("^it says what each thing it takes is for$", w.itSaysWhatEachThingItTakesIsFor)
 		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description) "([^"]*)"$`, w.iAddedATaskTitledWith)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",

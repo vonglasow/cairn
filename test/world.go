@@ -91,7 +91,7 @@ func (w *World) Run(line string) {
 
 // Seed puts cairn in a given state through the real command, so that what a
 // precondition writes is what the command under test would have written. Going
-// around the command would leave nothing proving `task add` writes at all.
+// around the command would leave nothing proving `task new` writes at all.
 //
 // What the precondition answered is put back afterwards: a scenario asserts
 // against the command under test, not against the one that set it up.
@@ -143,7 +143,7 @@ func (w *World) WriteConfig(content string) error {
 // built the older shape by hand would be asserting against a shape cairn never
 // wrote.
 func (w *World) AStoreFromAnOlderCairn(title string) error {
-	if err := w.Seed(fmt.Sprintf(`cairn task add "%s"`, title)); err != nil {
+	if err := w.Seed(fmt.Sprintf(`cairn task new "%s"`, title)); err != nil {
 		return err
 	}
 	if err := w.Seed(`cairn migration rollback --yes`); err != nil {
@@ -217,7 +217,7 @@ func (w *World) NothingInItYet() error {
 
 // IAddedATaskTitled puts a task in the store through the real command.
 func (w *World) IAddedATaskTitled(title string) error {
-	return w.Seed(fmt.Sprintf(`cairn task add "%s"`, title))
+	return w.Seed(fmt.Sprintf(`cairn task new "%s"`, title))
 }
 
 // IRun hands a command line over and keeps what came back.

@@ -84,7 +84,7 @@ func TestMain_answersARefusalAsJSONWithItsKindAndReason(t *testing.T) {
 
 // What is written after `--` is a value, whatever it reads like.
 func TestAskedForJSON_readsNothingAfterTheDoubleDash(t *testing.T) {
-	if askedForJSON([]string{"task", "add", "--", "--json"}) {
+	if askedForJSON([]string{"task", "new", "--", "--json"}) {
 		t.Error("a title written after -- was read as asking for JSON")
 	}
 }
@@ -108,7 +108,7 @@ func TestMain_saysARefusalItCouldNotWriteAsJSON(t *testing.T) {
 // A deletion refused for want of --yes names what it would have deleted.
 func TestMain_namesWhatAnUnconfirmedDeletionWouldTake(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 	r := run(t, "task", "delete", "1")
 	if r.Code != exitRefused || !strings.Contains(strings.ToLower(r.Stderr), "task 1") || !strings.Contains(r.Stderr, "--yes") {
 		t.Errorf("exit %d, stderr %q: want the task named and --yes asked for", r.Code, r.Stderr)

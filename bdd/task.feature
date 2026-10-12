@@ -23,31 +23,31 @@ Feature: Tasks
 
     @task-title-empty
     Scenario: an empty title is no title
-      When I run `cairn task add ""`
+      When I run `cairn task new ""`
       Then it fails
       And it says a task needs a title
       And it shows the title I typed
 
     @task-title-spaces
     Scenario: a title of spaces is no title
-      When I run `cairn task add "   "`
+      When I run `cairn task new "   "`
       Then it fails
       And it says a task needs a title
       And it shows the title I typed
 
     @task-title-trimmed
     Scenario: what surrounds a title is not part of it
-      When I run `cairn task add "  Write the spec  "`
+      When I run `cairn task new "  Write the spec  "`
       Then it reports a task titled "Write the spec"
 
     @task-title-inner-spaces
     Scenario: spaces inside a title are kept
-      When I run `cairn task add "Write  the   spec"`
+      When I run `cairn task new "Write  the   spec"`
       Then it reports a task titled "Write  the   spec"
 
     @task-title-content
     Scenario Outline: a title is taken as typed
-      When I run `cairn task add "<title>"`
+      When I run `cairn task new "<title>"`
       Then it reports a task titled "<title>"
 
       Examples: nothing about the text is special
@@ -58,7 +58,7 @@ Feature: Tasks
 
     @task-title-dash
     Scenario: a title starting with a dash is still a title
-      When I run `cairn task add -- "--not-a-flag"`
+      When I run `cairn task new -- "--not-a-flag"`
       Then it reports a task titled "--not-a-flag"
 
     @task-title-one-line
@@ -83,26 +83,26 @@ Feature: Tasks
 
     @task-number-first
     Scenario: the first task is numbered 1
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then it numbers the task 1
 
     @task-number-next
     Scenario: the next task gets the next number
       Given I added a task titled "First"
-      When I run `cairn task add "Second"`
+      When I run `cairn task new "Second"`
       Then it numbers the task 2
 
     @task-number-same-title
     Scenario: two tasks with the same title are still two tasks
       Given I added a task titled "Write the spec"
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then it numbers the task 2
 
   Rule: A task carries only what it was given
 
     @task-defaults
     Scenario: a new task carries nothing else
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then the task has no description
       And the task has no labels
       And the task has no deadline
@@ -113,7 +113,7 @@ Feature: Tasks
 
     @task-columns
     Scenario Outline: every column a task can sit in
-      When I run `cairn task add "Write the spec" --state <column>`
+      When I run `cairn task new "Write the spec" --state <column>`
       Then the task is in the "<column>" column
 
       Examples: the four, and no others
@@ -125,7 +125,7 @@ Feature: Tasks
 
     @task-priorities
     Scenario Outline: every priority a task can carry
-      When I run `cairn task add "Write the spec" --priority <priority>`
+      When I run `cairn task new "Write the spec" --priority <priority>`
       Then the task carries the priority "<priority>"
 
       Examples: the four, and no others
@@ -137,7 +137,7 @@ Feature: Tasks
 
     @task-attribute-accepted
     Scenario Outline: an attribute given is an attribute carried
-      When I run `cairn task add "Write the spec" <flag> <value>`
+      When I run `cairn task new "Write the spec" <flag> <value>`
       Then the task carries the <attribute> "<stored>"
 
       Examples: each attribute, and how it comes back
@@ -150,7 +150,7 @@ Feature: Tasks
 
     @task-attribute-refused
     Scenario Outline: an attribute it cannot make sense of is refused
-      When I run `cairn task add "Write the spec" <flag> <value>`
+      When I run `cairn task new "Write the spec" <flag> <value>`
       Then it fails
       And it says what it expects instead of "<value>"
 
@@ -167,39 +167,39 @@ Feature: Tasks
 
     @task-label-blank
     Scenario: a label with no name is refused
-      When I run `cairn task add "Write the spec" --label "  "`
+      When I run `cairn task new "Write the spec" --label "  "`
       Then it fails
       And it says a label needs a name
 
     @task-labels-several
     Scenario: a task can carry several labels
-      When I run `cairn task add "Write the spec" --label spec --label team`
+      When I run `cairn task new "Write the spec" --label spec --label team`
       Then the task carries the labels "spec" and "team"
 
     @task-labels-sorted
     Scenario: labels come back in alphabetical order, not the order they were given
-      When I run `cairn task add "Write the spec" --label team --label spec`
+      When I run `cairn task new "Write the spec" --label team --label spec`
       Then the task carries the labels "spec" and "team"
 
     @task-labels-lowercased
     Scenario: a label is kept in lower case, whatever case it was given in
-      When I run `cairn task add "Write the spec" --label Spec`
+      When I run `cairn task new "Write the spec" --label Spec`
       Then the task carries the label "spec"
 
     @task-labels-repeated
     Scenario: the same label twice counts once
-      When I run `cairn task add "Write the spec" --label spec --label spec`
+      When I run `cairn task new "Write the spec" --label spec --label spec`
       Then the task carries exactly 1 label
 
     @task-labels-same-in-any-case
     Scenario: the same label in two cases is still one label
-      When I run `cairn task add "Write the spec" --label Spec --label spec`
+      When I run `cairn task new "Write the spec" --label Spec --label spec`
       Then the task carries exactly 1 label
       And the task carries the label "spec"
 
     @task-labels-written-one-way
     Scenario Outline: a label is written one way, whatever way it was typed
-      When I run `cairn task add "Write the spec" --label "<typed>"`
+      When I run `cairn task new "Write the spec" --label "<typed>"`
       Then the task carries exactly 1 label
       And the task carries the label "<kept>"
 
@@ -212,19 +212,19 @@ Feature: Tasks
 
     @task-labels-no-family
     Scenario: a label with a family is refused, and says to write two
-      When I run `cairn task add "Write the spec" --label "ado:77594"`
+      When I run `cairn task new "Write the spec" --label "ado:77594"`
       Then it fails
       And it says a label has no family
 
     @task-labels-what-a-label-holds
     Scenario: a label holding what no label may hold is refused, saying what one may hold
-      When I run `cairn task add "Write the spec" --label "#urgent"`
+      When I run `cairn task new "Write the spec" --label "#urgent"`
       Then it fails
       And it says what a label may hold
 
     @task-attributes-together
     Scenario: attributes do not interfere with each other
-      When I run `cairn task add "Write the spec" --priority high --state todo --label spec`
+      When I run `cairn task new "Write the spec" --priority high --state todo --label spec`
       Then the task carries the priority "high"
       And the task is in the "todo" column
       And the task carries the label "spec"
@@ -479,7 +479,7 @@ Feature: Tasks
       Several paragraphs are written in an editor or piped in, not typed between
       quotes, and `-` is how every other tool on the machine says so.
 
-      When I run `cairn task add "Write the spec" --desc -` with "first paragraph" and "second paragraph" on standard input
+      When I run `cairn task new "Write the spec" --desc -` with "first paragraph" and "second paragraph" on standard input
       Then it succeeds
       And `cairn task show 1` shows "second paragraph"
 
@@ -864,7 +864,7 @@ Feature: Tasks
 
     @task-label-list
     Scenario: several labels can be given in one flag
-      When I run `cairn task add "Write the spec" --label "spec,team"`
+      When I run `cairn task new "Write the spec" --label "spec,team"`
       Then the task carries exactly 2 labels
       And the task carries the labels "spec" and "team"
 
@@ -883,7 +883,7 @@ Feature: Tasks
 
     @task-label-list-gaps
     Scenario: an empty place in a list is not a label
-      When I run `cairn task add "Write the spec" --label "spec,,team,"`
+      When I run `cairn task new "Write the spec" --label "spec,,team,"`
       Then the task carries exactly 2 labels
 
     @task-label-add
@@ -941,7 +941,7 @@ Feature: Tasks
 
     @task-label-sign-at-creation
     Scenario: a new task has nothing to add to
-      When I run `cairn task add "Write the spec" --label +urgent`
+      When I run `cairn task new "Write the spec" --label +urgent`
       Then it fails
       And it says a label is added or taken away only when changing a task
 
@@ -1270,7 +1270,7 @@ Feature: Tasks
       Given I added a task titled "First"
       And I added a task titled "Second"
       And I deleted task 2
-      When I run `cairn task add "Third"`
+      When I run `cairn task new "Third"`
       Then it numbers the task 3
 
     @task-delete-several
@@ -1661,13 +1661,13 @@ Feature: Tasks
 
     @task-parent-none
     Scenario: a task hangs under nothing unless it is told to
-      When I run `cairn task add "Ship it"`
+      When I run `cairn task new "Ship it"`
       Then the task has no parent
 
     @task-parent-add
     Scenario: a task can be added under another
       Given I added a task titled "Ship it"
-      When I run `cairn task add "Write the tests" --parent 1`
+      When I run `cairn task new "Write the tests" --parent 1`
       Then the task carries the parent "1"
 
     @task-parent-edit
@@ -1687,7 +1687,7 @@ Feature: Tasks
     @task-parent-unknown
     Scenario: hanging a task under one that does not exist is refused
       Given I added a task titled "Ship it"
-      When I run `cairn task add "Write the tests" --parent 99`
+      When I run `cairn task new "Write the tests" --parent 99`
       Then it fails
       And it says there is no such task
 
@@ -1701,7 +1701,7 @@ Feature: Tasks
     @task-parent-not-a-number
     Scenario: a parent that is not a number says so
       Given I added a task titled "Ship it"
-      When I run `cairn task add "Write the tests" --parent spec`
+      When I run `cairn task new "Write the tests" --parent spec`
       Then it fails
       And it says a task number is expected
 
@@ -1709,7 +1709,7 @@ Feature: Tasks
     Scenario: a sub-task cannot carry sub-tasks
       Given I added a task titled "Ship it"
       And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task add "Write the first one" --parent 2`
+      When I run `cairn task new "Write the first one" --parent 2`
       Then it fails
       And it says a sub-task cannot carry sub-tasks
 
@@ -1896,18 +1896,18 @@ Feature: Tasks
     Scenario: numbering picks up where it left off
       Given I added a task titled "First"
       And cairn has exited
-      When I run `cairn task add "Second"`
+      When I run `cairn task new "Second"`
       Then it numbers the task 2
 
     @task-store-created
     Scenario: the first command creates the store
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then it succeeds
       And the store exists
 
     @task-store-elsewhere
     Scenario: told where to live, it does not touch the default place
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then the store is created where I said
       And nothing is written to the default place
 
@@ -1976,9 +1976,9 @@ Feature: Tasks
 
       Examples: what someone types the first time
         | command                       | what is wrong             |
-        | cairn task add                | no title at all           |
-        | cairn task add Write the spec | quotes forgotten          |
-        | cairn task add "a" "b"        | two titles                |
+        | cairn task new                | no title at all           |
+        | cairn task new Write the spec | quotes forgotten          |
+        | cairn task new "a" "b"        | two titles                |
         | cairn task addd "Write"       | a typo in the subcommand  |
         | cairn task                    | the group with no command |
         | cairn task show               | no number given           |
@@ -1987,7 +1987,7 @@ Feature: Tasks
 
     @task-usage-unknown-flag
     Scenario: an unknown flag is refused rather than ignored
-      When I run `cairn task add "Write the spec" --colour red`
+      When I run `cairn task new "Write the spec" --colour red`
       Then it fails
       And it says the flag is unknown
 
@@ -2000,7 +2000,7 @@ Feature: Tasks
 
     @task-exit-success
     Scenario: what worked says nothing on the error stream
-      When I run `cairn task add "Write the spec"`
+      When I run `cairn task new "Write the spec"`
       Then it exits with code 0
       And it writes the task to standard output
       And it writes nothing to standard error
@@ -2014,11 +2014,11 @@ Feature: Tasks
 
       Examples: understood but impossible, against not understood at all
         | command                               | code | what happened            |
-        | cairn task add ""                     | 1    | no title to work with    |
+        | cairn task new ""                     | 1    | no title to work with    |
         | cairn task show 99                    | 1    | nothing there to show    |
         | cairn task delete 99 --yes            | 1    | nothing there to delete  |
-        | cairn task add                        | 2    | no title given at all    |
-        | cairn task add "Spec" --colour red    | 2    | a flag it does not know  |
+        | cairn task new                        | 2    | no title given at all    |
+        | cairn task new "Spec" --colour red    | 2    | a flag it does not know  |
         | cairn task show spec                  | 2    | a number was expected    |
 
     @task-exit-store
@@ -2036,7 +2036,7 @@ Feature: Tasks
 
     @task-json
     Scenario: asking for machine-readable output
-      When I run `cairn task add "Write the spec" --json`
+      When I run `cairn task new "Write the spec" --json`
       Then it writes JSON to standard output
       And it carries the title "Write the spec"
       And it carries an identifier
@@ -2091,7 +2091,7 @@ Feature: Tasks
 
     @task-json-failure
     Scenario: a refusal is reported the same way it is asked for
-      When I run `cairn task add "" --json`
+      When I run `cairn task new "" --json`
       Then it exits with code 1
       And it writes JSON to standard output
       And the JSON carries the reason

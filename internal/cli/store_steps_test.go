@@ -305,7 +305,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^the board adds a task titled "([^"]*)"$`, func(title string) error {
-		_, err := w.board.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{"title": title}})
+		_, err := w.board.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": title}})
 		return err
 	})
 
@@ -352,7 +352,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		w.file = filepath.Join(w.T.TempDir(), "other", "cairn.db")
 		w.Setenv(config.StoreVariable, w.file)
 		defer w.Setenv(config.StoreVariable, mine)
-		return w.Seed(fmt.Sprintf(`cairn task add "%s"`, title))
+		return w.Seed(fmt.Sprintf(`cairn task new "%s"`, title))
 	})
 	sc.Step(`^I import that file$`, func() error {
 		w.Run("cairn backup import " + w.file + " --yes")
@@ -364,7 +364,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^I made a backup of the store$`, func() error {
-		return w.Seed(`cairn backup add`)
+		return w.Seed(`cairn backup new`)
 	})
 
 	sc.Step(`^I deleted backup (\d+)$`, func(n int) error {

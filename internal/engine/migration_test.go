@@ -117,8 +117,8 @@ func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 
 func TestMigrationList_listsChangesAndWhatIsHeld(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(MigrationList, path, Input{})

@@ -23,4 +23,4 @@
                           ┃ 13                 ⊘ ┃
                           ┃ Waiting on the       ┃
 
- hjkl ←↓↑→ columns   i insert   a add   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command

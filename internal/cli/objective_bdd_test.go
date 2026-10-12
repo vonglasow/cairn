@@ -50,7 +50,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	// --- the common context ---------------------------------------------------
 
 	sc.Step(`^I add(?:ed)? an objective with it$`, func() error {
-		w.Run(fmt.Sprintf(`cairn objective add "%s"`, w.long))
+		w.Run(fmt.Sprintf(`cairn objective new "%s"`, w.long))
 		return nil
 	})
 
@@ -60,12 +60,12 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 				"description": "--desc", "deadline": "--deadline",
 				"priority": "--priority", "state": "--state", "estimate": "--estimate",
 			}[attribute]
-			return w.Seed(fmt.Sprintf(`cairn objective add "%s" %s "%s"`, title, flag, value))
+			return w.Seed(fmt.Sprintf(`cairn objective new "%s" %s "%s"`, title, flag, value))
 		})
 
 	sc.Step(`^I added an objective titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`,
 		func(title, first, second string) error {
-			return w.Seed(fmt.Sprintf(`cairn objective add "%s" --label "%s" --label "%s"`, title, first, second))
+			return w.Seed(fmt.Sprintf(`cairn objective new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
 	// Written as one step rather than three hundred lines of Given. The share
@@ -74,7 +74,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	sc.Step(`^I added (\d+) tasks under it, of which (\d+) (?:is|are) done$`,
 		func(total, done int) error {
 			for i := 1; i <= total; i++ {
-				if err := w.Seed(fmt.Sprintf(`cairn task add "Task %d" --objective 1`, i)); err != nil {
+				if err := w.Seed(fmt.Sprintf(`cairn task new "Task %d" --objective 1`, i)); err != nil {
 					return err
 				}
 				if i <= done {

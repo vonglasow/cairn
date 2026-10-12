@@ -11,7 +11,7 @@ func TestCommands_reportAStoreTheyCannotEvenLocate(t *testing.T) {
 	t.Setenv("CAIRN_STORE", "")
 
 	for _, args := range [][]string{
-		{"backup", "add"},
+		{"backup", "new"},
 		{"backup", "list"},
 		{"backup", "show", "1"},
 		{"backup", "delete", "1", "--yes"},
@@ -70,8 +70,8 @@ func TestBackupCommands_refuseAnArgumentThatIsNotANumber(t *testing.T) {
 func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
-	mustRun(t, "backup", "add")
+	mustRun(t, "task", "new", "Write the spec")
+	mustRun(t, "backup", "new")
 
 	out := mustRun(t, "backup", "list", "--json").Stdout
 	var listing struct {
@@ -88,9 +88,9 @@ func TestBackupList_answersAMachineAsAMachine(t *testing.T) {
 func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 
-	made := mustRun(t, "backup", "add", "--json").Stdout
+	made := mustRun(t, "backup", "new", "--json").Stdout
 	var one map[string]any
 	if err := json.Unmarshal([]byte(made), &one); err != nil {
 		t.Fatalf("stdout is not JSON (%v): %s", err, made)
@@ -112,8 +112,8 @@ func TestBackupAddAndShow_answerAMachineAsAMachine(t *testing.T) {
 func TestBackupDelete_answersAMachineAsAMachine(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
-	mustRun(t, "backup", "add")
+	mustRun(t, "task", "new", "Write the spec")
+	mustRun(t, "backup", "new")
 	mustRun(t, "backup", "restore", "1", "--yes")
 	mustRun(t, "task", "delete", "1", "--yes", "--json")
 }
@@ -121,8 +121,8 @@ func TestBackupDelete_answersAMachineAsAMachine(t *testing.T) {
 func TestBackupRestore_saysWhichBackupItPutBack(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
-	mustRun(t, "backup", "add")
+	mustRun(t, "task", "new", "Write the spec")
+	mustRun(t, "backup", "new")
 
 	out := mustRun(t, "backup", "restore", "1", "--yes").Stdout
 	if !strings.Contains(out, "backup 1") {
@@ -133,8 +133,8 @@ func TestBackupRestore_saysWhichBackupItPutBack(t *testing.T) {
 func TestBackupDelete_saysWhichBackupItDeleted(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
-	mustRun(t, "backup", "add")
+	mustRun(t, "task", "new", "Write the spec")
+	mustRun(t, "backup", "new")
 
 	out := mustRun(t, "backup", "delete", "1", "--yes").Stdout
 	if !strings.Contains(out, "backup 1") {
@@ -145,9 +145,9 @@ func TestBackupDelete_saysWhichBackupItDeleted(t *testing.T) {
 func TestBackupAdd_namesTheBackupItMade(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	mustRun(t, "task", "add", "Write the spec")
+	mustRun(t, "task", "new", "Write the spec")
 
-	out := mustRun(t, "backup", "add").Stdout
+	out := mustRun(t, "backup", "new").Stdout
 	if !strings.Contains(out, "#1") {
 		t.Errorf("stdout = %q, want it to name the backup it made", out)
 	}

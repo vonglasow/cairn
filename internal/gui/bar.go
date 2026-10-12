@@ -238,7 +238,7 @@ func helping() []Said {
 		{Key: "⏎ in a list", Means: "take the row · ⌘⏎ keeps the list · j and k walk it"},
 		{Key: "⏎ on a deadline", Means: "a calendar — the arrows walk days and weeks, ⇧←→ months, t today, ⌫ no day"},
 		{Key: "⇧A", Means: "what was archived, on the board or off it — it reads faintly"},
-		{Key: "⌘N", Means: "add"},
+		{Key: "⌘N", Means: "new"},
 		{Key: "⌘B", Means: "back the store up — it says where the copy lies"},
 		{Key: "⇧B", Means: "the backups — enter puts one back, after asking, the store backed up first"},
 		{Key: "⌘E", Means: "export the store to a file chosen in the system's dialog"},

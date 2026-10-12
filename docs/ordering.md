@@ -313,7 +313,7 @@ settled as an element and it stays settled — it is the one date no other field
 implies — but it is not stored beside the task: it is derived from the trace,
 which records every act performed on one. See [trace.md](trace.md).
 
-`task add` places a task at the end of the backlog, `task list` and `task
+`task new` places a task at the end of the backlog, `task list` and `task
 search` order by column then position, and `task edit` moves a task only when
 it leaves the tasks it sat with — a different column, or a different parent —
 landing it at the end of its new group and closing the gap behind it. Editing a

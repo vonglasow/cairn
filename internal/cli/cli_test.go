@@ -192,7 +192,7 @@ func TestMain_readsATextNamedAsADashFromStandardInput(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	var out, errs bytes.Buffer
 	stdin := strings.NewReader("first paragraph\n\nsecond paragraph\n")
-	if code := Main(context.Background(), []string{"task", "add", "Write the spec", "--desc", "-"}, stdin, &out, &errs); code != exitOK {
+	if code := Main(context.Background(), []string{"task", "new", "Write the spec", "--desc", "-"}, stdin, &out, &errs); code != exitOK {
 		t.Fatalf("exit %d: %s", code, errs.String())
 	}
 	shown := mustRun(t, "task", "show", "1").Stdout
@@ -204,7 +204,7 @@ func TestMain_readsATextNamedAsADashFromStandardInput(t *testing.T) {
 // Standard input is read once: two texts cannot both come from it.
 func TestMain_refusesTwoTextsNamedAsADash(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	r := run(t, "task", "add", "-", "--desc", "-")
+	r := run(t, "task", "new", "-", "--desc", "-")
 	if r.Code != exitUsage {
 		t.Errorf("exit %d, want %d: only one text can come from standard input", r.Code, exitUsage)
 	}

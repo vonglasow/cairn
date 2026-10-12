@@ -140,7 +140,7 @@ func TestHandlerFor_readsALargeNumberAsTheNumberItIs(t *testing.T) {
 
 func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskNew, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"From the handler"}`)}}
 
 	if _, err := handle(context.Background(), req); err != nil {
@@ -158,7 +158,7 @@ func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 
 func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskNew, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}}
 
 	// Empty arguments must reach engine.Do as nothing named, and come back as
@@ -182,7 +182,7 @@ func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 }
 
 func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
-	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
+	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`not json`)}}
 	refusedAsNotUnderstood(t, handle, req, "")
 }
@@ -192,7 +192,7 @@ func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 // bare string is not the one-element list it might have meant, so it is
 // refused by name rather than guessed at.
 func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
-	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
+	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":"spec"}`),
 	}}
@@ -203,7 +203,7 @@ func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 // slice made for {"label": [1, true]}: an element that is not a string is
 // refused by name rather than turned into one.
 func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
-	handle := handlerFor(engine.TaskAdd, homeFor(t, storeAt(t)))
+	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
 		Arguments: []byte(`{"title":"From the handler","label":[1,true]}`),
 	}}
@@ -236,12 +236,12 @@ func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallT
 // out.
 func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	path := storeAt(t)
-	added, err := engine.Do(engine.TaskAdd, path, engine.Input{
+	added, err := engine.Do(engine.TaskNew, path, engine.Input{
 		Given:  map[string]string{"title": "From the handler"},
 		Listed: map[string][]string{"label": {"spec"}},
 	})
 	if err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 	number := task.OfTask(*added.Task).Number
 
@@ -345,7 +345,7 @@ func TestToolFor_saysWhatACallCosts(t *testing.T) {
 		destructive, repeated bool
 	}{
 		{engine.TaskList, false, true},
-		{engine.TaskAdd, false, false},
+		{engine.TaskNew, false, false},
 		{engine.TaskEdit, true, true},
 		{engine.TaskLabel, true, true},
 		{engine.TimesheetAdd, false, false},
@@ -368,7 +368,7 @@ func TestToolFor_saysWhatACallCosts(t *testing.T) {
 // A client reads the schema before it calls: a name the operation does not
 // take, or a list holding something other than words, is refused there.
 func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
-	schema := schemaFor(engine.TaskAdd)
+	schema := schemaFor(engine.TaskNew)
 	if schema["additionalProperties"] != false {
 		t.Errorf("additionalProperties = %v, want false", schema["additionalProperties"])
 	}
@@ -398,7 +398,7 @@ func TestHandlerFor_answersARefusalWithItsKindAndReason(t *testing.T) {
 // A call the client gave up on before it ran is not run.
 func TestHandlerFor_runsNothingTheClientGaveUpOn(t *testing.T) {
 	path := storeAt(t)
-	handle := handlerFor(engine.TaskAdd, homeFor(t, path))
+	handle := handlerFor(engine.TaskNew, homeFor(t, path))
 	gone, cancel := context.WithCancel(context.Background())
 	cancel()
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"Too late"}`)}}

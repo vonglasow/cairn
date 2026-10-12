@@ -1,55 +1,4 @@
 {
-  "backup_add": {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": false,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-      "title": "Back up the store as it stands"
-    },
-    "input": {
-      "additionalProperties": false,
-      "properties": {},
-      "required": [],
-      "type": "object"
-    },
-    "level": 2,
-    "output": {
-      "type": "object",
-      "properties": {
-        "number": {
-          "type": "integer"
-        },
-        "made": {
-          "type": "string"
-        },
-        "holds": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "tasks": {
-              "type": "integer"
-            },
-            "objectives": {
-              "type": "integer"
-            }
-          },
-          "required": [
-            "tasks",
-            "objectives"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "number",
-        "made"
-      ],
-      "additionalProperties": false
-    }
-  },
   "backup_delete": {
     "annotations": {
       "destructiveHint": true,
@@ -259,6 +208,57 @@
       },
       "required": [
         "backups"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "backup_new": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Make a new backup of the store as it stands"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "made": {
+          "type": "string"
+        },
+        "holds": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "made"
       ],
       "additionalProperties": false
     }
@@ -606,186 +606,6 @@
         "number",
         "name",
         "applied"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "objective_add": {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": false,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-      "title": "Add an objective"
-    },
-    "input": {
-      "additionalProperties": false,
-      "properties": {
-        "deadline": {
-          "description": "the day it is due",
-          "type": "string"
-        },
-        "desc": {
-          "description": "what the objective is about",
-          "type": "string"
-        },
-        "estimate": {
-          "description": "how long it should take",
-          "type": "string"
-        },
-        "label": {
-          "description": "a label it carries",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "priority": {
-          "description": "the priority it carries",
-          "enum": [
-            "low",
-            "normal",
-            "high",
-            "critical"
-          ],
-          "type": "string"
-        },
-        "state": {
-          "description": "where the objective stands",
-          "enum": [
-            "active",
-            "on-hold",
-            "reached",
-            "dropped"
-          ],
-          "type": "string"
-        },
-        "title": {
-          "description": "what the objective is called",
-          "type": "string"
-        }
-      },
-      "required": [
-        "title"
-      ],
-      "type": "object"
-    },
-    "level": 2,
-    "output": {
-      "type": "object",
-      "properties": {
-        "number": {
-          "type": "integer",
-          "description": "the objective's number, never handed out twice"
-        },
-        "title": {
-          "type": "string",
-          "description": "what the objective is called"
-        },
-        "state": {
-          "type": "string",
-          "description": "where it stands: active, on-hold, reached or dropped"
-        },
-        "priority": {
-          "type": "string",
-          "description": "low, normal, high or critical"
-        },
-        "description": {
-          "type": "string",
-          "description": "what is written about it; empty when nothing is"
-        },
-        "labels": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
-        },
-        "deadline": {
-          "type": "string",
-          "description": "the day it is due, as 2026-12-01; empty when it has none"
-        },
-        "estimate": {
-          "type": "string",
-          "description": "how long it was expected to take, as 40h; empty when nobody said"
-        },
-        "tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "integer"
-          }
-        },
-        "progress": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "tasks": {
-              "type": [
-                "null",
-                "object"
-              ],
-              "properties": {
-                "total": {
-                  "type": "integer"
-                },
-                "done": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "total",
-                "done"
-              ],
-              "additionalProperties": false
-            },
-            "sub_tasks": {
-              "type": [
-                "null",
-                "object"
-              ],
-              "properties": {
-                "total": {
-                  "type": "integer"
-                },
-                "done": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "total",
-                "done"
-              ],
-              "additionalProperties": false
-            },
-            "percent": {
-              "type": "integer"
-            }
-          },
-          "required": [
-            "percent"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "number",
-        "title",
-        "state",
-        "priority",
-        "description",
-        "labels",
-        "deadline",
-        "estimate",
-        "tasks",
-        "progress"
       ],
       "additionalProperties": false
     }
@@ -1211,6 +1031,186 @@
       "additionalProperties": false
     }
   },
+  "objective_new": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Make a new objective"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the objective is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "description": "where the objective stands",
+          "enum": [
+            "active",
+            "on-hold",
+            "reached",
+            "dropped"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the objective is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "the objective's number, never handed out twice"
+        },
+        "title": {
+          "type": "string",
+          "description": "what the objective is called"
+        },
+        "state": {
+          "type": "string",
+          "description": "where it stands: active, on-hold, reached or dropped"
+        },
+        "priority": {
+          "type": "string",
+          "description": "low, normal, high or critical"
+        },
+        "description": {
+          "type": "string",
+          "description": "what is written about it; empty when nothing is"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
+        },
+        "deadline": {
+          "type": "string",
+          "description": "the day it is due, as 2026-12-01; empty when it has none"
+        },
+        "estimate": {
+          "type": "string",
+          "description": "how long it was expected to take, as 40h; empty when nobody said"
+        },
+        "tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "priority",
+        "description",
+        "labels",
+        "deadline",
+        "estimate",
+        "tasks",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
   "objective_search": {
     "annotations": {
       "destructiveHint": false,
@@ -1540,282 +1540,6 @@
       },
       "required": [
         "plugin"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "task_add": {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": false,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-      "title": "Add a task"
-    },
-    "input": {
-      "additionalProperties": false,
-      "properties": {
-        "because": {
-          "description": "what is in its way and is not a task cairn holds",
-          "type": "string"
-        },
-        "blocker": {
-          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "deadline": {
-          "description": "the day it is due",
-          "type": "string"
-        },
-        "desc": {
-          "description": "what the task is about",
-          "type": "string"
-        },
-        "estimate": {
-          "description": "how long it should take",
-          "type": "string"
-        },
-        "label": {
-          "description": "a label it carries",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "objective": {
-          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "parent": {
-          "description": "the number of the task it hangs under",
-          "type": "integer"
-        },
-        "priority": {
-          "description": "the priority it carries",
-          "enum": [
-            "low",
-            "normal",
-            "high",
-            "critical"
-          ],
-          "type": "string"
-        },
-        "spent": {
-          "description": "the time already spent on it; +30m adds, -15m takes off",
-          "type": "string"
-        },
-        "state": {
-          "description": "the column it sits in",
-          "enum": [
-            "backlog",
-            "todo",
-            "current",
-            "blocked",
-            "watching",
-            "paused",
-            "done"
-          ],
-          "type": "string"
-        },
-        "title": {
-          "description": "what the task is called",
-          "type": "string"
-        }
-      },
-      "required": [
-        "title"
-      ],
-      "type": "object"
-    },
-    "level": 2,
-    "output": {
-      "type": "object",
-      "properties": {
-        "number": {
-          "type": "integer",
-          "description": "the task's number, never handed out twice"
-        },
-        "parent": {
-          "type": "integer",
-          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-        },
-        "title": {
-          "type": "string",
-          "description": "what the task is called"
-        },
-        "state": {
-          "type": "string",
-          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
-        },
-        "archived": {
-          "type": "boolean",
-          "description": "true when it was taken off the board and kept"
-        },
-        "priority": {
-          "type": "string",
-          "description": "low, normal, high or critical"
-        },
-        "labels": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
-        },
-        "blocked_by": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "integer"
-          },
-          "description": "the numbers of the tasks in its way; empty or null when none is"
-        },
-        "because": {
-          "type": "string",
-          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
-        },
-        "deadline": {
-          "type": "string",
-          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
-        },
-        "estimate": {
-          "type": "string",
-          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
-        },
-        "time_spent": {
-          "type": "string",
-          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
-        },
-        "objectives": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "integer"
-          },
-          "description": "the numbers of the objectives it serves; empty or null when it serves none"
-        },
-        "description": {
-          "type": "string",
-          "description": "what is written about the task; empty when nothing is"
-        },
-        "progress": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "tasks": {
-              "type": [
-                "null",
-                "object"
-              ],
-              "properties": {
-                "total": {
-                  "type": "integer"
-                },
-                "done": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "total",
-                "done"
-              ],
-              "additionalProperties": false
-            },
-            "sub_tasks": {
-              "type": [
-                "null",
-                "object"
-              ],
-              "properties": {
-                "total": {
-                  "type": "integer"
-                },
-                "done": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "total",
-                "done"
-              ],
-              "additionalProperties": false
-            },
-            "percent": {
-              "type": "integer"
-            }
-          },
-          "required": [
-            "percent"
-          ],
-          "additionalProperties": false
-        },
-        "context": {
-          "type": "string"
-        },
-        "in_column_since": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "sub_tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "number",
-              "title",
-              "state"
-            ],
-            "additionalProperties": false
-          }
-        }
-      },
-      "required": [
-        "number",
-        "parent",
-        "title",
-        "state",
-        "archived",
-        "priority",
-        "labels",
-        "blocked_by",
-        "because",
-        "deadline",
-        "estimate",
-        "time_spent",
-        "objectives",
-        "description",
-        "progress"
       ],
       "additionalProperties": false
     }
@@ -3089,6 +2813,282 @@
       "required": [
         "tasks",
         "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_new": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Make a new task"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "because": {
+          "description": "what is in its way and is not a task cairn holds",
+          "type": "string"
+        },
+        "blocker": {
+          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "deadline": {
+          "description": "the day it is due",
+          "type": "string"
+        },
+        "desc": {
+          "description": "what the task is about",
+          "type": "string"
+        },
+        "estimate": {
+          "description": "how long it should take",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objective": {
+          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "description": "the number of the task it hangs under",
+          "type": "integer"
+        },
+        "priority": {
+          "description": "the priority it carries",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "spent": {
+          "description": "the time already spent on it; +30m adds, -15m takes off",
+          "type": "string"
+        },
+        "state": {
+          "description": "the column it sits in",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "what the task is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
+        },
+        "parent": {
+          "type": "integer",
+          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
+        },
+        "title": {
+          "type": "string",
+          "description": "what the task is called"
+        },
+        "state": {
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "true when it was taken off the board and kept"
+        },
+        "priority": {
+          "type": "string",
+          "description": "low, normal, high or critical"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
+        },
+        "because": {
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
+        },
+        "deadline": {
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
+        },
+        "estimate": {
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
+        },
+        "description": {
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "sub_tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sub_tasks": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "number",
+        "parent",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "progress"
       ],
       "additionalProperties": false
     }

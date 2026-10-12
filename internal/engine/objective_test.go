@@ -299,11 +299,11 @@ func TestEngine_countsNothingUnderATaskWithNoSubTasks(t *testing.T) {
 
 func TestObjectiveList_listsEveryObjective(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	if _, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
-	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "two"}}); err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	if _, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "two"}}); err != nil {
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 
 	answer, err := Do(ObjectiveList, path, Input{})
@@ -317,11 +317,11 @@ func TestObjectiveList_listsEveryObjective(t *testing.T) {
 
 func TestObjectiveSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "ship the release"}}); err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	if _, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "ship the release"}}); err != nil {
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
-	if _, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "plan the offsite"}}); err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+	if _, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "plan the offsite"}}); err != nil {
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 
 	answer, err := Do(ObjectiveSearch, path, Input{Listed: map[string][]string{"named": {"release"}}})
@@ -335,13 +335,13 @@ func TestObjectiveSearch_listsWhatCarriesEveryNamedThing(t *testing.T) {
 
 func TestObjectiveShow_showsAnObjectiveItsTasksAndProgress(t *testing.T) {
 	path := storeAt(t)
-	added, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "ship the release"}})
+	added, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "ship the release"}})
 	if err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 	number := strconv.Itoa(factsOfObjective(*added.Objective).number)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(ObjectiveShow, path, Input{Given: map[string]string{"number": number}})
@@ -361,13 +361,13 @@ func TestObjectiveShow_showsAnObjectiveItsTasksAndProgress(t *testing.T) {
 
 func TestObjectiveEdit_editsAnObjectiveAndRereads(t *testing.T) {
 	path := storeAt(t)
-	added, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "ship the release"}})
+	added, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "ship the release"}})
 	if err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 	number := strconv.Itoa(factsOfObjective(*added.Objective).number)
-	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
-		t.Fatalf("Do(TaskAdd): %v", err)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "task"}, Listed: map[string][]string{"objective": {number}}}); err != nil {
+		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
 	answer, err := Do(ObjectiveEdit, path, Input{Given: map[string]string{"number": number, "desc": "get it out the door"}})
@@ -389,9 +389,9 @@ func TestObjectiveEdit_editsAnObjectiveAndRereads(t *testing.T) {
 
 func TestObjectiveDelete_deletesAnObjective(t *testing.T) {
 	path := storeAt(t)
-	added, err := Do(ObjectiveAdd, path, Input{Given: map[string]string{"title": "gone soon"}})
+	added, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": "gone soon"}})
 	if err != nil {
-		t.Fatalf("Do(ObjectiveAdd): %v", err)
+		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 
 	answer, err := Do(ObjectiveDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(factsOfObjective(*added.Objective).number)}})
@@ -415,7 +415,7 @@ func TestObjectiveAdd_addsAnObjective(t *testing.T) {
 	path := storeAt(t)
 	in := Input{Given: map[string]string{"title": "ship the release"}}
 
-	answer, err := Do(ObjectiveAdd, path, in)
+	answer, err := Do(ObjectiveNew, path, in)
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}

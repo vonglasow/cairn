@@ -14,15 +14,15 @@ func TestSplitArgs_readsACommandLineTheWayAShellWould(t *testing.T) {
 		line string
 		want []string
 	}{
-		{`cairn task add "Write the spec"`, []string{"cairn", "task", "add", "Write the spec"}},
-		{`cairn task add ""`, []string{"cairn", "task", "add", ""}},
-		{`cairn task add "   "`, []string{"cairn", "task", "add", "   "}},
-		{`cairn task add Write the spec`, []string{"cairn", "task", "add", "Write", "the", "spec"}},
-		{`cairn task add -- "--not-a-flag"`, []string{"cairn", "task", "add", "--", "--not-a-flag"}},
-		{`cairn task add "a" "b"`, []string{"cairn", "task", "add", "a", "b"}},
+		{`cairn task new "Write the spec"`, []string{"cairn", "task", "new", "Write the spec"}},
+		{`cairn task new ""`, []string{"cairn", "task", "new", ""}},
+		{`cairn task new "   "`, []string{"cairn", "task", "new", "   "}},
+		{`cairn task new Write the spec`, []string{"cairn", "task", "new", "Write", "the", "spec"}},
+		{`cairn task new -- "--not-a-flag"`, []string{"cairn", "task", "new", "--", "--not-a-flag"}},
+		{`cairn task new "a" "b"`, []string{"cairn", "task", "new", "a", "b"}},
 		{`cairn task list`, []string{"cairn", "task", "list"}},
-		{`cairn task add "Spec" --desc the one`, []string{"cairn", "task", "add", "Spec", "--desc", "the one"}},
-		{`cairn task add "Spec" --priority high --state todo`, []string{"cairn", "task", "add", "Spec", "--priority", "high", "--state", "todo"}},
+		{`cairn task new "Spec" --desc the one`, []string{"cairn", "task", "new", "Spec", "--desc", "the one"}},
+		{`cairn task new "Spec" --priority high --state todo`, []string{"cairn", "task", "new", "Spec", "--priority", "high", "--state", "todo"}},
 		// A flag carrying nothing keeps nothing: a value invented here would
 		// reach the surface as an empty string it never had to refuse.
 		{`cairn task list --json`, []string{"cairn", "task", "list", "--json"}},
