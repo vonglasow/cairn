@@ -538,6 +538,14 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**Nothing of cairn's is in the system's menu bar.** Gio builds the macOS
+menu itself — Hide and Quit, in its own Objective-C — and offers no way to add
+to it, nor any menu at all on Windows or Linux. One of cairn's would be
+Objective-C on one system, Win32 on another and nothing on the third, none of
+which a test here can drive; what it would hold is in the window already, on
+the bar, in the help and in the menu below. See
+[decisions.md](decisions.md).
+
 **A right click says what can be done to what is under it.** What a card can
 have done to it was on the bar once the card was chosen, so a hand on the
 mouse went to the card and then down to the foot of the window. A right press
