@@ -1,7 +1,7 @@
 # Installing cairn from its sources
 
 What a version of cairn is handed over as: its sources, built where they are.
-The same archive builds on macOS and on Linux.
+The same archive builds on macOS, on Linux and on Windows.
 
 ## What it needs
 
@@ -22,6 +22,9 @@ The same archive builds on macOS and on Linux.
   <https://gioui.org/doc/install/linux>.
 - **On macOS, the command line tools** (`xcode-select --install`), for the C
   compiler the window needs.
+- **On Windows, nothing more than Go.** The window and the store need no C
+  compiler there. `make` and the scripts are written for a POSIX shell, which
+  Git for Windows provides as Git Bash; without one, see "On Windows" below.
 
 ## Building it
 
@@ -35,6 +38,19 @@ bin/cairn --version
 `bin/cairn --version` names the version the archive was made as, and the
 commit it was made from. The first build fetches the modules cairn is built
 from, so it needs the network once.
+
+### On Windows
+
+In Git Bash, `make build` works as above and gives `bin/cairn`. Without a
+POSIX shell, in PowerShell:
+
+```powershell
+go build -o cairn.exe ./cmd/cairn
+.\cairn.exe --version
+```
+
+A build made this way does not know its version: it says `dev`, because the
+version is stamped by `make`. Put `cairn.exe` in a folder on your `PATH`.
 
 ## Installing it
 
@@ -66,7 +82,9 @@ loads the task's notes when you say `on travaille sur cairn#12`, lists what to
 work on when you ask, holds the task in focus while you work and lets it go
 when you stop. [docs/claude-code.md](docs/claude-code.md) says how.
 
-It needs `cairn` and `jq` on your `PATH`. In Claude Code:
+It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
+Windows, Claude Code runs it through Git Bash, and `jq` comes with
+`winget install jqlang.jq`. In Claude Code:
 
 ```text
 /plugin marketplace add /path/to/cairn

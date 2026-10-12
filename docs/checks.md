@@ -19,6 +19,7 @@ here has to be remembered.
 | `semgrep` | is there a known bad pattern, or a secret written into a file? |
 | `tested-check` | does every package have a test file at all? |
 | `harness-check` | is the binary free of the test harness? |
+| `windows-check` | does cairn, tests included, still build for Windows? |
 | `govulncheck` | does anything we call have a known vulnerability? |
 | `cover-check` | does it work — and did every line at least run, in total and in each package? |
 | `mutation` | would a test have noticed if a changed line were wrong? |
@@ -38,7 +39,7 @@ tests, so that one run covers them too.
 **A hook is triggered by every file its answer depends on**, not only by Go.
 `cover-check` also runs when a scenario, a pinned frame under `testdata/`, a
 shell script, the Claude Code plugin, or `go.mod` changes — the suite runs the
-scripts and the plugin's hook; `govulncheck` and `harness-check` when `go.mod` or `go.sum`
+scripts and the plugin's hook; `govulncheck`, `harness-check` and `windows-check` when `go.mod` or `go.sum`
 does; `golangci-lint` when `.golangci.yml` does. Each says so with `files` in
 `prek.toml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.
@@ -312,6 +313,7 @@ make cover          # coverage per function, then the total
 make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
+make windows-check  # fail if cairn or its tests no longer build for Windows
 make mutation-changed  # the lines changed since HEAD: what a commit runs
 make mutation          # every package: what a push runs, and the report it leaves
 make check             # every hook, commit's and push's, on every file

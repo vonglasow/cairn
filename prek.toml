@@ -98,6 +98,9 @@ hooks = [
     # The binary must not be made of the test harness. Cheap, and it is what
     # replaced `no-go-testing` for `cairn/test` — see the target's comment.
     { id = "harness-check", name = "the binary does not reach the harness", entry = "make harness-check", language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
+    # Windows builds what was written, tests included: a few seconds, so with
+    # the cheap checks. See the target's comment.
+    { id = "windows-check", name = "it builds for Windows", entry = "make windows-check", language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
     # The vulnerability scan reads the whole module graph: after the cheap
     # checks, before the suite.
     { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
