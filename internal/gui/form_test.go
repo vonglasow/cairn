@@ -1221,3 +1221,38 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 		t.Errorf("pulled to the middle, the work is at %d, want %d", got, want)
 	}
 }
+
+// A field holding one of a closed set takes no text of its own: what is typed
+// there opens its list, narrowed by it, and the field keeps what it held.
+func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "priority" {
+		w = w.Key("tab")
+	}
+	w = w.Types("h")
+	if w.Screen() != OnChoosing || w.filtering.Value != "h" {
+		t.Fatalf("typing h left the window on %v narrowed by %q", w.Screen(), w.filtering.Value)
+	}
+	if got := w.Key("esc").Form().Fields()[w.Form().On()].Value; got != "normal" {
+		t.Errorf("the field reads %q once the list is put away", got)
+	}
+	w = w.Key("esc")
+	// Nor does it lose any of it to a key that takes text away.
+	for _, name := range []string{"backspace", "cmd+x", "alt+backspace"} {
+		if got := w.Key(name).Form().Fields()[w.Form().On()].Value; got != "normal" {
+			t.Errorf("%s left the field reading %q", name, got)
+		}
+	}
+	// What is pasted there narrows the list, as what is typed does.
+	if got := w.Key("cmd+v").Pasted("crit"); got.Screen() != OnChoosing || got.filtering.Value != "crit" {
+		t.Errorf("pasting left the window on %v narrowed by %q", got.Screen(), got.filtering.Value)
+	}
+	// A field of free text still takes what is typed.
+	for w.Form().Fields()[w.Form().On()].Arg != "estimate" {
+		w = w.Key("tab")
+	}
+	if got := w.Types("2h"); got.Screen() != OnForm || got.Form().Fields()[got.Form().On()].Value != "2h" {
+		t.Errorf("the estimate took %q", got.Form().Fields()[got.Form().On()].Value)
+	}
+}

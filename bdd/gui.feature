@@ -629,6 +629,24 @@ Feature: The desktop board
       When I press "enter"
       Then the field "priority" reads "high"
 
+    @gui-a-closed-set-takes-no-free-text
+    Scenario: typing on a field with a closed set opens its list, narrowed
+      A priority is one of four words. Typed into as text, the field took
+      "normal2h", which the store refuses and no row of the list matches.
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I press "tab"
+      And I press "tab"
+      And I press "tab"
+      Then the form is still on the field "priority"
+      When I type "h"
+      Then the window is choosing
+      And the list reads "high"
+      When I press "esc"
+      Then the field "priority" reads "normal"
+
     @gui-a-closed-set-is-never-emptied
     Scenario: taking the column a task is already in leaves it there
       Given I added a task titled "Write the spec" with the state "backlog"

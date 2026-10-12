@@ -193,9 +193,19 @@ func (w Window) Types(text string) Window {
 		}
 		return w
 	}
+	// A field holding one of a closed set takes no text of its own: typed
+	// into, a priority read "normal2h", which the store refuses and no row of
+	// its list matches. What is typed there narrows its list instead.
+	if w.onAClosedSet() {
+		return w.choosingList().Types(text)
+	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
 	return w.inSightOfTheCaret()
 }
+
+// onAClosedSet says whether the field the keyboard is on holds one of a closed
+// set of values, and so is only ever chosen.
+func (w Window) onAClosedSet() bool { return len(w.form.Fields()[w.form.On()].Choices) > 0 }
 
 // On puts the keyboard on a field by name, which is what a click does and what
 // a test says.
@@ -211,7 +221,7 @@ func (w Window) On(name string) Window {
 // back takes the last character off the field the keyboard is on. One
 // character and not one byte: half of a letter is not a letter.
 func (w Window) back() Window {
-	if w.screen != OnForm {
+	if w.screen != OnForm || w.onAClosedSet() {
 		return w
 	}
 	w.form = w.form.Writes(w.form.Writing().Back())
@@ -228,7 +238,7 @@ func (w Window) walks(by int) Window {
 	if w.screen != OnForm {
 		return w
 	}
-	if len(w.form.Fields()[w.form.On()].Choices) > 0 {
+	if w.onAClosedSet() {
 		return w.cycle(by)
 	}
 	w.form = w.form.Writes(w.form.Writing().CaretAt(w.form.caret + by))

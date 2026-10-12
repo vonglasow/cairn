@@ -709,6 +709,12 @@ in a column whatever is done to a list. The rows say the names alone: the
 number a row is listed under is the list's, not one anybody has seen. `←`/`→`
 on the field still step through the set without opening anything.
 
+**The field itself takes no text.** Typed into, a priority once read
+`normal2h`: a value the store refuses, and one no row of the list matches, so
+the list opened on its first row and `⏎` took `low`. What is typed or pasted on
+such a field opens its list narrowed by it; a key that takes text away does
+nothing there.
+
 **The list is as long as the panel, not as long as what it offers.** A board of
 fifty tasks drew fifty rows, straight past the panel, past the window, and over
 everything behind both. It is cut to the run the panel has and scrolled to for

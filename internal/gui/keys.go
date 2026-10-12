@@ -157,7 +157,7 @@ func (w Window) inForm(name string) Window {
 		}
 	}
 	long := w.form.Fields()[w.form.On()].Long
-	if edit, ok := textKey(name); ok && len(w.form.Fields()[w.form.On()].Choices) == 0 {
+	if edit, ok := textKey(name); ok && !w.onAClosedSet() {
 		w.form = w.form.Writes(edit(w.form.Writing()))
 		return w.inSightOfTheCaret()
 	}
@@ -202,7 +202,9 @@ func (w Window) inForm(name string) Window {
 		w.copying = w.form.Writing().Holds()
 	case "cmd+x":
 		w.copying = w.form.Writing().Holds()
-		w.form = w.form.Writes(w.form.Writing().Back())
+		if !w.onAClosedSet() {
+			w.form = w.form.Writes(w.form.Writing().Back())
+		}
 	case "cmd+v":
 		// Asked for here and answered later: a clipboard is read by the
 		// system, which takes as long as it takes, and the answer comes back
@@ -283,7 +285,7 @@ func (w Window) Pasted(text string) Window {
 	if w.screen != OnForm {
 		return w
 	}
-	if w.form.onParts() {
+	if w.form.onParts() || w.onAClosedSet() {
 		return w.Types(text)
 	}
 	w.form = w.form.Writes(w.form.Writing().Types(text))
