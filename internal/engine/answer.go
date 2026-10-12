@@ -314,6 +314,8 @@ func Of(op Operation, a Answer) any {
 		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
 	case PutBack:
 		return PutBack{PutBack: *a.PutBack}
+	case PluginWritten:
+		return PluginWritten{Plugin: *a.Plugin}
 	case Applied:
 		return Applied{Applied: a.Applied}
 	case Acts:

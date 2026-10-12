@@ -84,15 +84,26 @@ when you stop. [docs/claude-code.md](docs/claude-code.md) says how.
 
 It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
 Windows, Claude Code runs it through Git Bash, and `jq` comes with
-`winget install jqlang.jq`. In Claude Code:
+`winget install jqlang.jq`.
+
+The binary carries the plugin it was built with, so the sources are not needed
+for it. Write it out, beside the store unless `--dir` names a folder:
+
+```sh
+cairn plugin write
+```
+
+It says where it wrote it. Then, in Claude Code:
 
 ```text
-/plugin marketplace add /path/to/cairn
+/plugin marketplace add <the folder cairn plugin write named>
 /plugin install cairn@cairn
 ```
 
-The marketplace is this repository: a local copy, or its git URL. Restart
-Claude Code afterwards.
+Restart Claude Code afterwards. After installing a newer cairn, run `cairn
+plugin write` again, then `/plugin marketplace update cairn`, so the plugin
+matches the cairn it calls. From a copy of this repository, the repository
+itself is a marketplace too: `/plugin marketplace add /path/to/cairn`.
 
 The plugin declares cairn's MCP server itself. If you already declared one,
 declare it with the same command, or Claude Code loads both and every cairn

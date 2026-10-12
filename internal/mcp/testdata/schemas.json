@@ -1417,6 +1417,39 @@
       "additionalProperties": false
     }
   },
+  "plugin_write": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Write the Claude Code plugin this cairn carries"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "dir": {
+          "description": "the folder to write it into; beside the store when not named",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "plugin"
+      ],
+      "additionalProperties": false
+    }
+  },
   "task_add": {
     "annotations": {
       "destructiveHint": false,

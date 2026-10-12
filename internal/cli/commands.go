@@ -42,6 +42,7 @@ var groupShort = map[string]string{
 	"config":    "Show which places cairn uses, and where it got them",
 	"trace":     "Read what was done to a task, or over a period",
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
+	"plugin":    "Write the Claude Code plugin this cairn carries",
 }
 
 // home is what this process knows about where it runs: its home directory, or

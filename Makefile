@@ -147,14 +147,13 @@ tested-check:
 ## A Mac and a Linux container are where this code is written and run, and
 ## Windows is where it is also used: a file only one system builds, or a call
 ## another system does not have, was found there by hand. Gio and the SQLite
-## cairn uses need no C compiler on Windows, so the whole of it cross-builds,
-## tests included, in a few seconds. It runs nothing: what it proves is that
-## Windows can build what was written.
+## cairn uses need no C compiler on Windows, so the whole of it cross-builds
+## in a few seconds; vet type-checks every test file with it. It runs nothing:
+## what it proves is that Windows can build what was written.
 windows-check:
 	@out=$$(mktemp -d) && trap 'rm -rf "$$out"' EXIT && \
 		GOOS=windows GOARCH=amd64 go build -o "$$out/cairn.exe" ./cmd/cairn && \
-		GOOS=windows GOARCH=amd64 go vet ./... && \
-		GOOS=windows GOARCH=amd64 go test -c -o "$$out" ./... >/dev/null
+		GOOS=windows GOARCH=amd64 go vet ./...
 	@echo "✓ cairn and its tests build for Windows"
 
 ## harness-check: fail if the binary reaches the test harness

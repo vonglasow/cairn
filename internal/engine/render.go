@@ -90,6 +90,8 @@ func rendered(op Operation, a Answer) string {
 		return said
 	case PutBack:
 		return fmt.Sprintf("backup %d was put back\n", *a.PutBack)
+	case PluginWritten:
+		return pluginText(*a.Plugin)
 	case Applied:
 		return appliedText(a.Applied)
 	case Acts:

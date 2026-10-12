@@ -268,6 +268,7 @@ func All() []Operation {
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow,
+		PluginWrite,
 	}
 }
 
@@ -412,6 +413,8 @@ type Answer struct {
 	// goes with it, and afterwards nothing would say they once waited on it.
 	Unblocked []int
 	PutBack   *int
+	// Plugin is where the Claude Code plugin was written.
+	Plugin *string
 	// Archived is how many a sweep took off the board, Labelled how many it
 	// put a label on.
 	Archived *int

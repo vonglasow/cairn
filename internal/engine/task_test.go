@@ -151,8 +151,8 @@ func TestAll_namesEachOperationOnce(t *testing.T) {
 	}
 
 	ops := All()
-	if len(ops) != 32 {
-		t.Fatalf("len(All()) = %d, want 32", len(ops))
+	if len(ops) != 33 {
+		t.Fatalf("len(All()) = %d, want 33", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

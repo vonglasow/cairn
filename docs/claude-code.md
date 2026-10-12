@@ -194,6 +194,7 @@ choosing, detaching — and the rule of words. Nothing mechanical is in it.
 ```
 .claude-plugin/marketplace.json
 plugin/claude/
+  plugin.go                     the plugin, carried inside the binary
   .claude-plugin/plugin.json
   .mcp.json                     cairn mcp serve --access full
   skills/cairn/SKILL.md
@@ -202,9 +203,26 @@ plugin/claude/
 ```
 
 The plugin is independent of cairn's code: it reaches cairn only through its
-command line and its MCP server. `INSTALL.md` gains a Claude Code section:
-`/plugin marketplace add <the cairn repository>`, then `/plugin install
-cairn@cairn`. Needed: `cairn` and `jq` on the `PATH`. Nothing else.
+command line and its MCP server. Needed: `cairn` and `jq` on the `PATH`.
+Nothing else.
+
+**The binary carries the plugin.** A person handed only the binary — by brew,
+or as a file — has no repository to add as a marketplace. So `plugin.go`, in
+the plugin's own folder, embeds its files, and `cairn plugin write [--dir D]`
+writes them out as a marketplace: `D/.claude-plugin/marketplace.json`, read
+off the plugin's manifest rather than written a second time, and the plugin
+under `D/cairn`, its hook executable. `D` is `claude-plugin` beside the store
+unless named. Then `/plugin marketplace add D` and `/plugin install
+cairn@cairn`, which the command prints. The plugin installed is always the one
+the cairn it calls was built with.
+
+Writing again replaces the plugin written before, so nothing an older cairn
+carried is left behind; and so a folder holding anything else — a home named by
+mistake — is refused rather than cleared (`ErrNotItsFolder`). The repository
+stays a marketplace of its own, for a clone: `/plugin marketplace add <the
+cairn repository>`. `bdd/claude-plugin.feature` holds both, against the real
+binary, file by file against this folder; `claude plugin validate` accepts
+what it writes.
 
 The plugin declares the cairn MCP server, so that installing it is enough. A
 person who already declared one keeps theirs: Claude Code drops a plugin's

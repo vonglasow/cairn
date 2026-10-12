@@ -268,6 +268,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"backup_show":        {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
 		"backup_delete":      {{Deleted: of(1)}},
 		"backup_restore":     {{PutBack: of(1)}},
+		"plugin_write":       {{Plugin: func() *string { s := "/claude-plugin"; return &s }()}},
 		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
 		"migration_show":     {{Change: of(migration.Migration{})}},
 		"migration_apply":    {{Applied: []string{}}},
