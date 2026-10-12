@@ -1,4 +1,4 @@
-  TASKS   objectives                                                                          EDIT
+  TASKS   objectives   time                                                                   EDIT
 
  ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
  │ 4   Write the spec                                                               current  high │

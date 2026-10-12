@@ -749,3 +749,48 @@ Feature: The board
       And I deleted task 1
       And the board looks again
       Then the cursor is on the task "Second"
+
+  Rule: The time spent and the backups are reached from the terminal board too
+
+    The window gained a page for the time spent and a way to the backups; the
+    terminal board had neither, and a command typed at its prompt said nothing
+    of what it answered. A third tab lays the week out, and a command says its
+    answer until esc puts it away.
+
+    @tui-the-time-tab
+    Scenario: the third tab lays out the week's time, and the arrows walk the weeks
+      Given I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-01"
+      When I open the board
+      And I press "tab"
+      And I press "tab"
+      Then the tab is "TIME"
+      And the board says "Tue 01/09"
+      And the board says "1h30m  #1 Write the spec"
+      When I press "left"
+      Then the board says "Mon 24/08"
+      And the board does not say "Write the spec"
+      When I press "t"
+      Then the board says "Tue 01/09"
+
+    @tui-a-command-says-its-answer
+    Scenario: a command typed at the prompt says what it answered, until esc
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press ":"
+      And I type "backup list"
+      And I press "enter"
+      Then the board says "there is no backup"
+      When I press "esc"
+      Then the board does not say "there is no backup"
+
+    @tui-backups-from-the-board
+    Scenario: b backs the store up and B lists the backups
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "b"
+      Then the board says "#1"
+      And the board says "holds 1 task(s)"
+      When I press "esc"
+      And I press "B"
+      Then the board says "#1  made"

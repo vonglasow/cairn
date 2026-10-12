@@ -17,7 +17,7 @@ and the store can change underneath it. That is dealt with at the end.
 The whole file in eight lines, for whoever has a change to make and not an
 afternoon to spend:
 
-- **Two tabs**, tasks and objectives; four columns and a band of three stopped
+- **Three tabs**, tasks, objectives and the time spent; four columns and a band of three stopped
   states under the last three, and the backlog full height.
 - **Modes**: normal stands on a column, insert holds a task, edit is the form.
   The bar shows only what works where it is.
@@ -34,7 +34,7 @@ afternoon to spend:
 
 ## Contents
 
-- [Two tabs](#two-tabs)
+- [Three tabs](#three-tabs)
 - [The board's shape](#the-boards-shape)
 - [Width](#width)
 - [A card is six lines](#a-card-is-six-lines)
@@ -53,10 +53,21 @@ afternoon to spend:
 - [How it reaches the engine](#how-it-reaches-the-engine)
 - [Deliberately not there yet](#deliberately-not-there-yet)
 
-## Two tabs
+## Three tabs
 
 **tasks** — the kanban, where the work is. **objectives** — the list of what the
-work is for. `⇥` switches. Nothing else is a tab.
+work is for. **time** — how long the work took, a week at a time, as the
+window's TIME page lays it out: each day down the screen, its total, and a line
+for each task worked on with its time, read whole rather than cut to a seventh
+of a terminal's width; `←→` (or `h l`) walk the weeks, `t` comes back to
+today's, `j k` scroll. `⇥` walks the three round. Nothing else is a tab.
+
+**The backups, and what a command answers.** `b` backs the store up and `⇧B`
+lists the backups, as the window's `⌘B` and `⇧B` do. A command typed at `:`
+used to run and say nothing of what it answered, so `:timesheet show` or
+`:backup list` showed nothing at all; what it answers is now said on a screen
+of its own, scrolled with `j k`, until `esc` (`@tui-a-command-says-its-answer`).
+A gesture on the board says nothing: what it did is on the board.
 
 ## The board's shape
 

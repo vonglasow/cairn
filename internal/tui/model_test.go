@@ -110,9 +110,11 @@ func TestTheOtherTab(t *testing.T) {
 	if b.Where().Goal != 7 {
 		t.Fatalf("the cursor landed on objective %d, want 7", b.Where().Goal)
 	}
-	b = hit(b, "tab")
-	if b.tab != Tasks {
-		t.Fatal("the second press did not come back to the tasks")
+	if b = hit(b, "tab"); b.tab != Time {
+		t.Fatal("the second press did not go on to the time spent")
+	}
+	if b = hit(b, "tab"); b.tab != Tasks {
+		t.Fatal("the third press did not come back to the tasks")
 	}
 }
 

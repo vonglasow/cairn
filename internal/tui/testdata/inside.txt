@@ -1,4 +1,4 @@
-  TASKS   objectives   ▸ 1                                                                  NORMAL
+  TASKS   objectives   time   ▸ 1                                                           NORMAL
 
  1   Ship the desktop board                                                                       ▶
  ████████████████░░░░░░░░░░░░  7/12

@@ -1,4 +1,4 @@
-  tasks   OBJECTIVES                                                                          EDIT
+  tasks   OBJECTIVES   time                                                                   EDIT
 
  ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
  │ 1   Ship the desktop board                                                        active  high │

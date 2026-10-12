@@ -9,8 +9,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
+	"cairn/internal/task"
 	"cairn/internal/trace"
 )
 
@@ -332,7 +334,20 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	case "trace show":
 		return engine.Answer{Acts: f.acts}, nil
 	}
-	return engine.Answer{}, nil
+	return answerShaped(op), nil
+}
+
+// answerShaped is an answer of the shape the operation declares, holding
+// nothing: what a command typed at the prompt answers is written out, and
+// the engine writes only what it was handed.
+func answerShaped(op engine.Operation) engine.Answer {
+	switch op.Answers.(type) {
+	case engine.Task, engine.Focus:
+		return engine.Answer{Task: &task.Task{}}
+	case engine.BackupShape:
+		return engine.Answer{Backup: &domain.Backup{Number: 1}, Holds: &domain.Held{Tasks: 1}}
+	}
+	return engine.Answer{}
 }
 
 // placedBy reads back which of `task move`'s three places was named.

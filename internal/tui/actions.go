@@ -115,16 +115,21 @@ func (b Board) removeGoal() tea.Cmd {
 // holding on the one being left — a task number means nothing on a list of
 // objectives.
 func (b Board) otherTab() Board {
-	if b.tab == Tasks {
+	b.mode = Normal
+	switch b.tab {
+	case Tasks:
 		b.tab = Objectives
-		b.mode = Normal
 		b.task = 0
 		b.goal = b.firstGoal()
 		return b.follow()
+	case Objectives:
+		b.tab, b.inside = Time, 0
+		if b.week.IsZero() {
+			b.week = mondayOf(b.clock())
+		}
+		return b
 	}
 	b.tab = Tasks
-	b.mode = Normal
-	b.inside = 0
 	return b
 }
 
@@ -206,7 +211,7 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 		b.err = err
 		return b, nil
 	}
-	return b, b.carry(op, in)
+	return b, b.telling(op, in)
 }
 
 // carry runs an operation the prompt named and reads the board back, which is
@@ -218,5 +223,20 @@ func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 		}
 		found, err := reading.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
+	}
+}
+
+// telling runs an operation somebody asked for by name — at the prompt, or
+// by a key that stands for one — and says what it answered, the way the
+// command line would. A gesture on the board says nothing: what it did is
+// on the board.
+func (b Board) telling(op engine.Operation, in engine.Input) tea.Cmd {
+	return func() tea.Msg {
+		answer, err := b.work.Ask(op, in)
+		if err != nil {
+			return Looked{Err: err}
+		}
+		found, err := reading.Look(b.work)
+		return Answered{Text: engine.RenderText(op, answer), Looked: Looked{Snapshot: found, Err: err}}
 	}
 }

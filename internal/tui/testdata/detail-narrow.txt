@@ -1,4 +1,4 @@
-  TASKS   objectives                                            DETAIL
+  TASKS   objectives   time                                     DETAIL
 
  4   Write the spec                                          todo  high
  ⚑ spec   due 2026-09-03 · 2d

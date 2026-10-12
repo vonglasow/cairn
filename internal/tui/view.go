@@ -39,6 +39,8 @@ func (b Board) Draw() string {
 		return b.drawDetail()
 	case OnForm:
 		return b.drawForm()
+	case OnSaid:
+		return b.drawSaid()
 	}
 	return b.drawBoard()
 }
@@ -57,9 +59,12 @@ func (b Board) drawBoard() string {
 	l := LayoutFor(b.width, b.height)
 	var out []string
 	out = append(out, b.tabs(), "")
-	if b.tab == Objectives {
+	switch b.tab {
+	case Objectives:
 		out = append(out, b.objectivesList(l)...)
-	} else {
+	case Time:
+		out = append(out, b.timeWeek(l)...)
+	default:
 		out = append(out, b.tasksBoard(l)...)
 	}
 	return strings.Join(append(out, "", b.foot()), "\n")
@@ -67,13 +72,16 @@ func (b Board) drawBoard() string {
 
 // tabs is the top line: which tab is open, where inside it, and which mode.
 func (b Board) tabs() string {
-	tasks, goals := b.skin.TabOff.Render("tasks"), b.skin.TabOff.Render("objectives")
-	if b.tab == Tasks {
+	tasks, goals, spent := b.skin.TabOff.Render("tasks"), b.skin.TabOff.Render("objectives"), b.skin.TabOff.Render("time")
+	switch b.tab {
+	case Tasks:
 		tasks = b.skin.TabOn.Render("TASKS")
-	} else {
+	case Objectives:
 		goals = b.skin.TabOn.Render("OBJECTIVES")
+	case Time:
+		spent = b.skin.TabOn.Render("TIME")
 	}
-	left := " " + tasks + " " + goals
+	left := " " + tasks + " " + goals + " " + spent
 	if b.inside != 0 {
 		left += "  " + b.skin.Crumb.Render("▸ "+strconv.Itoa(b.inside))
 	}

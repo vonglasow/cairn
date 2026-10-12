@@ -1,4 +1,4 @@
-  TASKS   objectives                                                                          HELP
+  TASKS   objectives   time                                                                   HELP
 
  ╭─────────────────────────────────────────────╮ ╭─────────────────────────────────────────────╮
  │ KEYS                                        │ │ LEGEND                                      │
@@ -11,30 +11,30 @@
  │   ⇧X          take every task in this       │ │                                             │
  │ column off the board — it asks first        │ │ STALLED — the top right of a card           │
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
- │   ⇥           next tab                      │ │   ◉  watching  handed over, needs a look    │
- │   :           command                       │ │   ‖  paused    waiting on your decision     │
+ │   ⇥           next tab — tasks, objectives, │ │   ◉  watching  handed over, needs a look    │
+ │ the time spent                              │ │   ‖  paused    waiting on your decision     │
+ │   :           command — what it answers is  │ │                                             │
+ │ said until esc                              │ │ OBJECTIVES                                  │
+ │   b           back the store up             │ │   ▶  active    being worked towards         │
+ │   ⇧B          the backups                   │ │   ‖  on-hold   not for now                  │
+ │   ←→ t on timewalk the weeks, back to       │ │   ✓  reached   done with                    │
+ │ today's                                     │ │   ✕  dropped   given up                     │
  │                                             │ │                                             │
- │ INSERT — the cursor on a task               │ │ OBJECTIVES                                  │
- │   hjkl ←↓↑→   tasks, and the band           │ │   ▶  active    being worked towards         │
- │   gg / G      first / last in the column    │ │   ‖  on-hold   not for now                  │
- │   ⇧hjkl       move it: sideways changes     │ │   ✓  reached   done with                    │
- │ column, up and down change place            │ │   ✕  dropped   given up                     │
- │   ⏎           the detail                    │ │                                             │
- │   e           the form                      │ │ ON A CARD                                   │
- │   f           take or let go the focus      │ │   ≡            a description exists         │
- │   d           delete                        │ │   ▪            sub-tasks done / total       │
- │   x           off the board, or back on     │ │   ⚑            a label                      │
- │   esc         back to normal                │ │   ↳            what is in the way           │
- │                                             │ │   2d          a deadline close by           │
- │ DETAIL — one task, open                     │ │   −3d         one that has passed           │
- │   ^D ^U       walk its description, half a  │ │   ╔═╗         the task in focus             │
- │ box at a time                               │ ╰─────────────────────────────────────────────╯
+ │ INSERT — the cursor on a task               │ │ ON A CARD                                   │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ≡            a description exists         │
+ │   gg / G      first / last in the column    │ │   ▪            sub-tasks done / total       │
+ │   ⇧hjkl       move it: sideways changes     │ │   ⚑            a label                      │
+ │ column, up and down change place            │ │   ↳            what is in the way           │
+ │   ⏎           the detail                    │ │   2d          a deadline close by           │
+ │   e           the form                      │ │   −3d         one that has passed           │
+ │   f           take or let go the focus      │ │   ╔═╗         the task in focus             │
+ │   d           delete                        │ ╰─────────────────────────────────────────────╯
+ │   x           off the board, or back on     │
+ │   esc         back to normal                │
  │                                             │
- │ FORM — the same keys as the window          │
- │   ⏎           a new line in the             │
- │ description, the next field anywhere else   │
- │   ↑↓          the description's lines — tab │
- │ leaves it                                   │
- │   tab ⇧tab    next / previous field         │
+ │ DETAIL — one task, open                     │
+ │   ^D ^U       walk its description, half a  │
+ │ box at a time                               │
+ │                                             │
 
  ↓↑ read on   esc close

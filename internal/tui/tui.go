@@ -3,6 +3,7 @@ package tui
 import (
 	"time"
 
+	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/trace"
 
@@ -21,6 +22,7 @@ type Tab int
 const (
 	Tasks Tab = iota
 	Objectives
+	Time
 )
 
 // Mode is what the cursor is holding.
@@ -44,6 +46,8 @@ const (
 	OnHelp
 	OnDetail
 	OnForm
+	// OnSaid is what a command answered, until esc.
+	OnSaid
 )
 
 // Prompt is what, if anything, is taking what is typed at the foot.
@@ -150,6 +154,15 @@ type Board struct {
 	goalAt  int
 	helpAt  int
 
+	// week is the Monday of the week the time tab shows, and sheet the time
+	// spent over it; said is what a command last answered, and saidAt how far
+	// down it is read.
+	week   time.Time
+	sheet  engine.Timesheet
+	said   string
+	saidAt int
+	timeAt int
+
 	err error
 }
 
@@ -206,6 +219,15 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return b, nil
 	case Heard:
 		b.heard = m
+		return b, nil
+	case Sheeted:
+		b.sheet, b.err = m.Sheet, m.Err
+		return b, nil
+	case Answered:
+		b = b.took(m.Looked)
+		if m.Err == nil {
+			b = b.answering(m.Text)
+		}
 		return b, nil
 	case Beat:
 		return b, tea.Batch(b.wonder(), tick())

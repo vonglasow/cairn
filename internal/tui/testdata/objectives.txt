@@ -1,4 +1,4 @@
-  tasks   OBJECTIVES                                                                        NORMAL
+  tasks   OBJECTIVES   time                                                                 NORMAL
 
  OBJECTIVES                                                                                       2
  ──────────────────────────────────────────────────────────────────────────────────────────────────

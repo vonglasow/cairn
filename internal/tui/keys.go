@@ -5,6 +5,8 @@ import (
 	"unicode"
 
 	tea "charm.land/bubbletea/v2"
+
+	"cairn/internal/engine"
 )
 
 // What a key does, and where. Two rules hold everywhere and are worth stating
@@ -189,6 +191,15 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 		if b.screen == OnHelp {
 			return b.readOn(way), nil
 		}
+		if b.screen == OnSaid {
+			switch way {
+			case goDown:
+				b.saidAt++
+			case goUp:
+				b.saidAt = max(0, b.saidAt-1)
+			}
+			return b, nil
+		}
 		// The detail's bar offers hjkl and the arrows, and offering a key
 		// without serving it makes the bar a thing to distrust. They move
 		// between tasks, and the detail follows the cursor.
@@ -218,6 +229,11 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 
 // inNormal is what a key does while the cursor is on a column.
 func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
+	if b.tab == Time {
+		if walked, ok := b.walkingWeeks(key); ok {
+			return walked, walked.readingWeek()
+		}
+	}
 	if way, ok := direction(key); ok {
 		return b.moveCursor(way), nil
 	}
@@ -257,7 +273,15 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		b.prompt, b.typed = Commanding, ""
 		return b, nil
 	case "tab":
-		return b.otherTab(), nil
+		b = b.otherTab()
+		if b.tab == Time {
+			return b, b.readingWeek()
+		}
+		return b, nil
+	case "b":
+		return b, b.telling(engine.BackupAdd, engine.Input{})
+	case "B", "shift+b":
+		return b, b.telling(engine.BackupList, engine.Input{})
 	case "e":
 		// The objectives list has no insert mode — normal already moves between
 		// objectives — so what belongs to insert on the board belongs to normal

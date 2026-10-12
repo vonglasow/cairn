@@ -1,4 +1,4 @@
-  TASKS   objectives                                              HELP
+  TASKS   objectives   time                                       HELP
 
  ╭───────────────────────────────╮ ╭───────────────────────────────╮
  │ KEYS                          │ │ LEGEND                        │
@@ -15,16 +15,16 @@
  │ in this column off the board  │ │   ⊘  blocked   waiting on     │
  │ — it asks first               │ │ somebody else                 │
  │   /           search          │ │   ◉  watching  handed over,   │
- │   ⇥           next tab        │ │ needs a look                  │
- │   :           command         │ │   ‖  paused    waiting on     │
- │                               │ │ your decision                 │
- │ INSERT — the cursor on a task │ │                               │
- │   hjkl ←↓↑→   tasks, and the  │ │ OBJECTIVES                    │
- │ band                          │ │   ▶  active    being worked   │
- │   gg / G      first / last in │ │ towards                       │
- │ the column                    │ │   ‖  on-hold   not for now    │
- │   ⇧hjkl       move it:        │ │   ✓  reached   done with      │
- │ sideways changes column, up   │ │   ✕  dropped   given up       │
- │ and down change place         │ │                               │
+ │   ⇥           next tab —      │ │ needs a look                  │
+ │ tasks, objectives, the time   │ │   ‖  paused    waiting on     │
+ │ spent                         │ │ your decision                 │
+ │   :           command — what  │ │                               │
+ │ it answers is said until esc  │ │ OBJECTIVES                    │
+ │   b           back the store  │ │   ▶  active    being worked   │
+ │ up                            │ │ towards                       │
+ │   ⇧B          the backups     │ │   ‖  on-hold   not for now    │
+ │   ←→ t on timewalk the weeks, │ │   ✓  reached   done with      │
+ │ back to today's               │ │   ✕  dropped   given up       │
+ │                               │ │                               │
 
  ↓↑ read on   esc close

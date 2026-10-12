@@ -1,4 +1,4 @@
-  TASKS   objectives                                                                        NORMAL
+  TASKS   objectives   time                                                                 NORMAL
 
  BACKLOG                3 TODO                   2 CURRENT                1 DONE                   1
  ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────

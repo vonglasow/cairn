@@ -1,4 +1,4 @@
-  TASKS   objectives                                                                       COMMAND
+  TASKS   objectives   time                                                                COMMAND
 
  ▌BACKLOG               3 TODO                   2 CURRENT                1 DONE                   1
  ━━━━━━━━━━━━━━━━━━━━━━━━ ──────────────────────── ──────────────────────── ────────────────────────

@@ -1,4 +1,4 @@
-  TASKS   objectives                                                                        NORMAL
+  TASKS   objectives   time                                                                 NORMAL
 
  ▌BACKLOG               0 TODO                  12 CURRENT                0 DONE                   0
  ━━━━━━━━━━━━━━━━━━━━━━━━ ──────────────────────── ──────────────────────── ────────────────────────

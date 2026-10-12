@@ -91,8 +91,11 @@ func (b Board) helpKeys() []string {
 		b.says("⇧A", "show what was archived"),
 		b.says("⇧X", "take every task in this column off the board — it asks first"),
 		b.says("/", "search"),
-		b.says("⇥", "next tab"),
-		b.says(":", "command"),
+		b.says("⇥", "next tab — tasks, objectives, the time spent"),
+		b.says(":", "command — what it answers is said until esc"),
+		b.says("b", "back the store up"),
+		b.says("⇧B", "the backups"),
+		b.says("←→ t on time", "walk the weeks, back to today's"),
 	)
 	out = append(out, b.group("INSERT — the cursor on a task",
 		b.says("hjkl ←↓↑→", "tasks, and the band"),
