@@ -368,15 +368,36 @@ func (w Window) offerAt(p Point) (string, bool) {
 	// panel it is drawn faint, saying what the board will offer again, and
 	// what can be done now is on the panel.
 	alone := w.screen == OnTheBoard || w.screen == OnSearch
+	along := w.offersAlong(panel)
 	for i, offer := range w.Offers() {
 		if alone && OfferAt(l, i).In(p) {
 			return offer, true
 		}
-		if !alone && PanelOfferAt(panel, i).In(p) {
+		if !alone && along[i].In(p) {
 			return offer, true
 		}
 	}
 	return "", false
+}
+
+// PanelOffers is where the offers of the panel that has the window are drawn,
+// and so where they are clicked.
+func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
+
+// offersAlong lays a panel's offers along its foot, each as wide as what it
+// says and never narrower than an offer is: with one width for all,
+// "backspace  No day" ran into the "esc  Cancel" after it.
+func (w Window) offersAlong(panel Box) []Box {
+	var boxes []Box
+	x := panel.X + padding
+	for i, offer := range w.Offers() {
+		edges := w.measured()(w.Said(offer), reads)
+		box := PanelOfferAt(panel, i)
+		box.X, box.W = x, max(offerWide, edges[len(edges)-1]+padding)
+		boxes = append(boxes, box)
+		x += box.W
+	}
+	return boxes
 }
 
 // savedTitle is the title of what a form is open on, as it was saved.

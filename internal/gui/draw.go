@@ -892,7 +892,11 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
 	}
 	fill(gtx, FormRule(panel), skin.Edge)
-	drawPanelOffers(gtx, th, skin, panel, w)
+	// Under a list or the calendar the offers are theirs, drawn on their own
+	// panel: drawn here as well, they read twice.
+	if w.screen == OnForm {
+		drawPanelOffers(gtx, th, skin, panel, w)
+	}
 	// Beside a form opened on something already there: what was done to a
 	// task, and where what was written about it elsewhere lives; or the work
 	// serving an objective.
@@ -911,8 +915,9 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 // drawPanelOffers writes what can be done on a panel where it can be pressed:
 // the same words the bar says, in the panel's own row of places.
 func drawPanelOffers(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
+	along := w.offersAlong(box)
 	for i, offer := range w.Offers() {
-		drawOffer(gtx, th, skin, PanelOfferAt(box, i), offer, w)
+		drawOffer(gtx, th, skin, along[i], offer, w)
 	}
 }
 

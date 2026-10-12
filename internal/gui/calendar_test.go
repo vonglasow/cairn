@@ -105,3 +105,85 @@ func TestAFormAddingIsNamedNew(t *testing.T) {
 		t.Errorf("the calendar of task 4 is headed %q", got)
 	}
 }
+
+// Each offer of a panel is as wide as what it says, and the next one starts
+// after it: "backspace  No day" ran into "esc  Cancel" when every offer had the
+// same width whatever it said.
+func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if w.Screen() != OnCalendar {
+		t.Fatalf("enter on the deadline left the window on %v", w.Screen())
+	}
+	boxes, offers := w.PanelOffers(), w.Offers()
+	if len(boxes) != len(offers) {
+		t.Fatalf("%d boxes for %d offers", len(boxes), len(offers))
+	}
+	if first := PanelOfferAt(w.CalendarBox(), 0); boxes[0].X != first.X {
+		t.Errorf("the first offer starts at %d, not at the panel's %d", boxes[0].X, first.X)
+	}
+	for i, offer := range offers {
+		said := Reckoned(w.Said(offer), reads)
+		if wide := said[len(said)-1]; boxes[i].W < wide {
+			t.Errorf("%q needs %d and has %d", w.Said(offer), wide, boxes[i].W)
+		}
+		if boxes[i].W < offerWide {
+			t.Errorf("%q is narrower than an offer is ever drawn: %d", offer, boxes[i].W)
+		}
+		if i > 0 && boxes[i].X < boxes[i-1].X+boxes[i-1].W {
+			t.Errorf("%q starts at %d, inside the one before it", offer, boxes[i].X)
+		}
+		if boxes[i] != (Box{X: boxes[i].X, Y: PanelOfferAt(w.CalendarBox(), i).Y, W: boxes[i].W, H: barHigh}) {
+			t.Errorf("%q is not on the panel's row of offers: %+v", offer, boxes[i])
+		}
+	}
+	// And a click lands on the offer drawn where it is.
+	no := boxes[1]
+	if got := w.Click(Point{X: no.X + no.W - 2, Y: no.Y + no.H/2}); got.Screen() != OnForm || got.Form().Fields()[got.Form().On()].Value != "" {
+		t.Errorf("a click at the end of %q left the window on %v", offers[1], got.Screen())
+	}
+}
+
+// Under the calendar the form draws none of its offers: they would be the
+// calendar's, drawn a second time at the form's foot.
+func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	foot := PanelOfferAt(w.formPanel(), 0)
+	skin := Dark()
+	if painted(drawn(t, w), foot, skin.Chosen) == 0 {
+		t.Fatal("the open form draws no offer at its foot")
+	}
+	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
+		w = w.Key("tab")
+	}
+	if got := w.Key("enter"); painted(drawn(t, got), foot, skin.Chosen) != 0 {
+		t.Error("the form under the calendar still draws offers at its foot")
+	}
+}
+
+// The line saying where a task's context lives starts after the offers as
+// they are drawn: spelled for Windows, "Ctrl+Enter  Save" is wider than an
+// offer's least width, and the line used to start under it.
+func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
+	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
+	w.keyboard = KeyboardOf("windows")
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	offers := w.PanelOffers()
+	last := offers[len(offers)-1]
+	said := w.ContextSays()
+	if len(said) != 2 {
+		t.Fatalf("the context says %d things", len(said))
+	}
+	name, path := said[0].inSight(), said[1].inSight()
+	if name.X < last.X+last.W+padding {
+		t.Errorf("the context's name starts at %d, the last offer ends at %d", name.X, last.X+last.W)
+	}
+	if path.X != name.X+name.W || path.X+path.W != w.formPanel().X+w.formPanel().W-padding {
+		t.Errorf("the path runs %+v after a name %+v", path, name)
+	}
+}

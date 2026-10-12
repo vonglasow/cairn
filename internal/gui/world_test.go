@@ -333,7 +333,7 @@ func (w *world) clickOffer(name string) error {
 		// under the board otherwise. A person clicks what they are looking at.
 		box := OfferAt(w.w.Layout(), i)
 		if s := w.w.screen; s != OnTheBoard && s != OnSearch {
-			box = PanelOfferAt(w.w.panel(), i)
+			box = w.w.PanelOffers()[i]
 		}
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()

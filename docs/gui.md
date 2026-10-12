@@ -468,7 +468,11 @@ an open form and threw away what had been typed into it.
 stays the board's.** Under a panel it is drawn faint and answers nothing — it
 says what the board will offer again once the panel is put away. It used to
 change to repeat the panel's offers, which read as the board itself having
-changed underneath, and made two places to click for one thing.
+changed underneath, and made two places to click for one thing. The same
+holds between panels: a form under a list or the calendar draws none of its
+offers, which were theirs read a second time at its foot. Each offer is as wide
+as what it says, never narrower than the others: at one width for all,
+`backspace  No day` ran into the `esc  Cancel` after it.
 
 **Archive** is one of those offers, under `x`, beside *Edit* and *Delete* on a
 chosen card. On a card already off the board the bar reads *Restore* instead:

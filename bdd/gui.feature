@@ -1148,6 +1148,19 @@ Feature: The desktop board
       Then the window is on the form
       And the field "deadline" reads ""
 
+    @gui-a-calendar-offer-is-clicked-where-it-is-drawn
+    Scenario: what the calendar offers is drawn once, and answers a click
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-12-25"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      And I click "No day"
+      Then the window is on the form
+      And the field "deadline" reads ""
+
     @gui-a-calendar-left-changes-nothing
     Scenario: esc leaves the calendar and the deadline as it was
       Given I added a task titled "Write the spec"
