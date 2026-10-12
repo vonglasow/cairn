@@ -561,13 +561,20 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
-**The window opens on a cairn being built.** Five stones fall one after the
-other onto the one below, in the middle of the window, for a breath
-(`IntroLasts`, 1.4 s; `cairn.go`). It starts on the first frame a screen
-draws (`Born`), which no scenario draws, so nothing judged there sees it; and
-the first key or press ends it and still does what it does — it is never in
-the way. Drawn rather than shaded: Gio runs no shader of a program's own, and
-five ellipses say it.
+**The window opens on its board being built of stones.** Five stones stacking
+in the middle of the window said nothing of the board, and were drawn whether
+it held anything or not. Now the content is what is built: each card arrives
+as stones — courses of them, each stone cut irregular and fitted to its
+neighbours like an old dry-stone wall, never bricks — falling from above the
+window into its place, one card after another, then giving way to the card
+(`StonesOf`, `Arriving`; `cairn.go`). The same card is built of the same
+stones on every run, from a generator of its own seeded by the card's number.
+A board with no task opens on nothing being built
+(`@gui-no-task-no-cairn`). It lasts a breath (`IntroLasts`, 1.8 s), starts on
+the first frame a screen draws (`Born`), which no scenario draws, and the
+first key or press ends it and still does what it does — it is never in the
+way. Drawn rather than shaded: Gio runs no shader of a program's own, and
+filled outlines and opacity say it.
 
 **The time spent is seen a week or a month at a time, every task of it.** How
 long the work took was a table the command line printed. The third page, TIME,

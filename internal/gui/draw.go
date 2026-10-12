@@ -49,6 +49,9 @@ type Skin struct {
 	// both the board behind it and the card it will land on.
 	Ghost    color.NRGBA
 	Priority map[string]color.NRGBA
+	// Stones are the tones the board is built of while it opens: greys
+	// between a card and its edge, so a wall of them reads as one material.
+	Stones []color.NRGBA
 }
 
 // Dark is the one skin there is. Named rather than assumed, so the day a second
@@ -64,6 +67,11 @@ func Dark() Skin {
 		Wrong:  color.NRGBA{R: 255, G: 110, B: 160, A: 255},
 		Late:   color.NRGBA{R: 240, G: 186, B: 96, A: 255},
 		Ghost:  color.NRGBA{R: 72, G: 88, B: 124, A: 255},
+		Stones: []color.NRGBA{
+			{R: 86, G: 84, B: 92, A: 255},
+			{R: 104, G: 101, B: 108, A: 255},
+			{R: 122, G: 119, B: 124, A: 255},
+		},
 		// A priority is told from every other one, from the edge a card with
 		// no priority wears, and from the blue that says what is chosen —
 		// which "normal" used to be, at the bit.
@@ -210,18 +218,6 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	if w.Screen() == OnBackups {
 		drawBackups(gtx, th, skin, w)
-	}
-	if progress, building := w.Intro(); building {
-		drawCairn(gtx, skin, w, progress)
-	}
-}
-
-// drawCairn is the window's first breath: the stones over a ground of their
-// own, the board waiting under it.
-func drawCairn(gtx layout.Context, skin Skin, w Window, progress float64) {
-	fill(gtx, Box{W: w.width, H: w.height}, skin.Back)
-	for _, stone := range StonesAt(w.width, w.height, progress) {
-		paint.FillShape(gtx.Ops, skin.Faint, clip.Ellipse(rect(stone)).Op(gtx.Ops))
 	}
 }
 
@@ -517,23 +513,71 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
-		clipped := clip.Rect(rect(l.Column[i])).Push(gtx.Ops)
-		for at, c := range column.Cards {
-			drawCard(gtx, th, skin, l.CardAt(i, at, w.scroll[i]), c, c.Number == w.Chosen() || w.isTaken(c.Number))
-		}
-		clipped.Pop()
 	}
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	for lane, kind := range Lanes {
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
-		clipped := clip.Rect(rect(l.Lane[lane])).Push(gtx.Ops)
-		for at, c := range w.inLane(lane) {
-			drawCard(gtx, th, skin, l.LaneCardAt(lane, at, w.lanes[lane]), c, c.Number == w.Chosen() || w.isTaken(c.Number))
+	}
+	drawPlaced(gtx, th, skin, w)
+}
+
+// drawPlaced is every card of the board where it is placed, seen through its
+// column or its lane. While the board is being built a card is drawn as far
+// as it has arrived, and its stones fall over it until they give way to it.
+func drawPlaced(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	progress, building := w.Intro()
+	var seen []Placed
+	for _, p := range w.Placed() {
+		if p.seen() {
+			seen = append(seen, p)
 		}
+	}
+	for k, p := range seen {
+		chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
+		clipped := clip.Rect(rect(p.Within)).Push(gtx.Ops)
+		if !building {
+			drawCard(gtx, th, skin, p.Slot, p.Card, chosen)
+			clipped.Pop()
+			continue
+		}
+		_, fade := Arriving(progress, k, len(seen))
+		faded := paint.PushOpacity(gtx.Ops, float32(fade))
+		drawCard(gtx, th, skin, p.Slot, p.Card, chosen)
+		faded.Pop()
 		clipped.Pop()
 	}
+	if !building {
+		return
+	}
+	for k, p := range seen {
+		fall, fade := Arriving(progress, k, len(seen))
+		panel := PartsOf(p.Slot).Panel
+		// From above the window, slowing as they land, giving way to the
+		// card as it comes.
+		faded := paint.PushOpacity(gtx.Ops, float32(1-fade))
+		for i, stone := range StonesOf(panel, p.Card.Number) {
+			drawStone(gtx, Fallen(stone, Dropped(panel, fall)), skin.stoneOf(i))
+		}
+		faded.Pop()
+	}
+}
+
+// drawStone fills one stone.
+func drawStone(gtx layout.Context, stone []Point, ink color.NRGBA) {
+	var path clip.Path
+	path.Begin(gtx.Ops)
+	for i, p := range stone {
+		at := f32.Pt(float32(p.X), float32(p.Y))
+		if i == 0 {
+			path.MoveTo(at)
+			continue
+		}
+		path.LineTo(at)
+	}
+	path.Close()
+	paint.FillShape(gtx.Ops, ink, clip.Outline{Path: path.End()}.Op())
 }
 
 // drawCard is the one shape this board is made of: a panel, a coloured edge for
@@ -580,6 +624,9 @@ func (s Skin) Writing(c reading.Card) color.NRGBA {
 
 // edgeOf is the stripe down a card's side, which is its priority. Archived, it
 // is the plain edge: a colour that shouts is a colour asking to be acted on.
+// stoneOf is the tone of the i-th stone of a card, the three taken in turn.
+func (s Skin) stoneOf(i int) color.NRGBA { return s.Stones[i%len(s.Stones)] }
+
 func (s Skin) edgeOf(c reading.Card) color.NRGBA {
 	if edge, known := s.Priority[c.Priority]; known && !c.Archived {
 		return edge

@@ -922,15 +922,18 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
-  Rule: The window opens on a cairn being built
+  Rule: The window opens on its board being built of stones
 
-    A board that appears all at once is a tool; one that opens on a few
-    stones stacking themselves, the thing it is named after, is this tool. It
-    lasts a breath, and the first key or click ends it and still does what it
-    does: it is never in the way.
+    A board that appears all at once is a tool; one whose cards arrive as
+    stones, fitted like an old wall rather than bricks, falling into place and
+    giving way to the cards, is this one. What is built is the content: a
+    board with no task opens on nothing being built. It lasts a breath, and
+    the first key or click ends it and still does what it does: it is never in
+    the way.
 
     @gui-the-window-opens-on-a-cairn
     Scenario: the first frame starts a cairn, which a key ends without being swallowed
+      Given I added a task titled "Write the spec"
       When I open the window
       And the window draws its first frame
       Then a cairn is being built
@@ -938,8 +941,15 @@ Feature: The desktop board
       Then no cairn is being built
       And the help is open
 
+    @gui-no-task-no-cairn
+    Scenario: a board with no task opens on nothing being built
+      When I open the window
+      And the window draws its first frame
+      Then no cairn is being built
+
     @gui-the-cairn-is-built-in-a-breath
     Scenario: the cairn is done on its own a breath after the window opens
+      Given I added a task titled "Write the spec"
       When I open the window
       And the window draws its first frame
       And the window draws a frame 2 seconds later
