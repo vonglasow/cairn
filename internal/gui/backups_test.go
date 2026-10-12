@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/reading"
 )
 
 var errNoBackup = errors.New("the backups cannot be reached")
@@ -196,5 +197,44 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	}
 	if ink(shot, corner(1), Dark().Back) != 0 || ink(shot, corner(0), Dark().Panel) != 0 {
 		t.Error("the second line drawn, backup 6, is not the one lit")
+	}
+}
+
+// A panel over the board stops the wheel: over the calendar, the menu or the
+// list of backups it used to scroll the column hidden behind them. Over the
+// list of backups it scrolls the list, a line a notch, and stops at its ends.
+func TestTheWheelStaysInsideAPanel(t *testing.T) {
+	var many []reading.Card
+	for i := 1; i <= 12; i++ {
+		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+	}
+	w := holding(newFake(), many...)
+	l := w.Layout()
+	over := Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}
+	for _, screen := range []Screen{OnCalendar, OnMenu, OnBackups} {
+		v := w
+		v.screen = screen
+		if got := v.Scroll(over, CardHeight*3); got.scroll != w.scroll {
+			t.Errorf("the wheel over %v scrolled the board to %v", screen, got.scroll)
+		}
+	}
+	backups := make([]domain.Backup, 40)
+	for i := range backups {
+		backups[i] = domain.Backup{Number: 40 - i}
+	}
+	w.screen, w.backups = OnBackups, backups
+	box := ChoosingOver(w.width, w.height)
+	in := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	if got := w.Scroll(in, 2*lineHigh).BackupsFrom(); got != 2 {
+		t.Errorf("two notches down the list starts at %d", got)
+	}
+	if got := w.Scroll(in, 999*lineHigh).BackupsFrom(); got != len(backups)-w.BackupsRoom() {
+		t.Errorf("turned past its end the list starts at %d", got)
+	}
+	if got := w.Scroll(in, -lineHigh).BackupsFrom(); got != 0 {
+		t.Errorf("turned up past its start the list starts at %d", got)
+	}
+	if got := w.Scroll(Point{X: 1, Y: 1}, 2*lineHigh).BackupsFrom(); got != 0 {
+		t.Errorf("the wheel off the list moved it to %d", got)
 	}
 }

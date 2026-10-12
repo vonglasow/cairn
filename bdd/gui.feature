@@ -339,6 +339,15 @@ Feature: The desktop board
       Then "BACKLOG" is scrolled
       And "TODO" is not scrolled
 
+    @gui-the-wheel-stays-inside-a-panel
+    Scenario: the wheel over a panel never reaches the board behind it
+      Given I added 12 tasks to "backlog"
+      When I open the window
+      And I press "cmd+b"
+      And I press "shift+b"
+      And I scroll down over "BACKLOG"
+      Then "BACKLOG" is not scrolled
+
     @gui-the-wheel-scrolls-one-lane
     Scenario: the wheel scrolls the lane of the band under the pointer and no other
       Given I added 6 tasks to "watching"

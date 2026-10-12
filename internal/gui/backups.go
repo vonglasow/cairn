@@ -87,6 +87,20 @@ func (w Window) puttingBack() Window {
 // keyboard is on is kept among the ones drawn.
 func (w Window) BackupsFrom() int { return w.backupsFrom }
 
+// scrollingBackups turns the list of backups under the pointer, a line a
+// notch, between its first screenful and its last. The list is drawn in the
+// panel a list of choices is, and the two are never open together, so the
+// part of a notch left over is kept where the choices keep theirs.
+func (w Window) scrollingBackups(p Point, by int) Window {
+	if !ChoosingOver(w.width, w.height).In(p) {
+		return w
+	}
+	lines, left := turning(w.spareChoosing, by)
+	w.spareChoosing = left
+	w.backupsFrom = max(0, min(w.backupsFrom+lines, len(w.backups)-w.BackupsRoom()))
+	return w
+}
+
 // BackupsRoom is how many backups the list shows at once: the lines between
 // its heading and its offers.
 func (w Window) BackupsRoom() int {

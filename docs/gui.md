@@ -209,6 +209,11 @@ dropped if what the gesture began on has gone; a part after a pause is a turn
 of its own. Gio reports no phases for a gesture, so the pause is what says one
 has ended.
 
+**A panel keeps the wheel.** Over the calendar, the right-click menu or the
+list of backups, the wheel scrolled the column hidden behind them. Nothing
+under a panel moves now; the list of backups scrolls itself, a line a notch
+(`@gui-the-wheel-stays-inside-a-panel`).
+
 **Every bar can be pulled.** The history's, the description's, the work under a
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.

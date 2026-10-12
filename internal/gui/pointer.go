@@ -400,8 +400,13 @@ func (w Window) Scroll(p Point, by int) Window {
 		}
 		return w
 	}
-	if w.screen == OnAsking {
+	// The calendar, the menu and a question have nothing to scroll, and the
+	// board behind them is out of reach as much as behind any panel.
+	if w.screen == OnAsking || w.screen == OnCalendar || w.screen == OnMenu {
 		return w
+	}
+	if w.screen == OnBackups {
+		return w.scrollingBackups(p, by)
 	}
 	if w.screen == OnChoosing {
 		box := ChoosingOver(w.width, w.height)
