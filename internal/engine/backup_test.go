@@ -2,7 +2,10 @@ package engine
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -180,5 +183,71 @@ func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
 	got := OfBackup(domain.Backup{Number: 1, Made: madeAt}, nil)
 	if got.Holds != nil {
 		t.Errorf("Holds = %+v, want nil: nothing was counted", got.Holds)
+	}
+}
+
+// The store is written to a file named, and that file is a store holding what
+// this one held; a file already there is refused.
+func TestBackupExport_writesTheStoreToTheFileNamed(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+	to := filepath.Join(t.TempDir(), "elsewhere.db")
+	answer, err := Do(BackupExport, path, Input{Given: map[string]string{"to": to}})
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	if answer.Exported == nil || *answer.Exported != to || answer.Holds == nil || answer.Holds.Tasks != 1 {
+		t.Fatalf("answered %v holding %v", answer.Exported, answer.Holds)
+	}
+	if got := RenderText(BackupExport, answer); got != to+" holds 1 task(s) and 0 objective(s)\n" {
+		t.Errorf("it says %q", got)
+	}
+	if shape, ok := Of(BackupExport, answer).(Exported); !ok || shape.Exported != to || shape.Holds.Tasks != 1 {
+		t.Errorf("a machine reads %#v", Of(BackupExport, answer))
+	}
+	listed, err := Do(TaskList, to, Input{})
+	if err != nil || len(listed.Tasks) != 1 {
+		t.Errorf("the file lists %v, %v", listed.Tasks, err)
+	}
+	if _, err := Do(BackupExport, path, Input{Given: map[string]string{"to": to}}); !errors.Is(err, os.ErrExist) {
+		t.Errorf("exporting onto it again answered %v", err)
+	}
+}
+
+// A store from a file replaces this one, which is backed up first; the file
+// is left where it was.
+func TestBackupImport_putsTheStoreFromAFileInPlace(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(TaskAdd, path, Input{Given: map[string]string{"title": "here"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+	from := storeAt(t)
+	if _, err := Do(TaskAdd, from, Input{Given: map[string]string{"title": "from elsewhere"}}); err != nil {
+		t.Fatalf("Do(TaskAdd): %v", err)
+	}
+	answer, err := Do(BackupImport, path, Input{Given: map[string]string{"from": from}})
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	if answer.Imported == nil || *answer.Imported != from || answer.PutBack == nil || *answer.PutBack != 1 {
+		t.Fatalf("answered %v, put back %v", answer.Imported, answer.PutBack)
+	}
+	if got := RenderText(BackupImport, answer); got != "the store now holds what "+from+" held — backup 1; what it held before was backed up first\n" {
+		t.Errorf("it says %q", got)
+	}
+	if shape, ok := Of(BackupImport, answer).(Imported); !ok || shape.Imported != from || shape.Backup != 1 {
+		t.Errorf("a machine reads %#v", Of(BackupImport, answer))
+	}
+	listed, err := Do(TaskList, path, Input{})
+	if err != nil || len(listed.Tasks) != 1 || !strings.Contains(RenderText(TaskList, listed), "from elsewhere") {
+		t.Errorf("the store lists %v, %v", listed.Tasks, err)
+	}
+	if kept, _ := Do(BackupList, path, Input{}); len(kept.Backups) != 2 {
+		t.Errorf("%d backups, want the one taken in and the one set aside", len(kept.Backups))
+	}
+	if BackupImport.Level != Full || BackupExport.Level != Write {
+		t.Errorf("import is level %v and export %v", BackupImport.Level, BackupExport.Level)
 	}
 }

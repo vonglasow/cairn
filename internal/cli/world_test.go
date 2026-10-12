@@ -40,6 +40,10 @@ type world struct {
 	// board is an engine held open the way a board holds one, for the
 	// scenarios that need somebody else at the store while a command runs.
 	board *engine.Engine
+	// file is a file of the scenario's own, outside the store and its
+	// backups, and was what it held when the scenario made it.
+	file string
+	was  []byte
 }
 
 // newWorld builds the state one scenario works against, reaching the command

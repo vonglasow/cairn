@@ -62,6 +62,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutPuttingBack {
 			return "Put backup " + strconv.Itoa(w.backups[w.backupOn].Number) + " back?"
 		}
+		if w.question == aboutBringingIn {
+			return "Bring in " + w.bringingName + "?"
+		}
 		if w.question == aboutSweeping {
 			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
 		}
@@ -115,6 +118,14 @@ func Shortcut(offer string) string {
 		return "?"
 	case "archived":
 		return "shift+a"
+	case "export":
+		return "cmd+e"
+	case "import":
+		return "cmd+o"
+	case "back up":
+		return "cmd+b"
+	case "backups":
+		return "shift+b"
 	case "archive", "restore":
 		return "x"
 	case "take":
@@ -161,16 +172,18 @@ func Shortcut(offer string) string {
 // name meant for a program, and a key looked up by "⌘N" would never be found.
 func Pretty(key string) string {
 	switch key {
-	case "cmd+n":
-		return "⌘N"
 	case "cmd+enter":
 		return "⌘⏎"
-	case "shift+a":
-		return "⇧A"
-	case "cmd+z":
-		return "⌘Z"
 	case "enter":
 		return "⏎"
+	}
+	// A letter under a modifier is written the way the key is printed: one
+	// rule rather than a line for each chord, which every new one forgot.
+	if letter, ok := strings.CutPrefix(key, "cmd+"); ok {
+		return "⌘" + strings.ToUpper(letter)
+	}
+	if letter, ok := strings.CutPrefix(key, "shift+"); ok {
+		return "⇧" + strings.ToUpper(letter)
 	}
 	return key
 }
@@ -226,8 +239,10 @@ func helping() []Said {
 		{Key: "⏎ on a deadline", Means: "a calendar — the arrows walk days and weeks, ⇧←→ months, t today, ⌫ no day"},
 		{Key: "⇧A", Means: "what was archived, on the board or off it — it reads faintly"},
 		{Key: "⌘N", Means: "add"},
-		{Key: "⌘B", Means: "back the store up — it says where the copy lies, to take anywhere"},
+		{Key: "⌘B", Means: "back the store up — it says where the copy lies"},
 		{Key: "⇧B", Means: "the backups — enter puts one back, after asking, the store backed up first"},
+		{Key: "⌘E", Means: "export the store to a file chosen in the system's dialog"},
+		{Key: "⌘O", Means: "import a store from a file chosen there — after asking, the store backed up first"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
 		{Key: "tab", Means: "the next page — shift+tab the one before"},
@@ -313,7 +328,12 @@ func (w Window) BoardOffers() []string {
 		}
 		return append(offers, "Archive", "Delete")
 	}
-	if w.chosen != 0 {
+	// With nothing chosen, the store as a whole: carried out to a file, or
+	// brought in from one. The window said nothing of either.
+	if w.chosen == 0 {
+		return append(offers, "Export", "Import")
+	}
+	{
 		// Archive and Restore are the same key on the same card: the bar names
 		// which way it goes, so nobody has to work out which it will be.
 		away := "Archive"
@@ -429,6 +449,12 @@ func (w Window) Asks() []Said {
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
 		}
 	}
+	if w.question == aboutBringingIn {
+		return []Said{
+			{Means: "It takes the place of the store, which is backed up first."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	if w.question == aboutPuttingBack {
 		return []Said{
 			{Means: "What the store holds now is backed up first."},
@@ -464,6 +490,7 @@ const (
 	aboutDeletingSeveral
 	aboutArchivingSeveral
 	aboutPuttingBack
+	aboutBringingIn
 )
 
 // sweeps is the column a sweep would take off the board: the one the chosen

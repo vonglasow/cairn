@@ -569,15 +569,25 @@ round, which with two was a difference nothing could see.
 
 **The store is backed up, and put back, from the window.** Both were the
 command line's, so a person at the window went to a terminal for either. `⌘B`
-backs the store up and says where the backup lies — a file to copy wherever it
-is wanted, which is the export; `⇧B` lists the backups, and `⏎` puts one back
-once agreed to, the engine backing up what the store holds first, as it always
-does — which is the import, for a file from elsewhere once it lies among the
-backups (`backups.go`). What it tells is said above the bar in the ink of
-what is read, and goes as a refusal does. There is no file dialog: Gio has
-none of its own, and the one beside it (`gioui.org/x/explorer`) is a
-dependency and native code on every system for what the backups folder
-already is.
+backs the store up and says where the backup lies; `⇧B` lists the backups, and
+`⏎` puts one back once agreed to, the engine backing up what the store holds
+first, as it always does (`backups.go`). What it tells is said above the bar in
+the ink of what is read, and goes as a refusal does.
+
+**The store is carried out, and brought in, as a file chosen in the system's
+dialog.** Calling a backup "the export" and copying a file into the backups
+folder "the import" was nothing anybody at the window could find. `⌘E` and
+`⌘O`, on the bar of a board with nothing chosen and on a right click on the
+board, open the system's own file dialog (`gioui.org/x/explorer`, see
+[dependencies.md](dependencies.md)): the engine writes the store out
+(`backup export`) and the file is saved where the dialog says; or a file chosen
+there is copied aside, and once agreed to the engine puts it in place
+(`backup import`), what the store held backed up first. The dialog blocks
+until it is answered, and a window that is a value never waits: the window
+says what it wants (`FileAsked`), the loop opens the dialog on the side
+(`Filing`) and hands the answer back (`Filed`) — the one piece no test
+reaches is the call to the system, and the scenarios play the dialog the way
+they play the clipboard (`files.go`, `@gui-a-store-is-imported`).
 
 **Nothing of cairn's is in the system's menu bar.** Gio builds the macOS
 menu itself — Hide and Quit, in its own Objective-C — and offers no way to add

@@ -91,6 +91,10 @@ func (w Window) onBoard(name string) Window {
 		return w.backingUp()
 	case "shift+b":
 		return w.listingBackups()
+	case "cmd+e":
+		return w.exportingStore()
+	case "cmd+o":
+		return w.importingStore()
 	case "shift+x":
 		// The whole column off the board at once. Not on the bar either: the
 		// bar has room for what one card does, and this does what a column

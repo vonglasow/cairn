@@ -263,7 +263,7 @@ func All() []Operation {
 		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus,
 		ObjectiveAdd, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
-		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore,
+		BackupAdd, BackupList, BackupShow, BackupDelete, BackupRestore, BackupExport, BackupImport,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
@@ -413,6 +413,10 @@ type Answer struct {
 	// goes with it, and afterwards nothing would say they once waited on it.
 	Unblocked []int
 	PutBack   *int
+	// Exported is the file the store was written to, Imported the one it
+	// was brought in from.
+	Exported *string
+	Imported *string
 	// Plugin is where the Claude Code plugin was written.
 	Plugin *string
 	// Archived is how many a sweep took off the board, Labelled how many it

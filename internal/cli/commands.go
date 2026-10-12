@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -216,6 +217,12 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			// lack of confirmation has no business touching anything first.
 			if op.Level == engine.Full && !confirmed {
 				target := strings.TrimSpace(op.Thing + " " + strings.Join(args, " "))
+				// A file is named by its name and the act, not by its path: a
+				// long path pushed "--yes" across two lines of the box this is
+				// written in.
+				if len(positionals) > 0 && positionals[0].Kind == engine.Text && len(args) > 0 {
+					target = op.Line() + " " + filepath.Base(args[0])
+				}
 				// What is named beside it goes in the same act, so it is
 				// named in the refusal as well.
 				if also, ok := listed["also"]; ok {

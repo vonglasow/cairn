@@ -9,6 +9,7 @@ package gui
 // anything wrong quietly.
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -29,6 +30,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
+	"gioui.org/x/explorer"
 
 	"cairn/internal/reading"
 )
@@ -300,6 +302,11 @@ func loop(work reading.Work, width, height int) error {
 	theme, skin := Theme(), Dark()
 	board := New(work, width, height).Measuring(Measured(theme)).Look()
 
+	// The system's file dialog, answered on the side: it blocks until a file
+	// is chosen, and the window never waits.
+	dialog := explorer.NewExplorer(window)
+	filed := make(chan Filed, 1)
+
 	var ops op.Ops
 	var pressed time.Time
 	var pressedAt Point
@@ -323,16 +330,30 @@ func loop(work reading.Work, width, height int) error {
 	}()
 
 	for {
-		switch e := window.Event().(type) {
+		event := window.Event()
+		dialog.ListenEvents(event)
+		switch e := event.(type) {
 		case app.DestroyEvent:
 			return e.Err
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
+			select {
+			case got := <-filed:
+				board = board.Filed(got)
+			default:
+			}
 			board = board.Resized(Sized(gtx.Constraints.Max, gtx.Metric.PxPerDp)).At(gtx.Now)
 			if due(looked, gtx.Now) {
 				board, looked = board.Wonder(), gtx.Now
 			}
 			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt, traced)
+			if ask, asked := board.FileAsked(); asked {
+				board = board.FileTaken()
+				go func() {
+					filed <- Filing(ask, systemFiles{dialog})
+					window.Invalidate()
+				}()
+			}
 			board = board.Born(gtx.Now)
 			Draw(gtx, theme, skin, board)
 			// The cairn is drawn a frame at a time, and a frame is only
@@ -469,3 +490,25 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 // takesTyping says whether a screen has somewhere for text to land. The board
 // and the panels do not: what they do with a letter is a shortcut.
 func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }
+
+// systemFiles is the system's file dialog as Files: closed without a file is
+// ErrDeclined, whatever the system calls it.
+type systemFiles struct{ dialog *explorer.Explorer }
+
+func (s systemFiles) ChooseFile(extensions ...string) (io.ReadCloser, error) {
+	file, err := s.dialog.ChooseFile(extensions...)
+	return file, refusedOrDeclined(err)
+}
+
+func (s systemFiles) CreateFile(name string) (io.WriteCloser, error) {
+	file, err := s.dialog.CreateFile(name)
+	return file, refusedOrDeclined(err)
+}
+
+// refusedOrDeclined says a dialog closed the way Files says it.
+func refusedOrDeclined(err error) error {
+	if errors.Is(err, explorer.ErrUserDecline) {
+		return ErrDeclined
+	}
+	return err
+}

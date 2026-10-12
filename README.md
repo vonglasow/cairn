@@ -206,6 +206,8 @@ cairn backup show 2              # when it was made, and what it holds
                                  # `holds 4 task(s) and 2 objective(s)`
 cairn backup delete 2 --yes
 cairn backup restore 2 --yes     # put one back; without a number, the most recent
+cairn backup export ~/cairn.db   # the store, to carry elsewhere; never over a file
+cairn backup import ~/cairn.db --yes   # put a store from a file in place
 
 cairn migration list             # every change, applied or waiting
 cairn migration show 2           # what it does, and what rolling it back does

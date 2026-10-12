@@ -46,6 +46,10 @@ type world struct {
 	// has no system: the window asks and the loop does, so the world plays the
 	// loop's part.
 	clipboard string
+	// file is a file of the scenario's own, outside the store: what the
+	// system's dialog saves to or opens, played by the world as the loop's
+	// part is.
+	file string
 	// scrolled is what each column stood at before the last gesture, so a
 	// scenario can say which one moved.
 	scrolled [Columns]int
@@ -752,6 +756,32 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.Scroll(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, lineHigh)
 		return nil
 	})
+	sc.Step(`^I save it in the dialog as a file of my own$`, func() error {
+		w.file = filepath.Join(w.t.TempDir(), "mine.db")
+		return w.answerDialog(dialog{save: w.file})
+	})
+	sc.Step(`^I pick that file in the dialog$`, func() error { return w.answerDialog(dialog{open: w.file}) })
+	sc.Step(`^I close the dialog$`, func() error { return w.answerDialog(dialog{closed: true}) })
+	sc.Given(`^a file of my own holding a store with a task titled "([^"]*)"$`, func(title string) error {
+		w.file = filepath.Join(w.t.TempDir(), "other.db")
+		other, err := engine.Open(w.file)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = other.Close() }()
+		_, err = other.Ask(engine.TaskAdd, engine.Input{Given: map[string]string{"title": title}})
+		return err
+	})
+	sc.Then(`^that file is a store holding the task "([^"]*)"$`, func(title string) error {
+		listed, err := engine.Do(engine.TaskList, w.file, engine.Input{})
+		if err != nil {
+			return err
+		}
+		if said := engine.RenderText(engine.TaskList, listed); !strings.Contains(said, title) {
+			return fmt.Errorf("the file lists %q", said)
+		}
+		return nil
+	})
 	sc.Given(`^the window runs on "([^"]*)"$`, func(system string) error {
 		w.system = system
 		return nil
@@ -1248,3 +1278,15 @@ func (w *world) scrollObjectives() error {
 
 // notesRoot is where a scenario's board is told the notes live.
 const notesRoot = "/vault"
+
+// answerDialog plays the loop's part when the window has asked for the
+// system's file dialog: it opens the dialog, here answered as given, and hands
+// the answer back.
+func (w *world) answerDialog(d dialog) error {
+	ask, asked := w.w.FileAsked()
+	if !asked {
+		return fmt.Errorf("the window asked for no dialog")
+	}
+	w.w = w.w.FileTaken().Filed(Filing(ask, d))
+	return w.w.Wrong()
+}

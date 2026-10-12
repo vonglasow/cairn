@@ -63,6 +63,12 @@ func (c *Backups) Latest() (domain.Backup, error) { return c.vault.Latest() }
 // Delete removes a backup.
 func (c *Backups) Delete(number int) error { return c.vault.Delete(number) }
 
+// Adopt takes in a store from elsewhere as the next backup.
+func (c *Backups) Adopt(from string) (domain.Backup, error) { return c.vault.Adopt(from) }
+
+// Export writes the store to a file of its own, and says what it holds.
+func (c *Backups) Export(to string) (domain.Held, error) { return c.vault.Export(to) }
+
 // Restore puts a backup back, backing up first what it replaces.
 func (c *Backups) Restore(number int) error { return c.vault.Restore(number) }
 

@@ -573,6 +573,9 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnChoosing {
 			return w.leaving()
 		}
+		if w.question == aboutBringingIn {
+			return w.notBringingIn()
+		}
 		if w.question == aboutSweeping || w.question == aboutPuttingBack || w.screen == OnBackups {
 			w.screen, w.question = OnTheBoard, aboutDeleting
 			return w
@@ -614,6 +617,14 @@ func (w Window) Choose(name string) Window {
 	case "archived":
 		w.archived = !w.archived
 		return w
+	case "export":
+		return w.exportingStore()
+	case "import":
+		return w.importingStore()
+	case "back up":
+		return w.backingUp()
+	case "backups":
+		return w.listingBackups()
 	case "all possible":
 		return w.actingOnSeveral(true)
 	case "skip flagged":
@@ -627,6 +638,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutPuttingBack {
 			return w.puttingBack()
+		}
+		if w.question == aboutBringingIn {
+			return w.bringingIn()
 		}
 		if w.question == aboutLeaving {
 			return w.throwingAway()

@@ -138,6 +138,12 @@ type Window struct {
 	backups     []domain.Backup
 	backupOn    int
 	backupsFrom int
+	// fileAsk is the system's dialog the window wants opened, until the loop
+	// takes it; bringing is the window's copy of a store chosen there, and
+	// bringingName the name of the file it was chosen as.
+	fileAsk      *FileAsk
+	bringing     string
+	bringingName string
 	// week is the Monday of the week the time page shows, and sheet the time
 	// spent over it: see week.go.
 	week  time.Time

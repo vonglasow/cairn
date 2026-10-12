@@ -92,6 +92,10 @@ func rendered(op Operation, a Answer) string {
 		return fmt.Sprintf("backup %d was put back\n", *a.PutBack)
 	case PluginWritten:
 		return pluginText(*a.Plugin)
+	case Exported:
+		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
+	case Imported:
+		return fmt.Sprintf("the store now holds what %s held — backup %d; what it held before was backed up first\n", *a.Imported, *a.PutBack)
 	case Applied:
 		return appliedText(a.Applied)
 	case Acts:

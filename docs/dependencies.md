@@ -22,6 +22,7 @@ reason no longer holds is a dependency to take out.
 | `charm.land/huh/v2` | the terminal board's form | fields, focus and a text area that wraps, rather than a form engine written for one screen |
 | `charm.land/bubbles/v2` | the terminal board's scrolling and keys | a viewport for what is longer than its box, and key bindings the help can list |
 | `gioui.org` | the window | a vector-drawn window identical on macOS and Linux, in the same single binary, with no webview and no second language — see [gui.md](gui.md) |
+| `gioui.org/x` | the system's file dialog, to export and import the store from the window | Gio has none; `explorer` is the one Gio's authors keep beside it, the native dialog on macOS, Windows (Win32) and Linux (the desktop portal over D-Bus). Only that package is imported — see [gui.md](gui.md) |
 | `golang.org/x/image` | measuring text in the window | the fixed-point numbers Gio measures and places text in; Gio takes them, and they are not in the standard library |
 | `github.com/cucumber/godog` | running the scenarios | every `.feature` under `bdd/` is executed as Go tests by it — the scenarios are the contract, see [workflow.md](workflow.md) |
 

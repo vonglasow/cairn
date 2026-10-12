@@ -316,6 +316,10 @@ func Of(op Operation, a Answer) any {
 		return PutBack{PutBack: *a.PutBack}
 	case PluginWritten:
 		return PluginWritten{Plugin: *a.Plugin}
+	case Exported:
+		return Exported{Exported: *a.Exported, Holds: a.Holds}
+	case Imported:
+		return Imported{Imported: *a.Imported, Backup: *a.PutBack}
 	case Applied:
 		return Applied{Applied: a.Applied}
 	case Acts:

@@ -51,7 +51,38 @@ func NewVault(store string) *Vault {
 }
 
 // Make backups the store as it stands and hands back the backup it made.
-func (v *Vault) Make() (domain.Backup, error) {
+func (v *Vault) Make() (domain.Backup, error) { return v.take(v.store) }
+
+// Adopt takes in a store from elsewhere as the next backup, as it lies, so it
+// can be put back the way any backup is. What is not a store SQLite reads
+// whole is refused before anything is numbered: taken in, it would be put
+// back as an empty store, or as one that does not open.
+func (v *Vault) Adopt(from string) (domain.Backup, error) {
+	if err := whole(from); err != nil {
+		return domain.Backup{}, fmt.Errorf("%w: %w — file: %s", ErrNotAStore, err, from)
+	}
+	return v.take(from)
+}
+
+// Export writes the store as it stands to a file of its own, outside the
+// backups, and says what that file holds. A file already there is never
+// written over: one named by mistake keeps what it held.
+func (v *Vault) Export(to string) (domain.Held, error) {
+	if err := os.MkdirAll(filepath.Dir(to), 0o700); err != nil {
+		return domain.Held{}, fmt.Errorf("making room for %s: %w", to, err)
+	}
+	if err := claim(to); err != nil {
+		return domain.Held{}, fmt.Errorf("writing the store to %s: %w", to, err)
+	}
+	if err := snapshot(v.store, to); err != nil {
+		_ = os.Remove(to)
+		return domain.Held{}, err
+	}
+	return heldIn(to)
+}
+
+// take writes a store, this one or one from elsewhere, as the next backup.
+func (v *Vault) take(from string) (domain.Backup, error) {
 	if err := os.MkdirAll(v.folder, 0o700); err != nil {
 		return domain.Backup{}, fmt.Errorf("making room for the backups: %w", err)
 	}
@@ -74,7 +105,7 @@ func (v *Vault) Make() (domain.Backup, error) {
 	path := v.pathOf(number)
 	// A backup that failed is not a backup: the file claimed for it goes,
 	// or it is listed, taken for the latest, and put back as an empty store.
-	if err := snapshot(v.store, path); err != nil {
+	if err := snapshot(from, path); err != nil {
 		_ = os.Remove(path)
 		return domain.Backup{}, err
 	}
