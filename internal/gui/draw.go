@@ -13,7 +13,6 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/font"
-	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -108,7 +107,7 @@ func straight(v uint8) float64 {
 // Theme is the shaper and the sizes Gio needs, built once.
 func Theme() *material.Theme {
 	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	th.Shaper = text.NewShaper(text.WithCollection(Faces()))
 	return th
 }
 
@@ -164,8 +163,14 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	l := w.Layout()
 	drawTabs(gtx, th, skin, l, w)
 	// Where the system gives the window no menu bar, a button stands in.
+	// Drawn as three strokes rather than written: no face cairn carries has
+	// the glyph, and every process that drew it read the system's fonts off
+	// the disk, gigabytes of them — enough, run eight at once by the
+	// mutation sweep, to starve the machine.
 	if !w.native {
-		say(gtx, th, skin.Chosen, Inside(MenuButton(l)), "☰", heading)
+		for _, stroke := range MenuStrokes(MenuButton(l)) {
+			fill(gtx, stroke, skin.Chosen)
+		}
 	}
 	if w.Tab() == Objectives {
 		drawGoals(gtx, th, skin, l, w)

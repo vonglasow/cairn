@@ -409,6 +409,19 @@ caret in it and holding a run of it, so the four agree on where a line ends.
 How many rows a description asks for is still reckoned — the form is laid out
 with no face — which can leave it a line or two longer than it needs.
 
+**Every character the window writes has a face cairn carries.** Go's own
+faces lack the keys of a Mac keyboard, a tick and a cross; a character no face
+has sends the shaper to the system's fonts, and every process that drew one
+read them off the disk and kept them — the window's tests reached 3.5 GB each,
+and eight at once in a mutation sweep restarted the machine. Those dozen
+symbols are cut from DejaVu Sans into a font of 12 KB carried in the binary
+(`symbols.go`, its licence beside it and in the notices), and a test reads
+every string the window writes for a character none of its faces has
+(`TestEveryCharacterTheWindowWritesHasAFace`): measured, a run of the
+window's tests now peaks at 0.6 GB. What a person types still reaches the
+system's fonts, an emoji in a title among it. The button standing in for a
+menu bar is three strokes for the same reason.
+
 **The caret is a shape, not a character.** Written into the text it took a
 letter's place and pushed everything after it along, so typing looked like the
 text was being rewritten under the hand. It is drawn between two letters, at a

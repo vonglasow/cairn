@@ -45,6 +45,17 @@ else
 fi
 echo
 
+# What the tree itself carries from somebody else — a font cut from DejaVu
+# Sans among it — keeps its licence beside it, and that travels too.
+while read -r carried; do
+  [ -n "$carried" ] || continue
+  echo "================================================================"
+  echo "$(dirname "$carried") — carried in the tree"
+  echo "================================================================"
+  cat "$carried"
+  echo
+done < <(git ls-files '*/LICENSE')
+
 while read -r module; do
   [ -n "$module" ] || continue
   dir="$cache/$(escaped "$module")"

@@ -55,6 +55,14 @@ func MenuButton(l Layout) Box {
 	return Box{X: l.Tabs.X + l.Tabs.W - menuButtonWide, Y: l.Tabs.Y + between, W: menuButtonWide, H: l.Tabs.H - between}
 }
 
+// MenuStrokes are the three strokes the button is drawn as, across its
+// middle.
+func MenuStrokes(button Box) [3]Box {
+	wide, mid := button.W/2, button.Y+button.H/2
+	at := func(y int) Box { return Box{X: button.X + button.W/4, Y: y, W: wide, H: 2} }
+	return [3]Box{at(mid - 6), at(mid - 1), at(mid + 4)}
+}
+
 // openingMenuBar opens every line of the menu bar as one menu, under its
 // button.
 func (w Window) openingMenuBar() Window {

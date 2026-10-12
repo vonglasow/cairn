@@ -168,3 +168,25 @@ func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 		}
 	}
 }
+
+// The button is three strokes across its middle, a quarter in from its edges.
+func TestTheMenuButtonIsThreeStrokes(t *testing.T) {
+	got := MenuStrokes(Box{X: 100, Y: 10, W: 40, H: 30})
+	want := [3]Box{{X: 110, Y: 19, W: 20, H: 2}, {X: 110, Y: 24, W: 20, H: 2}, {X: 110, Y: 29, W: 20, H: 2}}
+	if got != want {
+		t.Errorf("the strokes are %+v", got)
+	}
+}
+
+// The button is drawn as its strokes, each filled whole in the ink of what
+// can be pressed: written as a glyph no face cairn carries has, it sent every
+// process that drew it to read the system's fonts off the disk.
+func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
+	w := New(newFake(), 1200, 800)
+	shot := drawn(t, w)
+	for _, stroke := range MenuStrokes(MenuButton(w.Layout())) {
+		if got := painted(shot, stroke, Dark().Chosen); got != stroke.W*stroke.H {
+			t.Errorf("the stroke %+v has %d of its %d pixels", stroke, got, stroke.W*stroke.H)
+		}
+	}
+}
