@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"testing"
@@ -90,13 +91,19 @@ func TestServe_answersNothingWrongWhenTheClientHasGone(t *testing.T) {
 // above is a match on the code the peer leaving produces, not a swallowing of
 // every session error: a context already canceled before the session starts
 // is a real transport failure, and Serve must still report it.
+//
+// The input never ends: an empty one raced the cancellation, and when the
+// end of the input was read first the session ended as a peer leaving does,
+// with nothing to report — measured, under a loaded run, once in a few dozen.
 func TestServe_stillReturnsASessionErrorThatIsNotThePeerLeaving(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	never, open := io.Pipe()
+	defer func() { _ = open.Close() }()
 
 	var out bytes.Buffer
 	err := Serve(ctx, Server{Name: "cairn", Version: "1.2.3", Access: engine.Write},
-		strings.NewReader(""), &out)
+		never, &out)
 
 	if err == nil {
 		t.Fatal("Serve = nil, want a session error")
