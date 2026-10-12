@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -779,6 +780,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		if said := engine.RenderText(engine.TaskList, listed); !strings.Contains(said, title) {
 			return fmt.Errorf("the file lists %q", said)
+		}
+		return nil
+	})
+	sc.Then(`^task (\d+) carries the priority "([^"]*)"$`, func(n int, priority string) error {
+		shown, err := w.other.Ask(engine.TaskShow, engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}})
+		if err != nil {
+			return err
+		}
+		if said := engine.RenderText(engine.TaskShow, shown); !strings.Contains(said, "priority     "+priority) {
+			return fmt.Errorf("task %d reads:\n%s", n, said)
 		}
 		return nil
 	})

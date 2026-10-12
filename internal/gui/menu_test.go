@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"testing"
 
 	"gioui.org/io/pointer"
@@ -77,5 +78,41 @@ func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Move, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if w.Screen() != OnTheBoard {
 		t.Errorf("a pointer moving with the second button held left the window on %v", w.Screen())
+	}
+}
+
+// A task's menu reaches what the keys and a drag do to it: its column and its
+// priority, offered in the menu itself, every value but the one it holds,
+// and taken at once; its labels in the list a form opens for them.
+func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	opened := w.ContextAt(middleOf(w, 1, 0))
+	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "Take up", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
+		t.Fatalf("a task's menu offers %v", got)
+	}
+	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))
+	if moving.Screen() != OnMenu || !slices.Equal(moving.Menu(), []string{"backlog", "current", "blocked", "watching", "paused", "done"}) {
+		t.Fatalf("Move to… left the window on %v offering %v", moving.Screen(), moving.Menu())
+	}
+	moved := moving.fromMenu(slices.Index(moving.Menu(), "done"))
+	if in, ok := f.gave("task", "edit"); !ok || in.Given["number"] != "1" || in.Given["state"] != "done" || moved.Screen() != OnTheBoard {
+		t.Errorf("done asked %+v, the window on %v", in, moved.Screen())
+	}
+	rating := opened.fromMenu(slices.Index(opened.Menu(), "Priority…"))
+	if !slices.Equal(rating.Menu(), []string{"low", "high", "critical"}) {
+		t.Fatalf("Priority… offers %v", rating.Menu())
+	}
+	rating.fromMenu(slices.Index(rating.Menu(), "high"))
+	if in, _ := f.gave("task", "edit"); in.Given["priority"] != "high" {
+		t.Errorf("high asked %+v", in)
+	}
+	labelling := opened.fromMenu(slices.Index(opened.Menu(), "Labels…"))
+	if labelling.Screen() != OnChoosing || labelling.choosingFor != "label" {
+		t.Errorf("Labels… left the window on %v choosing %q", labelling.Screen(), labelling.choosingFor)
+	}
+	// A menu put away and opened again is the card's own again.
+	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[2] != "Move to…" {
+		t.Errorf("opened again, the menu offers %v", again.Menu())
 	}
 }

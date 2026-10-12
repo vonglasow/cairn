@@ -638,9 +638,13 @@ lines as one menu (`MenuButton`).
 have done to it was on the bar once the card was chosen, so a hand on the
 mouse went to the card and then down to the foot of the window. A right press
 chooses what is under it and opens a menu beside the pointer (`menu.go`):
-Edit, Take up or Let go, Archive or Restore, Delete on a task; Edit and Delete
-on an objective; the board's own offers where there is neither. Every line is
-an offer the bar already makes, done the way the bar does it. The arrows and
+Edit, Take up or Let go, Move to…, Priority…, Labels…, Archive or Restore,
+Delete on a task; Edit and Delete on an objective; the board's own offers
+where there is neither. Every line is an act the bar, a key or a drag already
+does, done the same way. Move to… and Priority… turn the menu into the values
+the task may take, but the one it holds, and the one clicked is set at once;
+Labels… opens the list of its labels, as the form does
+(`@gui-a-card-is-moved-from-its-menu`). The arrows and
 `j k` walk it, `⏎` takes a line, `esc` or a click off it closes it and does
 nothing else.
 

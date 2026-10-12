@@ -1227,7 +1227,7 @@ Feature: The desktop board
       When I open the window
       And I right-click the card "Write the spec"
       Then the card "Write the spec" is chosen
-      And the menu offers "Edit", "Take up", "Archive", "Delete"
+      And the menu offers "Edit", "Take up", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
@@ -1238,7 +1238,32 @@ Feature: The desktop board
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Edit", "Let go", "Archive", "Delete"
+      Then the menu offers "Edit", "Let go", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+
+    @gui-a-card-is-moved-from-its-menu
+    Scenario: a card's menu moves it to another column, and sets its priority
+      What the keyboard and a drag do to a card, a hand on the mouse reaches
+      from its menu too, without opening anything.
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      And I click "Move to…" in the menu
+      Then the menu offers "backlog", "current", "blocked", "watching", "paused", "done"
+      When I click "done" in the menu
+      Then task 1 is in the column "done"
+      When I right-click the card "Write the spec"
+      And I click "Priority…" in the menu
+      And I click "high" in the menu
+      Then task 1 carries the priority "high"
+
+    @gui-labels-from-a-cards-menu
+    Scenario: a card's menu opens the list of its labels
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      And I click "Labels…" in the menu
+      Then the window is choosing
+      And the panel is headed "labels for task 1"
 
     @gui-a-menu-is-walked-with-the-keys
     Scenario: the menu is walked with the arrows, enter takes a line and esc closes it

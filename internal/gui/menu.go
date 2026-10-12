@@ -7,6 +7,13 @@ package gui
 // board's where there is neither. Nothing here is new: every line is an offer
 // the bar already makes, done the way the bar does it. See docs/gui.md.
 
+import (
+	"strconv"
+
+	"cairn/internal/engine"
+	"cairn/internal/reading"
+)
+
 const (
 	// menuWide is how wide the menu is, and menuRow how high one line of it.
 	menuWide = 180
@@ -20,7 +27,7 @@ func (w Window) ContextAt(p Point) Window {
 		return w
 	}
 	w = w.choosingAt(w.at(p))
-	w.menu, w.menuAt, w.menuOn = w.menuFor(), p, 0
+	w.menu, w.menuAt, w.menuOn, w.menuSets = w.menuFor(), p, 0, ""
 	w.screen = OnMenu
 	return w
 }
@@ -43,7 +50,20 @@ func (w Window) menuFor() []string {
 	if card.Archived {
 		away = "Restore"
 	}
-	return []string{"Edit", focus, away, "Delete"}
+	return []string{"Edit", focus, "Move to…", "Priority…", "Labels…", away, "Delete"}
+}
+
+// settingFrom turns the menu into the values a field of the chosen task may
+// take, but the one it holds: a column, or a priority, taken from the menu
+// at once.
+func (w Window) settingFrom(field string, values []string, held string) Window {
+	w.menu, w.menuOn, w.menuSets = nil, 0, field
+	for _, value := range values {
+		if value != held {
+			w.menu = append(w.menu, value)
+		}
+	}
+	return w
 }
 
 // Menu is what the open menu offers, line by line.
@@ -100,10 +120,36 @@ func (w Window) clickingMenu(p Point) Window {
 
 // fromMenu does what a line of the menu offers, the way the bar does it.
 func (w Window) fromMenu(i int) Window {
+	said, card := w.menu[i], w.chosenCard()
+	if w.menuSets != "" {
+		w.screen = OnTheBoard
+		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(w.chosen), w.menuSets: said}})
+	}
+	switch said {
+	case "Move to…":
+		return w.settingFrom("state", reading.States(), card.State)
+	case "Priority…":
+		return w.settingFrom("priority", reading.Priorities(), card.Priority)
+	case "Labels…":
+		w.screen = OnTheBoard
+		w = w.Edit()
+		for at, field := range w.form.Fields() {
+			if field.Arg == "label" {
+				w.form = w.form.onto(at)
+			}
+		}
+		return w.choosingList()
+	}
 	w.screen = OnTheBoard
-	said := w.menu[i]
 	if said == "Take up" || said == "Let go" {
 		return w.working()
 	}
 	return w.Choose(said)
+}
+
+// chosenCard is the task chosen, as the board last read it.
+func (w Window) chosenCard() reading.Card {
+	card, _ := w.snap.Card(w.chosen)
+	return card
 }
