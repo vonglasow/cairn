@@ -1443,7 +1443,7 @@ Feature: The desktop board
       And the window is on the form
 
     @gui-a-form-that-saved-itself-shows-it
-    Scenario: the history beside a form that saved itself says what it saved
+    Scenario: the trace beside a form that saved itself says what it saved
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -1451,7 +1451,7 @@ Feature: The desktop board
       And I put the keyboard on "title"
       And I type " now"
       And the window has looked at the store 2 times
-      Then the history begins with the last thing done to task 1
+      Then the trace begins with the last thing done to task 1
 
     @gui-typing-holds-the-save-off
     Scenario: nothing is saved while the typing goes on
@@ -1761,21 +1761,21 @@ Feature: The desktop board
       And the window looks again
       Then the store was read once
 
-  Rule: A task's history stays inside the panel that shows it
+  Rule: A task's trace stays inside the panel that shows it
 
-    A task worked on for a while carries more history than any panel can hold.
-    It was drawn down the panel and out of the bottom of the window — a history
+    A task worked on for a while carries more trace than any panel can hold.
+    It was drawn down the panel and out of the bottom of the window — a trace
     nobody can read, and nothing on screen saying it is there at all.
 
     @gui-opening-a-task-opens-it-to-be-edited
-    Scenario: opening a task opens it to be edited, its history beside what it carries
+    Scenario: opening a task opens it to be edited, its trace beside what it carries
       Given I added a task titled "Write the spec"
       And it was worked on 3 times
       When I open the window
       And I double-click the card "Write the spec"
       Then the window is on the form
-      And every field of the form stands left of the history
-      And the history begins with the last thing done to task 1
+      And every field of the form stands left of the trace
+      And the trace begins with the last thing done to task 1
 
     @gui-opening-an-objective-opens-it-to-be-edited
     Scenario: opening an objective opens it to be edited, the work serving it beside it
@@ -1788,14 +1788,14 @@ Feature: The desktop board
       Then the window is on the form
       And the work beside the form reads "Write the spec"
 
-    @gui-the-history-has-its-own-place
-    Scenario: the history is beside what the task carries, not under it
+    @gui-the-trace-has-its-own-place
+    Scenario: the trace is beside what the task carries, not under it
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      Then the history is beside the fields
-      And the history stays inside the panel
+      Then the trace is beside the fields
+      And the trace stays inside the panel
 
     @gui-a-long-description-scrolls
     Scenario: a description longer than its box scrolls, and says so with a bar
@@ -1825,44 +1825,44 @@ Feature: The desktop board
       Then a bar sits beside the description
       And the description is at its beginning
 
-    @gui-the-history-reads-newest-first
-    Scenario: the history reads from the last thing done, with no blank line between two acts
+    @gui-the-trace-reads-newest-first
+    Scenario: the trace reads from the last thing done, with no blank line between two acts
       Given I added a task titled "Write the spec"
       And it was worked on 3 times
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      Then the history begins with the last thing done to task 1
-      And no line of the history is empty
+      Then the trace begins with the last thing done to task 1
+      And no line of the trace is empty
 
-    @gui-the-history-scrolls
-    Scenario: a history longer than its box scrolls, and stops at both ends
+    @gui-the-trace-scrolls
+    Scenario: a trace longer than its box scrolls, and stops at both ends
       Given I added a task titled "Write the spec"
       And it was worked on 20 times
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      Then the history has more to show than it has room for
-      And the history is at its beginning
-      When I scroll down over the history
-      Then the history has moved
-      And the history stays inside the panel
-      When I scroll up over the history
-      Then the history is at its beginning
-      When I scroll down over the history 99 times
-      Then the history is at its end
-      And the history stays inside the panel
+      Then the trace has more to show than it has room for
+      And the trace is at its beginning
+      When I scroll down over the trace
+      Then the trace has moved
+      And the trace stays inside the panel
+      When I scroll up over the trace
+      Then the trace is at its beginning
+      When I scroll down over the trace 99 times
+      Then the trace is at its end
+      And the trace stays inside the panel
 
-    @gui-the-bar-beside-the-history-is-dragged
-    Scenario: the bar beside the history is taken hold of and moved
+    @gui-the-bar-beside-the-trace-is-dragged
+    Scenario: the bar beside the trace is taken hold of and moved
       Given I added a task titled "Write the spec"
       And it was worked on 20 times
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
-      And I drag the history's bar to the bottom
-      Then the history is at its end
-      And the history stays inside the panel
+      And I drag the trace's bar to the bottom
+      Then the trace is at its end
+      And the trace stays inside the panel
 
   Rule: What the arrows reach, they bring into sight
 
@@ -1975,8 +1975,8 @@ Feature: The desktop board
     under it. Opening one shows them by name and by where each stands, because
     a count alone says how far along it is and never what is left.
 
-    They sit beside the form, in the column a task's history has: an objective
-    has no history of its own — the trace is kept of tasks — and the question
+    They sit beside the form, in the column a task's trace has: an objective
+    has no trace of its own — the trace is kept of tasks — and the question
     it is opened to answer is what serves it. Each is a tile of one line,
     scrolled by the wheel over the column and by the bar beside it.
 

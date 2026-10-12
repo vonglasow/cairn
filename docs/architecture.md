@@ -29,7 +29,7 @@ SQL that keeps it, one counts what is done. Adding a fifth costs the cell
 nothing, which is the whole point.
 
 The act in `internal/trace` is a cell of the same kind, and it shows what a
-membrane buys where the shapes differ: one renders a line of a task's history,
+membrane buys where the shapes differ: one renders a line of a task's trace,
 one a line of a period across tasks, one binds the SQL, one adds up how long
 the work ran. Four readings of the same facts, and the act knows about none of
 them.

@@ -666,7 +666,7 @@ Feature: The board
 
   Rule: The detail shows what a card cannot
 
-    @tui-the-detail-shows-the-description-and-the-history
+    @tui-the-detail-shows-the-description-and-the-trace
     Scenario: opening a task shows what the card only marked
       Given I added a task titled "Write the spec" with the description "The client wants two columns"
       When I open the board

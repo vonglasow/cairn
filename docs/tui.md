@@ -178,7 +178,7 @@ the cursor to be wholly on screen is a division rather than a measurement. What
 it costs is two empty lines on a card carrying nothing.
 
 **Everything that can be longer than its window scrolls**: a column, the band,
-the objectives, a task's history. Each is drawn behind a viewport that follows
+the objectives, a task's trace. Each is drawn behind a viewport that follows
 the cursor, by whole cards — a column that scrolled by lines would leave half a
 card at the top, and half a card says its number and nothing else.
 
@@ -481,7 +481,7 @@ the cursor was, and the title the only thing `save` insists on.
 ## The detail
 
 `⏎` on a task takes the whole screen. There is enough to show that a panel would
-have squeezed the board and a popup would never have shown the whole history.
+have squeezed the board and a popup would never have shown the whole trace.
 
 ```
  ‹ TASKS ›  ▸ 14                                                          ── DETAIL ──
@@ -489,7 +489,7 @@ have squeezed the board and a popup would never have shown the whole history.
  ┃ 14   Write the spec                                       ≡    todo    high
  ┃ ⚑ spec  infra        due 02/09 · in 2d               3h estimated · 1h30 spent
 
- ┌─ DESCRIPTION ───────────────────────────────┬─ HISTORY ────────────────────────────┐
+ ┌─ DESCRIPTION ───────────────────────────────┬─ TRACE ──────────────────────────────┐
  │ The client wants two columns, not three.    │ 12/08  created    backlog · normal   │
  │ The third was in the mockup by accident     │ 18/08  priority   normal → high      │
  │ and nobody caught it before the review.     │ 21/08  column     backlog → todo     │
@@ -519,7 +519,7 @@ hold the height. A full screen has no such constraint.
 through the board, and `esc` climbs back one step at a time.
 
 This is the only place the trace is laid out beside the task it belongs to.
-`:trace show 14` prints the same history, the way the command line prints it, and
+`:trace show 14` prints the same trace, the way the command line prints it, and
 neither is the other's shortcut — one is read while looking at the task, the
 other while looking for something. The trace had been in the engine a while with
 nowhere to be looked at.

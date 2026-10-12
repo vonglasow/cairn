@@ -934,7 +934,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description) "([^"]*)"$`, w.iAddedATaskTitledWith)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
 			w.iCallTaskEditWithThePriority)
-		sc.Step("^the history of task (\\d+) says the change came through the server$",
+		sc.Step("^the trace of task (\\d+) says the change came through the server$",
 			w.theHistorySaysItCameThroughTheServer)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the deadline as nothing$",
 			w.iCallTaskEditWithTheNumberAndTheDeadlineAsNothing)

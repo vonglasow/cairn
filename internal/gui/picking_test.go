@@ -57,7 +57,7 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 	for _, c := range []struct {
 		key, word string
 	}{
-		{"history", "HISTORY"},
+		{"history", "TRACE"},
 		{"name:context", "context"},
 	} {
 		t.Run(c.key, func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 	if held := w.Holding("name:context", r.Said); held.Holds() != "context" {
 		t.Fatalf("the name of the context is drawn holding %q", held.Holds())
 	}
-	if held := w.Holding("history", "HISTORY"); held.Holding() {
+	if held := w.Holding("history", "TRACE"); held.Holding() {
 		t.Fatalf("the history's head is drawn holding %q, though nothing was picked in it", held.Holds())
 	}
 }

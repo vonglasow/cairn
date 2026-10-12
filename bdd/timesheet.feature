@@ -9,7 +9,7 @@ Feature: How long the work took, day by day
   at the moment it is done and no other — a focus placed after the fact would
   be a timesheet anybody could write. What was done without it — a meeting, an
   afternoon nobody focused — is added by hand, and too much is taken back the
-  same way. Every one of these is written down in the history, so the timing
+  same way. Every one of these is written down in the trace, so the timing
   of a task can be read back long after the sheet was sent.
 
   The scenarios below are set on days already past, so their time is added by
@@ -68,8 +68,8 @@ Feature: How long the work took, day by day
       And I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
       Then the day "2026-09-29" gives task 1 "1h"
 
-    @timesheet-time-added-by-hand-is-in-the-history
-    Scenario: time added by hand is written down where the rest of the task's history is
+    @timesheet-time-added-by-hand-is-in-the-trace
+    Scenario: time added by hand is written down where the rest of the task's trace is
       Given I added a task titled "Sprint review"
       When I run `cairn timesheet add 1 1h --on 2026-09-29`
       And I run `cairn trace show 1`

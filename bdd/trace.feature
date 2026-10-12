@@ -37,7 +37,7 @@ Feature: The trace
       Then it carries 1 act
 
     @trace-oldest-first
-    Scenario: a history reads oldest first
+    Scenario: a trace reads oldest first
       Given I added a task titled "Write the spec"
       And I edited task 1 with the priority "high"
       And I edited task 1 with the state "todo"
@@ -82,7 +82,7 @@ Feature: The trace
       Then it lists the acts in the order "created", "focus taken"
 
     @trace-focus-closed-when-the-task-goes
-    Scenario: deleting the task in focus closes the stretch, and its history stays
+    Scenario: deleting the task in focus closes the stretch, and its trace stays
       Given I added a task titled "Write the spec"
       And I put task 1 in focus
       And I deleted task 1
@@ -108,7 +108,7 @@ Feature: The trace
 
     The column going back to todo when the last thing is taken away is traced
     too, and that matters more than it looks. It is a change cairn made rather
-    than one anybody typed, so without it the history would show a task in todo
+    than one anybody typed, so without it the trace would show a task in todo
     with nothing saying how it got there.
 
     @trace-a-blocker-added
@@ -221,10 +221,10 @@ Feature: The trace
       When I run `cairn trace list`
       Then it lists the acts of 1 task
 
-  Rule: A history that cannot be shown says why
+  Rule: A trace that cannot be shown says why
 
     @trace-show-a-task-that-never-existed
-    Scenario: a task that was never there has no history to show
+    Scenario: a task that was never there has no trace to show
       Given I added a task titled "First"
       When I run `cairn trace show 99`
       Then it fails
@@ -232,7 +232,7 @@ Feature: The trace
       And it shows the number it could not find
 
     @trace-show-needs-a-number
-    Scenario: a history is asked for by number
+    Scenario: a trace is asked for by number
       Given I added a task titled "First"
       When I run `cairn trace show`
       Then it fails

@@ -177,7 +177,7 @@ func (b Board) drawDetail() string {
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.JoinVertical(lipgloss.Left, b.detailLeft(held, left)...),
 		" ",
-		b.named("HISTORY", strings.Join(b.history(held.Number, right-4, b.height-10), "\n"), right),
+		b.named("TRACE", strings.Join(b.history(held.Number, right-4, b.height-10), "\n"), right),
 	)
 	return strings.Join([]string{
 		b.tabs(), "", b.detailBand(held), "",

@@ -72,7 +72,7 @@ func (w Window) Lines() []string {
 	// opens onto, and taking it for an objective would cost every task the
 	// thing this panel was built for.
 	if w.chosenGoal {
-		return wrap("an objective has no history of its own").Said
+		return wrap("an objective has no trace of its own").Said
 	}
 	return Told(w.acts, wrap)
 }
@@ -81,7 +81,7 @@ func (w Window) Lines() []string {
 // serves it. PanelHead names the right column, which is the history's whatever
 // is open.
 const (
-	historyHead = "HISTORY"
+	historyHead = "TRACE"
 	servingHead = "WHAT SERVES IT"
 	hangingHead = "WHAT HANGS UNDER IT"
 )

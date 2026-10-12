@@ -677,7 +677,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the parts are drawn as %v, and %q is not among them", w.w.PartsTicked(), title)
 	})
-	sc.Then(`^the history begins with the last thing done to task (\d+)$`, func(n int) error {
+	sc.Then(`^the trace begins with the last thing done to task (\d+)$`, func(n int) error {
 		shown, err := w.held.Ask(engine.TraceShow, reading.Numbered(n))
 		if err != nil {
 			return err
@@ -688,7 +688,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^no line of the history is empty$`, func() error {
+	sc.Then(`^no line of the trace is empty$`, func() error {
 		for i, said := range w.w.Lines() {
 			if strings.TrimSpace(said) == "" {
 				return fmt.Errorf("line %d of the history is empty: %q", i, w.w.Lines())
@@ -696,7 +696,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^every field of the form stands left of the history$`, func() error {
+	sc.Then(`^every field of the form stands left of the trace$`, func() error {
 		history := BesideBox(w.w.formPanel())
 		_, frames := w.formFrames()
 		for i, frame := range frames {
@@ -1586,10 +1586,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^every key the bar offers does what it offers$`, w.everyKeyTheBarOffers)
-	sc.Then(`^the history is beside the fields$`, w.historyBesideTheFields)
-	sc.Then(`^the history stays inside the panel$`, w.historyInsideThePanel)
-	sc.Then(`^the history has more to show than it has room for$`, w.historyHasMore)
-	sc.Then(`^the history has moved$`, w.historyMoved)
+	sc.Then(`^the trace is beside the fields$`, w.historyBesideTheFields)
+	sc.Then(`^the trace stays inside the panel$`, w.historyInsideThePanel)
+	sc.Then(`^the trace has more to show than it has room for$`, w.historyHasMore)
+	sc.Then(`^the trace has moved$`, w.historyMoved)
 	sc.Then(`^the work under it has more to show than it has room for$`, w.servingHasMore)
 	sc.Then(`^the work under it has moved$`, w.servingMoved)
 	sc.Then(`^the work under it is at its beginning$`, w.servingAtTheBeginning)
@@ -1640,8 +1640,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the history is at its beginning$`, w.historyAtTheBeginning)
-	sc.Then(`^the history is at its end$`, w.historyAtTheEnd)
+	sc.Then(`^the trace is at its beginning$`, w.historyAtTheBeginning)
+	sc.Then(`^the trace is at its end$`, w.historyAtTheEnd)
 	sc.Then(`^the field "([^"]*)" is written on more than one line$`, w.fieldOnMoreThanOneLine)
 	sc.Then(`^no line of the field "([^"]*)" runs out of it$`, w.noLineRunsOut)
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)

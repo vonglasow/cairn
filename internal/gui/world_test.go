@@ -955,9 +955,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			}
 			return w.addTask(title, "", strings.Join(said, "\n"))
 		})
-	sc.Step(`^I scroll down over the history$`, func() error { return w.scrollHistory(1) })
-	sc.Step(`^I scroll up over the history$`, func() error { return w.scrollHistory(-1) })
-	sc.Step(`^I scroll down over the history (\d+) times$`, func(n int) error {
+	sc.Step(`^I scroll down over the trace$`, func() error { return w.scrollHistory(1) })
+	sc.Step(`^I scroll up over the trace$`, func() error { return w.scrollHistory(-1) })
+	sc.Step(`^I scroll down over the trace (\d+) times$`, func(n int) error {
 		for range n {
 			if err := w.scrollHistory(1); err != nil {
 				return err
@@ -965,7 +965,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^I drag the history's bar to the bottom$`, w.dragHistoryBar)
+	sc.Step(`^I drag the trace's bar to the bottom$`, w.dragHistoryBar)
 	sc.Step(`^I drag the description's bar to the bottom$`, w.dragSayingBar)
 	sc.Step(`^I scroll up over the description (\d+) times$`, func(n int) error {
 		for range n {

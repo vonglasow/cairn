@@ -92,7 +92,7 @@ sub-task behind a root task — a sub-task takes its place among its sisters,
 where its parent sits carrying the whole block.
 
 `task archive` archives a task without deleting it: the column it
-finished in, its history and everything it carries stay. It takes a number or a
+finished in, its trace and everything it carries stay. It takes a number or a
 narrowing, so a finished column goes in one command, and `task label` marks a
 set first when a sprint is what you want to sweep. A listing leaves the archived
 out until `--archived` or `--with-archived` asks for them; `task show` answers
@@ -192,7 +192,7 @@ sheet is filled in. Two tasks in focus at once share the minutes they overlap,
 and a focus left open stops at midnight and says so. See
 [docs/trace.md](docs/trace.md).
 
-A history outlives the task it describes — deleting a task would otherwise
+A trace outlives the task it describes — deleting a task would otherwise
 change your past — and an act done by an agent over MCP says so, where one done
 at the terminal says nothing. See [docs/trace.md](docs/trace.md) for why it was
 settled this way.

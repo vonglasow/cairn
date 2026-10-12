@@ -227,7 +227,7 @@ under a panel moves now; the list of backups scrolls itself, a line a notch,
 and the calendar walks its months, a notch a month
 (`@gui-the-wheel-stays-inside-a-panel`).
 
-**Every bar can be pulled.** The history's, the description's, the work under a
+**Every bar can be pulled.** The trace's, the description's, the work under a
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
@@ -282,7 +282,7 @@ between them: if the second fails, the board refreshes and shows the truth —
 column changed, place not. Visible rather than silent.
 
 Carrying only the column was the alternative: one operation, one line of
-history, faithful to an engine that refuses to change a column and a place in
+trace, faithful to an engine that refuses to change a column and a place in
 one act. It was turned down because dropping a card precisely somewhere and
 watching it land elsewhere is a small betrayal of the hand.
 
@@ -570,14 +570,14 @@ a program.
 follows a caret, and the rows its box holds were the whole of what a long
 description could ever show — the rest was clipped, with nothing on screen
 saying it was there. It now takes the wheel and carries a bar
-beside it, reusing the history's `Thumb` and window rather than growing a
+beside it, reusing the trace's `Thumb` and window rather than growing a
 second scrolling mechanism. The bar is drawn whether or not there is anything
-to scroll, by the same rule the history goes by.
+to scroll, by the same rule the trace goes by.
 
 The form is left alone: there the caret drags the window along with it, so what
 does not fit is already reachable.
 
-**The history is written in the reading ink**, with only the timestamp left
+**The trace is written in the reading ink**, with only the timestamp left
 faint. It was thirty lines of the palest grey in the window — a thing somebody
 opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
@@ -691,7 +691,7 @@ and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at
 the beat before, is saved where it stands and opened again over what it saved,
 read back from the store: the keyboard and the caret where they were, a part
-just added with its number, and the history beside it read again, since it
+just added with its number, and the trace beside it read again, since it
 otherwise lacked the very act just saved
 (`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
@@ -761,11 +761,11 @@ back.
 **A wheel keeps what did not come to a line.** `by / lineHigh` threw away every
 turn smaller than a row, which is every turn a trackpad sends — one pixel at a
 time, each rounding to nothing, so a description could not be scrolled with a
-mouse at all and a history answered only a notched wheel. `turning` adds the
-leftover to the next turn instead. A history still moves by whole lines, which
+mouse at all and a trace answered only a notched wheel. `turning` adds the
+leftover to the next turn instead. A trace still moves by whole lines, which
 is what its own test asks; six nudges of three pixels are now one of them.
 
-The bar beside a description **can be pulled**, like the history's. Without it
+The bar beside a description **can be pulled**, like the trace's. Without it
 a press on the bar fell through to the board behind the panel and closed the
 task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
@@ -821,7 +821,7 @@ height under its fields, as a form adding one does (`OpenOver`).
 straight past the panel, past the window, and over everything behind both. It
 is cut to the run the window has room for and scrolled to for the rest — by the wheel, by a bar beside it, and by the keyboard, which brings
 the row it is on into sight the way a column brings a card. The same `Thumb`
-and the same window of lines the history and the description use.
+and the same window of lines the trace and the description use.
 
 Counted in rows and not in pixels. The walk in pixels had to divide by a row's
 height at the end, and a run rarely divides into whole rows: the remainder was
@@ -969,23 +969,23 @@ well, both go (`@gui-a-click-off-the-form-closes-the-calendar-too`).
 **Two columns and not one above the other.** The fields take the left five
 eighths — in the narrowest window this board draws in, room for two short
 fields to a line — and the column beside them has the panel's full height at
-every size. Stacked, the history got what twelve framed fields left, which is
-nothing. A form being *added* has no history and takes the whole width, cut to
+every size. Stacked, the trace got what twelve framed fields left, which is
+nothing. A form being *added* has no trace and takes the whole width, cut to
 what it holds.
 
-The history **scrolls**, by the wheel over it or by pulling the bar beside
+The trace **scrolls**, by the wheel over it or by pulling the bar beside
 it. It is counted in lines and not in acts, because an act wraps onto as many
-lines as it needs and a history that jumped an act at a time would skip past
+lines as it needs and a trace that jumped an act at a time would skip past
 what it wrapped. Acts are told **the last done first**, one straight after
 another: each begins with when it was done, which is what says where it
 starts. They used to be told oldest first with a blank line between two of
 them, which put what was just done at the bottom of a box opened at its top,
-and read as an empty line between every line of a history whose acts each fit
+and read as an empty line between every line of a trace whose acts each fit
 on one.
 
 The bar is drawn whether or not there is anything to scroll. A bar that comes
 and goes is a bar somebody reaches for and does not find. Its grip says two
-things at once — how tall it is, how much of the history is showing; where it
+things at once — how tall it is, how much of the trace is showing; where it
 sits, which part — and it is never drawn smaller than can be taken hold of.
 
 **The description takes the wheel wherever the keyboard is.** It is what a
@@ -998,7 +998,7 @@ other text. Not among the fields: the place is not something the task carries.
 See [context.md](context.md).
 
 **Every piece of text beside the form can be held and copied**, the way what is
-in its fields can — the history's head and each of its lines, and the place of
+in its fields can — the trace's head and each of its lines, and the place of
 the notes. A drag across it holds a run, a double click holds a word, `⌘A`
 holds the whole of the text last pressed in, and `⌘C` copies. `Readables` lists
 every piece of it, once, laid out the way it is drawn, and what a pointer lands
@@ -1045,17 +1045,17 @@ The heading says what was opened: `task 7 · Ship it`, the title as it was
 saved and not as it is being typed, which the field below says.
 
 **An objective opens on the work that serves it**, beside its form, headed
-`WHAT SERVES IT`: an objective has no history of its own — the trace is kept
+`WHAT SERVES IT`: an objective has no trace of its own — the trace is kept
 of tasks — and what serves it is the question it is opened to answer. Each is
 a tile of one line, scrolled by the wheel over the column or by the bar beside
 it. An objective nothing serves yet says so in as many words — an empty frame
 reads as a box that failed to load rather than as a question nobody has
 answered yet.
 
-It once opened on a history, and on the wrong one: the panel asked for the
+It once opened on a trace, and on the wrong one: the panel asked for the
 trace of the chosen number without asking which kind of thing carried it, so
 opening objective 1 showed whatever had happened to *task* 1 — a stranger's
-history, presented as the objective's. Measured, not reasoned about.
+trace, presented as the objective's. Measured, not reasoned about.
 
 **An objective's card says how much it carries and how much is done** —
 `7/12 · 58%`, on the number line it otherwise leaves half empty. The share is
@@ -1067,7 +1067,7 @@ started reads as a failure rather than as one waiting for its first task.
 Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field
 touched is its own `task edit`, and twelve fields touched is twelve lines of
-history for one sitting.
+trace for one sitting.
 
 ## Several at once
 

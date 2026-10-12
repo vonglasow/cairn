@@ -220,7 +220,7 @@ Feature: Answering a machine over MCP
       Given I added a task titled "Write the spec"
       And a cairn server started with `--access write`
       When I call `task_edit` with the number 1 and the priority "high"
-      Then the history of task 1 says the change came through the server
+      Then the trace of task 1 says the change came through the server
 
     @mcp-says-what-it-answers
     Scenario: every tool says what shape its answer takes
