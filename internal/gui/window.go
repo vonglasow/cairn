@@ -141,6 +141,10 @@ type Window struct {
 	// spent over it: see week.go.
 	week  time.Time
 	sheet engine.Timesheet
+	// born is the moment of the window's first frame, and introOver says the
+	// cairn it opens on was ended by a key or a click: see cairn.go.
+	born      time.Time
+	introOver bool
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string

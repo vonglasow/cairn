@@ -538,6 +538,14 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**The window opens on a cairn being built.** Five stones fall one after the
+other onto the one below, in the middle of the window, for a breath
+(`IntroLasts`, 1.4 s; `cairn.go`). It starts on the first frame a screen
+draws (`Born`), which no scenario draws, so nothing judged there sees it; and
+the first key or press ends it and still does what it does — it is never in
+the way. Drawn rather than shaded: Gio runs no shader of a program's own, and
+five ellipses say it.
+
 **The time spent is seen a week at a time.** How long the work took was a
 table the command line printed. The third page, TIME, lays a week out
 (`week.go`): a column a day across the board's width, Monday first, each

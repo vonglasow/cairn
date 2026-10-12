@@ -103,6 +103,9 @@ type Gesture struct {
 // after a double-click closed the task it had just opened, found by hand in a
 // window rather than by any test.
 func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time.Time) (Window, Gesture) {
+	if kind == pointer.Press {
+		w = w.interrupted()
+	}
 	if kind == pointer.Scroll {
 		return w.wheeling(by, at, now), g
 	}
@@ -154,6 +157,7 @@ func Twice(before, now time.Time, was, at Point) bool {
 
 // Typed says what a key does. The few flat shortcuts, and nothing modal.
 func Typed(w Window, name string, with key.Modifiers) Window {
+	w = w.interrupted()
 	said, isNamed := naming(name)
 	// A key that moves the caret keeps every modifier it came with: ⌘ and ⌥
 	// say how far it goes, and shift that it holds on the way.
@@ -322,7 +326,13 @@ func loop(work reading.Work, width, height int) error {
 				board, looked = board.Wonder(), gtx.Now
 			}
 			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt, traced)
+			board = board.Born(gtx.Now)
 			Draw(gtx, theme, skin, board)
+			// The cairn is drawn a frame at a time, and a frame is only
+			// drawn when asked for.
+			if _, building := board.Intro(); building {
+				gtx.Execute(op.InvalidateCmd{})
+			}
 			e.Frame(gtx.Ops)
 		}
 	}

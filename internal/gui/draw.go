@@ -202,6 +202,18 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnBackups {
 		drawBackups(gtx, th, skin, w)
 	}
+	if progress, building := w.Intro(); building {
+		drawCairn(gtx, skin, w, progress)
+	}
+}
+
+// drawCairn is the window's first breath: the stones over a ground of their
+// own, the board waiting under it.
+func drawCairn(gtx layout.Context, skin Skin, w Window, progress float64) {
+	fill(gtx, Box{W: w.width, H: w.height}, skin.Back)
+	for _, stone := range StonesAt(w.width, w.height, progress) {
+		paint.FillShape(gtx.Ops, skin.Faint, clip.Ellipse(rect(stone)).Op(gtx.Ops))
+	}
 }
 
 // drawBackups is the list of backups, the one the keyboard is on lit.

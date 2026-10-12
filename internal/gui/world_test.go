@@ -667,6 +667,26 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.When(`^I open the window$`, w.open)
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
+	sc.Step(`^the window draws its first frame$`, func() error {
+		w.w = w.w.Born(w.today)
+		return nil
+	})
+	sc.Step(`^the window draws a frame (\d+) seconds? later$`, func(n int) error {
+		w.w = w.w.At(w.today.Add(time.Duration(n) * time.Second))
+		return nil
+	})
+	sc.Then(`^a cairn is being built$`, func() error {
+		if _, on := w.w.Intro(); !on {
+			return fmt.Errorf("no cairn is being built")
+		}
+		return nil
+	})
+	sc.Then(`^no cairn is being built$`, func() error {
+		if progress, on := w.w.Intro(); on {
+			return fmt.Errorf("a cairn is still being built, %.0f%% of the way", progress*100)
+		}
+		return nil
+	})
 	sc.Given(`^today is "([^"]*)"$`, func(day string) error {
 		parsed, err := domain.ParseDeadline(day)
 		w.today = parsed.Add(12 * time.Hour)

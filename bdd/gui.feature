@@ -882,6 +882,29 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: The window opens on a cairn being built
+
+    A board that appears all at once is a tool; one that opens on a few
+    stones stacking themselves, the thing it is named after, is this tool. It
+    lasts a breath, and the first key or click ends it and still does what it
+    does: it is never in the way.
+
+    @gui-the-window-opens-on-a-cairn
+    Scenario: the first frame starts a cairn, which a key ends without being swallowed
+      When I open the window
+      And the window draws its first frame
+      Then a cairn is being built
+      When I press "?"
+      Then no cairn is being built
+      And the help is open
+
+    @gui-the-cairn-is-built-in-a-breath
+    Scenario: the cairn is done on its own a breath after the window opens
+      When I open the window
+      And the window draws its first frame
+      And the window draws a frame 2 seconds later
+      Then no cairn is being built
+
   Rule: The time spent is seen a week at a time
 
     How long the work took was a table the command line printed. The third
