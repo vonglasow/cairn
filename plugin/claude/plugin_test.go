@@ -12,7 +12,7 @@ import (
 // points at the folder the plugin is written in.
 func TestWrite_makesAMarketplaceOfThePlugin(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "plugins")
-	if err := Write(dir); err != nil {
+	if err := Write(dir, "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 	var market struct {
@@ -59,7 +59,7 @@ func TestWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "precious.txt"), []byte("mine"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := Write(dir); !errors.Is(err, ErrNotItsFolder) {
+	if err := Write(dir, "1.2.3"); !errors.Is(err, ErrNotItsFolder) {
 		t.Fatalf("writing into a folder of somebody else's = %v, want %v", err, ErrNotItsFolder)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "precious.txt")); err != nil {
@@ -71,14 +71,14 @@ func TestWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 // wrote before is written again — without what an older cairn put there.
 func TestWrite_writesAnEmptyFolderOrItsOwnAgain(t *testing.T) {
 	dir := t.TempDir()
-	if err := Write(dir); err != nil {
+	if err := Write(dir, "1.2.3"); err != nil {
 		t.Fatalf("an empty folder: %v", err)
 	}
 	stale := filepath.Join(dir, "cairn", "skills", "gone.md")
 	if err := os.WriteFile(stale, []byte("old"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := Write(dir); err != nil {
+	if err := Write(dir, "1.2.3"); err != nil {
 		t.Fatalf("its own folder again: %v", err)
 	}
 	if _, err := os.Stat(stale); !errors.Is(err, os.ErrNotExist) {
@@ -92,7 +92,7 @@ func TestWrite_saysWhatCannotBeWritten(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := Write(filepath.Join(file, "under")); err == nil {
+	if err := Write(filepath.Join(file, "under"), "1.2.3"); err == nil {
 		t.Error("writing under a file said nothing went wrong")
 	}
 }
@@ -108,7 +108,7 @@ func TestWrite_refusesAMarketplaceThatIsNotItsOwn(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, ".claude-plugin", "marketplace.json"), []byte(held), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		if err := Write(dir); !errors.Is(err, ErrNotItsFolder) {
+		if err := Write(dir, "1.2.3"); !errors.Is(err, ErrNotItsFolder) {
 			t.Errorf("a marketplace holding %s = %v, want %v", held, err, ErrNotItsFolder)
 		}
 	}
@@ -130,35 +130,74 @@ func TestWrite_saysWhichStepCouldNotBeWritten(t *testing.T) {
 	}
 
 	clearing := t.TempDir()
-	if err := Write(clearing); err != nil {
+	if err := Write(clearing, "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 	locked(t, filepath.Join(clearing, Name, "hooks"))
-	if err := Write(clearing); err == nil {
+	if err := Write(clearing, "1.2.3"); err == nil {
 		t.Error("a plugin that could not be cleared said nothing went wrong")
 	}
 
 	market := t.TempDir()
-	if err := Write(market); err != nil {
+	if err := Write(market, "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Chmod(filepath.Join(market, ".claude-plugin", "marketplace.json"), 0o400); err != nil {
 		t.Fatal(err)
 	}
 	locked(t, filepath.Join(market, ".claude-plugin"))
-	if err := Write(market); err == nil {
+	if err := Write(market, "1.2.3"); err == nil {
 		t.Error("a marketplace that could not be written said nothing went wrong")
 	}
 
 	folders := t.TempDir()
-	if err := Write(folders); err != nil {
+	if err := Write(folders, "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.RemoveAll(filepath.Join(folders, Name)); err != nil {
 		t.Fatal(err)
 	}
 	locked(t, folders)
-	if err := Write(folders); err == nil {
+	if err := Write(folders, "1.2.3"); err == nil {
 		t.Error("a plugin whose folders could not be made said nothing went wrong")
+	}
+}
+
+// The plugin written carries the version of the cairn that wrote it, and so
+// does the marketplace offering it: Claude Code reads it to tell an update
+// from what it already has, and warned of a plugin with none.
+func TestWrite_saysTheVersionOfTheCairnThatWroteIt(t *testing.T) {
+	dir := t.TempDir()
+	if err := Write(dir, "4.5.6"); err != nil {
+		t.Fatal(err)
+	}
+	var plugin struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	}
+	read(t, filepath.Join(dir, Name, ".claude-plugin", "plugin.json"), &plugin)
+	if plugin.Version != "4.5.6" || plugin.Name != Name {
+		t.Errorf("the plugin written says %+v", plugin)
+	}
+	var market struct {
+		Plugins []struct {
+			Version string `json:"version"`
+		} `json:"plugins"`
+	}
+	read(t, filepath.Join(dir, ".claude-plugin", "marketplace.json"), &market)
+	if len(market.Plugins) != 1 || market.Plugins[0].Version != "4.5.6" {
+		t.Errorf("the marketplace says %+v", market)
+	}
+}
+
+// read decodes a JSON file the plugin wrote.
+func read(t *testing.T, path string, into any) {
+	t.Helper()
+	held, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(held, into); err != nil {
+		t.Fatal(err)
 	}
 }

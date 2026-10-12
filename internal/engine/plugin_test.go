@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"cairn/internal/build"
 )
 
 // The plugin is written beside the store unless a folder is named, and the
@@ -48,5 +50,20 @@ func TestPluginWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	}
 	if _, err := PluginWrite.Run(On{}, Input{Given: map[string]string{"dir": dir}}); err == nil {
 		t.Error("a folder of somebody else's was written into")
+	}
+}
+
+// The plugin written says the version of the cairn that wrote it.
+func TestPluginWrite_saysTheVersionOfThisCairn(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "plugin")
+	if _, err := Do(PluginWrite, filepath.Join(t.TempDir(), "cairn.db"), Input{Given: map[string]string{"dir": dir}}); err != nil {
+		t.Fatal(err)
+	}
+	held, err := os.ReadFile(filepath.Join(dir, "cairn", ".claude-plugin", "plugin.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `"version": "` + build.Read().Version + `"`; !strings.Contains(string(held), want) {
+		t.Errorf("the plugin says:\n%s\nwant %s", held, want)
 	}
 }

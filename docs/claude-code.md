@@ -214,7 +214,10 @@ off the plugin's manifest rather than written a second time, and the plugin
 under `D/cairn`, its hook executable. `D` is `claude-plugin` beside the store
 unless named. Then `/plugin marketplace add D` and `/plugin install
 cairn@cairn`, which the command prints. The plugin installed is always the one
-the cairn it calls was built with.
+the cairn it calls was built with, and says so: the manifest written, and the
+marketplace's entry for it, carry the version of the cairn that wrote them —
+Claude Code reads it to tell an update from what it has, and warned of a
+plugin with none.
 
 Writing again replaces the plugin written before, so nothing an older cairn
 carried is left behind; and so a folder holding anything else — a home named by

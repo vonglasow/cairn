@@ -136,6 +136,14 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 				}
 			}
 			for path, held := range want {
+				if path == manifest {
+					// The manifest is written with the version of the cairn
+					// that wrote it, and is otherwise the repository's.
+					if !sameButVersion(got[path], held) {
+						return fmt.Errorf("%s says other than the repository's, its version aside", path)
+					}
+					continue
+				}
 				if got[path] != held {
 					return fmt.Errorf("%s is not written as the repository holds it", path)
 				}
@@ -144,6 +152,27 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 				if _, ok := want[path]; !ok {
 					return fmt.Errorf("%s is written, and the plugin carries no such file", path)
 				}
+			}
+			return nil
+		})
+		sc.Step(`^the plugin written there says the version of the cairn that wrote it$`, func() error {
+			written, err := offers(w.beside(), "cairn")
+			if err != nil {
+				return err
+			}
+			var said struct {
+				Version string `json:"version"`
+			}
+			held, err := os.ReadFile(filepath.Join(written, manifest))
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(held, &said); err != nil {
+				return err
+			}
+			version, _ := w.cairn("--version")
+			if said.Version == "" || !strings.Contains(version, said.Version) {
+				return fmt.Errorf("the plugin says version %q, and the cairn that wrote it says %q", said.Version, version)
 			}
 			return nil
 		})
@@ -176,4 +205,21 @@ func TestAcceptance_ClaudePlugin(t *testing.T) {
 	if test.Suite(t, "claude-plugin.feature", initPlugin(t), "").Run() != 0 {
 		t.Fatal("the Claude plugin's scenarios did not all pass")
 	}
+}
+
+// manifest is where the plugin's own manifest lies, inside the plugin.
+const manifest = ".claude-plugin/plugin.json"
+
+// sameButVersion says two manifests say the same, whatever version either
+// carries.
+func sameButVersion(a, b string) bool {
+	var left, right map[string]any
+	if json.Unmarshal([]byte(a), &left) != nil || json.Unmarshal([]byte(b), &right) != nil {
+		return false
+	}
+	delete(left, "version")
+	delete(right, "version")
+	l, _ := json.Marshal(left)
+	r, _ := json.Marshal(right)
+	return string(l) == string(r)
 }

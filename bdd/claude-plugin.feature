@@ -10,6 +10,7 @@ Feature: The Claude Code plugin comes with the binary
     Then it succeeds
     And beside the store is a marketplace offering the plugin "cairn"
     And the plugin written there is the plugin in this repository
+    And the plugin written there says the version of the cairn that wrote it
     And the hook written there can be run
     And it says to run "/plugin marketplace add" and "/plugin install cairn@cairn"
 

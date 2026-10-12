@@ -6,6 +6,7 @@ package engine
 import (
 	"path/filepath"
 
+	"cairn/internal/build"
 	claudeplugin "cairn/plugin/claude"
 )
 
@@ -36,7 +37,7 @@ cairn plugin write --dir ~/claude/cairn`,
 		if dir == "" {
 			dir = filepath.Join(filepath.Dir(on.Path), "claude-plugin")
 		}
-		if err := claudeplugin.Write(dir); err != nil {
+		if err := claudeplugin.Write(dir, build.Read().Version); err != nil {
 			return Answer{}, err
 		}
 		return Answer{Plugin: &dir}, nil
