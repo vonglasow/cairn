@@ -409,6 +409,14 @@ caret in it and holding a run of it, so the four agree on where a line ends.
 How many rows a description asks for is still reckoned — the form is laid out
 with no face — which can leave it a line or two longer than it needs.
 
+**On Windows the window opens with no console behind it.** cairn is one
+binary, a console program, which the command line needs; started from the
+Explorer, Windows gave the window a console of its own, empty, beside it. The
+window lets go of a console nobody else is attached to as it starts
+(`leaveConsole`), so that one goes, after a flash; a console shared with the
+shell `cairn gui` was typed in stays, and what the window says there — a
+`CAIRN_GUI_TRACE` among it — still reaches whoever typed it.
+
 **Every character the window writes has a face cairn carries.** Go's own
 faces lack the keys of a Mac keyboard, a tick and a cross; a character no face
 has sends the shaper to the system's fonts, and every process that drew one

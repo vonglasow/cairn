@@ -276,6 +276,7 @@ var tag = new(int)
 // inside — which is why it hands nothing back, and why ended says what went
 // wrong itself rather than leaving it to a caller that is never returned to.
 func Run(work reading.Work, width, height int) {
+	leaveConsole()
 	go func() { ended(loop(work, width, height), os.Stderr, os.Exit) }()
 	app.Main()
 }
