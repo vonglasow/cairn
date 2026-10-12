@@ -101,6 +101,9 @@ hooks = [
     # Windows builds what was written, tests included: a few seconds, so with
     # the cheap checks. See the target's comment.
     { id = "windows-check", name = "it builds for Windows", entry = "make windows-check", language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },
+    # A build says nothing: a warning printed on every build is read past, and
+    # the next one with it. See the target's comment.
+    { id = "quiet-check", name = "it builds without a word", entry = "make quiet-check", language = "system", pass_filenames = false, files = '(\.(go|m|c|h)|(^|/)go\.(mod|sum))$' },
     # The vulnerability scan reads the whole module graph: after the cheap
     # checks, before the suite.
     { id = "govulncheck", name = "govulncheck", entry = "govulncheck", args = ["./..."], language = "system", pass_filenames = false, files = '(\.go|(^|/)go\.(mod|sum))$' },

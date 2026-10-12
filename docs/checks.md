@@ -20,6 +20,7 @@ here has to be remembered.
 | `tested-check` | does every package have a test file at all? |
 | `harness-check` | is the binary free of the test harness? |
 | `windows-check` | does cairn, tests included, still build for Windows? |
+| `quiet-check` | does building cairn, and the window's tests, print nothing at all? |
 | `govulncheck` | does anything we call have a known vulnerability? |
 | `cover-check` | does it work — and did every line at least run, in total and in each package? |
 | `mutation` | would a test have noticed if a changed line were wrong? |
@@ -314,6 +315,7 @@ make cover-check    # fail below the total floor, or below the per-package one
 make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make windows-check  # fail if cairn or its tests no longer build for Windows
+make quiet-check    # fail if building cairn or the window's tests prints anything
 make mutation-changed  # the lines changed since HEAD: what a commit runs
 make mutation          # every package: what a push runs, and the report it leaves
 make check             # every hook, commit's and push's, on every file

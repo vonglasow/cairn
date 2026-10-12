@@ -31,7 +31,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog dist stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check gremlins-present mutation mutation-changed check linux notices clean
+.PHONY: release release-check next-version changelog dist stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -155,6 +155,19 @@ windows-check:
 		GOOS=windows GOARCH=amd64 go build -o "$$out/cairn.exe" ./cmd/cairn && \
 		GOOS=windows GOARCH=amd64 go vet ./...
 	@echo "✓ cairn and its tests build for Windows"
+
+## quiet-check: fail if building cairn, or the window's tests, says anything
+## A build that prints a warning every time teaches everybody to read past
+## what a build prints, and the next one that matters is read past with it.
+## The linker's duplicate -lobjc was one: cmd/go links it once per package
+## holding an Objective-C file, so a second such package says so on every
+## build. The window is linked too, because its test binary is the other
+## thing built here all day.
+quiet-check:
+	@out=$$(mktemp -d) && trap 'rm -rf "$$out"' EXIT && \
+		said=$$( { go build -o "$$out/cairn" ./cmd/cairn && go test -c -o "$$out/gui.test" ./internal/gui; } 2>&1 ) ; \
+		status=$$?; if [ $$status -ne 0 ] || [ -n "$$said" ]; then printf '%s\n' "$$said"; echo "✗ building cairn said something"; exit 1; fi
+	@echo "✓ cairn builds without a word"
 
 ## harness-check: fail if the binary reaches the test harness
 ## `cairn/test` imports `testing` outside a _test.go file on purpose, because Go

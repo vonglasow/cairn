@@ -2,10 +2,9 @@
 
 package gui
 
-/*
-#cgo CFLAGS: -Werror -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework AppKit
+// The Objective-C behind these is in appkit_darwin.go.
 
+/*
 #include <stdlib.h>
 
 void cairn_menu_group(const char *title);

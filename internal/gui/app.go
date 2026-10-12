@@ -9,7 +9,6 @@ package gui
 // anything wrong quietly.
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -30,7 +29,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-	"gioui.org/x/explorer"
 
 	"cairn/internal/reading"
 )
@@ -305,7 +303,7 @@ func loop(work reading.Work, width, height int) error {
 
 	// The system's file dialog, answered on the side: it blocks until a file
 	// is chosen, and the window never waits.
-	dialog := explorer.NewExplorer(window)
+	files, listen := systemFiles(window)
 	filed := make(chan Filed, 1)
 	// A line picked in the system's menu bar, handed over from the system's
 	// own thread.
@@ -335,7 +333,7 @@ func loop(work reading.Work, width, height int) error {
 
 	for {
 		event := window.Event()
-		dialog.ListenEvents(event)
+		listen(event)
 		if installMenu(event, picks, window.Invalidate) {
 			board = board.Native(true)
 		}
@@ -359,7 +357,7 @@ func loop(work reading.Work, width, height int) error {
 			if ask, asked := board.FileAsked(); asked {
 				board = board.FileTaken()
 				go func() {
-					filed <- Filing(ask, systemFiles{dialog})
+					filed <- Filing(ask, files)
 					window.Invalidate()
 				}()
 			}
@@ -499,25 +497,3 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 // takesTyping says whether a screen has somewhere for text to land. The board
 // and the panels do not: what they do with a letter is a shortcut.
 func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }
-
-// systemFiles is the system's file dialog as Files: closed without a file is
-// ErrDeclined, whatever the system calls it.
-type systemFiles struct{ dialog *explorer.Explorer }
-
-func (s systemFiles) ChooseFile(extensions ...string) (io.ReadCloser, error) {
-	file, err := s.dialog.ChooseFile(extensions...)
-	return file, refusedOrDeclined(err)
-}
-
-func (s systemFiles) CreateFile(name string) (io.WriteCloser, error) {
-	file, err := s.dialog.CreateFile(name)
-	return file, refusedOrDeclined(err)
-}
-
-// refusedOrDeclined says a dialog closed the way Files says it.
-func refusedOrDeclined(err error) error {
-	if errors.Is(err, explorer.ErrUserDecline) {
-		return ErrDeclined
-	}
-	return err
-}

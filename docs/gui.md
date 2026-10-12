@@ -629,7 +629,7 @@ the ink of what is read, and goes as a refusal does.
 dialog.** Calling a backup "the export" and copying a file into the backups
 folder "the import" was nothing anybody at the window could find. `⌘E` and
 `⌘O`, on the bar of a board with nothing chosen and on a right click on the
-board, open the system's own file dialog (`gioui.org/x/explorer`, see
+board, open the system's own file dialog (AppKit's panels on macOS, `gioui.org/x/explorer` elsewhere, see
 [dependencies.md](dependencies.md)): the engine writes the store out
 (`backup export`) and the file is saved where the dialog says; or a file chosen
 there is copied aside, and once agreed to the engine puts it in place
@@ -647,7 +647,7 @@ help or a key already makes, done the same way (`Picked`) — from the board
 only: over a form it does nothing, as a key the form does not take does
 nothing. Gio builds the macOS menu itself and offers no way to add to it, so
 cairn adds its menus to Gio's from a few lines of Objective-C, the ⌘ chords as
-the menu's own keys (`menu_darwin.m`); on Windows the menu is a Win32 one set on
+the menu's own keys (`appkit_darwin.go`); on Windows the menu is a Win32 one set on
 the window Gio made, its commands caught in front of Gio's window procedure and
 the keys written beside each line (`menu_windows.go`). Neither call to the
 system is driven by a test; what each line does is. Where the system gives a
