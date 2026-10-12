@@ -194,6 +194,25 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 		drawCalendar(gtx, th, skin, w)
 	}
+	if w.Screen() == OnMenu {
+		drawMenu(gtx, th, skin, w)
+	}
+}
+
+// drawMenu is what a right click offers, the line the keyboard is on lit.
+func drawMenu(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := w.MenuBox()
+	fill(gtx, box, skin.Panel)
+	outline(gtx, box, skin.Edge)
+	for i, said := range w.Menu() {
+		row := MenuRowAt(box, i)
+		ink := skin.Ink
+		if i == w.MenuOn() {
+			fill(gtx, row, skin.Back)
+			ink = skin.Chosen
+		}
+		say(gtx, th, ink, Inside(row), said, reads)
+	}
 }
 
 // drawCalendar is the month the keyboard is in: the weekdays, six weeks, the

@@ -14,6 +14,9 @@ import (
 // Click chooses whatever is under the pointer, and nothing when there is
 // nothing there.
 func (w Window) Click(p Point) Window {
+	if w.screen == OnMenu {
+		return w.clickingMenu(p)
+	}
 	// What is offered answers first, wherever it is drawn: it is what closes
 	// a panel, so it is the one thing a panel does not swallow.
 	if offer, on := w.offerAt(p); on {

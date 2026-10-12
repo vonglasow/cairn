@@ -718,6 +718,63 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
+	sc.Step(`^I right-click the card "([^"]*)"$`, func(title string) error {
+		at, err := w.find(title)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.ContextAt(at)
+		return nil
+	})
+	column := func(name string) (Point, error) {
+		for i, heading := range []string{"BACKLOG", "TODO", "CURRENT", "DONE"} {
+			if heading == name {
+				box := w.w.Layout().Column[i]
+				return Point{X: box.X + box.W/2, Y: box.Y + box.H - 10}, nil
+			}
+		}
+		return Point{}, fmt.Errorf("no column is headed %q", name)
+	}
+	sc.Step(`^I right-click the column "([^"]*)"$`, func(name string) error {
+		at, err := column(name)
+		w.w = w.w.ContextAt(at)
+		return err
+	})
+	sc.Step(`^I click the column "([^"]*)"$`, func(name string) error {
+		at, err := column(name)
+		w.w = w.w.clicked(at)
+		return err
+	})
+	sc.Step(`^I click "([^"]*)" in the menu$`, func(said string) error {
+		for i, line := range w.w.Menu() {
+			if line == said {
+				box := MenuRowAt(w.w.MenuBox(), i)
+				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the menu offers %q, and not %q", w.w.Menu(), said)
+	})
+	sc.Then(`^the menu offers (".*")$`, func(list string) error {
+		var want []string
+		for _, quoted := range strings.Split(list, ", ") {
+			want = append(want, strings.Trim(quoted, `"`))
+		}
+		if w.w.Screen() != OnMenu {
+			return fmt.Errorf("no menu is open: the window is on %v", w.w.Screen())
+		}
+		if got := w.w.Menu(); strings.Join(got, "|") != strings.Join(want, "|") {
+			return fmt.Errorf("the menu offers %q, want %q", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^task (\d+) is in focus$`, func(n int) error {
+		c, found := w.w.Look().Reading().Card(n)
+		if !found || !c.InFocus {
+			return fmt.Errorf("task %d is not in focus", n)
+		}
+		return nil
+	})
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
 	// Pressed and let go, which is how a click reaches this window. Calling
 	// Click straight misses everything a release decides on the way — and it

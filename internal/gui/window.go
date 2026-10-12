@@ -41,6 +41,8 @@ const (
 	OnChoosing
 	// OnCalendar is the calendar a deadline is chosen on, over the form.
 	OnCalendar
+	// OnMenu is what a right click offers, beside the pointer.
+	OnMenu
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -117,6 +119,11 @@ type Window struct {
 	// calendar's keyboard is on: see calendar.go.
 	now time.Time
 	day time.Time
+	// menu is what a right click offered, menuAt where it was clicked and
+	// menuOn the line the keyboard is on: see menu.go.
+	menu   []string
+	menuAt Point
+	menuOn int
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string

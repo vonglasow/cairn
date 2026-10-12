@@ -230,6 +230,8 @@ func (w Window) panel() Box {
 		return w.HelpBox()
 	case OnCalendar:
 		return w.CalendarBox()
+	case OnMenu:
+		return w.MenuBox()
 	}
 	return Over(w.width, w.height)
 }

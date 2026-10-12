@@ -538,6 +538,16 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A right click says what can be done to what is under it.** What a card can
+have done to it was on the bar once the card was chosen, so a hand on the
+mouse went to the card and then down to the foot of the window. A right press
+chooses what is under it and opens a menu beside the pointer (`menu.go`):
+Edit, Take up or Let go, Archive or Restore, Delete on a task; Edit and Delete
+on an objective; the board's own offers where there is neither. Every line is
+an offer the bar already makes, done the way the bar does it. The arrows and
+`j k` walk it, `⏎` takes a line, `esc` or a click off it closes it and does
+nothing else.
+
 **A deadline is chosen on a calendar.** It was typed as a date, which meant
 knowing what date next Friday falls on. `⏎` on the field, or Choose, opens a
 month at a time over the form (`calendar.go`): six weeks from the Monday on or

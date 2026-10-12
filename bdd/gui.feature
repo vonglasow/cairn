@@ -882,6 +882,58 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: A right click says what can be done to what is under it
+
+    What a card can have done to it was on the bar, at the foot of the window,
+    once the card was chosen: a hand on the mouse went to the card, then down
+    to the bar. A right click on a card chooses it and offers the same acts
+    beside it; on an objective, an objective's; anywhere else on the board,
+    what the board offers.
+
+    @gui-a-right-click-on-a-card
+    Scenario: a right click on a card chooses it and offers what can be done to it
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      Then the card "Write the spec" is chosen
+      And the menu offers "Edit", "Take up", "Archive", "Delete"
+
+    @gui-a-menu-acts
+    Scenario: what is clicked in the menu is done to the card
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      And I click "Take up" in the menu
+      Then task 1 is in focus
+      And the window is on the board
+      When I right-click the card "Write the spec"
+      Then the menu offers "Edit", "Let go", "Archive", "Delete"
+
+    @gui-a-menu-is-walked-with-the-keys
+    Scenario: the menu is walked with the arrows, enter takes a line and esc closes it
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      And I press "esc"
+      Then the window is on the board
+      When I right-click the card "Write the spec"
+      And I press "enter"
+      Then the window is on the form
+
+    @gui-a-right-click-off-the-cards
+    Scenario: a right click where there is no card offers what the board does
+      When I open the window
+      And I right-click the column "TODO"
+      Then the menu offers "New", "Search", "Archived", "Help"
+
+    @gui-a-click-off-the-menu-closes-it
+    Scenario: a click off the menu closes it and does nothing else
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I right-click the card "Write the spec"
+      And I click the column "BACKLOG"
+      Then the window is on the board
+
   Rule: A deadline is chosen on a calendar
 
     A deadline was typed as a date, which means knowing what day of the week

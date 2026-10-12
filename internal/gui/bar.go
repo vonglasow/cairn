@@ -184,6 +184,7 @@ func helping() []Said {
 		{Key: "double-click", Means: "open it, and see everything it carries"},
 		{Key: "drag", Means: "move it — the column it lands in is its new state"},
 		{Key: "drag into a lane", Means: "blocked, watching or paused"},
+		{Key: "right click", Means: "what can be done to what is under it — the board's offers where there is nothing"},
 		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a history"},
 		{Key: "wheel on a history", Means: "scroll it — the bar beside it can be pulled too"},
 		{Key: "on an open task", Means: "every text can be held: drag across it, double-click a word, triple-click a paragraph — ⌘A holds it all, ⌘C copies"},
@@ -232,6 +233,10 @@ func (w Window) Offers() []string {
 		return []string{"Take", "Keep", "Cancel"}
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
+	case OnMenu:
+		// The menu is its own offers: the bar under it says what the board
+		// will offer again, faintly, as it does under every panel.
+		return nil
 	case OnForm:
 		// The one field a list answers says so on the bar. enter is Save's key
 		// everywhere else in a form, and a bar that went on offering Save here

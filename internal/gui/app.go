@@ -78,11 +78,12 @@ func pasting(w Window, said io.Reader) Window {
 	return w.Pasted(string(read))
 }
 
-// Acts says whether a pointer event carries a button this board answers. Only
-// the first: a right or a middle click arrived as a press and a release like
-// any other, so it chose cards and pressed offers while nothing on screen
-// suggested it would — and there is no menu behind it to make that mean
-// something. A scroll carries no button at all and goes through.
+// Acts says whether a pointer event carries a button this board answers as a
+// click. Only the first: a right or a middle click arrived as a press and a
+// release like any other, so it chose cards and pressed offers while nothing
+// on screen suggested it would. The right press is read before this, and
+// opens the menu (menu.go). A scroll carries no button at all and goes
+// through.
 func Acts(b pointer.Buttons) bool { return b == 0 || b == pointer.ButtonPrimary }
 
 // Gesture is what a pointer has said so far: when the last press landed and
@@ -409,6 +410,12 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 		}
 		switch e := raw.(type) {
 		case pointer.Event:
+			// The second button opens what can be done to what is under it,
+			// on the press, the way a menu opens everywhere else.
+			if e.Buttons == pointer.ButtonSecondary && e.Kind == pointer.Press {
+				w = w.ContextAt(Dp(e.Position, gtx.Metric.PxPerDp))
+				continue
+			}
 			if !Acts(e.Buttons) {
 				continue
 			}
