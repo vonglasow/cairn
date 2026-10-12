@@ -945,6 +945,26 @@ Feature: The desktop board
       When I press "t"
       Then the week shown starts on "2026-10-12"
 
+    @gui-the-time-tab-is-clicked
+    Scenario: the time page is reached by clicking its tab, like the other two
+      Given today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the tab is "TIME"
+      And the week shown starts on "2026-09-28"
+
+    @gui-a-page-lets-go-of-what-was-taken
+    Scenario: changing page lets go of the cards taken together, which are not on the new one
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "todo"
+      When I open the window
+      And I click the card "First"
+      And I ⌘-click the card "Second"
+      And I press "tab"
+      And I press "tab"
+      Then no card is taken with another
+      And the bar does not offer "Delete"
+
     @gui-the-time-page-chooses-no-card
     Scenario: a click on the time page chooses no card behind it
       Given I added a task titled "Write the spec" with the state "todo"

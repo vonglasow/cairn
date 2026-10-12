@@ -70,8 +70,7 @@ func (w Window) Click(p Point) Window {
 		return w
 	}
 	if tab, on := w.tabAt(p); on {
-		w.tab, w.chosen, w.chosenGoal, w.taken = tab, 0, false, nil
-		return w
+		return w.onPage(tab)
 	}
 	return w.choosingAt(w.at(p))
 }
@@ -113,9 +112,9 @@ func (w Window) goalAt(p Point) int {
 // clicking nothing.
 func (w Window) tabAt(p Point) (Tab, bool) {
 	l := w.Layout()
-	for _, tab := range []Tab{Tasks, Objectives} {
-		if TabAt(l, int(tab)).In(p) {
-			return tab, true
+	for tab := range Pages {
+		if TabAt(l, tab).In(p) {
+			return Tab(tab), true
 		}
 	}
 	return w.tab, false

@@ -48,8 +48,16 @@ func (w Window) Searched() Written { return w.looking }
 // what went wrong too: said on one page, it is about that page, and read on
 // the other it would be about nothing there.
 func (w Window) other(by int) Window {
-	w.tab = Tab((int(w.tab) + by + len(Pages)) % len(Pages))
-	w.chosen, w.chosenGoal = 0, false
+	return w.onPage(Tab((int(w.tab) + by + len(Pages)) % len(Pages)))
+}
+
+// onPage opens a page, by key or by its tab: one way in, so the two cannot
+// disagree about what a page lets go of. What was chosen and what was taken
+// together are on the page left — the keys would act on cards not drawn —
+// and so is what went wrong.
+func (w Window) onPage(tab Tab) Window {
+	w.tab = tab
+	w.chosen, w.chosenGoal, w.taken = 0, false, nil
 	w.err, w.wrongFor = nil, 0
 	if w.tab == Time {
 		return w.readingWeek()

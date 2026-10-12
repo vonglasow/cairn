@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -251,9 +252,8 @@ func (w *world) doubleClick(title string) error {
 }
 
 func (w *world) clickTab(name string) error {
-	which := map[string]Tab{"TASKS": Tasks, "OBJECTIVES": Objectives}
-	tab, known := which[name]
-	if !known {
+	tab := slices.Index(Pages, name)
+	if tab < 0 {
 		return fmt.Errorf("no tab called %q", name)
 	}
 	box := TabAt(w.w.Layout(), int(tab))
