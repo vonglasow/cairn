@@ -64,9 +64,5 @@ func cairnMenuPicked(tag C.int) {
 	if !ok {
 		return
 	}
-	select {
-	case menuPicks <- line:
-	default:
-	}
-	menuWake()
+	handedOver(line, menuPicks, menuWake)
 }

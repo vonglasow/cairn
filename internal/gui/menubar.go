@@ -92,6 +92,19 @@ func (k Keyboard) KeyOf(item string) string {
 // made says whether a handle the system handed back names something.
 func made(handle uintptr) bool { return handle != 0 }
 
+// handedOver gives the loop a line picked in the system's menu bar, and asks
+// for the frame that takes it on the side. The system calls on its own
+// thread, and on macOS asking for a frame from there is answered there and
+// then, inside the lock the asking holds: asked in place, it never returned.
+// A loop with picks still to take loses the line rather than hold the system.
+func handedOver(line string, picks chan<- string, wake func()) {
+	select {
+	case picks <- line:
+	default:
+	}
+	go wake()
+}
+
 // lineAt is the line of the menu bar a number names, if any.
 func lineAt(lines []string, at int) (string, bool) {
 	if at < 0 || at >= len(lines) {

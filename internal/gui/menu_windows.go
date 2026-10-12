@@ -76,11 +76,7 @@ func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 func menuProc(hwnd, msg, wParam, lParam uintptr) uintptr {
 	if at, ok := commandLine(msg, wParam); ok {
 		if line, ok := lineAt(menuLines, at); ok {
-			select {
-			case menuPicks <- line:
-			default:
-			}
-			menuWake()
+			handedOver(line, menuPicks, menuWake)
 			return 0
 		}
 	}

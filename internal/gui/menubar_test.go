@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"slices"
 	"testing"
+	"time"
 
 	"cairn/internal/reading"
 )
@@ -188,5 +189,41 @@ func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
 		if got := painted(shot, stroke, Dark().Chosen); got != stroke.W*stroke.H {
 			t.Errorf("the stroke %+v has %d of its %d pixels", stroke, got, stroke.W*stroke.H)
 		}
+	}
+}
+
+// A line picked in the system's menu bar is handed to the loop, and the
+// frame that takes it is asked for without waiting on it: the system calls
+// on its own thread, and on macOS asking for a frame from that thread runs
+// the asking there and then — inside the very lock the asking holds — so a
+// pick that waited never came back and the window spun for good.
+func TestALinePickedIsHandedOverWithoutWaiting(t *testing.T) {
+	picks := make(chan string, 1)
+	release, woken := make(chan struct{}), make(chan struct{})
+	wake := func() { <-release; close(woken) }
+	returned := make(chan struct{})
+	go func() { handedOver("Quit", picks, wake); close(returned) }()
+	select {
+	case <-returned:
+	case <-time.After(time.Second):
+		t.Fatal("handing a line over waited on the frame it asked for")
+	}
+	if got := <-picks; got != "Quit" {
+		t.Errorf("the loop was handed %q", got)
+	}
+	close(release)
+	select {
+	case <-woken:
+	case <-time.After(time.Second):
+		t.Fatal("no frame was asked for")
+	}
+	// A loop with picks still to take loses the line, never the system's thread.
+	full := make(chan string)
+	done := make(chan struct{})
+	go func() { handedOver("Quit", full, func() {}); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("handing a line to a full loop waited")
 	}
 }
