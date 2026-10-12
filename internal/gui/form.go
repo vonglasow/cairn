@@ -10,6 +10,7 @@ package gui
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -537,8 +538,17 @@ func (w Window) Choose(name string) Window {
 		// list, and in the list it takes what the keyboard is on. A bar that
 		// said "Open a list" would be naming the mechanism rather than what
 		// somebody came to do.
+		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
+			return w.openingCalendar()
+		}
 		return w.choosingList()
+	case "no day":
+		return w.dated(time.Time{})
 	case "cancel":
+		if w.screen == OnCalendar {
+			w.screen = OnForm
+			return w
+		}
 		// Backing out of a list is backing out of the list, not of the form
 		// under it: the form holds what somebody typed, and throwing that away
 		// is what Cancel on a form means.
@@ -554,6 +564,9 @@ func (w Window) Choose(name string) Window {
 		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
 		return w
 	case "take":
+		if w.screen == OnCalendar {
+			return w.dated(w.day)
+		}
 		return w.taking()
 	case "keep":
 		return w.keeping()

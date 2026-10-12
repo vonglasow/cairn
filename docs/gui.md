@@ -538,6 +538,17 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A deadline is chosen on a calendar.** It was typed as a date, which meant
+knowing what date next Friday falls on. `⏎` on the field, or Choose, opens a
+month at a time over the form (`calendar.go`): six weeks from the Monday on or
+before the first, so no row moves from one month to the next; the arrows walk
+days and weeks, `⇧←→` months — the last day of a longer month landing on the
+last of a shorter one, never in the month after — `t` today, `⏎` or a click
+takes a day, `⌫` leaves no day and `esc` leaves the field as it was. It opens
+on the day the field holds, or today. Today is what the window was last told
+it is, each frame (`At`), so a scenario names its own. The field still takes a
+date typed. Tasks and objectives open the same one.
+
 **A form saves itself.** `⌘S` was the only way a change reached the store,
 and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at

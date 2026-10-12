@@ -190,6 +190,37 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawForm(gtx, th, skin, w)
 		drawChoosing(gtx, th, skin, w)
 	}
+	if w.Screen() == OnCalendar {
+		drawForm(gtx, th, skin, w)
+		drawCalendar(gtx, th, skin, w)
+	}
+}
+
+// drawCalendar is the month the keyboard is in: the weekdays, six weeks, the
+// day the keyboard is on outlined, today on a ground of its own, and the days
+// of the months either side faint.
+func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := w.CalendarBox()
+	drawPanel(gtx, th, skin, box, Heads(w))
+	for i, name := range Weekdays {
+		say(gtx, th, skin.Faint, WeekdayAt(box, i), name, reads)
+	}
+	today := w.today()
+	for i, day := range MonthGrid(w.day) {
+		at := DayAt(box, i)
+		if day.Equal(today) {
+			fill(gtx, at, skin.Back)
+		}
+		if day.Equal(w.day) {
+			outline(gtx, at, skin.Chosen)
+		}
+		ink := skin.Ink
+		if w.Faded(day) {
+			ink = skin.Faint
+		}
+		say(gtx, th, ink, Inside(at), strconv.Itoa(day.Day()), reads)
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // TickedMark says an objective is in. A third mark in a window that took two on

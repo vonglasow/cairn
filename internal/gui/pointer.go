@@ -25,6 +25,10 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnChoosing {
 		return w.clickingList(p)
 	}
+	if w.screen == OnCalendar {
+		w, _ = w.dayClicked(p)
+		return w
+	}
 	// A form's own fields answer, because that is how the keyboard gets to one
 	// with a mouse.
 	if at, on := w.fieldAt(p); on {

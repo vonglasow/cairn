@@ -39,6 +39,8 @@ const (
 	// does here is not what it does in a field: space ticks, and enter — which
 	// saves everywhere else — is what opened this.
 	OnChoosing
+	// OnCalendar is the calendar a deadline is chosen on, over the form.
+	OnCalendar
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -111,6 +113,10 @@ type Window struct {
 	measure Measure
 	// keyboard is what keys are written for, see keyboard.go.
 	keyboard Keyboard
+	// now is the moment the window was last told it is, and day the day the
+	// calendar's keyboard is on: see calendar.go.
+	now time.Time
+	day time.Time
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string

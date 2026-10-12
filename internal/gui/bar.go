@@ -36,6 +36,8 @@ func HeadsOn(w Window, screen Screen) string {
 			what = "a " + w.form.Fields()[w.form.On()].Name + " for"
 		}
 		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
+	case OnCalendar:
+		return "a deadline for " + w.formKind() + " " + strconv.Itoa(w.form.Number) + " — " + w.day.Format("January 2006")
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -133,6 +135,8 @@ func Shortcut(offer string) string {
 		return "s"
 	case "recover":
 		return "cmd+z"
+	case "no day":
+		return "backspace"
 	}
 	return ""
 }
@@ -203,6 +207,7 @@ func helping() []Said {
 		{Key: "⌦ ⌘⌫ ⌥⌫", Means: "take out what is after the caret, back to the start of the line, back a word"},
 		{Key: "⇧↑↓ in the description", Means: "hold whole lines of it"},
 		{Key: "⏎ in a list", Means: "take the row · ⌘⏎ keeps the list · j and k walk it"},
+		{Key: "⏎ on a deadline", Means: "a calendar — the arrows walk days and weeks, ⇧←→ months, t today, ⌫ no day"},
 		{Key: "⇧A", Means: "what was archived, on the board or off it — it reads faintly"},
 		{Key: "⌘N", Means: "add"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
@@ -225,6 +230,8 @@ func (w Window) Offers() []string {
 		// on, which is the gesture a hand already has for a list; enter is
 		// done with the whole list, which is a different act and says so.
 		return []string{"Take", "Keep", "Cancel"}
+	case OnCalendar:
+		return []string{"Take", "No day", "Cancel"}
 	case OnForm:
 		// The one field a list answers says so on the bar. enter is Save's key
 		// everywhere else in a form, and a bar that went on offering Save here
@@ -236,7 +243,7 @@ func (w Window) Offers() []string {
 		// list closed there was no way to save at all — the one act a form
 		// exists for, unreachable for having chosen something.
 		offers := []string{"Save", "Cancel"}
-		if chosenFromAList(w.form.Fields()[w.form.On()]) {
+		if on := w.form.Fields()[w.form.On()]; chosenFromAList(on) || chosenOnACalendar(on) {
 			offers = []string{"Choose", "Save", "Cancel"}
 		}
 		if w.recoverable() {
@@ -316,6 +323,9 @@ func (w Window) clickingList(p Point) Window {
 // rather than by typing. The objectives and the parent are numbers somebody
 // would otherwise have to go and look up; a column or a priority is one of a
 // closed set, and the list is where that set is read before one is picked.
+func chosenOnACalendar(field reading.Field) bool { return field.Arg == "deadline" }
+
+// chosenFromAList says whether a field is answered by a list.
 func chosenFromAList(field reading.Field) bool {
 	return field.Arg == "objective" || field.Arg == "parent" || field.Arg == "label" || len(field.Choices) > 0
 }

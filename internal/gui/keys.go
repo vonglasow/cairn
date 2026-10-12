@@ -60,6 +60,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnSearch:   Window.onSearch,
 	OnChoosing: Window.inChoosing,
 	OnHelp:     Window.inHelp,
+	OnCalendar: Window.onCalendar,
 }
 
 // onBoard is what a key does on the board itself.

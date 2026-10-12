@@ -316,7 +316,7 @@ func loop(work reading.Work, width, height int) error {
 			return e.Err
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
-			board = board.Resized(Sized(gtx.Constraints.Max, gtx.Metric.PxPerDp))
+			board = board.Resized(Sized(gtx.Constraints.Max, gtx.Metric.PxPerDp)).At(gtx.Now)
 			if due(looked, gtx.Now) {
 				board, looked = board.Wonder(), gtx.Now
 			}

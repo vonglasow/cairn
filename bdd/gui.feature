@@ -882,6 +882,96 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: A deadline is chosen on a calendar
+
+    A deadline was typed as a date, which means knowing what day of the week
+    the twentieth is, or what date next Friday falls on. Enter on the field
+    opens a calendar, a month at a time; the field still takes a date typed.
+
+    @gui-a-deadline-is-chosen-on-a-calendar
+    Scenario: the calendar walks the days and the months, and enter takes one
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      Then the calendar is open on "2026-10-12"
+      When I press "right" 3 times
+      And I press "down"
+      And I press "shift+right"
+      Then the calendar is open on "2026-11-22"
+      When I press "enter"
+      Then the window is on the form
+      And the field "deadline" reads "2026-11-22"
+
+    @gui-a-calendar-opens-on-the-day-held
+    Scenario: the calendar opens on the day the field holds, and t goes back to today
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-12-25"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      Then the calendar is open on "2026-12-25"
+      When I press "t"
+      Then the calendar is open on "2026-10-12"
+
+    @gui-a-calendar-takes-the-deadline-away
+    Scenario: backspace on the calendar leaves the task with no deadline
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-12-25"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      And I press "backspace"
+      Then the window is on the form
+      And the field "deadline" reads ""
+
+    @gui-a-calendar-left-changes-nothing
+    Scenario: esc leaves the calendar and the deadline as it was
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-12-25"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      And I press "right"
+      And I press "esc"
+      Then the window is on the form
+      And the field "deadline" reads "2026-12-25"
+
+    @gui-a-day-is-clicked-on-the-calendar
+    Scenario: a day clicked on the calendar is taken
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      And I click the day "2026-10-30" on the calendar
+      Then the field "deadline" reads "2026-10-30"
+
+    @gui-an-objective-deadline-is-chosen-too
+    Scenario: an objective's deadline opens the same calendar
+      Given I added an objective titled "Ship the board"
+      And today is "2026-10-12"
+      When I open the window
+      And I press "tab"
+      And I click the objective "Ship the board"
+      And I choose "Edit"
+      And I put the keyboard on "deadline"
+      And I press "enter"
+      And I press "enter"
+      Then the field "deadline" reads "2026-10-12"
+
   Rule: A form saves itself
 
     ⌘S was the only way a change reached the store, and every other place a

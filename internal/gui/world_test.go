@@ -11,12 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/widget/material"
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/task"
@@ -32,6 +34,9 @@ type world struct {
 	w     Window
 
 	width, high int
+	// today is the day the window is told it is: the moment every scenario
+	// is read at, unless it names another.
+	today time.Time
 	// system is what the window is told it runs on. Every scenario runs on a
 	// Mac unless it says otherwise, so the keys it reads are the same keys
 	// whatever machine runs the suite.
@@ -84,6 +89,7 @@ func (w *world) reset() {
 	w.w = Window{}
 	w.width, w.high = 1200, 800
 	w.system = "darwin"
+	w.today = moment
 	w.scrolled = [Columns]int{}
 	w.laneScrolled = [3]int{}
 }
@@ -171,7 +177,7 @@ func (w *world) storeRefuses() error {
 // ── what a person does ────────────────────────────────────────────────────
 
 func (w *world) open() error {
-	w.w = New(w.work, w.width, w.high).OnSystem(w.system)
+	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today)
 	w.w = w.w.Look()
 	return w.w.Wrong()
 }
@@ -661,6 +667,30 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.When(`^I open the window$`, w.open)
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
+	sc.Given(`^today is "([^"]*)"$`, func(day string) error {
+		parsed, err := domain.ParseDeadline(day)
+		w.today = parsed.Add(12 * time.Hour)
+		return err
+	})
+	sc.Then(`^the calendar is open on "([^"]*)"$`, func(day string) error {
+		if w.w.Screen() != OnCalendar {
+			return fmt.Errorf("the window is on %v, not on the calendar", w.w.Screen())
+		}
+		if got := domain.FormatDay(w.w.CalendarDay()); got != day {
+			return fmt.Errorf("the calendar is on %s, want %s", got, day)
+		}
+		return nil
+	})
+	sc.Step(`^I click the day "([^"]*)" on the calendar$`, func(day string) error {
+		for i, shown := range MonthGrid(w.w.CalendarDay()) {
+			if domain.FormatDay(shown) == day {
+				box := DayAt(w.w.CalendarBox(), i)
+				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the calendar does not show %s", day)
+	})
 	sc.Given(`^the window runs on "([^"]*)"$`, func(system string) error {
 		w.system = system
 		return nil
