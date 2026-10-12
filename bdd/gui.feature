@@ -1167,15 +1167,15 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "Back up", "Backups", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+      Then the menu offers "New", "New backup", "Backups", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
 
-  Rule: The store is backed up, and put back, from the window
+  Rule: A new backup is made, and a backup restored, from the window
 
-    Backing the store up, and putting a backup back, were the command line's:
-    a person at the window went to a terminal to do either. ⌘B backs it up
-    and says where the backup is — a file to copy anywhere; ⇧B lists the
-    backups, and enter puts one back once it has been agreed to, what the
-    store holds then backed up first.
+    Making a new backup, and restoring one, were the command line's: a person
+    at the window went to a terminal to do either. ⌘B makes a new backup and
+    says where it is — a file to copy anywhere; ⇧B lists the backups, and
+    enter restores one once it has been agreed to, a new backup of what the
+    store holds made first.
 
     @gui-backing-up-from-the-window
     Scenario: ⌘B backs the store up and says where the backup is
@@ -1186,7 +1186,7 @@ Feature: The desktop board
       And there is 1 backup
 
     @gui-putting-a-backup-back-from-the-window
-    Scenario: a backup chosen from the list is put back once agreed to
+    Scenario: a backup chosen from the list is restored once agreed to
       Given I added a task titled "Write the spec"
       When I open the window
       And I press "cmd+b"
@@ -1200,7 +1200,7 @@ Feature: The desktop board
       Then the window is on the board
       And "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
-      And the window tells "backup 1 was put back"
+      And the window tells "backup 1 was restored"
       And there are 2 backups
 
     @gui-the-backups-are-left-without-putting-one-back
@@ -1280,7 +1280,7 @@ Feature: The desktop board
     Scenario: a right click where there is no card offers what the board does
       When I open the window
       And I right-click the column "TODO"
-      Then the menu offers "New", "Search", "Archived", "Help", "Back up", "Backups", "Export", "Import"
+      Then the menu offers "New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"
 
     @gui-a-click-off-the-menu-closes-it
     Scenario: a click off the menu closes it and does nothing else

@@ -627,7 +627,7 @@ func (w Window) Choose(name string) Window {
 		return w.exportingStore()
 	case "import":
 		return w.importingStore()
-	case "back up":
+	case "new backup":
 		return w.backingUp()
 	case "backups":
 		return w.listingBackups()

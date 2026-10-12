@@ -38,7 +38,7 @@ var errNotConfirmed = engine.Refusing("not-confirmed", "needs --yes to confirm")
 var groupShort = map[string]string{
 	"task":      "Add, list, read, change and delete tasks",
 	"objective": "Add, list, read, change and delete objectives",
-	"backup":    "Make, list, read and put back backups of the store",
+	"backup":    "New, list, show, restore and delete backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
 	"trace":     "Read what was done to a task, or over a period",

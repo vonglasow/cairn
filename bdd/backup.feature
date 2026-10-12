@@ -152,7 +152,7 @@ Feature: Backups of the store
 
 
 
-  Rule: A backup can be put back
+  Rule: A backup can be restored
 
     @backup-restore
     Scenario: putting a backup back returns the store to what it held
@@ -164,7 +164,7 @@ Feature: Backups of the store
       And `cairn task list` lists 1 task
 
     @backup-restore-under-an-open-board
-    Scenario: a board open while a backup is put back writes to what was put back
+    Scenario: a board open while a backup is restored writes to what was restored
       A board holds the store open for as long as it is on screen. Putting a
       backup back replaces the file under it, and a board still writing to the
       file that was replaced loses what it writes without a word.
@@ -225,7 +225,7 @@ Feature: Backups of the store
       Given I added a task titled "Write the spec"
       When I run `cairn backup restore --yes`
       Then it fails
-      And it says there is no backup to put back
+      And it says there is no backup to restore
 
   Rule: A store travels as a file
 

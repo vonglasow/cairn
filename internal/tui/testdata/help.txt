@@ -15,7 +15,7 @@
  │ the time spent                              │ │   ‖  paused    waiting on your decision     │
  │   :           command — what it answers is  │ │                                             │
  │ said until esc                              │ │ OBJECTIVES                                  │
- │   b           back the store up             │ │   ▶  active    being worked towards         │
+ │   b           a new backup of the store     │ │   ▶  active    being worked towards         │
  │   ⇧B          the backups                   │ │   ‖  on-hold   not for now                  │
  │   ←→ t on timewalk the weeks, back to       │ │   ✓  reached   done with                    │
  │ today's                                     │ │   ✕  dropped   given up                     │

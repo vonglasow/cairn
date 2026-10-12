@@ -93,7 +93,7 @@ func (w Window) puttingBack() Window {
 	if _, err := w.work.Ask(engine.BackupRestore, reading.Numbered(number)); err != nil {
 		return w.failing(err)
 	}
-	return w.Look().telling(fmt.Sprintf("backup %d was put back", number))
+	return w.Look().telling(fmt.Sprintf("backup %d was restored", number))
 }
 
 // BackupsFrom is the first backup of the list in sight. Every backup put back

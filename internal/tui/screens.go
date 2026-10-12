@@ -93,7 +93,7 @@ func (b Board) helpKeys() []string {
 		b.says("/", "search"),
 		b.says("⇥", "next tab — tasks, objectives, the time spent"),
 		b.says(":", "command — what it answers is said until esc"),
-		b.says("b", "back the store up"),
+		b.says("b", "a new backup of the store"),
 		b.says("⇧B", "the backups"),
 		b.says("←→ t on time", "walk the weeks, back to today's"),
 	)

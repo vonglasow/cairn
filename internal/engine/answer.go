@@ -238,10 +238,10 @@ type Deleted struct {
 	WasBlocking []int `json:"was_blocking,omitempty"`
 }
 
-// PutBack confirms a backup was restored, replacing the store with what it
+// Restored confirms a backup was restored, replacing the store with what it
 // held.
-type PutBack struct {
-	PutBack int `json:"put back"`
+type Restored struct {
+	Restored int `json:"restored"`
 }
 
 // Applied names what a change command made — every name it applied, or none
@@ -312,14 +312,14 @@ func Of(op Operation, a Answer) any {
 		return Labelled{Labelled: *a.Labelled}
 	case Deleted:
 		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
-	case PutBack:
-		return PutBack{PutBack: *a.PutBack}
+	case Restored:
+		return Restored{Restored: *a.Restored}
 	case PluginWritten:
 		return PluginWritten{Plugin: *a.Plugin}
 	case Exported:
 		return Exported{Exported: *a.Exported, Holds: a.Holds}
 	case Imported:
-		return Imported{Imported: *a.Imported, Backup: *a.PutBack}
+		return Imported{Imported: *a.Imported, Backup: *a.Restored}
 	case Applied:
 		return Applied{Applied: a.Applied}
 	case Acts:

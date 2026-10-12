@@ -110,8 +110,8 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if answer.PutBack == nil || *answer.PutBack != latest.Backup.Number {
-		t.Fatalf("answer.PutBack = %v, want %d", answer.PutBack, latest.Backup.Number)
+	if answer.Restored == nil || *answer.Restored != latest.Backup.Number {
+		t.Fatalf("answer.Restored = %v, want %d", answer.Restored, latest.Backup.Number)
 	}
 
 	// A number a backup does carry restores that one, not whichever the
@@ -120,8 +120,8 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if first.PutBack == nil || *first.PutBack != 1 {
-		t.Fatalf("first.PutBack = %v, want 1", first.PutBack)
+	if first.Restored == nil || *first.Restored != 1 {
+		t.Fatalf("first.Restored = %v, want 1", first.Restored)
 	}
 }
 
@@ -231,10 +231,10 @@ func TestBackupImport_putsTheStoreFromAFileInPlace(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if answer.Imported == nil || *answer.Imported != from || answer.PutBack == nil || *answer.PutBack != 1 {
-		t.Fatalf("answered %v, put back %v", answer.Imported, answer.PutBack)
+	if answer.Imported == nil || *answer.Imported != from || answer.Restored == nil || *answer.Restored != 1 {
+		t.Fatalf("answered %v, put back %v", answer.Imported, answer.Restored)
 	}
-	if got := RenderText(BackupImport, answer); got != "the store now holds what "+from+" held — backup 1; what it held before was backed up first\n" {
+	if got := RenderText(BackupImport, answer); got != "the store now holds what "+from+" held — backup 1; a new backup of what it held before was made first\n" {
 		t.Errorf("it says %q", got)
 	}
 	if shape, ok := Of(BackupImport, answer).(Imported); !ok || shape.Imported != from || shape.Backup != 1 {

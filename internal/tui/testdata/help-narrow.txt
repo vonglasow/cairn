@@ -20,8 +20,8 @@
  │ spent                         │ │ your decision                 │
  │   :           command — what  │ │                               │
  │ it answers is said until esc  │ │ OBJECTIVES                    │
- │   b           back the store  │ │   ▶  active    being worked   │
- │ up                            │ │ towards                       │
+ │   b           a new backup of │ │   ▶  active    being worked   │
+ │ the store                     │ │ towards                       │
  │   ⇧B          the backups     │ │   ‖  on-hold   not for now    │
  │   ←→ t on timewalk the weeks, │ │   ✓  reached   done with      │
  │ back to today's               │ │   ✕  dropped   given up       │

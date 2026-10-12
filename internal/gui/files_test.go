@@ -173,7 +173,7 @@ func TestImportingAsksBeforeReplacingTheStore(t *testing.T) {
 	if chosen.Screen() != OnAsking || Heads(chosen) != "Bring in cairn.db?" {
 		t.Fatalf("the window is on %v headed %q", chosen.Screen(), Heads(chosen))
 	}
-	if asks := chosen.Asks(); len(asks) != 2 || asks[0].Means != "It takes the place of the store, which is backed up first." {
+	if asks := chosen.Asks(); len(asks) != 2 || asks[0].Means != "It takes the place of the store, a new backup of which is made first." {
 		t.Errorf("the question says %+v", asks)
 	}
 	if left := chosen.Choose("Cancel"); left.Screen() != OnTheBoard || f.what("backup", "import") != 0 {
@@ -210,17 +210,17 @@ func TestCarryingTheStoreIsOffered(t *testing.T) {
 	if offers := w.BoardOffers(); !slices.Contains(offers, "Export") || !slices.Contains(offers, "Import") {
 		t.Errorf("the bar offers %v", offers)
 	}
-	if Shortcut("export") != "cmd+e" || Shortcut("import") != "cmd+o" || Shortcut("back up") != "cmd+b" || Shortcut("backups") != "shift+b" {
+	if Shortcut("export") != "cmd+e" || Shortcut("import") != "cmd+o" || Shortcut("new backup") != "cmd+b" || Shortcut("backups") != "shift+b" {
 		t.Error("the shortcuts are not the keys")
 	}
-	if got := w.menuFor(); !slices.Equal(got, []string{"New", "Search", "Archived", "Help", "Back up", "Backups", "Export", "Import"}) {
+	if got := w.menuFor(); !slices.Equal(got, []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"}) {
 		t.Errorf("the board's menu offers %v", got)
 	}
 	// Refused, so the empty answer of the fake is never read: what is
 	// counted is that each was asked for.
 	f := newFake()
 	f.fail = errors.New("refused")
-	if New(f, 1200, 800).Choose("Back up"); f.what("backup", "new") != 1 {
+	if New(f, 1200, 800).Choose("New backup"); f.what("backup", "new") != 1 {
 		t.Error("Back up made no backup")
 	}
 	if New(f, 1200, 800).Choose("Backups"); f.what("backup", "list") != 1 {

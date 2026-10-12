@@ -269,7 +269,7 @@
       "idempotentHint": false,
       "openWorldHint": false,
       "readOnlyHint": false,
-      "title": "Put a backup back, the most recent one unless told otherwise"
+      "title": "Restore a backup, the most recent one unless told otherwise"
     },
     "input": {
       "additionalProperties": false,
@@ -286,12 +286,12 @@
     "output": {
       "type": "object",
       "properties": {
-        "put back": {
+        "restored": {
           "type": "integer"
         }
       },
       "required": [
-        "put back"
+        "restored"
       ],
       "additionalProperties": false
     }

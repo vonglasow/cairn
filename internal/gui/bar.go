@@ -49,7 +49,7 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnCalendar:
 		return "a deadline for " + w.formNamed() + " — " + w.day.Format("January 2006")
 	case OnBackups:
-		return "Backups — enter puts one back"
+		return "Backups — enter restores one"
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -122,7 +122,7 @@ func Shortcut(offer string) string {
 		return "cmd+e"
 	case "import":
 		return "cmd+o"
-	case "back up":
+	case "new backup":
 		return "cmd+b"
 	case "backups":
 		return "shift+b"
@@ -239,10 +239,10 @@ func helping() []Said {
 		{Key: "⏎ on a deadline", Means: "a calendar — the arrows walk days and weeks, ⇧←→ months, t today, ⌫ no day"},
 		{Key: "⇧A", Means: "what was archived, on the board or off it — it reads faintly"},
 		{Key: "⌘N", Means: "new"},
-		{Key: "⌘B", Means: "back the store up — it says where the copy lies"},
-		{Key: "⇧B", Means: "the backups — enter puts one back, after asking, the store backed up first"},
+		{Key: "⌘B", Means: "a new backup of the store — it says where it lies"},
+		{Key: "⇧B", Means: "the backups — enter restores one, after asking, a new backup made first"},
 		{Key: "⌘E", Means: "export the store to a file chosen in the system's dialog"},
-		{Key: "⌘O", Means: "import a store from a file chosen there — after asking, the store backed up first"},
+		{Key: "⌘O", Means: "import a store from a file chosen there — after asking, a new backup made first"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
 		{Key: "tab", Means: "the next page — shift+tab the one before"},
@@ -469,13 +469,13 @@ func (w Window) Asks() []Said {
 	}
 	if w.question == aboutBringingIn {
 		return []Said{
-			{Means: "It takes the place of the store, which is backed up first."},
+			{Means: "It takes the place of the store, a new backup of which is made first."},
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutPuttingBack {
 		return []Said{
-			{Means: "What the store holds now is backed up first."},
+			{Means: "A new backup of what the store holds now is made first."},
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}

@@ -357,7 +357,7 @@ type On struct {
 // which shape they make: Of and RenderText read that declaration, never which
 // field happens to be filled.
 //
-// Deleted and PutBack are numbers rather than entities because what they name
+// Deleted and Restored are numbers rather than entities because what they name
 // is gone, or is a whole store just replaced: there is nothing left to hand
 // back but which one it was.
 //
@@ -412,7 +412,7 @@ type Answer struct {
 	// Unblocked names the tasks a deleted task was in the way of: the link
 	// goes with it, and afterwards nothing would say they once waited on it.
 	Unblocked []int
-	PutBack   *int
+	Restored  *int
 	// Exported is the file the store was written to, Imported the one it
 	// was brought in from.
 	Exported *string

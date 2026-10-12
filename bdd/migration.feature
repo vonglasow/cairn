@@ -3,7 +3,7 @@ Feature: Changes to the shape of the store
   with it. A store already on disk knows nothing of the latest addition, and
   changing it on the way past — while listing tasks, say — would rewrite
   somebody's data as a side effect. So cairn says what is missing and waits to
-  be told, sets a backup aside before it touches anything, and can put back what
+  be told, sets a backup aside before it touches anything, and can restore what
   it changed.
 
   Background:
@@ -213,7 +213,7 @@ Feature: Changes to the shape of the store
       When I run `cairn migration rollback --yes`
       Then it succeeds
       And it says what it lost
-      And it says a backup can put it back
+      And it says a backup can restore it
 
     @migration-rollback-keeps-what-fits
     Scenario: rolling back keeps what the older shape can still hold

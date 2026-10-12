@@ -96,8 +96,8 @@ finished in, its history and everything it carries stay. It takes a number or a
 narrowing, so a finished column goes in one command, and `task label` marks a
 set first when a sprint is what you want to sweep. A listing leaves the archived
 out until `--archived` or `--with-archived` asks for them; `task show` answers
-one either way. On both boards `x` takes the task under the cursor off the
-board or puts it back, and `⇧A` shows what was taken off, written faintly.
+one either way. On both boards `x` archives or unarchives the task under the
+cursor, and `⇧A` shows what was archived, written faintly.
 
 `task focus` says what you are working on. Several at once is fine — one agent
 session per task, and they run together — so focusing another keeps the first,
@@ -205,7 +205,7 @@ cairn backup list                # every backup, with its number and date
 cairn backup show 2              # when it was made, and what it holds
                                  # `holds 4 task(s) and 2 objective(s)`
 cairn backup delete 2 --yes
-cairn backup restore 2 --yes     # put one back; without a number, the most recent
+cairn backup restore 2 --yes     # restore one; without a number, the most recent
 cairn backup export ~/cairn.db   # the store, to carry elsewhere; never over a file
 cairn backup import ~/cairn.db --yes   # put a store from a file in place
 

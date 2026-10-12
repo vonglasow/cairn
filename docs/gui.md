@@ -618,11 +618,11 @@ so nothing on it chooses a card behind it, and the keys that act on a card
 reach nothing there. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.
 
-**The store is backed up, and put back, from the window.** Both were the
-command line's, so a person at the window went to a terminal for either. `⌘B`
-backs the store up and says where the backup lies; `⇧B` lists the backups, and
-`⏎` puts one back once agreed to, the engine backing up what the store holds
-first, as it always does (`backups.go`). What it tells is said above the bar in
+**A new backup is made, and a backup restored, from the window.** Both were
+the command line's, so a person at the window went to a terminal for either.
+`⌘B` makes a new backup and says where it lies; `⇧B` lists the backups, and
+`⏎` restores one once agreed to, the engine making a new backup of what the
+store holds first, as it always does (`backups.go`). What it tells is said above the bar in
 the ink of what is read, and goes as a refusal does.
 
 **The store is carried out, and brought in, as a file chosen in the system's
@@ -633,7 +633,7 @@ board, open the system's own file dialog (AppKit's panels on macOS, `gioui.org/x
 [dependencies.md](dependencies.md)): the engine writes the store out
 (`backup export`) and the file is saved where the dialog says; or a file chosen
 there is copied aside, and once agreed to the engine puts it in place
-(`backup import`), what the store held backed up first. The dialog blocks
+(`backup import`), a new backup of what the store held made first. The dialog blocks
 until it is answered, and a window that is a value never waits: the window
 says what it wants (`FileAsked`), the loop opens the dialog on the side
 (`Filing`) and hands the answer back (`Filed`) — the one piece no test

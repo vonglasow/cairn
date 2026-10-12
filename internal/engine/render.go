@@ -88,14 +88,14 @@ func rendered(op Operation, a Answer) string {
 			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
 		}
 		return said
-	case PutBack:
-		return fmt.Sprintf("backup %d was put back\n", *a.PutBack)
+	case Restored:
+		return fmt.Sprintf("backup %d was restored\n", *a.Restored)
 	case PluginWritten:
 		return pluginText(*a.Plugin)
 	case Exported:
 		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
 	case Imported:
-		return fmt.Sprintf("the store now holds what %s held — backup %d; what it held before was backed up first\n", *a.Imported, *a.PutBack)
+		return fmt.Sprintf("the store now holds what %s held — backup %d; a new backup of what it held before was made first\n", *a.Imported, *a.Restored)
 	case Applied:
 		return appliedText(a.Applied)
 	case Acts:

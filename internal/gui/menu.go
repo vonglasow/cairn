@@ -46,7 +46,7 @@ func (w Window) ContextAt(p Point) Window {
 // offer for it, the focus with it, and the board's own offers for nothing.
 func (w Window) menuFor() []string {
 	if w.chosen == 0 {
-		return []string{"New", "Search", "Archived", "Help", "Back up", "Backups", "Export", "Import"}
+		return []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"}
 	}
 	if w.chosenGoal {
 		return []string{"Edit", "Delete"}

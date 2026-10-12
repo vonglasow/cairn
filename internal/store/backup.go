@@ -16,7 +16,7 @@ import (
 // The reasons a backup cannot be found.
 var (
 	ErrNoSuchBackup = errors.New("there is no such backup")
-	ErrNoBackup     = errors.New("there is no backup to put back")
+	ErrNoBackup     = errors.New("there is no backup to restore")
 
 	// ErrNotAStore: the file is there and readable, and holds no tasks table.
 	// Backing it up anyway would answer "backup made, 0 tasks", which turns a

@@ -14,7 +14,7 @@ import (
 // or a key already makes.
 func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	want := []MenuGroup{
-		{Name: "File", Items: []string{"New", "Back up", "Backups", "Export", "Import"}},
+		{Name: "File", Items: []string{"New", "New backup", "Backups", "Export", "Import"}},
 		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
 		{Name: "Help", Items: []string{"Help"}},
@@ -130,13 +130,13 @@ func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 	if made(0) || !made(1) {
 		t.Error("a handle of nought names something, or one of 1 nothing")
 	}
-	lines := []string{"New", "Back up"}
+	lines := []string{"New", "New backup"}
 	for at, want := range map[int]bool{-1: false, 0: true, 1: true, 2: false} {
 		if _, ok := lineAt(lines, at); ok != want {
 			t.Errorf("line %d found: %v", at, ok)
 		}
 	}
-	if line, _ := lineAt(lines, 1); line != "Back up" {
+	if line, _ := lineAt(lines, 1); line != "New backup" {
 		t.Errorf("line 1 is %q", line)
 	}
 	if commandOf(0) != 1 || commandOf(4) != 5 {

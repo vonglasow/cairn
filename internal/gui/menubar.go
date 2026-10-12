@@ -22,7 +22,7 @@ const menuButtonWide = 40
 // MenuBar is every menu of the bar, in the order a window lays them out.
 func MenuBar() []MenuGroup {
 	return []MenuGroup{
-		{Name: "File", Items: []string{"New", "Back up", "Backups", "Export", "Import"}},
+		{Name: "File", Items: []string{"New", "New backup", "Backups", "Export", "Import"}},
 		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
 		{Name: "Help", Items: []string{"Help"}},

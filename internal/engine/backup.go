@@ -124,14 +124,14 @@ var BackupDelete = Operation{
 var BackupRestore = Operation{
 	Thing: "backup",
 	Verb:  "restore",
-	Short: "Put a backup back, the most recent one unless told otherwise",
-	Does:  "Put a backup back, the most recent one unless told otherwise.",
+	Short: "Restore a backup, the most recent one unless told otherwise",
+	Does:  "Restore a backup, the most recent one unless told otherwise.",
 	Example: `cairn backup restore --yes
 cairn backup restore 3 --yes`,
 	Level:   Full,
 	Needs:   NoStore,
 	Again:   DoesItAgain,
-	Answers: PutBack{},
+	Answers: Restored{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},
 	},
@@ -143,7 +143,7 @@ cairn backup restore 3 --yes`,
 		if err := on.Backups.Restore(one.Number); err != nil {
 			return Answer{}, err
 		}
-		return Answer{PutBack: &one.Number}, nil
+		return Answer{Restored: &one.Number}, nil
 	},
 }
 
@@ -192,7 +192,7 @@ var BackupImport = Operation{
 	Thing:   "backup",
 	Verb:    "import",
 	Short:   "Put the store held in a file in place of this one",
-	Does:    "Put the store held in a file in place of this one. It is taken in as a backup first, and what the store held is backed up before it goes.",
+	Does:    "Put the store held in a file in place of this one. It is taken in as a backup first, and a new backup of what the store held is made before it goes.",
 	Example: "cairn backup import ~/Downloads/cairn.db --yes",
 	Level:   Full,
 	Needs:   NoStore,
@@ -210,6 +210,6 @@ var BackupImport = Operation{
 		if err := on.Backups.Restore(taken.Number); err != nil {
 			return Answer{}, err
 		}
-		return Answer{Imported: &from, PutBack: &taken.Number}, nil
+		return Answer{Imported: &from, Restored: &taken.Number}, nil
 	},
 }

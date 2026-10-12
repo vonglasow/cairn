@@ -320,7 +320,7 @@ from that mode's bar, and pressing it there does nothing.
 | `:` | ✓ | | ✓ | command |
 | `⇥` | ✓ | | ✓ | next tab |
 | `gg` `G` | | ✓ | ✓ | the first / the last of what you are in |
-| `esc` | ✓ | ✓ | | back up one level |
+| `esc` | ✓ | ✓ | | back one level |
 
 On the board itself `esc` widens a search that is still in force, and does
 nothing once there is none: there is nothing above it to back up to, and leaving

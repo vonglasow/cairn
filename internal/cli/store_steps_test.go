@@ -218,7 +218,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "which task each sub-task hangs under", "the answer")
 	})
 
-	sc.Step(`^it says a backup can put it back$`, func() error {
+	sc.Step(`^it says a backup can restore it$`, func() error {
 		return test.WantContains(w.Out.Stdout, "cairn backup restore", "the answer")
 	})
 
@@ -507,7 +507,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		`^it says the store is behind$`:              "the store is behind",
 		`^it says there is no backup$`:               "there is no backup",
 		`^it says there is no such backup$`:          "there is no such backup",
-		`^it says there is no backup to put back$`:   "there is no backup to put back",
+		`^it says there is no backup to restore$`:    "there is no backup to restore",
 		`^it says there is nothing left to undo$`:    "nothing left to undo",
 		`^it says the store was brought up to date$`: "brought up to date",
 	} {

@@ -8,7 +8,7 @@ import (
 // unsaid are the words cairn never uses for an act it has a word for: the
 // command's own. The boards are held to the same list in internal/tui and
 // internal/gui.
-var unsaid = regexp.MustCompile(`(?i)\btak(e|es|en|ing) up\b|\blet(ting)? go\b|off the board|onto the board`)
+var unsaid = regexp.MustCompile(`(?i)\btak(e|es|en|ing) up\b|\blet(ting)? go\b|off the board|onto the board|\bback(ed)? (the store )?up\b|\bputs? (one |it )?back\b`)
 
 // What every command says of itself — what it is, what it does, what each of
 // its arguments means — uses the commands' words for the acts it names.
