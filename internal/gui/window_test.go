@@ -1074,15 +1074,21 @@ func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
 // Shortcut says which key an offer has, Helping says what each key does — so
 // nothing but this keeps the second from forgetting one the first added.
 func TestTheHelpNamesEveryKeyTheBarTeaches(t *testing.T) {
-	var said strings.Builder
-	for _, f := range holding(newFake()).Helping() {
-		said.WriteString(f.Key + " ")
-	}
-	for _, offer := range []string{"new", "search", "help", "archived", "archive", "take", "keep",
-		"edit", "delete", "agree", "save", "done", "close"} {
-		key := Pretty(Shortcut(offer))
-		if !strings.Contains(said.String(), key) {
-			t.Errorf("%s is %q on the bar and the help never names it", offer, key)
+	// On every keyboard, spelled as the help is: a Mac's ⌘ is Ctrl on Linux
+	// and Windows, and a test that read the Mac's alone failed on Linux.
+	for _, system := range []string{"darwin", "linux", "windows"} {
+		var said strings.Builder
+		w := holding(newFake())
+		w.keyboard = KeyboardOf(system)
+		for _, f := range w.Helping() {
+			said.WriteString(f.Key + " ")
+		}
+		for _, offer := range []string{"new", "search", "help", "archived", "archive", "take", "keep",
+			"edit", "delete", "agree", "save", "done", "close"} {
+			key := w.keyboard.Spelled(Pretty(Shortcut(offer)))
+			if !strings.Contains(said.String(), key) {
+				t.Errorf("on %s, %s is %q on the bar and the help never names it", system, offer, key)
+			}
 		}
 	}
 }
