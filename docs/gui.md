@@ -569,16 +569,25 @@ the first key or press ends it and still does what it does — it is never in
 the way. Drawn rather than shaded: Gio runs no shader of a program's own, and
 five ellipses say it.
 
-**The time spent is seen a week at a time.** How long the work took was a
-table the command line printed. The third page, TIME, lays a week out
-(`week.go`): a column a day across the board's width, Monday first, each
-day's total, and each task worked on with its time and a bar as long as its
-share of the longest stretch of the week — a glance says which day went where.
-`←→` walk the weeks and `t` comes back to this one; the tab says how many
-tasks the week was spent on. The page lies over the columns and draws none of
-them, so nothing on it chooses a card behind it, and the keys that act on a
-card reach nothing there. With three pages, `tab` and `shift+tab` walk them
-round, which with two was a difference nothing could see.
+**The time spent is seen a week or a month at a time, every task of it.** How
+long the work took was a table the command line printed. The third page, TIME,
+lays a week out (`week.go`): a column a day across the board's width, Monday
+first, each day's total, and each task worked on with its time and a bar as
+long as its share of the longest stretch of the week — a glance says which day
+went where. A day of more tasks than its column holds scrolls under the wheel,
+a task a notch, with a bar beside it: it used to cut them off at its foot
+(`@gui-a-day-scrolls-to-its-last-task`). A week alone said nothing of a month,
+so `m`, or Month in the strip along the top, lays out the month's six weeks,
+each day its total and as many of its tasks as fit, then how many more; a day
+clicked shows its week (`@gui-the-time-page-shows-a-month`). The strip's `‹ ›`
+and `←→` walk weeks or months, Today and `t` come back to today's, and the
+range shown and today are outlined. What has not happened yet is not asked for:
+the engine refuses a period running past today, which left the week in progress
+unreadable, so a period is read up to today. The tab says how many tasks the
+time shown was spent on. The page lies over the columns and draws none of them,
+so nothing on it chooses a card behind it, and the keys that act on a card
+reach nothing there. With three pages, `tab` and `shift+tab` walk them round,
+which with two was a difference nothing could see.
 
 **The store is backed up, and put back, from the window.** Both were the
 command line's, so a person at the window went to a terminal for either. `⌘B`

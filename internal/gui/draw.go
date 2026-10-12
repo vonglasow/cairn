@@ -242,9 +242,23 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawPanelOffers(gtx, th, skin, box, w)
 }
 
-// drawWeek is the time page: a column a day, its heading and total, and each
-// task worked on with its time and its bar.
+// drawWeek is the time page: the strip along its top, then a week — a
+// column a day, its heading and total, and each task worked on with its time
+// and its bar, scrolled — or a month's six weeks, each day saying what it held.
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	for _, chip := range TimeChips {
+		box := TimeChip(l, chip)
+		// The range shown is outlined, the way the chosen card is.
+		if (chip == "Month" && w.Monthly()) || (chip == "Week" && !w.Monthly()) {
+			outline(gtx, box, skin.Chosen)
+		}
+		say(gtx, th, skin.Chosen, Inside(box), chip, reads)
+	}
+	say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
+	if w.Monthly() {
+		drawMonth(gtx, th, skin, l, w)
+		return
+	}
 	longest := w.longest()
 	for i := range 7 {
 		box := WeekDayAt(l, i)
@@ -252,10 +266,42 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		fill(gtx, box, skin.Panel)
 		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+DaySays(w.timeOn(i)), reads)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
-		for j, one := range w.timeOn(i).Tasks {
+		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
 			say(gtx, th, skin.Ink, Box{X: row.X, Y: row.Y, W: row.W, H: lineHigh}, TaskTimeSays(one), reads)
 			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
+		}
+		clipped.Pop()
+		// A day holding more than it shows says so, with a bar beside it.
+		if track, more := DayTrack(box, len(w.timeOn(i).Tasks)); more {
+			fill(gtx, track, skin.Back)
+			fill(gtx, Thumb(track, len(w.timeOn(i).Tasks), DayRoom(box), w.DayFrom(i)), skin.Edge)
+		}
+	}
+}
+
+// drawMonth is a month's six weeks under the weekdays' names: each day its
+// number and its total, and what it held in the room it has.
+func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	for i, name := range Weekdays {
+		say(gtx, th, skin.Faint, MonthWeekdayAt(l, i), name, reads)
+	}
+	for i, day := range MonthGrid(w.week) {
+		cell := MonthCellAt(l, i)
+		fill(gtx, cell, skin.Panel)
+		if day.Equal(w.today()) {
+			outline(gtx, cell, skin.Chosen)
+		}
+		// A day of the months either side is there to finish a week.
+		ink := skin.Ink
+		if !sameMonth(day, w.week) {
+			ink = skin.Faint
+		}
+		held := w.MonthDay(i)
+		say(gtx, th, ink, CellHeadAt(cell), CellHead(day, held), reads)
+		clipped := clip.Rect(rect(cell)).Push(gtx.Ops)
+		for j, line := range CellLines(held.Tasks, CellRoom(cell)) {
+			say(gtx, th, skin.Faint, CellLineAt(cell, j), line, small)
 		}
 		clipped.Pop()
 	}

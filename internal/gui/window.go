@@ -150,6 +150,10 @@ type Window struct {
 	// spent over it: see week.go.
 	week  time.Time
 	sheet engine.Timesheet
+	// monthly says the time page shows a month, and dayFrom is how far down
+	// each day of a week its tasks are scrolled.
+	monthly bool
+	dayFrom [7]int
 	// born is the moment of the window's first frame, and introOver says the
 	// cairn it opens on was ended by a key or a click: see cairn.go.
 	born      time.Time

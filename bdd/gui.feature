@@ -945,13 +945,61 @@ Feature: The desktop board
       And the window draws a frame 2 seconds later
       Then no cairn is being built
 
-  Rule: The time spent is seen a week at a time
+  Rule: The time spent is seen a week or a month at a time, every task of it
 
     How long the work took was a table the command line printed. The third
     page lays a week out: a column a day, Monday first, each day's total and
     each task worked on with its time and a bar as long as its share of the
     longest stretch of the week. The arrows walk the weeks, t comes back to
-    this one.
+    this one. A week alone said nothing of a month, and a day of more tasks
+    than its column held hid the rest: a month is laid out too, every day of
+    it, and a day scrolls to its last task. The pointer walks it as the keys
+    do.
+
+    @gui-a-day-scrolls-to-its-last-task
+    Scenario: a day worked on more tasks than its column holds scrolls to the last
+      Given I added 20 tasks to "backlog"
+      And I spent "15m" on each of tasks 1 to 20 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the day "2026-09-29" has more to show than it has room for
+      When I scroll down over the day "2026-09-29" 99 times
+      Then the day "2026-09-29" shows "Task 20"
+      And the day "2026-09-29" does not show "Task 1"
+
+    @gui-the-time-page-shows-a-month
+    Scenario: the time page shows a month, every day with what was worked on
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      And I spent "1h" on task 1 on "2026-09-03"
+      And I spent "2h" on task 2 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I click "Month" on the time page
+      Then the month shown is "September 2026"
+      And the month's day "2026-09-03" shows "Write the spec"
+      And the month's day "2026-09-29" shows "Ship the board"
+      When I click the month's day "2026-09-03"
+      Then the week shown starts on "2026-08-31"
+
+    @gui-the-time-page-is-walked-by-the-pointer
+    Scenario: the arrows at the top of the time page, and Today, walk what it shows
+      Given today is "2026-09-16"
+      When I open the window
+      And I click the tab "TIME"
+      And I click "‹" on the time page
+      Then the week shown starts on "2026-09-07"
+      When I click "Today" on the time page
+      Then the week shown starts on "2026-09-14"
+      When I click "Month" on the time page
+      And I click "›" on the time page
+      Then the month shown is "October 2026"
+      When I press "left"
+      Then the month shown is "September 2026"
+      When I click "Week" on the time page
+      Then the week shown starts on "2026-09-14"
 
     @gui-the-week-of-time
     Scenario: the time page shows the week's days, what was worked on and for how long
@@ -960,7 +1008,7 @@ Feature: The desktop board
       And I spent "1h30m" on task 1 on "2026-09-29"
       And I spent "45m" on task 2 on "2026-09-29"
       And I spent "2h" on task 2 on "2026-10-02"
-      And today is "2026-09-30"
+      And today is "2026-10-03"
       When I open the window
       And I press "tab"
       And I press "tab"

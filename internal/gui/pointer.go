@@ -88,6 +88,9 @@ func (w Window) Click(p Point) Window {
 	if tab, on := w.tabAt(p); on {
 		return w.onPage(tab)
 	}
+	if w.tab == Time {
+		return w.clickingTime(p)
+	}
 	return w.choosingAt(w.at(p))
 }
 
@@ -430,6 +433,9 @@ func (w Window) Scroll(p Point, by int) Window {
 		return w
 	}
 	l := w.Layout()
+	if w.tab == Time {
+		return w.scrollingDay(p, by)
+	}
 	if w.tab == Objectives {
 		// One grid across the four columns' worth of width, so anywhere over
 		// the board is over the objectives.

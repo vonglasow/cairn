@@ -958,6 +958,117 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("%s carries nothing titled %q", day, title)
 	})
+	weekday := func(day string) (int, error) {
+		for i := range 7 {
+			if domain.FormatDay(w.w.Week().AddDate(0, 0, i)) == day {
+				return i, nil
+			}
+		}
+		return 0, fmt.Errorf("the week shown has no %s", day)
+	}
+	sc.Given(`^I spent "([^"]*)" on each of tasks (\d+) to (\d+) on "([^"]*)"$`, func(length string, from, to int, day string) error {
+		for n := from; n <= to; n++ {
+			in := engine.Input{Given: map[string]string{"number": strconv.Itoa(n), "time": length, "on": day}}
+			if _, err := w.other.Ask(engine.TimesheetAdd, in); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the day "([^"]*)" has more to show than it has room for$`, func(day string) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		if all, room := len(w.w.timeOn(i).Tasks), DayRoom(WeekDayAt(w.w.Layout(), i)); all <= room {
+			return fmt.Errorf("%s holds %d tasks in room for %d", day, all, room)
+		}
+		return nil
+	})
+	sc.Step(`^I scroll down over the day "([^"]*)" (\d+) times$`, func(day string, n int) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		box := WeekDayAt(w.w.Layout(), i)
+		for range n {
+			w.w = w.w.Scroll(Point{X: box.X + 4, Y: box.Y + box.H/2}, weekRow)
+		}
+		return nil
+	})
+	shows := func(day, title string) (bool, error) {
+		i, err := weekday(day)
+		if err != nil {
+			return false, err
+		}
+		for _, one := range w.w.DayShown(i) {
+			if one.Title == title {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	sc.Then(`^the day "([^"]*)" shows "([^"]*)"$`, func(day, title string) error {
+		shown, err := shows(day, title)
+		if err != nil {
+			return err
+		}
+		if !shown {
+			return fmt.Errorf("%s does not show %q", day, title)
+		}
+		return nil
+	})
+	sc.Then(`^the day "([^"]*)" does not show "([^"]*)"$`, func(day, title string) error {
+		shown, err := shows(day, title)
+		if err != nil {
+			return err
+		}
+		if shown {
+			return fmt.Errorf("%s shows %q", day, title)
+		}
+		return nil
+	})
+	sc.Step(`^I click "([^"]*)" on the time page$`, func(chip string) error {
+		box := TimeChip(w.w.Layout(), chip)
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return w.w.Wrong()
+	})
+	sc.Then(`^the month shown is "([^"]*)"$`, func(month string) error {
+		if !w.w.Monthly() || w.w.MonthShown().Format("January 2006") != month {
+			return fmt.Errorf("the time page shows %q, monthly %v", TimeSays(w.w), w.w.Monthly())
+		}
+		return nil
+	})
+	dayOfMonth := func(day string) (int, error) {
+		for i, shown := range MonthGrid(w.w.MonthShown()) {
+			if domain.FormatDay(shown) == day {
+				return i, nil
+			}
+		}
+		return 0, fmt.Errorf("the month shown has no %s", day)
+	}
+	sc.Then(`^the month's day "([^"]*)" shows "([^"]*)"$`, func(day, title string) error {
+		i, err := dayOfMonth(day)
+		if err != nil {
+			return err
+		}
+		lines := CellLines(w.w.MonthDay(i).Tasks, CellRoom(MonthCellAt(w.w.Layout(), i)))
+		for _, line := range lines {
+			if strings.Contains(line, title) {
+				return nil
+			}
+		}
+		return fmt.Errorf("%s reads %q", day, lines)
+	})
+	sc.Step(`^I click the month's day "([^"]*)"$`, func(day string) error {
+		i, err := dayOfMonth(day)
+		if err != nil {
+			return err
+		}
+		box := MonthCellAt(w.w.Layout(), i)
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
 	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
 		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
 			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))

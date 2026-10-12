@@ -32,8 +32,8 @@ func TestAWeekStartsOnItsMonday(t *testing.T) {
 func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	first, last := WeekDayAt(l, 0), WeekDayAt(l, 6)
-	if first.X != l.Column[0].X || first.Y != l.Head[0].Y || first.Y+first.H != l.Band.Y+l.Band.H {
-		t.Errorf("the first day is %+v, not from the first column's head to the foot of the band", first)
+	if strip := TimeStrip(l); first.X != l.Column[0].X || first.Y != strip.Y+strip.H+between || first.Y+first.H != l.Band.Y+l.Band.H {
+		t.Errorf("the first day is %+v, not from under the strip to the foot of the band", first)
 	}
 	right := l.Column[Columns-1].X + l.Column[Columns-1].W
 	if gapLeft := right - (last.X + last.W); gapLeft < 0 || gapLeft >= 7 {
