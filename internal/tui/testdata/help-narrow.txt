@@ -11,9 +11,9 @@
  │   a           a new task      │ │   ▌ critical                  │
  │   ⇧A          show what was   │ │                               │
  │ archived                      │ │ STALLED — the top right of a  │
- │   ⇧X          take every task │ │ card                          │
- │ in this column off the board  │ │   ⊘  blocked   waiting on     │
- │ — it asks first               │ │ somebody else                 │
+ │   ⇧X          archive every   │ │ card                          │
+ │ task in this column — it asks │ │   ⊘  blocked   waiting on     │
+ │ first                         │ │ somebody else                 │
  │   /           search          │ │   ◉  watching  handed over,   │
  │   ⇥           next tab —      │ │ needs a look                  │
  │ tasks, objectives, the time   │ │   ‖  paused    waiting on     │

@@ -139,7 +139,7 @@ var ErrAlreadyArchived = errors.New("the task is already archived")
 var ErrNotArchived = errors.New("the task is on the board")
 
 // ErrPartGoesWithItsWork is returned when a sub-task is archived on its own.
-var ErrPartGoesWithItsWork = errors.New("a part goes off the board with the work it belongs to")
+var ErrPartGoesWithItsWork = errors.New("a part is archived with the work it belongs to, and unarchived with it")
 
 // MayArchive says whether this task may be taken off the board.
 func (t Task) MayArchive() error {

@@ -52,7 +52,7 @@ cairn task focus 3               # this is what I am working on
 cairn task focus                 # which ones are those again?
 cairn task unfocus 3             # done with that one
 cairn task unfocus               # done with all of them
-cairn task archive 1             # off the board, kept whole
+cairn task archive 1             # archived, kept whole
 cairn task archive --state done  # the whole column in one go
 cairn task label sprint-12 --state done  # mark a sprint before sweeping it
 cairn task list --archived       # only what was taken off
@@ -91,7 +91,7 @@ moving a task behind one in another column is refused, and so is moving a
 sub-task behind a root task — a sub-task takes its place among its sisters,
 where its parent sits carrying the whole block.
 
-`task archive` takes a task off the board without deleting it: the column it
+`task archive` archives a task without deleting it: the column it
 finished in, its history and everything it carries stay. It takes a number or a
 narrowing, so a finished column goes in one command, and `task label` marks a
 set first when a sprint is what you want to sweep. A listing leaves the archived
@@ -243,7 +243,7 @@ every operation the command line takes, and `?` answers in every mode. `:q`
 leaves.
 
 Two things lose work and both are asked about first: `d`, which deletes, and
-leaving a form you have typed into. `⇧X` takes a whole column off the board and
+leaving a form you have typed into. `⇧X` archives a whole column and
 asks as well — nothing is lost, but twelve cards moving on one key is not
 something to find out about afterwards.
 

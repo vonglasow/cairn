@@ -62,7 +62,7 @@ to the task above it and is counted towards that task's objectives through it â€
 an objective it served alone would be one its parent might have nothing to do
 with.
 
-## What was taken off the board still counts
+## What was archived still counts
 
 Archiving a task keeps it whole, and what it did for an objective is part of
 it: a task archived done is still a task done towards what it served, and one

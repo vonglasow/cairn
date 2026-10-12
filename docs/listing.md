@@ -45,7 +45,7 @@ exactly one way to ask each question. It is just a different one.
 | label | ✓ | |
 | objectives served | ✓ | |
 | number | | ✓ |
-| off the board | ✓ | |
+| archived | ✓ | |
 | deadline, as a range | ✓ | |
 
 The line falls between **a closed set** and **free text**. A closed set can be
@@ -70,7 +70,7 @@ true.
 
 ## What was archived is off every listing until it is asked for
 
-Archiving takes a task off the board without deleting it. It is a flag beside
+Archiving keeps a task without deleting it, out of its column. It is a flag beside
 the column, not one of them: a task keeps the column it finished in, its
 history and everything it carries, and stops being answered.
 
@@ -98,10 +98,10 @@ was named — the task as it ends up.
 which drops what hangs under something before either touches a row. One sweep
 counting parts while the other did not was a pair answering two different
 boards, and it showed: archiving a finished column took 120 tasks where
-labelling the same narrowing took 167. A part still goes off the board — with
+labelling the same narrowing took 167. A part is still archived — with
 the work it belongs to, and archiving one on its own is refused by name.
 
-**A part is off the board when its work is**, read that way by every listing:
+**A part is archived when its work is**, read that way by every listing:
 it keeps its own mark as it was, and the clause that leaves the archived out
 asks about the task and about the task it hangs under. Archiving the work used
 to mark the work alone, and its parts stayed on the board with no way off it —
@@ -343,7 +343,7 @@ when the board grew long enough that a word worth searching for was a word
 answering the whole of it.
 
 It reads the narrowed listing and looks in that, rather than reading everything
-and narrowing afterwards — so `--archived` reaches what was taken off the board
+and narrowing afterwards — so `--archived` reaches what was archived
 and nothing else does, which is the same rule every other listing follows.
 
 **The boards search the same way.** They narrow what they already hold rather

@@ -84,7 +84,7 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	Argument{
 		Name:  "archived",
 		Kind:  Bool,
-		Means: "keep only the tasks taken off the board, instead of the ones still on it",
+		Means: "keep only the archived tasks, instead of the ones still on the board",
 	},
 	Argument{
 		Name:  "with-archived",
@@ -149,8 +149,8 @@ func (on On) contextOf(n int) string {
 var TaskArchive = Operation{
 	Thing: "task",
 	Verb:  "archive",
-	Short: "Take a task off the board, keeping everything it carries",
-	Does:  "Take a task off the board. Everything it carries is kept, and it can be brought back; deleting is the other thing.",
+	Short: "Archive a task, keeping everything it carries",
+	Does:  "Archive a task. Everything it carries is kept, and it can be unarchived; deleting is the other thing.",
 	Example: `cairn task archive 1
 cairn task archive --state done`,
 	Level:   Write,
@@ -252,8 +252,8 @@ var ErrAlsoWithoutNumber = errors.New("--also names tasks beside a number, and n
 var TaskUnarchive = Operation{
 	Thing:   "task",
 	Verb:    "unarchive",
-	Short:   "Bring a task back onto the board",
-	Does:    "Bring a task back onto the board.",
+	Short:   "Unarchive a task, back on the board",
+	Does:    "Unarchive a task: it is back on the board, as it was.",
 	Example: "cairn task unarchive 1",
 	Level:   Write,
 	Needs:   AStore,

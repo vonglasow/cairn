@@ -433,7 +433,7 @@ Three rules follow, and they are one rule seen from three sides:
 
 - it stands in `todo` or `done` and nowhere else. A part being "blocked" is its
   task being blocked; a part being "current" is its task being worked on;
-- it goes off the board with the work it belongs to, and it goes when that work
+- it is archived with the work it belongs to, and it goes when that work
   is deleted. A deletion that refused while a part was there could not be
   carried out at all once the boards stopped drawing parts;
 - what it carries beyond a title and a tick is not asked for. Measured on a

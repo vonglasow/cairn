@@ -47,7 +47,7 @@ func TestArchivingTasks_namesWhatCannotGo(t *testing.T) {
 	}
 	got := ArchivingTasks(snap, []int{1, 2})
 	want := []Flag{
-		{Number: 1, Says: "it is already off the board", Refused: true},
+		{Number: 1, Says: "it is already archived", Refused: true},
 		{Number: 2, Says: "its 1 part goes with it"},
 		{Number: 2, Says: "it is in focus"},
 	}

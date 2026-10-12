@@ -326,7 +326,7 @@ things of which 170 were the work and the rest its pieces — and once off it, a
 task carrying one could neither be changed nor deleted, because the deletion was
 refused while a part was there and nothing was left that could remove the part.
 **Deleting a task now takes its parts with it**, which is the rule archiving
-already went by: a part goes off the board with the work it belongs to.
+already went by: a part is archived with the work it belongs to.
 
 A part carries a title and whether it is done, and nothing else. Measured on a
 store of 219 tasks, its 49 parts were done 47 times and todo twice, with no
@@ -511,11 +511,11 @@ board lays its offers out the same way (`BarOffers`): spelled for Windows,
 `Shift+A  Archived` ran into the `?  Help` after it.
 
 **Archive** is one of those offers, under `x`, beside *Edit* and *Delete* on a
-chosen card. On a card already off the board the bar reads *Restore* instead:
+chosen card. On a card already archived the bar reads *Unarchive* instead:
 one key both ways, and the bar says which way it goes rather than leaving it to
 be worked out. Unlike *Delete* it asks nothing first — nothing is lost.
 
-**A whole column goes off the board on `⇧X`**, the column the chosen card
+**A whole column is archived on `⇧X`**, the column the chosen card
 stands in. It asks first and names the column: nothing is lost, but a key that
 moves twelve cards is not a key to press and find out about. It is not on the
 bar — the bar has room for what one card does, and this does what a column
@@ -524,8 +524,8 @@ has swept by a narrowing since the beginning; only the command line ever asked
 it to.
 
 **One screen asks the questions, and there are three.** Deleting a task and
-throwing away a form somebody has typed into both lose work; taking a column
-off the board does not, and is asked about for its size. *Agree* and *Cancel*
+throwing away a form somebody has typed into both lose work; archiving a column
+does not, and is asked about for its size. *Agree* and *Cancel*
 are the two offers, `⏎` agrees, and the targets are as tall as the bar's — they
 used to be the smallest in the window, for the most destructive act in it.
 A question is asked in a box as big as its sentences and its offers, not in
@@ -658,7 +658,7 @@ lines as one menu (`MenuButton`).
 have done to it was on the bar once the card was chosen, so a hand on the
 mouse went to the card and then down to the foot of the window. A right press
 chooses what is under it and opens a menu beside the pointer (`menu.go`):
-Edit, Focus or Unfocus, Move to…, Priority…, Labels…, Archive or Restore,
+Edit, Focus or Unfocus, Move to…, Priority…, Labels…, Archive or Unarchive,
 Delete on a task; Edit and Delete on an objective; the board's own offers
 where there is neither. Every line is an act the bar, a key or a drag already
 does, done the same way. Move to… and Priority… turn the menu into the values

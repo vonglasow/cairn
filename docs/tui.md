@@ -265,7 +265,7 @@ edge out of line.
 | sub-tasks done / total | `nf-oct-checklist` | `▪` | |
 | a label | `nf-oct-tag` | `⚑` | |
 | what is in the way | `nf-oct-blocked` | `↳` | |
-| off the board | `nf-oct-archive` | `▭` | |
+| archived | `nf-oct-archive` | `▭` | |
 
 `‖` does double duty — `paused` on a task, `on-hold` on an objective. It is the
 same idea in two tabs, so it kept one symbol rather than inventing a second for
@@ -308,9 +308,9 @@ from that mode's bar, and pressing it there does nothing.
 | `i` | ✓ | | ✓ | enter insert · on objectives, open the objective |
 | `⇧hjkl` `⇧←↓↑→` | | ✓ | | move the task anywhere; its state follows where it lands |
 | `a` | ✓ | | ✓ | add — the column under the cursor gives the state |
-| `x` | | ✓ | | take the task off the board, or put it back |
+| `x` | | ✓ | | archive or unarchive the task |
 | `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
-| `⇧X` | ✓ | | | take every task in the column off the board — it asks first |
+| `⇧X` | ✓ | | | archive every task in the column — it asks first |
 | `e` | | ✓ | ✓ | the form |
 | `d` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out |
 | `f` | | ✓ | | focus or unfocus — an objective has none |
@@ -328,7 +328,7 @@ is `:q`. A search accepted with `⏎` outlives the prompt that typed it, and
 nothing else on the board says so — so `esc` is the way back to the whole board. Inside an objective's own board there is — it goes back to
 the list of objectives, with the cursor still on the one you were in.
 
-**Taking a whole column off the board** is `⇧X`, in normal mode, on the column
+**Archiving a whole column** is `⇧X`, in normal mode, on the column
 the cursor is on. It asks first and names the column, because a key that moves
 twelve cards is not a key to press and find out about. The engine has swept by a
 narrowing since the beginning; only the command line ever asked it to.

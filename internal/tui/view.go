@@ -368,8 +368,8 @@ func (b Board) question() string {
 			b.bar(b.offer("⏎", "throw it away"), b.offer("esc", "back to the form"))
 	}
 	if b.sweeping {
-		return " " + b.skin.Title.Render("take every task in "+
-			strings.ToUpper(reading.StateAt(b.column))+" off the board?") + "  " +
+		return " " + b.skin.Title.Render("archive every task in "+
+			strings.ToUpper(reading.StateAt(b.column))+"?") + "  " +
 			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
 	}
 	what, number := "task", b.task

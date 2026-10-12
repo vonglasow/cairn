@@ -634,7 +634,7 @@ Feature: Tasks
       And it says there is no task
 
     @task-search-leaves-archived-out-until-asked-for
-    Scenario: what was taken off the board is not looked in until it is asked for
+    Scenario: what was archived is not looked in until it is asked for
       Given I added a task titled "Write the spec"
       And I archived task 1
       When I run `cairn task search spec`
@@ -1413,7 +1413,7 @@ Feature: Tasks
     Measured on a real store: 120 of its 170 tasks were done, seven in ten, and
     the work still to do sat among them.
 
-    Archiving takes a task off the board and keeps everything it carries — its
+    Archiving keeps a task and everything it carries — its
     number, its title, what happened to it. Deleting is the other thing, and it
     is still there for work that should never have existed.
 
@@ -1427,7 +1427,7 @@ Feature: Tasks
     cleared without choosing each in turn.
 
     A sub-task is never archived on its own: it is part of the work its parent
-    names, and goes off the board with it or not at all.
+    names, and is archived with it or not at all.
 
     A listing leaves them out. That is the whole point of archiving: a column
     of a hundred and twenty finished tasks is a column nobody reads, and a
@@ -1522,8 +1522,8 @@ Feature: Tasks
       And task 2 is not archived
 
     @task-list-leaves-parts-of-archived-work-out
-    Scenario: the parts of work taken off the board go off it with the work
-      A part keeps its own mark as it was; it is off the board because the
+    Scenario: the parts of archived work are archived with the work
+      A part keeps its own mark as it was; it is archived because the
       work it belongs to is, and comes back when that work does.
 
       Given I added a task titled "Dépôt APP" with the state "done"

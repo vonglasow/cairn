@@ -45,7 +45,7 @@ func ArchivingTasks(snap Snapshot, numbers []int) []Flag {
 	var flags []Flag
 	for _, n := range numbers {
 		if c, found := snap.Card(n); found && c.Archived {
-			flags = append(flags, Flag{Number: n, Says: "it is already off the board", Refused: true})
+			flags = append(flags, Flag{Number: n, Says: "it is already archived", Refused: true})
 			continue
 		}
 		flags = append(flags, goingWith(snap, n)...)

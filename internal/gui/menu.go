@@ -58,7 +58,7 @@ func (w Window) menuFor() []string {
 	}
 	away := "Archive"
 	if card.Archived {
-		away = "Restore"
+		away = "Unarchive"
 	}
 	return []string{"Edit", focus, "Move to…", "Priority…", "Labels…", away, "Delete"}
 }

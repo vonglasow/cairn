@@ -39,7 +39,7 @@ read and a trace you can rebuild from, and rebuilding is what was asked for.
 Thirteen of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
 beside them, its deadline, its estimate, the time spent on it, its parent, the
-objectives it serves, and whether it was taken off the board — archiving and
+objectives it serves, and whether it was archived — archiving and
 bringing back are changes like any other, written `yes` and nothing. Six are not
 about a field: **created**, **moved**, **focus taken**, **focus released**,
 **deleted**, **time added**.

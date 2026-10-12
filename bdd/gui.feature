@@ -36,8 +36,8 @@ Feature: The desktop board
       When I press "shift+a"
       Then the board says nothing of "Migration Jenkins"
 
-    @gui-a-card-is-taken-off-the-board
-    Scenario: a chosen card is taken off the board, and brought back
+    @gui-a-card-is-archived
+    Scenario: a chosen card is archived, and unarchived
       Given I added a task titled "Migration Jenkins"
       And I added a task titled "Spike Argo"
       When I open the window
@@ -47,8 +47,8 @@ Feature: The desktop board
       Then the board says nothing of "Migration Jenkins"
       When I press "shift+a"
       And I click the card "Migration Jenkins"
-      Then the bar offers "Restore" under "x"
-      When I choose "Restore"
+      Then the bar offers "Unarchive" under "x"
+      When I choose "Unarchive"
       Then "BACKLOG" carries "Migration Jenkins"
       And the card "Migration Jenkins" is not dimmed
 
@@ -2928,7 +2928,7 @@ Feature: The desktop board
 
     Two gestures lose work: deleting a task, and throwing away a form somebody
     has typed into. Both are asked about, in a box no bigger than the question.
-    A whole column going off the board is asked about as well — nothing is
+    A whole column being archived is asked about as well — nothing is
     lost, but a key that moves twelve cards is not a key to press and find out.
 
     A form is left with esc, and esc again throws it away: that is what a hand
@@ -2984,7 +2984,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I press "shift+x"
-      Then the panel is headed "Take every task in DONE off the board?"
+      Then the panel is headed "Archive every task in DONE?"
       When I choose "Agree"
       Then "DONE" does not carry "Write the spec"
       And "DONE" does not carry "Ship it"
@@ -3084,7 +3084,7 @@ Feature: The desktop board
     What is gathered is deleted or archived in one act, all of it or none, and
     asked about first. The question names what would take more with it — the
     parts of a task, a task waiting on it, the task in focus — and what cannot
-    go at all — an objective work still serves, a task already off the board.
+    go at all — an objective work still serves, a task already archived.
     The answer is one of three: nothing; all but what was named; or all that
     can go.
 

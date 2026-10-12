@@ -8,8 +8,8 @@
  │   i           insert mode                   │ │   ▌ normal                                  │
  │   a           a new task                    │ │   ▌ high                                    │
  │   ⇧A          show what was archived        │ │   ▌ critical                                │
- │   ⇧X          take every task in this       │ │                                             │
- │ column off the board — it asks first        │ │ STALLED — the top right of a card           │
+ │   ⇧X          archive every task in this    │ │                                             │
+ │ column — it asks first                      │ │ STALLED — the top right of a card           │
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
  │   ⇥           next tab — tasks, objectives, │ │   ◉  watching  handed over, needs a look    │
  │ the time spent                              │ │   ‖  paused    waiting on your decision     │
@@ -29,7 +29,7 @@
  │   e           the form                      │ │   −3d         one that has passed           │
  │   f           focus or unfocus              │ │   ╔═╗         the task in focus             │
  │   d           delete                        │ ╰─────────────────────────────────────────────╯
- │   x           off the board, or back on     │
+ │   x           archive or unarchive          │
  │   esc         back to normal                │
  │                                             │
  │ DETAIL — one task, open                     │

@@ -31,7 +31,7 @@ type Facts struct {
 	Title  string `json:"title" jsonschema:"what the task is called"`
 	State  string `json:"state" jsonschema:"the column it stands in: backlog, todo, current, blocked, watching, paused or done"`
 	// Archived is beside the state, so a machine is told both.
-	Archived   bool     `json:"archived" jsonschema:"true when it was taken off the board and kept"`
+	Archived   bool     `json:"archived" jsonschema:"true when it was archived: kept, and off the columns"`
 	Priority   string   `json:"priority" jsonschema:"low, normal, high or critical"`
 	Labels     []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
 	BlockedBy  []int    `json:"blocked_by" jsonschema:"the numbers of the tasks in its way; empty or null when none is"`

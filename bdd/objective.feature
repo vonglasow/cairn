@@ -248,7 +248,7 @@ Feature: Objectives
       Then it says 1 of 2 tasks are done
 
     @objective-progress-keeps-what-was-archived
-    Scenario: work taken off the board still counts towards what it served
+    Scenario: archived work still counts towards what it served
       Archiving keeps a task whole, and what it did for an objective is part of
       it: sweeping the done column leaves an objective as far along as it was.
 

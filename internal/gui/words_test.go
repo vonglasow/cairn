@@ -10,7 +10,7 @@ import (
 // unsaid are the words the window never uses for an act: each act has one
 // word, the engine's, on every surface — the terminal board's are held to the
 // same list in internal/tui.
-var unsaid = regexp.MustCompile(`(?i)\badd\b|\btak(e|es|en|ing) up\b|\blet(ting)? go\b`)
+var unsaid = regexp.MustCompile(`(?i)\badd\b|\btak(e|es|en|ing) up\b|\blet(ting)? go\b|off the board|onto the board`)
 
 // The window says every act with the engine's word for it, in its help and in
 // its menu bar alike.

@@ -49,7 +49,7 @@ Feature: The board
       Then the board carries 1 task
 
     @tui-a-task-is-taken-off-the-board-from-the-cursor
-    Scenario: a task is taken off the board, and brought back
+    Scenario: a task is archived, and unarchived
       Given I added a task titled "Migration Jenkins"
       And I added a task titled "Spike Argo"
       When I open the board
@@ -616,7 +616,7 @@ Feature: The board
     Two gestures lose work and neither can be undone: deleting a task, and
     throwing away a form somebody has typed into. Both are asked about, in the
     same place and with the same two keys — enter agrees, anything else backs
-    out. A whole column going off the board is asked about too: it is not lost,
+    out. A whole column being archived is asked about too: it is not lost,
     but twelve cards moving on one key is not something to find out afterwards.
 
     @tui-deleting-asks-first
@@ -659,7 +659,7 @@ Feature: The board
       When I open the board
       And I press "l", "l", "l"
       And I press "shift+x"
-      Then the board says "take every task in DONE off the board?"
+      Then the board says "archive every task in DONE?"
       When I press "enter"
       And the board looks again
       Then the board carries 0 tasks

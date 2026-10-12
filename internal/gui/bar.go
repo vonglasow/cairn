@@ -66,7 +66,7 @@ func HeadsOn(w Window, screen Screen) string {
 			return "Bring in " + w.bringingName + "?"
 		}
 		if w.question == aboutSweeping {
-			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
+			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
 		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
@@ -126,7 +126,7 @@ func Shortcut(offer string) string {
 		return "cmd+b"
 	case "backups":
 		return "shift+b"
-	case "archive", "restore":
+	case "archive", "unarchive":
 		return "x"
 	case "take":
 		return "enter"
@@ -220,8 +220,8 @@ func helping() []Said {
 		{Key: "e", Means: "edit what is chosen, on the board or on an open task"},
 		{Key: "f", Means: "focus or unfocus what is chosen — several in focus at once is fine"},
 		{Key: "d", Means: "delete what is chosen — it asks first"},
-		{Key: "x", Means: "take what is chosen off the board, or put it back"},
-		{Key: "⇧X", Means: "take every task in that card's column off the board — it asks first"},
+		{Key: "x", Means: "archive or unarchive what is chosen"},
+		{Key: "⇧X", Means: "archive every task in that card's column — it asks first"},
 		{Key: "←→↑↓", Means: "walk the board, the band included"},
 		{Key: "⇧←→↑↓", Means: "move what is chosen — sideways changes its column"},
 		{Key: "⏎ on the board", Means: "open what is chosen"},
@@ -335,11 +335,11 @@ func (w Window) BoardOffers() []string {
 		return append(offers, "Export", "Import")
 	}
 	{
-		// Archive and Restore are the same key on the same card: the bar names
+		// Archive and Unarchive are the same key on the same card: the bar names
 		// which way it goes, so nobody has to work out which it will be.
 		away := "Archive"
 		if w.chosenIsArchived() {
-			away = "Restore"
+			away = "Unarchive"
 		}
 		offers = append(offers, "Edit", away, "Delete")
 	}

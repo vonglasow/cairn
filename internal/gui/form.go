@@ -661,7 +661,7 @@ func (w Window) Choose(name string) Window {
 	case "recover":
 		w.form, w.draft = w.draft, Form{}
 		return w
-	case "archive", "restore":
+	case "archive", "unarchive":
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutArchivingSeveral)
 		}

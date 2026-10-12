@@ -89,7 +89,7 @@ func (b Board) helpKeys() []string {
 		b.says("i", "insert mode"),
 		b.says("a", "a new task"),
 		b.says("⇧A", "show what was archived"),
-		b.says("⇧X", "take every task in this column off the board — it asks first"),
+		b.says("⇧X", "archive every task in this column — it asks first"),
 		b.says("/", "search"),
 		b.says("⇥", "next tab — tasks, objectives, the time spent"),
 		b.says(":", "command — what it answers is said until esc"),
@@ -105,7 +105,7 @@ func (b Board) helpKeys() []string {
 		b.says("e", "the form"),
 		b.says("f", "focus or unfocus"),
 		b.says("d", "delete"),
-		b.says("x", "off the board, or back on"),
+		b.says("x", "archive or unarchive"),
 		b.says("esc", "back to normal"),
 	)...)
 	out = append(out, b.group("DETAIL — one task, open",
