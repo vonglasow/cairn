@@ -10,6 +10,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/gpu/headless"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -1516,6 +1517,33 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 		value, rows := formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i)
 		if painted(shot, Inside(Framed(value, rows)), Dark().Ink) == 0 {
 			t.Errorf("%q writes nothing", field.Name)
+		}
+	}
+}
+
+// A line of a question that names something carries it on a chip, the way the
+// help carries a key; a line that is only a sentence has no chip to sit on.
+func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
+	skin := Dark()
+	cards := []reading.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
+	w := holding(newFake(), cards...)
+	w.archived = true
+	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0)
+	for _, c := range []struct {
+		what  string
+		asked Window
+		chip  bool
+	}{
+		{"archiving what is already off", w.Key("x"), true},
+		{"deleting one task", w.clicked(middleOf(w, 1, 0)).Choose("Delete"), false},
+	} {
+		if c.asked.Screen() != OnAsking {
+			t.Fatalf("%s left the window on %v", c.what, c.asked.Screen())
+		}
+		box := c.asked.QuestionBox()
+		name, _ := FieldRow(box, FirstRow(box))
+		if got := painted(drawn(t, c.asked), Chip(name), skin.Back) > 0; got != c.chip {
+			t.Errorf("%s: its first line on a chip is %v", c.what, got)
 		}
 	}
 }
