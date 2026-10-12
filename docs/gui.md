@@ -107,8 +107,8 @@ same seam (`var openGui = func(…)`) so a test never needs a window.
 ## The window
 
 The terminal's shape, larger. Four columns — backlog, todo, current, done —
-the backlog full height, the stalled band across the last three. Two tabs:
-tasks, objectives.
+the backlog full height, the stalled band across the last three. Three tabs:
+tasks, objectives, and the time spent.
 
 **Cards keep a fixed height.** In the terminal that is what makes moving the
 cursor arithmetic rather than measurement; with a mouse that reason is gone,
@@ -189,9 +189,11 @@ A click chooses a card, or changes tab when it lands on one. A double-click
 opens it to be edited. The wheel scrolls the column, or the lane, under the
 pointer.
 
-**Only the primary button acts.** A right click, a middle click or a side
-button used to run the same press and release as the left one, so they chose
-cards and pressed offers — and no context menu exists to have meant it.
+**Only the primary button presses and drags.** A right click, a middle click or
+a side button used to run the same press and release as the left one, so they
+chose cards and pressed offers. A right press now opens the menu of what is
+under it (see *A right click says what can be done to what is under it*); the
+others do nothing.
 
 **What the pointer is resting on is lit.** The window answered nothing before
 it was pressed, which made "Delete" read exactly like a label: the one

@@ -260,9 +260,10 @@ func helping() []Said {
 func (w Window) Offers() []string {
 	switch w.screen {
 	case OnChoosing:
-		// Take and Done, not Choose twice. Space takes what the keyboard is
-		// on, which is the gesture a hand already has for a list; enter is
-		// done with the whole list, which is a different act and says so.
+		// Take and Keep, not Choose twice. Enter takes the row the keyboard is
+		// on; ⌘⏎ keeps what is ticked and is done with the list, which is a
+		// different act and says so. Not space: a list narrows as it is typed
+		// into, and a title has spaces in it.
 		return []string{"Take", "Keep", "Cancel"}
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
@@ -352,7 +353,7 @@ func (w Window) BoardOffers() []string {
 func (w Window) clickingList(p Point) Window {
 	box := w.ChoosingBox()
 	// A click puts the keyboard on the row; it does not take it. Taking is
-	// space, and a double-click — a single click that took would make choosing
+	// enter, and a double-click — a single click that took would make choosing
 	// which row to read impossible without choosing it.
 	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 		w.choosing = at

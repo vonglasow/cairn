@@ -549,7 +549,7 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	box := w.ChoosingBox()
 	for at, one := range offered {
 		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
-		// A click says which row; space takes it.
+		// A click says which row; enter takes it.
 		got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}).Key("enter")
 		if got.Form().ValueOf("parent") != strconv.Itoa(one.Number) {
 			t.Errorf("clicking row %d took %q, want task %d (%s)",
