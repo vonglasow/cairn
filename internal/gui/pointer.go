@@ -17,6 +17,12 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnMenu {
 		return w.clickingMenu(p)
 	}
+	if w.screen == OnBackups {
+		if offer, on := w.offerAt(p); on {
+			return w.Choose(offer)
+		}
+		return w.clickingBackups(p)
+	}
 	// What is offered answers first, wherever it is drawn: it is what closes
 	// a panel, so it is the one thing a panel does not swallow.
 	if offer, on := w.offerAt(p); on {

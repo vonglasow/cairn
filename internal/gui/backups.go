@@ -52,7 +52,7 @@ func (w Window) listingBackups() Window {
 	if len(kept.Backups) == 0 {
 		return w.telling("no backup yet: ⌘B makes one")
 	}
-	w.backups, w.backupOn, w.screen = kept.Backups, 0, OnBackups
+	w.backups, w.backupOn, w.backupsFrom, w.screen = kept.Backups, 0, 0, OnBackups
 	return w
 }
 
@@ -62,8 +62,10 @@ func (w Window) onBackups(name string) Window {
 	switch name {
 	case "down", "j":
 		w.backupOn = min(len(w.backups)-1, w.backupOn+1)
+		w.backupsFrom = max(w.backupsFrom, w.backupOn-w.BackupsRoom()+1)
 	case "up", "k":
 		w.backupOn = max(0, w.backupOn-1)
+		w.backupsFrom = min(w.backupsFrom, w.backupOn)
 	case "enter":
 		w.screen, w.question = OnAsking, aboutPuttingBack
 	case "esc":
@@ -81,6 +83,35 @@ func (w Window) puttingBack() Window {
 		return w
 	}
 	return w.Look().telling(fmt.Sprintf("backup %d was put back", number))
+}
+
+// BackupsFrom is the first backup of the list in sight. Every backup put back
+// sets another aside, so the list grows past its panel, and the line the
+// keyboard is on is kept among the ones drawn.
+func (w Window) BackupsFrom() int { return w.backupsFrom }
+
+// BackupsRoom is how many backups the list shows at once: the lines between
+// its heading and its offers.
+func (w Window) BackupsRoom() int {
+	box := ChoosingOver(w.width, w.height)
+	return max(1, (PanelOfferAt(box, 0).Y-padding-FirstRow(box)-between)/menuRow)
+}
+
+// clickingBackups asks to put back the backup clicked, and a click off the
+// list closes it.
+func (w Window) clickingBackups(p Point) Window {
+	box := ChoosingOver(w.width, w.height)
+	for i := w.backupsFrom; i < min(len(w.backups), w.backupsFrom+w.BackupsRoom()); i++ {
+		if BackupRowAt(box, i-w.backupsFrom).In(p) {
+			w.backupOn = i
+			w.screen, w.question = OnAsking, aboutPuttingBack
+			return w
+		}
+	}
+	if !box.In(p) {
+		w.screen = OnTheBoard
+	}
+	return w
 }
 
 // BackupRowAt is where the i-th backup of the list is written.

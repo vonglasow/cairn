@@ -115,3 +115,86 @@ func TestPuttingBackAsksWhatItCosts(t *testing.T) {
 		t.Errorf("the question is headed %q", got)
 	}
 }
+
+// A click on a backup asks to put it back; a click off the list closes it.
+func TestTheBackupsAnswerThePointer(t *testing.T) {
+	w := Window{screen: OnBackups, width: 1200, height: 800, backups: []domain.Backup{{Number: 2}, {Number: 1}}}
+	row := BackupRowAt(ChoosingOver(1200, 800), 1)
+	asked := w.Click(Point{X: row.X + 5, Y: row.Y + 5})
+	if asked.Screen() != OnAsking || asked.question != aboutPuttingBack || asked.BackupOn() != 1 {
+		t.Errorf("a click on the second backup left the window on %v asking %v about %d", asked.Screen(), asked.question, asked.BackupOn())
+	}
+	if got := w.Click(Point{X: 2, Y: 2}); got.Screen() != OnTheBoard {
+		t.Errorf("a click off the list left the window on %v", got.Screen())
+	}
+}
+
+// Many backups scroll: the one the keyboard is on is always among the lines
+// drawn, and the list never starts past the last screenful.
+func TestManyBackupsScroll(t *testing.T) {
+	many := make([]domain.Backup, 40)
+	for i := range many {
+		many[i] = domain.Backup{Number: 40 - i}
+	}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many}
+	room := w.BackupsRoom()
+	if room < 1 || room >= len(many) {
+		t.Fatalf("the list has room for %d of 40", room)
+	}
+	for range room + 3 {
+		w = w.onBackups("down")
+	}
+	if from := w.BackupsFrom(); w.BackupOn() < from || w.BackupOn() >= from+room {
+		t.Errorf("backup %d is out of sight, the list starting at %d with room for %d", w.BackupOn(), from, room)
+	}
+	for range 3 {
+		w = w.onBackups("up")
+	}
+	if from := w.BackupsFrom(); w.BackupOn() < from {
+		t.Errorf("walking back up left backup %d above the list, which starts at %d", w.BackupOn(), from)
+	}
+}
+
+// The list's room, to the line: 387 between its first line and its offers,
+// thirteen lines of 28. And a click on a list scrolled down takes the backup
+// drawn there, not the one that would be there unscrolled.
+func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
+	many := make([]domain.Backup, 40)
+	for i := range many {
+		many[i] = domain.Backup{Number: 40 - i}
+	}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5}
+	if got := w.BackupsRoom(); got != 13 {
+		t.Errorf("the list has room for %d, want 13", got)
+	}
+	first := BackupRowAt(ChoosingOver(1200, 800), 0)
+	if got := w.Click(Point{X: first.X + 5, Y: first.Y + 5}).BackupOn(); got != 5 {
+		t.Errorf("a click on the first line drawn took backup %d, want the sixth, 5", got)
+	}
+	last := BackupRowAt(ChoosingOver(1200, 800), 12)
+	if got := w.Click(Point{X: last.X + 5, Y: last.Y + 5}).BackupOn(); got != 17 {
+		t.Errorf("a click on the last line drawn took backup %d, want 17", got)
+	}
+	// Under the last line drawn, inside the panel, there is nothing to take.
+	under := BackupRowAt(ChoosingOver(1200, 800), 13)
+	if got := w.Click(Point{X: under.X + 5, Y: under.Y + 5}); got.Screen() != OnBackups {
+		t.Errorf("a click under the last line drawn left the window on %v", got.Screen())
+	}
+}
+
+// Scrolled, the line lit is the one the keyboard is on, wherever it is drawn.
+func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
+	many := make([]domain.Backup, 20)
+	for i := range many {
+		many[i] = domain.Backup{Number: 20 - i}
+	}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5, backupOn: 6}
+	shot := drawn(t, w)
+	corner := func(i int) Box {
+		row := BackupRowAt(ChoosingOver(1200, 800), i)
+		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
+	}
+	if ink(shot, corner(1), Dark().Back) != 0 || ink(shot, corner(0), Dark().Panel) != 0 {
+		t.Error("the second line drawn, backup 6, is not the one lit")
+	}
+}

@@ -133,10 +133,11 @@ type Window struct {
 	// told is what the window last said that is not something gone wrong,
 	// and toldFor how many beats it has been said for; backups and backupOn
 	// are the list of backups and the line the keyboard is on: backups.go.
-	told     string
-	toldFor  int
-	backups  []domain.Backup
-	backupOn int
+	told        string
+	toldFor     int
+	backups     []domain.Backup
+	backupOn    int
+	backupsFrom int
 	// week is the Monday of the week the time page shows, and sheet the time
 	// spent over it: see week.go.
 	week  time.Time

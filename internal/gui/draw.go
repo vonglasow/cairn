@@ -220,10 +220,11 @@ func drawCairn(gtx layout.Context, skin Skin, w Window, progress float64) {
 func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := ChoosingOver(w.width, w.height)
 	drawPanel(gtx, th, skin, box, Heads(w))
-	for i, one := range w.Backups() {
+	from := w.BackupsFrom()
+	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
 		row := BackupRowAt(box, i)
 		ink := skin.Ink
-		if i == w.BackupOn() {
+		if from+i == w.BackupOn() {
 			fill(gtx, row, skin.Back)
 			ink = skin.Chosen
 		}
