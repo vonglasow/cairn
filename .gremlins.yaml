@@ -23,6 +23,14 @@ unleash:
   # neither column — so scripts/mutation.sh fails the run on one instead.
   timeout-coefficient: 30
 
+  # Two mutants at a time, not one per core. Each runs a whole package's
+  # tests, and the window's run 2.5 to 3.5 GB each: ten at once, the default
+  # on this machine, and a container VM beside them took 16 GB to 40, starved
+  # the display server until macOS restarted the machine — twice. Two leaves
+  # room for everything else a person has open. Raising it is a change to say
+  # in docs/checks.md, with what was measured.
+  workers: 2
+
   # 99.99, not 100, and this is not a lowered threshold. gremlins fails when the
   # score is **less than or equal to** the value here (report.go:236), so a 100
   # would refuse a perfect run. 99.99 is how "nothing less than 100%" is spelled

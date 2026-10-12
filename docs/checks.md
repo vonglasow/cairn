@@ -375,3 +375,10 @@ relative to the package, with no context lines — check a run's summary reads
 Every mutant is a build, and builds land in the Go cache — one full sweep left
 50 to 150 GB in it. Gremlins gets a cache of its own, `$(go env
 GOCACHE)-gremlins`, wiped once it passes 10 GB.
+
+**Two mutants run at a time** (`workers: 2` in `.gremlins.yaml`), not one per
+core. Each one runs its package's whole suite, and the window's took 2.5 to
+3.5 GB: measured on 2026-10-12, eight at once beside a container VM took a
+16 GB machine to 40, starved WindowServer, and macOS restarted the machine —
+twice. A sweep is slower for it; a machine that restarts mid-sweep finishes
+nothing.
