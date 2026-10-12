@@ -13,6 +13,7 @@ package gui
 import (
 	"time"
 
+	"cairn/internal/domain"
 	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
@@ -43,6 +44,8 @@ const (
 	OnCalendar
 	// OnMenu is what a right click offers, beside the pointer.
 	OnMenu
+	// OnBackups is the list of backups, one of which may be put back.
+	OnBackups
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -124,6 +127,13 @@ type Window struct {
 	menu   []string
 	menuAt Point
 	menuOn int
+	// told is what the window last said that is not something gone wrong,
+	// and toldFor how many beats it has been said for; backups and backupOn
+	// are the list of backups and the line the keyboard is on: backups.go.
+	told     string
+	toldFor  int
+	backups  []domain.Backup
+	backupOn int
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string
@@ -369,6 +379,12 @@ func (w Window) Wonder() Window {
 // aged counts one more beat on what went wrong, and forgets it once it has
 // lingered its time.
 func (w Window) aged() Window {
+	if w.told != "" {
+		w.toldFor++
+		if w.toldFor >= Lingers() {
+			w.told, w.toldFor = "", 0
+		}
+	}
 	if w.err == nil {
 		return w
 	}

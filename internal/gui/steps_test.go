@@ -927,6 +927,37 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
+	sc.Then(`^the window tells "([^"]*)"$`, func(said string) error {
+		if !strings.Contains(w.w.Note(), said) {
+			return fmt.Errorf("the window tells %q, want it to say %q", w.w.Note(), said)
+		}
+		return nil
+	})
+	sc.Then(`^there (?:is|are) (\d+) backups?$`, func(n int) error {
+		kept, err := w.work.Ask(engine.BackupList, engine.Input{})
+		if err != nil {
+			return err
+		}
+		if len(kept.Backups) != n {
+			return fmt.Errorf("there are %d backups, want %d", len(kept.Backups), n)
+		}
+		return nil
+	})
+	sc.Then(`^the backups listed are (\d+)$`, func(n int) error {
+		if w.w.Screen() != OnBackups {
+			return fmt.Errorf("the window is on %v, not on the backups", w.w.Screen())
+		}
+		if got := len(w.w.Backups()); got != n {
+			return fmt.Errorf("%d backups are listed, want %d", got, n)
+		}
+		return nil
+	})
+	sc.Then(`^the window is asking$`, func() error {
+		if w.w.Screen() != OnAsking {
+			return fmt.Errorf("the window is on %v, not asking", w.w.Screen())
+		}
+		return nil
+	})
 	sc.Then(`^it says nothing went wrong$`, func() error {
 		if wrong := w.w.Wrong(); wrong != nil {
 			return fmt.Errorf("the window still says: %w", wrong)

@@ -197,6 +197,25 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnMenu {
 		drawMenu(gtx, th, skin, w)
 	}
+	if w.Screen() == OnBackups {
+		drawBackups(gtx, th, skin, w)
+	}
+}
+
+// drawBackups is the list of backups, the one the keyboard is on lit.
+func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := ChoosingOver(w.width, w.height)
+	drawPanel(gtx, th, skin, box, Heads(w))
+	for i, one := range w.Backups() {
+		row := BackupRowAt(box, i)
+		ink := skin.Ink
+		if i == w.BackupOn() {
+			fill(gtx, row, skin.Back)
+			ink = skin.Chosen
+		}
+		say(gtx, th, ink, Inside(row), "backup "+strconv.Itoa(one.Number)+"   "+domain.FormatMoment(one.Made), reads)
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 // drawMenu is what a right click offers, the line the keyboard is on lit.
@@ -530,6 +549,9 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		// ground of its own, since it lies over the foot of the board.
 		fill(gtx, WrongBox(l), skin.Back)
 		sayOver(gtx, th, skin.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
+	} else if w.Note() != "" {
+		fill(gtx, WrongBox(l), skin.Back)
+		sayOver(gtx, th, skin.Ink, WrongBox(l), w.Note(), reads, 2)
 	}
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		for i, offer := range w.BoardOffers() {

@@ -38,6 +38,8 @@ func HeadsOn(w Window, screen Screen) string {
 		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
 	case OnCalendar:
 		return "a deadline for " + w.formKind() + " " + strconv.Itoa(w.form.Number) + " — " + w.day.Format("January 2006")
+	case OnBackups:
+		return "Backups — enter puts one back"
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -46,6 +48,9 @@ func HeadsOn(w Window, screen Screen) string {
 		}
 		if w.asksAboutSeveral() {
 			return w.severalHead()
+		}
+		if w.question == aboutPuttingBack {
+			return "Put backup " + strconv.Itoa(w.backups[w.backupOn].Number) + " back?"
 		}
 		if w.question == aboutSweeping {
 			return "Take every task in " + strings.ToUpper(w.sweeps()) + " off the board?"
@@ -211,6 +216,8 @@ func helping() []Said {
 		{Key: "⏎ on a deadline", Means: "a calendar — the arrows walk days and weeks, ⇧←→ months, t today, ⌫ no day"},
 		{Key: "⇧A", Means: "what was archived, on the board or off it — it reads faintly"},
 		{Key: "⌘N", Means: "add"},
+		{Key: "⌘B", Means: "back the store up — it says where the copy lies, to take anywhere"},
+		{Key: "⇧B", Means: "the backups — enter puts one back, after asking, the store backed up first"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
 		{Key: "tab", Means: "the other page — shift+tab the one before"},
@@ -233,6 +240,8 @@ func (w Window) Offers() []string {
 		return []string{"Take", "Keep", "Cancel"}
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
+	case OnBackups:
+		return []string{"Cancel"}
 	case OnMenu:
 		// The menu is its own offers: the bar under it says what the board
 		// will offer again, faintly, as it does under every panel.
@@ -379,6 +388,12 @@ func (w Window) Asks() []Said {
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
 		}
 	}
+	if w.question == aboutPuttingBack {
+		return []Said{
+			{Means: "What the store holds now is backed up first."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -407,6 +422,7 @@ const (
 	aboutSweeping
 	aboutDeletingSeveral
 	aboutArchivingSeveral
+	aboutPuttingBack
 )
 
 // sweeps is the column a sweep would take off the board: the one the chosen

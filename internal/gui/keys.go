@@ -62,6 +62,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnHelp:     Window.inHelp,
 	OnCalendar: Window.onCalendar,
 	OnMenu:     Window.onMenu,
+	OnBackups:  Window.onBackups,
 }
 
 // onBoard is what a key does on the board itself.
@@ -74,6 +75,13 @@ func (w Window) onBoard(name string) Window {
 		if w.chosen != 0 && !w.chosenGoal {
 			return w.working()
 		}
+	case "cmd+b":
+		// Not on the bar, which has room for what changes a task: this keeps
+		// the whole store, and is in the help, under the key the system's own
+		// save-a-copy chords are near.
+		return w.backingUp()
+	case "shift+b":
+		return w.listingBackups()
 	case "shift+x":
 		// The whole column off the board at once. Not on the bar either: the
 		// bar has room for what one card does, and this does what a column

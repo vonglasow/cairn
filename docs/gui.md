@@ -538,6 +538,18 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**The store is backed up, and put back, from the window.** Both were the
+command line's, so a person at the window went to a terminal for either. `⌘B`
+backs the store up and says where the backup lies — a file to copy wherever it
+is wanted, which is the export; `⇧B` lists the backups, and `⏎` puts one back
+once agreed to, the engine backing up what the store holds first, as it always
+does — which is the import, for a file from elsewhere once it lies among the
+backups (`backups.go`). What it tells is said above the bar in the ink of
+what is read, and goes as a refusal does. There is no file dialog: Gio has
+none of its own, and the one beside it (`gioui.org/x/explorer`) is a
+dependency and native code on every system for what the backups folder
+already is.
+
 **Nothing of cairn's is in the system's menu bar.** Gio builds the macOS
 menu itself — Hide and Quit, in its own Objective-C — and offers no way to add
 to it, nor any menu at all on Windows or Linux. One of cairn's would be

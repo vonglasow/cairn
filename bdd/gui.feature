@@ -882,6 +882,50 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: The store is backed up, and put back, from the window
+
+    Backing the store up, and putting a backup back, were the command line's:
+    a person at the window went to a terminal to do either. ⌘B backs it up
+    and says where the backup is — a file to copy anywhere; ⇧B lists the
+    backups, and enter puts one back once it has been agreed to, what the
+    store holds then backed up first.
+
+    @gui-backing-up-from-the-window
+    Scenario: ⌘B backs the store up and says where the backup is
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+b"
+      Then the window tells "backup 1 is"
+      And there is 1 backup
+
+    @gui-putting-a-backup-back-from-the-window
+    Scenario: a backup chosen from the list is put back once agreed to
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+b"
+      And I added a task titled "Ship the board"
+      And the window has looked at the store 1 time
+      And I press "shift+b"
+      Then the backups listed are 1
+      When I press "enter"
+      Then the window is asking
+      When I press "enter"
+      Then the window is on the board
+      And "BACKLOG" carries "Write the spec"
+      And "BACKLOG" does not carry "Ship the board"
+      And the window tells "backup 1 was put back"
+      And there are 2 backups
+
+    @gui-the-backups-are-left-without-putting-one-back
+    Scenario: esc leaves the backups without putting one back
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+b"
+      And I press "shift+b"
+      And I press "esc"
+      Then the window is on the board
+      And there is 1 backup
+
   Rule: A right click says what can be done to what is under it
 
     What a card can have done to it was on the bar, at the foot of the window,

@@ -555,7 +555,7 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnChoosing {
 			return w.leaving()
 		}
-		if w.question == aboutSweeping {
+		if w.question == aboutSweeping || w.question == aboutPuttingBack || w.screen == OnBackups {
 			w.screen, w.question = OnTheBoard, aboutDeleting
 			return w
 		}
@@ -606,6 +606,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutSweeping {
 			return w.sweeping()
+		}
+		if w.question == aboutPuttingBack {
+			return w.puttingBack()
 		}
 		if w.question == aboutLeaving {
 			return w.throwingAway()
