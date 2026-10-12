@@ -74,6 +74,14 @@ already said why not.
 | `internal/reading` both reads the board and builds what a board asks the engine | both boards need both halves, and neither half is used without the other | [architecture.md](architecture.md) |
 | the engine is one package, split into files by notion | one door (`Ask`) and one place for the rules; sub-packages wait until a file cannot be read on its own | [architecture.md](architecture.md) |
 
+## Sharing
+
+| decided | why, in one line | where |
+|---|---|---|
+| no decentralised store (IPFS), no CRDT library, no synced store file | public by default and undeletable; every CRDT engine fitting SQLite needs C; a file synced mid-write is a corrupt store | [sharing.md](sharing.md#study-1--a-decentralised-store-16) |
+| sharing, when it is needed, is the trace merged over a relay of the same binary | the trace is already a log, and a relay is where a deletion reaches everybody | [sharing.md](sharing.md#study-1--a-decentralised-store-16) |
+| no blockchain | colleagues of one employer trust each other, and a chain cannot forget what the GDPR says must be forgettable | [sharing.md](sharing.md#study-2--a-blockchain-17) |
+
 ## The checks
 
 | decided | why, in one line | where |

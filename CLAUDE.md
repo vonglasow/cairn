@@ -49,6 +49,7 @@ calls it, and prints — it decides nothing.
 | touching the desktop window, or anything a person sees in one | [docs/gui.md](docs/gui.md) |
 | touching how long the work took, or the timesheet | [docs/trace.md](docs/trace.md) |
 | adding a dependency, or wondering why one is there | [docs/dependencies.md](docs/dependencies.md) |
+| sharing a board with other people, syncing a store, or anything decentralised | [docs/sharing.md](docs/sharing.md) |
 | proposing something cairn does not do, or wondering why it does not | [docs/decisions.md](docs/decisions.md) |
 | making a version, or handing a binary to anybody | [docs/release.md](docs/release.md) |
 
