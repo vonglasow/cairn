@@ -55,7 +55,9 @@ func TestTheHelpDrawsItsBarWhenItScrolls(t *testing.T) {
 // column running under the bar, or a bar beside nothing.
 func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
 	tall := New(newFake(), 1600, 2000).Key("?")
-	if got, want := tall.HelpBox(), (Box{X: 200, Y: 166, W: 1200, H: 1162}); got != want {
+	// 106 is the heading, its rule and the offers at the foot; each line is
+	// one apart.
+	if got, want := tall.HelpBox(), (Box{X: 200, Y: 166, W: 1200, H: 106 + len(tall.HelpRows())*apart}); got != want {
 		t.Errorf("a tall window's help is %+v, want %+v — as tall as its %d lines", got, want, len(tall.HelpRows()))
 	}
 	name, value := HelpRowAt(tall.HelpBox(), 2)

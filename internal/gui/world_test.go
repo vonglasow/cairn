@@ -357,14 +357,24 @@ func (w *world) clipping() error {
 // the modifiers apart from it.
 func asGio(name string) (string, key.Modifiers) {
 	var with key.Modifiers
-	for prefix, mod := range map[string]key.Modifiers{
-		"shift+": key.ModShift, "cmd+": key.ModCommand, "ctrl+": key.ModCtrl,
-	} {
-		if rest, ok := strings.CutPrefix(name, prefix); ok {
-			name, with = rest, mod
+	// As many modifiers as the name carries, in the order it writes them.
+	for found := true; found; {
+		found = false
+		for prefix, mod := range map[string]key.Modifiers{
+			"shift+": key.ModShift, "cmd+": key.ModCommand, "ctrl+": key.ModCtrl, "alt+": key.ModAlt,
+		} {
+			if rest, ok := strings.CutPrefix(name, prefix); ok {
+				name, with, found = rest, with|mod, true
+			}
 		}
 	}
 	switch name {
+	case "home":
+		return string(key.NameHome), with
+	case "end":
+		return string(key.NameEnd), with
+	case "delete-forward":
+		return string(key.NameDeleteForward), with
 	case "esc":
 		return string(key.NameEscape), with
 	case "tab":
@@ -850,6 +860,26 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			}
 			w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
 			return nil
+		})
+	// Line by line, for a field with room for several: the step above lays
+	// every character along one row, which is not where a second line is.
+	sc.Step(`^I drag across the field "([^"]*)" from line (\d+) character (\d+) to line (\d+) character (\d+)$`,
+		func(name string, fromLine, fromColumn, toLine, toColumn int) error {
+			fields := w.w.Form().Fields()
+			for i, field := range fields {
+				if field.Name != name {
+					continue
+				}
+				_, value, rows := FormPlace(w.w.formBox(), fields, i)
+				inside := Inside(Framed(value, rows))
+				at := func(line, column int) Point {
+					row := LineAt(inside, line, 0)
+					return Point{X: row.X + column*glyphOf(FormSize(field)), Y: row.Y + row.H/2}
+				}
+				w.w = w.w.PressAt(at(fromLine, fromColumn)).MoveTo(at(toLine, toColumn)).LetGo(at(toLine, toColumn))
+				return nil
+			}
+			return fmt.Errorf("the form has no field called %q", name)
 		})
 	sc.Step(`^I drag across the field "([^"]*)" from (\d+) to past its end$`,
 		func(name string, from int) error {

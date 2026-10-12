@@ -718,6 +718,101 @@ Feature: The desktop board
       And I press "backspace"
       Then the field "title" reads "abd"
 
+    @gui-the-caret-goes-to-the-ends-of-its-line
+    Scenario: the caret goes to the start and the end of the line it is on
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I press "home"
+      Then the caret is at 0
+      When I press "cmd+right"
+      Then the caret is at 14
+      When I press "cmd+left"
+      Then the caret is at 0
+      When I press "end"
+      Then the caret is at 14
+
+    @gui-the-caret-walks-a-word-at-a-time
+    Scenario: the caret walks a word at a time, and holds as it goes with shift
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I press "alt+left"
+      Then the caret is at 10
+      When I press "alt+shift+left"
+      And I press "backspace"
+      Then the field "title" reads "Write spec"
+
+    @gui-holding-to-the-ends-of-a-line
+    Scenario: shift holds from the caret to either end of the line
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I press "alt+left"
+      And I press "cmd+shift+left"
+      And I press "backspace"
+      Then the field "title" reads "spec"
+      When I press "shift+end"
+      And I type "plan"
+      Then the field "title" reads "plan"
+
+    @gui-taking-out-forward-and-in-strokes
+    Scenario: what is after the caret is taken out, and a word or a line in one stroke
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I press "home"
+      And I press "delete-forward"
+      Then the field "title" reads "rite the spec"
+      When I press "end"
+      And I press "alt+backspace"
+      Then the field "title" reads "rite the "
+      When I press "cmd+backspace"
+      Then the field "title" reads ""
+
+    @gui-holding-lines-of-a-description
+    Scenario: shift with the arrows holds whole lines of a description, which go in one stroke
+      Given I added a task titled "Write the spec" with the paragraphs "one" and "two three"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "description"
+      And I press "left"
+      And I press "left"
+      And I press "shift+up"
+      And I press "backspace"
+      Then the field "description" reads "oneee"
+
+    @gui-a-run-held-across-lines-goes-in-one-stroke
+    Scenario: a run held across the lines of a description is taken out whole
+      Given I added a task titled "Write the spec" with the paragraphs "one" and "two"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I drag across the field "description" from line 0 character 1 to line 1 character 2
+      And I press "backspace"
+      Then the field "description" reads "oo"
+
+    @gui-the-search-walks-like-a-field
+    Scenario: the search line walks and takes out like any other text
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "/"
+      And I type "the spec"
+      And I press "home"
+      And I press "delete-forward"
+      And I press "end"
+      And I press "alt+backspace"
+      Then the search reads "he "
+
     @gui-the-search-has-a-caret-too
     Scenario: the search line is text like any other
       Given I added a task titled "Write the spec"

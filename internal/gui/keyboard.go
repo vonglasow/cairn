@@ -25,7 +25,7 @@ func (k Keyboard) Spelled(said string) string {
 	if k.mac {
 		return said
 	}
-	return strings.NewReplacer("⌘", "Ctrl+", "⇧", "Shift+").Replace(said)
+	return strings.NewReplacer("⌘", "Ctrl+", "⇧", "Shift+", "⌥", "Alt+", "⌫", "Backspace", "⌦", "Delete").Replace(said)
 }
 
 // OnSystem is the window written for another system than the one it runs on:

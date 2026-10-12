@@ -106,6 +106,10 @@ func (w Window) onBoard(name string) Window {
 
 // onSearch is what a key does while the search box is open.
 func (w Window) onSearch(name string) Window {
+	if edit, ok := textKey(name); ok {
+		w.looking = edit(w.looking)
+		return w
+	}
 	switch name {
 	case "backspace":
 		w.looking = w.looking.Back()
@@ -132,6 +136,17 @@ func (w Window) inForm(name string) Window {
 		}
 	}
 	long := w.form.Fields()[w.form.On()].Long
+	if edit, ok := textKey(name); ok && len(w.form.Fields()[w.form.On()].Choices) == 0 {
+		w.form = w.form.Writes(edit(w.form.Writing()))
+		return w.inSightOfTheCaret()
+	}
+	if long && (name == "shift+up" || name == "shift+down") {
+		by := 1
+		if name == "shift+up" {
+			by = -1
+		}
+		return w.holdingLines(by)
+	}
 	switch name {
 	case "tab":
 		w.form = w.form.onto(w.form.On() + 1)

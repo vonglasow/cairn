@@ -153,13 +153,22 @@ func Twice(before, now time.Time, was, at Point) bool {
 
 // Typed says what a key does. The few flat shortcuts, and nothing modal.
 func Typed(w Window, name string, with key.Modifiers) Window {
+	said, isNamed := naming(name)
+	// A key that moves the caret keeps every modifier it came with: ⌘ and ⌥
+	// say how far it goes, and shift that it holds on the way.
+	if moving(said) {
+		return w.Key(modified(with, key.ModCommand|key.ModCtrl, "cmd+") +
+			modified(with, key.ModAlt, "alt+") + modified(with, key.ModShift, "shift+") + said)
+	}
 	if with.Contain(key.ModCommand) || with.Contain(key.ModCtrl) {
 		// Named first, like every other key. Lowercasing Gio's own spelling
 		// left ⌘ with a special key arriving as "cmd+⏎" — a name nothing is
 		// bound to, and nothing said so.
-		return w.Key("cmd+" + named(name))
+		return w.Key("cmd+" + said)
 	}
-	said := named(name)
+	if with.Contain(key.ModAlt) && said == "backspace" {
+		return w.Key("alt+backspace")
+	}
 	// Shift is a modifier Gio reports apart from the key, so a shifted letter
 	// arrives as the plain letter and has to be put back together here. Only a
 	// letter and tab: a shifted "/" is a different character, not a shifted
@@ -167,10 +176,27 @@ func Typed(w Window, name string, with key.Modifiers) Window {
 	// A named key or a letter: those are what this board spells with a shift+
 	// prefix. Punctuation is left alone, because Gio has already applied shift
 	// to it — the "/" key with shift is named "?" before it gets here.
-	if _, isNamed := naming(name); with.Contain(key.ModShift) && (isNamed || aLetter(said)) {
+	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) {
 		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
+}
+
+// moving says whether a key moves the caret: the arrows, home and end.
+func moving(said string) bool {
+	switch said {
+	case "left", "right", "up", "down", "home", "end":
+		return true
+	}
+	return false
+}
+
+// modified is a modifier's word when the key came with any of the ones named.
+func modified(with, any key.Modifiers, word string) string {
+	if with&any != 0 {
+		return word
+	}
+	return ""
 }
 
 // aLetter says whether a name is a single letter.
@@ -179,15 +205,9 @@ func aLetter(name string) bool {
 	return len(r) == 1 && unicode.IsLetter(r[0])
 }
 
-// named turns what Gio calls a key into what this board calls it. Gio spells
-// them for a keyboard; a board says what they do.
-func named(name string) string {
-	said, _ := naming(name)
-	return said
-}
-
-// naming does the same and says whether the key was one this board has a word
-// for. Shift is joined to those and to letters, and to nothing else: Gio has
+// naming turns what Gio calls a key into what this board calls it, and says
+// whether the key was one this board has a word for. Gio spells them for a
+// keyboard; a board says what they do. Shift is joined to those and to letters, and to nothing else: Gio has
 // already applied it to punctuation.
 func naming(name string) (string, bool) {
 	switch key.Name(name) {
@@ -207,6 +227,12 @@ func naming(name string) (string, bool) {
 		return "up", true
 	case key.NameDownArrow:
 		return "down", true
+	case key.NameHome:
+		return "home", true
+	case key.NameEnd:
+		return "end", true
+	case key.NameDeleteForward:
+		return "delete-forward", true
 	}
 	return strings.ToLower(name), false
 }
@@ -323,7 +349,7 @@ func listening() []event.Filter {
 			// column and watched it stay where it was.
 			ScrollY: pointer.ScrollRange{Min: -reach, Max: reach},
 		},
-		key.Filter{Focus: tag, Optional: key.ModCommand | key.ModCtrl | key.ModShift},
+		key.Filter{Focus: tag, Optional: key.ModCommand | key.ModCtrl | key.ModShift | key.ModAlt},
 		// Named explicitly, because Gio hands a filter that names no key
 		// everything the system has not already spoken for — and tab is
 		// one of the ones it has.

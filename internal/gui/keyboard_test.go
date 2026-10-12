@@ -16,6 +16,9 @@ func TestAKeyIsWrittenTheWayItsSystemWritesIt(t *testing.T) {
 		{"linux", "⌘⏎ or ⌘S in a form", "Ctrl+⏎ or Ctrl+S in a form"},
 		{"windows", "⇧←→ in a field", "Shift+←→ in a field"},
 		{"windows", "esc", "esc"},
+		{"windows", "⌥←→ a word", "Alt+←→ a word"},
+		{"linux", "⌦ ⌘⌫ ⌥⌫", "Delete Ctrl+Backspace Alt+Backspace"},
+		{"darwin", "⌦ ⌘⌫ ⌥⌫", "⌦ ⌘⌫ ⌥⌫"},
 	} {
 		if got := KeyboardOf(c.system).Spelled(c.said); got != c.want {
 			t.Errorf("on %s, %q is written %q, want %q", c.system, c.said, got, c.want)
@@ -28,7 +31,7 @@ func TestAKeyIsWrittenTheWayItsSystemWritesIt(t *testing.T) {
 func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 	w := New(newFake(), 1200, 800).OnSystem("windows")
 	for _, line := range w.Helping() {
-		if strings.ContainsAny(line.Key+line.Means, "⌘⇧") {
+		if strings.ContainsAny(line.Key+line.Means, "⌘⇧⌥⌫⌦") {
 			t.Errorf("the help says %q — %q on Windows", line.Key, line.Means)
 		}
 	}

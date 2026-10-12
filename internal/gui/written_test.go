@@ -123,3 +123,76 @@ func TestWritten_holdsARunOfText(t *testing.T) {
 		t.Errorf("holding all of it gave %q", got)
 	}
 }
+
+// The caret goes to the start and the end of the line it is on, and no
+// further: a line is what lies between two breaks.
+func TestWritten_walksToEitherEndOfItsLine(t *testing.T) {
+	w := Written{Value: "first line\nsecond line\nthird", At: 14}
+	if got := w.LineStart(); got.At != 11 || got.Held != 0 {
+		t.Errorf("the start of the line is at %d holding %d, want 11", got.At, got.Held)
+	}
+	if got := w.LineEnd(); got.At != 22 || got.Held != 0 {
+		t.Errorf("the end of the line is at %d holding %d, want 22", got.At, got.Held)
+	}
+	if got := (Written{Value: "one", At: 1}).LineEnd(); got.At != 3 {
+		t.Errorf("the end of the only line is at %d, want 3", got.At)
+	}
+	if got := (Written{Value: "a\nb", At: 2}).LineStart(); got.At != 2 {
+		t.Errorf("a caret already at the start of its line moved to %d", got.At)
+	}
+}
+
+// The caret walks a word at a time: back to the start of the word it is in or
+// the one before, on to the end of the word it is in or the one after.
+func TestWritten_walksAWordAtATime(t *testing.T) {
+	w := Written{Value: "write  the spec", At: 9}
+	if got := w.WordBack(); got.At != 7 {
+		t.Errorf("a word back is at %d, want 7", got.At)
+	}
+	if got := w.WordBack().WordBack(); got.At != 0 {
+		t.Errorf("two words back is at %d, want 0", got.At)
+	}
+	if got := w.WordOn(); got.At != 10 {
+		t.Errorf("a word on is at %d, want 10", got.At)
+	}
+	if got := w.WordOn().WordOn(); got.At != 15 {
+		t.Errorf("two words on is at %d, want 15", got.At)
+	}
+	if got := (Written{Value: "ab", At: 0}).WordBack(); got.At != 0 {
+		t.Errorf("a word back from the start is at %d", got.At)
+	}
+	if got := (Written{Value: "ab", At: 2}).WordOn(); got.At != 2 {
+		t.Errorf("a word on from the end is at %d", got.At)
+	}
+}
+
+// What lies after the caret is taken out, and a held run in one stroke.
+func TestWritten_takesOutWhatIsAfterTheCaret(t *testing.T) {
+	w := Written{Value: "spec", At: 1}
+	if got := w.Forward(); got.Value != "sec" || got.At != 1 {
+		t.Errorf("forward = %q at %d, want \"sec\" at 1", got.Value, got.At)
+	}
+	if got := (Written{Value: "spec", At: 4}).Forward(); got.Value != "spec" {
+		t.Errorf("forward at the end took %q", got.Value)
+	}
+	held := Written{Value: "one\ntwo\nthree", At: 9, Held: -7}
+	if got := held.Forward(); got.Value != "onhree" || got.At != 2 {
+		t.Errorf("forward over a run across lines = %q at %d", got.Value, got.At)
+	}
+}
+
+// Taking back to a place takes out everything between it and the caret: to
+// the start of the line, or of the word, in one stroke.
+func TestWritten_takesBackToAPlace(t *testing.T) {
+	w := Written{Value: "one\ntwo three", At: 13}
+	if got := w.BackTo(w.WordBack().At); got.Value != "one\ntwo " || got.At != 8 {
+		t.Errorf("back a word = %q at %d", got.Value, got.At)
+	}
+	if got := w.BackTo(w.LineStart().At); got.Value != "one\n" || got.At != 4 {
+		t.Errorf("back to the start of the line = %q at %d", got.Value, got.At)
+	}
+	held := Written{Value: "one two", At: 7, Held: -3}
+	if got := held.BackTo(0); got.Value != "one " {
+		t.Errorf("a held run is taken back alone, whatever the place: %q", got.Value)
+	}
+}

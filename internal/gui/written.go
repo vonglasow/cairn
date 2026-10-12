@@ -154,3 +154,72 @@ func (w Written) around(at int, ends func(rune) bool) Written {
 	}
 	return Written{Value: w.Value, At: to, Held: from - to}
 }
+
+// LineStart puts the caret at the start of the line it is on: just after the
+// break before it, or at the very start.
+func (w Written) LineStart() Written {
+	said := []rune(w.Value)
+	at := w.settled(w.At)
+	for at > 0 && said[at-1] != '\n' {
+		at--
+	}
+	return w.CaretAt(at)
+}
+
+// LineEnd puts the caret at the end of the line it is on: just before the
+// break after it, or at the very end.
+func (w Written) LineEnd() Written {
+	said := []rune(w.Value)
+	at := w.settled(w.At)
+	for at < len(said) && said[at] != '\n' {
+		at++
+	}
+	return w.CaretAt(at)
+}
+
+// WordBack puts the caret at the start of the word it is in, or of the one
+// before when it is already there.
+func (w Written) WordBack() Written {
+	said := []rune(w.Value)
+	at := w.settled(w.At)
+	for at > 0 && unicode.IsSpace(said[at-1]) {
+		at--
+	}
+	for at > 0 && !unicode.IsSpace(said[at-1]) {
+		at--
+	}
+	return w.CaretAt(at)
+}
+
+// WordOn puts the caret at the end of the word it is in, or of the one after
+// when it is already there.
+func (w Written) WordOn() Written {
+	said := []rune(w.Value)
+	at := w.settled(w.At)
+	for at < len(said) && unicode.IsSpace(said[at]) {
+		at++
+	}
+	for at < len(said) && !unicode.IsSpace(said[at]) {
+		at++
+	}
+	return w.CaretAt(at)
+}
+
+// Forward takes out the character after the caret, and leaves the caret
+// where it is. A held run goes in one stroke, as it does going back.
+func (w Written) Forward() Written {
+	if w.Holding() {
+		return w.cut()
+	}
+	return w.Selects(w.At + 1).cut()
+}
+
+// BackTo takes out everything between a place before the caret and the
+// caret: back to the start of the word, or of the line. A held run goes alone,
+// whatever the place: it is what was pointed at.
+func (w Written) BackTo(at int) Written {
+	if w.Holding() {
+		return w.cut()
+	}
+	return w.Selects(at).cut()
+}

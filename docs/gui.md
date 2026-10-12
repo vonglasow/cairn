@@ -538,6 +538,18 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A text is corrected the way every text field corrects one.** A field knew a
+character at a time to either side and nothing more, so a word mistyped at the
+start of a long title cost a walk through every letter after it. Now `home`
+and `end`, or `⌘←→`, go to either end of the line; `⌥←→` walk a word at a
+time; shift holds as either goes; `⇧↑↓` hold whole lines of a description; and
+`⌦`, `⌘⌫` and `⌥⌫` take out what is after the caret, back to the start of the
+line, or back a word, in one stroke. The search reads the same keys
+(`editing.go`). For them to arrive, the window asks for ⌥ too, and a key that
+moves the caret keeps every modifier it came with. A run held across the lines
+of a description, with the pointer or with the keys, goes in one stroke
+(`@gui-a-run-held-across-lines-goes-in-one-stroke`).
+
 **A drag on Windows is not yet understood.** On Windows the card in hand was
 drawn at the top left of the window rather than under the pointer. Read
 through, nothing between the system and the drawing differs by system: Gio
