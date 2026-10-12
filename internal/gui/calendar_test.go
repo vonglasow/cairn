@@ -91,3 +91,17 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 		}
 	}
 }
+
+// A form adding names what it adds as new, never as number nought: the list
+// and the calendar it opens say so in their heading.
+func TestAFormAddingIsNamedNew(t *testing.T) {
+	w := Window{screen: OnCalendar, day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}
+	w.form = adding(Tasks, "backlog")
+	if got := Heads(w); got != "a deadline for the new task — October 2026" {
+		t.Errorf("the calendar of a task being added is headed %q", got)
+	}
+	w.form = editing(reading.Card{Number: 4, Title: "Ship"}, nil)
+	if got := Heads(w); got != "a deadline for task 4 — October 2026" {
+		t.Errorf("the calendar of task 4 is headed %q", got)
+	}
+}

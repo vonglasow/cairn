@@ -159,6 +159,13 @@ func Twice(before, now time.Time, was, at Point) bool {
 func Typed(w Window, name string, with key.Modifiers) Window {
 	w = w.interrupted()
 	said, isNamed := naming(name)
+	// ⌥ with anything but a move or ⌫ writes a letter — on a Mac ⌥ alone, on
+	// Windows AltGr, which is Ctrl and Alt together — and the letter arrives
+	// as text on its own. The key beside it is no shortcut: AltGr+S, ś in
+	// Polish, used to save and close the form.
+	if with.Contain(key.ModAlt) && !moving(said) && said != "backspace" {
+		return w
+	}
 	// A key that moves the caret keeps every modifier it came with: ⌘ and ⌥
 	// say how far it goes, and shift that it holds on the way.
 	if moving(said) {
@@ -423,7 +430,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 			// The second button opens what can be done to what is under it,
 			// on the press, the way a menu opens everywhere else.
 			if e.Buttons == pointer.ButtonSecondary && e.Kind == pointer.Press {
-				w = w.ContextAt(Dp(e.Position, gtx.Metric.PxPerDp))
+				w = w.interrupted().ContextAt(Dp(e.Position, gtx.Metric.PxPerDp))
 				continue
 			}
 			if !Acts(e.Buttons) {

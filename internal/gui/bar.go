@@ -16,6 +16,16 @@ import (
 // window knows and the drawing only shows.
 var Pages = []string{"TASKS", "OBJECTIVES", "TIME"}
 
+// formNamed is what the open form is over, as a heading names it: its kind
+// and number, or new when it is being added — a task being added has no
+// number yet, and "task 0" is nothing anybody added.
+func (w Window) formNamed() string {
+	if w.form.Adding {
+		return "the new " + w.formKind()
+	}
+	return w.formKind() + " " + strconv.Itoa(w.form.Number)
+}
+
 // Heads is what the panel that is open says it is, written across its top.
 // Nothing when no panel is open: the board is its own heading.
 func Heads(w Window) string { return HeadsOn(w, w.screen) }
@@ -35,9 +45,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.OneOnly() {
 			what = "a " + w.form.Fields()[w.form.On()].Name + " for"
 		}
-		return what + " " + w.formKind() + " " + strconv.Itoa(w.form.Number)
+		return what + " " + w.formNamed()
 	case OnCalendar:
-		return "a deadline for " + w.formKind() + " " + strconv.Itoa(w.form.Number) + " — " + w.day.Format("January 2006")
+		return "a deadline for " + w.formNamed() + " — " + w.day.Format("January 2006")
 	case OnBackups:
 		return "Backups — enter puts one back"
 	case OnHelp:

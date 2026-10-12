@@ -3,6 +3,11 @@ package gui
 import (
 	"strings"
 	"testing"
+
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
+
+	"cairn/internal/reading"
 )
 
 // A key is written the way the keyboard in front of the person writes it: ⌘ and
@@ -40,5 +45,35 @@ func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 	}
 	if got := New(newFake(), 1200, 800).OnSystem("darwin").Said("New"); got != "⌘N  New" {
 		t.Errorf("on a Mac the bar writes %q", got)
+	}
+}
+
+// AltGr is Ctrl and Alt together on Windows, and writes a letter: ś, ź, €.
+// It arrives as text, and the key that came with it is not a shortcut. Alone,
+// ⌥ with a letter writes one on a Mac too. Neither saves, cuts or archives.
+func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	chosen := w.clicked(middleOf(w, 1, 0))
+	if got := Typed(chosen, "X", key.ModCtrl|key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
+		t.Errorf("AltGr+X archived, or left the window on %v", got.Screen())
+	}
+	if got := Typed(chosen, "X", key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
+		t.Errorf("⌥X archived, or left the window on %v", got.Screen())
+	}
+	// ⌥ with what moves the caret, or takes back, is still read.
+	if got := Typed(chosen, string(key.NameDeleteBackward), key.ModAlt); got.Screen() != OnTheBoard {
+		t.Errorf("⌥⌫ on the board left the window on %v", got.Screen())
+	}
+}
+
+// A right press while the cairn is being built ends it, as any press does:
+// the menu it opens would otherwise be drawn under the stones.
+func TestARightPressEndsTheCairn(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)
+	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
+	if _, on := w.Intro(); on {
+		t.Error("a right press left the cairn building")
 	}
 }
