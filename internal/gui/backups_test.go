@@ -106,18 +106,18 @@ func TestTheBackupsAreLaidOut(t *testing.T) {
 
 // The question says what agreeing costs: nothing, since the store is backed
 // up first — and names the backup it would put back.
-func TestPuttingBackAsksWhatItCosts(t *testing.T) {
+func TestRestoringAsksWhatItCosts(t *testing.T) {
 	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []domain.Backup{{Number: 7}}}}
 	asks := w.Asks()
 	if len(asks) != 2 || asks[0].Means != "A new backup of what the store holds now is made first." {
 		t.Errorf("the question says %+v", asks)
 	}
-	if got := Heads(w); got != "Put backup 7 back?" {
+	if got := Heads(w); got != "Restore backup 7?" {
 		t.Errorf("the question is headed %q", got)
 	}
 }
 
-// A click on a backup asks to put it back; a click off the list closes it.
+// A click on a backup asks to restore it; a click off the list closes it.
 func TestTheBackupsAnswerThePointer(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
 	row := BackupRowAt(w.BackupsBox(), 1)

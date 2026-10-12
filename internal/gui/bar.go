@@ -60,7 +60,7 @@ func HeadsOn(w Window, screen Screen) string {
 			return w.severalHead()
 		}
 		if w.question == aboutPuttingBack {
-			return "Put backup " + strconv.Itoa(w.backups[w.backupOn].Number) + " back?"
+			return "Restore backup " + strconv.Itoa(w.backups[w.backupOn].Number) + "?"
 		}
 		if w.question == aboutSweeping {
 			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
