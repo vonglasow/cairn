@@ -546,7 +546,7 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 		t.Fatalf("the list offers %v, want the two tasks this one may hang under", goalTitles(offered))
 	}
 
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	for at, one := range offered {
 		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
 		// A click says which row; space takes it.
@@ -613,7 +613,7 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter")
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	run := ChoosingRun(box)
 	w = w.Scroll(Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, 6*lineHigh)
 	if w.ChoosingFromRow() != 6 {

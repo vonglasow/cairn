@@ -626,6 +626,19 @@ Feature: The desktop board
       Then the window is on the form
       And the field "column" reads "todo"
 
+    @gui-a-list-is-the-size-of-what-it-holds
+    Scenario: a field's list hangs under it, as long as what it offers
+      Four priorities sat in a panel made for fifty tasks, most of the form
+      hidden behind three empty quarters of it.
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "priority"
+      Then the window is choosing
+      And the list hangs under the field "priority"
+      And the list has room for 4 rows and no more
+
     @gui-a-priority-is-found-by-typing
     Scenario: a priority is found by typing, the way a parent is
       Given I added a task titled "Write the spec"

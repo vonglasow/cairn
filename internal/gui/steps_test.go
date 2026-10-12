@@ -563,7 +563,7 @@ func (w *world) markedDescribed(n int, want bool) error {
 // panel gives them. A list longer than its panel used to draw straight past it
 // and over the window behind.
 func (w *world) listInsideThePanel() error {
-	box := ChoosingOver(w.w.width, w.w.height)
+	box := w.w.ChoosingBox()
 	run := ChoosingRun(box)
 	offered, from, room := w.w.Choosing(), w.w.ChoosingFromRow(), w.w.ChoosingRoom()
 	for i := from; i < min(len(offered), from+room); i++ {
@@ -697,7 +697,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^every field of the form stands left of the history$`, func() error {
-		history := BesideBox(Over(w.w.width, w.w.height))
+		history := BesideBox(w.w.formPanel())
 		_, frames := w.formFrames()
 		for i, frame := range frames {
 			if frame.X+frame.W > history.X {
@@ -1070,7 +1070,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !somewhere {
 			return fmt.Errorf("nothing says where the tile would land")
 		}
-		box := BesideBox(Over(w.w.width, w.w.height))
+		box := BesideBox(w.w.formPanel())
 		if landing.X != box.X || landing.W != box.W {
 			return fmt.Errorf("it lands at %+v, and the box is %+v", landing, box)
 		}
@@ -1381,7 +1381,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^every row of the list is inside the panel$`, w.listInsideThePanel)
 	sc.Then(`^a bar sits beside the list$`, func() error {
-		box := ChoosingOver(w.w.width, w.w.height)
+		box := w.w.ChoosingBox()
 		run, track := ChoosingRun(box), ChoosingBar(box)
 		if track.W <= 0 || track.H <= 0 {
 			return fmt.Errorf("the bar beside the list is %dx%d", track.W, track.H)
@@ -1396,6 +1396,28 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if at < from || at >= from+room {
 			return fmt.Errorf("the keyboard is on row %d, and rows %d to %d are in sight",
 				at, from, from+room-1)
+		}
+		return nil
+	})
+	sc.Then(`^the list hangs under the field "([^"]*)"$`, func(name string) error {
+		box := w.w.ChoosingBox()
+		fields := w.w.Form().Fields()
+		for i, field := range fields {
+			if field.Name != name {
+				continue
+			}
+			_, value, rows := FormPlace(w.w.formBox(), fields, i)
+			frame := Framed(value, rows)
+			if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+				return fmt.Errorf("the list is at %d,%d and the field %q ends at %d,%d", box.X, box.Y, name, frame.X, frame.Y+frame.H)
+			}
+			return nil
+		}
+		return fmt.Errorf("the form has no field %q", name)
+	})
+	sc.Then(`^the list has room for (\d+) rows and no more$`, func(rows int) error {
+		if got := ChoosingRows(w.w.ChoosingBox()); got != rows {
+			return fmt.Errorf("the list has room for %d rows", got)
 		}
 		return nil
 	})
@@ -1977,7 +1999,7 @@ func (w *world) servingAtTheBeginning() error {
 }
 
 func (w *world) servingAtTheEnd() error {
-	box := BesideBox(Over(w.w.width, w.w.height))
+	box := BesideBox(w.w.formPanel())
 	last := len(w.w.Under())*SubHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
@@ -2009,7 +2031,7 @@ func (w *world) historyAtTheEnd() error {
 // formBehindTheList checks the list is an overlay and not a page of its own:
 // the form's own panel is wider than the list's, and both are drawn.
 func (w *world) formBehindTheList() error {
-	over, list := Over(w.w.width, w.w.height), ChoosingOver(w.w.width, w.w.height)
+	over, list := Over(w.w.width, w.w.height), w.w.ChoosingBox()
 	if list.W >= over.W || list.H >= over.H {
 		return fmt.Errorf("the list is %dx%d over a form of %dx%d: it covers it rather than sitting on it",
 			list.W, list.H, over.W, over.H)

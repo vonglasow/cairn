@@ -1036,7 +1036,7 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 		t.Fatalf("the window is on %v, not the detail", w.Screen())
 	}
 
-	box := Over(w.width, w.height)
+	box := w.formPanel()
 	frame, track := BesideBox(box), BesideBar(box)
 	shot := drawn(t, w)
 
@@ -1122,8 +1122,8 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
 	}
 
-	frame := BesideBox(Over(w.width, w.height))
-	track := BesideBar(Over(w.width, w.height))
+	frame := BesideBox(w.formPanel())
+	track := BesideBar(w.formPanel())
 	shot := drawn(t, w)
 
 	// The box down a tile's left, filled when the work is done: the tile's
@@ -1233,7 +1233,7 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 		t.Fatalf("the window is on %v, not the list", w.Screen())
 	}
 
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	first := ChoosingRow(box, ChoosingFrom(box))
 	shot := drawn(t, w)
 
@@ -1268,7 +1268,7 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	}
 	w = w.Key("enter")
 
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	value := Row(box, ChoosingFrom(box), lineHigh)
 	if painted(drawn(t, w), value, Dark().Faint) == 0 {
 		t.Error("the list says nothing where it should say there is nothing to serve")
@@ -1398,7 +1398,7 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 // keeps for it, on both lists.
 func TestOnlyATaskSaysWhereItStands(t *testing.T) {
 	strip := func(w Window) Box {
-		box := ChoosingOver(w.width, w.height)
+		box := w.ChoosingBox()
 		line := ChoosingLine(box, ChoosingFrom(box))
 		return Box{X: line.X + line.W*3/4, Y: line.Y, W: line.W / 4, H: line.H}
 	}

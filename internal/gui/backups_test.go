@@ -82,7 +82,7 @@ func TestTheBackupsAreDrawn(t *testing.T) {
 	made := time.Date(2026, 10, 12, 10, 0, 0, 0, time.UTC)
 	w := Window{screen: OnBackups, width: 1200, height: 800, backups: []domain.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}
 	shot := drawn(t, w)
-	box := ChoosingOver(1200, 800)
+	box := w.BackupsBox()
 	corner := func(i int) Box {
 		row := BackupRowAt(box, i)
 		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
@@ -120,7 +120,7 @@ func TestPuttingBackAsksWhatItCosts(t *testing.T) {
 // A click on a backup asks to put it back; a click off the list closes it.
 func TestTheBackupsAnswerThePointer(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backups: []domain.Backup{{Number: 2}, {Number: 1}}}
-	row := BackupRowAt(ChoosingOver(1200, 800), 1)
+	row := BackupRowAt(w.BackupsBox(), 1)
 	asked := w.Click(Point{X: row.X + 5, Y: row.Y + 5})
 	if asked.Screen() != OnAsking || asked.question != aboutPuttingBack || asked.BackupOn() != 1 {
 		t.Errorf("a click on the second backup left the window on %v asking %v about %d", asked.Screen(), asked.question, asked.BackupOn())
@@ -156,28 +156,29 @@ func TestManyBackupsScroll(t *testing.T) {
 	}
 }
 
-// The list's room, to the line: 387 between its first line and its offers,
-// thirteen lines of 28. And a click on a list scrolled down takes the backup
-// drawn there, not the one that would be there unscrolled.
+// The list's room, to the line: as many lines of 28 as the panel a form is
+// drawn in has between a list's heading and its offers — nineteen at 1200 by
+// 800. And a click on a list scrolled down takes the backup drawn there, not
+// the one that would be there unscrolled.
 func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 	many := make([]domain.Backup, 40)
 	for i := range many {
 		many[i] = domain.Backup{Number: 40 - i}
 	}
 	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5}
-	if got := w.BackupsRoom(); got != 13 {
-		t.Errorf("the list has room for %d, want 13", got)
+	if got := w.BackupsRoom(); got != 19 {
+		t.Errorf("the list has room for %d, want 19", got)
 	}
-	first := BackupRowAt(ChoosingOver(1200, 800), 0)
+	first := BackupRowAt(w.BackupsBox(), 0)
 	if got := w.Click(Point{X: first.X + 5, Y: first.Y + 5}).BackupOn(); got != 5 {
 		t.Errorf("a click on the first line drawn took backup %d, want the sixth, 5", got)
 	}
-	last := BackupRowAt(ChoosingOver(1200, 800), 12)
-	if got := w.Click(Point{X: last.X + 5, Y: last.Y + 5}).BackupOn(); got != 17 {
-		t.Errorf("a click on the last line drawn took backup %d, want 17", got)
+	last := BackupRowAt(w.BackupsBox(), 18)
+	if got := w.Click(Point{X: last.X + 5, Y: last.Y + 5}).BackupOn(); got != 23 {
+		t.Errorf("a click on the last line drawn took backup %d, want 23", got)
 	}
 	// Under the last line drawn, inside the panel, there is nothing to take.
-	under := BackupRowAt(ChoosingOver(1200, 800), 13)
+	under := BackupRowAt(w.BackupsBox(), 19)
 	if got := w.Click(Point{X: under.X + 5, Y: under.Y + 5}); got.Screen() != OnBackups {
 		t.Errorf("a click under the last line drawn left the window on %v", got.Screen())
 	}
@@ -192,7 +193,7 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backups: many, backupsFrom: 5, backupOn: 6}
 	shot := drawn(t, w)
 	corner := func(i int) Box {
-		row := BackupRowAt(ChoosingOver(1200, 800), i)
+		row := BackupRowAt(w.BackupsBox(), i)
 		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
 	}
 	if ink(shot, corner(1), Dark().Back) != 0 || ink(shot, corner(0), Dark().Panel) != 0 {
@@ -223,7 +224,7 @@ func TestTheWheelStaysInsideAPanel(t *testing.T) {
 		backups[i] = domain.Backup{Number: 40 - i}
 	}
 	w.screen, w.backups = OnBackups, backups
-	box := ChoosingOver(w.width, w.height)
+	box := w.BackupsBox()
 	in := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 	if got := w.Scroll(in, 2*lineHigh).BackupsFrom(); got != 2 {
 		t.Errorf("two notches down the list starts at %d", got)

@@ -767,7 +767,7 @@ func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 		t.Fatalf("the list did not open: %v", w.Screen())
 	}
 
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	for i, offer := range w.Offers() {
 		at := PanelOfferAt(box, i)
 		got, on := w.offerAt(Point{X: at.X + 10, Y: at.Y + at.H/2})
@@ -925,7 +925,7 @@ func TestTheListsBarCanBePulled(t *testing.T) {
 	if w.Screen() != OnChoosing {
 		t.Fatalf("the list did not open: %v", w.Screen())
 	}
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	track := ChoosingBar(box)
 	w = w.PressAt(Point{X: track.X + track.W/2, Y: track.Y + 2}).
 		MoveTo(Point{X: track.X + track.W/2, Y: track.Y + track.H - 2})

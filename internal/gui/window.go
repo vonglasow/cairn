@@ -332,7 +332,7 @@ func (w Window) ContextSays() []Readable {
 	if at == "" {
 		return nil
 	}
-	box := Over(w.width, w.height)
+	box := w.formPanel()
 	return []Readable{one("name:context", ContextName(box), "context", small),
 		one("field:context", ContextPath(box), at, small)}
 }

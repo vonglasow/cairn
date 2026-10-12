@@ -726,10 +726,21 @@ the list opened on its first row and `⏎` took `low`. What is typed or pasted o
 such a field opens its list narrowed by it; a key that takes text away does
 nothing there.
 
-**The list is as long as the panel, not as long as what it offers.** A board of
-fifty tasks drew fifty rows, straight past the panel, past the window, and over
-everything behind both. It is cut to the run the panel has and scrolled to for
-the rest — by the wheel, by a bar beside it, and by the keyboard, which brings
+**A list is the size of what it holds, up to what the window has room for.**
+It used to take three quarters of the form whatever it offered: four
+priorities sat in a panel made for fifty tasks, most of the form hidden behind
+its empty rows. It now hangs under the field it answers, the way a field's
+list opens anywhere else — above it when there is no room below — as wide as
+its widest row, its heading and its offers, and as tall as its rows
+(`ChoosingBox`, `@gui-a-list-is-the-size-of-what-it-holds`). It is sized on
+what it offers before anything narrows it, so typing does not move every row
+from under the pointer. The list of backups is sized the same way, across the
+middle of the window (`BackupsBox`), and a form open on a task ends a bar's
+height under its fields, as a form adding one does (`OpenOver`).
+
+**Past that room, the list scrolls.** A board of fifty tasks drew fifty rows,
+straight past the panel, past the window, and over everything behind both. It
+is cut to the run the window has room for and scrolled to for the rest — by the wheel, by a bar beside it, and by the keyboard, which brings
 the row it is on into sight the way a column brings a card. The same `Thumb`
 and the same window of lines the history and the description use.
 

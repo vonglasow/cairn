@@ -64,7 +64,7 @@ func (w Window) Acts() []string { return w.acts }
 // Lines is the history as the lines it is drawn on, wrapped to the room the
 // panel gives it.
 func (w Window) Lines() []string {
-	inside := Inside(BesideBox(Over(w.width, w.height)))
+	inside := Inside(BesideBox(w.formPanel()))
 	wrap := func(said string) Lines { return w.wrapping(said, inside, small) }
 	// An objective has no history of its own — the trace is kept of tasks. It
 	// says so rather than leaving the frame empty, which reads as a panel that
@@ -99,7 +99,7 @@ const ServingSays = "nothing serves it yet"
 func (w Window) Told() int { return len(w.Lines()) }
 
 // Rows is how many lines of history the panel shows at once.
-func (w Window) Rows() int { return BesideRows(Over(w.width, w.height)) }
+func (w Window) Rows() int { return BesideRows(w.formPanel()) }
 
 // History is the first line of the history that is shown.
 func (w Window) History() int { return w.history }
@@ -109,7 +109,7 @@ func (w Window) History() int { return w.history }
 func (w Window) ChoosingFromRow() int { return w.choosingFrom }
 
 // ChoosingRoom is how many rows the open list shows at once.
-func (w Window) ChoosingRoom() int { return ChoosingRows(ChoosingOver(w.width, w.height)) }
+func (w Window) ChoosingRoom() int { return ChoosingRows(w.ChoosingBox()) }
 
 func (w Window) settledChoosing(want int) int {
 	return min(max(0, len(w.Choosing())-w.ChoosingRoom()), max(0, want))
@@ -195,19 +195,19 @@ func (w Window) settledHistory(want int) int {
 // way a column's scroll is kept between its own — in pixels, because these are
 // cards of one height and not lines of text that wrap.
 func (w Window) settledServing(want int) int {
-	box := BesideBox(Over(w.width, w.height))
+	box := BesideBox(w.formPanel())
 	return min(max(0, len(w.Under())*SubHeight-box.H), max(0, want))
 }
 
 // ServingRows is how many tiles that box shows at once.
 func (w Window) ServingRows() int {
-	return max(1, BesideBox(Over(w.width, w.height)).H/SubHeight)
+	return max(1, BesideBox(w.formPanel()).H/SubHeight)
 }
 
 // ServingCardAt is where one of those tiles is drawn, counting the scroll —
 // the same reckoning a column makes of its cards.
 func (w Window) ServingCardAt(at int) Box {
-	box := BesideBox(Over(w.width, w.height))
+	box := BesideBox(w.formPanel())
 	return Box{X: box.X, Y: box.Y + at*SubHeight - w.serving, W: box.W, H: SubHeight}
 }
 
@@ -223,7 +223,7 @@ func (w Window) panel() Box {
 	case OnForm:
 		return w.formPanel()
 	case OnChoosing:
-		return ChoosingOver(w.width, w.height)
+		return w.ChoosingBox()
 	case OnAsking:
 		return w.QuestionBox()
 	case OnHelp:
@@ -233,7 +233,7 @@ func (w Window) panel() Box {
 	case OnMenu:
 		return w.MenuBox()
 	case OnBackups:
-		return ChoosingOver(w.width, w.height)
+		return w.BackupsBox()
 	}
 	return Over(w.width, w.height)
 }
@@ -246,7 +246,7 @@ func (w Window) formPanel() Box {
 	if w.form.Adding {
 		return FormOver(w.width, w.height, w.form.Fields())
 	}
-	return Over(w.width, w.height)
+	return OpenOver(w.width, w.height, w.form.Fields())
 }
 
 // formBox is the box a form's fields are laid out in: the whole of a form

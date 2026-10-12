@@ -92,7 +92,7 @@ func (w Window) Readables() []Readable {
 	if w.screen != OnForm || w.form.Adding {
 		return nil
 	}
-	box := Over(w.width, w.height)
+	box := w.formPanel()
 	if w.form.ForObjective {
 		out := []Readable{one("under", BesideHead(box), w.UnderHead(), small)}
 		frame := BesideBox(box)

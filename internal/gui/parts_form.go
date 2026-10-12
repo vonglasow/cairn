@@ -131,7 +131,21 @@ const longHigh = 44
 // does not put a floor of empty ground between the parts and Save.
 func FormOver(width, height int, fields []reading.Field) Box {
 	over := Over(width, height)
-	_, _, end := formLayout(over, fields)
+	return cutTo(over, over, fields)
+}
+
+// OpenOver is the panel a form open on something already there is drawn in:
+// cut the same way, to the fields laid out in its left column, with what
+// stands beside them as tall as they are.
+func OpenOver(width, height int, fields []reading.Field) Box {
+	over := Over(width, height)
+	return cutTo(over, FormFields(over), fields)
+}
+
+// cutTo cuts a panel to the fields laid out in a part of it, with room under
+// them for the rule and the offers.
+func cutTo(over, laid Box, fields []reading.Field) Box {
+	_, _, end := formLayout(laid, fields)
 	over.H = min(over.H, end-over.Y+between+barHigh+padding)
 	return over
 }

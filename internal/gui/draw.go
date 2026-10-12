@@ -218,7 +218,7 @@ func drawCairn(gtx layout.Context, skin Skin, w Window, progress float64) {
 
 // drawBackups is the list of backups, the one the keyboard is on lit.
 func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	box := ChoosingOver(w.width, w.height)
+	box := w.BackupsBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
 	from := w.BackupsFrom()
 	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
@@ -228,7 +228,7 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			fill(gtx, row, skin.Back)
 			ink = skin.Chosen
 		}
-		say(gtx, th, ink, Inside(row), "backup "+strconv.Itoa(one.Number)+"   "+domain.FormatMoment(one.Made), reads)
+		say(gtx, th, ink, Inside(row), backupSays(one), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -305,7 +305,7 @@ const TickedMark = "✓"
 // like the help and the question rather than like a board: it is read down, and
 // what it offers is one line each.
 func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
 
 	// The line that narrows the list, above it and inside the same panel.

@@ -3,19 +3,6 @@ package gui
 // Where the parts of the list a field answers with go: its rows, the line
 // it filters by, and its bar.
 
-// ChoosingOver is the panel the list of objectives is drawn in: inside the
-// form's own, so the form shows around it. A choice made with the rest of the
-// form out of sight is a choice made from memory.
-func ChoosingOver(width, height int) Box {
-	over := Over(width, height)
-	return Box{
-		X: over.X + over.W/8,
-		Y: over.Y + over.H/8,
-		W: over.W * 3 / 4,
-		H: over.H * 3 / 4,
-	}
-}
-
 // Reaches says which character of a wrapped text a point lands on: the line it
 // is down to, counting the lines scrolled out of sight above the first, then
 // the edge between two characters of that line nearest to it. Reading only how

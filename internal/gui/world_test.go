@@ -1020,7 +1020,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 	sc.Step(`^I double-click the list row "([^"]*)"$`, func(title string) error {
-		box := ChoosingOver(w.w.width, w.w.height)
+		box := w.w.ChoosingBox()
 		for i, one := range w.w.Choosing() {
 			if one.Title != title {
 				continue
@@ -1032,7 +1032,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the list offers no row called %q", title)
 	})
 	sc.Step(`^I click the list row "([^"]*)"$`, func(title string) error {
-		box := ChoosingOver(w.w.width, w.w.height)
+		box := w.w.ChoosingBox()
 		for i, one := range w.w.Choosing() {
 			if one.Title != title {
 				continue
@@ -1061,7 +1061,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I click the line that narrows the list$`, func() error {
-		look := ChoosingLooking(ChoosingOver(w.w.width, w.w.height))
+		look := ChoosingLooking(w.w.ChoosingBox())
 		w.w = w.w.clicked(Point{X: look.X + 20, Y: look.Y + look.H/2})
 		return nil
 	})
@@ -1094,7 +1094,7 @@ func (w *world) workedOn(times int) error {
 // middleOfHistory is a point over the history's box, which is what the wheel
 // has to be over for the history and not a column to move.
 func (w *world) middleOfHistory() Point {
-	box := BesideBox(Over(w.w.width, w.w.height))
+	box := BesideBox(w.w.formPanel())
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
@@ -1129,7 +1129,7 @@ func (w *world) dragTileOut(what string) error {
 	if err != nil {
 		return err
 	}
-	box := BesideBox(Over(w.w.width, w.w.height))
+	box := BesideBox(w.w.formPanel())
 	out := Point{X: from.X, Y: box.Y + box.H + CardHeight}
 	w.w = w.w.PressAt(from).MoveTo(out).LetGo(out)
 	return nil
@@ -1145,7 +1145,7 @@ func (w *world) scrollServing(by int) error {
 // middleOfServing is a point inside the box the work under an objective is
 // drawn in, which is where a wheel has to be for it to scroll that box.
 func (w *world) middleOfServing() Point {
-	box := BesideBox(Over(w.w.width, w.w.height))
+	box := BesideBox(w.w.formPanel())
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
@@ -1157,7 +1157,7 @@ func (w *world) middleOfSaying() Point {
 
 // scrollList turns the wheel over an open list.
 func (w *world) scrollList(by int) error {
-	run := ChoosingRun(ChoosingOver(w.w.width, w.w.height))
+	run := ChoosingRun(w.w.ChoosingBox())
 	w.was = w.w.ChoosingFromRow()
 	w.w = w.w.Scroll(Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, by*lineHigh)
 	return nil
@@ -1190,7 +1190,7 @@ func (w *world) dragSayingBar() error {
 // dragHistoryBar takes hold of the bar beside the history and pulls it past
 // the bottom of its track, which is as far as it goes.
 func (w *world) dragHistoryBar() error {
-	track := BesideBar(Over(w.w.width, w.w.height))
+	track := BesideBar(w.w.formPanel())
 	thumb := Thumb(track, w.w.Told(), w.w.Rows(), w.w.history)
 	w.was = w.w.history
 	w.w = w.w.PressAt(Point{X: thumb.X + thumb.W/2, Y: thumb.Y + thumb.H/2})

@@ -35,15 +35,15 @@ context name   x=504   y=695   w=64    h=18
 context path   x=568   y=695   w=470   h=18
 sub panel      x=100   y=200   w=400   h=22
 sub writing    x=132   y=202   w=356   h=18
-choosing over  x=262   y=149   w=675   h=499
-choosing looking x=274   y=195   w=651   h=26
-choosing row 0 x=274   y=223   w=635   h=26
-choosing row 1 x=274   y=255   w=635   h=26
-choosing line 0 x=286   y=227   w=611   h=18
-choosing run   x=274   y=223   w=635   h=369
-choosing bar   x=915   y=223   w=10    h=369
-choosing thumb at the top x=915   y=223   w=10    h=125
-choosing thumb at the end x=915   y=467   w=10    h=125
+choosing for four x=262   y=149   w=400   h=258
+choosing looking x=274   y=195   w=376   h=26
+choosing row 0 x=274   y=223   w=360   h=26
+choosing row 1 x=274   y=255   w=360   h=26
+choosing line 0 x=286   y=227   w=336   h=18
+choosing run   x=274   y=223   w=360   h=128
+choosing bar   x=640   y=223   w=10    h=128
+choosing thumb at the top x=640   y=223   w=10    h=43
+choosing thumb at the end x=640   y=308   w=10    h=43
 counted at     x=502   y=98    w=80    h=18
 beside head    x=724   y=116   w=314   h=18
 beside box     x=724   y=140   w=298   h=536

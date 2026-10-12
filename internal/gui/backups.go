@@ -10,6 +10,7 @@ package gui
 
 import (
 	"fmt"
+	"strconv"
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -37,6 +38,11 @@ func (w Window) backingUp() Window {
 
 // Backups is what the list of backups holds, as the engine listed them.
 func (w Window) Backups() []domain.Backup { return w.backups }
+
+// backupSays is how a line of the list of backups reads.
+func backupSays(one domain.Backup) string {
+	return "backup " + strconv.Itoa(one.Number) + "   " + domain.FormatMoment(one.Made)
+}
 
 // BackupOn is the line of the list the keyboard is on.
 func (w Window) BackupOn() int { return w.backupOn }
@@ -92,7 +98,7 @@ func (w Window) BackupsFrom() int { return w.backupsFrom }
 // panel a list of choices is, and the two are never open together, so the
 // part of a notch left over is kept where the choices keep theirs.
 func (w Window) scrollingBackups(p Point, by int) Window {
-	if !ChoosingOver(w.width, w.height).In(p) {
+	if !w.BackupsBox().In(p) {
 		return w
 	}
 	lines, left := turning(w.spareChoosing, by)
@@ -104,14 +110,14 @@ func (w Window) scrollingBackups(p Point, by int) Window {
 // BackupsRoom is how many backups the list shows at once: the lines between
 // its heading and its offers.
 func (w Window) BackupsRoom() int {
-	box := ChoosingOver(w.width, w.height)
+	box := w.BackupsBox()
 	return max(1, (PanelOfferAt(box, 0).Y-padding-FirstRow(box)-between)/menuRow)
 }
 
 // clickingBackups asks to put back the backup clicked, and a click off the
 // list closes it.
 func (w Window) clickingBackups(p Point) Window {
-	box := ChoosingOver(w.width, w.height)
+	box := w.BackupsBox()
 	for i := w.backupsFrom; i < min(len(w.backups), w.backupsFrom+w.BackupsRoom()); i++ {
 		if BackupRowAt(box, i-w.backupsFrom).In(p) {
 			w.backupOn = i

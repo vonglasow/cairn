@@ -330,7 +330,7 @@ func (w Window) BoardOffers() []string {
 // Anywhere else inside the panel it does nothing, which is what a click on a
 // panel's own ground has always done.
 func (w Window) clickingList(p Point) Window {
-	box := ChoosingOver(w.width, w.height)
+	box := w.ChoosingBox()
 	// A click puts the keyboard on the row; it does not take it. Taking is
 	// space, and a double-click — a single click that took would make choosing
 	// which row to read impossible without choosing it.
@@ -390,14 +390,23 @@ func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
 func (w Window) offersAlong(panel Box) []Box {
 	var boxes []Box
 	x := panel.X + padding
-	for i, offer := range w.Offers() {
-		edges := w.measured()(w.Said(offer), reads)
+	for i, wide := range w.offerWidths() {
 		box := PanelOfferAt(panel, i)
-		box.X, box.W = x, max(offerWide, edges[len(edges)-1]+padding)
+		box.X, box.W = x, wide
 		boxes = append(boxes, box)
-		x += box.W
+		x += wide
 	}
 	return boxes
+}
+
+// offerWidths is how wide each offer is drawn: what it says, and never
+// narrower than an offer is.
+func (w Window) offerWidths() []int {
+	var widths []int
+	for _, offer := range w.Offers() {
+		widths = append(widths, max(offerWide, ends(w.measured(), w.Said(offer), reads)+padding))
+	}
+	return widths
 }
 
 // savedTitle is the title of what a form is open on, as it was saved.

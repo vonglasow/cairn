@@ -132,7 +132,7 @@ func (w Window) DoubleClick(p Point) Window {
 	// In a list it takes the row and is done with it, which is the gesture a
 	// hand already has: one click says which row, two say that one.
 	if w.screen == OnChoosing {
-		box := ChoosingOver(w.width, w.height)
+		box := w.ChoosingBox()
 		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 			w.choosing = at
 			w = w.taking()
@@ -205,7 +205,7 @@ func (w Window) PressAt(p Point) Window {
 	// goes where the press landed and not to the field's end: the end is where
 	// somebody arriving at a field types, and this one is not arriving.
 	if w.screen == OnChoosing {
-		w.draggingChoosing = ChoosingBar(ChoosingOver(w.width, w.height)).In(p)
+		w.draggingChoosing = ChoosingBar(w.ChoosingBox()).In(p)
 		return w
 	}
 	if w.screen == OnForm {
@@ -254,7 +254,7 @@ func (w Window) PressAt(p Point) Window {
 // MoveTo follows the pointer, and past Grip says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
 	if w.draggingBar {
-		track := BesideBar(Over(w.width, w.height))
+		track := BesideBar(w.formPanel())
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
@@ -277,7 +277,7 @@ func (w Window) MoveTo(p Point) Window {
 		return w.draggingText(p)
 	}
 	if w.draggingChoosing {
-		box := ChoosingOver(w.width, w.height)
+		box := w.ChoosingBox()
 		w.choosingFrom = w.settledChoosing(
 			Reached(ChoosingBar(box), len(w.Choosing()), ChoosingRows(box), p))
 		return w
@@ -285,8 +285,8 @@ func (w Window) MoveTo(p Point) Window {
 	if w.draggingServing {
 		// Counted in tiles and settled in pixels, since that box is scrolled
 		// by pixels and not by lines.
-		track := BesideBar(Over(w.width, w.height))
-		room := max(1, BesideBox(Over(w.width, w.height)).H/SubHeight)
+		track := BesideBar(w.formPanel())
+		room := max(1, BesideBox(w.formPanel()).H/SubHeight)
 		w.serving = w.settledServing(Reached(track, len(w.Under()), room, p) * SubHeight)
 		return w
 	}
@@ -409,7 +409,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		return w.scrollingBackups(p, by)
 	}
 	if w.screen == OnChoosing {
-		box := ChoosingOver(w.width, w.height)
+		box := w.ChoosingBox()
 		if ChoosingRun(box).In(p) || ChoosingBar(box).In(p) {
 			lines, left := turning(w.spareChoosing, by)
 			w.choosingFrom, w.spareChoosing = w.settledChoosing(w.choosingFrom+lines), left
