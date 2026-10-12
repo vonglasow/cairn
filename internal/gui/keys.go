@@ -67,6 +67,15 @@ var screens = map[Screen]func(Window, string) Window{
 
 // onBoard is what a key does on the board itself.
 func (w Window) onBoard(name string) Window {
+	if w.tab == Time {
+		mine, shared := weekKeys(name)
+		if mine {
+			return w.onWeek(name)
+		}
+		if !shared {
+			return w
+		}
+	}
 	switch name {
 	case "f":
 		// Taking a task up is not offered on the bar: the bar has room for
@@ -90,8 +99,10 @@ func (w Window) onBoard(name string) Window {
 		if w.tab == Tasks && w.sweeps() != "" {
 			w.screen, w.question = OnAsking, aboutSweeping
 		}
-	case "tab", "shift+tab":
-		return w.other()
+	case "tab":
+		return w.other(1)
+	case "shift+tab":
+		return w.other(-1)
 	case "left":
 		return w.walking(-1, 0)
 	case "right":

@@ -437,6 +437,10 @@ func (w Window) at(p Point) int {
 	if w.tab == Objectives {
 		return w.goalAt(p)
 	}
+	// The time page lies over the columns too, and draws none of them.
+	if w.tab == Time {
+		return 0
+	}
 	l := w.Layout()
 	if column, _, found := l.Under(p, 0); found {
 		here := w.inColumn(column)

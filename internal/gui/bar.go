@@ -14,7 +14,7 @@ import (
 // Pages is what the two tabs are called, in the order they are drawn. Here
 // and not in the drawing, because which page somebody is on is a thing the
 // window knows and the drawing only shows.
-var Pages = []string{"TASKS", "OBJECTIVES"}
+var Pages = []string{"TASKS", "OBJECTIVES", "TIME"}
 
 // Heads is what the panel that is open says it is, written across its top.
 // Nothing when no panel is open: the board is its own heading.
@@ -220,7 +220,8 @@ func helping() []Said {
 		{Key: "⇧B", Means: "the backups — enter puts one back, after asking, the store backed up first"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
-		{Key: "tab", Means: "the other page — shift+tab the one before"},
+		{Key: "tab", Means: "the next page — shift+tab the one before"},
+		{Key: "←→ on TIME", Means: "the week before or after — t this week"},
 		{Key: "tab, ↑↓ in a form", Means: "walk its fields — inside the description ↑↓ walk its lines"},
 		{Key: "←→", Means: "change a field that has a closed set"},
 		{Key: "esc", Means: "back out of whatever is open"},

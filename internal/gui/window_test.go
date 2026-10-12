@@ -521,27 +521,34 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	}
 }
 
-// The other page is the one somebody is not on, from either of them. Both tab
-// and shift+tab ask for it: with two pages, which way round a walk goes is a
-// difference nothing can see.
-func TestTheOtherPageIsTheOneNobodyIsOn(t *testing.T) {
+// The pages are walked round: tab goes to the next, shift+tab to the one
+// before, and either end comes round to the other. With two pages which way a
+// walk went was a difference nothing could see; with three it is the walk.
+func TestThePagesAreWalkedRound(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.other().Tab(); got != Objectives {
-		t.Errorf("the other page from the first is %v", got)
-	}
-	if got := w.other().other().Tab(); got != Tasks {
-		t.Errorf("the other page from the second is %v", got)
-	}
-	if got := w.Key("shift+tab").Tab(); got != Objectives {
-		t.Errorf("shift+tab from the first page is %v", got)
-	}
-	if got := w.Key("tab").Key("shift+tab").Tab(); got != Tasks {
-		t.Errorf("tab then shift+tab is %v", got)
+	for _, c := range []struct {
+		keys []string
+		want Tab
+	}{
+		{[]string{"tab"}, Objectives},
+		{[]string{"tab", "tab"}, Time},
+		{[]string{"tab", "tab", "tab"}, Tasks},
+		{[]string{"shift+tab"}, Time},
+		{[]string{"shift+tab", "shift+tab"}, Objectives},
+		{[]string{"tab", "shift+tab"}, Tasks},
+	} {
+		got := w
+		for _, key := range c.keys {
+			got = got.Key(key)
+		}
+		if got.Tab() != c.want {
+			t.Errorf("%v from the first page lands on %v, want %v", c.keys, got.Tab(), c.want)
+		}
 	}
 	// And changing page lets go of what was chosen: a card chosen on the page
 	// you left is a card the arrows would walk from on the page you are on.
-	if got := w.clicked(middleOf(w, 1, 0)).other(); got.Chosen() != 0 {
+	if got := w.clicked(middleOf(w, 1, 0)).other(1); got.Chosen() != 0 {
 		t.Errorf("after changing page, task %d is still chosen", got.Chosen())
 	}
 }

@@ -538,6 +538,17 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**The time spent is seen a week at a time.** How long the work took was a
+table the command line printed. The third page, TIME, lays a week out
+(`week.go`): a column a day across the board's width, Monday first, each
+day's total, and each task worked on with its time and a bar as long as its
+share of the longest stretch of the week — a glance says which day went where.
+`←→` walk the weeks and `t` comes back to this one; the tab says how many
+tasks the week was spent on. The page lies over the columns and draws none of
+them, so nothing on it chooses a card behind it, and the keys that act on a
+card reach nothing there. With three pages, `tab` and `shift+tab` walk them
+round, which with two was a difference nothing could see.
+
 **The store is backed up, and put back, from the window.** Both were the
 command line's, so a person at the window went to a terminal for either. `⌘B`
 backs the store up and says where the backup lies — a file to copy wherever it

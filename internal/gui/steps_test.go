@@ -15,6 +15,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
 	"cairn/internal/reading"
@@ -116,10 +117,7 @@ func (w *world) tabsRead(list string) error {
 }
 
 func (w *world) tabIs(name string) error {
-	got := "TASKS"
-	if w.w.Tab() == Objectives {
-		got = "OBJECTIVES"
-	}
+	got := Pages[w.w.Tab()]
 	if got != name {
 		return fmt.Errorf("the tab is %q, want %q", got, name)
 	}
@@ -927,6 +925,45 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
+	sc.Then(`^the week shown starts on "([^"]*)"$`, func(day string) error {
+		if got := domain.FormatDay(w.w.Week()); got != day {
+			return fmt.Errorf("the week shown starts on %s, want %s", got, day)
+		}
+		return nil
+	})
+	dayOfWeek := func(day string) (engine.TimesheetDay, bool) {
+		for _, d := range w.w.Sheet().Days {
+			if d.Day == day {
+				return d, true
+			}
+		}
+		return engine.TimesheetDay{}, false
+	}
+	sc.Then(`^the day "([^"]*)" says "([^"]*)"$`, func(day, total string) error {
+		d, _ := dayOfWeek(day)
+		if got := DaySays(d); got != total {
+			return fmt.Errorf("%s says %q, want %q", day, got, total)
+		}
+		return nil
+	})
+	sc.Then(`^the day "([^"]*)" carries "([^"]*)" for "([^"]*)"$`, func(day, title, length string) error {
+		d, _ := dayOfWeek(day)
+		for _, one := range d.Tasks {
+			if one.Title == title {
+				if got := TaskTimeSays(one); !strings.Contains(got, length) {
+					return fmt.Errorf("%s carries %q, want it to say %s", day, got, length)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("%s carries nothing titled %q", day, title)
+	})
+	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
+		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
+			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))
+		}
+		return nil
+	})
 	sc.Then(`^the window tells "([^"]*)"$`, func(said string) error {
 		if !strings.Contains(w.w.Note(), said) {
 			return fmt.Errorf("the window tells %q, want it to say %q", w.w.Note(), said)

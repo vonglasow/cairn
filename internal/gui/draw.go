@@ -165,6 +165,8 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawTabs(gtx, th, skin, l, w)
 	if w.Tab() == Objectives {
 		drawGoals(gtx, th, skin, l, w)
+	} else if w.Tab() == Time {
+		drawWeek(gtx, th, skin, l, w)
 	} else {
 		drawColumns(gtx, th, skin, l, w)
 		drawBand(gtx, th, skin, l, w)
@@ -216,6 +218,25 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		say(gtx, th, ink, Inside(row), "backup "+strconv.Itoa(one.Number)+"   "+domain.FormatMoment(one.Made), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
+}
+
+// drawWeek is the time page: a column a day, its heading and total, and each
+// task worked on with its time and its bar.
+func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	longest := w.longest()
+	for i := range 7 {
+		box := WeekDayAt(l, i)
+		day := w.week.AddDate(0, 0, i)
+		fill(gtx, box, skin.Panel)
+		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+DaySays(w.timeOn(i)), reads)
+		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
+		for j, one := range w.timeOn(i).Tasks {
+			row := WeekRowAt(box, j)
+			say(gtx, th, skin.Ink, Box{X: row.X, Y: row.Y, W: row.W, H: lineHigh}, TaskTimeSays(one), reads)
+			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
+		}
+		clipped.Pop()
+	}
 }
 
 // drawMenu is what a right click offers, the line the keyboard is on lit.

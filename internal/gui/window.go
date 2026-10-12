@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
@@ -58,6 +59,8 @@ const (
 	Tasks Tab = iota
 	// Objectives is what the work is for.
 	Objectives
+	// Time is how long the work took, a week at a time: see week.go.
+	Time
 )
 
 // Held is a card being dragged: which task, where it was picked up, and where
@@ -134,6 +137,10 @@ type Window struct {
 	toldFor  int
 	backups  []domain.Backup
 	backupOn int
+	// week is the Monday of the week the time page shows, and sheet the time
+	// spent over it: see week.go.
+	week  time.Time
+	sheet engine.Timesheet
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string
@@ -408,6 +415,9 @@ func (w Window) Look() Window {
 	}
 	for i := range w.lanes {
 		w.lanes[i] = w.settledLane(i, w.lanes[i])
+	}
+	if w.tab == Time {
+		return w.readingWeek()
 	}
 	return w
 }

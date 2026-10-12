@@ -163,6 +163,13 @@ func (g Givens) IPutTaskInFocus(number int) error {
 	return err
 }
 
+// ISpentOnTask records time spent on a task on a given day, the way the
+// timesheet is told about work done without the focus.
+func (g Givens) ISpentOnTask(length string, number int, day string) error {
+	_, err := g.ask(engine.TimesheetAdd, map[string]string{"number": strconv.Itoa(number), "time": length, "on": day}, nil)
+	return err
+}
+
 // Task reads a task back as somebody else would see it.
 func (g Givens) Task(number int) (task.Task, error) {
 	answer, err := g.ask(engine.TaskShow, map[string]string{"number": strconv.Itoa(number)}, nil)
@@ -206,6 +213,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, g.IAddedATaskHangingUnderTask)
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, g.IAddedTasksTo)
 	sc.Step(`^I added an objective titled "([^"]*)"$`, g.IAddedAnObjectiveTitled)
+	sc.Step(`^I spent "([^"]*)" on task (\d+) on "([^"]*)"$`, g.ISpentOnTask)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, g.IEditedTaskWithTheBlocker)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)

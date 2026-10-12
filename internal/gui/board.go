@@ -47,14 +47,13 @@ func (w Window) Searched() Written { return w.looking }
 // is a card the arrows would walk from on the page you are on. It lets go of
 // what went wrong too: said on one page, it is about that page, and read on
 // the other it would be about nothing there.
-func (w Window) other() Window {
-	if w.tab == Tasks {
-		w.tab = Objectives
-	} else {
-		w.tab = Tasks
-	}
+func (w Window) other(by int) Window {
+	w.tab = Tab((int(w.tab) + by + len(Pages)) % len(Pages))
 	w.chosen, w.chosenGoal = 0, false
 	w.err, w.wrongFor = nil, 0
+	if w.tab == Time {
+		return w.readingWeek()
+	}
 	return w
 }
 
@@ -102,6 +101,15 @@ func (w Window) LaneSays(kind string) string {
 func (w Window) Holds(tab Tab) int {
 	if tab == Objectives {
 		return len(w.Showing().Goals)
+	}
+	if tab == Time {
+		worked := map[int]bool{}
+		for _, d := range w.sheet.Days {
+			for _, one := range d.Tasks {
+				worked[one.Number] = true
+			}
+		}
+		return len(worked)
 	}
 	return len(w.Showing().Cards)
 }

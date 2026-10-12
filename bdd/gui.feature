@@ -882,6 +882,55 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: The time spent is seen a week at a time
+
+    How long the work took was a table the command line printed. The third
+    page lays a week out: a column a day, Monday first, each day's total and
+    each task worked on with its time and a bar as long as its share of the
+    longest stretch of the week. The arrows walk the weeks, t comes back to
+    this one.
+
+    @gui-the-week-of-time
+    Scenario: the time page shows the week's days, what was worked on and for how long
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And I spent "45m" on task 2 on "2026-09-29"
+      And I spent "2h" on task 2 on "2026-10-02"
+      And today is "2026-09-30"
+      When I open the window
+      And I press "tab"
+      And I press "tab"
+      Then the tab is "TIME"
+      And the week shown starts on "2026-09-28"
+      And the day "2026-09-29" says "2h15m"
+      And the day "2026-09-29" carries "Write the spec" for "1h30m"
+      And the day "2026-10-02" carries "Ship the board" for "2h"
+      And the day "2026-09-28" carries nothing
+
+    @gui-the-weeks-are-walked
+    Scenario: the arrows walk the weeks, and t comes back to this one
+      Given today is "2026-10-14"
+      When I open the window
+      And I press "tab"
+      And I press "tab"
+      And I press "left"
+      Then the week shown starts on "2026-10-05"
+      When I press "right"
+      And I press "right"
+      Then the week shown starts on "2026-10-19"
+      When I press "t"
+      Then the week shown starts on "2026-10-12"
+
+    @gui-the-time-page-chooses-no-card
+    Scenario: a click on the time page chooses no card behind it
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I press "tab"
+      And I press "tab"
+      And I click the column "TODO"
+      Then no card is chosen
+
   Rule: The store is backed up, and put back, from the window
 
     Backing the store up, and putting a backup back, were the command line's:
@@ -1533,7 +1582,7 @@ Feature: The desktop board
       And I scroll down over the objectives
       Then the objectives have moved
 
-  Rule: The two pages are walked with tab
+  Rule: The pages are walked round with tab
 
     @gui-tab-walks-the-pages
     Scenario: tab moves to the next page and shift+tab to the one before
@@ -1544,7 +1593,7 @@ Feature: The desktop board
       When I press "shift+tab"
       Then the tab is "TASKS"
       When I press "shift+tab"
-      Then the tab is "OBJECTIVES"
+      Then the tab is "TIME"
 
     @gui-tab-in-a-form-walks-the-fields
     Scenario: tab in a form walks its fields rather than changing the page
