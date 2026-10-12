@@ -382,8 +382,7 @@ func (w Window) Wonder() Window {
 	w = w.aged().autosaved()
 	version, err := w.work.Version()
 	if err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	if version == w.version {
 		return w
@@ -391,21 +390,32 @@ func (w Window) Wonder() Window {
 	return w.Look()
 }
 
+// failing says what went wrong, and starts its time on screen over.
+func (w Window) failing(err error) Window {
+	w.err, w.wrongFor = err, 0
+	return w
+}
+
+// lingered counts a beat on something said, and says whether its time is up.
+func lingered(beats int) (int, bool) {
+	beats++
+	return beats, beats >= Lingers()
+}
+
 // aged counts one more beat on what went wrong, and forgets it once it has
 // lingered its time.
 func (w Window) aged() Window {
 	if w.told != "" {
-		w.toldFor++
-		if w.toldFor >= Lingers() {
+		var gone bool
+		if w.toldFor, gone = lingered(w.toldFor); gone {
 			w.told, w.toldFor = "", 0
 		}
 	}
-	if w.err == nil {
-		return w
-	}
-	w.wrongFor++
-	if w.wrongFor >= Lingers() {
-		w.err, w.wrongFor = nil, 0
+	if w.err != nil {
+		var gone bool
+		if w.wrongFor, gone = lingered(w.wrongFor); gone {
+			w.err, w.wrongFor = nil, 0
+		}
 	}
 	return w
 }
@@ -414,8 +424,7 @@ func (w Window) aged() Window {
 func (w Window) Look() Window {
 	found, err := reading.Look(w.work)
 	if err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	w.snap, w.version, w.err = found, found.Version, nil
 	for i := range Columns {

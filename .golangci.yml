@@ -54,6 +54,23 @@ linters:
             # production code.
             - testing
 
+        # The plugin the binary carries knows nobody: it is files, and the code
+        # that writes them out. The engine calls it, and it calls nothing of
+        # ours. An allow-list, like domain.
+        plugin:
+          files: ["**/plugin/claude/**"]
+          allow:
+            - embed
+            - encoding/json
+            - errors
+            - fmt
+            - io/fs
+            - os
+            - path/filepath
+            - strings
+            # Only reachable from _test.go, as for domain.
+            - testing
+
         # Which build this is knows nobody, for the same reason an entity does:
         # both surfaces have to answer the question, and an identity owned by one
         # of them is an identity the other borrows. An allow-list, like domain.

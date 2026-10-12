@@ -156,26 +156,16 @@ func (w Written) around(at int, ends func(rune) bool) Written {
 }
 
 // LineStart puts the caret at the start of the line it is on: just after the
-// break before it, or at the very start.
+// break before it, or at the very start. The line is the paragraph a triple
+// click holds, so it is found the same way.
 func (w Written) LineStart() Written {
-	said := []rune(w.Value)
-	at := w.settled(w.At)
-	for at > 0 && said[at-1] != '\n' {
-		at--
-	}
-	return w.CaretAt(at)
+	line := w.Paragraph(w.At)
+	return w.CaretAt(line.At + line.Held)
 }
 
 // LineEnd puts the caret at the end of the line it is on: just before the
 // break after it, or at the very end.
-func (w Written) LineEnd() Written {
-	said := []rune(w.Value)
-	at := w.settled(w.At)
-	for at < len(said) && said[at] != '\n' {
-		at++
-	}
-	return w.CaretAt(at)
-}
+func (w Written) LineEnd() Written { return w.CaretAt(w.Paragraph(w.At).At) }
 
 // WordBack puts the caret at the start of the word it is in, or of the one
 // before when it is already there.

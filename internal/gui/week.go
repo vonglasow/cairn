@@ -44,8 +44,7 @@ func (w Window) readingWeek() Window {
 	}}
 	answer, err := w.work.Ask(engine.TimesheetShow, asked)
 	if err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	w.sheet = engine.Timesheet{}
 	if answer.Sheet != nil {

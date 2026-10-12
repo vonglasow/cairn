@@ -30,8 +30,7 @@ func (w Window) telling(said string) Window {
 func (w Window) backingUp() Window {
 	made, err := w.work.Ask(engine.BackupAdd, engine.Input{})
 	if err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	return w.telling(fmt.Sprintf("backup %d is %s", made.Backup.Number, made.Backup.Path))
 }
@@ -46,8 +45,7 @@ func (w Window) BackupOn() int { return w.backupOn }
 func (w Window) listingBackups() Window {
 	kept, err := w.work.Ask(engine.BackupList, engine.Input{})
 	if err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	if len(kept.Backups) == 0 {
 		return w.telling("no backup yet: ⌘B makes one")
@@ -79,8 +77,7 @@ func (w Window) puttingBack() Window {
 	number := w.backups[w.backupOn].Number
 	w.screen, w.question = OnTheBoard, aboutDeleting
 	if _, err := w.work.Ask(engine.BackupRestore, reading.Numbered(number)); err != nil {
-		w.err, w.wrongFor = err, 0
-		return w
+		return w.failing(err)
 	}
 	return w.Look().telling(fmt.Sprintf("backup %d was put back", number))
 }
