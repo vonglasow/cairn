@@ -1167,7 +1167,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "Back up", "Backups", "Export", "Import", "Edit", "Take up", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+      Then the menu offers "New", "Back up", "Backups", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
 
   Rule: The store is backed up, and put back, from the window
 
@@ -1227,18 +1227,18 @@ Feature: The desktop board
       When I open the window
       And I right-click the card "Write the spec"
       Then the card "Write the spec" is chosen
-      And the menu offers "Edit", "Take up", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      And the menu offers "Edit", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the window
       And I right-click the card "Write the spec"
-      And I click "Take up" in the menu
+      And I click "Focus" in the menu
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Edit", "Let go", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      Then the menu offers "Edit", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-card-is-moved-from-its-menu
     Scenario: a card's menu moves it to another column, and sets its priority
@@ -2052,7 +2052,7 @@ Feature: The desktop board
   Rule: The window takes work up
 
     @gui-focus-takes-a-task-up
-    Scenario: a task is taken up and let go from the window
+    Scenario: a task is focused and unfocused from the window
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"

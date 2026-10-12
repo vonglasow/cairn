@@ -154,8 +154,8 @@ sheet. What replaced it answers the one question that sum was for: how long the
 work took, day by day. `cairn timesheet show`, and `timesheet_show` for an
 agent. The scenarios are in `bdd/timesheet.feature`.
 
-**Focus is what is measured**, and nothing else is: taken when the work starts,
-let go when it stops, at the moment it is done and no other. Placing it after
+**Focus is what is measured**, and nothing else is: focused when the work starts,
+unfocused when it stops, at the moment it is done and no other. Placing it after
 the fact was built and taken back out the same day: a focus that can be put at
 any moment past is a timesheet anybody can write, and the time it measures
 says what was typed rather than what was done. What was done without focus — a

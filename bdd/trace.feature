@@ -50,7 +50,7 @@ Feature: The trace
     the first, and the release named what had taken over so a cut could be told
     from a stop. Several tasks are now worked on at once, one per agent
     session, and their stretches overlap on purpose — so nothing is cut, and
-    what closes a stretch is letting go of that task and nothing else.
+    what closes a stretch is unfocusing that task and nothing else.
 
     @trace-focus-taken-and-released
     Scenario: taking the focus and letting it go are both written down
@@ -215,7 +215,7 @@ Feature: The trace
       Then it says nothing was done
 
     @trace-letting-go-of-nothing-is-written-down-nowhere
-    Scenario: letting go of nothing is written down nowhere
+    Scenario: unfocusing nothing is written down nowhere
       Given I added a task titled "Write the spec"
       And I let the focus go
       When I run `cairn trace list`

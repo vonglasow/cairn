@@ -5,7 +5,7 @@ Feature: How long the work took, day by day
   and bringing a day down to what a sheet accepts, is done afterwards, by
   whoever fills the sheet in; cairn holds no kind of work and no ceiling.
 
-  Focus is what is measured: taken when the work starts, let go when it stops,
+  Focus is what is measured: focused when the work starts, unfocused when it stops,
   at the moment it is done and no other — a focus placed after the fact would
   be a timesheet anybody could write. What was done without it — a meeting, an
   afternoon nobody focused — is added by hand, and too much is taken back the

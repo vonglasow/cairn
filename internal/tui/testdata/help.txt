@@ -27,7 +27,7 @@
  │ column, up and down change place            │ │   ↳            what is in the way           │
  │   ⏎           the detail                    │ │   2d          a deadline close by           │
  │   e           the form                      │ │   −3d         one that has passed           │
- │   f           take or let go the focus      │ │   ╔═╗         the task in focus             │
+ │   f           focus or unfocus              │ │   ╔═╗         the task in focus             │
  │   d           delete                        │ ╰─────────────────────────────────────────────╯
  │   x           off the board, or back on     │
  │   esc         back to normal                │

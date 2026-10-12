@@ -1,7 +1,7 @@
 Feature: A Claude Code session tied to a cairn task
   A working session with Claude Code is tied to the one cairn task it serves:
   it starts from that task's notes, writes where the next session will find
-  it, and holds the task in focus while the person works — letting go when
+  it, and holds the task in focus while the person works — unfocusing it when
   they stop, and never of a task another session is working on.
 
   What ties them is an entry the hook writes in the task's notes. Each step
@@ -18,7 +18,7 @@ Feature: A Claude Code session tied to a cairn task
     And the hook said nothing and succeeded
 
   @claude-session-unfocus-closes-the-link
-  Scenario: letting go of its task closes the link
+  Scenario: unfocusing its task closes the link
     Given session "s1" holds task 1
     When session "s1" lets go of task 1
     Then the entry of session "s1" in the notes of task 1 says it was released

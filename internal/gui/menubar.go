@@ -23,7 +23,7 @@ const menuButtonWide = 40
 func MenuBar() []MenuGroup {
 	return []MenuGroup{
 		{Name: "File", Items: []string{"New", "Back up", "Backups", "Export", "Import"}},
-		{Name: "Edit", Items: []string{"Edit", "Take up", "Archive", "Delete", "Search"}},
+		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
 		{Name: "Help", Items: []string{"Help"}},
 	}
@@ -37,7 +37,7 @@ func (w Window) Picked(item string) Window {
 		return w
 	}
 	w.screen = OnTheBoard
-	if item == "Take up" {
+	if item == "Focus" {
 		return w.working()
 	}
 	return w.Choose(item)

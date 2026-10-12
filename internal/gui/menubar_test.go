@@ -15,7 +15,7 @@ import (
 func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	want := []MenuGroup{
 		{Name: "File", Items: []string{"New", "Back up", "Backups", "Export", "Import"}},
-		{Name: "Edit", Items: []string{"Edit", "Take up", "Archive", "Delete", "Search"}},
+		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
 		{Name: "Help", Items: []string{"Help"}},
 	}
@@ -49,7 +49,7 @@ func TestALinePickedActsFromTheBoard(t *testing.T) {
 		t.Errorf("Tasks left the window on %v", got.Tab())
 	}
 	chosen := w.clicked(middleOf(w, 1, 0))
-	if chosen.Picked("Take up"); f.what("task", "focus") != 1 {
+	if chosen.Picked("Focus"); f.what("task", "focus") != 1 {
 		t.Error("Take up took nothing up")
 	}
 	if got := chosen.Picked("Edit"); got.Screen() != OnForm || got.Form().Adding {

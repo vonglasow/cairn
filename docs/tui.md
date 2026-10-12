@@ -313,7 +313,7 @@ from that mode's bar, and pressing it there does nothing.
 | `⇧X` | ✓ | | | take every task in the column off the board — it asks first |
 | `e` | | ✓ | ✓ | the form |
 | `d` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out |
-| `f` | | ✓ | | take or let go of the focus — an objective has none |
+| `f` | | ✓ | | focus or unfocus — an objective has none |
 | `⏎` | | ✓ | ✓ | the detail · on objectives, open the objective |
 | `/` | ✓ | | ✓ | search |
 | `?` | ✓ | ✓ | ✓ | help — the one key that works in every mode |
@@ -582,7 +582,7 @@ because with two hundred tasks what is highlighted is usually off screen.
  │   ⇧hjkl      move the task          │   ▶  active     ✓  reached                │
  │   ⏎          the detail             │   ‖  on-hold    ✕  dropped                │
  │   e          the form               │                                           │
- │   f          take / let go focus    │ ON THE CARD                               │
+ │   f          focus or unfocus       │ ON THE CARD                               │
  │   d          delete                 │   ≡    a description exists               │
  │   esc        back to normal         │   ▪    sub-tasks done / total             │
  │                                     │   ⚑    a label                            │

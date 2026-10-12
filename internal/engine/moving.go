@@ -251,7 +251,7 @@ cairn task focus`,
 	Again:   ChangesNothingMore,
 	Answers: Focus{},
 	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to take up, or nothing to name every task in focus"},
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to focus, or nothing to name every task in focus"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, named := in.Whole("number")
@@ -278,8 +278,8 @@ cairn task focus`,
 var TaskUnfocus = Operation{
 	Thing: "task",
 	Verb:  "unfocus",
-	Short: "Let go of a task in focus, or of them all",
-	Does:  "Let go of one task and keep the rest, or of every task in focus when no number is given. Letting go of nothing is not a failure.",
+	Short: "Unfocus a task in focus, or all of them",
+	Does:  "Unfocus one task and keep the rest in focus, or every task in focus when no number is given. Unfocusing nothing is not a failure.",
 	Example: `cairn task unfocus 3
 cairn task unfocus`,
 	Level:   Write,
@@ -287,7 +287,7 @@ cairn task unfocus`,
 	Again:   ChangesNothingMore,
 	Answers: Focus{},
 	Takes: []Argument{
-		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to let go of, or nothing to let go of them all"},
+		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to unfocus, or nothing to unfocus them all"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, named := in.Whole("number")

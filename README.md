@@ -100,7 +100,7 @@ one either way. On both boards `x` takes the task under the cursor off the
 board or puts it back, and `⇧A` shows what was taken off, written faintly.
 
 `task focus` says what you are working on. Several at once is fine — one agent
-session per task, and they run together — so taking up another keeps the first,
+session per task, and they run together — so focusing another keeps the first,
 `task unfocus 3` lets go of one, and bare `task unfocus` lets go of them all.
 Deleting a task takes it out. The listing marks every one of them. It is not the
 head of the list and does not move anything: a day goes ten minutes on one task,

@@ -52,9 +52,9 @@ func (w Window) menuFor() []string {
 		return []string{"Edit", "Delete"}
 	}
 	card, _ := w.snap.Card(w.chosen)
-	focus := "Take up"
+	focus := "Focus"
 	if card.InFocus {
-		focus = "Let go"
+		focus = "Unfocus"
 	}
 	away := "Archive"
 	if card.Archived {
@@ -152,7 +152,7 @@ func (w Window) fromMenu(i int) Window {
 		return w.choosingList()
 	}
 	w.screen = OnTheBoard
-	if said == "Take up" || said == "Let go" {
+	if said == "Focus" || said == "Unfocus" {
 		return w.working()
 	}
 	return w.Choose(said)

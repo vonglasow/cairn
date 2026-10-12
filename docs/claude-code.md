@@ -90,7 +90,7 @@ claude --resume <session-id>
 The open entry of a session — one not ending in a `released <time>` line — is
 the session's link; the directory it sits in is the task's number. One session,
 one task: taking another lets go of the previous task and closes its link.
-Asking what is in focus, a focus cairn refused, and letting go of some other
+Asking what is in focus, a focus cairn refused, and unfocusing some other
 task leave the link alone. A bare unfocus — every task at once — is not the
 session's to answer, and the hook does nothing about it. Nothing is stored
 outside the notes but the idle waits, in the temporary directory.

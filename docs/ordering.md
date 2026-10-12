@@ -241,16 +241,16 @@ construction rather than by a rule anybody had to keep. But an agent session is
 started per task, and several run at once — a focus that held one made every
 other one invisible to whoever asked what was being worked on. It is a row per
 task now, keyed by the task so nothing can be held twice, and the order the
-rows were made is the order they were taken up in. Holding none is an ordinary
+rows were made is the order they were focused in. Holding none is an ordinary
 state, not a missing row.
 
 What that costs is worth naming: the single holder no longer comes free from
-the shape of the table, and "taking up what is already held changes nothing" is
+the shape of the table, and "focusing what is already in focus changes nothing" is
 now a rule the store keeps rather than one the schema makes impossible to
 break. It is kept in one statement — an insert that ignores a conflict — which
 is the smallest place it could live.
 
-A task it names may be deleted, and it is let go when that happens —
+A task it names may be deleted, and it is unfocused when that happens —
 by hand, in the same statement's company as the labels. The schema declares the
 reference `ON DELETE SET NULL` and that clause never fires: SQLite leaves
 foreign keys off unless a connection turns them on, and cairn's does not. The
@@ -305,7 +305,7 @@ all.
 | | |
 |---|---|
 | a position on a task | 1..N with no hole, within its column and under one parent |
-| `focused` | a row per task being worked on, in the order they were taken up |
+| `focused` | a row per task being worked on, in the order they were focused |
 
 One column and one table, then, and not the two columns this design first
 carried. **When a task last changed column is not a column here.** It was

@@ -12,7 +12,7 @@ import (
 // The menu opens down and to the right of the point clicked, and is kept
 // inside the window near an edge.
 func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
-	w := Window{width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Take up", "Archive", "Delete"}}}
+	w := Window{width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Focus", "Archive", "Delete"}}}
 	w.menuAt = Point{X: 300, Y: 200}
 	if got, want := w.MenuBox(), (Box{X: 300, Y: 200, W: 180, H: 124}); got != want {
 		t.Errorf("the menu is at %+v, want %+v", got, want)
@@ -88,7 +88,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
-	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "Take up", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
+	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)
 	}
 	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))

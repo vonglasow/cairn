@@ -218,7 +218,7 @@ func helping() []Said {
 		{Key: "on an open task", Means: "every text can be held: drag across it, double-click a word, triple-click a paragraph — ⌘A holds it all, ⌘C copies"},
 		{Key: "^D ^U on an open task", Means: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Key: "e", Means: "edit what is chosen, on the board or on an open task"},
-		{Key: "f", Means: "take up what is chosen, or let it go — several at once is fine"},
+		{Key: "f", Means: "focus or unfocus what is chosen — several in focus at once is fine"},
 		{Key: "d", Means: "delete what is chosen — it asks first"},
 		{Key: "x", Means: "take what is chosen off the board, or put it back"},
 		{Key: "⇧X", Means: "take every task in that card's column off the board — it asks first"},

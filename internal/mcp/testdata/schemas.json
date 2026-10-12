@@ -2173,7 +2173,7 @@
       "additionalProperties": false,
       "properties": {
         "number": {
-          "description": "the task to take up, or nothing to name every task in focus",
+          "description": "the task to focus, or nothing to name every task in focus",
           "type": "integer"
         }
       },
@@ -3710,13 +3710,13 @@
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": false,
-      "title": "Let go of a task in focus, or of them all"
+      "title": "Unfocus a task in focus, or all of them"
     },
     "input": {
       "additionalProperties": false,
       "properties": {
         "number": {
-          "description": "the task to let go of, or nothing to let go of them all",
+          "description": "the task to unfocus, or nothing to unfocus them all",
           "type": "integer"
         }
       },

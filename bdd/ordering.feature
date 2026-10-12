@@ -212,7 +212,7 @@ Feature: Ordering
       Then it marks 1 task in focus
 
     @ordering-unfocus-one
-    Scenario: one task is let go and the others stay
+    Scenario: one task is unfocused and the others stay
       Given I added a task titled "First"
       And I added a task titled "Second"
       And I put task 1 in focus
@@ -224,7 +224,7 @@ Feature: Ordering
       And it marks 1 task in focus
 
     @ordering-unfocus-one-that-is-not-held
-    Scenario: letting go of a task that was not in focus is not a failure
+    Scenario: unfocusing a task that was not in focus is not a failure
       Given I added a task titled "First"
       And I added a task titled "Second"
       And I put task 1 in focus
@@ -274,7 +274,7 @@ Feature: Ordering
       And it shows the number it could not find
 
     @ordering-unfocus-when-nothing-is-in-focus
-    Scenario: letting go of nothing is not a failure
+    Scenario: unfocusing nothing is not a failure
       Given I added a task titled "The only one"
       When I run `cairn task unfocus`
       Then it succeeds

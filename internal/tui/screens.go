@@ -103,7 +103,7 @@ func (b Board) helpKeys() []string {
 		b.says("⇧hjkl", "move it: sideways changes column, up and down change place"),
 		b.says("⏎", "the detail"),
 		b.says("e", "the form"),
-		b.says("f", "take or let go the focus"),
+		b.says("f", "focus or unfocus"),
 		b.says("d", "delete"),
 		b.says("x", "off the board, or back on"),
 		b.says("esc", "back to normal"),
