@@ -111,6 +111,9 @@ type Window struct {
 	measure Measure
 	// keyboard is what keys are written for, see keyboard.go.
 	keyboard Keyboard
+	// paused is what the open form held when the window last looked at the
+	// store, see autosave.go.
+	paused []string
 	// growing is what a run held with the pointer grows by, and anchor the run
 	// it grows from: what the press, the double or the triple click held.
 	growing Unit
@@ -338,7 +341,7 @@ func (w Window) UnderHead() string {
 // whole thing again only when the answer has moved. Every listing is two
 // questions and a redraw; the version is one integer.
 func (w Window) Wonder() Window {
-	w = w.aged()
+	w = w.aged().autosaved()
 	version, err := w.work.Version()
 	if err != nil {
 		w.err, w.wrongFor = err, 0

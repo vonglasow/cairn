@@ -417,25 +417,36 @@ func (w Window) Save() Window {
 		w.form = w.form.committing()
 		w.form.writingPart = false
 	}
+	w, _, err := w.stored()
+	if err != nil {
+		return w
+	}
+	w.screen, w.form = OnTheBoard, Form{}
+	return w.Look()
+}
+
+// stored writes what the form holds, and says the number of what it wrote:
+// the task or objective it was over, or the one it has just added. What went
+// wrong is said on the window and handed back.
+func (w Window) stored() (Window, int, error) {
 	w.form = w.form.withoutStruck()
 	op, asked := w.saving()
 	answer, err := w.work.Ask(op, asked)
 	if err != nil {
 		w.err, w.wrongFor = err, 0
-		return w
+		return w, 0, err
 	}
 	// The parts go under the task the form was over — or, when it added one,
 	// under the task it has just added.
-	parent := w.form.Number
+	number := w.form.Number
 	if w.form.Adding {
-		parent = reading.Added(answer)
+		number = reading.Added(answer)
 	}
-	if err := w.savingParts(parent); err != nil {
+	if err := w.savingParts(number); err != nil {
 		w.err, w.wrongFor = err, 0
-		return w
+		return w, 0, err
 	}
-	w.screen, w.form = OnTheBoard, Form{}
-	return w.Look()
+	return w, number, nil
 }
 
 // savingParts settles what hangs under a task with what the form's parts

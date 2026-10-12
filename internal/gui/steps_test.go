@@ -905,6 +905,24 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
 	sc.Then(`^task (\d+) is called "([^"]*)"$`, w.taskCalled)
+	// Numbered from one and never reused, so n tasks made are tasks 1 to n.
+	sc.Then(`^there (?:is|are) (\d+) tasks?$`, func(n int) error {
+		for i := 1; i <= n; i++ {
+			if _, err := w.tell(i); err != nil {
+				return fmt.Errorf("task %d is not there: %w", i, err)
+			}
+		}
+		if _, err := w.tell(n + 1); err == nil {
+			return fmt.Errorf("there is a task %d, want %d tasks", n+1, n)
+		}
+		return nil
+	})
+	sc.Then(`^there are no tasks$`, func() error {
+		if _, err := w.tell(1); err == nil {
+			return fmt.Errorf("there is a task 1, want none")
+		}
+		return nil
+	})
 	sc.Then(`^the form asks about (".*")$`, w.formAsksAbout)
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)

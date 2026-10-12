@@ -538,6 +538,20 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**A form saves itself.** `⌘S` was the only way a change reached the store,
+and every other place a person writes in saves on its own. On each beat of the
+window (`Beat`, two seconds) a form that was changed, and holds what it held at
+the beat before, is saved where it stands and opened again over what it saved,
+read back from the store: the keyboard and the caret where they were, a part
+just added with its number (`autosave.go`). Waiting for a beat with no typing
+keeps a save from landing in the middle of a word
+(`@gui-typing-holds-the-save-off`). A task being added is made once it has a
+title, and the form goes on over it; with no title there is nothing to make
+(`@gui-a-new-task-is-made-once-it-has-a-title`). A form that saved itself has
+nothing left to lose, so `esc` closes it without the question. `⌘S` still
+saves at once, and closes. What the store refuses is said above the bar, as
+any refusal is.
+
 **A text is corrected the way every text field corrects one.** A field knew a
 character at a time to either side and nothing more, so a word mistyped at the
 start of a long title cost a walk through every letter after it. Now `home`

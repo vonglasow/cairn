@@ -882,6 +882,72 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: A form saves itself
+
+    ⌘S was the only way a change reached the store, and every other place a
+    person writes saves on its own. A form now saves what was typed once the
+    typing has paused for a beat of the window, and stays open on what it
+    saved. A task being added is made as soon as it has a title, and the form
+    goes on over it. ⌘S still saves at once, and closes.
+
+    @gui-a-form-saves-itself
+    Scenario: what was typed is saved once the typing pauses, and the form stays open
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " now"
+      And the window has looked at the store 2 times
+      Then task 1 is called "Write the spec now"
+      And the window is on the form
+
+    @gui-typing-holds-the-save-off
+    Scenario: nothing is saved while the typing goes on
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " no"
+      And the window has looked at the store 1 time
+      And I type "w"
+      And the window has looked at the store 1 time
+      Then task 1 is called "Write the spec"
+
+    @gui-a-saved-form-closes-without-a-question
+    Scenario: a form that saved itself closes on esc without asking
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " now"
+      And the window has looked at the store 2 times
+      And I press "esc"
+      Then the window is on the board
+      And task 1 is called "Write the spec now"
+
+    @gui-a-new-task-is-made-once-it-has-a-title
+    Scenario: a task being added is made once it has a title, and the form goes on over it
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 2 times
+      Then task 1 is called "Plan the week"
+      And the window is on the form
+      When I type " ahead"
+      And the window has looked at the store 2 times
+      Then task 1 is called "Plan the week ahead"
+      And there is 1 task
+
+    @gui-a-new-task-with-no-title-is-not-made
+    Scenario: a form adding a task with no title yet makes nothing
+      When I open the window
+      And I press "cmd+n"
+      And the window has looked at the store 3 times
+      Then there are no tasks
+
   Rule: What the board can do, the window can do
 
     A person who has learnt the terminal board has learnt this one. Anything
