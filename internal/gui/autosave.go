@@ -24,10 +24,16 @@ func (w Window) autosaved() Window {
 	now := w.form.values()
 	paused := slices.Equal(now, w.paused)
 	w.paused = now
-	if !paused || !w.form.Changed() || !w.form.titled() {
+	// What the store refused is not asked again until it changes: asked a
+	// beat, the refusal never went, and the store was written to for ever.
+	if !paused || !w.form.Changed() || !w.form.titled() || slices.Equal(now, w.refused) {
 		return w
 	}
-	return w.savedInPlace()
+	saved := w.savedInPlace()
+	if saved.err != nil {
+		saved.refused = now
+	}
+	return saved
 }
 
 // values is what the form holds, struck parts included, as one list a beat
@@ -80,7 +86,12 @@ func (w Window) savedInPlace() Window {
 	}
 	w.chosen, w.chosenGoal = number, kept.ForObjective
 	w.form = w.form.onto(kept.at)
-	w.form = w.form.Writes(w.form.Writing().CaretAt(kept.caret))
+	// The field being typed in keeps what was typed: the store trims a title,
+	// and a space typed before the next word went with it. It counts as saved
+	// as it stands, so the next beat does not save it again.
+	typed := kept.fields[kept.at].Value
+	w.form = w.form.Writes(Written{Value: typed, At: kept.caret})
+	w.form.opened[kept.at] = typed
 	w.form.partAt, w.form.partsTop = kept.partAt, kept.partsTop
 	w.paused = w.form.values()
 	return w

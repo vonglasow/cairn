@@ -148,6 +148,9 @@ type Window struct {
 	// paused is what the open form held when the window last looked at the
 	// store, see autosave.go.
 	paused []string
+	// refused is what the open form held when the store last refused to
+	// save it: see autosave.go.
+	refused []string
 	// growing is what a run held with the pointer grows by, and anchor the run
 	// it grows from: what the press, the double or the triple click held.
 	growing Unit

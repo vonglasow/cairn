@@ -1199,6 +1199,44 @@ Feature: The desktop board
       Then task 1 is called "Plan the week ahead"
       And there is 1 task
 
+    @gui-a-saved-form-keeps-what-is-typed
+    Scenario: saving on its own keeps the space typed at the end of a title
+      Given I added a task titled "Fix the"
+      When I open the window
+      And I click the card "Fix the"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " "
+      And the window has looked at the store 2 times
+      And I type "bug"
+      And the window has looked at the store 2 times
+      Then task 1 is called "Fix the bug"
+
+    @gui-a-refused-save-is-not-tried-again
+    Scenario: what the store refuses is said once and not tried again until it changes
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "title"
+      And I type " now"
+      And the store refuses what it is asked to change
+      And the window has looked at the store 2 times
+      Then it says what went wrong
+      When the window has looked at the store 4 times
+      Then it says nothing went wrong
+      And the engine was asked "task edit" once
+
+    @gui-a-task-added-once-whatever-its-parts
+    Scenario: a task whose parts were refused is made once, not once a beat
+      Given the store refuses to add a part
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And I set the field "parts" to "Book the room"
+      And the window has looked at the store 6 times
+      Then there is 1 task
+
     @gui-a-new-task-with-no-title-is-not-made
     Scenario: a form adding a task with no title yet makes nothing
       When I open the window

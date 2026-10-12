@@ -439,9 +439,13 @@ func (w Window) stored() (Window, int, error) {
 	}
 	// The parts go under the task the form was over — or, when it added one,
 	// under the task it has just added.
+	// Once added it is there, whatever its parts come to: a form still
+	// adding would add it again on the next save, and a form saving on its
+	// own made a copy a beat.
 	number := w.form.Number
 	if w.form.Adding {
 		number = reading.Added(answer)
+		w.form.Adding, w.form.Number = false, number
 	}
 	if err := w.savingParts(number); err != nil {
 		w.err, w.wrongFor = err, 0

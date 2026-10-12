@@ -100,7 +100,10 @@ func (w *world) reset() {
 type refusing struct {
 	held   *engine.Engine
 	refuse error
-	reads  int
+	// refuseParts refuses adding a part and nothing else: the second half of
+	// saving a task that carries parts.
+	refuseParts bool
+	reads       int
 	// wrote is every operation that changes something, in order — which is
 	// what a scenario asks about when it says the engine was asked, or was
 	// not, or was asked once.
@@ -118,6 +121,9 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 	}
 	if op.Level != engine.Read && r.refuse != nil {
 		return engine.Answer{}, r.refuse
+	}
+	if r.refuseParts && op.Thing == "task" && op.Verb == "add" && in.Given["parent"] != "" {
+		return engine.Answer{}, fmt.Errorf("that part cannot be added")
 	}
 	if op.Thing == "task" && op.Verb == "list" {
 		r.reads++
@@ -664,6 +670,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.givens().Register(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 	sc.Step(`^the store refuses what it is asked to change$`, w.storeRefuses)
+	sc.Step(`^the store refuses to add a part$`, func() error {
+		w.work.refuseParts = true
+		return nil
+	})
 
 	sc.When(`^I open the window$`, w.open)
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
