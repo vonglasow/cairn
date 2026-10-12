@@ -55,8 +55,8 @@ One flag, three levels, `read` by default:
 | `--access` | what it reaches |
 |---|---|
 | `read` | listing and showing, nothing else |
-| `write` | also adding, changing, `backup_new`, `backup_export`, `migration_apply` |
-| `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `backup_import`, `migration_rollback` |
+| `write` | also adding, changing, `task_export`, `task_import`, `backup_new`, `migration_apply` |
+| `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `migration_rollback` |
 
 The line between `write` and `full` is not "destructive" in the technical sense
 — it is **what can lose work already done**. Adding a backup loses nothing, so

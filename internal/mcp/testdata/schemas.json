@@ -52,100 +52,6 @@
       "additionalProperties": false
     }
   },
-  "backup_export": {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-      "title": "Write the store to a file of your choosing"
-    },
-    "input": {
-      "additionalProperties": false,
-      "properties": {
-        "to": {
-          "description": "the file to write the store to",
-          "type": "string"
-        }
-      },
-      "required": [
-        "to"
-      ],
-      "type": "object"
-    },
-    "level": 2,
-    "output": {
-      "type": "object",
-      "properties": {
-        "exported": {
-          "type": "string"
-        },
-        "holds": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "tasks": {
-              "type": "integer"
-            },
-            "objectives": {
-              "type": "integer"
-            }
-          },
-          "required": [
-            "tasks",
-            "objectives"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "exported",
-        "holds"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "backup_import": {
-    "annotations": {
-      "destructiveHint": true,
-      "idempotentHint": false,
-      "openWorldHint": false,
-      "readOnlyHint": false,
-      "title": "Put the store held in a file in place of this one"
-    },
-    "input": {
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "description": "the file holding the store to bring in",
-          "type": "string"
-        }
-      },
-      "required": [
-        "from"
-      ],
-      "type": "object"
-    },
-    "level": 3,
-    "output": {
-      "type": "object",
-      "properties": {
-        "imported": {
-          "type": "string"
-        },
-        "backup": {
-          "type": "integer"
-        }
-      },
-      "required": [
-        "imported",
-        "backup"
-      ],
-      "additionalProperties": false
-    }
-  },
   "backup_list": {
     "annotations": {
       "destructiveHint": false,
@@ -2161,6 +2067,61 @@
       "additionalProperties": false
     }
   },
+  "task_export": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Write every task to a file, with the objectives they serve"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "to": {
+          "description": "the file to write the tasks to",
+          "type": "string"
+        }
+      },
+      "required": [
+        "to"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "exported": {
+          "type": "string"
+        },
+        "holds": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "exported",
+        "holds"
+      ],
+      "additionalProperties": false
+    }
+  },
   "task_focus": {
     "annotations": {
       "destructiveHint": false,
@@ -2388,6 +2349,58 @@
       "required": [
         "tasks",
         "in_focus"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_import": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Add the tasks of a file written by task export"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "the file holding the tasks to add",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "imported": {
+          "type": "string"
+        },
+        "added": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "integer"
+            },
+            "objectives": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "imported",
+        "added"
       ],
       "additionalProperties": false
     }

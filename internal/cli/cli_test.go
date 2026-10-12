@@ -264,18 +264,3 @@ func TestMain_neverHandsAnEscapeToTheTerminal(t *testing.T) {
 		t.Errorf("stderr %q hands an escape to the terminal", r.Stderr)
 	}
 }
-
-// A refusal for want of --yes names a file by its name alone: a path names
-// the store's folder, and a long one pushed "--yes" onto two lines of the
-// box the refusal is written in, cut at its hyphens.
-func TestARefusalNamesAFileByItsName(t *testing.T) {
-	t.Setenv("CAIRN_STORE", filepath.Join(t.TempDir(), "cairn.db"))
-	far := filepath.Join(t.TempDir(), strings.Repeat("a-long-folder-name/", 6), "cairn.db")
-	got := run(t, "backup", "import", far)
-	if got.Code == 0 || !strings.Contains(got.Stderr, "backup import cairn.db needs --yes") {
-		t.Errorf("exit %d, said %q", got.Code, got.Stderr)
-	}
-	if got := run(t, "backup", "restore", "3"); !strings.Contains(got.Stderr, "backup 3 needs --yes") {
-		t.Errorf("a number is still named as before: %q", got.Stderr)
-	}
-}

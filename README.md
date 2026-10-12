@@ -197,17 +197,18 @@ change your past — and an act done by an agent over MCP says so, where one don
 at the terminal says nothing. See [docs/trace.md](docs/trace.md) for why it was
 settled this way.
 
-## Backups and versions
+## Backups, exports and versions
 
 ```sh
-cairn backup new                 # backup the store as it stands
+cairn backup new                 # a new backup of the store as it stands
 cairn backup list                # every backup, with its number and date
 cairn backup show 2              # when it was made, and what it holds
                                  # `holds 4 task(s) and 2 objective(s)`
 cairn backup delete 2 --yes
 cairn backup restore 2 --yes     # restore one; without a number, the most recent
-cairn backup export ~/cairn.db   # the store, to carry elsewhere; never over a file
-cairn backup import ~/cairn.db --yes   # put a store from a file in place
+
+cairn task export ~/tasks.json   # every task and what it serves, never over a file
+cairn task import ~/tasks.json   # add the tasks of such a file, as new tasks
 
 cairn migration list             # every change, applied or waiting
 cairn migration show 2           # what it does, and what rolling it back does

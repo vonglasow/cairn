@@ -319,7 +319,7 @@ func Of(op Operation, a Answer) any {
 	case Exported:
 		return Exported{Exported: *a.Exported, Holds: a.Holds}
 	case Imported:
-		return Imported{Imported: *a.Imported, Backup: *a.Restored}
+		return Imported{Imported: *a.Imported, Added: *a.Holds}
 	case Applied:
 		return Applied{Applied: a.Applied}
 	case Acts:

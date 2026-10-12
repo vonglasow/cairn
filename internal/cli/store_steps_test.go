@@ -14,7 +14,6 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
 	"cairn/internal/migration"
 	"cairn/test"
@@ -309,32 +308,11 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return err
 	})
 
-	sc.Step(`^I export the store to a file of my own$`, func() error {
-		w.file = filepath.Join(w.T.TempDir(), "elsewhere", "cairn.db")
-		w.Run("cairn backup export " + w.file)
-		return nil
-	})
-	sc.Step(`^I export the store to that file$`, func() error {
-		w.Run("cairn backup export " + w.file)
-		return nil
-	})
 	sc.Step(`^it says the file written holds (\d+) tasks? and (\d+) objectives?$`,
 		func(tasks, objectives int) error {
 			said := fmt.Sprintf("%s holds %d task(s) and %d objective(s)", w.file, tasks, objectives)
 			return test.WantContains(w.Out.Stdout, said, "the answer")
 		})
-	// Read by pointing cairn at it, the way the other machine will.
-	sc.Step(`^that file is a store holding the task "([^"]*)"$`, func(title string) error {
-		mine := w.StorePath
-		w.Setenv(config.StoreVariable, w.file)
-		defer w.Setenv(config.StoreVariable, mine)
-		w.Run("cairn task list")
-		return test.WantContains(w.Out.Stdout, title, "the listing of that file")
-	})
-	sc.Step(`^a file of my own that is not a cairn store$`, func() error {
-		w.file, w.was = filepath.Join(w.T.TempDir(), "notes.db"), []byte("not a database\n")
-		return os.WriteFile(w.file, w.was, 0o600)
-	})
 	sc.Step(`^that file is as it was$`, func() error {
 		got, err := os.ReadFile(w.file)
 		if err != nil {
@@ -343,23 +321,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		if string(got) != string(w.was) {
 			return fmt.Errorf("the file now holds %q", got)
 		}
-		return nil
-	})
-	// Made the way the other machine made it: by cairn, against a store of
-	// its own.
-	sc.Step(`^a file of my own holding a store with a task titled "([^"]*)"$`, func(title string) error {
-		mine := w.StorePath
-		w.file = filepath.Join(w.T.TempDir(), "other", "cairn.db")
-		w.Setenv(config.StoreVariable, w.file)
-		defer w.Setenv(config.StoreVariable, mine)
-		return w.Seed(fmt.Sprintf(`cairn task new "%s"`, title))
-	})
-	sc.Step(`^I import that file$`, func() error {
-		w.Run("cairn backup import " + w.file + " --yes")
-		return nil
-	})
-	sc.Step(`^I run the import of that file without confirming$`, func() error {
-		w.Run("cairn backup import " + w.file)
 		return nil
 	})
 

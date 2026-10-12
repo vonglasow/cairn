@@ -573,9 +573,6 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnChoosing {
 			return w.leaving()
 		}
-		if w.question == aboutBringingIn {
-			return w.notBringingIn()
-		}
 		if w.question == aboutSweeping || w.question == aboutPuttingBack || w.screen == OnBackups {
 			w.screen, w.question = OnTheBoard, aboutDeleting
 			return w
@@ -624,9 +621,9 @@ func (w Window) Choose(name string) Window {
 	case "time":
 		return w.onPage(Time)
 	case "export":
-		return w.exportingStore()
+		return w.exportingTasks()
 	case "import":
-		return w.importingStore()
+		return w.importingTasks()
 	case "new backup":
 		return w.backingUp()
 	case "backups":
@@ -644,9 +641,6 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutPuttingBack {
 			return w.puttingBack()
-		}
-		if w.question == aboutBringingIn {
-			return w.bringingIn()
 		}
 		if w.question == aboutLeaving {
 			return w.throwingAway()

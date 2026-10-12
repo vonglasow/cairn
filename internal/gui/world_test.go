@@ -8,6 +8,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -758,28 +759,32 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I save it in the dialog as a file of my own$`, func() error {
-		w.file = filepath.Join(w.t.TempDir(), "mine.db")
+		w.file = filepath.Join(w.t.TempDir(), "mine.json")
 		return w.answerDialog(dialog{save: w.file})
 	})
 	sc.Step(`^I pick that file in the dialog$`, func() error { return w.answerDialog(dialog{open: w.file}) })
 	sc.Step(`^I close the dialog$`, func() error { return w.answerDialog(dialog{closed: true}) })
-	sc.Given(`^a file of my own holding a store with a task titled "([^"]*)"$`, func(title string) error {
-		w.file = filepath.Join(w.t.TempDir(), "other.db")
-		other, err := engine.Open(w.file)
+	sc.Given(`^a file of my own exported from a store with a task titled "([^"]*)"$`, func(title string) error {
+		dir := w.t.TempDir()
+		other, err := engine.Open(filepath.Join(dir, "other.db"))
 		if err != nil {
 			return err
 		}
 		defer func() { _ = other.Close() }()
-		_, err = other.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": title}})
+		if _, err := other.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": title}}); err != nil {
+			return err
+		}
+		w.file = filepath.Join(dir, "tasks.json")
+		_, err = other.Ask(engine.TaskExport, engine.Input{Given: map[string]string{"to": w.file}})
 		return err
 	})
-	sc.Then(`^that file is a store holding the task "([^"]*)"$`, func(title string) error {
-		listed, err := engine.Do(engine.TaskList, w.file, engine.Input{})
+	sc.Then(`^that file holds the task "([^"]*)"$`, func(title string) error {
+		held, err := os.ReadFile(w.file)
 		if err != nil {
 			return err
 		}
-		if said := engine.RenderText(engine.TaskList, listed); !strings.Contains(said, title) {
-			return fmt.Errorf("the file lists %q", said)
+		if !strings.Contains(string(held), `"title": "`+title+`"`) {
+			return fmt.Errorf("the file holds %s", held)
 		}
 		return nil
 	})

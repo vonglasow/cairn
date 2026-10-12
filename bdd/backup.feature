@@ -221,58 +221,8 @@ Feature: Backups of the store
       And it says there is no such backup
 
     @backup-restore-none
-    Scenario: putting back when no backup was ever made says so
+    Scenario: restoring when no backup was ever made says so
       Given I added a task titled "Write the spec"
       When I run `cairn backup restore --yes`
       Then it fails
       And it says there is no backup to restore
-
-  Rule: A store travels as a file
-
-    A store moves to another machine, or comes back from one, as a file put
-    wherever a person wants it — not only into the backups folder beside it.
-    Bringing one in replaces the store, so it is checked first, and what the
-    store held is backed up before it goes.
-
-    @backup-export
-    Scenario: the store is written to a file of my choosing
-      Given I added a task titled "Write the spec"
-      When I export the store to a file of my own
-      Then it succeeds
-      And it says the file written holds 1 task and 0 objectives
-      And that file is a store holding the task "Write the spec"
-
-    @backup-export-never-overwrites
-    Scenario: exporting onto a file that is already there is refused
-      Given I added a task titled "Write the spec"
-      And a file of my own that is not a cairn store
-      When I export the store to that file
-      Then it fails
-      And that file is as it was
-
-    @backup-import
-    Scenario: a store brought in from a file replaces this one, backed up first
-      Given I added a task titled "Write the spec"
-      And a file of my own holding a store with a task titled "Ship it"
-      When I import that file
-      Then it succeeds
-      And `cairn task list` lists 1 task
-      And `cairn task list` lists task 1 titled "Ship it"
-      And `cairn backup list` lists 2 backups
-
-    @backup-import-not-a-store
-    Scenario: bringing in what is not a cairn store is refused, and changes nothing
-      Given I added a task titled "Write the spec"
-      And a file of my own that is not a cairn store
-      When I import that file
-      Then it fails
-      And `cairn task list` lists task 1 titled "Write the spec"
-      And `cairn backup list` says there is no backup
-
-    @backup-import-unconfirmed
-    Scenario: bringing in a store without confirming refuses
-      Given I added a task titled "Write the spec"
-      And a file of my own holding a store with a task titled "Ship it"
-      When I run the import of that file without confirming
-      Then it fails
-      And it says how to confirm

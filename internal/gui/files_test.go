@@ -59,30 +59,30 @@ func (d dialog) CreateFile(string) (io.WriteCloser, error) {
 // its own the way an export's is.
 func written(t *testing.T, held string) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "cairn.db")
+	path := filepath.Join(t.TempDir(), "tasks.json")
 	if err := os.WriteFile(path, []byte(held), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return path
 }
 
-// A store written out goes to the file chosen in the dialog, under the name
-// the dialog gave it, and the copy it was written from goes.
+// Tasks written out go to the file chosen in the dialog, under the name the
+// dialog gave it, and the copy they were written from goes.
 func TestFilingSavesWhereTheDialogSays(t *testing.T) {
-	from := written(t, "the store")
-	to := filepath.Join(t.TempDir(), "mine.db")
-	got := Filing(FileAsk{Save: true, Name: "cairn.db", From: from}, dialog{save: to})
+	from := written(t, "the tasks")
+	to := filepath.Join(t.TempDir(), "mine.json")
+	got := Filing(FileAsk{Save: true, Name: "tasks.json", From: from}, dialog{save: to})
 	if got.Err != nil || got.Declined || got.Called != to {
 		t.Fatalf("filed %+v", got)
 	}
-	if held, _ := os.ReadFile(to); string(held) != "the store" {
+	if held, _ := os.ReadFile(to); string(held) != "the tasks" {
 		t.Errorf("the file holds %q", held)
 	}
 	if _, err := os.Stat(filepath.Dir(from)); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the copy written from is still there: %v", err)
 	}
-	from = written(t, "the store")
-	if got := Filing(FileAsk{Save: true, Name: "cairn.db", From: from}, dialog{closed: true}); !got.Declined || got.Err != nil {
+	from = written(t, "the tasks")
+	if got := Filing(FileAsk{Save: true, Name: "tasks.json", From: from}, dialog{closed: true}); !got.Declined || got.Err != nil {
 		t.Errorf("a dialog closed filed %+v", got)
 	}
 	if _, err := os.Stat(from); !errors.Is(err, os.ErrNotExist) {
@@ -97,15 +97,15 @@ func TestFilingSavesWhereTheDialogSays(t *testing.T) {
 	}
 }
 
-// A store brought in is copied out of the file chosen, into one of the
+// A file of tasks chosen is copied out of the dialog's file, into one of the
 // window's own: the dialog's file may only be read while it is open.
 func TestFilingOpensWhatTheDialogChose(t *testing.T) {
-	chosen := written(t, "another store")
+	chosen := written(t, "some tasks")
 	got := Filing(FileAsk{}, dialog{open: chosen})
 	if got.Err != nil || got.Declined || got.Called != chosen || got.Chosen == "" || got.Chosen == chosen {
 		t.Fatalf("filed %+v", got)
 	}
-	if held, _ := os.ReadFile(got.Chosen); string(held) != "another store" {
+	if held, _ := os.ReadFile(got.Chosen); string(held) != "some tasks" {
 		t.Errorf("the copy holds %q", held)
 	}
 	if got := Filing(FileAsk{}, dialog{closed: true}); !got.Declined || got.Chosen != "" {
@@ -124,24 +124,24 @@ func TestFilingOpensWhatTheDialogChose(t *testing.T) {
 	}
 }
 
-// ⌘E writes the store out through the engine first, then asks the loop for
+// ⌘E writes the tasks out through the engine first, then asks the loop for
 // the dialog, naming the file after the day.
 func TestExportingAsksTheEngineThenTheDialog(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800).At(time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)).Key("cmd+e")
-	in, ok := f.gave("backup", "export")
-	if !ok || filepath.Base(in.Given["to"]) != "cairn.db" {
+	in, ok := f.gave("task", "export")
+	if !ok || filepath.Base(in.Given["to"]) != "tasks.json" {
 		t.Fatalf("the engine was asked %+v", in)
 	}
 	ask, asked := w.FileAsked()
-	if !asked || !ask.Save || ask.Name != "cairn-2026-10-12.db" || ask.From != in.Given["to"] {
+	if !asked || !ask.Save || ask.Name != "cairn-tasks-2026-10-12.json" || ask.From != in.Given["to"] {
 		t.Errorf("the dialog asked for is %+v", ask)
 	}
 	if _, again := w.FileTaken().FileAsked(); again {
 		t.Error("a dialog taken is asked for again")
 	}
-	saved := w.FileTaken().Filed(Filed{Ask: ask, Called: "/somewhere/mine.db"})
-	if saved.Note() != "the store was written to /somewhere/mine.db" {
+	saved := w.FileTaken().Filed(Filed{Ask: ask, Called: "/somewhere/mine.json"})
+	if saved.Note() != "the tasks were written to /somewhere/mine.json" {
 		t.Errorf("the window tells %q", saved.Note())
 	}
 	if got := w.FileTaken().Filed(Filed{Ask: ask, Declined: true}); got.Note() != "" || got.Wrong() != nil {
@@ -159,53 +159,42 @@ func TestExportingAsksTheEngineThenTheDialog(t *testing.T) {
 	}
 }
 
-// ⌘O asks for the dialog; the file chosen is put in place only once agreed
-// to, and the copy of it goes either way.
-func TestImportingAsksBeforeReplacingTheStore(t *testing.T) {
+// ⌘O asks for the dialog, and the tasks of the file chosen are added at
+// once: nothing is replaced, so nothing is asked. The copy of it goes either
+// way.
+func TestImportingAddsTheTasksOfTheFileChosen(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800).Key("cmd+o")
 	ask, asked := w.FileAsked()
 	if !asked || ask.Save {
 		t.Fatalf("the dialog asked for is %+v, %v", ask, asked)
 	}
-	copied := written(t, "another store")
-	chosen := w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "/Downloads/cairn.db"})
-	if chosen.Screen() != OnAsking || Heads(chosen) != "Bring in cairn.db?" {
-		t.Fatalf("the window is on %v headed %q", chosen.Screen(), Heads(chosen))
+	copied := written(t, "some tasks")
+	added := w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "/Downloads/tasks.json"})
+	in, ok := f.gave("task", "import")
+	if !ok || in.Given["from"] != copied || added.Screen() != OnTheBoard {
+		t.Errorf("the engine was asked %+v and the window is on %v", in, added.Screen())
 	}
-	if asks := chosen.Asks(); len(asks) != 2 || asks[0].Means != "It takes the place of the store, a new backup of which is made first." {
-		t.Errorf("the question says %+v", asks)
-	}
-	if left := chosen.Choose("Cancel"); left.Screen() != OnTheBoard || f.what("backup", "import") != 0 {
-		t.Errorf("cancelling left the window on %v", left.Screen())
-	}
-	if _, err := os.Stat(copied); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("the copy outlived a cancel: %v", err)
-	}
-	copied = written(t, "another store")
-	chosen = w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "/Downloads/cairn.db"})
-	agreed := chosen.Key("enter")
-	in, ok := f.gave("backup", "import")
-	if !ok || in.Given["from"] != copied || agreed.Screen() != OnTheBoard {
-		t.Errorf("agreeing asked %+v and left the window on %v", in, agreed.Screen())
-	}
-	if agreed.Note() != "the store now holds what cairn.db held" {
-		t.Errorf("the window tells %q", agreed.Note())
+	if added.Note() != "0 task(s) and 0 objective(s) were added from tasks.json" {
+		t.Errorf("the window tells %q", added.Note())
 	}
 	if _, err := os.Stat(copied); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the copy outlived the import: %v", err)
 	}
-	f.failOp = errors.New("not a cairn store")
-	copied = written(t, "another store")
-	refused := w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "x.db"}).Key("enter")
+	f.failOp = errors.New("not an export")
+	copied = written(t, "some tasks")
+	refused := w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "x.json"})
 	if !errors.Is(refused.Wrong(), f.failOp) {
 		t.Errorf("an import refused says %v", refused.Wrong())
+	}
+	if _, err := os.Stat(copied); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("the copy outlived a refusal: %v", err)
 	}
 }
 
 // Both are offered where a person looks for them: on the bar of a board with
-// nothing chosen, and on a right click on the board, beside backing up.
-func TestCarryingTheStoreIsOffered(t *testing.T) {
+// nothing chosen, and on a right click on the board, beside the backups.
+func TestCarryingTheTasksIsOffered(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	if offers := w.BoardOffers(); !slices.Contains(offers, "Export") || !slices.Contains(offers, "Import") {
 		t.Errorf("the bar offers %v", offers)
@@ -229,7 +218,7 @@ func TestCarryingTheStoreIsOffered(t *testing.T) {
 	if _, asked := New(f, 1200, 800).Choose("Import").FileAsked(); !asked {
 		t.Error("Import asked for no dialog")
 	}
-	if New(f, 1200, 800).Choose("Export"); f.what("backup", "export") != 1 {
+	if New(f, 1200, 800).Choose("Export"); f.what("task", "export") != 1 {
 		t.Error("Export wrote nothing")
 	}
 }

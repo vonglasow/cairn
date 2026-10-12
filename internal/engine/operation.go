@@ -261,9 +261,9 @@ func All() []Operation {
 	return []Operation{
 		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
 		TaskArchive, TaskUnarchive, TaskLabel,
-		TaskMove, TaskFocus, TaskUnfocus,
+		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport,
 		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
-		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore, BackupExport, BackupImport,
+		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,

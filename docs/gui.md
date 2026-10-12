@@ -625,15 +625,16 @@ the command line's, so a person at the window went to a terminal for either.
 store holds first, as it always does (`backups.go`). What it tells is said above the bar in
 the ink of what is read, and goes as a refusal does.
 
-**The store is carried out, and brought in, as a file chosen in the system's
-dialog.** Calling a backup "the export" and copying a file into the backups
-folder "the import" was nothing anybody at the window could find. `⌘E` and
-`⌘O`, on the bar of a board with nothing chosen and on a right click on the
-board, open the system's own file dialog (AppKit's panels on macOS, `gioui.org/x/explorer` elsewhere, see
-[dependencies.md](dependencies.md)): the engine writes the store out
-(`backup export`) and the file is saved where the dialog says; or a file chosen
-there is copied aside, and once agreed to the engine puts it in place
-(`backup import`), a new backup of what the store held made first. The dialog blocks
+**Tasks are exported, and imported, as a file chosen in the system's
+dialog.** `⌘E` and `⌘O`, on the bar of a board with nothing chosen and on a
+right click on the board, open the system's own file dialog (AppKit's panels
+on macOS, `gioui.org/x/explorer` elsewhere, see
+[dependencies.md](dependencies.md)): the engine writes every task out, with
+the objectives they serve (`task export`), and the file is saved where the
+dialog says; or a file chosen there is copied aside and the engine adds its
+tasks as new ones (`task import`). Nothing on the board is replaced, so
+nothing is asked first. An earlier version carried the whole store and put
+one in its place, which is a backup's work, not an export's. The dialog blocks
 until it is answered, and a window that is a value never waits: the window
 says what it wants (`FileAsked`), the loop opens the dialog on the side
 (`Filing`) and hands the answer back (`Filed`) — the one piece no test

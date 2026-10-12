@@ -62,9 +62,6 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutPuttingBack {
 			return "Put backup " + strconv.Itoa(w.backups[w.backupOn].Number) + " back?"
 		}
-		if w.question == aboutBringingIn {
-			return "Bring in " + w.bringingName + "?"
-		}
 		if w.question == aboutSweeping {
 			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
 		}
@@ -241,8 +238,8 @@ func helping() []Said {
 		{Key: "⌘N", Means: "new"},
 		{Key: "⌘B", Means: "a new backup of the store — it says where it lies"},
 		{Key: "⇧B", Means: "the backups — enter restores one, after asking, a new backup made first"},
-		{Key: "⌘E", Means: "export the store to a file chosen in the system's dialog"},
-		{Key: "⌘O", Means: "import a store from a file chosen there — after asking, a new backup made first"},
+		{Key: "⌘E", Means: "export every task to a file chosen in the system's dialog"},
+		{Key: "⌘O", Means: "import the tasks of a file chosen there, as new tasks"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
 		{Key: "tab", Means: "the next page — shift+tab the one before"},
@@ -467,12 +464,6 @@ func (w Window) Asks() []Said {
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
 		}
 	}
-	if w.question == aboutBringingIn {
-		return []Said{
-			{Means: "It takes the place of the store, a new backup of which is made first."},
-			{Means: "Enter to agree, or Cancel."},
-		}
-	}
 	if w.question == aboutPuttingBack {
 		return []Said{
 			{Means: "A new backup of what the store holds now is made first."},
@@ -508,7 +499,6 @@ const (
 	aboutDeletingSeveral
 	aboutArchivingSeveral
 	aboutPuttingBack
-	aboutBringingIn
 )
 
 // sweeps is the column a sweep would take off the board: the one the chosen

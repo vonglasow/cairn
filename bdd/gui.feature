@@ -1097,37 +1097,34 @@ Feature: The desktop board
       And I click the column "TODO"
       Then no card is chosen
 
-  Rule: The store is carried out of the window, and brought into it, as a file
+  Rule: Tasks are exported from the window, and imported into it, as a file
 
-    The backups stay beside the store they back up. Carrying the store to
-    another machine, or bringing one back, went through a terminal, and the
-    window said nothing of either. ⌘E writes the store to a file chosen in the
-    system's own dialog; ⌘O brings one in from a file chosen there, once
-    agreed to, what the store holds backed up first. Both are on the bar and
-    on a right click on the board.
+    ⌘E writes every task, with the objectives they serve, to a file chosen in
+    the system's own dialog — the file `cairn task export` writes. ⌘O adds the
+    tasks of such a file chosen there, as new tasks: nothing on the board is
+    replaced, so nothing is asked first. Both are on the bar and on a right
+    click on the board.
 
-    @gui-the-store-is-exported
-    Scenario: ⌘E writes the store to a file chosen in the system's dialog
+    @gui-the-tasks-are-exported
+    Scenario: ⌘E writes the tasks to a file chosen in the system's dialog
       Given I added a task titled "Write the spec"
       When I open the window
       And I press "cmd+e"
       And I save it in the dialog as a file of my own
-      Then that file is a store holding the task "Write the spec"
-      And the window tells "the store was written to"
+      Then that file holds the task "Write the spec"
+      And the window tells "the tasks were written to"
 
-    @gui-a-store-is-imported
-    Scenario: ⌘O brings in a store chosen in the system's dialog, once agreed to
+    @gui-tasks-are-imported
+    Scenario: ⌘O adds the tasks of a file chosen in the system's dialog
       Given I added a task titled "Write the spec"
-      And a file of my own holding a store with a task titled "Ship it"
+      And a file of my own exported from a store with a task titled "Ship it"
       When I open the window
       And I press "cmd+o"
       And I pick that file in the dialog
-      Then the window is asking
-      When I press "enter"
       Then the window is on the board
       And "BACKLOG" carries "Ship it"
-      And "BACKLOG" does not carry "Write the spec"
-      And there are 2 backups
+      And "BACKLOG" carries "Write the spec"
+      And the window tells "1 task(s) and 0 objective(s) were added"
 
     @gui-a-dialog-closed-changes-nothing
     Scenario: closing the dialog without choosing a file changes nothing
@@ -1140,7 +1137,7 @@ Feature: The desktop board
       And there are 0 backups
 
     @gui-carrying-the-store-is-offered
-    Scenario: the bar offers to export the store and to import one
+    Scenario: the bar offers to export the tasks and to import some
       When I open the window
       Then the bar offers "Export" under "⌘E"
       And the bar offers "Import" under "⌘O"

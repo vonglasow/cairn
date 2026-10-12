@@ -54,27 +54,6 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	}
 }
 
-// Exporting into a place that cannot be a folder, or out of a store that is
-// not there, writes nothing and says why.
-func TestExportSaysWhyItWroteNothing(t *testing.T) {
-	v, _ := vaultOn(t, "Write the spec")
-	file := filepath.Join(t.TempDir(), "a-file")
-	if err := os.WriteFile(file, []byte("x"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := v.Export(filepath.Join(file, "under", "cairn.db")); err == nil || !strings.Contains(err.Error(), "making room") {
-		t.Errorf("exporting under a file answered %v", err)
-	}
-	gone := NewVault(filepath.Join(t.TempDir(), "absent.db"))
-	to := filepath.Join(t.TempDir(), "out.db")
-	if _, err := gone.Export(to); err == nil {
-		t.Error("exporting a store that is not there answered nothing")
-	}
-	if _, err := os.Stat(to); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("a failed export left %s behind: %v", to, err)
-	}
-}
-
 // The facts a task or an objective has finished telling a store need nothing
 // of it: the lists were built as they were told.
 func TestTheEndOfAListToldChangesNothing(t *testing.T) {

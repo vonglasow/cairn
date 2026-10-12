@@ -56,6 +56,8 @@ var reasons = []reason{
 	{ErrNotAStore, KindStore, "not-a-store"},
 	{ErrStore, KindStore, "store-unreadable"},
 	{errMisread, KindUsage, "not-understood"},
+	{ErrNotAnExport, KindRefused, "not-an-export"},
+	{ErrExportPointsOutside, KindRefused, "export-points-outside"},
 	{domain.ErrTitleRequired, KindRefused, "title-required"},
 	{domain.ErrTitleNotOneLine, KindRefused, "title-not-one-line"},
 	{domain.ErrNotText, KindRefused, "not-text"},

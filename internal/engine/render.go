@@ -95,7 +95,7 @@ func rendered(op Operation, a Answer) string {
 	case Exported:
 		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
 	case Imported:
-		return fmt.Sprintf("the store now holds what %s held — backup %d; a new backup of what it held before was made first\n", *a.Imported, *a.Restored)
+		return fmt.Sprintf("%d task(s) and %d objective(s) were added from %s\n", a.Holds.Tasks, a.Holds.Objectives, *a.Imported)
 	case Applied:
 		return appliedText(a.Applied)
 	case Acts:
