@@ -295,3 +295,34 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 		}
 	}
 }
+
+// A click off the calendar closes it: on the form, back to the form with the
+// day as it was; off the form as well, the form goes too, what was typed in
+// it saved, as a click off any panel puts it away.
+func TestAClickOffTheCalendarClosesIt(t *testing.T) {
+	f := newFake()
+	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if w.Screen() != OnCalendar {
+		t.Fatalf("enter left the window on %v", w.Screen())
+	}
+	title := formValue(w.formBox(), w.Form().Fields(), 0)
+	back := w.Click(Point{X: title.X + 4, Y: title.Y + 4})
+	if back.Screen() != OnForm || back.Form().Fields()[back.Form().On()].Value != "" {
+		t.Errorf("a click on the form left the window on %v", back.Screen())
+	}
+	if gone := w.Click(Point{X: 2, Y: 2}); gone.Screen() != OnTheBoard {
+		t.Errorf("a click off the form left the window on %v", gone.Screen())
+	}
+	if inside := w.CalendarBox(); w.Click(Point{X: inside.X + inside.W - 2, Y: inside.Y + inside.H - 2}).Screen() != OnCalendar {
+		t.Error("a click on the calendar's own ground closed it")
+	}
+	typed := w.Key("esc").On("title").Types("x")
+	if left := typed.Click(Point{X: 2, Y: 2}); left.Screen() != OnTheBoard || f.what("task", "edit") != 1 {
+		t.Errorf("a click off a form typed into left the window on %v, %d edits asked", left.Screen(), f.what("task", "edit"))
+	}
+}

@@ -37,6 +37,9 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnChoosing {
 		return w.clickingList(p)
 	}
+	if w.screen == OnCalendar && !w.CalendarBox().In(p) {
+		return w.clickedOff(p)
+	}
 	if w.screen == OnCalendar {
 		if walked, on := w.monthClicked(p); on {
 			return walked
@@ -65,11 +68,10 @@ func (w Window) Click(p Point) Window {
 	// Off a panel is out of it, where getting out costs nothing. A hand on the
 	// mouse should not have to reach for the keyboard to put something away.
 	//
-	// A form is the exception and the only one: it holds what somebody typed
-	// and has not saved, and a click landing anywhere outside would throw that
-	// away without asking. esc is still there, and the bar offers it.
+	// A form goes too, what was typed in it saved as it goes, and a list or
+	// the calendar over it gives the form back when the click is on the form.
 	if w.closesOnAClickOff() && !w.panel().In(p) {
-		return w.Choose("Close")
+		return w.clickedOff(p)
 	}
 	// A search is not a panel over the board: the board is still there, still
 	// showing what the search left, and a card under the pointer is a card.
@@ -540,4 +542,27 @@ func (w Window) where(l Layout, p Point) (state string, place map[string]string,
 		return reading.StateAt(i), map[string]string{"last": "true"}, true
 	}
 	return "", nil, false
+}
+
+// clickedOff is a click outside the panel that has the window. A list or the
+// calendar over a form closes and gives the form back; when the click is
+// outside the form as well, the form goes too, what was typed in it saved —
+// a click outside a panel puts it away, and never throws away what was typed.
+func (w Window) clickedOff(p Point) Window {
+	overForm := w.screen == OnChoosing || w.screen == OnCalendar
+	if w.screen == OnCalendar {
+		w.screen = OnForm
+	} else if w.screen != OnForm {
+		w = w.Choose("Close")
+	}
+	if overForm && w.formPanel().In(p) {
+		return w
+	}
+	if w.screen != OnForm {
+		return w
+	}
+	if w.form.Changed() {
+		return w.Save()
+	}
+	return w.Choose("Close")
 }

@@ -220,7 +220,10 @@ Feature: The desktop board
       Then the help is closed
 
     @gui-clicking-off-a-form-keeps-it
-    Scenario: clicking off a form keeps what was typed
+    Scenario: clicking off a form keeps what was typed, saved, and puts it away
+      A click outside the form leaves it, as a click outside any panel does.
+      What was typed is not thrown away for it: it is saved, as the form
+      saves itself.
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -228,8 +231,30 @@ Feature: The desktop board
       And I put the keyboard on "title"
       And I type "X"
       And I click outside the panel
-      Then the form is open on task 1
-      And the field "title" reads "Write the specX"
+      Then the window is on the board
+      And task 1 is called "Write the specX"
+
+    @gui-a-click-off-the-calendar-closes-it
+    Scenario: a click on the form outside the calendar closes the calendar alone
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the deadline "2026-12-25"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I click the field "title"
+      Then the window is on the form
+      And the field "deadline" reads "2026-12-25"
+
+    @gui-a-click-off-the-form-closes-the-calendar-too
+    Scenario: a click outside the form closes the calendar and the form
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I click outside the panel
+      Then the window is on the board
 
     @gui-closing-a-panel-keeps-the-search
     Scenario: putting a task away gives back what the search left, not the board

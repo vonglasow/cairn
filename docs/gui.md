@@ -935,7 +935,12 @@ A task opens to be edited, with `enter` or a double click: its form, and
 beside the form what was done to it. There used to be a panel to read a task
 in and a form to change it, one gesture apart; a task is opened to be worked
 on, and the second gesture was a gesture spent for nothing. A form nobody typed
-into is put away by `esc` or a click off it, the way the reading panel was.
+into is put away by `esc` or a click off it, the way the reading panel was. A
+form typed into is put away by a click off it too, what was typed saved as it
+goes — it used to stay, for fear of losing it, and saving is what the form does
+on its own anyway (`clickedOff`, `@gui-clicking-off-a-form-keeps-it`). A click
+off the calendar or a list closes it and gives the form back; off the form as
+well, both go (`@gui-a-click-off-the-form-closes-the-calendar-too`).
 
 **Two columns and not one above the other.** The fields take the left five
 eighths — in the narrowest window this board draws in, room for two short

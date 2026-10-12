@@ -263,11 +263,10 @@ func (w Window) closesOnAClickOff() bool {
 	case OnHelp, OnAsking, OnChoosing:
 		return true
 	case OnForm:
-		// A form nobody typed into loses nothing by going: it is a task
-		// opened to look at as much as to change. One somebody typed into
-		// stays, because a click landing anywhere outside would throw away
-		// what was typed without asking.
-		return !w.form.Changed()
+		// A form goes like any panel. What was typed into it is saved as it
+		// goes (clickedOff), the way the form saves itself, so nothing typed
+		// is thrown away for a click landing outside it.
+		return true
 	}
 	return false
 }
