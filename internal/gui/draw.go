@@ -699,13 +699,15 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		sayOver(gtx, th, skin.Ink, WrongBox(l), w.Note(), reads, 2)
 	}
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
+		under := w.barAlong(w.BoardOffers())
 		for i, offer := range w.BoardOffers() {
-			say(gtx, th, skin.Faint, OfferAt(l, i), w.Said(offer), reads)
+			say(gtx, th, skin.Faint, under[i], w.Said(offer), reads)
 		}
 		return
 	}
+	bar := w.BarOffers()
 	for i, offer := range w.Offers() {
-		drawOffer(gtx, th, skin, OfferAt(l, i), offer, w)
+		drawOffer(gtx, th, skin, bar[i], offer, w)
 	}
 }
 

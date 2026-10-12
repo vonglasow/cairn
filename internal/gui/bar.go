@@ -379,7 +379,6 @@ func chosenFromAList(field reading.Field) bool {
 // the board has the window, on the panel's own foot while a panel has it. A
 // person clicks what they are looking at, and that is where it is drawn.
 func (w Window) offerAt(p Point) (string, bool) {
-	l := w.Layout()
 	// The panel the offers are drawn on, which for a list is its own and not
 	// the one everything else uses: drawn in one place and listened for in
 	// another, three words looked like buttons and answered nowhere.
@@ -388,9 +387,9 @@ func (w Window) offerAt(p Point) (string, bool) {
 	// panel it is drawn faint, saying what the board will offer again, and
 	// what can be done now is on the panel.
 	alone := w.screen == OnTheBoard || w.screen == OnSearch
-	along := w.offersAlong(panel)
+	along, bar := w.offersAlong(panel), w.BarOffers()
 	for i, offer := range w.Offers() {
-		if alone && OfferAt(l, i).In(p) {
+		if alone && bar[i].In(p) {
 			return offer, true
 		}
 		if !alone && along[i].In(p) {
@@ -408,10 +407,25 @@ func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
 // says and never narrower than an offer is: with one width for all,
 // "backspace  No day" ran into the "esc  Cancel" after it.
 func (w Window) offersAlong(panel Box) []Box {
+	return laidAlong(w.widthsOf(w.Offers()), func(i int) Box { return PanelOfferAt(panel, i) }, panel.X+padding)
+}
+
+// BarOffers is where the bar under the board draws what it offers, and so
+// where those are clicked: each as wide as what it says, as a panel's are.
+func (w Window) BarOffers() []Box { return w.barAlong(w.Offers()) }
+
+// barAlong lays offers along the bar under the board.
+func (w Window) barAlong(offers []string) []Box {
+	l := w.Layout()
+	return laidAlong(w.widthsOf(offers), func(i int) Box { return OfferAt(l, i) }, l.Bar.X)
+}
+
+// laidAlong lays boxes of the widths given one after another from x, each
+// on the row its slot is on.
+func laidAlong(widths []int, slot func(int) Box, x int) []Box {
 	var boxes []Box
-	x := panel.X + padding
-	for i, wide := range w.offerWidths() {
-		box := PanelOfferAt(panel, i)
+	for i, wide := range widths {
+		box := slot(i)
 		box.X, box.W = x, wide
 		boxes = append(boxes, box)
 		x += wide
@@ -421,9 +435,12 @@ func (w Window) offersAlong(panel Box) []Box {
 
 // offerWidths is how wide each offer is drawn: what it says, and never
 // narrower than an offer is.
-func (w Window) offerWidths() []int {
+func (w Window) offerWidths() []int { return w.widthsOf(w.Offers()) }
+
+// widthsOf is how wide each of some offers is drawn.
+func (w Window) widthsOf(offers []string) []int {
 	var widths []int
-	for _, offer := range w.Offers() {
+	for _, offer := range offers {
 		widths = append(widths, max(offerWide, ends(w.measured(), w.Said(offer), reads)+padding))
 	}
 	return widths

@@ -486,7 +486,9 @@ changed underneath, and made two places to click for one thing. The same
 holds between panels: a form under a list or the calendar draws none of its
 offers, which were theirs read a second time at its foot. Each offer is as wide
 as what it says, never narrower than the others: at one width for all,
-`backspace  No day` ran into the `esc  Cancel` after it.
+`backspace  No day` ran into the `esc  Cancel` after it. The bar under the
+board lays its offers out the same way (`BarOffers`): spelled for Windows,
+`Shift+A  Archived` ran into the `?  Help` after it.
 
 **Archive** is one of those offers, under `x`, beside *Edit* and *Delete* on a
 chosen card. On a card already off the board the bar reads *Restore* instead:

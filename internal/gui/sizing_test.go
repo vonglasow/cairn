@@ -204,3 +204,34 @@ func TestWhatHangsFromAFieldGoesAboveOnlyWhenItMust(t *testing.T) {
 		t.Errorf("a panel a pixel too tall hangs at %+v", got)
 	}
 }
+
+// The bar's offers are as wide as what they say, the way a panel's are:
+// spelled for Windows, "Shift+A  Archived" ran into the "?  Help" after it.
+func TestTheBarsOffersAreAsWideAsWhatTheySay(t *testing.T) {
+	w := New(newFake(), 1200, 800)
+	w.keyboard = KeyboardOf("windows")
+	l, boxes, offers := w.Layout(), w.BarOffers(), w.Offers()
+	if len(boxes) != len(offers) || boxes[0].X != l.Bar.X {
+		t.Fatalf("%d boxes for %d offers, the first at %+v", len(boxes), len(offers), boxes[0])
+	}
+	for i, offer := range offers {
+		said := Reckoned(w.Said(offer), reads)
+		if boxes[i].W < said[len(said)-1] || boxes[i].W < offerWide {
+			t.Errorf("%q needs %d and has %d", w.Said(offer), said[len(said)-1], boxes[i].W)
+		}
+		if i > 0 && boxes[i].X != boxes[i-1].X+boxes[i-1].W {
+			t.Errorf("%q starts at %d, not where the one before it ends", offer, boxes[i].X)
+		}
+		if boxes[i].Y != OfferAt(l, i).Y || boxes[i].H != OfferAt(l, i).H {
+			t.Errorf("%q is off the bar: %+v", offer, boxes[i])
+		}
+	}
+	archived := boxes[2]
+	if got, ok := w.offerAt(Point{X: archived.X + archived.W - 2, Y: archived.Y + archived.H/2}); !ok || got != "Archived" {
+		t.Errorf("the end of Archived answers %q, %v", got, ok)
+	}
+	// Under a panel the bar says the board's offers, laid out the same way.
+	if under := w.Edit(); len(under.barAlong(under.BoardOffers())) != len(under.BoardOffers()) {
+		t.Error("under a panel the bar lays out another number of offers")
+	}
+}
