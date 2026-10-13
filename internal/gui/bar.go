@@ -298,9 +298,6 @@ func (w Window) offerAt(p Point) (string, bool) {
 	return "", false
 }
 
-// PanelOffers is where the offers of the panel that has the window are drawn, and so where they are clicked.
-func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
-
 func (w Window) offersAlong(panel Box) []Box {
 	return laidAlong(w.widthsOf(w.Offers()), func(i int) Box { return PanelOfferAt(panel, i) }, panel.X+padding)
 }

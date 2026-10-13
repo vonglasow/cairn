@@ -108,38 +108,38 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	f := newFake()
 	w := Window{work: f, tab: Time, width: 1200, height: 800, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-10-12")}}
 	month := w.onWeek("m")
-	if !month.Monthly() || month.MonthShown().Format("January 2006") != "October 2026" {
-		t.Fatalf("m shows %v, monthly %v", month.MonthShown(), month.Monthly())
+	if !month.Monthly() || month.week.Format("January 2006") != "October 2026" {
+		t.Fatalf("m shows %v, monthly %v", month.week, month.Monthly())
 	}
 	in, _ := f.gave("timesheet", "show")
 	grid := engine.MonthGrid(dayNamed("2026-10-01"))
 	if in.Given["since"] != domain.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
-	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.MonthShown().Format("January 2006") != "October 2026" {
-		t.Errorf("the week of 28 September turned to %s", got.MonthShown().Format("January 2006"))
+	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.week.Format("January 2006") != "October 2026" {
+		t.Errorf("the week of 28 September turned to %s", got.week.Format("January 2006"))
 	}
-	if got := (Window{work: f, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.MonthShown().Format("January 2006") != "September 2026" {
-		t.Errorf("the week of 28 September, today the 30th, turned to %s", got.MonthShown().Format("January 2006"))
+	if got := (Window{work: f, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.week.Format("January 2006") != "September 2026" {
+		t.Errorf("the week of 28 September, today the 30th, turned to %s", got.week.Format("January 2006"))
 	}
-	if got := month.onWeek("right").MonthShown().Format("January 2006"); got != "November 2026" {
+	if got := month.onWeek("right").week.Format("January 2006"); got != "November 2026" {
 		t.Errorf("right shows %s", got)
 	}
-	if got := month.onWeek("left").onWeek("t").MonthShown().Format("January 2006"); got != "October 2026" {
+	if got := month.onWeek("left").onWeek("t").week.Format("January 2006"); got != "October 2026" {
 		t.Errorf("t shows %s", got)
 	}
-	if got := month.onWeek("m"); got.Monthly() || domain.FormatDay(got.Week()) != "2026-10-12" {
-		t.Errorf("m again shows the week of %s, monthly %v", domain.FormatDay(got.Week()), got.Monthly())
+	if got := month.onWeek("m"); got.Monthly() || domain.FormatDay(got.week) != "2026-10-12" {
+		t.Errorf("m again shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
 	}
 	later := month.onWeek("right").onWeek("right")
-	if got := later.onWeek("m"); domain.FormatDay(got.Week()) != "2026-11-30" {
-		t.Errorf("the week of December shown is %s", domain.FormatDay(got.Week()))
+	if got := later.onWeek("m"); domain.FormatDay(got.week) != "2026-11-30" {
+		t.Errorf("the week of December shown is %s", domain.FormatDay(got.week))
 	}
 	l := w.Layout()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	for chip, want := range map[string]string{"‹": "2026-10-05", "›": "2026-10-19", "Today": "2026-10-12", "Week": "2026-10-12"} {
-		if got := w.Click(middle(TimeChip(l, chip))); got.Monthly() || domain.FormatDay(got.Week()) != want {
-			t.Errorf("%s shows the week of %s", chip, domain.FormatDay(got.Week()))
+		if got := w.Click(middle(TimeChip(l, chip))); got.Monthly() || domain.FormatDay(got.week) != want {
+			t.Errorf("%s shows the week of %s", chip, domain.FormatDay(got.week))
 		}
 	}
 	if got := w.Click(middle(TimeChip(l, "Month"))); !got.Monthly() {
@@ -149,8 +149,8 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 		t.Error("Month on a month left it")
 	}
 	fourth := slices.IndexFunc(grid, func(d time.Time) bool { return d.Day() == 4 })
-	if got := month.Click(middle(MonthCellAt(l, fourth))); got.Monthly() || domain.FormatDay(got.Week()) != "2026-09-28" {
-		t.Errorf("the 4th clicked shows the week of %s, monthly %v", domain.FormatDay(got.Week()), got.Monthly())
+	if got := month.Click(middle(MonthCellAt(l, fourth))); got.Monthly() || domain.FormatDay(got.week) != "2026-09-28" {
+		t.Errorf("the 4th clicked shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
 	}
 	if got := month.Click(Point{X: 1, Y: l.Band.Y + l.Band.H + 2}); !got.Monthly() {
 		t.Error("a click under the month left it")
@@ -193,8 +193,8 @@ func TestTheTimePageAsksNothingOfTheFuture(t *testing.T) {
 	}
 	asked := f.what("timesheet", "show")
 	w.week = dayNamed("2026-10-19")
-	if got := w.readingWeek(); f.what("timesheet", "show") != asked || len(got.Sheet().Days) != 0 {
-		t.Errorf("a week to come was asked for, and reads %+v", got.Sheet())
+	if got := w.readingWeek(); f.what("timesheet", "show") != asked || len(got.sheet.Days) != 0 {
+		t.Errorf("a week to come was asked for, and reads %+v", got.sheet)
 	}
 }
 
@@ -250,10 +250,10 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 		}
 	}
 	m := Window{work: newFake(), now: dayNamed("2026-10-14"), timeState: timeState{monthly: true, week: dayNamed("2026-10-01")}}
-	if got := m.onWeek("right").Week(); domain.FormatDay(got) != "2026-11-01" {
+	if got := m.onWeek("right").week; domain.FormatDay(got) != "2026-11-01" {
 		t.Errorf("right from October shows %s", domain.FormatDay(got))
 	}
-	if got := m.onWeek("left").Week(); domain.FormatDay(got) != "2026-09-01" {
+	if got := m.onWeek("left").week; domain.FormatDay(got) != "2026-09-01" {
 		t.Errorf("left from October shows %s", domain.FormatDay(got))
 	}
 }

@@ -621,13 +621,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if w.w.Screen() != OnCalendar {
 			return fmt.Errorf("the window is on %v, not on the calendar", w.w.Screen())
 		}
-		if got := domain.FormatDay(w.w.CalendarDay()); got != day {
+		if got := domain.FormatDay(w.w.day); got != day {
 			return fmt.Errorf("the calendar is on %s, want %s", got, day)
 		}
 		return nil
 	})
 	sc.Step(`^I click the day "([^"]*)" on the calendar$`, func(day string) error {
-		for i, shown := range engine.MonthGrid(w.w.CalendarDay()) {
+		for i, shown := range engine.MonthGrid(w.w.day) {
 			if domain.FormatDay(shown) == day {
 				box := DayAt(w.w.CalendarBox(), i)
 				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})

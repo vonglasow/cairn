@@ -22,17 +22,8 @@ type timeState struct {
 	dayFrom [7]int
 }
 
-// Week is the Monday of the week the time page shows, or the first day of the month it shows.
-func (w Window) Week() time.Time { return w.week }
-
 // Monthly says the time page shows a month rather than a week.
 func (w Window) Monthly() bool { return w.monthly }
-
-// MonthShown is the first day of the month the time page shows.
-func (w Window) MonthShown() time.Time { return w.week }
-
-// Sheet is the time spent over that week, as the engine reckoned it.
-func (w Window) Sheet() engine.Timesheet { return w.sheet }
 
 func (w Window) readingWeek() Window {
 	if w.week.IsZero() {

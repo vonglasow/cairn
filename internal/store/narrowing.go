@@ -103,22 +103,9 @@ func (s *Store) Narrowed(kept *domain.Narrowing) ([]task.Task, error) {
 		return nil, err
 	}
 	where, args := readBy(kept).whereTasks(taskLabels)
-	rows, err := s.on.Query(
+	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) },
 		`SELECT `+taskColumns+` FROM tasks`+where+` `+taskOrder, args...)
 	if err != nil {
-		return nil, fmt.Errorf("reading the store: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	tasks := []task.Task{}
-	for rows.Next() {
-		t, err := s.scanTask(rows, every)
-		if err != nil {
-			return nil, fmt.Errorf("reading a task: %w", err)
-		}
-		tasks = append(tasks, t)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading the store: %w", err)
 	}
 	return tasks, nil

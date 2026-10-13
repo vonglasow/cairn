@@ -215,22 +215,9 @@ func (s *Store) Under(number int) ([]task.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.on.Query(
+	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) },
 		`SELECT `+taskColumns+` FROM tasks WHERE parent = ? `+taskOrder, number)
 	if err != nil {
-		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	tasks := []task.Task{}
-	for rows.Next() {
-		t, err := s.scanTask(rows, every)
-		if err != nil {
-			return nil, fmt.Errorf("reading a sub-task: %w", err)
-		}
-		tasks = append(tasks, t)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading the sub-tasks of %d: %w", number, err)
 	}
 	return tasks, nil
@@ -238,6 +225,29 @@ func (s *Store) Under(number int) ([]task.Task, error) {
 
 type scanner interface {
 	Scan(dest ...any) error
+}
+
+func rowsOf[T any](s *Store, scan func(scanner) (T, error), query string, args ...any) ([]T, error) {
+	rows, err := s.on.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	out := []T{}
+	for rows.Next() {
+		one, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, one)
+	}
+	return out, rows.Err()
+}
+
+func one[T any](row scanner) (T, error) {
+	var v T
+	err := row.Scan(&v)
+	return v, err
 }
 
 func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {

@@ -82,20 +82,20 @@ func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	w := holding(f, engine.Card{Number: 1, Title: "réunion", State: "backlog"})
 
 	w = w.Key("/").Types("réu")
-	if got := w.Key("backspace").Looking(); got != "ré" {
+	if got := w.Key("backspace").looking.Reads(); got != "ré" {
 		t.Fatalf("taking one back left %q", got)
 	}
-	if got := w.Key("backspace").Key("backspace").Looking(); got != "r" {
+	if got := w.Key("backspace").Key("backspace").looking.Reads(); got != "r" {
 		t.Errorf("taking two back left %q", got)
 	}
 	empty := w.Key("esc").Key("/")
 	for range 3 {
 		empty = empty.Key("backspace")
 	}
-	if got := empty.Looking(); got != "" {
+	if got := empty.looking.Reads(); got != "" {
 		t.Errorf("an empty search reads %q", got)
 	}
-	if got := w.Key("esc").Key("backspace").Looking(); got != "" {
+	if got := w.Key("esc").Key("backspace").looking.Reads(); got != "" {
 		t.Errorf("backspace on the board left a search of %q", got)
 	}
 }
@@ -119,14 +119,14 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 func TestEscapeOutOfTheSearchByTheKey(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("/").Types("spec")
-	if w.Screen() != OnSearch || w.Looking() == "" {
-		t.Fatalf("the search did not open: %v %q", w.Screen(), w.Looking())
+	if w.Screen() != OnSearch || w.looking.Reads() == "" {
+		t.Fatalf("the search did not open: %v %q", w.Screen(), w.looking.Reads())
 	}
 	w = w.Key("esc")
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("escape left the window on %v", w.Screen())
 	}
-	if w.Looking() != "" {
-		t.Fatalf("escape left the board narrowed to %q", w.Looking())
+	if w.looking.Reads() != "" {
+		t.Fatalf("escape left the board narrowed to %q", w.looking.Reads())
 	}
 }

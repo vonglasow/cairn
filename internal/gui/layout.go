@@ -3,8 +3,6 @@ package gui
 
 import (
 	"cairn/internal/engine"
-	"fmt"
-	"strings"
 )
 
 // Narrowest and Shortest are the window this board needs.
@@ -124,26 +122,4 @@ func (l Layout) LaneUnder(p Point) (lane int, found bool) {
 		}
 	}
 	return 0, false
-}
-
-// Showing is how many whole cards a column has room for.
-func (l Layout) Showing(column int) int { return l.Column[column].H / CardHeight }
-
-// Written is the whole shape as a person can read it, so a test can pin it and a sum changed by accident shows up as a number that moved.
-func (l Layout) Written() string {
-	var out strings.Builder
-	say := func(name string, b Box) {
-		fmt.Fprintf(&out, "%-12s x=%-5d y=%-5d w=%-5d h=%d\n", name, b.X, b.Y, b.W, b.H)
-	}
-	say("tabs", l.Tabs)
-	for i := range engine.Columns {
-		say(fmt.Sprintf("head %d", i), l.Head[i])
-		say(fmt.Sprintf("column %d", i), l.Column[i])
-	}
-	say("band", l.Band)
-	for i, name := range engine.Stalled {
-		say("lane "+name, l.Lane[i])
-	}
-	say("bar", l.Bar)
-	return out.String()
 }

@@ -43,22 +43,9 @@ func (s *Store) Record(a trace.Act) error {
 
 // ActsOn hands back everything done to a task, oldest first.
 func (s *Store) ActsOn(number int) ([]trace.Act, error) {
-	rows, err := s.on.Query(
+	acts, err := rowsOf(s, scanAct,
 		`SELECT `+traceColumns+` FROM trace WHERE task_number = ? ORDER BY id`, number)
 	if err != nil {
-		return nil, fmt.Errorf("reading what happened to task %d: %w", number, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	acts := []trace.Act{}
-	for rows.Next() {
-		one, err := scanAct(rows)
-		if err != nil {
-			return nil, fmt.Errorf("reading an act: %w", err)
-		}
-		acts = append(acts, one)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading what happened to task %d: %w", number, err)
 	}
 	return acts, nil
@@ -66,23 +53,10 @@ func (s *Store) ActsOn(number int) ([]trace.Act, error) {
 
 // ActsSince hands back everything done from a moment onward, across every task, oldest first.
 func (s *Store) ActsSince(from time.Time) ([]trace.Act, error) {
-	rows, err := s.on.Query(
+	acts, err := rowsOf(s, scanAct,
 		`SELECT `+traceColumns+` FROM trace WHERE at >= ? ORDER BY id`,
 		from.UTC().Format(time.RFC3339))
 	if err != nil {
-		return nil, fmt.Errorf("reading what happened since %s: %w", from, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	acts := []trace.Act{}
-	for rows.Next() {
-		one, err := scanAct(rows)
-		if err != nil {
-			return nil, fmt.Errorf("reading an act: %w", err)
-		}
-		acts = append(acts, one)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading what happened since %s: %w", from, err)
 	}
 	return acts, nil

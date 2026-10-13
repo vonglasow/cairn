@@ -54,9 +54,6 @@ func TooSmall(width, height int) bool {
 	return width < Narrowest || height < Shortest
 }
 
-// Showing is how many whole cards a run of rows has room for.
-func Showing(rows int) int { return rows / CardHeight }
-
 // Scrolled says how far down a run of cards has to be pushed for the one at `at` to be wholly on screen, given where it is pushed to now.
 func Scrolled(offset, at, rows int) int {
 	top := at * CardHeight

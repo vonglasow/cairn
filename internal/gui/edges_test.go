@@ -117,7 +117,7 @@ func TestEveryShapeAHistoryLineCanTake(t *testing.T) {
 	}
 	w = w.doubleClicked(middleOf(w, 1, 0))
 
-	lines := w.Acts()
+	lines := w.acts
 	if len(lines) != 3 {
 		t.Fatalf("the history is %d lines", len(lines))
 	}

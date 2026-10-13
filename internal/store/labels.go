@@ -28,21 +28,8 @@ func (s *Store) clearLabels(in labelStore, number int) error {
 }
 
 func (s *Store) labelsOf(in labelStore, number int) ([]string, error) {
-	rows, err := s.on.Query(in.byOwner, number)
+	labels, err := rowsOf(s, one[string], in.byOwner, number)
 	if err != nil {
-		return nil, fmt.Errorf("reading the labels: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	labels := []string{}
-	for rows.Next() {
-		var label string
-		if err := rows.Scan(&label); err != nil {
-			return nil, fmt.Errorf("reading a label: %w", err)
-		}
-		labels = append(labels, label)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading the labels: %w", err)
 	}
 	return labels, nil

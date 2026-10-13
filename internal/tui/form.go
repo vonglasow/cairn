@@ -58,13 +58,6 @@ func (f Form) typed() []engine.Field {
 	return out
 }
 
-func (f Form) typedInto(name, value string) Form {
-	if held, there := f.held[name]; there {
-		*held = value
-	}
-	return f
-}
-
 func asking(fields []engine.Field, width, height int, skin Skin) Form {
 	held := make(map[string]*string, len(fields))
 	keep := new(bool)

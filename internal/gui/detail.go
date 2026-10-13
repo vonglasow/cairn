@@ -45,9 +45,6 @@ func (w Window) Landing() (Box, bool) {
 
 const landingHigh = 3
 
-// Acts is the history of the task the detail is open on, oldest first.
-func (w Window) Acts() []string { return w.acts }
-
 // Lines is the history as the lines it is drawn on, wrapped to the room the panel gives it.
 func (w Window) Lines() []string {
 	inside := Inside(BesideBox(w.formPanel()))
@@ -151,11 +148,6 @@ func (w Window) settledHistory(want int) int {
 func (w Window) settledServing(want int) int {
 	box := BesideBox(w.formPanel())
 	return min(max(0, len(w.Under())*SubHeight-box.H), max(0, want))
-}
-
-// ServingRows is how many tiles that box shows at once.
-func (w Window) ServingRows() int {
-	return max(1, BesideBox(w.formPanel()).H/SubHeight)
 }
 
 // ServingCardAt is where one of those tiles is drawn, counting the scroll — the same reckoning a column makes of its cards.

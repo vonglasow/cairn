@@ -17,9 +17,6 @@ func (w Window) Showing() engine.Snapshot {
 	return found
 }
 
-// Looking is what has been typed into the search so far.
-func (w Window) Looking() string { return w.looking.Reads() }
-
 // Searched is the search as a written text, caret and all.
 func (w Window) Searched() Written { return w.looking }
 
@@ -37,20 +34,16 @@ func (w Window) onPage(tab Tab) Window {
 	return w
 }
 
-func (w Window) working() Window {
-	card, found := w.snap.Card(w.chosen)
-	if !found {
-		return w
-	}
-	return w.asking(engine.FocusOp(card), engine.Numbered(w.chosen))
-}
+func (w Window) working() Window { return w.toggling(engine.FocusOp) }
 
-func (w Window) puttingAway() Window {
+func (w Window) puttingAway() Window { return w.toggling(engine.AwayOp) }
+
+func (w Window) toggling(op func(engine.Card) engine.Operation) Window {
 	card, found := w.snap.Card(w.chosen)
 	if !found {
 		return w
 	}
-	return w.asking(engine.AwayOp(card), engine.Numbered(w.chosen))
+	return w.asking(op(card), engine.Numbered(w.chosen))
 }
 
 // LaneSays is what a lane of the band writes above itself: what it is, and how many it holds.

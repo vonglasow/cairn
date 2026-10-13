@@ -21,12 +21,6 @@ func (k Keyboard) Spelled(said string) string {
 	return strings.NewReplacer("⌘", "Ctrl+", "⇧", "Shift+", "⌥", "Alt+", "⌫", "Backspace", "⌦", "Delete").Replace(said)
 }
 
-// OnSystem is the window written for another system than the one it runs on: what a test asks for, so that what it reads does not depend on the machine.
-func (w Window) OnSystem(system string) Window {
-	w.keyboard = KeyboardOf(system)
-	return w
-}
-
 // Said is an offer as the bar writes it: the key beside the word, spelled for this keyboard.
 func (w Window) Said(offer string) string {
 	key := Shortcut(offer)

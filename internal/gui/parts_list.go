@@ -209,20 +209,6 @@ func (w Window) PartLanding() (Box, bool) {
 	return Box{X: tile.X, Y: tile.Y, W: tile.W, H: landingHigh}, true
 }
 
-// PartOn is the title of the part the keyboard is on, and whether it is on one.
-func (w Window) PartOn() (string, bool) {
-	parts := w.form.parts()
-	if w.screen != OnForm || !w.form.onParts() || w.form.partAt >= len(parts) {
-		return "", false
-	}
-	return parts[w.form.partAt].Title, true
-}
-
-// PartsGone is what is struck out, until the form is saved.
-func (w Window) PartsGone() []engine.Part {
-	return slices.DeleteFunc(w.form.parts(), func(part engine.Part) bool { return !w.form.isStruck(part) })
-}
-
 func (w Window) onParts(name string) (Window, bool) {
 	if w.form.writingPart {
 		switch name {

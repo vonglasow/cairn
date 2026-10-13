@@ -4,22 +4,12 @@ import "fmt"
 
 // Focus says which tasks are being worked on, oldest first, and nothing at all when none are.
 func (s *Store) Focus() ([]int, error) {
-	rows, err := s.on.Query(`SELECT task_number FROM focused ORDER BY id`)
+	held, err := rowsOf(s, one[int], `SELECT task_number FROM focused ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("reading what is in focus: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	var held []int
-	for rows.Next() {
-		var number int
-		if err := rows.Scan(&number); err != nil {
-			return nil, fmt.Errorf("reading what is in focus: %w", err)
-		}
-		held = append(held, number)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("reading what is in focus: %w", err)
+	if len(held) == 0 {
+		return nil, nil
 	}
 	return held, nil
 }

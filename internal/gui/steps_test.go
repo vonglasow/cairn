@@ -888,13 +888,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
 	sc.Then(`^the week shown starts on "([^"]*)"$`, func(day string) error {
-		if got := domain.FormatDay(w.w.Week()); got != day {
+		if got := domain.FormatDay(w.w.week); got != day {
 			return fmt.Errorf("the week shown starts on %s, want %s", got, day)
 		}
 		return nil
 	})
 	dayOfWeek := func(day string) (engine.TimesheetDay, bool) {
-		for _, d := range w.w.Sheet().Days {
+		for _, d := range w.w.sheet.Days {
 			if d.Day == day {
 				return d, true
 			}
@@ -922,7 +922,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	weekday := func(day string) (int, error) {
 		for i := range 7 {
-			if domain.FormatDay(w.w.Week().AddDate(0, 0, i)) == day {
+			if domain.FormatDay(w.w.week.AddDate(0, 0, i)) == day {
 				return i, nil
 			}
 		}
@@ -996,13 +996,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return w.w.Wrong()
 	})
 	sc.Then(`^the month shown is "([^"]*)"$`, func(month string) error {
-		if !w.w.Monthly() || w.w.MonthShown().Format("January 2006") != month {
+		if !w.w.Monthly() || w.w.week.Format("January 2006") != month {
 			return fmt.Errorf("the time page shows %q, monthly %v", TimeSays(w.w), w.w.Monthly())
 		}
 		return nil
 	})
 	dayOfMonth := func(day string) (int, error) {
-		for i, shown := range engine.MonthGrid(w.w.MonthShown()) {
+		for i, shown := range engine.MonthGrid(w.w.week) {
 			if domain.FormatDay(shown) == day {
 				return i, nil
 			}
@@ -1285,7 +1285,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the search is not in force$`, func() error {
 		if !w.w.Searched().Empty() {
-			return fmt.Errorf("the board is still narrowed to %q", w.w.Looking())
+			return fmt.Errorf("the board is still narrowed to %q", w.w.looking.Reads())
 		}
 		return nil
 	})
@@ -1519,7 +1519,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" names "([^"]*)"$`, w.fieldNames)
 	sc.Then(`^the list says there is nothing to serve yet$`, w.listSaysNothing)
 	sc.Then(`^nothing has been looked for yet$`, func() error {
-		if said := w.w.Looking(); said != "" {
+		if said := w.w.looking.Reads(); said != "" {
 			return fmt.Errorf("the search box already reads %q", said)
 		}
 		return nil
@@ -1883,7 +1883,7 @@ func (w *world) caretIsAt(at int) error {
 }
 
 func (w *world) searchReads(value string) error {
-	if got := w.w.Looking(); got != value {
+	if got := w.w.looking.Reads(); got != value {
 		return fmt.Errorf("the search reads %q, want %q", got, value)
 	}
 	return nil
@@ -1904,7 +1904,7 @@ func (w *world) searchBoxClosed() error {
 }
 
 func (w *world) searchStillInForce() error {
-	if w.w.Looking() == "" {
+	if w.w.looking.Reads() == "" {
 		return fmt.Errorf("nothing is being searched for any more")
 	}
 	return nil

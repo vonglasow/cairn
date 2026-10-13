@@ -372,35 +372,6 @@ func (w Window) walkingGoals(across, down int) Window {
 	return w.followingGoal(at)
 }
 
-// WhereChosen is where what is chosen is drawn and the run of the window it is drawn in, so that a test can ask whether one is inside the other.
-func (w Window) WhereChosen() (box, run Box, ok bool) {
-	l := w.Layout()
-	if w.tab == Objectives {
-		for i, g := range engine.Sorted(w.Showing().Goals) {
-			if g.Number == w.chosen {
-				return GoalAt(l, i, w.goals), GoalsRun(l), true
-			}
-		}
-		return Box{}, Box{}, false
-	}
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
-	for i, held := range dealt {
-		for j, c := range held.Cards {
-			if c.Number == w.chosen {
-				return l.CardAt(i, j, w.scroll[i]), l.Column[i], true
-			}
-		}
-	}
-	for lane := range engine.Stalled {
-		for j, c := range w.inLane(lane) {
-			if c.Number == w.chosen {
-				return l.LaneCardAt(lane, j, w.lanes[lane]), l.Lane[lane], true
-			}
-		}
-	}
-	return Box{}, Box{}, false
-}
-
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
 	if _, err := w.work.Ask(op, in); err != nil {
 		return w.failing(err)

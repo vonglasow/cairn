@@ -170,6 +170,3 @@ func (p Palette) Standing(named string) color.Color {
 		return p.Paused
 	}
 }
-
-// PlainSkin is a skin with no colour in it.
-func PlainSkin() Skin { return Skin{palette: Default} }

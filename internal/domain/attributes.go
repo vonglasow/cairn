@@ -65,25 +65,21 @@ func naming[T ~string](of []T) string {
 }
 
 // ParseState reads a column name.
-func ParseState(name string) (State, error) {
-	if name == "" {
-		return Backlog, nil
-	}
-	if slices.Contains(States, State(name)) {
-		return State(name), nil
-	}
-	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAState, naming(States))
-}
+func ParseState(name string) (State, error) { return parseOne(name, Backlog, States, ErrNotAState) }
 
 // ParsePriority reads a priority name.
 func ParsePriority(name string) (Priority, error) {
+	return parseOne(name, Normal, Priorities, ErrNotAPriority)
+}
+
+func parseOne[T ~string](name string, fallback T, set []T, outside error) (T, error) {
 	if name == "" {
-		return Normal, nil
+		return fallback, nil
 	}
-	if slices.Contains(Priorities, Priority(name)) {
-		return Priority(name), nil
+	if slices.Contains(set, T(name)) {
+		return T(name), nil
 	}
-	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAPriority, naming(Priorities))
+	return "", fmt.Errorf("%q: %w — %s", name, outside, naming(set))
 }
 
 // ParseLabels turns what was given into the set a task carries: lower case, no duplicate, alphabetical order.

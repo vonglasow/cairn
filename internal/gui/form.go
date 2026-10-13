@@ -101,19 +101,6 @@ func editingGoal(g engine.Goal) Form {
 // Fields is what the form asks about, in the order it lays them out.
 func (f Form) Fields() []engine.Field { return f.fields }
 
-// On is the field the keyboard is on.
-func (f Form) On() int { return f.at }
-
-// ValueOf answers what a field holds, and nothing for a field that is not there.
-func (f Form) ValueOf(name string) string {
-	for _, field := range f.fields {
-		if field.Name == name {
-			return field.Value
-		}
-	}
-	return ""
-}
-
 // Set writes a field.
 func (f Form) Set(name, value string) Form {
 	fields := make([]engine.Field, len(f.fields))
@@ -159,15 +146,8 @@ func (w Window) Types(text string) Window {
 
 func (w Window) onAClosedSet() bool { return len(w.form.Fields()[w.form.On()].Choices) > 0 }
 
-// On puts the keyboard on a field by name, which is what a click does and what a test says.
-func (w Window) On(name string) Window {
-	for i, field := range w.form.Fields() {
-		if field.Name == name {
-			w.form = w.form.onto(i)
-		}
-	}
-	return w
-}
+// On is the field the keyboard is on.
+func (f Form) On() int { return f.at }
 
 func (w Window) back() Window {
 	if w.screen != OnForm || w.onAClosedSet() {
@@ -262,12 +242,6 @@ func (w Window) scrolledOf(at int) int {
 		return w.Saying()
 	}
 	return 0
-}
-
-// Walk moves the keyboard from one field to the next, and stops at both ends rather than wrapping: a form that wraps is a form somebody falls off.
-func (f Form) Walk(by int) Form {
-	f.at = min(len(f.fields)-1, max(0, f.at+by))
-	return f
 }
 
 // Edit opens the form on whatever is chosen.

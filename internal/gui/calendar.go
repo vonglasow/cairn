@@ -29,9 +29,6 @@ func (w Window) At(now time.Time) Window {
 
 func (w Window) today() time.Time { return engine.DayOf(w.now) }
 
-// CalendarDay is the day the keyboard is on.
-func (w Window) CalendarDay() time.Time { return w.day }
-
 // CalendarFor is the panel the calendar is drawn in at a corner, as wide as given: a heading, the weekdays, six weeks and the offers.
 func CalendarFor(x, y, wide int) Box {
 	high := FirstRow(Box{Y: y}) - y + lineHigh + between + weeks*dayHigh + padding + barHigh + padding

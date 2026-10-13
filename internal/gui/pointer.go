@@ -79,9 +79,6 @@ func (w Window) Away() Window {
 	return w
 }
 
-// Hovered is the offer the pointer is resting on.
-func (w Window) Hovered() (string, bool) { return w.over, w.hovered }
-
 // Lighting says whether an offer is the one the pointer is resting on, which is the one thing in the window that says a word can be clicked.
 func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offer }
 

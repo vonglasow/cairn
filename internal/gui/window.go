@@ -200,14 +200,6 @@ func (w Window) ContextSays() []Readable {
 // ChosenGoal says whether what is chosen is an objective rather than a task.
 func (w Window) ChosenGoal() bool { return w.chosenGoal }
 
-// Serving is the work under the objective that is open, by title and by where each task stands.
-func (w Window) Serving() []engine.Card {
-	if !w.chosenGoal {
-		return nil
-	}
-	return engine.Serving(w.snap.Cards, w.chosen)
-}
-
 // Under is what the box beneath the fields holds: the work that serves an open objective, or the work hanging under an open task.
 func (w Window) Under() []engine.Card {
 	if w.chosenGoal {

@@ -143,22 +143,10 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 		return nil, fmt.Errorf("reading the labels: %w", err)
 	}
 	where, args := readBy(kept).where(objectiveLabels)
-	rows, err := s.on.Query(
+	labelled := func(n int) ([]string, error) { return labels[n], nil }
+	objectives, err := rowsOf(s, func(r scanner) (objective.Objective, error) { return s.scanObjective(r, labelled) },
 		`SELECT `+objectiveColumns+` FROM objectives`+where+` ORDER BY number`, args...)
 	if err != nil {
-		return nil, fmt.Errorf("reading the objectives: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	objectives := []objective.Objective{}
-	for rows.Next() {
-		o, err := s.scanObjective(rows, func(n int) ([]string, error) { return labels[n], nil })
-		if err != nil {
-			return nil, fmt.Errorf("reading an objective: %w", err)
-		}
-		objectives = append(objectives, o)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading the objectives: %w", err)
 	}
 	return objectives, nil
@@ -206,21 +194,8 @@ func (s *Store) TasksServing(number int) ([]task.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.on.Query(`SELECT `+taskColumns+` `+servingOne+taskOrder, number)
+	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) }, `SELECT `+taskColumns+` `+servingOne+taskOrder, number)
 	if err != nil {
-		return nil, fmt.Errorf("reading what serves objective %d: %w", number, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	tasks := []task.Task{}
-	for rows.Next() {
-		t, err := s.scanTask(rows, every)
-		if err != nil {
-			return nil, fmt.Errorf("reading a task: %w", err)
-		}
-		tasks = append(tasks, t)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading what serves objective %d: %w", number, err)
 	}
 	return tasks, nil

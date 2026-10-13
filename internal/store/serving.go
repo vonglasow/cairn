@@ -13,33 +13,24 @@ const (
 )
 
 func (s *Store) objectivesServedBy(number int) ([]int, error) {
-	rows, err := s.on.Query(servedBy, number)
+	served, err := rowsOf(s, one[int], servedBy, number)
 	if err != nil {
-		return nil, fmt.Errorf("reading what task %d serves: %w", number, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	served := []int{}
-	for rows.Next() {
-		var objective int
-		if err := rows.Scan(&objective); err != nil {
-			return nil, fmt.Errorf("reading an objective served: %w", err)
-		}
-		served = append(served, objective)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading what task %d serves: %w", number, err)
 	}
 	return served, nil
 }
 
 func (s *Store) keepServedBy(number int, objectives []int) error {
-	if _, err := s.on.Exec(clearServing, number); err != nil {
-		return fmt.Errorf("clearing what task %d serves: %w", number, err)
+	return s.relink(clearServing, keepServing, number, objectives, "what serves")
+}
+
+func (s *Store) relink(clear, keep string, number int, others []int, what string) error {
+	if _, err := s.on.Exec(clear, number); err != nil {
+		return fmt.Errorf("clearing %s task %d: %w", what, number, err)
 	}
-	for _, objective := range objectives {
-		if _, err := s.on.Exec(keepServing, number, objective); err != nil {
-			return fmt.Errorf("keeping what task %d serves: %w", number, err)
+	for _, other := range others {
+		if _, err := s.on.Exec(keep, number, other); err != nil {
+			return fmt.Errorf("keeping %s task %d: %w", what, number, err)
 		}
 	}
 	return nil
