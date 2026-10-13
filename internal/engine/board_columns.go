@@ -1,11 +1,5 @@
 package engine
 
-// Where every card goes. Four columns for the states work passes through, and
-// one band underneath for the three that mean it is not passing through
-// anything. The band lies under the last three columns and not under the
-// backlog, which runs the whole height: the backlog is the heap everything
-// lands in, and it holds more than the other three together.
-
 import "cairn/internal/domain"
 
 // Column is one of the four, named as the board writes it.
@@ -15,8 +9,6 @@ type Column struct {
 	Cards []Card
 }
 
-// columns are the four, left to right, in the order work goes through them —
-// domain's states, named the way a board writes them.
 var columns = []struct{ state, name string }{
 	{string(domain.Backlog), "BACKLOG"},
 	{string(domain.Todo), "TODO"},
@@ -24,36 +16,16 @@ var columns = []struct{ state, name string }{
 	{string(domain.Done), "DONE"},
 }
 
-// Columns is how many columns stand side by side: backlog, todo, current,
-// done. The band underneath is not one of them — it lies across the last
-// three.
-//
-// A constant rather than len(columns), so a board can size what it keeps per
-// column by it; TestTheBoardIsLaidOutFromDomainsStates holds the two together.
+// Columns is how many columns stand side by side: backlog, todo, current, done.
 const Columns = 4
 
-// Stalled are the three states the band holds, in the order it lays them out:
-// domain's three that mean a task is not moving.
+// Stalled are the three states the band holds, in the order it lays them out: domain's three that mean a task is not moving.
 var Stalled = []string{string(domain.Blocked), string(domain.Watching), string(domain.Paused)}
 
-// Band is the name the three stopped states share. Not "waiting", because one
-// of the three is called watching and two seven-letter words that contain one
-// another get read for each other.
+// Band is the name the three stopped states share.
 const Band = "STALLED"
 
-// Deal puts every card where it belongs: in the column of its state, or in the
-// band if its state is one of the three that are not moving.
-//
-// A sub-task is left off entirely. It is a part of the work its parent names,
-// so the parent is what stands in a column and the part is read where the
-// parent is read — in the box under its fields. They used to sit beside their
-// parents as though they were work of their own, which made a board of 219
-// tasks show 219 things when 170 of them were the work and the rest its
-// pieces.
-//
-// The order inside a column is the order the cards arrived in, which is the
-// order the engine keeps them in. A board that sorted them again would be a
-// second place deciding where a task sits.
+// Deal puts every card where it belongs: in the column of its state, or in the band if its state is one of the three that are not moving.
 func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 	out := make([]Column, len(columns))
 	for i, c := range columns {
@@ -75,8 +47,7 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 	return out, band
 }
 
-// At answers the column of a given state, and whether there is one. The band's
-// three states have no column of their own, which is what this says.
+// At answers the column of a given state, and whether there is one.
 func At(all []Column, state string) (Column, bool) {
 	for _, c := range all {
 		if c.State == state {
@@ -105,12 +76,6 @@ func StateAt(i int) string {
 }
 
 // OnTheBoard is what a board lays out: every task hanging under nothing.
-//
-// A sub-task is a part of the work its parent names, so the parent stands in a
-// column and the part is read where the parent is read. Asked here rather than
-// inside Deal, because what is counted and what the arrows walk have to be the
-// same set as what is drawn — a board whose cursor could reach a card nobody
-// drew is a board that loses the keyboard on it.
 func OnTheBoard(cards []Card, withArchived bool) []Card {
 	var laid []Card
 	for _, c := range cards {
@@ -122,21 +87,7 @@ func OnTheBoard(cards []Card, withArchived bool) []Card {
 	return laid
 }
 
-// Found is what a board shows of a search: the work a query reaches, with a
-// part that reached it answering as the work it is part of.
-//
-// A board draws only the work, so a sub-task has no line of its own to appear
-// on. Dropping one that matched would make a search come back empty for a word
-// plainly in the store — measured on a real store, 44 of 49 sub-tasks carry a
-// word their parent does not, so that is most of them.
-//
-// Each parent once, however many of its parts matched, and in the order the
-// board already holds them: a search answers what to work on, not how many of
-// its pieces mentioned a word.
-//
-// The command line does not do this and should not. There a line carries a
-// number somebody can act on, so naming the sub-task itself says more than
-// naming what it hangs under.
+// Found is what a board shows of a search: the work a query reaches, with a part that reached it answering as the work it is part of.
 func Found(cards []Card, query string, withArchived bool) []Card {
 	if query == "" {
 		return OnTheBoard(cards, withArchived)

@@ -2,8 +2,7 @@ package trace
 
 import "time"
 
-// Shape is how an act crosses to a machine. Every fact a line shows, and the
-// moment as a machine reads one rather than as a person does.
+// Shape is how an act crosses to a machine.
 type Shape struct {
 	Task    int    `json:"task"`
 	Did     string `json:"did"`
@@ -21,8 +20,6 @@ func OfAct(a Act) Shape {
 	return m.shape()
 }
 
-// shapeMembrane is an act's membrane for what crosses to a machine: it is told
-// every fact and keeps them as the strings JSON carries.
 type shapeMembrane struct {
 	task                             int
 	did, field, was, became, through string
@@ -41,8 +38,6 @@ func (m *shapeMembrane) Through(surface string) { m.through = surface }
 func (m *shapeMembrane) ByHand()                { m.through = "" }
 func (m *shapeMembrane) At(when time.Time)      { m.at = when }
 
-// shape lays out what was told. The moment goes out in the one format a
-// machine reads without guessing, never the one a person reads.
 func (m *shapeMembrane) shape() Shape {
 	return Shape{
 		Task: m.task, Did: m.did, Field: m.field, Was: m.was,

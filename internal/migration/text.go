@@ -8,8 +8,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// textFacts is a change's membrane for the text a person reads: it keeps
-// every fact told, ready for Text, List and RolledBackText to lay out.
 type textFacts struct {
 	number                    int
 	name, does, undoes, loses string
@@ -30,15 +28,12 @@ func (f *textFacts) Applied(t time.Time) {
 }
 func (f *textFacts) NotApplied() { f.applied = false }
 
-// textOf reads back what the two renderings below need from a change,
-// without reaching into fields that stopped being exported.
 func textOf(m Migration) textFacts {
 	var f textFacts
 	m.Tell(&f)
 	return f
 }
 
-// state is how a change reads in a listing.
 func state(f textFacts) string {
 	if f.applied {
 		return "applied " + domain.FormatMoment(f.made)
@@ -46,9 +41,7 @@ func state(f textFacts) string {
 	return "waiting          "
 }
 
-// Text renders one change in full: what it is, what it does, and what
-// undoing it does. The SQL is shown because that is what somebody wants to
-// read before letting a tool touch their data.
+// Text renders one change in full: what it is, what it does, and what undoing it does.
 func Text(m Migration) string {
 	f := textOf(m)
 	var out strings.Builder
@@ -59,8 +52,7 @@ func Text(m Migration) string {
 	return out.String()
 }
 
-// List renders every change, applied or waiting: a list that only showed
-// what was done could not tell you what to apply.
+// List renders every change, applied or waiting: a list that only showed what was done could not tell you what to apply.
 func List(all []Migration, held domain.Held) string {
 	waiting := 0
 	var out strings.Builder
@@ -75,10 +67,7 @@ func List(all []Migration, held domain.Held) string {
 	return out.String()
 }
 
-// RolledBackText names the change a rollback unmade, and what that cost. The
-// cost is said here rather than left to be worked out from the SQL: somebody
-// who rolls back to try something is exactly somebody who has not read the
-// schema.
+// RolledBackText names the change a rollback unmade, and what that cost.
 func RolledBackText(m Migration) string {
 	f := textOf(m)
 	var out strings.Builder

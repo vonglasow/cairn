@@ -1,32 +1,10 @@
 Feature: Answering a machine over MCP
 
-  The same cairn, asked by an agent instead of by a person. It parses a call,
-  hands it to the engine and answers — it decides nothing the command line does
-  not already decide, and the rules live where they have always lived.
-
-  What an agent may do is settled when the server starts, not per call:
-  `--access read` is the default and looks and never writes, `--access write`
-  also adds and changes, `--access full` also does what loses work. An agent
-  is handed only what it was given on purpose: one talked into writing by what
-  it read writes nothing it was not trusted to.
-
   Background:
     Given a store of my own, somewhere that is not the default place
     And nothing in it yet
 
   Rule: The server is started like any other command
-
-    `cairn mcp serve`, because everything else here reads
-    `cairn <thing> <verb>` and a server is no reason to break that. It speaks
-    over standard input and output, since a client starts it itself as a child
-    process — and because no open port is the right default for something one
-    person runs on one machine.
-
-    A client owns the process it started, and ends it by closing the pipe. That
-    is how every session ends rather than a way one fails: once the asker has
-    gone there is nobody left to answer, so a request still in flight is not
-    work lost, and an exit code nobody is there to read is not worth failing
-    over.
 
     @mcp-serve-speaks-the-protocol
     Scenario: the server answers a client that greets it
@@ -52,18 +30,6 @@ Feature: Answering a machine over MCP
 
   Rule: The server holds nothing between two calls
 
-    A command opens the store when it needs it and closes it on the way out,
-    and that is what makes "added by one, found by the next" a claim about the
-    disk rather than about a cache. A server is only a command that is asked
-    more often, so it does the same: opening costs a fraction of the work of
-    the call it serves, and holding the file would make the server the one
-    place where the rule stops being true.
-
-    It also settles two things that would otherwise need settling. Nothing
-    holds a write-ahead log open, so a backup still copies a whole store. And
-    nothing holds the file while `backup_restore` or `migration_rollback`
-    swaps it underneath.
-
     @mcp-a-backup-taken-through-it-holds-everything
     Scenario: a backup taken through the server holds what was just added
       Given a cairn server started with `--access full`
@@ -87,10 +53,6 @@ Feature: Answering a machine over MCP
       Then `cairn task list` lists 1 task
 
   Rule: What the server offers is what it was allowed to do
-
-    An agent cannot ask for a tool it was never shown, so a level is kept by
-    leaving tools out rather than by turning them down. A refusal invites
-    another attempt; an absence does not.
 
     @mcp-read-offers-reading
     Scenario: reading only, which is the default
@@ -131,16 +93,6 @@ Feature: Answering a machine over MCP
 
   Rule: A tool says what calling it would cost
 
-    The level settles what an agent may reach; the annotations tell the client
-    what it is about to do, so a person is asked before the work goes. One is
-    ours to enforce, the other is theirs to honour — a client that ignores the
-    hint still cannot reach a tool the level left out.
-
-    A third thing is said, and it is true of all of them: cairn is a store on
-    this machine and goes looking nowhere else. The protocol assumes the
-    opposite until told otherwise, so saying nothing would claim a reach cairn
-    does not have.
-
     @mcp-marks-what-loses-work
     Scenario Outline: what loses work is marked as such
       Given a cairn server started with `--access full`
@@ -175,14 +127,6 @@ Feature: Answering a machine over MCP
       Then every tool is marked as reaching nothing outside cairn
 
   Rule: A tool does what the command of the same name does
-
-    The same work, and the same words for it: an agent names a state the way a
-    person types it, and is turned down for the same reasons. Three things are
-    said out loud rather than left to be worked out — what a tool takes, what
-    handing it nothing means, and what handing it several things means. That
-    last one is here because it was got wrong first: a list arrived as one
-    string nobody read, so labels an agent gave were dropped without a word,
-    and nothing on either side said so.
 
     @mcp-add-a-task
     Scenario: adding a task
@@ -315,15 +259,6 @@ Feature: Answering a machine over MCP
       And it is still titled "Write the spec"
 
   Rule: A refusal is a refusal, not a broken tool
-
-    A tool that reports an error means cairn could not do the work. Something
-    cairn understood and turned down — an empty title, a state that is not one
-    — is an answer, and the agent has to be able to read it as one.
-
-    A store this cairn cannot use belongs with those, not with the broken ones.
-    Nothing is broken: the store is simply not the one this cairn knows. An
-    agent that reads why can put it right, and one told only that the call
-    failed cannot.
 
     @mcp-refusal-is-answered
     Scenario: a refusal comes back as the reason it was refused

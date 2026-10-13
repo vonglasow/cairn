@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for what blocks a task. The steps every
-// feature shares live in world_test.go; only what belongs to blocking is
-// declared here.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -14,8 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// registerBlocking declares the steps about what stops a task and about the
-// mark that says nothing does any more.
 func (w *world) registerBlocking(sc *godog.ScenarioContext) {
 	sc.Step(`^it marks "([^"]*)" as having nothing in its way$`, func(title string) error {
 		for _, line := range strings.Split(w.Out.Stdout, "\n") {
@@ -26,9 +20,6 @@ func (w *world) registerBlocking(sc *godog.ScenarioContext) {
 		return fmt.Errorf("%q is not marked as having nothing in its way:\n%s", title, w.Out.Stdout)
 	})
 
-	// The other half of the mark. Marking the right task proves nothing on its
-	// own: the answer would read the same with every task marked, and the cases
-	// where cairn must not claim anything are most of them.
 	sc.Step(`^it marks nothing as having nothing in its way$`, func() error {
 		if marked := strings.Count(w.Out.Stdout, task.NothingBlocksMark); marked != 0 {
 			return fmt.Errorf("%d lines say nothing is in the way, want none:\n%s",
@@ -37,10 +28,6 @@ func (w *world) registerBlocking(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The card lays out every attribute a task carries, empty ones included, so
-	// nothing blocking it is the row reading empty rather than the row being
-	// gone. Asserted on the row and not on its absence: a card that stopped
-	// laying out the row at all would leave a reader wondering.
 	sc.Step(`^it says nothing blocks it$`, func() error {
 		if got := w.field("blocked by"); got != "" {
 			return fmt.Errorf("what blocks it is %q, want nothing", got)
@@ -48,9 +35,6 @@ func (w *world) registerBlocking(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// What crosses to a machine, read out of the JSON rather than off the card:
-	// the two readings are answered by the same engine, and a scenario that
-	// checked the card twice would prove the wire nothing.
 	sc.Step("^it says task (\\d+) blocks it and \"([^\"]*)\" does too$",
 		func(n int, words string) error {
 			var card struct {

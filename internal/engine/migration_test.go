@@ -8,8 +8,6 @@ import (
 	"cairn/internal/migration"
 )
 
-// changeFacts reads back what a test needs from a change, without reaching
-// into fields that stopped being exported.
 type changeFacts struct {
 	number  int
 	name    string
@@ -72,7 +70,6 @@ func TestMigrationRollback_unmakesTheLastChangeApplied(t *testing.T) {
 func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 	upToDate := storeAt(t)
 
-	// Nothing waiting is a success, not a refusal: Applied is empty, not nil.
 	answer, err := Do(MigrationApply, upToDate, Input{})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
@@ -81,7 +78,6 @@ func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 		t.Fatalf("answer.Applied = %v, want an empty, non-nil set", answer.Applied)
 	}
 
-	// A number names exactly one change to make, not every change waiting.
 	numbered := behindStore(t)
 	waiting, err := Do(MigrationList, numbered, Input{})
 	if err != nil {

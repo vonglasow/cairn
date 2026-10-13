@@ -1,9 +1,5 @@
 package trace
 
-// How an act crosses to a machine. Every fact a line shows, and the moment as a
-// machine reads one — never as a person does, since a machine reading this has
-// to parse it without guessing at a locale.
-
 import (
 	"encoding/json"
 	"strings"
@@ -30,8 +26,6 @@ func TestOfAct_carriesEveryFactALineShows(t *testing.T) {
 	}
 }
 
-// The moment crosses in the one format a machine reads without guessing, and in
-// UTC, so what a script gets does not shift with whoever ran the command.
 func TestOfAct_writesTheMomentTheWayAMachineReadsOne(t *testing.T) {
 	got := OfAct(acted(1, FocusTaken, "", "", "", "", 9, 15)).At
 	when, err := time.Parse(time.RFC3339, got)
@@ -43,8 +37,6 @@ func TestOfAct_writesTheMomentTheWayAMachineReadsOne(t *testing.T) {
 	}
 }
 
-// What was absent is left out rather than crossing as an empty string: a machine
-// asking whether an attribute changed should not have to tell "" from absent.
 func TestOfAct_leavesOutWhatWasAbsent(t *testing.T) {
 	written, err := json.Marshal(OfAct(acted(1, FocusTaken, "", "", "", "", 9, 15)))
 	if err != nil {

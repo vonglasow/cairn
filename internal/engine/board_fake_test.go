@@ -8,35 +8,21 @@ import (
 	"cairn/internal/task"
 )
 
-// A stand-in for whatever holds the work. What is read here is how the two
-// listings become cards and goals, and how a task tells its own facts — none
-// of which needs a store, so this answers Work's two questions and writes down
-// what it was asked.
-
 type fake struct {
-	asked   []askedOf
-	tasks   []task.Task
-	goals   []objective.Objective
-	focus   []int
-	freed   []int
-	context string
-	// along and goalsAlong are how far along each task and objective is, as
-	// the two listings say it.
-	along      map[int]domain.Progress
-	goalsAlong map[int]domain.Progress
-	version    int64
-	// fail refuses everything; refuse refuses one operation by name, which is
-	// what a test needs to reach the path that gives up halfway through a
-	// reading rather than at its first question.
-	fail   error
-	refuse map[string]error
-	// versionFails is its own field because a store can answer every listing
-	// and still fail to say which version it is at, and a reading has to give
-	// up on that too.
+	asked        []askedOf
+	tasks        []task.Task
+	goals        []objective.Objective
+	focus        []int
+	freed        []int
+	context      string
+	along        map[int]domain.Progress
+	goalsAlong   map[int]domain.Progress
+	version      int64
+	fail         error
+	refuse       map[string]error
 	versionFails error
 }
 
-// askedOf is one thing a reading asked the engine to do.
 type askedOf struct {
 	op Operation
 	in Input
@@ -57,8 +43,6 @@ func (f *fake) Ask(op Operation, in Input) (Answer, error) {
 	}
 	switch named {
 	case "task list":
-		// A listing marks the focus, which is where a reading learns it, and
-		// says where each task's context lives and how far along it is.
 		contexts := map[int]string{}
 		for _, t := range f.tasks {
 			contexts[task.OfTask(t).Number] = f.context
@@ -78,7 +62,6 @@ func (f *fake) Version() (int64, error) {
 	return f.version, f.fail
 }
 
-// aTask and aGoal build one the only way there is: through its own membrane.
 func aTask(title string) task.Task {
 	built, err := task.NewTask(title)
 	if err != nil {

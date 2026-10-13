@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-// An absence is a fact that gets told: a value nobody gave is said to be
-// missing, never left for whoever listens to notice. The same few lines were
-// written out wherever a cell, or the store building one, said what it held.
 func TestTellOrNot_saysAValueOrThatThereIsNone(t *testing.T) {
 	var said []string
 	TellOrNot("spec", func(s string) { said = append(said, "told "+s) }, func() { said = append(said, "none") })
@@ -19,8 +16,6 @@ func TestTellOrNot_saysAValueOrThatThereIsNone(t *testing.T) {
 	}
 }
 
-// A set is told one member at a time, said to be empty when it is, and closed
-// either way, so whoever listens knows when it is complete.
 func TestTellAll_tellsEachMemberThenClosesTheSet(t *testing.T) {
 	var said []string
 	each := func(s string) { said = append(said, s) }

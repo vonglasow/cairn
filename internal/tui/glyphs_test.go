@@ -21,8 +21,6 @@ func TestGlyphsFor(t *testing.T) {
 }
 
 func TestTheTwoSetsSayTheSameThings(t *testing.T) {
-	// Every mark exists in both, or a board would draw a hole where the other
-	// draws something.
 	for name, pair := range map[string][2]string{
 		"blocked":    {nerd.Blocked, plain.Blocked},
 		"watching":   {nerd.Watching, plain.Watching},

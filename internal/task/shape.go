@@ -6,31 +6,18 @@ import (
 	"cairn/internal/domain"
 )
 
-// Shape is how a task crosses to a machine. The field names are the wire, so
-// they are written here once rather than derived from the entity — an entity
-// that knew its wire format would drag a protocol into every test.
-//
-// How far along a task is has no field here: it is not the task's to say, and
-// the engine's answer — the one place that reaches both notions — carries it
-// instead.
-//
-// It is the task's facts and what the task says, kept apart: a listing hands
-// over the facts of every task and leaves what each says to be shown, and a
-// shape that held both in one list of fields could only be cut down after the
-// fact, by a second list kept in step with this one.
+// Shape is how a task crosses to a machine.
 type Shape struct {
 	Facts
 	Description string `json:"description" jsonschema:"what is written about the task; empty when nothing is"`
 }
 
-// Facts is everything a task carries but what it says: the part of it a
-// listing hands over for every row.
+// Facts is everything a task carries but what it says: the part of it a listing hands over for every row.
 type Facts struct {
-	Number int    `json:"number" jsonschema:"the task's number, never handed out twice"`
-	Parent int    `json:"parent" jsonschema:"the number of the task this one is a part of; 0 when it is a task in its own right"`
-	Title  string `json:"title" jsonschema:"what the task is called"`
-	State  string `json:"state" jsonschema:"the column it stands in: backlog, todo, current, blocked, watching, paused or done"`
-	// Archived is beside the state, so a machine is told both.
+	Number     int      `json:"number" jsonschema:"the task's number, never handed out twice"`
+	Parent     int      `json:"parent" jsonschema:"the number of the task this one is a part of; 0 when it is a task in its own right"`
+	Title      string   `json:"title" jsonschema:"what the task is called"`
+	State      string   `json:"state" jsonschema:"the column it stands in: backlog, todo, current, blocked, watching, paused or done"`
 	Archived   bool     `json:"archived" jsonschema:"true when it was archived: kept, and off the columns"`
 	Priority   string   `json:"priority" jsonschema:"low, normal, high or critical"`
 	Labels     []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
@@ -42,9 +29,6 @@ type Facts struct {
 	Objectives []int    `json:"objectives" jsonschema:"the numbers of the objectives it serves; empty or null when it serves none"`
 }
 
-// shapeMembrane is a task's membrane for the shape a machine reads: it is
-// told every fact and keeps it in the form Shape needs, ready to be read off
-// once telling is done.
 type shapeMembrane struct {
 	number, parent                      int
 	objectives                          []int

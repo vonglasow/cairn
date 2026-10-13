@@ -9,9 +9,6 @@ import (
 	"cairn/internal/task"
 )
 
-// One act that writes several rows is kept whole or not at all. A task was
-// written, then its labels, then what it blocks, each on its own — a failure
-// between two of them left a task carrying half of what it was given.
 func TestWithin_keepsNothingOfAnActThatFailedHalfway(t *testing.T) {
 	s := openStore(t)
 	failed := errors.New("halfway")
@@ -49,18 +46,12 @@ func TestWithin_keepsWhatAnActThatWorkedWrote(t *testing.T) {
 	}
 }
 
-// A transaction says it will write before it reads, so two cairns adding to
-// one column at once take their turn rather than both reading the same last
-// place and writing the same next one.
 func TestShared_beginsEveryTransactionAsAWrite(t *testing.T) {
 	if got := shared("/somewhere/cairn.db"); !strings.Contains(got, "_txlock=immediate") {
 		t.Errorf("the store is opened as %q, want its transactions to begin as writes", got)
 	}
 }
 
-// Measured on the shape that used to lose: several adds to one column at once,
-// each reading the last place then writing the next. Every task ends up with a
-// place of its own.
 func TestWithin_givesTasksAddedTogetherAPlaceEach(t *testing.T) {
 	path := openStore(t).path
 	const together = 6

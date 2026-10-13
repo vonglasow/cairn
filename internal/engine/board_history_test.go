@@ -9,7 +9,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// act builds one act of a history.
 func act(did, field, was, became, through string, at time.Time) trace.Act {
 	var a trace.AsTold
 	a.On(1)
@@ -22,11 +21,6 @@ func act(did, field, was, became, through string, at time.Time) trace.Act {
 	return a.Act()
 }
 
-// A line of a history says when, what was done, and — when it was about
-// something in particular — what it went from and to, and which surface did it
-// when it was not the person reading. Both boards say it the same way: the
-// window used to write the moment the way a machine reads one, and leave out
-// what a value was.
 func TestSaid_isOneLineOfAHistoryTheWayAPersonReadsIt(t *testing.T) {
 	at := time.Date(2026, 9, 29, 9, 30, 0, 0, time.Local)
 	changed := SaidOf(act("changed", "priority", "normal", "high", "mcp", at))

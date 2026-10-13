@@ -7,11 +7,6 @@ import (
 	"cairn/test"
 )
 
-// Searching from the window: what a search narrows, how it is left, and what
-// it reaches.
-
-// A search narrows what is drawn to what it reaches, and reaches what a card
-// does not show.
 func TestSearchingNarrowsTheBoardToWhatItReaches(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -36,8 +31,6 @@ func TestSearchingNarrowsTheBoardToWhatItReaches(t *testing.T) {
 	}
 }
 
-// Leaving a search puts everything back, because a search is a way of looking
-// and not a way of changing.
 func TestLeavingASearchPutsEverythingBack(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -57,8 +50,6 @@ func TestLeavingASearchPutsEverythingBack(t *testing.T) {
 	}
 }
 
-// A search that reaches nothing draws nothing rather than everything: an empty
-// answer is an answer.
 func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -68,7 +59,6 @@ func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 	}
 }
 
-// A search reaches objectives too, on the tab that shows them.
 func TestASearchReachesObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -87,8 +77,6 @@ func TestASearchReachesObjectives(t *testing.T) {
 	}
 }
 
-// Backspace in a search takes back one character of what is being looked for,
-// and one character is one rune.
 func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "réunion", State: "backlog"})
@@ -100,7 +88,6 @@ func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	if got := w.Key("backspace").Key("backspace").Looking(); got != "r" {
 		t.Errorf("taking two back left %q", got)
 	}
-	// Taking back what is not there leaves nothing rather than failing.
 	empty := w.Key("esc").Key("/")
 	for range 3 {
 		empty = empty.Key("backspace")
@@ -108,15 +95,11 @@ func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	if got := empty.Looking(); got != "" {
 		t.Errorf("an empty search reads %q", got)
 	}
-	// And backspace on the board itself is not a search at all.
 	if got := w.Key("esc").Key("backspace").Looking(); got != "" {
 		t.Errorf("backspace on the board left a search of %q", got)
 	}
 }
 
-// A search can be left with the pointer. The box took the whole bar, so the
-// one way out was a key — and the card the search had just found could not be
-// acted on at all.
 func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo")).Choose("Search")
@@ -133,8 +116,6 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 	}
 }
 
-// Escape closes the search box and widens the board again, by the key as well
-// as by the offer: the two are the same act and were written apart.
 func TestEscapeOutOfTheSearchByTheKey(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("/").Types("spec")

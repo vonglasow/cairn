@@ -10,8 +10,6 @@ import (
 	"cairn/internal/store"
 )
 
-// engineOn gives an open engine and the path it was opened on, because what is
-// under test is that the second survives inside the first.
 func engineOn(t *testing.T) (*Engine, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -36,8 +34,6 @@ func TestAskRunsAnOperationOnAnEngineThatStaysOpen(t *testing.T) {
 	}
 }
 
-// The engine has to remember where it was opened, or an operation reaching for
-// what sits beside the store is handed nowhere to look.
 func TestAskGivesAnOperationThePathItWasOpenedOn(t *testing.T) {
 	e, _ := engineOn(t)
 	add(t, e, "Write the spec")
@@ -66,10 +62,6 @@ func TestAskRefusesAnArgumentTheOperationDoesNotTake(t *testing.T) {
 	}
 }
 
-// An engine held open is asked through an operation and nothing else: Ask
-// checks what it is handed and keeps what it writes whole. It used to export
-// thirty-odd methods beside it — Add, Edit, Archive — each a second door that
-// checked nothing, and the boards' own tests went through them.
 func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
 	door := reflect.TypeFor[*Engine]()
 	var exported []string
@@ -81,10 +73,6 @@ func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
 	}
 }
 
-// Every field of the engine that reaches the store is handed the one it is
-// kept by, in a single place: an act runs as one transaction only when every
-// door it can reach the store through is that transaction, and a field added
-// tomorrow and forgotten would write beside it without a word.
 func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
 	kept, err := store.Open(filepath.Join(t.TempDir(), "cairn.db"))
 	if err != nil {
@@ -104,8 +92,6 @@ func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
 	}
 }
 
-// An engine held open follows a store put back under it: what it writes next
-// reaches the store everyone else reads, and its version moves.
 func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	held, err := Open(path)
@@ -127,8 +113,6 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	if err := BackupsAt(path).Restore(made.Number); err != nil {
 		t.Fatal(err)
 	}
-	// Higher, not only different: a version only ever grows, so a board that
-	// keeps the highest it has seen is never told a store moved back.
 	if after, err := held.Version(); err != nil || after <= before {
 		t.Errorf("Version = %d, %v after a backup was put back, want it above %d", after, err, before)
 	}

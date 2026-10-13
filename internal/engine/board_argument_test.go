@@ -4,11 +4,6 @@ import (
 	"testing"
 )
 
-// A field says which engine argument it fills, so nothing has to translate one
-// vocabulary into the other on the way to the store. These two tests are what
-// stops the two drifting: a field renamed on screen still names its argument,
-// and an argument renamed in the engine breaks here rather than at runtime.
-
 func TestEveryTaskFieldNamesAnArgumentTaskEditTakes(t *testing.T) {
 	takes := map[string]bool{}
 	for _, a := range TaskEdit.Takes {

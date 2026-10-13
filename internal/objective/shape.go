@@ -6,14 +6,7 @@ import (
 	"cairn/internal/domain"
 )
 
-// Shape is how an objective crosses to a machine. The field names are the
-// wire, so they are written here once rather than derived from the entity —
-// an entity that knew its wire format would drag a protocol into every test.
-//
-// Neither the tasks put under it nor how far along it is sit here: both need
-// a task's number to say anything, and an objective may not know of one —
-// the engine's answer, the one place that reaches both notions, carries them
-// instead.
+// Shape is how an objective crosses to a machine.
 type Shape struct {
 	Number      int      `json:"number" jsonschema:"the objective's number, never handed out twice"`
 	Title       string   `json:"title" jsonschema:"what the objective is called"`
@@ -25,9 +18,6 @@ type Shape struct {
 	Estimate    string   `json:"estimate" jsonschema:"how long it was expected to take, as 40h; empty when nobody said"`
 }
 
-// shapeMembrane is an objective's membrane for the shape a machine reads: it
-// is told every fact and keeps it in the form Shape needs, ready to be read
-// off once telling is done.
 type shapeMembrane struct {
 	number                              int
 	title, state, priority, description string

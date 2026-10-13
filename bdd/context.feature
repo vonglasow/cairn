@@ -1,13 +1,4 @@
 Feature: Where a task's outside context lives
-  A task's context is not always written in cairn. Meeting notes, and what a
-  working session settled, live in whatever tool they were taken with.
-
-  Cairn does one thing about it: when it answers about a task, it says where
-  that context is. It never writes there, never reads it, never checks that
-  anything is there at all. Naming a place is not the same as keeping it.
-
-  Where the notes live is found the way every place cairn uses is found — see
-  bdd/config.feature.
 
   Background:
     Given a home of my own, made for this run
@@ -16,13 +7,6 @@ Feature: Where a task's outside context lives
     And a configuration that says the notes live at "~/vault"
 
   Rule: Showing a task says where its context is
-
-    A session opened on this task alone gets the place in the same answer as
-    everything else. It has nothing to look up, and nothing to have been told
-    beforehand.
-
-    Only showing a task says it. A listing and a search answer about many tasks
-    at once, and a place on every line would drown what they are for.
 
     @context-an-answer-says-where-to-look
     Scenario: looking at a task says where its context lives
@@ -44,10 +28,6 @@ Feature: Where a task's outside context lives
       Then no line says where a context lives
 
   Rule: The place is worked out from the task, never remembered
-
-    Nothing about it is stored, so nothing about it can be wrong. The same task
-    gives the same place at every call, whatever happened to the task in
-    between, and two tasks never share one.
 
     @context-the-same-task-always-gives-the-same-place
     Scenario: the place does not move when the task does
@@ -75,11 +55,6 @@ Feature: Where a task's outside context lives
       Then both say the context lives at the same place
 
   Rule: Cairn says the place, and does nothing about it
-
-    It does not make the folder, does not put anything in it, does not look to
-    see whether it is there. A place that holds nothing is answered exactly like
-    a place that holds a year of notes — because cairn cannot tell them apart,
-    and does not try.
 
     @context-a-place-that-holds-nothing-is-answered-the-same
     Scenario: nothing was ever written there, and the answer does not change

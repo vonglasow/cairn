@@ -1,10 +1,5 @@
 package claude
 
-// The plugin's wiring, which no scenario reaches: Claude Code reads these files
-// and calls the hook, and a file that names the wrong event, the wrong script
-// or a server cairn does not answer to fails silently — on somebody's machine,
-// with a session that never ties itself to anything.
-
 import (
 	"encoding/json"
 	"os"
@@ -59,8 +54,6 @@ func TestPlugin_wiresEveryEventToTheHook(t *testing.T) {
 	}
 }
 
-// The cairn server is named one way when the person declared it and another
-// when the plugin did, and the hook must hear both — and nothing else.
 func TestPlugin_hearsTheFocusFromEitherServer(t *testing.T) {
 	var file hookFile
 	readJSON(t, filepath.Join(plugin, "hooks", "hooks.json"), &file)

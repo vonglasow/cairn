@@ -1,12 +1,5 @@
 package test
 
-// The givens a board's scenarios share. A scenario says what is in the store,
-// not how it got there, and the two boards — the terminal's and the window's —
-// say it in the same words. Each used to carry its own copy of every one of
-// these steps, and each reached past the operations into the engine's methods
-// to write them; written once here, they go through the same door everything
-// else does.
-
 import (
 	"fmt"
 	"strconv"
@@ -19,40 +12,29 @@ import (
 	"cairn/internal/task"
 )
 
-// Asker is somebody else at the store: a second connection, a command line,
-// a server. What a board's givens are written through, because a board notices
-// another's writes and not its own.
+// Asker is somebody else at the store: a second connection, a command line, a server.
 type Asker interface {
 	Ask(engine.Operation, engine.Input) (engine.Answer, error)
 }
 
-// Givens writes a board's givens through whoever Other answers at the moment a
-// step runs — a scenario opens a fresh store before each one.
+// Givens writes a board's givens through whoever Other answers at the moment a step runs — a scenario opens a fresh store before each one.
 type Givens struct {
 	Other func() Asker
 }
 
-// ask runs one operation as somebody else, handing over what a person would
-// have typed.
 func (g Givens) ask(op engine.Operation, given map[string]string, listed map[string][]string) (engine.Answer, error) {
-	// What a scenario says is in the store is a given, not an act anybody
-	// is asked about.
 	return g.Other().Ask(op, engine.Agreed(engine.Input{Given: given, Listed: listed}))
 }
 
-// addTask adds a task carrying what a scenario named about it.
 func (g Givens) addTask(title string, with map[string]string, objectives ...string) error {
 	given := map[string]string{"title": title}
 	for name, value := range with {
 		given[name] = value
 	}
-	// Named always, empty or not: a task added serving nothing is a task
-	// added with no objective named, and the engine reads the two alike.
 	_, err := g.ask(engine.TaskNew, given, map[string][]string{"objective": objectives})
 	return err
 }
 
-// editTask changes what a scenario named about a task.
 func (g Givens) editTask(number int, given map[string]string, listed map[string][]string) error {
 	if given == nil {
 		given = map[string]string{}
@@ -85,8 +67,7 @@ func (g Givens) IAddedATaskWithTheParagraphs(title, first, second string) error 
 	return g.IAddedATaskWithTheDescription(title, first+"\n"+second)
 }
 
-// IAddedATaskWithADescriptionOfLines adds a task whose description is long
-// enough to scroll, ending on a line the scenario names.
+// IAddedATaskWithADescriptionOfLines adds a task whose description is long enough to scroll, ending on a line the scenario names.
 func (g Givens) IAddedATaskWithADescriptionOfLines(title string, lines int, end string) error {
 	said := make([]string, 0, lines)
 	for i := range lines - 1 {
@@ -100,8 +81,7 @@ func (g Givens) IAddedATaskServingObjective(title string, objective int) error {
 	return g.addTask(title, nil, strconv.Itoa(objective))
 }
 
-// IAddedATaskWithTheStateServingObjective adds a task in a column, towards an
-// objective.
+// IAddedATaskWithTheStateServingObjective adds a task in a column, towards an objective.
 func (g Givens) IAddedATaskWithTheStateServingObjective(title, state string, objective int) error {
 	return g.addTask(title, map[string]string{"state": state}, strconv.Itoa(objective))
 }
@@ -165,8 +145,7 @@ func (g Givens) IPutTaskInFocus(number int) error {
 	return err
 }
 
-// ISpentOnTask records time spent on a task on a given day, the way the
-// timesheet is told about work done without the focus.
+// ISpentOnTask records time spent on a task on a given day, the way the timesheet is told about work done without the focus.
 func (g Givens) ISpentOnTask(length string, number int, day string) error {
 	_, err := g.ask(engine.TimesheetAdd, map[string]string{"number": strconv.Itoa(number), "time": length, "on": day}, nil)
 	return err
@@ -196,9 +175,7 @@ func (g Givens) Objective(number int) (objective.Objective, error) {
 	return *answer.Objective, nil
 }
 
-// Register declares the givens both boards share. A store made before the
-// scenario began is the store of its own a scenario asks for, so the two
-// steps that say so have nothing left to do.
+// Register declares the givens both boards share.
 func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Given(`^a store of my own, somewhere that is not the default place$`, func() error { return nil })
 	sc.Given(`^nothing in it yet$`, func() error { return nil })

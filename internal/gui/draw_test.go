@@ -19,21 +19,8 @@ import (
 	"github.com/cucumber/godog"
 )
 
-// Drawing, checked coarsely and on purpose. What is pinned everywhere else is
-// numbers; pixels depend on a font's rasterisation, a driver and a version of
-// Gio, so a frame pinned in pixels would go red on another machine for
-// something that is not a defect.
-//
-// What these ask is the one thing numbers cannot: that something was actually
-// drawn, where it was supposed to be.
-
-// windowless is how a machine with no way to draw off screen says so. Asked
-// for, never assumed: a drawing test that skipped itself quietly was a test
-// that passed on every machine where nothing was checked.
 const windowless = "CAIRN_WINDOWLESS"
 
-// offScreen makes a window with no screen, or stops the test: skipped when
-// the machine said it cannot draw, failed when it did not say so.
 func offScreen(t *testing.T, wide, high int) *headless.Window {
 	t.Helper()
 	window, err := headless.NewWindow(wide, high)
@@ -47,7 +34,6 @@ func offScreen(t *testing.T, wide, high int) *headless.Window {
 	return nil
 }
 
-// drawn renders a window with no screen and answers the pixels.
 func drawn(t *testing.T, w Window) *image.RGBA {
 	t.Helper()
 	shot, err := rendered(offScreen(t, w.width, w.height), w)
@@ -57,9 +43,6 @@ func drawn(t *testing.T, w Window) *image.RGBA {
 	return shot
 }
 
-// drawnInAStep is drawn for a scenario's step, which must return what went
-// wrong rather than stop the test from inside godog: a machine that said it
-// cannot draw skips the scenario, one that did not say so fails it.
 func drawnInAStep(w Window) (*image.RGBA, error) {
 	window, err := headless.NewWindow(w.width, w.height)
 	if err != nil {
@@ -71,10 +54,6 @@ func drawnInAStep(w Window) (*image.RGBA, error) {
 	return rendered(window, w)
 }
 
-// drawsWithoutFault lays out a window the way a frame does, without a screen
-// to send it to, and says whether laying it out panicked. Only the layout is
-// asked: a panic is raised while the frame is being described, before any
-// pixel exists, so no headless window is needed and none is skipped.
 func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -91,8 +70,6 @@ func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 	return nil
 }
 
-// rendered draws a window into one with no screen, releases it, and answers
-// the pixels.
 func rendered(window *headless.Window, w Window) (*image.RGBA, error) {
 	defer window.Release()
 	var ops op.Ops
@@ -112,7 +89,6 @@ func rendered(window *headless.Window, w Window) (*image.RGBA, error) {
 	return shot, nil
 }
 
-// ink counts the pixels in a box that are not the background.
 func ink(shot *image.RGBA, b Box, back color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -148,7 +124,6 @@ func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 		}
 	}
 
-	// A column nothing stands in has its header and no card under it.
 	empty := l.CardAt(3, 0, 0)
 	if got := ink(shot, empty, back); got != 0 {
 		t.Errorf("an empty column drew %d pixels where its first card would be", got)
@@ -164,23 +139,12 @@ func TestAWindowTooSmallDrawsItsMessageAndNoBoard(t *testing.T) {
 	if got := ink(shot, Box{W: 400, H: 300}, back); got == 0 {
 		t.Fatal("a window too small drew nothing at all")
 	}
-	// The board's own shape is not there: no bar along the bottom.
 	bottom := Box{X: 0, Y: 290, W: 400, H: 10}
 	if got := ink(shot, bottom, back); got != 0 {
 		t.Errorf("a window too small drew %d pixels of board along its bottom", got)
 	}
 }
 
-// A card fills its own box whether it is chosen or not, so counting what is not
-// the background says nothing here. What says it is the colour of the outline.
-// inked counts what was drawn in a box whatever colour it came out, by
-// counting what is not the ground it was drawn on.
-//
-// painted asks for one colour exactly, which is right for a fill and wrong for
-// a thin glyph: anti-aliasing leaves a tick or a plus with no pixel at exactly
-// the colour asked for, and asking that way says nothing was drawn when
-// something was. Measured, and very nearly written down as "the font has no
-// tick in it".
 func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -205,9 +169,6 @@ func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 	return count
 }
 
-// The bar under the board is written in the ink of what can be pressed while
-// the board, or a search over it, has the window — and faint under a panel,
-// which offers its own.
 func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -261,7 +222,6 @@ func TestTheFormIsDrawnOverTheBoard(t *testing.T) {
 	if got := ink(shot, Over(w.width, w.height), Dark().Back); got == 0 {
 		t.Fatal("the form is blank")
 	}
-	// The board is still there around it.
 	l := w.Layout()
 	if got := ink(shot, l.Head[0], Dark().Back); got == 0 {
 		t.Error("the form hid the board behind it rather than sitting over it")
@@ -279,8 +239,6 @@ func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
 	}
 }
 
-// What went wrong is said above the bar and not over it: it used to take the
-// bar's place, and every offer went with it until the next good read.
 func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -300,8 +258,6 @@ func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 	}
 }
 
-// A lane with nothing of its kind in it is empty, and a board that drew a card
-// in the wrong lane would be a board that lied about what is in the way.
 func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
@@ -313,8 +269,6 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 		t.Error("the blocked lane is empty and holds a blocked task")
 	}
 	for _, lane := range []int{1, 2} {
-		// A lane holds its name whatever is in it; what is asked here is that
-		// nothing was drawn where a card would be.
 		card := l.LaneCardAt(lane, 0, 0)
 		if got := ink(shot, card, back); got != 0 {
 			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", engine.Stalled[lane], got)
@@ -322,29 +276,23 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	}
 }
 
-// The detail shows the task it was opened on, and not the one beside it.
 func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
 		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Description: "the first"},
 		engine.Card{Number: 2, Title: "Ship it", State: "todo", Description: "the second"})
 
-	// The panel fills its own box, so what is counted is the colour the task's
-	// name is written in and not merely what is not the background.
 	box, written := Over(w.width, w.height), Dark().Ink
 	first := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 0))), box, written)
 	second := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 1))), box, written)
 	if first == 0 || second == 0 {
 		t.Fatal("a detail drew no title at all")
 	}
-	// Two different titles of two different lengths cannot draw the same.
 	if first == second {
 		t.Error("the detail drew the same thing for two different tasks")
 	}
 }
 
-// The field the keyboard is on is drawn differently from the rest, which is the
-// only thing saying where typing would go.
 func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -361,8 +309,6 @@ func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 	}
 }
 
-// The page being looked at is the open folder, and the other is not — and
-// clicking the other one opens it.
 func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -388,7 +334,6 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	}
 }
 
-// A card chosen in a lane is drawn chosen, the same as one in a column.
 func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
@@ -402,8 +347,6 @@ func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	}
 }
 
-// Two cards of the same kind stack down their lane rather than on top of one
-// another.
 func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -420,8 +363,6 @@ func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 	}
 }
 
-// A detail opened on a task draws that task's name. With one task to choose
-// from, a detail that drew the others would draw nothing at all.
 func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -432,8 +373,6 @@ func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 	}
 }
 
-// One field is lit at a time: the one the keyboard is on, and no other. A form
-// that lit every field but that one would say the typing goes everywhere.
 func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -441,8 +380,6 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 
 	box := w.formBox()
 	lit := Dark().Chosen
-	// The frame and not the name: the title is written under no name, as the
-	// heading of what is being edited.
 	rowOf := func(i int) Box {
 		return Framed(formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i))
 	}
@@ -457,7 +394,6 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 		}
 	}
 
-	// And it follows the keyboard.
 	w.form = w.form.Set("priority", "high")
 	on := w.Form().On()
 	shot = drawn(t, w)
@@ -469,10 +405,6 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	}
 }
 
-// A window reports its size in pixels and this board works in dp, so on a
-// screen with two pixels to the dp everything must be drawn twice as large.
-// Getting this wrong is invisible to every test that draws at one to one — and
-// it made every card half-height on a Retina screen.
 func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -495,30 +427,17 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 		t.Fatalf("reading the pixels back: %v", err)
 	}
 
-	// The card the layout puts at these dp has to be drawn at twice them.
 	box := w.Layout().CardAt(1, 0, 0)
 	twice := Box{X: box.X * 2, Y: box.Y * 2, W: box.W * 2, H: box.H * 2}
 	if got := ink(shot, twice, Dark().Back); got == 0 {
 		t.Error("nothing was drawn where two pixels to the dp puts the first card")
 	}
-	// And not at the dp themselves, which is where it went when the ratio was
-	// ignored: a card half the size it should be, up in the corner.
-	//
-	// The band between the tabs and the column headers is what is looked at:
-	// it is empty when the ratio is honoured, and it is where the lower half
-	// of a card drawn at one pixel to the dp lands. The card's own corner used
-	// to be looked at and stopped discriminating the day the tabs were given a
-	// ground of their own — it is covered by that band whether the ratio was
-	// honoured or not.
 	empty := Box{X: box.X, Y: box.Y + box.H/2, W: box.W, H: box.H / 4}
 	if got := ink(shot, empty, Dark().Back); got != 0 {
 		t.Errorf("%d pixels were drawn as though one pixel were one dp", got)
 	}
 }
 
-// A pointer reports where it is in pixels too, and a board that took that for
-// dp would choose the wrong card on a Retina screen — the one twice as far
-// down the column.
 func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -537,7 +456,6 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 	}
 }
 
-// The objectives tab draws a list, not four columns.
 func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -555,14 +473,11 @@ func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
 			t.Errorf("objective %d is not drawn", at)
 		}
 	}
-	// And the four column headers are not: this tab is not the board.
 	if got := ink(shot, l.Head[1], back); got != 0 {
 		t.Errorf("the objectives tab drew %d pixels of a column header", got)
 	}
 }
 
-// The bar draws what it offers, which is the only thing making them clickable
-// in earnest rather than in a test.
 func TestTheBarDrawsWhatItOffers(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -576,8 +491,6 @@ func TestTheBarDrawsWhatItOffers(t *testing.T) {
 	}
 }
 
-// A card in mid-air and the line it would land on are both drawn, or a drop is
-// a guess.
 func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -598,15 +511,6 @@ func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 	}
 }
 
-// Text must be scaled once. Gio scales a label by the screen's ratio itself,
-// and the whole drawing is already scaled by that same ratio — so a label told
-// the ratio a second time comes out squared.
-//
-// What that looks like is not writing that spills, because a row is clipped to
-// itself: it is writing too large for the row, crammed into it and cut. So what
-// is measured is how full the row is. Measured both ways: 11.1% of the row at
-// one pixel to the dp, 8.3% at two when it is right, and 17.4% at two when the
-// ratio is applied twice.
 func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -648,8 +552,6 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 	}
 }
 
-// The card in mid-air carries the title of the card being dragged, and not of
-// whichever card is nearby.
 func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -665,8 +567,6 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 		t.Fatal("the card in mid-air carries no title")
 	}
 
-	// The one being dragged is "Short"; the long one would write a good deal
-	// more, and writing it would mean the wrong card is in hand.
 	long := holding(f, engine.Card{Number: 2, Title: "A very long name indeed for a task", State: "backlog"})
 	long = long.PressAt(middleOf(long, 0, 0)).MoveTo(middleOf(long, 1, 0))
 	longGhost, _ := long.Ghost()
@@ -675,19 +575,16 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 	}
 }
 
-// Nothing in hand draws nothing in mid-air, whatever the pointer is over.
 func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
-	// The gap between two columns: no card, no lane, nothing.
 	between := Box{X: l.Column[0].X + l.Column[0].W, Y: l.Column[0].Y, W: gap, H: l.Column[0].H}
 	if got := painted(drawn(t, w), between, Dark().Ghost); got != 0 {
 		t.Errorf("%d pixels of a card in mid-air were drawn with nothing in hand", got)
 	}
 }
 
-// An objective chosen in the list is drawn chosen, the same as a card is.
 func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -709,14 +606,12 @@ func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	if painted(shot, first, edge) <= plain {
 		t.Error("a chosen objective is drawn no differently")
 	}
-	// And the one beside it is not.
 	second := GoalAt(w.Layout(), 1, 0)
 	if got := painted(shot, second, edge); got != 0 {
 		t.Errorf("an objective nobody chose drew %d pixels of the chosen colour", got)
 	}
 }
 
-// A search narrows what is drawn, not merely what is counted.
 func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -733,8 +628,6 @@ func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 	}
 }
 
-// What has been typed into a search is shown, or nobody knows what they are
-// looking at.
 func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -744,13 +637,11 @@ func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 	if got := painted(shot, Searching(w.Layout()), Dark().Ink); got == 0 {
 		t.Error("what is being searched for is not shown along the bottom")
 	}
-	// And not across the middle, where the window says it is too small.
 	if got := painted(shot, Message(w.width, w.height), Dark().Ink); got != 0 {
 		t.Errorf("%d pixels of the search were written across the middle of the board", got)
 	}
 }
 
-// The help and the question are panels over the board, like the detail.
 func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -765,8 +656,6 @@ func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 	}
 }
 
-// The caret is drawn on the field the keyboard is on, and the row it is on is
-// taller for a field that wants a paragraph.
 func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -779,8 +668,6 @@ func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 		return value
 	}
 
-	// The caret is drawn in its own colour, standing beside the letters rather
-	// than among them — so what is counted is the caret and not the writing.
 	on := w.On("title")
 	with := painted(drawn(t, on), valueOf(0), Dark().Chosen)
 	without := painted(drawn(t, on.On("priority")), valueOf(0), Dark().Chosen)
@@ -792,16 +679,12 @@ func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 	}
 }
 
-// A description is drawn over the rows it was given, and the fields under it
-// begin below them.
 func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{
 		Number: 1, State: "todo", Title: "Write the spec",
 		Description: strings.Repeat("two columns, the client says, and nothing else. ", 6),
 	})
-	// On the description, because the caret is drawn only where the keyboard
-	// is and it is the caret's room that has to be four rows deep.
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
@@ -822,18 +705,12 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	}
 }
 
-// The tab somebody is on is a folder opening onto the page: it carries the
-// page's own ground, it is closed on three sides, and the line across the band
-// stops either side of it. Told apart by the colour of its word alone, the two
-// sat in the same emptiness and neither of them looked like a page.
 func TestTheOpenTabIsAFolderAndNotAColouredWord(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 	shot := drawn(t, w)
 
-	// The band is its own ground; the open tab is the page's, and the shut one
-	// is left in the band.
 	if got := painted(shot, TabAt(l, 0), Dark().Back); got == 0 {
 		t.Error("the open tab does not carry the page's own ground")
 	}
@@ -843,14 +720,11 @@ func TestTheOpenTabIsAFolderAndNotAColouredWord(t *testing.T) {
 	if got := painted(shot, TabAt(l, 1), Dark().Panel); got == 0 {
 		t.Error("a shut tab does not sit in the band")
 	}
-	// Closed on three sides, and open at the bottom where the page begins.
 	for i, side := range TabSides(TabAt(l, 0)) {
 		if got := painted(shot, side, Dark().Edge); got == 0 {
 			t.Errorf("side %d of the open tab was not drawn", i)
 		}
 	}
-	// The line across the band runs either side of the open tab and not under
-	// it: that break is the whole of what makes it a folder.
 	for i, piece := range TabsLineAround(l, 0) {
 		if piece.W == 0 {
 			continue
@@ -865,7 +739,6 @@ func TestTheOpenTabIsAFolderAndNotAColouredWord(t *testing.T) {
 	}
 }
 
-// The columns stand clear of the band of tabs rather than starting against it.
 func TestTheColumnsStandClearOfTheTabs(t *testing.T) {
 	l := LayoutFor(1280, 840)
 	if got := l.Head[0].Y - (l.Tabs.Y + l.Tabs.H); got < gap {
@@ -873,9 +746,6 @@ func TestTheColumnsStandClearOfTheTabs(t *testing.T) {
 	}
 }
 
-// A search says what it is before it says what was typed. It used to draw the
-// key that opened it where the text goes, so the first thing on screen was a
-// character nobody had typed.
 func TestASearchSaysWhatItIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -890,15 +760,12 @@ func TestASearchSaysWhatItIs(t *testing.T) {
 	if got := painted(on, SearchWord(box), Dark().Faint); got == 0 {
 		t.Error("the search box does not say what it is")
 	}
-	// And what is typed goes beside that word, not over it.
 	typed := painted(drawn(t, w.Key("/").Types("spec")), SearchInto(box), Dark().Ink)
 	if typed == 0 {
 		t.Error("what was typed was not drawn where the search box types")
 	}
 }
 
-// A panel says what it is before it says anything else, and a key in a panel is
-// drawn on a chip so it reads as a key rather than as one more word.
 func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -918,9 +785,6 @@ func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	}
 }
 
-// The bar says what to press beside what it does. A bar that only names what
-// can be done teaches nothing, and everything it names can already be done by
-// pointing at the bar itself.
 func TestTheBarSaysWhatToPress(t *testing.T) {
 	if got := Shortcut("New"); got != "cmd+n" {
 		t.Errorf("New is offered under %q", got)
@@ -928,8 +792,6 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 	if got := Shortcut("nothing at all"); got != "" {
 		t.Errorf("an offer with no key is offered under %q", got)
 	}
-	// What the bar writes is not what a key is called: a bar reading "cmd+n"
-	// would be reading out a name meant for a program.
 	if got := Pretty("cmd+n"); got != "⌘N" {
 		t.Errorf("the bar writes cmd+n as %q", got)
 	}
@@ -947,9 +809,6 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 	}
 }
 
-// Every field of a form is drawn in a box, and the box of the field the
-// keyboard is on is the one that is lit. A value floating on the panel's own
-// ground looked like something written rather than something to write in.
 func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -983,7 +842,6 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	}
 }
 
-// What is typed into a long field goes onto the next line and stays in its box.
 func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -1010,20 +868,16 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	if painted(shot, second, Dark().Ink) == 0 {
 		t.Error("nothing went onto the second line: it was cut rather than wrapped")
 	}
-	// And nothing was drawn past the frame, on either side of it.
 	past := Box{X: frame.X + frame.W, Y: frame.Y, W: 40, H: frame.H}
 	if got := painted(shot, past, Dark().Ink); got != 0 {
 		t.Errorf("%d pixels of writing ran out of the right of the box", got)
 	}
-	// Only as far as the next field's own box, which is what is below this one.
 	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: between}
 	if got := painted(shot, under, Dark().Ink); got != 0 {
 		t.Errorf("%d pixels of writing ran out of the bottom of the box", got)
 	}
 }
 
-// The history is drawn in its own box beside the fields, it stays in that box
-// however long it is, and the bar beside it says where in it somebody is.
 func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	f := newFake()
 	for range 40 {
@@ -1042,14 +896,11 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	if painted(shot, Inside(frame), Dark().Faint) == 0 {
 		t.Error("nothing of the history was drawn in its box")
 	}
-	// Nothing below the box, where it used to run off the panel and the window.
 	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: lineHigh}
 	if got := painted(shot, under, Dark().Faint); got != 0 {
 		t.Errorf("%d pixels of history ran out of the bottom of its box", got)
 	}
 
-	// The grip is at the top before anything is scrolled, and at the bottom
-	// once it is.
 	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
 	low := Box{X: track.X, Y: track.Y + track.H*3/4, W: track.W, H: track.H / 4}
 	if painted(shot, high, Dark().Edge) == 0 {
@@ -1062,14 +913,11 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	if painted(ended, low, Dark().Edge) == 0 {
 		t.Error("the grip is not at the bottom of a history scrolled to its end")
 	}
-	// And what is shown moved with it.
 	if painted(ended, Inside(frame), Dark().Faint) == 0 {
 		t.Error("a history scrolled to its end shows nothing")
 	}
 }
 
-// The objectives are cut to the run they are drawn in. Scrolled, they used to
-// be drawn over the band of tabs above them, because nothing cut them to it.
 func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	f := newFake()
 	var goals []engine.Goal
@@ -1083,28 +931,16 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	w = w.Scroll(Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*CardHeight)
 
-	// The gap between the band of tabs and the column headers, which is empty
-	// when the objectives are cut to their run and holds a card when they are
-	// not. The band itself cannot be looked at: its own ground is the colour a
-	// card is drawn in.
 	above := Box{X: l.Column[0].X, Y: l.Tabs.Y + l.Tabs.H, W: l.Column[0].W, H: gap}
 	if got := painted(drawn(t, w), above, Dark().Panel); got != 0 {
 		t.Errorf("%d pixels of objective were drawn above the run they belong in", got)
 	}
 }
 
-// The work under an objective is drawn as cards in its own box under the
-// fields, it stays inside that box however much of it there is, and the bar
-// beside it says where in it somebody is.
-//
-// Drawn and not merely known: this box was a run of text lines first, and
-// nothing in the suite could tell the difference until it was rendered.
 func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	f := newFake()
 	var cards []engine.Card
 	for i := range 30 {
-		// A priority whose edge is a colour nothing else on this panel uses,
-		// so that what is counted below is a card and not the panel behind it.
 		cards = append(cards, engine.Card{
 			Number: i + 1, Title: fmt.Sprintf("Task %d", i+1), State: "done",
 			Objectives: []int{1},
@@ -1125,27 +961,20 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	track := BesideBar(w.formPanel())
 	shot := drawn(t, w)
 
-	// The box down a tile's left, filled when the work is done: the tile's
-	// body is the panel's colour, and counting that would count the panel
-	// behind it — measured, it did.
 	check := SubCheck(w.ServingCardAt(0))
 	strip := func(b Box) Box { return Box{X: check.X, Y: b.Y, W: check.W, H: b.H} }
 	if painted(shot, strip(frame), Dark().Faint) == 0 {
 		t.Error("no tile was drawn in the box beside the form")
 	}
-	// Nothing below the box: thirty tiles are far more than it holds, and they
-	// must be cut to it the way a column's cards are.
 	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: SubHeight}
 	if got := painted(shot, strip(under), Dark().Faint); got != 0 {
 		t.Errorf("%d pixels of tile ran out of the bottom of the box", got)
 	}
 
-	// The grip is at the top before anything is scrolled, and lower once it is.
 	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
 	if painted(shot, high, Dark().Edge) == 0 {
 		t.Error("the grip is not at the top of a list nobody has scrolled")
 	}
-	// Turned past what the box shows, by the wheel over it.
 	walked := w
 	for range w.ServingRows() + 2 {
 		walked = walked.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, SubHeight)
@@ -1156,8 +985,6 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	}
 }
 
-// An objective nothing serves says so where its cards would have been, rather
-// than leaving a frame somebody reads as a box that failed to load.
 func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1177,8 +1004,6 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 	}
 }
 
-// An objective's card says how much it carries and how much is done, on the
-// objectives tab, without anybody opening it.
 func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1197,7 +1022,6 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	}
 }
 
-// goalMiddle is the point a person would click to hit an objective's card.
 func goalMiddle(w Window, number int) Point {
 	for at, g := range engine.Sorted(w.Showing().Goals) {
 		if g.Number == number {
@@ -1208,11 +1032,6 @@ func goalMiddle(w Window, number int) Point {
 	return Point{}
 }
 
-// The list of objectives is drawn over the form: every objective by name, a
-// mark on the ones that are in, and the row the keyboard is on lit.
-//
-// Drawn and not merely known — the window knowing what to offer and not
-// putting it on screen is the fault this suite exists to catch.
 func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1236,8 +1055,6 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	first := ChoosingRow(box, ChoosingFrom(box))
 	shot := drawn(t, w)
 
-	// The row the keyboard is on is lit, and the row is what is lit — a mark
-	// beside the names said nothing about which line it belonged to.
 	if painted(shot, first, Dark().Chosen) == 0 {
 		t.Error("the row the keyboard is on is not lit")
 	}
@@ -1246,9 +1063,6 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 		t.Errorf("%d pixels lit a row the keyboard is not on", got)
 	}
 
-	// Ticking puts a mark where there was none. Compared with the keyboard in
-	// the same place both times: a lit row and a tick are drawn in one colour,
-	// so moving the cursor as well would compare two things at once.
 	moved := inked(drawn(t, w.Key("down")), first, Dark().Panel)
 	ticked := inked(drawn(t, w.Key("enter").Key("down")), first, Dark().Panel)
 	if ticked <= moved {
@@ -1256,7 +1070,6 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	}
 }
 
-// A store with no objectives says so where the list would have been.
 func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1274,11 +1087,6 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	}
 }
 
-// What fits in the room there is, measured rather than reckoned.
-//
-// Every case of the walk back: what already fits is left alone, what does not
-// is cut with an ellipsis, and a width too narrow for even one rune and an
-// ellipsis answers the ellipsis on its own rather than looping for ever.
 func TestFits_cutsToTheRoomThereIs(t *testing.T) {
 	var ops op.Ops
 	gtx := layout.Context{
@@ -1302,10 +1110,6 @@ func TestFits_cutsToTheRoomThereIs(t *testing.T) {
 	if len([]rune(cut)) >= len([]rune(long)) {
 		t.Errorf("fits(long, 200) = %q, which is no shorter than what it was given", cut)
 	}
-	// Exactly as wide as the room there is, which is the one width where
-	// "fits" and "is narrower than" part company. Measured and then handed
-	// back, rather than guessed at: nothing about a proportional font lets a
-	// count of runes name this number.
 	exact := wide(loosened(gtx), th, "short", small).Size.X
 	if got := fits(gtx, th, "short", exact, small); got != "short" {
 		t.Errorf("fits(short, its own width) = %q, want it left alone", got)
@@ -1314,42 +1118,29 @@ func TestFits_cutsToTheRoomThereIs(t *testing.T) {
 		t.Errorf("fits(short, one less than its width) = %q, want it cut", got)
 	}
 
-	// Exactly the width of a cut one, which is the boundary the walk itself
-	// turns on. Measured and handed back, for the same reason as above.
 	oneCut := fits(gtx, th, long, 200, small)
 	atCut := wide(loosened(gtx), th, oneCut, small).Size.X
 	if got := fits(gtx, th, long, atCut, small); got != oneCut {
 		t.Errorf("fits(long, the width of its own cut) = %q, want %q", got, oneCut)
 	}
 
-	// The width where exactly one rune and an ellipsis fit, which is the last
-	// step of the walk. Found by measuring rather than by choosing a number:
-	// a walk that stopped one step early would answer the ellipsis alone here,
-	// and nothing about the font says where that width falls.
 	one := string([]rune(long)[:1]) + "…"
 	atOne := wide(loosened(gtx), th, one, small).Size.X
 	if got := fits(gtx, th, long, atOne, small); got != one {
 		t.Errorf("fits(long, room for one rune) = %q, want %q", got, one)
 	}
 
-	// Narrower than anything can be: the ellipsis alone, and no loop that
-	// never ends.
 	if got := fits(gtx, th, long, 1, small); got != "…" {
 		t.Errorf("fits(long, 1) = %q, want the ellipsis on its own", got)
 	}
 }
 
-// loosened is what fits measures with, kept here so the test asks the same
-// question the code does.
 func loosened(gtx layout.Context) layout.Context {
 	loose := gtx
 	loose.Constraints = layout.Constraints{Max: image.Pt(1<<20, lineHigh)}
 	return loose
 }
 
-// A card's ghost is a whole card and a tile's is a whole tile. The body drawn
-// for each is its own kind's, so what is carried looks like what it will be
-// once it is put down.
 func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -1360,9 +1151,6 @@ func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
 	if !dragging {
 		t.Fatal("nothing is in hand on the board")
 	}
-	// A card's ghost is filled the whole of its height. A tile's body is its
-	// box less the gap to the next; taking that off a card here would leave a
-	// strip of board showing through the bottom of what is in hand.
 	shot := drawn(t, w)
 	foot := Box{X: ghost.X + 2, Y: ghost.Y + ghost.H - between, W: ghost.W - 4, H: between - 2}
 	if painted(shot, foot, Dark().Ghost) == 0 {
@@ -1370,9 +1158,6 @@ func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
 	}
 }
 
-// The marks are drawn, and only where there are marks. Asked of the pixels in
-// the room beside a card's number: a card carrying nothing leaves it empty,
-// and one carrying something does not.
 func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -1392,9 +1177,6 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	}
 }
 
-// A task's row says which column it sits in; an objective's says nothing,
-// because an objective sits in none. Asked of the pixels in the strip a row
-// keeps for it, on both lists.
 func TestOnlyATaskSaysWhereItStands(t *testing.T) {
 	strip := func(w Window) Box {
 		box := w.ChoosingBox()
@@ -1412,9 +1194,6 @@ func TestOnlyATaskSaysWhereItStands(t *testing.T) {
 		return w.Key("enter")
 	}
 
-	// Compared with each other and not with the ground: the row the keyboard
-	// is on is lit in both, and that light is what a count against the panel
-	// would be measuring.
 	tasks := opened("parent", engine.Snapshot{Cards: []engine.Card{
 		{Number: 1, Title: "Write the spec", State: "todo"},
 		{Number: 2, Title: "Ship it", State: "current"},
@@ -1431,9 +1210,6 @@ func TestOnlyATaskSaysWhereItStands(t *testing.T) {
 	}
 }
 
-// A held run is painted behind the words. Asked of the pixels, because where
-// it falls is measured with the font and nothing else can judge that: a run
-// measured any other way sits a word away from its own caret.
 func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1456,7 +1232,6 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 		t.Errorf("holding the whole field painted %d pixels and letting go %d: "+
 			"the run is not drawn", held, loose)
 	}
-	// And a run held from the right only covers part of it.
 	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, Dark().Back)
 	if some <= loose || some >= held {
 		t.Errorf("a run of two characters painted %d, between %d and %d expected",
@@ -1464,8 +1239,6 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	}
 }
 
-// Every card has an edge, not only the one that is chosen. A fill at 1.35
-// against the board is a hint; the edge is what says where a card stops.
 func TestEveryCardHasAnEdge(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -1482,8 +1255,6 @@ func TestEveryCardHasAnEdge(t *testing.T) {
 	}
 }
 
-// The three lanes count what they hold, the way the four columns do, and the
-// objectives page says what it is. Counting by eye is not counting.
 func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -1501,8 +1272,6 @@ func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 	}
 }
 
-// A form writes what each field says while the keyboard is elsewhere: the
-// parts are the only field drawn as something other than its words.
 func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}})
@@ -1520,8 +1289,6 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	}
 }
 
-// A line of a question that names something carries it on a chip, the way the
-// help carries a key; a line that is only a sentence has no chip to sit on.
 func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
 	skin := Dark()
 	cards := []engine.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
@@ -1547,9 +1314,6 @@ func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
 	}
 }
 
-// The tasks tab counts what the board lays out, searched or not. It counted
-// every part and every archived task until a search was typed, then only the
-// work: the same tab, two counts, and the first one was not the board's.
 func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 	w := holding(newFake(),
 		engine.Card{Number: 1, Title: "Ship it", State: "todo"},

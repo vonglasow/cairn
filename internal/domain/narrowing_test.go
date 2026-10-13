@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// heard writes down what a narrowing told it, in the order it was told.
 type heard struct{ said []string }
 
 func (h *heard) InColumn(s string)   { h.said = append(h.said, "column "+s) }
@@ -16,9 +15,6 @@ func (h *heard) Labelled(l []string) { h.said = append(h.said, "labels "+l[0]) }
 func (h *heard) Archived()           { h.said = append(h.said, "archived") }
 func (h *heard) WithArchived()       { h.said = append(h.said, "both") }
 
-// A narrowing is what was named, told back in the order it was named to
-// whoever reads by it. It used to be the store's own SQL builder, so the
-// engine could only say what to keep by importing the store.
 func TestNarrowing_tellsWhatWasNamedInTheOrderItWasNamed(t *testing.T) {
 	var n Narrowing
 	n.InColumn("done")
@@ -36,9 +32,6 @@ func TestNarrowing_tellsWhatWasNamedInTheOrderItWasNamed(t *testing.T) {
 	}
 }
 
-// A narrowing nobody named anything on narrows nothing; asking for both sides
-// of the board is not narrowing it either, and asking for what was taken off
-// is.
 func TestNarrowing_narrowsOnlyWhenSomethingWasNamed(t *testing.T) {
 	var nothing Narrowing
 	if nothing.Narrows() {

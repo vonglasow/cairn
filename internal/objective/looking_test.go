@@ -7,9 +7,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// carrying builds an objective from plan(t), told the extra facts given, the
-// same way TestText_showsWhatTheObjectiveCarries builds one — through the
-// membrane, never through a literal struct.
 func carrying(t *testing.T, tell func(*AsTold)) Objective {
 	t.Helper()
 	built := plan(t)
@@ -29,9 +26,6 @@ func TestMatching_ignoresCase(t *testing.T) {
 	if !Matching(plan(t), []string{"RELEASE"}) {
 		t.Error("Matching = false, want true: looking should not care how it was typed")
 	}
-	// The other direction: what is carried is read the way it is shown, not
-	// lower-cased on the way in, so a name typed in lower case still has to
-	// reach it.
 	got := carrying(t, func(a *AsTold) { a.Described("URGENT REVIEW") })
 	if !Matching(got, []string{"urgent"}) {
 		t.Error("Matching = false, want true: what is carried is read case-insensitively too")
@@ -51,8 +45,6 @@ func TestMatching_reachesTheDescription(t *testing.T) {
 	}
 }
 
-// Where it stands, the priority and a label are looked in like anything else
-// an objective carries. The reason is the task side's, and said there.
 func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
@@ -73,9 +65,6 @@ func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 	}
 }
 
-// TestMatching_reachesTheDeadlineTheWayItIsShown pins the frozen example: a
-// deadline is looked for as domain.FormatDay shows it, so a month reaches a
-// day within it.
 func TestMatching_reachesTheDeadlineTheWayItIsShown(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-09-01")
 	if err != nil {
@@ -87,8 +76,6 @@ func TestMatching_reachesTheDeadlineTheWayItIsShown(t *testing.T) {
 	}
 }
 
-// TestMatching_reachesADurationTheWayItIsShown pins the frozen example:
-// ninety minutes is shown as 1h30m, so that is what it is found by.
 func TestMatching_reachesADurationTheWayItIsShown(t *testing.T) {
 	estimate, err := domain.ParseEstimate("90m")
 	if err != nil {
@@ -110,9 +97,6 @@ func TestMatching_everyNamedThingHasToBeFound(t *testing.T) {
 	}
 }
 
-// TestMatching_aPhraseWithASpaceIsOneThing pins the frozen clause: a thing
-// with a space in it is one thing, so it has to sit together rather than
-// its words being spread across two.
 func TestMatching_aPhraseWithASpaceIsOneThing(t *testing.T) {
 	if !Matching(plan(t), []string{"the release"}) {
 		t.Error("Matching = false, want true: \"the release\" sits in the title as one phrase")
@@ -123,26 +107,18 @@ func TestMatching_aPhraseWithASpaceIsOneThing(t *testing.T) {
 	}
 }
 
-// TestMatching_reachesItsNumber: the number is the way back when it is what
-// somebody has, as it is for a task, and the boards have no show to type.
 func TestMatching_reachesItsNumber(t *testing.T) {
 	if !Matching(plan(t), []string{"1"}) {
 		t.Error("Matching = false, want true: the objective is numbered 1")
 	}
 }
 
-// TestMatching_anEmptyNamedThingIsNeverFound guards the other side of the
-// same rule: an absent fact contributes nothing, so nothing named as nothing
-// may be satisfied by it — an objective with plenty to carry must still not
-// be found by looking for "".
 func TestMatching_anEmptyNamedThingIsNeverFound(t *testing.T) {
 	if Matching(plan(t), []string{""}) {
 		t.Error("Matching = true, want false: an empty name is never found")
 	}
 }
 
-// TestMatching_anAbsenceContributesNothing pins the frozen reason directly:
-// what an objective does not carry cannot be what it is found by.
 func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	got := carrying(t, func(a *AsTold) {
 		a.NotDescribed()
@@ -156,7 +132,6 @@ func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	}
 }
 
-// Said is what a search looks in, once: see the task side.
 func TestSaid_isWhatASearchLooksIn(t *testing.T) {
 	got := carrying(t, func(a *AsTold) {
 		a.Standing(OnHold)

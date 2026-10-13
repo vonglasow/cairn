@@ -12,12 +12,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// What a gesture decides, read without drawing anything. The window keeps its
-// state in one struct of ours, a gesture turns one into another, and a test
-// reads what the store was asked. Gio is immediate mode and would rather each
-// widget kept its own state; letting that happen is how this surface would
-// stop being testable at all.
-
 func TestAClickChoosesTheCardUnderIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
@@ -61,8 +55,6 @@ func TestADoubleClickOpensTheDetail(t *testing.T) {
 	}
 }
 
-// A click that barely moves is a click. Without the threshold, a shaky hand
-// would move a task every time it chose one.
 func TestAClickThatBarelyMovesIsStillAClick(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "backlog"))
@@ -150,9 +142,6 @@ func TestAStoreOutOfReachIsSaidRatherThanDrawnEmpty(t *testing.T) {
 	}
 }
 
-// A click in a real window is a press and a release, so everything a click does
-// has to happen on the release — including the things that are not cards. This
-// is what stopped the tabs being reachable at all.
 func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -166,9 +155,6 @@ func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 	}
 }
 
-// The bar offers what can be done here, and clicking an offer does it. Without
-// this there is no way to edit a task at all unless somebody knows a shortcut
-// nobody wrote down.
 func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -190,7 +176,6 @@ func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 	}
 }
 
-// With nothing chosen there is nothing to edit, and the bar does not offer it.
 func TestTheBarOffersNothingToEditWithNothingChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -201,8 +186,6 @@ func TestTheBarOffersNothingToEditWithNothingChosen(t *testing.T) {
 	}
 }
 
-// The objectives tab lists what the work is for, and one of them can be chosen
-// and edited the same way a task is.
 func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -228,7 +211,6 @@ func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 	}
 }
 
-// A click below the last objective chooses nothing.
 func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -241,8 +223,6 @@ func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 	}
 }
 
-// The detail shows everything a task carries. Only the history is what a card
-// already marks; the rest is what a card had no room for.
 func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{
@@ -272,7 +252,6 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 	}
 }
 
-// With nothing open there is nothing to show.
 func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -281,8 +260,6 @@ func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 	}
 }
 
-// Double-clicking an objective opens that objective, and not whatever task
-// happens to lie under the same row of the board behind it.
 func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -307,9 +284,6 @@ func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 	}
 }
 
-// A panel over the board has the window. A click that lands on the board
-// behind it does nothing — changing what an open detail shows by clicking
-// behind it is the sort of thing nobody can explain afterwards.
 func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -331,7 +305,6 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen())
 	}
 
-	// The panel's own offers answer: they are what closes it.
 	for i, offer := range w.Offers() {
 		if offer != "Cancel" {
 			continue
@@ -344,7 +317,6 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 	}
 }
 
-// Nor can a card be picked up from behind a panel.
 func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -357,8 +329,6 @@ func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 	}
 }
 
-// An objective's detail shows what the objective carries, the same way a
-// task's does.
 func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -382,9 +352,6 @@ func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	}
 }
 
-// A number does not say which kind of thing it is: task 1 and objective 1 both
-// exist, and cairn numbers them apart. A board that remembered only the number
-// opened the task when an objective was pointed at.
 func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -393,7 +360,6 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 		Goals: []engine.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
 	}
 
-	// On the objectives tab, the objective.
 	w.tab = Objectives
 	box := GoalAt(w.Layout(), 0, 0)
 	goal := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
@@ -404,7 +370,6 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 		t.Error("editing objective 1 opened a task's form")
 	}
 
-	// On the tasks tab, the task.
 	w.tab = Tasks
 	task := w.doubleClicked(middleOf(w, 0, 0))
 	if got := task.Form().Fields(); len(got) == 0 || got[0].Value != "Write the spec" {
@@ -415,7 +380,6 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	}
 }
 
-// Deleting asks first, because it is the one thing here that loses work.
 func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -437,7 +401,6 @@ func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 	}
 }
 
-// An objective is deleted the same way, through its own operation.
 func TestDeletingAnObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -450,7 +413,6 @@ func TestDeletingAnObjective(t *testing.T) {
 	}
 }
 
-// Nothing chosen is nothing to delete, and the bar does not offer it.
 func TestDeletingIsNotOfferedWithNothingChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -461,8 +423,6 @@ func TestDeletingIsNotOfferedWithNothingChosen(t *testing.T) {
 	}
 }
 
-// The help says what everything does, which is the only thing here that has to
-// be read rather than pointed at.
 func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -489,9 +449,6 @@ func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 	}
 }
 
-// Every panel says what it is, and says which thing it is about. Read only by
-// the drawing, so it is asked for here: a heading nothing checks is a heading
-// that goes out saying the wrong number.
 func TestWhatEachPanelSaysItIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 7, Title: "Write the spec", State: "todo"})
@@ -499,8 +456,6 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
 	on := w.clicked(middleOf(w, 1, 0))
-	// An open task is headed by its number and its title as it was saved —
-	// not as it is being typed, which the field below says.
 	if got := Heads(on.Key("enter").Types("x")); got != "task 7 · Write the spec" {
 		t.Errorf("a task being edited is headed %q", got)
 	}
@@ -520,9 +475,6 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	}
 }
 
-// The pages are walked round: tab goes to the next, shift+tab to the one
-// before, and either end comes round to the other. With two pages which way a
-// walk went was a difference nothing could see; with three it is the walk.
 func TestThePagesAreWalkedRound(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -545,15 +497,11 @@ func TestThePagesAreWalkedRound(t *testing.T) {
 			t.Errorf("%v from the first page lands on %v, want %v", c.keys, got.Tab(), c.want)
 		}
 	}
-	// And changing page lets go of what was chosen: a card chosen on the page
-	// you left is a card the arrows would walk from on the page you are on.
 	if got := w.clicked(middleOf(w, 1, 0)).other(1); got.Chosen() != 0 {
 		t.Errorf("after changing page, task %d is still chosen", got.Chosen())
 	}
 }
 
-// Where what is chosen is drawn is the box of that very thing, and not of
-// whatever else happened to be looked at first.
 func TestWhereWhatIsChosenIsDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -576,13 +524,11 @@ func TestWhereWhatIsChosenIsDrawn(t *testing.T) {
 	if got, _, _ := second.WhereChosen(); got != l.CardAt(1, 1, second.scroll[1]) {
 		t.Errorf("the second card is drawn at %+v, want %+v", got, l.CardAt(1, 1, second.scroll[1]))
 	}
-	// Nothing chosen is drawn nowhere, and says so rather than answering a box.
 	if _, _, ok := w.WhereChosen(); ok {
 		t.Error("with nothing chosen, something was said to be drawn")
 	}
 }
 
-// The wheel moves a history by whole lines, and by as many as it was turned.
 func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	f := newFake()
 	for range 40 {
@@ -599,15 +545,11 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	if got := w.Scroll(at, lineHigh-1).History(); got != 0 {
 		t.Errorf("turned by less than a line, the history is at %d", got)
 	}
-	// And the wheel anywhere else over the panel moves nothing.
 	if got := w.Scroll(Point{X: 1, Y: 1}, 9*lineHigh).History(); got != 0 {
 		t.Errorf("turned away from the history, it is at %d", got)
 	}
 }
 
-// The objectives are a grid, so how far they scroll is reckoned in rows and
-// not in objectives — and how far they may scroll is reckoned from the rows
-// there are against the room there is.
 func TestHowFarTheObjectivesScroll(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -618,7 +560,6 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	run := GoalsRun(w.Layout())
 	rows := GoalRows(len(w.snap.Goals))
 
-	// The far end is every row there is, less the room there is to show them.
 	end := rows*CardHeight - run.H
 	if end <= 0 {
 		t.Fatalf("%d objectives in a run of %d all fit: this proves nothing", len(w.snap.Goals), run.H)
@@ -630,26 +571,19 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 		t.Errorf("scrolled before the beginning, the objectives stand at %d", got)
 	}
 
-	// Following the second objective moves nothing: it is on the first row.
 	if got := w.followingGoal(1).goals; got != 0 {
 		t.Errorf("following the second objective moved the grid to %d", got)
 	}
-	// Following the last one puts its row against the bottom of the run.
 	last := len(w.snap.Goals) - 1
 	if got, want := w.followingGoal(last).goals, end; got != want {
 		t.Errorf("following the last objective moved the grid to %d, want %d", got, want)
 	}
-	// And the first one on the row past what fits moves just far enough to
-	// show that row's bottom, which is less than a whole row when the run is
-	// not a whole number of rows tall.
 	fits := run.H / CardHeight
 	if got, want := w.followingGoal(fits*GoalsAcross()).goals, (fits+1)*CardHeight-run.H; got != want {
 		t.Errorf("following the first objective past what fits moved to %d, want %d", got, want)
 	}
 }
 
-// Where a chosen objective is drawn is the box of that very objective, and not
-// of whichever one happened to be looked at first.
 func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -677,16 +611,12 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	if run != GoalsRun(l) {
 		t.Errorf("it is drawn in %+v, want %+v", run, GoalsRun(l))
 	}
-	// An objective nobody chose is drawn nowhere, and says so.
 	w.chosen = 99
 	if _, _, ok := w.WhereChosen(); ok {
 		t.Error("an objective that is not there was said to be drawn somewhere")
 	}
 }
 
-// A panel drawn under another keeps its own heading. The form is still there
-// while a list is open over it, and both were asking the window what it was
-// on — so both read the list's heading and the form said it twice.
 func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 7, Title: "Write the spec", State: "todo"})
@@ -706,8 +636,6 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	}
 }
 
-// The wheel stops at a panel. It reached the board behind a form, the help and
-// the question, so turning it over a modal scrolled something nobody could see.
 func TestTheWheelStopsAtAPanel(t *testing.T) {
 	f := newFake()
 	cards := []engine.Card{}
@@ -731,9 +659,6 @@ func TestTheWheelStopsAtAPanel(t *testing.T) {
 	}
 }
 
-// Only the primary button acts. A right or a middle click arrived as a press
-// and a release like any other, so it chose cards and pressed offers while
-// nothing on screen suggested it would.
 func TestOnlyTheFirstButtonActs(t *testing.T) {
 	if Acts(pointer.ButtonSecondary) || Acts(pointer.ButtonTertiary) {
 		t.Error("a button other than the first was allowed to act")
@@ -741,16 +666,11 @@ func TestOnlyTheFirstButtonActs(t *testing.T) {
 	if !Acts(pointer.ButtonPrimary) {
 		t.Error("the first button was not allowed to act")
 	}
-	// A scroll carries no button at all, and has to go through.
 	if !Acts(0) {
 		t.Error("an event with no button was refused")
 	}
 }
 
-// An offer drawn on a panel answers where it is drawn. The list is drawn in a
-// panel of its own, inset from the one the others use, so its three words were
-// painted in one place and listened for in another — words that look like
-// buttons and answer only somewhere else.
 func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -776,8 +696,6 @@ func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 	}
 }
 
-// A field holding one of a closed set is answered by the pointer, with the
-// list a parent is chosen from: what it may hold is read before it is picked.
 func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
@@ -799,9 +717,6 @@ func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 	t.Fatal("the form has no column field")
 }
 
-// Every bar beside a run of text can be pulled. Two of the four were drawn
-// with a grip sized "never smaller than can be taken hold of" and answered
-// nothing — a handle that invites the hand and does not move.
 func TestEveryBarCanBePulled(t *testing.T) {
 	f := newFake()
 	for range 40 {
@@ -836,9 +751,6 @@ func TestEveryBarCanBePulled(t *testing.T) {
 	}
 }
 
-// A click on a text of several lines lands on the line it was over. It read
-// only how far across the point was, so clicking the third line of a
-// description put the caret on the first.
 func TestAClickOnAWrappedTextLandsOnItsOwnLine(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
@@ -861,9 +773,6 @@ func TestAClickOnAWrappedTextLandsOnItsOwnLine(t *testing.T) {
 	}
 }
 
-// Nothing in the window answered the pointer before it was pressed: "Delete"
-// looked exactly like a label, and the one affordance that says a thing can be
-// clicked was missing from the whole surface.
 func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 	w := New(newFake(), 1200, 800).Wonder()
 	if _, over := w.Hovered(); over {
@@ -882,8 +791,6 @@ func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 	}
 }
 
-// Shrinking the window below what the board needs used to throw away whatever
-// was open: a form filled in for ten minutes came back as an empty board.
 func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
@@ -903,9 +810,6 @@ func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
 	}
 }
 
-// The list's scrollbar has a thumb sized never to be too small to grab, and
-// grabbing it did nothing: only two of the four bars in the window answered a
-// drag at all.
 func TestTheListsBarCanBePulled(t *testing.T) {
 	f := newFake()
 	var goals []engine.Goal
@@ -933,7 +837,6 @@ func TestTheListsBarCanBePulled(t *testing.T) {
 	}
 }
 
-// askedFor finds the first thing asked of the store of a given kind.
 func askedFor(f *fake, thing, verb string) *engine.Input {
 	for _, one := range f.asked {
 		if one.op.Thing == thing && one.op.Verb == verb {
@@ -944,9 +847,6 @@ func askedFor(f *fake, thing, verb string) *engine.Input {
 	return nil
 }
 
-// Lighting is what the drawing asks before it lights an offer, so what the
-// pointer is resting on is a question a scenario can put rather than a colour
-// it has to count pixels for.
 func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
 	w := New(newFake(), 1200, 800).Wonder()
 	offers := w.Offers()
@@ -965,17 +865,11 @@ func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
 	}
 }
 
-// onLaneCard is the point a person would click to hit the n-th card of a lane.
 func onLaneCard(w Window, lane, at int) Point {
 	box := w.Layout().LaneCardAt(lane, at, 0)
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-// Scrolling a description to the end shows its last line. It did not: the end
-// of the scroll was worked out from the text laid out on one width and the text
-// was drawn on another, a few points narrower — so what was drawn ran longer
-// than what was counted, and the last lines of a long description could never
-// be brought into the box, bar or no bar.
 func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
@@ -999,16 +893,11 @@ func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 	}
 }
 
-// A task opens on the top of its description, whatever was scrolled before it.
-// The scroll was left where the last task or the form had put it, and drawn as
-// it stood: a task opened after a long description had been read to its end
-// showed an empty box until the wheel brought the scroll back inside the text.
 func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
 	w := holding(newFake(),
 		engine.Card{Number: 1, Title: "Long", State: "todo", Description: long},
 		engine.Card{Number: 2, Title: "Short", State: "todo", Description: "PREMIERE LIGNE"})
-	// Read the long one to its end, and put it away.
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, lines, _, _ := w.sayingOn()
 	for range len(lines.Said) {
@@ -1018,7 +907,6 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 		t.Fatal("this proves nothing: the long description was not scrolled")
 	}
 	w = w.Cancel()
-	// The short one opens on its first line.
 	w = w.clicked(middleOf(w, 1, 1)).DoubleClick(middleOf(w, 1, 1))
 	if w.Screen() != OnForm || w.Chosen() != 2 {
 		t.Fatalf("the short task did not open: %v on %d", w.Screen(), w.Chosen())
@@ -1026,7 +914,6 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	if got := w.Saying(); got != 0 {
 		t.Fatalf("the short task opened with its description scrolled to %d", got)
 	}
-	// And it is the same coming from the form.
 	w = w.Cancel().clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
 		if field.Name == "description" {
@@ -1040,8 +927,6 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	}
 }
 
-// Whatever the scroll holds, what is drawn is inside the text: a scroll past
-// the end is read as the end.
 func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Short", State: "todo",
 		Description: "PREMIERE LIGNE"})
@@ -1052,8 +937,6 @@ func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
 	}
 }
 
-// The box under an open task says how many of its parts are left and how many
-// are done, beside what it is.
 func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
 	w := holding(newFake(),
 		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
@@ -1069,12 +952,7 @@ func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
 	}
 }
 
-// Every key the bar teaches is in the help too. The two are written apart —
-// Shortcut says which key an offer has, Helping says what each key does — so
-// nothing but this keeps the second from forgetting one the first added.
 func TestTheHelpNamesEveryKeyTheBarTeaches(t *testing.T) {
-	// On every keyboard, spelled as the help is: a Mac's ⌘ is Ctrl on Linux
-	// and Windows, and a test that read the Mac's alone failed on Linux.
 	for _, system := range []string{"darwin", "linux", "windows"} {
 		var said strings.Builder
 		w := holding(newFake())

@@ -1,6 +1,4 @@
-// Package config reads the file that says cairn's two places. It knows only
-// where that file sits and what it says, never what a place means once read —
-// expansion, defaults and the environment are somebody else's turn.
+// Package config reads the file that says cairn's two places.
 package config
 
 import (
@@ -16,51 +14,29 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// DefaultFolder and defaultFile make up the place the store goes when
-// nothing names it: no file at all, or a file that says nothing under
-// `store`. Owned here, not borrowed from internal/engine, so the one place
-// that decides the fallback also spells it. DefaultFolder is exported
-// because a caller outside this package needs to name it; defaultFile has
-// no such caller and stays private.
+// DefaultFolder and defaultFile make up the place the store goes when nothing names it: no file at all, or a file that says nothing under `store`.
 const (
 	DefaultFolder = ".cairn"
 	defaultFile   = "cairn.db"
 )
 
-// defaultNotesFolder is where notes go under DefaultFolder when nothing
-// names them — the twin of defaultFile, for the other place this package
-// resolves. No caller outside this package needs to name it, so it stays
-// private like defaultFile does.
 const defaultNotesFolder = "notes"
 
-// StoreVariable is the environment variable that replaces whatever the file
-// or the default answered, named here because this package now owns it —
-// the surface that reads it lives elsewhere, but the name is spelled once.
+// StoreVariable is the environment variable that replaces whatever the file or the default answered, named here because this package now owns it — the surface that reads it lives elsewhere, but the name is spelled once.
 const StoreVariable = "CAIRN_STORE"
 
-// NotesVariable is the environment variable that replaces whatever the file
-// or the default answered for notes — the twin of StoreVariable, for the
-// other place this package resolves.
+// NotesVariable is the environment variable that replaces whatever the file or the default answered for notes — the twin of StoreVariable, for the other place this package resolves.
 const NotesVariable = "CAIRN_NOTES"
 
-// ErrUnknownKey is returned when the file names a key cairn does not know —
-// the decoding is strict, so a typo or a leftover from another tool is
-// refused rather than quietly ignored.
+// ErrUnknownKey is returned when the file names a key cairn does not know — the decoding is strict, so a typo or a leftover from another tool is refused rather than quietly ignored.
 var ErrUnknownKey = errors.New("not a key cairn knows")
 
-// ErrNotTOML is returned when the file's content cannot be made sense of as
-// TOML at all — not a specific rule the file broke, just the syntax itself.
+// ErrNotTOML is returned when the file's content cannot be made sense of as TOML at all — not a specific rule the file broke, just the syntax itself.
 var ErrNotTOML = errors.New("not a file cairn can make sense of")
 
-// ErrNotAbsolute is returned when a place the file names is not absolute,
-// even once a leading "~" has been expanded — a configuration is read from
-// everywhere, so what it names has to mean one thing regardless of where a
-// command runs from.
+// ErrNotAbsolute is returned when a place the file names is not absolute, even once a leading "~" has been expanded — a configuration is read from everywhere, so what it names has to mean one thing regardless of where a command runs from.
 var ErrNotAbsolute = errors.New("must be absolute")
 
-// namedBy is which of the three provenances resolved an emplacement. Private:
-// nothing outside this package names one directly, it is only ever told
-// through Tell.
 type namedBy int
 
 const (
@@ -69,8 +45,7 @@ const (
 	byTheEnvironment
 )
 
-// Places is what the configuration file says, exactly as it was written. It
-// tells what it carries; nothing reaches into it.
+// Places is what the configuration file says, exactly as it was written.
 type Places struct {
 	store        string
 	notes        string
@@ -78,22 +53,11 @@ type Places struct {
 	notesNamedBy namedBy
 }
 
-// file is the shape config.toml decodes into. Its tags are the only list of
-// what cairn accepts — acceptedKeys reads them back rather than a second,
-// hand-kept list drifting from this one.
-//
-// Store and Notes are pointers so a key that is absent — nil — is not
-// confused with one written as the empty string: filepath.IsAbs("") is
-// false, so an explicit empty value is refused rather than silently taking
-// the default meant for "nothing said".
 type file struct {
 	Store *string `toml:"store"`
 	Notes *string `toml:"notes"`
 }
 
-// acceptedKeys names, in the order the struct declares them, the keys cairn
-// decodes config.toml into — derived from the tags above so a key added
-// there needs no matching edit to a message spelled out here.
 func acceptedKeys() []string {
 	t := reflect.TypeFor[file]()
 	keys := make([]string, 0, t.NumField())
@@ -103,33 +67,21 @@ func acceptedKeys() []string {
 	return keys
 }
 
-// Reading is the tolerant primitive Read is a gate over: it carries the path
-// of the file it read, and either the emplacements the file named or the
-// problem that stood in the way — never both, since emplacements resolved
-// alongside a rule the file broke are not emplacements worth trusting. The
-// path is carried regardless: "which file" is half of what a problem has to
-// answer.
+// Reading is the tolerant primitive Read is a gate over: it carries the path of the file it read, and either the emplacements the file named or the problem that stood in the way — never both, since emplacements resolved alongside a rule the file broke are not emplacements worth trusting.
 type Reading struct {
 	path   string
 	places Places
 	err    error
 }
 
-// ReadingTold is the membrane of a Reading: whoever wants to know what a
-// reading found implements this and is told it — its emplacements, or the
-// problem it hit naming the file it read. Never both.
+// ReadingTold is the membrane of a Reading: whoever wants to know what a reading found implements this and is told it — its emplacements, or the problem it hit naming the file it read.
 type ReadingTold interface {
 	ReadFrom(path string)
 	Resolved(Places)
 	NotUnderstood(path string, err error)
 }
 
-// Tell says which file this reading read from, told first and regardless of
-// what came of it, then what it found: its emplacements if it made sense of
-// the file, or — naming the path again — the problem that stood in the way.
-// "Which file" is answered the same way whether the reading made sense of it
-// or not, since a reading that fell back to defaults still read from
-// somewhere.
+// Tell says which file this reading read from, told first and regardless of what came of it, then what it found: its emplacements if it made sense of the file, or — naming the path again — the problem that stood in the way.
 func (r Reading) Tell(to ReadingTold) {
 	to.ReadFrom(r.path)
 	if r.err != nil {
@@ -139,11 +91,7 @@ func (r Reading) Tell(to ReadingTold) {
 	to.Resolved(r.places)
 }
 
-// NewReading decodes <home>/.config/cairn/config.toml, tolerating what it
-// cannot make sense of by reporting it through the Reading it hands back
-// rather than returning it. It still returns an error outright when the file
-// could not be read at all beyond not existing — that case is frozen out of
-// this tolerance, and surfaces exactly as it always has.
+// NewReading decodes <home>/.config/cairn/config.toml, tolerating what it cannot make sense of by reporting it through the Reading it hands back rather than returning it.
 func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, error) {
 	path := filepath.Join(home, ".config", "cairn", "config.toml")
 	data, err := os.ReadFile(path)
@@ -154,20 +102,11 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	var f file
 	if err == nil {
 		if err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&f); err != nil {
-			// *StrictMissingError carries the names of the keys the file used
-			// that the struct above does not know — checked before the more
-			// general *toml.DecodeError below, since StrictMissingError also
-			// unwraps to one and would otherwise be caught there first,
-			// answering with a message that never names the key.
 			var strict *toml.StrictMissingError
 			if errors.As(err, &strict) {
 				return Reading{path: path, err: fmt.Errorf("%q: %w — cairn accepts %s",
 					strings.Join(strict.Errors[0].Key(), "."), ErrUnknownKey, strings.Join(acceptedKeys(), ", "))}, nil
 			}
-			// *toml.DecodeError is what is left once StrictMissingError has
-			// already been ruled out above: the content itself could not be
-			// made sense of as TOML, rather than a rule cairn's own strict
-			// decoding added on top of it.
 			var decode *toml.DecodeError
 			if errors.As(err, &decode) {
 				return Reading{path: path, err: fmt.Errorf("%q: %w", path, ErrNotTOML)}, nil
@@ -176,20 +115,12 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		}
 	}
 
-	// answer is what the file said, or the default when it said nothing —
-	// worked out completely, before the environment gets a say. Named by
-	// nothing until one of the branches below says otherwise.
 	answer := Places{
 		store:        filepath.Join(home, DefaultFolder, defaultFile),
 		notes:        filepath.Join(home, DefaultFolder, defaultNotesFolder),
 		storeNamedBy: byNothing,
 		notesNamedBy: byNothing,
 	}
-	// The file first, then the environment, which is not a third rung after
-	// the file and the default: it replaces the answer outright, rather than
-	// taking a turn before it. Set but empty says nothing, so the answer
-	// stands as it was worked out. Every place is read the same way —
-	// expanded, then judged — and it was written out four times.
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},
 		{f.Notes, &answer.notes, &answer.notesNamedBy, byTheFile, ""},
@@ -208,8 +139,6 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	return Reading{path: path, places: answer}, nil
 }
 
-// claim is one source naming one place: what it said, nothing when it said
-// nothing, where the answer keeps it, and who it is.
 type claim struct {
 	said     *string
 	place    *string
@@ -218,8 +147,6 @@ type claim struct {
 	variable string
 }
 
-// quoted is what a refusal quotes: the place as written in the file, or the
-// variable and what it was set to.
 func (c claim) quoted() string {
 	if c.variable == "" {
 		return fmt.Sprintf("%q", *c.said)
@@ -227,8 +154,6 @@ func (c claim) quoted() string {
 	return fmt.Sprintf("%s=%q", c.variable, *c.said)
 }
 
-// fromEnv is what a variable said of a place: nothing when it is unset or
-// set to nothing.
 func fromEnv(lookupEnv func(string) (string, bool), name string) *string {
 	if said, ok := lookupEnv(name); ok && said != "" {
 		return &said
@@ -236,9 +161,6 @@ func fromEnv(lookupEnv func(string) (string, bool), name string) *string {
 	return nil
 }
 
-// readGate is a ReadingTold that captures whichever single fact a Reading
-// told it, so Read can hand that fact back the way it always has: the
-// emplacements, or the problem that stood in the way.
 type readGate struct {
 	places Places
 	err    error
@@ -248,10 +170,7 @@ func (g *readGate) ReadFrom(_ string)                 {}
 func (g *readGate) Resolved(p Places)                 { g.places = p }
 func (g *readGate) NotUnderstood(_ string, err error) { g.err = err }
 
-// Read decodes <home>/.config/cairn/config.toml and hands back the places it
-// names, unchanged from what the file wrote. It is a gate over the tolerant
-// NewReading, a few lines above it: if a problem stood in the way, return it;
-// otherwise return the emplacements it resolved.
+// Read decodes <home>/.config/cairn/config.toml and hands back the places it names, unchanged from what the file wrote.
 func Read(home string, lookupEnv func(string) (string, bool)) (Places, error) {
 	reading, err := NewReading(home, lookupEnv)
 	if err != nil {
@@ -262,10 +181,7 @@ func Read(home string, lookupEnv func(string) (string, bool)) (Places, error) {
 	return gate.places, gate.err
 }
 
-// Told is the membrane of a Places: one method per fact it has to tell about
-// each emplacement it resolved, absence of a namer included. Whoever wants to
-// know who named a place implements this and is told it; nothing reaches
-// into Places to read it directly.
+// Told is the membrane of a Places: one method per fact it has to tell about each emplacement it resolved, absence of a namer included.
 type Told interface {
 	StoreNamedByTheFile(string)
 	StoreNamedByTheEnvironment(string)
@@ -275,8 +191,7 @@ type Told interface {
 	NotesNamedByNothing(string)
 }
 
-// Tell says, for each emplacement, which of the three provenances named it,
-// carrying the emplacement it resolved to.
+// Tell says, for each emplacement, which of the three provenances named it, carrying the emplacement it resolved to.
 func (p Places) Tell(to Told) {
 	switch p.storeNamedBy {
 	case byTheFile:
@@ -296,8 +211,6 @@ func (p Places) Tell(to Told) {
 	}
 }
 
-// expandTilde replaces a "~" at the very start of value with home. Anywhere
-// else, "~" is just a character the file wrote — this is not shell syntax.
 func expandTilde(value, home string) string {
 	rest, ok := strings.CutPrefix(value, "~/")
 	if !ok {

@@ -15,11 +15,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// storeAt and behindStore are declared in store_test.go, which needs the same
-// two shapes.
-
-// garbageStore gives a path to a file that is not a store at all, so opening
-// it fails with something other than the store being behind.
 func garbageStore(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -29,9 +24,6 @@ func garbageStore(t *testing.T) string {
 	return path
 }
 
-// walFileGone reports whether the store at path was left with nothing
-// checkpointed and waiting — which only happens once every connection to it
-// has closed.
 func walFileGone(t *testing.T, path string) bool {
 	t.Helper()
 	_, err := os.Stat(path + "-wal")
@@ -223,8 +215,6 @@ func TestInput_tellsNotNamedFromNamedAsNothing(t *testing.T) {
 	}
 }
 
-// Every operation says what it answers, because a surface that describes itself
-// to a machine has to say it before anything runs — and nothing else knows it.
 func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
 	silent := []string{}
 	for _, op := range All() {
@@ -237,10 +227,6 @@ func TestAll_everyOperationSaysWhatItAnswers(t *testing.T) {
 	}
 }
 
-// What an operation declares it answers is what Of actually builds from what
-// its Run answers. Read off All() rather than listed: a hand-kept list held 19
-// of 33 operations, and the ones left out — config show among them — were the
-// ones whose answer nothing compared to anything.
 func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 	answered := map[string][]Answer{
 		"task_new":           {{Task: of(task.Task{})}},
@@ -294,10 +280,6 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 	}
 }
 
-// Every listing answers an object naming what it carries, never a bare list. A
-// client refuses a description that is not of an object, and one refused tool
-// costs the whole list — so this is asserted over every operation there is,
-// rather than over the ones that happen to have been thought of.
 func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
 	bare := []string{}
 	for _, op := range All() {
@@ -310,10 +292,6 @@ func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
 	}
 }
 
-// A required list has to hold something: being handed an empty one is not
-// being given anything to go on. The command line refused it already, through
-// its own count of arguments; a server handed `{"named": []}` answered the whole
-// board as if everything had matched.
 func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 	for _, op := range []Operation{TaskSearch, ObjectiveSearch} {
 		if err := op.Check(Input{Listed: map[string][]string{"named": {}}}); err == nil {
@@ -325,9 +303,6 @@ func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 	}
 }
 
-// A value outside a closed set is a refusal, whichever operation it was given
-// to — the same sentinel for a listing as for an edit, so it is answered the
-// same way.
 func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 	e := openEngine(t)
 	if _, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, domain.ErrNotAState) {
@@ -335,10 +310,6 @@ func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 	}
 }
 
-// A day that is not one is refused before any Run sees it, the way a number
-// that is not one already is. Without it a narrowing compared a column of days
-// against whatever text was typed, and answered whatever that happened to sort
-// beside — silence where a refusal belonged.
 func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
 	op := Operation{
 		Thing: "task", Verb: "list",
@@ -350,15 +321,11 @@ func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
 	if err := op.Check(Input{Given: map[string]string{"due-before": "2026-10-01"}}); err != nil {
 		t.Errorf("a day that is one was refused: %v", err)
 	}
-	// Empty is how such an argument is cleared, and clearing is not a mistake.
 	if err := op.Check(Input{Given: map[string]string{"due-before": ""}}); err != nil {
 		t.Errorf("an empty day was refused: %v", err)
 	}
 }
 
-// A client deciding whether to ask before a call needs to know what a second
-// call does, and whether the first one can replace what was written. Every
-// operation that writes says so; one added without saying is caught here.
 func TestEveryWriteSaysWhatCallingItAgainDoes(t *testing.T) {
 	for _, op := range All() {
 		if op.Level != Read && op.Again == 0 {
@@ -375,8 +342,6 @@ func TestEveryWriteSaysWhatCallingItAgainDoes(t *testing.T) {
 	}
 }
 
-// A person reads how a command is typed faster than what it takes, so every
-// operation carries at least one example of itself, typed as it is typed.
 func TestEveryOperationShowsHowItIsTyped(t *testing.T) {
 	for _, op := range All() {
 		if !strings.Contains(op.Example, "cairn "+op.Line()) {

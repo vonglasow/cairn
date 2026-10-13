@@ -9,7 +9,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// standing builds a task numbered n in a column, with whatever blocks it.
 func standing(n int, state domain.State, because string, blockers ...int) Task {
 	var a AsTold
 	a.Numbered(n)
@@ -25,8 +24,6 @@ func standing(n int, state domain.State, because string, blockers ...int) Task {
 	return a.Task()
 }
 
-// Finishing asks what hangs under the task only when it is being finished,
-// and not again once it was.
 func TestMayFinishAs_asksWhatHangsUnderItOnlyWhenItIsBeingFinished(t *testing.T) {
 	asked := 0
 	open := []Task{standing(2, domain.Todo, "")}
@@ -47,7 +44,6 @@ func TestMayFinishAs_asksWhatHangsUnderItOnlyWhenItIsBeingFinished(t *testing.T)
 	}
 }
 
-// part builds task n hanging under parent.
 func part(n, parent int) Task {
 	var a AsTold
 	a.Numbered(n)
@@ -57,8 +53,6 @@ func part(n, parent int) Task {
 	return a.Task()
 }
 
-// Where a task may hang is the task's to say, and its parent's: never under a
-// part, never under itself, never as a part in a working column.
 func TestMayHang_isAskedOfTheTaskAndOfItsParent(t *testing.T) {
 	parents := map[int]Task{1: standing(1, domain.Todo, ""), 2: part(2, 1)}
 	parentOf := func(n int) (Task, error) {
@@ -99,7 +93,6 @@ func TestMayHang_isAskedOfTheTaskAndOfItsParent(t *testing.T) {
 	}
 }
 
-// What a sweep reaches is the work, not its parts.
 func TestWork_leavesThePartsOut(t *testing.T) {
 	got := Work([]Task{standing(1, domain.Done, ""), part(2, 1), standing(3, domain.Done, "")})
 	var numbers []int
@@ -111,8 +104,6 @@ func TestWork_leavesThePartsOut(t *testing.T) {
 	}
 }
 
-// The two columns that claim the work is yours are refused while something is
-// still in the way; every other column stays reachable.
 func TestMayLeaveFor_refusesOnlyTheColumnsThatClaimTheWork(t *testing.T) {
 	for _, tc := range []struct {
 		what    string
@@ -146,9 +137,6 @@ func TestMayLeaveFor_refusesOnlyTheColumnsThatClaimTheWork(t *testing.T) {
 	}
 }
 
-// A refusal is an instruction: it names what is in the way and the flags that
-// would take each one away. Without that, somebody holding three blockers has
-// to work out which is which.
 func TestMayLeaveFor_saysWhatIsInTheWayAndHowToTakeItAway(t *testing.T) {
 	err := standing(1, domain.Blocked, "the client's answer", 2, 3).
 		MayLeaveFor(standing(1, domain.Todo, "the client's answer", 2, 3))
@@ -163,8 +151,6 @@ func TestMayLeaveFor_saysWhatIsInTheWayAndHowToTakeItAway(t *testing.T) {
 	}
 }
 
-// Taking the last thing away puts a task back in todo. Taking one of two does
-// not, and neither does anything happening to a task nobody said was blocked.
 func TestFreedBy_putsATaskBackOnlyWhenTheLastThingGoes(t *testing.T) {
 	for _, tc := range []struct {
 		what    string
@@ -202,14 +188,6 @@ func TestFreedBy_putsATaskBackOnlyWhenTheLastThingGoes(t *testing.T) {
 	}
 }
 
-// The mark and the return read the words differently, and the difference is who
-// is doing the reading.
-//
-// Cairn never concludes anything from words it cannot check, so a task blocked
-// by words is never marked as having nothing in its way. But somebody erasing
-// those words has said the thing is out of the way, so that erasure takes the
-// task back to todo like any other last thing. One is a guess cairn is not
-// allowed to make; the other is a sentence somebody typed.
 func TestFreedBy_actsOnTheWordsBeingErasedAndNeverOnTheirMeaning(t *testing.T) {
 	if _, put := standing(1, domain.Blocked, "the client").
 		FreedBy(standing(1, domain.Blocked, "the client")); put {

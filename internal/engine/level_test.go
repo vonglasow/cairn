@@ -6,9 +6,6 @@ import (
 	"testing"
 )
 
-// The level an agent may reach is read once, by name, from what a person
-// typed. It is the engine's Level and nothing else: a copy of it kept by the
-// server, converted by a cast, was two lists kept in step by their order alone.
 func TestParseLevel_acceptsTheThreeLevels(t *testing.T) {
 	for name, want := range map[string]Level{
 		"read":  Read,

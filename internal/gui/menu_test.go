@@ -8,8 +8,6 @@ import (
 	"gioui.org/io/pointer"
 )
 
-// The menu opens down and to the right of the point clicked, and is kept
-// inside the window near an edge.
 func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
 	w := Window{width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Focus", "Archive", "Delete"}}}
 	w.menuAt = Point{X: 300, Y: 200}
@@ -25,7 +23,6 @@ func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
 	}
 }
 
-// The keys walk the menu both ways and stop at its ends.
 func TestTheMenuIsWalkedBothWays(t *testing.T) {
 	w := Window{screen: OnMenu, menuState: menuState{menu: []string{"Edit", "Delete"}}}
 	if got := w.onMenu("up").MenuOn(); got != 0 {
@@ -40,7 +37,6 @@ func TestTheMenuIsWalkedBothWays(t *testing.T) {
 	}
 }
 
-// A right press in the loop opens the menu on the card under it.
 func TestTheSecondButtonOpensTheMenu(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -50,7 +46,6 @@ func TestTheSecondButtonOpensTheMenu(t *testing.T) {
 	}
 }
 
-// The menu is drawn, the line the keyboard is on lit.
 func TestTheMenuIsDrawn(t *testing.T) {
 	w := Window{screen: OnMenu, width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Delete"}, menuAt: Point{X: 300, Y: 200}}}
 	shot := drawn(t, w)
@@ -69,8 +64,6 @@ func TestTheMenuIsDrawn(t *testing.T) {
 	}
 }
 
-// Only the press opens it: a pointer moving with the second button held, or
-// coming in with it, opens nothing.
 func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -80,9 +73,6 @@ func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 	}
 }
 
-// A task's menu reaches what the keys and a drag do to it: its column and its
-// priority, offered in the menu itself, every value but the one it holds,
-// and taken at once; its labels in the list a form opens for them.
 func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
@@ -110,7 +100,6 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	if labelling.Screen() != OnChoosing || labelling.choosingFor != "label" {
 		t.Errorf("Labels… left the window on %v choosing %q", labelling.Screen(), labelling.choosingFor)
 	}
-	// A menu put away and opened again is the card's own again.
 	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[2] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
 	}

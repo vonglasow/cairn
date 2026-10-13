@@ -7,8 +7,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// The third tab is the time spent, a week at a time; tab walks the three
-// round, and the arrows walk the weeks, t coming back to today's.
 func TestTheTimeTabWalksTheWeeks(t *testing.T) {
 	f := newFake()
 	b := hit(standing(f), "tab", "tab")
@@ -42,7 +40,6 @@ func TestTheTimeTabWalksTheWeeks(t *testing.T) {
 	}
 }
 
-// b backs the store up and B lists the backups, each answer said until esc.
 func TestBackupsAreReachedFromTheBoard(t *testing.T) {
 	f := newFake()
 	b := hit(standing(f), "b")

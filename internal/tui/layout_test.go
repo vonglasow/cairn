@@ -19,8 +19,6 @@ func TestLayoutFor(t *testing.T) {
 
 func TestLayoutBandSpansTheLastThreeColumns(t *testing.T) {
 	l := LayoutFor(100, 40)
-	// The band lies under three columns and the two gaps between them, and
-	// nowhere else: the backlog keeps its own full height beside it.
 	if want := l.Column*3 + 2; l.Band != want {
 		t.Fatalf("the band is %d wide, want %d", l.Band, want)
 	}
@@ -39,9 +37,6 @@ func TestTooSmall(t *testing.T) {
 }
 
 func TestTheBandIsNeverGivenNothing(t *testing.T) {
-	// Whatever the window, the band keeps a share of it: what is not moving is
-	// the thing most worth seeing, and a band pushed off the bottom might as
-	// well not be there.
 	for height := Shortest; height <= 80; height++ {
 		l := LayoutFor(100, height)
 		if l.Rows < 1 {
@@ -60,7 +55,6 @@ func TestTheBandTakesTwoRowsOfCardsWhenThereIsRoom(t *testing.T) {
 	if got := LayoutFor(100, 60).Rows; got != bandCards*CardHeight {
 		t.Fatalf("the band got %d rows in a tall window, want two rows of cards", got)
 	}
-	// And half of what is left when there is not.
 	if got := LayoutFor(100, 26).Rows; got != 9 {
 		t.Fatalf("the band got %d rows in a short window, want half of what was left", got)
 	}
@@ -75,8 +69,6 @@ func TestShowing(t *testing.T) {
 }
 
 func TestScrolled(t *testing.T) {
-	// Thirty rows is five cards. Nothing moves while the one wanted is already
-	// on screen; it moves by whole cards when it is not.
 	for _, c := range []struct {
 		name                   string
 		offset, at, rows, want int
@@ -96,9 +88,6 @@ func TestScrolled(t *testing.T) {
 }
 
 func TestLayoutDividesWhatIsLeftAfterTheMarginAndTheGaps(t *testing.T) {
-	// Ninety-nine, not a hundred: at a hundred the margin and the gaps happen
-	// to divide out the same way whichever sign they carry, so a wrong one
-	// would go unnoticed.
 	if got := LayoutFor(99, 40).Column; got != 23 {
 		t.Fatalf("a column at 99 columns is %d wide, want 23", got)
 	}

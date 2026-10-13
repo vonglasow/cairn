@@ -1,12 +1,5 @@
 package test
 
-// What a search looks in, for a card or an objective a test built by hand. A
-// board searches what the engine said each one carries when it was read; a
-// card written as a literal was never read, so it says nothing and no search
-// reaches it. This builds the task or the objective the card stands for,
-// through the membrane a store builds one through, and asks the engine what it
-// says — so a test never keeps a copy of the rule of its own.
-
 import (
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -14,8 +7,7 @@ import (
 	"cairn/internal/task"
 )
 
-// Searchable is a reading whose every card and objective says what the engine
-// says it carries.
+// Searchable is a reading whose every card and objective says what the engine says it carries.
 func Searchable(s engine.Snapshot) engine.Snapshot {
 	cards := make([]engine.Card, 0, len(s.Cards))
 	for _, c := range s.Cards {

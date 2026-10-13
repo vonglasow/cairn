@@ -95,14 +95,10 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	// A number nothing carries is refused before anything else is touched.
 	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, ErrNoSuchBackup) {
 		t.Fatalf("err = %v, want %v", err, ErrNoSuchBackup)
 	}
 
-	// No number given restores the most recent one. Checked before the
-	// explicit-number restore below, which backs up first and would
-	// otherwise make a newer backup "the most recent one".
 	answer, err := Do(BackupRestore, path, Input{Confirmed: true})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
@@ -111,8 +107,6 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 		t.Fatalf("answer.Restored = %v, want %d", answer.Restored, latest.Backup.Number)
 	}
 
-	// A number a backup does carry restores that one, not whichever the
-	// number happens to resolve to by accident.
 	first, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
@@ -139,8 +133,6 @@ func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 		t.Fatalf("answer.Holds = %v, want a count of 1 task, taken before the backup was made", answer.Holds)
 	}
 
-	// Counted before backing up, not after: a file that cannot be counted is
-	// refused before any backup of it is made.
 	garbage := garbageStore(t)
 	if _, err := Do(BackupNew, garbage, Input{}); err == nil {
 		t.Fatalf("Do: want an error, got none: %q is not a store", garbage)
@@ -156,9 +148,6 @@ func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 
 var madeAt = time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
 
-// TestOfBackup_carriesWhatItHeldWhenCounted pins the wire: what a machine
-// reads for a backup carries its number, a moment written the way a person
-// reads one, and what it held — only when that was counted.
 func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
 	backup := domain.Backup{Number: 2, Made: madeAt}
 	held := domain.Held{Tasks: 3, Objectives: 1}
@@ -174,8 +163,6 @@ func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
 	}
 }
 
-// Making a backup does not open it, so nothing counted must read as nothing
-// held — never as a zero, which would read as an empty store.
 func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
 	got := OfBackup(domain.Backup{Number: 1, Made: madeAt}, nil)
 	if got.Holds != nil {

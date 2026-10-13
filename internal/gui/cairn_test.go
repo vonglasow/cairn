@@ -12,7 +12,6 @@ import (
 	"gioui.org/io/pointer"
 )
 
-// area is a polygon's area, by the shoelace.
 func area(points []Point) int {
 	twice := 0
 	for i, p := range points {
@@ -22,10 +21,6 @@ func area(points []Point) int {
 	return max(twice, -twice) / 2
 }
 
-// A card is built of stones the way an old wall is: courses of irregular
-// stones fitted together, not bricks — every stone inside the card, the
-// card mostly covered, the same stones every time for the same card and
-// other stones for another.
 func TestACardIsBuiltOfStones(t *testing.T) {
 	panel := Box{X: 100, Y: 200, W: 280, H: 96}
 	stones := StonesOf(panel, 7)
@@ -73,8 +68,6 @@ func TestACardIsBuiltOfStones(t *testing.T) {
 	}
 }
 
-// The cards arrive one after another: a card's stones fall, then give way to
-// the card; the first lands before the last, and all are cards at the end.
 func TestTheCardsArriveOneAfterAnother(t *testing.T) {
 	if fall, fade := Arriving(0, 0, 5); fall != 0 || fade != 0 {
 		t.Errorf("at the start the first card has fallen %v, faded %v", fall, fade)
@@ -99,14 +92,11 @@ func TestTheCardsArriveOneAfterAnother(t *testing.T) {
 			t.Errorf("at %v a card goes back up", at)
 		}
 	}
-	// Many cards still all arrive inside the breath.
 	if fall, fade := Arriving(0.999, 59, 60); fall != 1 || fade < 0.9 {
 		t.Errorf("the sixtieth card of sixty has fallen %v, faded %v, at the very end", fall, fade)
 	}
 }
 
-// Nothing is built over a board with no task: the animation is the content
-// arriving, and there is none.
 func TestNoTaskNoCairn(t *testing.T) {
 	start := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
 	if _, on := New(newFake(), 1200, 800).Born(start).Intro(); on {
@@ -117,8 +107,6 @@ func TestNoTaskNoCairn(t *testing.T) {
 	}
 }
 
-// The cairn is built from the first frame, for as long as it lasts, and is
-// ended by a press.
 func TestTheCairnLastsABreath(t *testing.T) {
 	start := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
 	if _, on := holding(newFake(), card(1, "A", "todo")).Intro(); on {
@@ -147,8 +135,6 @@ func TestTheCairnLastsABreath(t *testing.T) {
 	}
 }
 
-// While it is built, a card not yet arrived is not drawn — the board shows
-// its ground there — and its stones are, falling; once arrived it is the card.
 func TestTheCardsAreBuiltOnScreen(t *testing.T) {
 	start := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
 	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
@@ -159,7 +145,6 @@ func TestTheCardsAreBuiltOnScreen(t *testing.T) {
 	if got := painted(drawn(t, early), last, Dark().Panel); got != 0 {
 		t.Errorf("before it arrives, %d pixels of the last card are drawn", got)
 	}
-	// Half way through its fall, its stones are above where it lands.
 	at := 0.0
 	for fall, _ := Arriving(at, 2, 3); fall < 0.5; fall, _ = Arriving(at, 2, 3) {
 		at += 0.01
@@ -175,10 +160,6 @@ func TestTheCardsAreBuiltOnScreen(t *testing.T) {
 	}
 }
 
-// The stones of a few cards, and how the cards arrive, to the point and the
-// millionth: a sum gone wrong builds another wall, or another arrival, and
-// nothing else would say so. UPDATE_STONES=1 writes it anew, after a change
-// meant to build other stones.
 func TestTheStonesAreTheSameStones(t *testing.T) {
 	var out strings.Builder
 	for _, panel := range []Box{{X: 100, Y: 200, W: 280, H: 96}, {X: 0, Y: 0, W: 150, H: 60}} {
@@ -212,7 +193,6 @@ func TestTheStonesAreTheSameStones(t *testing.T) {
 	}
 }
 
-// What the building is drawn by, at its edges.
 func TestWhatTheBuildingIsDrawnBy(t *testing.T) {
 	if got := cut(0, 200, 100); got != 100 {
 		t.Errorf("leaving a stone's width, a cut is at %d", got)

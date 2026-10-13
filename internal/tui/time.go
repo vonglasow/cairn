@@ -1,12 +1,5 @@
 package tui
 
-// The time spent and what a command answers, on the terminal board. The window
-// gained a page for the time spent and a way to the backups; the terminal had
-// neither, and a command typed at its prompt said nothing of what it
-// answered. A third tab lays the week out, b and B back the store up and list
-// the backups, and a command's answer is said until esc puts it away. See
-// docs/tui.md.
-
 import (
 	"strings"
 	"time"
@@ -28,8 +21,6 @@ type Answered struct {
 	Looked
 }
 
-// walkingWeeks is what a key does on the time tab: the arrows and h l walk the
-// weeks, t comes back to today's. Anything else is not the tab's.
 func (b Board) walkingWeeks(key string) (Board, bool) {
 	switch key {
 	case "left", "h":
@@ -51,7 +42,6 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 	return b, true
 }
 
-// readingWeek asks how long the work took over the week shown, up to today.
 func (b Board) readingWeek() tea.Cmd {
 	since, until, today := b.week, b.week.AddDate(0, 0, 6), engine.DayOf(b.clock())
 	return func() tea.Msg {
@@ -60,9 +50,6 @@ func (b Board) readingWeek() tea.Cmd {
 	}
 }
 
-// timeWeek is the week laid out down the screen: each day, its total, and a
-// line for each task worked on with its time — read whole rather than cut to a
-// seventh of a terminal's width — scrolled with j and k.
 func (b Board) timeWeek(l Layout) []string {
 	var lines []string
 	for i := range 7 {
@@ -78,14 +65,11 @@ func (b Board) timeWeek(l Layout) []string {
 	return lines[from:min(len(lines), from+room)]
 }
 
-// spent is one day of the week as the tab writes it.
 type spent struct {
 	Total string
 	Tasks []string
 }
 
-// timeOn is what a day of the sheet says: its total, and a line a task. A day
-// nothing was done on still says how long: nothing at all.
 func timeOn(sheet engine.Timesheet, day time.Time) spent {
 	on := sheet.On(day)
 	out := spent{Total: on.Says()}
@@ -98,7 +82,6 @@ func timeOn(sheet engine.Timesheet, day time.Time) spent {
 	return out
 }
 
-// answering opens what a command answered, over the board.
 func (b Board) answering(text string) Board {
 	b.said, b.saidAt = text, 0
 	if text != "" {
@@ -107,8 +90,6 @@ func (b Board) answering(text string) Board {
 	return b
 }
 
-// drawSaid is what a command answered, a screen of it, scrolled with the
-// arrows, until esc.
 func (b Board) drawSaid() string {
 	lines := strings.Split(strings.TrimRight(b.said, "\n"), "\n")
 	room := max(1, b.height-3)

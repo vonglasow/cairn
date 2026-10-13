@@ -1,9 +1,5 @@
 package engine
 
-// What a test kills only once && and || are swapped, or continue and break:
-// each case here is a branch the rest of the suite reached and never told
-// apart from its opposite.
-
 import (
 	"errors"
 	"fmt"
@@ -15,8 +11,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// A sweep that reaches a task already off the board passes over it and goes
-// on to the next, rather than stopping there.
 func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 	path := storeAt(t, "first", "second")
 	for _, n := range []string{"1", "2"} {
@@ -39,16 +33,12 @@ func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 	}
 }
 
-// Named as nothing, the number names no task, and what is left to archive by
-// is nothing at all.
 func TestArchive_aNumberNamedAsNothingNamesNoTask(t *testing.T) {
 	if _, err := Do(TaskArchive, storeAt(t, "one"), given("number", "")); !errors.Is(err, ErrNothingToArchive) {
 		t.Errorf("err = %v, want ErrNothingToArchive", err)
 	}
 }
 
-// A store from a newer cairn is said as itself, never as a store that cannot
-// be read — the same as one that is behind.
 func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
 	for _, kind := range []error{ErrStoreBehind, ErrNewerStore} {
 		if err := storeProblem(fmt.Errorf("opening: %w", kind)); errors.Is(err, ErrStore) {
@@ -57,15 +47,12 @@ func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
 	}
 }
 
-// Check reads every argument named, past the ones that were not.
 func TestCheck_readsPastAnArgumentLeftOut(t *testing.T) {
 	if err := TaskArchive.Check(given("due-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
 		t.Errorf("Check = %v, want the day refused", err)
 	}
 }
 
-// A task's creation writes down every attribute it carries, past the ones it
-// carries nothing for.
 func TestCreation_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	acts, err := Do(TraceShow, path, given("number", "1"))
@@ -82,7 +69,6 @@ func TestCreation_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	t.Error("the column the task started in was not written down")
 }
 
-// A variable that names the store as nothing names no store.
 func TestLocate_refusesAVariableNamingNothing(t *testing.T) {
 	h := Home{Lookup: func(string) (string, bool) { return "", true }, Missing: errors.New("no home")}
 	if _, err := Locate(h); !errors.Is(err, ErrStore) {
@@ -90,7 +76,6 @@ func TestLocate_refusesAVariableNamingNothing(t *testing.T) {
 	}
 }
 
-// Every word typed is read, past a yes named on its own.
 func TestRead_readsPastAYes(t *testing.T) {
 	in, err := TaskMove.Read([]string{"--first", "4"})
 	if err != nil || in.Given["number"] != "4" || in.Given["first"] != "true" {
@@ -98,7 +83,6 @@ func TestRead_readsPastAYes(t *testing.T) {
 	}
 }
 
-// Every field sent is read, past a list, a null and a yes.
 func TestFromJSON_readsPastEveryKindOfField(t *testing.T) {
 	in, err := TaskNew.FromJSON([]byte(`{"desc": null, "label": ["spec"], "title": "Write the spec"}`))
 	if err != nil || in.Given["title"] != "Write the spec" {
@@ -110,8 +94,6 @@ func TestFromJSON_readsPastEveryKindOfField(t *testing.T) {
 	}
 }
 
-// A narrowed listing counts the parts of a task among every task there is,
-// not only among the ones it kept.
 func TestListing_countsPartsTheNarrowingLeftOut(t *testing.T) {
 	path := storeAt(t, "Ship it")
 	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
@@ -129,8 +111,6 @@ func TestListing_countsPartsTheNarrowingLeftOut(t *testing.T) {
 	}
 }
 
-// A task deleted since keeps its time and loses its name, and the tasks after
-// it keep theirs.
 func TestTimesheet_namesWhatComesAfterATaskDeletedSince(t *testing.T) {
 	path := storeAt(t, "gone", "kept")
 	for _, n := range []string{"1", "2"} {
@@ -150,7 +130,6 @@ func TestTimesheet_namesWhatComesAfterATaskDeletedSince(t *testing.T) {
 	}
 }
 
-// actFacts reads what an act says about its field.
 type actFacts struct{ field string }
 
 func (f *actFacts) On(int)            {}
@@ -167,8 +146,6 @@ func (f *actFacts) At(time.Time)      {}
 
 var _ trace.Told = (*actFacts)(nil)
 
-// A deletion writes down everything the task held, past what it held nothing
-// of.
 func TestDeletion_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	if _, err := Do(TaskDelete, path, confirmed(given("number", "1"))); err != nil {
@@ -186,7 +163,6 @@ func TestDeletion_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	}
 }
 
-// deletedFacts reads what an act says a task was.
 type deletedFacts struct {
 	actFacts
 	was string
@@ -194,8 +170,6 @@ type deletedFacts struct {
 
 func (d *deletedFacts) Was(s string) { d.was = s }
 
-// Days are counted on the calendar: a moment late yesterday is a day ago, and
-// one early this morning is today, however few hours separate them.
 func TestDaysSince_countsTheDaysOnTheCalendar(t *testing.T) {
 	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.Local)
 	for _, c := range []struct {
@@ -214,8 +188,6 @@ func TestDaysSince_countsTheDaysOnTheCalendar(t *testing.T) {
 	}
 }
 
-// A task asked about says since when it has stood where it is; one that is
-// not says nothing of it.
 func TestStoodText_saysSinceWhenOnlyWhenItKnows(t *testing.T) {
 	task := add(t, openEngine(t), "Write the spec")
 	if got := stoodText(task, time.Time{}); got != "" {
@@ -226,9 +198,6 @@ func TestStoodText_saysSinceWhenOnlyWhenItKnows(t *testing.T) {
 	}
 }
 
-// The day is the one on the person's calendar, not the store's: a moment is
-// kept in UTC, and read as it is, a task taken up just after midnight in Paris
-// said it had stood there since the day before.
 func TestStoodText_saysTheDayOnTheLocalCalendar(t *testing.T) {
 	kept := time.Local
 	time.Local = time.FixedZone("UTC+2", 2*60*60)

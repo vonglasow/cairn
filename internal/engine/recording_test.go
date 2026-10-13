@@ -1,8 +1,5 @@
 package engine
 
-// What the engine writes down, asked of the engine: the history it hands back,
-// what a creation and a change record, and what a period reaches.
-
 import (
 	"errors"
 	"slices"
@@ -15,8 +12,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// actsOf reads back what was written down about a task, failing the test if the
-// engine will not say.
 func actsOf(t *testing.T, e *Engine, number int) []trace.Act {
 	t.Helper()
 	acts, err := e.historyOf(number)
@@ -26,14 +21,12 @@ func actsOf(t *testing.T, e *Engine, number int) []trace.Act {
 	return acts
 }
 
-// didOf reads what an act says was done, and about which attribute.
 func didOf(a trace.Act) (did, field, was, became string) {
 	var f recordedFacts
 	a.Tell(&f)
 	return f.did, f.field, f.was, f.became
 }
 
-// recordedFacts is an act's membrane for what these tests read off one.
 type recordedFacts struct {
 	task                    int
 	did, field, was, became string
@@ -52,9 +45,6 @@ func (f *recordedFacts) Through(string)        {}
 func (f *recordedFacts) ByHand()               {}
 func (f *recordedFacts) At(when time.Time)     { f.at = when }
 
-// A creation writes one act per attribute the task carries, each with what it
-// started as. One act carrying them all could not be read back apart, which is
-// the whole reason it is one each.
 func TestRecordCreated_writesOneActPerAttributeItStartedWith(t *testing.T) {
 	e := openEngine(t)
 	added, err := e.add("Write the spec", Changes{Priority: of("high"), Description: of("the one")})
@@ -86,8 +76,6 @@ func TestRecordCreated_writesOneActPerAttributeItStartedWith(t *testing.T) {
 	}
 }
 
-// An attribute the task does not carry writes no act: a creation says what a
-// task started with, not what it started without.
 func TestRecordCreated_writesNothingForWhatItDoesNotCarry(t *testing.T) {
 	e := openEngine(t)
 	added, err := e.add("Write the spec", Changes{})
@@ -104,8 +92,6 @@ func TestRecordCreated_writesNothingForWhatItDoesNotCarry(t *testing.T) {
 	}
 }
 
-// A change writes what the attribute went from and to, and writes nothing for
-// an attribute given the value it already held.
 func TestRecordChanges_writesOnlyWhatActuallyMoved(t *testing.T) {
 	e := openEngine(t)
 	added, err := e.add("Write the spec", Changes{Priority: of("high")})
@@ -129,9 +115,6 @@ func TestRecordChanges_writesOnlyWhatActuallyMoved(t *testing.T) {
 	}
 }
 
-// Nothing written down means nothing was ever there: a task always carries at
-// least its creation, and a deletion takes nothing away from a history — which
-// is what lets the absence of acts be the signal.
 func TestHistory_refusesATaskNothingWasEverWrittenAbout(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "The only one")
@@ -140,8 +123,6 @@ func TestHistory_refusesATaskNothingWasEverWrittenAbout(t *testing.T) {
 	}
 }
 
-// And a task since deleted still has one, which is the case the refusal above
-// must not catch.
 func TestHistory_stillAnswersForATaskThatIsGone(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Gone soon")).number
@@ -154,8 +135,6 @@ func TestHistory_stillAnswersForATaskThatIsGone(t *testing.T) {
 	}
 }
 
-// A period reaches across tasks from a day onward, and leaves out what came
-// before it.
 func TestSince_reachesFromADayOnward(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
@@ -178,8 +157,6 @@ func TestSince_reachesFromADayOnward(t *testing.T) {
 	}
 }
 
-// Left out, a period starts at the beginning of today: a listing of every act
-// cairn ever recorded is not a question anybody asked.
 func TestSinceWhen_startsAtTodayWhenNoDayIsGiven(t *testing.T) {
 	from, err := sinceWhen(Input{Given: map[string]string{}})
 	if err != nil {
@@ -208,16 +185,11 @@ func TestSinceWhen_refusesWhatIsNotADay(t *testing.T) {
 	}
 }
 
-// startOfToday is what a period starts at when no day was named.
 func startOfToday() time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 }
 
-// Every kind of move is written down, and says where it went. Asserted for all
-// three because each takes its own path through the store, and a recording
-// forgotten on one of them would be invisible on the others. Each moves a task
-// somewhere it was not: a move to where it stands is not written down.
 func TestMove_isWrittenDownWithWhereItWent(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
@@ -248,13 +220,6 @@ func TestMove_isWrittenDownWithWhereItWent(t *testing.T) {
 	}
 }
 
-// Taking a task up writes it down, and leaves whatever else is being worked on
-// alone.
-//
-// It used to release the one before and name what took over, so that a cut
-// could be told from a stop. Nothing is cut any more: several tasks are worked
-// on at once, one per agent session, and their stretches overlap on purpose.
-// What closes a stretch is letting go of that task, and nothing else.
 func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	e := openEngine(t)
 	first := factsOf(add(t, e, "First")).number
@@ -276,7 +241,6 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	if did, _, _, _ := didOf(onFirst[0]); did != trace.FocusTaken {
 		t.Errorf("the act is %q, want %q", did, trace.FocusTaken)
 	}
-	// And letting it go writes the release, which is what closes its stretch.
 	if err := e.letGoOf(first); err != nil {
 		t.Fatalf("LetGoOf: %v", err)
 	}
@@ -284,9 +248,6 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	if len(released) != 2 {
 		t.Fatalf("%d acts once it was let go, want a take and a release", len(released))
 	}
-	// The release names nothing: nothing took over. It used to name the task
-	// that had, so a cut could be told from a stop — and with several held at
-	// once there is no cut to tell.
 	did, _, _, became := didOf(released[1])
 	if did != trace.FocusReleased {
 		t.Errorf("the second act is %q, want %q", did, trace.FocusReleased)
@@ -299,8 +260,6 @@ func TestPutInFocus_writesTheTakeAndLeavesTheRestHeld(t *testing.T) {
 	}
 }
 
-// Taking the focus where it already is writes nothing: a stretch closed and
-// reopened on the same task at the same moment is a switch nobody made.
 func TestPutInFocus_writesNothingWhenItIsAlreadyThere(t *testing.T) {
 	e := openEngine(t)
 	only := factsOf(add(t, e, "The only one")).number
@@ -316,9 +275,6 @@ func TestPutInFocus_writesNothingWhenItIsAlreadyThere(t *testing.T) {
 	}
 }
 
-// Letting go writes a release naming nothing — a stop, not a cut. Letting go of
-// nothing writes nothing at all, since a release with no stretch open would
-// fault every duration around it.
 func TestLetGo_writesAReleaseOnlyWhenSomethingWasHeld(t *testing.T) {
 	e := openEngine(t)
 	only := factsOf(add(t, e, "The only one")).number
@@ -347,8 +303,6 @@ func TestLetGo_writesAReleaseOnlyWhenSomethingWasHeld(t *testing.T) {
 	}
 }
 
-// A task being worked on that goes away closes its stretch first, then records
-// the deletion. Deleting some other task closes nothing.
 func TestDelete_closesTheStretchOnlyOnTheTaskThatWasHeld(t *testing.T) {
 	e := openEngine(t)
 	held := factsOf(add(t, e, "Being worked on")).number
@@ -382,8 +336,6 @@ func TestDelete_closesTheStretchOnlyOnTheTaskThatWasHeld(t *testing.T) {
 	}
 }
 
-// Two attributes changing in one edit write two acts, not one: a recording that
-// stopped after the first would look right on every edit that changes one thing.
 func TestRecordChanges_writesEveryAttributeThatMoved(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Write the spec")).number
@@ -408,8 +360,6 @@ func TestRecordChanges_writesEveryAttributeThatMoved(t *testing.T) {
 	}
 }
 
-// A length of time is written down as a person reads one, and an absent one is
-// not written down at all.
 func TestRecordCreated_writesALengthOfTimeItStartedWith(t *testing.T) {
 	e := openEngine(t)
 	added, err := e.add("Write the spec", Changes{Estimate: of("90m")})
@@ -429,9 +379,6 @@ func TestRecordCreated_writesALengthOfTimeItStartedWith(t *testing.T) {
 	}
 }
 
-// The two operations are run here, not only the engine methods behind them: a
-// Run body is where an argument becomes a call, and the lines that check what
-// came back are exercised by nothing else.
 func TestTraceShow_answersWithTheHistoryOrRefuses(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Write the spec")).number
@@ -482,9 +429,6 @@ func TestTraceList_answersWithThePeriodOrRefusesTheDay(t *testing.T) {
 	}
 }
 
-// A period is rendered as its acts and nothing else: how long the work took is
-// the timesheet's to say, worked out day by day, and a second sum under the
-// acts counted a focus left open for days as days of work.
 func TestRenderText_rendersAPeriodAsItsActs(t *testing.T) {
 	e := openEngine(t)
 	first := factsOf(add(t, e, "First")).number
@@ -508,10 +452,6 @@ func TestRenderText_rendersAPeriodAsItsActs(t *testing.T) {
 	}
 }
 
-// The trace recorded that a task was deleted and not what the task was: no
-// title, no description, nothing. Reading and undoing are two different asks and
-// cairn answers only the first — but a trace that keeps no content makes even a
-// manual restore impossible, which is a different thing from not having undo.
 func TestDeletingWritesDownWhatWentWithIt(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
@@ -537,9 +477,6 @@ func TestDeletingWritesDownWhatWentWithIt(t *testing.T) {
 	}
 }
 
-// Taking a task off the board and bringing it back are acts on it like any
-// other, and its history says both. They used to change the task and write
-// nothing down, so a task off the board had no say in how it got there.
 func TestArchiving_isWrittenDown(t *testing.T) {
 	e := openEngine(t)
 	n := factsOf(add(t, e, "Ship it")).number
@@ -564,8 +501,6 @@ func TestArchiving_isWrittenDown(t *testing.T) {
 	}
 }
 
-// How long a task has sat where it is is read off what was done to it: the
-// moment its column last changed, or the moment it was made.
 func TestShow_saysSinceWhenATaskHasStoodInItsColumn(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	made, err := Do(TaskShow, path, given("number", "1"))
@@ -602,7 +537,6 @@ func TestShow_saysSinceWhenATaskHasStoodInItsColumn(t *testing.T) {
 	}
 }
 
-// momentOf reads what an act changed and when.
 type momentOf struct {
 	actFacts
 	at time.Time

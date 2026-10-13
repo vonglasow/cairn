@@ -5,10 +5,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// line is one act, written the way the detail shows it: when, what was done,
-// what it went from and to when it was about something in particular, and who
-// did it when it was not the person engine. What the act says is
-// engine.SaidOf's to hear; how each piece is inked is the board's.
 func (b Board) line(act trace.Act) string {
 	said := engine.SaidOf(act)
 	out := b.skin.Faint.Render(said.When) + "  " + b.skin.Bright.Render(said.Did)
@@ -23,7 +19,6 @@ func (b Board) line(act trace.Act) string {
 	return out
 }
 
-// written is how a value that was not there is drawn in a history.
 func written(s string) string {
 	if s == "" {
 		return "—"

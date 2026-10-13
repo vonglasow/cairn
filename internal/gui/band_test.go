@@ -5,10 +5,6 @@ import (
 	"testing"
 )
 
-// The band and its three lanes, and the edges of every rectangle. A point one
-// pixel outside a box is outside it, and a board that answered otherwise would
-// pick up a card nobody pointed at.
-
 func TestABoxHoldsItsOwnEdgesAndNotTheNextOnes(t *testing.T) {
 	box := Box{X: 10, Y: 20, W: 30, H: 40}
 	for _, c := range []struct {
@@ -66,8 +62,6 @@ func TestWhichLaneAPointFallsIn(t *testing.T) {
 	}
 }
 
-// A card in the band is clicked the same way as one in a column, and the
-// window has to look in the lanes to find it.
 func TestClickingACardInALaneChoosesIt(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -84,8 +78,6 @@ func TestClickingACardInALaneChoosesIt(t *testing.T) {
 	}
 }
 
-// A lane with nothing in it answers nothing, rather than the card that would
-// have been there.
 func TestClickingAnEmptyLaneChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
@@ -100,8 +92,6 @@ func TestClickingAnEmptyLaneChoosesNothing(t *testing.T) {
 	}
 }
 
-// Dragging out of the band puts the task back in a column, which is the way
-// work starts moving again.
 func TestDraggingOutOfALaneReturnsATaskToAColumn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
@@ -121,8 +111,6 @@ func TestDraggingOutOfALaneReturnsATaskToAColumn(t *testing.T) {
 	}
 }
 
-// A drop in no column and no lane — the margin, the bar, the gap between two
-// columns — changes nothing rather than guessing.
 func TestADropOnNothingChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -140,7 +128,6 @@ func TestADropOnNothingChangesNothing(t *testing.T) {
 	}
 }
 
-// Letting go having taken hold of nothing is nothing at all.
 func TestLettingGoOfNothingDoesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -154,8 +141,6 @@ func TestLettingGoOfNothingDoesNothing(t *testing.T) {
 	}
 }
 
-// Dropping past the last card of a column puts the task behind all of them,
-// which is what the bottom of a column means.
 func TestDroppingBelowEverythingPutsItLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -176,8 +161,6 @@ func TestDroppingBelowEverythingPutsItLast(t *testing.T) {
 	}
 }
 
-// Scrolling never goes above the first card nor past the last, whatever it is
-// asked for.
 func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 	f := newFake()
 	var many []engine.Card
@@ -188,8 +171,6 @@ func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 
 	l := w.Layout()
 	most := len(many)*CardHeight - l.Column[1].H
-	// A point in the column's body rather than on a card: once a column is
-	// scrolled to its end, its first card is off the top of it.
 	over := Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}
 
 	w = w.Scroll(over, CardHeight*100)
@@ -202,8 +183,6 @@ func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 	}
 }
 
-// A lane of the band is scrolled the same way, between the same two ends, and
-// leaves the columns above it where they were.
 func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
 	f := newFake()
 	var many []engine.Card
@@ -229,7 +208,6 @@ func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
 	}
 }
 
-// A point in no column at all scrolls nothing.
 func TestScrollingOverNothingScrollsNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -238,8 +216,6 @@ func TestScrollingOverNothingScrollsNothing(t *testing.T) {
 	}
 }
 
-// Just past the last card of a column is the column and no card: a board that
-// answered the last card there would choose one nobody pointed at.
 func TestJustPastTheLastCardChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -256,9 +232,6 @@ func TestJustPastTheLastCardChoosesNothing(t *testing.T) {
 	}
 }
 
-// Exactly one slot past the last card is the boundary the "behind this one"
-// reckoning stops at. One short of it names a task; on it, there is no task to
-// name and the drop means last.
 func TestTheSlotJustPastTheLastCardMeansLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,

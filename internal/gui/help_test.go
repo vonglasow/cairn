@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// The help's Close is drawn at the foot of the panel the help is drawn in,
-// which on a tall window is shorter than the panel every other screen gets.
-// A click has to find it there, and a click just under the help is off it.
 func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	open := New(newFake(), 1600, 2000).Key("?")
@@ -24,7 +21,6 @@ func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
 	}
 }
 
-// The wheel over the help walks it, and settles at its last line.
 func TestTheWheelWalksTheHelp(t *testing.T) {
 	open := New(newFake(), 1024, 640).Key("?")
 	inside := Point{X: open.HelpBox().X + 40, Y: open.HelpBox().Y + 80}
@@ -38,7 +34,6 @@ func TestTheWheelWalksTheHelp(t *testing.T) {
 	}
 }
 
-// On a short window the bar beside the help is drawn, and its thumb with it.
 func TestTheHelpDrawsItsBarWhenItScrolls(t *testing.T) {
 	open := New(newFake(), 1024, 640).Key("?")
 	bar, ok := open.HelpBar()
@@ -50,13 +45,8 @@ func TestTheHelpDrawsItsBarWhenItScrolls(t *testing.T) {
 	}
 }
 
-// The help's measures, to the pixel. Each is arithmetic of the panel's own
-// parts, and a sum gone wrong by a padding draws a help one line short, a
-// column running under the bar, or a bar beside nothing.
 func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
 	tall := New(newFake(), 1600, 2000).Key("?")
-	// 106 is the heading, its rule and the offers at the foot; each line is
-	// one apart.
 	if got, want := tall.HelpBox(), (Box{X: 200, Y: 166, W: 1200, H: 106 + len(tall.HelpRows())*apart}); got != want {
 		t.Errorf("a tall window's help is %+v, want %+v — as tall as its %d lines", got, want, len(tall.HelpRows()))
 	}
@@ -68,8 +58,6 @@ func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
 		t.Errorf("what the third key does is at %+v, want %+v", value, want)
 	}
 
-	// 660 high leaves 456 between the first line and the offers: thirteen
-	// lines once the padding above the offers is kept, fourteen without it.
 	short := New(newFake(), 1024, 660).Key("?")
 	if got := short.HelpRoom(); got != 13 {
 		t.Errorf("a short window's help shows %d lines, want 13", got)
@@ -80,7 +68,6 @@ func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
 	}
 }
 
-// The help walks back up as it walks down: ↑ and k, a line at a time.
 func TestTheHelpWalksBackUp(t *testing.T) {
 	down := New(newFake(), 1024, 640).Key("?").Key("down").Key("j")
 	if got := down.HelpFrom(); got != 2 {

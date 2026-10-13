@@ -7,11 +7,7 @@ import (
 	"cairn/internal/trace"
 )
 
-// Said is one act of a task's history, the way a person reads it: when, what
-// was done, what about, what it went from and to, and which surface did it
-// when it was not the person reading. Both boards show a history; each read
-// the act its own way, and the window wrote the moment the way a machine reads
-// one and left out what a value had been.
+// Said is one act of a task's history, the way a person reads it: when, what was done, what about, what it went from and to, and which surface did it when it was not the person reading.
 type Said struct {
 	When, Did, Field, Was, Became, Through string
 }
@@ -23,8 +19,7 @@ func SaidOf(act trace.Act) Said {
 	return h.said
 }
 
-// Line is the act on one line, the way a board writes it when it has no ink to
-// tell the pieces apart with.
+// Line is the act on one line, the way a board writes it when it has no ink to tell the pieces apart with.
 func (s Said) Line() string {
 	out := s.When + "  " + s.Did
 	if s.Field != "" {
@@ -36,7 +31,6 @@ func (s Said) Line() string {
 	return out
 }
 
-// saying is the membrane an act tells its facts to.
 type saying struct{ said Said }
 
 func (h *saying) On(int)                {}

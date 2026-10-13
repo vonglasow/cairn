@@ -7,12 +7,10 @@ import (
 	"testing"
 )
 
-// errNotANumber is what a set of numbers refuses a piece with, in this test.
 var errNotANumber = errors.New("a number is expected")
 
 var errBothWays = errors.New("replaced or changed, not both")
 
-// readNumber reads one piece of a set of numbers.
 func readNumber(raw, value string, _ bool) (int, error) {
 	var n int
 	if _, err := fmt.Sscan(value, &n); err != nil || n <= 0 {
@@ -21,10 +19,6 @@ func readNumber(raw, value string, _ bool) (int, error) {
 	return n, nil
 }
 
-// One grammar for every set a caller changes — labels, what blocks a task,
-// what it serves: a plain member says what the set becomes, + adds, - takes
-// away, a comma names several in one, and mixing the two ways is refused. It
-// was written once for labels and once for numbers.
 func TestParseSetChange_isOneGrammarForEverySet(t *testing.T) {
 	for _, tc := range []struct {
 		what  string

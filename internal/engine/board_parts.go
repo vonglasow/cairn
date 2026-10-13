@@ -5,8 +5,7 @@ import (
 	"cairn/internal/task"
 )
 
-// Added is the number of the task an add answered with: the parent the parts
-// written in its form are added under. Nothing for an answer with no task.
+// Added is the number of the task an add answered with: the parent the parts written in its form are added under.
 func Added(answer Answer) int {
 	if answer.Task == nil {
 		return 0
@@ -14,8 +13,7 @@ func Added(answer Answer) int {
 	return task.OfTask(*answer.Task).Number
 }
 
-// PartState is the state a part is put in: done when ticked, todo when not —
-// the only two a part may stand in.
+// PartState is the state a part is put in: done when ticked, todo when not — the only two a part may stand in.
 func PartState(done bool) string {
 	if done {
 		return string(domain.Done)
@@ -23,18 +21,9 @@ func PartState(done bool) string {
 	return string(domain.Todo)
 }
 
-// partsArgument is how a task's parts are handed over with it: one a line,
-// "#4 [x] its title" for a part there already and "[ ] its title" for a new
-// one — the lines a board's form writes them in.
 var partsArgument = Argument{Name: "parts", Kind: Text,
 	Means: `its parts, one a line: "#4 [x] its title" for one there already, "[ ] its title" for a new one; a part not named is left where it is`}
 
-// settleParts settles what hangs under a task with the parts it was handed, in
-// the act that handed them over: a line carrying a number is that part, named
-// and ticked as it reads; a line carrying none is a new part. A part the lines
-// no longer name is left where it is — deleting a task is an act of its own,
-// asked for as one. One part refused and the act is, so none of them is
-// written.
 func (e *Engine) settleParts(parent int, said string) error {
 	parts := PartsIn(said)
 	added := map[int]bool{}
@@ -57,10 +46,6 @@ func (e *Engine) settleParts(parent int, said string) error {
 	return e.orderingParts(parts, added)
 }
 
-// orderingParts puts the parts already there in the order the lines say,
-// column by column: a task moves among the ones it sits with, so the parts
-// done are ordered among themselves and those left among theirs. A part added
-// on the way goes in behind them, where an add puts it.
 func (e *Engine) orderingParts(parts []Part, added map[int]bool) error {
 	for _, done := range []bool{false, true} {
 		var order []int
@@ -85,9 +70,7 @@ func (e *Engine) orderingParts(parts []Part, added map[int]bool) error {
 	return nil
 }
 
-// PartsGone is what hung under a task when its form was opened and its parts
-// lines no longer name: the parts a board deletes, each as an act of its own,
-// once the task and the rest of its parts are saved.
+// PartsGone is what hung under a task when its form was opened and its parts lines no longer name: the parts a board deletes, each as an act of its own, once the task and the rest of its parts are saved.
 func PartsGone(said string, had []Card, parent int) []int {
 	kept := map[int]bool{}
 	for _, part := range PartsIn(said) {

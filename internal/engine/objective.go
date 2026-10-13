@@ -9,29 +9,15 @@ import (
 	"cairn/internal/task"
 )
 
-// ErrNoSuchObjective is the name the engine answers with when an objective is
-// asked for by a number nothing carries. A surface may not import the store,
-// so the name it recognises has to live here.
+// ErrNoSuchObjective is the name the engine answers with when an objective is asked for by a number nothing carries.
 var ErrNoSuchObjective = store.ErrNoSuchObjective
 
-// ErrSubTaskServesNoObjective is one rule seen from three sides: a task never
-// carries a parent and an objective at the same time. Re-exported from
-// domain, which is where a task's own rules live: a surface asks the engine
-// and may not import domain, so the name it recognises has to live here too.
+// ErrSubTaskServesNoObjective is one rule seen from three sides: a task never carries a parent and an objective at the same time.
 var ErrSubTaskServesNoObjective = task.ErrSubTaskServesNoObjective
 
-// ErrObjectiveCarriesTasks is why an objective with work under it is not
-// deleted: the tasks would be left pointing at a number nothing carries.
-// Re-exported from domain, which is where an objective's own rules live: a
-// surface asks the engine and may not import domain, so the name it
-// recognises has to live here too.
+// ErrObjectiveCarriesTasks is why an objective with work under it is not deleted: the tasks would be left pointing at a number nothing carries.
 var ErrObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
 
-// objectives is what the engine needs from whatever keeps its objectives.
-// Declared here, by the consumer, for the same reason tasks is.
-// It names only what is called today. An interface listing what a caller might
-// want one day is a promise nothing checks, and the store already offers the
-// rest — each arrives here with the operation that needs it.
 type objectives interface {
 	KeepObjective(objective.Objective) (objective.Objective, error)
 	FindObjective(int) (objective.Objective, error)
@@ -43,13 +29,6 @@ type objectives interface {
 }
 
 // ObjectiveChanges are the attributes an operation was given for an objective.
-// A nil field was not named at all; a field pointing at an empty value was
-// named and emptied — which is how an attribute is taken away.
-//
-// It is not Changes: an objective has no parent, no objective of its own,
-// nothing in its way, no words beside that and no time spent, and its state is
-// not a task's. A shared struct would offer every surface five fields that mean
-// nothing here; what the two carry alike is applied once, by applyCarried.
 type ObjectiveChanges struct {
 	Title       *string
 	Description *string
@@ -60,13 +39,11 @@ type ObjectiveChanges struct {
 	Estimate    *string
 }
 
-// named says whether anything at all was given to change.
 func (c ObjectiveChanges) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil
 }
 
-// addObjective records an objective under the title given.
 func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
 	o, err := objective.NewObjective(title)
 	if err != nil {
@@ -78,23 +55,18 @@ func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objec
 	return e.objectives.KeepObjective(o)
 }
 
-// listObjectives hands back every objective, in the order they were added.
 func (e *Engine) listObjectives() ([]objective.Objective, error) {
 	return e.objectives.AllObjectives()
 }
 
-// narrowedObjectives hands back the objectives a narrowing keeps. Told nothing,
-// it keeps everything, so this is ListObjectives with something to say.
 func (e *Engine) narrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
 	return e.objectives.NarrowedObjectives(kept)
 }
 
-// showObjective hands back the objective carrying number.
 func (e *Engine) showObjective(number int) (objective.Objective, error) {
 	return e.objectives.FindObjective(number)
 }
 
-// editObjective changes what was named and leaves the rest alone.
 func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Objective, error) {
 	if !c.named() {
 		return objective.Objective{}, ErrNothingToChange
@@ -112,9 +84,6 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	return o, nil
 }
 
-// deleteObjective removes an objective, refusing while tasks are still under
-// it. Cascading would take work nobody named, and setting those tasks loose
-// silently would leave somebody wondering where their objective went.
 func (e *Engine) deleteObjective(number int) error {
 	serving, err := e.objectives.TasksServing(number)
 	if err != nil {
@@ -126,10 +95,6 @@ func (e *Engine) deleteObjective(number int) error {
 	return e.objectives.DeleteObjective(number)
 }
 
-// objectiveFacts is an objective's membrane for what the engine, or a test on
-// it, has to read back off it — everything else is a rule the objective
-// already owns, or a fact only a builder writing a new objective needs told
-// to it.
 type objectiveFacts struct {
 	number             int
 	title, description string
@@ -154,20 +119,12 @@ func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} 
 func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
 func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
 
-// factsOfObjective reads back what the engine needs from an objective,
-// without reaching into fields that stopped being exported.
 func factsOfObjective(o objective.Objective) objectiveFacts {
 	var f objectiveFacts
 	o.Tell(&f)
 	return f
 }
 
-// applyObjective lays the changes over an objective, refusing any value it
-// cannot make sense of. A field that was not named is left exactly as it was.
-//
-// It reads like apply for a task, and stays written out rather than shared:
-// every line here is a call to a parser both already use, and the one piece
-// with logic of its own — the labels — is changedLabels.
 func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) (objective.Objective, error) {
 	current := factsOfObjective(o)
 	a := &objective.AsTold{}
@@ -189,22 +146,12 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 	return a.Objective(), nil
 }
 
-// canServe says whether a task may serve the objectives it was told to. Every
-// one has to exist, and the task has to be one in its own right: what hangs
-// under a task never serves an objective directly.
-//
-// One that does not exist turns down the whole set, and the task keeps what it
-// had. Attaching the ones that do and dropping the rest would write a set
-// nobody asked for, and say nothing about the one that went missing.
 func (e *Engine) canServe(t task.Task) error {
 	served := factsOf(t).objectives
 	if len(served) == 0 {
 		return nil
 	}
 	if err := t.MayServeAnObjective(); err != nil {
-		// No number in front: at creation there is none yet, and "task 0" reads
-		// as a task somebody could go and look at. On an edit the number was
-		// just typed, so repeating it adds nothing either.
 		return err
 	}
 	for _, one := range served {
@@ -215,23 +162,14 @@ func (e *Engine) canServe(t task.Task) error {
 	return nil
 }
 
-// tasksUnder hands back the tasks put directly under an objective. Sub-tasks
-// are not among them: they are counted towards the objective, never listed as
-// serving it.
 func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
 	return e.objectives.TasksServing(number)
 }
 
-// objectiveProgress is how far along an objective is: the tasks put under it,
-// and the sub-tasks hanging under those. The two are counted apart because
-// they are not the same thing, and the objective has to exist to be asked.
 func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
 	if _, err := e.objectives.FindObjective(number); err != nil {
 		return domain.Progress{}, err
 	}
-	// Counted the way every listing counts: one reading of every task, then
-	// arithmetic. Asking for the parts of each task it serves read every link
-	// of the store once per task — four queries a task, for one number.
 	_, objectives, err := e.alongEvery(nil, false)
 	if err != nil {
 		return domain.Progress{}, err
@@ -239,9 +177,6 @@ func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
 	return objectives[number], nil
 }
 
-// alongEvery is how far along every task and every objective is, counted from
-// one reading of every task — on the board or off it, the way showing one
-// counts them. Handed what was already read when that was everything.
 func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objectives map[int]domain.Progress, err error) {
 	all := read
 	if !everything {
@@ -270,8 +205,6 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 		p := tasks[f.parent]
 		p.SubTasks = counted(p.SubTasks, t)
 		tasks[f.parent] = p
-		// A part counts towards an objective by way of the task it hangs
-		// under, never on its own.
 		for _, o := range serves[f.parent] {
 			p := objectives[o]
 			p.SubTasks = counted(p.SubTasks, t)
@@ -281,9 +214,6 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	return tasks, objectives, nil
 }
 
-// taskProgress is how far along a task is, counted over what hangs under it.
-// A task never counts itself: two sub-tasks of which one is done is one of
-// two, and nobody reads it as one of three.
 func (e *Engine) taskProgress(number int) (domain.Progress, error) {
 	under, err := e.tasks.Under(number)
 	if err != nil {
@@ -296,22 +226,12 @@ func (e *Engine) taskProgress(number int) (domain.Progress, error) {
 	return p, nil
 }
 
-// counted adds one task to a tally by telling it every fact it carries and
-// keeping only what a tally needs: the column it sits in.
 func counted(tally domain.Tally, t task.Task) domain.Tally {
 	c := task.NewCounter(tally)
 	t.Tell(c)
 	return c.Tally()
 }
 
-// objectiveAttributes are the seven attributes an objective carries, minus
-// title, which is taken as a positional argument where it can be given at
-// all.
-//
-// It is not taskAttributes with fields left out: an objective has no column
-// to sit in the way a task does, nothing to hang under and no time spent on
-// it, and a shared set would offer three flags that could only ever be
-// refused.
 var objectiveAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the objective is about"},
 	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
@@ -321,8 +241,6 @@ var objectiveAttributes = []Argument{
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 }
 
-// objectiveChanges turns what was named in in into the changes
-// addObjective and editObjective take.
 func objectiveChanges(in Input) ObjectiveChanges {
 	var c ObjectiveChanges
 	c.Description = in.Change("desc")
@@ -334,9 +252,6 @@ func objectiveChanges(in Input) ObjectiveChanges {
 	return c
 }
 
-// readObjective asks for everything one objective is shown with. Three calls
-// that always travel together, so ObjectiveShow and ObjectiveEdit cannot each
-// remember a different two of them.
 func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain.Progress, error) {
 	o, err := eng.showObjective(n)
 	if err != nil {
@@ -376,14 +291,11 @@ var ObjectiveNew = Operation{
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
-		// Nothing hangs under an objective that has just been created, so the
-		// progress is asked of nobody rather than of the store.
 		return Answer{Objective: &o, Progress: domain.Progress{}}, nil
 	},
 }
 
-// ObjectiveList names every objective, or only the ones carrying what was
-// named.
+// ObjectiveList names every objective, or only the ones carrying what was named.
 var ObjectiveList = Operation{
 	Thing: "objective",
 	Verb:  "list",
@@ -408,10 +320,6 @@ cairn objective list --state reached`,
 		if err != nil {
 			return Answer{}, err
 		}
-		// A narrowed listing is answered flat, the same way a narrowed listing
-		// of tasks is. Nothing hangs under an objective in a listing, so the
-		// two read alike either way — but the fields are kept apart so a reader
-		// of the answer can still tell which question was asked.
 		if kept.Narrows() {
 			return Answer{MatchedObjectives: all, Along: along}, nil
 		}
@@ -419,16 +327,13 @@ cairn objective list --state reached`,
 	},
 }
 
-// objectiveNarrowing are the facts a listing of objectives can be kept down to.
-// Not what it serves, since nothing puts an objective under another.
 var objectiveNarrowing = narrowedBy(objectiveAttributes, map[string]string{
 	"state":    "keep only the objectives standing here",
 	"priority": "keep only the objectives carrying this priority",
 	"label":    "keep only the objectives carrying this label; named twice, only those carrying both",
 })
 
-// ObjectiveShow says what an objective carries, what hangs under it and how
-// far along it is.
+// ObjectiveShow says what an objective carries, what hangs under it and how far along it is.
 var ObjectiveShow = Operation{
 	Thing:   "objective",
 	Verb:    "show",
@@ -486,8 +391,7 @@ var ObjectiveEdit = Operation{
 	},
 }
 
-// ObjectiveSearch names every objective carrying everything named, wherever
-// among its facts each one happens to sit.
+// ObjectiveSearch names every objective carrying everything named, wherever among its facts each one happens to sit.
 var ObjectiveSearch = Operation{
 	Thing:   "objective",
 	Verb:    "search",

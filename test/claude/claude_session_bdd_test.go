@@ -1,14 +1,5 @@
 package claude
 
-// Executable acceptance scenarios for bdd/claude-session.feature: the Claude
-// Code hook of plugin/claude, driven the way Claude Code drives it — one JSON
-// document on standard input per event — against the real cairn binary on a
-// store and notes of the scenario's own.
-//
-// It sits two levels under the root, as every package holding scenarios does,
-// and in no package of cairn's: the plugin knows cairn only through its
-// command line, and so do these steps.
-
 import (
 	"context"
 	"encoding/json"
@@ -28,8 +19,6 @@ import (
 	"cairn/test"
 )
 
-// idleSeconds is the idle delay the hook is given here, and settle how long
-// past it a step waits for the hook's wait to have answered.
 const (
 	idleSeconds = 1
 	settle      = 1500 * time.Millisecond
@@ -41,8 +30,6 @@ var (
 	buildFail error
 )
 
-// cairnOnPath builds cairn once for the whole package, into a directory the
-// hook finds it in through PATH, the way it finds it on a person's machine.
 func cairnOnPath(t *testing.T) string {
 	built.Do(func() {
 		binaries, buildFail = os.MkdirTemp("", "cairn-claude-")
@@ -60,8 +47,6 @@ func cairnOnPath(t *testing.T) string {
 	return binaries
 }
 
-// sessionWorld is one scenario's machine: its store, its notes, its home, and
-// what the hook last answered.
 type sessionWorld struct {
 	t      *testing.T
 	env    []string
@@ -85,10 +70,7 @@ func (w *sessionWorld) reset() {
 	)
 }
 
-// cairn runs the real command line, as the person or the MCP server would.
 func (w *sessionWorld) cairn(args ...string) (string, error) {
-	// The binary built here, by its path: a name would be looked for on this
-	// process's PATH, where a cairn installed on the machine answers instead.
 	run := exec.Command(filepath.Join(cairnOnPath(w.t), "cairn"), args...)
 	run.Env = w.env
 	out, err := run.CombinedOutput()
@@ -98,7 +80,6 @@ func (w *sessionWorld) cairn(args ...string) (string, error) {
 	return string(out), nil
 }
 
-// hook hands the hook one event, and keeps what it wrote and how it ended.
 func (w *sessionWorld) hook(event map[string]any) {
 	if _, ok := event["cwd"]; !ok {
 		event["cwd"] = "/work/project"
@@ -107,8 +88,6 @@ func (w *sessionWorld) hook(event map[string]any) {
 	run := exec.Command("bash", filepath.Join("..", "..", "plugin", "claude", "hooks", "cairn-session.sh"))
 	run.Env = w.env
 	run.Stdin = strings.NewReader(string(input))
-	// The idle wait outlives the hook on purpose; its output is closed, but a
-	// bound keeps a child that held a pipe from hanging the run.
 	run.WaitDelay = time.Second
 	out, err := run.CombinedOutput()
 	w.said, w.failed = string(out), err
@@ -131,7 +110,6 @@ func (w *sessionWorld) event(session, name string) {
 	w.hook(map[string]any{"hook_event_name": name, "session_id": session})
 }
 
-// aTask adds tasks until the one numbered n exists.
 func (w *sessionWorld) aTask(n int) error {
 	for w.tasks < n {
 		w.tasks++
@@ -142,9 +120,6 @@ func (w *sessionWorld) aTask(n int) error {
 	return nil
 }
 
-// holds ties a session to a task without the hook — the entry written by hand
-// and the focus taken by cairn — so that what a scenario asserts is never the
-// precondition coming back through the code under test.
 func (w *sessionWorld) holds(session string, n int) error {
 	if err := w.aTask(n); err != nil {
 		return err
@@ -161,8 +136,6 @@ func (w *sessionWorld) holds(session string, n int) error {
 	return err
 }
 
-// entry is what a session's entry in a task's notes says, found by its
-// session and not by its day, so a scenario run across midnight still finds it.
 func (w *sessionWorld) entry(session string, n int) (string, error) {
 	found, _ := filepath.Glob(filepath.Join(w.notes, strconv.Itoa(n), "*-session-"+session+".md"))
 	if len(found) != 1 {

@@ -476,14 +476,6 @@ func TestEngine_refusesATimeItCannotMakeSenseOf(t *testing.T) {
 	}
 }
 
-// A task goes off with what hangs under it. It used to be refused while a part
-// was there, and the parts are reachable only in the form of the task they
-// belong to — so a task that carried one could not be deleted at all once the
-// board stopped drawing them.
-//
-// It is the rule archiving already goes by: a part goes off the board with the
-// work it belongs to. A part is not work in its own right; it is a line of a
-// list its task owns.
 func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
 	e := openEngine(t)
 	ship := factsOf(add(t, e, "Ship it")).number
@@ -505,8 +497,6 @@ func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
 	}
 }
 
-// What is written about a task reaches a terminal as it was written, from
-// more than one surface, so an escape among it is refused before it is kept.
 func TestEngine_refusesProseATerminalWouldObey(t *testing.T) {
 	for name, c := range map[string]Changes{
 		"description": {Description: of("look \x1b]52;c;aGk=\x07 here")},
@@ -521,8 +511,6 @@ func TestEngine_refusesProseATerminalWouldObey(t *testing.T) {
 	}
 }
 
-// A deletion names the tasks it was in the way of: the link goes with it,
-// and afterwards nothing says a task once waited on it.
 func TestDelete_namesWhatItWasBlocking(t *testing.T) {
 	path := storeAt(t, "Write the spec", "Ship it", "Unrelated")
 	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "2"}, Listed: map[string][]string{"blocker": {"1"}}}); err != nil {
@@ -543,7 +531,6 @@ func TestDelete_namesWhatItWasBlocking(t *testing.T) {
 	}
 }
 
-// The version a board watches moves when somebody else writes, and only then.
 func TestVersion_movesWhenAnotherWrites(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	watching, err := Open(path)
@@ -566,9 +553,6 @@ func TestVersion_movesWhenAnotherWrites(t *testing.T) {
 	}
 }
 
-// Several tasks are deleted in one act, all of them or none: a deletion of
-// three that met a number with no task behind it took the first two anyway,
-// and left somebody to work out which had gone.
 func TestDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	path := storeAt(t, "First", "Second", "Third")
 	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3", "99"}}}); err == nil {
@@ -589,7 +573,6 @@ func TestDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	}
 }
 
-// Several tasks are archived in one act, all of them or none.
 func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 	path := storeAt(t, "First", "Second", "Third")
 	if _, err := Do(TaskArchive, path, given("number", "3")); err != nil {
@@ -610,7 +593,6 @@ func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 	}
 }
 
-// Several objectives are deleted in one act, all of them or none.
 func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	path := storeAt(t)
 	for _, title := range []string{"One", "Two"} {
@@ -629,7 +611,6 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	}
 }
 
-// Archiving names more tasks beside a number, never instead of one.
 func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	path := storeAt(t, "First", "Second")
 	_, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": "backlog"}, Listed: map[string][]string{"also": {"2"}}})
@@ -641,8 +622,6 @@ func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	}
 }
 
-// A number beside the first is a task's: nought and less are refused, the way
-// a word is.
 func TestDelete_refusesNoughtBesideTheFirst(t *testing.T) {
 	path := storeAt(t, "First", "Second")
 	for _, beside := range []string{"0", "-2"} {

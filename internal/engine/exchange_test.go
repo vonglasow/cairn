@@ -8,8 +8,6 @@ import (
 	"testing"
 )
 
-// ran asks the engine at path for each line, read the way the command line
-// reads it, and fails the test on the first refusal.
 func ran(t *testing.T, path string, asks ...func() (Operation, Input)) {
 	t.Helper()
 	for _, ask := range asks {
@@ -34,8 +32,6 @@ func asked(op Operation, pairs ...string) func() (Operation, Input) {
 	}
 }
 
-// Every task is written out, archived ones included, with the objectives they
-// serve; a file already there is refused.
 func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	path := storeAt(t)
 	ran(t, path,
@@ -76,8 +72,6 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	}
 }
 
-// The tasks of a file are added as new ones, after what the store holds, and
-// what they carry points at their new numbers.
 func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	from := storeAt(t)
 	ran(t, from,
@@ -127,15 +121,12 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	if here := show("1"); !strings.Contains(here, "Already here") {
 		t.Errorf("task 1 became:\n%s", here)
 	}
-	// Read twice, it is added twice: nothing is merged.
 	ran(t, path, asked(TaskImport, "from", file))
 	if listed, _ := Do(TaskList, path, Input{Given: map[string]string{"with-archived": "true"}}); len(listed.Tasks) < 9 {
 		t.Errorf("read twice, the store lists %d tasks", len(listed.Tasks))
 	}
 }
 
-// A file that is not an export, or whose tasks point outside it, is refused
-// before anything is added.
 func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 	path := storeAt(t)
 	ran(t, path, asked(TaskNew, "title", "Already here"))
@@ -175,7 +166,6 @@ func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 	}
 }
 
-// A task pointing outside the file is named by the number the file gave it.
 func TestTaskImport_namesTheTaskTheFileDoesNotHold(t *testing.T) {
 	path := storeAt(t)
 	file := filepath.Join(t.TempDir(), "orphan.json")

@@ -2,9 +2,6 @@ package engine
 
 import "testing"
 
-// One key takes a task up or lets it go, takes it off the board or brings it
-// back: which, is what the card already says. Each board answered that its own
-// way — the terminal from the focus list, the window from the card.
 func TestToggles_areReadOffTheCard(t *testing.T) {
 	if FocusOp(Card{}).Name() != "task_focus" || FocusOp(Card{InFocus: true}).Name() != "task_unfocus" {
 		t.Error("taking up and letting go are not read off the card")
@@ -14,8 +11,6 @@ func TestToggles_areReadOffTheCard(t *testing.T) {
 	}
 }
 
-// A card or a goal found by its number in what was read. Looked for a dozen
-// times over, by hand, in both boards.
 func TestSnapshot_findsByNumber(t *testing.T) {
 	s := Snapshot{Cards: []Card{{Number: 2, Title: "Two"}}, Goals: []Goal{{Number: 5, Title: "Five"}}}
 	if c, ok := s.Card(2); !ok || c.Title != "Two" {
@@ -32,8 +27,6 @@ func TestSnapshot_findsByNumber(t *testing.T) {
 	}
 }
 
-// The word a board offers for an act is the act's own verb, so the offer and
-// what it does are one decision: what the engine says one key does to a card.
 func TestAnActIsOfferedByItsVerb(t *testing.T) {
 	if got := FocusOp(Card{InFocus: true}).Offered(); got != "Unfocus" {
 		t.Errorf("a card in focus is offered %q", got)

@@ -10,7 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// spec builds a numbered task with a title, for the tests below.
 func spec(t *testing.T) task.Task {
 	t.Helper()
 	built, err := task.NewTask("Write the spec")
@@ -23,10 +22,6 @@ func spec(t *testing.T) task.Task {
 	return a.Task()
 }
 
-// A machine reading the answer has to loop over the labels. A task carrying
-// none must therefore hand back an empty list, never a null: null is not a
-// list, and a reader that trusted the field would break on the first task
-// nobody labelled.
 func TestForWire_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	encoded, err := json.Marshal(engine.OfTask(spec(t), domain.Progress{}))
 	if err != nil {

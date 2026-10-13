@@ -1,8 +1,5 @@
 package engine
 
-// How long the work took, day by day — read from the focus taken and let go,
-// and from time added by hand. See bdd/timesheet.feature and docs/trace.md.
-
 import (
 	"errors"
 	"fmt"
@@ -14,15 +11,12 @@ import (
 	"cairn/internal/trace"
 )
 
-// ErrDayToCome is returned when a day has not happened yet: work cannot be
-// said to have been done tomorrow.
+// ErrDayToCome is returned when a day has not happened yet: work cannot be said to have been done tomorrow.
 var ErrDayToCome = errors.New("that has not happened yet")
 
-// ErrNotATime is returned when time added by hand is not a length of time, or
-// is none at all.
+// ErrNotATime is returned when time added by hand is not a length of time, or is none at all.
 var ErrNotATime = errors.New("time added is an amount and a unit, as in 1h or 45m — less than nothing, as in -30m, takes some back")
 
-// dayOf reads a day given, or today, as the start of that day where cairn runs.
 func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	given := in.Given[name]
@@ -40,13 +34,6 @@ func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	return day, nil
 }
 
-// addTime writes down time spent on a task without it being in focus, for the
-// day it was spent. Nothing is changed but the history: the time is read back
-// from there, like the rest.
-//
-// The length is kept as it was given, once read: written back from a duration
-// it needed a branch for its sign, and a branch nobody can reach the far side
-// of, since no time at all is refused before this.
 func (e *Engine) addTime(number int, day time.Time, length string) error {
 	if _, err := e.tasks.Find(number); err != nil {
 		return err
@@ -54,15 +41,12 @@ func (e *Engine) addTime(number int, day time.Time, length string) error {
 	return e.record(number, trace.TimeAdded, "", domain.FormatDay(day), length)
 }
 
-// timed is how long the work took from one day to another, both counted whole,
-// with what each task worked on is called.
 func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, error) {
 	acts, err := e.since(first)
 	if err != nil {
 		return trace.Sheet{}, nil, err
 	}
 	sheet := trace.Timed(acts, first, last, time.Now())
-	// Each task worked on is read once, however many days it was worked on.
 	worked := map[int]bool{}
 	for _, day := range sheet.Days {
 		for _, w := range day.Tasks {
@@ -71,8 +55,6 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, erro
 	}
 	titles := map[int]string{}
 	for _, number := range slices.Sorted(maps.Keys(worked)) {
-		// A task deleted since keeps its time and loses its name: the number
-		// still says which one it was.
 		t, err := e.tasks.Find(number)
 		if errors.Is(err, ErrNoSuchTask) {
 			continue

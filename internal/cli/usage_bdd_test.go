@@ -1,8 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/usage.feature. The Gherkin is the
-// contract; this file is only the wiring between it and the real CLI.
-
 import (
 	"fmt"
 	"strings"
@@ -15,8 +12,6 @@ import (
 
 func initUsage(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
-		// The shared world runs `cairn` and says whether it succeeded; only
-		// what usage itself claims is written here.
 		w := test.NewWorld(t, run)
 		w.Register(sc)
 

@@ -7,10 +7,6 @@ import (
 	"cairn/internal/task"
 )
 
-// The claim the board rests on: an integer that moves when somebody else
-// writes, and does not move when nobody does. Measured rather than assumed —
-// PRAGMA data_version is standard SQLite, and this driver is not the C one.
-
 func TestVersion_DoesNotMoveOnItsOwn(t *testing.T) {
 	s := openStore(t)
 	first, err := s.Version()

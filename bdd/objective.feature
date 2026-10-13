@@ -1,7 +1,4 @@
 Feature: Objectives
-  An objective is what tasks are for. It carries a title, and a number to refer
-  to it by afterwards — the same way a task does, because it is looked at, put
-  right and thrown away by the same hands.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -77,14 +74,6 @@ Feature: Objectives
       And `cairn objective show 1` says nothing is under it
 
   Rule: A task can serve more than one objective
-
-    A piece of work serves what it serves. Made to serve one, a task that
-    advanced two had to pick, and the objective it did not name then counted it
-    as nothing — so how far along that objective was read low, and the fix was
-    to remember what cairn had not been told.
-
-    Named the way labels and blockers are: a plain number says what the set
-    becomes, +4 adds, -1 takes away, and nothing named sets the task loose.
 
     @objective-task-serves-two
     Scenario: a task can be given two objectives at once
@@ -162,11 +151,6 @@ Feature: Objectives
       And it says the task serves objectives 1 and 2
 
   Rule: A sub-task never serves an objective
-
-    A sub-task lives with the task it hangs under, and nowhere else. It counts
-    towards its parent's objective by way of that parent, and is never given
-    one of its own: an objective it served alone would be one its parent might
-    have nothing to do with.
 
     @objective-sub-task-refused
     Scenario: a sub-task cannot be given an objective
@@ -249,8 +233,6 @@ Feature: Objectives
 
     @objective-progress-keeps-what-was-archived
     Scenario: archived work still counts towards what it served
-      Archiving keeps a task whole, and what it did for an objective is part of
-      it: sweeping the done column leaves an objective as far along as it was.
 
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec" with the objective "1"
@@ -410,10 +392,6 @@ Feature: Objectives
 
   Rule: A listing of objectives can be narrowed the same way
 
-    The same reason as for tasks, and the same names. What it narrows by is what
-    an objective carries: where it stands, the priority, a label. Not the
-    objective it serves, since nothing puts an objective under another.
-
     @objective-list-narrowed-by-state
     Scenario: only the objectives standing where I asked
       Given I added an objective titled "Ship cairn 1.0" with the state "on-hold"
@@ -431,13 +409,6 @@ Feature: Objectives
       And it lists objective 1 titled "Ship cairn 1.0"
 
   Rule: An objective is looked for by anything it carries
-
-    The same way back to a number as for a task, and for the same reason: the
-    number is what every other command asks for and the one thing nobody
-    remembers. What an objective carries is not what a task carries — no
-    parent, nothing it serves, no time spent — so what can be looked in
-    differs. The rule does not: its number, where it stands, its priority and
-    its labels are looked in like the rest, as they are on the boards.
 
     @objective-search-by-a-word
     Scenario: a word from the title is the way back to a number
@@ -653,9 +624,6 @@ Feature: Objectives
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec" with the objective "1"
       And I added a task titled "Write the tests" with the objective "1"
-      # Under task 2, because task 1 is the one finished below and a task is
-      # not finished while something under it is open. The counts are the same
-      # either way: one sub-task, nobody's done.
       And I added a task titled "Ship it" with the parent "2"
       When I run `cairn task edit 1 --state done`
       And I run `cairn objective show 1 --json`

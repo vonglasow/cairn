@@ -1,14 +1,5 @@
 package engine
 
-// Turning what a caller handed over into an Input, once for every surface that
-// is not handed one already parsed.
-//
-// The command line has cobra, which reads its flags from the same description.
-// The terminal's prompt and the server had each written their own reader, and
-// each had dropped something on the way: the prompt put a list where a list is
-// never read, the server spelled a large number in a way no number is read.
-// What an argument's Kind says it carries is said here, and read here.
-
 import (
 	"bytes"
 	"encoding/json"
@@ -29,7 +20,6 @@ func Called(thing, verb string) (Operation, bool) {
 	return Operation{}, false
 }
 
-// argument finds what o takes under a name.
 func (o Operation) argument(name string) (Argument, bool) {
 	for _, arg := range o.Takes {
 		if arg.Name == name {
@@ -39,11 +29,7 @@ func (o Operation) argument(name string) (Argument, bool) {
 	return Argument{}, false
 }
 
-// Read turns the words a person typed after the two that name the operation
-// into what it takes: the positional arguments in the order it lists them — a
-// positional list taking every word left — then `--name value` or
-// `--name=value` for the rest. A yes is named on its own, a list flag named once
-// per item. The words the command line reads, so what works there works here.
+// Read turns the words a person typed after the two that name the operation into what it takes: the positional arguments in the order it lists them — a positional list taking every word left — then `--name value` or `--name=value` for the rest.
 func (o Operation) Read(words []string) (Input, error) {
 	in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	var positional []Argument
@@ -98,16 +84,7 @@ func (o Operation) Read(words []string) (Input, error) {
 	return in, nil
 }
 
-// FromJSON turns the arguments an agent sent, as one JSON object, into what
-// the operation takes. A list arrives as the strings it holds, a number as the
-// number it is — read as written, never through a float — a yes as true or
-// false, and null as the argument named as nothing, which is how a field is
-// emptied. A name the operation does not take is handed over as it is, for
-// Check to refuse by name.
-//
-// What cannot be read as what the argument carries is refused, naming the
-// argument: a bare string is not the one-element list it might have meant, and
-// a number among labels is not the label its digits would read as.
+// FromJSON turns the arguments an agent sent, as one JSON object, into what the operation takes.
 func (o Operation) FromJSON(sent []byte) (Input, error) {
 	in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	if len(bytes.TrimSpace(sent)) == 0 {
@@ -119,11 +96,6 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 	if err := decoder.Decode(&values); err != nil {
 		return Input{}, Misread(err)
 	}
-	// Written with ifs rather than a switch on purpose: a tagless switch puts
-	// its conditions outside any covered block, so a mutation of one of them
-	// reports as unreachable and the gate cannot judge it.
-	// In the order of the names rather than the map's: what is read the same
-	// way every time is what a test can tell apart from reading it wrong.
 	for _, name := range slices.Sorted(maps.Keys(values)) {
 		value := values[name]
 		arg, _ := o.argument(name)
@@ -152,8 +124,6 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 	return in, nil
 }
 
-// stringsOf reads a JSON list of strings. Null empties it, the same as any
-// other kind.
 func stringsOf(value any) ([]string, error) {
 	if value == nil {
 		return []string{}, nil

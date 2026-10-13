@@ -7,10 +7,6 @@ import (
 	"testing"
 )
 
-// Where the cursor goes: across the columns, down a column and into the band,
-// along the objectives, to either end, and where it falls when what it held
-// went away.
-
 func TestWalkingAcrossToAnEmptyColumnLetsGo(t *testing.T) {
 	b := hit(standing(twoTasks()), "l", "i", "l")
 	if b.Where().Mode != Normal {
@@ -56,8 +52,6 @@ func TestSteppingUpAndDownAColumn(t *testing.T) {
 	if b.Where().Task != 2 {
 		t.Fatalf("j moved to %d, want 2", b.Where().Task)
 	}
-	// Off the bottom of a column the cursor carries on into the band, which is
-	// what is under it on screen.
 	b = hit(b, "j")
 	if !b.Where().InBand || b.Where().Task != 3 {
 		t.Fatalf("j off the last task landed on %d, band %v", b.Where().Task, b.Where().InBand)
@@ -115,8 +109,6 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 	if b.Where().Column != lastColumn() {
 		t.Fatal("walking right went past the last column")
 	}
-	// And with a task in every column, the same walk in insert reaches the last
-	// one and stops there rather than walking off the end.
 	full := newFake()
 	full.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "backlog"},
@@ -141,8 +133,6 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 		{Number: 3, Title: "Second", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
 	}
-	// The list is not in order of number, so a cursor that fell to the next
-	// number would land somewhere else entirely.
 	b := hit(standing(f), "l", "i", "j")
 	fewer := engine.Snapshot{Cards: []engine.Card{
 		{Number: 5, Title: "First", State: "todo"},
@@ -155,9 +145,6 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 }
 
 func TestSteppingWithATaskThatIsNotInTheColumn(t *testing.T) {
-	// Three tasks, so that "nowhere in the list" and "second in the list" lead
-	// somewhere different: with two, stepping on from either lands nowhere and
-	// the two cannot be told apart.
 	f := newFake()
 	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo"},
@@ -209,8 +196,6 @@ func TestWalkingTheObjectives(t *testing.T) {
 }
 
 func TestSidewaysDoesNothingOnTheObjectives(t *testing.T) {
-	// The list is one column. A key that pointed sideways and moved something
-	// would be a key that looked broken.
 	b := hit(standing(manyGoals()), "tab", "j")
 	if after := hit(b, "l", "h"); after.Where().Goal != b.Where().Goal {
 		t.Fatalf("sideways moved the cursor to %d", after.Where().Goal)
@@ -258,7 +243,6 @@ func TestAColumnScrollsToTheCursor(t *testing.T) {
 	if b.offsets[1] == 0 {
 		t.Fatal("the column never scrolled, so the last task is off screen")
 	}
-	// And every card is reachable, which is what scrolling is for.
 	if b.Where().Task != 12 {
 		t.Fatalf("the cursor reached %d, want the last of twelve", b.Where().Task)
 	}
@@ -313,8 +297,6 @@ func TestWalkingAlongTheBandsFirstRow(t *testing.T) {
 		{Number: 2, Title: "Blocked one", State: "blocked"},
 		{Number: 3, Title: "Blocked two", State: "blocked"},
 	}
-	// Two stalled cards make one row, so along it is right and left — down
-	// would be a row that is not there.
 	b := hit(standing(f), "l", "i", "j", "l")
 	if !b.Where().InBand || b.Where().Task != 3 {
 		t.Fatalf("the cursor is on %d, band %v, want the second stalled card", b.Where().Task, b.Where().InBand)
@@ -330,15 +312,11 @@ func TestWalkingAlongTheBandsFirstRow(t *testing.T) {
 }
 
 func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
-	// Three cards to a row, so the seventh is in the third row. A band that
-	// counted rows any other way would scroll to the wrong place.
 	f := newFake()
 	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 32; i++ {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
-	// Down twice from the first card is two rows down, which is the seventh
-	// card: three to a row.
 	b := hit(standing(f), "l", "i", "j", "j", "j")
 	if b.Where().Task != 26 {
 		t.Fatalf("two rows down landed on %d, want the seventh stalled card", b.Where().Task)
@@ -355,7 +333,6 @@ func TestTheBandIsWalkedAsAGrid(t *testing.T) {
 	for i := 20; i < 27; i++ {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
-	// Seven stalled cards, three to a row: 20 21 22 / 23 24 25 / 26.
 	b := hit(standing(f), "l", "i", "j")
 	if b.Where().Task != 20 {
 		t.Fatalf("the band opened on %d, want the first", b.Where().Task)
@@ -392,7 +369,6 @@ func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
 	for i := 20; i < 24; i++ {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
-	// Four stalled: 20 21 22 / 23. Down from 22 has no card under it.
 	b := hit(standing(f), "l", "i", "j", "l", "l")
 	if b.Where().Task != 22 {
 		t.Fatalf("the cursor is on %d, want the last of the first row", b.Where().Task)
@@ -411,9 +387,6 @@ func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 	for i := 20; i < 26; i++ {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
-	// Six stalled: 20 21 22 / 23 24 25. Left from the head of the second row is
-	// the end of the first, and walking there would move the cursor up a row
-	// while pointing sideways.
 	b := hit(standing(f), "l", "i", "j", "j")
 	if b.Where().Task != 23 {
 		t.Fatalf("down a row landed on %d, want the head of the second row", b.Where().Task)
@@ -421,8 +394,6 @@ func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 	if after := hit(b, "h"); after.Where().Task != 23 {
 		t.Fatalf("left off the head of a row moved to %d", after.Where().Task)
 	}
-	// And up from the head of the second row is the head of the first, not out
-	// of the band.
 	up := hit(b, "k")
 	if !up.Where().InBand || up.Where().Task != 20 {
 		t.Fatalf("up from the second row landed on %d, band %v", up.Where().Task, up.Where().InBand)
@@ -452,7 +423,6 @@ func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 	if b.Where().Task != 13 {
 		t.Fatalf("walking across landed on %d, want the third of current", b.Where().Task)
 	}
-	// And back, at the same level again.
 	if back := hit(b, "h"); back.Where().Task != 3 {
 		t.Fatalf("walking back landed on %d, want the third of todo", back.Where().Task)
 	}
@@ -489,7 +459,6 @@ func TestOneGOnItsOwnDoesNothingAndIsForgotten(t *testing.T) {
 	if after.Where().Task != 1 || after.pending != "g" {
 		t.Fatalf("one g moved to %d, pending %q", after.Where().Task, after.pending)
 	}
-	// Something else clears it, so the next g is a first g and not a second.
 	after = hit(after, "j")
 	if after.pending != "" {
 		t.Fatalf("a key after a g left it pending as %q", after.pending)
@@ -528,8 +497,6 @@ func TestGoesToTheEndsOfTheObjectives(t *testing.T) {
 }
 
 func TestGIsALetterWhereALetterIsWhatItMeans(t *testing.T) {
-	// At a prompt, in a form, and on a column where nothing is held: a g there
-	// is a g, and jumping has no business reading it.
 	typed := hit(standing(aColumnOf(3)), "/", "g")
 	if !strings.Contains(bare(typed.Draw()), "/g") {
 		t.Fatalf("a g at the prompt did not reach it:\n%s", bare(typed.Draw()))

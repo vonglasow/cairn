@@ -1,6 +1,4 @@
-// Package store keeps tasks and hands them back. It is the only place that
-// knows a database exists: it speaks in entities, so no *sql.Rows crosses its
-// boundary and no caller needs to know the schema.
+// Package store keeps tasks and hands them back.
 package store
 
 import (
@@ -9,10 +7,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
-	// The pure-Go SQLite driver. Registered for its side effect, as database/sql
-	// drivers are. Pure Go on purpose: cgo would forfeit cross-compilation for
-	// the surfaces that come later.
 
 	"cairn/internal/domain"
 	"cairn/internal/task"
@@ -23,35 +17,14 @@ var ErrNoSuchTask = errors.New("there is no such task")
 
 // Store is a collection of tasks kept on disk.
 type Store struct {
-	db *sql.DB
-	// on is what every read and write goes through: the database itself, or
-	// the one transaction an act is being kept whole in.
-	on   runs
-	path string
-	// opened is the file this store was opened on, to tell it apart from one
-	// put in its place since.
+	db     *sql.DB
+	on     runs
+	path   string
 	opened os.FileInfo
 }
 
-// taskColumns is the reading order every query below hands to scanTask,
-// written once so Find, All and Under cannot drift apart. A column added to
-// one of them and forgotten in the others comes back as a zero nobody notices.
 const taskColumns = `number, parent, title, description, state, archived, priority, because, deadline, estimate, time_spent`
 
-// taskOrder is how every listing reads a task's place: the column first, in the
-// order the columns are read, then the place set by hand inside it.
-//
-// The number breaks a tie, so a store whose tasks predate the places still
-// comes back in one settled order rather than whichever the engine happened to
-// return. A column this cairn does not know sorts last: an unknown column is
-// not the next thing to do.
-//
-// Written out rather than built from domain.States, and that is a trade made
-// with both gates in view. Built, it could not be a constant — and a query
-// assembled from a function call cannot be told from one assembled from user
-// input, which is a warning worth keeping rather than silencing. Constant, the
-// two can drift, so a test compares this to what domain.States says: derived by
-// a test instead of by construction, which fails loudly rather than quietly.
 const taskOrder = `ORDER BY CASE state
 	WHEN 'backlog'  THEN 0
 	WHEN 'todo'     THEN 1
@@ -62,18 +35,10 @@ const taskOrder = `ORDER BY CASE state
 	WHEN 'done'     THEN 6
 	ELSE 7 END, position, number`
 
-// lastPlaceAmong is the place a task takes when it arrives in a column: one
-// past the last of the tasks it will sit with. Its sisters are the tasks in
-// the same column under the same parent, which is what makes a sub-task rank
-// among its sisters and a root task among the root tasks of its column.
 const lastPlaceAmong = `
 	(SELECT COALESCE(MAX(sisters.position), 0) + 1 FROM tasks AS sisters
 	 WHERE sisters.state = ? AND sisters.parent = ?)`
 
-// boundTask holds a task's facts in the shape SQL will bind: strings and
-// integers, nothing a driver has to guess at. A task tells them here rather
-// than handing over its fields directly, which is what lets Keep and Update
-// stay correct the day those fields stop being exported.
 type boundTask struct {
 	number, parent int
 	title, description,
@@ -115,17 +80,12 @@ func (b *boundTask) Serves(n int)              { b.objectives = append(b.objecti
 func (b *boundTask) ServesNothing()            { b.objectives = nil }
 func (b *boundTask) ObjectivesTold()           {}
 
-// bind tells a task's facts to a fresh boundTask, ready for the parameters an
-// INSERT or an UPDATE needs.
 func bind(t task.Task) *boundTask {
 	b := &boundTask{}
 	t.Tell(b)
 	return b
 }
 
-// renumbered hands back a task carrying a new number and everything else t
-// already told. Told a second time here rather than assigned: the number is
-// not a field this package may reach into once it stops being exported.
 func renumbered(t task.Task, number int) task.Task {
 	a := &task.AsTold{}
 	t.Tell(a)
@@ -161,11 +121,7 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 	return renumbered(t, int(number)), nil
 }
 
-// Update replaces what the store holds for a task. The labels given replace
-// those that were there: a task carries a set, so one left out is one removed.
-//
-// A task changes place only when it leaves the tasks it sat with — a different
-// column, or a different parent. Editing a title or a priority moves nothing.
+// Update replaces what the store holds for a task.
 func (s *Store) Update(t task.Task) error {
 	b := bind(t)
 	wasIn, wasUnder, held, err := s.whereItSits(b.number)
@@ -179,8 +135,6 @@ func (s *Store) Update(t task.Task) error {
 		if err != nil {
 			return err
 		}
-		// The task still carries its old group at this point, so it is not
-		// among the ones just counted: one past them is the last place there.
 		place = among + 1
 	}
 
@@ -194,9 +148,6 @@ func (s *Store) Update(t task.Task) error {
 		return fmt.Errorf("changing the task: %w", err)
 	}
 
-	// The group it left closes up behind it. Without this the places there stop
-	// running 1..N — the order still reads correctly, so nothing looks wrong,
-	// and every departure leaves one more hole than the last.
 	if leaving {
 		if err := s.closeTheGapLeftIn(wasIn, wasUnder, held); err != nil {
 			return err
@@ -217,9 +168,6 @@ func (s *Store) Update(t task.Task) error {
 
 // Delete removes a task, and says so when there was none to remove.
 func (s *Store) Delete(number int) error {
-	// Where it sat is read before it goes, since the group it leaves has to
-	// close up behind it: a task removed from the middle would otherwise leave
-	// the places there running 1, 3, 4.
 	wasIn, wasUnder, held, err := s.whereItSits(number)
 	if err != nil {
 		return err
@@ -230,21 +178,12 @@ func (s *Store) Delete(number int) error {
 	if err := s.closeTheGapLeftIn(wasIn, wasUnder, held); err != nil {
 		return err
 	}
-	// What referred to the task goes with it, and it goes by hand. The schema
-	// declares ON DELETE CASCADE and ON DELETE SET NULL, and neither fires:
-	// SQLite leaves foreign keys off unless a connection turns them on, and
-	// this one does not. Measured, after believing otherwise — the labels
-	// disappearing on a delete looked like the cascade working and was this
-	// call all along.
 	if err := s.clearLabels(taskLabels, number); err != nil {
 		return err
 	}
-	// Both sides of every blocking link, since a task that is gone neither
-	// blocks anything nor is blocked by anything.
 	if err := s.releaseBlockersOn(number); err != nil {
 		return err
 	}
-	// What it served goes with it too, for the same reason.
 	if _, err := s.on.Exec(clearServing, number); err != nil {
 		return fmt.Errorf("releasing what task %d served: %w", number, err)
 	}
@@ -265,17 +204,12 @@ func (s *Store) Find(number int) (task.Task, error) {
 	return t, nil
 }
 
-// All hands back every task in the one order there is: the column first,
-// then the place set by hand inside it.
-//
-// A read told to keep nothing is a read of everything, so this is Narrowed
-// with nothing named rather than a second loop over the same rows.
+// All hands back every task in the one order there is: the column first, then the place set by hand inside it.
 func (s *Store) All() ([]task.Task, error) {
 	return s.Narrowed(&domain.Narrowing{})
 }
 
-// Under hands back the tasks hanging directly under a task, each in the place
-// it takes among its sisters.
+// Under hands back the tasks hanging directly under a task, each in the place it takes among its sisters.
 func (s *Store) Under(number int) ([]task.Task, error) {
 	every, err := s.everyLink()
 	if err != nil {
@@ -302,16 +236,10 @@ func (s *Store) Under(number int) ([]task.Task, error) {
 	return tasks, nil
 }
 
-// scanner is what both a single row and a row of a result set can do. Declared
-// here so Find and All share one reading of a task.
 type scanner interface {
 	Scan(dest ...any) error
 }
 
-// scanTask reads one task, labels included, by scanning a row into plain
-// variables and telling them to a builder rather than into a task's fields
-// directly — the membrane Tell uses, the other way round, so this keeps
-// working the day those fields stop being exported.
 func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 	var (
 		number, parent     int

@@ -7,9 +7,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// The prompt at the foot of the board: a search, a command the engine knows,
-// and what is typed into either.
-
 func TestACommandNobodyKnowsIsSaid(t *testing.T) {
 	b := hit(standing(twoTasks()), ":", "z", "enter")
 	if !strings.Contains(bare(b.Draw()), "not a command") {
@@ -77,8 +74,6 @@ func TestSearchingTheObjectives(t *testing.T) {
 	}
 }
 
-// The bar offers ":" and the prompt knew two words out of the whole engine. A
-// command typed there was answered "unknown" however well the command line knew it.
 func TestTheCommandPromptKnowsWhatTheEngineKnows(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), ":")
@@ -93,8 +88,6 @@ func TestTheCommandPromptKnowsWhatTheEngineKnows(t *testing.T) {
 	}
 }
 
-// What the prompt refuses, and where it refuses it: a word where no argument
-// goes, and a required one left out. Both are said rather than run.
 func TestTheCommandPromptRefusesWhatTheEngineWouldNotUnderstand(t *testing.T) {
 	for _, c := range []struct {
 		what string
@@ -125,8 +118,6 @@ func TestTheCommandPromptRefusesWhatTheEngineWouldNotUnderstand(t *testing.T) {
 	}
 }
 
-// A sweep the store refuses says so rather than redrawing as though a column
-// had gone off the board.
 func TestASweepTheStoreRefusesIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
@@ -141,10 +132,6 @@ func TestASweepTheStoreRefusesIsSaid(t *testing.T) {
 	}
 }
 
-// A list typed at the prompt reaches the list the operation reads, and a yes
-// is named on its own — the words the command line takes. The prompt used to
-// put every --name value into the plain map, so a label given here was
-// dropped without a word and --first asked for a value.
 func TestTheCommandPromptHandsOverListsAndYeses(t *testing.T) {
 	for _, c := range []struct {
 		line  string
@@ -171,7 +158,6 @@ func TestTheCommandPromptHandsOverListsAndYeses(t *testing.T) {
 	}
 }
 
-// Two words are a command: the thing and the verb, with nothing after them.
 func TestACommandOfTwoWordsRuns(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), ":")
@@ -190,8 +176,6 @@ func TestACommandOfTwoWordsRuns(t *testing.T) {
 	}
 }
 
-// What the prompt runs and the store refuses is said, the way every other
-// gesture's refusal is.
 func TestACommandTheStoreRefusesIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse

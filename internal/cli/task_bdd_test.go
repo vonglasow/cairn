@@ -1,8 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/task.feature. The Gherkin is the
-// contract; the steps live in world_test.go, shared with the other features.
-
 import (
 	"testing"
 

@@ -9,9 +9,6 @@ import (
 	"gioui.org/io/pointer"
 )
 
-// A key is written the way the keyboard in front of the person writes it: ⌘ and
-// ⇧ on a Mac, Ctrl+ and Shift+ everywhere else. What arrives is the same on
-// all of them — Typed reads ⌘ and Ctrl alike — so only the words change.
 func TestAKeyIsWrittenTheWayItsSystemWritesIt(t *testing.T) {
 	for _, c := range []struct{ system, said, want string }{
 		{"darwin", "⌘N", "⌘N"},
@@ -30,8 +27,6 @@ func TestAKeyIsWrittenTheWayItsSystemWritesIt(t *testing.T) {
 	}
 }
 
-// The bar's offers and every line of the help are written for the system the
-// window runs on.
 func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 	w := New(newFake(), 1200, 800).OnSystem("windows")
 	for _, line := range w.Helping() {
@@ -47,9 +42,6 @@ func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 	}
 }
 
-// AltGr is Ctrl and Alt together on Windows, and writes a letter: ś, ź, €.
-// It arrives as text, and the key that came with it is not a shortcut. Alone,
-// ⌥ with a letter writes one on a Mac too. Neither saves, cuts or archives.
 func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -60,14 +52,11 @@ func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 	if got := Typed(chosen, "X", key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
 		t.Errorf("⌥X archived, or left the window on %v", got.Screen())
 	}
-	// ⌥ with what moves the caret, or takes back, is still read.
 	if got := Typed(chosen, string(key.NameDeleteBackward), key.ModAlt); got.Screen() != OnTheBoard {
 		t.Errorf("⌥⌫ on the board left the window on %v", got.Screen())
 	}
 }
 
-// A right press while the cairn is being built ends it, as any press does:
-// the menu it opens would otherwise be drawn under the stones.
 func TestARightPressEndsTheCairn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)

@@ -44,8 +44,6 @@ func TestMarks(t *testing.T) {
 	if got := marks(engine.Card{State: "blocked"}, g); got != g.Blocked {
 		t.Fatalf("a blocked card is marked %q", got)
 	}
-	// The state anchors the right-hand end, so the eye finds it in the same
-	// place whether or not there is a description beside it.
 	both := marks(engine.Card{Description: "something written", State: "paused"}, g)
 	if !strings.HasSuffix(both, g.Paused) {
 		t.Fatalf("the state is not last: %q", both)
@@ -66,8 +64,6 @@ func TestFactsInAColumn(t *testing.T) {
 	}
 }
 
-// A task that is done says nothing of the day it was wanted: a countdown,
-// drawn late, would call for an act nobody has left to do.
 func TestFactsOfADoneTaskSayNothingOfItsDay(t *testing.T) {
 	g := GlyphsFor(Unicode)
 	c := engine.Card{State: "done", Deadline: on("2026-08-29"), Labels: []string{"spec"}}
@@ -80,8 +76,6 @@ func TestFactsOfADoneTaskSayNothingOfItsDay(t *testing.T) {
 	}
 }
 
-// The open task keeps the day it was wanted on once it is done — it is a fact
-// about the task — but no longer counts it down nor draws it late.
 func TestDetailBandOfADoneTaskKeepsTheDayWithoutCountingIt(t *testing.T) {
 	b := Board{skin: plainSkin, glyphs: GlyphsFor(Unicode), clock: func() time.Time { return today }}
 	done := b.detailBand(engine.Card{Number: 1, Title: "Shipped", State: "done", Priority: "normal", Deadline: on("2026-08-29")})
@@ -120,8 +114,6 @@ func TestFactsInTheBand(t *testing.T) {
 	if nothing != "" {
 		t.Fatalf("a paused card with nothing in its way says %q", nothing)
 	}
-	// A stalled card says what is in the way instead of when it is due: in the
-	// band that is the only question being asked.
 	both := facts(engine.Card{State: "blocked", Blockers: []int{1}, Deadline: on("2026-09-02")}, g, plainSkin, today, 40)
 	if strings.Contains(both, "1d") {
 		t.Fatalf("a stalled card mentioned its deadline: %q", both)
@@ -179,9 +171,6 @@ func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
 	}
 }
 
-// An archived task showed exactly like a live one. Turn the archive on and the
-// board gained rows that behaved differently from their neighbours with nothing
-// on them to say so.
 func TestAnArchivedTaskCarriesItsOwnMark(t *testing.T) {
 	g := GlyphsFor(Unicode)
 	live := engine.Card{Number: 1, Title: "One", State: "todo"}
@@ -194,8 +183,6 @@ func TestAnArchivedTaskCarriesItsOwnMark(t *testing.T) {
 	}
 }
 
-// Labels past the end of the row were dropped without a word, so a card said it
-// carried one label when it carried four.
 func TestLabelsThatDoNotFitAreCounted(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "One", State: "todo",
 		Labels: []string{"sprint-172", "backend", "urgent", "review"}}
@@ -205,8 +192,6 @@ func TestLabelsThatDoNotFitAreCounted(t *testing.T) {
 	}
 }
 
-// The one thing about a blocked task that has to be acted on: every task it
-// waits on is done. The command line said so and the board did not.
 func TestABlockedCardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "Ship it", State: "blocked",
 		Blockers: []int{2}, Freed: true}
@@ -216,15 +201,11 @@ func TestABlockedCardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 	}
 }
 
-// The two ends of the row that counts what it dropped: a width that holds the
-// count exactly, and one that holds nothing at all.
 func TestARowThatCountsWhatItDropped(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "One", State: "todo",
 		Labels: []string{"aaa", "bbb", "ccc"}}
 	g, s := GlyphsFor(Unicode), PlainSkin()
 
-	// "⚑ aaa  +2" is nine cells. At nine it fits exactly; at eight the last
-	// fact goes too and nothing is left to count beside.
 	if got := facts(c, g, s, today, 9); got != "⚑ aaa  +2" {
 		t.Errorf("at nine the row reads %q", got)
 	}
@@ -236,9 +217,6 @@ func TestARowThatCountsWhatItDropped(t *testing.T) {
 	}
 }
 
-// A long field says how much it holds, beside its name: the half of what a bar
-// says that a terminal box can carry. The other half — where in it you are — is
-// the line numbers down its side.
 func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
 	for _, c := range []struct {
 		value, want string
@@ -253,9 +231,6 @@ func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
 	}
 }
 
-// The parts on an open task, the window's way: what is left first, a box
-// before each — empty or ticked, the same marks the form's field writes — and
-// the heading counting both.
 func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{
@@ -264,8 +239,6 @@ func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 		{Number: 3, Title: "Get the client's nod", State: "todo", Parent: 1},
 	}
 	b := standing(f)
-	// What the rows say, and not how they are dressed: the dressing is checked
-	// in the pinned frames, where it is decided.
 	var rows []string
 	for _, row := range b.subTasks(f.cards[0], 60) {
 		rows = append(rows, strip(row))
@@ -284,9 +257,6 @@ func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	}
 }
 
-// A part whose name is longer than its panel is cut to the panel, and the panel
-// keeps one row for it: a row cut to the wrong width wraps, and every row that
-// wraps pushes the history and everything under it down a line.
 func TestALongPartIsCutToItsPanel(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{
@@ -298,7 +268,6 @@ func TestALongPartIsCutToItsPanel(t *testing.T) {
 	if len(under) != 1 {
 		t.Fatalf("%d panels under the description, want the parts' one", len(under))
 	}
-	// Its border, its name, one row, its border.
 	if got := lipgloss.Height(under[0]); got != 4 {
 		t.Fatalf("a panel holding one long part is %d rows tall, want 4:\n%s", got, under[0])
 	}

@@ -1,8 +1,4 @@
 Feature: The Claude Code plugin comes with the binary
-  The plugin was installed from this repository, which a person who was handed
-  only the binary — by brew, or as a file — does not have. The binary carries
-  the plugin it was built with, and writes it out as a marketplace Claude Code
-  installs from: one command, and the plugin always matches the cairn it calls.
 
   @plugin-written-beside-the-store
   Scenario: the binary writes the plugin it carries beside the store

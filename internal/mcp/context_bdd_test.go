@@ -1,9 +1,5 @@
 package mcp_test
 
-// The one scenario of bdd/context.feature that is about the server: an agent
-// showing a task is told where its outside context lives, in the shape it
-// reads. The rest of that feature runs in internal/cli.
-
 import (
 	"fmt"
 	"path/filepath"
@@ -14,7 +10,6 @@ import (
 	"cairn/test"
 )
 
-// TestAcceptance_Context_TravelsInTheJSON runs it.
 func TestAcceptance_Context_TravelsInTheJSON(t *testing.T) {
 	init := func(sc *godog.ScenarioContext) {
 		w := newWorld(t)
@@ -26,7 +21,6 @@ func TestAcceptance_Context_TravelsInTheJSON(t *testing.T) {
 	}
 }
 
-// registerContext declares what that scenario needs beyond the shared steps.
 func (w *world) registerContext(sc *godog.ScenarioContext) {
 	sc.Step(`^a configuration that says the notes live at "([^"]*)"$`, func(place string) error {
 		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))

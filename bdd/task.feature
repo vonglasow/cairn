@@ -1,19 +1,4 @@
 Feature: Tasks
-  A task is the unit of work. It carries a title, and an identity to refer to
-  it by afterwards. Everything else — a description, a priority, a column,
-  labels, a deadline, an estimate — is optional and has a stated default.
-
-  A task sits in one of seven columns — backlog, todo, current, blocked,
-  watching, paused, done — and carries one of four priorities — low, normal,
-  high, critical. Nothing else is a column, nothing else is a priority. A new
-  task starts in the backlog at normal priority.
-
-  Labels are a set. They are kept in lower case, so Spec and spec are one and
-  the same. A task never carries the same one twice, and they always come back
-  in alphabetical order, whatever order they were given in.
-
-  A task outlives the command that created it: what one invocation writes, the
-  next one finds, unchanged.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -303,16 +288,6 @@ Feature: Tasks
 
   Rule: A listing can be narrowed to what is wanted
 
-    A list of everything stops being readable once there is a lot of it, and
-    stops being usable to an agent, which pays for every line it is handed. So
-    a listing takes the facts a task carries from a closed set — the column it
-    sits in, the priority it carries, a label, the objective it serves — and
-    answers only the tasks carrying them.
-
-    They are named the way they are named everywhere else. A filter that spelled
-    a fact differently from the command that sets it would be a second
-    vocabulary for the same thing.
-
     @task-list-narrowed-by-state
     Scenario: only the tasks in one column
       Given I added a task titled "Write the spec" with the state "todo"
@@ -379,8 +354,6 @@ Feature: Tasks
     @task-list-narrowed-keeps-the-parent-out
     Scenario: a parent that does not carry it is not brought along
       Given I added a task titled "Ship it" with the state "todo"
-      # Done, because a sub-task takes done or todo and the parent is in todo:
-      # the two have to differ for this to be about the narrowing at all.
       And I added a task titled "Write the tests" with the parent "1"
       And I edited task 2 with the state "done"
       When I run `cairn task list --state todo`
@@ -476,8 +449,6 @@ Feature: Tasks
 
     @task-description-from-standard-input
     Scenario: a description too long to type is read from standard input
-      Several paragraphs are written in an editor or piped in, not typed between
-      quotes, and `-` is how every other tool on the machine says so.
 
       When I run `cairn task new "Write the spec" --desc -` with "first paragraph" and "second paragraph" on standard input
       Then it succeeds
@@ -485,8 +456,6 @@ Feature: Tasks
 
     @task-description-not-text
     Scenario: a description a terminal would obey is refused
-      A description is printed straight to a terminal, by more than one surface;
-      an escape in it is an instruction to that terminal, not text.
 
       When I add a task whose description carries an escape
       Then it fails
@@ -494,9 +463,6 @@ Feature: Tasks
 
     @task-show-since
     Scenario: showing a task says since when it has stood in its column
-      How long a task has sat where it is is the one date nothing else a task
-      carries implies. It is read off what was done to the task, never kept
-      beside it: the day the column last changed, or the day the task was made.
 
       Given I added a task titled "Write the spec" with the state "todo"
       When I run `cairn task show 1`
@@ -522,8 +488,6 @@ Feature: Tasks
 
     @task-show-unknown-as-json
     Scenario: a refusal asked for as JSON says what kind it is, and which
-      A script branches on a word that stays the same when the sentence is
-      reworded, not on the sentence.
 
       When I run `cairn task show 99 --json`
       Then it fails
@@ -531,8 +495,6 @@ Feature: Tasks
 
     @task-refusal-quotes-as-typed
     Scenario: a refusal quotes what was typed exactly as it was typed
-      What a person typed is theirs: a refusal quotes it back unchanged, and
-      writes out whatever in it a terminal would act on rather than obeying it.
 
       When I run `cairn task show abc`
       Then it fails
@@ -559,43 +521,6 @@ Feature: Tasks
       Then it reports a task titled "Write the other spec"
 
   Rule: A task is looked for by what somebody remembers of it
-
-    Every other command asks for a number, and a number is the one thing
-    nobody remembers. So the way back to one is to look for what a person does
-    remember — a word from the title, the day it is due — and be told which
-    task carries it.
-
-    Looking reaches what a task says in its own words, and reads it the way a
-    person does: a duration is looked for as it is shown and not as the count
-    of nanoseconds it is kept as. So the title, the description, the deadline,
-    the estimate and the time spent.
-
-    It reaches the column, the priority and the labels too. A listing narrows
-    by them, and the boards have one search box and no narrowing at all: left
-    out, a label could not be searched for there, and the boards searched them
-    anyway with a rule of their own. One search, the engine's, on every
-    surface — so `search high` answers what carries priority high as well as
-    what says the word.
-
-    A task's own number it does reach, and it used not to. The reason it was
-    left out held for the command line, where `task show 228` is right there;
-    it does not hold on a board, where the search box is the only way in and
-    there is no `show` to type. Somebody who knows the number had no way to use
-    it. Found by using it, which is where that kind of thing is found.
-
-    It is looked for the way every other thing is — as a substring, so 228
-    answers 228 and 1228 both. Weighed and kept: the alternative is a second
-    kind of matching in a membrane that has one, and being handed 1228 as well
-    costs a glance, while being handed nothing costs the way back.
-
-    What it still does not reach is what a task hangs under or serves. Those
-    are numbers a task carries about *other* things, and reaching them would
-    answer every sub-task of 228 to somebody looking for 228 — which is the
-    half of the old reason that was always true.
-
-    Each thing named has to be found, and any field it still reaches may be
-    where it is found. A thing with a space in it is one thing: the shell hands
-    `"the spec"` over whole.
 
     @task-search-by-a-word
     Scenario: a word from the title is the way back to a number
@@ -729,11 +654,6 @@ Feature: Tasks
 
   Rule: A task can be changed
 
-    Everything a task can be given when it is created can be changed
-    afterwards, read back, and taken away again. Labels are the odd one out:
-    a task carries a set of them, so what is given replaces what was there —
-    a label left out of the new set is a label removed.
-
     @task-edit-title
     Scenario: changing the title
       Given I added a task titled "Write the spec"
@@ -859,12 +779,6 @@ Feature: Tasks
 
   Rule: A label can be added or taken away without naming the others
 
-    A label given plainly says what the set becomes, so adding one means typing
-    them all again. A label given with a leading + is added to what is there,
-    one with a leading - is taken away, and the rest is left alone. The two
-    cannot be mixed: one says what the set becomes, the other says how it
-    changes, and a command that did both would have to guess which won.
-
     @task-label-list
     Scenario: several labels can be given in one flag
       When I run `cairn task new "Write the spec" --label "spec,team"`
@@ -950,19 +864,6 @@ Feature: Tasks
 
   Rule: A task can say what blocks it
 
-    A task stops for one of two reasons: another task, or something that is not
-    in cairn at all. The first has a number, so it is named by one. The second
-    has none, so it is named in words. Both land in the same place — what blocks
-    this — and the card shows them together.
-
-    Two flags rather than one, because a single flag taking either would have to
-    guess whether "3" is task 3 or the word "3", and nothing here guesses.
-
-    A blocker can sit on a task in any column: it may block part of the work and
-    not the rest. When it blocks the whole thing, the column is what says so —
-    and splitting the part that is stopped into a sub-task of its own is the
-    better move, which cairn suggests nowhere and refuses never.
-
     @task-blocker-named
     Scenario: a task can say which task blocks it
       Given I added a task titled "Write the spec"
@@ -1041,20 +942,6 @@ Feature: Tasks
 
   Rule: A blocked task is not picked back up by accident
 
-    A task in the blocked column with something recorded against it cannot be
-    put back in todo or current. Not a confirmation — a refusal: those two
-    columns say the work is yours to do, and a task still waiting on somebody
-    else is not.
-
-    Taking the last thing away is what puts it back in todo, because that is
-    the one moment somebody said out loud that nothing is in the way. Taking one
-    of two away changes nothing: something is still in the way.
-
-    The other columns stay reachable. Deciding a blocked task is done, or
-    putting it back in the backlog, or pausing it, or handing it over to watch
-    are all things you can say about work that is waiting — only claiming it is
-    yours to do now is refused.
-
     @task-blocked-cannot-go-back-to-work
     Scenario Outline: a task still blocked cannot be claimed as yours to do
       Given I added a task titled "Write the spec"
@@ -1117,21 +1004,7 @@ Feature: Tasks
 
   Rule: A blocked task says when nothing is in its way any more
 
-    A blocker going done does not move the task that was waiting on it. Cairn
-    proposes, it does not decide — and a column changed by nobody is a change
-    the trace cannot attribute. Nothing ever leaves the blocked column on its
-    own: taking the last thing away is what does that, and that is somebody
-    saying so.
-
     But it says so, because otherwise a blocked task waits forever on somebody
-    remembering to look. The listing marks a blocked task whose every named
-    blocker is done: that mark is what says it is your turn.
-
-    Only when blockers were named and all of them are done. A task blocked by
-    words has words cairn cannot check — "the client's answer" is either in or
-    out, and cairn has no way to know which — and a task blocked by nothing
-    named is blocked by something cairn was never told about. Neither gets the
-    mark, because in both cases claiming nothing is in the way would be a guess.
 
     @task-blocked-nothing-in-the-way
     Scenario: every task blocking it is done, and the listing says so
@@ -1208,8 +1081,6 @@ Feature: Tasks
 
     @task-delete-names-what-it-was-blocking
     Scenario: deleting a task says which tasks it was in the way of
-      The link goes with the task, and nothing would say a task once waited on
-      it: the deletion is the one moment that can.
 
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
@@ -1305,11 +1176,7 @@ Feature: Tasks
 
   Rule: Time spent on a task can be written down
 
-    A task carries the time already spent on it, and that time accumulates.
     Given plainly it says what the total becomes; with a leading + or - it
-    moves what is there, the way a label joins or leaves a set. That is why a
-    minus is a value here and a refusal on --estimate: an estimate is a guess
-    about the whole, time spent is a tally that grows.
 
     @task-spent-written
     Scenario: time spent can be written down
@@ -1356,10 +1223,6 @@ Feature: Tasks
         | +     | a sign with no duration |
 
   Rule: A label is put on everything a narrowing reaches
-
-    Marking a sprint is putting one word on the work it held. Done one task at
-    a time it is not done at all, so the same narrowing that sweeps a column
-    puts a label on what it reaches.
 
     @task-label-what-a-narrowing-reaches
     Scenario: a label is put on everything a narrowing reaches
@@ -1411,32 +1274,6 @@ Feature: Tasks
       And it says what it needs to go on
 
   Rule: A task is archived rather than deleted
-
-    A column of a hundred and twenty finished tasks is a column nobody reads.
-    Measured on a real store: 120 of its 170 tasks were done, seven in ten, and
-    the work still to do sat among them.
-
-    Archiving keeps a task and everything it carries — its
-    number, its title, what happened to it. Deleting is the other thing, and it
-    is still there for work that should never have existed.
-
-    A mark beside the column and not a column of its own. A task archived after
-    being finished is still finished, and one archived without ever being done
-    — abandoned, overtaken — says exactly that rather than being given a
-    standing it never had.
-
-    Named by number it takes one; named by what a task carries, it takes every
-    one the narrowing reaches. That is how a column of a hundred and twenty is
-    cleared without choosing each in turn.
-
-    A sub-task is never archived on its own: it is part of the work its parent
-    names, and is archived with it or not at all.
-
-    A listing leaves them out. That is the whole point of archiving: a column
-    of a hundred and twenty finished tasks is a column nobody reads, and a
-    listing that still handed them all over would have moved the problem rather
-    than answered it. `--archived` brings them back, on their own or beside the
-    rest.
 
     @task-list-leaves-archived-out
     Scenario: a listing is the work still on the board
@@ -1526,8 +1363,6 @@ Feature: Tasks
 
     @task-list-leaves-parts-of-archived-work-out
     Scenario: the parts of archived work are archived with the work
-      A part keeps its own mark as it was; it is archived because the
-      work it belongs to is, and comes back when that work does.
 
       Given I added a task titled "Dépôt APP" with the state "done"
       And I added a task titled "Préparation" with the parent "1"
@@ -1554,8 +1389,6 @@ Feature: Tasks
 
     @task-archive-a-sweep-needs-confirming
     Scenario: archiving everything a narrowing reaches asks to be confirmed
-      Every board asks before it sweeps a column away, and the command line
-      did not: one act, two rules. The engine asks now, wherever it is asked.
 
       Given I added a task titled "Migration Jenkins" with the state "done"
       When I run `cairn task archive --state done`
@@ -1604,29 +1437,6 @@ Feature: Tasks
       And it says the task is on the board
 
   Rule: A task can hang under another one
-
-    A task given a parent becomes one of its sub-tasks, and stays a task in
-    every other way: its own number, its own title, its own description, its
-    own labels, changed and read back like any other. Only one level — a
-    sub-task cannot itself carry sub-tasks, so what hangs under a task is never
-    something with more hanging under it.
-
-    What it stops carrying is a column of its own. A sub-task is a part of the
-    work its parent names, split off to be sure the whole is finished, and the
-    only thing worth knowing about a part is whether it is done. It had all
-    seven columns and used two: measured on a store of 219 tasks, the 49
-    sub-tasks in it were `done` forty-eight times and `todo` once, never
-    `current`, never stopped, never with a deadline or a blocker of their own.
-
-    So `done` and `todo` are what a sub-task takes, and any other column is
-    refused. Where the work stands is the parent's to say — a part being
-    "blocked" is the parent being blocked, and a part being "current" is the
-    parent being worked on.
-
-    A task carrying sub-tasks takes them with it when it is deleted: a part
-    goes with the work it belongs to, and a deletion that refused while a part
-    was there could not be carried out at all once the boards stopped drawing
-    parts. See @task-parent-delete-takes-the-parts.
 
     @task-sub-task-takes-done
     Scenario Outline: a sub-task is done or it is not, and takes nothing else
@@ -1778,18 +1588,6 @@ Feature: Tasks
 
   Rule: A task is not done while something under it is open
 
-    A parent is done because what hangs under it is done. If it can be
-    finished while a sub-task is still open, then either the sub-task was not
-    part of it — in which case it is another task — or the parent was closed
-    over work nobody did.
-
-    Refused rather than cascaded. Marking the children done on the parent's
-    behalf would finish work nobody finished, and it would do it silently; the
-    refusal says which ones are in the way, which is the useful thing to be
-    told. Every other stopped state stays open to a parent: blocked, watching
-    and paused say something about the parent itself, and done is the only one
-    that claims something about what hangs under it.
-
     @task-done-refused-while-a-sub-task-is-open
     Scenario: a parent is not finished while a sub-task is still open
       Given I added a task titled "Ship it"
@@ -1831,15 +1629,6 @@ Feature: Tasks
 
   Rule: A task's parts are written with it, in one act
 
-    A board writes a task's parts in its form, one a line: `#4 [x] its title`
-    for a part there already, `[ ] its title` for a new one. Saved, that was
-    one act for the task and one for every part, so a part refused halfway left
-    half of them written. Handed over with the task, they are taken in the same
-    act as it: every one of them, or none.
-
-    A part the lines no longer name is left where it is. Deleting a task is an
-    act of its own, asked for as one, and saving a list is not a way around it.
-
     @task-new-with-its-parts
     Scenario: a task is made with its parts
       When I run `cairn task new "Ship it" --parts -` with "[ ] Write the spec" and "[x] Plan it" on standard input
@@ -1875,10 +1664,6 @@ Feature: Tasks
       Then it says there is no task
 
   Rule: A task says how many of its sub-tasks are done
-
-    A task counts what hangs under it, never itself: a task with two sub-tasks
-    of which one is done is one of two, not one of three. Nobody reads it the
-    other way round.
 
     @task-progress
     Scenario: a task says how many of its sub-tasks are done
@@ -2052,11 +1837,6 @@ Feature: Tasks
 
   Rule: It answers the same way every time
 
-    A result goes to standard output. A reason meant for a person goes to
-    standard error. The exit code says which kind of answer it is: 0 it worked,
-    1 the request was understood but could not be satisfied, 2 the command was
-    not understood, 3 the store could not be used.
-
     @task-exit-success
     Scenario: what worked says nothing on the error stream
       When I run `cairn task new "Write the spec"`
@@ -2088,10 +1868,6 @@ Feature: Tasks
       And it writes the reason to standard error
 
   Rule: The output can be read by a machine
-
-    Asked for JSON, the whole answer goes to standard output as JSON — whether
-    it worked or not. A machine reads one stream, and a refusal it cannot parse
-    is a refusal it cannot act on.
 
     @task-json
     Scenario: asking for machine-readable output

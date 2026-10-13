@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// facts reads back what a test needs from a change, without reaching into
-// fields that stopped being exported.
 type facts struct {
 	number                    int
 	name, does, undoes, loses string
@@ -41,8 +39,6 @@ func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
 	}
 }
 
-// The first change is the floor: it has no undoing, because unmaking it would
-// mean throwing the store away, which is what deleting the file is for.
 func TestKnown_theFirstChangeCannotBeUndone(t *testing.T) {
 	f := factsOf(Known[0])
 	if f.undoes != "" {

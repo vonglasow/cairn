@@ -10,17 +10,13 @@ import (
 	"time"
 )
 
-// dialog is the system's file dialog as a test plays it: a file to save to,
-// a file to open, or closed without either.
 type dialog struct {
 	save, open string
 	closed     bool
 	broken     error
-	// failing is a file that breaks once it is read or written.
-	failing bool
+	failing    bool
 }
 
-// breaking is a file that fails the first read or write.
 type breaking struct{}
 
 func (breaking) Read([]byte) (int, error)  { return 0, errBroke }
@@ -55,8 +51,6 @@ func (d dialog) CreateFile(string) (io.WriteCloser, error) {
 	return os.Create(d.save)
 }
 
-// written is a file of the test's own, holding what is given, in a folder of
-// its own the way an export's is.
 func written(t *testing.T, held string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "tasks.json")
@@ -66,8 +60,6 @@ func written(t *testing.T, held string) string {
 	return path
 }
 
-// Tasks written out go to the file chosen in the dialog, under the name the
-// dialog gave it, and the copy they were written from goes.
 func TestFilingSavesWhereTheDialogSays(t *testing.T) {
 	from := written(t, "the tasks")
 	to := filepath.Join(t.TempDir(), "mine.json")
@@ -97,8 +89,6 @@ func TestFilingSavesWhereTheDialogSays(t *testing.T) {
 	}
 }
 
-// A file of tasks chosen is copied out of the dialog's file, into one of the
-// window's own: the dialog's file may only be read while it is open.
 func TestFilingOpensWhatTheDialogChose(t *testing.T) {
 	chosen := written(t, "some tasks")
 	got := Filing(FileAsk{}, dialog{open: chosen})
@@ -124,8 +114,6 @@ func TestFilingOpensWhatTheDialogChose(t *testing.T) {
 	}
 }
 
-// ⌘E writes the tasks out through the engine first, then asks the loop for
-// the dialog, naming the file after the day.
 func TestExportingAsksTheEngineThenTheDialog(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800).At(time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)).Key("cmd+e")
@@ -159,9 +147,6 @@ func TestExportingAsksTheEngineThenTheDialog(t *testing.T) {
 	}
 }
 
-// ⌘O asks for the dialog, and the tasks of the file chosen are added at
-// once: nothing is replaced, so nothing is asked. The copy of it goes either
-// way.
 func TestImportingAddsTheTasksOfTheFileChosen(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800).Key("cmd+o")
@@ -192,8 +177,6 @@ func TestImportingAddsTheTasksOfTheFileChosen(t *testing.T) {
 	}
 }
 
-// Both are offered where a person looks for them: on the bar of a board with
-// nothing chosen, and on a right click on the board, beside the backups.
 func TestCarryingTheTasksIsOffered(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	if offers := w.BoardOffers(); !slices.Contains(offers, "Export") || !slices.Contains(offers, "Import") {
@@ -205,8 +188,6 @@ func TestCarryingTheTasksIsOffered(t *testing.T) {
 	if got := w.menuFor(); !slices.Equal(got, []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"}) {
 		t.Errorf("the board's menu offers %v", got)
 	}
-	// Refused, so the empty answer of the fake is never read: what is
-	// counted is that each was asked for.
 	f := newFake()
 	f.fail = errors.New("refused")
 	if New(f, 1200, 800).Choose("New backup"); f.what("backup", "new") != 1 {

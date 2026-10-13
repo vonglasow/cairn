@@ -1,10 +1,5 @@
 package engine
 
-// What a narrowed listing answers. The narrowing itself is the store's, and
-// tested there; what is tested here is what an operation makes of what it was
-// given — which facts it passes on, and what it says about the focus once part
-// of the store has been left out.
-
 import (
 	"slices"
 	"testing"
@@ -12,8 +7,6 @@ import (
 	"cairn/internal/task"
 )
 
-// titlesOf reads back the titles a listing answered with, whichever field it
-// used to carry them.
 func titlesOf(a Answer) []string {
 	titles := []string{}
 	for _, one := range append(append([]task.Task{}, a.Tasks...), a.Matched...) {
@@ -22,8 +15,6 @@ func titlesOf(a Answer) []string {
 	return titles
 }
 
-// A fact named on a listing keeps only what carries it. The one case the store
-// cannot be asked about: whether the operation passes on what it was given.
 func TestTaskList_keepsWhatTheFactsNamedHoldFor(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
@@ -41,9 +32,6 @@ func TestTaskList_keepsWhatTheFactsNamedHoldFor(t *testing.T) {
 	}
 }
 
-// A narrowed listing is answered flat, an unnarrowed one as the tree it is.
-// Which field carries the tasks is how Of and RenderText tell the two apart,
-// so it is asserted rather than assumed.
 func TestTaskList_answersNarrowedFlatAndUnnarrowedAsATree(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
@@ -65,9 +53,6 @@ func TestTaskList_answersNarrowedFlatAndUnnarrowedAsATree(t *testing.T) {
 	}
 }
 
-// The focus is a flag on a task, so a listing the task was narrowed out of has
-// nothing to say about it. Said anyway, an agent would read a number it cannot
-// find among the tasks it was handed.
 func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
@@ -83,9 +68,6 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
-	// None of these rows, rather than nothing at all: the listing was asked, so
-	// it answers about what it is showing. Said as a number it could not find
-	// among its own rows, a caller would be left looking for it.
 	if narrowed.InFocus == nil || len(*narrowed.InFocus) != 0 {
 		t.Errorf("it says %v is in focus, and did not hand that task over", narrowed.InFocus)
 	}
@@ -99,10 +81,6 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 	}
 }
 
-// A value outside a closed set is refused, and one from an argument that has no
-// closed set is passed on untouched. Both halves matter: refusing everything
-// would turn `--objective 9` into a failure, and refusing nothing would turn
-// `--state nowhere` into an empty column.
 func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
@@ -113,10 +91,6 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 		t.Error("a column no task can sit in was accepted")
 	}
 
-	// An objective nothing serves has no closed set to fall outside of, so it
-	// is answered with nothing rather than refused: a filter says what is
-	// wanted, and whether it exists is a question about objectives. What it is
-	// still held to is being a number at all, which the next case asks.
 	answer, err := TaskList.Run(On{Engine: e}, Input{
 		Listed: map[string][]string{"objective": {"9"}},
 	})
@@ -128,9 +102,6 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 	}
 }
 
-// A listing of objectives is held to its own closed set, which is not the
-// tasks': an objective stands somewhere rather than sitting in a column, and a
-// column name is not one of the places it can stand.
 func TestObjectiveList_isHeldToTheObjectiveStates(t *testing.T) {
 	e := openEngine(t)
 	if _, err := ObjectiveList.Run(On{Engine: e}, Input{
@@ -140,14 +111,6 @@ func TestObjectiveList_isHeldToTheObjectiveStates(t *testing.T) {
 	}
 }
 
-// A filter naming an objective that could not number anything is refused. There
-// is no closed set of objectives to fall outside of, but there is a shape:
-// "soon" is not a number, and zero is a number nothing is ever given.
-//
-// Zero matters more than it looks. Refused, it says so; accepted, it would
-// narrow to the tasks serving objective zero — of which there are never any —
-// and answer "there is no task", which reads as an objective nobody is working
-// towards rather than as a filter nobody could satisfy.
 func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
@@ -160,8 +123,6 @@ func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
 	}
 }
 
-// A label is looked for the way it is written, so a narrowing typed another way
-// finds the tasks carrying it rather than nothing.
 func TestTaskList_looksForALabelWrittenTheOneWay(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")

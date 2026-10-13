@@ -1,18 +1,4 @@
 Feature: Ordering
-  A task carries a place, and the place is what says which one to do next.
-
-  A list is one list. The column gives the coarse order — what you can act on
-  first (backlog, todo, current), then what is under way without you, ordered by
-  what it asks of you (blocked, watching), then what you stopped on purpose
-  (paused), then done — and within a column the order is the one you set.
-
-  A sub-task takes its place among its sisters and not among the root tasks:
-  where its parent sits carries the whole block, and the sub-task's own column
-  says how far along it is rather than where it goes.
-
-  A new task takes the last place in its column, because arriving is not
-  deciding. The place itself is never shown: the order is what there is to see,
-  and a number beside a task that already has one would only mislead.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -127,11 +113,6 @@ Feature: Ordering
 
   Rule: A task is moved to another column and a place in one act
 
-    Dropping a card into another column at a place is one gesture, and it was
-    two acts: a column change, then a move. When the move was refused the task
-    had changed column and not place. Named together they are one act, both
-    or neither.
-
     @ordering-moved-into-another-column-at-a-place
     Scenario: a task is moved into another column, behind one already there
       Given I added a task titled "Coming from the backlog"
@@ -192,13 +173,6 @@ Feature: Ordering
       And it says where a task can be moved
 
   Rule: Several tasks can be in focus at once
-
-    Amended 2026-09-14. This rule read "One task is in focus, and never more
-    than one", and putting a second in focus released the first. A person
-    works on one thing at a time, which is what it was written for — but an
-    agent session is started per task, and several run at once. A focus that
-    held one made every other one invisible to whoever asked what was being
-    worked on.
 
     @ordering-focus-nothing-at-first
     Scenario: nothing is in focus to begin with

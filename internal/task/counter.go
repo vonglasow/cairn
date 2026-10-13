@@ -6,17 +6,12 @@ import (
 	"cairn/internal/domain"
 )
 
-// Counter is a task's membrane for a tally: it is told every fact a task
-// carries and keeps only the one a tally needs — which column it sits in.
-// A membrane hears everything, and keeping only what it needs is exactly the
-// point: counting what is done is not a question to ask a task, it is a task
-// telling its column and a counter keeping score.
+// Counter is a task's membrane for a tally: it is told every fact a task carries and keeps only the one a tally needs — which column it sits in.
 type Counter struct {
 	tally domain.Tally
 }
 
-// NewCounter starts a counter from a tally already under way, so a running
-// total can be told one task at a time rather than rebuilt from nothing.
+// NewCounter starts a counter from a tally already under way, so a running total can be told one task at a time rather than rebuilt from nothing.
 func NewCounter(start domain.Tally) *Counter { return &Counter{tally: start} }
 
 // Numbered is heard and ignored: a tally does not care which task it counts.
@@ -25,15 +20,13 @@ func (c *Counter) Numbered(int) {}
 // Titled is heard and ignored: a tally does not care what a task is called.
 func (c *Counter) Titled(string) {}
 
-// Archived is dropped: being off the board says nothing about how far along
-// the work under a task has got.
+// Archived is dropped: being off the board says nothing about how far along the work under a task has got.
 func (c *Counter) Archived() {}
 
 // NotArchived is dropped for the same reason.
 func (c *Counter) NotArchived() {}
 
-// InColumn is the one fact a tally needs: it counts the task, and counts it
-// again as done when the column it sits in is Done.
+// InColumn is the one fact a tally needs: it counts the task, and counts it again as done when the column it sits in is Done.
 func (c *Counter) InColumn(s domain.State) {
 	c.tally.Total++
 	if s == domain.Done {
@@ -59,8 +52,7 @@ func (c *Counter) NotLabelled() {}
 // LabelsTold is heard and ignored: a tally never waited on the labels.
 func (c *Counter) LabelsTold() {}
 
-// BlockedBy is heard and ignored: a task waiting on something is still a task
-// to be counted, and only the column says whether it is done.
+// BlockedBy is heard and ignored: a task waiting on something is still a task to be counted, and only the column says whether it is done.
 func (c *Counter) BlockedBy(int) {}
 
 // NotBlocked is heard and ignored, the same way BlockedBy is.

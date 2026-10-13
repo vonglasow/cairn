@@ -2,14 +2,6 @@ package store
 
 import "fmt"
 
-// The labels a task and an objective carry: one table each, written the same
-// way.
-
-// labelStore says where one kind of thing keeps its labels. The queries are
-// written out rather than built from a table name: a name interpolated into
-// SQL is a habit that reads as harmless until the day the name comes from
-// somewhere else. Three literals cost nothing and cannot be turned into an
-// injection by a later edit.
 type labelStore struct{ insert, byOwner, clear, carrier string }
 
 var taskLabels = labelStore{
@@ -19,7 +11,6 @@ var taskLabels = labelStore{
 	carrier: `EXISTS (SELECT 1 FROM labels WHERE task_number = tasks.number AND label = ?)`,
 }
 
-// keepLabels records the labels one thing carries.
 func (s *Store) keepLabels(in labelStore, number int, labels []string) error {
 	for _, label := range labels {
 		if _, err := s.on.Exec(in.insert, number, label); err != nil {
@@ -29,8 +20,6 @@ func (s *Store) keepLabels(in labelStore, number int, labels []string) error {
 	return nil
 }
 
-// clearLabels takes away every label one thing carries, so a set given can
-// replace the set that was there.
 func (s *Store) clearLabels(in labelStore, number int) error {
 	if _, err := s.on.Exec(in.clear, number); err != nil {
 		return fmt.Errorf("clearing the labels: %w", err)
@@ -38,7 +27,6 @@ func (s *Store) clearLabels(in labelStore, number int) error {
 	return nil
 }
 
-// labelsOf hands back the labels one thing carries, in alphabetical order.
 func (s *Store) labelsOf(in labelStore, number int) ([]string, error) {
 	rows, err := s.on.Query(in.byOwner, number)
 	if err != nil {

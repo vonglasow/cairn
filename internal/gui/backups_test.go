@@ -11,8 +11,6 @@ import (
 
 var errNoBackup = errors.New("the backups cannot be reached")
 
-// What the store refuses, backing up or listing or putting back, is said as
-// anything gone wrong is, and the window stays where it was.
 func TestBackingUpSaysWhatWentWrong(t *testing.T) {
 	f := newFake()
 	f.fail = errNoBackup
@@ -29,8 +27,6 @@ func TestBackingUpSaysWhatWentWrong(t *testing.T) {
 	}
 }
 
-// With no backup at all there is nothing to list, and the window says how to
-// make one rather than opening an empty list.
 func TestNoBackupYetIsSaid(t *testing.T) {
 	got := New(newFake(), 1200, 800).listingBackups()
 	if got.Screen() != OnTheBoard || got.Note() != "no backup yet: ⌘B makes one" {
@@ -38,7 +34,6 @@ func TestNoBackupYetIsSaid(t *testing.T) {
 	}
 }
 
-// The list is walked both ways and stops at its ends; esc closes it.
 func TestTheBackupsAreWalkedBothWays(t *testing.T) {
 	w := Window{screen: OnBackups, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
 	if got := w.onBackups("up").BackupOn(); got != 0 {
@@ -62,7 +57,6 @@ func TestTheBackupsAreWalkedBothWays(t *testing.T) {
 	}
 }
 
-// What the window tells goes on its own, as what went wrong does.
 func TestWhatIsToldGoes(t *testing.T) {
 	w := Window{}.telling("backup 1 is here")
 	for range Lingers() - 1 {
@@ -76,8 +70,6 @@ func TestWhatIsToldGoes(t *testing.T) {
 	}
 }
 
-// The list is drawn, a backup to a line, the one the keyboard is on lit; and
-// what the window tells is drawn above the bar.
 func TestTheBackupsAreDrawn(t *testing.T) {
 	made := time.Date(2026, 10, 12, 10, 0, 0, 0, time.UTC)
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}}
@@ -96,7 +88,6 @@ func TestTheBackupsAreDrawn(t *testing.T) {
 	}
 }
 
-// The list's lines start under its heading, one menu row apart.
 func TestTheBackupsAreLaidOut(t *testing.T) {
 	box := Box{X: 100, Y: 50, W: 400, H: 300}
 	if got, want := BackupRowAt(box, 1), (Box{X: 106, Y: 100 + between + menuRow, W: 388, H: menuRow}); got != want {
@@ -104,8 +95,6 @@ func TestTheBackupsAreLaidOut(t *testing.T) {
 	}
 }
 
-// The question says what agreeing costs: nothing, since the store is backed
-// up first — and names the backup it would put back.
 func TestRestoringAsksWhatItCosts(t *testing.T) {
 	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []domain.Backup{{Number: 7}}}}
 	asks := w.Asks()
@@ -117,7 +106,6 @@ func TestRestoringAsksWhatItCosts(t *testing.T) {
 	}
 }
 
-// A click on a backup asks to restore it; a click off the list closes it.
 func TestTheBackupsAnswerThePointer(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
 	row := BackupRowAt(w.BackupsBox(), 1)
@@ -130,8 +118,6 @@ func TestTheBackupsAnswerThePointer(t *testing.T) {
 	}
 }
 
-// Many backups scroll: the one the keyboard is on is always among the lines
-// drawn, and the list never starts past the last screenful.
 func TestManyBackupsScroll(t *testing.T) {
 	many := make([]domain.Backup, 40)
 	for i := range many {
@@ -156,10 +142,6 @@ func TestManyBackupsScroll(t *testing.T) {
 	}
 }
 
-// The list's room, to the line: as many lines of 28 as the panel a form is
-// drawn in has between a list's heading and its offers — nineteen at 1200 by
-// 800. And a click on a list scrolled down takes the backup drawn there, not
-// the one that would be there unscrolled.
 func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 	many := make([]domain.Backup, 40)
 	for i := range many {
@@ -177,14 +159,12 @@ func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 	if got := w.Click(Point{X: last.X + 5, Y: last.Y + 5}).BackupOn(); got != 23 {
 		t.Errorf("a click on the last line drawn took backup %d, want 23", got)
 	}
-	// Under the last line drawn, inside the panel, there is nothing to take.
 	under := BackupRowAt(w.BackupsBox(), 19)
 	if got := w.Click(Point{X: under.X + 5, Y: under.Y + 5}); got.Screen() != OnBackups {
 		t.Errorf("a click under the last line drawn left the window on %v", got.Screen())
 	}
 }
 
-// Scrolled, the line lit is the one the keyboard is on, wherever it is drawn.
 func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	many := make([]domain.Backup, 20)
 	for i := range many {
@@ -201,9 +181,6 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	}
 }
 
-// A panel over the board stops the wheel: over the calendar, the menu or the
-// list of backups it used to scroll the column hidden behind them. Over the
-// list of backups it scrolls the list, a line a notch, and stops at its ends.
 func TestTheWheelStaysInsideAPanel(t *testing.T) {
 	var many []engine.Card
 	for i := 1; i <= 12; i++ {

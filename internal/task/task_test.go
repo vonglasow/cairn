@@ -11,9 +11,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// told is a fake Told: it records, in order, the facts it was told rather
-// than doing anything with them. A test on it is a test on the order and the
-// content of what Tell says, nothing else.
 type told struct {
 	said []string
 }
@@ -52,9 +49,6 @@ func (r *told) Serves(n int)          { r.said = append(r.said, fmt.Sprintf("Ser
 func (r *told) ServesNothing()        { r.said = append(r.said, "ServesNothing()") }
 func (r *told) ObjectivesTold()       { r.said = append(r.said, "ObjectivesTold()") }
 
-// TestTell_saysEveryFactATaskCarries checks that Tell says every fact a task
-// carries, in the card's order, and says the absence of a fact rather than
-// staying silent about it.
 func TestTell_saysEveryFactATaskCarries(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-01-02")
 	if err != nil {
@@ -125,8 +119,6 @@ func TestNewTask_refusesATitleOfSpaces(t *testing.T) {
 	}
 }
 
-// The sentinel is shared with an objective, the wording is not: a person told
-// "an objective needs a title" after typing `task new` learns nothing.
 func TestNewTask_saysItIsATaskThatNeedsATitle(t *testing.T) {
 	_, err := NewTask("")
 	if got := err.Error(); !strings.Contains(got, "a task needs a title") {
@@ -229,11 +221,6 @@ func TestNewTask_servesNoObjectiveUnlessItIsTold(t *testing.T) {
 	}
 }
 
-// A title is one line. A line break turns one row of a listing into two, the
-// second carrying no number and belonging to nothing; a tab walks through the
-// tabwriter that lines a card up and shifts columns it has no business in.
-// Cleaning it up quietly would mean cairn keeping a title other than the one
-// that was typed, which is the thing it refuses to do everywhere else.
 func TestNewTask_refusesATitleThatIsNotOneLine(t *testing.T) {
 	for _, title := range []string{"two\nlines", "a\ttab", "carriage\rreturn", "bell\a", "\aleading",
 		"line\u2028separator", "para\u2029separator"} {
@@ -243,9 +230,6 @@ func TestNewTask_refusesATitleThatIsNotOneLine(t *testing.T) {
 	}
 }
 
-// TestTask_refusesToCarrySubTasksWhenItIsOneItself checks the depth rule from
-// the side of the would-be parent: only one level, so a sub-task cannot
-// itself carry sub-tasks.
 func TestTask_refusesToCarrySubTasksWhenItIsOneItself(t *testing.T) {
 	subTask := Task{number: 2, parent: 1}
 	if err := subTask.MayCarrySubTasks(); !errors.Is(err, ErrParentIsSubTask) {
@@ -253,10 +237,6 @@ func TestTask_refusesToCarrySubTasksWhenItIsOneItself(t *testing.T) {
 	}
 }
 
-// TestTask_refusesToServeAnObjectiveWhileHangingUnderAParent checks the rule
-// seen from the task itself: a sub-task lives with the task it hangs under,
-// and is never given an objective of its own — but carrying either alone is
-// still fine, so the refusal is about the two together.
 func TestTask_refusesToServeAnObjectiveWhileHangingUnderAParent(t *testing.T) {
 	for _, c := range []struct {
 		name string
@@ -273,8 +253,6 @@ func TestTask_refusesToServeAnObjectiveWhileHangingUnderAParent(t *testing.T) {
 	}
 }
 
-// TestTask_refusesToHangUnderItself checks the rule from the task about to
-// hang: it cannot name itself as its own parent.
 func TestTask_refusesToHangUnderItself(t *testing.T) {
 	self := Task{number: 1, parent: 1}
 	if err := self.MayHangUnderItsParent(); !errors.Is(err, ErrParentIsSelf) {
@@ -290,9 +268,6 @@ func TestNewTask_keepsAnOrdinaryTitle(t *testing.T) {
 	}
 }
 
-// MayFinish is the rule that a parent is done because what hangs under it is
-// done. Refused rather than cascaded: marking the children done on the
-// parent's behalf would finish work nobody finished, and silently.
 func TestMayFinish_refusesWhileSomethingUnderItIsOpen(t *testing.T) {
 	open := func(state domain.State) Task {
 		var a AsTold
@@ -327,8 +302,6 @@ func TestMayFinish_refusesWhileSomethingUnderItIsOpen(t *testing.T) {
 	}
 }
 
-// The refusal names what is in the way, which is the useful thing to be told:
-// "it is not finished" leaves somebody hunting for which one.
 func TestMayFinish_namesWhatIsInTheWay(t *testing.T) {
 	var a AsTold
 	a.Numbered(7)
@@ -341,10 +314,6 @@ func TestMayFinish_namesWhatIsInTheWay(t *testing.T) {
 	}
 }
 
-// A sub-task is done or it is not. It carried all seven columns and used two:
-// measured on a store of 219 tasks, its 49 sub-tasks were done forty-eight
-// times and todo once — never current, never stopped. Where the work stands is
-// the parent's to say.
 func TestMayCarryItsColumn_holdsASubTaskToDoneOrNot(t *testing.T) {
 	under := func(state domain.State) Task {
 		var a AsTold
@@ -386,8 +355,6 @@ func TestMayCarryItsColumn_holdsASubTaskToDoneOrNot(t *testing.T) {
 	}
 }
 
-// Settled is what a task becomes when it is hung under another: the column it
-// was standing in on its own stops being true, except done, which stays.
 func TestSettled_keepsDoneAndDropsEveryOtherColumn(t *testing.T) {
 	made := func(parent int, state domain.State) Task {
 		var a AsTold
@@ -420,9 +387,6 @@ func TestSettled_keepsDoneAndDropsEveryOtherColumn(t *testing.T) {
 	}
 }
 
-// A task carries whether it is archived beside the column it stands in, so
-// that one archived after being finished is still finished, and one archived
-// without ever being done says exactly that.
 func TestArchived_isCarriedBesideTheColumn(t *testing.T) {
 	made := func(state domain.State, archived bool) Task {
 		var a AsTold
@@ -464,9 +428,6 @@ func TestArchived_isCarriedBesideTheColumn(t *testing.T) {
 	}
 }
 
-// Archiving what is already archived is refused: it is not a thing that
-// happens twice, and a second one would write a line of history saying
-// nothing changed.
 func TestMayArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	var a AsTold
 	a.Numbered(1)
@@ -484,8 +445,6 @@ func TestMayArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	}
 }
 
-// A part is never archived on its own: it belongs to the work its parent
-// names, and goes off the board with it.
 func TestMayArchive_refusesAPartOnItsOwn(t *testing.T) {
 	var a AsTold
 	a.Numbered(2)
@@ -501,9 +460,6 @@ func TestMayArchive_refusesAPartOnItsOwn(t *testing.T) {
 	}
 }
 
-// Bringing back what never went away is refused the way archiving twice is:
-// the two are one gesture in opposite directions, and one of them answering a
-// mistake while the other stays silent is a pair nobody can reason about.
 func TestMayUnarchive_refusesWhatIsOnTheBoard(t *testing.T) {
 	var here AsTold
 	here.Numbered(1)

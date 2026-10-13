@@ -1,11 +1,4 @@
 Feature: The board
-  The same cairn, laid out on a screen that stays open. Four columns for where
-  the work stands, a band underneath for what is not moving, and a second tab
-  for what the work is for.
-
-  A board decides nothing. It draws what the engine holds, and every key that
-  changes something goes back through the engine — so what is done here is done
-  the same way it is done at the command line.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -13,21 +6,6 @@ Feature: The board
     And a window of 100 by 44
 
   Rule: The work is laid out in four columns and a band
-
-    Left to right, the order the work goes through: backlog, todo, current,
-    done. The three states that mean "not moving" share a band underneath,
-    because what tells them apart is what unblocks them, not where they sit.
-
-    What was archived is not laid out here either, until `a` asks for it: then
-    it comes back into the columns it was in, dimmed, and `a` again puts it
-    away. Nothing is asked of the store either way — it changes what is drawn,
-    the way a search does.
-
-    A sub-task is not laid out here at all. It is a part of the work its parent
-    names, so the parent is what stands in a column and the part is read where
-    the parent is read. They used to sit beside their parents as though they
-    were tasks of their own, which made a board of 219 tasks show 219 things
-    when 170 of them were the work and the rest were its pieces.
 
     @tui-four-columns-left-to-right
     Scenario: the columns are named in the order the work goes through
@@ -98,10 +76,6 @@ Feature: The board
 
   Rule: A window too narrow is told so, rather than drawn badly
 
-    Four columns need sixty columns of terminal. Below that a title says
-    nothing anybody can read, so the board says what it needs instead of
-    drawing something useless.
-
     @tui-too-narrow-says-what-it-needs
     Scenario: a window under sixty says how many it needs
       Given a window of 47 by 30
@@ -116,9 +90,6 @@ Feature: The board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
   Rule: Normal moves between columns, insert between tasks
-
-    Two modes, and which one you are in says what the cursor is holding. The
-    bar at the foot says which, so it is never guessed.
 
     @tui-the-board-opens-in-normal
     Scenario: the board opens on a column
@@ -169,10 +140,6 @@ Feature: The board
 
   Rule: Walking sideways keeps the level, and the ends are one key away
 
-    Reading across a board is reading across it. A cursor that jumped back to
-    the first card every time it changed column would make the third task in
-    one column and the third in the next two separate journeys.
-
     @tui-sideways-keeps-the-level
     Scenario: changing column stays at the same level in it
       Given I added a task titled "First" with the state "todo"
@@ -207,10 +174,6 @@ Feature: The board
 
   Rule: The band is walked the way it is drawn
 
-    Three cards to a row, so along a row is left and right and down is a row
-    lower. A key that pointed down and moved the cursor sideways would be a key
-    nobody could trust.
-
     @tui-the-band-is-a-grid
     Scenario: right walks along the band's row, down goes a row lower
       Given I added a task titled "First" with the state "blocked"
@@ -226,10 +189,6 @@ Feature: The board
       Then the cursor is on the task "Fourth"
 
   Rule: Moving a task changes where it stands
-
-    Sideways it changes column, and the state follows. Up and down it changes
-    place among the ones it sits with, and never the column — until there is
-    nowhere lower in the column, and what is below the column is the band.
 
     @tui-moving-a-task-across-changes-its-column
     Scenario: pushing a task right puts it in the next column
@@ -288,9 +247,6 @@ Feature: The board
 
   Rule: The bar shows only what works here
 
-    A key on the bar does something in this view. A key that does nothing here
-    is not on it, so the bar is never read against what the board will refuse.
-
     @tui-the-bar-follows-the-mode
     Scenario: the bar changes with the mode
       Given I added a task titled "Write the spec"
@@ -300,9 +256,6 @@ Feature: The board
       Then the bar offers "move"
 
   Rule: Help answers in every mode
-
-    Help that cannot be reached from the mode you are stuck in is help you have
-    to already understand to find.
 
     @tui-help-answers-in-every-mode
     Scenario Outline: the question mark answers wherever it is asked
@@ -327,21 +280,6 @@ Feature: The board
       Then the mode is "INSERT"
 
   Rule: Searching narrows the board in place
-
-    The columns stay, so where a match sits in the flow is part of the answer.
-
-    What a search reaches is not this board's to decide. It reaches what the
-    command line reaches, by the engine's rule, so that one question typed into
-    three surfaces cannot come back with three answers. It did: this board
-    looked in three fields where the engine looked in six, and neither knew
-    about the other.
-
-    A word found only in a part answers the work it is part of. A sub-task has
-    no line of its own here, so a search that reached one and drew nothing
-    would answer nothing at all for a word plainly in the store — measured, 44
-    of 49 sub-tasks carry a word their parent does not. The command line still
-    names the sub-task itself, because there a line carries a number somebody
-    can act on.
 
     @tui-searching-narrows-in-place
     Scenario: only what matches is drawn, in the columns it sits in
@@ -439,9 +377,6 @@ Feature: The board
 
   Rule: A card says what its task carries, and no more
 
-    Twenty characters of width decide what fits. What is on a card was chosen
-    once and holds everywhere.
-
     @tui-a-card-carries-the-number-and-the-title
     Scenario: a card is its number and its title
       Given I added a task titled "Write the spec"
@@ -491,11 +426,6 @@ Feature: The board
 
   Rule: The command prompt runs what the command line runs
 
-    The bar offers ":" and the prompt behind it knew two words out of the whole
-    engine. What is understood there is what is understood at the command line,
-    read off the same list of operations — so an operation added to cairn is
-    understood here the day it is added.
-
     @tui-the-command-prompt-runs-an-operation
     Scenario: a command typed at the prompt is the command line's own
       Given I added a task titled "Write the spec"
@@ -544,9 +474,6 @@ Feature: The board
 
   Rule: Nothing is written until it is saved
 
-    The same form adds and edits, and it holds everything back until it is
-    told to keep it — otherwise cancelling would mean nothing.
-
     @tui-escape-closes-the-form
     Scenario: escape closes the form and writes nothing
       Given I added a task titled "Write the spec"
@@ -585,11 +512,6 @@ Feature: The board
 
   Rule: A form is filled in the same way as the window's
 
-    One rule for a form, on both boards. Enter writes a line in the description
-    and moves on everywhere else; the arrows walk the description's lines and
-    tab is what leaves it; ^S saves from anywhere — enter never does. Every
-    field that was typed into is what is saved.
-
     @tui-enter-writes-a-line-in-the-description
     Scenario: enter writes a line in the description rather than saving
       Given I added a task titled "Write the spec"
@@ -612,12 +534,6 @@ Feature: The board
       Then the card for task 1 says "backend"
 
   Rule: Losing work is asked about first
-
-    Two gestures lose work and neither can be undone: deleting a task, and
-    throwing away a form somebody has typed into. Both are asked about, in the
-    same place and with the same two keys — enter agrees, anything else backs
-    out. A whole column being archived is asked about too: it is not lost,
-    but twelve cards moving on one key is not something to find out afterwards.
 
     @tui-deleting-asks-first
     Scenario: deleting asks before it takes the task away
@@ -751,11 +667,6 @@ Feature: The board
       Then the cursor is on the task "Second"
 
   Rule: The time spent and the backups are reached from the terminal board too
-
-    The window gained a page for the time spent and a way to the backups; the
-    terminal board had neither, and a command typed at its prompt said nothing
-    of what it answered. A third tab lays the week out, and a command says its
-    answer until esc puts it away.
 
     @tui-the-time-tab
     Scenario: the third tab lays out the week's time, and the arrows walk the weeks

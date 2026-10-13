@@ -6,21 +6,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// Where the cursor is, and what moves it. In normal it stands on a column; in
-// insert it holds a task. The two are different enough that the same key means
-// two different journeys, and near enough that both are spelled hjkl.
-
-// lastColumn is the rightmost, done. A function rather than a constant, so the
-// gate can judge the arithmetic: a package-level constant sits outside every
-// covered block, and a wrong one would go out unjudged.
 func lastColumn() int { return engine.Columns - 1 }
 
-// underTheBand says whether the stalled band lies beneath a column. It does
-// not lie under the backlog, which runs the whole height instead.
 func underTheBand(column int) bool { return column > 0 }
 
-// moveCursor walks the cursor: between objectives on the second tab, and
-// between columns — and down into the band or back out of it — on the first.
 func (b Board) moveCursor(way string) Board {
 	if b.tab == Objectives {
 		return b.walkGoals(way)
@@ -48,9 +37,6 @@ func (b Board) moveCursor(way string) Board {
 	return b
 }
 
-// walkGoals moves up and down the objectives. Left and right do nothing there:
-// the list is one column, and a key that pointed sideways would be a key that
-// looked broken.
 func (b Board) walkGoals(way string) Board {
 	goals := b.goals()
 	if len(goals) == 0 {
@@ -70,13 +56,8 @@ func (b Board) walkGoals(way string) Board {
 	return b.follow()
 }
 
-// toColumn puts the cursor on a column, and refuses to walk off either end —
-// a cursor that wrapped round would move the eye across the whole screen for
-// one keystroke.
 func (b Board) toColumn(to int) Board {
 	if b.inBand {
-		// Left and right inside the band walk the cards, not the columns: the
-		// band is one place, however wide it is.
 		return b
 	}
 	if to < 0 || to > lastColumn() {
@@ -86,9 +67,6 @@ func (b Board) toColumn(to int) Board {
 	return b.follow()
 }
 
-// takeHold puts the cursor on a task, if there is one where it stands. On an
-// empty column there is nothing to hold, so the board stays in normal rather
-// than pretending.
 func (b Board) takeHold() Board {
 	if b.tab == Objectives {
 		return b.openObjective()
@@ -102,10 +80,7 @@ func (b Board) takeHold() Board {
 	return b.follow()
 }
 
-// stepTo moves the cursor from one task to another.
 func (b Board) stepTo(way string) Board {
-	// The band is a grid, and a grid is walked as one. Everywhere else a column
-	// is a list, and left and right change which list.
 	if b.inBand {
 		return b.stepInBand(way)
 	}
@@ -120,14 +95,8 @@ func (b Board) stepTo(way string) Board {
 	return b
 }
 
-// wide is how many cards the band puts in a row.
 func wide() int { return engine.Columns - 1 }
 
-// stepInBand walks the band as what it is drawn as: a grid. Down goes down a
-// row and right goes along one, because a key that pointed down and moved the
-// cursor sideways would be a key nobody could trust.
-//
-// Up off the top row leaves the band, since that is what is above it.
 func (b Board) stepInBand(way string) Board {
 	band := b.here()
 	at := b.at(band)
@@ -161,12 +130,6 @@ func (b Board) stepInBand(way string) Board {
 	return b.follow()
 }
 
-// stepBy moves up or down the list the cursor is standing in.
-//
-// Off the bottom of a column it carries on into the band, and off the top of
-// the band it comes back up: the band is under the columns on screen, so down
-// out of one has to reach it. A column that stopped at its last card would
-// leave what is stalled unreachable whenever a column happened to be short.
 func (b Board) stepBy(way string) Board {
 	here := b.here()
 	at := b.at(here)
@@ -181,8 +144,6 @@ func (b Board) stepBy(way string) Board {
 		b.task = here[to].Number
 		return b.follow()
 	}
-	// Off an end. Which end is the direction, not the number: a number would
-	// carry a comparison nothing can tell the two sides of apart.
 	if way == goUp {
 		if b.inBand {
 			return b.outOfBand()
@@ -195,14 +156,11 @@ func (b Board) stepBy(way string) Board {
 	return b
 }
 
-// intoBand puts the cursor on the first thing that is not moving.
 func (b Board) intoBand() Board {
 	b.cameFrom = b.column
 	b.inBand = true
 	band := b.here()
 	if len(band) == 0 {
-		// Nothing is stalled, so there is nothing to hold: the cursor stands on
-		// the band itself rather than on a card in it.
 		b.mode, b.task = Normal, 0
 		return b.follow()
 	}
@@ -210,7 +168,6 @@ func (b Board) intoBand() Board {
 	return b.follow()
 }
 
-// outOfBand brings the cursor back up to the column it came down from.
 func (b Board) outOfBand() Board {
 	b.inBand = false
 	b.column = b.cameFrom
@@ -223,9 +180,6 @@ func (b Board) outOfBand() Board {
 	return b.follow()
 }
 
-// follow scrolls whatever the cursor is standing in so that what it holds is
-// wholly on screen. It is called after every move, so nothing the cursor can
-// reach is ever hidden.
 func (b Board) follow() Board {
 	l := LayoutFor(b.width, b.height)
 	if b.tab == Objectives {
@@ -235,8 +189,6 @@ func (b Board) follow() Board {
 	here := b.here()
 	at := max(0, b.at(here))
 	if b.inBand {
-		// The band lays its cards out three across, so what scrolls is the row
-		// a card is in and not the card itself.
 		b.bandAt = Scrolled(b.bandAt, at/(engine.Columns-1), l.Rows)
 		return b
 	}
@@ -248,9 +200,6 @@ func (b Board) follow() Board {
 	return b
 }
 
-// readOn moves the help down or up, a line at a time. Something longer than the
-// window has to be readable to its end, and the help is the one screen with
-// nothing in it to put a cursor on.
 func (b Board) readOn(way string) Board {
 	if way == goDown {
 		b.helpAt++
@@ -261,7 +210,6 @@ func (b Board) readOn(way string) Board {
 	return b
 }
 
-// goalPlace is where in the list the objective under the cursor stands.
 func (b Board) goalPlace() int {
 	for i, g := range b.goals() {
 		if g.Number == b.goal {
@@ -271,14 +219,6 @@ func (b Board) goalPlace() int {
 	return 0
 }
 
-// acrossTo moves to another column and stays at the same level in it. A column
-// with nothing in it is still moved to, so the cursor can walk past an empty
-// column rather than being stopped by one.
-//
-// The level is kept rather than reset to the top: walking sideways along a
-// board is reading across it, and a cursor that jumped back to the first card
-// every time would make the third task in one column and the third in the next
-// two separate journeys.
 func (b Board) acrossTo(to int) Board {
 	if b.inBand || to < 0 || to > lastColumn() {
 		return b
@@ -295,14 +235,10 @@ func (b Board) acrossTo(to int) Board {
 	return b.follow()
 }
 
-// toEnd puts the cursor on the last of whatever it is standing in, and toStart
-// on the first. `G` and `gg`, which is what anybody who has used vim will try.
 func (b Board) toEnd() Board { return b.toEdge(func(n int) int { return n - 1 }) }
 
-// toStart puts it on the first.
 func (b Board) toStart() Board { return b.toEdge(func(int) int { return 0 }) }
 
-// toEdge is both of them: it asks where to go given how many there are.
 func (b Board) toEdge(which func(int) int) Board {
 	if b.tab == Objectives {
 		goals := b.goals()
@@ -320,7 +256,6 @@ func (b Board) toEdge(which func(int) int) Board {
 	return b.follow()
 }
 
-// at answers where in a list the cursor's task sits, or that it is not in it.
 func (b Board) at(here []engine.Card) int {
 	for i, c := range here {
 		if c.Number == b.task {
@@ -330,7 +265,6 @@ func (b Board) at(here []engine.Card) int {
 	return -1
 }
 
-// held answers the card the cursor is holding.
 func (b Board) held() (engine.Card, bool) {
 	for _, c := range b.cards() {
 		if c.Number == b.task {
@@ -340,10 +274,6 @@ func (b Board) held() (engine.Card, bool) {
 	return engine.Card{}, false
 }
 
-// push moves the task itself. Sideways it changes column, and the state follows
-// — where a task sits and what state it is in are the same fact drawn two ways.
-// Up and down it changes place among the ones it sits with, which is a
-// different thing and never touches the column.
 func (b Board) push(way string) (tea.Model, tea.Cmd) {
 	if _, ok := b.held(); !ok {
 		return b, nil
@@ -359,10 +289,6 @@ func (b Board) push(way string) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-// pushDown puts the task one place lower among the ones it sits with. From the
-// last of them there is nowhere lower in the column, and what is below the
-// column is the band — so that is the one case where it asks which kind of
-// stopped the task has become.
 func (b Board) pushDown() (tea.Model, tea.Cmd) {
 	if b.inBand {
 		return b, nil
@@ -374,14 +300,10 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 	if b.at(here) < 0 {
 		return b, nil
 	}
-	// Which of the three kinds of stopped this is cannot be worked out, only
-	// asked. Nothing is written until the answer comes back.
 	b.choosing, b.choice = true, 0
 	return b, nil
 }
 
-// pushUp puts the task one place higher, and out of the band back into the
-// column it was pushed down from.
 func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
 		return b.land(engine.StateAt(b.cameFrom), b.cameFrom, false)
@@ -392,9 +314,6 @@ func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-// sideways moves a task one column over. Out of the band it reaches the
-// backlog, which the band does not lie under but which is still what is to its
-// left; there is nothing to the band's right, so nothing happens there.
 func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	by := -1
 	if way == goRight {
@@ -407,7 +326,6 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	return b.land(state, engine.IndexOf(state), false)
 }
 
-// land writes the new state and puts the cursor where the task went.
 func (b Board) land(state string, column int, inBand bool) (tea.Model, tea.Cmd) {
 	b.column, b.inBand = column, inBand
 	return b, b.setState(state)

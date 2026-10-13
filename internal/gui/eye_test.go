@@ -5,9 +5,6 @@ import (
 	"testing"
 )
 
-// A card in focus says so with an eye before its number, drawn rather than
-// written: a dot read as nothing in particular. The number moves along to
-// make room for it, and a card nobody is on has neither.
 func TestACardInFocusHasAnEyeBeforeItsNumber(t *testing.T) {
 	number := Box{X: 100, Y: 200, W: 240, H: lineHigh}
 	eye, ok := FocusEye(engine.Card{Number: 7, InFocus: true}, number)
@@ -31,8 +28,6 @@ func TestACardInFocusHasAnEyeBeforeItsNumber(t *testing.T) {
 	}
 }
 
-// The eye is drawn, in the colour that says chosen, and nothing is drawn
-// where a card nobody is on would have one.
 func TestTheEyeIsDrawn(t *testing.T) {
 	on := engine.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true}
 	off := engine.Card{Number: 2, Title: "Ship it", State: "todo"}

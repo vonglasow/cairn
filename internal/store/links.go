@@ -2,17 +2,10 @@ package store
 
 import "fmt"
 
-// What a task carries besides its own row — its labels, what blocks it, what it
-// serves — sits in tables of its own. Reading one task asks for each; reading a
-// listing reads the three tables once, rather than three times for every task
-// in it.
-
-// links answers what one task carries in the tables beside its row.
 type links interface {
 	of(number int) (labels []string, blockers, objectives []int, err error)
 }
 
-// askedEach reads one task's links by asking the store for each.
 type askedEach struct{ s *Store }
 
 func (a askedEach) of(number int) ([]string, []int, []int, error) {
@@ -31,7 +24,6 @@ func (a askedEach) of(number int) ([]string, []int, []int, error) {
 	return labels, blockers, objectives, nil
 }
 
-// readAtOnce holds every task's links, read in one pass over each table.
 type readAtOnce struct {
 	labels            map[int][]string
 	blockers, serving map[int][]int
@@ -41,8 +33,6 @@ func (r readAtOnce) of(number int) ([]string, []int, []int, error) {
 	return r.labels[number], r.blockers[number], r.serving[number], nil
 }
 
-// everyLink reads the three tables whole, each in the order a task tells its
-// own: labels alphabetically, numbers in order.
 func (s *Store) everyLink() (readAtOnce, error) {
 	labels, err := pairs[string](s, `SELECT task_number, label FROM labels ORDER BY task_number, label`)
 	if err != nil {
@@ -59,8 +49,6 @@ func (s *Store) everyLink() (readAtOnce, error) {
 	return readAtOnce{labels: labels, blockers: blockers, serving: serving}, nil
 }
 
-// pairs reads a table of task numbers and one thing each carries, gathered by
-// the task.
 func pairs[T any](s *Store, query string) (map[int][]T, error) {
 	rows, err := s.on.Query(query)
 	if err != nil {

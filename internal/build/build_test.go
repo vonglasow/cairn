@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-// stampFor sets a linker-injected variable for the length of the test.
 func stampFor(t *testing.T, target *string, value string) {
 	t.Helper()
 	prev := *target
@@ -52,9 +51,6 @@ func TestApplyVCS_leavesAStampedCommitAlone(t *testing.T) {
 	}
 }
 
-// A build from a source archive has no VCS stamp to fall back on, so the date
-// it says comes from the linker — and a linker stamp is the more deliberate of
-// the two wherever both are there.
 func TestApplyVCS_leavesAStampedCommitDateAlone(t *testing.T) {
 	got := applyVCS(Info{CommitDate: "2026-10-07T21:00:00Z"}, []debug.BuildSetting{
 		{Key: "vcs.time", Value: "2026-08-15T13:59:37Z"},
@@ -88,11 +84,6 @@ func TestRead_readsTheRuntime(t *testing.T) {
 	}
 }
 
-// Nothing but this holds the rendering: `cairn --version` prints it, and that
-// scenario lives in another package, whose coverage does not count for this
-// one. The fields are walked rather than listed, because a test that names the
-// six that exist says nothing about the seventh — and it is the seventh,
-// added and not printed, that would go out in a release saying nothing.
 func TestString_printsEveryFieldABuildCarries(t *testing.T) {
 	told := Info{
 		Version:    "v1.2.3",

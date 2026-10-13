@@ -1,13 +1,5 @@
 package gui
 
-// The loop, and the one thing in this package a test cannot reach: a window
-// only a real display can open.
-//
-// What an event *means* is worked out by Pointed, Typed and Twice, which are
-// ordinary functions over a Window and are covered like everything else. What
-// is left here is plumbing, and plumbing that decides nothing cannot get
-// anything wrong quietly.
-
 import (
 	"cairn/internal/engine"
 	"fmt"
@@ -33,33 +25,21 @@ import (
 	"gioui.org/unit"
 )
 
-// Beat is how often the window asks the store whether anybody else has written
-// to it. The same two seconds as the terminal board, and for the reason a
-// second screen gives: a board nobody is looking at still has to be true.
-// A function and not a constant, for the reason test/harness.go gives: the
-// arithmetic of a package-level constant is never inside a covered block.
+// Beat is how often the window asks the store whether anybody else has written to it.
 func Beat() time.Duration { return 2 * time.Second }
 
-// Still is how long the wheel has to be left alone for the next turn to be a
-// turn of its own. A trackpad goes on sending after the fingers leave it, about
-// one turn a frame, so anything closer than this is the same gesture going on.
+// Still is how long the wheel has to be left alone for the next turn to be a turn of its own.
 func Still() time.Duration { return 150 * time.Millisecond }
 
-// Twin is how long after a press a second one at the same place is the same
-// gesture. Worked out here because Gio reports presses and says nothing about
-// double-clicks.
+// Twin is how long after a press a second one at the same place is the same gesture.
 func Twin() time.Duration { return 400 * time.Millisecond }
 
-// Dp turns where a pointer says it is into where the board thinks it is. A
-// window speaks in pixels and this board works in dp; on a screen with two
-// pixels to the dp, taking one for the other picks the card twice as far down
-// the column.
+// Dp turns where a pointer says it is into where the board thinks it is.
 func Dp(at f32.Point, perDp float32) Point {
 	return Point{X: int(at.X / perDp), Y: int(at.Y / perDp)}
 }
 
-// Sized turns the size a window reports, in pixels, into the size this board
-// works in.
+// Sized turns the size a window reports, in pixels, into the size this board works in.
 func Sized(max image.Point, perDp float32) (width, height int) {
 	return int(float32(max.X) / perDp), int(float32(max.Y) / perDp)
 }
@@ -67,9 +47,6 @@ func Sized(max image.Point, perDp float32) (width, height int) {
 // Turned is the same for how far a wheel says it went.
 func Turned(by, perDp float32) int { return int(by / perDp) }
 
-// pasting hands the window what the clipboard held. A clipboard that will not
-// read leaves the text alone and stops the waiting all the same: a paste that
-// silently emptied a field would be worse than one that did nothing.
 func pasting(w Window, said io.Reader) Window {
 	read, err := io.ReadAll(said)
 	if err != nil {
@@ -78,30 +55,17 @@ func pasting(w Window, said io.Reader) Window {
 	return w.Pasted(string(read))
 }
 
-// Acts says whether a pointer event carries a button this board answers as a
-// click. Only the first: a right or a middle click arrived as a press and a
-// release like any other, so it chose cards and pressed offers while nothing
-// on screen suggested it would. The right press is read before this, and
-// opens the menu (menu.go). A scroll carries no button at all and goes
-// through.
+// Acts says whether a pointer event carries a button this board answers as a click.
 func Acts(b pointer.Buttons) bool { return b == 0 || b == pointer.ButtonPrimary }
 
-// Gesture is what a pointer has said so far: when the last press landed and
-// where, which is the whole of what tells the press after it from the second
-// half of a double-click.
+// Gesture is what a pointer has said so far: when the last press landed and where, which is the whole of what tells the press after it from the second half of a double-click.
 type Gesture struct {
-	At    time.Time
-	Where Point
-	// Clicks is how many presses the gesture has made so far: two once it is
-	// a double click, which is what tells a third press from a first.
+	At     time.Time
+	Where  Point
 	Clicks int
 }
 
-// Pointing is everything a pointer event does, the double-click included, and
-// the gesture it leaves behind. One function and not a rule kept in the loop:
-// what the loop decided itself, no scenario could reach — and the release
-// after a double-click closed the task it had just opened, found by hand in a
-// window rather than by any test.
+// Pointing is everything a pointer event does, the double-click included, and the gesture it leaves behind.
 func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time.Time) (Window, Gesture) {
 	if kind == pointer.Press {
 		w = w.interrupted()
@@ -114,8 +78,6 @@ func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time
 			if g.Clicks >= 2 {
 				return w.TripleClick(at), Gesture{}
 			}
-			// A double click that opened something ends there: the press after
-			// it lands on what it opened, and is a press on that.
 			after := w.DoubleClick(at)
 			if after.screen != w.screen {
 				return after, Gesture{}
@@ -146,8 +108,7 @@ func Pointed(w Window, kind pointer.Kind, at Point, by int) Window {
 	return w
 }
 
-// Twice says whether a press is the second half of a double-click: soon enough
-// after the last one, and close enough to it that the hand did not move.
+// Twice says whether a press is the second half of a double-click: soon enough after the last one, and close enough to it that the hand did not move.
 func Twice(before, now time.Time, was, at Point) bool {
 	if before.IsZero() || now.Sub(before) > Twin() {
 		return false
@@ -155,46 +116,29 @@ func Twice(before, now time.Time, was, at Point) bool {
 	return abs(at.X-was.X) <= Grip && abs(at.Y-was.Y) <= Grip
 }
 
-// Typed says what a key does. The few flat shortcuts, and nothing modal.
+// Typed says what a key does.
 func Typed(w Window, name string, with key.Modifiers) Window {
 	w = w.interrupted()
 	said, isNamed := naming(name)
-	// ⌥ with anything but a move or ⌫ writes a letter — on a Mac ⌥ alone, on
-	// Windows AltGr, which is Ctrl and Alt together — and the letter arrives
-	// as text on its own. The key beside it is no shortcut: AltGr+S, ś in
-	// Polish, used to save and close the form.
 	if with.Contain(key.ModAlt) && !moving(said) && said != "backspace" {
 		return w
 	}
-	// A key that moves the caret keeps every modifier it came with: ⌘ and ⌥
-	// say how far it goes, and shift that it holds on the way.
 	if moving(said) {
 		return w.Key(modified(with, key.ModCommand|key.ModCtrl, "cmd+") +
 			modified(with, key.ModAlt, "alt+") + modified(with, key.ModShift, "shift+") + said)
 	}
 	if with.Contain(key.ModCommand) || with.Contain(key.ModCtrl) {
-		// Named first, like every other key. Lowercasing Gio's own spelling
-		// left ⌘ with a special key arriving as "cmd+⏎" — a name nothing is
-		// bound to, and nothing said so.
 		return w.Key("cmd+" + said)
 	}
 	if with.Contain(key.ModAlt) && said == "backspace" {
 		return w.Key("alt+backspace")
 	}
-	// Shift is a modifier Gio reports apart from the key, so a shifted letter
-	// arrives as the plain letter and has to be put back together here. Only a
-	// letter and tab: a shifted "/" is a different character, not a shifted
-	// key. Nothing typed comes this way — text goes through EditEvent.
-	// A named key or a letter: those are what this board spells with a shift+
-	// prefix. Punctuation is left alone, because Gio has already applied shift
-	// to it — the "/" key with shift is named "?" before it gets here.
 	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) {
 		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
 }
 
-// moving says whether a key moves the caret: the arrows, home and end.
 func moving(said string) bool {
 	switch said {
 	case "left", "right", "up", "down", "home", "end":
@@ -203,7 +147,6 @@ func moving(said string) bool {
 	return false
 }
 
-// modified is a modifier's word when the key came with any of the ones named.
 func modified(with, any key.Modifiers, word string) string {
 	if with&any != 0 {
 		return word
@@ -211,16 +154,11 @@ func modified(with, any key.Modifiers, word string) string {
 	return ""
 }
 
-// aLetter says whether a name is a single letter.
 func aLetter(name string) bool {
 	r := []rune(name)
 	return len(r) == 1 && unicode.IsLetter(r[0])
 }
 
-// naming turns what Gio calls a key into what this board calls it, and says
-// whether the key was one this board has a word for. Gio spells them for a
-// keyboard; a board says what they do. Shift is joined to those and to letters, and to nothing else: Gio has
-// already applied it to punctuation.
 func naming(name string) (string, bool) {
 	switch key.Name(name) {
 	case key.NameEscape:
@@ -249,30 +187,11 @@ func naming(name string) (string, bool) {
 	return strings.ToLower(name), false
 }
 
-// reach is how far one turn of a wheel is allowed to say it went. Larger than
-// any window, so nothing a hand can do falls outside it.
 const reach = 1 << 20
 
-// tag is what this window's events are addressed to. One for the whole window:
-// what a point means is worked out from the layout, not from whichever widget
-// happened to claim it.
 var tag = new(int)
 
 // Run opens a window and keeps it until it is closed.
-//
-// The shape is not a choice. Gio's Main has to be called from the program's
-// main goroutine and blocks there for as long as the program lives, because
-// some operating systems insist on owning that thread to run a window at all —
-// macOS is one. So the window's own loop goes on a goroutine and Main stays
-// here, on the thread the command was called on.
-//
-// Measured, by running it: without Main the command starts, waits, and shows
-// nothing. Every test in this package draws with no window and so never needed
-// it, which is exactly the kind of thing only the built binary says.
-//
-// It follows that this never returns on a desktop, and the process ends from
-// inside — which is why it hands nothing back, and why ended says what went
-// wrong itself rather than leaving it to a caller that is never returned to.
 func Run(work engine.Work, width, height int) {
 	leaveConsole()
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
@@ -282,10 +201,6 @@ func Run(work engine.Work, width, height int) {
 	app.Main()
 }
 
-// ended is how the process ends once the window is gone: quietly when it was
-// closed on purpose, saying why and exiting 1 when it failed. What exits is
-// handed in because a test that called the real one would take the suite
-// with it.
 func ended(err error, said io.Writer, exit func(int)) {
 	if err == nil {
 		exit(0)
@@ -295,7 +210,6 @@ func ended(err error, said io.Writer, exit func(int)) {
 	exit(1)
 }
 
-// loop is the window itself: the only code in this package no test runs.
 func loop(work engine.Work, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
@@ -304,12 +218,8 @@ func loop(work engine.Work, width, height int) error {
 	theme, skin := Theme(), Dark()
 	board := New(work, width, height).Measuring(Measured(theme)).Look()
 
-	// The system's file dialog, answered on the side: it blocks until a file
-	// is chosen, and the window never waits.
 	files, listen := systemFiles(window)
 	filed := make(chan Filed, 1)
-	// A line picked in the system's menu bar, handed over from the system's
-	// own thread.
 	picks := make(chan string, 8)
 
 	var ops op.Ops
@@ -317,8 +227,6 @@ func loop(work engine.Work, width, height int) error {
 	var pressedAt Point
 	var looked time.Time
 
-	// The beat asks for a frame every so often, and stops when the window
-	// does: one left running outlived every window it was started for.
 	beating := time.NewTicker(Beat())
 	defer beating.Stop()
 	gone := make(chan struct{})
@@ -366,8 +274,6 @@ func loop(work engine.Work, width, height int) error {
 			}
 			board = board.Born(gtx.Now)
 			Draw(gtx, theme, skin, board)
-			// The cairn is drawn a frame at a time, and a frame is only
-			// drawn when asked for.
 			if _, building := board.Intro(); building {
 				gtx.Execute(op.InvalidateCmd{})
 			}
@@ -376,32 +282,17 @@ func loop(work engine.Work, width, height int) error {
 	}
 }
 
-// due says whether it is time to ask the store again. Its own function because
-// it is the one decision inside Run, and Run is the only thing here no test can
-// reach — a decision left in there is a decision nothing judges.
 func due(looked, now time.Time) bool { return now.Sub(looked) >= Beat() }
 
-// listening is everything the window asks to hear, in one list: the pointer,
-// the keys the system would otherwise keep, what an input method sends, and
-// what a clipboard hands back.
 func listening() []event.Filter {
 	return []event.Filter{
 		pointer.Filter{
 			Target: tag,
 			Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Scroll |
-				// And what the pointer does before it is pressed, which
-				// is the whole of the window's hovering.
 				pointer.Move | pointer.Enter | pointer.Leave,
-			// A range, and not the zero one: Gio delivers a scroll only
-			// when it falls inside what was asked for, and the zero range
-			// asks for scrolls of nothing. Found by a test that scrolled a
-			// column and watched it stay where it was.
 			ScrollY: pointer.ScrollRange{Min: -reach, Max: reach},
 		},
 		key.Filter{Focus: tag, Optional: key.ModCommand | key.ModCtrl | key.ModShift | key.ModAlt},
-		// Named explicitly, because Gio hands a filter that names no key
-		// everything the system has not already spoken for — and tab is
-		// one of the ones it has.
 		key.Filter{Focus: tag, Name: key.NameTab},
 		key.Filter{Focus: tag, Name: key.NameTab, Required: key.ModShift},
 		key.Filter{Focus: tag, Name: key.NameDeleteBackward},
@@ -411,37 +302,20 @@ func listening() []event.Filter {
 		key.Filter{Focus: tag, Name: key.NameRightArrow},
 		key.Filter{Focus: tag, Name: key.NameUpArrow},
 		key.Filter{Focus: tag, Name: key.NameDownArrow},
-		// And what an input method sends, which is how text actually
-		// arrives: a letter is not a key press with a name, it is an edit.
 		key.FocusFilter{Target: tag},
 		transfer.TargetFilter{Target: tag, Type: "application/text"},
 	}
 }
 
-// heard takes everything that has happened since the last frame and answers the
-// window it leaves behind.
-//
-// traced is where each pointer event is written down, and nil for nowhere: see
-// trace.go.
 func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, traced io.Writer) (Window, time.Time, Point) {
 	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, tag)
 	area.Pop()
 
-	// Where the keyboard was before any of this frame's events were read. A
-	// keystroke can arrive twice — once as a key with a name, once as the text
-	// an input method made of it — and some systems send both where others
-	// send one. Judging by where the window was when the frame began is what
-	// keeps the key that opens a field from also writing in it.
 	was := w.screen
 
-	// The window asks for the keyboard and keeps it. There is one thing here to
-	// type into at a time and it is always the form's own field, so a second
-	// place for the focus to be would only be a second place to lose it.
 	gtx.Execute(key.FocusCmd{Tag: tag})
 
-	// What the window asked for, done here because a value cannot execute
-	// anything. Copying goes out now; pasting comes back as an event above.
 	if said, wants := w.Copying(); wants {
 		gtx.Execute(clipboard.WriteCmd{Type: "application/text",
 			Data: io.NopCloser(strings.NewReader(said))})
@@ -461,8 +335,6 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 		}
 		switch e := raw.(type) {
 		case pointer.Event:
-			// The second button opens what can be done to what is under it,
-			// on the press, the way a menu opens everywhere else.
 			if e.Buttons == pointer.ButtonSecondary && e.Kind == pointer.Press {
 				w = w.interrupted().ContextAt(Dp(e.Position, gtx.Metric.PxPerDp))
 				continue
@@ -483,16 +355,8 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 				w = Typed(w, string(e.Name), e.Modifiers)
 			}
 		case transfer.DataEvent:
-			// What the clipboard held, come back as an event: the read was
-			// asked for a frame or more ago and answered when the system
-			// could.
 			w = pasting(w, e.Open())
 		case key.EditEvent:
-			// Text goes only where there was already somewhere to put it. The
-			// `e` that opened this form arrived as a name first and as text
-			// second, and taking the second would write the shortcut into the
-			// field it just opened — measured: a title read "eWrite the spec",
-			// and every search began with the slash that opened it.
 			if takesTyping(was) {
 				w = w.Types(e.Text)
 			}
@@ -500,6 +364,4 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 	}
 }
 
-// takesTyping says whether a screen has somewhere for text to land. The board
-// and the panels do not: what they do with a letter is a shortcut.
 func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }

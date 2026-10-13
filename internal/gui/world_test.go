@@ -1,10 +1,5 @@
 package gui
 
-// The world the window's scenarios live in. It reaches the engine for the
-// givens — a scenario says what is in the store, not how it got there — and
-// drives the window itself for everything else: the window is a value, so a
-// gesture is a call and what it decided is a field, with no screen anywhere.
-
 import (
 	"context"
 	"fmt"
@@ -35,35 +30,16 @@ type world struct {
 	work  *refusing
 	w     Window
 
-	width, high int
-	// today is the day the window is told it is: the moment every scenario
-	// is read at, unless it names another.
-	today time.Time
-	// system is what the window is told it runs on. Every scenario runs on a
-	// Mac unless it says otherwise, so the keys it reads are the same keys
-	// whatever machine runs the suite.
-	system string
-	// clipboard is what the system's would hold, kept here because a scenario
-	// has no system: the window asks and the loop does, so the world plays the
-	// loop's part.
-	clipboard string
-	// file is a file of the scenario's own, outside the store: what the
-	// system's dialog saves to or opens, played by the world as the loop's
-	// part is.
-	file string
-	// scrolled is what each column stood at before the last gesture, so a
-	// scenario can say which one moved.
-	scrolled [engine.Columns]int
-	// laneScrolled is the same for the three lanes of the band.
+	width, high  int
+	today        time.Time
+	system       string
+	clipboard    string
+	file         string
+	scrolled     [engine.Columns]int
 	laneScrolled [3]int
-	// was is where the history stood before a step moved it, so a step after
-	// it can say whether it moved at all.
-	was int
-	// pointer is where the pointer holding a part was last put down.
-	pointer Point
-	// theme is the one every step's window is laid out with: made once, since
-	// shaping a font collection costs more than laying out a frame.
-	theme *material.Theme
+	was          int
+	pointer      Point
+	theme        *material.Theme
 }
 
 func newWorld(t *testing.T) *world { return &world{t: t, width: 1200, high: 800} }
@@ -76,16 +52,11 @@ func (w *world) reset() {
 		_ = w.other.Close()
 	}
 	w.path = filepath.Join(w.t.TempDir(), "cairn.db")
-	// The notes are named, as a surface finds them, and never made: cairn
-	// only says where they are, so an absolute place nobody writes to is safe.
 	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
 	if err != nil {
 		w.t.Fatalf("opening the store: %v", err)
 	}
 	w.held = held
-	// Everything a scenario writes goes through a second connection, because
-	// that is what it is: somebody else, at a command line or over MCP. The
-	// window notices another connection's writes and cannot notice its own.
 	other, err := engine.Open(w.path)
 	if err != nil {
 		w.t.Fatalf("opening the store a second time: %v", err)
@@ -100,23 +71,14 @@ func (w *world) reset() {
 	w.laneScrolled = [3]int{}
 }
 
-// refusing is the store the window talks to. It is the real engine, with one
-// thing a real engine cannot be asked for on demand: a refusal of everything
-// that changes something.
 type refusing struct {
-	held   *engine.Engine
-	refuse error
-	// refuseParts refuses adding a part and nothing else: a task saved with a
-	// new part among its parts is refused whole, as the engine would.
+	held        *engine.Engine
+	refuse      error
 	refuseParts bool
 	reads       int
-	// wrote is every operation that changes something, in order — which is
-	// what a scenario asks about when it says the engine was asked, or was
-	// not, or was asked once.
-	wrote []wrote
+	wrote       []wrote
 }
 
-// wrote is one thing the window told the store to change.
 type wrote struct {
 	thing, verb, number string
 }
@@ -139,8 +101,6 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 
 func (r *refusing) Version() (int64, error) { return r.held.Version() }
 
-// addsAPart says whether what was asked adds a part: a task made under
-// another, or one of the lines of a task's parts with no number on it.
 func addsAPart(in engine.Input) bool {
 	if in.Given["parent"] != "" && in.Given["number"] == "" {
 		return true
@@ -153,14 +113,11 @@ func addsAPart(in engine.Input) bool {
 	return false
 }
 
-// ── what a scenario sets up ───────────────────────────────────────────────
-
 func (w *world) aWindow(width, high int) error {
 	w.width, w.high = width, high
 	return nil
 }
 
-// givens writes what a scenario says is in the store, as somebody else.
 func (w *world) givens() test.Givens {
 	return test.Givens{Other: func() test.Asker { return w.other }}
 }
@@ -177,8 +134,6 @@ func (w *world) addTask(title, state, desc string) error {
 	return err
 }
 
-// inField is where the nth character of a field sits: where production reads
-// a character from, not a geometry worked out beside it.
 func (w *world) inField(name string) (func(int) Point, error) {
 	box := w.w.formBox()
 	fields := w.w.Form().Fields()
@@ -200,8 +155,6 @@ func (w *world) storeRefuses() error {
 	return nil
 }
 
-// ── what a person does ────────────────────────────────────────────────────
-
 func (w *world) open() error {
 	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today)
 	w.w = w.w.Look()
@@ -213,7 +166,6 @@ func (w *world) resize(width, high int) error {
 	return nil
 }
 
-// find is where on screen a card sits, by the title a scenario calls it.
 func (w *world) find(title string) (Point, error) {
 	l := w.w.Layout()
 	dealt, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
@@ -251,19 +203,11 @@ func (w *world) click(title string) error {
 	return nil
 }
 
-// doubleClick is the two presses and the two releases a mouse sends, not a
-// call to DoubleClick: what a release does with what the press opened is the
-// whole of what this is for.
 func (w *world) doubleClick(title string) error {
 	at, err := w.find(title)
 	if err != nil {
 		return err
 	}
-	// On the card's left edge and not its middle: a card is wider than the
-	// panel that opens over it, so the middle of one lands inside the panel
-	// and its edge does not. The release that follows the double click landed
-	// outside and closed what the click had just opened, and a test aiming at
-	// the middle could never see it.
 	edge := Point{X: at.X - w.w.Layout().Column[0].W/2 + 2, Y: at.Y}
 	w.w = w.w.PressAt(edge).LetGo(edge)
 	w.w = w.w.doubleClicked(edge).LetGo(edge)
@@ -280,8 +224,6 @@ func (w *world) clickTab(name string) error {
 	return nil
 }
 
-// findGoal is where an objective sits in the list, by the title a scenario
-// calls it.
 func (w *world) findGoal(title string) (Point, error) {
 	for i, g := range engine.Sorted(w.w.Reading().Goals) {
 		if g.Title != title {
@@ -302,8 +244,6 @@ func (w *world) clickGoal(title string) error {
 	return nil
 }
 
-// scrollParts turns the wheel over the parts of the open form, a notch at a
-// time.
 func (w *world) scrollParts(times int) error {
 	tiles := w.w.partTiles()
 	if len(tiles) < 2 {
@@ -317,7 +257,6 @@ func (w *world) scrollParts(times int) error {
 	return nil
 }
 
-// partPoint is the middle of a part's tile in the open form.
 func (w *world) partPoint(title string) (Point, error) {
 	for i, c := range w.w.PartsTicked() {
 		if c.Title == title {
@@ -328,10 +267,6 @@ func (w *world) partPoint(title string) (Point, error) {
 	return Point{}, fmt.Errorf("no part is titled %q", title)
 }
 
-// clickWith clicks what is titled with a key held down, the way a hand holds
-// ⌘ or ⇧ while it clicks: down before the press, up after the release. ⌘ is
-// the shortcut key, which is Ctrl on Linux — named as the shortcut, so the
-// scenario holds the key the window listens for wherever it runs.
 func (w *world) clickWith(held key.Modifiers, find func(string) (Point, error), title string) error {
 	at, err := find(title)
 	if err != nil {
@@ -341,15 +276,11 @@ func (w *world) clickWith(held key.Modifiers, find func(string) (Point, error), 
 	return nil
 }
 
-// clickOffer presses one of the bar's offers, which is how a person reaches
-// anything here without knowing a shortcut.
 func (w *world) clickOffer(name string) error {
 	for i, offer := range w.w.Offers() {
 		if offer != name {
 			continue
 		}
-		// Where it is drawn: on the panel when one is open, and on the bar
-		// under the board otherwise. A person clicks what they are looking at.
 		box := OfferAt(w.w.Layout(), i)
 		if s := w.w.screen; s != OnTheBoard && s != OnSearch {
 			box = w.w.PanelOffers()[i]
@@ -360,19 +291,12 @@ func (w *world) clickOffer(name string) error {
 	return fmt.Errorf("the bar offers %v, and none of them is %q", w.w.Offers(), name)
 }
 
-// press sends a key the way a window receives one: through the conversion a
-// real keyboard goes through. Driving Key directly let a scenario pass on a
-// key no window could send — ⇧A among them, which is how the key that shows
-// what was archived came to do nothing outside the tests.
 func (w *world) press(name string) error {
 	said, with := asGio(name)
 	w.w = Typed(w.w, said, with)
 	return w.clipping()
 }
 
-// clipping is what the loop does between frames: it puts on the clipboard what
-// the window asked to copy, and hands back what is on it when the window has
-// asked to paste.
 func (w *world) clipping() error {
 	if said, wants := w.w.Copying(); wants {
 		w.clipboard = said
@@ -384,11 +308,8 @@ func (w *world) clipping() error {
 	return nil
 }
 
-// asGio spells a key the way Gio hands it over: the name it gives the key, and
-// the modifiers apart from it.
 func asGio(name string) (string, key.Modifiers) {
 	var with key.Modifiers
-	// As many modifiers as the name carries, in the order it writes them.
 	for found := true; found; {
 		found = false
 		for prefix, mod := range map[string]key.Modifiers{
@@ -437,8 +358,6 @@ func (w *world) nudge(title string, by int) error {
 	return nil
 }
 
-// slotIn is the point that drops a card into a column at a given place: the
-// head of it, or the slot a named card occupies.
 func (w *world) slotIn(column string, above string) (Point, error) {
 	at := engine.IndexOf(strings.ToLower(column))
 	if at < 0 {
@@ -498,11 +417,6 @@ func (w *world) dragToLane(title, kind string) error {
 	return nil
 }
 
-// takeHold picks a card up and moves it over a column without letting go, so a
-// scenario can look at what is shown while a hand is still holding one.
-// takeHoldUnder picks a card up and holds it just below another, which is the
-// place behind that card: what the engine is told is `after` the card the
-// pointer sits under, so the step says the same thing the gesture does.
 func (w *world) takeHoldUnder(title, below string) error {
 	from, err := w.find(title)
 	if err != nil {
@@ -517,7 +431,6 @@ func (w *world) takeHoldUnder(title, below string) error {
 	return nil
 }
 
-// under is the point just inside the slot below a card.
 func (w *world) under(title string) (Point, error) {
 	l := w.w.Layout()
 	dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
@@ -558,7 +471,6 @@ func (w *world) scrollOver(column string) error {
 	return nil
 }
 
-// laneNamed is which of the band's lanes holds the kind of stopped named.
 func laneNamed(kind string) (int, error) {
 	for i, name := range engine.Stalled {
 		if name == kind {
@@ -579,8 +491,6 @@ func (w *world) scrollOverLane(kind string) error {
 	return nil
 }
 
-// clickTopOfLane clicks just inside the top of a lane, where whichever card the
-// lane has been scrolled to is drawn.
 func (w *world) clickTopOfLane(kind string) error {
 	lane, err := laneNamed(kind)
 	if err != nil {
@@ -609,11 +519,7 @@ func (w *world) types(text string) error {
 	return nil
 }
 
-// clickField is how a pointer puts the keyboard on a field.
 func (w *world) clickField(name string) error {
-	// The box production looks in, not one worked back out of the layout: a
-	// helper that reckons its own geometry clicks where nothing is, and says
-	// so by failing somewhere else entirely.
 	box := w.w.formBox()
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
@@ -627,8 +533,6 @@ func (w *world) clickField(name string) error {
 	return fmt.Errorf("the form has no field called %q", name)
 }
 
-// clickInto clicks a given number of characters into a field's value, which is
-// how a pointer puts the caret in the middle of a word.
 func (w *world) clickInto(characters int, name string) error {
 	box := Over(w.w.Layout().Bar.W+2*margin, w.w.Layout().Bar.Y+barHigh+margin)
 	fields := w.w.Form().Fields()
@@ -637,9 +541,6 @@ func (w *world) clickInto(characters int, name string) error {
 			continue
 		}
 		value := formValue(box, fields, i)
-		// Where the text itself begins, which is the frame's own inset and not
-		// a card's padding: the two happened to be close enough to land on the
-		// right glyph until the spacing scale was put straight.
 		inside := Inside(value)
 		at := Point{X: inside.X + characters*glyphOf(FormSize(field)), Y: inside.Y + inside.H/2}
 		w.w = w.w.clicked(at)
@@ -671,11 +572,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	// Every step leaves a window that can be drawn. A window can reach a state
-	// no scenario draws — a list opened over the form of a task with parts
-	// panicked in the hands of the person using it, while every step that led
-	// there passed. Drawn after each step, a state that cannot be drawn fails
-	// the scenario that reached it, whatever the scenario was about.
 	sc.StepContext().After(func(ctx context.Context, _ *godog.Step, _ godog.StepResultStatus, err error) (context.Context, error) {
 		if err != nil || w.w.width == 0 {
 			return ctx, err
@@ -911,9 +807,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
-	// Pressed and let go, which is how a click reaches this window. Calling
-	// Click straight misses everything a release decides on the way — and it
-	// did: this passed while no click outside a panel closed anything at all.
 	sc.Step(`^I click outside the panel$`, func() error {
 		off := Point{X: 2, Y: 2}
 		w.w = w.w.PressAt(off).LetGo(off)
@@ -1062,10 +955,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b).LetGo(b)
 		return nil
 	})
-	// Both halves of one keystroke, in the order a keyboard sends them and
-	// through Gio's own router: the name first, then the text an input method
-	// made of it. This is what Linux does and macOS does not, and driving it
-	// here is how the difference is reached without a second machine.
 	sc.Step(`^the keyboard says "([^"]*)" as both a key and as text$`, func(said string) error {
 		w.w, _, _ = frames(w.t, w.w,
 			key.Event{Name: key.Name(strings.ToUpper(said)), State: key.Press},
@@ -1083,8 +972,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			w.w = w.w.PressAt(at(from)).MoveTo(at(to)).LetGo(at(to))
 			return nil
 		})
-	// Line by line, for a field with room for several: the step above lays
-	// every character along one row, which is not where a second line is.
 	sc.Step(`^I drag across the field "([^"]*)" from line (\d+) character (\d+) to line (\d+) character (\d+)$`,
 		func(name string, fromLine, fromColumn, toLine, toColumn int) error {
 			fields := w.w.Form().Fields()
@@ -1109,8 +996,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			if err != nil {
 				return err
 			}
-			// Past the frame and past the panel, where no field is: the hand
-			// overshoots, and what it holds should not stop where it left.
 			past := Point{X: w.w.width - 2, Y: at(from).Y}
 			w.w = w.w.PressAt(at(from)).MoveTo(past).LetGo(past)
 			return nil
@@ -1177,8 +1062,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.expects(sc)
 }
 
-// workedOn edits the last task added over and over, so it carries more history
-// than any panel could hold.
 func (w *world) workedOn(times int) error {
 	found, err := w.givens().Tasks()
 	if err != nil {
@@ -1196,14 +1079,11 @@ func (w *world) workedOn(times int) error {
 	return nil
 }
 
-// middleOfHistory is a point over the history's box, which is what the wheel
-// has to be over for the history and not a column to move.
 func (w *world) middleOfHistory() Point {
 	box := BesideBox(w.w.formPanel())
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-// tileAt is the middle of the tile a part is drawn on.
 func (w *world) tileAt(title string) (Point, error) {
 	for at, c := range w.w.Under() {
 		if c.Title == title {
@@ -1227,8 +1107,6 @@ func (w *world) dragTile(what, onto string) error {
 	return nil
 }
 
-// dragTileOut lets a tile go past the bottom of its box, which is nowhere it
-// can land: a part moves among its sisters and has no column to fall into.
 func (w *world) dragTileOut(what string) error {
 	from, err := w.tileAt(what)
 	if err != nil {
@@ -1242,25 +1120,20 @@ func (w *world) dragTileOut(what string) error {
 
 func (w *world) scrollServing(by int) error {
 	w.was = w.w.serving
-	// One tile a notch, the way a column is scrolled by one card.
 	w.w = w.w.Scroll(w.middleOfServing(), by*SubHeight)
 	return nil
 }
 
-// middleOfServing is a point inside the box the work under an objective is
-// drawn in, which is where a wheel has to be for it to scroll that box.
 func (w *world) middleOfServing() Point {
 	box := BesideBox(w.w.formPanel())
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-// middleOfSaying is a point over the description on an open task.
 func (w *world) middleOfSaying() Point {
 	b, _, _, _, _ := w.w.sayingOn()
 	return Point{X: b.X + b.W/2, Y: b.Y + b.H/2}
 }
 
-// scrollList turns the wheel over an open list.
 func (w *world) scrollList(by int) error {
 	run := ChoosingRun(w.w.ChoosingBox())
 	w.was = w.w.ChoosingFromRow()
@@ -1280,8 +1153,6 @@ func (w *world) scrollHistory(by int) error {
 	return nil
 }
 
-// dragSayingBar pulls the bar beside a description past the bottom of its
-// track, the way the history's is pulled.
 func (w *world) dragSayingBar() error {
 	_, track, _, _, _ := w.w.sayingOn()
 	thumb := Thumb(track, len(w.w.SaidLines()), w.w.SaidRows(), w.w.saying)
@@ -1292,8 +1163,6 @@ func (w *world) dragSayingBar() error {
 	return nil
 }
 
-// dragHistoryBar takes hold of the bar beside the history and pulls it past
-// the bottom of its track, which is as far as it goes.
 func (w *world) dragHistoryBar() error {
 	track := BesideBar(w.w.formPanel())
 	thumb := Thumb(track, w.w.Told(), w.w.Rows(), w.w.history)
@@ -1320,12 +1189,8 @@ func (w *world) scrollObjectives() error {
 	return nil
 }
 
-// notesRoot is where a scenario's board is told the notes live.
 const notesRoot = "/vault"
 
-// answerDialog plays the loop's part when the window has asked for the
-// system's file dialog: it opens the dialog, here answered as given, and hands
-// the answer back.
 func (w *world) answerDialog(d dialog) error {
 	ask, asked := w.w.FileAsked()
 	if !asked {

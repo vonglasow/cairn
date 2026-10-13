@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-// The list and the parser are two places that could say different things
-// about what a column is; this proves they cannot. Every name ParseState
-// accepts has to be in States, and States cannot hold a name ParseState
-// refuses.
 func TestStates_areExactlyWhatParseStateAccepts(t *testing.T) {
 	for _, name := range []string{"backlog", "todo", "current", "done"} {
 		if !slices.Contains(States, State(name)) {
@@ -28,8 +24,6 @@ func TestStates_areExactlyWhatParseStateAccepts(t *testing.T) {
 	}
 }
 
-// Same proof as above, for priorities: the list and the parser cannot say
-// different things about what a priority is.
 func TestPriorities_areExactlyWhatParsePriorityAccepts(t *testing.T) {
 	for _, name := range []string{"low", "normal", "high", "critical"} {
 		if !slices.Contains(Priorities, Priority(name)) {
@@ -229,10 +223,6 @@ func TestFormatDay_writesNothingWhenThereIsNoDeadline(t *testing.T) {
 	}
 }
 
-// cairn writes a duration down to the second and no finer, so anything that
-// is not a whole number of seconds cannot be read back as it was given.
-// Refusing it is the only answer that does not lose it in silence: 500ms was
-// accepted, stored, and came back as nothing at all.
 func TestParseEstimate_refusesWhatItCannotWriteBack(t *testing.T) {
 	for _, amount := range []string{"500ms", "1m30s500ms", "1ns", "1500ms"} {
 		if _, err := ParseEstimate(amount); !errors.Is(err, ErrFinerThanASecond) {
@@ -256,9 +246,6 @@ func TestParseEstimate_saysWhatItWasGiven(t *testing.T) {
 	}
 }
 
-// A refusal that names what was wrong and not what is right leaves somebody
-// guessing. All four of these are closed sets, or one fixed shape, and saying
-// so costs one clause.
 func TestARefusalSaysWhatWouldHaveBeenTaken(t *testing.T) {
 	for _, c := range []struct {
 		what string
@@ -283,10 +270,8 @@ func TestARefusalSaysWhatWouldHaveBeenTaken(t *testing.T) {
 	}
 }
 
-// refusedBy drops the value a parser returned and keeps what it refused with.
 func refusedBy[T any](_ T, err error) error { return err }
 
-// A label named as nothing says none, and the labels after it are still read.
 func TestParseLabels_readsOnPastALabelNamedAsNothing(t *testing.T) {
 	if got, err := ParseLabels([]string{"", "spec"}); err != nil || len(got) != 1 || got[0] != "spec" {
 		t.Errorf("ParseLabels = %v, %v; want [spec]", got, err)

@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/exchange.feature: tasks carried
-// from one store to another as a file. The steps every feature shares live in
-// world_test.go and store_steps_test.go; the ones only this one uses are here.
-
 import (
 	"fmt"
 	"os"
@@ -30,7 +26,6 @@ func TestAcceptance_Exchange(t *testing.T) {
 	runAcceptance(t, "exchange.feature", initExchange(t), "")
 }
 
-// registerExchange declares the steps only bdd/exchange.feature uses.
 func (w *world) registerExchange(sc *godog.ScenarioContext) {
 	sc.Step(`^I export the tasks to a file of my own$`, func() error {
 		w.file = filepath.Join(w.T.TempDir(), "elsewhere", "tasks.json")
@@ -45,8 +40,6 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		w.file, w.was = filepath.Join(w.T.TempDir(), "notes.json"), []byte("not tasks\n")
 		return os.WriteFile(w.file, w.was, 0o600)
 	})
-	// Made the way the other machine made it: by cairn, against a store of
-	// its own, then written out by it.
 	sc.Step(`^a file of my own exported from a store where these were run:$`, func(run *godog.DocString) error {
 		mine := w.StorePath
 		other := filepath.Join(w.T.TempDir(), "other", "cairn.db")

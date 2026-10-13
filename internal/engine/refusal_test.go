@@ -58,8 +58,6 @@ func TestRefusalOf_readsAReasonASurfaceNamed(t *testing.T) {
 	}
 }
 
-// A reason is what a script or an agent branches on, so it is written once,
-// in one spelling, and never shared by two refusals.
 func TestReasons_areEachWrittenOnceAndSpelledAlike(t *testing.T) {
 	spelled := regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
 	seen := map[string]bool{}
@@ -91,11 +89,6 @@ func TestRefusalOf_readsWhatTheReadersRefuseAsNotUnderstood(t *testing.T) {
 	}
 }
 
-// Every failure a package below the surfaces declares is listed among the
-// reasons. A failure left out is answered as one nobody foresaw, and a script
-// told "something went wrong" for a request that was simply refused cannot
-// act on it.
-
 func TestEveryFailureCairnForesawHasAReason(t *testing.T) {
 	listed, err := os.ReadFile("refusal.go")
 	if err != nil {
@@ -125,8 +118,6 @@ func TestEveryFailureCairnForesawHasAReason(t *testing.T) {
 	}
 }
 
-// One mistake, one reason: a value outside a closed set is refused in the
-// same words whether a listing narrows by it or an edit gives it.
 func TestRefusalOf_givesOneReasonForAValueOutsideItsSet(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	for _, c := range []struct {

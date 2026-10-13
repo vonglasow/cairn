@@ -7,11 +7,7 @@ import (
 	"time"
 )
 
-// A card is one line of title and a fixed height, so a long name is cut rather
-// than allowed to change the shape of the board. These say where the cut falls.
-
 func TestATitleThatFitsIsLeftAlone(t *testing.T) {
-	// A column of 285 leaves (285-20)/8 = 33 characters.
 	if got := TitleOf("Write the spec", 285); got != "Write the spec" {
 		t.Fatalf("a title that fits was written %q", got)
 	}
@@ -28,7 +24,6 @@ func TestATitleTooLongIsCutAndSaysSo(t *testing.T) {
 	}
 }
 
-// Exactly the room it has is not too long. One more is.
 func TestTheCutFallsWhereTheRoomEnds(t *testing.T) {
 	room := (285 - padding - padding) / perGlyph
 	exactly := strings.Repeat("a", room)
@@ -41,8 +36,6 @@ func TestTheCutFallsWhereTheRoomEnds(t *testing.T) {
 	}
 }
 
-// A card too narrow to hold anything answers the title whole rather than an
-// ellipsis on its own, which says nothing at all.
 func TestACardWithNoRoomAnswersTheTitleWhole(t *testing.T) {
 	if got := TitleOf("Write the spec", 0); got != "Write the spec" {
 		t.Fatalf("a card with no room answered %q", got)
@@ -52,7 +45,6 @@ func TestACardWithNoRoomAnswersTheTitleWhole(t *testing.T) {
 	}
 }
 
-// A space left at the cut is dropped, so nothing reads "the …".
 func TestASpaceAtTheCutGoesWithIt(t *testing.T) {
 	room := (285 - padding - padding) / perGlyph
 	title := strings.Repeat("a", room-1) + " more"
@@ -62,10 +54,6 @@ func TestASpaceAtTheCutGoesWithIt(t *testing.T) {
 	}
 }
 
-// Labels are measured at the size they are drawn in. They are written in the
-// small face while perGlyph is the wide one the title uses, so measuring with
-// the title's gabarit left a fifth of every card's label line empty — and on a
-// card carrying three, the third was the one dropped.
 func TestTagged_measuresAtTheSizeItIsDrawnIn(t *testing.T) {
 	c := engine.Card{Labels: []string{"ado:36467", "chantier:tests-qualite", "sp26-20"}}
 	got := Tagged(c, 270)
@@ -74,8 +62,6 @@ func TestTagged_measuresAtTheSizeItIsDrawnIn(t *testing.T) {
 	}
 }
 
-// What a card's label line says, at the edges. Room is counted in glyphs of
-// the small face, so the widths here are that many times perSmallGlyph.
 func TestTagged_atItsEdges(t *testing.T) {
 	room := func(glyphs int) int { return glyphs * perSmallGlyph }
 	for _, c := range []struct {
@@ -99,9 +85,6 @@ func TestTagged_atItsEdges(t *testing.T) {
 	}
 }
 
-// What a card says beside its number, at its edges. A card with nothing under
-// it says nothing about parts: "0/0" is a card claiming to be a piece of work
-// that was split, which it was not.
 func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 	g := Marks()
 	for _, c := range []struct {
@@ -122,8 +105,6 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 	}
 }
 
-// The window knew nothing about time: no deadline, no notion of late. Deciding
-// what to do without knowing what is due is not deciding.
 func TestACardSaysWhenItIsDue(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
 	for _, c := range []struct {
@@ -146,7 +127,6 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 	}
 }
 
-// Estimated at two hours and nine hours spent is a fact no overview carried.
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
 	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
 	said, over := c.Cost()
@@ -161,8 +141,6 @@ func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
 	}
 }
 
-// An objective's standing — active, on hold, reached, dropped — was nowhere on
-// its card, so a list mixed what is running with what was abandoned.
 func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 	for standing, want := range map[string]string{
 		"active":  "▶",
@@ -177,8 +155,6 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 	}
 }
 
-// The right-hand end of a card's label row: what is due, what it has cost, and
-// what it serves — the three facts the detail carried and no overview did.
 func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
 	if said, warn := Facts(engine.Card{State: "blocked", Freed: true}, now); said != FreedMark || !warn {
@@ -201,8 +177,6 @@ func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	}
 }
 
-// An objective with no standing writes nothing where it would write one, rather
-// than an empty mark taking a label's room.
 func TestAnObjectiveWithNoStandingWritesNothing(t *testing.T) {
 	if got := Standings(engine.Goal{}); got != nil {
 		t.Fatalf("an objective standing nowhere says %v", got)

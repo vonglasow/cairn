@@ -1,16 +1,11 @@
 package engine
 
-// What a card and an objective say about themselves, worked out here once so
-// that the two boards only choose which of it to show and how to draw it.
-
 import (
 	"strconv"
 	"strings"
 )
 
-// InTheWay is what stops a task: the tasks it waits on, or the words somebody
-// wrote when it waits on something cairn does not hold. The tasks come first —
-// they are what can be acted on.
+// InTheWay is what stops a task: the tasks it waits on, or the words somebody wrote when it waits on something cairn does not hold.
 func (c Card) InTheWay() string {
 	if len(c.Blockers) > 0 {
 		return Numbers(c.Blockers)
@@ -18,9 +13,7 @@ func (c Card) InTheWay() string {
 	return c.Because
 }
 
-// Cost is how long a task has taken against how long it was reckoned to take,
-// and whether it has gone past. Nothing when neither was ever written: "0h/0h"
-// says nothing and takes the room of something that would.
+// Cost is how long a task has taken against how long it was reckoned to take, and whether it has gone past.
 func (c Card) Cost() (said string, over bool) {
 	switch {
 	case c.Spent == "" && c.Estimate == "":
@@ -33,8 +26,7 @@ func (c Card) Cost() (said string, over bool) {
 	return c.Spent + "/" + c.Estimate, c.Overrun
 }
 
-// PartsDone is how many of the parts under a task are done out of how many
-// there are, and nothing when there are none.
+// PartsDone is how many of the parts under a task are done out of how many there are, and nothing when there are none.
 func (c Card) PartsDone() string {
 	if c.SubTotal == 0 {
 		return ""
@@ -42,8 +34,7 @@ func (c Card) PartsDone() string {
 	return strconv.Itoa(c.SubDone) + "/" + strconv.Itoa(c.SubTotal)
 }
 
-// Served is the objectives a task counts towards, as this reading holds them,
-// in the order the task names them. One the reading never heard of is left out.
+// Served is the objectives a task counts towards, as this reading holds them, in the order the task names them.
 func (s Snapshot) Served(c Card) []Goal {
 	var out []Goal
 	for _, n := range c.Objectives {
@@ -54,11 +45,7 @@ func (s Snapshot) Served(c Card) []Goal {
 	return out
 }
 
-// Named is what a field reads as, which is not always what it carries. A field
-// that carries numbers — the objectives a task serves, the task it hangs under
-// — reads as what each one is called: nobody knows an objective by its number.
-// A task this reading never heard of reads as its number again; an objective,
-// as nothing after its number.
+// Named is what a field reads as, which is not always what it carries.
 func (s Snapshot) Named(f Field) string {
 	var said []string
 	switch f.Arg {

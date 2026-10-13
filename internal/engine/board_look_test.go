@@ -10,8 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// Reading is asked for the same way as writing, and the focus arrives with the
-// listing that marks it rather than through a question of its own.
 func TestLookAsksTheTwoListingsAndTakesTheFocusFromThem(t *testing.T) {
 	f := newFake()
 	f.focus = []int{7}
@@ -34,9 +32,6 @@ func TestLookAsksTheTwoListingsAndTakesTheFocusFromThem(t *testing.T) {
 	}
 }
 
-// A reading is the two listings turned into what a board draws. These cover
-// the turning itself and the three places it can give up: either listing, and
-// the store's own version.
 func TestLookTurnsTheTwoListingsIntoCardsAndGoals(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{aTask("Write the spec"), aTask("Ship the board")}
@@ -76,9 +71,6 @@ func TestLookPassesOnAListingItCannotRead(t *testing.T) {
 	}
 }
 
-// Two facts a card carries that are not on the task itself: whether anything
-// is written about it, and whether it is the one being worked on. Both are
-// worked out here, so both are checked here.
 func TestACardIsToldWhetherAnythingIsWrittenAboutIt(t *testing.T) {
 	f := newFake()
 	var told task.AsTold
@@ -112,8 +104,6 @@ func TestACardKnowsWhetherItIsInHand(t *testing.T) {
 	}
 }
 
-// Several tasks can be in hand at once — one per agent session — and each of
-// them is marked.
 func TestEveryCardInHandIsMarked(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{numberedTask(3, "First"), numberedTask(4, "Second"), numberedTask(5, "Third")}
@@ -128,9 +118,6 @@ func TestEveryCardInHandIsMarked(t *testing.T) {
 	}
 }
 
-// numbered builds a task carrying a number, which only the store gives one in
-// earnest — and a card that marks the focus can only be checked against two
-// tasks that are telling different numbers.
 func numberedTask(n int, title string) task.Task {
 	var told task.AsTold
 	aTask(title).Tell(&told)
@@ -138,7 +125,6 @@ func numberedTask(n int, title string) task.Task {
 	return told.Task()
 }
 
-// found reads the board and fails the test rather than the caller.
 func found(t *testing.T, w Work) Snapshot {
 	t.Helper()
 	read, err := Look(w)
@@ -148,9 +134,6 @@ func found(t *testing.T, w Work) Snapshot {
 	return read
 }
 
-// "Nothing blocks it any more" is the one thing about blocking that has to be
-// acted on, and it reached the command line's listing and nowhere else. The
-// boards read the same answer and threw the mark away.
 func TestACardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{aTask("Write the spec"), aTask("Ship the board")}
@@ -167,8 +150,6 @@ func TestACardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 	}
 }
 
-// A card carries where its task's outside context lives, as showing the task
-// answered it: a board draws it without asking again.
 func TestLookCarriesWhereEachTasksContextLives(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{aTask("Write the spec")}
@@ -182,8 +163,6 @@ func TestLookCarriesWhereEachTasksContextLives(t *testing.T) {
 	}
 }
 
-// A card says whether the task has gone past what it was reckoned to take, so
-// no board has to read that back off the lengths it prints.
 func TestLookSaysWhenATaskHasGonePastItsEstimate(t *testing.T) {
 	var a task.AsTold
 	aTask("Write the spec").Tell(&a)
@@ -200,10 +179,6 @@ func TestLookSaysWhenATaskHasGonePastItsEstimate(t *testing.T) {
 	}
 }
 
-// A reading is the two listings and nothing else, however many tasks there
-// are: how far along each one is and where its context lives come with them.
-// It used to show every task and every objective in turn to learn those two
-// facts — two hundred questions to draw two hundred cards.
 func TestLookAsksTheTwoListingsWhateverTheyHold(t *testing.T) {
 	var parent task.AsTold
 	aTask("Ship it").Tell(&parent)
@@ -224,9 +199,6 @@ func TestLookAsksTheTwoListingsWhateverTheyHold(t *testing.T) {
 	}
 }
 
-// A reading carries, for every card and every objective, what a search looks
-// in, as the engine says it: a board searches what it holds without a second
-// rule of its own.
 func TestLookCarriesWhatASearchLooksIn(t *testing.T) {
 	f := newFake()
 	f.tasks = []task.Task{aTask("Write the spec")}

@@ -10,9 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// TestOfTask_carriesEveryFieldAScriptReads pins the shape a script reads for
-// a task: the field names are the wire, and a script that reads one has no
-// way to notice a change unless every one of them is checked here.
 func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-09-01")
 	if err != nil {
@@ -91,9 +88,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 }
 
-// TestOfTask_writesAnEmptyListRatherThanNothingAtAll pins that a task
-// carrying no labels answers with an empty list, never null: a machine that
-// trusted the field would break on the first task nobody labelled.
 func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	built, err := task.NewTask("Write the spec")
 	if err != nil {
@@ -110,9 +104,6 @@ func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	}
 }
 
-// TestOfTask_keepsWhatATaskSaysApartFromItsFacts: a listing hands over the
-// facts of every task and leaves what each one says to be shown, so the two
-// are kept apart in the shape rather than cut out of it afterwards.
 func TestOfTask_keepsWhatATaskSaysApartFromItsFacts(t *testing.T) {
 	var a task.AsTold
 	a.Numbered(1)
@@ -124,9 +115,6 @@ func TestOfTask_keepsWhatATaskSaysApartFromItsFacts(t *testing.T) {
 	}
 }
 
-// Every field that crosses to a machine says what it holds, and what its empty
-// value means: an agent reading a 0 or an empty string cannot otherwise tell
-// "none" from a value.
 func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
 	for _, shape := range []any{task.Shape{}, task.Facts{}} {
 		of := reflect.TypeOf(shape)

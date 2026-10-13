@@ -1,10 +1,5 @@
 package engine
 
-// What the rules about blocking are worth, asked of them directly. The
-// scenarios exercise the same rules through the commands, and credit this
-// package with nothing: coverage and mutation are counted per package, so a
-// rule tested only from outside is a rule nothing here can vouch for.
-
 import (
 	"errors"
 	"fmt"
@@ -16,7 +11,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// A plain number says what the set becomes; a sign says how it moves.
 func TestChangedBlockers_readsTheSameGrammarAsTheLabels(t *testing.T) {
 	for _, tc := range []struct {
 		what    string
@@ -53,7 +47,6 @@ func TestChangedBlockers_readsTheSameGrammarAsTheLabels(t *testing.T) {
 	}
 }
 
-// What a blocking change is turned down for, before anything is written.
 func TestChangedBlockers_refusesWhatItCannotRead(t *testing.T) {
 	for _, tc := range []struct {
 		what  string
@@ -74,11 +67,7 @@ func TestChangedBlockers_refusesWhatItCannotRead(t *testing.T) {
 	}
 }
 
-// A ring in which nothing could ever start is refused, however long the way
-// round. The walk asks what blocks each task it reaches, which is the one thing
-// here that cannot be read off the task in hand.
 func TestMayBlock_refusesARingNothingCouldEverStart(t *testing.T) {
-	// Task 2 waits on 3, and 3 waits on 4. Nothing waits on 1.
 	blocking := map[int][]int{2: {3}, 3: {4}}
 	asked := func(n int) ([]int, error) { return blocking[n], nil }
 
@@ -103,8 +92,6 @@ func TestMayBlock_refusesARingNothingCouldEverStart(t *testing.T) {
 	}
 }
 
-// What blocks a task is asked of the store, so a store that cannot answer stops
-// the walk rather than being read as "nothing blocks it".
 func TestMayBlock_handsBackWhatTheStoreCouldNotAnswer(t *testing.T) {
 	sulking := errors.New("the store cannot be read")
 	err := mayBlock(1, []int{2}, func(int) ([]int, error) { return nil, sulking })
@@ -113,8 +100,6 @@ func TestMayBlock_handsBackWhatTheStoreCouldNotAnswer(t *testing.T) {
 	}
 }
 
-// A blocker naming a task the store does not hold is refused rather than kept:
-// a link to nothing is a fact that was never true.
 func TestCanBeBlocked_refusesATaskTheStoreDoesNotHold(t *testing.T) {
 	e := openEngine(t)
 	one := add(t, e, "Ship it")
@@ -132,10 +117,6 @@ func TestCanBeBlocked_refusesATaskTheStoreDoesNotHold(t *testing.T) {
 	}
 }
 
-// The whole way round, through the engine: a task blocked, then the last thing
-// taken away. Walked here as well as in the scenarios, because the column cairn
-// puts it back in is written by this package and nothing in this package
-// otherwise reaches it.
 func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
@@ -152,7 +133,6 @@ func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 		t.Fatalf("stopping it: %v", err)
 	}
 
-	// Still blocked, so the two columns that claim the work is yours are shut.
 	working := string(domain.Current)
 	if _, err := e.edit(number, Changes{State: &working}); !errors.Is(err, ErrStillBlocked) {
 		t.Errorf("err = %v, want it to say the task is still blocked", err)
@@ -167,8 +147,6 @@ func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 		t.Errorf("it ended up in %q, want todo", got)
 	}
 
-	// And the column cairn chose is written down, so a history says how the
-	// task got there rather than leaving a reader to guess.
 	acts, err := e.historyOf(number)
 	if err != nil {
 		t.Fatalf("History: %v", err)
@@ -178,8 +156,6 @@ func TestEdit_putsATaskBackInTodoWhenTheLastThingGoes(t *testing.T) {
 	}
 }
 
-// A blocker cairn cannot read stops the edit, and the reason comes back rather
-// than a task quietly carrying no blocker at all.
 func TestEdit_handsBackABlockerItCannotRead(t *testing.T) {
 	e := openEngine(t)
 	one := add(t, e, "Ship it")
@@ -189,9 +165,6 @@ func TestEdit_handsBackABlockerItCannotRead(t *testing.T) {
 	}
 }
 
-// A history says which task was in the way, not merely that one was. Written
-// the way a card writes it, so a number read here can be taken straight to
-// `task show`.
 func TestEdit_writesDownWhichTaskWasInTheWay(t *testing.T) {
 	e := openEngine(t)
 	spec := add(t, e, "Write the spec")
@@ -211,9 +184,6 @@ func TestEdit_writesDownWhichTaskWasInTheWay(t *testing.T) {
 	}
 }
 
-// The engine is behind four surfaces and the refusal spoke to one of them. A
-// person on the board or in the window was told to type --blocker -4, which is
-// not something either of them can be told.
 func TestTheRefusalDoesNotSpeakInCommandLineFlags(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Waiting")).number

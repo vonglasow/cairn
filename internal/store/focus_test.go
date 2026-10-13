@@ -1,15 +1,10 @@
 package store
 
-// What the focus is worth is asked of the store: take up tasks, read them
-// back, let go of one and of all of them.
-
 import (
 	"slices"
 	"testing"
 )
 
-// inFocus reads back which tasks are being worked on, failing the test if the
-// store cannot say.
 func inFocus(t *testing.T, s *Store) []int {
 	t.Helper()
 	held, err := s.Focus()
@@ -38,9 +33,6 @@ func TestAddFocus_takesUpATask(t *testing.T) {
 	}
 }
 
-// Several at once, in the order they were taken up. The order matters: it is
-// what a listing reads back, and the first thing taken up is the first thing
-// somebody started on.
 func TestAddFocus_holdsSeveralInTheOrderTheyWereTakenUp(t *testing.T) {
 	s := openStore(t)
 	first := factsOf(keep(t, s, "First")).number
@@ -57,8 +49,6 @@ func TestAddFocus_holdsSeveralInTheOrderTheyWereTakenUp(t *testing.T) {
 	}
 }
 
-// Taking up what is already held is not a change: it is held once, and it
-// keeps the place in the order it already had.
 func TestAddFocus_twiceHoldsATaskOnce(t *testing.T) {
 	s := openStore(t)
 	first := factsOf(keep(t, s, "First")).number
@@ -90,8 +80,6 @@ func TestDropFocus_letsGoOfOneAndLeavesTheRest(t *testing.T) {
 	}
 }
 
-// Letting go of a task that was never taken up is not a failure: the state
-// asked for already holds.
 func TestDropFocus_onATaskThatWasNotHeldIsNotAFailure(t *testing.T) {
 	s := openStore(t)
 	only := factsOf(keep(t, s, "The only one")).number
@@ -121,7 +109,6 @@ func TestClearFocus_leavesNothingInFocus(t *testing.T) {
 	}
 }
 
-// Letting go of nothing is not a failure: the state asked for already holds.
 func TestClearFocus_onNothingIsNotAFailure(t *testing.T) {
 	s := openStore(t)
 	if err := s.ClearFocus(); err != nil {
@@ -129,9 +116,6 @@ func TestClearFocus_onNothingIsNotAFailure(t *testing.T) {
 	}
 }
 
-// A task in focus may be deleted, and it leaves the focus with it while the
-// others stay. It goes by hand: the schema's reference never fires, since
-// foreign keys are off.
 func TestDelete_letsGoOfTheTaskItRemoved(t *testing.T) {
 	s := openStore(t)
 	first := factsOf(keep(t, s, "First")).number
@@ -147,7 +131,6 @@ func TestDelete_letsGoOfTheTaskItRemoved(t *testing.T) {
 	if got, want := inFocus(t, s), []int{first}; !slices.Equal(got, want) {
 		t.Errorf("Focus = %v, want %v once the task was deleted", got, want)
 	}
-	// And deleting some other task leaves the focus alone.
 	other := factsOf(keep(t, s, "Another")).number
 	if err := s.Delete(other); err != nil {
 		t.Fatalf("Delete: %v", err)

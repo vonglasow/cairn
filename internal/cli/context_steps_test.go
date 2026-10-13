@@ -1,7 +1,5 @@
 package cli
 
-// Steps observed only by bdd/context.feature.
-
 import (
 	"context"
 	"fmt"
@@ -14,8 +12,6 @@ import (
 	"cairn/internal/config"
 )
 
-// contextLine is the line of a card that says where a task's outside context
-// lives, and nothing else.
 func (w *world) contextLine() (string, bool) {
 	for _, l := range strings.Split(w.Out.Stdout, "\n") {
 		if rest, ok := strings.CutPrefix(strings.TrimSpace(l), "context"); ok {
@@ -25,13 +21,9 @@ func (w *world) contextLine() (string, bool) {
 	return "", false
 }
 
-// registerContext declares the steps only bdd/context.feature uses.
 func (w *world) registerContext(sc *godog.ScenarioContext) {
-	// Every place a show said, in order: two shows in a row each overwrite
-	// what the last command answered, and the comparison needs both.
 	var said []string
 	sc.StepContext().After(func(ctx context.Context, step *godog.Step, _ godog.StepResultStatus, err error) (context.Context, error) {
-		// The step running a show against each store keeps its own two.
 		if strings.Contains(step.Text, "cairn task show") && !strings.HasSuffix(step.Text, "against each store") {
 			if place, ok := w.contextLine(); ok {
 				said = append(said, place)
@@ -72,8 +64,6 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Another store, the same configuration: the notes are found the way the
-	// store is, and only the store moves.
 	var stores []string
 	sc.Step(`^another store of my own, somewhere else again$`, func() error {
 		stores = append(stores, w.StorePath)
@@ -111,8 +101,6 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The place and nothing beside it: no word on whether it is there, empty,
-	// or full — a claim about the disk made now and read later.
 	sc.Step(`^it says nothing about whether anything is there$`, func() error {
 		got, _ := w.contextLine()
 		if got != w.expand("~/vault/1") {
@@ -133,7 +121,6 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Written by hand, the way a harness or a person would — never by cairn.
 	sc.Step(`^notes were written under "([^"]*)"$`, func(place string) error {
 		dir := w.expand(place)
 		if err := os.MkdirAll(dir, 0o700); err != nil {

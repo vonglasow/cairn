@@ -11,13 +11,9 @@ import (
 	"cairn/internal/task"
 )
 
-// ErrNoSuchObjective is returned when an objective is asked for by a number
-// nothing carries.
+// ErrNoSuchObjective is returned when an objective is asked for by a number nothing carries.
 var ErrNoSuchObjective = errors.New("there is no such objective")
 
-// objectiveLabels says where an objective keeps its labels. A table of its
-// own, so a task and an objective that happen to share a number never share
-// what they carry.
 var objectiveLabels = labelStore{
 	insert:  `INSERT INTO objective_labels (objective_number, label) VALUES (?, ?)`,
 	byOwner: `SELECT label FROM objective_labels WHERE objective_number = ? ORDER BY label`,
@@ -25,15 +21,8 @@ var objectiveLabels = labelStore{
 	carrier: `EXISTS (SELECT 1 FROM objective_labels WHERE objective_number = objectives.number AND label = ?)`,
 }
 
-// objectiveColumns is the reading order every query below hands to
-// scanObjective, written once so the two cannot drift apart.
 const objectiveColumns = `number, title, description, state, priority, deadline, estimate`
 
-// boundObjective holds an objective's facts in the shape SQL will bind:
-// strings and integers, nothing a driver has to guess at. An objective tells
-// them here rather than handing over its fields directly, which is what lets
-// KeepObjective and UpdateObjective stay correct the day those fields stop
-// being exported.
 type boundObjective struct {
 	number                    int
 	title, description        string
@@ -56,18 +45,12 @@ func (b *boundObjective) NotDue()                    { b.deadline = "" }
 func (b *boundObjective) Estimated(d time.Duration)  { b.estimate = int64(d) }
 func (b *boundObjective) NotEstimated()              { b.estimate = 0 }
 
-// bindObjective tells an objective's facts to a fresh boundObjective, ready
-// for the parameters an INSERT or an UPDATE needs.
 func bindObjective(o objective.Objective) *boundObjective {
 	b := &boundObjective{}
 	o.Tell(b)
 	return b
 }
 
-// renumberedObjective hands back an objective carrying a new number and
-// everything else o already told. Told a second time here rather than
-// assigned: the number is not a field this package may reach into once it
-// stops being exported.
 func renumberedObjective(o objective.Objective, number int) objective.Objective {
 	a := &objective.AsTold{}
 	o.Tell(a)
@@ -75,9 +58,7 @@ func renumberedObjective(o objective.Objective, number int) objective.Objective 
 	return a.Objective()
 }
 
-// KeepObjective records an objective and hands it back carrying the number it
-// was given. Objectives are numbered apart from tasks: they sit in a table of
-// their own, so the first of each is number one.
+// KeepObjective records an objective and hands it back carrying the number it was given.
 func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error) {
 	b := bindObjective(o)
 	res, err := s.on.Exec(
@@ -97,9 +78,7 @@ func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error
 	return renumberedObjective(o, int(number)), nil
 }
 
-// UpdateObjective replaces what the store holds for an objective. The labels
-// given replace those that were there: an objective carries a set, so one left
-// out is one removed.
+// UpdateObjective replaces what the store holds for an objective.
 func (s *Store) UpdateObjective(o objective.Objective) error {
 	b := bindObjective(o)
 	res, err := s.on.Exec(
@@ -122,8 +101,7 @@ func (s *Store) UpdateObjective(o objective.Objective) error {
 	return s.keepLabels(objectiveLabels, b.number, b.labels)
 }
 
-// DeleteObjective removes an objective, and says so when there was none to
-// remove. What was put under it is the engine's business, not this one's.
+// DeleteObjective removes an objective, and says so when there was none to remove.
 func (s *Store) DeleteObjective(number int) error {
 	res, err := s.on.Exec(`DELETE FROM objectives WHERE number = ?`, number)
 	if err != nil {
@@ -139,8 +117,7 @@ func (s *Store) DeleteObjective(number int) error {
 	return s.clearLabels(objectiveLabels, number)
 }
 
-// FindObjective hands back the objective carrying number, and says so when
-// there is none.
+// FindObjective hands back the objective carrying number, and says so when there is none.
 func (s *Store) FindObjective(number int) (objective.Objective, error) {
 	row := s.on.QueryRow(
 		`SELECT `+objectiveColumns+` FROM objectives WHERE number = ?`, number)
@@ -159,10 +136,8 @@ func (s *Store) AllObjectives() ([]objective.Objective, error) {
 	return s.NarrowedObjectives(&domain.Narrowing{})
 }
 
-// NarrowedObjectives hands back the objectives a narrowing keeps, in the order
-// they were added.
+// NarrowedObjectives hands back the objectives a narrowing keeps, in the order they were added.
 func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
-	// Every objective's labels in one read, rather than one read for each.
 	labels, err := pairs[string](s, `SELECT objective_number, label FROM objective_labels ORDER BY objective_number, label`)
 	if err != nil {
 		return nil, fmt.Errorf("reading the labels: %w", err)
@@ -189,10 +164,6 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 	return objectives, nil
 }
 
-// scanObjective reads one objective, labels included, by scanning a row into
-// plain variables and telling them to a builder rather than into an
-// objective's fields directly — the membrane Tell uses, the other way round,
-// so this keeps working the day those fields stop being exported.
 func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error)) (objective.Objective, error) {
 	var (
 		number             int
@@ -226,9 +197,7 @@ func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error))
 	return a.Objective(), nil
 }
 
-// TasksServing hands back the tasks put directly under an objective, in the
-// order they were added. Sub-tasks are not among them: they serve no objective
-// of their own, and are reached through the task they hang under.
+// TasksServing hands back the tasks put directly under an objective, in the order they were added.
 func (s *Store) TasksServing(number int) ([]task.Task, error) {
 	if number == task.NoObjective {
 		return []task.Task{}, nil

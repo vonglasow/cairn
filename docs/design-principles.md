@@ -101,3 +101,11 @@ objects that are none of your business, and ties you to a shape you do not own â
 it breaks the day any link in that chain changes.
 
 Ask the neighbour for what you need, and let it deal with its own neighbours.
+
+## Comments
+
+The code carries no comments but a one-line doc comment on each exported
+symbol, which the linter requires. Why a thing is the way it is lives in
+`docs/`, in the scenarios' names and in the commit that made it so â€” not
+beside the code, where it went stale and outweighed the code it described.
+Scenarios carry their steps and no prose.

@@ -9,19 +9,9 @@ import (
 	"cairn/internal/engine"
 )
 
-// The list labels are chosen from: the one objectives are chosen from, with
-// names where it had numbers, and one row more — the one that creates a label
-// nobody carries yet, under the name the engine will keep it by
-// (docs/labels.md). The name shown is the rule's own, read from the domain,
-// so the row never promises a spelling the save would not keep.
-
-// LabelsNoneSays is what an empty list of labels reads: nobody carries one
-// yet, and what is typed creates the first.
+// LabelsNoneSays is what an empty list of labels reads: nobody carries one yet, and what is typed creates the first.
 const LabelsNoneSays = "no label yet: type one"
 
-// openingLabels offers every label some task or objective carries, and those
-// the field already holds — typed or created before the list was opened —
-// with the field's own ticked.
 func (w Window) openingLabels(held string) Window {
 	known := map[string]bool{}
 	for _, c := range w.snap.Cards {
@@ -51,9 +41,6 @@ func (w Window) openingLabels(held string) Window {
 	return w
 }
 
-// labelChoices is the list as it reads: the labels the typing reaches, in
-// alphabetical order, after the row that creates what was typed when that is
-// no label yet — or says why it cannot be one.
 func (w Window) labelChoices() []Choice {
 	looking := strings.TrimSpace(w.filtering.Reads())
 	written, refused := domain.ParseLabels([]string{looking})
@@ -80,8 +67,6 @@ func (w Window) labelChoices() []Choice {
 	return append([]Choice{{Title: "create " + written[0], Creates: written[0]}}, found...)
 }
 
-// refusal is why what was typed cannot be a label, without the typing it
-// quotes: the line above the list already shows that.
 func refusal(err error) string {
 	for _, why := range []error{domain.ErrLabelHasNoFamily, domain.ErrLabelHolds, domain.ErrLabelNotOneLine} {
 		if errors.Is(err, why) {
@@ -91,9 +76,6 @@ func refusal(err error) string {
 	return err.Error()
 }
 
-// takingLabel ticks the label the keyboard is on, or unticks it; on the row
-// that creates one, creates it ticked and clears the line, ready for the next.
-// A row saying why something cannot be a label takes nothing.
 func (w Window) takingLabel() Window {
 	offered := w.Choosing()
 	if w.choosing >= len(offered) {
@@ -112,8 +94,6 @@ func (w Window) takingLabel() Window {
 	return w
 }
 
-// keepingLabels closes the list and puts the labels ticked in the field, in
-// alphabetical order, the way the field writes them.
 func (w Window) keepingLabels() Window {
 	var kept []string
 	for i, label := range w.labelsOffered {

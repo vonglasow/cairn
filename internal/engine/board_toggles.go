@@ -2,10 +2,7 @@ package engine
 
 import "strings"
 
-// FocusOp is what one key does to a card's focus: takes it up, or lets it go
-// when it is already being worked on. Both name the task, since several can be
-// in focus at once and letting go of nothing in particular would let go of
-// every one of them.
+// FocusOp is what one key does to a card's focus: takes it up, or lets it go when it is already being worked on.
 func FocusOp(c Card) Operation {
 	if c.InFocus {
 		return TaskUnfocus
@@ -13,8 +10,7 @@ func FocusOp(c Card) Operation {
 	return TaskFocus
 }
 
-// AwayOp is what one key does to a card's place on the board: takes it off, or
-// brings it back when it is already off.
+// AwayOp is what one key does to a card's place on the board: takes it off, or brings it back when it is already off.
 func AwayOp(c Card) Operation {
 	if c.Archived {
 		return TaskUnarchive
@@ -22,8 +18,7 @@ func AwayOp(c Card) Operation {
 	return TaskArchive
 }
 
-// Offered is the word a board offers an act by: its own verb, so what is
-// offered and what it does are the one decision.
+// Offered is the word a board offers an act by: its own verb, so what is offered and what it does are the one decision.
 func (o Operation) Offered() string {
 	if o.Verb == "" {
 		return ""

@@ -1,9 +1,5 @@
 package test
 
-// What scripts/mutation-report.sh writes about one package from what gremlins
-// reported on it: the report a full sweep leaves behind, read later to fix
-// what it found rather than scrolled back to in a terminal that is gone.
-
 import (
 	"os"
 	"os/exec"
@@ -12,9 +8,6 @@ import (
 	"testing"
 )
 
-// gremlinsSaid is a report of gremlins' shape, on a package with one file:
-// a mutant killed, one that lived, one no test reached, and one still timing
-// out once judged again.
 const gremlinsSaid = `{"files":[{"file_name":"wrap.go","mutations":[
  {"type":"ARITHMETIC_BASE","status":"KILLED","line":2,"column":9},
  {"type":"CONDITIONALS_BOUNDARY","status":"LIVED","line":3,"column":11},

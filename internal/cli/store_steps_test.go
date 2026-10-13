@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/store.feature. The steps every
-// feature shares live in world_test.go; only what belongs to the store and its
-// backups is declared here.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -19,7 +15,6 @@ import (
 	"cairn/test"
 )
 
-// numberOfRow reads the number a listing row leads with.
 func numberOfRow(row string) (int, bool) {
 	fields := strings.Fields(row)
 	if len(fields) == 0 || !strings.HasPrefix(fields[0], "#") {
@@ -29,21 +24,15 @@ func numberOfRow(row string) (int, bool) {
 	return number, err == nil
 }
 
-// backupsListed counts the backups in whatever the last command printed.
 func backupsListed(out string) int {
 	return strings.Count(out, "#")
 }
 
-// change is one line of what `cairn migration list --json` answers.
 type change struct {
 	Name    string `json:"name"`
 	Applied bool   `json:"applied"`
 }
 
-// changesListed asks cairn what changes it knows and which are applied. Asked
-// through the real command rather than read out of migration.Known: what the
-// step needs to know is what this store has had done to it, which only cairn
-// can say.
 func (w *world) changesListed() ([]change, error) {
 	before := w.Out
 	w.Run(`cairn migration list --json`)
@@ -62,9 +51,6 @@ func (w *world) changesListed() ([]change, error) {
 	return listing.Changes, nil
 }
 
-// rollBackPast undoes changes, one at a time through the real command, until
-// the one named is no longer applied. How many that is comes from what cairn
-// itself reports, so nothing here has a number written into it.
 func (w *world) rollBackPast(name string) error {
 	changes, err := w.changesListed()
 	if err != nil {
@@ -85,7 +71,6 @@ func (w *world) rollBackPast(name string) error {
 	return fmt.Errorf("the change named %q is still applied with nothing left to roll back", name)
 }
 
-// isApplied says whether the change named has been applied to this store.
 func (w *world) isApplied(name string) (bool, error) {
 	changes, err := w.changesListed()
 	if err != nil {
@@ -99,19 +84,8 @@ func (w *world) isApplied(name string) (bool, error) {
 	return false, fmt.Errorf("cairn knows no change named %q", name)
 }
 
-// registerStore declares the steps about the store itself — its backups and
-// its shape. Both bdd/backup.feature and bdd/migration.feature draw on them:
-// a scenario about applying a change checks the backup it set aside, and a
-// scenario about backups needs a store older than this cairn to backup.
 func (w *world) registerStore(sc *godog.ScenarioContext) {
 	sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.AStoreFromAnOlderCairn)
-	// A store from before labels were written one way, kept as a file rather
-	// than made here: no command writes a label that way any more, which is the
-	// rule's whole point, and a scenario never opens a database. It was made
-	// with the cairn of the change before, then labelled with sqlite3 — task 1
-	// "chantier:proxmox", "ado:77594", "proxmox"; task 2 "obj-modularité/helm",
-	// "dette_config", "dette-config", "a:b:c", "ado:", "sp26   20", "--";
-	// objective 1 "chantier:doc-infra"; objective 2 "été 2026".
 	sc.Step(`^a store from before labels were written one way$`, func() error {
 		before, err := os.ReadFile(filepath.Join("testdata", "labels-before-the-rule.db"))
 		if err != nil {
@@ -136,9 +110,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The number is read from the store, never written here: a scenario that
-	// spelled out "apply 2" would be describing how many migrations cairn has
-	// rather than what applying one does, and the next migration would break it.
 	sc.Step(`^I apply the change that is waiting, by its number$`, func() error {
 		before := w.Out
 		w.Run(`cairn migration list`)
@@ -185,10 +156,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return w.Seed(`cairn migration rollback --yes`)
 	})
 
-	// Named rather than counted, and that is not decoration. A scenario whose
-	// counts depend on which change was undone cannot say "the last one": what
-	// that means changes the day a change is appended, and this scenario spent
-	// a while asserting about the wrong one for exactly that reason.
 	sc.Step(`^I rolled back the change named "([^"]*)"$`, func(name string) error {
 		return w.rollBackPast(name)
 	})
@@ -198,17 +165,12 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^I ran a command that was refused$`, func() error {
-		// Deliberately not seeded: the point is that it failed and changed
-		// nothing, so its failure must not stop the scenario.
 		before := w.Out
 		w.Run(`cairn task list`)
 		w.Out = before
 		return nil
 	})
 
-	// The shape of the answer, not a word from it: "there is nothing waiting to
-	// be applied" contains "applied", so a step looking for that word alone
-	// passes on a command that applied nothing.
 	sc.Step(`^it names the change it applied$`, func() error {
 		return test.WantContains(w.Out.Stdout, `applied "`, "the answer")
 	})
@@ -221,16 +183,10 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "cairn backup restore", "the answer")
 	})
 
-	// Named by shape too, and for a sharper reason: a rollback unmakes whichever
-	// change happens to be last. Asserting its wording here would freeze how
-	// many migrations cairn has, and the next one would turn this red for a
-	// reason that has nothing to do with rolling back.
 	sc.Step(`^it names the change it rolled back$`, func() error {
 		return test.WantContains(w.Out.Stdout, `rolled back "`, "the answer")
 	})
 
-	// A machine reads a field, not a sentence. Checked separately from the text
-	// form so neither can quietly satisfy the other's assertion.
 	sc.Step(`^it carries the change it rolled back$`, func() error {
 		var doc map[string]any
 		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -364,8 +320,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "there is no backup", "the answer")
 	})
 
-	// Both counts in one step: a backup that named its tasks and stayed quiet
-	// about its objectives is exactly the answer this is here to catch.
 	held := func(tasks, objectives int) string {
 		return fmt.Sprintf("holds %d task(s) and %d objective(s)", tasks, objectives)
 	}
@@ -392,8 +346,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// What the store holds is said in the text and used to be lost in the JSON:
-	// a bare list had nowhere to put it. The envelope has.
 	sc.Step(`^it says the store holds (\d+) tasks? and (\d+) objectives?$`,
 		func(tasks, objectives int) error {
 			_, envelope, err := listedUnder(w.Out.Stdout, "changes")
@@ -474,8 +426,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	} {
 		wanted, where := want, step
 		sc.Step(where, func() error {
-			// A result is on stdout, a reason on stderr. Which one a step reads
-			// is part of what it asserts.
 			if strings.Contains(where, "no backup$") || strings.Contains(where, "nothing waiting") {
 				return test.WantContains(w.Out.Stdout, wanted, "the answer")
 			}

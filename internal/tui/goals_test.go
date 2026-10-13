@@ -84,7 +84,6 @@ func TestTheGoalUnderTheCursorIsDrawnApart(t *testing.T) {
 }
 
 func TestABarOfOneColumn(t *testing.T) {
-	// One column is still a bar: it says nothing is done yet, which is true.
 	if got := Bar(1, 2, 1); got != "░" {
 		t.Fatalf("a bar one column wide is %q", got)
 	}

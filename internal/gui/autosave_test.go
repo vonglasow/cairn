@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// A part struck out is a change a beat has to see: two forms holding the same
-// text, one with a part struck, hold different things.
 func TestAFormsValuesSayWhatWasStruck(t *testing.T) {
 	plain := Form{fields: []engine.Field{{Name: "title", Value: "Ship it"}}}
 	struck := plain

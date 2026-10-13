@@ -2,11 +2,7 @@ package trace
 
 import "time"
 
-// AsTold builds an act from what it is told. It is the same membrane the other
-// way round: whoever has an act's facts — a store reading a row it wrote, or
-// the engine recording something that just happened — tells them, and is handed
-// the act they make. Nothing has to reach inside an act to put one together,
-// which is what lets an act keep its insides to itself.
+// AsTold builds an act from what it is told.
 type AsTold struct {
 	act Act
 }
@@ -32,8 +28,7 @@ func (a *AsTold) Was(value string) { a.act.was = value }
 // WasNothing is told the attribute held nothing before.
 func (a *AsTold) WasNothing() { a.act.was = "" }
 
-// Became is told what the attribute holds after, or what the act carries when
-// it is about no attribute — where a task was moved to, what it started as.
+// Became is told what the attribute holds after, or what the act carries when it is about no attribute — where a task was moved to, what it started as.
 func (a *AsTold) Became(value string) { a.act.became = value }
 
 // BecameNothing is told the attribute holds nothing after.
@@ -42,8 +37,7 @@ func (a *AsTold) BecameNothing() { a.act.became = "" }
 // Through is told which surface performed the act.
 func (a *AsTold) Through(surface string) { a.act.through = surface }
 
-// ByHand is told the act was performed at the terminal, which a history says
-// nothing about.
+// ByHand is told the act was performed at the terminal, which a history says nothing about.
 func (a *AsTold) ByHand() { a.act.through = "" }
 
 // At is told when the act happened.

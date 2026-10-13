@@ -1,9 +1,4 @@
 Feature: Backups of the store
-  A store holds work nobody wants to lose, so it can be copied at any moment —
-  before a change of shape, before anything risky, or simply because a backup is
-  wanted. A backup is a thing in its own right: it has a number to refer to it by,
-  it can be looked at before it is trusted, and nothing throws it away but a
-  deliberate deletion.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -69,9 +64,6 @@ Feature: Backups of the store
       And I made a backup of the store
       When I run `cairn backup show 1`
       Then it says the backup holds 1 task and 0 objectives
-
-
-
 
   Rule: Backups can be listed and read
 
@@ -149,9 +141,6 @@ Feature: Backups of the store
       When I run `cairn backup new`
       Then it numbers the backup 2
 
-
-
-
   Rule: A backup can be restored
 
     @backup-restore
@@ -165,9 +154,6 @@ Feature: Backups of the store
 
     @backup-restore-under-an-open-board
     Scenario: a board open while a backup is restored writes to what was restored
-      A board holds the store open for as long as it is on screen. Putting a
-      backup back replaces the file under it, and a board still writing to the
-      file that was replaced loses what it writes without a word.
 
       Given I added a task titled "Write the spec"
       And I made a backup of the store

@@ -12,16 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// Drawing. Nothing here changes anything: a board is read, and a string comes
-// out. That is what lets a scenario press a key and then read what is on the
-// screen, with no terminal anywhere near it.
-
-// View is what bubbletea asks for. It is one line over Draw, because what the
-// board says has to be readable without a terminal: a scenario reads Draw.
-//
-// The board takes the whole terminal and gives it back on the way out, which is
-// what the alternate screen is for: a board is a place you go to, and the
-// scrollback you left behind should still be there when you come out.
+// View is what bubbletea asks for.
 func (b Board) View() tea.View {
 	return tea.View{Content: b.Draw(), AltScreen: true}
 }
@@ -44,16 +35,12 @@ func (b Board) Draw() string {
 	return b.drawBoard()
 }
 
-// tooSmall is the whole screen when the board will not fit. It says what is
-// needed and what there is, because "too small" without a number leaves
-// somebody dragging a window and guessing.
 func (b Board) tooSmall() string {
 	return b.skin.Title.Render(" cairn needs a bigger window.") + "\n" +
 		b.skin.Faint.Render(fmt.Sprintf(" %d by %d at least. This one is %d by %d.",
 			Narrowest, Shortest, b.width, b.height))
 }
 
-// drawBoard is the ordinary screen: the tabs, the columns, the band, the bar.
 func (b Board) drawBoard() string {
 	l := LayoutFor(b.width, b.height)
 	var out []string
@@ -69,7 +56,6 @@ func (b Board) drawBoard() string {
 	return strings.Join(append(out, "", b.foot()), "\n")
 }
 
-// tabs is the top line: which tab is open, where inside it, and which mode.
 func (b Board) tabs() string {
 	tasks, goals, spent := b.skin.TabOff.Render("tasks"), b.skin.TabOff.Render("objectives"), b.skin.TabOff.Render("time")
 	switch b.tab {
@@ -87,12 +73,6 @@ func (b Board) tabs() string {
 	return Spread(left, b.skin.Mode.Render(b.modeName())+" ", b.width)
 }
 
-// modeName is what the mode is called on screen.
-//
-// Written as ifs rather than a tagless switch, and not for taste: a switch with
-// no expression puts its conditions outside any covered block, so the mutation
-// gate cannot judge them and a wrong one would go out unnoticed. The same trap
-// is written up in test/harness.go.
 func (b Board) modeName() string {
 	if b.screen == OnHelp {
 		return "HELP"
@@ -115,16 +95,11 @@ func (b Board) modeName() string {
 	return "NORMAL"
 }
 
-// tasksBoard is the four columns, the band under three of them, and the
-// objective's own card above the lot when one is open.
 func (b Board) tasksBoard(l Layout) []string {
 	all, band := engine.Deal(b.cards(), b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
-		// The objective's card takes two rows out of the columns rather than
-		// out of the band: what is stalled stays visible whatever else is on
-		// screen.
 		out = append(out, b.insideBand(), "")
 		top = max(0, top-insideRows)
 	}
@@ -145,10 +120,7 @@ func (b Board) tasksBoard(l Layout) []string {
 	return append(out, b.bandRows(band, l)...)
 }
 
-// bandRows is the stalled band: its own header, and its cards three across.
 func (b Board) bandRows(band []engine.Card, l Layout) []string {
-	// The band starts where the second column starts: the left margin, the
-	// whole of the backlog, and the gap after it.
 	offset := margin + l.Column + 1
 	under := strings.Repeat(" ", offset)
 	held := b.inBand && b.mode == Normal
@@ -163,8 +135,6 @@ func (b Board) bandRows(band []engine.Card, l Layout) []string {
 	}
 }
 
-// header is the line above a column: its name on the left, how many it holds on
-// the right, and a bar in front of the name when the cursor stands on it.
 func (b Board) header(name string, held, width int, under bool) string {
 	if under {
 		return Spread(b.skin.HeadOn.Render("▌"+name), b.skin.Count.Render(strconv.Itoa(held)), width)
@@ -172,7 +142,6 @@ func (b Board) header(name string, held, width int, under bool) string {
 	return Spread(b.skin.Head.Render(name), b.skin.Count.Render(strconv.Itoa(held)), width)
 }
 
-// rule is the line under a header, drawn heavier where the cursor stands.
 func (b Board) rule(width int, under bool) string {
 	if under {
 		return b.skin.RuleOn.Render(strings.Repeat("━", width))
@@ -180,15 +149,10 @@ func (b Board) rule(width int, under bool) string {
 	return b.skin.Rule.Render(strings.Repeat("─", width))
 }
 
-// across lays the band's cards out three to a row, and scrolls when there are
-// more of them than the band has room for.
 func (b Board) across(cards []engine.Card, l Layout) string {
 	return through(b.laidOut(cards, l), l.Band, l.Rows, b.bandAt)
 }
 
-// laidOut is the band's cards, three to a row, before anything is put behind a
-// window. Separated so a test can count the rows it really made rather than the
-// rows the window padded it out to.
 func (b Board) laidOut(cards []engine.Card, l Layout) string {
 	wide := engine.Columns - 1
 	var rows []string
@@ -203,8 +167,6 @@ func (b Board) laidOut(cards []engine.Card, l Layout) string {
 	return strings.Join(rows, "\n")
 }
 
-// stack draws one column's cards down the screen, scrolling to whatever the
-// cursor is standing on.
 func (b Board) stack(cards []engine.Card, l Layout, rows, at int) string {
 	drawn := make([]string, 0, len(cards))
 	for _, c := range cards {
@@ -213,16 +175,11 @@ func (b Board) stack(cards []engine.Card, l Layout, rows, at int) string {
 	return through(strings.Join(drawn, "\n"), l.Column, rows, at)
 }
 
-// card draws one, in the frame its priority and its focus decide.
 func (b Board) card(c engine.Card, l Layout) string {
 	return b.skin.Card(l.Column, c.Priority, c.InFocus, b.chosen(c)).
 		Render(strings.Join(Rows(c, b.glyphs, b.skin, b.now(), l.Interior), "\n"))
 }
 
-// through puts a drawing behind a window of a given size, scrolled to a given
-// row. It is what makes a column longer than the screen usable rather than
-// merely truncated: what is past the bottom is reachable, it is just not on
-// screen yet.
 func through(content string, width, height, at int) string {
 	if height < 1 {
 		return ""
@@ -233,14 +190,10 @@ func through(content string, width, height, at int) string {
 	return pane.View()
 }
 
-// chosen says whether a card is the one the cursor is holding.
 func (b Board) chosen(c engine.Card) bool { return b.mode == Insert && c.Number == b.task }
 
-// now is what the board calls the time. Taken from the outside so a scenario
-// can say what day it is and a deadline reads the same every run.
 func (b Board) now() time.Time { return b.clock() }
 
-// spaced puts a single blank column between things drawn side by side.
 func spaced(parts []string) []string {
 	var out []string
 	for i, part := range parts {
@@ -252,8 +205,6 @@ func spaced(parts []string) []string {
 	return out
 }
 
-// insideBand is the objective's own card, flattened onto two rows above its
-// board.
 func (b Board) insideBand() string {
 	for _, g := range b.snap.Goals {
 		if g.Number != b.inside {
@@ -266,8 +217,6 @@ func (b Board) insideBand() string {
 	return ""
 }
 
-// objectivesList is the second tab: one card per objective, down the screen,
-// scrolling to whichever the cursor is on.
 func (b Board) objectivesList(l Layout) []string {
 	goals := b.goals()
 	width := b.width - margin - margin - frame
@@ -275,7 +224,7 @@ func (b Board) objectivesList(l Layout) []string {
 	for _, g := range goals {
 		drawn = append(drawn, b.goalCard(g, width))
 	}
-	rows := l.Top + l.Rows + 2 // the band's header and rule are the columns' here
+	rows := l.Top + l.Rows + 2
 	return []string{
 		" " + Spread(b.skin.Head.Render("OBJECTIVES"), b.skin.Count.Render(strconv.Itoa(len(goals))), b.width-2),
 		" " + b.rule(b.width-2, false),
@@ -284,15 +233,11 @@ func (b Board) objectivesList(l Layout) []string {
 	}
 }
 
-// goalCard draws one objective.
 func (b Board) goalCard(g engine.Goal, width int) string {
 	return b.skin.Card(width+frame, g.Priority, false, g.Number == b.goal).
 		Render(strings.Join(b.goalRows(g, width), "\n"))
 }
 
-// foot is the bar at the bottom, and whatever is being typed above it. It only
-// offers what works here: a key on the bar does something in this view, and a
-// key that does nothing here is not on it.
 func (b Board) foot() string {
 	if b.err != nil {
 		return " " + b.skin.Wrong.Render(b.err.Error())
@@ -309,19 +254,14 @@ func (b Board) foot() string {
 	return b.bar(b.offers()...)
 }
 
-// bar is the line at the foot of any screen: what can be pressed, cut to the
-// width, dropping whole entries from the end rather than wrapping. A wrapped
-// bar pushes everything above it up and out of the window.
 func (b Board) bar(offers ...string) string {
 	return " " + Join("   ", b.width-margin, offers...)
 }
 
-// offer writes one entry of the bar: the key, then what it does.
 func (b Board) offer(key, does string) string {
 	return b.skin.Key.Render(key) + " " + b.skin.Says.Render(does)
 }
 
-// offers is what the bar says, for this tab and this mode.
 func (b Board) offers() []string {
 	if b.tab == Objectives {
 		return []string{
@@ -349,7 +289,6 @@ func (b Board) offers() []string {
 		b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"))
 }
 
-// promptLine is what a prompt looks like while it is taking what is typed.
 func (b Board) promptLine() string {
 	mark := "/"
 	if b.prompt == Commanding {
@@ -358,9 +297,6 @@ func (b Board) promptLine() string {
 	return " " + b.skin.Prompt.Render(mark+b.typed) + b.skin.Key.Render("▏")
 }
 
-// question is the deletion waiting to be agreed to, said out loud: what would
-// go, and the two keys that answer. Nothing undoes a deletion, so it is named
-// by number rather than left to be guessed at.
 func (b Board) question() string {
 	if b.leaving {
 		return " " + b.skin.Title.Render("throw away what you typed?") + "  " +
@@ -379,7 +315,6 @@ func (b Board) question() string {
 	return " " + asked + "  " + b.bar(b.offer("⏎", "delete"), b.offer("esc", "keep"))
 }
 
-// kindPopup asks which of the three kinds of stopped a task is going into.
 func (b Board) kindPopup() string {
 	out := make([]string, 0, len(engine.Stalled))
 	for i, kind := range engine.Stalled {

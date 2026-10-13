@@ -16,10 +16,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// What an event means. These are the three functions the loop is made of, and
-// they are ordinary functions precisely so that the loop itself is the only
-// thing left that no test can reach.
-
 func TestEveryPointerEventItsGesture(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -43,8 +39,6 @@ func TestEveryPointerEventItsGesture(t *testing.T) {
 
 	scrolled := Pointed(w, pointer.Scroll, at, CardHeight)
 	if scrolled.scroll[0] != w.scroll[0] {
-		// One card fits, so there is nothing to scroll: what is checked is
-		// that a scroll event reaches the column rather than what it does.
 		t.Log("scrolling a column that fits changes nothing, as it should")
 	}
 	if same := Pointed(w, pointer.Enter, at, 0); same.Chosen() != w.Chosen() {
@@ -93,18 +87,12 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	if got := Typed(w, "Q", 0); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("a key nobody bound did something")
 	}
-	// Gio names the key "A" and says shift apart from it, so a window that
-	// only lowercased what it was given never saw ⇧A at all.
 	if got := Typed(w, "A", key.ModShift); !got.archived {
 		t.Error("⇧A did not show what was archived")
 	}
 	if got := Typed(Typed(w, "A", key.ModShift), "A", key.ModShift); got.archived {
 		t.Error("⇧A twice did not hide it again")
 	}
-	// Only a letter is put back together, and that is Gio's own rule: a letter
-	// is named in upper case whatever shift does, while a shifted "/" is
-	// already named "?" before it gets here. Joining punctuation would take
-	// the help away from every keyboard that writes "?" that way.
 	if got := Typed(w, "?", key.ModShift); got.Screen() != OnHelp {
 		t.Errorf("? left the window on %v, not the help", got.Screen())
 	}
@@ -113,8 +101,6 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	}
 }
 
-// The detail draws the task and its history, which is the one panel the board
-// cannot show on a card.
 func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	f := newFake()
 	f.acts = []trace.Act{anAct("added", "", "", "")}
@@ -129,7 +115,6 @@ func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	}
 }
 
-// A form opened on the objectives tab asks an objective's questions.
 func TestAddingOnTheObjectivesTabAsksAnObjectivesQuestions(t *testing.T) {
 	form := adding(Objectives, "")
 	if !form.ForObjective {
@@ -142,7 +127,6 @@ func TestAddingOnTheObjectivesTabAsksAnObjectivesQuestions(t *testing.T) {
 	}
 }
 
-// A window that is not too small says nothing about its size.
 func TestAWindowBigEnoughSaysNothingAboutItsSize(t *testing.T) {
 	f := newFake()
 	if said := New(f, 1200, 800).Says(); said != "" {
@@ -150,8 +134,6 @@ func TestAWindowBigEnoughSaysNothingAboutItsSize(t *testing.T) {
 	}
 }
 
-// A drop the store refuses is said, and it is one act: no column change is
-// asked for on its own beforehand, to stand when the place is refused.
 func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 	f := newFake()
 	f.refuseMove = errRefuse
@@ -171,12 +153,10 @@ func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 	}
 }
 
-// A task the reading does not hold has no column, and a drop is still asked
-// for: the store is what says what is true, not the last reading of it.
 func TestATaskTheReadingDoesNotHoldStillMoves(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
-	w.snap.Cards[0].Number = 7 // the card on screen is no longer task 1
+	w.snap.Cards[0].Number = 7
 
 	at := middleOf(w, 0, 0)
 	w = w.PressAt(at)
@@ -188,8 +168,6 @@ func TestATaskTheReadingDoesNotHoldStillMoves(t *testing.T) {
 	}
 }
 
-// Asking the store again is the one decision the loop makes, so it is a
-// function the loop calls rather than a line inside it.
 func TestWhenItIsTimeToAskTheStoreAgain(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 	if !due(time.Time{}, now) {
@@ -203,8 +181,6 @@ func TestWhenItIsTimeToAskTheStoreAgain(t *testing.T) {
 	}
 }
 
-// The two lengths of time this window runs on, said out loud so a change to
-// either is a change somebody made on purpose.
 func TestTheTwoLengthsOfTime(t *testing.T) {
 	if got := Beat(); got != 2*time.Second {
 		t.Errorf("the beat is %v", got)
@@ -214,7 +190,6 @@ func TestTheTwoLengthsOfTime(t *testing.T) {
 	}
 }
 
-// Exactly the grip, in either direction, is still the same place.
 func TestTheGripOfADoubleClickInBothDirections(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 	at := Point{X: 100, Y: 100}
@@ -228,7 +203,6 @@ func TestTheGripOfADoubleClickInBothDirections(t *testing.T) {
 	}
 }
 
-// Clicking a tab changes to it, which is the only way there is.
 func TestClickingATabChangesToIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -246,7 +220,6 @@ func TestClickingATabChangesToIt(t *testing.T) {
 	}
 }
 
-// Clicking the strip beside the tabs changes nothing.
 func TestClickingBesideTheTabsChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -257,7 +230,6 @@ func TestClickingBesideTheTabsChangesNothing(t *testing.T) {
 	}
 }
 
-// Exactly the span is still the same gesture; a moment past it is not.
 func TestExactlyTheSpanOfADoubleClick(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 	at := Point{X: 100, Y: 100}
@@ -269,8 +241,6 @@ func TestExactlyTheSpanOfADoubleClick(t *testing.T) {
 	}
 }
 
-// Scrolling back up is a scroll like any other, and the range the loop asks for
-// has to reach below zero for one to arrive at all.
 func TestAFrameOfEventsScrollsBackUp(t *testing.T) {
 	f := newFake()
 	var many []engine.Card
@@ -292,9 +262,6 @@ func TestAFrameOfEventsScrollsBackUp(t *testing.T) {
 	}
 }
 
-// Closing the window is not a failure, and anything else is. This is what the
-// process exits with, and it is a function because the loop that calls it is
-// the one thing here no test can reach.
 func TestWhatClosingTheWindowExitsWith(t *testing.T) {
 	for _, c := range []struct {
 		err  error
@@ -307,18 +274,12 @@ func TestWhatClosingTheWindowExitsWith(t *testing.T) {
 		if exited != c.code {
 			t.Errorf("%v: exited %d, want %d", c.err, exited, c.code)
 		}
-		// A window that failed says why: the process ends from inside, so
-		// nothing above it is left to.
 		if !strings.Contains(said.String(), c.said) || (c.err == nil && said.Len() > 0) {
 			t.Errorf("%v: said %q", c.err, said.String())
 		}
 	}
 }
 
-// A window reports itself in pixels and this board works in dp, so both the
-// size it reports and the distance a wheel says it turned have to be divided
-// by the ratio. Written as functions because the loop that calls them is the
-// one thing here no test can reach.
 func TestASizeAndAScrollAreBothReadInDp(t *testing.T) {
 	if wide, high := Sized(image.Pt(2400, 1600), 2); wide != 1200 || high != 800 {
 		t.Errorf("a window of 2400 by 1600 at two pixels to the dp is %d by %d", wide, high)
@@ -334,11 +295,6 @@ func TestASizeAndAScrollAreBothReadInDp(t *testing.T) {
 	}
 }
 
-// The wheel over a description reaches it through the pointer, not only
-// through Scroll: a scenario that drives Scroll directly passes on a gesture
-// no window can send. And a notch smaller than a line has to count for one —
-// a trackpad sends a few pixels at a time, and integer division turned every
-// one of them into nothing.
 func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	f := newFake()
 	said := make([]string, 30)
@@ -360,9 +316,6 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	if got := Pointed(w, pointer.Scroll, over, lineHigh); got.Saying() == 0 {
 		t.Error("the wheel over the description left it where it was")
 	}
-	// Six nudges of three pixels are a line like any other. Taken one by one
-	// they each rounded to nothing and were thrown away, so a trackpad moved
-	// the description not at all.
 	small := w
 	for range 6 {
 		small = Pointed(small, pointer.Scroll, over, 3)
@@ -372,10 +325,6 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	}
 }
 
-// A pointer's whole gesture, the double-click included, is one function the
-// loop and the scenarios both go through. It used to be the loop's own
-// arithmetic: nothing could reach it, and the release after a double-click
-// closed what the double-click had just opened — found by hand, in a window.
 func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -394,7 +343,6 @@ func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 		t.Errorf("the second click left the window on %v, not the task it opened", two.Screen())
 	}
 
-	// And two presses too far apart are two clicks, not one gesture.
 	apart, g := Pointing(one, g, pointer.Press, at, 0, now.Add(Twin()+time.Second))
 	apart, _ = Pointing(apart, g, pointer.Release, at, 0, now.Add(Twin()+time.Second))
 	if apart.Screen() != OnTheBoard {
@@ -402,10 +350,6 @@ func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 	}
 }
 
-// Every kind of pointer event reaches the thing it is meant to. The scenarios
-// drive the window's own methods, which is fine only as long as the dispatch
-// above them is right — so the dispatch is asserted here, once, rather than
-// assumed a hundred times.
 func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 	f := newFake()
 	long := strings.Repeat("Une ligne de ce que la tâche raconte, bien assez longue\n", 30)
@@ -415,7 +359,6 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 	if got := Pointed(w, pointer.Press, at, 0); !got.pressed {
 		t.Error("a press took hold of nothing")
 	}
-	// A press then a drag past the grip is a card in hand.
 	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Drag,
 		Point{X: at.X + Grip + 1, Y: at.Y}, 0); !got.held.Moved {
 		t.Error("a drag did not move what the press had taken hold of")
@@ -431,10 +374,6 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 	}
 }
 
-// What the clipboard held comes back as a stream, and the window takes it the
-// way it takes anything else. Its own function and not a branch inside the
-// loop: a decision the loop makes itself is a decision no scenario reaches,
-// which is what put ⇧A and the double-click out of reach before it.
 func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -450,8 +389,6 @@ func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 	if got.Pasting() {
 		t.Error("the window is still waiting for a clipboard it has been given")
 	}
-	// A clipboard that cannot be read leaves the text alone rather than
-	// emptying it, and stops the waiting all the same.
 	broken := pasting(w, failing{})
 	if said := broken.Form().ValueOf("title"); said != "Write the spec" {
 		t.Errorf("a clipboard that would not open left the title as %q", said)
@@ -461,15 +398,10 @@ func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 	}
 }
 
-// failing is a reader that will not read.
 type failing struct{}
 
 func (failing) Read([]byte) (int, error) { return 0, errors.New("no") }
 
-// A wheel's turn belongs to what it began on. A trackpad goes on sending turns
-// after the fingers have left it, and a task put away with esc while they were
-// still coming handed the rest of them to the board: the column under the
-// pointer scrolled though nobody had turned anything over it.
 func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
 	cards := []engine.Card{{Number: 1, Title: "Ship it", State: "todo", Description: long}}
@@ -493,7 +425,6 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	if w.Saying() == 0 {
 		t.Fatal("the turn did not scroll the description")
 	}
-	// Put away while the trackpad is still sending.
 	w = w.Key("esc")
 	if w.Screen() != OnTheBoard {
 		t.Fatalf("esc left the window on %v", w.Screen())
@@ -504,15 +435,11 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	if w.scroll[1] != 0 {
 		t.Fatalf("the rest of the turn scrolled the column under it to %d", w.scroll[1])
 	}
-	// A turn begun after a pause is a turn of its own, and it reaches the board
-	// — a pause of exactly Still() included, which is where one gesture ends.
 	fresh := 9*16*time.Millisecond + Still()
 	w = turn(w, fresh)
 	if w.scroll[1] == 0 {
 		t.Fatal("a fresh turn over the board after a pause of Still() did not scroll it")
 	}
-	// And the other way round: the rest of a turn of the board does not scroll
-	// the task opened while it was still coming.
 	w = w.DoubleClick(middleOf(w, 1, 0))
 	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())

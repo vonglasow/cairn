@@ -1,10 +1,5 @@
 package store
 
-// What was done to a task, kept. The table is appended to and never rewritten,
-// and an act names its task by number rather than referring to it: a task may
-// be gone by the time its acts are read, and the numbers are never handed out
-// twice, so a number goes on naming the one task it always named.
-
 import (
 	"fmt"
 	"time"
@@ -13,13 +8,8 @@ import (
 	"cairn/internal/trace"
 )
 
-// traceColumns is the reading order every query below hands to scanAct, written
-// once so recording and reading cannot drift apart.
 const traceColumns = `task_number, did, field, was, became, through, at`
 
-// boundAct holds an act's facts in the shape SQL will bind. An act tells them
-// here rather than handing over its fields, which is what lets this keep
-// working the day those fields change.
 type boundAct struct {
 	task                             int
 	did, field, was, became, through string
@@ -38,8 +28,7 @@ func (b *boundAct) Through(surface string) { b.through = surface }
 func (b *boundAct) ByHand()                { b.through = "" }
 func (b *boundAct) At(when time.Time)      { b.at = when }
 
-// Record writes down one act. Nothing is ever updated here: a history that
-// could be rewritten would not be one.
+// Record writes down one act.
 func (s *Store) Record(a trace.Act) error {
 	var b boundAct
 	a.Tell(&b)
@@ -52,10 +41,7 @@ func (s *Store) Record(a trace.Act) error {
 	return nil
 }
 
-// ActsOn hands back everything done to a task, oldest first. A task that never
-// existed and one nothing was ever done to answer the same way, since a task
-// always carries at least its creation: the caller asks about the task itself
-// when it needs to tell them apart.
+// ActsOn hands back everything done to a task, oldest first.
 func (s *Store) ActsOn(number int) ([]trace.Act, error) {
 	rows, err := s.on.Query(
 		`SELECT `+traceColumns+` FROM trace WHERE task_number = ? ORDER BY id`, number)
@@ -78,10 +64,7 @@ func (s *Store) ActsOn(number int) ([]trace.Act, error) {
 	return acts, nil
 }
 
-// ActsSince hands back everything done from a moment onward, across every task,
-// oldest first. A task deleted since keeps its acts, so a period can name a task
-// that is no longer there — which is the whole reason a history outlives what it
-// describes.
+// ActsSince hands back everything done from a moment onward, across every task, oldest first.
 func (s *Store) ActsSince(from time.Time) ([]trace.Act, error) {
 	rows, err := s.on.Query(
 		`SELECT `+traceColumns+` FROM trace WHERE at >= ? ORDER BY id`,
@@ -105,9 +88,6 @@ func (s *Store) ActsSince(from time.Time) ([]trace.Act, error) {
 	return acts, nil
 }
 
-// scanAct reads one act by scanning a row into plain variables and telling them
-// to a builder, rather than into an act's fields directly — the membrane Tell
-// uses, the other way round.
 func scanAct(row scanner) (trace.Act, error) {
 	var (
 		task                             int

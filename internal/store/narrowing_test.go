@@ -1,9 +1,5 @@
 package store
 
-// What a narrowed read is worth. Asked of the store as a whole — tasks in, a
-// fact named, the titles read back — because what a narrowing is worth is what
-// comes out of the store, not the SQL it was turned into.
-
 import (
 	"strings"
 	"testing"
@@ -14,7 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// keepLabelled adds a task carrying labels, so a test can ask for one of them.
 func keepLabelled(t *testing.T, s *Store, title string, labels ...string) task.Task {
 	t.Helper()
 	kept, err := s.Keep(changed(mustBuild(t, title), func(a *task.AsTold) {
@@ -29,7 +24,6 @@ func keepLabelled(t *testing.T, s *Store, title string, labels ...string) task.T
 	return kept
 }
 
-// wantKept fails unless a narrowed read hands back exactly these titles.
 func wantKept(t *testing.T, s *Store, narrowing *domain.Narrowing, want ...string) {
 	t.Helper()
 	kept, err := s.Narrowed(narrowing)
@@ -45,7 +39,6 @@ func wantKept(t *testing.T, s *Store, narrowing *domain.Narrowing, want ...strin
 	}
 }
 
-// A column named keeps the tasks sitting in it and nothing else.
 func TestNarrowed_keepsTheColumnNamed(t *testing.T) {
 	s := openStore(t)
 	keepInColumn(t, s, "Write the spec", domain.Todo)
@@ -56,7 +49,6 @@ func TestNarrowed_keepsTheColumnNamed(t *testing.T) {
 	wantKept(t, s, narrowing, "Write the spec")
 }
 
-// A priority named keeps the tasks carrying it.
 func TestNarrowed_keepsThePriorityNamed(t *testing.T) {
 	s := openStore(t)
 	high, err := s.Keep(changed(mustBuild(t, "Write the spec"), func(a *task.AsTold) {
@@ -73,8 +65,6 @@ func TestNarrowed_keepsThePriorityNamed(t *testing.T) {
 	wantKept(t, s, narrowing, "Write the spec")
 }
 
-// Two labels named keep only what carries both. Naming two things is naming
-// two conditions, not a choice between them.
 func TestNarrowed_keepsWhatCarriesEveryLabelNamed(t *testing.T) {
 	s := openStore(t)
 	keepLabelled(t, s, "Write the spec", "team", "urgent")
@@ -89,7 +79,6 @@ func TestNarrowed_keepsWhatCarriesEveryLabelNamed(t *testing.T) {
 	wantKept(t, s, one, "Write the spec", "Ship it")
 }
 
-// Two facts from different fields both have to hold.
 func TestNarrowed_keepsWhatEveryFactNamedHoldsFor(t *testing.T) {
 	s := openStore(t)
 	both, err := s.Keep(changed(mustBuild(t, "Write the spec"), func(a *task.AsTold) {
@@ -108,8 +97,6 @@ func TestNarrowed_keepsWhatEveryFactNamedHoldsFor(t *testing.T) {
 	wantKept(t, s, narrowing, "Write the spec")
 }
 
-// Naming nothing narrows nothing: a read told to keep everything reads the
-// store in the one order there is, exactly as All does.
 func TestNarrowed_namingNothingReadsEverything(t *testing.T) {
 	s := openStore(t)
 	keepInColumn(t, s, "Write the spec", domain.Todo)
@@ -118,9 +105,6 @@ func TestNarrowed_namingNothingReadsEverything(t *testing.T) {
 	wantKept(t, s, &domain.Narrowing{}, "Ship it", "Write the spec")
 }
 
-// A narrowing says whether anything was named at all, because what is done
-// with the answer depends on it: a listing nobody narrowed is shown as the
-// tree it is, and a narrowed one is shown flat.
 func TestNarrowing_narrowsOnlyWhenSomethingWasNamed(t *testing.T) {
 	if (&domain.Narrowing{}).Narrows() {
 		t.Error("a narrowing nobody named anything on says it narrows")
@@ -132,8 +116,6 @@ func TestNarrowing_narrowsOnlyWhenSomethingWasNamed(t *testing.T) {
 	}
 }
 
-// An objective named keeps the tasks serving it, and one nothing serves keeps
-// nothing rather than failing: a filter says what is wanted, not what exists.
 func TestNarrowed_keepsWhatServesTheObjectiveNamed(t *testing.T) {
 	s := openStore(t)
 	serving, err := s.Keep(changed(mustBuild(t, "Write the spec"), func(a *task.AsTold) {
@@ -155,9 +137,6 @@ func TestNarrowed_keepsWhatServesTheObjectiveNamed(t *testing.T) {
 	wantKept(t, s, nobody)
 }
 
-// An objective is narrowed the same way, on the facts it carries. Asserted
-// here as well as through the commands: a narrowing that worked for tasks and
-// not for objectives would be caught nowhere in this package.
 func TestNarrowedObjectives_keepsWhatWasNamed(t *testing.T) {
 	s := openStore(t)
 	built, err := objective.NewObjective("Ship cairn 1.0")
@@ -198,12 +177,6 @@ func TestNarrowedObjectives_keepsWhatWasNamed(t *testing.T) {
 	}
 }
 
-// A narrowing leaves archived tasks out unless it is asked for them. Archiving
-// is for taking work off the board, and a listing that handed it all back
-// would have moved the problem rather than answered it.
-//
-// Even one nobody narrowed: what is off the board is off it whether or not
-// anything else was named.
 func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 	var plain narrowing
 	where, _ := plain.whereTasks(taskLabels)
@@ -211,8 +184,6 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 		t.Errorf("a narrowing nobody named gives %q, want it to leave archived out", where)
 	}
 
-	// The clause is the same either way; what it holds to is not. Comparing
-	// the two strings says nothing, which is what this asked at first.
 	_, plainArgs := plain.whereTasks(taskLabels)
 	var asked narrowing
 	asked.Archived()
@@ -225,7 +196,6 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 			plainArgs[0], askedArgs[0])
 	}
 
-	// And asking for them says nothing about what else was named.
 	var both narrowing
 	both.InColumn("done")
 	both.Archived()
@@ -238,10 +208,6 @@ func TestNarrowing_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 	}
 }
 
-// What is due by a day, the day itself included: a deadline is the last day
-// something may be done, so a listing of what is due by the first that left
-// out the first would answer a different question. What carries no deadline is
-// not due by that day — it is not due at all — and is left out.
 func TestNarrowed_keepsWhatIsDueByADay(t *testing.T) {
 	s := openStore(t)
 	due := func(title, day string) {
@@ -266,8 +232,6 @@ func TestNarrowed_keepsWhatIsDueByADay(t *testing.T) {
 	wantKept(t, s, narrowing, "Write the spec", "On the day itself")
 }
 
-// Asked for both, what is on the board and what is off it are held to
-// nothing: the clause that leaves the archived out is not there at all.
 func TestNarrowing_withArchivedHoldsToNeither(t *testing.T) {
 	var both narrowing
 	both.WithArchived()
@@ -277,8 +241,6 @@ func TestNarrowing_withArchivedHoldsToNeither(t *testing.T) {
 	}
 }
 
-// A part is off the board when the work it belongs to is: it keeps its own
-// mark as it was, and every listing reads the two together.
 func TestNarrowed_takesAPartOffTheBoardWithItsWork(t *testing.T) {
 	s := openStore(t)
 	work := keep(t, s, "Dépôt APP")

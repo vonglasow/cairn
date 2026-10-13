@@ -1,8 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/timesheet.feature: how long the work
-// took, day by day, read from what the history kept.
-
 import (
 	"testing"
 

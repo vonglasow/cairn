@@ -11,9 +11,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// told is a fake Told: it records, in order, the facts it was told rather
-// than doing anything with them. A test on it is a test on the order and the
-// content of what Tell says, nothing else.
 type told struct {
 	said []string
 }
@@ -38,9 +35,6 @@ func (r *told) Estimated(d time.Duration) {
 }
 func (r *told) NotEstimated() { r.said = append(r.said, "NotEstimated()") }
 
-// TestTell_saysEveryFactAnObjectiveCarries checks that Tell says every fact an
-// objective carries, in the card's order, and says the absence of a fact
-// rather than staying silent about it.
 func TestTell_saysEveryFactAnObjectiveCarries(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-01-02")
 	if err != nil {
@@ -92,8 +86,6 @@ func TestTell_saysEveryFactAnObjectiveCarries(t *testing.T) {
 	}
 }
 
-// Same proof as for States and Priorities: the list and the parser cannot
-// say different things about what an objective's state is.
 func TestObjectiveStates_areExactlyWhatParseObjectiveStateAccepts(t *testing.T) {
 	for _, name := range []string{"active", "on-hold", "reached", "dropped"} {
 		if !slices.Contains(ObjectiveStates, State(name)) {
@@ -110,10 +102,6 @@ func TestObjectiveStates_areExactlyWhatParseObjectiveStateAccepts(t *testing.T) 
 	}
 }
 
-// TestAsTold_buildsAnObjectiveFromEveryFactItIsTold checks that an objective
-// told to a builder, fact by fact, is handed back whole: this is the same
-// membrane Tell uses, the other way round, so what goes in has to come out
-// unchanged.
 func TestAsTold_buildsAnObjectiveFromEveryFactItIsTold(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-01-02")
 	if err != nil {
@@ -160,11 +148,6 @@ func TestAsTold_buildsAnObjectiveFromEveryFactItIsTold(t *testing.T) {
 		t.Errorf("Estimate = %v, want %v", got.estimate, want.estimate)
 	}
 }
-
-// The four tests below each poison the field first, through the fact that
-// carries a value, before telling AsTold the fact says there is none. A
-// builder that dropped the absence on the floor would still hold the
-// poisoned value afterwards.
 
 func TestAsTold_notDescribedMeansNoDescription(t *testing.T) {
 	a := &AsTold{}
@@ -215,9 +198,6 @@ func TestNewObjective_refusesATitleOfSpaces(t *testing.T) {
 	}
 }
 
-// The sentinel is shared with a task, the wording is not: a person told "a
-// task needs a title" after typing `objective new` learns nothing. The task
-// side of that sharing is task.TestNewTask_saysItIsATaskThatNeedsATitle.
 func TestNewObjective_saysItIsAnObjectiveThatNeedsATitle(t *testing.T) {
 	_, err := NewObjective("")
 	if got := err.Error(); !strings.Contains(got, "an objective needs a title") {
@@ -294,9 +274,6 @@ func TestParseObjectiveState_readsNothingAsActive(t *testing.T) {
 	}
 }
 
-// An objective has no column, so it cannot be put in one. A task's state given
-// to an objective is the mistake most likely to be made, and the one a shared
-// parser would have accepted in silence.
 func TestParseObjectiveState_refusesATasksState(t *testing.T) {
 	for _, name := range []string{"backlog", "todo", "current", "done", "nope"} {
 		if _, err := ParseObjectiveState(name); !errors.Is(err, ErrNotAnObjectiveState) {
@@ -312,8 +289,6 @@ func TestParseObjectiveState_saysWhatItWasGiven(t *testing.T) {
 	}
 }
 
-// The other way round: a column is still a column, and the states an
-// objective can be in are not among them.
 func TestParseState_refusesAnObjectivesState(t *testing.T) {
 	for _, name := range []string{"active", "on-hold", "reached", "dropped"} {
 		if _, err := domain.ParseState(name); !errors.Is(err, domain.ErrNotAState) {
@@ -328,9 +303,6 @@ func TestNewObjective_refusesATitleThatIsNotOneLine(t *testing.T) {
 	}
 }
 
-// TestMayDelete_refusesAnObjectiveCarryingTasks checks the rule that keeps an
-// objective's tasks from being left pointing at a number nothing carries —
-// and that an objective nothing serves is not caught by it.
 func TestMayDelete_refusesAnObjectiveCarryingTasks(t *testing.T) {
 	for _, c := range []struct {
 		name    string

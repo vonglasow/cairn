@@ -1,13 +1,5 @@
 package gui
 
-// The third page: the time spent, a week or a month at a time. How long the
-// work took was a table the command line printed; here a column a day,
-// Monday first, each day's total and each task worked on with its time and a
-// bar as long as its share of the longest stretch of the week — every task,
-// a day scrolling to its last — or a month's six weeks, each day saying what
-// it held. A strip along the top walks it, as the arrows and t do, and goes
-// between the two. See docs/gui.md.
-
 import (
 	"strconv"
 	"time"
@@ -17,18 +9,12 @@ import (
 )
 
 const (
-	// weekRow is the room one task takes in a day: its line, and its bar.
-	weekRow = 40
-	// barHighOf is how thick a task's bar is.
+	weekRow   = 40
 	barHighOf = 6
-	// arrowWide is how wide an arrow of the strip is, rangeWide a range.
 	arrowWide = 32
 	rangeWide = 72
 )
 
-// timeState is what the time page keeps: the Monday of the week it shows,
-// or the first day of the month, the time spent over it, whether a month is
-// shown, and how far down each day of a week its tasks are scrolled.
 type timeState struct {
 	week    time.Time
 	sheet   engine.Timesheet
@@ -36,8 +22,7 @@ type timeState struct {
 	dayFrom [7]int
 }
 
-// Week is the Monday of the week the time page shows, or the first day of
-// the month it shows.
+// Week is the Monday of the week the time page shows, or the first day of the month it shows.
 func (w Window) Week() time.Time { return w.week }
 
 // Monthly says the time page shows a month rather than a week.
@@ -49,7 +34,6 @@ func (w Window) MonthShown() time.Time { return w.week }
 // Sheet is the time spent over that week, as the engine reckoned it.
 func (w Window) Sheet() engine.Timesheet { return w.sheet }
 
-// readingWeek asks how long the work took over the week shown.
 func (w Window) readingWeek() Window {
 	if w.week.IsZero() {
 		w.week = engine.Monday(w.today())
@@ -67,8 +51,6 @@ func (w Window) readingWeek() Window {
 	return w
 }
 
-// onWeek is what a key does on the time page: the arrows walk the weeks, and
-// t comes back to the one today is in.
 func (w Window) onWeek(name string) Window {
 	switch name {
 	case "left":
@@ -95,10 +77,6 @@ func (w Window) onWeek(name string) Window {
 	return w.readingWeek()
 }
 
-// turned goes from a week to its month — the month of today when today is
-// in the week, else the month of its Thursday, which holds the most of its
-// days — or from a month to the week today is in, or to its first week when
-// today is elsewhere.
 func (w Window) turned() Window {
 	w.monthly = !w.monthly
 	if w.monthly {
@@ -117,9 +95,6 @@ func (w Window) turned() Window {
 	return w
 }
 
-// weekKeys is what the time page answers itself; anything else that is not
-// the window's own — tab, the backups — reaches nothing on it, since there
-// is no card on the page to act on.
 func weekKeys(name string) (mine, shared bool) {
 	switch name {
 	case "left", "right", "t", "m":
@@ -130,15 +105,13 @@ func weekKeys(name string) (mine, shared bool) {
 	return false, false
 }
 
-// TimeStrip is the strip along the top of the time page: the board's whole
-// width, where the columns' headers are on the other pages.
+// TimeStrip is the strip along the top of the time page: the board's whole width, where the columns' headers are on the other pages.
 func TimeStrip(l Layout) Box {
 	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
 	return Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}
 }
 
-// TimeChip is where a chip of the strip is: the arrows at its left, the
-// ranges at its right, Today before them.
+// TimeChip is where a chip of the strip is: the arrows at its left, the ranges at its right, Today before them.
 func TimeChip(l Layout, name string) Box {
 	strip := TimeStrip(l)
 	at := func(x, wide int) Box { return Box{X: x, Y: strip.Y, W: wide, H: strip.H} }
@@ -161,16 +134,14 @@ func TimeChip(l Layout, name string) Box {
 // TimeChips is every chip of the strip, in the order they are drawn.
 var TimeChips = []string{"‹", "›", "Today", "Week", "Month"}
 
-// TimeSaid is where the strip says what is shown, between the arrows and
-// the ranges.
+// TimeSaid is where the strip says what is shown, between the arrows and the ranges.
 func TimeSaid(l Layout) Box {
 	after, today := TimeChip(l, "›"), TimeChip(l, "Today")
 	x := after.X + arrowWide + padding
 	return Box{X: x, Y: after.Y, W: today.X - padding - x, H: after.H}
 }
 
-// TimeSays is what is shown, as the strip says it: a week's first and last
-// days, or a month.
+// TimeSays is what is shown, as the strip says it: a week's first and last days, or a month.
 func TimeSays(w Window) string {
 	if w.monthly {
 		return w.week.Format("January 2006")
@@ -185,8 +156,7 @@ func TimeSays(w Window) string {
 	return w.week.Format("2") + " – " + last.Format("2 Jan 2006")
 }
 
-// WeekDayAt is where the i-th day of the week is laid out: the board's whole
-// width, from under the strip to the foot of the band, cut in seven.
+// WeekDayAt is where the i-th day of the week is laid out: the board's whole width, from under the strip to the foot of the band, cut in seven.
 func WeekDayAt(l Layout, i int) Box {
 	strip := TimeStrip(l)
 	wide, top := (strip.W-6*gap)/7, strip.Y+strip.H+between
@@ -205,8 +175,6 @@ func (w Window) DayShown(i int) []engine.TimesheetTask {
 	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(WeekDayAt(w.Layout(), i)))]
 }
 
-// scrollingDay turns the day of the week under the pointer, a task a notch,
-// between its first task and the last screenful.
 func (w Window) scrollingDay(p Point, by int) Window {
 	l := w.Layout()
 	for i := range 7 {
@@ -214,8 +182,6 @@ func (w Window) scrollingDay(p Point, by int) Window {
 		if !day.In(p) {
 			continue
 		}
-		// A task's row at a time, what did not come to one kept for the
-		// rest of the turn.
 		total := w.spareChoosing + by
 		rows := total / weekRow
 		w.spareChoosing = total % weekRow
@@ -242,9 +208,7 @@ func MonthCellAt(l Layout, i int) Box {
 // CellRoom is how many lines a day of a month has under its own.
 func CellRoom(cell Box) int { return max(1, (cell.H-lineHigh-padding)/lineHigh) }
 
-// CellLines is what a day of a month says of its tasks in the room it has:
-// as many as fit, and how many more there are on the last line when they do
-// not all fit.
+// CellLines is what a day of a month says of its tasks in the room it has: as many as fit, and how many more there are on the last line when they do not all fit.
 func CellLines(tasks []engine.TimesheetTask, room int) []string {
 	var lines []string
 	shown := len(tasks)
@@ -271,8 +235,6 @@ func (w Window) MonthDay(i int) engine.TimesheetDay {
 	return engine.TimesheetDay{Day: day}
 }
 
-// clickingTime is what a click does on the time page: a chip of the strip
-// does what its key does, and a day of a month shows its week.
 func (w Window) clickingTime(p Point) Window {
 	l := w.Layout()
 	keyOf := map[string]string{"‹": "left", "›": "right", "Today": "t"}
@@ -303,20 +265,17 @@ func (w Window) clickingTime(p Point) Window {
 // WeekHeadAt is where a day says which it is and its total, at its top.
 func WeekHeadAt(day Box) Box { return Row(day, day.Y+padding, lineHigh) }
 
-// WeekRowAt is where the j-th task of a day is written, under its heading
-// and its total.
+// WeekRowAt is where the j-th task of a day is written, under its heading and its total.
 func WeekRowAt(day Box, j int) Box {
 	return Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}
 }
 
-// WeekBar is a task's bar: under its line, as long as its share of the
-// longest stretch of the week.
+// WeekBar is a task's bar: under its line, as long as its share of the longest stretch of the week.
 func WeekBar(row Box, minutes, longest int) Box {
 	return Box{X: row.X, Y: row.Y + lineHigh + between, W: row.W * minutes / max(1, longest), H: barHighOf}
 }
 
-// DayTrack is the bar beside a day of a week holding more tasks than it
-// shows, along the tasks it shows; nothing when they all fit.
+// DayTrack is the bar beside a day of a week holding more tasks than it shows, along the tasks it shows; nothing when they all fit.
 func DayTrack(day Box, all int) (Box, bool) {
 	room := DayRoom(day)
 	if all <= room {
@@ -325,8 +284,7 @@ func DayTrack(day Box, all int) (Box, bool) {
 	return Box{X: day.X + day.W - barWide, Y: WeekRowAt(day, 0).Y, W: barWide, H: room * weekRow}, true
 }
 
-// CellHead is what a day of a month says at its top: its number, and its
-// total once anything was spent on it.
+// CellHead is what a day of a month says at its top: its number, and its total once anything was spent on it.
 func CellHead(day time.Time, held engine.TimesheetDay) string {
 	if held.Minutes <= 0 {
 		return strconv.Itoa(day.Day())
@@ -340,5 +298,4 @@ func CellHeadAt(cell Box) Box { return Row(cell, cell.Y+inset, lineHigh) }
 // CellLineAt is where the j-th line under a day of a month's head goes.
 func CellLineAt(cell Box, j int) Box { return Row(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh) }
 
-// sameMonth says two days are in the same month of the same year.
 func sameMonth(a, b time.Time) bool { return a.Year() == b.Year() && a.Month() == b.Month() }

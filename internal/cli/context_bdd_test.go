@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/context.feature: where a task's
-// outside context lives, said by showing the task. The one scenario about the
-// server runs in internal/mcp, where a session can be opened.
-
 import (
 	"testing"
 

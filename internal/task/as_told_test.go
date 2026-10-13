@@ -7,9 +7,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// TestAsTold_buildsATaskFromEveryFactItIsTold checks that a task told to a
-// builder, fact by fact, is handed back whole: this is the same membrane
-// Tell uses, the other way round, so what goes in has to come out unchanged.
 func TestAsTold_buildsATaskFromEveryFactItIsTold(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-01-02")
 	if err != nil {
@@ -67,11 +64,6 @@ func TestAsTold_buildsATaskFromEveryFactItIsTold(t *testing.T) {
 	}
 }
 
-// The seven tests below each poison the field first, through the fact that
-// carries a value, before telling AsTold the fact says there is none. A
-// builder that dropped the absence on the floor would still hold the
-// poisoned value afterwards.
-
 func TestAsTold_notDescribedMeansNoDescription(t *testing.T) {
 	a := &AsTold{}
 	a.Described("Say what it does")
@@ -117,9 +109,6 @@ func TestAsTold_underNothingMeansNoParent(t *testing.T) {
 	}
 }
 
-// ServesNothing empties the set, the way NotLabelled and NotBlocked do — and
-// like them it is heard before the set is closed, so what was gathered before
-// it goes with it.
 func TestAsTold_servesNothingEmptiesTheSet(t *testing.T) {
 	a := &AsTold{}
 	a.Serves(2)

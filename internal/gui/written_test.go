@@ -4,11 +4,6 @@ import (
 	"testing"
 )
 
-// A piece of text somebody is typing into, and where the caret is in it. One
-// mechanism for every text in this window — the fields of a form and the
-// search line — because a caret that behaved differently in two places would
-// be two things to learn.
-
 func TestTypingGoesInAtTheCaret(t *testing.T) {
 	written := Written{Value: "spec", At: 2}
 	if got := written.Types("XY"); got.Value != "spXYec" {
@@ -38,7 +33,6 @@ func TestTheCaretWalksAndStopsAtBothEnds(t *testing.T) {
 	}
 }
 
-// A character is a rune: the caret walks letters, not bytes.
 func TestTheCaretWalksCharactersAndNotBytes(t *testing.T) {
 	written := Written{Value: "réunion", At: 7}
 	if got := written.Left().Left(); got.At != 5 {
@@ -61,8 +55,6 @@ func TestWhatIsTakenBackIsWhatIsBeforeTheCaret(t *testing.T) {
 	}
 }
 
-// The caret can be put anywhere, and anywhere outside the text is its nearest
-// end: a click past the last letter means the end, not an error.
 func TestTheCaretIsPutWhereItIsAskedForOrAtTheNearestEnd(t *testing.T) {
 	written := Written{Value: "abcdefgh"}
 	if got := written.CaretAt(3); got.At != 3 {
@@ -76,8 +68,6 @@ func TestTheCaretIsPutWhereItIsAskedForOrAtTheNearestEnd(t *testing.T) {
 	}
 }
 
-// Ending is the caret put after the last character, which is where a field
-// opens: somebody who has just arrived is adding, not correcting.
 func TestAFieldOpensWithTheCaretAtTheEnd(t *testing.T) {
 	if got := Ending("spec"); got.At != 4 || got.Value != "spec" {
 		t.Errorf("a field of %q opens with the caret at %d", got.Value, got.At)
@@ -87,17 +77,12 @@ func TestAFieldOpensWithTheCaretAtTheEnd(t *testing.T) {
 	}
 }
 
-// A run of text can be held, which is what selecting is: an anchor where it
-// began and the caret where it stands now. Everything else here already works
-// on one place; this is the only thing that works on two.
 func TestWritten_holdsARunOfText(t *testing.T) {
 	w := Ending("Deux colonnes")
 	if w.Holding() {
 		t.Error("a text nobody selected is holding a run")
 	}
 
-	// Held back from the end, the run is what lies between the two places,
-	// whichever way round they are.
 	held := w.CaretAt(5).Selects(9)
 	if got := held.Holds(); got != "colo" {
 		t.Errorf("held %q, want %q", got, "colo")
@@ -106,26 +91,20 @@ func TestWritten_holdsARunOfText(t *testing.T) {
 		t.Errorf("held backwards %q, want %q", got, "colo")
 	}
 
-	// Typing over a held run replaces it, which is what every text field does.
 	if got := held.Types("X").Reads(); got != "Deux Xnnes" {
 		t.Errorf("typing over the run gave %q", got)
 	}
-	// And so does deleting, in one stroke rather than four.
 	if got := held.Back().Reads(); got != "Deux nnes" {
 		t.Errorf("deleting the run gave %q", got)
 	}
-	// Putting the caret anywhere lets the run go.
 	if held.CaretAt(2).Holding() {
 		t.Error("moving the caret kept the run held")
 	}
-	// All of it is a run from one end to the other.
 	if got := w.All().Holds(); got != "Deux colonnes" {
 		t.Errorf("holding all of it gave %q", got)
 	}
 }
 
-// The caret goes to the start and the end of the line it is on, and no
-// further: a line is what lies between two breaks.
 func TestWritten_walksToEitherEndOfItsLine(t *testing.T) {
 	w := Written{Value: "first line\nsecond line\nthird", At: 14}
 	if got := w.LineStart(); got.At != 11 || got.Held != 0 {
@@ -142,8 +121,6 @@ func TestWritten_walksToEitherEndOfItsLine(t *testing.T) {
 	}
 }
 
-// The caret walks a word at a time: back to the start of the word it is in or
-// the one before, on to the end of the word it is in or the one after.
 func TestWritten_walksAWordAtATime(t *testing.T) {
 	w := Written{Value: "write  the spec", At: 9}
 	if got := w.WordBack(); got.At != 7 {
@@ -166,7 +143,6 @@ func TestWritten_walksAWordAtATime(t *testing.T) {
 	}
 }
 
-// What lies after the caret is taken out, and a held run in one stroke.
 func TestWritten_takesOutWhatIsAfterTheCaret(t *testing.T) {
 	w := Written{Value: "spec", At: 1}
 	if got := w.Forward(); got.Value != "sec" || got.At != 1 {
@@ -181,8 +157,6 @@ func TestWritten_takesOutWhatIsAfterTheCaret(t *testing.T) {
 	}
 }
 
-// Taking back to a place takes out everything between it and the caret: to
-// the start of the line, or of the word, in one stroke.
 func TestWritten_takesBackToAPlace(t *testing.T) {
 	w := Written{Value: "one\ntwo three", At: 13}
 	if got := w.BackTo(w.WordBack().At); got.Value != "one\ntwo " || got.At != 8 {

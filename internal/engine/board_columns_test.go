@@ -84,9 +84,6 @@ func TestIndexOfAndStateAt(t *testing.T) {
 	}
 }
 
-// OnTheBoard is what a board lays out, which is every task hanging under
-// nothing. Anything counting what is shown, or walking it with the arrows, has
-// to agree with what is drawn — so both ask this rather than each deciding.
 func TestOnTheBoard_isEveryTaskHangingUnderNothing(t *testing.T) {
 	cards := []Card{
 		{Number: 1, Title: "Ship it"},
@@ -102,9 +99,6 @@ func TestOnTheBoard_isEveryTaskHangingUnderNothing(t *testing.T) {
 	}
 }
 
-// A sub-task is not dealt onto a board at all. It is a part of the work its
-// parent names, so the parent is what stands in a column and the part is read
-// where the parent is read.
 func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
 	dealt, band := Deal([]Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
@@ -128,9 +122,6 @@ func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
 	}
 }
 
-// A search reaches what a task carries, and a board draws only the work. So a
-// part that matched answers as the work it is part of: drawing nothing would
-// make a search come back empty for a word plainly in the store.
 func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
 	all := []Card{
 		{Number: 1, Title: "Ship it", Said: []string{"1", "Ship it"}},

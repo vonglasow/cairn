@@ -1,10 +1,5 @@
 package store
 
-// What the places are worth is asked of the store as a whole: put tasks in,
-// move one, and read the order back. The place itself is never read directly —
-// nothing outside this package can, and a test that reached for the column
-// would be asserting about the schema rather than about the order.
-
 import (
 	"errors"
 	"fmt"
@@ -15,8 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// titlesInOrder reads back the titles of every task the store holds, in the one
-// order there is.
 func titlesInOrder(t *testing.T, s *Store) []string {
 	t.Helper()
 	all, err := s.All()
@@ -30,7 +23,6 @@ func titlesInOrder(t *testing.T, s *Store) []string {
 	return titles
 }
 
-// wantOrder fails unless the store holds exactly these titles, in this order.
 func wantOrder(t *testing.T, s *Store, want ...string) {
 	t.Helper()
 	if got := titlesInOrder(t, s); strings.Join(got, ",") != strings.Join(want, ",") {
@@ -38,8 +30,6 @@ func wantOrder(t *testing.T, s *Store, want ...string) {
 	}
 }
 
-// keepInColumn adds a task sitting in a column, so a test can build the groups
-// the places are counted within.
 func keepInColumn(t *testing.T, s *Store, title string, state domain.State) task.Task {
 	t.Helper()
 	kept, err := s.Keep(changed(mustBuild(t, title), func(a *task.AsTold) {
@@ -51,7 +41,6 @@ func keepInColumn(t *testing.T, s *Store, title string, state domain.State) task
 	return kept
 }
 
-// keepUnder adds a task hanging under another.
 func keepUnder(t *testing.T, s *Store, title string, parent int) task.Task {
 	t.Helper()
 	kept, err := s.Keep(changed(mustBuild(t, title), func(a *task.AsTold) {
@@ -63,7 +52,6 @@ func keepUnder(t *testing.T, s *Store, title string, parent int) task.Task {
 	return kept
 }
 
-// mustBuild builds a task from a title, failing the test if it cannot.
 func mustBuild(t *testing.T, title string) task.Task {
 	t.Helper()
 	built, err := task.NewTask(title)
@@ -73,13 +61,6 @@ func mustBuild(t *testing.T, title string) task.Task {
 	return built
 }
 
-// wantEveryGroupRunsOneToN fails unless the places in every group are exactly
-// 1..N with no hole and nothing twice.
-//
-// This is the invariant the whole ordering rests on, and it is asserted here
-// rather than left to the orders above: an order reads correctly while the
-// places behind it are 2, 5, 9 — so a group that stops running 1..N looks
-// perfectly right until something is inserted into it.
 func wantEveryGroupRunsOneToN(t *testing.T, s *Store) {
 	t.Helper()
 	rows, err := s.db.Query(
@@ -112,10 +93,6 @@ func wantEveryGroupRunsOneToN(t *testing.T, s *Store) {
 	}
 }
 
-// Every act that can touch a place, one after another, with the invariant
-// checked after each. A sequence rather than a test each: what broke it once
-// was a departure nobody closed the gap behind, and that only shows when one
-// act follows another.
 func TestThePlaces_runOneToNAfterEveryAct(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
@@ -163,8 +140,6 @@ func TestKeep_putsATaskBehindTheOnesItSitsWith(t *testing.T) {
 
 func TestAll_readsTheColumnsInTheOrderTheyAreRead(t *testing.T) {
 	s := openStore(t)
-	// Added in the reverse of the reading order, so the numbers alone would
-	// give the opposite answer.
 	keepInColumn(t, s, "Finished", domain.Done)
 	keepInColumn(t, s, "Under way", domain.Current)
 	keepInColumn(t, s, "Chosen", domain.Todo)
@@ -194,8 +169,6 @@ func TestMoveLast_putsATaskBehindTheRest(t *testing.T) {
 	wantOrder(t, s, "Second", "Third", "First")
 }
 
-// Both directions, because the arithmetic differs: coming from in front the
-// target slides forward as the gap closes, coming from behind it does not.
 func TestMoveAfter_landsBehindTheTargetFromEitherSide(t *testing.T) {
 	t.Run("coming from in front", func(t *testing.T) {
 		s := openStore(t)
@@ -219,12 +192,8 @@ func TestMoveAfter_landsBehindTheTargetFromEitherSide(t *testing.T) {
 	})
 }
 
-// onlyErr keeps what went wrong from a move and drops whether it moved, for
-// the tests that ask only the first.
 func onlyErr(_ bool, err error) error { return err }
 
-// A move says whether the task went anywhere: one asked to go where it already
-// stands did not, and the engine writes down only a move that happened.
 func TestMove_saysWhetherTheTaskWentAnywhere(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
@@ -251,8 +220,6 @@ func TestMove_saysWhetherTheTaskWentAnywhere(t *testing.T) {
 	}
 }
 
-// Moving a task to where it already is changes nothing, and says nothing went
-// wrong: asking for what is already true is not a failure.
 func TestMove_toWhereItAlreadyIsChangesNothing(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
@@ -263,9 +230,6 @@ func TestMove_toWhereItAlreadyIsChangesNothing(t *testing.T) {
 	wantOrder(t, s, "First", "Second")
 }
 
-// A task asked to go behind itself has nowhere to travel, so nothing moves.
-// The engine refuses the request before it gets here; the store still has to
-// answer it without shuffling the group, which is what pins the boundary.
 func TestMoveAfter_behindItselfLeavesTheOrderAlone(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
@@ -295,8 +259,6 @@ func TestMove_refusesATaskThatIsNotThere(t *testing.T) {
 	}
 }
 
-// A sub-task's place is counted among its sisters, so moving one leaves the
-// root tasks alone and moving a root task leaves the sisters alone.
 func TestMove_countsASubTaskAmongItsSisters(t *testing.T) {
 	s := openStore(t)
 	parent := keep(t, s, "The parent")
@@ -323,8 +285,6 @@ func TestMove_countsASubTaskAmongItsSisters(t *testing.T) {
 	}
 }
 
-// Changing a task's column takes it out of the group it was in and puts it
-// behind the tasks it now sits with, rather than keeping the place it held.
 func TestUpdate_landsATaskBehindTheOnesInItsNewColumn(t *testing.T) {
 	s := openStore(t)
 	coming := keep(t, s, "Coming from the backlog")
@@ -338,8 +298,6 @@ func TestUpdate_landsATaskBehindTheOnesInItsNewColumn(t *testing.T) {
 	wantOrder(t, s, "Already to do", "Coming from the backlog")
 }
 
-// A change that is not a change of column leaves the place alone: editing a
-// title is not a request to be moved.
 func TestUpdate_leavesThePlaceAloneWhenTheColumnDoesNot(t *testing.T) {
 	s := openStore(t)
 	first := keep(t, s, "First")
@@ -353,8 +311,6 @@ func TestUpdate_leavesThePlaceAloneWhenTheColumnDoesNot(t *testing.T) {
 	wantOrder(t, s, "First, renamed", "Second")
 }
 
-// A task moved under a parent joins its sisters, since a place is counted
-// within a column under a parent and not within a column alone.
 func TestUpdate_landsATaskAmongItsNewSisters(t *testing.T) {
 	s := openStore(t)
 	parent := keep(t, s, "The parent")
@@ -376,7 +332,6 @@ func TestUpdate_landsATaskAmongItsNewSisters(t *testing.T) {
 	}
 }
 
-// titlesOf reads the titles of a list of tasks, for a message.
 func titlesOf(all []task.Task) []string {
 	titles := make([]string, 0, len(all))
 	for _, one := range all {
@@ -385,13 +340,6 @@ func titlesOf(all []task.Task) []string {
 	return titles
 }
 
-// rankOfColumns is built from domain.States so the two cannot drift. What that
-// buys is asserted rather than assumed: every column cairn knows takes a rank,
-// and one it does not know sorts last.
-// A task can leave its group and change its labels in one edit, and both have
-// to happen. Asserted together because the two are done one after the other:
-// an early return between them would move the task and quietly keep the labels
-// it had, which reads as success.
 func TestUpdate_changesTheLabelsOfATaskThatAlsoChangedColumn(t *testing.T) {
 	s := openStore(t)
 	kept, err := s.Keep(changed(mustBuild(t, "Moving and relabelled"), func(a *task.AsTold) {
@@ -422,9 +370,6 @@ func TestUpdate_changesTheLabelsOfATaskThatAlsoChangedColumn(t *testing.T) {
 	wantOrder(t, s, "Already to do", "Moving and relabelled")
 }
 
-// rankTheColumnsSay is the ranking domain.States implies, built here rather
-// than in the store: the store carries the order as a constant, and this is
-// what proves the constant still says the same thing.
 func rankTheColumnsSay() string {
 	var out strings.Builder
 	out.WriteString("CASE state")
@@ -435,9 +380,6 @@ func rankTheColumnsSay() string {
 	return out.String()
 }
 
-// The order is written out in the store and derived here, so a column added to
-// domain.States without a rank turns this red rather than sorting last in
-// silence. Compared past the whitespace the constant is laid out with.
 func TestTaskOrder_agreesWithTheColumnsCairnKnows(t *testing.T) {
 	flat := strings.Join(strings.Fields(taskOrder), " ")
 	if want := "ORDER BY " + rankTheColumnsSay() + ", position, number"; flat != want {

@@ -7,12 +7,7 @@ import (
 	"cairn/internal/task"
 )
 
-// Applying what a caller named to a task or an objective: the changes it was
-// given, read the way each attribute reads, and the set grammar for labels.
-
-// Changes are the attributes an operation was given. A nil field was not
-// named at all; a field pointing at an empty value was named and emptied —
-// which is how an attribute is taken away.
+// Changes are the attributes an operation was given.
 type Changes struct {
 	Title       *string
 	Description *string
@@ -28,7 +23,6 @@ type Changes struct {
 	Objective   *[]string
 }
 
-// named says whether anything at all was given to change.
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
@@ -36,21 +30,11 @@ func (c Changes) named() bool {
 		c.Blocker != nil || c.Because != nil
 }
 
-// Whether a task is being created or changed. Labels are the only attribute
-// that cares: a sign says how an existing set moves, and there is no set to
-// move at creation.
 const (
 	creating = true
 	changing = false
 )
 
-// changedLabels works out the set that a change leaves behind. A sign says how
-// an existing set moves, and there is no set to move at creation, so one given
-// there is refused rather than read as a label named "+urgent".
-//
-// Shared by tasks and objectives: both carry a set and both move it the same
-// way, and this is the one part of applying a change that is more than a call
-// to a parser.
 func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 	change, err := domain.ParseLabelChange(given)
 	if err != nil {
@@ -62,8 +46,6 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 	return change.Apply(current)
 }
 
-// apply lays the changes over a task, refusing any value it cannot make sense
-// of. A field that was not named is left exactly as it was.
 func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 	current := factsOf(t)
 	a := &task.AsTold{}
@@ -125,8 +107,6 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 	return a.Task(), nil
 }
 
-// carried is what both a task and an objective are told about what they carry
-// alike — the half of AsTold the two share.
 type carried interface {
 	Titled(string)
 	Described(string)
@@ -138,15 +118,11 @@ type carried interface {
 	Estimated(time.Duration)
 }
 
-// carriedChanges are the changes to what a task and an objective carry alike.
 type carriedChanges struct {
 	title, description, priority, deadline, estimate *string
 	labels                                           *[]string
 }
 
-// applyCarried tells a task or an objective what changed among what both
-// carry, read the same way for both. It was written once for each, and the two
-// copies differed only in what they were building.
 func applyCarried(a carried, of string, c carriedChanges, labels []string, atCreation bool) error {
 	if c.title != nil {
 		title, err := domain.Title(of, *c.title)

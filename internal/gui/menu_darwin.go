@@ -2,8 +2,6 @@
 
 package gui
 
-// The Objective-C behind these is in appkit_darwin.go.
-
 /*
 #include <stdlib.h>
 
@@ -19,9 +17,6 @@ import (
 	"gioui.org/io/event"
 )
 
-// menuPicks is where a line picked in the system's menu bar is handed to the
-// loop, and menuWake asks the loop for a frame to take it. One window, one
-// menu bar: AppKit has a single one for the whole application.
 var (
 	menuPicks chan<- string
 	menuWake  func()
@@ -29,8 +24,6 @@ var (
 	installed bool
 )
 
-// installMenu puts cairn's menus in the system's menu bar once the window has
-// a view, and says whether it did.
 func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 	view, ok := e.(app.AppKitViewEvent)
 	if !ok || !made(view.View) || installed {
@@ -50,7 +43,6 @@ func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 	return true
 }
 
-// said hands a Go string to C for the length of one call.
 func said(s string, to func(*C.char)) {
 	c := C.CString(s)
 	defer C.free(unsafe.Pointer(c))

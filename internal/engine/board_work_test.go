@@ -6,8 +6,6 @@ import (
 	"cairn/internal/objective"
 )
 
-// An absence is a fact that gets told, and this is the one that a reading can
-// only learn that way: whether anything is written about an objective at all.
 func TestAGoalIsToldItHasADescription(t *testing.T) {
 	built, err := objective.NewObjective("Ship it")
 	if err != nil {

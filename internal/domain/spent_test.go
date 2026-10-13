@@ -33,9 +33,6 @@ func TestSpent_takesOffWhatIsGivenWithAMinus(t *testing.T) {
 	}
 }
 
-// Time spent is a tally of work done. Taking off more than was ever put on
-// leaves nothing — a negative tally is not a smaller amount of work, it is a
-// number that would travel all the way to the JSON and into any sum.
 func TestSpent_stopsAtNothingRatherThanGoingBelow(t *testing.T) {
 	if got := spentAfter(t, 2*time.Hour, "-3h"); got != 0 {
 		t.Errorf("got %v, want none", got)
@@ -80,17 +77,12 @@ func TestSpent_knowsWhetherItMovesOrSets(t *testing.T) {
 	}
 }
 
-// Adding nothing is a thing somebody can ask for, and it changes nothing. The
-// boundary matters: refusing zero would make `+0m` an error rather than a
-// no-op.
 func TestSpent_acceptsMovingByNothing(t *testing.T) {
 	if got := spentAfter(t, 2*time.Hour, "+0m"); got != 2*time.Hour {
 		t.Errorf("got %v, want 2h unchanged", got)
 	}
 }
 
-// A sign already says which way it goes, so a second one inside the duration
-// is somebody saying two things at once.
 func TestSpent_refusesASignedDurationAfterASign(t *testing.T) {
 	for _, given := range []string{"+-30m", "-+30m"} {
 		if _, err := ParseSpent(given); !errors.Is(err, ErrNotADuration) {
@@ -99,9 +91,6 @@ func TestSpent_refusesASignedDurationAfterASign(t *testing.T) {
 	}
 }
 
-// The same rule as an estimate: a tally cairn cannot write back is a tally it
-// does not take. It holds for a sign too — +500m5ms moves the tally by an
-// amount that would come back changed.
 func TestParseSpent_refusesWhatItCannotWriteBack(t *testing.T) {
 	for _, amount := range []string{"500ms", "+500ms", "-500ms", "1m30s500ms"} {
 		if _, err := ParseSpent(amount); !errors.Is(err, ErrFinerThanASecond) {

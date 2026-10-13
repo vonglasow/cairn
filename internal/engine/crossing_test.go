@@ -1,13 +1,5 @@
 package engine
 
-// What an answer crosses as, for the fields whose own package never asks.
-//
-// Every one of these is exercised by a scenario, through a surface — and that
-// credits the surface, not this package. Coverage is measured per package, so
-// code called from elsewhere and never from home reads as untested however well
-// it is proven. These close that gap where it is worth closing: the dispatch
-// that decides which shape an answer takes.
-
 import (
 	"strings"
 	"testing"
@@ -19,7 +11,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// anAct builds an act, for the two fields that carry them.
 func anAct(task int, did string) trace.Act {
 	var a trace.AsTold
 	a.On(task)
@@ -32,8 +23,6 @@ func anAct(task int, did string) trace.Act {
 	return a.Act()
 }
 
-// A history and a period cross as the same shape, since a machine reading
-// either does not care which question was asked.
 func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 	for _, tc := range []struct {
 		what string
@@ -54,8 +43,6 @@ func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 	}
 }
 
-// A history renders as a card a person reads; a period renders as its acts and
-// then what they come to.
 func TestRenderText_rendersAHistory(t *testing.T) {
 	got := RenderText(TraceShow, Answer{Acts: []trace.Act{anAct(1, trace.Created)}})
 	if !strings.Contains(got, trace.Created) {
@@ -63,8 +50,6 @@ func TestRenderText_rendersAHistory(t *testing.T) {
 	}
 }
 
-// What an objective search found crosses as objectives, and reads as a listing:
-// its own field beside Objectives, so nobody has to ask which one they got.
 func TestOf_crossesFoundObjectives(t *testing.T) {
 	e := openEngine(t)
 	found := []objective.Objective{addObjective(t, e, "Ship cairn 1.0")}
@@ -81,8 +66,6 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 	}
 }
 
-// An objective crossing with tasks under it names their numbers, which is the
-// loop nothing else in this package walks.
 func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	e := openEngine(t)
 	served := addObjective(t, e, "Ship cairn 1.0")
@@ -100,8 +83,6 @@ func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	}
 }
 
-// Check refuses before anything is opened, and each of its three refusals is
-// reached from a surface's scenarios rather than from here.
 func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 	for _, tc := range []struct {
 		what string
@@ -135,8 +116,6 @@ func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 	}
 }
 
-// Retitling an objective goes through a path of its own, since a title is the
-// one thing an objective cannot be left without.
 func TestEditObjective_retitlesIt(t *testing.T) {
 	e := openEngine(t)
 	added := addObjective(t, e, "Ship cairn 1.0")

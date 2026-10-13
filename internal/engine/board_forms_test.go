@@ -6,10 +6,6 @@ import (
 	"cairn/internal/task"
 )
 
-// A new task's form starts in the column it was opened on and at normal
-// priority; a new objective's starts active and at normal. The terminal filled
-// these in and the window left them empty, so one gesture made two different
-// tasks.
 func TestNewForms_startWhereEveryBoardStartsThem(t *testing.T) {
 	task := NewTaskFields("todo")
 	if state, _ := valueOf(task, "column"); state != "todo" {
@@ -27,7 +23,6 @@ func TestNewForms_startWhereEveryBoardStartsThem(t *testing.T) {
 	}
 }
 
-// Editing a task brings its parts with it, written one line each.
 func TestEditFields_bringTheParts(t *testing.T) {
 	cards := []Card{{Number: 1, Title: "Ship it"}, {Number: 2, Parent: 1, Title: "Read it", State: "todo"}}
 	parts, ok := valueOf(EditFields(cards[0], cards), "parts")
@@ -36,8 +31,6 @@ func TestEditFields_bringTheParts(t *testing.T) {
 	}
 }
 
-// What a saved form asks for: adding or editing, the title trimmed, and the
-// number when it is an edit.
 func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	fields := []Field{{Name: "title", Arg: "title", Value: "  Ship it  "}}
 	op, in := Saved(fields, true, 0, TaskNew, TaskEdit)
@@ -53,8 +46,6 @@ func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	}
 }
 
-// A new task added in a window carries a parts field, empty, last — the same
-// field its edit form has — so parts written down beforehand go in with it.
 func TestAddingFields_carryAnEmptyPartsField(t *testing.T) {
 	fields := AddingFields("todo")
 	if last := fields[len(fields)-1]; last.Name != "parts" || last.Value != "" || !last.Long {
@@ -65,8 +56,6 @@ func TestAddingFields_carryAnEmptyPartsField(t *testing.T) {
 	}
 }
 
-// Added is the number of the task an add answered with, and nothing for an
-// answer that carries no task.
 func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
 	var told task.AsTold
 	aTask("Ship it").Tell(&told)

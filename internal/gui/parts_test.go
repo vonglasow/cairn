@@ -10,15 +10,6 @@ import (
 	"testing"
 )
 
-// Where every piece of every panel goes. This exists because of what mutation
-// found: arithmetic inside the drawing is arithmetic no assertion can judge —
-// a title moved six pixels looks like a title, and the only test that would
-// notice is a pinned pixel frame, which goes red on another machine for a
-// reason that is not a defect.
-//
-// So the sums live here, in numbers a test can pin, and drawing is left with
-// nothing to get wrong but a colour.
-
 func TestTheParcelsOfACardSitInsideIt(t *testing.T) {
 	box := Box{X: 100, Y: 200, W: 285, H: CardHeight}
 	parts := PartsOf(box)
@@ -68,8 +59,6 @@ func TestARowSitsInsideItsPanel(t *testing.T) {
 	}
 }
 
-// A field's name and its value share a row, and the value starts after the
-// widest name a form asks about.
 func TestAFieldsNameAndItsValueShareARowWithoutOverlapping(t *testing.T) {
 	panel := Box{X: 100, Y: 100, W: 600, H: 400}
 	name, value := FieldRow(panel, 120)
@@ -98,7 +87,6 @@ func TestTheTabsSitOneAfterAnother(t *testing.T) {
 	}
 }
 
-// The message a window too small shows is in the middle of it, and inside it.
 func TestTheMessageOfAWindowTooSmallSitsInIt(t *testing.T) {
 	box := Message(400, 300)
 	if box.X < 0 || box.X+box.W > 400 {
@@ -109,9 +97,6 @@ func TestTheMessageOfAWindowTooSmallSitsInIt(t *testing.T) {
 	}
 }
 
-// Every parcel of every panel, written down at one size. A sum changed by
-// accident shows up here as a number that moved, which is the only way a
-// drawing's arithmetic can be noticed at all.
 func TestTheParcelsAtOneSize(t *testing.T) {
 	var out strings.Builder
 	say := func(name string, b Box) {
@@ -182,9 +167,6 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	say("caret", CaretAt(Inside(BesideBox(over)), 1, 0, 40))
 	say("panel offer 0", PanelOfferAt(over, 0))
 	say("panel offer 1", PanelOfferAt(over, 1))
-	// The form of a task being edited: a short field before the description,
-	// one after it, the description and the parts, with the rows each is
-	// given written as the height of a box, and the rule over the offers.
 	edited := engine.EditFields(engine.Card{Number: 1}, nil)
 	for _, at := range []int{0, 1, 2, len(edited) - 1} {
 		name, value, rows := FormPlace(over, edited, at)
@@ -214,7 +196,6 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	}
 }
 
-// The four edges of an outline are the four sides of a box and nothing else.
 func TestTheFourEdgesOfAnOutline(t *testing.T) {
 	box := Box{X: 10, Y: 20, W: 100, H: 50}
 	edges := Edges(box)
@@ -229,7 +210,6 @@ func TestTheFourEdgesOfAnOutline(t *testing.T) {
 			t.Errorf("edge %d runs from %d to %d, outside the box", i, edge.Y, edge.Y+edge.H)
 		}
 	}
-	// The bottom edge is on the last row of the box, not past it.
 	if got := edges[1].Y; got != box.Y+box.H-1 {
 		t.Errorf("the bottom edge is at %d, want %d", got, box.Y+box.H-1)
 	}
@@ -238,7 +218,6 @@ func TestTheFourEdgesOfAnOutline(t *testing.T) {
 	}
 }
 
-// The first row of a panel is inside it, below its top.
 func TestTheFirstRowOfAPanel(t *testing.T) {
 	box := Box{X: 10, Y: 20, W: 100, H: 200}
 	if got := FirstRow(box); got <= box.Y || got >= box.Y+box.H {
@@ -246,8 +225,6 @@ func TestTheFirstRowOfAPanel(t *testing.T) {
 	}
 }
 
-// The bar along the bottom offers what can be done, and each offer is a place
-// a pointer can land.
 func TestTheOffersInTheBarSitOneAfterAnother(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	first, second := OfferAt(l, 0), OfferAt(l, 1)
@@ -262,10 +239,6 @@ func TestTheOffersInTheBarSitOneAfterAnother(t *testing.T) {
 	}
 }
 
-// The objectives are a grid: across first, then down, each the width of a
-// card. One to a row and the width of the whole board, an objective was a
-// card's height stretched over four columns of nothing, and a dozen of them
-// ran off the bottom of the window.
 func TestTheObjectivesAreLaidOutAcrossAndThenDown(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	across := GoalsAcross()
@@ -282,7 +255,6 @@ func TestTheObjectivesAreLaidOutAcrossAndThenDown(t *testing.T) {
 	if first.W != l.Column[0].W {
 		t.Errorf("an objective is %d wide and a column %d", first.W, l.Column[0].W)
 	}
-	// The one after the last of a row goes back to the left, a row down.
 	wrapped := GoalAt(l, across, 0)
 	if wrapped.X != first.X {
 		t.Errorf("the first of the second row is at %d and the first of the first at %d", wrapped.X, first.X)
@@ -290,7 +262,6 @@ func TestTheObjectivesAreLaidOutAcrossAndThenDown(t *testing.T) {
 	if wrapped.Y != first.Y+CardHeight {
 		t.Errorf("the second row is at %d, want %d", wrapped.Y, first.Y+CardHeight)
 	}
-	// And every one of them stands inside the board.
 	run := GoalsRun(l)
 	for at := range 2 * across {
 		box := GoalAt(l, at, 0)
@@ -301,8 +272,6 @@ func TestTheObjectivesAreLaidOutAcrossAndThenDown(t *testing.T) {
 	}
 }
 
-// How many rows a number of objectives comes to, including the part-full one:
-// a row nobody counted is a row nobody can scroll to.
 func TestHowManyRowsTheObjectivesComeTo(t *testing.T) {
 	across := GoalsAcross()
 	if got := GoalRows(0); got != 0 {
@@ -319,7 +288,6 @@ func TestHowManyRowsTheObjectivesComeTo(t *testing.T) {
 	}
 }
 
-// An objective moves with the grid, as a card moves with its column.
 func TestAnObjectiveMovesWithTheGrid(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	at := GoalsAcross() + 2
@@ -330,7 +298,6 @@ func TestAnObjectiveMovesWithTheGrid(t *testing.T) {
 	if scrolled.X != still.X {
 		t.Error("scrolling moved an objective sideways")
 	}
-	// The board the grid is laid out in spans every column, first to last.
 	run := GoalsRun(l)
 	if got, want := run.W, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W-l.Column[0].X; got != want {
 		t.Errorf("the objectives' board is %d wide, want %d", got, want)
@@ -340,15 +307,10 @@ func TestAnObjectiveMovesWithTheGrid(t *testing.T) {
 	}
 }
 
-// A search is a box along the bottom — and not a message across the middle of
-// the board, which is where a window says it is too small and nowhere a person
-// types. It takes the whole bar, and says what it is before what is in it.
 func TestTheSearchIsABoxAlongTheBottom(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	box := Searching(l)
 
-	// It shares the bar with one offer, so a search can be left with the
-	// pointer: taking the whole of it left a key as the only way out.
 	if box.Y != l.Bar.Y || box.H != l.Bar.H {
 		t.Errorf("the search box is %+v and the bar %+v", box, l.Bar)
 	}
@@ -369,7 +331,6 @@ func TestTheSearchIsABoxAlongTheBottom(t *testing.T) {
 	if into.W <= box.W/2 {
 		t.Errorf("what is typed has %d of a box %d wide: the word has taken it", into.W, box.W)
 	}
-	// Both sit on one line, in the middle of a bar taller than a line.
 	if word.Y != into.Y || word.H != lineHigh || into.H != lineHigh {
 		t.Errorf("the word is %+v and what is typed %+v: they are not on one line", word, into)
 	}
@@ -378,9 +339,6 @@ func TestTheSearchIsABoxAlongTheBottom(t *testing.T) {
 	}
 }
 
-// A panel draws what can be done along its own bottom, and each of them is a
-// place a pointer can land. Drawing a word that looks like a button and is not
-// one is worse than drawing nothing.
 func TestAPanelsOwnOffersSitAlongItsBottom(t *testing.T) {
 	box := Over(1200, 800)
 	first, second := PanelOfferAt(box, 0), PanelOfferAt(box, 1)
@@ -402,9 +360,6 @@ func TestAPanelsOwnOffersSitAlongItsBottom(t *testing.T) {
 	}
 }
 
-// A value longer than the room a one-line field has shows its end, because the
-// end is where typing is happening — and it shows it whole, wrapped onto a
-// line of its own rather than cut down to fit.
 func TestAValueTooLongForOneLineShowsItsEnd(t *testing.T) {
 	room := 20
 	long := "a value far longer than this"
@@ -418,13 +373,11 @@ func TestAValueTooLongForOneLineShowsItsEnd(t *testing.T) {
 	if shown := lines.Said[from]; !strings.HasSuffix(long, shown) {
 		t.Errorf("it shows %q, which is not the end of %q", shown, long)
 	}
-	// Nothing is lost: every line put back together is what was typed.
 	if back := strings.Join(lines.Said, " "); back != long {
 		t.Errorf("the lines came back as %q", back)
 	}
 }
 
-// Where a one-line field starts showing its end instead of its beginning.
 func TestWhereAValueStartsShowingItsEndInstead(t *testing.T) {
 	room := 20
 	exactly := strings.Repeat("a", room)
@@ -441,8 +394,6 @@ func TestWhereAValueStartsShowingItsEndInstead(t *testing.T) {
 	}
 }
 
-// How many characters a box can show, which every cut in this window is
-// reckoned from.
 func TestHowManyCharactersABoxCanShow(t *testing.T) {
 	if got := room(Box{W: padding + padding + 10*perGlyph}); got != 10 {
 		t.Errorf("a box with room for ten answered %d", got)
@@ -456,8 +407,6 @@ func TestHowManyCharactersABoxCanShow(t *testing.T) {
 	}
 }
 
-// A text too long for its box goes onto the next line rather than out of it,
-// and breaks at a space when there is one to break at.
 func TestATextTooLongForItsBoxGoesOntoTheNextLine(t *testing.T) {
 	lines := Wrapped("the quick brown fox", 9)
 	for i, line := range lines.Said {
@@ -471,12 +420,9 @@ func TestATextTooLongForItsBoxGoesOntoTheNextLine(t *testing.T) {
 	if strings.Join(strings.Fields(strings.Join(lines.Said, " ")), " ") != "the quick brown fox" {
 		t.Errorf("the words came back as %q", lines.Said)
 	}
-	// Broken at a space, so no line starts or ends inside a word that fits.
 	if strings.HasPrefix(lines.Said[1], "k ") {
 		t.Errorf("%q was broken inside a word that would have fitted", lines.Said)
 	}
-	// A word longer than the room has to break inside itself: the alternative
-	// is a line that runs out of the box, which is the thing being prevented.
 	long := Wrapped("antidisestablishmentarianism", 9)
 	if len(long.Said) < 3 {
 		t.Errorf("a word of 28 characters in room for 9 came to %d lines", len(long.Said))
@@ -486,8 +432,6 @@ func TestATextTooLongForItsBoxGoesOntoTheNextLine(t *testing.T) {
 			t.Errorf("%q is longer than the room there is", line)
 		}
 	}
-	// No room at all is one line: a box nothing fits in is not a reason to
-	// loop for ever.
 	if none := Wrapped("anything", 0); len(none.Said) != 1 || none.Said[0] != "anything" {
 		t.Errorf("with no room it came to %q", none.Said)
 	}
@@ -496,8 +440,6 @@ func TestATextTooLongForItsBoxGoesOntoTheNextLine(t *testing.T) {
 	}
 }
 
-// The caret is counted in the whole text, and has to be found on the line it
-// fell on — otherwise it is drawn on the first line whatever was typed.
 func TestWhichLineTheCaretFellOn(t *testing.T) {
 	lines := Wrapped("the quick brown fox", 9)
 	if line, column := lines.At(0); line != 0 || column != 0 {
@@ -510,7 +452,6 @@ func TestWhichLineTheCaretFellOn(t *testing.T) {
 	if column != len([]rune(lines.Said[line])) {
 		t.Errorf("the end is %d into a line of %d", column, len([]rune(lines.Said[line])))
 	}
-	// Past the end, and before the beginning, are the ends.
 	if l, c := lines.At(999); l != len(lines.Said)-1 || c != len([]rune(lines.Said[l])) {
 		t.Errorf("past the end is line %d column %d", l, c)
 	}
@@ -519,8 +460,6 @@ func TestWhichLineTheCaretFellOn(t *testing.T) {
 	}
 }
 
-// More lines than there is room for shows the ones around the caret: what is
-// being typed is what has to stay in sight.
 func TestWhichLinesAreShownWhenThereAreMoreThanFit(t *testing.T) {
 	lines := Wrapped("one two three four five six seven eight", 9)
 	if len(lines.Said) < 5 {
@@ -533,14 +472,11 @@ func TestWhichLinesAreShownWhenThereAreMoreThanFit(t *testing.T) {
 	if from := lines.Window(4, last); from != last-3 {
 		t.Errorf("with the caret on the last line, the window starts at %d and the last line is %d", from, last)
 	}
-	// Room for more lines than there are shows them all, from the first.
 	if from := lines.Window(99, last); from != 0 {
 		t.Errorf("with room for every line, the window starts at %d", from)
 	}
 }
 
-// A field is a box, the way the search is a box: the same shape wherever
-// somebody types, and room inside it that the frame does not take.
 func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 	over := Over(1200, 800)
 	_, value := FieldRow(over, FirstRow(over))
@@ -549,8 +485,6 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 	if four.H <= one.H {
 		t.Errorf("a field of four lines is %d tall and one of a single line %d", four.H, one.H)
 	}
-	// Every frame is as wide as every other, and leaves the room a bar takes
-	// at the end of the line, so a long field's bar sits beside it.
 	if one.X != value.X {
 		t.Errorf("the frame starts at %d and what it holds at %d", one.X, value.X)
 	}
@@ -567,14 +501,6 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 	}
 }
 
-// Every field of a form fits in the panel, above what the panel offers. Fields
-// grew a frame around them, and a frame is height: the last field of the
-// longest form is the one that goes off the bottom first, and going off the
-// bottom is a field somebody cannot fill in.
-//
-// Every field, and not the last: the fields are two columns, and it was the
-// parts of a task being edited — a field the test did not ask about — that
-// ran over the offers.
 func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 	many := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
 	many[len(many)-1].Value = strings.Repeat("#2 [ ] a part\n", 30)
@@ -602,8 +528,6 @@ func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 	}
 }
 
-// The history is beside what a task carries, not under it — and its box and
-// its bar both stop short of what the panel offers along its bottom.
 func TestTheHistoryHasItsOwnColumnOfThePanel(t *testing.T) {
 	for _, size := range [][2]int{{Narrowest, Shortest}, {1280, 840}, {1920, 1200}} {
 		box := Over(size[0], size[1])
@@ -636,12 +560,9 @@ func TestTheHistoryHasItsOwnColumnOfThePanel(t *testing.T) {
 	}
 }
 
-// The grip says two things at once: how tall it is, how much of the history is
-// showing; where it sits, which part of it.
 func TestTheGripSaysHowMuchIsShowingAndWhichPart(t *testing.T) {
 	track := Box{X: 100, Y: 200, W: barWide, H: 300}
 
-	// Nothing to scroll: the grip fills the track, and the bar is still there.
 	if got := Thumb(track, 5, 10, 0); got != track {
 		t.Errorf("with everything showing the grip is %+v and the track %+v", got, track)
 	}
@@ -654,7 +575,6 @@ func TestTheGripSaysHowMuchIsShowingAndWhichPart(t *testing.T) {
 		t.Errorf("a grip of %d is too small to take hold of", little.H)
 	}
 
-	// It starts at the top and reaches the bottom, and never passes it.
 	top, bottom := Thumb(track, 100, 10, 0), Thumb(track, 100, 10, 90)
 	if top.Y != track.Y {
 		t.Errorf("at the beginning the grip is at %d and the track at %d", top.Y, track.Y)
@@ -670,8 +590,6 @@ func TestTheGripSaysHowMuchIsShowingAndWhichPart(t *testing.T) {
 	}
 }
 
-// Where a point on the track falls in the history, which is what makes the bar
-// something to pull rather than something to look at.
 func TestWhereAPointOnTheBarFallsInTheHistory(t *testing.T) {
 	track := Box{X: 100, Y: 200, W: barWide, H: 300}
 	if got := Reached(track, 100, 10, Point{Y: track.Y}); got > 0 {
@@ -684,7 +602,6 @@ func TestWhereAPointOnTheBarFallsInTheHistory(t *testing.T) {
 	if middle <= 0 || middle >= 90 {
 		t.Errorf("halfway down the track is line %d", middle)
 	}
-	// A history that fits has nowhere to be pulled to.
 	if got := Reached(track, 5, 10, Point{Y: track.Y + track.H}); got != 0 {
 		t.Errorf("a history that fits was pulled to line %d", got)
 	}
@@ -693,10 +610,6 @@ func TestWhereAPointOnTheBarFallsInTheHistory(t *testing.T) {
 	}
 }
 
-// Acts are told the last first, one straight after another: each begins with
-// when it was done, which is what says where it starts. A blank line between
-// two of them read as an empty line between every line of a history whose
-// acts each fit on one.
 func TestTheHistoryIsToldTheLastActFirst(t *testing.T) {
 	acts := []string{"29 Aug  added", "30 Aug  moved column → current"}
 	lines := Told(acts, inTwelve)
@@ -709,48 +622,33 @@ func TestTheHistoryIsToldTheLastActFirst(t *testing.T) {
 	}
 }
 
-// Moving a run so that what was chosen is inside it. Written once and used by
-// the columns and by the objectives alike: it was the same arithmetic twice,
-// and the second copy is where a boundary goes wrong unnoticed.
 func TestMovingARunSoThatWhatIsChosenIsInsideIt(t *testing.T) {
-	const high, run = 10, 50 // five rows fit
-	// Already in sight: nothing moves, at either end of what is showing.
+	const high, run = 10, 50
 	for _, at := range []int{0, 4} {
 		if got := inSight(at, high, run, 0); got != 0 {
 			t.Errorf("row %d is already in sight and the run moved to %d", at, got)
 		}
 	}
-	// One past the bottom: the run moves by exactly one row and no more.
 	if got := inSight(5, high, run, 0); got != high {
 		t.Errorf("one past the bottom moved the run to %d, want %d", got, high)
 	}
-	// Far past the bottom: the row ends up against the bottom of the run.
 	if got := inSight(9, high, run, 0); got != 10*high-run {
 		t.Errorf("row 9 moved the run to %d, want %d", got, 10*high-run)
 	}
-	// Above what is showing: the row ends up against the top.
 	if got := inSight(2, high, run, 40); got != 2*high {
 		t.Errorf("row 2 from a run at 40 moved to %d, want %d", got, 2*high)
 	}
 	if got := inSight(4, high, run, 40); got != 40 {
 		t.Errorf("row 4 is the first one showing and the run moved to %d", got)
 	}
-	// A run with no room at all still answers, rather than looping or dividing
-	// by nothing: the row's top goes to the top of the run.
 	if got := inSight(3, high, 0, 0); got != 3*high {
 		t.Errorf("a run with no room answered %d", got)
 	}
-	// A run shorter than one row shows that row's top. It never happens on
-	// this board — a column is always taller than a card — but it is what the
-	// two clamps say, and what they say is worth being able to read back.
 	if got := inSight(2, high, high/2, 2*high); got != 2*high {
 		t.Errorf("a row taller than its run answered %d, want %d", got, 2*high)
 	}
 }
 
-// Where one line of a wrapped text is drawn, and which is the last one drawn.
-// Both drawings that show wrapped lines worked this out for themselves, which
-// is arithmetic inside a drawing — the one thing no assertion here can judge.
 func TestWhereEachLineOfAWrappedTextGoes(t *testing.T) {
 	inside := Box{X: 100, Y: 200, W: 300, H: 4 * lineHigh}
 
@@ -764,7 +662,6 @@ func TestWhereEachLineOfAWrappedTextGoes(t *testing.T) {
 	if second := LineAt(inside, 1, 0); second.Y != first.Y+lineHigh {
 		t.Errorf("the second line is at %d, want %d", second.Y, first.Y+lineHigh)
 	}
-	// Scrolled, the first line shown is the one at the top of the box.
 	if scrolled := LineAt(inside, 3, 3); scrolled.Y != inside.Y {
 		t.Errorf("with the fourth line first, it is at %d and the box at %d", scrolled.Y, inside.Y)
 	}
@@ -772,7 +669,6 @@ func TestWhereEachLineOfAWrappedTextGoes(t *testing.T) {
 		t.Errorf("two below the first shown is at %d", scrolled.Y)
 	}
 
-	// The last line drawn is the last there is, or the last there is room for.
 	if got := Lasting(2, 0, 4); got != 2 {
 		t.Errorf("two lines in room for four came to %d", got)
 	}
@@ -784,7 +680,6 @@ func TestWhereEachLineOfAWrappedTextGoes(t *testing.T) {
 	}
 }
 
-// Where the caret stands: on the line it fell on, after what comes before it.
 func TestWhereTheCaretStandsAmongWrappedLines(t *testing.T) {
 	inside := Box{X: 100, Y: 200, W: 300, H: 4 * lineHigh}
 
@@ -798,21 +693,17 @@ func TestWhereTheCaretStandsAmongWrappedLines(t *testing.T) {
 	if first.W != caretWide {
 		t.Errorf("the caret is %d wide, want %d", first.W, caretWide)
 	}
-	// On a later line, and on a later line of a text that has been scrolled.
 	if third := CaretAt(inside, 2, 0, 0); third.Y != inside.Y+2*lineHigh {
 		t.Errorf("on the third line the caret is at %d", third.Y)
 	}
 	if scrolled := CaretAt(inside, 5, 4, 0); scrolled.Y != inside.Y+lineHigh {
 		t.Errorf("the sixth line with the fifth first puts the caret at %d", scrolled.Y)
 	}
-	// Nothing before it puts it hard against the left of the box.
 	if none := CaretAt(inside, 0, 0, 0); none.X != inside.X {
 		t.Errorf("with nothing before it the caret is at %d", none.X)
 	}
 }
 
-// A line is broken at a space, but never at the first character of the line
-// itself: that gives an empty line, and the text never gets any shorter.
 func TestALineIsNeverBrokenAtItsOwnBeginning(t *testing.T) {
 	lines := Wrapped(" abcdefgh", 4)
 	if lines.Said[0] == "" {
@@ -823,8 +714,6 @@ func TestALineIsNeverBrokenAtItsOwnBeginning(t *testing.T) {
 	}
 }
 
-// The last line is left whole: it fits, so there is nothing to break. Broken
-// anyway, a text ending in two short words came apart for no reason.
 func TestTheLastLineIsLeftWhole(t *testing.T) {
 	lines := Wrapped("abcdefghij k l", 11)
 	if len(lines.Said) != 2 {
@@ -835,11 +724,7 @@ func TestTheLastLineIsLeftWhole(t *testing.T) {
 	}
 }
 
-// The grip's height, at the sizes the two guards around it turn on.
 func TestHowTallTheGripIs(t *testing.T) {
-	// A track shorter than the smallest grip, with everything showing: the
-	// grip is the track, not the floor. Told apart, because a grip taller than
-	// its own track is a grip drawn outside the bar.
 	if got := thumbHigh(Box{H: 10}, 5, 5); got != 10 {
 		t.Errorf("a track of 10 with everything showing has a grip of %d", got)
 	}
@@ -851,8 +736,6 @@ func TestHowTallTheGripIs(t *testing.T) {
 	}
 }
 
-// A track with exactly one point of room to move in still moves: it is the
-// boundary between a bar that can be pulled and one that cannot.
 func TestABarWithOnePointOfRoomStillMoves(t *testing.T) {
 	track := Box{X: 5, Y: 100, W: barWide, H: leastThumb + 1}
 	if got := thumbHigh(track, 100, 1); got != leastThumb {
@@ -865,18 +748,13 @@ func TestABarWithOnePointOfRoomStillMoves(t *testing.T) {
 	if bottom.Y != top.Y+1 {
 		t.Errorf("with one point of room the grip went from %d to %d", top.Y, bottom.Y)
 	}
-	// And a point at the bottom of that track reaches the end of the history.
 	if got := Reached(track, 100, 1, Point{Y: track.Y + track.H}); got <= 0 {
 		t.Errorf("the bottom of a track with one point of room is line %d", got)
 	}
 }
 
-// Where a point on the track falls, exactly. The grip is taken hold of by its
-// middle, so half of it comes off the reckoning — a half nobody pinned is a
-// grip that jumps by half its height the moment it is touched.
 func TestExactlyWhereAPointOnTheBarFalls(t *testing.T) {
 	track := Box{Y: 100, W: barWide, H: 300}
-	// A grip of 30 in a track of 300 leaves 270 to move in, over 90 lines.
 	if got := Reached(track, 100, 10, Point{Y: track.Y + 150}); got != 45 {
 		t.Errorf("halfway down the track is line %d, want 45", got)
 	}
@@ -885,8 +763,6 @@ func TestExactlyWhereAPointOnTheBarFalls(t *testing.T) {
 	}
 }
 
-// Room for one character at a time is room: it wraps rather than giving up and
-// writing the whole text on one line.
 func TestRoomForOneCharacterIsStillRoom(t *testing.T) {
 	if got := Wrapped("abc", 1); len(got.Said) != 3 {
 		t.Errorf("three characters in room for one came to %d lines: %q", len(got.Said), got.Said)
@@ -896,8 +772,6 @@ func TestRoomForOneCharacterIsStillRoom(t *testing.T) {
 	}
 }
 
-// The caret exactly at the start of a line belongs to that line and not to the
-// one before it, where it would be drawn at the far right of the wrong row.
 func TestTheCaretAtTheStartOfALineBelongsToThatLine(t *testing.T) {
 	lines := Wrapped("the quick brown fox", 9)
 	if len(lines.Said) < 2 || lines.From[1] == 0 {
@@ -910,13 +784,11 @@ func TestTheCaretAtTheStartOfALineBelongsToThatLine(t *testing.T) {
 	if column != 0 {
 		t.Errorf("it fell %d into that line, and it is at its start", column)
 	}
-	// And two characters on, it is two into that same line.
 	if line, column := lines.At(lines.From[1] + 2); line != 1 || column != 2 {
 		t.Errorf("two into the second line is line %d column %d", line, column)
 	}
 }
 
-// Which line the window of shown lines starts at, exactly.
 func TestExactlyWhereTheWindowOfShownLinesStarts(t *testing.T) {
 	ten := Lines{Said: make([]string, 10)}
 	if got := ten.Window(4, 9); got != 6 {
@@ -930,9 +802,6 @@ func TestExactlyWhereTheWindowOfShownLinesStarts(t *testing.T) {
 	}
 }
 
-// Where a tile of the work under an objective sits: down by its rank, up by
-// what has been scrolled. Nothing else pinned this, and every sum in it
-// survived being changed.
 func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -965,9 +834,6 @@ func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 	}
 }
 
-// A line break is a line break. Wrapping answered the width and nothing else,
-// so a description written in paragraphs was drawn as one run of words — and
-// there was no way to write one anyway, since enter saves a form.
 func TestWrapped_breaksWhereTheTextDoes(t *testing.T) {
 	lines := Wrapped("Deux colonnes\net une bande", 40)
 	if len(lines.Said) != 2 {
@@ -976,31 +842,22 @@ func TestWrapped_breaksWhereTheTextDoes(t *testing.T) {
 	if lines.Said[0] != "Deux colonnes" || lines.Said[1] != "et une bande" {
 		t.Errorf("wrapped to %q", lines.Said)
 	}
-	// An empty line between two paragraphs is a line, and reads as the space
-	// somebody left there.
 	if got := Wrapped("un\n\ndeux", 40); len(got.Said) != 3 || got.Said[1] != "" {
 		t.Errorf("a blank line between paragraphs came back as %q", got.Said)
 	}
-	// A text that begins with a break begins with an empty line: the break is
-	// at the very first place, which is a place like any other.
 	if got := Wrapped("\nun", 40); len(got.Said) != 2 || got.Said[0] != "" || got.Said[1] != "un" {
 		t.Errorf("a text beginning with a break came back as %q", got.Said)
 	}
-	// And a paragraph longer than the room still wraps inside itself.
 	if got := Wrapped("un deux trois quatre\ncinq", 10); len(got.Said) < 3 {
 		t.Errorf("a long paragraph did not wrap: %q", got.Said)
 	}
 }
 
-// Which characters of each line a held run covers. A run over several lines
-// covers all of the middle ones and part of the two ends; a line outside it
-// carries none of it and says so.
 func TestHeldOn_coversTheLinesItCrosses(t *testing.T) {
 	lines := Wrapped("un deux\ntrois quatre\ncinq six", 40)
 	if len(lines.Said) != 3 {
 		t.Fatalf("wrapped to %q", lines.Said)
 	}
-	// "deux\ntrois" — the end of the first line and the start of the second.
 	for _, c := range []struct {
 		what   string
 		line   int
@@ -1018,15 +875,11 @@ func TestHeldOn_coversTheLinesItCrosses(t *testing.T) {
 				c.what, a, b, on, c.wantA, c.wantB, c.wantOn)
 		}
 	}
-	// A run of no length covers nothing, on the line it sits in.
 	if _, _, on := HeldOn(lines, 4, 4, 0); on {
 		t.Error("a run of no length was said to cover a line")
 	}
 }
 
-// A panel's own offers are as easy to hit as the bar's. They were eighteen
-// points tall against the bar's thirty-two — so Delete and Cancel, on the one
-// screen that asks before losing work, were the smallest targets drawn.
 func TestAPanelsOffersAreAsEasyToHitAsTheBars(t *testing.T) {
 	box := Over(1200, 800)
 	offer := PanelOfferAt(box, 0)
@@ -1034,14 +887,11 @@ func TestAPanelsOffersAreAsEasyToHitAsTheBars(t *testing.T) {
 	if offer.H < bar.H {
 		t.Errorf("a panel's offer is %d tall and the bar's is %d", offer.H, bar.H)
 	}
-	// And it still sits inside the panel it belongs to.
 	if offer.Y+offer.H > box.Y+box.H {
 		t.Errorf("the offer runs to %d and the panel ends at %d", offer.Y+offer.H, box.Y+box.H)
 	}
 }
 
-// A tile has as much room under its words as over them. It had four points
-// above and none below: the text finished exactly on the panel's edge.
 func TestATileBreathesOnBothSides(t *testing.T) {
 	tile := Box{X: 0, Y: 100, W: 400, H: SubHeight}
 	panel, writing := SubPanel(tile), SubWriting(tile)
@@ -1055,8 +905,6 @@ func TestATileBreathesOnBothSides(t *testing.T) {
 	}
 }
 
-// A form reads from the top: the title, the description, the fields grouped a
-// section to a row, then the parts. The fields of one section share a line.
 func TestAFormReadsTitleDescriptionSectionsThenParts(t *testing.T) {
 	over := Over(1200, 800)
 	fields := engine.EditFields(engine.Card{Number: 1}, nil)
@@ -1085,9 +933,6 @@ func TestAFormReadsTitleDescriptionSectionsThenParts(t *testing.T) {
 	}
 }
 
-// The description is given a line for each it says, four at the least and ten
-// at the most; the parts a line for each tile and one to add another, three at
-// the least. Neither is given room it has nothing to put in.
 func TestTheLongFieldsOfAFormAreAsTallAsWhatTheyHold(t *testing.T) {
 	over := Over(1200, 900)
 	rowsOf := func(description, parts string) (int, int) {
@@ -1115,25 +960,18 @@ func TestTheLongFieldsOfAFormAreAsTallAsWhatTheyHold(t *testing.T) {
 	}
 }
 
-// The most instructive refusal the product has — "it is still blocked, by #3
-// … take them away first" — was drawn on one line of bar, at the smallest size
-// in the window, and cut off just before the instruction.
 func TestAnErrorHasRoomForMoreThanTheBar(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	wrong := WrongBox(l)
 	if wrong.H < 2*lineHigh {
 		t.Errorf("an error gets %d, which is less than two lines", wrong.H)
 	}
-	// It ends where the bar begins: the bar is still there under it, offering.
 	if wrong.Y+wrong.H != l.Bar.Y {
 		t.Errorf("an error does not end where the bar begins: %d against %d",
 			wrong.Y+wrong.H, l.Bar.Y)
 	}
 }
 
-// The history was thirty lines of the faintest ink in the window — a thing to
-// read written in the ink reserved for metadata. The time stays faint; what was
-// done is read.
 func TestAHistoryLineIsSplitFromItsTimestamp(t *testing.T) {
 	stamp, rest, ok := Stamped("2026-10-01 09:00  changed  title  — → Write the spec")
 	if !ok {
@@ -1150,13 +988,7 @@ func TestAHistoryLineIsSplitFromItsTimestamp(t *testing.T) {
 	}
 }
 
-// One field to the next, and one line of a panel to the next, are the same
-// step. Pinned, because a window spacing the same text at two rhythms reads as
-// two pieces of software and nothing else would notice.
 func TestOneFieldToTheNextIsOneStep(t *testing.T) {
-	// Written as numbers and not as the sum they come from: an expression
-	// repeated on both sides of a comparison agrees with itself however it is
-	// mutated, and says nothing at all.
 	if one := lineHigh + inset + inset + between; one != 32 {
 		t.Fatalf("a one-line field takes %d, want 32", one)
 	}
@@ -1165,9 +997,6 @@ func TestOneFieldToTheNextIsOneStep(t *testing.T) {
 	}
 }
 
-// The labels get what the facts beside them leave. Worked out here and not in
-// the drawing, for the reason this file opens with: arithmetic inside a drawing
-// is arithmetic no assertion can judge.
 func TestTheLabelsGetWhatTheFactsLeave(t *testing.T) {
 	labels := Box{X: 10, Y: 0, W: 200, H: lineHigh}
 	if got := LabelsRoom(labels, ""); got != labels.W {
@@ -1183,7 +1012,6 @@ func TestTheLabelsGetWhatTheFactsLeave(t *testing.T) {
 	}
 }
 
-// Where what was done is written, once the time it happened has taken its room.
 func TestWhatWasDoneIsWrittenPastTheTime(t *testing.T) {
 	if got := StampedOver("2026-10-01T09:00:00Z"); got != 154 {
 		t.Fatalf("a timestamp of twenty characters takes %d, want 154", got)
@@ -1193,8 +1021,6 @@ func TestWhatWasDoneIsWrittenPastTheTime(t *testing.T) {
 	}
 }
 
-// Where what was done is written, as a box: past the time it happened, and no
-// wider than what is left of the line.
 func TestWhatWasDoneIsBoxedPastTheTime(t *testing.T) {
 	box := Box{X: 100, Y: 0, W: 400, H: lineHigh}
 	got := PastStamp(box, "2026-10-01T09:00:00Z")
@@ -1209,10 +1035,6 @@ func TestWhatWasDoneIsBoxedPastTheTime(t *testing.T) {
 	}
 }
 
-// A text ending in a line break has a line for the caret to stand on. Without
-// one the caret stayed drawn at the end of the line above, and only moved down
-// once something had been typed on the new line — so ⇧⏎ looked as though it had
-// done nothing at all.
 func TestATextEndingInABreakKeepsALineForTheCaret(t *testing.T) {
 	lines := Wrapped("abc\n", 20)
 	if len(lines.Said) != 2 {
@@ -1224,19 +1046,14 @@ func TestATextEndingInABreakKeepsALineForTheCaret(t *testing.T) {
 	if line, column := lines.At(4); line != 1 || column != 0 {
 		t.Fatalf("the caret falls on line %d column %d, want the new line", line, column)
 	}
-	// And a break on its own is two lines, both empty.
 	if only := Wrapped("\n", 20); len(only.Said) != 2 {
 		t.Fatalf("a break on its own came back as %q", only.Said)
 	}
-	// A text that does not end in one is unchanged.
 	if plain := Wrapped("abc", 20); len(plain.Said) != 1 {
 		t.Fatalf("a text with no break came back as %q", plain.Said)
 	}
 }
 
-// Where a field's text starts in sight. A field with a caret and no scroll of
-// its own follows the caret; a long field the wheel has moved shows what the
-// wheel left — the same on the detail and in the form.
 func TestWhereAFieldsTextStartsInSight(t *testing.T) {
 	lines := Wrapped("un\ndeux\ntrois\nquatre\ncinq\nsix", 40)
 	if got := StartsAt(lines, 3, 5, Follow); got != 3 {
@@ -1247,9 +1064,6 @@ func TestWhereAFieldsTextStartsInSight(t *testing.T) {
 	}
 }
 
-// A part says whether it is done by a box ticked or not, before its name — a
-// shape, read without comparing two greys. The box sits where the line used to
-// begin, and the line begins after it.
 func TestAPartCarriesABoxBeforeItsName(t *testing.T) {
 	tile := Box{X: 100, Y: 200, W: 400, H: SubHeight}
 	check, line := SubCheck(tile), SubWriting(tile)
@@ -1269,9 +1083,6 @@ func TestAPartCarriesABoxBeforeItsName(t *testing.T) {
 	}
 }
 
-// What is left is written in the ink that is read, and what is done in the
-// faint one, struck through. It was the other way round, and the brightness
-// was the only difference: a part to do read as one finished with.
 func TestWhatIsLeftIsWrittenToBeRead(t *testing.T) {
 	skin := Dark()
 	if got := SubInk(skin, engine.Card{State: "todo"}); got != skin.Ink {
@@ -1282,9 +1093,6 @@ func TestWhatIsLeftIsWrittenToBeRead(t *testing.T) {
 	}
 }
 
-// Where the tick is written inside a filled box. Pinned to the point: a tick a
-// point too high reads as a mark sitting on the box rather than in it, and
-// nothing but a number held here would notice it moving.
 func TestTheTickSitsInItsBox(t *testing.T) {
 	check := Box{X: 100, Y: 200, W: checkSide, H: checkSide}
 	if got, want := TickAt(check), (Box{X: 100, Y: 199, W: checkSide + 2, H: lineHigh}); got != want {
@@ -1292,9 +1100,6 @@ func TestTheTickSitsInItsBox(t *testing.T) {
 	}
 }
 
-// Where the line through a part done is drawn: across its middle, from where
-// its name begins and as long as the name is. Pinned to the point, for the
-// reason this file opens with.
 func TestTheLineThroughAPartDoneCrossesItsMiddle(t *testing.T) {
 	line := Box{X: 132, Y: 202, W: 356, H: lineHigh}
 	if got, want := StruckAt(line, 90), (Box{X: 132, Y: 211, W: 90, H: 1}); got != want {
@@ -1302,8 +1107,6 @@ func TestTheLineThroughAPartDoneCrossesItsMiddle(t *testing.T) {
 	}
 }
 
-// The place an open task names sits at its foot past every offer it can make,
-// and inside the panel: beside the buttons, never under one.
 func TestTheContextLineSitsBesideTheOffers(t *testing.T) {
 	box := Over(1200, 800)
 	name, path := ContextName(box), ContextPath(box)
@@ -1316,9 +1119,6 @@ func TestTheContextLineSitsBesideTheOffers(t *testing.T) {
 	}
 }
 
-// In the smallest window, every part of a task being edited is drawn before
-// its description is given more than its fewest lines: a part out of sight is
-// a part nobody ticks, and a paragraph is read just as well by scrolling.
 func TestThePartsAreGivenTheirRoomBeforeTheDescriptionGrows(t *testing.T) {
 	over := Over(Narrowest, Shortest)
 	fields := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
@@ -1334,9 +1134,6 @@ func TestThePartsAreGivenTheirRoomBeforeTheDescriptionGrows(t *testing.T) {
 	}
 }
 
-// A form's panel is as tall as what it holds, up to the panel every other
-// screen uses: on a tall window it stops under the parts, rather than under a
-// floor of empty ground, and every field stays where the taller panel put it.
 func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
 	fields := engine.EditFields(engine.Card{Number: 1}, nil)
 	at := len(fields) - 1
@@ -1355,8 +1152,6 @@ func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
 			t.Errorf("%q moved when the panel shrank", fields[i].Name)
 		}
 	}
-	// And a form that wants more than the panel has takes all of it, but for
-	// less than a line: rows are whole.
 	fields[1].Value = strings.Repeat("a line\n", 40)
 	fields[at].Value = strings.Repeat("#2 [ ] a part\n", 30)
 	if got, whole := FormOver(Narrowest, Shortest, fields), Over(Narrowest, Shortest); got.H > whole.H || whole.H-got.H >= lineHigh {
@@ -1364,7 +1159,6 @@ func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
 	}
 }
 
-// The title is written as large as a panel's heading, and nothing else is.
 func TestOnlyTheTitleOfAFormIsWrittenLarge(t *testing.T) {
 	for _, field := range engine.EditFields(engine.Card{Number: 1}, nil) {
 		want := reads
@@ -1377,9 +1171,6 @@ func TestOnlyTheTitleOfAFormIsWrittenLarge(t *testing.T) {
 	}
 }
 
-// A form that wants more room than its panel has fills it: what it lays out
-// ends less than a line short of the rule, whatever the panel and whichever
-// form. A row counted too many or too few takes a line from it.
 func TestAFormThatWantsMoreThanItHasFillsItsPanel(t *testing.T) {
 	goal := engine.GoalFields(engine.Goal{Description: strings.Repeat("a line\n", 40)})
 	task := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
@@ -1402,7 +1193,6 @@ func TestAFormThatWantsMoreThanItHasFillsItsPanel(t *testing.T) {
 	}
 }
 
-// A form with no long field at all is laid out all the same.
 func TestAFormWithNoLongFieldIsLaidOut(t *testing.T) {
 	fields := []engine.Field{{Name: "title", Arg: "title"}, {Name: "column", Arg: "state"}}
 	over := Over(1200, 800)
@@ -1413,9 +1203,6 @@ func TestAFormWithNoLongFieldIsLaidOut(t *testing.T) {
 	}
 }
 
-// The parts drawn as tiles: one under the other from the top of the frame,
-// as many as fit above the line that says another is added, and that line
-// under the last of them — inside the frame, however many parts there are.
 func TestTheTicksAreAsManyAsTheFrameHolds(t *testing.T) {
 	frame := Box{X: 100, Y: 200, W: 400, H: 8 + 6*lineHigh}
 	inside := Inside(frame)
@@ -1436,18 +1223,12 @@ func TestTheTicksAreAsManyAsTheFrameHolds(t *testing.T) {
 	}
 }
 
-// What a long field of a form takes besides its rows is its name, the gap under
-// it, the room its frame keeps and the gap after it: the number is written out,
-// and this is the sum it stands for.
 func TestALongFieldTakesItsNameItsFrameAndAGap(t *testing.T) {
 	if want := lineHigh + between + inset + inset + padding; longHigh != want {
 		t.Errorf("a long field takes %d besides its rows, and its parts come to %d", longHigh, want)
 	}
 }
 
-// narrow is a face in which an i is three wide and anything else nine: far
-// enough from the reckoning that a text wrapped by one is not wrapped by the
-// other.
 func narrow(line string, _ int) []int {
 	edges := []int{0}
 	for _, r := range line {
@@ -1460,9 +1241,6 @@ func narrow(line string, _ int) []int {
 	return edges
 }
 
-// A line is broken where the face it is written in runs out of room, not where
-// a reckoned number of characters does: eight i's and a space are narrower
-// than three W's, and a word wider than the room is broken inside itself.
 func TestALineIsBrokenWhereItsFaceRunsOut(t *testing.T) {
 	m := Measure(narrow)
 	for _, c := range []struct {
@@ -1483,12 +1261,8 @@ func TestALineIsBrokenWhereItsFaceRunsOut(t *testing.T) {
 	}
 }
 
-// inTwelve wraps a text in twelve characters, which is what a history is told
-// in by the tests that count its lines.
 func inTwelve(said string) Lines { return Wrapped(said, 12) }
 
-// A text in a box is wrapped in the box's width less the padding either side
-// of its words — the one rule for every text a box holds.
 func TestATextInABoxIsWrappedInsideItsPadding(t *testing.T) {
 	got := wrapIn(Measure(characters), "abc def", Box{W: padding + 3 + padding}, reads)
 	if !slices.Equal(got.Said, []string{"abc", "def"}) {
@@ -1496,10 +1270,6 @@ func TestATextInABoxIsWrappedInsideItsPadding(t *testing.T) {
 	}
 }
 
-// Every short field of a form keeps room to read what it holds, in the
-// narrowest column a form is laid out in: a section with more fields than its
-// row has room for goes on over a second row, under the same head. Three to a
-// row in the left column of an opened task left a column four letters wide.
 func TestEveryShortFieldOfAFormHasRoomToBeRead(t *testing.T) {
 	for _, box := range []Box{FormFields(Over(Narrowest, Shortest)), Over(Narrowest, Shortest), FormFields(Over(1920, 1200))} {
 		fields := engine.EditFields(engine.Card{Number: 1}, nil)
@@ -1517,8 +1287,6 @@ func TestEveryShortFieldOfAFormHasRoomToBeRead(t *testing.T) {
 	}
 }
 
-// How many short fields a line of a form holds: as many as leave each its
-// name and the least a box is given, and one at the least.
 func TestHowManyShortFieldsALineHolds(t *testing.T) {
 	two := sectionWide - padding + 2*(formNamed+formValueFewest+padding)
 	for _, c := range []struct{ full, want int }{{0, 1}, {two - 1, 1}, {two, 2}, {two + formNamed + formValueFewest + padding, 3}} {
@@ -1528,8 +1296,6 @@ func TestHowManyShortFieldsALineHolds(t *testing.T) {
 	}
 }
 
-// The rows of two long fields: the first keeps its fewest while the second can
-// keep its own, and gives way to it where it cannot.
 func TestTheDescriptionGivesWayToThePartsFewest(t *testing.T) {
 	wanted := map[int]int{0: 10, 1: 10}
 	for _, c := range []struct{ room, said, listed int }{{8, 4, 4}, {5, 2, 3}} {
@@ -1540,9 +1306,6 @@ func TestTheDescriptionGivesWayToThePartsFewest(t *testing.T) {
 	}
 }
 
-// In the smallest window, a task with many parts still shows one of them and
-// the line that adds: the description gives way down to a line for it, since
-// a list nothing of which is in sight is a list nobody can work.
 func TestThePartsKeepALineInTheSmallestWindow(t *testing.T) {
 	for _, box := range []Box{Over(Narrowest, Shortest), FormFields(Over(Narrowest, Shortest))} {
 		fields := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
@@ -1555,8 +1318,6 @@ func TestThePartsKeepALineInTheSmallestWindow(t *testing.T) {
 	}
 }
 
-// In a room narrower than one character, every character is a line of its
-// own, the last one included, and nothing is read past the end of the text.
 func TestARoomNarrowerThanOneCharacterTakesOneAtATime(t *testing.T) {
 	got := Measure(narrow).Wrapped("WW", 5, reads)
 	if !slices.Equal(got.Said, []string{"W", "W"}) {

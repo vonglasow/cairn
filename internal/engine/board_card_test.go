@@ -14,12 +14,8 @@ import (
 	"cairn/internal/domain"
 )
 
-// today is the day these tests are read from, so "in two days" is a fact and
-// not a moving target.
 var today = time.Date(2026, 9, 1, 15, 30, 0, 0, time.UTC)
 
-// on reads a day the way the domain writes one, rather than through a layout
-// kept here: a second layout is a second thing to keep true.
 func on(day string) time.Time {
 	parsed, err := domain.ParseDeadline(day)
 	if err != nil {
@@ -64,9 +60,6 @@ func TestDeadline(t *testing.T) {
 	}
 }
 
-// A task that is done is wanted on no day any more: its deadline is not
-// counted down, nor drawn as late, on either board. Any other column still
-// counts it.
 func TestCardDeadline_saysNothingOnceTheTaskIsDone(t *testing.T) {
 	gone := on("2026-08-29")
 	if text, show, late := CardDeadline(Card{State: "done", Deadline: gone}, today); text != "" || show || late {
@@ -80,8 +73,6 @@ func TestCardDeadline_saysNothingOnceTheTaskIsDone(t *testing.T) {
 }
 
 func TestDeadlineIgnoresTheTimeOfDay(t *testing.T) {
-	// The answer to "how many days" must not depend on what o'clock it is when
-	// the board is opened.
 	morning := time.Date(2026, 9, 1, 0, 1, 0, 0, time.UTC)
 	evening := time.Date(2026, 9, 1, 23, 59, 0, 0, time.UTC)
 	first, _, _ := Deadline(on("2026-09-03"), morning)
@@ -91,9 +82,6 @@ func TestDeadlineIgnoresTheTimeOfDay(t *testing.T) {
 	}
 }
 
-// Serving is the work under one objective, taken from the listing both boards
-// already hold. No question of its own: the snapshot carries what each task
-// serves, and asking again could answer differently.
 func TestServing_isTheWorkUnderOneObjective(t *testing.T) {
 	cards := []Card{
 		{Number: 1, Title: "Write the spec", Objectives: []int{1}},
@@ -119,9 +107,6 @@ func cardTitles(cards []Card) []string {
 	return said
 }
 
-// Hanging is the work under one task, read from the listing both boards
-// already hold — the same shape as Serving, asked of a parent instead of an
-// objective, because it is the same question put to a different thing.
 func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
 	cards := []Card{
 		{Number: 1, Title: "Ship it"},
@@ -138,15 +123,11 @@ func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
 	if under := Hanging(cards, 2); len(under) != 0 {
 		t.Errorf("Hanging(2) = %v, want nothing under a task nothing hangs under", cardTitles(under))
 	}
-	// Not the root tasks: they hang under nothing, and nothing is not a task.
 	if under := Hanging(cards, 0); len(under) != 0 {
 		t.Errorf("Hanging(0) = %v, want nothing — no task is numbered nought", cardTitles(under))
 	}
 }
 
-// A card is reached by what the engine says a search looks in, and by nothing
-// a board decides for itself: the boards and the command line once kept three
-// copies of one rule, and they drifted.
 func TestACardIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
 	c := Card{Number: 12, Title: "Write the spec", Said: []string{"backend", "high"}}
 	for _, typed := range []string{"backend", "BACKEND high"} {
@@ -159,8 +140,6 @@ func TestACardIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
 	}
 }
 
-// Whether a part of the work is done. Both boards ask it and the answer is one
-// word of the domain's, so it is not each board's to spell.
 func TestFinished_isWhatDoneMeansOnACard(t *testing.T) {
 	for _, tc := range []struct {
 		state string
@@ -177,9 +156,6 @@ func TestFinished_isWhatDoneMeansOnACard(t *testing.T) {
 	}
 }
 
-// What hangs under a task comes what is left first and what is done after, in
-// the order it was put in inside each: what is left is what is looked for, and
-// a done part mixed in among them is a part read as one still to do.
 func TestWhatHangsUnderATaskComesWhatIsLeftFirst(t *testing.T) {
 	cards := []Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
@@ -206,8 +182,6 @@ func TestWhatHangsUnderATaskComesWhatIsLeftFirst(t *testing.T) {
 	}
 }
 
-// What was kept before cairn refused escapes reaches a board shown, never
-// obeyed: the terminal board draws these strings straight to the screen.
 func TestCardOf_showsWhatATerminalWouldObey(t *testing.T) {
 	var told task.AsTold
 	told.Numbered(1)
@@ -227,7 +201,6 @@ func TestCardOf_showsWhatATerminalWouldObey(t *testing.T) {
 	}
 }
 
-// A line of history read before the refusals is shown the same way.
 func TestSaidOf_showsWhatATerminalWouldObey(t *testing.T) {
 	var a trace.AsTold
 	a.On(1)

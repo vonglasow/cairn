@@ -78,9 +78,6 @@ func TestText_showsHowFarAlongItIs(t *testing.T) {
 	}
 }
 
-// TestText_countsSubTasksApartFromTasks pins that the sub-tasks tally is
-// only said when there are sub-tasks to say it about — the mirror of what
-// TestText_showsHowFarAlongItIs pins for tasks.
 func TestText_countsSubTasksApartFromTasks(t *testing.T) {
 	got := Text(plan(t), domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 2}})
 	if !strings.Contains(got, "2 of 4 sub-tasks are done") {
@@ -125,8 +122,6 @@ func TestServing_listsTheLinesItIsGiven(t *testing.T) {
 	}
 }
 
-// A listing of objectives said only a number and a title: whether one was
-// reached, abandoned or still running was not in it.
 func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
 	var a AsTold
 	a.Numbered(3)

@@ -1,7 +1,4 @@
-// Package objective holds the objective: what it carries, the rules that
-// keep it valid, and the membrane anything uses to read or build one. It
-// knows only domain, for the attributes an objective carries and the title
-// rule it shares with a task.
+// Package objective holds the objective: what it carries, the rules that keep it valid, and the membrane anything uses to read or build one.
 package objective
 
 import (
@@ -13,27 +10,16 @@ import (
 	"cairn/internal/domain"
 )
 
-// ErrNotAnObjectiveState is returned when something that is not one of the
-// four is offered as an objective's state. It is kept apart from
-// domain.ErrNotAState on purpose: both are called a state, but a task's is a
-// column it sits in and an objective's is not, so the two sets never overlap.
-// A parser shared between them would accept "todo" for an objective without a
-// word.
+// ErrNotAnObjectiveState is returned when something that is not one of the four is offered as an objective's state.
 var ErrNotAnObjectiveState = errors.New("not one of the objective states")
 
-// State is where an objective stands. There are four, and nothing else is
-// one. It is a type of its own rather than a domain.State: they share the
-// word because that is what both are called, but a task's state is a column
-// it gets moved between and an objective's is not, so neither set of values
-// is ever valid for the other.
+// State is where an objective stands.
 type State string
 
-// ObjectiveStates holds the four states, in the order they are declared
-// above. It is what ParseObjectiveState consults, so the two cannot say
-// different things.
+// ObjectiveStates holds the four states, in the order they are declared above.
 var ObjectiveStates = []State{Active, OnHold, Reached, Dropped}
 
-// The four states an objective can be in. One with none stated is active.
+// The four states an objective can be in.
 const (
 	Active  State = "active"
 	OnHold  State = "on-hold"
@@ -41,14 +27,10 @@ const (
 	Dropped State = "dropped"
 )
 
-// ErrObjectiveCarriesTasks is returned when an objective serving tasks is
-// asked to be deleted. What serves it would be left pointing at a number
-// nothing carries, and a deletion that takes more than the number typed is a
-// deletion nobody asked for.
+// ErrObjectiveCarriesTasks is returned when an objective serving tasks is asked to be deleted.
 var ErrObjectiveCarriesTasks = errors.New("the objective carries tasks")
 
-// MayDelete says whether the objective carrying number may be deleted, given
-// how many tasks serve it.
+// MayDelete says whether the objective carrying number may be deleted, given how many tasks serve it.
 func MayDelete(number int, serving int) error {
 	if serving > 0 {
 		return fmt.Errorf("objective %d: %w", number, ErrObjectiveCarriesTasks)
@@ -56,11 +38,7 @@ func MayDelete(number int, serving int) error {
 	return nil
 }
 
-// Objective is something worth doing, that tasks are put under. It carries a
-// title and a number, and shares every other attribute's type with a task —
-// but not its struct: the six fields they have in common say the same thing
-// about two different things, and folding them together would make every
-// future field of one a field of the other.
+// Objective is something worth doing, that tasks are put under.
 type Objective struct {
 	number      int
 	title       string
@@ -72,14 +50,7 @@ type Objective struct {
 	estimate    time.Duration
 }
 
-// Told is the membrane of an objective: one method per fact it has to tell,
-// absence included. Whoever wants to know something about an objective
-// implements this and is told it; nothing reads an objective's insides, and
-// an objective knows none of them.
-//
-// It carries fewer methods than the task's Told: an objective has no column,
-// no parent, no objective it serves, nothing in its way, no time spent and is
-// never taken off the board, so there is nothing to tell about any of those.
+// Told is the membrane of an objective: one method per fact it has to tell, absence included.
 type Told interface {
 	Numbered(int)
 	Titled(string)
@@ -96,8 +67,7 @@ type Told interface {
 	NotEstimated()
 }
 
-// Tell says every fact this objective carries to the given membrane, absence
-// included, in the order a card lays them out.
+// Tell says every fact this objective carries to the given membrane, absence included, in the order a card lays them out.
 func (o Objective) Tell(to Told) {
 	to.Numbered(o.number)
 	to.Titled(o.title)
@@ -109,15 +79,7 @@ func (o Objective) Tell(to Told) {
 	domain.TellOrNot(o.estimate, to.Estimated, to.NotEstimated)
 }
 
-// AsTold builds an objective from what it is told. It is the same membrane
-// the other way round: whoever has an objective's facts — a row out of the
-// store — tells them, and is handed the objective they make. Nothing has to
-// reach inside an objective to put one together, which is what lets an
-// objective keep its insides to itself.
-//
-// Labels are trusted rather than re-parsed: whoever tells AsTold a label is
-// retelling one an objective already carried, made lower case, deduplicated
-// and sorted once already on the way into the store.
+// AsTold builds an objective from what it is told.
 type AsTold struct {
 	objective Objective
 	labels    []string
@@ -165,8 +127,7 @@ func (a *AsTold) NotEstimated() { a.objective.estimate = 0 }
 // Objective hands back the objective AsTold was told to build.
 func (a *AsTold) Objective() Objective { return a.objective }
 
-// NewObjective builds an objective from a title, refusing one that carries no
-// text. What surrounds the title is not part of it; what sits inside it is.
+// NewObjective builds an objective from a title, refusing one that carries no text.
 func NewObjective(raw string) (Objective, error) {
 	title, err := domain.Title("an objective", raw)
 	if err != nil {
@@ -176,8 +137,6 @@ func NewObjective(raw string) (Objective, error) {
 }
 
 // ParseObjectiveState reads the name of a state an objective can be in.
-// Nothing given returns active, which is where an objective starts and what
-// clearing the state returns to.
 func ParseObjectiveState(name string) (State, error) {
 	if name == "" {
 		return Active, nil

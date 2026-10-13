@@ -1,8 +1,4 @@
 Feature: Version
-  A binary must be able to say what it is: which build, from which commit, made
-  when, on what. Stamps come from the linker, the commit date from the VCS
-  information Go embeds on its own, and the toolchain and platform from the
-  runtime — so a binary built with nothing at all still tells the truth.
 
   @version-degraded
   Scenario: a binary built without stamps degrades cleanly
@@ -39,9 +35,6 @@ Feature: Version
 
   @version-brew-formula
   Scenario: the archive comes with a Homebrew formula that builds it
-    Homebrew installs from a tap, and a tap needs a formula: one naming the
-    archive, its checksum and how to build it. Made with the archive, it can
-    never name another.
     Given the source archive of this repository made as version "v9.9.9"
     Then beside the archive is a Homebrew formula for version "9.9.9"
     And the formula names the archive's checksum
@@ -54,9 +47,6 @@ Feature: Version
 
   @version-install-reads-anywhere
   Scenario: the archive's install guide reads the same in any tool, on any system
-    The guide is read before anything is installed, in whatever the machine
-    has — on Windows, a tool that takes a file with no mark of its encoding for
-    the system's own code page, and wrote every dash as "â€”".
     Given the source archive of this repository made as version "v9.9.9"
     When I unpack it somewhere git has never been
     Then the archive's install guide is written in ASCII alone

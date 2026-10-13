@@ -8,8 +8,6 @@ import (
 	"testing"
 )
 
-// The marketplace written names the plugin as the plugin names itself, and
-// points at the folder the plugin is written in.
 func TestWrite_makesAMarketplaceOfThePlugin(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "plugins")
 	if err := Write(dir, "1.2.3"); err != nil {
@@ -51,9 +49,6 @@ func TestWrite_makesAMarketplaceOfThePlugin(t *testing.T) {
 	}
 }
 
-// A folder holding anything but a marketplace cairn wrote is never written
-// into: writing again clears the plugin it wrote before, and a folder named by
-// mistake — a home, a project — would lose what it held.
 func TestWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "precious.txt"), []byte("mine"), 0o600); err != nil {
@@ -67,8 +62,6 @@ func TestWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	}
 }
 
-// An empty folder is a folder nobody would lose anything in, and one cairn
-// wrote before is written again — without what an older cairn put there.
 func TestWrite_writesAnEmptyFolderOrItsOwnAgain(t *testing.T) {
 	dir := t.TempDir()
 	if err := Write(dir, "1.2.3"); err != nil {
@@ -86,7 +79,6 @@ func TestWrite_writesAnEmptyFolderOrItsOwnAgain(t *testing.T) {
 	}
 }
 
-// What cannot be written says so rather than leaving half a plugin silently.
 func TestWrite_saysWhatCannotBeWritten(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "a file")
 	if err := os.WriteFile(file, nil, 0o600); err != nil {
@@ -97,8 +89,6 @@ func TestWrite_saysWhatCannotBeWritten(t *testing.T) {
 	}
 }
 
-// A marketplace somebody else wrote, or one that cannot be read, is not the
-// plugin's folder either.
 func TestWrite_refusesAMarketplaceThatIsNotItsOwn(t *testing.T) {
 	for _, held := range []string{`{"name": "another"}`, `not json`} {
 		dir := t.TempDir()
@@ -114,9 +104,6 @@ func TestWrite_refusesAMarketplaceThatIsNotItsOwn(t *testing.T) {
 	}
 }
 
-// A folder that will not take what is written says so, at each step: the
-// plugin written before that cannot be cleared, the marketplace that cannot be
-// written, the plugin's folders that cannot be made.
 func TestWrite_saysWhichStepCouldNotBeWritten(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("permissions do not stop the superuser")
@@ -163,9 +150,6 @@ func TestWrite_saysWhichStepCouldNotBeWritten(t *testing.T) {
 	}
 }
 
-// The plugin written carries the version of the cairn that wrote it, and so
-// does the marketplace offering it: Claude Code reads it to tell an update
-// from what it already has, and warned of a plugin with none.
 func TestWrite_saysTheVersionOfTheCairnThatWroteIt(t *testing.T) {
 	dir := t.TempDir()
 	if err := Write(dir, "4.5.6"); err != nil {
@@ -190,7 +174,6 @@ func TestWrite_saysTheVersionOfTheCairnThatWroteIt(t *testing.T) {
 	}
 }
 
-// read decodes a JSON file the plugin wrote.
 func read(t *testing.T, path string, into any) {
 	t.Helper()
 	held, err := os.ReadFile(path)

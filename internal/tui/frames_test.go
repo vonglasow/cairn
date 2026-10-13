@@ -12,15 +12,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// The frames, pinned to the character. Nothing else can hold a drawing
-// honestly: a width off by one, a gap that moved, a column that lost its
-// header — none of it shows up in a test that only looks for a word, and all of
-// it shows up here. Run with -update to write the files again after a change
-// that was meant.
-//
-// What is stored is the screen with the styling taken off, because a colour is
-// checked where it is decided and a frame is checked where it is drawn.
-
 var update = os.Getenv("UPDATE_FRAMES") != ""
 
 func fullBoard() *fake {
@@ -45,8 +36,6 @@ func fullBoard() *fake {
 		{Number: 2, Title: "Cut the onboarding time in half", State: "on-hold", Priority: "normal", Done: 1, Total: 8},
 	}
 	f.focus = []int{6}
-	// A life, so the history panel has something in it, and enough of one that
-	// it has to scroll.
 	for i := range 40 {
 		var told trace.AsTold
 		told.On(4)
@@ -60,8 +49,6 @@ func fullBoard() *fake {
 	return f
 }
 
-// crowded is a board with more in it than the window can hold, so what scrolls
-// has something to scroll.
 func crowded() *fake {
 	f := newFake()
 	for i := 1; i <= 12; i++ {
@@ -73,22 +60,13 @@ func crowded() *fake {
 	for i := 1; i <= 9; i++ {
 		f.goals = append(f.goals, engine.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active", Done: i, Total: 9})
 	}
-	// One with nothing under it yet, so a card with no count to show is drawn
-	// as well as one with.
 	f.goals = append(f.goals, engine.Goal{Number: 10, Title: "Nothing serves this yet", State: "active"})
-	// And the tasks of the first objective, so its own board has something on
-	// it and something in its band.
 	for i := 1; i <= 12; i++ {
 		f.cards[i-1].Objectives = []int{1}
 	}
 	return f
 }
 
-// The frames were pinned where they were written, at UTC+2 in September, and
-// a moment is drawn in the zone of the machine drawing it: run anywhere else
-// — a Linux container keeps UTC — every line of a history moved by two hours
-// and every frame that shows one went red for nothing. The zone they were
-// pinned in is the zone the whole package's tests draw in.
 func init() { time.Local = time.FixedZone("UTC+2", 2*60*60) }
 
 func TestFramesOfACrowdedBoard(t *testing.T) {
@@ -135,8 +113,6 @@ func TestFrames(t *testing.T) {
 		{"inside", 100, 40, []string{"tab", "enter"}},
 		{"band", 100, 40, []string{"l", "j"}},
 		{"band-insert", 100, 40, []string{"l", "j", "i"}},
-		// By tab and not by down: inside the description the arrows walk its
-		// lines, so down stays there, and tab is what leaves it.
 		{"form-on-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab"}},
 		{"form-changed-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab", "right"}},
 		{"objectives-form", 100, 40, []string{"tab", "e"}},
@@ -157,7 +133,6 @@ func TestFrames(t *testing.T) {
 	}
 }
 
-// pinned compares a drawing with what was pinned, or writes it when asked.
 func pinned(t *testing.T, name, got string) {
 	t.Helper()
 	got = bare(got)
@@ -177,9 +152,6 @@ func pinned(t *testing.T, name, got string) {
 	}
 }
 
-// bare takes the styling out of a drawing, and the trailing blanks off every
-// line: a run of spaces at the end of a row is invisible on a screen and
-// impossible to read in a file.
 func bare(s string) string {
 	var out strings.Builder
 	inEscape := false

@@ -7,12 +7,7 @@ import (
 	"cairn/internal/engine"
 )
 
-// Pushing a task: sideways into another column, down into the band and the
-// kind of stopped it becomes, up and down among its sisters.
-
 func TestTheKindPopupWalksAndCancels(t *testing.T) {
-	// From the last task in the column: from any other, pushing down moves it
-	// one place lower rather than out of the column.
 	b := hit(standing(twoTasks()), "l", "i", "j", "shift+j")
 	if !strings.Contains(bare(b.Draw()), "which kind of stopped") {
 		t.Fatal("pushing the last task down asked nothing")
@@ -90,8 +85,6 @@ func TestPushingWithNothingHeldDoesNothing(t *testing.T) {
 func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
-	// current is the third column: left is todo, right is done. A push that
-	// went the other way, or one column too far, would land somewhere else.
 	left := hit(standing(f), "l", "l", "i")
 	if _, cmd := left.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -179,7 +172,6 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
 	}
-	// The third: it goes behind the first, which is one place higher.
 	b := hit(standing(f), "l", "i", "j", "j")
 	if _, cmd := b.pressed("shift+k"); cmd != nil {
 		cmd()
@@ -187,7 +179,6 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	if got := f.moved[0]; got.number != 3 || got.at != engine.Behind || got.target != 1 {
 		t.Fatalf("pushing the third up asked for %+v, want task 3 behind task 1", got)
 	}
-	// And the second goes to the head, because there is nothing to sit behind.
 	f.moved = nil
 	second := hit(standing(f), "l", "i", "j")
 	if _, cmd := second.pressed("shift+k"); cmd != nil {

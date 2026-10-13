@@ -1,12 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/version.feature. The Gherkin is the
-// contract; this file is only the wiring between it and the real CLI.
-//
-// A new feature adds a file like this one — a world, an initializer, and one Go
-// test per scenario selected by tag — and calls runAcceptance from cli_test.go.
-// The suite itself is defined once, there.
-
 import (
 	"context"
 	"fmt"
@@ -24,14 +17,9 @@ import (
 	"cairn/test"
 )
 
-// versionWorld carries what one scenario needs between its steps, the three
-// stamps included: no test is linked, so what a scenario can choose is not what
-// the linker wrote but how this surface reads it.
 type versionWorld struct {
-	t   *testing.T
-	out test.Result
-	// archive is where a source archive was made, and unpacked where it was
-	// opened; repo is a repository a release is tried in.
+	t                       *testing.T
+	out                     test.Result
 	archive, unpacked, repo string
 	version                 string
 	commit                  string
@@ -40,8 +28,6 @@ type versionWorld struct {
 	restores                []func()
 }
 
-// newVersionWorld builds the state one scenario works against, and puts the
-// surface's way of reading its build back when the scenario ends.
 func newVersionWorld(t *testing.T) *versionWorld {
 	w := &versionWorld{t: t}
 	previous := stamps
@@ -50,19 +36,12 @@ func newVersionWorld(t *testing.T) *versionWorld {
 	return w
 }
 
-// reading is what the surface answers while this scenario runs.
 func (w *versionWorld) reading() build.Info {
 	return build.Stamped(w.version, w.commit, w.built, w.committed)
 }
 
-// stamp decides what the binary claims to be for the length of the scenario.
 func (w *versionWorld) stamp(target *string, value string) { *target = value }
 
-// endScenario puts back every stamp the scenario set, most recent first.
-//
-// t.Cleanup would be the obvious home for this and is the wrong one: it fires
-// when the Go test ends, not when the scenario does, so the next scenario in
-// the same run would start on this one's leftovers.
 func (w *versionWorld) endScenario() {
 	for i := len(w.restores) - 1; i >= 0; i-- {
 		w.restores[i]()
@@ -70,8 +49,6 @@ func (w *versionWorld) endScenario() {
 	w.restores = nil
 }
 
-// stampedThere asks make, where the archive was unpacked, what a build there
-// would be stamped with, and compares one of the three words it answers.
 func (w *versionWorld) stampedThere(at int, want string) error {
 	said, err := exec.Command("make", "-s", "-C", w.unpacked, "stamps").Output()
 	if err != nil {
@@ -83,10 +60,8 @@ func (w *versionWorld) stampedThere(at int, want string) error {
 	return nil
 }
 
-// root is the repository the tests run in.
 func root() string { return filepath.Join("..", "..") }
 
-// command runs a program in a directory and says what it wrote when it fails.
 func command(dir, name string, args ...string) error {
 	run := exec.Command(name, args...)
 	run.Dir = dir
@@ -96,7 +71,6 @@ func command(dir, name string, args ...string) error {
 	return nil
 }
 
-// line returns the value printed for key, or "" when the key is absent.
 func (w *versionWorld) line(key string) string {
 	for _, l := range strings.Split(w.out.Stdout, "\n") {
 		if rest, ok := strings.CutPrefix(l, key); ok {
@@ -414,9 +388,6 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
-		// A step returns its error; it never calls t.Fatalf. A Goexit from
-		// inside godog wrecks its subtest bookkeeping and surfaces as an
-		// unreadable "test executed panic(nil) or runtime.Goexit".
 		sc.Step(`^it reports the version as "([^"]*)"$`, func(want string) error {
 			first := strings.SplitN(w.out.Stdout, "\n", 2)[0]
 			if got := strings.TrimSpace(first); got != "cairn "+want {
@@ -461,13 +432,6 @@ func wantLine(w *versionWorld, key, want string) error {
 	return nil
 }
 
-// How the surface reads its build is a package-level variable, so a scenario
-// that replaces it has to put it back before the next scenario starts — not at
-// the end of the Go test that happened to run it. Every scenario in
-// version.feature currently sets every stamp it reads, which is what keeps the
-// leak invisible; the first Scenario Outline whose examples don't will start on
-// the previous one's leftovers. This test watches the restoring itself, since no
-// scenario can.
 func TestVersionWorld_putsTheBuildBackWhenTheScenarioEnds(t *testing.T) {
 	found := stamps
 	t.Cleanup(func() { stamps = found })
@@ -500,7 +464,6 @@ func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {
 	runAcceptance(t, "version.feature", initVersion(t), "@version-is-made-on-main,@version-is-made-from-a-clean-tree")
 }
 
-// changelog is what the last source archive made says changed.
 func (w *versionWorld) changelog() (string, error) {
 	found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
 	if err != nil {
@@ -519,7 +482,6 @@ func (w *versionWorld) changelog() (string, error) {
 	return string(said), nil
 }
 
-// changelogSection is one heading's part of one version's notes.
 func (w *versionWorld) changelogSection(version, heading string) (string, error) {
 	said, err := w.changelog()
 	if err != nil {

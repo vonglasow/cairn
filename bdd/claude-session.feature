@@ -1,13 +1,4 @@
 Feature: A Claude Code session tied to a cairn task
-  A working session with Claude Code is tied to the one cairn task it serves:
-  it starts from that task's notes, writes where the next session will find
-  it, and holds the task in focus while the person works — unfocusing it when
-  they stop, and never of a task another session is working on.
-
-  What ties them is an entry the hook writes in the task's notes. Each step
-  below is one event Claude Code hands its hook, as Claude Code hands it: a
-  JSON document on standard input. cairn is the real binary, on a store and
-  notes of the scenario's own. See docs/claude-code.md.
 
   @claude-session-focus-writes-the-entry
   Scenario: taking the focus writes the session's entry

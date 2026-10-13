@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-// storeAt gives a path to a real store, with n tasks in it, closed.
 func storeAt(t *testing.T, titles ...string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -170,8 +169,6 @@ func TestEngine_countsWhatTheStoreHolds(t *testing.T) {
 	}
 }
 
-// behindStore gives a store one change short of what this cairn knows, by
-// rolling one back through the engine itself.
 func behindStore(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -248,7 +245,6 @@ func TestEngine_refusesToOpenAStoreBehindIt(t *testing.T) {
 
 func TestEngine_reportsAPlaceItCannotBackupBeforeChanging(t *testing.T) {
 	e := openEngine(t)
-	// A file where a folder must go: the backup cannot be written.
 	blocked := filepath.Join(t.TempDir(), "cairn.db")
 	if err := os.WriteFile(blocked, []byte("x"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
@@ -266,9 +262,6 @@ func TestEngine_reportsAPlaceItCannotBackupBeforeChanging(t *testing.T) {
 	}
 }
 
-// A store that cannot be used as it stands is told what to type about it.
-// Written once here and not at each door into the store: three of them open
-// one, and the two boards used to leave somebody to go and find out.
 func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
 	behind := fmt.Errorf("%w by 1 change(s)", ErrStoreBehind)
 	got := Told(behind)
@@ -280,12 +273,7 @@ func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
 	}
 }
 
-// Anything else passes through untouched: an error nobody can act on is not
-// improved by being handed a command to run.
 func TestTold_leavesEveryOtherErrorAlone(t *testing.T) {
-	// The message, and not errors.Is: what is being asked is that nothing was
-	// added, and errors.Is would say yes to an error that had been wrapped —
-	// which is the very thing this is watching for.
 	for _, err := range []error{ErrNewerStore, ErrNotAStore, errors.New("something else")} {
 		if got := Told(err); got.Error() != err.Error() {
 			t.Errorf("Told(%v) = %v, want it left alone", err, got)

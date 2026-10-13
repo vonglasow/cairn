@@ -1,17 +1,10 @@
 package trace
 
-// What an act tells, and that nothing is lost telling it and being told it
-// again. Nothing here reaches an act's fields: a test that did would be the one
-// place allowed to, and the membrane would stop being the only way in.
-
 import (
 	"testing"
 	"time"
 )
 
-// everyFact is an act's membrane for a test: it keeps every fact it is told and
-// counts what it was told about absence, so a test can check both that a fact
-// arrived and that its absence did.
 type everyFact struct {
 	task                             int
 	did, field, was, became, through string
@@ -32,15 +25,12 @@ func (f *everyFact) Through(surface string) { f.through = surface }
 func (f *everyFact) ByHand()                { f.byHand = true }
 func (f *everyFact) At(when time.Time)      { f.at = when }
 
-// told hands back everything an act says.
 func told(a Act) everyFact {
 	var f everyFact
 	a.Tell(&f)
 	return f
 }
 
-// built makes an act carrying everything, so a test can check every fact
-// survives the round trip.
 func built() Act {
 	var a AsTold
 	a.On(4)
@@ -75,9 +65,6 @@ func TestTell_saysEveryFactAnActCarries(t *testing.T) {
 	}
 }
 
-// Absence is told, and told explicitly. An act that said nothing about an
-// attribute it does not have would leave whoever is listening to guess whether
-// they were told or missed it.
 func TestTell_saysWhatIsAbsentRatherThanSayingNothing(t *testing.T) {
 	var a AsTold
 	a.On(1)
@@ -104,8 +91,6 @@ func TestTell_saysWhatIsAbsentRatherThanSayingNothing(t *testing.T) {
 	}
 }
 
-// The membrane both ways round: what an act is told is what it tells, so a
-// store reading a row it wrote gets back the act it wrote.
 func TestAsTold_losesNothingOnTheWayThrough(t *testing.T) {
 	first := built()
 
@@ -118,7 +103,6 @@ func TestAsTold_losesNothingOnTheWayThrough(t *testing.T) {
 	}
 }
 
-// And the same for an act carrying nothing but its own absences.
 func TestAsTold_losesNothingOnTheWayThroughWhenNothingIsThere(t *testing.T) {
 	var bare AsTold
 	bare.On(1)
@@ -137,8 +121,6 @@ func TestAsTold_losesNothingOnTheWayThroughWhenNothingIsThere(t *testing.T) {
 	}
 }
 
-// The moment a field last changed is the last act that named it, the
-// creation included; a field nothing ever named has no such moment.
 func TestLastNamed_isTheLastActThatNamedTheField(t *testing.T) {
 	acts := []Act{
 		acted(1, Created, "column", "", "backlog", "", 9, 0),

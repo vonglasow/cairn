@@ -1,16 +1,5 @@
 package config_test
 
-// Whether the cell built by Read carries exactly what the file wrote under
-// `store` — no expansion, no default. Those are later slices' concern.
-//
-// TestRead_expandsALeadingTildeAgainstTheHome is the exception: a leading
-// "~/" is the one thing this slice teaches Read to change, against the home
-// it was itself handed.
-//
-// TestRead_takesWhatTheEnvironmentSaysOverAnythingElse is the other: the
-// environment does not take a turn after the file and before the default —
-// it replaces whichever of the two already answered.
-
 import (
 	"errors"
 	"fmt"
@@ -23,13 +12,8 @@ import (
 	"cairn/internal/config"
 )
 
-// silentEnv says nothing, for the tests that are not about the environment
-// at all: Read has to be given some lookupEnv, and this is the one that
-// leaves the file and the default to answer on their own.
 func silentEnv(string) (string, bool) { return "", false }
 
-// placesHeard is told where each place resolved to, whatever named it: the
-// only way to read a Places, since it has no accessor to read it by.
 type placesHeard struct{ store, notes string }
 
 func (p *placesHeard) StoreNamedByTheFile(at string)        { p.store = at }
@@ -51,9 +35,6 @@ func notesOf(p config.Places) string {
 	return heard.notes
 }
 
-// A place the environment names is read the same way as one the file names:
-// expanded, then judged. Measured before this: CAIRN_STORE=cairn.db wrote a
-// store into whichever directory the command was run from.
 func TestRead_refusesAPlaceTheEnvironmentNamesThatIsNotAbsolute(t *testing.T) {
 	for _, variable := range []string{config.StoreVariable, config.NotesVariable} {
 		env := func(name string) (string, bool) {
@@ -90,10 +71,6 @@ func TestRead_takesTheStoreTheFileNames(t *testing.T) {
 	}
 }
 
-// TestRead_fallsBackToTheHomeWhenNothingNamesTheStore covers the one rule
-// with its two entries: a file that says nothing about `store`, and no file
-// at all. Table-driven so the single test the fiche names carries both cases,
-// rather than asserting the rule twice under two names.
 func TestRead_fallsBackToTheHomeWhenNothingNamesTheStore(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -158,11 +135,6 @@ func TestRead_expandsALeadingTildeAgainstTheHome(t *testing.T) {
 	}
 }
 
-// TestRead_takesWhatTheEnvironmentSaysOverAnythingElse is the one rule with
-// its four entries: the environment replaces what the file named, replaces
-// the default when nothing named anything, undergoes the same "~" expansion
-// as the file's own answer, and — set but empty — says nothing at all, so
-// the answer stays whatever the file or the default already gave.
 func TestRead_takesWhatTheEnvironmentSaysOverAnythingElse(t *testing.T) {
 	withFile := func(home string) {
 		dir := filepath.Join(home, ".config", "cairn")
@@ -224,9 +196,6 @@ func TestRead_takesWhatTheEnvironmentSaysOverAnythingElse(t *testing.T) {
 	}
 }
 
-// TestRead_refusesANameItDoesNotKnow: a key cairn does not know about is not
-// silently ignored — it is refused, and the error names the key that was
-// unknown as well as what cairn accepts instead.
 func TestRead_refusesANameItDoesNotKnow(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -253,9 +222,6 @@ func TestRead_refusesANameItDoesNotKnow(t *testing.T) {
 	}
 }
 
-// TestRead_refusesAFileItCannotMakeSenseOf: a file that is not TOML at all
-// is refused, and the error names the file it could not make sense of — not
-// just the reason the parser gave up.
 func TestRead_refusesAFileItCannotMakeSenseOf(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -280,10 +246,6 @@ func TestRead_refusesAFileItCannotMakeSenseOf(t *testing.T) {
 	}
 }
 
-// TestRead_refusesAPlaceThatIsNotAbsolute is one rule checked under both
-// keys: a place the file names — store or notes — has to be absolute once a
-// leading "~" is expanded, and the error names the place as the file wrote
-// it, before that expansion.
 func TestRead_refusesAPlaceThatIsNotAbsolute(t *testing.T) {
 	refused := []string{"vault", "./vault", "../vault", ""}
 	accepted := []string{"~/vault", "/tmp/x"}
@@ -313,8 +275,6 @@ func TestRead_refusesAPlaceThatIsNotAbsolute(t *testing.T) {
 				if !errors.Is(err, config.ErrNotAbsolute) {
 					t.Errorf("err = %v, want it to be config.ErrNotAbsolute", err)
 				}
-				// Quoted as the file wrote it, and nothing before it: no
-				// variable set it.
 				if !strings.HasPrefix(err.Error(), strconv.Quote(place)) {
 					t.Errorf("err = %q, want it to begin with %q", err.Error(), strconv.Quote(place))
 				}
@@ -334,12 +294,6 @@ func TestRead_refusesAPlaceThatIsNotAbsolute(t *testing.T) {
 	}
 }
 
-// TestRead_resolvesTheNotesTheSameWayAsTheStore is the one rule proven a
-// second time under a second name: an emplacement resolves the same way
-// whichever one it is. Same three entries as the store's own resolution —
-// the file names it, nothing names it, the environment names it and
-// replaces both — so a Notes() that answered with the store's value instead
-// of its own would fail here exactly as it would for Store().
 func TestRead_resolvesTheNotesTheSameWayAsTheStore(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -407,12 +361,6 @@ func TestRead_resolvesTheNotesTheSameWayAsTheStore(t *testing.T) {
 	}
 }
 
-// TestRead_stillReportsAnUnknownKeyAsSuchRatherThanNotTOML locks the order
-// slice 3 relies on by accident: *toml.StrictMissingError unwraps to a
-// *toml.DecodeError, so a check for the latter alone would also catch the
-// former. Checked in the wrong order, an unknown key would be reported as
-// "not TOML" instead of ErrUnknownKey, and SC4 and SC5 would become
-// indistinguishable.
 func TestRead_stillReportsAnUnknownKeyAsSuchRatherThanNotTOML(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -436,10 +384,6 @@ func TestRead_stillReportsAnUnknownKeyAsSuchRatherThanNotTOML(t *testing.T) {
 	}
 }
 
-// readingRecorder is a fake config.ReadingTold: it records whichever single
-// fact a Reading told it — its emplacements, or the problem it hit — rather
-// than doing anything with it. A test on it is a test on what Reading.Tell
-// says, nothing else.
 type readingRecorder struct {
 	resolvedCalled bool
 	places         config.Places
@@ -462,11 +406,6 @@ func (r *readingRecorder) NotUnderstood(path string, err error) {
 	r.err = err
 }
 
-// TestReading_reportsWhatItCannotMakeSenseOf is the fiche's named test: the
-// tolerant primitive NewReading is a gate over reports, rather than returns,
-// the three refusals Read has always carried — naming the file's path
-// alongside the problem — and never tells emplacements alongside a problem:
-// a Reading that hit one has nothing trustworthy to say about places.
 func TestReading_reportsWhatItCannotMakeSenseOf(t *testing.T) {
 	writeConfig := func(t *testing.T, home, content string) string {
 		t.Helper()
@@ -538,13 +477,6 @@ func TestReading_reportsWhatItCannotMakeSenseOf(t *testing.T) {
 	}
 }
 
-// TestReading_saysWhereItReadFromEvenWhenItMadeSenseOfIt is the fiche's named
-// test: the ordinary case — no file at all, so the reading falls back to
-// defaults and makes sense of it without trouble — still has to say which
-// file it read from. "Which file" is half of what a reading answers, whether
-// it made sense of the file or not; a Resolved that stayed silent about the
-// path would leave anyone reading the emplacements to guess where they came
-// from.
 func TestReading_saysWhereItReadFromEvenWhenItMadeSenseOfIt(t *testing.T) {
 	home := t.TempDir()
 
@@ -565,9 +497,6 @@ func TestReading_saysWhereItReadFromEvenWhenItMadeSenseOfIt(t *testing.T) {
 	}
 }
 
-// told is a fake config.Told: it records, in order, the facts it was told
-// rather than doing anything with them. A test on it is a test on what Tell
-// says, nothing else.
 type told struct {
 	said []string
 }
@@ -591,11 +520,6 @@ func (r *told) NotesNamedByNothing(s string) {
 	r.said = append(r.said, fmt.Sprintf("NotesNamedByNothing(%q)", s))
 }
 
-// TestPlaces_tellsWhatNamedEachPlace checks that Places remembers, for each
-// of its two emplacements, which of the three provenances named it — the
-// file, the environment, or nothing at all — and tells exactly that one
-// fact through Tell, carrying the emplacement it resolved to. Six sub-cases,
-// one per fact: three provenances times two emplacements.
 func TestPlaces_tellsWhatNamedEachPlace(t *testing.T) {
 	writeConfig := func(t *testing.T, home, content string) {
 		t.Helper()
@@ -612,7 +536,7 @@ func TestPlaces_tellsWhatNamedEachPlace(t *testing.T) {
 		name  string
 		setup func(home string)
 		env   func(string) (string, bool)
-		index int // where the fact under test lands in what Tell says: 0 for the store, 1 for the notes
+		index int
 		want  func(home string) string
 	}{
 		{

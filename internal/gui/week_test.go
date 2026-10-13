@@ -17,8 +17,6 @@ func dayNamed(day string) time.Time {
 	return parsed
 }
 
-// The time page, to the pixel: the days cut the board's width in seven, a
-// task's line and bar under each day's heading, a bar as long as its share.
 func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	first, last := WeekDayAt(l, 0), WeekDayAt(l, 6)
@@ -44,8 +42,6 @@ func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 	}
 }
 
-// The page says the week's longest stretch, and how many tasks were worked
-// on, each counted once however many days it was worked on.
 func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
 	w := Window{timeState: timeState{week: dayNamed("2026-09-28"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{
 		{Day: "2026-09-29", Minutes: 135, Tasks: []engine.TimesheetTask{{Number: 1, Minutes: 90}, {Number: 2, Minutes: 45}}},
@@ -70,8 +66,6 @@ func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
 	}
 }
 
-// The page answers its own keys, lets the window's through, and swallows the
-// rest: there is no card on it to act on.
 func TestTheWeekAnswersItsOwnKeys(t *testing.T) {
 	for name, want := range map[string][2]bool{"left": {true, false}, "t": {true, false}, "tab": {false, true}, "shift+b": {false, true}, "e": {false, false}} {
 		if mine, shared := weekKeys(name); mine != want[0] || shared != want[1] {

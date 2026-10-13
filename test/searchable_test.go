@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// A card or an objective built by hand is reached by what it carries once it
-// says what the engine says it carries, and by nothing else.
 func TestSearchable_saysWhatTheEngineSays(t *testing.T) {
 	s := Searchable(engine.Snapshot{
 		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}, Estimate: "90m"}},

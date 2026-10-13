@@ -8,8 +8,6 @@ import (
 	"gioui.org/io/key"
 )
 
-// gathered is a board with the cards given, the first of the second column
-// chosen and the others ⌘-clicked in, in the order given.
 func gathered(cards []engine.Card, at ...Point) Window {
 	w := holding(newFake(), cards...)
 	w = w.clicked(at[0])
@@ -19,9 +17,6 @@ func gathered(cards []engine.Card, at ...Point) Window {
 	return w
 }
 
-// A card ⌘-clicked a second time comes back out of what is taken, the first
-// one taken as much as any other; and esc lets go of what is taken before it
-// clears a search.
 func TestWhatIsTakenIsLetGoOf(t *testing.T) {
 	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
 	w := holding(newFake(), cards...)
@@ -41,21 +36,16 @@ func TestWhatIsTakenIsLetGoOf(t *testing.T) {
 	if w = w.Key("esc"); w.looking.Value != "" {
 		t.Errorf("esc with nothing taken left the search at %q", w.looking.Value)
 	}
-	// And with no search to clear, esc still lets go of what is taken.
 	w = gathered(cards, middleOf(w, 1, 0), middleOf(w, 1, 1))
 	if w = w.Key("esc"); len(w.taken) != 0 {
 		t.Errorf("esc with no search left %v taken", w.taken)
 	}
-	// A stretch runs upward as well as down.
 	w = w.clicked(middleOf(w, 1, 2)).KeysDown(key.ModShift).clicked(middleOf(w, 1, 0)).KeysDown(0)
 	if got := w.Taken(); !slices.Equal(got, []int{1, 2, 3}) {
 		t.Errorf("a stretch upward took %v", got)
 	}
 }
 
-// ⇧ stretches within one column, and across two there is no between: the
-// click gathers instead. On the objectives page what is chosen stays an
-// objective.
 func TestAStretchStaysInItsColumn(t *testing.T) {
 	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
 	w := holding(newFake(), cards...)
@@ -72,8 +62,6 @@ func TestAStretchStaysInItsColumn(t *testing.T) {
 	}
 }
 
-// Archiving several names what is already off the board, and leaves it out:
-// the rest goes in one act.
 func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 	f := newFake()
 	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}

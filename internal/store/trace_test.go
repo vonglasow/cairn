@@ -1,9 +1,5 @@
 package store
 
-// What the store keeps of what happened. Written down through Record and read
-// back through the two ways of asking, so what a test checks is what came off
-// the disk and not what it handed over.
-
 import (
 	"testing"
 	"time"
@@ -11,12 +7,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// happened builds an act to write down.
-//
-// Written out rather than through trace.TellOrNot, which is what the code under
-// test uses. Measured: sharing it made a mutation of it invisible — the fixture
-// and the code moved together, so breaking one broke both and every assertion
-// still held.
 func happened(task int, did, field, was, became, through string, at time.Time) trace.Act {
 	var a trace.AsTold
 	a.On(task)
@@ -45,7 +35,6 @@ func happened(task int, did, field, was, became, through string, at time.Time) t
 	return a.Act()
 }
 
-// actFacts is an act's membrane for what a test reads back off one.
 type actFacts struct {
 	task                             int
 	did, field, was, became, through string
@@ -64,14 +53,12 @@ func (f *actFacts) Through(surface string) { f.through = surface }
 func (f *actFacts) ByHand()                { f.through = "" }
 func (f *actFacts) At(when time.Time)      { f.at = when }
 
-// factsOfAct reads back what an act says.
 func factsOfAct(a trace.Act) actFacts {
 	var f actFacts
 	a.Tell(&f)
 	return f
 }
 
-// record writes an act down, failing the test if it cannot.
 func record(t *testing.T, s *Store, a trace.Act) {
 	t.Helper()
 	if err := s.Record(a); err != nil {
@@ -79,13 +66,10 @@ func record(t *testing.T, s *Store, a trace.Act) {
 	}
 }
 
-// aMoment is a moment these tests can name.
 func aMoment(hour int) time.Time {
 	return time.Date(2026, 3, 3, hour, 0, 0, 0, time.UTC)
 }
 
-// Every fact survives the round trip through the disk, the moment included —
-// which is the one that could have been lost, since it goes down as text.
 func TestRecord_keepsEveryFactAnActCarries(t *testing.T) {
 	s := openStore(t)
 	written := happened(4, trace.Changed, "priority", "normal", "high", "mcp", aMoment(9))
@@ -108,8 +92,6 @@ func TestRecord_keepsEveryFactAnActCarries(t *testing.T) {
 	}
 }
 
-// An act carrying nothing but its own absences survives too: absent must not
-// come back as something.
 func TestRecord_keepsWhatWasAbsentAbsent(t *testing.T) {
 	s := openStore(t)
 	record(t, s, happened(1, trace.FocusTaken, "", "", "", "", aMoment(9)))
@@ -124,9 +106,6 @@ func TestRecord_keepsWhatWasAbsentAbsent(t *testing.T) {
 	}
 }
 
-// Oldest first, and by the order they were written rather than by their moment:
-// two acts of one command land in the same second, and what a history means is
-// the order they happened in.
 func TestActsOn_handsThemBackOldestFirst(t *testing.T) {
 	s := openStore(t)
 	for _, did := range []string{trace.Created, trace.FocusTaken, trace.FocusReleased} {
@@ -143,7 +122,6 @@ func TestActsOn_handsThemBackOldestFirst(t *testing.T) {
 	}
 }
 
-// One task's history is that task's, and says nothing about another's.
 func TestActsOn_keepsOneTasksHistoryToItself(t *testing.T) {
 	s := openStore(t)
 	record(t, s, happened(1, trace.Created, "", "", "", "", aMoment(9)))
@@ -159,8 +137,6 @@ func TestActsOn_keepsOneTasksHistoryToItself(t *testing.T) {
 	}
 }
 
-// A task nothing was written down about answers with nothing rather than
-// failing: what that means is the engine's to decide, not the store's.
 func TestActsOn_answersNothingForATaskItKnowsNothingAbout(t *testing.T) {
 	acts, err := openStore(t).ActsOn(99)
 	if err != nil {
@@ -171,8 +147,6 @@ func TestActsOn_answersNothingForATaskItKnowsNothingAbout(t *testing.T) {
 	}
 }
 
-// A period reaches across tasks, from a moment onward, and leaves out what came
-// before it.
 func TestActsSince_reachesAcrossTasksFromAMomentOnward(t *testing.T) {
 	s := openStore(t)
 	record(t, s, happened(1, trace.Created, "", "", "", "", aMoment(8)))
@@ -194,7 +168,6 @@ func TestActsSince_reachesAcrossTasksFromAMomentOnward(t *testing.T) {
 	}
 }
 
-// A period nothing falls into answers with nothing.
 func TestActsSince_answersNothingForAPeriodNothingFallsInto(t *testing.T) {
 	s := openStore(t)
 	record(t, s, happened(1, trace.Created, "", "", "", "", aMoment(9)))
@@ -208,8 +181,6 @@ func TestActsSince_answersNothingForAPeriodNothingFallsInto(t *testing.T) {
 	}
 }
 
-// A history outlives what it describes: the acts of a deleted task are still
-// there, which is the whole reason they are not a child of the task.
 func TestActsOn_outlivesTheTaskItDescribes(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Gone soon")
@@ -228,9 +199,6 @@ func TestActsOn_outlivesTheTaskItDescribes(t *testing.T) {
 	}
 }
 
-// A moment the store cannot read is a store that has been written to by
-// something else, and it says so rather than handing back a zero moment nobody
-// would question.
 func TestActsOn_refusesAMomentItCannotRead(t *testing.T) {
 	s := openStore(t)
 	if _, err := s.db.Exec(

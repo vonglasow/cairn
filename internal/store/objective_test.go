@@ -10,7 +10,6 @@ import (
 	"cairn/internal/task"
 )
 
-// keepObjective adds an objective titled title, failing the test if it cannot.
 func keepObjective(t *testing.T, s *Store, title string) objective.Objective {
 	t.Helper()
 	o, err := objective.NewObjective(title)
@@ -34,9 +33,6 @@ func TestKeepObjective_numbersFromOne(t *testing.T) {
 	}
 }
 
-// Objectives and tasks are counted apart, so the first of each is number one.
-// One sequence for both would make `objective show 1` and `task show 1` two
-// halves of the same numbering, which is not what either command says.
 func TestKeepObjective_numbersApartFromTasks(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "Write the spec")
@@ -90,8 +86,6 @@ func TestFindObjective_handsBackEverythingItWasGiven(t *testing.T) {
 	}
 }
 
-// The labels of an objective live in a table of their own, so a task and an
-// objective sharing a number must not share labels.
 func TestFindObjective_doesNotPickUpATasksLabels(t *testing.T) {
 	s := openStore(t)
 	built, err := task.NewTask("Write the spec")
@@ -175,8 +169,6 @@ func TestUpdateObjective_replacesWhatIsHeld(t *testing.T) {
 	}
 }
 
-// An objective carries a set of labels, so one left out of an update is one
-// taken away — the same rule a task follows.
 func TestUpdateObjective_replacesTheLabelsRatherThanAddingToThem(t *testing.T) {
 	s := openStore(t)
 	o := keepObjective(t, s, "Ship cairn 1.0")
@@ -309,9 +301,6 @@ func TestUpdate_changesTheObjectiveATaskServes(t *testing.T) {
 	}
 }
 
-// All and Under read the same columns as Find, and the three lists are written
-// out separately. A column added to one and forgotten in the others comes back
-// as a zero nobody notices, so each is asked the same question.
 func TestAllAndUnder_readTheObjectiveTaskstoo(t *testing.T) {
 	s := openStore(t)
 	o := keepObjective(t, s, "Ship cairn 1.0")
@@ -388,8 +377,6 @@ func TestTasksServing_handsBackNothingWhenNothingWasPutUnderIt(t *testing.T) {
 	}
 }
 
-// Zero means "no objective", and it is the number no objective ever carries.
-// Asking for it must not hand back every loose task in the store.
 func TestTasksServing_doesNotTreatNoObjectiveAsAnObjective(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "Write the spec")

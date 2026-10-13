@@ -2,10 +2,6 @@
 
 package gui
 
-// The window's menu bar on Windows: a Win32 menu set on the window Gio made,
-// and its commands caught by a window procedure put in front of Gio's, which
-// hands every other message on unchanged. See menubar.go.
-
 import (
 	"unsafe"
 
@@ -18,7 +14,7 @@ import (
 const (
 	mfString    = 0x0000
 	mfPopup     = 0x0010
-	gwlpWndProc = ^uintptr(3) // -4
+	gwlpWndProc = ^uintptr(3)
 )
 
 var (
@@ -37,9 +33,6 @@ var (
 	installed bool
 )
 
-// installMenu sets cairn's menu bar on the window once Gio has made it, and
-// says whether it did. Anything the system refuses leaves the window as it
-// was, with the button standing in for the menu bar.
 func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 	view, ok := e.(app.Win32ViewEvent)
 	if !ok || !made(view.HWND) || installed {
@@ -71,8 +64,6 @@ func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 	return made(done)
 }
 
-// menuProc takes a command from the menu bar, and hands every message on to
-// Gio's own procedure.
 func menuProc(hwnd, msg, wParam, lParam uintptr) uintptr {
 	if at, ok := commandLine(msg, wParam); ok {
 		if line, ok := lineAt(menuLines, at); ok {
@@ -84,9 +75,6 @@ func menuProc(hwnd, msg, wParam, lParam uintptr) uintptr {
 	return handed
 }
 
-// utf16Of is a string as Win32 reads one. Turned into a number only inside
-// the call it is handed to, so the collector cannot take it in between. It
-// fails only on a NUL, which no line of the menu bar holds.
 func utf16Of(s string) *uint16 {
 	p, _ := windows.UTF16PtrFromString(s)
 	return p

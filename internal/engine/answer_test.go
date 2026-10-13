@@ -13,9 +13,6 @@ import (
 	"cairn/internal/task"
 )
 
-// TestOfTask_carriesEveryFieldAScriptReads pins the shape a script reads for a
-// task: the field names are the wire, and a script that reads one has no way
-// to notice a change unless every one of them is checked here.
 func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-09-01")
 	if err != nil {
@@ -196,11 +193,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	})
 }
 
-// TestRenderText_rendersEveryFieldAnswerCarries pins what a person reads for
-// every field RenderText resolves on, the same way the table above pins what
-// a script reads: each field of Answer takes RenderText down a different
-// branch, and a list carries two shapes of its own — empty and not — that
-// only differ in whether it says so.
 func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	var ta task.AsTold
 	ta.Numbered(1)
@@ -218,8 +210,6 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	built := ta.Task()
 	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
 
-	// sub hangs under built, so a listing would indent it — a search's flat
-	// rendering must not, which is what tells the two apart.
 	var sa task.AsTold
 	built.Tell(&sa)
 	sa.Numbered(2)
@@ -296,8 +286,6 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}
 }
 
-// What crosses about the focus: the tasks being worked on and their numbers,
-// in one shape.
 func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
 	one := builtTask(t, 7, "The one")
 	held, ok := Of(TaskFocus, Answer{Task: &one, InFocus: list(7)}).(Focus)
@@ -312,8 +300,6 @@ func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
 	}
 }
 
-// Several at once, since several can be. Handed over in the order they were
-// taken up, which is the order the store answers them in.
 func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
@@ -329,9 +315,6 @@ func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 	}
 }
 
-// Nothing in focus is the same shape with both lists empty, so a machine reads
-// one field of one shape either way. A list rather than null: a client that
-// reads a list either way does not have to test for null first.
 func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
 	none, ok := Of(TaskUnfocus, Answer{InFocus: list()}).(Focus)
 	if !ok {
@@ -345,8 +328,6 @@ func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
 	}
 }
 
-// A listing says which task is in focus once, at the top. Said on every row the
-// rows can disagree, and a reader has to pick one to believe.
 func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
@@ -363,8 +344,6 @@ func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
 	}
 }
 
-// A listing asked for without the focus says none, rather than saying the task
-// numbered zero is being worked on.
 func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
 	crossed, ok := Of(TaskList, Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).(Tasks)
 	if !ok {
@@ -375,12 +354,8 @@ func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
 	}
 }
 
-// list is a run of numbers as an answer carries them, for a test saying what
-// an answer said about the focus.
 func list(numbers ...int) *[]int { return &numbers }
 
-// A card asked for by number is a task and nothing else: it was not asked about
-// the focus, so it does not answer about it.
 func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 	one := builtTask(t, 7, "The one")
 	if _, ok := Of(TaskShow, Answer{Task: &one}).(Task); !ok {
@@ -388,7 +363,6 @@ func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 	}
 }
 
-// Nothing in focus is an answer a person reads, not an empty one.
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
 	got := RenderText(TaskUnfocus, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
@@ -396,14 +370,10 @@ func TestRenderText_saysNothingIsInFocus(t *testing.T) {
 	}
 }
 
-// A listing marks the task in focus, and a listing asked for without it marks
-// nothing — the same claim as the JSON above, on the other rendering.
 func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
 
 	marked := RenderText(TaskList, Answer{Tasks: tasks, InFocus: list(2)})
-	// The mark goes at the end of the row, and a row carries what a decision
-	// is made on between the title and it.
 	if !strings.Contains(marked, "Second") || !strings.Contains(marked, task.InFocusMark) {
 		t.Errorf("the listing does not mark Second:\n%s", marked)
 	}
@@ -416,7 +386,6 @@ func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
 	}
 }
 
-// builtTask builds a numbered task, for the assertions above.
 func builtTask(t *testing.T, number int, title string) task.Task {
 	t.Helper()
 	built, err := task.NewTask(title)
@@ -429,9 +398,6 @@ func builtTask(t *testing.T, number int, title string) task.Task {
 	return a.Task()
 }
 
-// Nothing in focus reads the same whether the answer carries an empty list of
-// tasks or none at all: `task unfocus` hands back what is left, and what is
-// left is often nothing.
 func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
 	got := RenderText(TaskFocus, Answer{Held: []task.Task{}, InFocus: list()})
 	if got != "nothing is in focus\n" {
@@ -439,8 +405,6 @@ func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
 	}
 }
 
-// Several in focus are rendered as a listing, each marked, rather than as one
-// card after another — a dozen cards in a row is a page nobody reads.
 func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	second := builtTask(t, 2, "Second")
@@ -455,9 +419,6 @@ func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 	}
 }
 
-// A machine asking about a task is told what hangs under it. The text says so
-// already; the JSON gave a count and nothing to act on, so an agent that wanted
-// to finish a part had to list every task and filter by parent.
 func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
 	var parent task.AsTold
 	parent.Numbered(1)
@@ -484,10 +445,6 @@ func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
 	}
 }
 
-// TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown: a listing names the work
-// and says whether each task has a description, without handing it over —
-// measured on a real board, 105 tasks with theirs came to 106 000 characters,
-// more than a client hands an agent in one answer. A search lists the same way.
 func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
 	var one, two task.AsTold
 	one.Numbered(1)
@@ -528,8 +485,6 @@ func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
 	}
 }
 
-// What was kept before cairn refused escapes is printed shown, never obeyed:
-// the command line and an agent's text both come from here.
 func TestRenderText_showsWhatATerminalWouldObey(t *testing.T) {
 	var a task.AsTold
 	a.Numbered(1)

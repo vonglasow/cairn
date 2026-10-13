@@ -8,8 +8,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// sitting builds a task carrying only what the moving rule reads: which task it
-// is, what it hangs under, and which column it is in.
 func sitting(number, parent int, state domain.State) Task {
 	var a AsTold
 	a.Numbered(number)
@@ -19,10 +17,6 @@ func sitting(number, parent int, state domain.State) Task {
 	return a.Task()
 }
 
-// Each case names the reason it expects rather than only that it was refused. A
-// test asserting "it failed" lets every mutant that fails differently live: swap
-// two of these three checks and the refusals come back in the wrong order, which
-// only a test reading the reason can see.
 func TestMayMoveBehind_refusesWithTheReasonThatIsTrue(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
@@ -82,8 +76,6 @@ func TestMayMoveBehind_allowsTwoTasksThatSitTogether(t *testing.T) {
 	}
 }
 
-// The refusal has to say where the task can go instead, which means naming the
-// parent — and naming the right one whichever of the two hangs under something.
 func TestMayMoveBehind_namesWhoseSubTaskItIs(t *testing.T) {
 	for _, tc := range []struct {
 		what           string
@@ -100,8 +92,6 @@ func TestMayMoveBehind_namesWhoseSubTaskItIs(t *testing.T) {
 	}
 }
 
-// The column refusal names both columns, since a refusal naming one leaves
-// somebody not knowing which of the two to move.
 func TestMayMoveBehind_namesTheColumnEachIsIn(t *testing.T) {
 	err := sitting(1, NoParent, domain.Backlog).MayMoveBehind(sitting(2, NoParent, domain.Todo))
 	if err == nil {
@@ -114,9 +104,6 @@ func TestMayMoveBehind_namesTheColumnEachIsIn(t *testing.T) {
 	}
 }
 
-// SitTogether is the level rule on its own, asked without a task in hand: a
-// board has the same question before it draws, and a board working it out for
-// itself is the rule living twice.
 func TestSitTogether_isTheLevelAndNotTheColumn(t *testing.T) {
 	for _, tc := range []struct {
 		what string

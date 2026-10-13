@@ -16,8 +16,6 @@ func dayNamed(day string) time.Time {
 	return parsed
 }
 
-// A week starts on the Monday a day is in: a Sunday belongs to the week
-// before it, a Monday to its own — whatever the hour.
 func TestAWeekStartsOnItsMonday(t *testing.T) {
 	for day, want := range map[string]string{"2026-10-14": "2026-10-12", "2026-10-18": "2026-10-12", "2026-10-12": "2026-10-12", "2026-10-19": "2026-10-19"} {
 		if got := domain.FormatDay(Monday(dayNamed(day).Add(15 * time.Hour))); got != want {
@@ -26,7 +24,6 @@ func TestAWeekStartsOnItsMonday(t *testing.T) {
 	}
 }
 
-// A month walked from the 31st lands on the last day of a shorter month.
 func TestMonthOn_keepsTheDayItCan(t *testing.T) {
 	if got := domain.FormatDay(MonthOn(dayNamed("2026-01-31"), 1)); got != "2026-02-28" {
 		t.Errorf("a month after the 31st of January is %s", got)
@@ -36,9 +33,6 @@ func TestMonthOn_keepsTheDayItCan(t *testing.T) {
 	}
 }
 
-// A period is read up to today: the engine refuses what has not happened, so
-// a week in progress stops at today, and one wholly to come holds nothing and
-// asks for nothing.
 func TestReadPeriod_readsUpToToday(t *testing.T) {
 	f := newFake()
 	today := dayNamed("2026-10-14")
@@ -57,8 +51,6 @@ func TestReadPeriod_readsUpToToday(t *testing.T) {
 	}
 }
 
-// A sheet says what one day holds, and a day nothing was done on is still a
-// day, holding nothing.
 func TestATimesheetSaysWhatADayHolds(t *testing.T) {
 	sheet := Timesheet{Days: []TimesheetDay{{Day: "2026-10-13", Minutes: 135, Tasks: []TimesheetTask{
 		{Number: 4, Title: "Ship it", Minutes: 120}, {Number: 5, Title: "Spec", Minutes: 15}}}}}
@@ -74,8 +66,6 @@ func TestATimesheetSaysWhatADayHolds(t *testing.T) {
 	}
 }
 
-// A month is shown as six weeks from the Monday on or before its first day:
-// every month fits, and the rows do not move from one month to the next.
 func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
 	grid := MonthGrid(time.Date(2026, 10, 12, 15, 0, 0, 0, time.UTC))
 	if got := domain.FormatDay(grid[0]); got != "2026-09-28" {

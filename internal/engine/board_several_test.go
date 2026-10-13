@@ -5,9 +5,6 @@ import (
 	"testing"
 )
 
-// What a deletion of several tasks names first: the parts that go with one,
-// the tasks waiting on one that is not going too, the task in focus. Nothing
-// is refused: any task can be deleted.
 func TestDeletingTasks_namesWhatGoesWithThem(t *testing.T) {
 	snap := Snapshot{
 		Cards: []Card{
@@ -34,8 +31,6 @@ func TestDeletingTasks_namesWhatGoesWithThem(t *testing.T) {
 	}
 }
 
-// What an archiving of several names first: a task already off the board
-// cannot go again, and the parts and the focus go as they do on a deletion.
 func TestArchivingTasks_namesWhatCannotGo(t *testing.T) {
 	snap := Snapshot{
 		Cards: []Card{
@@ -56,7 +51,6 @@ func TestArchivingTasks_namesWhatCannotGo(t *testing.T) {
 	}
 }
 
-// An objective work still serves cannot be deleted, and says how much does.
 func TestDeletingGoals_namesWhatWorkStillServes(t *testing.T) {
 	snap := Snapshot{Cards: []Card{
 		{Number: 1, Objectives: []int{2}},
@@ -73,8 +67,6 @@ func TestDeletingGoals_namesWhatWorkStillServes(t *testing.T) {
 	}
 }
 
-// What is left once what was named is left out: everything flagged, or only
-// what cannot go at all.
 func TestLeavingOut_isEitherEveryFlagOrOnlyTheRefused(t *testing.T) {
 	flags := []Flag{{Number: 1, Says: "x"}, {Number: 2, Says: "y", Refused: true}}
 	if got := LeavingOut([]int{1, 2, 3}, flags, false); !slices.Equal(got, []int{3}) {
@@ -85,8 +77,6 @@ func TestLeavingOut_isEitherEveryFlagOrOnlyTheRefused(t *testing.T) {
 	}
 }
 
-// Several taken together are asked of the engine as one: the first as the
-// number, the rest beside it.
 func TestSeveral_isTheFirstAndTheRestBesideIt(t *testing.T) {
 	in := Several([]int{4, 7, 9})
 	if in.Given["number"] != "4" || !slices.Equal(in.Listed["also"], []string{"7", "9"}) {

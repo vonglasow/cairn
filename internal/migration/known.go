@@ -1,12 +1,6 @@
 package migration
 
-// Known names every change to the shape of the store cairn knows, oldest
-// first. Appending one here is what a store then has to be told to apply;
-// the name is what gets recorded, so it is written for somebody reading
-// `cairn migration list` a year from now.
-//
-// A change to the shape of a store is SQL, so the text lives here, with the
-// notion it describes — internal/store is what executes it, and only it.
+// Known names every change to the shape of the store cairn knows, oldest first.
 var Known = []Migration{
 	{
 		name: "the shape a store starts with",
@@ -26,8 +20,6 @@ CREATE TABLE IF NOT EXISTS labels (
 	label       TEXT    NOT NULL,
 	PRIMARY KEY (task_number, label)
 );`,
-		// Left empty on purpose: this one is the floor, see ErrNothingToRollBack
-		// in internal/store.
 		undoes: "",
 	},
 	{
@@ -159,10 +151,6 @@ DROP TABLE IF EXISTS focused;`,
 		does: `
 UPDATE tasks SET state = 'todo'
 	WHERE parent IS NOT NULL AND parent != 0 AND state != 'done';`,
-		// Nothing to undo: what column each sub-task stood in is gone by then,
-		// and putting them all back in the backlog would be inventing an
-		// answer rather than restoring one. The shape is unchanged either way,
-		// so an older cairn reads this store as it always did.
 		undoes: "",
 		loses:  "which column a sub-task stood in, for any that was not done",
 	},
@@ -170,18 +158,11 @@ UPDATE tasks SET state = 'todo'
 		name: "a task can be taken off the board and kept",
 		does: `
 ALTER TABLE tasks ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;`,
-		// The column goes with it: rolling back and applying again is a thing
-		// this store does, and the second apply fails on a column left behind.
 		undoes: `
 ALTER TABLE tasks DROP COLUMN archived;`,
 		loses: "which tasks had been taken off the board",
 	},
 	{
-		// docs/labels.md: a label has no family, so one carrying a colon is
-		// split at every colon into labels of its own; then every label is
-		// written the one way — accents off, spaces, underscores and slashes
-		// made dashes, a run of dashes made one, none at either end — and a
-		// task or an objective left carrying one twice carries it once.
 		name: "a label is written one way, and has no family",
 		does: `
 WITH RECURSIVE pieces(owner, piece, rest) AS (
@@ -229,9 +210,6 @@ INSERT OR IGNORE INTO objective_labels (objective_number, label)
 	WHERE written.becomes <> written.was AND written.becomes <> '';
 DELETE FROM objective_labels WHERE label IN (SELECT was FROM written WHERE becomes <> was);
 DROP TABLE written;`,
-		// Nothing to undo: which spellings were one word is gone once they
-		// are one label, and the shape is unchanged, so an older cairn reads
-		// this store as it always did.
 		undoes: "",
 		loses:  "how each label was spelt before, and which labels had a family",
 	},

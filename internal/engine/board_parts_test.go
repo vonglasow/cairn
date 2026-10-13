@@ -9,17 +9,12 @@ import (
 	"testing"
 )
 
-// Ticked or not is the one thing a part carries besides its title, and it is
-// done or todo — said once, for both boards and for ticking one in the window.
 func TestPartState_isDoneOrTodo(t *testing.T) {
 	if PartState(true) != "done" || PartState(false) != "todo" {
 		t.Errorf("PartState = %q, %q", PartState(true), PartState(false))
 	}
 }
 
-// Parts written down are read back the same: a number when the part has one,
-// its box, its title — and a part nobody has saved yet is written without a
-// number, the way it is typed.
 func TestPartsWritten_isWhatPartsInReads(t *testing.T) {
 	parts := []Part{{Number: 2, Title: "Write it", Done: true}, {Title: "Read it first"}}
 	said := PartsWritten(parts)
@@ -31,9 +26,6 @@ func TestPartsWritten_isWhatPartsInReads(t *testing.T) {
 	}
 }
 
-// A task's parts handed over with it are settled in the same act: added,
-// renamed, ticked and put in the order the lines give, and a part the lines no
-// longer name is left where it is.
 func TestTaskEdit_settlesThePartsItIsGiven(t *testing.T) {
 	e := openEngine(t)
 	ship := addTitled(t, e, "Ship it", nil)
@@ -60,7 +52,6 @@ func TestTaskEdit_settlesThePartsItIsGiven(t *testing.T) {
 	_ = kept
 }
 
-// One part refused and none of them is written.
 func TestTaskEdit_writesNoPartWhenOneIsRefused(t *testing.T) {
 	e := openEngine(t)
 	ship := addTitled(t, e, "Ship it", nil)
@@ -74,7 +65,6 @@ func TestTaskEdit_writesNoPartWhenOneIsRefused(t *testing.T) {
 	}
 }
 
-// A task made with its parts has them under it, in the order given.
 func TestTaskNew_writesThePartsItIsGiven(t *testing.T) {
 	e := openEngine(t)
 	answer, err := e.Ask(TaskNew, Input{Given: map[string]string{"title": "Ship it", "parts": "[ ] One\n[ ] Two"}})
@@ -87,7 +77,6 @@ func TestTaskNew_writesThePartsItIsGiven(t *testing.T) {
 	}
 }
 
-// addTitled makes a task through the operation, carrying what was given.
 func addTitled(t *testing.T, e *Engine, title string, given map[string]string) int {
 	t.Helper()
 	in := Input{Given: map[string]string{"title": title}}
@@ -101,9 +90,6 @@ func addTitled(t *testing.T, e *Engine, title string, given map[string]string) i
 	return factsOf(*answer.Task).number
 }
 
-// The parts are put in the order the lines give, among those in the same
-// column only — a task moves among the ones it sits with — and an order they
-// already had writes nothing about it.
 func TestTaskEdit_ordersThePartsColumnByColumn(t *testing.T) {
 	e := openEngine(t)
 	ship := addTitled(t, e, "Ship it", nil)

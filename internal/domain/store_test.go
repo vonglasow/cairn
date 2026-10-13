@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// What a store holds, the way a person reads it. Its own function because two
-// packages say it — the engine on a backup's line, the migration ledger under
-// its listing — and one of them saying "1 tasks" would be the one nobody spots.
 func TestHeldText_writesBothCountsWhateverTheyAre(t *testing.T) {
 	for _, tc := range []struct {
 		of   Held
@@ -23,8 +20,6 @@ func TestHeldText_writesBothCountsWhateverTheyAre(t *testing.T) {
 	}
 }
 
-// A moment is read back the way it is written, so whoever finds one at the
-// head of a line can tell it from the words after it.
 func TestParseMoment_readsBackWhatFormatMomentWrote(t *testing.T) {
 	at := time.Date(2026, 10, 1, 9, 0, 0, 0, time.Local)
 	back, err := ParseMoment(FormatMoment(at))

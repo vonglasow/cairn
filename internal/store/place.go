@@ -1,28 +1,16 @@
 package store
 
-// Where a task sits among the tasks it sits with, and how that place is
-// changed. The place itself never leaves this package: a task does not carry
-// it, the list does, and nothing above here has any use for the number.
-
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 )
 
-// sisters is the group a task takes its place in: the tasks in the same column
-// under the same parent. Written once because every statement below has to
-// agree on it — a move that closed a gap in one group and opened one in
-// another would leave both with a hole.
 const sisters = `state = ? AND parent = ?`
 
-// whereItSits reads back the group a task is in and the place it holds there.
 func (s *Store) whereItSits(number int) (state string, parent, place int, err error) {
 	row := s.on.QueryRow(
 		`SELECT state, parent, position FROM tasks WHERE number = ?`, number)
-	// Written with ifs rather than a tagless switch on purpose: a tagless
-	// switch puts its conditions outside any covered block, so a mutation of
-	// one of them reports as unreachable and the gate cannot judge it.
 	err = row.Scan(&state, &parent, &place)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", 0, 0, fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
@@ -33,35 +21,23 @@ func (s *Store) whereItSits(number int) (state string, parent, place int, err er
 	return state, parent, place, nil
 }
 
-// MoveFirst puts a task at the head of the tasks it sits with, and says
-// whether it went anywhere.
+// MoveFirst puts a task at the head of the tasks it sits with, and says whether it went anywhere.
 func (s *Store) MoveFirst(number int) (bool, error) {
 	return s.place(number, func(_, _ int) int { return 1 })
 }
 
-// MoveLast puts a task behind all the tasks it sits with, and says whether it
-// went anywhere.
+// MoveLast puts a task behind all the tasks it sits with, and says whether it went anywhere.
 func (s *Store) MoveLast(number int) (bool, error) {
 	return s.place(number, func(_, among int) int { return among })
 }
 
-// MoveAfter puts a task directly behind another. Both are in the same group by
-// the time this is called — that a task is moved among the ones it sits with is
-// a rule of the notion, refused before the store is asked. It says whether the
-// task went anywhere.
+// MoveAfter puts a task directly behind another.
 func (s *Store) MoveAfter(number, target int) (bool, error) {
 	_, _, behind, err := s.whereItSits(target)
 	if err != nil {
 		return false, err
 	}
 	return s.place(number, func(from, _ int) int {
-		// Coming from in front, the target slides forward by one as the gap
-		// closes, so landing on its place is landing behind it. Coming from
-		// behind, the target does not move, so one past it is the place.
-		//
-		// The boundary is `<=` and not `<`: a task already where it is asked to
-		// go has nowhere to travel, and reading that as "one past" would move
-		// it off the place it holds.
 		if from <= behind {
 			return behind
 		}
@@ -69,14 +45,6 @@ func (s *Store) MoveAfter(number, target int) (bool, error) {
 	})
 }
 
-// place moves a task to the place chosen among the tasks it sits with: the gap
-// it leaves is closed and one is opened where it lands, so the places stay
-// 1..N with no hole. The place is chosen by a function rather than passed,
-// since each caller names it from something different — nothing, the size of
-// the group, or where the task is coming from.
-//
-// It says whether the task went anywhere: one already where it is asked to go
-// did not, and a history that wrote that down would be writing down nothing.
 func (s *Store) place(number int, chosen func(from, among int) int) (bool, error) {
 	state, parent, from, err := s.whereItSits(number)
 	if err != nil {
@@ -86,9 +54,6 @@ func (s *Store) place(number int, chosen func(from, among int) int) (bool, error
 	if err != nil {
 		return false, err
 	}
-	// Nothing needs clamping. The places named are 1, the size of the group, or
-	// one past the target — and one past the target only passes the group when
-	// the target is last, which is a place a task cannot be travelling from.
 	to := chosen(from, among)
 	if to == from {
 		return false, nil
@@ -103,8 +68,6 @@ func (s *Store) place(number int, chosen func(from, among int) int) (bool, error
 	return true, nil
 }
 
-// countSisters says how many tasks sit in a group, which is the last place in
-// it.
 func (s *Store) countSisters(state string, parent int) (int, error) {
 	var among int
 	if err := s.on.QueryRow(
@@ -114,8 +77,6 @@ func (s *Store) countSisters(state string, parent int) (int, error) {
 	return among, nil
 }
 
-// closeTheGapLeftIn pulls forward everything that sat behind the place a task
-// has left, so the places there go on running 1..N.
 func (s *Store) closeTheGapLeftIn(state string, parent, left int) error {
 	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position - 1
@@ -125,14 +86,6 @@ func (s *Store) closeTheGapLeftIn(state string, parent, left int) error {
 	return nil
 }
 
-// makeRoom shifts by one everything lying between the place a task is leaving
-// and the place it lands, so the gap it leaves is closed and one is opened
-// where it goes.
-//
-// One statement either way, and the direction falls out of the two numbers
-// inside it rather than being asked here. Asked here it could not be judged:
-// place has already turned back when the two places are the same, so a
-// comparison of them would have no boundary any test could stand on.
 func (s *Store) makeRoom(state string, parent, from, to int) error {
 	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position + CASE WHEN ? < ? THEN -1 ELSE 1 END

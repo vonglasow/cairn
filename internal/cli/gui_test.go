@@ -7,17 +7,8 @@ import (
 	"testing"
 )
 
-// The `gui` command, without a display. What is worth testing is that it finds
-// the store, opens it, and hands the window what it needs — a window that needs
-// a screen is not something a test should need.
-
 func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
-	// A store of this test's own. Without it the command opens whatever store
-	// the person running the suite happens to have, and a test that passes
-	// because somebody else's store was up to date is a test that says nothing.
 	t.Setenv("CAIRN_STORE", storeFor(t))
-	// Asked while the command still holds it: the store is closed on the way
-	// out, which is the point of opening it where it is needed.
 	var readable error
 	handed := false
 	was := openGui

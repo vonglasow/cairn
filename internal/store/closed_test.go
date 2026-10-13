@@ -11,10 +11,6 @@ import (
 	"cairn/internal/objective"
 )
 
-// A store that cannot be written to says so for every write, naming what it
-// was doing: a write that failed quietly is a change somebody believes was
-// made. A store closed under the caller is the plainest way for every query
-// to fail.
 func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
@@ -54,8 +50,6 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	}
 }
 
-// The facts a task or an objective has finished telling a store need nothing
-// of it: the lists were built as they were told.
 func TestTheEndOfAListToldChangesNothing(t *testing.T) {
 	b := &boundTask{labels: []string{"x"}, blockers: []int{2}, objectives: []int{3}}
 	b.LabelsTold()
@@ -71,7 +65,6 @@ func TestTheEndOfAListToldChangesNothing(t *testing.T) {
 	}
 }
 
-// A backup that cannot be made, numbered or found says which.
 func TestABackupSaysWhyItCouldNotBeMade(t *testing.T) {
 	v, path := vaultOn(t, "Write the spec")
 	if _, err := v.Make(); err != nil {

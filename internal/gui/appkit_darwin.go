@@ -2,14 +2,6 @@
 
 package gui
 
-// What the window says to AppKit: cairn's menus in the system's menu bar and
-// the system's file panels. Written here, in a cgo preamble, rather than in
-// an Objective-C file of its own: cmd/go links -lobjc once for every package
-// holding one, Gio's is already one, and a second has the linker say so on
-// every build. The preamble holds the definitions, so this file exports
-// nothing: a file that does has its preamble compiled twice. See
-// menu_darwin.go and files_darwin.go.
-
 /*
 #cgo CFLAGS: -Werror -fobjc-arc -x objective-c
 #cgo LDFLAGS: -framework AppKit -framework UniformTypeIdentifiers

@@ -8,9 +8,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// The calendar's panel and its days, to the pixel: a sum gone wrong by a
-// padding puts a click on the day beside the one drawn. The days share the
-// width of the panel between them.
 func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	box := CalendarFor(100, 50, 400)
 	if want := (Box{X: 100, Y: 50, W: 400, H: 322}); box != want {
@@ -36,8 +33,6 @@ func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	}
 }
 
-// The calendar hangs under the field it answers, the way a list does, as wide
-// as its heading with the arrows beside it, its offers, or a week of days.
 func TestTheCalendarHangsUnderItsField(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -57,8 +52,6 @@ func TestTheCalendarHangsUnderItsField(t *testing.T) {
 	}
 }
 
-// A click on the deadline opens the calendar, as one on a field a list
-// answers opens the list; on any other field it only puts the keyboard there.
 func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -78,8 +71,6 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 	}
 }
 
-// The arrows in the heading walk a month either way, and so does the wheel
-// over the calendar, a notch a month; off the calendar it does nothing.
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
@@ -109,7 +100,6 @@ func TestThePointerWalksTheMonths(t *testing.T) {
 	}
 }
 
-// The arrows walk back as they walk on: a day, and a week.
 func TestTheCalendarWalksBack(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	if got := domain.FormatDay(w.onCalendar("left").day); got != "2026-10-11" {
@@ -123,8 +113,6 @@ func TestTheCalendarWalksBack(t *testing.T) {
 	}
 }
 
-// A month on from the last day of a longer month is the last day of the
-// shorter one, never a day into the month after it.
 func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
 	if got := domain.FormatDay(w.onCalendar("shift+right").day); got != "2026-02-28" {
@@ -136,8 +124,6 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 	}
 }
 
-// The calendar is drawn over the form: the day the keyboard is on carries the
-// outline the chosen card does.
 func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"}, nil)
@@ -154,8 +140,6 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 	}
 }
 
-// A form adding names what it adds as new, never as number nought: the list
-// and the calendar it opens say so in their heading.
 func TestAFormAddingIsNamedNew(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = adding(Tasks, "backlog")
@@ -168,9 +152,6 @@ func TestAFormAddingIsNamedNew(t *testing.T) {
 	}
 }
 
-// Each offer of a panel is as wide as what it says, and the next one starts
-// after it: "backspace  No day" ran into "esc  Cancel" when every offer had the
-// same width whatever it said.
 func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -203,15 +184,12 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 			t.Errorf("%q is not on the panel's row of offers: %+v", offer, boxes[i])
 		}
 	}
-	// And a click lands on the offer drawn where it is.
 	no := boxes[1]
 	if got := w.Click(Point{X: no.X + no.W - 2, Y: no.Y + no.H/2}); got.Screen() != OnForm || got.Form().Fields()[got.Form().On()].Value != "" {
 		t.Errorf("a click at the end of %q left the window on %v", offers[1], got.Screen())
 	}
 }
 
-// Under the calendar the form draws none of its offers: they would be the
-// calendar's, drawn a second time at the form's foot.
 func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -228,9 +206,6 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	}
 }
 
-// The line saying where a task's context lives starts after the offers as
-// they are drawn: spelled for Windows, "Ctrl+Enter  Save" is wider than an
-// offer's least width, and the line used to start under it.
 func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
 	w.keyboard = KeyboardOf("windows")
@@ -250,7 +225,6 @@ func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
 	}
 }
 
-// With no form to hang from, the calendar is across the middle of the window.
 func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	box := w.CalendarBox()
@@ -259,8 +233,6 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 	}
 }
 
-// Each arrow of the heading sits on a chip two pixels inside its room, so the
-// two read as two things to press and not one bar.
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
@@ -278,9 +250,6 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	}
 }
 
-// A click off the calendar closes it: on the form, back to the form with the
-// day as it was; off the form as well, the form goes too, what was typed in
-// it saved, as a click off any panel puts it away.
 func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
@@ -309,10 +278,6 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	}
 }
 
-// The form stays drawn under its calendar, parts and all: answered for the
-// form alone, a task with parts opened its deadline's calendar and the
-// window fell over, its tiles counting the parts and the parts said to be
-// none.
 func TestACalendarOverATaskWithPartsIsDrawn(t *testing.T) {
 	w := holding(newFake(), card(1, "Ship it", "todo"),
 		engine.Card{Number: 2, Title: "Draft the columns", State: "todo", Parent: 1})

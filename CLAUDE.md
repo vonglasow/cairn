@@ -5,7 +5,11 @@ in the terminal and the same board in a window — four surfaces over one engine
 
 ## Always
 
-**English.** Code, comments, commit messages, scenarios, documentation.
+**English.** Code, commit messages, scenarios, documentation.
+
+**No comments in the code** but a one-line doc comment on each exported symbol;
+the reasons live in `docs/` and in the commits. See
+[docs/design-principles.md](docs/design-principles.md#comments).
 
 **`prek` runs on its own at every commit**, and whatever it reports gets fixed —
 every time. Not worked around, not deferred.

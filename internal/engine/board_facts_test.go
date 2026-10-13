@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// What stops a task is said once: the tasks it waits on first, and the words
-// somebody wrote only when it waits on nothing cairn holds.
 func TestACardSaysWhatIsInItsWay(t *testing.T) {
 	for _, tc := range []struct {
 		c    Card
@@ -22,9 +20,6 @@ func TestACardSaysWhatIsInItsWay(t *testing.T) {
 	}
 }
 
-// What a task cost against what it was reckoned to cost, and nothing when
-// neither was written: "0h/0h" says nothing and takes the room of something
-// that would.
 func TestACardSaysWhatItCost(t *testing.T) {
 	for _, tc := range []struct {
 		c    Card
@@ -44,7 +39,6 @@ func TestACardSaysWhatItCost(t *testing.T) {
 	}
 }
 
-// How far the parts under a task have got, and nothing when it has none.
 func TestACardSaysHowFarItsPartsHaveGot(t *testing.T) {
 	if got := (Card{SubDone: 2, SubTotal: 5}).PartsDone(); got != "2/5" {
 		t.Errorf("PartsDone = %q, want 2/5", got)
@@ -54,8 +48,6 @@ func TestACardSaysHowFarItsPartsHaveGot(t *testing.T) {
 	}
 }
 
-// The objectives a task serves, as a reading holds them, in the order the task
-// names them; one the reading never heard of is left out.
 func TestASnapshotSaysWhatACardServes(t *testing.T) {
 	s := Snapshot{Goals: []Goal{{Number: 1, Title: "A"}, {Number: 2, Title: "B"}}}
 	var got []int
@@ -67,8 +59,6 @@ func TestASnapshotSaysWhatACardServes(t *testing.T) {
 	}
 }
 
-// A field that carries numbers reads as what those numbers are called, since
-// nobody knows a task or an objective by its number.
 func TestASnapshotSaysWhatAFieldsNumbersAreCalled(t *testing.T) {
 	s := Snapshot{
 		Cards: []Card{{Number: 4, Title: "Ship it"}},

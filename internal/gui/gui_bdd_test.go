@@ -1,8 +1,5 @@
 package gui
 
-// Executable acceptance scenarios for bdd/gui.feature. The Gherkin is the
-// contract; the world that drives the window lives in world_test.go.
-
 import (
 	"testing"
 

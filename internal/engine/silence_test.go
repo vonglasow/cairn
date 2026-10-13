@@ -11,8 +11,6 @@ import (
 	"cairn/internal/task"
 )
 
-// failingFind is a store whose reads of one task fail for a reason that is not
-// the task being gone.
 type failingFind struct {
 	tasks
 	err error
@@ -20,8 +18,6 @@ type failingFind struct {
 
 func (f failingFind) Find(int) (task.Task, error) { return task.Task{}, f.err }
 
-// A task deleted since keeps its time and loses its name; a store that cannot
-// be read is not a task deleted, and used to be taken for one.
 func TestTimed_saysAStoreItCouldNotRead(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "one")
@@ -36,8 +32,6 @@ func TestTimed_saysAStoreItCouldNotRead(t *testing.T) {
 	}
 }
 
-// failingClose is a store that fails to close — which is where it writes what
-// it held back to disk.
 type failingClose struct {
 	tasks
 	err error
@@ -45,9 +39,6 @@ type failingClose struct {
 
 func (f failingClose) Close() error { return f.err }
 
-// Closing is where the store writes back what it held aside, so a close that
-// failed is a write that failed, and an operation that worked is not told as
-// one that did when its store could not be closed.
 func TestDoWith_saysAStoreItCouldNotClose(t *testing.T) {
 	broken := errors.New("could not write back")
 	open := func(path string) (*Engine, error) {
@@ -66,22 +57,15 @@ func TestDoWith_saysAStoreItCouldNotClose(t *testing.T) {
 	}
 }
 
-// A number required and given as nothing is not a number: it used to be read
-// as zero, so `task show ""` went looking for task 0.
 func TestCheck_refusesARequiredNumberGivenAsNothing(t *testing.T) {
 	if err := TaskShow.Check(given("number", "")); err == nil {
 		t.Error("task show accepted an empty number")
 	}
-	// Optional, empty is how a number is cleared.
 	if err := TaskEdit.Check(given("number", "1", "parent", "")); err != nil {
 		t.Errorf("task edit refused a parent cleared: %v", err)
 	}
 }
 
-// An operation that writes is kept whole or not at all: what it changed and
-// what it wrote down about it go together. A task used to be written, then its
-// act, each on its own, so a failure between them left a change nobody could
-// see in its history.
 func TestDo_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	path := storeAt(t)
 	failed := errors.New("halfway")
@@ -107,7 +91,6 @@ func TestDo_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	}
 }
 
-// A board holds the engine and asks it; what it asks is kept whole the same way.
 func TestAsk_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	e := openEngine(t)
 	failed := errors.New("halfway")
@@ -130,8 +113,6 @@ func TestAsk_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	}
 }
 
-// keptBy is a way of keeping tasks that is not SQLite: it keeps none, and
-// remembers what it was asked to keep by.
 type keptBy struct {
 	tasks
 	told []string
@@ -149,9 +130,6 @@ func (k *keptBy) Labelled(l []string) { k.told = append(k.told, "labels "+string
 func (k *keptBy) Archived()           {}
 func (k *keptBy) WithArchived()       {}
 
-// The engine says what to keep in words of its own, and whatever keeps its
-// tasks reads them. It used to hand over the store's own query builder, so a
-// second way of keeping tasks would have had to import the first.
 func TestNarrowed_isSaidToWhateverKeepsTheTasks(t *testing.T) {
 	kept, err := keeping(Input{
 		Given:  map[string]string{"state": "done", "priority": "high"},

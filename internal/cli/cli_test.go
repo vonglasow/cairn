@@ -14,13 +14,6 @@ import (
 	"cairn/test"
 )
 
-// run executes the real command line in-process, through the same Main the
-// binary runs, and returns what it produced. Every test in this package goes
-// through it, so what a test observes is what a user observes — fang's error
-// rendering included, no mocked command layer, no spawned binary.
-//
-// An empty reader stands in for standard input: no command exercised here
-// reads it.
 func run(t *testing.T, args ...string) test.Result {
 	t.Helper()
 	var out, err bytes.Buffer
@@ -28,8 +21,6 @@ func run(t *testing.T, args ...string) test.Result {
 	return test.Result{Stdout: out.String(), Stderr: err.String(), Code: code}
 }
 
-// mustRun fails the test if the command did not succeed, and returns what it
-// produced.
 func mustRun(t *testing.T, args ...string) test.Result {
 	t.Helper()
 	r := run(t, args...)
@@ -39,8 +30,6 @@ func mustRun(t *testing.T, args ...string) test.Result {
 	return r
 }
 
-// wantErr fails the test if the command unexpectedly succeeds. Error paths are
-// behaviour too, and they are where coverage quietly rots.
 func wantErr(t *testing.T, args ...string) {
 	t.Helper()
 	if r := run(t, args...); r.Code == exitOK {
@@ -48,11 +37,6 @@ func wantErr(t *testing.T, args ...string) {
 	}
 }
 
-// runAcceptance runs the scenarios carrying tag from the named feature file,
-// and fails t on any of them.
-//
-// The suite itself is described once, in cairn/test — this is only who fails
-// when it does not pass, which is each surface's own business.
 func runAcceptance(t *testing.T, feature string, init func(*godog.ScenarioContext), tag string) {
 	t.Helper()
 	if test.Suite(t, feature, init, tag).Run() != 0 {
@@ -60,8 +44,6 @@ func runAcceptance(t *testing.T, feature string, init func(*godog.ScenarioContex
 	}
 }
 
-// storeFor gives a path to a store of this test's own, somewhere nothing else
-// will look.
 func storeFor(t *testing.T) string {
 	t.Helper()
 	return filepath.Join(t.TempDir(), "cairn.db")
@@ -92,10 +74,6 @@ func TestMain_reportsACommandItDidNotUnderstand(t *testing.T) {
 	}
 }
 
-// A reason is written for a person to read, so it goes to stderr and nowhere
-// else. Nothing enforces that but a test: cobra and fang each default to a
-// stream, and a single misrouted Fprintln is invisible until someone pipes the
-// output somewhere.
 func TestMain_writesAResultToStandardOutputOnly(t *testing.T) {
 	r := mustRun(t, "--version")
 	if r.Stdout == "" {
@@ -116,17 +94,12 @@ func TestMain_writesAReasonToStandardErrorOnly(t *testing.T) {
 	}
 }
 
-// The binary renders its errors through fang, not through cobra. A harness
-// that called cobra directly would assert a message no user is ever shown.
 func TestMain_rendersErrorsTheWayTheBinaryDoes(t *testing.T) {
 	if got := run(t, "nope").Stderr; !strings.Contains(got, "ERROR") {
 		t.Errorf("stderr = %q, want fang's rendering of the error", got)
 	}
 }
 
-// Asked for JSON however it was spelled, a refusal comes back as JSON too.
-// The flag was looked for as the literal `--json`, so `--json=true` answered
-// a success as JSON and a refusal as prose a machine could not read.
 func TestMain_answersARefusalAsJSONHoweverTheFlagWasSpelled(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	for _, flag := range []string{"--json", "--json=true", "--json=1"} {
@@ -141,9 +114,6 @@ func TestMain_answersARefusalAsJSONHoweverTheFlagWasSpelled(t *testing.T) {
 	}
 }
 
-// Every thing the engine names has the sentence its group is shown with. The
-// sentences stay here, since only the command line groups its verbs, but a
-// thing added without one used to show an empty line and nothing said so.
 func TestEveryThingHasAGroupSentence(t *testing.T) {
 	for _, op := range engine.All() {
 		if groupShort[op.Thing] == "" {
@@ -152,10 +122,6 @@ func TestEveryThingHasAGroupSentence(t *testing.T) {
 	}
 }
 
-// A length to take back is typed with a minus, which cobra reads as a flag.
-// Said plainly what to type instead, on the command line where the problem
-// is — the engine's description of the argument is read by agents too, and
-// an agent has no `--` to write.
 func TestMain_saysToWriteALengthUnderZeroAfterTheDoubleDash(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "timesheet", "add", "1", "-30m")
@@ -167,7 +133,6 @@ func TestMain_saysToWriteALengthUnderZeroAfterTheDoubleDash(t *testing.T) {
 	}
 }
 
-// The description an agent reads names nothing of the command line.
 func TestNoArgumentSpeaksOfTheCommandLine(t *testing.T) {
 	for _, op := range engine.All() {
 		for _, arg := range op.Takes {
@@ -178,16 +143,12 @@ func TestNoArgumentSpeaksOfTheCommandLine(t *testing.T) {
 	}
 }
 
-// What somebody typed is read off the parser's own error, never out of its
-// sentence: a sentence is reworded by an upgrade nobody reads the notes of.
 func TestLeadingMinus_readsNothingOutOfASentence(t *testing.T) {
 	if typed, ok := leadingMinus(errors.New("unknown shorthand flag: '3' in -30m")); ok {
 		t.Errorf("leadingMinus read %q out of a sentence, want only the parser's own error read", typed)
 	}
 }
 
-// A description too long to type on one line is read from standard input,
-// named as `-` — the convention every other tool on the machine follows.
 func TestMain_readsATextNamedAsADashFromStandardInput(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	var out, errs bytes.Buffer
@@ -201,7 +162,6 @@ func TestMain_readsATextNamedAsADashFromStandardInput(t *testing.T) {
 	}
 }
 
-// Standard input is read once: two texts cannot both come from it.
 func TestMain_refusesTwoTextsNamedAsADash(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "task", "new", "-", "--desc", "-")
@@ -210,8 +170,6 @@ func TestMain_refusesTwoTextsNamedAsADash(t *testing.T) {
 	}
 }
 
-// Asked for JSON in a spelling the flag cannot read, the refusal is still
-// JSON: the caller asked for it, and a machine reads one stream.
 func TestMain_answersAJSONFlagItCannotReadAsJSON(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "task", "list", "--json=maybe")
@@ -220,7 +178,6 @@ func TestMain_answersAJSONFlagItCannotReadAsJSON(t *testing.T) {
 	}
 }
 
-// "--json" given as the value of a flag is that value: nothing asked for JSON.
 func TestMain_readsJSONGivenAsAValueAsTheValue(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "task", "edit", "1", "--title", "--json")
@@ -229,15 +186,12 @@ func TestMain_readsJSONGivenAsAValueAsTheValue(t *testing.T) {
 	}
 }
 
-// Every argument that takes text says it can come from standard input.
 func TestHelp_saysATextCanComeFromStandardInput(t *testing.T) {
 	if got := mustRun(t, "task", "edit", "--help").Stdout; !strings.Contains(got, "standard input") {
 		t.Errorf("task edit --help does not say a text can come from standard input:\n%s", got)
 	}
 }
 
-// What a person typed is quoted back as it was typed: a refusal that changed
-// the case of the value it names would be quoting something nobody wrote.
 func TestMain_quotesWhatWasTypedAsItWasTyped(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	for _, args := range [][]string{
@@ -255,8 +209,6 @@ func TestMain_quotesWhatWasTypedAsItWasTyped(t *testing.T) {
 	}
 }
 
-// What a person typed reaches the screen shown, never obeyed: a value carrying
-// an escape is quoted with it written out, not handed to the terminal.
 func TestMain_neverHandsAnEscapeToTheTerminal(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "task", "list", "--state", "x\x1b]52;c;aGk=\x07y")

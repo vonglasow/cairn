@@ -13,9 +13,6 @@ import (
 	"cairn/internal/config"
 )
 
-// answering builds a world whose surface always answers the same thing, and
-// records what it was asked. A harness needs no real surface to be checked:
-// what it does with an answer is the whole of its behaviour.
 func answering(t *testing.T, answer Result) (*World, *[]string) {
 	t.Helper()
 	var asked []string
@@ -293,19 +290,8 @@ func TestLineListsTasks_runsTheLineAndCounts(t *testing.T) {
 	}
 }
 
-// Register is pure wiring and afterScenario is the hook that puts the world
-// back. Neither can be reached except through godog, so this runs godog — over
-// a feature written here rather than one cairn ships, because what is being
-// checked is the wiring and not any scenario.
-//
-// Without it the two go out unjudged: a step left unwired would show up as a
-// scenario passing for the wrong reason, in whichever surface happened to run
-// it, which is the very thing the rest of this file exists to prevent.
 func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
 	w, asked := answering(t, Result{Code: 0, Stdout: "#1  Write the spec\n"})
-	// The world is set aside before the run and put back after, so that what
-	// the scenario does to the environment is undone by the hook under test
-	// rather than by the cleanup answering registers.
 	here, had := os.LookupEnv(config.StoreVariable)
 
 	suite := godog.TestSuite{
@@ -334,17 +320,12 @@ func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
 	if len(*asked) == 0 {
 		t.Error("nothing reached the surface: the steps were wired to nothing")
 	}
-	// afterScenario ran, so the store the scenario pointed cairn at is gone.
 	if now, still := os.LookupEnv(config.StoreVariable); still != had || now != here {
 		t.Errorf("the store variable is %q (set: %v), and it was %q (set: %v) before",
 			now, still, here, had)
 	}
 }
 
-// A store an older cairn wrote is made through the real commands — a task
-// added, the last change to the shape undone — and the backup undoing set
-// aside is forgotten, so a scenario counts only what it caused. The command
-// line and the server each carried a copy of this.
 func TestAStoreFromAnOlderCairn_isMadeThroughTheCommands(t *testing.T) {
 	w, asked := answering(t, Result{})
 	w.StorePath = filepath.Join(t.TempDir(), "cairn.db")
@@ -367,8 +348,6 @@ func TestAStoreFromAnOlderCairn_isMadeThroughTheCommands(t *testing.T) {
 	}
 }
 
-// A configuration is written by hand, the way a person would have, where this
-// scenario's cairn reads it.
 func TestWriteConfig_posesTheFileWhereCairnReadsIt(t *testing.T) {
 	w, _ := answering(t, Result{})
 	w.Defaults = t.TempDir()

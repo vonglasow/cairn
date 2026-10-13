@@ -1,10 +1,5 @@
 package engine
 
-// What a form asks about, without knowing what a form looks like. Which fields
-// a task has, in what order, which of them hold a closed set of values, and
-// which engine argument each one fills — a terminal and a window differ in how
-// they draw a box, not in what goes in it.
-
 import (
 	"fmt"
 	"strconv"
@@ -15,25 +10,14 @@ import (
 
 // Field is one thing a form asks about.
 type Field struct {
-	// Name is what a person reads beside the box: "labels", "time spent".
-	Name string
-	// Arg is what the engine calls the same thing: "label", "spent". Both are
-	// kept because neither is wrong — a repeatable flag reads singular on a
-	// command line, and a box holding all of them reads plural on a screen.
-	// Saying it here is what stops a translation table existing somewhere else.
-	Arg string
-	// Value is what the box starts with.
-	Value string
-	// Choices is the closed set the value is picked from, empty when there is
-	// none.
+	Name    string
+	Arg     string
+	Value   string
 	Choices []string
-	// Long says the value wants more than one line.
-	Long bool
+	Long    bool
 }
 
-// TaskFields is every field of a task, in the order a form lays them out: what
-// it is called first, and the two that are read far more often than they are
-// written last.
+// TaskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
 func TaskFields(c Card) []Field {
 	return []Field{
 		{Name: "title", Arg: "title", Value: c.Title},
@@ -51,8 +35,7 @@ func TaskFields(c Card) []Field {
 	}
 }
 
-// GoalFields is every field of an objective. Fewer, and none of them about
-// what is in the way: an objective is not blocked, the work under it is.
+// GoalFields is every field of an objective.
 func GoalFields(g Goal) []Field {
 	return []Field{
 		{Name: "title", Arg: "title", Value: g.Title},
@@ -65,8 +48,7 @@ func GoalFields(g Goal) []Field {
 	}
 }
 
-// States is the closed set a column is picked from, read off the domain rather
-// than listed again here.
+// States is the closed set a column is picked from, read off the domain rather than listed again here.
 func States() []string {
 	out := make([]string, 0, len(domain.States))
 	for _, s := range domain.States {
@@ -84,10 +66,7 @@ func Priorities() []string {
 	return out
 }
 
-// NumbersIn reads back what Numbers wrote. What is not a number is passed
-// over rather than refused: this reads a field somebody may have typed into,
-// and a form that threw away everything because one word was wrong would lose
-// the choices that were right.
+// NumbersIn reads back what Numbers wrote.
 func NumbersIn(said string) []int {
 	var all []int
 	for _, word := range strings.Fields(said) {
@@ -98,8 +77,7 @@ func NumbersIn(said string) []int {
 	return all
 }
 
-// Numbers writes a list of task or objective numbers the way a form takes them
-// back.
+// Numbers writes a list of task or objective numbers the way a form takes them back.
 func Numbers(all []int) string {
 	out := make([]string, 0, len(all))
 	for _, n := range all {
@@ -116,9 +94,7 @@ func Maybe(n int) string {
 	return strconv.Itoa(n)
 }
 
-// Words splits what was typed into a field the way a shell would have split
-// it: on spaces, and nothing cleverer. A form is not a place to invent a
-// syntax.
+// Words splits what was typed into a field the way a shell would have split it: on spaces, and nothing cleverer.
 func Words(s string) []string {
 	found := strings.Fields(s)
 	if found == nil {
@@ -127,22 +103,14 @@ func Words(s string) []string {
 	return found
 }
 
-// Part is one of the things hanging under a task, as a form holds it: its
-// number when it already exists, what it is called, and whether it is done.
-//
-// That is the whole of a part. It carries no column of its own beyond those
-// two, no deadline, no label and no priority — measured on a store of 219
-// tasks, its 49 parts were done 47 times and todo twice, and carried nothing
-// else at all.
+// Part is one of the things hanging under a task, as a form holds it: its number when it already exists, what it is called, and whether it is done.
 type Part struct {
 	Number int
 	Title  string
 	Done   bool
 }
 
-// PartsSaid writes the parts of a task as one line each, which is how they are
-// read, ticked, renamed, added to and taken away: in the form of the task they
-// belong to, and nowhere else.
+// PartsSaid writes the parts of a task as one line each, which is how they are read, ticked, renamed, added to and taken away: in the form of the task they belong to, and nowhere else.
 func PartsSaid(parts []Card) string {
 	said := make([]Part, 0, len(parts))
 	for _, c := range parts {
@@ -151,9 +119,7 @@ func PartsSaid(parts []Card) string {
 	return PartsWritten(said)
 }
 
-// PartsWritten writes parts the way PartsIn reads them: a number when the part
-// has one, its box, its title. A part nobody has saved yet has no number, and
-// is written the way it is typed.
+// PartsWritten writes parts the way PartsIn reads them: a number when the part has one, its box, its title.
 func PartsWritten(parts []Part) string {
 	lines := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -170,9 +136,7 @@ func PartsWritten(parts []Part) string {
 	return strings.Join(lines, "\n")
 }
 
-// PartsIn reads those lines back. A line with no number is a part nobody has
-// written down yet; a line of spaces is not a part at all, so somebody can
-// break a line without having named what goes on it.
+// PartsIn reads those lines back.
 func PartsIn(said string) []Part {
 	var parts []Part
 	for _, line := range strings.Split(said, "\n") {

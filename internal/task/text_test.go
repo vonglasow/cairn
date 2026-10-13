@@ -82,9 +82,6 @@ func TestText_showsHowFarAlongItIs(t *testing.T) {
 	}
 }
 
-// TestText_countsTasksApartFromSubTasks pins that the tasks tally is only
-// said when there are tasks to say it about — the mirror of what
-// TestText_showsHowFarAlongItIs pins for sub-tasks.
 func TestText_countsTasksApartFromSubTasks(t *testing.T) {
 	got := Text(spec(t), domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}})
 	if !strings.Contains(got, "2 of 2 tasks are done") {
@@ -101,8 +98,6 @@ func TestLine_showsTheNumberAndTheTitle(t *testing.T) {
 	}
 }
 
-// listed builds a task with a number, a title and a parent, for the listing
-// tests below.
 func listed(number int, title string, parent int) Task {
 	var a AsTold
 	a.Numbered(number)
@@ -130,17 +125,12 @@ func TestUnder_listsWhatHangsUnderATask(t *testing.T) {
 	}
 }
 
-// Tree marks the tasks being worked on, and marks nothing else. The second
-// half is what carries the rule: one line marked proves nothing if every line
-// is.
 func TestTree_marksTheTasksInFocus(t *testing.T) {
 	tasks := []Task{
 		listed(1, "Ship it", NoParent),
 		listed(2, "Write the tests", 1),
 		listed(3, "Something else", NoParent),
 	}
-	// The work, and not what hangs under it: a listing no longer draws a
-	// sub-task, so one in focus has no line here to be marked on.
 	if got := Tree(tasks, Marks{InFocus: []int{2}}); strings.Contains(got, InFocusMark) {
 		t.Errorf("a sub-task in focus marked a listing it is not in:\n%s", got)
 	}
@@ -161,8 +151,6 @@ func TestTree_marksTheTasksInFocus(t *testing.T) {
 	}
 }
 
-// Several tasks in focus are all marked, and a task that is not in focus is
-// not — several can be under way at once, one per agent session.
 func TestTree_marksEveryTaskInFocus(t *testing.T) {
 	tasks := []Task{
 		listed(1, "Ship it", NoParent),
@@ -187,9 +175,6 @@ func TestTree_marksNothingWhenNothingIsInFocus(t *testing.T) {
 	}
 }
 
-// A card carrying what most tasks do not: a time already spent on it, a parent
-// it hangs under, an objective it serves. Each is a line of the card and each
-// has a membrane method of its own, reached only by a task that carries it.
 func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
 	built, err := NewTask("Write the spec")
 	if err != nil {
@@ -210,9 +195,6 @@ func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
 	}
 }
 
-// The two rules that say where a task may hang answer nothing when it may. The
-// refusing side is asserted elsewhere; this is the side that says yes, and a
-// rule that only ever refuses in a test is a rule nobody has seen allow.
 func TestTheHangingRules_answerNothingWhenTheTaskMayHang(t *testing.T) {
 	root := listed(1, "Ship it", NoParent)
 	if err := root.MayCarrySubTasks(); err != nil {
@@ -224,9 +206,6 @@ func TestTheHangingRules_answerNothingWhenTheTaskMayHang(t *testing.T) {
 	}
 }
 
-// The section under a task says which of them are finished. It is the section
-// that answers "is the whole of it done", and one that named them without
-// saying so made somebody open each in turn to find out.
 func TestUnder_namesEachOneAsDoneOrNot(t *testing.T) {
 	made := func(number int, title string, state domain.State) Task {
 		var a AsTold
@@ -250,9 +229,6 @@ func TestUnder_namesEachOneAsDoneOrNot(t *testing.T) {
 	}
 }
 
-// A listing names the work, and a sub-task is part of one. It used to draw
-// them indented under their parent; what hangs under a task is now read where
-// the task is read, which is the one place it answers a question.
 func TestTree_leavesSubTasksOut(t *testing.T) {
 	made := func(number int, title string, parent int) Task {
 		var a AsTold
@@ -278,9 +254,6 @@ func TestTree_leavesSubTasksOut(t *testing.T) {
 	}
 }
 
-// What hangs under a task keeps the order it was given, which is the order the
-// engine holds it in. A section that sorted it again would be a second place
-// deciding where a part sits.
 func TestUnder_keepsTheOrderItWasGiven(t *testing.T) {
 	made := func(number int, title string) Task {
 		var a AsTold
@@ -295,9 +268,6 @@ func TestUnder_keepsTheOrderItWasGiven(t *testing.T) {
 	}
 }
 
-// A task off the board says so where it is read in full, and one on it says
-// nothing: every task in a listing is on the board, and a row saying so on
-// each of them is a line nobody reads.
 func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
 	made := func(archived bool) Task {
 		var a AsTold
@@ -319,9 +289,6 @@ func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
 	}
 }
 
-// "#12  Write the spec" is every fact a listing gave: no column, no priority,
-// no deadline, no labels. It is what an agent sees through the MCP server too,
-// so a decision had to be made by opening every task one at a time.
 func TestALineCarriesEnoughToDecideOn(t *testing.T) {
 	var a AsTold
 	a.Numbered(12)

@@ -7,12 +7,6 @@ import (
 	"cairn/internal/task"
 )
 
-// Reading a task's facts back, for the engine's own rules and tests: the one
-// membrane the engine keeps on a task.
-
-// taskFacts is a task's membrane for what the engine, or a test on it, has to
-// read back off it — everything else is a rule the task already owns, or a
-// fact only a builder writing a new task needs told to it.
 type taskFacts struct {
 	number, parent      int
 	title, description  string
@@ -55,8 +49,6 @@ func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objecti
 func (f *taskFacts) ServesNothing()            { f.objectives = nil }
 func (f *taskFacts) ObjectivesTold()           {}
 
-// factsOf reads back what the engine needs from a task, without reaching
-// into fields that stopped being exported.
 func factsOf(t task.Task) taskFacts {
 	var f taskFacts
 	t.Tell(&f)

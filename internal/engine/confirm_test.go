@@ -7,9 +7,6 @@ import (
 	"testing"
 )
 
-// An act that loses work is refused until it comes confirmed, wherever it is
-// asked from: the engine decides which acts ask first, and a surface only says
-// that it asked.
 func TestAnActThatLosesWorkWaitsToBeConfirmed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "Write the spec"}}); err != nil {
@@ -33,7 +30,6 @@ func TestAnActThatLosesWorkWaitsToBeConfirmed(t *testing.T) {
 	}
 }
 
-// Sweeping everything a narrowing reaches asks first; one task named does not.
 func TestASweepWaitsToBeConfirmed(t *testing.T) {
 	sweep := Input{Given: map[string]string{"state": "done"}}
 	one := Input{Given: map[string]string{"number": "1"}}

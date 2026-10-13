@@ -8,9 +8,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// TestShape_marshalsUnderTheNamesAScriptReads pins the wire: the field names
-// are what a script reads, and a script that reads one has no way to notice
-// a renamed tag unless it is checked here.
 func TestShape_marshalsUnderTheNamesAScriptReads(t *testing.T) {
 	encoded, err := json.Marshal(OfMigration(builtChange(true)))
 	if err != nil {
@@ -36,8 +33,6 @@ func TestOfMigration_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 }
 
-// A change waiting has no moment to report yet: Made is left out until it is
-// applied, not written as a zero value nobody asked about.
 func TestOfMigration_leavesMadeOutUntilApplied(t *testing.T) {
 	got := OfMigration(builtChange(false))
 	if got.Made != "" {

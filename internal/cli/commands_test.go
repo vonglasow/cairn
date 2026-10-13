@@ -1,11 +1,5 @@
 package cli
 
-// The command tree is built from engine.All() by newActionGroups, which
-// makes "one command per action" true by construction — but only for the
-// shape. Nothing else checks that the words survived the trip: a flag's help,
-// a command's Short and Long, whether --yes landed on the right verbs. This
-// is that check.
-
 import (
 	"errors"
 	"os"
@@ -18,12 +12,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// TestConfigShow_isNotStoppedByAStoreItCannotResolve checks that `config show`
-// is not turned away by the same refusal that stops every other command when
-// the store cannot be resolved at all — no home, no CAIRN_STORE, nowhere for
-// the default store to live. That refusal exists for the 22 operations that
-// go on to open a store; `config show` opens none, and is exactly what
-// somebody reaches for once everything else refuses.
 func TestConfigShow_isNotStoppedByAStoreItCannotResolve(t *testing.T) {
 	t.Setenv("HOME", "")
 	if err := os.Unsetenv("HOME"); err != nil {
@@ -48,8 +36,6 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 		groups[g.Name()] = g
 	}
 
-	// wanted names every verb engine.All() declares under its thing, so a
-	// second pass can tell a stray command from a declared one.
 	wanted := map[string]map[string]bool{}
 
 	for _, op := range engine.All() {
@@ -105,8 +91,6 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 			}
 		}
 
-		// --yes is offered by what may ask first: what loses work, and what
-		// sweeps up whatever a narrowing reaches.
 		yes := cmd.Flags().Lookup("yes")
 		mayAsk := op.Level == engine.Full || op.Sweeps != nil
 		if mayAsk && yes == nil {
@@ -117,13 +101,6 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 		}
 	}
 
-	// `cairn mcp serve` is deliberately not an action (see mcp.go: it is the
-	// same cairn answering an agent instead of a person, not one of the
-	// the operations), so the mcp group is never in wanted and is never
-	// walked here. Cobra's own completion and help, and fang's hidden man,
-	// are root-level commands rather than verbs under an action group, so
-	// this loop — which only walks the things engine.All() named — never
-	// reaches them either.
 	for thing, verbs := range wanted {
 		for _, c := range groups[thing].Commands() {
 			if !verbs[c.Name()] {
@@ -133,8 +110,6 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 	}
 }
 
-// Every example `--help` shows is a command the tree reads: an example that
-// no longer parses teaches the wrong thing to whoever copies it.
 func TestEveryExampleIsACommandTheTreeReads(t *testing.T) {
 	for _, op := range engine.All() {
 		cmd, _, err := NewRootCmd().Find([]string{op.Thing, op.Verb})
@@ -166,8 +141,6 @@ func TestEveryExampleIsACommandTheTreeReads(t *testing.T) {
 	}
 }
 
-// shellWords splits a line the way a shell would for the examples above:
-// words, and double-quoted words with their escapes.
 func shellWords(line string) ([]string, error) {
 	var words []string
 	var word strings.Builder

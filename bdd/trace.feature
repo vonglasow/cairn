@@ -1,10 +1,4 @@
 Feature: The trace
-  Every act performed on a task is written down: what it was, what it became,
-  and when. Nothing is ever rewritten, so a task can be put back together as it
-  stood at any past moment.
-
-  Looking at a task is not an act. A trace records what changed, never what was
-  read.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -45,12 +39,6 @@ Feature: The trace
       Then it lists the acts in the order "created", "priority", "column"
 
   Rule: Taking the focus and letting it go are acts
-
-    Amended 2026-09-14. Taking up a second task used to close the stretch on
-    the first, and the release named what had taken over so a cut could be told
-    from a stop. Several tasks are now worked on at once, one per agent
-    session, and their stretches overlap on purpose — so nothing is cut, and
-    what closes a stretch is unfocusing that task and nothing else.
 
     @trace-focus-taken-and-released
     Scenario: taking the focus and letting it go are both written down
@@ -101,15 +89,6 @@ Feature: The trace
       And it says the deletion took "high" with it
 
   Rule: What blocks a task is written down like anything else it carries
-
-    A blocker and the words beside it are attributes, so they are traced as
-    attributes: what they were, what they became, when, and through what. No new
-    kind of act — the one that says an attribute changed already says it.
-
-    The column going back to todo when the last thing is taken away is traced
-    too, and that matters more than it looks. It is a change cairn made rather
-    than one anybody typed, so without it the trace would show a task in todo
-    with nothing saying how it got there.
 
     @trace-a-blocker-added
     Scenario: naming what blocks a task is written down

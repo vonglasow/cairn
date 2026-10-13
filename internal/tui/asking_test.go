@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// The board asks the engine through the operation the engine describes, not
-// through a method it named itself. This is the test that says so.
 func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
@@ -29,15 +27,12 @@ func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
 	}
 }
 
-// asks drives a gesture and answers the one operation it asked for.
 func asks(t *testing.T, f *fake, keys []string, press string) asked {
 	t.Helper()
 	b := hit(standing(f), keys...)
 	if _, cmd := b.pressed(press); cmd != nil {
 		cmd()
 	}
-	// What follows is the refresh: a gesture writes, then reads the board back.
-	// Only the first is the gesture's own doing.
 	if len(f.asked) == 0 {
 		t.Fatal("the board asked for nothing")
 	}
@@ -78,9 +73,6 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 	}
 }
 
-// Letting the focus go is its own operation, and it names the task: several
-// can be in focus at once, so letting go of nothing in particular would let go
-// of every one of them.
 func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo", InFocus: true}}
@@ -94,8 +86,6 @@ func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
 	}
 }
 
-// And a task that is not in focus is taken up alongside whatever else is,
-// rather than replacing it.
 func TestTakingUpATaskAsksTaskFocusByNumber(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{

@@ -12,8 +12,6 @@ import (
 	"cairn/internal/objective"
 )
 
-// olderStore writes a store the way cairn wrote them before it knew about
-// sub-tasks: the first shape, and no record of what has been applied.
 func olderStore(t *testing.T, title string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -89,9 +87,6 @@ func TestOpen_refusesAStoreFromANewerCairn(t *testing.T) {
 	}
 }
 
-// When a change was applied is read back as the moment it was written, and a
-// ledger that does not say one is a ledger that cannot be read. It used to be
-// read as the year one, and listed as applied then.
 func TestMigrations_refusesALedgerThatDoesNotSayWhen(t *testing.T) {
 	s := openStore(t)
 	if _, err := s.db.Exec(`UPDATE migrations SET applied_at = 'yesterday'`); err != nil {
@@ -132,9 +127,6 @@ func TestApply_makesOneChange(t *testing.T) {
 	}
 	defer func() { _ = s.Close() }()
 
-	// The number is derived, not written: this test is about applying one
-	// change and leaving the rest alone, which is a claim that has to keep
-	// holding when a third migration is added.
 	name, err := s.Apply(2)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
@@ -234,7 +226,6 @@ func TestMigrations_saysWhatUndoingEachOneLoses(t *testing.T) {
 			t.Errorf("change %d: Loses = %q, want %q", i+1, got, want)
 		}
 	}
-	// The shape a store starts with cannot be rolled back, so it costs nothing.
 	if got := factsOfChange(all[0]).loses; got != "" {
 		t.Errorf("the first shape should lose nothing, got %q", got)
 	}
@@ -288,7 +279,6 @@ func TestMigrations_reportsAStoreItCannotRead(t *testing.T) {
 	}
 }
 
-// holdsTable answers whether the store's shape has a table by that name.
 func holdsTable(t *testing.T, s *Store, name string) bool {
 	t.Helper()
 	var found string
@@ -304,7 +294,6 @@ func holdsTable(t *testing.T, s *Store, name string) bool {
 	return true
 }
 
-// holdsColumn answers whether a table carries a column by that name.
 func holdsColumn(t *testing.T, s *Store, table, column string) bool {
 	t.Helper()
 	rows, err := s.db.Query(`SELECT name FROM pragma_table_info(?)`, table)
@@ -334,18 +323,11 @@ func TestMigrate_makesRoomForObjectives(t *testing.T) {
 			t.Errorf("no %q table: an objective has nowhere to be kept", table)
 		}
 	}
-	// A task serves a set, so what it serves lives in a table of its own rather
-	// than in a column on the task.
 	if !holdsTable(t, s, "task_objectives") {
 		t.Error("no task_objectives table: nothing records what a task serves")
 	}
 }
 
-// rollBackPast undoes changes until the named one has been undone, deriving how
-// many that is from migration.Known rather than counting by hand. Written this
-// way because it already went wrong once: a test that rolled back once was
-// asserting about whichever change happened to be last, and appending one made
-// it assert about the wrong change while still reading as though it did not.
 func rollBackPast(t *testing.T, s *Store, name string) {
 	t.Helper()
 	for i := len(migration.Known) - 1; i >= 0; i-- {
@@ -364,8 +346,6 @@ func TestMigrate_makesRoomForPlacesAndTheFocus(t *testing.T) {
 	if !holdsColumn(t, s, "tasks", "position") {
 		t.Error("tasks carry no \"position\": the order has nowhere to be kept")
 	}
-	// "focused" and not "focus": the one row that held one task became a row
-	// per task, so that several can be worked on at once.
 	if !holdsTable(t, s, "focused") {
 		t.Error("no \"focused\" table: what is being worked on has nowhere to be kept")
 	}
@@ -374,8 +354,6 @@ func TestMigrate_makesRoomForPlacesAndTheFocus(t *testing.T) {
 	}
 }
 
-// Rolling back the change that made room for several keeps the first task
-// taken up, which is the most a single row can hold.
 func TestMigrate_rollingBackTheManyFocusKeepsTheFirst(t *testing.T) {
 	s := openStore(t)
 	first := factsOf(keep(t, s, "First")).number
@@ -427,9 +405,6 @@ func TestMigrate_rollingBackTakesTheRoomAway(t *testing.T) {
 	}
 }
 
-// The boundary is derived, never written: Apply(2) used to be the last change
-// and exercised it by accident. A third migration ended that, and the mutant
-// turning `number > len(all)` into `>=` survived in the gap.
 func TestChange_knowsExactlyWhereTheNumbersStop(t *testing.T) {
 	s := openStore(t)
 	last := len(migration.Known)
@@ -441,9 +416,6 @@ func TestChange_knowsExactlyWhereTheNumbersStop(t *testing.T) {
 	}
 }
 
-// A backup that named its tasks and stayed quiet about its objectives would
-// let somebody restore over a store full of planning, believing they were
-// risking two tasks.
 func TestHeld_countsObjectivesApartFromTasks(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "Write the spec")
@@ -486,13 +458,6 @@ func TestHeld_reportsAStoreItCannotRead(t *testing.T) {
 	}
 }
 
-// Opening a store must not write to it. Every command opened the store, and
-// every open ran `CREATE TABLE IF NOT EXISTS migrations` — DDL, replayed for
-// nothing on a store that already had it. Reading is reading: the shape is
-// looked at, and `migration apply` is what changes it.
-//
-// A read-only file is the one test that cannot be fooled: anything settle
-// writes fails outright, whatever locks or timestamps say.
 func TestOpen_writesNothingToAStoreThatAlreadyHasItsShape(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	made, err := Open(path)
@@ -522,9 +487,6 @@ func TestOpen_writesNothingToAStoreThatAlreadyHasItsShape(t *testing.T) {
 	}
 }
 
-// A store that has never been written cannot be made on a file nobody may
-// write to. It is reported rather than half-opened: the ledger is the first
-// thing a new store needs, and without it nothing else can be recorded.
 func TestOpen_reportsAStoreItCannotCreateTheLedgerIn(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	if err := os.WriteFile(path, nil, 0o444); err != nil {
@@ -537,8 +499,6 @@ func TestOpen_reportsAStoreItCannotCreateTheLedgerIn(t *testing.T) {
 	}
 }
 
-// knowing swaps the changes this cairn knows for the first shape and one more,
-// for as long as a test runs.
 func knowing(t *testing.T, does, undoes string) {
 	t.Helper()
 	was := migration.Known
@@ -616,8 +576,6 @@ func TestMake_saysAChangeAnotherCairnAppliedFirstIsApplied(t *testing.T) {
 	if _, err := s.Apply(2); err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
-	// What a second cairn does when it read the change as waiting a moment
-	// before the first applied it.
 	if err := s.make(migration.Known[1]); !errors.Is(err, ErrAlreadyApplied) {
 		t.Errorf("make of a change already applied = %v, want ErrAlreadyApplied", err)
 	}
@@ -639,7 +597,6 @@ func TestApply_refusesAChangeWithAnEarlierOneWaiting(t *testing.T) {
 
 func TestRollBack_saysAChangeAnotherCairnUndidFirstWasUndone(t *testing.T) {
 	s := openStore(t)
-	// What a second cairn read a moment before the first one rolled back.
 	stale, err := s.Migrations()
 	if err != nil {
 		t.Fatal(err)

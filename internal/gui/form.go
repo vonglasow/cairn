@@ -1,12 +1,5 @@
 package gui
 
-// The modal that adds and edits, and the two buttons that end it.
-//
-// Nothing here lists the fields. They come from reading, which says the word a
-// person reads, the closed set when there is one, the field that wants more
-// than one line, and which engine argument each fills — so an attribute added
-// to the engine and to the terminal's form arrives here with no line written.
-
 import (
 	"strings"
 	"time"
@@ -17,30 +10,14 @@ import (
 
 // Form is the modal over the board while it is open.
 type Form struct {
-	// Adding tells a form over nothing from a form over something. Adding and
-	// editing are one form, because they ask the same questions.
-	Adding bool
-	// ForObjective says which of the two things is being written.
+	Adding       bool
 	ForObjective bool
-	// Number is the task or objective being edited, and nothing when adding.
-	Number int
+	Number       int
 
-	fields []engine.Field
-	// at is the field the keyboard is on, and caret where it stands inside
-	// that field's value. Moving to another field puts the caret at its end,
-	// because somebody arriving at a field is adding to it.
-	at    int
-	caret int
-	// held is how far a run's anchor lies from the caret, nought for none.
-	held int
-	// partAt is which line of the list of parts the keyboard is on: a part,
-	// one struck out, or the line that adds. writingPart says a line is being
-	// written on — a part renamed, or a new one — and named is what is
-	// written there. partsTop is the first line of the list in sight, moved
-	// only as far as keeps the keyboard's line in sight. struck is the parts
-	// struck out, by number, which stay in
-	// their place until the form is saved; carried is the part being dragged,
-	// counted from one.
+	fields      []engine.Field
+	at          int
+	caret       int
+	held        int
 	partAt      int
 	partsTop    int
 	spareParts  int
@@ -48,11 +25,7 @@ type Form struct {
 	named       Written
 	struck      []int
 	carried     int
-	// opened is what the fields held when the form was opened, so leaving it
-	// can tell a form somebody typed into from one they only looked at. Ten
-	// minutes of typing used to go on an esc without a question, while a
-	// deletion of two words was guarded.
-	opened []string
+	opened      []string
 }
 
 // Changed says whether anything in the form differs from what it opened with.
@@ -71,7 +44,6 @@ func (f Form) Changed() bool {
 	return false
 }
 
-// asOpened records what the fields held, which is what Changed compares with.
 func asOpened(f Form) Form {
 	f.opened = make([]string, len(f.fields))
 	for i := range f.fields {
@@ -98,9 +70,7 @@ func (f Form) Writes(written Written) Form {
 	return f
 }
 
-// onto moves the keyboard to a field and puts the caret at its end.
 func (f Form) onto(at int) Form {
-	// What was being written on the list of parts is kept on the way out.
 	if f.writingPart {
 		f = f.committing()
 		f.writingPart = false
@@ -113,8 +83,6 @@ func (f Form) onto(at int) Form {
 	return f
 }
 
-// adding opens an empty form for whichever tab asked, a task's on the column
-// it was asked on.
 func adding(tab Tab, state string) Form {
 	if tab == Objectives {
 		return asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewGoalFields()})
@@ -122,12 +90,10 @@ func adding(tab Tab, state string) Form {
 	return asOpened(Form{Adding: true, fields: engine.AddingFields(state)})
 }
 
-// editing opens a form on what a task already carries, its parts included.
 func editing(c engine.Card, cards []engine.Card) Form {
 	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c, cards)})
 }
 
-// editingGoal is the same for an objective.
 func editingGoal(g engine.Goal) Form {
 	return asOpened(Form{Number: g.Number, ForObjective: true, fields: engine.GoalFields(g)})
 }
@@ -138,8 +104,7 @@ func (f Form) Fields() []engine.Field { return f.fields }
 // On is the field the keyboard is on.
 func (f Form) On() int { return f.at }
 
-// ValueOf answers what a field holds, and nothing for a field that is not
-// there.
+// ValueOf answers what a field holds, and nothing for a field that is not there.
 func (f Form) ValueOf(name string) string {
 	for _, field := range f.fields {
 		if field.Name == name {
@@ -149,8 +114,7 @@ func (f Form) ValueOf(name string) string {
 	return ""
 }
 
-// Set writes a field. A form is a value like everything else here, so this
-// answers the form it becomes.
+// Set writes a field.
 func (f Form) Set(name, value string) Form {
 	fields := make([]engine.Field, len(f.fields))
 	copy(fields, f.fields)
@@ -164,8 +128,7 @@ func (f Form) Set(name, value string) Form {
 	return f
 }
 
-// Types puts what was typed into the field the keyboard is on. A form nobody
-// opened has no field to type into, and typing on the board goes nowhere.
+// Types puts what was typed into the field the keyboard is on.
 func (w Window) Types(text string) Window {
 	if text == "" {
 		return w
@@ -174,8 +137,6 @@ func (w Window) Types(text string) Window {
 		w.looking = w.looking.Types(text)
 		return w
 	}
-	// A list narrows as it is typed into. It is the same gesture as a search
-	// over the board, and the same matching rule answers it.
 	if w.screen == OnChoosing {
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
@@ -183,17 +144,12 @@ func (w Window) Types(text string) Window {
 	if w.screen != OnForm {
 		return w
 	}
-	// On the list of parts, what is typed is a part's name — and nothing at
-	// all while no line is being written: space ticks there.
 	if w.form.onParts() {
 		if w.form.writingPart {
 			w.form.named = w.form.named.Types(text)
 		}
 		return w
 	}
-	// A field holding one of a closed set takes no text of its own: typed
-	// into, a priority read "normal2h", which the store refuses and no row of
-	// its list matches. What is typed there narrows its list instead.
 	if w.onAClosedSet() {
 		return w.choosingList().Types(text)
 	}
@@ -201,12 +157,9 @@ func (w Window) Types(text string) Window {
 	return w.inSightOfTheCaret()
 }
 
-// onAClosedSet says whether the field the keyboard is on holds one of a closed
-// set of values, and so is only ever chosen.
 func (w Window) onAClosedSet() bool { return len(w.form.Fields()[w.form.On()].Choices) > 0 }
 
-// On puts the keyboard on a field by name, which is what a click does and what
-// a test says.
+// On puts the keyboard on a field by name, which is what a click does and what a test says.
 func (w Window) On(name string) Window {
 	for i, field := range w.form.Fields() {
 		if field.Name == name {
@@ -216,8 +169,6 @@ func (w Window) On(name string) Window {
 	return w
 }
 
-// back takes the last character off the field the keyboard is on. One
-// character and not one byte: half of a letter is not a letter.
 func (w Window) back() Window {
 	if w.screen != OnForm || w.onAClosedSet() {
 		return w
@@ -226,8 +177,6 @@ func (w Window) back() Window {
 	return w
 }
 
-// walks the caret through the field the keyboard is on. A field with a closed
-// set has nothing to walk through: the same keys change its value instead.
 func (w Window) walks(by int) Window {
 	if w.screen == OnSearch {
 		w.looking = w.looking.CaretAt(w.looking.At + by)
@@ -243,8 +192,7 @@ func (w Window) walks(by int) Window {
 	return w
 }
 
-// CaretInto puts the caret a given number of characters into the field the
-// keyboard is on, which is what a click in the text means.
+// CaretInto puts the caret a given number of characters into the field the keyboard is on, which is what a click in the text means.
 func (w Window) CaretInto(characters int) Window {
 	if w.screen != OnForm {
 		return w
@@ -253,10 +201,6 @@ func (w Window) CaretInto(characters int) Window {
 	return w
 }
 
-// cycle moves a field with a closed set to the next or previous of them, and
-// stops at both ends. Seven columns and four priorities are a value to cycle,
-// not a page to read — and a field with nothing to cycle is left alone, because
-// the same key has to be free to do something else there one day.
 func (w Window) cycle(by int) Window {
 	if w.screen != OnForm {
 		return w
@@ -276,7 +220,6 @@ func (w Window) cycle(by int) Window {
 	return w
 }
 
-// fieldAt says which of a form's fields a point lands on.
 func (w Window) fieldAt(p Point) (int, bool) {
 	if w.screen != OnForm {
 		return 0, false
@@ -285,7 +228,6 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	fields := w.form.Fields()
 	for i := range fields {
 		name, value, rows := FormPlace(box, fields, i)
-		// A field that wants several rows is answered anywhere in them.
 		value.H = lineHigh * rows
 		if name.In(p) || value.In(p) {
 			return i, true
@@ -294,22 +236,14 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	return 0, false
 }
 
-// into says how many characters into a line of text a point falls, so that
-// clicking in the middle of a word puts the caret there rather than at the end.
 func into(value Box, p Point, said string, m Measure) int {
 	return m.Nearest(said, reads, p.X-value.X)
 }
 
-// reaching says which character of a field a point lands on, line and column
-// both, in the field as it is drawn: from the line in sight at its top, and
-// with the face its words are written in. Asked before the keyboard moves onto
-// the field, because what was pressed is what was on screen.
 func (w Window) reaching(at int, p Point) int {
 	fields := w.form.Fields()
 	_, value, rows := FormPlace(w.formBox(), fields, at)
 	inside := Inside(Framed(value, rows))
-	// What drawForm shows of it: the field the keyboard is on from what is
-	// being typed and where the wheel left it, the others from their beginning.
 	on := at == w.form.On()
 	said := Written{Value: fields[at].Value}
 	if on {
@@ -320,10 +254,6 @@ func (w Window) reaching(at int, p Point) int {
 	return lines.Reaches(inside, p, StartsAt(lines, rows, line, w.scrolledOf(at)), w.measured(), FormSize(fields[at]))
 }
 
-// scrolledOf is where a field of the form shows its text from: a one-line
-// field wherever its caret is, the long field the wheel moves wherever the
-// wheel left it, and any other long field from its beginning, which is where
-// a text is read from.
 func (w Window) scrolledOf(at int) int {
 	if !w.form.Fields()[at].Long {
 		return Follow
@@ -334,15 +264,13 @@ func (w Window) scrolledOf(at int) int {
 	return 0
 }
 
-// Walk moves the keyboard from one field to the next, and stops at both ends
-// rather than wrapping: a form that wraps is a form somebody falls off.
+// Walk moves the keyboard from one field to the next, and stops at both ends rather than wrapping: a form that wraps is a form somebody falls off.
 func (f Form) Walk(by int) Form {
 	f.at = min(len(f.fields)-1, max(0, f.at+by))
 	return f
 }
 
-// Edit opens the form on whatever is chosen. Nothing chosen opens nothing:
-// there is no task to be a form about.
+// Edit opens the form on whatever is chosen.
 func (w Window) Edit() Window {
 	if w.chosen == 0 {
 		return w
@@ -359,11 +287,6 @@ func (w Window) Edit() Window {
 	return w.beside()
 }
 
-// beside reads what the column beside an opened form shows, and puts it at
-// its top: the history of a task, or the work serving an objective, which is
-// already on the board. An objective has no history of its own — the trace is
-// kept of tasks — and the number it carries belongs to a task as well: asking
-// for the trace of that number answered with a task nobody had chosen.
 func (w Window) beside() Window {
 	w.history, w.serving, w.saying = 0, 0, 0
 	w.spareHistory, w.spareSaying = 0, 0
@@ -371,9 +294,6 @@ func (w Window) beside() Window {
 	return w.readingActs()
 }
 
-// readingActs reads the history of the task the form is open on: when it
-// opens, and again each time the form saves itself, whose acts would
-// otherwise be missing from beside it until it was opened again.
 func (w Window) readingActs() Window {
 	w.acts = nil
 	if w.chosenGoal || w.screen != OnForm {
@@ -392,18 +312,9 @@ func (w Window) readingActs() Window {
 // Form is what the modal holds, for whoever draws it.
 func (w Window) Form() Form { return w.form }
 
-// formShown says whether a screen draws the form: its own, and the list and
-// the calendar that hang over it.
 func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
 
-// PartsTicked is what the parts field of an open form is drawn as: a tile for
-// each part it says now, done or not, unsaved lines included. Nothing on a
-// form with no parts field.
-//
-// Answered wherever the form is drawn, which formShown says once: answered
-// on the form alone, then on the form and its list, a task with parts opened
-// a list, then its calendar, and the window fell over each time — its tiles
-// counted the parts, and this said there were none.
+// PartsTicked is what the parts field of an open form is drawn as: a tile for each part it says now, done or not, unsaved lines included.
 func (w Window) PartsTicked() []engine.Card {
 	if !formShown(w.screen) {
 		return nil
@@ -425,9 +336,7 @@ func (w Window) PartsTicked() []engine.Card {
 	return nil
 }
 
-// Save writes what the form holds and closes it. One act in the history per
-// save, which is the whole reason this is a modal and not twelve fields edited
-// in place on a card.
+// Save writes what the form holds and closes it.
 func (w Window) Save() Window {
 	if w.screen != OnForm {
 		return w
@@ -444,9 +353,6 @@ func (w Window) Save() Window {
 	return w.Look()
 }
 
-// stored writes what the form holds, and says the number of what it wrote:
-// the task or objective it was over, or the one it has just added. What went
-// wrong is said on the window and handed back.
 func (w Window) stored() (Window, int, error) {
 	w.form = w.form.withoutStruck()
 	op, asked := w.saving()
@@ -454,11 +360,6 @@ func (w Window) stored() (Window, int, error) {
 	if err != nil {
 		return w.failing(err), 0, err
 	}
-	// The parts go under the task the form was over — or, when it added one,
-	// under the task it has just added.
-	// Once added it is there, whatever its parts come to: a form still
-	// adding would add it again on the next save, and a form saving on its
-	// own made a copy a beat.
 	number := w.form.Number
 	if w.form.Adding {
 		number = engine.Added(answer)
@@ -470,8 +371,6 @@ func (w Window) stored() (Window, int, error) {
 	return w, number, nil
 }
 
-// savingParts deletes the parts the form's parts field no longer names, each
-// as an act of its own: the rest went to the engine with the task.
 func (w Window) savingParts(parent int) error {
 	for _, field := range w.form.fields {
 		if field.Name != "parts" {
@@ -486,70 +385,44 @@ func (w Window) savingParts(parent int) error {
 	return nil
 }
 
-// Cancel closes whatever is open and writes nothing. Whatever, and not only a
-// form: the question asked before deleting is answered with the same word, and
-// a Cancel that only knew about forms left it open.
+// Cancel closes whatever is open and writes nothing.
 func (w Window) Cancel() Window {
-	// On the board, esc is what clears a search — there is nothing else here
-	// to put away.
 	if w.screen == OnTheBoard {
 		w.looking = Written{}
 		return w
 	}
-	// Backing out of the search box itself clears what it was narrowing to.
-	// This used to be a branch on esc alone; the bar now offers the same act,
-	// and an offer that did less than the key behind it would be a bar lying
-	// about what it does.
 	if w.screen == OnSearch {
 		w.screen, w.looking = OnTheBoard, Written{}
 		return w
 	}
-	// A line of the list of parts being written is put down, and nothing
-	// else: it is the nearer thing to back out of.
 	if w.screen == OnForm && w.form.writingPart {
 		w.form.writingPart, w.form.named = false, Written{}
 		return w
 	}
-	// A form somebody typed into is asked about before it goes. The window
-	// guards a deletion of two words; ten minutes of typing went on an esc
-	// with no question at all.
 	if w.screen == OnForm && w.form.Changed() {
 		w.screen, w.question = OnAsking, aboutLeaving
 		return w
 	}
-	// And the question answered the way it was reached — esc, or a click off
-	// it — throws the form away, setting what was typed aside.
 	if w.screen == OnAsking && w.question == aboutLeaving {
 		return w.throwingAway()
 	}
-	// Anywhere else it closes what is open and nothing more. A search
-	// narrowing the board is not what was opened: a task found by searching,
-	// opened, changed and put away used to give back the whole board, leaving
-	// somebody to type their search again to carry on where they were.
 	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 	return w
 }
 
-// throwingAway closes a form somebody typed into, setting what they typed
-// aside rather than losing it.
 func (w Window) throwingAway() Window {
 	w.draft = w.form
 	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 	return w
 }
 
-// recoverable says whether the form open is the one a form was thrown away
-// from — the same task or objective, or a new one of the same kind — and
-// nothing has been typed into it since: what was set aside can be brought
-// back without writing over anything.
 func (w Window) recoverable() bool {
 	d := w.draft
 	return d.fields != nil && !w.form.Changed() &&
 		d.Adding == w.form.Adding && d.ForObjective == w.form.ForObjective && d.Number == w.form.Number
 }
 
-// Choose is a button pressed by name, which is how a scenario says it and how
-// a pointer says it.
+// Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
 	switch strings.ToLower(name) {
 	case "edit":
@@ -559,10 +432,6 @@ func (w Window) Choose(name string) Window {
 	case "cmd+enter":
 		return w.Save()
 	case "choose":
-		// The same word twice, and two different acts: on a form it opens the
-		// list, and in the list it takes what the keyboard is on. A bar that
-		// said "Open a list" would be naming the mechanism rather than what
-		// somebody came to do.
 		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
 			return w.openingCalendar()
 		}
@@ -574,9 +443,6 @@ func (w Window) Choose(name string) Window {
 			w.screen = OnForm
 			return w
 		}
-		// Backing out of a list is backing out of the list, not of the form
-		// under it: the form holds what somebody typed, and throwing that away
-		// is what Cancel on a form means.
 		if w.screen == OnChoosing {
 			return w.leaving()
 		}
@@ -596,9 +462,6 @@ func (w Window) Choose(name string) Window {
 	case "keep":
 		return w.keeping()
 	case "close":
-		// Closing the list is not cancelling the form under it. What was
-		// ticked goes back into the field and the form is still there, with
-		// everything else somebody had already typed into it still in it.
 		if w.screen == OnChoosing {
 			return w.keeping()
 		}
@@ -610,8 +473,6 @@ func (w Window) Choose(name string) Window {
 		w.screen, w.helpFrom, w.spareHelp = OnHelp, 0, 0
 		return w
 	case "clear":
-		// What is taken together is let go of first: it is the nearer of
-		// the two, and the search is still there for the esc after.
 		if len(w.taken) > 0 {
 			w.taken = nil
 			return w
@@ -656,7 +517,6 @@ func (w Window) Choose(name string) Window {
 	case "throw away":
 		return w.throwingAway()
 	case "back":
-		// Going back to the form is what the question was there for.
 		w.screen, w.question = OnForm, aboutDeleting
 		return w
 	case "recover":
@@ -671,14 +531,6 @@ func (w Window) Choose(name string) Window {
 	return w
 }
 
-// saving says which operation a saved form means and what it carries. Adding
-// and editing are one form, so they are one function here: the difference is
-// the operation and the number, and nothing else about a form knows which of
-// the two it is.
-//
-// The title is trimmed on its way out and nowhere else: a title is what a task
-// is called, and what somebody called it does not include the space they left
-// after it.
 func (w Window) saving() (engine.Operation, engine.Input) {
 	adding, editing := engine.TaskNew, engine.TaskEdit
 	if w.form.ForObjective {
@@ -687,9 +539,6 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 	return engine.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
 }
 
-// addingOn is the column a task added now belongs to: the one what is chosen
-// stands in, the backlog when nothing is — and the first of the stopped states
-// when what is chosen is in the band, the way the terminal adds there.
 func (w Window) addingOn() string {
 	column, inBand, _, found := engine.Where(w.Showing().Cards, w.archived, w.chosen)
 	if !found {
@@ -701,9 +550,7 @@ func (w Window) addingOn() string {
 	return engine.StateAt(column)
 }
 
-// Delete asks first, and deletes the second time. It is the one thing this
-// window does that loses work, and work lost without being asked is work
-// somebody has to remember they lost.
+// Delete asks first, and deletes the second time.
 func (w Window) Delete() Window {
 	if w.screen == OnAsking && w.question == aboutDeleting {
 		return w.deleting()
@@ -715,7 +562,6 @@ func (w Window) Delete() Window {
 	return w
 }
 
-// deleting is the second time: it does what was agreed to.
 func (w Window) deleting() Window {
 	op := engine.TaskDelete
 	if w.chosenGoal {
@@ -729,9 +575,7 @@ func (w Window) deleting() Window {
 	return w.Look()
 }
 
-// Choosing is what the open list offers: every objective there is, in the order
-// the objectives tab shows them, so that a list and the tab behind it cannot
-// disagree about what comes first.
+// Choosing is what the open list offers: every objective there is, in the order the objectives tab shows them, so that a list and the tab behind it cannot disagree about what comes first.
 func (w Window) Choosing() []Choice {
 	if w.screen != OnChoosing {
 		return nil
@@ -739,9 +583,7 @@ func (w Window) Choosing() []Choice {
 	return w.choices()
 }
 
-// ChoosingSays is what the list reads when there is nothing to serve. A store
-// with no objectives in it says so rather than opening an empty panel, which
-// reads as a list that failed to load.
+// ChoosingSays is what the list reads when there is nothing to serve.
 const ChoosingSays = "nothing to serve yet"
 
 // ChoosingAt is where in that list the keyboard sits.
@@ -750,13 +592,9 @@ func (w Window) ChoosingAt() int { return w.choosing }
 // Ticked says whether an objective is in, as the open list has it.
 func (w Window) Ticked(number int) bool { return w.ticked[number] }
 
-// FieldSays is what a field reads on screen, which is not always what it
-// carries: the engine names the numbers a field holds.
+// FieldSays is what a field reads on screen, which is not always what it carries: the engine names the numbers a field holds.
 func (w Window) FieldSays(field engine.Field) string { return w.snap.Named(field) }
 
-// choosing opens the list over the form, with what the field already carries
-// ticked. Opened from the objectives field and from nowhere else: it is the
-// one field a number was typed into, and the only one a list would answer.
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
 	if !chosenFromAList(on) {
@@ -765,15 +603,12 @@ func (w Window) choosingList() Window {
 	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
 	w.choosingFor, w.filtering = on.Arg, Written{}
 	if on.Arg == "label" {
-		// A label is named, not numbered: one made of digits is a name too.
 		w = w.openingLabels(on.Value)
 	} else {
 		for _, number := range engine.NumbersIn(on.Value) {
 			w.ticked[number] = true
 		}
 	}
-	// A closed set is listed in its own order, and what the field holds is the
-	// one of it already taken.
 	if len(on.Choices) > 0 {
 		w.ticked = map[int]bool{}
 		for i, choice := range on.Choices {
@@ -783,8 +618,6 @@ func (w Window) choosingList() Window {
 		}
 	}
 	w.screen = OnChoosing
-	// Opened on what it already carries, so taking it off is one key rather
-	// than a walk down the list to find it.
 	for at, one := range w.Choosing() {
 		if w.ticked[one.Number] {
 			w.choosing = at
@@ -796,23 +629,14 @@ func (w Window) choosingList() Window {
 }
 
 // Choice is one line of the list: what it is numbered and what it is called.
-// A task and an objective are the same thing to a list, which is why the list
-// is one piece of code and not two.
 type Choice struct {
-	Number int
-	Title  string
-	// State is the column the task sits in, said on the row. Empty for an
-	// objective, which sits in no column a list has any use for.
-	State string
-	// Creates is the label taking this row creates: the row that offers a
-	// label nobody carries yet, under the name it will have.
+	Number  int
+	Title   string
+	State   string
 	Creates string
 }
 
-// RowSays is what a row of the open list reads: whether it is taken, then what
-// it is known by. A task and an objective are known by their number too; a
-// column is known by its name alone, and the number it is listed under is the
-// list's, not anything somebody has seen before.
+// RowSays is what a row of the open list reads: whether it is taken, then what it is known by.
 func (w Window) RowSays(one Choice) string {
 	said := "   "
 	if w.Ticked(one.Number) {
@@ -824,18 +648,12 @@ func (w Window) RowSays(one Choice) string {
 	return said + one.Title
 }
 
-// choices is everything the open list offers, narrowed by what is typed into
-// it. The narrowing is the board's own — a list that matched its own way would
-// answer a different set from the search box two keystrokes away.
 func (w Window) choices() []Choice {
 	if w.choosingFor == "label" {
 		return w.labelChoices()
 	}
 	looking := w.filtering.Reads()
 	var out []Choice
-	// A closed set is offered in the order the domain gives it, numbered by
-	// where it stands in that order, since what is kept is a name and not a
-	// number anybody has seen.
 	if set := w.closedSet(); len(set) > 0 {
 		for i, choice := range set {
 			if strings.Contains(choice, strings.ToLower(looking)) {
@@ -850,8 +668,6 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
-	// The same search the search box makes, so the list and the box beside it
-	// never disagree about what a word reaches.
 	for _, g := range engine.FoundGoals(w.snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
@@ -861,13 +677,9 @@ func (w Window) choices() []Choice {
 // Filtering is what has been typed into the open list.
 func (w Window) Filtering() Written { return w.filtering }
 
-// OneOnly says whether the open list takes one answer rather than several. A
-// task hangs under one parent; it serves as many objectives as it serves.
-// A column, a priority or a standing is one of a set, and only one.
+// OneOnly says whether the open list takes one answer rather than several.
 func (w Window) OneOnly() bool { return w.choosingFor == "parent" || len(w.closedSet()) > 0 }
 
-// closedSet is what the field the list is open for may hold, when that is a
-// closed set; empty for a list of tasks or objectives.
 func (w Window) closedSet() []string {
 	if w.screen != OnChoosing {
 		return nil
@@ -875,7 +687,6 @@ func (w Window) closedSet() []string {
 	return w.form.Fields()[w.form.On()].Choices
 }
 
-// inChoosing is what a key does while the list has the window.
 func (w Window) inChoosing(name string) Window {
 	offered := w.Choosing()
 	switch name {
@@ -886,8 +697,6 @@ func (w Window) inChoosing(name string) Window {
 		w.choosing = max(0, w.choosing-1)
 		w.choosingFrom = w.bringingIntoSight()
 	case "backspace":
-		// A list is corrected the way every other text here is. Without it a
-		// mistyped letter meant closing the list and opening it again.
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Back(), 0, 0
 	case "esc":
 		return w.leaving()
@@ -899,9 +708,6 @@ func (w Window) inChoosing(name string) Window {
 	return w
 }
 
-// taking takes what the keyboard is on, or gives it back. One answer closes
-// the list with it, since there is nothing left to say; several stay open,
-// because taking them one at a time is what the list is for.
 func (w Window) taking() Window {
 	if w.choosingFor == "label" {
 		return w.takingLabel()
@@ -912,10 +718,6 @@ func (w Window) taking() Window {
 	}
 	number := offered[w.choosing].Number
 	if w.OneOnly() {
-		// Taken again is taken off. One answer is still an answer that can be
-		// withdrawn, and a field a list fills is a field only a list empties —
-		// except a closed set, which has no empty answer: a task stands in a
-		// column whatever is done to the list.
 		if w.ticked[number] && len(w.closedSet()) == 0 {
 			w.ticked = map[int]bool{}
 		} else {
@@ -927,35 +729,20 @@ func (w Window) taking() Window {
 	return w
 }
 
-// bringingIntoSight moves the run of rows in sight so the one the keyboard is
-// on is inside it, which is what a column does when a card is chosen off the
-// bottom of it.
-// Counted in rows and not in pixels. The same walk in pixels had to divide by
-// a row's height at the end, and a run rarely divides into whole rows — the
-// remainder was an arithmetic nothing could judge, which is what this file's
-// own header says to write out as numbers instead.
 func (w Window) bringingIntoSight() int {
 	room := w.ChoosingRoom()
 	return min(w.choosing, max(w.choosingFrom, w.choosing-room+1))
 }
 
-// leaving closes the list and puts nothing back, which is what backing out of
-// one means.
 func (w Window) leaving() Window {
 	w.screen = OnForm
 	return w
 }
 
-// keeping closes the list and puts what was ticked back in the field, as the
-// numbers the engine takes. What a person reads there is FieldSays; what is
-// sent is this, because a surface that made up its own spelling of an argument
-// would be a surface deciding something.
 func (w Window) keeping() Window {
 	if w.choosingFor == "label" {
 		return w.keepingLabels()
 	}
-	// A closed set keeps the name taken, and the one it held when nothing was:
-	// a column is never left empty for a list closed on a narrowing.
 	if set := w.closedSet(); len(set) > 0 {
 		kept := w.form.Fields()[w.form.On()].Value
 		for i, choice := range set {

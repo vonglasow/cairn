@@ -2,11 +2,7 @@ package migration
 
 import "time"
 
-// AsTold builds a change from what it is told. It is the same membrane the
-// other way round: whoever has a change's facts — the raw list, or the
-// ledger a store keeps beside it — tells them, and is handed the change they
-// make. Nothing has to reach inside a change to put one together, which is
-// what lets a change keep its insides to itself.
+// AsTold builds a change from what it is told.
 type AsTold struct {
 	migration Migration
 }

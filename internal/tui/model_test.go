@@ -314,10 +314,6 @@ func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
 	}
 }
 
-// Every argument the operation takes has to be named, empty ones included: a
-// form is the whole of a task, so a field left blank is a field somebody
-// emptied. Read off the operation rather than listed here, so an argument added
-// to the engine and forgotten on the form fails this test.
 func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
 	form := asking(engine.EditFields(engine.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
@@ -345,9 +341,6 @@ func TestValueOfAFieldThatIsNotThere(t *testing.T) {
 }
 
 func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
-	// The board declares what it needs; this is what says the engine gives it.
-	// Without it, a method renamed in the engine would only be found by opening
-	// the board by hand.
 	var _ engine.Work = (*engine.Engine)(nil)
 }
 
@@ -460,12 +453,6 @@ func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 		{Number: 2, Title: "Two", State: "active"},
 	}
 	b := hit(standing(f), "tab")
-	// The difference is a colour, so the drawing is read before the styling is
-	// taken off it — and it is the row of the objective the cursor is on that
-	// has to change, not merely some row.
-	// Compared against a card drawn as the one under the cursor and one drawn
-	// as any other, so the test says which of the two is which rather than only
-	// that they differ.
 	width := b.width - 2*margin - frame
 	held := b
 	held.goal = 1
@@ -486,14 +473,11 @@ func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 	}
 }
 
-// onTheBoard finds the row a title is drawn on, as the board draws it: without
-// the margin in front of it, and without the blank the window pads it out with.
 func onTheBoard(t *testing.T, b Board, title string) string {
 	t.Helper()
 	return strings.TrimRight(strings.TrimPrefix(rowOf(t, b.Draw(), title), " "), " ")
 }
 
-// rowOf finds the drawn line carrying a title, styling and all.
 func rowOf(t *testing.T, drawn, title string) string {
 	t.Helper()
 	for _, row := range strings.Split(drawn, "\n") {
@@ -506,9 +490,6 @@ func rowOf(t *testing.T, drawn, title string) string {
 }
 
 func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
-	// Forty-eight columns is exactly where "/ search" starts to fit. Pinned at
-	// the character, because a bar one column too generous wraps and pushes the
-	// board up out of the window.
 	b := standing(twoTasks())
 	b.skin = plainSkin
 	b.width = 47
@@ -565,10 +546,6 @@ func TestEscapeOnTheBoardItselfDoesNothing(t *testing.T) {
 }
 
 func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
-	// The state's mark is put on in colour, and only when there is one. A card
-	// in a column has none, and nothing at all should be added to its first row
-	// — not even an empty piece of styling, which is invisible until somebody
-	// measures the row.
 	skin := SkinOf(Default)
 	g := GlyphsFor(Unicode)
 	todo := Rows(engine.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, 20)
@@ -603,8 +580,6 @@ func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 	b := hit(standing(f), "tab")
 	width := b.width - 2*margin - frame
 	b.goal = 1
-	// Compared with the frame drawn on purpose as the one under the cursor, so
-	// the test says which of the two is which rather than only that they differ.
 	want := b.skin.Card(width+frame, "", false, true).Render(strings.Join(b.goalRows(f.goals[0], width), "\n"))
 	if got := b.goalCard(f.goals[0], width); got != want {
 		t.Fatal("the objective under the cursor is not drawn as the one under it")
@@ -631,8 +606,6 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "One", State: "blocked"})
 	}
 	b := standing(f)
-	// Three cards is exactly one row of three. A fourth row of nothing would be
-	// a blank line the band pays for.
 	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != CardHeight {
 		t.Fatalf("three cards across drew %d rows, want %d", got, CardHeight)
 	}
@@ -650,8 +623,6 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	}
 	b := heardOf(standing(f), 1)
 	b.mode, b.task = Insert, 1
-	// A window with room for three: the three that matter are the last three,
-	// because a history is read from its end.
 	got := b.history(1, 40, 3)
 	if len(got) != 3 {
 		t.Fatalf("a window three rows tall showed %d acts", len(got))
@@ -659,8 +630,6 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	if !strings.Contains(got[2], "8") {
 		t.Fatalf("the last act shown is %q, want the latest", got[2])
 	}
-	// And no window at all shows everything, for whoever is counting rather
-	// than looking.
 	if all := b.history(1, 40, 0); len(all) != 9 {
 		t.Fatalf("with no window %d acts came back, want all nine", len(all))
 	}
@@ -684,8 +653,6 @@ func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
 	g := engine.Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
-	// "1/2  ⚑ ab" is nine columns, and what is left for it is the width less
-	// the bar and the two spaces beside it.
 	const room = barWidth + 2 + 9
 	if got := b.goalFacts(g, room); !strings.Contains(got, "⚑ ab") {
 		t.Fatalf("a row with room for the label reads %q", got)
@@ -728,8 +695,6 @@ func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 		b := heardOf(standing(f), 1)
 		b.width, b.height = 100, height
 		b.mode, b.task, b.screen = Insert, 1, OnDetail
-		// The panel gets what the window leaves after the tabs, the band and
-		// the bar, and it fills it: a history longer than that scrolls.
 		if got := len(b.history(1, 40, height-10)); got != height-10 {
 			t.Fatalf("in a window %d tall the history drew %d rows, want %d", height, got, height-10)
 		}
@@ -752,9 +717,6 @@ func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
 }
 
 func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
-	// The one thing that has to hold of every screen: it fits. A screen one row
-	// too tall pushes the tabs off the top and the bar off the bottom, and
-	// neither comes back.
 	f := fullBoard()
 	for _, keys := range [][]string{
 		nil, {"l"}, {"l", "i"}, {"?"}, {"l", "i", "enter"}, {"l", "i", "e"},
@@ -844,9 +806,6 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 	}
 }
 
-// A write that went through is what closes the form, and nothing else is
-// closed by a reading coming back: a task open on its detail stays open when
-// the board hears from the store again.
 func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "e")
@@ -866,9 +825,6 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 	}
 }
 
-// Settling the parts of a task is several writes in one gesture, and any of
-// them may be refused. What the store refuses is said rather than swallowed,
-// whichever of them it was.
 func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 	for _, verb := range []string{"edit", "delete"} {
 		t.Run("a part the store will not "+verb, func(t *testing.T) {
@@ -881,7 +837,6 @@ func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 			if b.screen != OnForm {
 				t.Fatalf("the form did not open: %v", b.screen)
 			}
-			// Naming one and dropping the other, so both writes are asked for.
 			b.form = b.form.typedInto("parts", "[ ] Rédiger la section Flux")
 			f.refuseVerb = verb
 			cmd := b.saveTask(b.form)
@@ -896,10 +851,6 @@ func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 	}
 }
 
-// The history of an open task is read once, when it opens, and again when the
-// board is read again — never while it is being drawn. Drawing asked the store
-// every time, so every redraw of the open task was a round trip, against the
-// promise that nothing is fetched while a key is being handled.
 func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i")
@@ -928,7 +879,6 @@ func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 	if after != heard {
 		t.Errorf("drawing three times read the history %d more times", after-heard)
 	}
-	// Stepping to the next task reads that one's.
 	_ = hit(b, "j")
 	last := f.asked[len(f.asked)-1]
 	if last.op.Name() != "trace_show" || last.in.Given["number"] != "2" {
@@ -936,8 +886,6 @@ func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 	}
 }
 
-// A line of history says which surface did it when it was not the person
-// reading — and says nothing of the kind when it was.
 func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	b := standing(newFake())
 	var told trace.AsTold
@@ -956,8 +904,6 @@ func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	}
 }
 
-// Reading the board again reads the open task's history again, since what was
-// just written is in it; with no task open there is no history to read.
 func TestReadingTheBoardAgainReadsTheOpenHistoryAgain(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "enter")

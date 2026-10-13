@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// TestAsTold_buildsWhatItWasTold checks that AsTold is the same membrane the
-// other way round: every fact Tell says comes back out through AsTold, in
-// full and with an absence read back as an absence.
 func TestAsTold_buildsWhatItWasTold(t *testing.T) {
 	made := time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
 	full := Migration{
@@ -30,10 +27,6 @@ func TestAsTold_buildsWhatItWasTold(t *testing.T) {
 	}
 }
 
-// TestAsTold_clearsWhatItIsToldIsAbsent checks that telling AsTold an
-// absence after it already holds a value really clears it, rather than
-// leaving whatever was there before — a membrane that only ever adds would
-// let a stale fact survive the next thing built from it.
 func TestAsTold_clearsWhatItIsToldIsAbsent(t *testing.T) {
 	var a AsTold
 	a.Undoes("DROP COLUMN parent")

@@ -19,18 +19,11 @@ import (
 	"gioui.org/unit"
 )
 
-// What the loop does with a frame's worth of events, driven through Gio's own
-// router rather than through a window. A router is what a window has inside it,
-// so this is the real path — everything but opening a display.
-
-// frames runs heard twice over a router: once to say what it listens for, and
-// once to be given what happened. That is the shape of every Gio frame.
 func frames(t *testing.T, w Window, events ...event.Event) (Window, time.Time, Point) {
 	t.Helper()
 	return framesAt(t, w, time.Time{}, Point{}, time.Now(), events...)
 }
 
-// framesTraced is frames with every pointer event written down where it says.
 func framesTraced(t *testing.T, w Window, traced io.Writer, events ...event.Event) Window {
 	t.Helper()
 	w, _, _ = framesInto(t, w, time.Time{}, Point{}, time.Now(), traced, events...)
@@ -103,8 +96,6 @@ func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 
 	frames(t, w,
 		pointer.Event{Kind: pointer.Press, Position: from, Buttons: pointer.ButtonPrimary},
-		// Move rather than Drag: a drag is what the router makes of a move
-		// while a button is down, not something anybody hands it.
 		pointer.Event{Kind: pointer.Move, Position: onto, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: onto, Buttons: pointer.ButtonPrimary},
 	)
@@ -113,8 +104,6 @@ func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 	}
 }
 
-// Two presses close together in time and place are one double-click, and the
-// loop is where that is worked out.
 func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -129,8 +118,6 @@ func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	}
 }
 
-// A press that is not the second of a pair is remembered as the first of the
-// next one.
 func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -179,8 +166,6 @@ func TestAFrameOfEventsTakesAKey(t *testing.T) {
 	}
 }
 
-// A key going back up is not a key being pressed, and doing anything about it
-// would do everything twice.
 func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -193,7 +178,6 @@ func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 	}
 }
 
-// A frame with nothing in it changes nothing.
 func TestAFrameOfNothingChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -204,9 +188,6 @@ func TestAFrameOfNothingChangesNothing(t *testing.T) {
 	}
 }
 
-// Choosing a card and then pressing Edit in the bar, through the loop a real
-// window uses. Everything about this was tested through Click, which the window
-// never calls.
 func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -241,9 +222,6 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 	}
 }
 
-// Typing through the loop a real window uses. An input method sends text as an
-// edit rather than as a key with a name, and a board that listened only for
-// names would show a form nobody can fill in — which is what it did.
 func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -279,9 +257,6 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	}
 }
 
-// Saving a form by pressing the word Save on it, through the loop a real window
-// uses. Every button on every panel was clickable only in the bar at the very
-// bottom, which is not where anybody looks.
 func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -306,8 +281,6 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	}
 }
 
-// Asked to, the loop writes down every pointer event as it read it, and
-// every event the keyboard sent, in the order they came.
 func TestTheLoopWritesDownEachEventWhenAsked(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})

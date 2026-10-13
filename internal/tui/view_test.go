@@ -5,9 +5,6 @@ import (
 	"testing"
 )
 
-// A question nobody can see is not a question. The foot said nothing while a
-// deletion waited to be agreed to, so the next key looked like it had been
-// swallowed.
 func TestTheFootPutsTheQuestionItIsWaitingOn(t *testing.T) {
 	b := hit(standing(twoTasks()), "l", "i", "d")
 	drawn := b.Draw()
@@ -19,8 +16,6 @@ func TestTheFootPutsTheQuestionItIsWaitingOn(t *testing.T) {
 	}
 }
 
-// The detail's bar offered hjkl and the arrows, and the detail screen served
-// neither: every one of those keys did nothing at all.
 func TestTheDetailServesTheNavigationItOffers(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "enter")

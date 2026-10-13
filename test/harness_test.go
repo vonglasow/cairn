@@ -23,8 +23,6 @@ func TestSplitArgs_readsACommandLineTheWayAShellWould(t *testing.T) {
 		{`cairn task list`, []string{"cairn", "task", "list"}},
 		{`cairn task new "Spec" --desc the one`, []string{"cairn", "task", "new", "Spec", "--desc", "the one"}},
 		{`cairn task new "Spec" --priority high --state todo`, []string{"cairn", "task", "new", "Spec", "--priority", "high", "--state", "todo"}},
-		// A flag carrying nothing keeps nothing: a value invented here would
-		// reach the surface as an empty string it never had to refuse.
 		{`cairn task list --json`, []string{"cairn", "task", "list", "--json"}},
 		{`cairn task delete 1 --yes`, []string{"cairn", "task", "delete", "1", "--yes"}},
 	} {

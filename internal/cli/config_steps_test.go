@@ -1,8 +1,5 @@
 package cli
 
-// Steps observed only by bdd/config.feature: the file cairn reads its two
-// places from, and how the environment and the default sit around it.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -16,17 +13,10 @@ import (
 	"cairn/test"
 )
 
-// configPath is where the configuration lives for this scenario's home:
-// ~/.config/cairn/config.toml, the same on every platform this runs on.
-// Spelled once, in test.World — the world every surface shares, and the one
-// Seed itself sets aside — rather than a second time here.
 func (w *world) configPath() string {
 	return w.ConfigPath()
 }
 
-// appendConfig adds to a configuration already posed, rather than replacing
-// it — a scenario building up a file line by line, the way "that same
-// configuration says something under..." reads.
 func (w *world) appendConfig(content string) error {
 	f, err := os.OpenFile(w.configPath(), os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
@@ -37,14 +27,6 @@ func (w *world) appendConfig(content string) error {
 	return err
 }
 
-// mentionsPath says whether a rendered reason names a path, ignoring every
-// blank on both sides. The renderer wraps a long line wherever it must,
-// including in the middle of a path, and test.Flatten turns that wrap into a
-// space — which a path never carries. Dropping blanks altogether is safe for
-// a path and would not be in general: a path is one token, so nothing can be
-// glued to it that was not already beside it. Measured on this machine: the
-// default TMPDIR is long enough that the path wraps, and the scenario failed
-// on the comparison while the reason cairn wrote held the path intact.
 func mentionsPath(where, what string) bool {
 	strip := func(s string) string {
 		return strings.Join(strings.Fields(strings.ToLower(s)), "")
@@ -52,11 +34,6 @@ func mentionsPath(where, what string) bool {
 	return strings.Contains(strip(where), strip(what))
 }
 
-// itRefuses fails unless the last command line was understood and turned
-// down — exit 1, not any other code a failure could carry. exitStore (3) and
-// exitUsage (2) both look like "it failed" to a step that only checked the
-// code was not exitOK, and the distinction internal/cli/exit.go draws
-// between the three is exactly what these scenarios are pinning down.
 func (w *world) itRefuses() error {
 	if w.Out.Code != exitRefused {
 		return fmt.Errorf("exit %d, want %d (%s)", w.Out.Code, exitRefused, w.Out.Stderr)
@@ -64,9 +41,6 @@ func (w *world) itRefuses() error {
 	return nil
 }
 
-// expand turns a scenario's "~/..." into a real path under this run's own
-// home, the way the file itself is read against it rather than against
-// whoever runs the suite.
 func (w *world) expand(place string) string {
 	if rest, ok := strings.CutPrefix(place, "~"); ok {
 		return filepath.Join(w.Defaults, rest)
@@ -74,7 +48,6 @@ func (w *world) expand(place string) string {
 	return place
 }
 
-// registerConfig declares the steps only bdd/config.feature uses.
 func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	sc.Step(`^nothing configured anywhere yet$`, func() error {
 		w.Setenv(config.StoreVariable, "")
@@ -85,17 +58,10 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return os.Unsetenv("XDG_CONFIG_HOME")
 	})
 
-	// A file that names the other place, not an empty one. "Says nothing about
-	// the store" has to be told apart from there being no file at all, which
-	// is what @config-that-is-not-there-is-the-ordinary-case covers on its own:
-	// an empty file decodes to the same nothing as an absent one, and the two
-	// scenarios would guard one behaviour between them instead of two.
 	sc.Step(`^a configuration that says nothing about the store$`, func() error {
 		return w.WriteConfig("notes = \"~/vault\"\n")
 	})
 
-	// The store's twin of the step above, for the same reason: a file that
-	// names the other place, so it is not mistaken for there being none.
 	sc.Step(`^a configuration that says nothing about the notes$`, func() error {
 		return w.WriteConfig("store = \"~/.cairn/cairn.db\"\n")
 	})
@@ -107,8 +73,6 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Unreadable rather than absent: the file is there, and its permissions
-	// say nobody may open it.
 	sc.Step(`^a configuration file that cannot be read$`, func() error {
 		if err := w.WriteConfig("notes = \"~/vault\"\n"); err != nil {
 			return err
@@ -141,22 +105,16 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("store = %q\n", place))
 	})
 
-	// The variable carries what a person would have typed, "~" and all: it is
-	// cairn that expands it, so a step that expanded it first would be testing
-	// itself.
 	sc.Step(`^the environment says the store lives at "([^"]*)"$`, func(place string) error {
 		w.Setenv(config.StoreVariable, place)
 		return nil
 	})
 
-	// The notes' twin of the step above.
 	sc.Step(`^the environment says the notes live at "([^"]*)"$`, func(place string) error {
 		w.Setenv(config.NotesVariable, place)
 		return nil
 	})
 
-	// The behaviour under test, not a precondition: it goes through the real
-	// command, the same as `I run`.
 	sc.Step(`^I add a task titled "([^"]*)"$`, func(title string) error {
 		w.Run(fmt.Sprintf(`cairn task new "%s"`, title))
 		return nil
@@ -174,15 +132,10 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))
 	})
 
-	// Not TOML at all, rather than TOML that says something cairn does not
-	// know: @config-an-unknown-name-is-refused covers the second on its own,
-	// and the two would guard one behaviour between them instead of two.
 	sc.Step(`^a configuration that is not TOML$`, func() error {
 		return w.WriteConfig("this is not toml: [[[\n")
 	})
 
-	// Appended, not written afresh: the scenario reads as one configuration
-	// that says two things, not two configurations replacing each other.
 	sc.Step(`^that same configuration says something under "([^"]*)"$`, func(name string) error {
 		return w.appendConfig(fmt.Sprintf("%s = \"something\"\n", name))
 	})
@@ -204,8 +157,6 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, name, "the reason")
 	})
 
-	// What it accepts instead of a name it does not know: the two places a
-	// configuration is allowed to speak of.
 	sc.Step(`^it names what it accepts instead$`, func() error {
 		if err := test.WantContains(w.Out.Stderr, "store", "the reason"); err != nil {
 			return err
@@ -250,8 +201,6 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "other commands will refuse until it is", "the card")
 	})
 
-	// A real invocation, not a simulation: this measures the previous step's
-	// claim instead of taking it on faith.
 	sc.Step("^`cairn task list` on that same configuration does refuse$", func() error {
 		w.Run("cairn task list")
 		return w.itRefuses()
@@ -261,9 +210,6 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		w.jsonCarriesWhatItCouldNotMakeSenseOf)
 }
 
-// jsonCarriesEachPlace fails unless the JSON `config show --json` printed
-// carries the file it read and, for each of its two places, where it
-// resolved to and what named it.
 func (w *world) jsonCarriesEachPlace() error {
 	var doc map[string]any
 	if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -289,9 +235,6 @@ func (w *world) jsonCarriesEachPlace() error {
 	return nil
 }
 
-// jsonCarriesWhatItCouldNotMakeSenseOf fails unless the JSON `config show
-// --json` printed carries the file it read and what stood in the way of
-// making sense of it.
 func (w *world) jsonCarriesWhatItCouldNotMakeSenseOf() error {
 	var doc map[string]any
 	if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -307,9 +250,6 @@ func (w *world) jsonCarriesWhatItCouldNotMakeSenseOf() error {
 	return nil
 }
 
-// namedBy fails unless the card names place among what it printed, alongside
-// what named it — used for both the store and the notes, since a card says
-// the same two things about either.
 func (w *world) namedBy(place, by string) error {
 	if !mentionsPath(w.Out.Stdout, w.expand(place)) {
 		return fmt.Errorf("the card does not name %q:\n%s", place, w.Out.Stdout)

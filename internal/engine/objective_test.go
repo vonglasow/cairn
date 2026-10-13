@@ -12,7 +12,6 @@ import (
 	"cairn/internal/task"
 )
 
-// addObjective adds an objective, failing the test if it cannot.
 func addObjective(t *testing.T, e *Engine, title string) objective.Objective {
 	t.Helper()
 	o, err := e.addObjective(title, ObjectiveChanges{})
@@ -58,9 +57,6 @@ func TestEngine_setsATaskLooseFromItsObjective(t *testing.T) {
 	}
 }
 
-// The three refusals below are one rule seen from three sides: a task never
-// carries a parent and an objective at the same time.
-
 func TestEngine_refusesAnObjectiveOnASubTask(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
@@ -100,7 +96,6 @@ func TestEngine_refusesAParentOnATaskServingAnObjective(t *testing.T) {
 	if _, err := e.edit(factsOf(servingTask).number, Changes{Parent: of(factsOf(parent).number)}); !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("err = %v, want ErrSubTaskServesNoObjective", err)
 	}
-	// And nothing moved.
 	still, err := e.show(factsOf(servingTask).number)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
@@ -112,7 +107,6 @@ func TestEngine_refusesAParentOnATaskServingAnObjective(t *testing.T) {
 	}
 }
 
-// The refusal is not a dead end: set the task loose and hang it up in one go.
 func TestEngine_lettingGoOfTheObjectiveMakesRoomForAParent(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
@@ -134,8 +128,6 @@ func TestEngine_lettingGoOfTheObjectiveMakesRoomForAParent(t *testing.T) {
 	}
 }
 
-// A sub-task that never had an objective is still a sub-task: hanging it
-// somewhere else must not be mistaken for the refusal above.
 func TestEngine_stillMovesASubTaskThatServesNothing(t *testing.T) {
 	e := openEngine(t)
 	first := add(t, e, "Ship it")
@@ -153,7 +145,6 @@ func TestEngine_stillMovesASubTaskThatServesNothing(t *testing.T) {
 	}
 }
 
-// done marks a task as done, failing the test if it cannot.
 func done(t *testing.T, e *Engine, number int) {
 	t.Helper()
 	if _, err := e.edit(number, Changes{State: of("done")}); err != nil {
@@ -161,7 +152,6 @@ func done(t *testing.T, e *Engine, number int) {
 	}
 }
 
-// serving adds a task under an objective, failing the test if it cannot.
 func serving(t *testing.T, e *Engine, title string, objectiveNumber int) task.Task {
 	t.Helper()
 	added, err := e.add(title, Changes{Objective: serves(objectiveNumber)})
@@ -171,7 +161,6 @@ func serving(t *testing.T, e *Engine, title string, objectiveNumber int) task.Ta
 	return added
 }
 
-// under adds a sub-task, failing the test if it cannot.
 func under(t *testing.T, e *Engine, title string, parent int) task.Task {
 	t.Helper()
 	added, err := e.add(title, Changes{Parent: of(parent)})
@@ -203,8 +192,6 @@ func TestEngine_countsTheTasksUnderAnObjective(t *testing.T) {
 	}
 }
 
-// A sub-task counts towards the objective its parent serves, and is counted
-// apart from it: one task and one sub-task is never two tasks.
 func TestEngine_countsSubTasksApartUnderAnObjective(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
@@ -227,7 +214,6 @@ func TestEngine_countsSubTasksApartUnderAnObjective(t *testing.T) {
 	}
 }
 
-// Sub-tasks of a task serving another objective must not be swept in.
 func TestEngine_countsOnlyWhatServesTheObjectiveAsked(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
@@ -281,7 +267,6 @@ func TestEngine_countsTheSubTasksOfATask(t *testing.T) {
 	if got.SubTasks != (domain.Tally{Total: 2, Done: 1}) {
 		t.Errorf("SubTasks = %+v, want 1 of 2", got.SubTasks)
 	}
-	// A task never counts itself: two sub-tasks is one of two, not one of three.
 	if got.Tasks != (domain.Tally{}) {
 		t.Errorf("Tasks = %+v, want none: a task does not count itself", got.Tasks)
 	}
@@ -424,8 +409,6 @@ func TestObjectiveAdd_addsAnObjective(t *testing.T) {
 	}
 }
 
-// serves is Changes.Objective for a single objective, which is what most of
-// these tests name. A task serves a set, so even one is given as one.
 func serves(numbers ...int) *[]string {
 	named := make([]string, 0, len(numbers))
 	for _, one := range numbers {

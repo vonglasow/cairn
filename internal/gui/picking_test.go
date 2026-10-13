@@ -14,8 +14,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// openTask is a task opened to be edited, carrying something in every place
-// the column beside its form writes: a history, and the place of its notes.
 func openTask(t *testing.T) (Window, *fake) {
 	t.Helper()
 	f := newFake()
@@ -31,7 +29,6 @@ func openTask(t *testing.T) (Window, *fake) {
 	return w, f
 }
 
-// readable finds a piece of text the column beside a form writes, by what it is.
 func readable(t *testing.T, w Window, key string) Readable {
 	t.Helper()
 	for _, r := range w.Readables() {
@@ -43,15 +40,10 @@ func readable(t *testing.T, w Window, key string) Readable {
 	return Readable{}
 }
 
-// on is the point over a character of a piece of text, on its first line in sight.
 func on(r Readable, at int) Point {
 	return Point{X: r.Box.X + at*glyphOf(r.Size), Y: r.Box.Y + lineHigh/2}
 }
 
-// TOUT TEXTE ÉCRIT DOIT ÊTRE SÉLECTIONNABLE ET COPIABLE. Every piece of text
-// beside an open task's form can be held, a word at a time by a double click,
-// and copied, the way what is in its fields can. None of it could: a window
-// draws text as shapes, and nothing had said where a shape's letters were.
 func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 	w, _ := openTask(t)
 	for _, c := range []struct {
@@ -68,7 +60,6 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 			}
 		})
 	}
-	// A line of the history, a word into it.
 	history := readable(t, w, "history:0")
 	at := strings.Index(history.Said, "changed")
 	if at < 0 {
@@ -79,8 +70,6 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 	}
 }
 
-// A run of text is held by dragging across it, the way the form holds one, and
-// copied with ⌘C.
 func TestARunOfAnOpenTasksTextIsHeldByDraggingAcrossIt(t *testing.T) {
 	w, _ := openTask(t)
 	r := readable(t, w, "field:context")
@@ -88,15 +77,12 @@ func TestARunOfAnOpenTasksTextIsHeldByDraggingAcrossIt(t *testing.T) {
 	if got, _ := w.Key("cmd+c").Copying(); got != "/vault" {
 		t.Fatalf("dragging across the first six letters copied %q", got)
 	}
-	// A press that goes nowhere holds nothing, and copies nothing.
 	w = w.PressAt(on(r, 2)).LetGo(on(r, 2))
 	if got, wants := w.Key("cmd+c").Copying(); wants {
 		t.Fatalf("a click held %q", got)
 	}
 }
 
-// ⌘A holds the whole of the text last pressed in, so a line of history is
-// copied without being dragged across.
 func TestAllOfATextIsHeldAtOnce(t *testing.T) {
 	w, _ := openTask(t)
 	r := readable(t, w, "history:0")
@@ -106,8 +92,6 @@ func TestAllOfATextIsHeldAtOnce(t *testing.T) {
 	}
 }
 
-// What is held is what is painted: the run the window will copy is the run it
-// shows held, on the text it belongs to and no other.
 func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 	w, _ := openTask(t)
 	r := readable(t, w, "name:context")
@@ -120,7 +104,6 @@ func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 	}
 }
 
-// A word in a field of the form is held by a double click, as on an open task.
 func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -135,8 +118,6 @@ func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 	}
 }
 
-// What is held is painted, on both ways a line is written: a field's value,
-// laid out on lines, and a line of the history, written whole.
 func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
 	for _, key := range []string{"field:context", "history:0"} {
 		t.Run(key, func(t *testing.T) {
@@ -151,8 +132,6 @@ func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
 	}
 }
 
-// held counts the points of a piece of text's first line painted in the ground
-// a held run is painted in.
 func held(shot *image.RGBA, r Readable) int {
 	ghost, count := Dark().Ghost, 0
 	for y := r.Box.Y; y < r.Box.Y+lineHigh; y++ {
@@ -165,8 +144,6 @@ func held(shot *image.RGBA, r Readable) int {
 	return count
 }
 
-// How wide a character is reckoned to be, at every size the window writes in
-// and either side of where the reckoning changes.
 func TestACharacterIsReckonedAtEverySize(t *testing.T) {
 	for size, want := range map[int]int{
 		small - 1: perSmallGlyph, small: perSmallGlyph,
@@ -179,8 +156,6 @@ func TestACharacterIsReckonedAtEverySize(t *testing.T) {
 	}
 }
 
-// The character under a point, on any line in sight, scrolled or not, and held
-// to the text at all four of its edges.
 func TestTheCharacterUnderAPoint(t *testing.T) {
 	r := Readable{Box: Box{X: 100, Y: 200, W: 300, H: 3 * lineHigh}, Size: reads,
 		Lines: Wrapped("un deux\ntrois\nquatre", 40)}
@@ -208,10 +183,6 @@ func TestTheCharacterUnderAPoint(t *testing.T) {
 	}
 }
 
-// The room a piece of text takes to be pressed in is the box it is drawn in,
-// and no more. It used to be every line from the first in sight, drawn or not:
-// a long description reached past its frame to the foot of the panel, and took
-// the presses meant for the place of the notes and for what the panel offers.
 func TestTheRoomAPieceOfTextTakes(t *testing.T) {
 	r := Readable{Box: Box{X: 100, Y: 200, W: 300, H: lineHigh}, Size: reads,
 		Lines: Wrapped("1\n2\n3\n4\n5", 40), From: 2}
@@ -224,8 +195,6 @@ func TestTheRoomAPieceOfTextTakes(t *testing.T) {
 	}
 }
 
-// A part counts as in sight when the whole of its line is inside the box, its
-// edges included, and not when any of it is outside.
 func TestAPartIsInSightWhenAllOfItIs(t *testing.T) {
 	frame := Box{X: 0, Y: 100, W: 300, H: 100}
 	for _, c := range []struct {
@@ -240,8 +209,6 @@ func TestAPartIsInSightWhenAllOfItIs(t *testing.T) {
 	}
 }
 
-// Where a held run is painted on its line: as far in as what comes before it,
-// as wide as it is.
 func TestWhereAHeldRunIsPainted(t *testing.T) {
 	box := Box{X: 100, Y: 200, W: 300, H: lineHigh}
 	if got, want := HeldRun(box, 40, 25), (Box{X: 140, Y: 200, W: 25, H: lineHigh}); got != want {
@@ -249,10 +216,6 @@ func TestWhereAHeldRunIsPainted(t *testing.T) {
 	}
 }
 
-// What is measured is what is drawn: the edges between the characters of a
-// line fall where the face puts them, and a proportional face puts an i and a W
-// at different widths. Reckoned at one width for all, a run held with the mouse
-// ended a word away from the pointer by the end of a line.
 func TestTheFaceMeasuresWhatItDraws(t *testing.T) {
 	th := Theme()
 	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
@@ -274,8 +237,6 @@ func TestTheFaceMeasuresWhatItDraws(t *testing.T) {
 	}
 }
 
-// A point lands on the edge between two characters nearest to it, and not on
-// the character it is over: a pointer just short of a letter's end is after it.
 func TestAPointLandsOnTheNearestEdge(t *testing.T) {
 	m := Measure(func(string, int) []int { return []int{0, 3, 13, 15} })
 	for x, want := range map[int]int{-5: 0, 1: 0, 2: 1, 7: 1, 9: 2, 14: 3, 100: 3} {
@@ -285,7 +246,6 @@ func TestAPointLandsOnTheNearestEdge(t *testing.T) {
 	}
 }
 
-// Text on an open task and in a field is reached with the face it is drawn in.
 func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	m := Measure(func(string, int) []int { return []int{0, 3, 13, 15} })
 	r := Readable{Box: Box{X: 10, W: 100, H: lineHigh}, Said: "iWi", Size: reads,
@@ -307,9 +267,6 @@ func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	}
 }
 
-// A run dragged on is grown to whole units from its anchor, and the end that
-// moves is the one the pointer is at: inside the word it began on, that is the
-// word's end, where the caret was left by the double click.
 func TestARunGrowsFromItsAnchorByWholeUnits(t *testing.T) {
 	said := "Write the spec"
 	word := Picked{From: 6, To: 9}
@@ -334,15 +291,11 @@ func TestARunGrowsFromItsAnchorByWholeUnits(t *testing.T) {
 	}
 }
 
-// A field shows its last line when what it holds is longer than its room and
-// the keyboard is on it, and a press there lands on that line — not on the
-// first, which is out of sight.
 func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	f := newFake()
 	title := strings.Repeat("word ", 40) + "end"
 	w := holding(f, card(1, title, "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	// The caret at the end, where somebody arriving at the field types.
 	w.form = w.form.onto(0)
 	box := w.formBox()
 	fields := w.Form().Fields()
@@ -358,8 +311,6 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	}
 }
 
-// A task the window was told nowhere about writes nothing at its foot: there
-// is no place to say, and a name over nothing reads as a place that failed.
 func TestAnOpenTaskToldNowhereSaysNoPlace(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))

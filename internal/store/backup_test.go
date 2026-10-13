@@ -8,8 +8,6 @@ import (
 	"testing"
 )
 
-// held opens a store, puts n tasks in it, and closes it — leaving a real file
-// for the backups to be made of.
 func held(t *testing.T, path string, titles ...string) {
 	t.Helper()
 	s, err := Open(path)
@@ -235,8 +233,6 @@ func TestVault_countsWhatTheStoreHolds(t *testing.T) {
 	}
 }
 
-// A file that answers nothing is not a store. Counting it as an empty one is
-// how somebody else's file gets copied and reported as yours.
 func TestVault_refusesToCountWhatIsNotAStore(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	if err := os.WriteFile(path, []byte("this is not a cairn store"), 0o600); err != nil {
@@ -247,9 +243,6 @@ func TestVault_refusesToCountWhatIsNotAStore(t *testing.T) {
 	}
 }
 
-// A backup made by an older cairn has tasks and no objectives table at all, and
-// what it holds is still readable: the second question is asked rather than
-// assumed, so the older shape answers with the count it has.
 func TestHeldOn_readsTheOlderShapeThatHasNoObjectives(t *testing.T) {
 	older := filepath.Join(t.TempDir(), "older.db")
 	db, err := sql.Open("sqlite", older)
@@ -271,8 +264,6 @@ func TestHeldOn_readsTheOlderShapeThatHasNoObjectives(t *testing.T) {
 	}
 }
 
-// A file in the backup folder that is not one of ours is not one of ours,
-// whichever way its name is wrong: nothing is guessed from a name.
 func TestNumberOf_takesNoNameButOurs(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -293,10 +284,6 @@ func TestNumberOf_takesNoNameButOurs(t *testing.T) {
 	}
 }
 
-// A store held open keeps its latest writes beside it, in the write-ahead log,
-// until it is closed. A backup is of the store as it stands, writes held aside
-// included: a copy of the file alone missed them, and a board holds the store
-// open for as long as it is on screen.
 func TestVault_backsUpWhatAStoreHeldOpenHasNotWrittenBack(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	s, err := Open(path)
@@ -319,9 +306,6 @@ func TestVault_backsUpWhatAStoreHeldOpenHasNotWrittenBack(t *testing.T) {
 	}
 }
 
-// What sits beside the store belongs to the store it was written for. Left
-// there when another is put in its place, SQLite would read the old log on top
-// of the new file.
 func TestVault_putsABackupBackWithNothingOfTheOldStoreBesideIt(t *testing.T) {
 	v, path := vaultOn(t, "Write the spec")
 	made, err := v.Make()
@@ -347,9 +331,6 @@ func TestVault_putsABackupBackWithNothingOfTheOldStoreBesideIt(t *testing.T) {
 	}
 }
 
-// A file SQLite cannot read is backed up as it lies: a backup is most needed
-// when the store is damaged, and putting one back first sets the damaged store
-// aside.
 func TestVault_backsUpADamagedStoreAsItLies(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	if err := os.WriteFile(path, []byte("not a database at all"), 0o600); err != nil {
@@ -365,7 +346,6 @@ func TestVault_backsUpADamagedStoreAsItLies(t *testing.T) {
 	}
 }
 
-// ownerOnly fails the test when a file can be read by anybody but its owner.
 func ownerOnly(t *testing.T, path string) {
 	t.Helper()
 	info, err := os.Stat(path)
@@ -415,7 +395,6 @@ func TestVault_skipsANumberAnotherCairnTookMeanwhile(t *testing.T) {
 	if _, err := v.Make(); err != nil {
 		t.Fatalf("Make: %v", err)
 	}
-	// Another cairn read the same last number and made its backup first.
 	theirs := v.pathOf(2)
 	if err := os.WriteFile(theirs, []byte("theirs"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
@@ -550,8 +529,6 @@ func TestVault_putsBackThroughNoLinkLeftInItsWay(t *testing.T) {
 	}
 }
 
-// A store held open knows when the file it was opened on has been put away
-// for another — a backup put back under it.
 func TestStore_saysWhenItsFileWasReplaced(t *testing.T) {
 	v, path := vaultOn(t, "Write the spec")
 	made, err := v.Make()
@@ -574,9 +551,6 @@ func TestStore_saysWhenItsFileWasReplaced(t *testing.T) {
 	}
 }
 
-// Looking at a backup leaves it exactly as it was: not a byte written, not
-// its date moved — a backup read by an agent that only looks is a backup
-// nobody changed.
 func TestVault_looksAtABackupWithoutTouchingIt(t *testing.T) {
 	v, _ := vaultOn(t, "Write the spec")
 	made, err := v.Make()
@@ -598,7 +572,6 @@ func TestVault_looksAtABackupWithoutTouchingIt(t *testing.T) {
 	}
 }
 
-// Asked about a store that is not there, the vault says so and makes nothing.
 func TestVault_makesNoStoreByLookingForOne(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	if _, err := NewVault(path).HoldsStore(); err == nil {

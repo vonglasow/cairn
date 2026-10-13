@@ -7,11 +7,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// looking is an objective's membrane for a search: it is told every fact an
-// objective carries and keeps, for each thing named, whether it has turned up
-// in any of them — read the way a person reads an objective, not the way it
-// is stored, and case-insensitive. Its number, where it stands, its priority
-// and its labels are looked in like the rest: the task side says why.
 type looking struct {
 	said []string
 }
@@ -33,16 +28,14 @@ func (l *looking) NotDue()                   {}
 func (l *looking) Estimated(d time.Duration) { l.Consider(domain.FormatDuration(d)) }
 func (l *looking) NotEstimated()             {}
 
-// Said is everything a search looks in, read the way a person reads an
-// objective rather than the way it is stored.
+// Said is everything a search looks in, read the way a person reads an objective rather than the way it is stored.
 func Said(o Objective) []string {
 	l := &looking{}
 	o.Tell(l)
 	return l.said
 }
 
-// Matching says whether o carries every one of named, case-insensitive,
-// wherever among its facts each one happens to sit.
+// Matching says whether o carries every one of named, case-insensitive, wherever among its facts each one happens to sit.
 func Matching(o Objective, named []string) bool {
 	return domain.Reaches(Said(o), named)
 }

@@ -6,9 +6,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// TestCounter_countsOnlyWhatIsDone checks the counter's column-only hearing:
-// told a task in full, everything but the column it sits in leaves the tally
-// untouched.
 func TestCounter_countsOnlyWhatIsDone(t *testing.T) {
 	c := NewCounter(domain.Tally{})
 	Task{number: 1, state: domain.Done, title: "Write the spec"}.Tell(c)

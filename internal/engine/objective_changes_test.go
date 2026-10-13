@@ -131,8 +131,6 @@ func TestEngine_refusesAnObjectiveEditThatNamesNothing(t *testing.T) {
 	}
 }
 
-// The label signs work on an objective the way they work on a task, because
-// they are the same code: a set is moved, not replaced.
 func TestEngine_movesAnObjectivesLabelsWithSigns(t *testing.T) {
 	e := openEngine(t)
 	o, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"perso", "spec"})})
@@ -159,8 +157,6 @@ func TestEngine_deletesAnObjective(t *testing.T) {
 	}
 }
 
-// Deleting an objective that tasks were put under would leave them pointing at
-// a number nothing carries, so it is refused rather than cascaded.
 func TestEngine_refusesToDeleteAnObjectiveCarryingTasks(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")

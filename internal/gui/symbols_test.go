@@ -12,10 +12,6 @@ import (
 	"gioui.org/font"
 )
 
-// Every character the window writes has a face cairn carries. One that had
-// none sent the shaper to the system's fonts for it: each process that drew
-// one read them off the disk and kept them, gigabytes when a sweep ran eight
-// at once, and on a system without them it drew an empty box.
 func TestEveryCharacterTheWindowWritesHasAFace(t *testing.T) {
 	files, err := filepath.Glob("*.go")
 	if err != nil {
@@ -58,7 +54,6 @@ func TestEveryCharacterTheWindowWritesHasAFace(t *testing.T) {
 	}
 }
 
-// covered says whether one of the faces draws a character.
 func covered(faces []font.FontFace, r rune) bool {
 	for _, face := range faces {
 		if _, ok := face.Face.Face().NominalGlyph(r); ok {

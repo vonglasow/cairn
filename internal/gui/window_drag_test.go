@@ -7,9 +7,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// Pressing, dragging and dropping: a card onto the board, a tile under a task,
-// and what a drop the store refuses says.
-
 func TestDroppingACardInAnotherColumnChangesItsState(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "backlog"))
@@ -27,8 +24,6 @@ func TestDroppingACardInAnotherColumnChangesItsState(t *testing.T) {
 	}
 }
 
-// A drop says two things at once, and the engine is told both in one act: the
-// column and the place, or neither.
 func TestDroppingACardAboveAnotherCarriesBothTheColumnAndThePlace(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -64,16 +59,12 @@ func TestDroppingACardInItsOwnColumnOnlyMovesIt(t *testing.T) {
 	if f.what("task", "move") != 1 {
 		t.Fatalf("asked %d moves", f.what("task", "move"))
 	}
-	// Dropped on the first slot, which is the head of the column and not
-	// behind anything.
 	in, _ := f.gave("task", "move")
 	if in.Given["first"] != "true" {
 		t.Errorf("asked to move %+v, want it first", in.Given)
 	}
 }
 
-// Which lane a card lands in is which kind of stopped it is. The terminal asks
-// with a popup because a terminal band has no room for three named lanes.
 func TestDroppingACardInALaneSaysWhichKindOfStopped(t *testing.T) {
 	for lane, kind := range engine.Stalled {
 		t.Run(kind, func(t *testing.T) {
@@ -95,8 +86,6 @@ func TestDroppingACardInALaneSaysWhichKindOfStopped(t *testing.T) {
 	}
 }
 
-// A refusal is shown and the board keeps saying what is really there, rather
-// than drawing the move as though it had happened.
 func TestADropTheStoreRefusesSaysSoAndChangesNothing(t *testing.T) {
 	f := newFake()
 	f.failOp = errRefuse
@@ -114,8 +103,6 @@ func TestADropTheStoreRefusesSaysSoAndChangesNothing(t *testing.T) {
 	}
 }
 
-// A card being dragged follows the pointer, and the board says where it would
-// land — without that, a drop is a guess.
 func TestACardBeingDraggedFollowsThePointerAndShowsWhereItLands(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -148,8 +135,6 @@ func TestACardBeingDraggedFollowsThePointerAndShowsWhereItLands(t *testing.T) {
 	}
 }
 
-// Over nothing at all, there is nowhere to land and the board says so rather
-// than pointing somewhere.
 func TestOverNothingThereIsNowhereToLand(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "First", State: "todo"})
@@ -160,9 +145,6 @@ func TestOverNothingThereIsNowhereToLand(t *testing.T) {
 	}
 }
 
-// The line saying where a card would land is snapped to the grid of cards,
-// not left wherever the pointer happens to be: a line between two rows says
-// neither.
 func TestWhereACardWouldLandIsSnappedToTheGrid(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -187,7 +169,6 @@ func TestWhereACardWouldLandIsSnappedToTheGrid(t *testing.T) {
 	}
 }
 
-// A tile let go on its own place asks nothing: it is already there.
 func TestDroppedUnder_asksNothingForAPartAlreadyThere(t *testing.T) {
 	w := openOnAParent(t, 3)
 	box := BesideBox(Over(w.width, w.height))
@@ -201,8 +182,6 @@ func TestDroppedUnder_asksNothingForAPartAlreadyThere(t *testing.T) {
 	}
 }
 
-// openOnAParent is a window with a task open on the parts hanging under it,
-// numbered 2 upward in the order they are given.
 func openOnAParent(t *testing.T, parts int) Window {
 	t.Helper()
 	f := newFake()
@@ -217,8 +196,6 @@ func openOnAParent(t *testing.T, parts int) Window {
 	return w.clicked(middleOf(w, 1, 0)).Key("enter")
 }
 
-// Nothing is in hand, and nothing says where it would land, once a tile is let
-// go outside the box.
 func TestLanding_saysNothingOutsideTheBox(t *testing.T) {
 	w := openOnAParent(t, 3)
 	box := BesideBox(Over(w.width, w.height))
@@ -230,10 +207,6 @@ func TestLanding_saysNothingOutsideTheBox(t *testing.T) {
 	}
 }
 
-// An objective is not a task, and dragging one must not move the other. They
-// are numbered apart — task 1 and objective 1 both exist — so a press that
-// took hold by number alone, on the page where that number names an objective,
-// handed a task number to the move that followed.
 func TestDraggingAnObjectiveMovesNoTask(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)

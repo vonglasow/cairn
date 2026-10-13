@@ -1,6 +1,4 @@
-// Command cairn is the entry point. It hands the process's arguments and
-// streams to cli.Main and exits with what it returns — nothing else, so that
-// everything worth testing is reachable in-process without spawning a binary.
+// Command cairn is the entry point.
 package main
 
 import (

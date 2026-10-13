@@ -10,7 +10,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// many is a day worked on n tasks, a quarter of an hour each.
 func many(day string, n int) engine.TimesheetDay {
 	d := engine.TimesheetDay{Day: day}
 	for i := 1; i <= n; i++ {
@@ -20,9 +19,6 @@ func many(day string, n int) engine.TimesheetDay {
 	return d
 }
 
-// The time page, to the pixel: a strip along its top with the arrows at its
-// left and the ranges at its right, the days of a week under it to the foot
-// of the band, and a month's six weeks in the same room.
 func TestTheTimePageIsLaidOutToThePixel(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
@@ -71,8 +67,6 @@ func TestTheTimePageIsLaidOutToThePixel(t *testing.T) {
 	}
 }
 
-// A day of more tasks than its column holds scrolls, a task a notch, from its
-// first to its last and no further; the other days stay where they were.
 func TestADayScrollsToItsLastTask(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, timeState: timeState{week: dayNamed("2026-09-28"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{many("2026-09-29", 20), many("2026-09-30", 2)}}}}
 	l := w.Layout()
@@ -105,14 +99,11 @@ func TestADayScrollsToItsLastTask(t *testing.T) {
 	if got := w.DayShown(2); len(got) != 2 {
 		t.Errorf("a day of two tasks shows %d", len(got))
 	}
-	// Another week starts every day at its top.
 	if got := ended.onWeek("left").DayFrom(1); got != 0 {
 		t.Errorf("the week before starts Tuesday at %d", got)
 	}
 }
 
-// m and the chips of the strip go between a week and the month it is in; the
-// arrows walk what is shown, and t, or Today, comes back to today.
 func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	f := newFake()
 	w := Window{work: f, tab: Time, width: 1200, height: 800, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-10-12")}}
@@ -125,7 +116,6 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	if in.Given["since"] != domain.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
-	// From a week today is not in, the month of its Thursday.
 	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.MonthShown().Format("January 2006") != "October 2026" {
 		t.Errorf("the week of 28 September turned to %s", got.MonthShown().Format("January 2006"))
 	}
@@ -141,7 +131,6 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	if got := month.onWeek("m"); got.Monthly() || domain.FormatDay(got.Week()) != "2026-10-12" {
 		t.Errorf("m again shows the week of %s, monthly %v", domain.FormatDay(got.Week()), got.Monthly())
 	}
-	// Back to a week from a month today is not in: its first week.
 	later := month.onWeek("right").onWeek("right")
 	if got := later.onWeek("m"); domain.FormatDay(got.Week()) != "2026-11-30" {
 		t.Errorf("the week of December shown is %s", domain.FormatDay(got.Week()))
@@ -159,7 +148,6 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	if got := month.Click(middle(TimeChip(l, "Month"))); !got.Monthly() {
 		t.Error("Month on a month left it")
 	}
-	// A day of the month clicked shows its week.
 	fourth := slices.IndexFunc(grid, func(d time.Time) bool { return d.Day() == 4 })
 	if got := month.Click(middle(MonthCellAt(l, fourth))); got.Monthly() || domain.FormatDay(got.Week()) != "2026-09-28" {
 		t.Errorf("the 4th clicked shows the week of %s, monthly %v", domain.FormatDay(got.Week()), got.Monthly())
@@ -175,8 +163,6 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	}
 }
 
-// A day of a month says as many tasks as it has room for, and how many more
-// there are on the last line when they do not all fit.
 func TestADayOfAMonthSaysHowManyMore(t *testing.T) {
 	five := many("2026-10-01", 5).Tasks
 	if got := CellLines(five, 5); len(got) != 5 || got[4] != five[4].Says() {
@@ -198,9 +184,6 @@ func TestADayOfAMonthSaysHowManyMore(t *testing.T) {
 	}
 }
 
-// What has not happened yet is not asked for: the engine refuses a period
-// running past today, so a week or a month in progress is read up to today,
-// and one wholly to come is not read at all.
 func TestTheTimePageAsksNothingOfTheFuture(t *testing.T) {
 	f := newFake()
 	w := Window{work: f, tab: Time, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-10-12")}}
@@ -215,8 +198,6 @@ func TestTheTimePageAsksNothingOfTheFuture(t *testing.T) {
 	}
 }
 
-// The range shown is outlined among the strip's chips, and today among the
-// days of a month.
 func TestTheRangeShownAndTodayAreOutlined(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	l := w.Layout()
@@ -236,7 +217,6 @@ func TestTheRangeShownAndTodayAreOutlined(t *testing.T) {
 	}
 }
 
-// What the drawing of the time page is laid on, to the pixel and the word.
 func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 	day := Box{X: 100, Y: 50, W: 200, H: 2*lineHigh + padding + 3*weekRow}
 	if _, more := DayTrack(day, 3); more {
@@ -269,7 +249,6 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 			t.Errorf("the week of %s says %q", week, got)
 		}
 	}
-	// A month walked from a week's arrows lands on the next month's first.
 	m := Window{work: newFake(), now: dayNamed("2026-10-14"), timeState: timeState{monthly: true, week: dayNamed("2026-10-01")}}
 	if got := m.onWeek("right").Week(); domain.FormatDay(got) != "2026-11-01" {
 		t.Errorf("right from October shows %s", domain.FormatDay(got))

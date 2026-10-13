@@ -1,9 +1,5 @@
 package engine
 
-// Moving a task, and which task is being worked on. Both are about the one
-// order there is rather than about what a task carries, which is why they are
-// here together and not among the five that change a task's attributes.
-
 import (
 	"errors"
 	"fmt"
@@ -14,28 +10,24 @@ import (
 	"cairn/internal/trace"
 )
 
-// The reasons a move is refused, re-exported so a surface can recognise them:
-// a surface asks the engine and may not import the task, so the names it
-// answers with have to live here too.
+// The reasons a move is refused, re-exported so a surface can recognise them: a surface asks the engine and may not import the task, so the names it answers with have to live here too.
 var (
 	ErrMovedBehindItself  = task.ErrMovedBehindItself
 	ErrOtherColumn        = task.ErrOtherColumn
 	ErrNotAmongItsSisters = task.ErrNotAmongItsSisters
 )
 
-// ErrNowhereToMove is returned when a move names no place to go. A command
-// that parsed is not a command that asked for something.
+// ErrNowhereToMove is returned when a move names no place to go.
 var ErrNowhereToMove = errors.New("a task is moved to the first place, behind another, or to the last")
 
 // ErrMoreThanOnePlace is returned when a move names several places at once.
-// Picking one quietly would move the task somewhere nobody asked for.
 var ErrMoreThanOnePlace = errors.New("a task is moved to one place, not several")
 
 // Place is where a move puts a task among the ones it sits with.
 type Place int
 
 const (
-	_ Place = iota // the zero value: never a place.
+	_ Place = iota
 	// First is the head of the tasks it sits with.
 	First
 	// Behind is directly after another task.
@@ -44,8 +36,6 @@ const (
 	Last
 )
 
-// places is what the engine needs from whatever keeps the order and the focus.
-// Declared beside tasks, by the consumer, for the same reason.
 type places interface {
 	MoveFirst(int) (bool, error)
 	MoveLast(int) (bool, error)
@@ -56,12 +46,6 @@ type places interface {
 	ClearFocus() error
 }
 
-// move puts a task in a place among the ones it sits with. It never changes
-// the column: that is an edit, and one act with two meanings is an act nobody
-// can undo confidently.
-//
-// A move to the place a task already holds is not written down: the history
-// says what changed, and a card dropped back where it stood changed nothing.
 func (e *Engine) move(number int, at Place, target int) error {
 	moved, err := e.moveTo(number, at, target)
 	if err != nil || !moved {
@@ -70,9 +54,6 @@ func (e *Engine) move(number int, at Place, target int) error {
 	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
 }
 
-// moveInto puts a task into a column, by the same edit every column change
-// goes through, and only when it is not already there: naming the column a
-// task sits in moves it nowhere.
 func (e *Engine) moveInto(number int, state string) error {
 	was, err := e.tasks.Find(number)
 	if err != nil {
@@ -85,7 +66,6 @@ func (e *Engine) moveInto(number int, state string) error {
 	return editReason(err)
 }
 
-// moveTo asks for the place itself, and says whether the task went anywhere.
 func (e *Engine) moveTo(number int, at Place, target int) (bool, error) {
 	moving, err := e.tasks.Find(number)
 	if err != nil {
@@ -107,9 +87,6 @@ func (e *Engine) moveTo(number int, at Place, target int) (bool, error) {
 	return e.places.MoveAfter(number, target)
 }
 
-// placeNamed is how a place reads in a history. A move records where it went
-// and not what that did to the places of its sisters: nineteen lines saying a
-// number went up by one would bury the one line saying what a person did.
 func placeNamed(at Place, target int) string {
 	switch at {
 	case First:
@@ -121,21 +98,10 @@ func placeNamed(at Place, target int) string {
 	}
 }
 
-// focus says which tasks are being worked on, oldest first, and nothing when
-// none are. A listing asks for the numbers rather than the tasks: it marks
-// lines, and reading every task to mark a few would be a second query per
-// listing.
 func (e *Engine) focus() ([]int, error) {
 	return e.places.Focus()
 }
 
-// putInFocus takes up a task alongside whatever else is being worked on, and
-// hands it back so whoever asked sees what they are on.
-//
-// Alongside and not instead. One task at a time is how a person works, and how
-// this read for a long while; but an agent session is started per task, and
-// several run at once — a focus that held one made every other one invisible
-// to whoever asked what was being worked on.
 func (e *Engine) putInFocus(number int) (task.Task, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
@@ -145,9 +111,6 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	if err != nil {
 		return task.Task{}, err
 	}
-	// Already being worked on: nothing happens, and nothing is written down.
-	// Letting it through would open a second stretch on a task whose first has
-	// not closed, and every duration after it would count the same work twice.
 	if slices.Contains(held, number) {
 		return t, nil
 	}
@@ -160,10 +123,6 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	return t, nil
 }
 
-// letGoOf leaves one task and keeps the rest. Letting go of one that was never
-// taken up is not a failure — but it is not an act either, and nothing is
-// written down: a stretch closing that never opened would fault every duration
-// around it.
 func (e *Engine) letGoOf(number int) error {
 	held, err := e.places.Focus()
 	if err != nil {
@@ -178,9 +137,6 @@ func (e *Engine) letGoOf(number int) error {
 	return e.record(number, trace.FocusReleased, "", "", "")
 }
 
-// letGo leaves nothing in focus at all, and writes down the release of every
-// task that was being worked on. Every one of them: a release that named only
-// the first would leave the others' stretches open for ever.
 func (e *Engine) letGo() error {
 	held, err := e.places.Focus()
 	if err != nil {
@@ -197,9 +153,6 @@ func (e *Engine) letGo() error {
 	return nil
 }
 
-// inFocus hands back the tasks being worked on and their numbers, and nothing
-// at all when none are. The numbers come back alongside so a caller answering
-// about the focus does not have to ask twice for them.
 func (e *Engine) inFocus() ([]task.Task, []int, error) {
 	numbers, err := e.focus()
 	if err != nil {
@@ -238,9 +191,6 @@ cairn task move 3 --state todo --after 1`,
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		// A column and a place are one gesture on a board — a card dropped
-		// somewhere — and were two acts, so a refused place left the column
-		// changed. Taken in the one act, both or neither.
 		into := in.Change("state")
 		if into != nil {
 			if err := on.Engine.moveInto(n, *into); err != nil {
@@ -257,13 +207,6 @@ cairn task move 3 --state todo --after 1`,
 		if err := on.Engine.move(n, at, target); err != nil {
 			return Answer{}, err
 		}
-		// A move changes the order and nothing else, so the order is what it
-		// answers with: the card of the task moved would not show what moved.
-		//
-		// Answered as a listing nobody narrowed, and told so with an empty
-		// Input rather than handed the move's own: what a move was given says
-		// where to put a task, and reading it as facts to keep by would narrow
-		// the answer by whatever a later argument happened to be called.
 		return listing(on, Input{})
 	},
 }
@@ -332,18 +275,12 @@ cairn task unfocus`,
 	},
 }
 
-// placeFrom reads where a move was told to put a task. Naming nothing and
-// naming several are both refused: one is a command that asked for nothing,
-// the other a command that asked for two things, and picking either quietly
-// would move a task somewhere nobody said.
 func placeFrom(in Input) (Place, int, error) {
 	named := make([]Place, 0, 3)
 	target := 0
 	if in.Yes("first") {
 		named = append(named, First)
 	}
-	// Behind a task named as nothing names no place: read as a number, it
-	// was task zero, and the refusal spoke of a task nobody asked about.
 	if in.Given["after"] != "" {
 		named = append(named, Behind)
 		target, _ = in.Whole("after")
@@ -360,8 +297,6 @@ func placeFrom(in Input) (Place, int, error) {
 	return named[0], target, nil
 }
 
-// whatIsInFocus answers about the task being worked on, and says so plainly
-// when there is none: nothing in focus is an answer, not an absence.
 func whatIsInFocus(on On) (Answer, error) {
 	held, numbers, err := on.Engine.inFocus()
 	if err != nil {

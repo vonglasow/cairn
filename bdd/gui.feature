@@ -1,11 +1,4 @@
 Feature: The desktop board
-  The same cairn as the terminal board, in a window a mouse can reach. Four
-  columns for where the work stands, a band underneath for what is not moving,
-  and a second tab for what the work is for.
-
-  A window decides nothing. It draws what the engine holds, and every gesture
-  that changes something goes back through the engine — so what is done here is
-  done the same way it is done at the command line.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -13,10 +6,6 @@ Feature: The desktop board
     And a window of 1200 by 800
 
   Rule: The work is laid out the way the terminal lays it out
-
-    The same shape, with more room. A person who has learnt one board has
-    learnt the other — sub-tasks left off both, since a part of the work is
-    read where the work is read.
 
     @gui-four-columns-left-to-right
     Scenario: the columns are named in the order the work goes through
@@ -131,9 +120,6 @@ Feature: The desktop board
 
   Rule: Cards are the same height, whatever they carry
 
-    A fixed height is what lets a column say how many fit and which one is
-    under the pointer without drawing anything.
-
     @gui-cards-share-one-height
     Scenario: a card with a great deal on it is as tall as an empty one
       Given I added a task titled "Write the spec"
@@ -148,9 +134,6 @@ Feature: The desktop board
       Then "BACKLOG" carries a card whose title ends in "…"
 
   Rule: A window too small says what it needs
-
-    Below what a card needs to stay readable, the window says so rather than
-    drawing something nobody can use.
 
     @gui-too-small-says-so
     Scenario: a window under the smallest size says what it needs
@@ -180,22 +163,6 @@ Feature: The desktop board
 
   Rule: A click outside a panel closes it, where closing loses nothing
 
-    A hand on the mouse should not have to reach for the keyboard to put
-    something away. Clicking off a panel does what esc does — an open task
-    nobody typed into, the help, the question about deleting, the list of
-    objectives — because in each of those the way out costs nothing.
-
-    A form somebody typed into is the exception, and the only one. It holds
-    what was typed and not saved, and a click landing anywhere outside it would
-    throw that away without asking. Losing work without being asked is how
-    work is lost; esc is still there, and it is offered on the panel as Cancel.
-
-    Closing a panel closes the panel and nothing else. A search that was
-    narrowing the board stays in force, because it is not what was opened: a
-    task found by searching, opened, changed and put away, gave back the whole
-    board and left somebody to type their search again. The second esc is what
-    clears it, which is what esc on the board has always done.
-
     @gui-a-double-click-is-not-a-click-off-what-it-opened
     Scenario: opening a card by double-clicking it does not close it again
       Given I added a task titled "Write the spec"
@@ -221,9 +188,6 @@ Feature: The desktop board
 
     @gui-clicking-off-a-form-keeps-it
     Scenario: clicking off a form keeps what was typed, saved, and puts it away
-      A click outside the form leaves it, as a click outside any panel does.
-      What was typed is not thrown away for it: it is saved, as the form
-      saves itself.
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -276,8 +240,6 @@ Feature: The desktop board
       And "BACKLOG" carries "Ship the board"
 
   Rule: The mouse chooses, opens and scrolls
-
-    No modes and no cursor to move. What a person points at is what happens.
 
     @gui-a-click-chooses
     Scenario: clicking a card chooses it
@@ -392,9 +354,6 @@ Feature: The desktop board
 
   Rule: The arrows do what the pointer does
 
-    A hand on the keyboard should not have to reach for the mouse to look at
-    the next task. The terminal board walks with the arrows; so does this one.
-
     @gui-the-arrows-walk-the-cards
     Scenario: the arrows walk from one card to the next
       Given I added a task titled "First" with the state "todo"
@@ -426,10 +385,6 @@ Feature: The desktop board
       Then "Write the spec" is open to be edited
 
   Rule: Dragging a card moves the work
-
-    A drop says two things at once — which column, and which place among the
-    cards there — and the engine is told both in one act: when the place is
-    refused, the column stays as it was.
 
     @gui-a-small-move-is-still-a-click
     Scenario: a click that barely moves is a click
@@ -525,13 +480,6 @@ Feature: The desktop board
 
   Rule: A card says when it is wanted and what it has cost
 
-    The window knew nothing about time: no deadline, no notion of late, where
-    the terminal has written it on the card all along. Deciding what to do
-    without knowing what is due is not deciding.
-
-    Beside it, what the work has cost against what it was reckoned to cost, and
-    what it serves — three facts an open task carried and no overview summarised.
-
     @gui-a-card-says-when-it-is-due
     Scenario: a day close enough to matter is written on the card
       Given I added a task titled "Write the spec"
@@ -561,9 +509,6 @@ Feature: The desktop board
       Then the card "Write the spec" says "2h"
 
   Rule: A form is the whole of a task
-
-    Adding and editing are one form. Every field is asked about, including the
-    empty ones, so a field left blank is a field somebody emptied.
 
     @gui-editing-is-reachable-from-the-board
     Scenario: a chosen task is edited without knowing a shortcut
@@ -655,8 +600,6 @@ Feature: The desktop board
 
     @gui-a-list-is-the-size-of-what-it-holds
     Scenario: a field's list hangs under it, as long as what it offers
-      Four priorities sat in a panel made for fifty tasks, most of the form
-      hidden behind three empty quarters of it.
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -680,8 +623,6 @@ Feature: The desktop board
 
     @gui-a-closed-set-takes-no-free-text
     Scenario: typing on a field with a closed set opens its list, narrowed
-      A priority is one of four words. Typed into as text, the field took
-      "normal2h", which the store refuses and no row of the list matches.
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -951,13 +892,6 @@ Feature: The desktop board
 
   Rule: The window opens on its board being built of stones
 
-    A board that appears all at once is a tool; one whose cards arrive as
-    stones, fitted like an old wall rather than bricks, falling into place and
-    giving way to the cards, is this one. What is built is the content: a
-    board with no task opens on nothing being built. It lasts a breath, and
-    the first key or click ends it and still does what it does: it is never in
-    the way.
-
     @gui-the-window-opens-on-a-cairn
     Scenario: the first frame starts a cairn, which a key ends without being swallowed
       Given I added a task titled "Write the spec"
@@ -983,15 +917,6 @@ Feature: The desktop board
       Then no cairn is being built
 
   Rule: The time spent is seen a week or a month at a time, every task of it
-
-    How long the work took was a table the command line printed. The third
-    page lays a week out: a column a day, Monday first, each day's total and
-    each task worked on with its time and a bar as long as its share of the
-    longest stretch of the week. The arrows walk the weeks, t comes back to
-    this one. A week alone said nothing of a month, and a day of more tasks
-    than its column held hid the rest: a month is laid out too, every day of
-    it, and a day scrolls to its last task. The pointer walks it as the keys
-    do.
 
     @gui-a-day-scrolls-to-its-last-task
     Scenario: a day worked on more tasks than its column holds scrolls to the last
@@ -1101,12 +1026,6 @@ Feature: The desktop board
 
   Rule: Tasks are exported from the window, and imported into it, as a file
 
-    ⌘E writes every task, with the objectives they serve, to a file chosen in
-    the system's own dialog — the file `cairn task export` writes. ⌘O adds the
-    tasks of such a file chosen there, as new tasks: nothing on the board is
-    replaced, so nothing is asked first. Both are on the bar and on a right
-    click on the board.
-
     @gui-the-tasks-are-exported
     Scenario: ⌘E writes the tasks to a file chosen in the system's dialog
       Given I added a task titled "Write the spec"
@@ -1146,11 +1065,6 @@ Feature: The desktop board
 
   Rule: Every act is in the window's menu bar
 
-    A person at a window looks for what it does in its menus. File, Edit, View
-    and Help hold every act the window has, each line doing from the board what
-    its key does. Where the system gives the window no menu bar, a button at
-    the end of the tabs opens the same lines.
-
     @gui-the-menu-bar-acts-from-the-board
     Scenario: a line of the menu bar does what its key does
       Given I added a task titled "Write the spec" with the state "todo"
@@ -1169,12 +1083,6 @@ Feature: The desktop board
       Then the menu offers "New", "New backup", "Backups", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
 
   Rule: A new backup is made, and a backup restored, from the window
-
-    Making a new backup, and restoring one, were the command line's: a person
-    at the window went to a terminal to do either. ⌘B makes a new backup and
-    says where it is — a file to copy anywhere; ⇧B lists the backups, and
-    enter restores one once it has been agreed to, a new backup of what the
-    store holds made first.
 
     @gui-backing-up-from-the-window
     Scenario: ⌘B backs the store up and says where the backup is
@@ -1214,12 +1122,6 @@ Feature: The desktop board
 
   Rule: A right click says what can be done to what is under it
 
-    What a card can have done to it was on the bar, at the foot of the window,
-    once the card was chosen: a hand on the mouse went to the card, then down
-    to the bar. A right click on a card chooses it and offers the same acts
-    beside it; on an objective, an objective's; anywhere else on the board,
-    what the board offers.
-
     @gui-a-right-click-on-a-card
     Scenario: a right click on a card chooses it and offers what can be done to it
       Given I added a task titled "Write the spec" with the state "todo"
@@ -1241,8 +1143,6 @@ Feature: The desktop board
 
     @gui-a-card-is-moved-from-its-menu
     Scenario: a card's menu moves it to another column, and sets its priority
-      What the keyboard and a drag do to a card, a hand on the mouse reaches
-      from its menu too, without opening anything.
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the window
       And I right-click the card "Write the spec"
@@ -1290,12 +1190,6 @@ Feature: The desktop board
       Then the window is on the board
 
   Rule: A deadline is chosen on a calendar
-
-    A deadline was typed as a date, which means knowing what day of the week
-    the twentieth is, or what date next Friday falls on. Enter on the field
-    opens a calendar, a month at a time; the field still takes a date typed.
-    A click on the field opens it too, hung under the field rather than in the
-    middle of the window, and the pointer walks its months as the keys do.
 
     @gui-a-click-on-a-deadline-opens-the-calendar
     Scenario: a click on the deadline opens the calendar under it
@@ -1423,12 +1317,6 @@ Feature: The desktop board
 
   Rule: A form saves itself
 
-    ⌘S was the only way a change reached the store, and every other place a
-    person writes saves on its own. A form now saves what was typed once the
-    typing has paused for a beat of the window, and stays open on what it
-    saved. A task being added is made as soon as it has a title, and the form
-    goes on over it. ⌘S still saves at once, and closes.
-
     @gui-a-form-saves-itself
     Scenario: what was typed is saved once the typing pauses, and the form stays open
       Given I added a task titled "Write the spec"
@@ -1538,10 +1426,6 @@ Feature: The desktop board
       Then there are no tasks
 
   Rule: What the board can do, the window can do
-
-    A person who has learnt the terminal board has learnt this one. Anything
-    the terminal offers and the window does not is a reason to go back to the
-    terminal.
 
     @gui-deleting-a-task
     Scenario: a task is deleted once, having been asked about
@@ -1755,9 +1639,6 @@ Feature: The desktop board
 
   Rule: The window follows the store
 
-    Somebody else at a command line, or an agent over MCP, is working in the
-    same store. What they change shows up without anybody asking.
-
     @gui-somebody-else-added-something
     Scenario: a task added elsewhere appears
       When I open the window
@@ -1773,10 +1654,6 @@ Feature: The desktop board
       Then the store was read once
 
   Rule: A task's trace stays inside the panel that shows it
-
-    A task worked on for a while carries more trace than any panel can hold.
-    It was drawn down the panel and out of the bottom of the window — a trace
-    nobody can read, and nothing on screen saying it is there at all.
 
     @gui-opening-a-task-opens-it-to-be-edited
     Scenario: opening a task opens it to be edited, its trace beside what it carries
@@ -1877,11 +1754,6 @@ Feature: The desktop board
 
   Rule: What the arrows reach, they bring into sight
 
-    Walking past the bottom of a column used to choose a card nobody could
-    see: the choice moved and the column stayed where it was. A card chosen
-    out of sight is a card whose state, whose title and whose place are all
-    unknown to the person who chose it.
-
     @gui-the-arrows-bring-a-card-into-sight
     Scenario: walking down past what a column shows brings the next card into sight
       Given I added 12 tasks to "backlog"
@@ -1981,15 +1853,6 @@ Feature: The desktop board
       And the tab "OBJECTIVES" says it holds 1
 
   Rule: An objective opens on the work that serves it
-
-    An objective is a question — is this finished — and the answer is the tasks
-    under it. Opening one shows them by name and by where each stands, because
-    a count alone says how far along it is and never what is left.
-
-    They sit beside the form, in the column a task's trace has: an objective
-    has no trace of its own — the trace is kept of tasks — and the question
-    it is opened to answer is what serves it. Each is a tile of one line,
-    scrolled by the wheel over the column and by the bar beside it.
 
     @gui-an-objective-opens-on-what-serves-it
     Scenario: opening an objective shows the work that serves it
@@ -2454,11 +2317,6 @@ Feature: The desktop board
 
   Rule: A key does what the bar offers, where the bar offers it
 
-    The bar along the bottom is what somebody reads to find out what a key
-    does. A key that stays silent where the bar offers it makes the bar a
-    thing to distrust — and one that works where the bar says nothing is a
-    thing nobody can find.
-
     @gui-e-edits-an-open-task
     Scenario: a task being read is edited without closing it first
       Given I added a task titled "Write the spec"
@@ -2488,28 +2346,6 @@ Feature: The desktop board
       And the field "title" reads "Write it properly"
 
   Rule: A task opens on the work hanging under it
-
-    A parent is a question the same way an objective is — is this finished —
-    and the answer is the tasks under it. They are the last thing its form
-    holds: a list to tick while the keyboard is elsewhere, and the lines being
-    typed while it is on them.
-
-    They are drawn as tiles of one line and not as the cards a board draws. A
-    card is 96 pixels high and uses 50 of them: the rest was room for a
-    deadline and a progress bar a sub-task no longer carries. One line holds
-    everything one has left — whether it is done, its number, its title.
-    What is left comes first, and what is done after it.
-
-    A part is changed through its task's form, with the keyboard on its list:
-    the arrows walk the tiles, space ticks the one the keyboard is on, enter
-    renames it, backspace strikes it out — and again brings it back — and a
-    tile is dragged to another place. The last line adds one: enter, a title,
-    enter, and the next is already waiting.
-
-    A tick is done at once: a box ticked on a part says it is done, and a part
-    done only once its task's form was saved is a box that lies until then.
-    Everything else — a name, a part added, one struck out, the order — waits
-    for the form to be saved, and goes with a form thrown away.
 
     @gui-the-arrows-walk-the-parts
     Scenario: the arrows walk the parts, and space ticks the one they are on
@@ -2680,33 +2516,6 @@ Feature: The desktop board
       Then the parts are drawn as a list to tick, "Get the client's nod" first
 
   Rule: The objectives a task serves are picked from a list, not typed
-
-    A task serves as many objectives as it needs, and the form asked for them
-    as numbers typed by hand. Nobody knows an objective by its number: the one
-    place that says what a number means is the other tab, so filling this field
-    meant leaving the form to go and look.
-
-    Enter opens the list over the form. Everywhere else in a form enter saves,
-    and here it does not: this is the one field that cannot be typed into, so
-    the key that would have finished a line opens the thing the line is picked
-    from instead. Saving is still on the bar, which is where a key is looked
-    for.
-
-    The list is drawn over the form and not instead of it: what is being
-    filled in stays on screen behind it, because a choice made with the rest of
-    the form out of sight is a choice made from memory.
-
-    The field itself reads the objectives by name. It holds the numbers the
-    engine takes — a surface inventing its own spelling of an argument would be
-    a surface deciding something — but nobody knows an objective by its number,
-    so what is drawn is what a person would say.
-
-    The arrows walk the list, and so do j and k, which is what the board is
-    walked with. Space takes an objective in or out — ticking is not the same
-    act as finishing, and a list that closed on the first choice could never be
-    used to pick two. esc closes it, and what was ticked stays ticked; nothing
-    reaches the store until the form is saved, the way nothing else in a form
-    does.
 
     @gui-the-objectives-field-opens-a-list
     Scenario: the objectives field opens a list of what there is to serve
@@ -2899,16 +2708,6 @@ Feature: The desktop board
 
   Rule: The key that opens a field does not write in it
 
-    A keyboard can say the same keystroke twice: once as a key with a name, and
-    once as the text an input method produced from it. Some systems send both,
-    some send one — so a window that listens to both hears `e` as "open the
-    form" and then as "write an e in it", and the title gains a letter nobody
-    typed on purpose. The same keystroke opening a search left every search
-    beginning with a slash, which finds nothing.
-
-    What opens a place to type does not also type in it. Text is taken only
-    where there was already somewhere for it to go.
-
     @gui-the-key-that-opens-a-form-writes-nothing-in-it
     Scenario: the key that opens the form does not land in the field
       Given I added a task titled "Write the spec"
@@ -2937,17 +2736,6 @@ Feature: The desktop board
       Then the field "title" reads "Write the specs"
 
   Rule: Losing work is asked about first
-
-    Two gestures lose work: deleting a task, and throwing away a form somebody
-    has typed into. Both are asked about, in a box no bigger than the question.
-    A whole column being archived is asked about as well — nothing is
-    lost, but a key that moves twelve cards is not a key to press and find out.
-
-    A form is left with esc, and esc again throws it away: that is what a hand
-    leaving a form does, and a question that sent the second esc back to the
-    form kept somebody in a form they were leaving. What was typed is not lost
-    for all that — it is set aside, and the form of the same task offers to
-    bring it back.
 
     @gui-a-filled-form-asks-before-it-is-thrown-away
     Scenario: a form somebody typed into is asked about before it goes
@@ -3002,11 +2790,6 @@ Feature: The desktop board
       And "DONE" does not carry "Ship it"
 
   Rule: What is on screen says what it is
-
-    Somebody arriving at this window should not have to guess. Which page they
-    are on, whether they are searching, and what a key does are all things the
-    window says out loud, because a board that has to be learned once is a
-    board that is learned wrong.
 
     @gui-nothing-runs-out-of-a-field
     Scenario: what is typed into a field stays inside it, on as many lines as it takes
@@ -3086,19 +2869,6 @@ Feature: The desktop board
       Then the help is headed "What everything does"
 
   Rule: Several cards are taken at once
-
-    A board that deletes or archives one card at a time makes a clear-out a
-    chore. ⌘-click gathers cards, a card at a time; ⇧-click takes every card
-    between the one chosen and the one clicked, in their column; a plain click
-    starts again. ⇧ and the arrows already move a card, so the keyboard gathers
-    nothing — the pointer does.
-
-    What is gathered is deleted or archived in one act, all of it or none, and
-    asked about first. The question names what would take more with it — the
-    parts of a task, a task waiting on it, the task in focus — and what cannot
-    go at all — an objective work still serves, a task already archived.
-    The answer is one of three: nothing; all but what was named; or all that
-    can go.
 
     @gui-several-are-gathered-with-cmd
     Scenario: ⌘-clicking gathers cards, and a plain click starts again

@@ -1,10 +1,4 @@
 Feature: Changes to the shape of the store
-  What a task can carry grows over time, so the shape of the store has to grow
-  with it. A store already on disk knows nothing of the latest addition, and
-  changing it on the way past — while listing tasks, say — would rewrite
-  somebody's data as a side effect. So cairn says what is missing and waits to
-  be told, sets a backup aside before it touches anything, and can restore what
-  it changed.
 
   Background:
     Given a store of my own, somewhere that is not the default place
@@ -40,8 +34,6 @@ Feature: Changes to the shape of the store
       When I run `cairn migration list`
       Then it says 1 change is waiting
 
-
-
   Rule: A change is applied when it is asked for
 
     @migration-apply
@@ -61,8 +53,6 @@ Feature: Changes to the shape of the store
 
     @migration-apply-in-order
     Scenario: a change is never made before one it was written after
-      Each change was written on the shape the ones before it leave, so one
-      applied ahead of an earlier one gives a shape no sequence describes.
 
       Given a store from an older cairn, holding a task titled "Write the spec"
       And I rolled the last change back
@@ -115,8 +105,6 @@ Feature: Changes to the shape of the store
       Then it succeeds
       And it writes nothing to standard error
 
-
-
   Rule: A label is written one way, and has no family
 
     @migration-labels-split-at-their-family
@@ -158,8 +146,6 @@ Feature: Changes to the shape of the store
       Then it fails
       And it says there is no such change
 
-
-
   Rule: What was done to a store can be read back
 
     @migration-list
@@ -184,8 +170,6 @@ Feature: Changes to the shape of the store
       Then it writes JSON to standard output
       And it carries every change
       And it says the store holds 1 task and 0 objectives
-
-
 
   Rule: The last change applied can be rolled back
 

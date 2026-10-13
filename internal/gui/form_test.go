@@ -10,9 +10,6 @@ import (
 	"cairn/test"
 )
 
-// The modal that adds and edits. What it asks about comes from reading; what is
-// here is which operation a saved form means, and what the two buttons do.
-
 func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
@@ -34,7 +31,6 @@ func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 	}
 }
 
-// Nothing chosen opens nothing: there is no task to be a form about.
 func TestEditingNothingOpensNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -112,8 +108,6 @@ func TestCancellingWritesNothing(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w.form = w.form.Set("title", "Something else")
-	// Twice: once for the question a changed form now asks, once to agree to
-	// losing what was typed.
 	w = w.Choose("Cancel").Choose("Agree")
 
 	if w.Screen() != OnTheBoard {
@@ -124,8 +118,6 @@ func TestCancellingWritesNothing(t *testing.T) {
 	}
 }
 
-// Save and Cancel are buttons on a form, and a board with no form open has
-// neither. Pressing one anyway does nothing rather than something surprising.
 func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -139,8 +131,6 @@ func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 	}
 }
 
-// A refused save says so and keeps the form open, because the form holds what
-// somebody typed and closing it would throw that away.
 func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 	f := newFake()
 	f.failOp = errRefuse
@@ -158,8 +148,6 @@ func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 	}
 }
 
-// The keyboard walks the fields and stops at both ends: a form that wraps is a
-// form somebody falls off the bottom of.
 func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
 	form := adding(Tasks, "backlog")
 	if got := form.Walk(-1).On(); got != 0 {
@@ -174,8 +162,6 @@ func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
 	}
 }
 
-// Setting a field puts the keyboard on it, because that is where somebody
-// typing is looking.
 func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
 	form := adding(Tasks, "backlog").Set("priority", "high")
 	if got := form.ValueOf("priority"); got != "high" {
@@ -189,7 +175,6 @@ func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
 	}
 }
 
-// Escape is the other way out of a form, and writes nothing.
 func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -205,7 +190,6 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	}
 }
 
-// A key nobody bound does nothing, rather than something.
 func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -213,9 +197,6 @@ func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 		t.Error("an unbound key did something")
 	}
 }
-
-// Typing. Without it a form is a window that shows what a task carries and
-// refuses to change any of it, which is what it was.
 
 func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 	f := newFake()
@@ -235,7 +216,6 @@ func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 	}
 }
 
-// Typing with no form open goes nowhere rather than somewhere.
 func TestTypingWithNoFormOpenChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -253,7 +233,6 @@ func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 	if got := w.Form().ValueOf("title"); got != "Write the spec" {
 		t.Fatalf("the title reads %q", got)
 	}
-	// Taking back what is not there leaves nothing rather than failing.
 	empty := w.On("because")
 	for range 3 {
 		empty = empty.Key("backspace")
@@ -263,8 +242,6 @@ func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 	}
 }
 
-// A character is one rune and not one byte: taking back the last of "réunion"
-// leaves "réunio", not half of an n.
 func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "réunion", State: "todo"})
@@ -295,7 +272,6 @@ func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 	if got := w.Form().Fields()[w.Form().On()].Name; got != "title" {
 		t.Fatalf("shift+tab landed on %q", got)
 	}
-	// Down and up do the same, because a form is a column of fields.
 	if got := w.Key("down").Form().On(); got != 1 {
 		t.Errorf("down landed on field %d", got)
 	}
@@ -304,8 +280,6 @@ func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 	}
 }
 
-// A field with a closed set is changed in place, because there is nothing to
-// type: seven columns and four priorities are values to cycle.
 func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
@@ -324,14 +298,12 @@ func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 	if got := last.Form().ValueOf("column"); got != "done" {
 		t.Errorf("past the last of the set is %q", got)
 	}
-	// A field with no closed set is not cycled by the same keys.
 	typed := w.On("title").Key("right")
 	if got := typed.Form().ValueOf("title"); got != "Write the spec" {
 		t.Errorf("right in a typed field changed it to %q", got)
 	}
 }
 
-// Clicking a field is how the keyboard gets there with a mouse.
 func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -346,7 +318,6 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 	}
 }
 
-// Enter saves, because a form is answered rather than dismissed.
 func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -361,8 +332,6 @@ func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 	}
 }
 
-// Save and Cancel are drawn on the form and have to work where they are drawn.
-// They were clickable only down in the bar, which is not where anybody looks.
 func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -385,7 +354,6 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	}
 }
 
-// The same for the question asked before deleting, and for the help.
 func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -409,8 +377,6 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	}
 }
 
-// A field that wants several rows is clicked anywhere in them, not only on its
-// first line.
 func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -418,7 +384,7 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 
 	box := Over(w.width, w.height)
 	fields := w.Form().Fields()
-	at := 1 // the description
+	at := 1
 	if !fields[at].Long {
 		t.Fatalf("field %d is %q, which is not the long one", at, fields[at].Name)
 	}
@@ -430,15 +396,12 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 		if got := w.clicked(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d of the description put the keyboard on %d", row, got)
 		}
-		// Its name answers over the same rows, or the left half of a tall
-		// field would be dead.
 		if got := w.clicked(Point{X: name.X + 10, Y: name.Y + down}).Form().On(); got != at {
 			t.Errorf("clicking row %d beside the description put the keyboard on %d", row, got)
 		}
 	}
 }
 
-// The keyboard lands on a field that exists, whatever it is asked for.
 func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 	form := adding(Tasks, "backlog")
 	last := len(form.Fields()) - 1
@@ -448,17 +411,12 @@ func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 	if got := form.onto(last + 5).On(); got != last {
 		t.Errorf("past the last field is %d, want %d", got, last)
 	}
-	// And arriving at a field puts the caret at its end.
 	arrived := form.Set("title", "spec").onto(0)
 	if got := arrived.Writing().At; got != 4 {
 		t.Errorf("arriving at a field of four characters put the caret at %d", got)
 	}
 }
 
-// What a field says when it carries a number the snapshot has never heard of.
-// A name is looked up and there is none: the number stands on its own rather
-// than the field going blank, because a number that names nothing is still
-// truer than an empty space where a name should be.
 func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -466,19 +424,12 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board"}},
 	})
 	field := engine.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
-	// Asked whole, and not for the two halves separately: a name and a number
-	// both being in there says nothing about the name belonging to that
-	// number. Measured — a test that asked that way passed with the lookup
-	// inverted, handing each number the other one's name.
 	want := "#1 Ship the desktop board, #7 "
 	if got := w.FieldSays(field); got != want {
 		t.Errorf("FieldSays = %q, want %q", got, want)
 	}
 }
 
-// The objectives list narrows as it is typed into, the way the parents list
-// does. One list, two fields: a filter that answered only one of them would be
-// a list behaving differently depending on where it was opened from.
 func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -501,13 +452,11 @@ func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 	if got := narrowed.Choosing(); len(got) != 1 || got[0].Number != 1 {
 		t.Errorf("narrowed to \"helm\", the list offers %v", goalTitles(got))
 	}
-	// And it does not care how it was typed, the way looking does not.
 	if got := w.Types("HELM").Choosing(); len(got) != 1 {
 		t.Errorf("narrowed to \"HELM\", the list offers %v", goalTitles(got))
 	}
 }
 
-// Choosing out of an empty list does nothing rather than reaching past its end.
 func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -525,9 +474,6 @@ func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	}
 }
 
-// A click lands on the row it is over, and not always on the first one. The
-// walk down the rows is arithmetic, and arithmetic only exercised at nought
-// answers the same whatever it does.
 func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -549,23 +495,18 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	box := w.ChoosingBox()
 	for at, one := range offered {
 		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
-		// A click says which row; enter takes it.
 		got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}).Key("enter")
 		if got.Form().ValueOf("parent") != strconv.Itoa(one.Number) {
 			t.Errorf("clicking row %d took %q, want task %d (%s)",
 				at, got.Form().ValueOf("parent"), one.Number, one.Title)
 		}
 	}
-	// And a point below the last row lands on no row at all.
 	below := ChoosingRow(box, ChoosingFrom(box)+len(offered)*apart)
 	if _, on := ChoosingAtPoint(box, len(offered), 0, Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
 		t.Error("a point past the last row was read as a row")
 	}
 }
 
-// Walking down a long list brings each row into sight, and brings in exactly
-// the one asked for: the run rarely divides into whole rows, and an answer
-// rounded the other way leaves the row the keyboard is on half under the edge.
 func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -598,8 +539,6 @@ func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 	}
 }
 
-// A click lands on the row it is over after the list has been scrolled, not on
-// the one that was there before.
 func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -620,7 +559,6 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 		t.Fatalf("the list starts at row %d, want 6", w.ChoosingFromRow())
 	}
 
-	// The second row drawn is the eighth of the list once six are above it.
 	row := ChoosingRow(box, ChoosingFrom(box)+apart)
 	got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}).Key("enter")
 	want := w.Choosing()[7].Number
@@ -630,9 +568,6 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 	}
 }
 
-// Shift+enter writes a line break where there is room for one, and nowhere
-// else. A title is one line whatever is typed into it, and a break written
-// into it would be a character nothing can draw and nobody asked for.
 func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -648,9 +583,6 @@ func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 	}
 }
 
-// What a list of tasks offers, told something to look for and told nothing.
-// The two answers are different sets, and the line between them is the empty
-// filter: told nothing, a list offers everything rather than nothing.
 func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.snap = test.Searchable(engine.Snapshot{Cards: []engine.Card{
@@ -674,15 +606,12 @@ func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 	}
 }
 
-// Both surfaces guard a deletion of two words and neither guarded ten minutes
-// of typing: Cancel emptied a filled form without a question.
 func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	if w.Screen() != OnForm {
 		t.Fatalf("the form did not open: %v", w.Screen())
 	}
-	// Nothing typed: there is nothing to lose, and a question would be noise.
 	if left := w.Choose("Cancel"); left.Screen() != OnTheBoard {
 		t.Fatalf("an untouched form asked about being closed: %v", left.Screen())
 	}
@@ -702,8 +631,6 @@ func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 	}
 }
 
-// into() takes the box the text is drawn in, and went on subtracting a card's
-// padding from it as well: the caret landed a glyph and a half from the click.
 func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
 	box := Box{X: 100, Y: 0, W: 200, H: lineHigh}
 	if got := into(box, Point{X: box.X}, "abcdef", Reckoned); got != 0 {
@@ -714,9 +641,6 @@ func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
 	}
 }
 
-// A key does what the bar offers, where the bar offers it. The bar offers Save
-// under ⌘⏎ and enter saved as well, which is a key doing what the bar does not
-// say — and it is why writing a description in paragraphs needed ⇧⏎.
 func TestEnterDoesNotSaveTheForm(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -733,8 +657,6 @@ func TestEnterDoesNotSaveTheForm(t *testing.T) {
 	}
 }
 
-// In a field with room for several lines, enter is what a line break always
-// was everywhere else: the one key a hand reaches for.
 func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -748,8 +670,6 @@ func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
 		t.Fatalf("the description reads %q", said)
 	}
-	// A field of one line is not a place for a break: ⇧⏎ there moves on, the
-	// way ⏎ does, and writes nothing into what it leaves.
 	w.form = w.form.onto(0)
 	before := w.Form().ValueOf("title")
 	if after := w.Key("shift+enter"); after.Form().ValueOf("title") != before || after.Form().On() != 1 {
@@ -770,12 +690,9 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 		t.Fatalf("the form opened holding %q", said)
 	}
 
-	// Rename one, tick it, drop the other, and name a new one.
 	w.form = w.form.Set("parts", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
 	w = w.Save()
 
-	// The parts go to the engine with the task, in the one act; the part no
-	// longer named is deleted as an act of its own.
 	saved, asked := f.gave("task", "edit")
 	if !asked || saved.Given["number"] != "1" ||
 		saved.Given["parts"] != "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux" {
@@ -792,8 +709,6 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	}
 }
 
-// A task with nothing under it opens on an empty field rather than none: it is
-// where a first part is written.
 func TestATaskWithNoPartsStillHasTheField(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -802,8 +717,6 @@ func TestATaskWithNoPartsStillHasTheField(t *testing.T) {
 	}
 }
 
-// A part the store will not let go of leaves the window saying so, rather than
-// closing the form as though the list had been settled.
 func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -811,8 +724,6 @@ func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 		engine.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	w.form = w.form.Set("parts", "")
-	// Only the deletion: the task's own edit has to go through for the part to
-	// be reached at all.
 	f.refuseDelete = errRefuse
 	w = w.Save()
 	if w.Wrong() == nil {
@@ -820,21 +731,15 @@ func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 	}
 }
 
-// One rule for a form, on both surfaces: enter writes a line where a line can
-// be written and moves on everywhere else, and it never saves. Saving is a
-// chord of its own, so it cannot happen by reaching for the key that breaks a
-// line.
 func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	// A one-line field: on to the next one.
 	w.form = w.form.onto(0)
 	if after := w.Key("enter"); after.Form().On() != 1 || after.Screen() != OnForm {
 		t.Fatalf("enter on the title went to field %d on %v", after.Form().On(), after.Screen())
 	}
-	// The description: a line, and the form stays where it is.
 	for i, field := range w.Form().Fields() {
 		if field.Name == "description" {
 			w.form = w.form.onto(i)
@@ -847,7 +752,6 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	if w.Screen() != OnForm || len(f.wrote()) != 0 {
 		t.Fatalf("enter left the form on %v having asked %v", w.Screen(), f.asked)
 	}
-	// Both chords save, from anywhere in it.
 	for _, chord := range []string{"cmd+enter", "cmd+s"} {
 		if after := w.Key(chord); after.Screen() == OnForm {
 			t.Errorf("%s did not save the form", chord)
@@ -855,9 +759,6 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	}
 }
 
-// Inside the description the arrows walk its lines, so every one of them can
-// be reached — down used to leave for the next field, and the only way through
-// a long text was a character at a time. Tab is what leaves.
 func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: "one\ntwo\nthree"})
@@ -886,25 +787,19 @@ func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
 	if got := w.Key("tab").Form().On(); got != at+1 {
 		t.Fatalf("tab out of the description went to field %d", got)
 	}
-	// Past the last line it stays where it is: leaving is what tab is for.
 	if got := w.Key("down").Key("down").Key("down").Form().Writing().At; got != 8 {
 		t.Fatalf("down past the last line put the caret at %d, want it kept at 8", got)
 	}
-	// Into a shorter line, as far in as that line goes and no further: four
-	// letters into "three", up onto "two", lands at the end of "two".
 	w.form = w.form.Writes(w.form.Writing().CaretAt(12))
 	if got := w.Key("up").Form().Writing().At; got != 7 {
 		t.Fatalf("up from four letters into the last line put the caret at %d, want 7", got)
 	}
-	// And as far in as it was, onto a line long enough to take it.
 	w.form = w.form.Writes(w.form.Writing().CaretAt(6))
 	if got := w.Key("down").Form().Writing().At; got != 10 {
 		t.Fatalf("down from two letters into the second line put the caret at %d, want 10", got)
 	}
 }
 
-// The description in the form scrolls, carries the bar the detail's carries,
-// and its end can be reached — the same box on both screens.
 func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
@@ -922,30 +817,24 @@ func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 	if bar.X < frame.X+frame.W {
 		t.Fatalf("the bar at %d sits over the text, which ends at %d", bar.X, frame.X+frame.W)
 	}
-	// The wheel takes it to the end, and the end is the text's last line.
 	for range len(lines.Said) {
 		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
 	}
 	if last := lines.Said[min(len(lines.Said)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "FIN") {
 		t.Fatalf("scrolled to the end, the last line in sight is %q", last)
 	}
-	// And the wheel over it does not move the keyboard off it.
 	if w.Form().Fields()[w.Form().On()].Name != "description" {
 		t.Fatal("scrolling the description put the keyboard somewhere else")
 	}
 }
 
-// What is in sight follows the caret: arriving at the description shows where
-// the caret is, and typing after the wheel moved the box away brings it back.
-// The wheel is left alone otherwise — that is what reading back through a text
-// is.
 func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	w.form = w.form.onto(0)
-	w = w.Key("tab") // onto the description, with the caret at its end
+	w = w.Key("tab")
 	if w.Form().Fields()[w.Form().On()].Name != "description" {
 		t.Fatalf("tab went to %q", w.Form().Fields()[w.Form().On()].Name)
 	}
@@ -966,8 +855,6 @@ func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 	}
 }
 
-// The bar beside the description in the form is pulled the way the detail's
-// is, and a press on it is not a press in the text.
 func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
@@ -993,8 +880,6 @@ func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
 	}
 }
 
-// A row of a list says whether it is taken, and a task or an objective by its
-// number too; a column is known by its name alone.
 func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
@@ -1021,8 +906,6 @@ func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 	}
 }
 
-// A task added in the window starts on the column of what is chosen, at normal
-// priority — the way the terminal starts one. It used to start with neither.
 func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "In todo", State: "todo"})
@@ -1046,9 +929,6 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	}
 }
 
-// The parts of a task being edited are drawn as tiles to tick, read from what
-// the field says now — a part typed and not yet saved among them, under its
-// title alone — wherever the keyboard is.
 func TestThePartsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Ship it", "todo"),
@@ -1071,9 +951,6 @@ func TestThePartsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	}
 }
 
-// The description is wrapped with the face it is drawn in, wherever its lines
-// are counted: in the form and on the open task alike. Wrapped by a reckoned
-// width, a line of narrow letters stopped two thirds of the way across its box.
 func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	text := strings.Repeat("iiii ", 120)
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Description: text}).Measuring(narrow)
@@ -1096,8 +973,6 @@ func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	}
 }
 
-// The history is wrapped with the face it is drawn in, the way the description
-// is: an act of narrow letters runs across the whole of its box.
 func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	act := strings.Repeat("iiii ", 120)
 	w := holding(newFake(), card(1, "Write the spec", "todo")).Measuring(narrow)
@@ -1108,9 +983,6 @@ func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	}
 }
 
-// What a form set aside is offered back on the form it came from, and on no
-// other: not on another task's, not on a new one, and not once something has
-// been typed into the form since, which bringing it back would write over.
 func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types(" again").Key("esc").Key("esc")
@@ -1129,7 +1001,6 @@ func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	if fresh := w.Choose("New"); offered(fresh) {
 		t.Errorf("a new task's form offers %v", fresh.Offers())
 	}
-	// Answered by a click off it, the question sets aside the same way.
 	clickedOff := w.Choose("Edit").Types(" once more").Key("esc").clicked(Point{X: 1, Y: 1})
 	recovered := clickedOff.Choose("Edit").Key("cmd+z").Form().Fields()[0].Value
 	if clickedOff.Screen() != OnTheBoard || !strings.Contains(recovered, "once more") {
@@ -1140,8 +1011,6 @@ func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	}
 }
 
-// The description shows where the wheel left it while the keyboard is on
-// another field, and every other long field shows its beginning.
 func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo", Description: text},
@@ -1156,8 +1025,6 @@ func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
 	}
 }
 
-// Beside an open task, a triple click holds the whole of a line of history,
-// the way it holds a paragraph in a field.
 func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
 	w, _ := openTask(t)
 	r := readable(t, w, "history:0")
@@ -1166,8 +1033,6 @@ func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
 	}
 }
 
-// Beside an open objective, the work serving it is held and copied like any
-// text, and its bar is pulled like the history's.
 func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 	var cards []engine.Card
 	for i := range 30 {
@@ -1193,9 +1058,6 @@ func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 	}
 }
 
-// Pulling the bar beside the work serving an objective scrolls it by whole
-// tiles, as far as the point pulled to means: to its end when pulled past it,
-// and to the tile the middle of the track names when pulled there.
 func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 	var cards []engine.Card
 	for i := range 30 {
@@ -1216,8 +1078,6 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 	}
 }
 
-// A field holding one of a closed set takes no text of its own: what is typed
-// there opens its list, narrowed by it, and the field keeps what it held.
 func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -1232,17 +1092,14 @@ func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 		t.Errorf("the field reads %q once the list is put away", got)
 	}
 	w = w.Key("esc")
-	// Nor does it lose any of it to a key that takes text away.
 	for _, name := range []string{"backspace", "cmd+x", "alt+backspace"} {
 		if got := w.Key(name).Form().Fields()[w.Form().On()].Value; got != "normal" {
 			t.Errorf("%s left the field reading %q", name, got)
 		}
 	}
-	// What is pasted there narrows the list, as what is typed does.
 	if got := w.Key("cmd+v").Pasted("crit"); got.Screen() != OnChoosing || got.filtering.Value != "crit" {
 		t.Errorf("pasting left the window on %v narrowed by %q", got.Screen(), got.filtering.Value)
 	}
-	// A field of free text still takes what is typed.
 	for w.Form().Fields()[w.Form().On()].Arg != "estimate" {
 		w = w.Key("tab")
 	}

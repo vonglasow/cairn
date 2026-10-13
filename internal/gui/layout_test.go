@@ -9,11 +9,6 @@ import (
 	"testing"
 )
 
-// Every size the window draws from is worked out here and nowhere else, so a
-// test can read the whole shape without a screen. What is pinned is numbers:
-// pixels would depend on a font, a driver and a version of Gio, and would go
-// red on another machine for something that is not a defect.
-
 func TestTooSmallIsTheTwoSidesTogether(t *testing.T) {
 	for _, c := range []struct {
 		what          string
@@ -48,9 +43,6 @@ func TestTheFourColumnsShareTheWidthEvenly(t *testing.T) {
 	}
 }
 
-// The backlog is the heap everything lands in, and it holds more than the
-// other three together — so it runs the whole height, past where the band
-// stops the others.
 func TestTheBacklogRunsPastWhereTheBandStopsTheOthers(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	if l.Column[0].H <= l.Column[1].H {
@@ -61,7 +53,6 @@ func TestTheBacklogRunsPastWhereTheBandStopsTheOthers(t *testing.T) {
 	}
 }
 
-// The band lies under the last three columns and not under the backlog.
 func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	if l.Band.X != l.Column[1].X {
@@ -75,8 +66,6 @@ func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 	}
 }
 
-// Three lanes, named, sharing the band's width: which lane a card sits in is
-// what says which kind of stopped it is.
 func TestTheBandIsThreeLanesSharingItsWidth(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	if len(engine.Stalled) != 3 {
@@ -92,8 +81,6 @@ func TestTheBandIsThreeLanesSharingItsWidth(t *testing.T) {
 	}
 }
 
-// A card is always the same height, which is what lets a column say which one
-// is under the pointer by arithmetic rather than by measurement.
 func TestWhichCardIsUnderAPoint(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	body := l.Column[1]
@@ -114,7 +101,6 @@ func TestWhichCardIsUnderAPoint(t *testing.T) {
 	}
 }
 
-// Scrolling moves what is drawn, so the same point answers a different card.
 func TestScrollingChangesWhatIsUnderAPoint(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	card := l.CardAt(1, 0, 0)
@@ -136,8 +122,6 @@ func TestHowManyCardsAColumnShows(t *testing.T) {
 	}
 }
 
-// The whole shape at two sizes, written down. A sum changed by accident shows
-// up here as a number that moved, which is the only way to notice one.
 func TestTheShapeAtTwoSizes(t *testing.T) {
 	for _, size := range []struct{ w, h int }{{1200, 800}, {Narrowest, Shortest}} {
 		name := fmt.Sprintf("%dx%d", size.w, size.h)

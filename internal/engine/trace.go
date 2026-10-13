@@ -6,8 +6,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// What was done to a task, asked for: its history, and every act of a day.
-
 // TraceShow says what has been done to a task.
 var TraceShow = Operation{
 	Thing:   "trace",
@@ -58,9 +56,6 @@ cairn trace list --since 2026-09-01`,
 	},
 }
 
-// sinceWhen reads the day a period starts at: the one given, or the start of
-// today when none was. Today rather than everything, because a listing of every
-// act cairn ever recorded is not a question anybody asked.
 func sinceWhen(in Input) (time.Time, error) {
 	given := in.Given["since"]
 	if given == "" {

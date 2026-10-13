@@ -1,16 +1,9 @@
 package engine
 
-// The backup operations: a backup of the store is made, listed, read,
-// deleted and put back, described once so both surfaces build the same
-// command from the same facts. They open no store — a backup is most needed
-// exactly when the store cannot be opened.
-
 import (
 	"cairn/internal/domain"
 )
 
-// resolveBackup is the backup a restore is aimed at: the one named, or the
-// most recent when none was.
 func resolveBackup(vault *Backups, in Input) (domain.Backup, error) {
 	n, named := in.Whole("number")
 	if !named {
@@ -31,8 +24,6 @@ var BackupNew = Operation{
 	Again:   DoesItAgain,
 	Answers: BackupShape{},
 	Run: func(on On, _ Input) (Answer, error) {
-		// Counted before backing up, not after: what is announced is what was
-		// taken.
 		held, err := on.Backups.HoldsStore()
 		if err != nil {
 			return Answer{}, err
@@ -61,9 +52,6 @@ var BackupList = Operation{
 			return Answer{}, err
 		}
 		if all == nil {
-			// No backups folder was ever created, and no backup is a set
-			// with none in it — not an absent answer indistinguishable from
-			// an operation that never touched this field at all.
 			all = []domain.Backup{}
 		}
 		return Answer{Backups: all}, nil

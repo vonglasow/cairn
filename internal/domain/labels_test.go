@@ -105,9 +105,6 @@ func TestLabelChange_clearsTheSetWhenGivenNothing(t *testing.T) {
 	}
 }
 
-// A list in one flag. Splitting comes first, and each piece then counts as a
-// --label of its own — which is why a signed piece beside a plain one falls
-// foul of the rule that was already there, rather than needing one of its own.
 func TestParseLabels_splitsOnCommas(t *testing.T) {
 	got, err := ParseLabels([]string{"spec,team"})
 	if err != nil {
@@ -148,8 +145,6 @@ func TestParseLabelChange_refusesAListThatMixesTheTwoForms(t *testing.T) {
 	}
 }
 
-// One word is one label however it was typed: two spellings of it would be two
-// labels, and a narrowing by one would miss every task carrying the other.
 func TestParseLabels_writesALabelOneWay(t *testing.T) {
 	for typed, kept := range map[string]string{
 		"Sp26 20":           "sp26-20",
@@ -189,23 +184,18 @@ func TestParseLabels_refusesWhatNoLabelMayHold(t *testing.T) {
 	}
 }
 
-// A label nothing is left of once written is a label with no name.
 func TestParseLabels_refusesALabelWrittenToNothing(t *testing.T) {
 	if _, err := ParseLabels([]string{"--__--"}); !errors.Is(err, ErrLabelRequired) {
 		t.Errorf("ParseLabels(--__--) = %v, want it refused for having no name", err)
 	}
 }
 
-// A label kept from before the rule was written is carried as it is: it does
-// not stop another label joining the task, or one leaving it.
 func TestLabelChange_leavesALabelFromBeforeTheRuleAlone(t *testing.T) {
 	if got := applied(t, []string{"c++"}, "+spec"); len(got) != 2 || got[0] != "c++" || got[1] != "spec" {
 		t.Errorf("+spec over [c++] gives %v, want [c++ spec]", got)
 	}
 }
 
-// The ends of what a label may hold are held too: a z and a 9 are a label's,
-// and what sits just past them is not.
 func TestParseLabels_holdsTheEndsOfWhatALabelMayHold(t *testing.T) {
 	if got, err := ParseLabels([]string{"az09"}); err != nil || len(got) != 1 || got[0] != "az09" {
 		t.Errorf("ParseLabels(az09) = %v, %v; want [az09]", got, err)

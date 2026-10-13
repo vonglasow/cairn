@@ -2,8 +2,6 @@ package tui
 
 import tea "charm.land/bubbletea/v2"
 
-// keyPress builds the message a terminal would have sent for a key, so a
-// scenario presses what a person presses.
 func keyPress(name string) tea.KeyPressMsg {
 	switch name {
 	case "enter":
@@ -27,7 +25,6 @@ func keyPress(name string) tea.KeyPressMsg {
 	case "down":
 		return tea.KeyPressMsg{Code: tea.KeyDown}
 	case "f1":
-		// A key that types nothing, for the tests that need one.
 		return tea.KeyPressMsg{Code: tea.KeyF1}
 	}
 	if rest, found := cutCtrl(name); found {
@@ -42,7 +39,6 @@ func keyPress(name string) tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: r, Text: name}
 }
 
-// cutCtrl takes the "ctrl+" off a key's name, the way cutShift does its own.
 func cutCtrl(name string) (string, bool) {
 	const ctrl = "ctrl+"
 	if len(name) > len(ctrl) && name[:len(ctrl)] == ctrl {
@@ -51,7 +47,6 @@ func cutCtrl(name string) (string, bool) {
 	return "", false
 }
 
-// cutShift takes the "shift+" off a key's name.
 func cutShift(name string) (string, bool) {
 	const shift = "shift+"
 	if len(name) > len(shift) && name[:len(shift)] == shift {

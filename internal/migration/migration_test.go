@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-// told is a fake Told: it records, in order, the facts it was told rather
-// than doing anything with them. A test on it is a test on the order and the
-// content of what Tell says, nothing else.
 type told struct {
 	said []string
 }
@@ -23,9 +20,6 @@ func (r *told) NothingLost()        { r.said = append(r.said, "NothingLost()") }
 func (r *told) Applied(t time.Time) { r.said = append(r.said, fmt.Sprintf("Applied(%s)", t)) }
 func (r *told) NotApplied()         { r.said = append(r.said, "NotApplied()") }
 
-// TestTell_saysEveryFactAChangeCarries checks that Tell says every fact a
-// change carries, in order, and says the absence of a fact — no undoing, or
-// nothing lost, or not yet applied — rather than staying silent about it.
 func TestTell_saysEveryFactAChangeCarries(t *testing.T) {
 	made := time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
 	full := Migration{

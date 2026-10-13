@@ -8,10 +8,6 @@ import (
 	"cairn/internal/domain"
 )
 
-// textMembrane is an objective's membrane for the text a person reads: it is
-// told every fact and lays each one down as a row, in the order it was told.
-// Labels are collected as they arrive and only laid down once LabelsTold
-// says there are no more.
 type textMembrane struct {
 	number int
 	title  string
@@ -49,10 +45,7 @@ func (c *textMembrane) NotEstimated() {
 	c.rows = append(c.rows, domain.Fact{Key: "estimate", Value: ""})
 }
 
-// Text renders an objective in full, empty attributes included, the way a
-// person reads it. It is not a task's text with fields removed: an objective
-// has no column, no parent and no time spent, and a shared renderer would
-// have to be told which half to leave out every time.
+// Text renders an objective in full, empty attributes included, the way a person reads it.
 func Text(o Objective, p domain.Progress) string {
 	m := &textMembrane{}
 	o.Tell(m)
@@ -60,12 +53,7 @@ func Text(o Objective, p domain.Progress) string {
 	return domain.Card(m.number, m.title, append(m.rows, domain.Fact{Key: "progress", Value: p.Line("the objective")}))
 }
 
-// Serving renders the tasks put under an objective as the lines already
-// built for each, and says so when there are none — an objective with an
-// empty heading would read as one whose tasks failed to load.
-//
-// It takes lines rather than tasks: an objective may not know of a task, so
-// whoever calls this across that boundary renders each line first.
+// Serving renders the tasks put under an objective as the lines already built for each, and says so when there are none — an objective with an empty heading would read as one whose tasks failed to load.
 func Serving(lines []string) string {
 	if len(lines) == 0 {
 		return "\nnothing is under it\n"
@@ -78,14 +66,9 @@ func Serving(lines []string) string {
 	return out.String()
 }
 
-// listingRow is an objective's membrane for one row of a listing: it is told
-// every fact and keeps the two a row needs — its number and its title.
 type listingRow struct {
-	number int
-	title  string
-	// And where it stands, what it carries, and when it is wanted. A listing
-	// that said only a number and a title made somebody open every objective
-	// to find out which of them was reached and which was abandoned.
+	number   int
+	title    string
 	state    State
 	priority domain.Priority
 	due      time.Time
@@ -105,9 +88,7 @@ func (r *listingRow) NotDue()                   {}
 func (r *listingRow) Estimated(time.Duration)   {}
 func (r *listingRow) NotEstimated()             {}
 
-// List renders every objective as one row each. No tree: what is under an
-// objective is shown by `objective show`, and a listing that unfolded every
-// task would stop being a listing of objectives.
+// List renders every objective as one row each.
 func List(all []Objective) string {
 	var out strings.Builder
 	for _, o := range all {

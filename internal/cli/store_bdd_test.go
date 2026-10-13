@@ -1,8 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/store.feature: what happens when
-// more than one cairn wants the same file at the same time.
-
 import (
 	"bytes"
 	"context"
@@ -31,10 +28,6 @@ func TestAcceptance_Store(t *testing.T) {
 	runAcceptance(t, "store.feature", initStore(t), "")
 }
 
-// atOnce runs commands together and hands back the worst exit code any of
-// them returned. Main builds a fresh command tree per call and writes into
-// the buffers it is given, so nothing is shared but the store on disk —
-// which is the whole point of the scenario.
 func atOnce(lines [][]string) (int, string) {
 	var (
 		wg    sync.WaitGroup
@@ -60,7 +53,6 @@ func atOnce(lines [][]string) (int, string) {
 	return worst, said
 }
 
-// registerAtOnce declares the steps only this feature uses.
 func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	sc.Step(`^the store cannot be written to$`, func() error {
 		if err := os.Chmod(w.StorePath, 0o444); err != nil {
@@ -70,9 +62,6 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// No CAIRN_STORE and no HOME: a cron entry, a container, a service unit
-	// with a bare environment. cairn has nowhere to put the default store and
-	// has to say so rather than guess a path.
 	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
 		w.Setenv(config.StoreVariable, "")
 		w.Setenv("HOME", "")
@@ -95,8 +84,6 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Reads mixed in with writes: a reader holding the file is exactly what
-	// used to turn a write into a refusal.
 	sc.Step(`^(\d+) commands read and write at the same time$`, func(n int) error {
 		lines := make([][]string, 0, n)
 		for i := 1; i <= n; i++ {

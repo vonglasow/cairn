@@ -1,8 +1,5 @@
 package engine
 
-// The order and the focus, asked of the engine: the rules it refuses on, and
-// what it answers when it does not.
-
 import (
 	"errors"
 	"slices"
@@ -15,7 +12,6 @@ import (
 	"cairn/internal/trace"
 )
 
-// titlesHeld reads back the titles the engine lists, in the one order there is.
 func titlesHeld(t *testing.T, e *Engine) []string {
 	t.Helper()
 	all, err := e.tasks.All()
@@ -29,7 +25,6 @@ func titlesHeld(t *testing.T, e *Engine) []string {
 	return titles
 }
 
-// wantHeld fails unless the engine lists exactly these titles, in this order.
 func wantHeld(t *testing.T, e *Engine, want ...string) {
 	t.Helper()
 	if got := titlesHeld(t, e); strings.Join(got, ",") != strings.Join(want, ",") {
@@ -37,7 +32,6 @@ func wantHeld(t *testing.T, e *Engine, want ...string) {
 	}
 }
 
-// three adds three tasks and hands back their numbers.
 func three(t *testing.T, e *Engine) (int, int, int) {
 	t.Helper()
 	return factsOf(add(t, e, "First")).number,
@@ -72,8 +66,6 @@ func TestMove_putsATaskBehindTheOneNamed(t *testing.T) {
 	wantHeld(t, e, "Second", "First", "Third")
 }
 
-// A move to the place a task already holds writes nothing down, and a move
-// that went somewhere does: the history says what changed, and only that.
 func TestMove_writesDownOnlyAMoveThatWentSomewhere(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
@@ -104,8 +96,6 @@ func TestMove_writesDownOnlyAMoveThatWentSomewhere(t *testing.T) {
 	}
 }
 
-// The rule lives in the task and is asked before the store is: every refusal
-// here comes back from the notion rather than from a failed statement.
 func TestMove_refusesWhatTheNotionRefuses(t *testing.T) {
 	e := openEngine(t)
 	first, _, _ := three(t, e)
@@ -187,8 +177,6 @@ func TestPutInFocus_handsBackTheTaskBeingWorkedOn(t *testing.T) {
 	}
 }
 
-// Several at once, in the order they were taken up. One at a time is what a
-// person does; an agent session is started per task, and several run together.
 func TestPutInFocus_holdsSeveralAtOnce(t *testing.T) {
 	e := openEngine(t)
 	first, second, third := three(t, e)
@@ -200,7 +188,6 @@ func TestPutInFocus_holdsSeveralAtOnce(t *testing.T) {
 	if got, err := e.focus(); err != nil || !slices.Equal(got, []int{third, first}) {
 		t.Errorf("Focus = %v (%v), want %v", got, err, []int{third, first})
 	}
-	// And taking up what is already held changes nothing at all.
 	if _, err := e.putInFocus(third); err != nil {
 		t.Fatalf("PutInFocus again: %v", err)
 	}
@@ -216,8 +203,6 @@ func TestPutInFocus_refusesATaskThatIsNotThere(t *testing.T) {
 	}
 }
 
-// Letting go of one leaves the rest held. Letting go of one that was never
-// held is not a failure: the state asked for already holds.
 func TestLetGoOf_releasesOneAndKeepsTheRest(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
@@ -256,8 +241,6 @@ func TestLetGo_leavesNothingInFocus(t *testing.T) {
 	}
 }
 
-// The focus points at tasks that may go away. One goes with it, and InFocus
-// answers with the rest rather than a task it could not read.
 func TestInFocus_dropsATaskOnceItIsDeleted(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
@@ -304,8 +287,6 @@ func TestPlaceFrom_readsWhereAMoveWasTold(t *testing.T) {
 	}
 }
 
-// A flag given as false was named, and reading "named" as a request would turn
-// `--first=false` into moving a task first.
 func TestPlaceFrom_refusesWhatNamesNoPlaceOrSeveral(t *testing.T) {
 	for _, tc := range []struct {
 		what string
@@ -339,8 +320,6 @@ func TestYes_readsOnlyAFlagGivenAsTrue(t *testing.T) {
 	}
 }
 
-// Both the listing and the focus are answered from the same two calls, so what
-// they hand back is asserted where an operation would read it.
 func TestListing_carriesTheOrderAndWhatIsInFocus(t *testing.T) {
 	e := openEngine(t)
 	_, second, _ := three(t, e)
@@ -386,8 +365,6 @@ func TestWhatIsInFocus_answersTheTaskOrSaysThereIsNone(t *testing.T) {
 	}
 }
 
-// A move answers with the order, not with the card of the task moved: the card
-// would not show what moved.
 func TestTaskMove_answersWithTheOrder(t *testing.T) {
 	e := openEngine(t)
 	_, _, third := three(t, e)
@@ -405,11 +382,8 @@ func TestTaskMove_answersWithTheOrder(t *testing.T) {
 	}
 }
 
-// itoaEngine writes a number the way an argument arrives, since Input speaks
-// one language for every kind.
 func itoaEngine(n int) string { return strconv.Itoa(n) }
 
-// titlesOfTasks reads the titles of a list of tasks, for a message.
 func titlesOfTasks(all []task.Task) []string {
 	titles := make([]string, 0, len(all))
 	for _, one := range all {
@@ -418,9 +392,6 @@ func titlesOfTasks(all []task.Task) []string {
 	return titles
 }
 
-// The three operations are run here, not only their engine methods: a Run body
-// is where an argument becomes a call, and the lines that check what came back
-// are exercised by nothing else.
 func TestTaskFocus_answersWithTheTaskOrSaysThereIsNone(t *testing.T) {
 	e := openEngine(t)
 	_, second, _ := three(t, e)
@@ -475,7 +446,6 @@ func TestTaskUnfocus_answersThatNothingIsInFocus(t *testing.T) {
 	}
 }
 
-// A move that names no place is refused before the store is touched.
 func TestTaskMove_refusesAMoveThatNamesNoPlace(t *testing.T) {
 	e := openEngine(t)
 	first, _, _ := three(t, e)
@@ -486,8 +456,6 @@ func TestTaskMove_refusesAMoveThatNamesNoPlace(t *testing.T) {
 	}
 }
 
-// And a move of a task that is not there is refused with the reason a person
-// can act on.
 func TestTaskMove_refusesATaskThatIsNotThere(t *testing.T) {
 	if _, err := TaskMove.Run(On{Engine: openEngine(t)}, Input{
 		Given: map[string]string{"number": "99", "first": "true"},
@@ -496,9 +464,6 @@ func TestTaskMove_refusesATaskThatIsNotThere(t *testing.T) {
 	}
 }
 
-// Letting go of everything writes the release on every task that was held, and
-// not only on the first: a release that named one would leave the others'
-// stretches open for ever.
 func TestLetGo_writesTheReleaseOnEveryTaskHeld(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
@@ -523,7 +488,6 @@ func TestLetGo_writesTheReleaseOnEveryTaskHeld(t *testing.T) {
 	}
 }
 
-// Letting go of one task through the operation names it, and leaves the rest.
 func TestTaskUnfocus_letsGoOfTheTaskItWasGiven(t *testing.T) {
 	e := openEngine(t)
 	first, second, _ := three(t, e)
@@ -546,9 +510,6 @@ func TestTaskUnfocus_letsGoOfTheTaskItWasGiven(t *testing.T) {
 	}
 }
 
-// A column and a place named together are one act: the task goes into the
-// column and to the place, and a place that cannot be had leaves it where it
-// was — the change of column with it.
 func TestTaskMove_takesAColumnAndAPlaceInOneAct(t *testing.T) {
 	e := openEngine(t)
 	first, second, third := three(t, e)

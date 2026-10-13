@@ -1,8 +1,5 @@
 package engine
 
-// The task operations: add, list, show, edit and delete a task, described
-// once so both surfaces build the same command from the same facts.
-
 import (
 	"errors"
 	"fmt"
@@ -46,8 +43,6 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		}
 		parts := in.Change("parts")
 		if parts == nil {
-			// Nothing hangs under a task that has just been created, so the
-			// progress is asked of nobody rather than of the store.
 			return Answer{Task: &added, Progress: domain.Progress{}}, nil
 		}
 		n := factsOf(added).number
@@ -78,17 +73,12 @@ cairn task list --label team --archived`,
 	Run:     listing,
 }
 
-// taskNarrowing are the facts a listing of tasks can be kept down to. The four
-// that come from closed sets or from something numbered: what a person typed
-// themselves is what `task search` looks in.
 var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	"state":     "keep only the tasks sitting in this column",
 	"priority":  "keep only the tasks carrying this priority",
 	"label":     "keep only the tasks carrying this label; named twice, only those carrying both",
 	"objective": "keep only the tasks serving this objective",
 }),
-	// Not one of a task's attributes: being off the board is done to a task,
-	// not carried by one.
 	Argument{
 		Name:  "due-before",
 		Kind:  Day,
@@ -106,16 +96,11 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	},
 )
 
-// TaskShow says what a task carries, what hangs under it, how far along it is,
-// and where its outside context lives.
+// TaskShow says what a task carries, what hangs under it, how far along it is, and where its outside context lives.
 var TaskShow = Operation{
-	Thing: "task",
-	Verb:  "show",
-	Short: "Show what a task carries",
-	// The last sentence is for an agent, which reads this as the tool's
-	// description: what it learns while working belongs in a dated file in
-	// that directory, added beside the rest, and not in the description,
-	// which is rewritten whole every time it is changed. See docs/context.md.
+	Thing:   "task",
+	Verb:    "show",
+	Short:   "Show what a task carries",
 	Does:    "Show what a task carries, what hangs under it, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
 	Example: "cairn task show 1",
 	Level:   Read,
@@ -146,10 +131,6 @@ var TaskShow = Operation{
 	},
 }
 
-// contextOf is where a task's outside context lives: the directory named for
-// its number under the notes, or nothing when nobody said where the notes are.
-// Composed, never looked at: cairn says where and does nothing about it — see
-// docs/context.md.
 func (on On) contextOf(n int) string {
 	if on.Notes == "" {
 		return ""
@@ -157,8 +138,7 @@ func (on On) contextOf(n int) string {
 	return filepath.Join(on.Notes, strconv.Itoa(n))
 }
 
-// TaskArchive takes a task off the board. Its own verb rather than a flag on
-// edit: it is done to a task, not carried by one.
+// TaskArchive takes a task off the board.
 var TaskArchive = Operation{
 	Thing: "task",
 	Verb:  "archive",
@@ -174,8 +154,6 @@ cairn task archive --state done`,
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
 		alsoOf("a task"),
 	}, taskNarrowing...),
-	// Every board asks before it sweeps a column away; so does the engine,
-	// wherever it is asked from.
 	Sweeps: sweepsByNarrowing,
 	Run: func(on On, in Input) (Answer, error) {
 		if n, named := in.Whole("number"); named && n != 0 {
@@ -200,8 +178,6 @@ cairn task archive --state done`,
 		if err != nil {
 			return Answer{}, err
 		}
-		// Nothing to go on would take the whole board off it, which is not
-		// something to find out afterwards.
 		if !kept.Narrows() {
 			return Answer{}, ErrNothingToArchive
 		}
@@ -213,8 +189,7 @@ cairn task archive --state done`,
 	},
 }
 
-// TaskLabel puts one label on every task a narrowing reaches. Marking a sprint
-// one task at a time is not marking it at all.
+// TaskLabel puts one label on every task a narrowing reaches.
 var TaskLabel = Operation{
 	Thing:      "task",
 	Verb:       "label",
@@ -227,9 +202,6 @@ var TaskLabel = Operation{
 	Overwrites: true,
 	Answers:    Labelled{},
 	Takes: append([]Argument{
-		// Named "put" and not "label": the narrowing below already takes a
-		// "label" — the ones a task has to carry to be reached — and an agent
-		// names its arguments in one object, where a name is held once.
 		{Name: "put", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
 	}, taskNarrowing...),
 	Run: func(on On, in Input) (Answer, error) {
@@ -255,13 +227,10 @@ var TaskLabel = Operation{
 // ErrNothingToLabel is returned when labelling is given nothing to narrow by.
 var ErrNothingToLabel = errors.New("labelling needs something to narrow by")
 
-// ErrNothingToArchive is returned when archiving is given neither a number nor
-// a narrowing.
+// ErrNothingToArchive is returned when archiving is given neither a number nor a narrowing.
 var ErrNothingToArchive = errors.New("archiving needs a number or something to narrow by")
 
-// ErrAlsoWithoutNumber is returned when archiving names more tasks beside a
-// first, and no first: a narrowing already takes many, and "also" said beside
-// one is a question about which.
+// ErrAlsoWithoutNumber is returned when archiving names more tasks beside a first, and no first: a narrowing already takes many, and "also" said beside one is a question about which.
 var ErrAlsoWithoutNumber = errors.New("--also names tasks beside a number, and no number was given")
 
 // TaskUnarchive brings one back onto the board.
@@ -287,7 +256,6 @@ var TaskUnarchive = Operation{
 	},
 }
 
-// shownTask answers with the task as it ends up, so nobody has to ask again.
 func shownTask(on On, number int) (Answer, error) {
 	found, err := on.Engine.show(number)
 	if err != nil {
@@ -322,8 +290,6 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		}
 		changes.Title = in.Change("title")
 		parts := in.Change("parts")
-		// Handed its parts and nothing else, a task itself is left alone:
-		// what changes is what hangs under it.
 		var edited task.Task
 		if parts != nil && !changes.named() {
 			edited, err = on.Engine.tasks.Find(n)
@@ -369,7 +335,6 @@ cairn task delete 1 --also 4 --also 7 --yes`,
 		}
 		var waiting []int
 		for _, n := range numbers {
-			// Read before it goes: afterwards the link is gone with it.
 			was, err := on.Engine.waitingOn(n)
 			if err != nil {
 				return Answer{}, err
@@ -379,14 +344,12 @@ cairn task delete 1 --also 4 --also 7 --yes`,
 			}
 			waiting = append(waiting, was...)
 		}
-		// A task deleted in the same act is not one left waiting.
 		waiting = slices.DeleteFunc(waiting, func(n int) bool { return slices.Contains(numbers, n) })
 		return Answer{Deleted: &numbers[0], Also: numbers[1:], Unblocked: waiting}, nil
 	},
 }
 
-// TaskSearch names every task carrying everything named, wherever among its
-// facts each one happens to sit.
+// TaskSearch names every task carrying everything named, wherever among its facts each one happens to sit.
 var TaskSearch = Operation{
 	Thing: "task",
 	Verb:  "search",
@@ -397,9 +360,6 @@ cairn task search spec team --state todo`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	// The one place the two vocabularies meet: what is looked for is free text
-	// and what narrows it is a closed set. A word worth searching for is a word
-	// common enough to answer the whole board without one.
 	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	}, taskNarrowing...),
@@ -423,18 +383,11 @@ cairn task search spec team --state todo`,
 	},
 }
 
-// Reaches is the engine's search over what a board already holds: what a task
-// or an objective said a search looks in (task.Said, objective.Said), and what
-// somebody typed, word by word. The same rule as `task search`, so one word
-// typed into any surface comes back with one answer; a board asks it rather
-// than the store because a board that waited on the store would wait to draw.
+// Reaches is the engine's search over what a board already holds: what a task or an objective said a search looks in (task.Said, objective.Said), and what somebody typed, word by word.
 func Reaches(said []string, typed string) bool {
 	return domain.Reaches(said, strings.Fields(typed))
 }
 
-// sweepsByNarrowing says an archive reaches whatever its narrowing does: no
-// task named, and something to narrow by. Named neither, it is refused for
-// what it lacks rather than asked to be confirmed.
 func sweepsByNarrowing(in Input) bool {
 	if n, named := in.Whole("number"); named && n != 0 {
 		return false
@@ -447,8 +400,6 @@ func sweepsByNarrowing(in Input) bool {
 	return false
 }
 
-// taskAttributes are the twelve attributes a task carries, minus title, which is
-// taken as a positional argument where it can be given at all.
 var taskAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the task is about"},
 	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column it sits in"},
@@ -463,8 +414,6 @@ var taskAttributes = []Argument{
 	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; +4 adds one, -1 takes one away"},
 }
 
-// oneOf turns a closed set of typed values into the strings Argument.OneOf
-// needs, in one place rather than once per attribute that has one.
 func oneOf[T ~string](values []T) []string {
 	out := make([]string, len(values))
 	for i, v := range values {
@@ -473,8 +422,6 @@ func oneOf[T ~string](values []T) []string {
 	return out
 }
 
-// withTypedTitle puts the title back in the reason when the title is what was
-// wrong, so whoever asked sees what cairn read — including nothing at all.
 func withTypedTitle(err error, typed string) error {
 	if errors.Is(err, domain.ErrTitleRequired) {
 		return fmt.Errorf("%w, got %q", err, typed)
@@ -482,7 +429,6 @@ func withTypedTitle(err error, typed string) error {
 	return err
 }
 
-// editReason says what an edit can change, when it was asked to change nothing.
 func editReason(err error) error {
 	if errors.Is(err, ErrNothingToChange) {
 		return fmt.Errorf("%w: name one of --title, --desc, --state, --priority, --label, --deadline, --estimate", err)
@@ -490,8 +436,6 @@ func editReason(err error) error {
 	return err
 }
 
-// taskChanges turns what was named in in into the changes Add and
-// Edit take.
 func taskChanges(in Input) (Changes, error) {
 	var c Changes
 	c.Description = in.Change("desc")
@@ -504,21 +448,13 @@ func taskChanges(in Input) (Changes, error) {
 	c.Estimate = in.Change("estimate")
 	c.Spent = in.Change("spent")
 	if in.Named("parent") {
-		// Empty is how a task is set free, and Whole reads it as zero — the
-		// same task.NoParent a number nobody could tell apart from "hang
-		// under task zero" would otherwise have to spell out here.
 		under, _ := in.Whole("parent")
 		c.Parent = &under
 	}
-	// A set now, so it is read the way the labels and the blockers are rather
-	// than as a single number: naming nothing sets the task loose, which the
-	// grammar already handles without a case of its own.
 	c.Objective = in.Changed("objective")
 	return c, nil
 }
 
-// listing is what every listing answers: every task in the one order there is,
-// and which of them is in focus, since a listing marks it.
 func listing(on On, in Input) (Answer, error) {
 	kept, err := keeping(in, taskNarrowing)
 	if err != nil {
@@ -537,9 +473,6 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	// Unnarrowed, the listing holds every part of every task it shows — a
-	// part is never taken off the board without its task — so it is all the
-	// counting needs. Narrowed, it does not, and every task is read.
 	along, _, err := on.Engine.alongEvery(tasks, !kept.Narrows())
 	if err != nil {
 		return Answer{}, err
@@ -549,9 +482,6 @@ func listing(on On, in Input) (Answer, error) {
 		n := factsOf(t).number
 		contexts[n] = on.contextOf(n)
 	}
-	// A narrowed listing is answered flat: what matched is what is shown, and
-	// where each task sits is not what was asked. Which field carries them is
-	// how Of and RenderText tell the two apart.
 	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts}
 	if kept.Narrows() {
 		answer.Matched = tasks

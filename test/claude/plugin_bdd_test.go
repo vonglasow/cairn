@@ -1,9 +1,5 @@
 package claude
 
-// Executable acceptance scenarios for bdd/claude-plugin.feature: the plugin
-// the binary carries, written out by the real binary and held against the
-// plugin in this repository, file by file.
-
 import (
 	"context"
 	"encoding/json"
@@ -19,7 +15,6 @@ import (
 	"cairn/test"
 )
 
-// pluginWorld is the session world, and what the last command said.
 type pluginWorld struct {
 	*sessionWorld
 	out    string
@@ -27,7 +22,6 @@ type pluginWorld struct {
 	folder string
 }
 
-// beside is where the plugin goes when no folder is named: next to the store.
 func (w *pluginWorld) beside() string {
 	for _, kv := range w.env {
 		if store, ok := strings.CutPrefix(kv, "CAIRN_STORE="); ok {
@@ -37,7 +31,6 @@ func (w *pluginWorld) beside() string {
 	return ""
 }
 
-// files is every file under a folder, by its path inside it, with what it holds.
 func files(root string) (map[string]string, error) {
 	found := map[string]string{}
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -55,8 +48,6 @@ func files(root string) (map[string]string, error) {
 	return found, err
 }
 
-// offers says a folder is a marketplace offering the plugin named, and where
-// that plugin lies.
 func offers(folder, name string) (string, error) {
 	var market struct {
 		Name    string `json:"name"`
@@ -128,8 +119,6 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			if err != nil {
 				return err
 			}
-			// The Go that carries the plugin inside the binary is not part
-			// of it: Claude Code reads the rest.
 			for path := range want {
 				if strings.HasSuffix(path, ".go") {
 					delete(want, path)
@@ -137,8 +126,6 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			for path, held := range want {
 				if path == manifest {
-					// The manifest is written with the version of the cairn
-					// that wrote it, and is otherwise the repository's.
 					if !sameButVersion(got[path], held) {
 						return fmt.Errorf("%s says other than the repository's, its version aside", path)
 					}
@@ -207,11 +194,8 @@ func TestAcceptance_ClaudePlugin(t *testing.T) {
 	}
 }
 
-// manifest is where the plugin's own manifest lies, inside the plugin.
 const manifest = ".claude-plugin/plugin.json"
 
-// sameButVersion says two manifests say the same, whatever version either
-// carries.
 func sameButVersion(a, b string) bool {
 	var left, right map[string]any
 	if json.Unmarshal([]byte(a), &left) != nil || json.Unmarshal([]byte(b), &right) != nil {

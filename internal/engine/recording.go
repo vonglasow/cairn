@@ -1,9 +1,5 @@
 package engine
 
-// What the engine writes down. Every act on a task already passes through here,
-// which is what makes one place enough to record them all — a surface records
-// nothing, and could not, since it never changes anything itself.
-
 import (
 	"fmt"
 	"strings"
@@ -14,18 +10,12 @@ import (
 	"cairn/internal/trace"
 )
 
-// history is what the engine needs from whatever keeps what happened. Declared
-// here, by the consumer, for the same reason tasks and places are.
 type history interface {
 	Record(trace.Act) error
 	ActsOn(int) ([]trace.Act, error)
 	ActsSince(time.Time) ([]trace.Act, error)
 }
 
-// theAttributes are the thirteen a task carries, in the order a card lays them
-// out, paired with how to read each off a task. Named once: recording a change and
-// recording what a task started as both walk this list, and two lists would
-// drift the day an attribute is added.
 var theAttributes = []struct {
 	named string
 	value func(taskFacts) string
@@ -42,18 +32,9 @@ var theAttributes = []struct {
 	{"time spent", func(f taskFacts) string { return domain.FormatDuration(f.timeSpent) }},
 	{"parent", func(f taskFacts) string { return numberOrNothing(f.parent) }},
 	{"objectives", func(f taskFacts) string { return numbersOrNothing(f.objectives) }},
-	// Off the board or on it: "yes" when it was taken off, nothing when it is
-	// on, so taking it off and bringing it back read as any other change.
 	{"archived", func(f taskFacts) string { return yesOrNothing(f.archived) }},
 }
 
-// historyOf hands back everything done to a task, oldest first, and refuses a
-// task nothing was ever written down about.
-//
-// Nothing written down means nothing was ever there: a task always carries at
-// least its creation. And it cannot be mistaken for a task since deleted, since
-// a deletion takes nothing away from a history — which is what lets this be the
-// signal rather than asking whether the task is still around.
 func (e *Engine) historyOf(number int) ([]trace.Act, error) {
 	acts, err := e.history.ActsOn(number)
 	if err != nil {
@@ -65,8 +46,6 @@ func (e *Engine) historyOf(number int) ([]trace.Act, error) {
 	return acts, nil
 }
 
-// stoodSince is the moment a task last changed column, or was made when it
-// never has: how long it has sat where it is.
 func (e *Engine) stoodSince(number int) (time.Time, error) {
 	acts, err := e.historyOf(number)
 	if err != nil {
@@ -75,23 +54,10 @@ func (e *Engine) stoodSince(number int) (time.Time, error) {
 	return trace.LastNamed(acts, "column"), nil
 }
 
-// since hands back everything done from a day onward, across every task.
 func (e *Engine) since(day time.Time) ([]trace.Act, error) {
 	return e.history.ActsSince(day)
 }
 
-// recordCreated writes down a task coming into being, and what it started as:
-// the act itself, then one act per attribute the task carries.
-//
-// One act per attribute and not one act carrying them all. Crammed into a
-// single field they cannot be read back apart — measured: a description accepts
-// tabs and newlines, so no separator is safe, and `title=Écrire la spéc, enfin`
-// splits into a pair and a word. Each value alone in its own act is exact
-// without a format to invent, and without one to get wrong.
-//
-// The values are written down rather than left to be inferred from the defaults
-// of the day: the day a default changes, every older history would replay wrong
-// and do it in silence.
 func (e *Engine) recordCreated(t task.Task) error {
 	f := factsOf(t)
 	if err := e.record(f.number, trace.Created, "", "", ""); err != nil {
@@ -109,14 +75,6 @@ func (e *Engine) recordCreated(t task.Task) error {
 	return nil
 }
 
-// whatItHeld is everything a task carried, written into the one act that says
-// it was deleted. The trace used to record that a task had gone and nothing of
-// what went with it — no title, no description — so even putting it back by
-// hand was impossible.
-//
-// On the act itself rather than one act per attribute: a deletion is one thing
-// that happened, and a history that read as thirteen would say a task was
-// deleted thirteen times.
 func whatItHeld(t task.Task) string {
 	f := factsOf(t)
 	var held []string
@@ -130,9 +88,6 @@ func whatItHeld(t task.Task) string {
 	return strings.Join(held, "; ")
 }
 
-// recordChanges writes down one act per attribute that actually took another
-// value. An attribute named in an edit but given what it already held is not a
-// change, and recording it would fill a history with acts nobody performed.
 func (e *Engine) recordChanges(was, became task.Task) error {
 	before, after := factsOf(was), factsOf(became)
 	for _, a := range theAttributes {
@@ -147,7 +102,6 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 	return nil
 }
 
-// record writes one act down, stamped now and with the surface that asked.
 func (e *Engine) record(number int, did, field, was, became string) error {
 	var a trace.AsTold
 	a.On(number)
@@ -160,7 +114,6 @@ func (e *Engine) record(number int, did, field, was, became string) error {
 	return e.history.Record(a.Act())
 }
 
-// yesOrNothing writes a fact that holds as "yes", and nothing when it does not.
 func yesOrNothing(holds bool) string {
 	if holds {
 		return "yes"
@@ -168,8 +121,6 @@ func yesOrNothing(holds bool) string {
 	return ""
 }
 
-// numberOrNothing writes the number a task points at, or nothing when it points
-// at none.
 func numberOrNothing(number int) string {
 	if number == task.NoParent {
 		return ""
@@ -177,9 +128,6 @@ func numberOrNothing(number int) string {
 	return fmt.Sprint(number)
 }
 
-// numbersOrNothing reads a set of task numbers the way a card writes them, and
-// nothing at all when the set is empty — so a history says a blocker went from
-// nothing to #1 rather than from an empty string to one.
 func numbersOrNothing(numbers []int) string {
 	if len(numbers) == 0 {
 		return ""

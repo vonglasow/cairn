@@ -9,12 +9,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// The keyboard on the window: the arrows walking the board, the band and the
-// objectives, shift moving what is chosen, and the few keys the bar does not
-// offer.
-
-// e edits whatever is chosen, because a hand that has just chosen something is
-// not on the other side of the window.
 func TestEEditsWhateverIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -28,11 +22,6 @@ func TestEEditsWhateverIsChosen(t *testing.T) {
 	}
 }
 
-// Deleting, searching and the help: what the terminal board offers and the
-// window did not.
-
-// The arrows walk the board, so a hand on the keyboard does not have to reach
-// for the mouse to look at the next task.
 func TestTheArrowsWalkTheBoard(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -56,8 +45,6 @@ func TestTheArrowsWalkTheBoard(t *testing.T) {
 	}
 }
 
-// The arrows stop at the edges rather than wrapping round, and an empty column
-// is walked past rather than stopped in.
 func TestTheArrowsStopAtTheEdges(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -74,13 +61,11 @@ func TestTheArrowsStopAtTheEdges(t *testing.T) {
 	if got := w.Key("down").Chosen(); got != 1 {
 		t.Errorf("down from the only card of a column chose %d", got)
 	}
-	// Two columns stand empty between them; walking right reaches the last.
 	if got := w.Key("right").Key("right").Key("right").Chosen(); got != 2 {
 		t.Errorf("walking right across two empty columns chose %d", got)
 	}
 }
 
-// With nothing chosen, an arrow chooses somewhere to begin rather than nothing.
 func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Only", State: "backlog"})
@@ -89,7 +74,6 @@ func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 	}
 }
 
-// The arrows walk the objectives too, which are a list and so have no columns.
 func TestTheArrowsWalkTheObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -112,8 +96,6 @@ func TestTheArrowsWalkTheObjectives(t *testing.T) {
 	}
 }
 
-// Enter opens what the arrows walked to, the way a double-click opens what the
-// pointer landed on.
 func TestEnterOpensWhatIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
@@ -130,8 +112,6 @@ func TestEnterOpensWhatIsChosen(t *testing.T) {
 	}
 }
 
-// Walking across into a shorter column lands on its last card rather than
-// nowhere: the level is kept as far as there is one.
 func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -149,8 +129,6 @@ func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 	}
 }
 
-// Walking the objectives from somewhere other than the first: the list has to
-// find where it is before it can move.
 func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -169,8 +147,6 @@ func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 	}
 }
 
-// An arrow on a board whose first columns are empty begins in the first column
-// that has anything.
 func TestAnArrowBeginsInTheFirstColumnThatHasAnything(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 7, Title: "Only", State: "current"})
@@ -179,9 +155,6 @@ func TestAnArrowBeginsInTheFirstColumnThatHasAnything(t *testing.T) {
 	}
 }
 
-// The band is walked like the columns. A task that is blocked, watching or
-// paused could not be reached by the arrows at all — and those are the tasks
-// that want a decision.
 func TestTheArrowsReachTheBand(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -201,9 +174,6 @@ func TestTheArrowsReachTheBand(t *testing.T) {
 	t.Errorf("walking down never reached the blocked task; it stopped on %d", down.Chosen())
 }
 
-// A card is moved with the keyboard. The terminal has done it from the start;
-// the window had only the drag, so the central gesture of the product needed a
-// mouse.
 func TestACardIsMovedWithTheKeyboard(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "backlog"), card(2, "Ship it", "backlog"))
@@ -224,9 +194,6 @@ func TestACardIsMovedWithTheKeyboard(t *testing.T) {
 	}
 }
 
-// Enter agrees to a deletion and d does not. The question was opened by d and
-// agreed to by d, so a quick dd — which is how one deletes in the grammar this
-// product borrows — removed a task before a word of it had been read.
 func TestADeletionIsAgreedToWithEnter(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
@@ -242,8 +209,6 @@ func TestADeletionIsAgreedToWithEnter(t *testing.T) {
 	}
 }
 
-// The same gesture as the terminal's: the column the board is on goes off it in
-// one, rather than a card at a time.
 func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "One", State: "done"},
@@ -265,15 +230,12 @@ func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
 	t.Fatalf("nothing was swept: %v", f.asked)
 }
 
-// The central gesture of the product — move this card — wanted a mouse in the
-// window: the keyboard walked the board and could not move anything on it.
 func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "One", State: "todo"},
 		engine.Card{Number: 2, Title: "Two", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
-	// Sideways: the column it lands in is its new state, either way.
 	w.Key("shift+right")
 	asked := askedFor(f, "task", "edit")
 	if asked == nil || asked.Given["state"] != "current" {
@@ -285,7 +247,6 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 	if back == nil || back.Given["state"] != "backlog" {
 		t.Fatalf("shift+left asked %v", f.asked)
 	}
-	// And no further than the two ends.
 	f.asked = nil
 	holding(f, engine.Card{Number: 9, Title: "Last", State: "done"}).
 		clicked(middleOf(w, 3, 0)).Key("shift+right")
@@ -293,7 +254,6 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 		t.Fatalf("shift+right off the last column asked %v", f.asked)
 	}
 
-	// Down: its place among the ones it sits with, and no further than the end.
 	f.asked = nil
 	w.Key("shift+down")
 	moved := askedFor(f, "task", "move")
@@ -314,9 +274,6 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 	}
 }
 
-// Up from the third card or further goes behind the one two above it: the
-// window asked for "after" the card directly above, which is where it already
-// was, so shift+up did nothing past the second card.
 func TestShiftUpFromFurtherDownGoesBehindTheCardTwoAbove(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -332,8 +289,6 @@ func TestShiftUpFromFurtherDownGoesBehindTheCardTwoAbove(t *testing.T) {
 	}
 }
 
-// A card in the band moved sideways goes to the backlog on the left and
-// nowhere on the right — never into a column read off a card it is not.
 func TestShiftSidewaysOutOfTheBand(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -361,8 +316,6 @@ func TestShiftSidewaysOutOfTheBand(t *testing.T) {
 	}
 }
 
-// The band used to be beyond the arrows altogether, and the tasks in it are
-// exactly the ones waiting for a decision.
 func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -371,20 +324,16 @@ func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 		engine.Card{Number: 3, Title: "Blocked two", State: "blocked"},
 		engine.Card{Number: 4, Title: "Watched", State: "watching"})
 
-	// Down out of the column lands in the lane beneath it.
 	w = w.clicked(middleOf(w, 1, 0)).Key("down")
 	if w.Chosen() != 2 {
 		t.Fatalf("down out of TODO chose %d, want the first blocked task", w.Chosen())
 	}
-	// Down again walks along the lane, and stops at its end.
 	if got := w.Key("down").Chosen(); got != 3 {
 		t.Fatalf("down in a lane chose %d, want 3", got)
 	}
 	if got := w.Key("down").Key("down").Chosen(); got != 3 {
 		t.Fatalf("down past the end of a lane chose %d, want 3", got)
 	}
-	// Sideways moves to the next lane that holds anything, and stops at the
-	// last one rather than walking off the end of them.
 	if got := w.Key("right").Chosen(); got != 4 {
 		t.Fatalf("right out of the blocked lane chose %d, want 4", got)
 	}
@@ -394,23 +343,17 @@ func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 	if got := w.Key("right").Key("right").Chosen(); got != 4 {
 		t.Fatalf("right off the last lane chose %d, want to stay on 4", got)
 	}
-	// And arriving at a shorter lane lands on its last card, not past it.
 	if got := w.Key("down").Key("right").Chosen(); got != 4 {
 		t.Fatalf("right from the second blocked card chose %d, want 4", got)
 	}
-	// Sideways out of a column is not a step down into the lane under it.
 	if got := w.clicked(middleOf(w, 1, 0)).Key("right").Chosen(); got != 1 {
 		t.Fatalf("right out of TODO chose %d, and should not have fallen into the band", got)
 	}
-	// Up from the head of a lane climbs back into the column above it.
 	if got := w.Key("up").Chosen(); got != 1 {
 		t.Fatalf("up out of a lane chose %d, want the task above it", got)
 	}
 }
 
-// Climbing out of the band lands on the last card of the column above, and
-// brings it into sight. A card chosen out of sight is a card whose state
-// somebody is about to change without seeing which one it is.
 func TestClimbingOutOfTheBandBringsTheCardIntoSight(t *testing.T) {
 	f := newFake()
 	var cards []engine.Card
@@ -439,8 +382,6 @@ func TestClimbingOutOfTheBandBringsTheCardIntoSight(t *testing.T) {
 	}
 }
 
-// A keyboard move the store refuses leaves the window saying so, rather than
-// redrawing as though it had worked.
 func TestAKeyboardMoveTheStoreRefusesIsSaid(t *testing.T) {
 	for _, c := range []struct {
 		what string
@@ -462,8 +403,6 @@ func TestAKeyboardMoveTheStoreRefusesIsSaid(t *testing.T) {
 	}
 }
 
-// The backlog stands alone, full height, with no lane under it: walking off the
-// bottom of it goes nowhere rather than into the band.
 func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "One", State: "backlog"},
@@ -474,8 +413,6 @@ func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
 	}
 }
 
-// Climbing out of a lane whose column above is empty stays where it is, rather
-// than reaching for a card that is not there.
 func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Stuck", State: "blocked"})
@@ -488,8 +425,6 @@ func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
 	}
 }
 
-// Walking left between lanes reaches the one before, which is the lane sitting
-// at nought — the end a guard written one off would never let it reach.
 func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Stuck", State: "blocked"},

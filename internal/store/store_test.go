@@ -15,7 +15,6 @@ import (
 	"cairn/internal/task"
 )
 
-// openStore gives a store on a fresh file, closed when the test ends.
 func openStore(t *testing.T) *Store {
 	t.Helper()
 	s, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
@@ -26,7 +25,6 @@ func openStore(t *testing.T) *Store {
 	return s
 }
 
-// keep adds a task titled title, failing the test if it cannot.
 func keep(t *testing.T, s *Store, title string) task.Task {
 	t.Helper()
 	built, err := task.NewTask(title)
@@ -40,11 +38,6 @@ func keep(t *testing.T, s *Store, title string) task.Task {
 	return kept
 }
 
-// changed hands back a task carrying whatever mutate tells it on top of what
-// it already tells: a local way to build the fixtures this file needs beyond
-// what task.NewTask starts with, without a second way to build a task —
-// AsTold is told every fact the task already carries first, so mutate only
-// has to name what is different.
 func changed(built task.Task, mutate func(a *task.AsTold)) task.Task {
 	a := &task.AsTold{}
 	built.Tell(a)
@@ -52,9 +45,6 @@ func changed(built task.Task, mutate func(a *task.AsTold)) task.Task {
 	return a.Task()
 }
 
-// taskFacts is a task's membrane for what a test needs to read back off it.
-// It never builds a task, only reads what Tell says, which is what keeps it
-// from being a second way to make one.
 type taskFacts struct {
 	number, parent      int
 	title, description  string
@@ -96,18 +86,12 @@ func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objecti
 func (f *taskFacts) ServesNothing()            { f.objectives = nil }
 func (f *taskFacts) ObjectivesTold()           {}
 
-// factsOf reads back what a test needs from a task.
 func factsOf(t task.Task) taskFacts {
 	var f taskFacts
 	t.Tell(&f)
 	return f
 }
 
-// changedObjective hands back an objective carrying whatever mutate tells it
-// on top of what it already tells: a local way to build the fixtures this
-// file needs beyond what objective.NewObjective starts with, without a second
-// way to build an objective — AsTold is told every fact the objective already
-// carries first, so mutate only has to name what is different.
 func changedObjective(built objective.Objective, mutate func(a *objective.AsTold)) objective.Objective {
 	a := &objective.AsTold{}
 	built.Tell(a)
@@ -115,9 +99,6 @@ func changedObjective(built objective.Objective, mutate func(a *objective.AsTold
 	return a.Objective()
 }
 
-// objectiveFacts is an objective's membrane for what a test needs to read
-// back off it. It never builds an objective, only reads what Tell says, which
-// is what keeps it from being a second way to make one.
 type objectiveFacts struct {
 	number             int
 	title, description string
@@ -142,7 +123,6 @@ func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} 
 func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
 func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
 
-// factsOfObjective reads back what a test needs from an objective.
 func factsOfObjective(o objective.Objective) objectiveFacts {
 	var f objectiveFacts
 	o.Tell(&f)
@@ -276,10 +256,6 @@ func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 	}
 }
 
-// TestStore_roundTripsTheTimeSpent checks that time spent comes back as it
-// was given, whether that is a real amount or none at all: the two read
-// differently off a row, and a store that read them the same way would still
-// pass every other test here.
 func TestStore_roundTripsTheTimeSpent(t *testing.T) {
 	s := openStore(t)
 	built, err := task.NewTask("Write the spec")
@@ -397,15 +373,11 @@ func TestOpen_reportsAPlaceItCannotWriteTo(t *testing.T) {
 	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
-	// A file where a directory must go: the folder cannot be created.
 	if _, err := Open(filepath.Join(path, "nested", "cairn.db")); err == nil {
 		t.Error("Open should report a place it cannot create")
 	}
 }
 
-// closed gives a store whose database is shut, so that every call has to report
-// a failure it cannot do anything about. Error paths are behaviour too, and a
-// store made only of happy paths is a store nobody has tested.
 func closed(t *testing.T) *Store {
 	t.Helper()
 	s := openStore(t)
@@ -455,8 +427,6 @@ func TestStore_reportsLabelsItCannotRead(t *testing.T) {
 func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
 	s := openStore(t)
 	built, _ := task.NewTask("Write the spec")
-	// The domain deduplicates; the store is handed whatever it is handed, and
-	// two identical labels break the key that makes them a set.
 	built = changed(built, func(a *task.AsTold) {
 		a.Labelled("spec")
 		a.Labelled("spec")
@@ -569,9 +539,6 @@ func TestStore_reportsSubTasksItCannotRead(t *testing.T) {
 	}
 }
 
-// Unusable answers for the store being out of reach, not for anything SQLite
-// happens to complain about. Both halves matter: an error from another package
-// is not it, and neither is a SQLite error of another kind.
 func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	made, err := Open(path)
@@ -582,8 +549,6 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	// Locked down before the connection is opened: SQLite keeps the descriptor
-	// it was given, so a file made read-only afterwards is still written to.
 	if err := os.Chmod(path, 0o444); err != nil {
 		t.Fatalf("Chmod: %v", err)
 	}
@@ -608,7 +573,6 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 		t.Error("Unusable does not see through a wrapped error")
 	}
 
-	// A SQLite error, and not the one: asking for a table that is not there.
 	var n int
 	other := db.QueryRow(`SELECT count(*) FROM nowhere`).Scan(&n)
 	if other == nil {
@@ -622,11 +586,6 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	}
 }
 
-// Making a store is the same moment as holding one, and the ordinary wait does
-// not cover it: switching a fresh file to WAL takes a lock busy_timeout knows
-// nothing about. Measured before this was handled, four commands making a store
-// together left two of them refused. Nothing was lost — the loser said so and
-// exited — but the Rule this store keeps says a command waits its turn.
 func TestOpen_waitsForAStoreSomebodyElseIsMaking(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "made-at-once", "cairn.db")
 
@@ -655,14 +614,14 @@ func TestOpen_waitsForAStoreSomebodyElseIsMaking(t *testing.T) {
 
 func TestBeingHeld_readsEveryShapeOfBeingHeld(t *testing.T) {
 	for code, held := range map[int]bool{
-		5:   true,  // SQLITE_BUSY, a plain lock
-		261: true,  // SQLITE_BUSY_RECOVERY
-		517: true,  // SQLITE_BUSY_SNAPSHOT, measured while a store was being made
-		773: true,  // SQLITE_BUSY_TIMEOUT
-		8:   false, // SQLITE_READONLY, which is the store and not somebody else
-		1:   false, // SQLITE_ERROR
-		0:   false, // nothing went wrong
-		6:   false, // SQLITE_LOCKED, which is this connection and not another
+		5:   true,
+		261: true,
+		517: true,
+		773: true,
+		8:   false,
+		1:   false,
+		0:   false,
+		6:   false,
 	} {
 		if got := beingHeld(code); got != held {
 			t.Errorf("beingHeld(%d) = %v, want %v", code, got, held)
@@ -670,10 +629,6 @@ func TestBeingHeld_readsEveryShapeOfBeingHeld(t *testing.T) {
 	}
 }
 
-// The inner look is what stops two commands both making the store, and it only
-// happens when one of them loses — which is a matter of timing, so the losing
-// side is asked for directly here rather than waited for. Called on a store
-// already made, laying the shape down must decline to and say so.
 func TestLayDownTheShape_declinesWhenSomebodyElseAlreadyMadeIt(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	s, err := Open(path)
@@ -690,9 +645,6 @@ func TestLayDownTheShape_declinesWhenSomebodyElseAlreadyMadeIt(t *testing.T) {
 	}
 }
 
-// The wait Go does and the wait SQLite is given are the same wait, and nothing
-// else pins it: how long a timeout lasts is not something a scenario can see.
-// So it is said here, on both sides, from the one number.
 func TestHeldFor_isTheSameWaitBothWaysRound(t *testing.T) {
 	if got := waitedOut(); got != 5*time.Second {
 		t.Errorf("waitedOut() = %v, want 5s", got)
@@ -702,19 +654,6 @@ func TestHeldFor_isTheSameWaitBothWaysRound(t *testing.T) {
 	}
 }
 
-// Laying the shape down can fail, and then the opening has to say so rather
-// than carry on reading a store that was never made.
-//
-// Provoked rather than waited for. A view named tasks leaves the store looking
-// empty — the shape is read as missing because no table of that name is there —
-// and the first change steps around it, because a table is only created when
-// one is missing. The second cannot: a view is not something a column can be
-// added to.
-//
-// The reason is asserted and not merely the failure, because carrying on would
-// fail too, only later and for another reason: the store would be reported as
-// behind. Which of the two comes back is the whole difference between saying
-// what went wrong and saying something went wrong.
 func TestOpen_reportsAShapeItCouldNotLayDown(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 
@@ -741,9 +680,6 @@ func TestOpen_reportsAShapeItCouldNotLayDown(t *testing.T) {
 	}
 }
 
-// Whether a task is archived is kept and read back, beside the column it
-// stands in: a task archived after being finished is still finished when the
-// store hands it over again.
 func TestStore_keepsWhetherATaskIsArchived(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Migration Jenkins")
@@ -770,8 +706,6 @@ func TestStore_keepsWhetherATaskIsArchived(t *testing.T) {
 	}
 }
 
-// told is what a store test reads a task back through, which is the membrane
-// everything else reads one through.
 type told struct {
 	archived bool
 	state    domain.State

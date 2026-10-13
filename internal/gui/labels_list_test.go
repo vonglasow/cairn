@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// labelsOpen opens the list of labels over the form of task 1, in a window
-// whose tasks carry the labels given.
 func labelsOpen(t *testing.T, carried ...[]string) Window {
 	t.Helper()
 	w := New(newFake(), 1200, 800)

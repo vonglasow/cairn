@@ -1,12 +1,5 @@
 package engine
 
-// Tasks carried from one store to another as a file of their own. Export
-// writes every task, archived ones included, with the objectives they serve,
-// in the shapes a machine already reads them in; import adds what such a file
-// holds as new tasks, numbered by the store they land in, and replaces and
-// merges nothing. What was done to a task — its trace, its time spent — stays
-// with the store it was done in. See bdd/exchange.feature.
-
 import (
 	"encoding/json"
 	"errors"
@@ -21,23 +14,17 @@ import (
 	"cairn/internal/task"
 )
 
-// exchangeKind and exchangeVersion are what a file of tasks says it is: a
-// file saying anything else is not one, and one of a later version is not
-// one this cairn can read.
 const (
 	exchangeKind    = "tasks"
 	exchangeVersion = 1
 )
 
-// ErrNotAnExport is what reading a file that does not hold tasks written by
-// task export is refused with.
+// ErrNotAnExport is what reading a file that does not hold tasks written by task export is refused with.
 var ErrNotAnExport = errors.New("the file holds no tasks written by cairn task export")
 
-// ErrExportPointsOutside is what reading a file whose tasks point at a task or
-// an objective it does not hold is refused with.
+// ErrExportPointsOutside is what reading a file whose tasks point at a task or an objective it does not hold is refused with.
 var ErrExportPointsOutside = errors.New("the file points outside itself")
 
-// exchanged is a file of tasks.
 type exchanged struct {
 	Cairn      string            `json:"cairn"`
 	Version    int               `json:"version"`
@@ -113,8 +100,6 @@ var TaskImport = Operation{
 	},
 }
 
-// exporting is every task, archived ones included, and the objectives any of
-// them serves, in the order they were made.
 func (e *Engine) exporting() (exchanged, error) {
 	var every domain.Narrowing
 	every.WithArchived()
@@ -144,8 +129,6 @@ func (e *Engine) exporting() (exchanged, error) {
 	return out, nil
 }
 
-// writeNew writes what was exported to a file nobody wrote before, making the
-// folder it goes in when there is none.
 func writeNew(to string, out exchanged) error {
 	written, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -165,7 +148,6 @@ func writeNew(to string, out exchanged) error {
 	return file.Close()
 }
 
-// readExport reads a file written by TaskExport, and refuses one that is not.
 func readExport(from string) (exchanged, error) {
 	held, err := os.ReadFile(filepath.Clean(from))
 	if err != nil {
@@ -181,10 +163,6 @@ func readExport(from string) (exchanged, error) {
 	return read, nil
 }
 
-// importing adds what a file holds: checked whole first, so a file refused
-// adds nothing; then the objectives, then the tasks — each before its parts —
-// then the column each stands in and what is in its way, parts first, and
-// last what was archived.
 func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	order, err := checked(read)
 	if err != nil {
@@ -230,9 +208,6 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
-// standing puts a task read in where it stood: its column, and what was in
-// its way, pointing at the new numbers. Nothing is asked when both are as
-// the task already has them.
 func (e *Engine) standing(t task.Shape, tasks map[int]int) error {
 	number := tasks[t.Number]
 	now, err := e.show(number)
@@ -255,10 +230,6 @@ func (e *Engine) standing(t task.Shape, tasks map[int]int) error {
 	return err
 }
 
-// checked refuses a file that would be added only in part — a title, a
-// column or an attribute this store refuses, a task or an objective it points
-// at and does not hold, a task hanging under itself — and hands back its
-// tasks in an order where each comes after the task it hangs under.
 func checked(read exchanged) ([]task.Shape, error) {
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
@@ -289,7 +260,6 @@ func checked(read exchanged) ([]task.Shape, error) {
 	return parentsFirst(read.Tasks, byNumber)
 }
 
-// checkedTask refuses one task of a file, by the number the file gave it.
 func checkedTask(t task.Shape, byNumber map[int]task.Shape, objectives map[int]bool) error {
 	outside := func(what string, n int) error {
 		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", ErrExportPointsOutside, t.Number, what, n, what, n)
@@ -320,9 +290,6 @@ func checkedTask(t task.Shape, byNumber map[int]task.Shape, objectives map[int]b
 	return nil
 }
 
-// parentsFirst orders the tasks of a file so each comes after the task it
-// hangs under, keeping the file's order otherwise; a task that hangs under
-// itself, however far round, is refused.
 func parentsFirst(tasks []task.Shape, byNumber map[int]task.Shape) ([]task.Shape, error) {
 	placed := map[int]bool{}
 	var order []task.Shape
@@ -352,8 +319,6 @@ func parentsFirst(tasks []task.Shape, byNumber map[int]task.Shape) ([]task.Shape
 	return order, nil
 }
 
-// fromFile is what a task of a file carries that points at nothing else: its
-// column and what is in its way are put after every task is in.
 func fromFile(t task.Shape) Changes {
 	c := Changes{Description: &t.Description, Priority: &t.Priority, Because: &t.Because}
 	if len(t.Labels) > 0 {
@@ -369,7 +334,6 @@ func fromFile(t task.Shape) Changes {
 	return c
 }
 
-// objectiveChangesOf is what an objective of a file carries.
 func objectiveChangesOf(o objective.Shape) ObjectiveChanges {
 	c := ObjectiveChanges{Description: &o.Description, State: &o.State, Priority: &o.Priority}
 	if len(o.Labels) > 0 {
@@ -385,8 +349,6 @@ func objectiveChangesOf(o objective.Shape) ObjectiveChanges {
 	return c
 }
 
-// numbered is the new numbers of what a file numbered, as the engine reads
-// numbers it is given.
 func numbered(old []int, now map[int]int) []string {
 	out := make([]string, 0, len(old))
 	for _, n := range old {
@@ -395,5 +357,4 @@ func numbered(old []int, now map[int]int) []string {
 	return out
 }
 
-// numberOf is an objective's number.
 func numberOf(o objective.Objective) int { return objective.OfObjective(o).Number }

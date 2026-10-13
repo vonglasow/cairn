@@ -10,11 +10,6 @@ import (
 	"gioui.org/io/pointer"
 )
 
-// A pointer event written down says everything the window made of it: what
-// the system sent, in pixels, the ratio it was read at, where that lands in dp,
-// and where a card in hand now stands. It is how a drag that draws its card in
-// the wrong place on one system is told apart from a drag that is told the
-// wrong place by it.
 func TestAPointerEventIsWrittenDownWithWhatTheWindowMadeOfIt(t *testing.T) {
 	w := Window{held: Held{Number: 3, At: Point{X: 40, Y: 50}, Moved: true}}
 	got := PointerTrace(pointer.Event{Kind: pointer.Drag, Position: f32.Pt(120, 150), Buttons: pointer.ButtonPrimary, PointerID: 2}, 1.5, w)
@@ -24,8 +19,6 @@ func TestAPointerEventIsWrittenDownWithWhatTheWindowMadeOfIt(t *testing.T) {
 	}
 }
 
-// Pointer events are written to standard error only when CAIRN_GUI_TRACE says
-// something.
 func TestPointerEventsAreWrittenDownOnlyWhenAsked(t *testing.T) {
 	var stderr bytes.Buffer
 	asked := func(name string) string {
@@ -42,11 +35,6 @@ func TestPointerEventsAreWrittenDownOnlyWhenAsked(t *testing.T) {
 	}
 }
 
-// What the keyboard sends is written down as it came: a key with its name and
-// state, text with the range it replaces, and what an input method says of
-// the text it holds. A letter typed once and written only on the second press,
-// on Linux, is told apart this way: by whether the system sent it, sent it
-// late, or sent it as a range the window did not read.
 func TestAKeyboardEventIsWrittenDownAsItCame(t *testing.T) {
 	for _, c := range []struct {
 		event event.Event

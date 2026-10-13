@@ -12,7 +12,6 @@ import (
 	"cairn/internal/task"
 )
 
-// givensOn opens a store of the test's own and hands back the givens written to it.
 func givensOn(t *testing.T) Givens {
 	t.Helper()
 	e, err := engine.Open(filepath.Join(t.TempDir(), "cairn.db"))
@@ -23,7 +22,6 @@ func givensOn(t *testing.T) Givens {
 	return Givens{Other: func() Asker { return e }}
 }
 
-// titled reads a task's title off its membrane.
 type titled struct {
 	task.AsTold
 	title string
@@ -31,14 +29,11 @@ type titled struct {
 
 func (f *titled) Titled(s string) { f.title = s }
 
-// shownText is a task's card, as a person would read it.
 func shownText(t *testing.T, one task.Task) string {
 	t.Helper()
 	return task.Text(one, domain.Progress{})
 }
 
-// Every given writes what it says, through the operations, so a board's
-// scenario starts from the store it describes.
 func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 	g := givensOn(t)
 	for _, step := range []func() error{

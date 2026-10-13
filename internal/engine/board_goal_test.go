@@ -4,8 +4,6 @@ import (
 	"testing"
 )
 
-// numbersOf is what a failed sort is reported with: the order it came out in,
-// which is the only thing worth reading when the order is wrong.
 func numbersOf(goals []Goal) []int {
 	out := make([]int, 0, len(goals))
 	for _, g := range goals {
@@ -39,8 +37,6 @@ func TestSortedLeavesWhatItWasGivenAlone(t *testing.T) {
 	}
 }
 
-// An objective is reached by what the engine says a search looks in, as a
-// card is.
 func TestAGoalIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
 	g := Goal{Number: 3, Title: "Ship cairn", Said: []string{"q4", "active"}}
 	if !ReachesGoal(g, "q4 active") {
@@ -51,10 +47,6 @@ func TestAGoalIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
 	}
 }
 
-// How much of an objective is done, written one way on both boards, and its
-// share worked out by the domain's rule — which keeps 0 and 100 for nothing
-// done and everything done. The window divided on its own, and called 299 of
-// 300 a hundred per cent finished.
 func TestGoal_saysHowMuchIsDone(t *testing.T) {
 	g := Goal{Done: 299, Total: 300}
 	if g.Counted() != "299/300" {

@@ -2,9 +2,7 @@ package migration
 
 import "cairn/internal/domain"
 
-// Shape is how a change crosses to a machine. The field names are the wire,
-// so they are written here once rather than derived from the entity — an
-// entity that knew its wire format would drag a protocol into every test.
+// Shape is how a change crosses to a machine.
 type Shape struct {
 	Number  int    `json:"number"`
 	Name    string `json:"name"`
@@ -12,8 +10,7 @@ type Shape struct {
 	Made    string `json:"made,omitempty"`
 }
 
-// OfMigration turns a change into what crosses. Made is left out until it is
-// applied: a change waiting has no moment to report yet.
+// OfMigration turns a change into what crosses.
 func OfMigration(m Migration) Shape {
 	f := textOf(m)
 	made := ""
@@ -23,10 +20,7 @@ func OfMigration(m Migration) Shape {
 	return Shape{Number: f.number, Name: f.name, Applied: f.applied, Made: made}
 }
 
-// RolledBack names the change a rollback unmade, and what that cost. The
-// cost is said here rather than left to be worked out from the SQL: somebody
-// who rolls back to try something is exactly somebody who has not read the
-// schema.
+// RolledBack names the change a rollback unmade, and what that cost.
 type RolledBack struct {
 	RolledBack string `json:"rolled_back"`
 	Lost       string `json:"lost"`

@@ -15,9 +15,6 @@ func given(pairs ...string) Input {
 	return in
 }
 
-// Time added by hand on a day past comes to that day of a timesheet: in the
-// answer, in what a person reads and in what a machine reads. How focus
-// becomes time is pinned in internal/trace, where moments can be chosen.
 func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
@@ -52,15 +49,11 @@ func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 	}
 }
 
-// With nothing named, a timesheet is today's, and says today even when
-// nothing was done on it.
 func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
 		t.Fatal(err)
 	}
-	// Today read on both sides of the call: midnight may fall between them,
-	// and either day is the one the call meant.
 	before := startOfToday()
 	answer, err := Do(TimesheetShow, path, Input{})
 	if err != nil {
@@ -73,8 +66,6 @@ func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
 	}
 }
 
-// Time added by hand is refused for a day to come, for a length nobody can
-// read or that is no time at all, and for a task that is not there.
 func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
@@ -96,10 +87,6 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 	}
 }
 
-// Focus is taken and let go when it is done, and at no other moment: a focus
-// that could be placed after the fact would be a timesheet anybody could
-// write, and the time it measures would say what was typed rather than what
-// was done.
 func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
 	for _, op := range []Operation{TaskFocus, TaskUnfocus} {
 		if err := op.Check(given("number", "1", "at", "09:00")); err == nil {
@@ -108,8 +95,6 @@ func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
 	}
 }
 
-// Time added answers the day it was added to, and too much is taken back the
-// same way: the history keeps the length as it was given, minus and all.
 func TestTimesheetAdd_answersItsDayAndTakesBack(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
@@ -134,7 +119,6 @@ func TestTimesheetAdd_answersItsDayAndTakesBack(t *testing.T) {
 	}
 }
 
-// confirmed is what was given, said yes to: an act that asks first goes ahead.
 func confirmed(in Input) Input {
 	in.Confirmed = true
 	return in

@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/trace.feature. The steps every
-// feature shares live in world_test.go; only what belongs to the trace is
-// declared here.
-
 import (
 	"fmt"
 	"regexp"
@@ -14,12 +10,8 @@ import (
 	"cairn/test"
 )
 
-// anAct is how a line of a history begins: the moment it happened. Recognising
-// an act by its moment rather than by its words is what lets a step count them
-// without knowing which acts a scenario put there.
 var anAct = regexp.MustCompile(`^\s*\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}`)
 
-// actsIn reads the lines of a history that carry an act.
 func actsIn(shown string) []string {
 	acts := []string{}
 	for _, line := range strings.Split(shown, "\n") {
@@ -30,15 +22,8 @@ func actsIn(shown string) []string {
 	return acts
 }
 
-// aTaskNumber is how a listing names the task an act was on. Matched by its
-// hash and not by being a number: a line carries a date, and counting its
-// digits among the tasks answers a different question — measured, it answered
-// six.
 var aTaskNumber = regexp.MustCompile(`#(\d+)`)
 
-// namesOnly keeps the part of a listing that names tasks, dropping what it
-// works out at the end: the summary carries numbers of its own, and counting
-// those among the tasks would answer a different question.
 func namesOnly(shown string) string {
 	kept := []string{}
 	for _, line := range strings.Split(shown, "\n") {
@@ -49,10 +34,7 @@ func namesOnly(shown string) string {
 	return strings.Join(kept, "\n")
 }
 
-// registerTrace declares the steps about what cairn records.
 func (w *world) registerTrace(sc *godog.ScenarioContext) {
-	// Looking at something, through the real command: a step that only pretended
-	// to look would prove nothing about whether looking is recorded.
 	sc.Step(`^I looked at task (\d+)$`, func(n int) error {
 		return w.Seed(fmt.Sprintf(`cairn task show %d`, n))
 	})
@@ -81,9 +63,6 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, where, "the move")
 	})
 
-	// The tasks a listing named, counted by their numbers rather than by its
-	// lines: what carries the rule is how many tasks appear, not how many acts
-	// each of them has.
 	sc.Step(`^it lists the acts of (\d+) tasks?$`, func(want int) error {
 		named := map[string]bool{}
 		for _, one := range aTaskNumber.FindAllStringSubmatch(namesOnly(w.Out.Stdout), -1) {
@@ -118,8 +97,6 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 			return nil
 		})
 
-	// Only that a moment is there, never which one: a scenario cannot name the
-	// time it is running at.
 	sc.Step(`^it says when$`, func() error {
 		if len(actsIn(w.Out.Stdout)) == 0 {
 			return fmt.Errorf("no act carries a moment:\n%s", w.Out.Stdout)
@@ -137,8 +114,6 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 			return nil
 		})
 
-	// The count is what carries the rule: an absence does not show, so the only
-	// way to see that reading was not recorded is that nothing was added.
 	sc.Step(`^it carries (\d+) acts?$`, func(want int) error {
 		if got := actsIn(w.Out.Stdout); len(got) != want {
 			return fmt.Errorf("%d acts, want %d:\n%s", len(got), want, w.Out.Stdout)

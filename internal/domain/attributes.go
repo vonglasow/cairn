@@ -9,12 +9,9 @@ import (
 	"unicode"
 )
 
-// dayLayout is how a deadline is written and read back: a day, never an
-// instant. A deadline with a time of day would be a different promise.
 const dayLayout = "2006-01-02"
 
-// The reasons an attribute can be refused. Sentinels, so a surface recognises
-// them with errors.Is rather than by matching a message.
+// The reasons an attribute can be refused.
 var (
 	ErrLabelRequired    = errors.New("a label needs a name")
 	ErrLabelNotOneLine  = errors.New("a label is one word or a few, on one line")
@@ -28,27 +25,13 @@ var (
 	ErrFinerThanASecond = errors.New("a duration is kept to the second, not finer")
 )
 
-// State is the column a task sits in. There are seven, and nothing else is one.
+// State is the column a task sits in.
 type State string
 
-// States holds the columns in the order they are read, which is the order they
-// are declared in below. It is what ParseState consults, so the two cannot say
-// different things.
-//
-// The order is a reading order and it is the whole reason this is a slice and
-// not a set: what you can act on comes first, then what is under way without
-// you, then what you stopped on purpose, then what is history. See
-// docs/ordering.md.
+// States holds the columns in the order they are read, which is the order they are declared in below.
 var States = []State{Backlog, Todo, Current, Blocked, Watching, Paused, Done}
 
-// The columns. A task with no column stated starts in the backlog.
-//
-// Blocked, Watching and Paused all mean "not moving", and they are three words
-// rather than one because what unblocks them differs: a blocked task waits on
-// somebody else and needs chasing, a watched one was handed over and needs
-// checking, a paused one waits on nothing but your own decision to pick it up.
-// One word for the three would have made the list shorter and the answer to
-// "what do I do about this?" unknowable.
+// The columns.
 const (
 	Backlog  State = "backlog"
 	Todo     State = "todo"
@@ -59,14 +42,13 @@ const (
 	Done     State = "done"
 )
 
-// Priority is what a task carries. There are four, and nothing else is one.
+// Priority is what a task carries.
 type Priority string
 
 // Priorities holds the four priorities, in the order they are declared above.
-// It is what ParsePriority consults, so the two cannot say different things.
 var Priorities = []Priority{Low, Normal, High, Critical}
 
-// The four priorities. A task with no priority stated carries normal.
+// The four priorities.
 const (
 	Low      Priority = "low"
 	Normal   Priority = "normal"
@@ -74,9 +56,6 @@ const (
 	Critical Priority = "critical"
 )
 
-// naming lists a closed set in a refusal. A refusal that says only what was
-// wrong leaves the next attempt to guesswork, and all of these sets are short
-// enough to put in the sentence that refuses.
 func naming[T ~string](of []T) string {
 	words := make([]string, len(of))
 	for i, one := range of {
@@ -85,8 +64,7 @@ func naming[T ~string](of []T) string {
 	return strings.Join(words, ", ")
 }
 
-// ParseState reads a column name. Nothing given returns the backlog, which is
-// where a task starts and where clearing the column puts it back.
+// ParseState reads a column name.
 func ParseState(name string) (State, error) {
 	if name == "" {
 		return Backlog, nil
@@ -97,8 +75,7 @@ func ParseState(name string) (State, error) {
 	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAState, naming(States))
 }
 
-// ParsePriority reads a priority name. Nothing given returns normal, which is
-// what a task carries by default and what clearing it returns to.
+// ParsePriority reads a priority name.
 func ParsePriority(name string) (Priority, error) {
 	if name == "" {
 		return Normal, nil
@@ -109,9 +86,7 @@ func ParsePriority(name string) (Priority, error) {
 	return "", fmt.Errorf("%q: %w — %s", name, ErrNotAPriority, naming(Priorities))
 }
 
-// ParseLabels turns what was given into the set a task carries: lower case, no
-// duplicate, alphabetical order. An empty string is how a caller says "none";
-// a string of spaces is a label somebody meant to name and did not.
+// ParseLabels turns what was given into the set a task carries: lower case, no duplicate, alphabetical order.
 func ParseLabels(given []string) ([]string, error) {
 	given = listed(given)
 	kept := make([]string, 0, len(given))
@@ -129,12 +104,6 @@ func ParseLabels(given []string) ([]string, error) {
 	return slices.Compact(kept), nil
 }
 
-// labelNamed is one label as it is kept, and the one way it is written, so
-// that one word is one label however it was typed (docs/labels.md): lower
-// case, its accents taken off, spaces, underscores and slashes made dashes, a
-// run of dashes made one and none kept at either end. What is left holds
-// a to z, 0 to 9, - and . — anything else is refused, a colon with a word of
-// its own. One rule for a label named in a set and one joining or leaving it.
 func labelNamed(raw string) (string, error) {
 	name := strings.ToLower(strings.TrimSpace(raw))
 	if strings.ContainsFunc(name, breaksALine) {
@@ -153,11 +122,6 @@ func labelNamed(raw string) (string, error) {
 	return name, nil
 }
 
-// unaccented takes the accents off a word: é is e, and ç is c. The letters
-// are named rather than decomposed: the domain leans on the standard library
-// alone, and the migration that wrote the labels before the rule knew the
-// same letters and no others — a word written one way here and another there
-// would be two labels again (docs/labels.md).
 var unaccented = strings.NewReplacer(
 	"à", "a", "á", "a", "â", "a", "ã", "a", "ä", "a", "å", "a",
 	"ç", "c",
@@ -169,8 +133,6 @@ var unaccented = strings.NewReplacer(
 	"ý", "y", "ÿ", "y",
 ).Replace
 
-// dashed makes every space, underscore and slash a dash, a run of dashes one,
-// and keeps none at either end.
 func dashed(word string) string {
 	pieces := strings.FieldsFunc(word, func(r rune) bool {
 		return r == '-' || r == '_' || r == '/' || unicode.IsSpace(r)
@@ -178,13 +140,11 @@ func dashed(word string) string {
 	return strings.Join(pieces, "-")
 }
 
-// notInALabel says whether a character has no place in a label once written.
 func notInALabel(r rune) bool {
 	return (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' && r != '.'
 }
 
-// ParseDeadline reads a day. Nothing given is no deadline, which is also how a
-// deadline is taken away.
+// ParseDeadline reads a day.
 func ParseDeadline(day string) (time.Time, error) {
 	if day == "" {
 		return time.Time{}, nil
@@ -196,8 +156,7 @@ func ParseDeadline(day string) (time.Time, error) {
 	return parsed, nil
 }
 
-// ParseEstimate reads a duration. Nothing given is no estimate; a negative one
-// is refused rather than stored, since no work takes less than no time.
+// ParseEstimate reads a duration.
 func ParseEstimate(amount string) (time.Duration, error) {
 	if amount == "" {
 		return 0, nil
@@ -209,18 +168,13 @@ func ParseEstimate(amount string) (time.Duration, error) {
 	if parsed < 0 {
 		return 0, fmt.Errorf("%q: %w", amount, ErrNegativeAmount)
 	}
-	// A duration is written back to the second and no finer, so anything with
-	// a remainder cannot come back as it was given. Taking it and dropping the
-	// remainder would be worse than refusing: 500ms was accepted, stored, and
-	// read back as no estimate at all.
 	if parsed%time.Second != 0 {
 		return 0, fmt.Errorf("%q: %w", amount, ErrFinerThanASecond)
 	}
 	return parsed, nil
 }
 
-// FormatDuration writes a duration the way it was meant to be read: 90 minutes
-// comes back as 1h30m, not as 1h30m0s. A duration of nothing writes nothing.
+// FormatDuration writes a duration the way it was meant to be read: 90 minutes comes back as 1h30m, not as 1h30m0s.
 func FormatDuration(d time.Duration) string {
 	if d == 0 {
 		return ""
@@ -240,8 +194,7 @@ func FormatDuration(d time.Duration) string {
 	return out.String()
 }
 
-// FormatDay writes a deadline back as the day it was given. No deadline writes
-// nothing.
+// FormatDay writes a deadline back as the day it was given.
 func FormatDay(t time.Time) string {
 	if t.IsZero() {
 		return ""

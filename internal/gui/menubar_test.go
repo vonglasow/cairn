@@ -8,9 +8,6 @@ import (
 	"time"
 )
 
-// The menu bar holds every act the window has, grouped the way a window's
-// menus are, and nothing it does not: each line is an offer the bar, the help
-// or a key already makes.
 func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	want := []MenuGroup{
 		{Name: "File", Items: []string{"New", "New backup", "Backups", "Export", "Import"}},
@@ -29,9 +26,6 @@ func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	}
 }
 
-// A line of the menu bar does from the board what its key does; picked while
-// a panel is open over the board it does nothing, as a key the panel does not
-// take does nothing.
 func TestALinePickedActsFromTheBoard(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
@@ -60,8 +54,6 @@ func TestALinePickedActsFromTheBoard(t *testing.T) {
 	}
 }
 
-// Where the system gives the window no menu bar, a button at the end of the
-// tabs opens the same lines as a menu; where it does, there is no button.
 func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	button := MenuButton(w.Layout())
@@ -83,7 +75,6 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 	if box.X+box.W != button.X+button.W || box.Y != button.Y+button.H {
 		t.Errorf("the menu %+v runs out of the window, or over its button %+v", box, button)
 	}
-	// Counted against the band the button stands on, read at its corner.
 	drawnOn := func(v Window) int {
 		shot := drawn(t, v)
 		at := shot.RGBAAt(button.X+1, button.Y+1)
@@ -101,8 +92,6 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 	}
 }
 
-// A line of a system's menu says the key that does the same, spelled for the
-// keyboard of that system.
 func TestALineOfTheMenuBarSaysItsKey(t *testing.T) {
 	mac, pc := KeyboardOf("darwin"), KeyboardOf("windows")
 	for _, c := range []struct {
@@ -123,8 +112,6 @@ func TestALineOfTheMenuBarSaysItsKey(t *testing.T) {
 	}
 }
 
-// What the system's menu bars need decided: a handle that names something,
-// a line by its number, Win32's commands, and the titles and keys.
 func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 	if made(0) || !made(1) {
 		t.Error("a handle of nought names something, or one of 1 nothing")
@@ -169,7 +156,6 @@ func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 	}
 }
 
-// The button is three strokes across its middle, a quarter in from its edges.
 func TestTheMenuButtonIsThreeStrokes(t *testing.T) {
 	got := MenuStrokes(Box{X: 100, Y: 10, W: 40, H: 30})
 	want := [3]Box{{X: 110, Y: 19, W: 20, H: 2}, {X: 110, Y: 24, W: 20, H: 2}, {X: 110, Y: 29, W: 20, H: 2}}
@@ -178,9 +164,6 @@ func TestTheMenuButtonIsThreeStrokes(t *testing.T) {
 	}
 }
 
-// The button is drawn as its strokes, each filled whole in the ink of what
-// can be pressed: written as a glyph no face cairn carries has, it sent every
-// process that drew it to read the system's fonts off the disk.
 func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	shot := drawn(t, w)
@@ -191,11 +174,6 @@ func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
 	}
 }
 
-// A line picked in the system's menu bar is handed to the loop, and the
-// frame that takes it is asked for without waiting on it: the system calls
-// on its own thread, and on macOS asking for a frame from that thread runs
-// the asking there and then — inside the very lock the asking holds — so a
-// pick that waited never came back and the window spun for good.
 func TestALinePickedIsHandedOverWithoutWaiting(t *testing.T) {
 	picks := make(chan string, 1)
 	release, woken := make(chan struct{}), make(chan struct{})
@@ -216,7 +194,6 @@ func TestALinePickedIsHandedOverWithoutWaiting(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("no frame was asked for")
 	}
-	// A loop with picks still to take loses the line, never the system's thread.
 	full := make(chan string)
 	done := make(chan struct{})
 	go func() { handedOver("Quit", full, func() {}); close(done) }()

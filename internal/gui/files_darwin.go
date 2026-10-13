@@ -21,19 +21,13 @@ import (
 	"gioui.org/io/event"
 )
 
-// panelAnswers is where the system's file panel hands back what was chosen:
-// one panel at a time, the window asks for no other until it is answered.
 var panelAnswers = make(chan string, 1)
 
-// appkitFiles is the system's file panels as Files, opened over the window's
-// view once it has one.
 type appkitFiles struct {
 	window *app.Window
 	view   *uintptr
 }
 
-// systemFiles is the system's file dialog for the window, and what it has to
-// be told of every event.
 func systemFiles(window *app.Window) (Files, func(event.Event)) {
 	files := appkitFiles{window: window, view: new(uintptr)}
 	return files, func(e event.Event) {
@@ -62,8 +56,6 @@ func (f appkitFiles) CreateFile(name string) (io.WriteCloser, error) {
 	return os.Create(path)
 }
 
-// asked opens a panel on the main thread and waits for its answer: a path, or
-// ErrDeclined when it was closed without one.
 func (f appkitFiles) asked(open func(C.uintptr_t, *C.char), said string) (string, error) {
 	view := *f.view
 	f.window.Run(func() {

@@ -6,13 +6,6 @@ import (
 	"testing"
 )
 
-// The palette, held to the ratios it has to meet. Everything else in this
-// repository is held by a gate; the palette was held by nothing, and drifted
-// until a card on the board stood at 1.10 against it.
-//
-// The thresholds are the ones a person reading a screen needs: 4.5 for text,
-// 3 for a shape that carries meaning by being seen at all — a border, a track,
-// the edge of a card.
 func TestEverySkinCanBeRead(t *testing.T) {
 	for _, skin := range []struct {
 		what string
@@ -38,10 +31,6 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			}
 		}
 
-		// A card is told from the board by its edge, not by its fill: a dark
-		// theme cannot lift a panel to three times the ground without ceasing
-		// to be dark. So the edge carries the threshold, and the fill only has
-		// to be visible at all.
 		shapes := []struct {
 			what string
 			on   color.NRGBA
@@ -58,9 +47,6 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			}
 		}
 
-		// A priority is told from the others and from what says "you are here".
-		// They were the same blue at the bit, so a card of ordinary priority
-		// wore the colour of being selected.
 		for name, said := range skin.Priority {
 			if near(said, skin.Chosen) {
 				t.Errorf("%s: priority %q is the colour of what is chosen", skin.what, name)
@@ -74,20 +60,12 @@ func TestEverySkinCanBeRead(t *testing.T) {
 				}
 			}
 		}
-		// And an error is told from the priority that shouts loudest, which it
-		// sat beside at 1.11.
 		if near(skin.Wrong, skin.Priority["critical"]) {
 			t.Errorf("%s: an error is the colour of a critical task", skin.what)
 		}
 	}
 }
 
-// near says whether two colours are close enough to be read as one. Measured
-// as a distance between them and not as a contrast: contrast weighs light
-// alone, so a blue and an orange of the same lightness come back identical —
-// which is how this test first accused a palette of a fault it did not have.
-// Sixty between a priority and what is chosen, where the fault was; forty-five
-// between two things that merely have to be told apart.
 func near(a, b color.NRGBA) bool  { return howFar(a, b) < 60 }
 func alike(a, b color.NRGBA) bool { return howFar(a, b) < 45 }
 
@@ -105,20 +83,12 @@ func TestContrast_answersTheKnownRatios(t *testing.T) {
 	if got := Contrast(black, black); math.Abs(got-1) > 0.01 {
 		t.Errorf("black on black is %.2f, want 1", got)
 	}
-	// Either way round, since a ratio has no direction.
 	if Contrast(white, black) != Contrast(black, white) {
 		t.Error("the ratio changed when the two were swapped")
 	}
 }
 
-// The curve a screen applies, straightened out. Pinned at the two values
-// either side of where it changes shape, because that is the only place the
-// two halves of it disagree — and at the two ends, which every ratio rests on.
 func TestTheCurveIsStraightenedWhereItChangesShape(t *testing.T) {
-	// To nine decimals, and that is not fussiness: the curve is continuous, so
-	// its two halves agree at the join to within a millionth. A tolerance any
-	// looser would accept either of them on the value that decides which is
-	// used, and the comparison that chooses would be held by nothing.
 	for _, c := range []struct {
 		v    uint8
 		want float64
@@ -135,8 +105,6 @@ func TestTheCurveIsStraightenedWhereItChangesShape(t *testing.T) {
 	}
 }
 
-// Black against white is the widest contrast there is, and a colour against
-// itself is none at all. Every judgement this file makes rests on those two.
 func TestContrastIsTwentyOneAtItsWidestAndOneAtItsNarrowest(t *testing.T) {
 	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	black := color.NRGBA{A: 255}

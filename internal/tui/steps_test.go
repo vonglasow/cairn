@@ -1,10 +1,5 @@
 package tui
 
-// What the scenarios look at once a key has been pressed. Every one of these
-// reads the board the way a person does — off the screen — except the few that
-// ask the store what was written, which is the only honest way to check that a
-// key changed something rather than only appeared to.
-
 import (
 	"fmt"
 	"strings"
@@ -52,11 +47,8 @@ func (w *world) columnCarries(column, title string) error {
 	return fmt.Errorf("%q does not carry %q", column, title)
 }
 
-// lower turns a column's name on screen back into the state it stands for.
 func lower(name string) string { return strings.ToLower(name) }
 
-// cards is what the board is drawing, read back through the same reading the
-// board itself draws from.
 func (w *world) cards() []engine.Card {
 	found, err := engine.Look(w.held)
 	if err != nil {
@@ -171,8 +163,6 @@ func (w *world) helpIsShown() error {
 	return nil
 }
 
-// boardSaysNothingOf is asked of the whole screen: a sub-task must not appear
-// in a column, in the band, or anywhere else a card is drawn.
 func (w *world) boardSaysNothingOf(title string) error {
 	if strings.Contains(w.screen(), title) {
 		return fmt.Errorf("the board draws %q:\n%s", title, w.screen())
@@ -208,7 +198,6 @@ func (w *world) cardDescribed(number int) error {
 	})
 }
 
-// cardArchived reads the mark that tells a card off the board from one on it.
 func (w *world) cardArchived(number int) error {
 	return w.rowsOf(number, func(rows []string) error {
 		if strings.Contains(rows[0], GlyphsFor(Unicode).Archived) {
@@ -218,7 +207,6 @@ func (w *world) cardArchived(number int) error {
 	})
 }
 
-// rowsOf hands the four lines of one card to whoever is checking them.
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {
 		if c.Number == number {

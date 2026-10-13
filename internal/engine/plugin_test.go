@@ -9,8 +9,6 @@ import (
 	"cairn/internal/build"
 )
 
-// The plugin is written beside the store unless a folder is named, and the
-// answer says where, so the person knows what to hand Claude Code.
 func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTold(t *testing.T) {
 	home := t.TempDir()
 	store := filepath.Join(home, "cairn.db")
@@ -42,7 +40,6 @@ func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTold(t *testing.T) {
 	}
 }
 
-// A folder that is not the plugin's is refused, and the refusal is said.
 func TestPluginWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "mine"), nil, 0o600); err != nil {
@@ -53,7 +50,6 @@ func TestPluginWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	}
 }
 
-// The plugin written says the version of the cairn that wrote it.
 func TestPluginWrite_saysTheVersionOfThisCairn(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "plugin")
 	if _, err := Do(PluginWrite, filepath.Join(t.TempDir(), "cairn.db"), Input{Given: map[string]string{"dir": dir}}); err != nil {

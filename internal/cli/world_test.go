@@ -1,12 +1,5 @@
 package cli
 
-// The world every feature file shares, and the steps they have in common.
-//
-// A step vocabulary is worth more than the feature that first needed it:
-// `I added a task titled "..."` reads the same whether the scenario is about
-// tasks or about the store that holds them. Feature-specific steps live beside
-// their feature; everything here is claimed by more than one.
-
 import (
 	"bytes"
 	"context"
@@ -32,29 +25,18 @@ import (
 	"cairn/test"
 )
 
-// world carries what one scenario needs between its steps: the world both
-// surfaces share, and the one thing only the command line's scenarios need.
 type world struct {
 	*test.World
-	long string
-	// board is an engine held open the way a board holds one, for the
-	// scenarios that need somebody else at the store while a command runs.
+	long  string
 	board *engine.Engine
-	// file is a file of the scenario's own, outside the store and its
-	// backups, and was what it held when the scenario made it.
-	file string
-	was  []byte
+	file  string
+	was   []byte
 }
 
-// newWorld builds the state one scenario works against, reaching the command
-// line through run — the same Main the binary calls.
 func newWorld(t *testing.T) *world {
 	return &world{World: test.NewWorld(t, run)}
 }
 
-// field reads a value out of the card a command printed.
-// daysToday is today as a step sees it, and as the command it checks may have
-// seen it a moment before midnight turned it into yesterday.
 func daysToday() []string {
 	return []string{domain.FormatDay(time.Now()), domain.FormatDay(time.Now().Add(-time.Minute))}
 }
@@ -72,7 +54,6 @@ func (w *world) field(key string) string {
 	return ""
 }
 
-// listedRow finds the line a task occupies in a listing, indentation included.
 func (w *world) listedRow(number int) (string, error) {
 	want := "#" + strconv.Itoa(number) + " "
 	for _, row := range strings.Split(w.Out.Stdout, "\n") {
@@ -83,12 +64,10 @@ func (w *world) listedRow(number int) (string, error) {
 	return "", fmt.Errorf("task %d is not in the listing:\n%s", number, w.Out.Stdout)
 }
 
-// heading is the first line of a card: its number and its title.
 func (w *world) heading() string {
 	return strings.TrimSpace(strings.SplitN(w.Out.Stdout, "\n", 2)[0])
 }
 
-// progress reads the progress out of the JSON a command printed.
 func (w *world) progress() (map[string]any, error) {
 	var doc map[string]any
 	if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -101,7 +80,6 @@ func (w *world) progress() (map[string]any, error) {
 	return progress, nil
 }
 
-// tally reads one of the two counts out of the progress.
 func (w *world) tally(key string) (map[string]any, error) {
 	progress, err := w.progress()
 	if err != nil {
@@ -114,14 +92,6 @@ func (w *world) tally(key string) (map[string]any, error) {
 	return tally, nil
 }
 
-// register declares the steps only the command line's scenarios claim. What
-// both surfaces claim is registered by the shared world.
-// listedUnder reads the rows of a listing out of the envelope it crosses in.
-//
-// A listing answers an object naming what it carries, not a bare list, so a step
-// asking how many tasks came back asks the envelope for its tasks. Written once
-// because five listings cross this way and a second reading of the same envelope
-// is a second thing to keep right.
 func listedUnder(out, key string) ([]map[string]any, map[string]any, error) {
 	var envelope map[string]any
 	if err := json.Unmarshal([]byte(out), &envelope); err != nil {
@@ -148,9 +118,6 @@ func listedUnder(out, key string) ([]map[string]any, map[string]any, error) {
 	return rows, envelope, nil
 }
 
-// flagFor is the flag an attribute is given by, named once because both the
-// step that creates a task with one and the step that edits one read it.
-// numbersIn reads every whole number a message names.
 var numbersIn = regexp.MustCompile(`\d+`)
 
 func flagFor(attribute string) string {
@@ -165,8 +132,6 @@ func flagFor(attribute string) string {
 
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
-
-	// --- doing things -----------------------------------------------------------
 
 	sc.Step(`^a title of (\d+) characters$`, func(n int) error {
 		w.long = strings.Repeat("a", n)
@@ -183,9 +148,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Shared rather than kept with the objectives: a backup counts what it
-	// holds of both, so its scenarios have to be able to put an objective
-	// in the store.
 	sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
 		return w.Seed(fmt.Sprintf(`cairn objective new "%s"`, title))
 	})
@@ -225,14 +187,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^cairn has exited$`, func() error {
-		// Nothing to undo: every invocation opens the store in its RunE and
-		// closes it on the way out, so no handle and no cache can outlive a
-		// command. What makes the scenario bite is that the task was written
-		// by one invocation and is read by another.
 		return nil
 	})
-
-	// --- what it answered ---------------------------------------------------
 
 	sc.Step(`^it does not crash$`, func() error {
 		if strings.Contains(w.Out.Stderr, "panic:") {
@@ -276,8 +232,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// --- what it said -------------------------------------------------------
-
 	for step, want := range map[string]string{
 		`^it says a title is one line$`:                                           "a title is one line",
 		`^it says a task needs a title$`:                                          "a task needs a title",
@@ -310,12 +264,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		})
 	}
 
-	// A refusal that does not quote the number leaves somebody who typed two of
-	// them with no idea which one cairn could not find, so the number is looked
-	// for among those the question actually carried.
-	//
-	// Shared rather than kept with the order: the trace refuses the same way,
-	// and a step two features claim belongs where both can reach it.
 	sc.Step(`^it shows the number it could not find$`, func() error {
 		asked := numbersIn.FindAllString(w.Line, -1)
 		if len(asked) == 0 {
@@ -333,15 +281,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, "got ", "the reason")
 	})
 
-	// The refusal names what is in the way, which is the useful thing to be
-	// told: "it is not finished" leaves somebody hunting for which one.
 	sc.Step(`^it says task (\d+) is in the way$`, func(n int) error {
 		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d", n), "the refusal")
 	})
 
-	// Asked of the store through the real command, not of what the last run
-	// printed: what is being checked is where the task ended up, and the run
-	// under test may well have refused and printed nothing about it.
 	sc.Step(`^task (\d+) is in the column "([^"]*)"$`, func(n int, column string) error {
 		w.Run(fmt.Sprintf(`cairn task show %d --json`, n))
 		shown := w.Out
@@ -368,9 +311,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Named as done or not: a section that listed what hangs under a task
-	// without saying which of them were finished made somebody open each one
-	// to find out, which is the question the section exists to answer.
 	sc.Step(`^it names task (\d+) as (done|not done)$`, func(n int, how string) error {
 		for _, line := range strings.Split(w.Out.Stdout, "\n") {
 			if !strings.Contains(line, fmt.Sprintf("#%d ", n)) {
@@ -464,8 +404,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d was deleted", n), "the answer")
 	})
 
-	// --- what the task carries ----------------------------------------------
-
 	sc.Step(`^it reports (?:a|the) task titled "([^"]*)"$`, func(title string) error {
 		return test.WantContains(w.heading(), title, "the heading")
 	})
@@ -491,9 +429,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 
-	// Carrying a label says it is among the ones the task carries, not that
-	// it is the only one. The count is asserted separately, by the scenarios
-	// that care how many there are.
 	sc.Step(`^the task carries the label "([^"]*)"$`, func(want string) error {
 		for _, carried := range strings.Split(w.field("labels"), ", ") {
 			if carried == want {
@@ -523,9 +458,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// What blocks a task, read off the card a person reads rather than out of
-	// the store: what is asserted is that the card answers "why is this
-	// stopped?", and a store the card never showed would answer nothing.
 	sc.Step("^`([^`]*)` says task (\\d+) blocks it$", func(line string, n int) error {
 		return w.blocksIt(line, fmt.Sprintf("#%d", n))
 	})
@@ -534,9 +466,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.blocksIt(line, words)
 	})
 
-	// What a task serves, shared rather than kept with the objectives: the
-	// migration that carries an attachment over has to be able to read it back,
-	// and so does anything else that changes what a task carries.
 	sc.Step("^`([^`]*)` says it serves objectives (\\d+) and (\\d+)$",
 		func(line string, first, second int) error {
 			return w.servesExactly(line, first, second)
@@ -564,8 +493,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-
-	// --- listing --------------------------------------------------------------
 
 	sc.Step(`^it lists (\d+) tasks?$`, func(n int) error {
 		return test.CountsTasks(w.Out.Stdout, n)
@@ -606,9 +533,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, "there is no such task", "the reason")
 	})
 
-	// The indentation is what says a task hangs under another, so these read
-	// it rather than the store: a listing that lost the link would still be
-	// green if the step went and asked the engine again.
 	sc.Step(`^task (\d+) is listed under task (\d+)$`, func(hung, under int) error {
 		row, err := w.listedRow(hung)
 		if err != nil {
@@ -645,8 +569,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// --- the store ------------------------------------------------------------
-
 	sc.Step(`^the store exists$`, func() error {
 		if _, err := os.Stat(w.StorePath); err != nil {
 			return fmt.Errorf("the store was not created at %s: %w", w.StorePath, err)
@@ -662,12 +584,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^nothing is written to the default place$`, func() error {
-		// The whole folder, not just cairn.db: SQLite leaves -wal and -shm
-		// beside it, and a check that missed them would pass on a store that
-		// was very much written to.
 		left, err := os.ReadDir(filepath.Join(w.Defaults, config.DefaultFolder))
 		if err != nil {
-			return nil // the folder was never created, which is the point
+			return nil
 		}
 		if len(left) > 0 {
 			return fmt.Errorf("the default place holds %d entries, want none", len(left))
@@ -675,8 +594,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// A database another application wrote, kept as a file rather than made
-	// here: a surface never opens a database, its tests included.
 	sc.Step(`^the store is another application's database$`, func() error {
 		theirs, err := os.ReadFile(filepath.Join("testdata", "another-application.db"))
 		if err != nil {
@@ -729,8 +646,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-
-	// --- machine-readable answers ---------------------------------------------
 
 	sc.Step(`^it writes JSON to standard output$`, func() error {
 		var any any
@@ -845,9 +760,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The focus is said once, at the top of a listing, and nowhere else. Both
-	// halves matter: said twice, the two can disagree, and a reader has to
-	// decide which to believe.
 	sc.Step(`^it says task (\d+) is the one in focus$`, func(n int) error {
 		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {
@@ -867,9 +779,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The flag belongs to the task, so a listing the task is not in has nothing
-	// to say about it — narrowing past the tasks in focus says none of these
-	// rather than naming a task the answer does not carry.
 	sc.Step(`^it says no task in it is in focus$`, func() error {
 		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {
@@ -898,9 +807,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// A listing names the work and leaves what each task says to be shown: a
-	// board of a hundred tasks handed over with every description came to more
-	// than an agent can read in one answer.
 	sc.Step(`^no task in it carries its description$`, func() error {
 		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {
@@ -953,11 +859,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// --- how far along something is -------------------------------------------
-	//
-	// Shared by tasks and objectives: both are asked the same question and
-	// answer it in the same words, so one vocabulary serves both features.
-
 	sc.Step(`^it says (\d+) of (\d+) (tasks|sub-tasks) are done$`,
 		func(done, total int, kind string) error {
 			return test.WantContains(w.Out.Stdout,
@@ -975,8 +876,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("the %s is %d%% done", what, share), "the answer")
 	})
 
-	// Looked for by shape rather than by the word "done", which a state of
-	// its own puts on the card: `state done` would match either way.
 	sc.Step(`^it does not say how much is done$`, func() error {
 		if strings.Contains(w.Out.Stdout, "% done") {
 			return fmt.Errorf("the answer works out a share it has nothing to work out:\n%s", w.Out.Stdout)
@@ -1008,8 +907,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// A task has sub-tasks under it and nothing else, so a count of tasks
-	// would name a kind of thing it cannot hold — zeroes included.
 	sc.Step(`^it carries no count of tasks$`, func() error {
 		progress, err := w.progress()
 		if err != nil {
@@ -1021,9 +918,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// The key has to be there and be null. A document missing it answers the
-	// same to a caller reading doc["progress"], right up to the day the
-	// caller starts checking whether the field exists at all.
 	sc.Step(`^it carries no progress$`, func() error {
 		var doc map[string]any
 		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -1050,12 +944,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 }
 
-// blocksIt runs a command line and fails unless the card it answered names
-// what is said to block the task, under the heading that says so.
-//
-// The heading is looked for as well as the thing: a title that happened to
-// contain "#3" would otherwise pass for a blocker, and what is being asserted
-// is that the card says this is what stops the task.
 func (w *world) blocksIt(line, blocker string) error {
 	w.Run(line)
 	if w.Out.Code != exitOK {
@@ -1071,8 +959,6 @@ func (w *world) blocksIt(line, blocker string) error {
 	return nil
 }
 
-// archived asks the store what a task carries, through the real command: what
-// is being checked is what was kept, not what the last run printed.
 func (w *world) archived(number int, want bool) error {
 	w.Run(fmt.Sprintf("cairn task show %d --json", number))
 	var said struct {
@@ -1087,7 +973,6 @@ func (w *world) archived(number int, want bool) error {
 	return nil
 }
 
-// carriesLabel asks the store what a task carries, through the real command.
 func (w *world) carriesLabel(number int, label string, want bool) error {
 	w.Run(fmt.Sprintf("cairn task show %d --json", number))
 	var said struct {

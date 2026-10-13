@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// numbersOfCards lists the numbers of cards, in order.
 func numbersOfCards(cards []Card) []int {
 	out := make([]int, 0, len(cards))
 	for _, c := range cards {
@@ -14,10 +13,6 @@ func numbersOfCards(cards []Card) []int {
 	return out
 }
 
-// What a search reaches among the objectives, in the order a list keeps them —
-// one rule for a board's search box and for the window's list of objectives to
-// serve, which matched on the title alone while the box beside it matched on
-// everything.
 func TestFoundGoals_isWhatASearchReachesInTheOrderAListKeeps(t *testing.T) {
 	goals := []Goal{
 		{Number: 1, Title: "Ship it", State: "reached"},
@@ -40,9 +35,6 @@ func TestFoundGoals_isWhatASearchReachesInTheOrderAListKeeps(t *testing.T) {
 	}
 }
 
-// What a task may hang under: work on the board, never itself and never a
-// part, in the order somebody reaches for it — what is being worked on first.
-// The engine refuses the rest; offering them was offering refusals.
 func TestParentable_isWhatATaskMayHangUnder(t *testing.T) {
 	cards := []Card{
 		{Number: 1, Title: "Old", State: "backlog"},
@@ -61,8 +53,6 @@ func TestParentable_isWhatATaskMayHangUnder(t *testing.T) {
 	}
 }
 
-// Whether a task has gone past what it was reckoned to take is read off the
-// lengths themselves, not off how a card happens to write them.
 func TestOverrun_isSpentPastTheEstimate(t *testing.T) {
 	for _, tc := range []struct {
 		estimate, spent string

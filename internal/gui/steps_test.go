@@ -1,10 +1,5 @@
 package gui
 
-// What the scenarios look at once a gesture has been made. Everything here
-// reads the window's own state or the store through the second connection — a
-// precondition or an assertion that went through the code under test would
-// cancel out with it and prove nothing.
-
 import (
 	"fmt"
 	"image/color"
@@ -21,7 +16,6 @@ import (
 	"cairn/internal/task"
 )
 
-// quoted reads a list written the way a scenario writes one: "a", "b", "c".
 func quoted(list string) []string {
 	var out []string
 	for _, part := range strings.Split(list, ",") {
@@ -178,8 +172,6 @@ func (w *world) numberOf(title string) (int, error) {
 }
 
 func (w *world) isChosen(title string) error {
-	// An objective is chosen by the same field under a different kind, so the
-	// title is looked for where the chosen thing actually lives.
 	if w.w.ChosenGoal() {
 		for _, g := range w.w.Reading().Goals {
 			if g.Title == title {
@@ -219,13 +211,6 @@ func (w *world) detailOpenOn(title string) error {
 	return w.isChosen(title)
 }
 
-// detailLists is asked of the work an open objective says serves it, by title:
-// a count says how far along it is and never what is left.
-// Asked of the lines the panel draws and not of what the window knows: a
-// window that has the answer and does not put it on screen has not answered.
-// Asked of the cards the box under the fields draws, and not of what the
-// window knows: a window that has the answer and does not put it on screen has
-// not answered.
 func (w *world) detailLists(title string) error {
 	for _, c := range w.w.Under() {
 		if c.Title == title {
@@ -244,9 +229,6 @@ func (w *world) detailDoesNotList(title string) error {
 	return nil
 }
 
-// servingCardsAreCards checks the tiles are a line high and no more: a card's
-// 96 pixels were mostly room for facts a sub-task no longer carries, and the
-// box holds five of these where it held one of those.
 func (w *world) servingCardsAreCards() error {
 	for at := range w.w.Under() {
 		if got := w.w.ServingCardAt(at).H; got != SubHeight {
@@ -266,7 +248,6 @@ func (w *world) detailSaysNothingServes() error {
 	return nil
 }
 
-// titles is what a failure prints of a run of cards.
 func titles(cards []engine.Card) []string {
 	var said []string
 	for _, c := range cards {
@@ -275,8 +256,6 @@ func titles(cards []engine.Card) []string {
 	return said
 }
 
-// rightColumnHead is the assertion that the history keeps its column: it is
-// what a task opens onto, and an objective must not take it away.
 func (w *world) rightColumnHead(head string) error {
 	got := w.w.PanelHead()
 	if w.w.ChosenGoal() {
@@ -305,8 +284,6 @@ func (w *world) isScrolled(column string) error {
 	return nil
 }
 
-// formFrames is where every field of the open form is drawn: its name and its
-// frame, the bar beside a long one included.
 func (w *world) formFrames() ([]Box, []Box) {
 	over := w.w.formBox()
 	fields := w.w.Form().Fields()
@@ -354,13 +331,9 @@ func (w *world) formFieldsApart() error {
 	return nil
 }
 
-// acrossTheForm says a field's frame runs from the left of the form to its
-// right, as far as any frame does, and that only the fields named are above it.
 func (w *world) acrossTheForm(name string, above []string) error {
 	over := w.w.formBox()
 	fields := w.w.Form().Fields()
-	// The frames alone, without a long field's bar: it sits in a margin every
-	// field keeps, which is what lines the frames up.
 	frames := make([]Box, len(fields))
 	for i := range fields {
 		_, value, rows := FormPlace(over, fields, i)
@@ -483,8 +456,6 @@ func (w *world) taskCalled(number int, title string) error {
 	return nil
 }
 
-// tell reads a task back through the second connection, so an assertion never
-// goes through the window it is judging.
 func (w *world) tell(number int) (task.Shape, error) {
 	found, err := w.givens().Task(number)
 	if err != nil {
@@ -534,9 +505,6 @@ func (w *world) saysWhatWentWrong() error {
 	return nil
 }
 
-// cardDimmed reads the ink the card would be written in, which is what the
-// drawing asks the skin for.
-// cardNumbered is the card a scenario names by its number.
 func (w *world) cardNumbered(n int) (engine.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Number == n {
@@ -546,7 +514,6 @@ func (w *world) cardNumbered(n int) (engine.Card, error) {
 	return engine.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
 }
 
-// markedDescribed reads the mark a card writes beside its number.
 func (w *world) markedDescribed(n int, want bool) error {
 	c, err := w.cardNumbered(n)
 	if err != nil {
@@ -558,9 +525,6 @@ func (w *world) markedDescribed(n int, want bool) error {
 	return nil
 }
 
-// listInsideThePanel asks of every row drawn that it is inside the run the
-// panel gives them. A list longer than its panel used to draw straight past it
-// and over the window behind.
 func (w *world) listInsideThePanel() error {
 	box := w.w.ChoosingBox()
 	run := ChoosingRun(box)
@@ -902,7 +866,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
 	sc.Then(`^task (\d+) is called "([^"]*)"$`, w.taskCalled)
-	// Numbered from one and never reused, so n tasks made are tasks 1 to n.
 	sc.Then(`^there (?:is|are) (\d+) tasks?$`, func(n int) error {
 		for i := 1; i <= n; i++ {
 			if _, err := w.tell(i); err != nil {
@@ -1131,7 +1094,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form shows the field "([^"]*)"$`, w.detailShowsField)
 	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
 		want := filepath.Join(notesRoot, strconv.Itoa(n))
-		// Written where it can be held and copied, like every text it writes.
 		for _, r := range w.w.Readables() {
 			if r.Key == "field:context" {
 				if r.Said != want {
@@ -1153,17 +1115,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form shows the field "([^"]*)" reading "([^"]*)"$`, w.detailFieldReads)
 	sc.Then(`^the card being dragged follows the pointer$`, w.ghostFollows)
 	sc.Then(`^the tile being dragged follows the pointer$`, w.ghostFollows)
-	// Inside the ghost and not merely somewhere: a ghost drawn with a card's
-	// layout put its title 28 pixels down, which is past the bottom of a tile
-	// — the writing landed on whatever was behind it instead.
 	sc.Then(`^what is in hand says what it carries$`, func() error {
 		ghost, dragging := w.w.Ghost()
 		if !dragging {
 			return fmt.Errorf("nothing is in hand")
 		}
-		// Strictly inside its own outline, which would otherwise be what is
-		// counted — measured, it was, and this passed with the writing landing
-		// entirely outside the ghost.
 		inside := Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
 		shot, err := drawnInAStep(w.w)
 		if err != nil {
@@ -1186,9 +1142,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	// The board is still drawn behind the panel, and it was still being asked
-	// where a point over it would land: a blue line appeared under the panel
-	// for a gesture that had nothing to do with the board.
 	sc.Then(`^the board behind shows no landing$`, func() error {
 		landing, somewhere := w.w.Landing()
 		if !somewhere {
@@ -1295,16 +1248,9 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the tab "([^"]*)" says it holds (\d+)$`, w.tabHolds)
 	sc.Then(`^the form is open on task (\d+)$`, w.formOpenOnTask)
 
-	// Asked before the one below it, and for the same reason it exists: that
-	// one asks whether writing reaches the frame's edge, which is trivially
-	// true of a tile with no writing on it at all. A measuring bug once cut
-	// every title to a lone ellipsis and it passed.
 	sc.Then(`^the second tile says what it holds$`, func() error {
 		tile := w.w.ServingCardAt(1)
 		line := Row(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
-		// Strictly inside the tile's own border, which runs its whole width
-		// and would ink every column asked about. Measured — it did, and this
-		// read as a full line of writing where there was a lone ellipsis.
 		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
 		shot, err := drawnInAStep(w.w)
 		if err != nil {
@@ -1322,13 +1268,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// Measured in pixels at the tile's right edge: a title cut by counting an
-	// average glyph width ran all the way there and was clipped, which reads
-	// as a word chopped against the scrollbar.
 	sc.Then(`^the second tile leaves room before its frame$`, func() error {
-		// The writing's own colour, and not everything that is not the tile:
-		// the tile the keyboard is on is outlined, and its outline runs down
-		// the very edge this asks about. Measured — it counted that.
 		tile := w.w.ServingCardAt(1)
 		edge := Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
 		shot, err := drawnInAStep(w.w)
@@ -1600,9 +1540,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the description is at its end$`, func() error {
-		// Asked first, because the end of a description nobody is showing is
-		// zero — and zero is where an untouched window already sits, so the
-		// question would answer yes to a gesture that did nothing at all.
 		if _, _, _, _, long := w.w.sayingOn(); !long {
 			return fmt.Errorf("no description is open: the window is on %v", w.w.Screen())
 		}
@@ -1645,8 +1582,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^no line of the field "([^"]*)" runs out of it$`, w.noLineRunsOut)
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)
 	sc.Then(`^the window is asking what to look for$`, w.askingWhatToLookFor)
-	// Asked of every card the board deals, columns and band alike: "not in
-	// BACKLOG" would pass for a card that merely sits in another column.
 	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
 		dealt, stalled := engine.Deal(w.w.Showing().Cards, w.w.archived)
 		for _, held := range dealt {
@@ -1715,8 +1650,6 @@ func (w *world) objectivesRead(list string) error {
 	return nil
 }
 
-// goalCardSays is asked of the line the objectives tab draws beside an
-// objective's number: how much work it carries and how much of it is done.
 func (w *world) goalCardSays(number int, text string) error {
 	for _, g := range w.w.Reading().Goals {
 		if g.Number == number {
@@ -1797,8 +1730,6 @@ func (w *world) ghostFollows() error {
 	return nil
 }
 
-// landsNowhere is the assertion that the window draws no landing line: the card
-// is in hand and over a place it cannot take, so there is nothing true to draw.
 func (w *world) landsNowhere() error {
 	if landing, somewhere := w.w.Landing(); somewhere {
 		return fmt.Errorf("the board says the card would land at %v, and it cannot land there", landing)
@@ -1871,8 +1802,6 @@ func (w *world) fieldShowsACaret(name string) error {
 }
 
 func (w *world) noOtherFieldShowsACaret() error {
-	// One field carries the keyboard at a time, and the caret is drawn there
-	// and nowhere else — so there is one caret by construction.
 	if w.w.Screen() != OnForm {
 		return fmt.Errorf("no form is open")
 	}
@@ -1904,7 +1833,6 @@ func (w *world) fieldHasRoomForOne(name string) error {
 	return nil
 }
 
-// rowsOfField is how many lines a field of the open form is drawn over.
 func (w *world) rowsOfField(name string) (int, error) {
 	fields := w.w.Form().Fields()
 	for i := range fields {
@@ -2009,8 +1937,6 @@ func (w *world) helpHeaded(head string) error {
 	return nil
 }
 
-// wrapping is a field's value broken into the lines it is drawn on, and the
-// room one of those lines has.
 func (w *world) wrapping(name string) (Lines, int, error) {
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
@@ -2071,7 +1997,6 @@ func (w *world) historyInsideThePanel() error {
 				what, part.Y, part.Y+part.H, PanelOfferAt(box, 0).Y)
 		}
 	}
-	// And nothing is shown past the end of what there is to show.
 	if w.w.history+w.w.Rows() > w.w.Told()+w.w.Rows() {
 		return fmt.Errorf("the history is scrolled to %d of %d lines", w.w.history, w.w.Told())
 	}
@@ -2138,17 +2063,12 @@ func (w *world) historyAtTheEnd() error {
 	return nil
 }
 
-// formBehindTheList checks the list is an overlay and not a page of its own:
-// the form's own panel is wider than the list's, and both are drawn.
 func (w *world) formBehindTheList() error {
 	over, list := Over(w.w.width, w.w.height), w.w.ChoosingBox()
 	if list.W >= over.W || list.H >= over.H {
 		return fmt.Errorf("the list is %dx%d over a form of %dx%d: it covers it rather than sitting on it",
 			list.W, list.H, over.W, over.H)
 	}
-	// What makes it an overlay is that the form is still there underneath. The
-	// first field's own frame lies outside the list's panel, so if the list
-	// were a page of its own that frame would have been painted over.
 	fields := w.w.Form().Fields()
 	value := formValue(over, fields, 0)
 	frame := Framed(value, formRows(over, fields, 0))
@@ -2156,9 +2076,6 @@ func (w *world) formBehindTheList() error {
 		return fmt.Errorf("the first field reaches %d and the list starts at %d: they overlap, so this proves nothing",
 			frame.Y+frame.H, list.Y)
 	}
-	// Its outline, and not its fill: the fill is the same colour as the ground
-	// the whole window is painted on, so counting that would pass even with no
-	// form drawn at all. Measured — it did.
 	shot, err := drawnInAStep(w.w)
 	if err != nil {
 		return err
@@ -2169,9 +2086,6 @@ func (w *world) formBehindTheList() error {
 	return nil
 }
 
-// fieldDrawnByName checks the drawing and not the window's own answer: the
-// field carries numbers and must be drawn as names, and a window that knows
-// the names without putting them on screen has not answered.
 func (w *world) fieldDrawnByName(field string) error {
 	for _, f := range w.w.Form().Fields() {
 		if f.Name != field {
@@ -2181,20 +2095,11 @@ func (w *world) fieldDrawnByName(field string) error {
 		if said == f.Value {
 			return fmt.Errorf("the field %q is drawn as %q, which is what it carries", field, said)
 		}
-		// Text cannot be read back out of a screenshot, so what is measured is
-		// reach: the names run far past where the numbers they stand for would
-		// have stopped. Two numbers and a comma cannot fill a third of this
-		// frame; two names do.
 		fields := w.w.Form().Fields()
 		at := slices.IndexFunc(fields, func(x engine.Field) bool { return x.Name == field })
 		box := w.w.formBox()
 		value := formValue(box, fields, at)
 		frame := Framed(value, formRows(box, fields, at))
-		// Past where the numbers themselves could have ended, and inside the
-		// frame rather than on it: the frame's own outline is not the field's
-		// writing, and a fraction of the width would only say the text is
-		// long. What proves the names are drawn is ink beyond the reach of
-		// what the field carries.
 		inside := Inside(frame)
 		from := inside.X + (len(f.Value)+2)*perGlyph
 		far := Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
@@ -2245,9 +2150,6 @@ func (w *world) ticked(number int, want bool) error {
 	return nil
 }
 
-// fieldNames is asked of what the field says on screen, and not of what it
-// carries: it carries the numbers the engine takes, and shows the names a
-// person knows. Asking the value would be asking the wrong half.
 func (w *world) fieldNames(field, title string) error {
 	for _, f := range w.w.Form().Fields() {
 		if f.Name != field {
@@ -2268,7 +2170,6 @@ func (w *world) listSaysNothing() error {
 	return nil
 }
 
-// goalTitles is what a failure prints of a run of objectives.
 func goalTitles(offered []Choice) []string {
 	var said []string
 	for _, one := range offered {
@@ -2287,10 +2188,6 @@ func (w *world) formOpenOnTask(number int) error {
 	return nil
 }
 
-// everyKeyTheBarOffers walks every screen and, on each, presses the key the
-// bar writes beside every offer — then chooses the same offer with the
-// pointer. The two have to land in the same place: the bar is what says what a
-// key does, so a key that does something else makes the bar a lie.
 func (w *world) everyKeyTheBarOffers() error {
 	from := w.w
 	for _, screen := range []Screen{OnTheBoard, OnForm, OnHelp, OnAsking} {
@@ -2317,7 +2214,6 @@ func (w *world) everyKeyTheBarOffers() error {
 	return nil
 }
 
-// onScreen puts a window on a screen, so the step above can walk all of them.
 func onScreen(w Window, screen Screen) (Window, error) {
 	switch screen {
 	case OnTheBoard:
@@ -2352,8 +2248,6 @@ func (w *world) tabHolds(name string, count int) error {
 	return fmt.Errorf("there is no tab called %q", name)
 }
 
-// chosenInSight asks where the chosen card is drawn and whether that is inside
-// the run of the window it is drawn in.
 func (w *world) chosenInSight() error {
 	if w.w.Chosen() == 0 {
 		return fmt.Errorf("nothing is chosen, so this proves nothing")
@@ -2376,7 +2270,6 @@ func (w *world) objectivesMoved() error {
 	return nil
 }
 
-// whereGoal is which of the objectives, in the order they are drawn, is chosen.
 func (w *world) whereGoal() (int, error) {
 	for i, g := range engine.Sorted(w.w.Showing().Goals) {
 		if g.Number == w.w.Chosen() {
@@ -2449,7 +2342,6 @@ func (w *world) chosenMovedDownARow() error {
 	return nil
 }
 
-// cardOf finds a card by its title, so a step can ask what it says.
 func (w *world) cardOf(title string) (engine.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title == title {
@@ -2459,15 +2351,11 @@ func (w *world) cardOf(title string) (engine.Card, error) {
 	return engine.Card{}, fmt.Errorf("no card titled %q", title)
 }
 
-// cardSays reads the line of labels a card draws, at the width a card in a
-// column actually has.
 func (w *world) cardSays(title, said string) error {
 	c, err := w.cardOf(title)
 	if err != nil {
 		return err
 	}
-	// The whole bottom row: the labels on the left, and what is due, what it
-	// has cost and what it serves on the right.
 	facts, _ := Facts(c, moment)
 	line := Tagged(c, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W) + "  " + facts
 	if !strings.Contains(line, said) {
@@ -2490,9 +2378,6 @@ func (w *world) cardSaysInFocus(title string) error {
 	return nil
 }
 
-// firstWordOf is the point over the first character of a piece of text an open
-// task writes: one beside its form, or one of the fields it is edited in —
-// "field:description" is the description, wherever it is written.
 func (w *world) firstWordOf(key string) (Point, error) {
 	for _, r := range w.w.Readables() {
 		if r.Key == key {

@@ -1,43 +1,20 @@
 package task
 
-// The rule that says where a task may be moved. It lives here rather than in
-// the engine because it is a rule about a task, and it lives beside the other
-// three for the same reason: whoever changes what a task is will read them
-// together.
-
 import (
 	"errors"
 	"fmt"
 )
 
-// ErrMovedBehindItself is returned when a task is asked to be moved behind
-// itself. Taking it out and putting it back relative to a place that has just
-// shifted is exactly how an order stops running 1..N without anybody seeing
-// it, so this is refused rather than quietly done.
+// ErrMovedBehindItself is returned when a task is asked to be moved behind itself.
 var ErrMovedBehindItself = errors.New("a task cannot be moved behind itself")
 
-// ErrOtherColumn is returned when a task is asked to be moved behind one in
-// another column. Moving orders; changing column is an edit, and doing both at
-// once would give one act two meanings.
+// ErrOtherColumn is returned when a task is asked to be moved behind one in another column.
 var ErrOtherColumn = errors.New("a task is moved inside its own column")
 
-// ErrNotAmongItsSisters is returned when a sub-task is asked to be moved
-// behind a task it does not sit with. A sub-task takes its place among its
-// sisters, never among the root tasks: where its parent sits carries the whole
-// block.
-//
-// It is its own reason and not ErrOtherColumn because the two say different
-// things. Between two columns it is the column that differs; between a
-// sub-task and a root task it is the level, and those two may well share a
-// column — saying "not in that column" of them would be false.
+// ErrNotAmongItsSisters is returned when a sub-task is asked to be moved behind a task it does not sit with.
 var ErrNotAmongItsSisters = errors.New("a sub-task is moved among its sisters")
 
 // MayMoveBehind says whether this task may take the place behind target.
-//
-// The three refusals are asked in the order that makes each message the true
-// one: a task and itself share everything, so that case would otherwise be
-// answered by whichever check came first; and a sub-task and a root task may
-// share a column, so the level is asked about before the column is.
 func (t Task) MayMoveBehind(target Task) error {
 	if t.number == target.number {
 		return fmt.Errorf("task %d: %w", t.number, ErrMovedBehindItself)
@@ -52,18 +29,8 @@ func (t Task) MayMoveBehind(target Task) error {
 	return nil
 }
 
-// SitTogether says whether two tasks take their places in the same run: two
-// sub-tasks under one parent, or two tasks hanging under nothing. It is the
-// level alone and says nothing about the column — those two may well share
-// one, which is why the column is asked about separately.
-//
-// Exported because a surface has the same question before it draws: a board
-// that shows where a held card would land has to know where it may land, and a
-// board working that out for itself is the rule living twice.
+// SitTogether says whether two tasks take their places in the same run: two sub-tasks under one parent, or two tasks hanging under nothing.
 func SitTogether(parent, otherParent int) bool { return parent == otherParent }
-
-// notAmongItsSisters says which of the two hangs under what, since knowing
-// that is knowing where the task can go instead.
 
 func (t Task) notAmongItsSisters(target Task) error {
 	whose, hanging := t.number, t.parent

@@ -1,9 +1,5 @@
 package tui
 
-// Executable acceptance scenarios for bdd/tui.feature. The Gherkin is the
-// contract; the world that drives the board lives in world_test.go and what
-// the scenarios look at afterwards lives in steps_test.go.
-
 import (
 	"testing"
 

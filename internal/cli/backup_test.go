@@ -29,10 +29,6 @@ func TestCommands_reportAStoreTheyCannotEvenLocate(t *testing.T) {
 	}
 }
 
-// The server is not one call but a conversation, and the store is located at
-// each call rather than once at the start: a store nobody can locate is what
-// each call answers, and `config_show` — the one call that says why — is still
-// reachable. It used to refuse to start, which left an agent nothing to ask.
 func TestMCPServe_startsWhereTheStoreCannotBeLocated(t *testing.T) {
 	t.Setenv("HOME", "")
 	t.Setenv("CAIRN_STORE", "")

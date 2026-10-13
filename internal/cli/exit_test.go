@@ -46,9 +46,6 @@ func TestCodeFor_tellsARequestItDidNotUnderstand(t *testing.T) {
 	}
 }
 
-// Kept for a request understood and still refused, and for whatever nobody
-// foresaw: a failure is "could not do it" unless something said it was not
-// understood — a parse error that has to be guessed at is a guess.
 func TestCodeFor_tellsAFailureNobodyForesawAsOne(t *testing.T) {
 	if got := codeFor(errors.New("the disk is on fire")); got != exitRefused {
 		t.Errorf("codeFor = %d, want %d for a failure nobody foresaw", got, exitRefused)
@@ -82,20 +79,16 @@ func TestMain_answersARefusalAsJSONWithItsKindAndReason(t *testing.T) {
 	}
 }
 
-// What is written after `--` is a value, whatever it reads like.
 func TestAskedForJSON_readsNothingAfterTheDoubleDash(t *testing.T) {
 	if askedForJSON([]string{"task", "new", "--", "--json"}) {
 		t.Error("a title written after -- was read as asking for JSON")
 	}
 }
 
-// failing is a stream nothing can be written to.
 type failing struct{}
 
 func (failing) Write([]byte) (int, error) { return 0, errors.New("the pipe is closed") }
 
-// A refusal that cannot be written as JSON is still said, where a person
-// reads: a machine reading an empty stream learns nothing either way.
 func TestMain_saysARefusalItCouldNotWriteAsJSON(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	var stderr bytes.Buffer
@@ -105,7 +98,6 @@ func TestMain_saysARefusalItCouldNotWriteAsJSON(t *testing.T) {
 	}
 }
 
-// A deletion refused for want of --yes names what it would have deleted.
 func TestMain_namesWhatAnUnconfirmedDeletionWouldTake(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	mustRun(t, "task", "new", "Write the spec")

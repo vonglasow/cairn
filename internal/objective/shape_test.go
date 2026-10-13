@@ -10,10 +10,6 @@ import (
 	"cairn/internal/objective"
 )
 
-// TestOfObjective_carriesEveryFieldAScriptReads pins the shape a script
-// reads for an objective: the field names are the wire, and a script that
-// reads one has no way to notice a change unless every one of them is
-// checked here.
 func TestOfObjective_carriesEveryFieldAScriptReads(t *testing.T) {
 	deadline, err := domain.ParseDeadline("2026-10-01")
 	if err != nil {
@@ -66,8 +62,6 @@ func TestOfObjective_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 }
 
-// TestOfObjective_writesAnEmptyListRatherThanNothingAtAll pins that an
-// objective carrying no labels answers with an empty list, never null.
 func TestOfObjective_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	built, err := objective.NewObjective("Ship it")
 	if err != nil {
@@ -82,9 +76,6 @@ func TestOfObjective_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
 	}
 }
 
-// Every field that crosses to a machine says what it holds, and what its empty
-// value means: an agent reading a 0 or an empty string cannot otherwise tell
-// "none" from a value.
 func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
 	for _, shape := range []any{objective.Shape{}} {
 		of := reflect.TypeOf(shape)

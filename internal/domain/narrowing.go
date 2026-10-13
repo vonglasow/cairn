@@ -1,14 +1,6 @@
 package domain
 
-// Narrowing is what a read was told to keep: facts named one at a time, and a
-// fact never named narrows nothing — so a Narrowing nobody named anything on
-// reads everything.
-//
-// It holds what was named, not how to look for it. Whoever reads by it is told
-// each fact in the order it was named, and turns it into whatever it reads
-// with: the store into SQL. It used to be the store's own query builder, which
-// meant the engine could only say what to keep by importing the store, and a
-// second way of keeping tasks would have had to import it too.
+// Narrowing is what a read was told to keep: facts named one at a time, and a fact never named narrows nothing — so a Narrowing nobody named anything on reads everything.
 type Narrowing struct {
 	told    []func(NarrowingTold)
 	narrows bool
@@ -25,7 +17,6 @@ type NarrowingTold interface {
 	WithArchived()
 }
 
-// name keeps one fact to tell, and says whether it narrows anything.
 func (n *Narrowing) name(narrows bool, tell func(NarrowingTold)) {
 	n.told = append(n.told, tell)
 	n.narrows = n.narrows || narrows
@@ -61,9 +52,7 @@ func (n *Narrowing) Archived() {
 	n.name(true, func(to NarrowingTold) { to.Archived() })
 }
 
-// WithArchived keeps both sides of the board, which is what a board asks for:
-// it draws the two apart rather than reading twice. Asking for everything is
-// not narrowing anything.
+// WithArchived keeps both sides of the board, which is what a board asks for: it draws the two apart rather than reading twice.
 func (n *Narrowing) WithArchived() {
 	n.name(false, func(to NarrowingTold) { to.WithArchived() })
 }

@@ -52,9 +52,6 @@ func TestNumbersWritesThemSpacedApart(t *testing.T) {
 	}
 }
 
-// A store that answers its listings and then cannot say which version it is at
-// is still a store a reading has to give up on: the board follows the version,
-// so a reading without one would never notice the next change.
 func TestLookPassesOnAStoreThatCannotSayItsVersion(t *testing.T) {
 	f := newFake()
 	f.refuse = map[string]error{}
@@ -64,10 +61,6 @@ func TestLookPassesOnAStoreThatCannotSayItsVersion(t *testing.T) {
 	}
 }
 
-// NumbersIn reads back what Numbers wrote. A form hands its field to the engine
-// as the engine takes it, so a surface that showed names had to be able to get
-// the numbers again — and getting them by splitting on spaces in the surface
-// would be the spelling of an argument living in two places.
 func TestNumbersIn_readsBackWhatNumbersWrote(t *testing.T) {
 	for _, tc := range []struct {
 		what string
@@ -87,9 +80,6 @@ func TestNumbersIn_readsBackWhatNumbersWrote(t *testing.T) {
 	}
 }
 
-// The parts of a task, written as one line each so they can be read, ticked,
-// renamed, added to and taken away in one place — the form of the task they
-// belong to, which is the only place they are reachable at all.
 func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
 	said := PartsSaid([]Card{
 		{Number: 2, Title: "Relire l'ADR", State: "todo"},
@@ -120,8 +110,6 @@ func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
 	}
 }
 
-// A task with no parts says nothing, so the field is empty rather than
-// carrying a shape nobody typed.
 func TestATaskWithNoPartsSaysNothing(t *testing.T) {
 	if said := PartsSaid(nil); said != "" {
 		t.Fatalf("a task with no parts reads %q", said)

@@ -6,16 +6,7 @@ import (
 	"cairn/internal/domain"
 )
 
-// AsTold builds a task from what it is told. It is the same membrane the
-// other way round: whoever has a task's facts — a row out of the store —
-// tells them, and is handed the task they make. Nothing has to reach inside a
-// task to put one together, which is what lets a task keep its insides to
-// itself.
-//
-// Labels are trusted rather than re-parsed: whoever tells AsTold a label is
-// retelling one a task already carried, made lower case, deduplicated and
-// sorted once already on the way into the store. Running it through
-// ParseLabels a second time here would be the same rule kept in two places.
+// AsTold builds a task from what it is told.
 type AsTold struct {
 	task       Task
 	labels     []string
@@ -56,9 +47,7 @@ func (a *AsTold) NotLabelled() { a.labels = nil }
 // LabelsTold is told there are no more labels coming, and closes the set.
 func (a *AsTold) LabelsTold() { a.task.labels = a.labels }
 
-// BlockedBy adds a task to what is in this one's way. Gathered and set on
-// BlockersTold, the way labels are: a set is told one member at a time, and the
-// task cannot know it is complete until it is said so.
+// BlockedBy adds a task to what is in this one's way.
 func (a *AsTold) BlockedBy(n int) { a.blockers = append(a.blockers, n) }
 
 // NotBlocked says nothing is in its way.
@@ -97,10 +86,7 @@ func (a *AsTold) Under(n int) { a.task.parent = n }
 // UnderNothing is told the task hangs under nothing.
 func (a *AsTold) UnderNothing() { a.task.parent = NoParent }
 
-// Serves adds an objective the task serves. Gathered and set on
-// ObjectivesTold, the way labels and blockers are: a task serves what it
-// serves, and told one at a time it cannot know the set is complete until it is
-// said so.
+// Serves adds an objective the task serves.
 func (a *AsTold) Serves(n int) { a.objectives = append(a.objectives, n) }
 
 // ServesNothing is told the task serves no objective.

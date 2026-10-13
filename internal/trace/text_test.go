@@ -1,20 +1,13 @@
 package trace
 
-// The two renderings a person reads: one act on a line, a task's history, and a
-// period across tasks.
-
 import (
 	"strings"
 	"testing"
 	"time"
 )
 
-// rendered is one act as a history shows it. Asserted through Text and not
-// through a rendering of a single act: Text is what the product calls, and a
-// test on anything else would prove something nobody uses.
 func rendered(a Act) string { return strings.TrimRight(Text([]Act{a}), "\n") }
 
-// acted builds an act, naming only what the rendering reads.
 func acted(task int, did, field, was, became, through string, hour, minute int) Act {
 	var a AsTold
 	a.On(task)
@@ -43,8 +36,6 @@ func acted(task int, did, field, was, became, through string, hour, minute int) 
 	return a.Act()
 }
 
-// A change says what it went from and to, and the attribute names the line: a
-// line reading "changed  priority" would say the same thing twice.
 func TestLine_namesTheAttributeAndBothItsValues(t *testing.T) {
 	got := rendered(acted(1, Changed, "priority", "normal", "high", "", 9, 15))
 	for _, want := range []string{"priority", "normal", went, "high"} {
@@ -57,8 +48,6 @@ func TestLine_namesTheAttributeAndBothItsValues(t *testing.T) {
 	}
 }
 
-// An attribute that held nothing before says so, because going from nothing to
-// something is worth seeing.
 func TestLine_showsThatAnAttributeHeldNothingBefore(t *testing.T) {
 	got := rendered(acted(1, Changed, "deadline", "", "2026-09-01", "", 9, 15))
 	if !strings.Contains(got, "— "+went) {
@@ -66,8 +55,6 @@ func TestLine_showsThatAnAttributeHeldNothingBefore(t *testing.T) {
 	}
 }
 
-// An act about no attribute has no before, so it says its detail plainly.
-// Rendering it as "— → …" would claim a previous state that never existed.
 func TestLine_claimsNoPreviousStateForAnActAboutNoAttribute(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
@@ -89,8 +76,6 @@ func TestLine_claimsNoPreviousStateForAnActAboutNoAttribute(t *testing.T) {
 	}
 }
 
-// The surface shows only when it was not the terminal: silent in the ordinary
-// case, visible in the one that matters.
 func TestLine_namesTheSurfaceOnlyWhenItWasNotTheTerminal(t *testing.T) {
 	byHand := rendered(acted(1, Changed, "priority", "normal", "high", "", 9, 15))
 	if strings.Contains(byHand, "(") {
@@ -102,9 +87,6 @@ func TestLine_namesTheSurfaceOnlyWhenItWasNotTheTerminal(t *testing.T) {
 	}
 }
 
-// What a task was born carrying is laid out under the creation it belongs to,
-// indented and without a moment of its own — so the moment is not repeated once
-// per attribute, and a reader can tell the birth from what came after.
 func TestText_laysTheBirthUnderTheCreation(t *testing.T) {
 	got := Text([]Act{
 		acted(1, Created, "", "", "", "", 9, 0),
@@ -132,7 +114,6 @@ func TestText_laysTheBirthUnderTheCreation(t *testing.T) {
 	}
 }
 
-// A period names the task each act was on, since it reaches across them.
 func TestList_namesTheTaskOfEveryAct(t *testing.T) {
 	got := List([]Act{
 		acted(3, FocusTaken, "", "", "", "", 9, 0),
@@ -146,9 +127,6 @@ func TestList_namesTheTaskOfEveryAct(t *testing.T) {
 	}
 }
 
-// What a task was born carrying is left out of a period: those acts belong to
-// that task's own history, and a day is unreadable with four lines of birth for
-// every task created in it.
 func TestList_leavesTheBirthOutOfAPeriod(t *testing.T) {
 	got := List([]Act{
 		acted(1, Created, "", "", "", "", 9, 0),
@@ -170,8 +148,6 @@ func TestList_saysNothingWasDoneWhenNothingWas(t *testing.T) {
 	}
 }
 
-// A period holding nothing but a birth has nothing to show either: the birth
-// belongs to a history, so leaving it out leaves nothing.
 func TestList_saysNothingWasDoneWhenOnlyABirthIsLeftOut(t *testing.T) {
 	got := List([]Act{acted(1, Created, "title", "", "Write the spec", "", 9, 0)})
 	if !strings.Contains(got, "nothing was done") {
@@ -179,10 +155,6 @@ func TestList_saysNothingWasDoneWhenOnlyABirthIsLeftOut(t *testing.T) {
 	}
 }
 
-// An attribute act that carries neither value shows the attribute and nothing
-// else. It cannot arise from an edit — giving an attribute the value it already
-// holds is not a change — but the rendering has to say something, and saying
-// "— → —" would claim two states where there is no information at all.
 func TestLine_showsOnlyTheAttributeWhenNeitherValueIsThere(t *testing.T) {
 	got := rendered(acted(1, Changed, "priority", "", "", "", 9, 15))
 	if !strings.Contains(got, "priority") {
@@ -193,8 +165,6 @@ func TestLine_showsOnlyTheAttributeWhenNeitherValueIsThere(t *testing.T) {
 	}
 }
 
-// A deletion carries what the task held, and a history that printed only the
-// word "deleted" kept it where nobody could read it.
 func TestAHistorySaysWhatADeletionTookWithIt(t *testing.T) {
 	var a AsTold
 	a.On(1)
@@ -212,11 +182,6 @@ func TestAHistorySaysWhatADeletionTookWithIt(t *testing.T) {
 	}
 }
 
-// A value written over several lines, changed by an agent, leaves the columns
-// of every act after it where they were. The surface used to be a column of its
-// own, so the last line of such a value ended in a tab, became a cell, and
-// widened the first column of every line after it — measured on a real store:
-// the moments of a whole afternoon pushed seventy characters to the right.
 func TestList_aValueOverSeveralLinesLeavesTheColumnsAfterIt(t *testing.T) {
 	said := "first line\nthe last line of the description, far longer than any moment is"
 	for name, render := range map[string]func([]Act) string{"a period": List, "a history": Text} {
@@ -235,8 +200,6 @@ func TestList_aValueOverSeveralLinesLeavesTheColumnsAfterIt(t *testing.T) {
 	}
 }
 
-// Time added by hand says how much, and for which day: the day it was added on
-// is the moment of the line, and is not the day it counts for.
 func TestText_saysTimeAddedForTheDayItCountsFor(t *testing.T) {
 	got := rendered(acted(1, TimeAdded, "", "2026-09-29", "1h", "", 9, 0))
 	if !strings.Contains(got, "time added") || !strings.Contains(got, "1h for 2026-09-29") {
@@ -244,9 +207,6 @@ func TestText_saysTimeAddedForTheDayItCountsFor(t *testing.T) {
 	}
 }
 
-// A sheet writes each day, then each task's time before its title — so a title
-// holding "1h" is never read as one — then what the day came to; and says when
-// nothing was in focus at all.
 func TestSheetText_writesEachDayTaskByTask(t *testing.T) {
 	day := time.Date(2026, 9, 29, 0, 0, 0, 0, time.UTC)
 	got := SheetText(Sheet{Days: []Day{{Day: day, Total: 8*time.Hour + 30*time.Minute, Tasks: []Worked{
@@ -268,8 +228,6 @@ func TestSheetText_writesEachDayTaskByTask(t *testing.T) {
 	}
 }
 
-// What a task was born with is left out, and what was done to it afterwards
-// is not: the listing reads on past a birth.
 func TestList_readsOnPastABirth(t *testing.T) {
 	got := List([]Act{
 		acted(1, Created, "", "", "", "", 9, 0),

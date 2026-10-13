@@ -1,8 +1,5 @@
 package store
 
-// What the store makes of what blocks a task: kept, read back, and released
-// when a task on either end of the link goes.
-
 import (
 	"testing"
 
@@ -10,7 +7,6 @@ import (
 	"cairn/internal/task"
 )
 
-// keepBlocked adds a task saying what is in its way.
 func keepBlocked(t *testing.T, s *Store, title string, state domain.State, blockers []int, because string) task.Task {
 	t.Helper()
 	kept, err := s.Keep(changed(mustBuild(t, title), func(a *task.AsTold) {
@@ -27,8 +23,6 @@ func keepBlocked(t *testing.T, s *Store, title string, state domain.State, block
 	return kept
 }
 
-// What a task says blocks it comes back exactly as it was given, and a task
-// that said nothing comes back saying nothing.
 func TestBlockers_comeBackAsTheyWereGiven(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "Write the spec")
@@ -56,8 +50,6 @@ func TestBlockers_comeBackAsTheyWereGiven(t *testing.T) {
 	}
 }
 
-// An edit says what blocks a task, so what it leaves out is taken away: a set
-// given is a set replaced, the way the labels are.
 func TestBlockers_areReplacedByAnUpdate(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "Write the spec")
@@ -81,9 +73,6 @@ func TestBlockers_areReplacedByAnUpdate(t *testing.T) {
 	}
 }
 
-// A task that is gone neither blocks anything nor is blocked by anything, so
-// both sides of every link go with it. By hand, since this connection leaves
-// the foreign keys off.
 func TestBlockers_areReleasedWhenEitherEndGoes(t *testing.T) {
 	s := openStore(t)
 	blocking := keep(t, s, "Write the spec")
@@ -101,7 +90,6 @@ func TestBlockers_areReleasedWhenEitherEndGoes(t *testing.T) {
 		t.Errorf("it is still blocked by %v, and that task is gone", got)
 	}
 
-	// And the other way round: the blocked task going leaves nothing behind it.
 	again := keep(t, s, "Write the tests")
 	third := keepBlocked(t, s, "Announce it", domain.Blocked, []int{factsOf(again).number}, "")
 	if err := s.Delete(factsOf(third).number); err != nil {
@@ -116,7 +104,6 @@ func TestBlockers_areReleasedWhenEitherEndGoes(t *testing.T) {
 	}
 }
 
-// The three conditions that make "nothing blocks it" honest, each on its own.
 func TestNothingBlocks_answersOnlyWhenItIsCertain(t *testing.T) {
 	s := openStore(t)
 	done := keepInColumn(t, s, "Write the spec", domain.Done)

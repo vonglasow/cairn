@@ -72,7 +72,6 @@ func TestTaskEdit_editsATask(t *testing.T) {
 	}
 	number := strconv.Itoa(factsOf(*child.Task).number)
 
-	// An empty --parent sets a task free — the same translation task_new uses.
 	answer, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": number, "parent": ""}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
@@ -176,8 +175,6 @@ func TestAll_namesEachOperationOnce(t *testing.T) {
 	}
 }
 
-// A parent is not finished while something under it is open, and the engine is
-// where that is enforced once for all three surfaces.
 func TestEdit_refusesToFinishAParentWithAnOpenSubTask(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
@@ -191,7 +188,6 @@ func TestEdit_refusesToFinishAParentWithAnOpenSubTask(t *testing.T) {
 		t.Fatalf("err = %v, want it to say something under it is open", err)
 	}
 
-	// Once the sub-task is done, the parent may be.
 	if _, err := e.edit(under, Changes{State: &finished}); err != nil {
 		t.Fatalf("finishing the sub-task: %v", err)
 	}
@@ -200,10 +196,6 @@ func TestEdit_refusesToFinishAParentWithAnOpenSubTask(t *testing.T) {
 	}
 }
 
-// A parent already done may still be edited for anything else. Asking the rule
-// of every edit would make a finished parent fail for a reason nobody caused
-// today — the sub-task was open when it was finished, or it was reopened
-// since, and neither is this edit's doing.
 func TestEdit_leavesAFinishedParentEditableForAnythingElse(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
@@ -222,8 +214,6 @@ func TestEdit_leavesAFinishedParentEditableForAnythingElse(t *testing.T) {
 	}
 }
 
-// A sub-task takes done or todo, and hanging a task under another settles the
-// column it was carrying: done stays done, anything else becomes todo.
 func TestEdit_holdsASubTaskToDoneOrNot(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
@@ -233,14 +223,12 @@ func TestEdit_holdsASubTaskToDoneOrNot(t *testing.T) {
 	if _, err := e.edit(under, Changes{State: &working}); err != nil {
 		t.Fatalf("putting it in current while it hangs under nothing: %v", err)
 	}
-	// Hung under a parent, what it was doing on its own stops being true.
 	if _, err := e.edit(under, Changes{Parent: &parent}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
 	}
 	if got := factsOf(shown(t, e, under)).state; got != domain.Todo {
 		t.Errorf("state = %q, want it settled to todo", got)
 	}
-	// And it will not go back.
 	if _, err := e.edit(under, Changes{State: &working}); !errors.Is(err, task.ErrSubTaskHasNoColumn) {
 		t.Errorf("err = %v, want it to say a sub-task is done or it is not", err)
 	}
@@ -250,8 +238,6 @@ func TestEdit_holdsASubTaskToDoneOrNot(t *testing.T) {
 	}
 }
 
-// A task already done keeps being done when it is hung under one: finished is
-// the one thing a part was doing on its own that stays true.
 func TestEdit_keepsAFinishedTaskDoneWhenItIsHungUnderOne(t *testing.T) {
 	e := openEngine(t)
 	parent := factsOf(add(t, e, "Ship it")).number
@@ -268,7 +254,6 @@ func TestEdit_keepsAFinishedTaskDoneWhenItIsHungUnderOne(t *testing.T) {
 	}
 }
 
-// shown reads a task back the way anything else does.
 func shown(t *testing.T, e *Engine, number int) task.Task {
 	t.Helper()
 	found, err := e.show(number)
@@ -278,8 +263,6 @@ func shown(t *testing.T, e *Engine, number int) task.Task {
 	return found
 }
 
-// Archiving takes a task off the board and keeps everything it carries. It is
-// the engine that says so, once, for every surface.
 func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Migration Jenkins")).number
@@ -299,7 +282,6 @@ func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 		t.Errorf("state = %q, want it still done — archiving is not a column", found.state)
 	}
 
-	// And it comes back.
 	if err := e.unarchive(number); err != nil {
 		t.Fatalf("Unarchive: %v", err)
 	}
@@ -308,8 +290,6 @@ func TestArchive_takesATaskOffTheBoardAndKeepsIt(t *testing.T) {
 	}
 }
 
-// Archiving what is already off the board is refused rather than written down
-// again.
 func TestArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	e := openEngine(t)
 	number := factsOf(add(t, e, "Migration Jenkins")).number
@@ -321,8 +301,6 @@ func TestArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	}
 }
 
-// A listing leaves what is off the board out, and hands it over when it is
-// asked for by name.
 func TestListing_leavesArchivedOutUntilAskedFor(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -343,9 +321,6 @@ func TestListing_leavesArchivedOutUntilAskedFor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Do(TaskList): %v", err)
 		}
-		// Both fields: a listing nobody narrowed answers in Tasks and a
-		// narrowed one in Matched, and asking for what is off the board is a
-		// narrowing. Reading only the first said the archived ones were gone.
 		var out []int
 		for _, one := range append(answer.Tasks, answer.Matched...) {
 			out = append(out, factsOf(one).number)
@@ -360,7 +335,6 @@ func TestListing_leavesArchivedOutUntilAskedFor(t *testing.T) {
 	}
 }
 
-// Archiving takes a number or a narrowing, and says how many it reached.
 func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -387,7 +361,6 @@ func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
 		t.Fatalf("Archived = %v, want 2", answer.Archived)
 	}
 
-	// What it did not reach is still on the board.
 	listed, err := Do(TaskList, path, Input{})
 	if err != nil {
 		t.Fatalf("Do(TaskList): %v", err)
@@ -397,7 +370,6 @@ func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
 	}
 }
 
-// A narrowing reaching nothing archives nothing and says so.
 func TestArchiving_saysWhenItReachedNothing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -417,8 +389,6 @@ func TestArchiving_saysWhenItReachedNothing(t *testing.T) {
 	}
 }
 
-// Neither a number nor a narrowing is refused: archiving everything by
-// accident is not something to find out afterwards.
 func TestArchiving_refusesWithNothingToGoOn(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -434,8 +404,6 @@ func TestArchiving_refusesWithNothingToGoOn(t *testing.T) {
 	}
 }
 
-// A label is put on everything a narrowing reaches, keeping what each already
-// carries.
 func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -448,8 +416,6 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 		t.Fatalf("setting it up: %v", err)
 	}
 	add(t, e, "Spike Argo")
-	// A part of the work the narrowing reaches is left out with it, the way a
-	// sweep leaves it out: both read the same world.
 	part := factsOf(add(t, e, "Write the tests")).number
 	if _, err := e.edit(part, Changes{Parent: &first, State: &done}); err != nil {
 		t.Fatalf("hanging it under: %v", err)
@@ -484,10 +450,6 @@ func TestLabelling_putsOneOnWhatANarrowingReaches(t *testing.T) {
 	}
 }
 
-// Labelling keeps by everything a listing keeps by, lists included. The labels
-// and the objectives a narrowing names travel apart from the rest, and they
-// used to be dropped on the way: `--objective 3` labelled every task the
-// other filters reached, without a word.
 func TestTaskLabel_keepsByWhatItWasListed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -515,9 +477,6 @@ func TestTaskLabel_keepsByWhatItWasListed(t *testing.T) {
 	}
 }
 
-// An operation that took two arguments under one name could only ever be
-// handed one of them by a caller that names its arguments: an agent's call is
-// a JSON object, and an object holds a key once.
 func TestAll_noOperationTakesTwoArgumentsUnderOneName(t *testing.T) {
 	for _, op := range All() {
 		seen := map[string]bool{}
@@ -530,7 +489,6 @@ func TestAll_noOperationTakesTwoArgumentsUnderOneName(t *testing.T) {
 	}
 }
 
-// labelReader reads back the labels a task carries.
 type labelReader struct {
 	task.AsTold
 	labels []string
@@ -538,8 +496,6 @@ type labelReader struct {
 
 func (r *labelReader) Labelled(s string) { r.labels = append(r.labels, s) }
 
-// Archiving one by number, and bringing it back. Both answer with the task as
-// it ends up, and both refuse a number no task carries.
 func TestArchiving_oneByNumber(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -578,10 +534,6 @@ func TestArchiving_oneByNumber(t *testing.T) {
 	}
 }
 
-// A search can be narrowed by what a listing narrows by. The one place the two
-// vocabularies meet: what is looked for is free text and what narrows it is a
-// closed set, and a word common enough to be worth searching is a word that
-// answers the whole board without one.
 func TestSearching_canBeNarrowed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
@@ -606,7 +558,6 @@ func TestSearching_canBeNarrowed(t *testing.T) {
 	if len(answer.Matched) != 1 || factsOf(answer.Matched[0]).number != gone {
 		t.Fatalf("narrowed to done, the search answered %d tasks, want only %d", len(answer.Matched), gone)
 	}
-	// And told nothing to narrow by, it still answers the whole board.
 	all, err := Do(TaskSearch, path, Input{Listed: looking})
 	if err != nil {
 		t.Fatalf("Do(TaskSearch): %v", err)
@@ -617,10 +568,6 @@ func TestSearching_canBeNarrowed(t *testing.T) {
 	}
 }
 
-// TestTaskShow_saysWhereItsContextLives: showing a task answers the directory
-// its outside context lives in, composed from the notes the surface found and
-// the task's number — and touches nothing on disk to say so. A caller that
-// never said where the notes are is told nothing about them.
 func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
 	path := storeAt(t)
 	notes := filepath.Join(t.TempDir(), "vault")
@@ -664,9 +611,6 @@ func TestTaskShow_saysWhereItsContextLives(t *testing.T) {
 	}
 }
 
-// A listing says how far along each task is and where its context lives, so a
-// board drawing every card reads them in the one answer rather than showing
-// each task in turn to learn two facts about it.
 func TestTaskList_saysHowFarAlongEachTaskIsAndWhereItsContextLives(t *testing.T) {
 	path := storeAt(t)
 	for _, step := range []Input{
@@ -701,7 +645,6 @@ func TestTaskList_saysHowFarAlongEachTaskIsAndWhereItsContextLives(t *testing.T)
 	}
 }
 
-// The same for objectives: how far along each one is, in the listing.
 func TestObjectiveList_saysHowFarAlongEachObjectiveIs(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(ObjectiveNew, path, given("title", "Ship cairn")); err != nil {

@@ -6,8 +6,7 @@ import (
 	"cairn/internal/domain"
 )
 
-// FoundGoals is what a search reaches among the objectives, in the order a list
-// keeps them; every one of them when nothing is looked for.
+// FoundGoals is what a search reaches among the objectives, in the order a list keeps them; every one of them when nothing is looked for.
 func FoundGoals(goals []Goal, query string) []Goal {
 	if query == "" {
 		return Sorted(goals)
@@ -21,11 +20,7 @@ func FoundGoals(goals []Goal, query string) []Goal {
 	return Sorted(found)
 }
 
-// Parentable is what the task numbered self may hang under, among what a
-// search reaches: work on the board, never the task itself, and never a part —
-// nothing hangs under a part. In the order somebody reaches for them, which is
-// not the order the board reads: work is hung under what is being worked on,
-// and the board's order put two dozen backlog tasks in front of it.
+// Parentable is what the task numbered self may hang under, among what a search reaches: work on the board, never the task itself, and never a part — nothing hangs under a part.
 func Parentable(cards []Card, self int, query string) []Card {
 	var out []Card
 	for _, c := range OnTheBoard(cards, false) {
@@ -40,9 +35,6 @@ func Parentable(cards []Card, self int, query string) []Card {
 	return out
 }
 
-// reachedFor is how soon a column is reached for when something is being hung
-// under it: what is being worked on, then what is next, then what is stopped,
-// then what has not been started, and last what is over.
 func reachedFor(state string) int {
 	switch domain.State(state) {
 	case domain.Current:
@@ -57,8 +49,6 @@ func reachedFor(state string) int {
 	return 4
 }
 
-// overrun says whether the time spent has gone past the estimate, read off the
-// lengths themselves. Nothing estimated is never gone past.
 func overrun(estimate, spent string) bool {
 	reckoned, oneErr := domain.ParseEstimate(estimate)
 	took, twoErr := domain.ParseEstimate(spent)

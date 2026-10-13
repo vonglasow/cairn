@@ -1,9 +1,5 @@
 package cli
 
-// Executable acceptance scenarios for bdd/objective.feature. The Gherkin is
-// the contract; the steps an objective does not share with a task live here,
-// beside the feature that claims them.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -27,7 +23,6 @@ func TestAcceptance_Objective(t *testing.T) {
 	runAcceptance(t, "objective.feature", initObjective(t), "")
 }
 
-// wantField checks one field of the card a command printed.
 func (w *world) wantField(key, want string) error {
 	if got := w.field(key); got != want {
 		return fmt.Errorf("%s = %q, want %q", key, got, want)
@@ -35,7 +30,6 @@ func (w *world) wantField(key, want string) error {
 	return nil
 }
 
-// wantLabel checks that the card carries a label among the ones it lists.
 func (w *world) wantLabel(want string) error {
 	for _, label := range strings.Split(w.field("labels"), ", ") {
 		if label == want {
@@ -45,9 +39,7 @@ func (w *world) wantLabel(want string) error {
 	return fmt.Errorf("labels = %q, want one of them to be %q", w.field("labels"), want)
 }
 
-// registerObjective declares the steps only objectives use.
 func (w *world) registerObjective(sc *godog.ScenarioContext) {
-	// --- the common context ---------------------------------------------------
 
 	sc.Step(`^I add(?:ed)? an objective with it$`, func() error {
 		w.Run(fmt.Sprintf(`cairn objective new "%s"`, w.long))
@@ -68,9 +60,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn objective new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	// Written as one step rather than three hundred lines of Given. The share
-	// only bites at a scale nobody types out, and a scenario nobody can read is
-	// a scenario nobody checks.
 	sc.Step(`^I added (\d+) tasks under it, of which (\d+) (?:is|are) done$`,
 		func(total, done int) error {
 			for i := 1; i <= total; i++ {
@@ -85,8 +74,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 			}
 			return nil
 		})
-
-	// --- what it answered -----------------------------------------------------
 
 	sc.Step(`^it reports an objective titled "([^"]*)"$`, func(title string) error {
 		return test.WantContains(w.heading(), title, "the answer")
@@ -128,9 +115,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "nothing is under it", "the answer")
 	})
 
-	// How many tasks an objective is holding, counted off its card. Counted
-	// rather than looked for as a number: the card lists them, and a count
-	// written on it would be a second thing to keep true.
 	sc.Step(`^it says (\d+) tasks? (?:is|are) under it$`, func(n int) error {
 		return countedUnder(w.Out.Stdout, n)
 	})
@@ -148,8 +132,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 				fmt.Sprintf("the objective is %d%% done", share), "the answer")
 		})
 
-	// The task appears indented under the objective's own heading, the way a
-	// sub-task appears under its parent — same shape, so it reads the same.
 	sc.Step(`^task (\d+) is shown under objective (\d+)$`, func(task, objective int) error {
 		if err := test.WantContains(w.heading(), fmt.Sprintf("#%d", objective), "the heading"); err != nil {
 			return err
@@ -170,8 +152,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("task %d is not among what is under the objective:\n%s", task, block)
 	})
-
-	// --- what it carries ------------------------------------------------------
 
 	sc.Step(`^the objective carries the (description|deadline|estimate|priority|state|label) "([^"]*)"$`,
 		func(attribute, want string) error {
@@ -210,9 +190,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// A task serves a set, so the card lays out "objectives". These two steps
-	// keep the wording the frozen scenarios use: what changed is where the
-	// answer is read, not what is being asserted.
 	sc.Step(`^the task carries the objective "([^"]*)"$`, func(want string) error {
 		return w.wantField("objectives", served(want))
 	})
@@ -223,8 +200,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-
-	// --- machine-readable answers ---------------------------------------------
 
 	sc.Step(`^it carries (\d+) objectives?$`, func(n int) error {
 		rows, _, err := listedUnder(w.Out.Stdout, "objectives")
@@ -237,9 +212,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// What a task serves crosses as a list, named "objectives". Read out of the
-	// JSON rather than off the card: the two readings come from one engine, and
-	// a step that checked the card twice would prove the wire nothing.
 	sc.Step(`^it says the task serves objectives (\d+) and (\d+)$`,
 		func(first, second int) error {
 			var card struct {
@@ -266,11 +238,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	// --- what it refused ------------------------------------------------------
-
 	for step, said := range map[string]string{
-		// `it says how to confirm` is not here: a task already claims it, and
-		// --yes reads the same whichever thing was about to go away.
 		`^it says there is no such objective$`:      "there is no such objective",
 		`^it says an objective needs a title$`:      "an objective needs a title",
 		`^it says a sub-task serves no objective$`:  "a sub-task serves no objective",
@@ -281,15 +249,10 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	}
 }
 
-// served writes an objective number the way a card writes it, so a step can
-// compare what it asked for against what was laid out.
 func served(number string) string {
 	return "#" + number
 }
 
-// servesExactly runs a command line and fails unless the card names exactly
-// these objectives. Exactly, and not merely among them: a set that quietly
-// kept one nobody asked for would read the same as one that did not.
 func (w *world) servesExactly(line string, numbers ...int) error {
 	w.Run(line)
 	if w.Out.Code != exitOK {
@@ -305,7 +268,6 @@ func (w *world) servesExactly(line string, numbers ...int) error {
 	return nil
 }
 
-// countedUnder counts the tasks an objective's card lists under it.
 func countedUnder(card string, want int) error {
 	_, block, found := strings.Cut(card, "\ntasks\n")
 	if !found {

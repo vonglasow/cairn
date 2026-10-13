@@ -8,7 +8,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// listOn opens the list of the field named, on a task's form.
 func listOn(t *testing.T, arg string, cards ...engine.Card) Window {
 	t.Helper()
 	w := holding(newFake(), cards...)
@@ -23,9 +22,6 @@ func listOn(t *testing.T, arg string, cards ...engine.Card) Window {
 	return w
 }
 
-// A list of four priorities is a panel of four rows, as wide as what it says
-// and hung under the field it answers, the way a field's list opens anywhere
-// else. It used to take most of the window whatever it held.
 func TestAListIsTheSizeOfWhatItHolds(t *testing.T) {
 	w := listOn(t, "priority", engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	box := w.ChoosingBox()
@@ -40,7 +36,6 @@ func TestAListIsTheSizeOfWhatItHolds(t *testing.T) {
 	if box.X != field.X || box.Y != field.Y+field.H+between {
 		t.Errorf("the list is at %d,%d; the field ends at %d,%d", box.X, box.Y, field.X, field.Y+field.H)
 	}
-	// Wide enough for every row, its heading and its offers.
 	for _, one := range w.Choosing() {
 		said := Reckoned(w.RowSays(one), reads)
 		if line := ChoosingLine(box, 0); line.W < said[len(said)-1] {
@@ -55,15 +50,11 @@ func TestAListIsTheSizeOfWhatItHolds(t *testing.T) {
 	if Heading(box).W < head[len(head)-1] {
 		t.Errorf("the heading %q needs %d and has %d", Heads(w), head[len(head)-1], Heading(box).W)
 	}
-	// Narrowed, it keeps its size: a panel jumping under the typing moves
-	// every row and offer from under the pointer.
 	if got := w.Types("hi").ChoosingBox(); got != box {
 		t.Errorf("narrowed, the list became %+v from %+v", got, box)
 	}
 }
 
-// A list longer than the window has room for stops at the panel's foot and
-// scrolls; one with nothing in it keeps a row to say so.
 func TestALongListStopsWithinTheWindow(t *testing.T) {
 	cards := []engine.Card{{Number: 1, Title: "A", State: "todo"}}
 	for i := 2; i <= 60; i++ {
@@ -83,7 +74,6 @@ func TestALongListStopsWithinTheWindow(t *testing.T) {
 	}
 }
 
-// The list of backups is as long as the backups, in the middle of the window.
 func TestTheBackupsListIsTheSizeOfTheBackups(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.screen, w.backups = OnBackups, []domain.Backup{{Number: 2}, {Number: 1}}
@@ -102,10 +92,6 @@ func TestTheBackupsListIsTheSizeOfTheBackups(t *testing.T) {
 	}
 }
 
-// A form open on a task ends a bar's height under what it holds, as a form
-// adding one does: a task of few fields sat over a floor of empty ground, its
-// offers a hand's width below its last field. The history beside it is as
-// tall as the fields, and stays inside the panel.
 func TestAnOpenFormIsTheHeightOfItsFields(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -122,9 +108,6 @@ func TestAnOpenFormIsTheHeightOfItsFields(t *testing.T) {
 	}
 }
 
-// A list with no room under its field opens above it, ending a gap over it;
-// one too tall for that too starts at the panel's top. A list wider than the
-// room right of its field ends at the panel's right edge.
 func TestAListOpensWhereItHasRoom(t *testing.T) {
 	cards := []engine.Card{{Number: 1, Title: "A", State: "todo"}}
 	for i := 2; i <= 6; i++ {
@@ -153,8 +136,6 @@ func TestAListOpensWhereItHasRoom(t *testing.T) {
 	}
 }
 
-// A row's words and the state written hard right of them have the line to
-// themselves and no more: the widest row sets the width, to the pixel.
 func TestAListIsAsWideAsItsWidestRow(t *testing.T) {
 	long := engine.Card{Number: 2, Title: strings.Repeat("a long title ", 6), State: "backlog"}
 	w := listOn(t, "parent", engine.Card{Number: 1, Title: "A", State: "todo"}, long)
@@ -170,8 +151,6 @@ func TestAListIsAsWideAsItsWidestRow(t *testing.T) {
 	}
 }
 
-// The list of backups is as wide as its longest line, a padding either side of
-// the line and either side of the row it is written in.
 func TestTheBackupsListIsAsWideAsItsLongestLine(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.screen, w.backups = OnBackups, []domain.Backup{{Number: 1234567890123}, {Number: 1}}
@@ -183,8 +162,6 @@ func TestTheBackupsListIsAsWideAsItsLongestLine(t *testing.T) {
 	}
 }
 
-// A heading is written whole: the width a panel needs for it leaves a padding
-// either side of it.
 func TestAHeadingSetsTheLeastWidthOfItsPanel(t *testing.T) {
 	w := Window{screen: OnBackups}
 	if got := Heading(Box{W: w.headWide()}).W; got != ends(Reckoned, Heads(w), heading) {
@@ -192,8 +169,6 @@ func TestAHeadingSetsTheLeastWidthOfItsPanel(t *testing.T) {
 	}
 }
 
-// What hangs from a field stays under it when it ends exactly at the panel's
-// foot, and goes above it a pixel past that.
 func TestWhatHangsFromAFieldGoesAboveOnlyWhenItMust(t *testing.T) {
 	over := Box{X: 0, Y: 0, W: 1000, H: 500}
 	field := Box{X: 100, Y: 400, W: 100, H: 20}
@@ -205,8 +180,6 @@ func TestWhatHangsFromAFieldGoesAboveOnlyWhenItMust(t *testing.T) {
 	}
 }
 
-// The bar's offers are as wide as what they say, the way a panel's are:
-// spelled for Windows, "Shift+A  Archived" ran into the "?  Help" after it.
 func TestTheBarsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.keyboard = KeyboardOf("windows")
@@ -230,7 +203,6 @@ func TestTheBarsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	if got, ok := w.offerAt(Point{X: archived.X + archived.W - 2, Y: archived.Y + archived.H/2}); !ok || got != "Archived" {
 		t.Errorf("the end of Archived answers %q, %v", got, ok)
 	}
-	// Under a panel the bar says the board's offers, laid out the same way.
 	if under := w.Edit(); len(under.barAlong(under.BoardOffers())) != len(under.BoardOffers()) {
 		t.Error("under a panel the bar lays out another number of offers")
 	}

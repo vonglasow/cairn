@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-// The rule lives here because a task and an objective are shown the same way
-// and break the same way, so its test lives here too. It moved here without
-// them once, and the mutation gate is what caught it: the two Unicode
-// separators were only ever exercised from another package, whose coverage
-// does not count for this one.
 func TestOneLine_refusesEverythingThatWouldEndTheLine(t *testing.T) {
 	for what, title := range map[string]string{
 		"a newline":             "two\nlines",
@@ -55,10 +50,6 @@ func TestOrNothing_showsAnAbsenceAsAnAbsence(t *testing.T) {
 	}
 }
 
-// What is written about a thing runs over several lines and may line things up
-// with a tab, but it is printed straight to a terminal: an escape among it is
-// an instruction to that terminal, not text \u2014 hidden text, a link that lies
-// about where it goes, a write to the clipboard.
 func TestProse_refusesWhatATerminalWouldReadAsAnInstruction(t *testing.T) {
 	for what, said := range map[string]string{
 		"an escape":              "look \x1b]52;c;aGk=\x07 here",
@@ -90,7 +81,6 @@ func TestProse_keepsLinesAndTabs(t *testing.T) {
 	}
 }
 
-// A label is shown on one line among others, so it is held to the title's rule.
 func TestParseLabels_refusesALabelThatIsNotOneLine(t *testing.T) {
 	for _, label := range []string{"two\nlines", "esc\x1b[2J", "tab\tbed"} {
 		if _, err := ParseLabels([]string{label}); !errors.Is(err, ErrLabelNotOneLine) {
@@ -102,9 +92,6 @@ func TestParseLabels_refusesALabelThatIsNotOneLine(t *testing.T) {
 	}
 }
 
-// A character that turns text around or hides in it says one thing on screen
-// and keeps another: a title shown backwards is a title somebody acts on
-// believing it says what it does not.
 func TestOneLineAndProse_refuseWhatTurnsTextAroundOrHides(t *testing.T) {
 	for what, said := range map[string]string{
 		"a right-to-left override": "pay \u202Eevil\u202C now",
@@ -121,8 +108,6 @@ func TestOneLineAndProse_refuseWhatTurnsTextAroundOrHides(t *testing.T) {
 	}
 }
 
-// What was kept before the refusals existed is shown with what a terminal
-// would obey replaced, and everything else as it was.
 func TestShown_replacesWhatATerminalWouldObey(t *testing.T) {
 	for kept, want := range map[string]string{
 		"look \x1b]52;c;aGk=\x07 here": "look \uFFFD]52;c;aGk=\uFFFD here",
@@ -136,10 +121,6 @@ func TestShown_replacesWhatATerminalWouldObey(t *testing.T) {
 	}
 }
 
-// Every character Unicode says formats text rather than shows it hides: the
-// bidirectional marks and overrides, the zero-width ones, the soft hyphen,
-// the invisible operators, and the tag characters a person cannot see and a
-// model reads. A list of the ones somebody thought of left the rest through.
 func TestHides_takesEveryFormatCharacter(t *testing.T) {
 	for r, want := range map[rune]bool{
 		'\u2029': false, '\u202A': true, '\u202E': true, '\u202F': false,

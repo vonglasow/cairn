@@ -1,16 +1,4 @@
 Feature: Tasks carried from one store to another
-  Tasks go from one store to another as a file of their own: written out by
-  `task export`, read in by `task import`. Reading one in adds the tasks it
-  holds as new tasks, numbered by the store they land in; it replaces nothing
-  and merges nothing, so the store keeps every task it had and the same file
-  read twice is read in twice. The file is JSON, in the shapes a machine
-  already reads cairn's tasks and objectives in.
-
-  What a task carries comes with it — its column, priority, labels,
-  description, deadline, estimate, what it hangs under, what is in its way,
-  the objectives it serves, whether it was archived — and points at the new
-  numbers. What was done to it does not: its trace and its time spent belong
-  to the store it was done in.
 
   Background:
     Given a store of my own, somewhere that is not the default place

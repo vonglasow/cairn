@@ -9,10 +9,6 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// How the board looks. Every style is built once, here, so a colour is chosen
-// in one place and a change is made in one place — and so that nothing at a
-// call site reaches for a colour of its own.
-
 // Skin carries every style the board draws with.
 type Skin struct {
 	palette Palette
@@ -79,13 +75,8 @@ func SkinOf(p Palette) Skin {
 	}
 }
 
-// Card is the frame one card is drawn in: rounded, faint, and carrying its
-// priority on the left edge alone.
+// Card is the frame one card is drawn in: rounded, faint, and carrying its priority on the left edge alone.
 func (l Skin) Card(width int, priority string, focused, chosen bool) lipgloss.Style {
-	// Thick rather than thin: a card is the thing the eye lands on, and a
-	// hairline round four sides of it disappears against everything else on
-	// screen. The one in focus is double, which reads as heavier still without
-	// being the same weight twice.
 	border := lipgloss.ThickBorder()
 	if focused {
 		border = lipgloss.DoubleBorder()
@@ -94,9 +85,6 @@ func (l Skin) Card(width int, priority string, focused, chosen bool) lipgloss.St
 		Border(border).
 		BorderForeground(l.palette.Line).
 		BorderLeftForeground(l.palette.Priority(priority)).
-		// Width counts the border and the padding, measured rather than
-		// assumed: given the interior alone, a card's first row wrapped onto
-		// its second and nothing lined up.
 		Width(width).
 		Padding(0, 1)
 	if chosen {
@@ -126,26 +114,24 @@ type Palette struct {
 
 // Default is the palette the board draws with.
 var Default = Palette{
-	Low:      lipgloss.Color("39"),  // a cool blue
-	Normal:   lipgloss.Color("245"), // grey
-	High:     lipgloss.Color("214"), // amber
-	Critical: lipgloss.Color("203"), // red
+	Low:      lipgloss.Color("39"),
+	Normal:   lipgloss.Color("245"),
+	High:     lipgloss.Color("214"),
+	Critical: lipgloss.Color("203"),
 	Blocked:  lipgloss.Color("203"),
 	Watching: lipgloss.Color("39"),
 	Paused:   lipgloss.Color("245"),
-	Reached:  lipgloss.Color("42"), // green
+	Reached:  lipgloss.Color("42"),
 	Late:     lipgloss.Color("203"),
 	Faint:    lipgloss.Color("245"),
 	Bright:   lipgloss.Color("252"),
 	Line:     lipgloss.Color("238"),
-	Accent:   lipgloss.Color("111"), // periwinkle
+	Accent:   lipgloss.Color("111"),
 	Stalled:  lipgloss.Color("214"),
 	Ink:      lipgloss.Color("235"),
 }
 
-// Priority answers the colour a priority is drawn in. An unknown one is drawn
-// like a normal one: a board that refused to draw a card because it did not
-// recognise a word would hide the card and the word at once.
+// Priority answers the colour a priority is drawn in.
 func (p Palette) Priority(named string) color.Color {
 	switch named {
 	case string(domain.Low):
@@ -185,7 +171,5 @@ func (p Palette) Standing(named string) color.Color {
 	}
 }
 
-// PlainSkin is a skin with no colour in it. It exists so that a scenario can
-// read what a card says rather than what it looks like: how the board is
-// dressed is checked where it is decided, against a pinned drawing.
+// PlainSkin is a skin with no colour in it.
 func PlainSkin() Skin { return Skin{palette: Default} }

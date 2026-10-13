@@ -1,11 +1,5 @@
 package engine
 
-// The migration operations: what has been done to the shape of the store,
-// what a change will do before it is made, and how to apply or roll one
-// back, described once so both surfaces build the same command from the
-// same facts. They open the store whatever shape it is in — changing that
-// shape is their job.
-
 import (
 	"errors"
 

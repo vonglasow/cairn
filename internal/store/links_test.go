@@ -7,7 +7,6 @@ import (
 	"cairn/internal/objective"
 )
 
-// counting is the store's connection, counting what it is asked.
 type counting struct {
 	runs
 	queries int
@@ -18,9 +17,6 @@ func (c *counting) Query(query string, args ...any) (*sql.Rows, error) {
 	return c.runs.Query(query, args...)
 }
 
-// A listing reads its tasks and what they carry in a handful of questions,
-// however many tasks there are. It asked three more for every task — labels,
-// blockers, objectives — so a board of two hundred was six hundred questions.
 func TestNarrowed_readsWhatTasksCarryAllAtOnce(t *testing.T) {
 	s := openStore(t)
 	for _, title := range []string{"one", "two", "three", "four", "five", "six"} {
@@ -40,7 +36,6 @@ func TestNarrowed_readsWhatTasksCarryAllAtOnce(t *testing.T) {
 	}
 }
 
-// The same for objectives: their labels are read once for the listing.
 func TestNarrowedObjectives_readsTheirLabelsAllAtOnce(t *testing.T) {
 	s := openStore(t)
 	for _, title := range []string{"one", "two", "three", "four"} {

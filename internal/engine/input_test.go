@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-// Typed words reach the engine the way the command line hands them over: a
-// list where a list is taken, a flag that carries nothing where a yes is
-// asked, and the rest as text. The terminal's prompt read every --name value
-// into the plain map, so a label given there never reached the list the
-// operation reads — and was dropped without a word.
 func TestRead_handsOverWhatWasTypedTheWayTheOperationTakesIt(t *testing.T) {
 	for _, tc := range []struct {
 		what  string
@@ -61,10 +56,6 @@ func TestRead_refusesWhatItCannotPlace(t *testing.T) {
 	}
 }
 
-// What an agent sends is read the same way: a list as the strings it holds, a
-// number as the number it is, a yes as true or false, and null as a field named
-// as nothing. A number went through fmt.Sprint, so a million arrived as
-// "1e+06" and was refused as not being one.
 func TestFromJSON_handsOverWhatWasSentTheWayTheOperationTakesIt(t *testing.T) {
 	for _, tc := range []struct {
 		what string
@@ -114,7 +105,6 @@ func TestFromJSON_refusesWhatItCannotRead(t *testing.T) {
 	}
 }
 
-// Called finds an operation by the two words a person types for it.
 func TestCalled_findsTheOperationTwoWordsName(t *testing.T) {
 	if op, found := Called("task", "show"); !found || op.Name() != TaskShow.Name() {
 		t.Errorf("Called(task, show) = %s, %v", op.Name(), found)
@@ -124,7 +114,6 @@ func TestCalled_findsTheOperationTwoWordsName(t *testing.T) {
 	}
 }
 
-// sameInput compares two inputs, an absent map and an empty one alike.
 func sameInput(a, b Input) bool {
 	norm := func(in Input) Input {
 		if in.Given == nil {

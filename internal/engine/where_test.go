@@ -10,7 +10,6 @@ import (
 	"cairn/internal/config"
 )
 
-// environment answers the way os.LookupEnv does, from a map a test owns.
 func environment(said map[string]string) func(string) (string, bool) {
 	return func(name string) (string, bool) {
 		value, ok := said[name]
@@ -18,7 +17,6 @@ func environment(said map[string]string) func(string) (string, bool) {
 	}
 }
 
-// writeConfiguration poses a configuration under home, the way a person would.
 func writeConfiguration(t *testing.T, home, content string) string {
 	t.Helper()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -32,10 +30,6 @@ func writeConfiguration(t *testing.T, home, content string) string {
 	return path
 }
 
-// With no home to put the default under and nothing naming the notes, the
-// notes are left unsaid rather than sent somewhere relative to wherever the
-// command ran; the store, named by the environment, is still found. Named by
-// the environment, they are said whatever the home.
 func TestLocate_leavesTheNotesUnsaidWithNoHomeToPutThemUnder(t *testing.T) {
 	store := filepath.Join(t.TempDir(), "cairn.db")
 	nowhere := errors.New("no home")
@@ -59,8 +53,6 @@ func TestLocate_leavesTheNotesUnsaidWithNoHomeToPutThemUnder(t *testing.T) {
 	}
 }
 
-// No home and no store named by the environment leaves nowhere to put the
-// store: that is the store being unusable, not the request being wrong.
 func TestLocate_refusesAStoreWithNowhereToGo(t *testing.T) {
 	nowhere := errors.New("no home")
 	_, err := Locate(Home{Missing: nowhere, Lookup: environment(nil)})
@@ -69,8 +61,6 @@ func TestLocate_refusesAStoreWithNowhereToGo(t *testing.T) {
 	}
 }
 
-// What a person wrote wrong is theirs to fix and passes through as it is;
-// anything else about reading the file is the store being unusable.
 func TestLocate_passesAMistakeInTheFileThrough(t *testing.T) {
 	home := t.TempDir()
 	writeConfiguration(t, home, "this is not toml: [[[\n")
@@ -107,8 +97,6 @@ func TestLocate_findsBothPlacesTheFileNames(t *testing.T) {
 	}
 }
 
-// config show is answered by the engine whichever surface asks: it used to be
-// read by the command line alone, so the server answered an empty object.
 func TestDoFrom_showsTheConfigurationItReads(t *testing.T) {
 	home := t.TempDir()
 	path := writeConfiguration(t, home, "store = \"/tmp/somewhere/cairn.db\"\n")
@@ -129,8 +117,6 @@ func TestDoFrom_showsTheConfigurationItReads(t *testing.T) {
 	}
 }
 
-// Showing the configuration stays reachable exactly when every other command
-// refuses it.
 func TestDoFrom_showsAConfigurationEveryOtherCommandRefuses(t *testing.T) {
 	home := t.TempDir()
 	writeConfiguration(t, home, "this is not toml: [[[\n")
@@ -146,8 +132,6 @@ func TestDoFrom_showsAConfigurationEveryOtherCommandRefuses(t *testing.T) {
 	}
 }
 
-// A request that is not understood is refused before anything is located,
-// the way DoAt refuses before anything is opened.
 func TestDoFrom_refusesBeforeLocating(t *testing.T) {
 	home := t.TempDir()
 	writeConfiguration(t, home, "this is not toml: [[[\n")
@@ -158,8 +142,6 @@ func TestDoFrom_refusesBeforeLocating(t *testing.T) {
 	}
 }
 
-// A board holds an engine and asks it; config show asked that way reads the
-// same file a command line would.
 func TestHold_answersConfigShowFromTheHomeItWasOpenedAt(t *testing.T) {
 	home := t.TempDir()
 	path := writeConfiguration(t, home, "store = \"~/cairn.db\"\n")
@@ -177,8 +159,6 @@ func TestHold_answersConfigShowFromTheHomeItWasOpenedAt(t *testing.T) {
 	}
 }
 
-// Holding a store behind this cairn says what to type about it, as an
-// operation does: one sentence, written once.
 func TestHold_saysWhatToTypeAboutAStoreBehind(t *testing.T) {
 	home := t.TempDir()
 	path := behindStore(t)
@@ -188,8 +168,6 @@ func TestHold_saysWhatToTypeAboutAStoreBehind(t *testing.T) {
 	}
 }
 
-// The text of config show is the engine's to write, so the server's text and
-// the command line's are one rendering.
 func TestRenderText_padsBothPlacesToTheLongerOfThem(t *testing.T) {
 	for _, tc := range []struct {
 		what         string

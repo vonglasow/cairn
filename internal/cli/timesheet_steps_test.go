@@ -1,7 +1,5 @@
 package cli
 
-// Steps observed only by bdd/timesheet.feature.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -14,8 +12,6 @@ import (
 	"cairn/test"
 )
 
-// dayBlock is the lines a timesheet writes under one day, the day's own line
-// excluded; nothing when the day is not written at all.
 func (w *world) dayBlock(day string) []string {
 	var block []string
 	in := false
@@ -34,12 +30,9 @@ func (w *world) dayBlock(day string) []string {
 	return block
 }
 
-// registerTimesheet declares the steps only bdd/timesheet.feature uses.
 func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	sc.Step("^I ran `([^`]*)`$", func(line string) error { return w.Seed(line) })
 
-	// A task's line reads its number, then its time, then its title: the time
-	// comes before the title so a title holding "1h" cannot be read as one.
 	sc.Step(`^the day "([^"]*)" gives task (\d+) "([^"]*)"$`, func(day string, n int, want string) error {
 		for _, l := range w.dayBlock(day) {
 			fields := strings.Fields(l)
@@ -53,7 +46,6 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the day %s says nothing of task %d:\n%s", day, n, w.Out.Stdout)
 	})
 
-	// A day nothing was done on is not written at all, and comes to nothing.
 	sc.Step(`^the day "([^"]*)" comes to "([^"]*)"$`, func(day, want string) error {
 		block := w.dayBlock(day)
 		if len(block) == 0 {
@@ -74,8 +66,6 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^it says today$`, func() error {
-		// Today as the command saw it, which midnight may have just turned
-		// into yesterday as this step sees it.
 		if was := domain.FormatDay(time.Now().Add(-time.Minute)); strings.Contains(w.Out.Stdout, was) {
 			return nil
 		}

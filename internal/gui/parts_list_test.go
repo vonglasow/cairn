@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// onTheList is task 1 opened with the parts named hanging under it, the
-// keyboard on its list of parts, in a window of the height given.
 func onTheList(t *testing.T, high int, titles ...string) Window {
 	t.Helper()
 	cards := []engine.Card{card(1, "Ship it", "todo")}
@@ -23,8 +21,6 @@ func onTheList(t *testing.T, high int, titles ...string) Window {
 	return w
 }
 
-// The arrows stop at the line that adds, and up from the first part leaves
-// for the field before; staying on the list, the keyboard keeps its line.
 func TestTheArrowsStopAtBothEndsOfTheList(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
 	for range 5 {
@@ -50,8 +46,6 @@ func TestTheArrowsStopAtBothEndsOfTheList(t *testing.T) {
 	}
 }
 
-// Space and backspace do nothing on the line that adds; a part struck out is
-// not ticked; a part never saved is taken away rather than struck out.
 func TestTickingAndStrikingKnowWhatTheyAreOn(t *testing.T) {
 	w := onTheList(t, 800, "A")
 	adding := w.Key("down")
@@ -72,8 +66,6 @@ func TestTickingAndStrikingKnowWhatTheyAreOn(t *testing.T) {
 	}
 }
 
-// Once a part is added, the next is waiting on the line that adds; esc puts
-// down what is being written, and leaves the form open.
 func TestTheNextPartIsWaiting(t *testing.T) {
 	w := onTheList(t, 800, "A").Key("down").Key("enter").Types("B").Key("enter")
 	if !w.form.writingPart || w.form.partAt != w.form.lines()-1 || w.form.named.Reads() != "" {
@@ -84,7 +76,6 @@ func TestTheNextPartIsWaiting(t *testing.T) {
 	}
 }
 
-// A part carried past the last lands last, and only a part is carried.
 func TestAPartIsCarriedNoFurtherThanTheList(t *testing.T) {
 	f := onTheList(t, 800, "A", "B", "C").form
 	if got := f.carrying(0, 99).parts(); got[2].Title != "A" {
@@ -95,8 +86,6 @@ func TestAPartIsCarriedNoFurtherThanTheList(t *testing.T) {
 	}
 }
 
-// A click on a part's box ticks it, on the rest of its tile chooses it, and
-// on the line that adds begins a new part — wherever the list is scrolled to.
 func TestAClickOnTheListDoesWhatItLandsOn(t *testing.T) {
 	titles := make([]string, 12)
 	for i := range titles {
@@ -135,8 +124,6 @@ func TestAClickOnTheListDoesWhatItLandsOn(t *testing.T) {
 	}
 }
 
-// The list shows the line the keyboard is on, and starts as far up as it can
-// while it does.
 func TestTheListFollowsTheKeyboard(t *testing.T) {
 	titles := make([]string, 12)
 	for i := range titles {
@@ -170,8 +157,6 @@ func TestTheListFollowsTheKeyboard(t *testing.T) {
 	}
 }
 
-// The tiles of a list scrolled down start with the first in sight, at the
-// top of the frame.
 func TestTicksStartFromTheFirstInSight(t *testing.T) {
 	frame := Box{X: 100, Y: 200, W: 400, H: 8 + 12*lineHigh}
 	tiles, _ := TickedPlaces(frame, 5, 2)
@@ -180,9 +165,6 @@ func TestTicksStartFromTheFirstInSight(t *testing.T) {
 	}
 }
 
-// The line the keyboard is on is outlined, and no other; the line that adds
-// is lit while the keyboard is on it; a line being written shows what is
-// written; a part struck out is drawn faint.
 func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
 	lit := Dark().Chosen
@@ -217,8 +199,6 @@ func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 	}
 }
 
-// A part in hand is drawn under the pointer only once it has moved past the
-// grip, and lands above a part when carried up, below one when carried down.
 func TestAPartInHandSaysWhereItLands(t *testing.T) {
 	w := onTheList(t, 800, "A", "B", "C")
 	tiles := w.partTiles()
@@ -249,16 +229,12 @@ func TestAPartInHandSaysWhereItLands(t *testing.T) {
 	if ghost, _ := down.PartGhost(); painted(shot, ghost, Dark().Ghost) == 0 {
 		t.Error("the part in hand is not drawn")
 	}
-	// Held right over where it would land, the line is still drawn: over the
-	// part in hand, not under it.
 	over := pressed.MoveTo(Point{X: middle(tiles[2]).X, Y: tiles[2].Y + tiles[2].H - 2})
 	if line, _ := over.PartLanding(); painted(drawn(t, over), line, Dark().Chosen) < line.W*line.H/2 {
 		t.Error("where it would land is hidden under the part in hand")
 	}
 }
 
-// A tick is said to the engine at once; refused, the box stays as it was and
-// the refusal is said.
 func TestATickIsDoneAtOnceOrNotAtAll(t *testing.T) {
 	w := onTheList(t, 800, "A")
 	f := w.work.(*fake)
@@ -277,8 +253,6 @@ func TestATickIsDoneAtOnceOrNotAtAll(t *testing.T) {
 	}
 }
 
-// Held over the line that adds, a part would land at the end of the list; held
-// over its own tile, where it was; and the line that adds is never in hand.
 func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
 	tiles := w.partTiles()
@@ -301,8 +275,6 @@ func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	}
 }
 
-// In a list scrolled down, a part lands by the tile drawn under the pointer,
-// not by the one that would be there unscrolled.
 func TestAPartLandsInAScrolledList(t *testing.T) {
 	titles := make([]string, 12)
 	for i := range titles {
@@ -322,9 +294,6 @@ func TestAPartLandsInAScrolledList(t *testing.T) {
 	}
 }
 
-// The wheel over the parts moves them, between their two ends, wherever the
-// keyboard is; the arrows on the list then bring the line they reach back in
-// sight.
 func TestTheWheelScrollsTheParts(t *testing.T) {
 	titles := make([]string, 12)
 	for i := range titles {
@@ -361,9 +330,6 @@ func TestTheWheelScrollsTheParts(t *testing.T) {
 	}
 }
 
-// The list moves exactly as far as the keyboard needs and the wheel asks: a
-// line further down shows from one further only once it would be out of
-// sight; the line that adds shows the end; two half notches are one.
 func TestTheListMovesExactlyAsFarAsAsked(t *testing.T) {
 	titles := make([]string, 12)
 	for i := range titles {

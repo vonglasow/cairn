@@ -13,42 +13,19 @@ import (
 	"cairn/internal/objective"
 )
 
-// The two screens that take the whole window without taking a form with them:
-// the help, and a task's detail. Each hands the window back untouched, so what
-// was on the board before is what is on it after.
-//
-// Both are built out of panels rather than out of headings and rules. A heading
-// over a rule is what a terminal does when nobody has decided anything; a panel
-// says where a thing begins and where it ends, and lets two of them sit side by
-// side without either being read into the other.
-
-// panel puts a titled box round something, of a given width. The title is
-// dressed here when it is a plain word, and handed over already dressed when it
-// is more than one thing — which is why it is not styled again.
 func (b Board) panel(title, body string, width int) string {
 	return b.skin.Panel.Width(width).Render(title + "\n" + body)
 }
 
-// named is a panel whose title is one word.
 func (b Board) named(title, body string, width int) string {
 	return b.panel(b.skin.Title.Render(title), body, width)
 }
 
-// drawHelp is the keys on the left and the legend on the right. It is
-// contextual, like the bar it explains: the keys shown are the ones that work
-// on the tab it was asked from, and a help listing keys that do nothing here is
-// a help that has to be second-guessed.
 func (b Board) drawHelp() string {
 	half := (b.width - margin - margin - 3) / 2
 	keys := b.named("KEYS", strings.Join(b.helpKeys(), "\n"), half)
 	legend := b.named("LEGEND", strings.Join(b.legend(), "\n"), half)
 	both := lipgloss.JoinHorizontal(lipgloss.Top, keys, " ", legend)
-	// Behind a window like everything else: the legend is longer than a short
-	// terminal, and help that pushed the way out of it off the bottom would be
-	// help nobody could leave.
-	//
-	// The window is exactly as wide as the two panels it holds. Wider and it
-	// would cut nothing, which means a width worked out wrong would never show.
 	rows := max(1, b.height-4)
 	return strings.Join([]string{
 		b.tabs(), "",
@@ -57,17 +34,14 @@ func (b Board) drawHelp() string {
 	}, "\n")
 }
 
-// group is a heading inside a panel, with its lines under it.
 func (b Board) group(name string, lines ...string) []string {
 	return append([]string{"", b.skin.Head.Render(name)}, lines...)
 }
 
-// says writes one key and what it does, lined up.
 func (b Board) says(key, does string) string {
 	return "  " + b.skin.Key.Render(pad(key, 12)) + b.skin.Says.Render(does)
 }
 
-// helpKeys is what can be pressed, grouped by mode.
 func (b Board) helpKeys() []string {
 	if b.tab == Objectives {
 		return b.group("NORMAL — the cursor on an objective",
@@ -119,7 +93,6 @@ func (b Board) helpKeys() []string {
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)
 }
 
-// legend is what the marks on a card mean.
 func (b Board) legend() []string {
 	g, p := b.glyphs, b.skin.palette
 	swatch := func(c any, name string) string {
@@ -160,10 +133,6 @@ func (b Board) legend() []string {
 	)...)
 }
 
-// drawDetail is one task, whole: the short facts in a band, and the lists in
-// panels underneath. A fact that is empty is not drawn — the opposite of a
-// card, where an absence keeps its line to hold the height, because a full
-// screen has no such constraint.
 func (b Board) drawDetail() string {
 	held, ok := b.held()
 	if !ok {
@@ -185,8 +154,6 @@ func (b Board) drawDetail() string {
 	}, "\n")
 }
 
-// detailOffers is the detail's bar. ^D and ^U are on it only when there is a
-// description for them to walk: a key on the bar does something here.
 func (b Board) detailOffers(c engine.Card) []string {
 	offers := []string{b.offer("hjkl ←↓↑→", "navigate"), b.offer("e", "edit"), b.offer("f", "focus")}
 	if c.Description != "" {
@@ -195,8 +162,6 @@ func (b Board) detailOffers(c engine.Card) []string {
 	return append(offers, b.offer("?", "help"), b.offer("esc", "back"))
 }
 
-// detailLeft is what stacks down the left of the detail: what was written about
-// the task, and what hangs under it.
 func (b Board) detailLeft(c engine.Card, width int) []string {
 	under := b.detailLeftUnder(c, width)
 	var out []string
@@ -213,32 +178,19 @@ func (b Board) detailLeft(c engine.Card, width int) []string {
 	return out
 }
 
-// describing is the room a description's panel keeps for itself across: its
-// border and padding, and the bar with the space before it.
 const describing = 6
 
-// aroundTheDetail is the rows the detail takes for everything but its panels:
-// the tabs, the band of short facts, the bar, and the space between them.
 const aroundTheDetail = 7
 
-// saidOn is the description of an open task laid out on its panel's width, and
-// how many of its lines that panel shows: what the screen has left once the
-// panels under it have taken theirs, and three at the least.
-//
-// It used to be drawn whole, and a long one ran off the bottom of the terminal
-// with everything under it.
 func (b Board) saidOn(c engine.Card, width int, under []string) ([]string, int) {
 	taken := 0
 	for _, panel := range under {
 		taken += lipgloss.Height(panel)
 	}
-	// Its own border, top and bottom, and the line its name is on.
 	rows := max(3, b.height-aroundTheDetail-taken-3)
 	return Paragraphs(c.Description, width-describing), rows
 }
 
-// scrolledSaying is where the description of this task is scrolled to, kept
-// between its two ends. Another task's scroll is not this one's.
 func (b Board) scrolledSaying(c engine.Card, lines []string, rows int) int {
 	if b.sayingOf != c.Number {
 		return 0
@@ -246,8 +198,6 @@ func (b Board) scrolledSaying(c engine.Card, lines []string, rows int) int {
 	return min(max(0, len(lines)-rows), max(0, b.saying))
 }
 
-// scrollingSaying moves the description of the open task by half its box,
-// the way ^D and ^U move a page in the grammar this board borrows.
 func (b Board) scrollingSaying(down bool) Board {
 	c, ok := b.held()
 	if !ok || c.Description == "" {
@@ -264,12 +214,8 @@ func (b Board) scrollingSaying(down bool) Board {
 	return b
 }
 
-// detailWidth is how wide the left of the detail is: three fifths of what the
-// margins leave, less the space between it and the history.
 func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
 
-// detailLeftUnder is the panels under the description, measured to know how
-// much room is left for it.
 func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 	var under []string
 	if rows := b.subTasks(c, width-4); len(rows) > 0 {
@@ -278,15 +224,12 @@ func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 	if len(c.Objectives) > 0 {
 		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
 	}
-	// Where what was written about it elsewhere lives: a place to go and write,
-	// said whether or not anything is there yet. See docs/context.md.
 	if c.Context != "" {
 		under = append(under, b.named("CONTEXT", b.skin.Faint.Render(c.Context), width))
 	}
 	return under
 }
 
-// detailBand is the short facts, on two rows above the panels.
 func (b Board) detailBand(c engine.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
@@ -299,8 +242,6 @@ func (b Board) detailBand(c engine.Card) string {
 	for _, label := range c.Labels {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
-	// The day stays once the task is done — it is a fact about the task — and
-	// only its count goes: see engine.CardDeadline.
 	if day := domain.FormatDay(c.Deadline); day != "" {
 		text, show, late := engine.CardDeadline(c, b.now())
 		style := b.skin.Bright
@@ -328,13 +269,8 @@ func (b Board) detailBand(c engine.Card) string {
 	return first + "\n " + strings.Join(told, "   ")
 }
 
-// subTasks is what hangs under a task, each with where it stands.
 func (b Board) subTasks(c engine.Card, width int) []string {
 	var out []string
-	// What is left first, and a box before each, the marks the form's own
-	// field writes: what is left in the reading ink, what is done faint and
-	// struck through. The difference used to be the brightness of the ink, the
-	// other way round, and a part to do read as one finished with.
 	for _, part := range engine.Hanging(b.snap.Cards, c.Number) {
 		box, name := "[ ]", b.skin.Bright.Render(part.Title)
 		if engine.Finished(part) {
@@ -345,12 +281,10 @@ func (b Board) subTasks(c engine.Card, width int) []string {
 	return out
 }
 
-// partsHead is the panel's name, and how many of its parts are left and done.
 func (b Board) partsHead(c engine.Card) string {
 	return "SUB-TASKS   " + engine.Tallied(engine.Hanging(b.snap.Cards, c.Number))
 }
 
-// serves is the objectives a task counts towards.
 func (b Board) serves(c engine.Card, width int) string {
 	var out []string
 	for _, g := range b.snap.Served(c) {
@@ -362,13 +296,6 @@ func (b Board) serves(c engine.Card, width int) string {
 	return strings.Join(out, "\n")
 }
 
-// history is every act performed on a task, newest last, behind a window of its
-// own so a long life does not push everything else off the screen. It is drawn
-// from what was heard when the task opened — see hearing.
-//
-// This is the one place the trace is laid out beside the task it belongs to.
-// `:trace show 14` prints the same history the way the command line prints it,
-// and neither is the other's shortcut.
 func (b Board) history(number, width, rows int) []string {
 	if b.heard.Number != number {
 		return nil
@@ -385,15 +312,10 @@ func (b Board) history(number, width, rows int) []string {
 	}
 	pane := viewport.New(viewport.WithWidth(width), viewport.WithHeight(min(rows, len(drawn))))
 	pane.SetContent(strings.Join(drawn, "\n"))
-	// A history is read from its end: what happened last is what somebody came
-	// to see. Asked for by name rather than worked out, so there is no sum to
-	// get wrong.
 	pane.GotoBottom()
 	return strings.Split(pane.View(), "\n")
 }
 
-// hearing reads the history of a task, to be drawn from until it is read
-// again.
 func (b Board) hearing(number int) tea.Cmd {
 	return func() tea.Msg {
 		shown, err := b.work.Ask(engine.TraceShow, engine.Numbered(number))
@@ -401,7 +323,6 @@ func (b Board) hearing(number int) tea.Cmd {
 	}
 }
 
-// pad puts a string in a fixed width, so a column of names lines up.
 func pad(s string, width int) string {
 	return s + strings.Repeat(" ", max(0, width-lipgloss.Width(s)))
 }

@@ -1,10 +1,5 @@
 package mcp
 
-// Plumbing tests for handlerFor: they prove the handler a tool is offered
-// with really reaches engine.Do, and nothing more — what a call answers, how
-// a refusal comes back, and what happens when the store is behind are
-// bdd/mcp.feature's next rule, not this file's.
-
 import (
 	"context"
 	"fmt"
@@ -24,9 +19,6 @@ import (
 	"cairn/internal/task"
 )
 
-// taskFacts is a task's membrane for what a test needs to read back off it.
-// A local helper, not a second way to build a task: it never builds one, it
-// only reads what Tell says.
 type taskFacts struct {
 	title string
 }
@@ -59,16 +51,12 @@ func (f *taskFacts) Serves(int)              {}
 func (f *taskFacts) ServesNothing()          {}
 func (f *taskFacts) ObjectivesTold()         {}
 
-// factsOf reads back what a test needs from a task.
 func factsOf(t task.Task) taskFacts {
 	var f taskFacts
 	t.Tell(&f)
 	return f
 }
 
-// storeAt gives a path to a real, up-to-date store, closed — the same shape
-// internal/action's own storeAt gives, since this package needs the same
-// thing to prove handlerFor reaches engine.Do at all.
 func storeAt(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn.db")
@@ -82,8 +70,6 @@ func storeAt(t *testing.T) string {
 	return path
 }
 
-// homeFor is a home of this test's own whose environment names the store at
-// path — the way a server is started with CAIRN_STORE set.
 func homeFor(t *testing.T, path string) engine.Home {
 	t.Helper()
 	dir := t.TempDir()
@@ -95,9 +81,6 @@ func homeFor(t *testing.T, path string) engine.Home {
 	}}
 }
 
-// config_show is answered by the engine, so an agent is told the file a
-// person would be told, in both renderings. It used to be read by the command
-// line alone, and an agent was answered an object with every field empty.
 func TestHandlerFor_showsTheConfigurationToAnAgent(t *testing.T) {
 	home := homeFor(t, storeAt(t))
 	dir := filepath.Join(home.Dir, ".config", "cairn")
@@ -123,9 +106,6 @@ func TestHandlerFor_showsTheConfigurationToAnAgent(t *testing.T) {
 	}
 }
 
-// A number is read as the number it is. It went through fmt.Sprint on a
-// float, so a million arrived as "1e+06" and was refused as not a number —
-// rather than answered as a task nobody numbered that high.
 func TestHandlerFor_readsALargeNumberAsTheNumberItIs(t *testing.T) {
 	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
 	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 1000000}`)}})
@@ -161,13 +141,6 @@ func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
 	handle := handlerFor(engine.TaskNew, homeFor(t, path))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}}
 
-	// Empty arguments must reach engine.Do as nothing named, and come back as
-	// an answer marked IsError, not a protocol error: a refusal is something
-	// cairn understood and turned down, and the agent has to be able to read
-	// it as one. "title" is required and was never named, which is now
-	// engine.Operation.Check's own refusal rather than the empty-title one
-	// domain raises once Run is reached — the same call is still refused, and
-	// the reason still names what was missing.
 	res, err := handle(context.Background(), req)
 	if err != nil {
 		t.Fatalf("handle = %v, want the refusal answered rather than returned as an error", err)
@@ -187,10 +160,6 @@ func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 	refusedAsNotUnderstood(t, handle, req, "")
 }
 
-// TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne pins the decision
-// this slice made for {"label": "spec"} instead of {"label": ["spec"]}: a
-// bare string is not the one-element list it might have meant, so it is
-// refused by name rather than guessed at.
 func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
@@ -199,9 +168,6 @@ func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
 	refusedAsNotUnderstood(t, handle, req, `"label"`)
 }
 
-// TestHandlerFor_refusesAListElementThatIsNotAString pins the decision this
-// slice made for {"label": [1, true]}: an element that is not a string is
-// refused by name rather than turned into one.
 func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
 	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
@@ -210,10 +176,6 @@ func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
 	refusedAsNotUnderstood(t, handle, req, `"label"`)
 }
 
-// refusedAsNotUnderstood calls a tool with arguments it cannot read, and fails
-// unless the answer is a refusal like any other — IsError, the reason as text
-// naming what it could not read, and its kind under _meta — rather than a
-// call that failed: an agent branches on one shape for every refusal.
 func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallToolRequest, naming string) {
 	t.Helper()
 	result, err := handle(context.Background(), req)
@@ -228,12 +190,6 @@ func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallT
 	}
 }
 
-// TestHandlerFor_emptiesAListNamedAsNull proves JSON null empties a Kind:
-// List argument the same way it empties any other kind: a name present and
-// holding nothing, not the same request as leaving it out. The label is
-// seeded through engine.Do directly, not through the handler under test, so
-// the precondition and the assertion do not travel the same path and cancel
-// out.
 func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	path := storeAt(t)
 	added, err := engine.Do(engine.TaskNew, path, engine.Input{
@@ -262,7 +218,6 @@ func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
 	}
 }
 
-// The shape a tool says its answer takes, from what the operation declared.
 func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
 	one := answerSchemaFor(engine.Operation{Answers: engine.Deleted{}})
 	shape, ok := one.(*jsonschema.Schema)
@@ -280,10 +235,6 @@ func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
 	}
 }
 
-// A listing describes an object naming what it carries, and the fields it
-// knows besides its rows. Pinned here and not only in the scenario: this is the
-// shape a client validates against, and the scenario reads the description
-// through a running server while this reads it off the type.
 func TestAnswerSchemaFor_namesWhatAListingCarriesBesidesItsRows(t *testing.T) {
 	listing := answerSchemaFor(engine.Operation{Answers: engine.Tasks{}})
 	shape, ok := listing.(*jsonschema.Schema)
@@ -300,18 +251,12 @@ func TestAnswerSchemaFor_namesWhatAListingCarriesBesidesItsRows(t *testing.T) {
 	}
 }
 
-// An operation that declares nothing describes nothing, rather than describing
-// something empty a client would try to hold its answer to.
 func TestAnswerSchemaFor_describesNothingWhenNothingWasDeclared(t *testing.T) {
 	if got := answerSchemaFor(engine.Operation{}); got != nil {
 		t.Errorf("answerSchemaFor = %v, want nothing described", got)
 	}
 }
 
-// Every tool offered carries the shape of its answer. Asserted here as well as
-// in the scenarios: a scenario runs the server, and this runs the description on
-// its own, so a tool that stopped describing itself fails in the package that
-// builds it.
 func TestToolFor_everyToolCarriesTheShapeOfItsAnswer(t *testing.T) {
 	silent := []string{}
 	for _, op := range engine.All() {
@@ -324,10 +269,6 @@ func TestToolFor_everyToolCarriesTheShapeOfItsAnswer(t *testing.T) {
 	}
 }
 
-// A shape that cannot be read off its type describes nothing rather than
-// stopping the server: a tool nobody can describe is better than a server that
-// will not start, and it is a programming mistake rather than something a caller
-// did.
 func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
 	if got := answerSchemaFor(engine.Operation{
 		Answers: make(chan int),
@@ -336,9 +277,6 @@ func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
 	}
 }
 
-// What a client is told a call costs: whether it only looks, whether calling it
-// twice does more than calling it once, and whether it can replace what was
-// written — an edit empties a description as surely as a deletion does.
 func TestToolFor_saysWhatACallCosts(t *testing.T) {
 	for _, c := range []struct {
 		op                    engine.Operation
@@ -365,8 +303,6 @@ func TestToolFor_saysWhatACallCosts(t *testing.T) {
 	}
 }
 
-// A client reads the schema before it calls: a name the operation does not
-// take, or a list holding something other than words, is refused there.
 func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
 	schema := schemaFor(engine.TaskNew)
 	if schema["additionalProperties"] != false {
@@ -378,8 +314,6 @@ func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
 	}
 }
 
-// A refusal carries what kind it is and which, so an agent branches on words
-// that do not change when the sentence is reworded.
 func TestHandlerFor_answersARefusalWithItsKindAndReason(t *testing.T) {
 	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
 	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 4}`)}})
@@ -395,7 +329,6 @@ func TestHandlerFor_answersARefusalWithItsKindAndReason(t *testing.T) {
 	}
 }
 
-// A call the client gave up on before it ran is not run.
 func TestHandlerFor_runsNothingTheClientGaveUpOn(t *testing.T) {
 	path := storeAt(t)
 	handle := handlerFor(engine.TaskNew, homeFor(t, path))
