@@ -474,10 +474,12 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 	if chosen {
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
-	if eye, ok := FocusEye(c, parts.Number); ok {
+	measuring := gtx
+	measuring.Constraints.Min = image.Point{}
+	if eye, ok := FocusEye(c, parts.Number, wide(measuring, th, Numbered(c), small).Size.X); ok {
 		drawEye(gtx, eye, skin.Chosen)
 	}
-	say(gtx, th, skin.Faint, NumberText(c, parts.Number), Numbered(c), small)
+	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
 	if said := Carried(c, Marks()); said != "" {
 		say(gtx, th, skin.Faint, CountedAt(parts.Number, said), said, small)
 	}

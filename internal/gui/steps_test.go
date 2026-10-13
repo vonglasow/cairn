@@ -2372,7 +2372,7 @@ func (w *world) cardSaysInFocus(title string) error {
 	if !c.InFocus {
 		return fmt.Errorf("%q does not say it is being worked on", title)
 	}
-	if _, eye := FocusEye(c, Box{W: 200, H: lineHigh}); !eye {
+	if _, eye := FocusEye(c, Box{W: 200, H: lineHigh}, 20); !eye {
 		return fmt.Errorf("the card for %q draws no eye, and says nothing about being worked on", title)
 	}
 	return nil

@@ -53,21 +53,12 @@ const (
 	eyeSpace = 5
 )
 
-// FocusEye is where a card's eye is drawn in its number line, and whether it has one: only a card in focus does.
-func FocusEye(c engine.Card, number Box) (Box, bool) {
+// FocusEye is where the eye of a card in focus is drawn: after its number, on the number line.
+func FocusEye(c engine.Card, number Box, numberWide int) (Box, bool) {
 	if !c.InFocus {
 		return Box{}, false
 	}
-	return Box{X: number.X, Y: number.Y + (number.H-eyeHigh)/2, W: eyeWide, H: eyeHigh}, true
-}
-
-// NumberText is where a card's number is written: along the number line, or after the eye when there is one.
-func NumberText(c engine.Card, number Box) Box {
-	if _, ok := FocusEye(c, number); !ok {
-		return number
-	}
-	moved := eyeWide + eyeSpace
-	return Box{X: number.X + moved, Y: number.Y, W: number.W - moved, H: number.H}
+	return Box{X: number.X + numberWide + eyeSpace, Y: number.Y + (number.H-eyeHigh)/2, W: eyeWide, H: eyeHigh}, true
 }
 
 // Numbered is a card's number line: its number.
