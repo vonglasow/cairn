@@ -253,23 +253,23 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		drawMonth(gtx, th, skin, l, w)
 		return
 	}
-	longest := w.longest()
+	longest := w.sheet.Longest()
 	for i := range 7 {
 		box := WeekDayAt(l, i)
 		day := w.week.AddDate(0, 0, i)
 		fill(gtx, box, skin.Panel)
-		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+DaySays(w.timeOn(i)), reads)
+		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+w.sheet.On(w.week.AddDate(0, 0, i)).Says(), reads)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
-			say(gtx, th, skin.Ink, Box{X: row.X, Y: row.Y, W: row.W, H: lineHigh}, TaskTimeSays(one), reads)
+			say(gtx, th, skin.Ink, Box{X: row.X, Y: row.Y, W: row.W, H: lineHigh}, one.Says(), reads)
 			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
 		}
 		clipped.Pop()
 		// A day holding more than it shows says so, with a bar beside it.
-		if track, more := DayTrack(box, len(w.timeOn(i).Tasks)); more {
+		if track, more := DayTrack(box, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks)); more {
 			fill(gtx, track, skin.Back)
-			fill(gtx, Thumb(track, len(w.timeOn(i).Tasks), DayRoom(box), w.DayFrom(i)), skin.Edge)
+			fill(gtx, Thumb(track, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks), DayRoom(box), w.DayFrom(i)), skin.Edge)
 		}
 	}
 }
@@ -280,7 +280,7 @@ func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	for i, name := range Weekdays {
 		say(gtx, th, skin.Faint, MonthWeekdayAt(l, i), name, reads)
 	}
-	for i, day := range MonthGrid(w.week) {
+	for i, day := range engine.MonthGrid(w.week) {
 		cell := MonthCellAt(l, i)
 		fill(gtx, cell, skin.Panel)
 		if day.Equal(w.today()) {
@@ -336,7 +336,7 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		say(gtx, th, skin.Faint, WeekdayAt(box, i), name, reads)
 	}
 	today := w.today()
-	for i, day := range MonthGrid(w.day) {
+	for i, day := range engine.MonthGrid(w.day) {
 		at := DayAt(box, i)
 		if day.Equal(today) {
 			fill(gtx, at, skin.Back)

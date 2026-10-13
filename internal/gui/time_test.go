@@ -121,7 +121,7 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 		t.Fatalf("m shows %v, monthly %v", month.MonthShown(), month.Monthly())
 	}
 	in, _ := f.gave("timesheet", "show")
-	grid := MonthGrid(dayNamed("2026-10-01"))
+	grid := engine.MonthGrid(dayNamed("2026-10-01"))
 	if in.Given["since"] != domain.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
@@ -179,10 +179,10 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 // there are on the last line when they do not all fit.
 func TestADayOfAMonthSaysHowManyMore(t *testing.T) {
 	five := many("2026-10-01", 5).Tasks
-	if got := CellLines(five, 5); len(got) != 5 || got[4] != TaskTimeSays(five[4]) {
+	if got := CellLines(five, 5); len(got) != 5 || got[4] != five[4].Says() {
 		t.Errorf("five in room for five read %q", got)
 	}
-	if got := CellLines(five, 3); !slices.Equal(got, []string{TaskTimeSays(five[0]), TaskTimeSays(five[1]), "+3 more"}) {
+	if got := CellLines(five, 3); !slices.Equal(got, []string{five[0].Says(), five[1].Says(), "+3 more"}) {
 		t.Errorf("five in room for three read %q", got)
 	}
 	if got := CellLines(five[:2], 1); !slices.Equal(got, []string{"+2 more"}) {
@@ -192,7 +192,7 @@ func TestADayOfAMonthSaysHowManyMore(t *testing.T) {
 		t.Errorf("nothing reads %q", got)
 	}
 	w := Window{tab: Time, width: 1200, height: 800, timeState: timeState{monthly: true, week: dayNamed("2026-10-01"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{many("2026-10-01", 2)}}}}
-	at := slices.IndexFunc(MonthGrid(w.week), func(d time.Time) bool { return d.Day() == 1 })
+	at := slices.IndexFunc(engine.MonthGrid(w.week), func(d time.Time) bool { return d.Day() == 1 })
 	if got := w.MonthDay(at); got.Day != "2026-10-01" || len(got.Tasks) != 2 {
 		t.Errorf("the 1st reads %+v", got)
 	}
@@ -229,7 +229,7 @@ func TestTheRangeShownAndTodayAreOutlined(t *testing.T) {
 	if !outlined(m, TimeChip(l, "Month")) || outlined(m, TimeChip(l, "Week")) {
 		t.Error("a month shown does not outline Month alone")
 	}
-	grid := MonthGrid(m.week)
+	grid := engine.MonthGrid(m.week)
 	today := slices.IndexFunc(grid, func(d time.Time) bool { return d.Equal(dayNamed("2026-09-30")) })
 	if !outlined(m, MonthCellAt(l, today)) || outlined(m, MonthCellAt(l, today-1)) {
 		t.Error("today is not the one day outlined")

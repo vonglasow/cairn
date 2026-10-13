@@ -17,16 +17,6 @@ func dayNamed(day string) time.Time {
 	return parsed
 }
 
-// A week starts on the Monday a day is in: a Sunday belongs to the week
-// before it, a Monday to its own.
-func TestAWeekStartsOnItsMonday(t *testing.T) {
-	for day, want := range map[string]string{"2026-10-14": "2026-10-12", "2026-10-18": "2026-10-12", "2026-10-12": "2026-10-12", "2026-10-19": "2026-10-19"} {
-		if got := domain.FormatDay(mondayOf(dayNamed(day))); got != want {
-			t.Errorf("the week of %s starts on %s, want %s", day, got, want)
-		}
-	}
-}
-
 // The time page, to the pixel: the days cut the board's width in seven, a
 // task's line and bar under each day's heading, a bar as long as its share.
 func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
@@ -61,16 +51,16 @@ func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
 		{Day: "2026-09-29", Minutes: 135, Tasks: []engine.TimesheetTask{{Number: 1, Minutes: 90}, {Number: 2, Minutes: 45}}},
 		{Day: "2026-10-02", Minutes: 120, Tasks: []engine.TimesheetTask{{Number: 2, Minutes: 120}}},
 	}}}}
-	if got := w.longest(); got != 120 {
+	if got := w.sheet.Longest(); got != 120 {
 		t.Errorf("the longest stretch is %d, want 120", got)
 	}
 	if got := w.Holds(Time); got != 2 {
 		t.Errorf("the page says %d tasks, want 2", got)
 	}
-	if got := w.timeOn(1); got.Minutes != 135 {
+	if got := w.sheet.On(w.week.AddDate(0, 0, 1)); got.Minutes != 135 {
 		t.Errorf("Tuesday holds %d minutes", got.Minutes)
 	}
-	if got := w.timeOn(0); got.Day != "2026-09-28" || len(got.Tasks) != 0 {
+	if got := w.sheet.On(w.week.AddDate(0, 0, 0)); got.Day != "2026-09-28" || len(got.Tasks) != 0 {
 		t.Errorf("a day nothing was done on reads %+v", got)
 	}
 	shot := drawn(t, Window{tab: Time, width: 1200, height: 800, timeState: timeState{week: w.week, sheet: w.sheet}})

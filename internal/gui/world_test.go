@@ -717,7 +717,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I click the day "([^"]*)" on the calendar$`, func(day string) error {
-		for i, shown := range MonthGrid(w.w.CalendarDay()) {
+		for i, shown := range engine.MonthGrid(w.w.CalendarDay()) {
 			if domain.FormatDay(shown) == day {
 				box := DayAt(w.w.CalendarBox(), i)
 				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})

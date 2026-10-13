@@ -8,24 +8,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// A month is shown as six weeks from the Monday on or before its first day:
-// every month fits, and the rows do not move from one month to the next.
-func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
-	grid := MonthGrid(time.Date(2026, 10, 12, 15, 0, 0, 0, time.UTC))
-	if got := domain.FormatDay(grid[0]); got != "2026-09-28" {
-		t.Errorf("October 2026 starts its grid on %s, want the Monday 2026-09-28", got)
-	}
-	if got := domain.FormatDay(grid[len(grid)-1]); got != "2026-11-08" {
-		t.Errorf("it ends on %s, want 2026-11-08", got)
-	}
-	if got := domain.FormatDay(MonthGrid(time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC))[0]); got != "2026-06-01" {
-		t.Errorf("a month starting on a Monday starts its grid on %s", got)
-	}
-	if got := domain.FormatDay(MonthGrid(time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC))[0]); got != "2026-10-26" {
-		t.Errorf("a month starting on a Sunday starts its grid on %s, want the Monday before", got)
-	}
-}
-
 // The calendar's panel and its days, to the pixel: a sum gone wrong by a
 // padding puts a click on the day beside the one drawn. The days share the
 // width of the panel between them.
@@ -49,7 +31,7 @@ func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	if got, want := MonthBefore(box), (Box{X: 460 - monthWide, Y: 62, W: monthWide, H: titleHi}); got != want {
 		t.Errorf("the month before is offered at %+v, want %+v", got, want)
 	}
-	if got := len(MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
+	if got := len(engine.MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
 		t.Errorf("a month is shown as %d days, want six weeks", got)
 	}
 }
@@ -160,7 +142,7 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"}, nil)
 	shot := drawn(t, w)
-	for i, day := range MonthGrid(w.day) {
+	for i, day := range engine.MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
 		outlined := ink(shot, edge, Dark().Panel) > 0
 		if day.Equal(w.day) && !outlined {

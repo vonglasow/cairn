@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 const (
@@ -39,28 +40,10 @@ func (w Window) At(now time.Time) Window {
 }
 
 // today is the day the window was last told it is.
-func (w Window) today() time.Time { return dayOf(w.now) }
-
-// dayOf is a moment's day, at midnight in the zone days are kept in.
-func dayOf(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-}
+func (w Window) today() time.Time { return engine.DayOf(w.now) }
 
 // CalendarDay is the day the keyboard is on.
 func (w Window) CalendarDay() time.Time { return w.day }
-
-// MonthGrid is the six weeks a month is shown as, from the Monday on or
-// before its first day: every month fits, and no row moves from one month to
-// the next.
-func MonthGrid(day time.Time) []time.Time {
-	first := time.Date(day.Year(), day.Month(), 1, 0, 0, 0, 0, time.UTC)
-	back := (int(first.Weekday()) + 6) % 7
-	grid := make([]time.Time, weeks*7)
-	for i := range grid {
-		grid[i] = first.AddDate(0, 0, i-back)
-	}
-	return grid
-}
 
 // CalendarFor is the panel the calendar is drawn in at a corner, as wide as
 // given: a heading, the weekdays, six weeks and the offers.
@@ -143,9 +126,9 @@ func (w Window) monthClicked(p Point) (Window, bool) {
 	box := w.CalendarBox()
 	switch {
 	case MonthBefore(box).In(p):
-		w.day = monthOn(w.day, -1)
+		w.day = engine.MonthOn(w.day, -1)
 	case MonthAfter(box).In(p):
-		w.day = monthOn(w.day, 1)
+		w.day = engine.MonthOn(w.day, 1)
 	default:
 		return w, false
 	}
@@ -159,7 +142,7 @@ func (w Window) scrollingMonths(p Point, by int) Window {
 		return w
 	}
 	months, left := turning(w.spareChoosing, by)
-	w.day, w.spareChoosing = monthOn(w.day, months), left
+	w.day, w.spareChoosing = engine.MonthOn(w.day, months), left
 	return w
 }
 
@@ -172,7 +155,7 @@ func (w Window) Faded(day time.Time) bool { return day.Month() != w.day.Month() 
 func (w Window) openingCalendar() Window {
 	w.day = w.today()
 	if held, err := domain.ParseDeadline(w.form.Fields()[w.form.On()].Value); err == nil && !held.IsZero() {
-		w.day = dayOf(held)
+		w.day = engine.DayOf(held)
 	}
 	w.screen = OnCalendar
 	return w
@@ -191,9 +174,9 @@ func (w Window) onCalendar(name string) Window {
 	case "down":
 		w.day = w.day.AddDate(0, 0, 7)
 	case "shift+left":
-		w.day = monthOn(w.day, -1)
+		w.day = engine.MonthOn(w.day, -1)
 	case "shift+right":
-		w.day = monthOn(w.day, 1)
+		w.day = engine.MonthOn(w.day, 1)
 	case "t":
 		w.day = w.today()
 	}
@@ -210,19 +193,10 @@ func (w Window) dated(day time.Time) Window {
 // dayClicked takes the day under the pointer, when there is one.
 func (w Window) dayClicked(p Point) (Window, bool) {
 	box := w.CalendarBox()
-	for i, day := range MonthGrid(w.day) {
+	for i, day := range engine.MonthGrid(w.day) {
 		if DayAt(box, i).In(p) {
 			return w.dated(day), true
 		}
 	}
 	return w, false
-}
-
-// monthOn is the same day some months on, or the last day of that month when
-// it is shorter: a month on from the thirty-first of January is the end of
-// February, not the third of March.
-func monthOn(day time.Time, by int) time.Time {
-	first := time.Date(day.Year(), day.Month()+time.Month(by), 1, 0, 0, 0, 0, time.UTC)
-	last := first.AddDate(0, 1, -1).Day()
-	return first.AddDate(0, 0, min(day.Day(), last)-1)
 }

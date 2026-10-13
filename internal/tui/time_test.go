@@ -18,7 +18,7 @@ func TestTheTimeTabWalksTheWeeks(t *testing.T) {
 	if got := hit(b, "tab").tab; got != Tasks {
 		t.Errorf("a third tab left the board on %v", got)
 	}
-	monday := mondayOf(today)
+	monday := engine.Monday(today)
 	if !b.week.Equal(monday) {
 		t.Errorf("the week shown starts on %v, want %v", b.week, monday)
 	}

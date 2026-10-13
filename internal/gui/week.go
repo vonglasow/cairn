@@ -46,51 +46,24 @@ func (w Window) Monthly() bool { return w.monthly }
 // MonthShown is the first day of the month the time page shows.
 func (w Window) MonthShown() time.Time { return w.week }
 
-// firstOf is the first day of the month a day is in.
-func firstOf(day time.Time) time.Time {
-	return time.Date(day.Year(), day.Month(), 1, 0, 0, 0, 0, time.UTC)
-}
-
 // Sheet is the time spent over that week, as the engine reckoned it.
 func (w Window) Sheet() engine.Timesheet { return w.sheet }
-
-// mondayOf is the Monday of the week a day is in.
-func mondayOf(day time.Time) time.Time {
-	day = dayOf(day)
-	return day.AddDate(0, 0, -((int(day.Weekday()) + 6) % 7))
-}
 
 // readingWeek asks how long the work took over the week shown.
 func (w Window) readingWeek() Window {
 	if w.week.IsZero() {
-		w.week = mondayOf(w.today())
+		w.week = engine.Monday(w.today())
 	}
 	since, until := w.week, w.week.AddDate(0, 0, 6)
 	if w.monthly {
-		grid := MonthGrid(w.week)
+		grid := engine.MonthGrid(w.week)
 		since, until = grid[0], grid[len(grid)-1]
 	}
-	// The engine refuses what has not happened yet: a period in progress is
-	// read up to today, and one wholly to come holds nothing to read.
-	if today := w.today(); until.After(today) {
-		until = today
-	}
-	if since.After(until) {
-		w.sheet = engine.Timesheet{}
-		return w
-	}
-	asked := engine.Input{Given: map[string]string{
-		"since": domain.FormatDay(since),
-		"until": domain.FormatDay(until),
-	}}
-	answer, err := w.work.Ask(engine.TimesheetShow, asked)
+	sheet, err := engine.ReadPeriod(w.work, since, until, w.today())
 	if err != nil {
 		return w.failing(err)
 	}
-	w.sheet = engine.Timesheet{}
-	if answer.Sheet != nil {
-		w.sheet, _ = engine.Of(engine.TimesheetShow, answer).(engine.Timesheet)
-	}
+	w.sheet = sheet
 	return w
 }
 
@@ -100,20 +73,20 @@ func (w Window) onWeek(name string) Window {
 	switch name {
 	case "left":
 		if w.monthly {
-			w.week = monthOn(w.week, -1)
+			w.week = engine.MonthOn(w.week, -1)
 		} else {
 			w.week = w.week.AddDate(0, 0, -7)
 		}
 	case "right":
 		if w.monthly {
-			w.week = monthOn(w.week, 1)
+			w.week = engine.MonthOn(w.week, 1)
 		} else {
 			w.week = w.week.AddDate(0, 0, 7)
 		}
 	case "t":
-		w.week = mondayOf(w.today())
+		w.week = engine.Monday(w.today())
 		if w.monthly {
-			w.week = firstOf(w.today())
+			w.week = engine.FirstOfMonth(w.today())
 		}
 	case "m":
 		w = w.turned()
@@ -133,14 +106,14 @@ func (w Window) turned() Window {
 		if today.Before(w.week) || !today.Before(w.week.AddDate(0, 0, 7)) {
 			today = w.week.AddDate(0, 0, 3)
 		}
-		w.week = firstOf(today)
+		w.week = engine.FirstOfMonth(today)
 		return w
 	}
-	if firstOf(w.today()).Equal(w.week) {
-		w.week = mondayOf(w.today())
+	if engine.FirstOfMonth(w.today()).Equal(w.week) {
+		w.week = engine.Monday(w.today())
 		return w
 	}
-	w.week = mondayOf(w.week)
+	w.week = engine.Monday(w.week)
 	return w
 }
 
@@ -155,40 +128,6 @@ func weekKeys(name string) (mine, shared bool) {
 		return false, true
 	}
 	return false, false
-}
-
-// timeOn is the day of the week shown that a day of the sheet is, and the
-// sheet's day for each of the seven: a day nothing was done on is not in it.
-func (w Window) timeOn(i int) engine.TimesheetDay {
-	day := domain.FormatDay(w.week.AddDate(0, 0, i))
-	for _, d := range w.sheet.Days {
-		if d.Day == day {
-			return d
-		}
-	}
-	return engine.TimesheetDay{Day: day}
-}
-
-// longest is the longest stretch any task had on any day of the week: what
-// every bar is a share of.
-func (w Window) longest() int {
-	most := 0
-	for _, d := range w.sheet.Days {
-		for _, one := range d.Tasks {
-			most = max(most, one.Minutes)
-		}
-	}
-	return most
-}
-
-// DaySays is a day's total, as a duration is written.
-func DaySays(d engine.TimesheetDay) string {
-	return domain.FormatDuration(time.Duration(d.Minutes) * time.Minute)
-}
-
-// TaskTimeSays is one task's line on a day: its time, then which task.
-func TaskTimeSays(one engine.TimesheetTask) string {
-	return domain.FormatDuration(time.Duration(one.Minutes)*time.Minute) + "  #" + strconv.Itoa(one.Number) + " " + one.Title
 }
 
 // TimeStrip is the strip along the top of the time page: the board's whole
@@ -262,7 +201,7 @@ func (w Window) DayFrom(i int) int { return w.dayFrom[i] }
 
 // DayShown is the tasks of the i-th day of the week in sight.
 func (w Window) DayShown(i int) []engine.TimesheetTask {
-	tasks, from := w.timeOn(i).Tasks, w.dayFrom[i]
+	tasks, from := w.sheet.On(w.week.AddDate(0, 0, i)).Tasks, w.dayFrom[i]
 	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(WeekDayAt(w.Layout(), i)))]
 }
 
@@ -280,7 +219,7 @@ func (w Window) scrollingDay(p Point, by int) Window {
 		total := w.spareChoosing + by
 		rows := total / weekRow
 		w.spareChoosing = total % weekRow
-		w.dayFrom[i] = max(0, min(w.dayFrom[i]+rows, len(w.timeOn(i).Tasks)-DayRoom(day)))
+		w.dayFrom[i] = max(0, min(w.dayFrom[i]+rows, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks)-DayRoom(day)))
 		return w
 	}
 	return w
@@ -313,7 +252,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 		shown = room - 1
 	}
 	for _, one := range tasks[:shown] {
-		lines = append(lines, TaskTimeSays(one))
+		lines = append(lines, one.Says())
 	}
 	if shown < len(tasks) {
 		lines = append(lines, "+"+strconv.Itoa(len(tasks)-shown)+" more")
@@ -323,7 +262,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 
 // MonthDay is the sheet's day for the i-th day of the month's six weeks.
 func (w Window) MonthDay(i int) engine.TimesheetDay {
-	day := domain.FormatDay(MonthGrid(w.week)[i])
+	day := domain.FormatDay(engine.MonthGrid(w.week)[i])
 	for _, d := range w.sheet.Days {
 		if d.Day == day {
 			return d
@@ -352,9 +291,9 @@ func (w Window) clickingTime(p Point) Window {
 	if !w.monthly {
 		return w
 	}
-	for i, day := range MonthGrid(w.week) {
+	for i, day := range engine.MonthGrid(w.week) {
 		if MonthCellAt(l, i).In(p) {
-			w.monthly, w.week, w.dayFrom = false, mondayOf(day), [7]int{}
+			w.monthly, w.week, w.dayFrom = false, engine.Monday(day), [7]int{}
 			return w.readingWeek()
 		}
 	}
@@ -392,7 +331,7 @@ func CellHead(day time.Time, held engine.TimesheetDay) string {
 	if held.Minutes <= 0 {
 		return strconv.Itoa(day.Day())
 	}
-	return strconv.Itoa(day.Day()) + "   " + DaySays(held)
+	return strconv.Itoa(day.Day()) + "   " + held.Says()
 }
 
 // CellHeadAt is where a day of a month says its number and its total.

@@ -121,7 +121,7 @@ func (b Board) otherTab() Board {
 	case Objectives:
 		b.tab, b.inside = Time, 0
 		if b.week.IsZero() {
-			b.week = mondayOf(b.clock())
+			b.week = engine.Monday(b.clock())
 		}
 		return b
 	}

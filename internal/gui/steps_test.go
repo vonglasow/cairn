@@ -940,7 +940,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	}
 	sc.Then(`^the day "([^"]*)" says "([^"]*)"$`, func(day, total string) error {
 		d, _ := dayOfWeek(day)
-		if got := DaySays(d); got != total {
+		if got := d.Says(); got != total {
 			return fmt.Errorf("%s says %q, want %q", day, got, total)
 		}
 		return nil
@@ -949,7 +949,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		d, _ := dayOfWeek(day)
 		for _, one := range d.Tasks {
 			if one.Title == title {
-				if got := TaskTimeSays(one); !strings.Contains(got, length) {
+				if got := one.Says(); !strings.Contains(got, length) {
 					return fmt.Errorf("%s carries %q, want it to say %s", day, got, length)
 				}
 				return nil
@@ -979,7 +979,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if all, room := len(w.w.timeOn(i).Tasks), DayRoom(WeekDayAt(w.w.Layout(), i)); all <= room {
+		if all, room := len(w.w.sheet.On(w.w.week.AddDate(0, 0, i)).Tasks), DayRoom(WeekDayAt(w.w.Layout(), i)); all <= room {
 			return fmt.Errorf("%s holds %d tasks in room for %d", day, all, room)
 		}
 		return nil
@@ -1039,7 +1039,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	dayOfMonth := func(day string) (int, error) {
-		for i, shown := range MonthGrid(w.w.MonthShown()) {
+		for i, shown := range engine.MonthGrid(w.w.MonthShown()) {
 			if domain.FormatDay(shown) == day {
 				return i, nil
 			}

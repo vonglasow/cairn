@@ -8,13 +8,11 @@ package tui
 // docs/tui.md.
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -30,12 +28,6 @@ type Answered struct {
 	Looked
 }
 
-// mondayOf is the Monday of the week a moment is in, at midnight.
-func mondayOf(at time.Time) time.Time {
-	day := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
-	return day.AddDate(0, 0, -((int(day.Weekday()) + 6) % 7))
-}
-
 // walkingWeeks is what a key does on the time tab: the arrows and h l walk the
 // weeks, t comes back to today's. Anything else is not the tab's.
 func (b Board) walkingWeeks(key string) (Board, bool) {
@@ -45,7 +37,7 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 	case "right", "l":
 		b.week = b.week.AddDate(0, 0, 7)
 	case "t":
-		b.week = mondayOf(b.clock())
+		b.week = engine.Monday(b.clock())
 	case "j", "down":
 		b.timeAt++
 		return b, true
@@ -59,24 +51,12 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 	return b, true
 }
 
-// readingWeek asks how long the work took over the week shown, up to today:
-// the engine refuses what has not happened yet.
+// readingWeek asks how long the work took over the week shown, up to today.
 func (b Board) readingWeek() tea.Cmd {
-	since, until := b.week, b.week.AddDate(0, 0, 6)
-	if today := mondayOf(b.clock()).AddDate(0, 0, (int(b.clock().Weekday())+6)%7); until.After(today) {
-		until = today
-	}
+	since, until, today := b.week, b.week.AddDate(0, 0, 6), engine.DayOf(b.clock())
 	return func() tea.Msg {
-		if since.After(until) {
-			return Sheeted{}
-		}
-		answer, err := b.work.Ask(engine.TimesheetShow, engine.Input{Given: map[string]string{
-			"since": domain.FormatDay(since), "until": domain.FormatDay(until)}})
-		if err != nil || answer.Sheet == nil {
-			return Sheeted{Err: err}
-		}
-		sheet, _ := engine.Of(engine.TimesheetShow, answer).(engine.Timesheet)
-		return Sheeted{Sheet: sheet}
+		sheet, err := engine.ReadPeriod(b.work, since, until, today)
+		return Sheeted{Sheet: sheet, Err: err}
 	}
 }
 
@@ -104,19 +84,18 @@ type spent struct {
 	Tasks []string
 }
 
-// timeOn is what a day of the sheet says: its total, and a line a task.
+// timeOn is what a day of the sheet says: its total, and a line a task. A day
+// nothing was done on still says how long: nothing at all.
 func timeOn(sheet engine.Timesheet, day time.Time) spent {
-	for _, d := range sheet.Days {
-		if d.Day != domain.FormatDay(day) {
-			continue
-		}
-		out := spent{Total: domain.FormatDuration(time.Duration(d.Minutes) * time.Minute)}
-		for _, one := range d.Tasks {
-			out.Tasks = append(out.Tasks, domain.FormatDuration(time.Duration(one.Minutes)*time.Minute)+"  #"+strconv.Itoa(one.Number)+" "+one.Title)
-		}
-		return out
+	on := sheet.On(day)
+	out := spent{Total: on.Says()}
+	if out.Total == "" {
+		out.Total = "0m"
 	}
-	return spent{Total: "0m"}
+	for _, one := range on.Tasks {
+		out.Tasks = append(out.Tasks, one.Says())
+	}
+	return out
 }
 
 // answering opens what a command answered, over the board.
