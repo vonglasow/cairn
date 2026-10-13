@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"cairn/internal/reading"
+	"cairn/test"
 )
 
 // Searching from the window: what a search narrows, how it is left, and what
@@ -71,10 +72,10 @@ func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 func TestASearchReachesObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{
+	w.snap = test.Searchable(reading.Snapshot{Goals: []reading.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
-	}}
+	}})
 	w.tab = Objectives
 
 	w = w.Key("/").Types("honest")

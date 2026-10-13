@@ -8,11 +8,10 @@ package reading
 import (
 	"fmt"
 	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 // soon is how many days ahead a deadline starts being worth a card's width.
@@ -129,60 +128,11 @@ func Tallied(parts []Card) string {
 	return fmt.Sprintf("%d to do · %d done", left, done)
 }
 
-// ReachesCard says whether a search reaches a card. It is what both boards ask,
-// and it answers what `task search` answers: the same facts read the way a
-// person reads them, case-insensitive, wherever among them the query sits.
-//
-// Its twin for objectives has been here all along, and both boards ask it.
-// This one lived three times instead. The engine looked in six fields,
-// the terminal board in three and the window in three, and nothing caught it —
-// every check this repo runs measures one package against itself, and three
-// tested copies of one rule score three perfect marks. depguard can forbid a
-// board from reaching the other; it cannot make either reach for this.
-//
-// What it does not reach is what a card carries about other things — its
-// parent, the objectives it serves — nor the closed sets a listing narrows by.
-// Those are the same lines the command line draws, and the test beside this
-// one holds the two answers together.
+// ReachesCard says whether what was typed reaches a card. The rule is the
+// engine's, over what the engine said a search looks in when the card was
+// read: once it lived here three times over, and the copies drifted.
 func ReachesCard(c Card, query string) bool {
-	if query == "" {
-		return false
-	}
-	said := []string{
-		strconv.Itoa(c.Number),
-		c.Title,
-		c.Description,
-		c.Because,
-		c.Estimate,
-		c.Spent,
-		// And the closed sets, which the engine has always reached and the
-		// boards never did: searching by label was impossible in the window
-		// and on the terminal board, and the same word meant two things.
-		c.State,
-		c.Priority,
-	}
-	said = append(said, c.Labels...)
-	if !c.Deadline.IsZero() {
-		said = append(said, domain.FormatDay(c.Deadline))
-	}
-	// Every word, not one: the engine takes as many as were typed and keeps
-	// only what carries all of them, wherever among its facts each one sits.
-	for _, word := range strings.Fields(strings.ToLower(query)) {
-		if !carries(said, word) {
-			return false
-		}
-	}
-	return true
-}
-
-// carries says whether any of a card's facts holds this word.
-func carries(said []string, word string) bool {
-	for _, field := range said {
-		if field != "" && strings.Contains(strings.ToLower(field), word) {
-			return true
-		}
-	}
-	return false
+	return engine.Reaches(c.Said, query)
 }
 
 // Finished says whether a card is done. One line, and it earns being here

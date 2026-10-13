@@ -100,6 +100,21 @@ func (l *Looking) Consider(text string) {
 	}
 }
 
+// Reaches says whether every thing named sits somewhere in what was said. It
+// is the one rule a search keeps, whoever holds what was said: the store's
+// task on the command line, a card already drawn on a board. Nothing named
+// reaches nothing.
+func Reaches(said, named []string) bool {
+	if len(named) == 0 {
+		return false
+	}
+	l := LookingFor(named)
+	for _, s := range said {
+		l.Consider(s)
+	}
+	return l.All()
+}
+
 // All says whether every named thing was found.
 func (l *Looking) All() bool {
 	for _, found := range l.found {

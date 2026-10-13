@@ -8,6 +8,7 @@ import (
 
 	"cairn/internal/engine"
 	"cairn/internal/reading"
+	"cairn/test"
 )
 
 // The modal that adds and edits. What it asks about comes from reading; what is
@@ -46,7 +47,7 @@ func TestEditingNothingOpensNothing(t *testing.T) {
 func TestEditingAnObjectiveAsksTheObjectivesQuestions(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.snap = test.Searchable(reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}})
 	w.tab = Objectives
 	w.chosen, w.chosenGoal = 3, true
 
@@ -462,9 +463,9 @@ func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
+	w.snap = test.Searchable(reading.Snapshot{
 		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board"}},
-	}
+	})
 	field := reading.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
 	// Asked whole, and not for the two halves separately: a name and a number
 	// both being in there says nothing about the name belonging to that
@@ -482,13 +483,13 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
+	w.snap = test.Searchable(reading.Snapshot{
 		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: []reading.Goal{
 			{Number: 1, Title: "Modularité / Helm"},
 			{Number: 2, Title: "Stabiliser les environnements"},
 		},
-	}
+	})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
@@ -511,7 +512,7 @@ func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
@@ -531,11 +532,11 @@ func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: []reading.Card{
+	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
 		{Number: 2, Title: "Write the spec", State: "todo"},
 		{Number: 3, Title: "Rewrite the tests", State: "todo"},
-	}}
+	}})
 	w = w.clicked(middleOf(w, 1, 1)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -573,7 +574,7 @@ func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 	for i := 2; i <= 45; i++ {
 		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
 	}
-	w.snap = reading.Snapshot{Cards: cards}
+	w.snap = test.Searchable(reading.Snapshot{Cards: cards})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -607,7 +608,7 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 	for i := 2; i <= 45; i++ {
 		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
 	}
-	w.snap = reading.Snapshot{Cards: cards}
+	w.snap = test.Searchable(reading.Snapshot{Cards: cards})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -653,11 +654,11 @@ func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 // filter: told nothing, a list offers everything rather than nothing.
 func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 	w := New(newFake(), 1200, 800)
-	w.snap = reading.Snapshot{Cards: []reading.Card{
+	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{
 		{Number: 1, Title: "Write the spec", State: "todo"},
 		{Number: 2, Title: "Ship it", State: "current"},
 		{Number: 3, Title: "Rewrite the tests", State: "todo"},
-	}}
+	}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -1180,7 +1181,7 @@ func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}}
+	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	var parts []string
 	for _, r := range w.Readables() {
@@ -1208,7 +1209,7 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}}
+	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	track, frame := BesideBar(w.formPanel()), BesideBox(w.formPanel())
 	grip := Point{X: track.X + track.W/2, Y: track.Y + 4}

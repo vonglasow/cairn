@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 
 	"cairn/internal/domain"
 	"cairn/internal/task"
@@ -392,6 +393,15 @@ cairn task search spec team --state todo`,
 		}
 		return Answer{Matched: found}, nil
 	},
+}
+
+// Reaches is the engine's search over what a board already holds: what a task
+// or an objective said a search looks in (task.Said, objective.Said), and what
+// somebody typed, word by word. The same rule as `task search`, so one word
+// typed into any surface comes back with one answer; a board asks it rather
+// than the store because a board that waited on the store would wait to draw.
+func Reaches(said []string, typed string) bool {
+	return domain.Reaches(said, strings.Fields(typed))
 }
 
 // taskAttributes are the twelve attributes a task carries, minus title, which is

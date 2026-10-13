@@ -1,6 +1,7 @@
 package objective
 
 import (
+	"slices"
 	"testing"
 
 	"cairn/internal/domain"
@@ -50,9 +51,9 @@ func TestMatching_reachesTheDescription(t *testing.T) {
 	}
 }
 
-// Where it stands, the priority and a label are what a listing narrows by, so
-// looking does not reach them. The reason is the task side's, and said there.
-func TestMatching_doesNotReachWhatAListingNarrowsBy(t *testing.T) {
+// Where it stands, the priority and a label are looked in like anything else
+// an objective carries. The reason is the task side's, and said there.
+func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
 		told   func(*AsTold)
@@ -66,8 +67,8 @@ func TestMatching_doesNotReachWhatAListingNarrowsBy(t *testing.T) {
 			a.LabelsTold()
 		}, "urgent"},
 	} {
-		if Matching(carrying(t, tc.told), []string{tc.looked}) {
-			t.Errorf("looking for %q reached %s, and a listing is what narrows by it", tc.looked, tc.what)
+		if !Matching(carrying(t, tc.told), []string{tc.looked}) {
+			t.Errorf("looking for %q did not reach %s", tc.looked, tc.what)
 		}
 	}
 }
@@ -122,12 +123,11 @@ func TestMatching_aPhraseWithASpaceIsOneThing(t *testing.T) {
 	}
 }
 
-// TestMatching_aNumberIsNeverReached pins the frozen reason: looking for "1"
-// must not answer an objective numbered 1, since asking by number is what
-// `objective show` is for.
-func TestMatching_aNumberIsNeverReached(t *testing.T) {
-	if Matching(plan(t), []string{"1"}) {
-		t.Error("Matching = true, want false: a number is never reached by looking")
+// TestMatching_reachesItsNumber: the number is the way back when it is what
+// somebody has, as it is for a task, and the boards have no show to type.
+func TestMatching_reachesItsNumber(t *testing.T) {
+	if !Matching(plan(t), []string{"1"}) {
+		t.Error("Matching = false, want true: the objective is numbered 1")
 	}
 }
 
@@ -153,5 +153,21 @@ func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	})
 	if Matching(got, []string{"team"}) {
 		t.Error("Matching = true, want false: nothing carries \"team\"")
+	}
+}
+
+// Said is what a search looks in, once: see the task side.
+func TestSaid_isWhatASearchLooksIn(t *testing.T) {
+	got := carrying(t, func(a *AsTold) {
+		a.Standing(OnHold)
+		a.Carries(domain.High)
+		a.Labelled("urgent")
+		a.LabelsTold()
+	})
+	said := Said(got)
+	for _, want := range []string{"on-hold", "high", "urgent"} {
+		if !slices.Contains(said, want) {
+			t.Errorf("Said = %v, want %q among it", said, want)
+		}
 	}
 }

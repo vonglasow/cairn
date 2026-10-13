@@ -331,7 +331,7 @@ Feature: The board
     The columns stay, so where a match sits in the flow is part of the answer.
 
     What a search reaches is not this board's to decide. It reaches what the
-    command line reaches, out of `reading`, so that one question typed into
+    command line reaches, by the engine's rule, so that one question typed into
     three surfaces cannot come back with three answers. It did: this board
     looked in three fields where the engine looked in six, and neither knew
     about the other.

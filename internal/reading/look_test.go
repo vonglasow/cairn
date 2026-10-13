@@ -223,3 +223,22 @@ func TestLookAsksTheTwoListingsWhateverTheyHold(t *testing.T) {
 		t.Errorf("task 1 is along %d of %d, want 1 of 2", found.Cards[0].SubDone, found.Cards[0].SubTotal)
 	}
 }
+
+// A reading carries, for every card and every objective, what a search looks
+// in, as the engine says it: a board searches what it holds without a second
+// rule of its own.
+func TestLookCarriesWhatASearchLooksIn(t *testing.T) {
+	f := newFake()
+	f.tasks = []task.Task{aTask("Write the spec")}
+	f.goals = []objective.Objective{aGoal("Ship cairn")}
+	found, err := Look(f)
+	if err != nil {
+		t.Fatalf("Look: %v", err)
+	}
+	if !slices.Equal(found.Cards[0].Said, task.Said(f.tasks[0])) {
+		t.Errorf("the card says %v, the engine %v", found.Cards[0].Said, task.Said(f.tasks[0]))
+	}
+	if !slices.Equal(found.Goals[0].Said, objective.Said(f.goals[0])) {
+		t.Errorf("the objective says %v, the engine %v", found.Goals[0].Said, objective.Said(f.goals[0]))
+	}
+}

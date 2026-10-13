@@ -21,7 +21,7 @@ func numbersOfCards(cards []Card) []int {
 func TestFoundGoals_isWhatASearchReachesInTheOrderAListKeeps(t *testing.T) {
 	goals := []Goal{
 		{Number: 1, Title: "Ship it", State: "reached"},
-		{Number: 2, Title: "Write it", State: "active", Labels: []string{"docs"}},
+		{Number: 2, Title: "Write it", State: "active", Labels: []string{"docs"}, Said: []string{"Write it", "docs"}},
 		{Number: 3, Title: "Plan it", State: "active"},
 	}
 	var got []int
@@ -49,7 +49,7 @@ func TestParentable_isWhatATaskMayHangUnder(t *testing.T) {
 		{Number: 2, Title: "Now", State: "current"},
 		{Number: 3, Title: "A part", State: "todo", Parent: 2},
 		{Number: 4, Title: "Itself", State: "todo"},
-		{Number: 5, Title: "Next", State: "todo"},
+		{Number: 5, Title: "Next", State: "todo", Said: []string{"Next"}},
 		{Number: 6, Title: "Over", State: "done"},
 		{Number: 7, Title: "Stuck", State: "blocked"},
 	}

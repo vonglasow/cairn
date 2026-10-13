@@ -9,9 +9,9 @@ import (
 	"cmp"
 	"slices"
 	"strconv"
-	"strings"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 	"cairn/internal/objective"
 )
 
@@ -47,31 +47,10 @@ func Sorted(goals []Goal) []Goal {
 	return out
 }
 
-// ReachesGoal says whether a search reaches an objective, over everything it
-// carries and with every word that was typed — the same search a card gets, so
-// that one word does not mean two things a tab apart.
+// ReachesGoal says whether what was typed reaches an objective, by the same
+// rule a card is reached by.
 func ReachesGoal(g Goal, query string) bool {
-	if query == "" {
-		return false
-	}
-	said := []string{
-		strconv.Itoa(g.Number),
-		g.Title,
-		g.Description,
-		g.State,
-		g.Priority,
-		g.Estimate,
-	}
-	said = append(said, g.Labels...)
-	if !g.Deadline.IsZero() {
-		said = append(said, domain.FormatDay(g.Deadline))
-	}
-	for _, word := range strings.Fields(strings.ToLower(query)) {
-		if !carries(said, word) {
-			return false
-		}
-	}
-	return true
+	return engine.Reaches(g.Said, query)
 }
 
 // Counted is how much of an objective is done, the way a board writes it.

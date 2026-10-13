@@ -133,10 +133,10 @@ func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
 // make a search come back empty for a word plainly in the store.
 func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
 	all := []Card{
-		{Number: 1, Title: "Ship it"},
-		{Number: 2, Title: "Write the pipeline", Parent: 1},
-		{Number: 3, Title: "Fix the pipeline", Parent: 1},
-		{Number: 4, Title: "Buy a lamp"},
+		{Number: 1, Title: "Ship it", Said: []string{"1", "Ship it"}},
+		{Number: 2, Title: "Write the pipeline", Parent: 1, Said: []string{"2", "Write the pipeline"}},
+		{Number: 3, Title: "Fix the pipeline", Parent: 1, Said: []string{"3", "Fix the pipeline"}},
+		{Number: 4, Title: "Buy a lamp", Said: []string{"4", "Buy a lamp"}},
 	}
 	numbers := func(cards []Card) []int {
 		var out []int

@@ -1609,6 +1609,17 @@ Feature: The desktop board
       Then "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
 
+    @gui-searching-by-label-and-by-column
+    Scenario: a search reaches the labels and the column, as the engine's does
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship the board"
+      And I edited task 1 with the labels "backend" and "sprint-172"
+      When I open the window
+      And I press "/"
+      And I type "backend"
+      Then "TODO" carries "Write the spec"
+      And "BACKLOG" does not carry "Ship the board"
+
     @gui-a-card-can-be-clicked-while-still-searching
     Scenario: a card is clicked while the search box is still open
       Given I added a task titled "Write the spec"

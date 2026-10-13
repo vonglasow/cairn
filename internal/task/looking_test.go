@@ -1,6 +1,7 @@
 package task
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -51,11 +52,10 @@ func TestMatching_reachesTheDescription(t *testing.T) {
 	}
 }
 
-// The column, the priority and a label are what a listing narrows by, so
-// looking does not reach them. It used to, and answered every task whose
-// description merely contained the word — one question asked two ways, and the
-// worse of the two.
-func TestMatching_doesNotReachWhatAListingNarrowsBy(t *testing.T) {
+// The column, the priority and a label are looked in like anything else a
+// task carries: one search on every surface, and the boards have no listing to
+// narrow by them.
+func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 	for _, tc := range []struct {
 		what   string
 		told   func(*AsTold)
@@ -69,8 +69,8 @@ func TestMatching_doesNotReachWhatAListingNarrowsBy(t *testing.T) {
 			a.LabelsTold()
 		}, "urgent"},
 	} {
-		if Matching(carrying(t, tc.told), []string{tc.looked}) {
-			t.Errorf("looking for %q reached %s, and a listing is what narrows by it", tc.looked, tc.what)
+		if !Matching(carrying(t, tc.told), []string{tc.looked}) {
+			t.Errorf("looking for %q did not reach %s", tc.looked, tc.what)
 		}
 	}
 }
@@ -218,6 +218,23 @@ func TestMatching_reachesItsOwnNumberAndNoOtherTasks(t *testing.T) {
 	} {
 		if got := Matching(tc.task, []string{tc.named}); got != tc.want {
 			t.Errorf("%s: Matching(%q) = %v, want %v", tc.what, tc.named, got, tc.want)
+		}
+	}
+}
+
+// Said is what a search looks in, once, so a board searching a card it holds
+// and the command line searching the store look in the same things.
+func TestSaid_isWhatASearchLooksIn(t *testing.T) {
+	got := carrying(t, func(a *AsTold) {
+		a.InColumn(domain.Current)
+		a.Carries(domain.High)
+		a.Labelled("urgent")
+		a.LabelsTold()
+	})
+	said := Said(got)
+	for _, want := range []string{"current", "high", "urgent"} {
+		if !slices.Contains(said, want) {
+			t.Errorf("Said = %v, want %q among it", said, want)
 		}
 	}
 }

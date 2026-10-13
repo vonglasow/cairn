@@ -570,12 +570,12 @@ Feature: Tasks
     of nanoseconds it is kept as. So the title, the description, the deadline,
     the estimate and the time spent.
 
-    It reaches neither the column, the priority nor a label, though it used to.
-    Those come from closed sets, and a listing narrows by them — so looking for
-    them too would be a second way to ask one question, and a worse one: `search
-    high` answered every task whose description merely contained the word. What
-    a listing filters, looking leaves alone; what somebody typed themselves,
-    looking searches. Nothing is lost and the false answer is gone.
+    It reaches the column, the priority and the labels too. A listing narrows
+    by them, and the boards have one search box and no narrowing at all: left
+    out, a label could not be searched for there, and the boards searched them
+    anyway with a rule of their own. One search, the engine's, on every
+    surface — so `search high` answers what carries priority high as well as
+    what says the word.
 
     A task's own number it does reach, and it used not to. The reason it was
     left out held for the command line, where `task show 228` is right there;
@@ -667,26 +667,29 @@ Feature: Tasks
       When I run `cairn task search client`
       Then it lists 1 task
 
-    @task-search-does-not-reach-the-column
-    Scenario: a column is narrowed by, not looked for
+    @task-search-reaches-the-column
+    Scenario: the column is looked in like anything else it carries
       Given I added a task titled "Write the spec" with the state "current"
+      And I added a task titled "Ship it"
       When I run `cairn task search current`
-      Then it succeeds
-      And it says there is no task
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
 
-    @task-search-does-not-reach-the-priority
-    Scenario: a priority is narrowed by, not looked for
+    @task-search-reaches-the-priority
+    Scenario: the priority is looked in like anything else it carries
       Given I added a task titled "Write the spec" with the priority "high"
+      And I added a task titled "Ship it"
       When I run `cairn task search high`
-      Then it succeeds
-      And it says there is no task
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
 
-    @task-search-does-not-reach-a-label
-    Scenario: a label is narrowed by, not looked for
+    @task-search-reaches-a-label
+    Scenario: a label is looked in like anything else it carries
       Given I added a task titled "Write the spec" with the labels "team" and "urgent"
+      And I added a task titled "Ship it"
       When I run `cairn task search urgent`
-      Then it succeeds
-      And it says there is no task
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
 
     @task-search-everything-named-is-found
     Scenario: everything named has to be there, wherever it is

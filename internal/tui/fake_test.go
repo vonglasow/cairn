@@ -14,6 +14,7 @@ import (
 	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/internal/trace"
+	"cairn/test"
 )
 
 // A stand-in for whatever holds the work. The board asks it questions and tells
@@ -103,7 +104,7 @@ func standing(f *fake) Board {
 		c.InFocus = slices.Contains(f.focus, c.Number)
 		cards = append(cards, c)
 	}
-	b.snap = reading.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version}
+	b.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
 	return b
 }
 

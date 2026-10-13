@@ -144,41 +144,18 @@ func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
 	}
 }
 
-// ReachesCard is what a search reaches, and it must reach exactly what the command
-// line reaches. This pins the two together: the same facts, told to the domain
-// and drawn as a card, have to answer the same of every query.
-//
-// It exists because they had drifted. The engine looked in six fields and each
-// board looked in three, and nothing noticed — every check this repo runs
-// measures one package against itself, and three tested copies of one rule
-// score three perfect marks.
-func TestReaches_answersWhatTheCommandLineAnswers(t *testing.T) {
-	spent := 90 * time.Minute
-	due := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
-	// Built through the membrane a store builds one through, so this compares
-	// the real rule against the real rule and not against a fixture.
-	var told task.AsTold
-	told.Numbered(228)
-	told.Titled("Write the spec")
-	told.Described("two columns")
-	told.Because("the client's answer")
-	told.Due(due)
-	told.Estimated(spent)
-	told.Spent(spent)
-	built := told.Task()
-	card := Card{
-		Number: 228, Title: "Write the spec", Description: "two columns",
-		Because: "the client's answer", Deadline: due,
-		Estimate: domain.FormatDuration(spent), Spent: domain.FormatDuration(spent),
-	}
-	for _, q := range []string{
-		"spec", "SPEC", "columns", "client", "228", "22", "1h30m", "2026-09",
-		"lamp", "9", "", "todo", "high",
-	} {
-		want := task.Matching(built, []string{q})
-		if got := ReachesCard(card, q); got != want {
-			t.Errorf("ReachesCard(%q) = %v and the command line answers %v", q, got, want)
+// A card is reached by what the engine says a search looks in, and by nothing
+// a board decides for itself: the boards and the command line once kept three
+// copies of one rule, and they drifted.
+func TestACardIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
+	c := Card{Number: 12, Title: "Write the spec", Said: []string{"backend", "high"}}
+	for _, typed := range []string{"backend", "BACKEND high"} {
+		if !ReachesCard(c, typed) {
+			t.Errorf("%q does not reach a card that says it", typed)
 		}
+	}
+	if ReachesCard(c, "spec") {
+		t.Error("a word the engine did not say reached the card")
 	}
 }
 
@@ -197,27 +174,6 @@ func TestFinished_isWhatDoneMeansOnACard(t *testing.T) {
 		if got := Finished(Card{State: tc.state}); got != tc.want {
 			t.Errorf("Finished(%q) = %v, want %v", tc.state, got, tc.want)
 		}
-	}
-}
-
-// The boards searched six fields with one word; the engine searches every fact
-// a task carries, with as many words as were typed, all of them. Two meanings
-// for one word: searching by label was impossible on either board.
-func TestACardIsSearchedTheWayTheEngineSearches(t *testing.T) {
-	c := Card{
-		Number: 12, Title: "Write the spec", State: "current", Priority: "high",
-		Labels: []string{"backend", "sprint-172"},
-	}
-	for _, word := range []string{"backend", "sprint-172", "current", "high"} {
-		if !ReachesCard(c, word) {
-			t.Errorf("a search for %q does not reach the card", word)
-		}
-	}
-	if !ReachesCard(c, "spec backend") {
-		t.Error("two words the card carries do not reach it")
-	}
-	if ReachesCard(c, "spec frontend") {
-		t.Error("a word the card does not carry still reached it")
 	}
 }
 

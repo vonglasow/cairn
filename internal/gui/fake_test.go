@@ -10,6 +10,7 @@ import (
 	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/internal/trace"
+	"cairn/test"
 )
 
 // A stand-in for whatever holds the work. The window asks it questions and
@@ -109,7 +110,7 @@ func (f *fake) gave(thing, verb string) (engine.Input, bool) {
 // a person starts rather than at an empty screen.
 func holding(f *fake, cards ...reading.Card) Window {
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: cards, Focus: f.focus, Version: f.version}
+	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
 	return w
 }
 

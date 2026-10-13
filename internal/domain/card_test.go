@@ -92,3 +92,18 @@ func TestLooking_looksForEverythingInEveryText(t *testing.T) {
 		t.Error("a thing named was left unfound after a text holding it was considered")
 	}
 }
+
+// Reaches is the one rule a search keeps: every thing named sits somewhere in
+// what was said, case aside, and nothing named reaches nothing.
+func TestReaches_isEveryThingNamedSomewhereInWhatIsSaid(t *testing.T) {
+	said := []string{"Write the SPEC", "team"}
+	if !Reaches(said, []string{"spec", "Team"}) {
+		t.Error("two things said do not reach")
+	}
+	if Reaches(said, []string{"spec", "lamp"}) {
+		t.Error("a thing not said reached")
+	}
+	if Reaches(said, nil) {
+		t.Error("nothing named reached")
+	}
+}

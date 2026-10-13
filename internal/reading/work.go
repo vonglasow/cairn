@@ -61,6 +61,8 @@ type Card struct {
 	// showing it answered; empty when the board was not told where the notes
 	// are. See docs/context.md.
 	Context string
+	// Said is what a search looks in, as the engine says it.
+	Said []string
 }
 
 // Described says whether anything is written about the task.
@@ -78,6 +80,8 @@ type Goal struct {
 	Estimate    string
 	Done        int
 	Total       int
+	// Said is what a search looks in, as the engine says it.
+	Said []string
 }
 
 // Described says whether anything is written about the objective.
@@ -194,6 +198,7 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		InFocus:     slices.Contains(held, told.Number),
 		Freed:       slices.Contains(freed, told.Number),
 		Context:     contexts[told.Number],
+		Said:        task.Said(t),
 	}, nil
 }
 
@@ -216,5 +221,6 @@ func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) 
 		Estimate:    told.Estimate,
 		Done:        sofar.Done(),
 		Total:       sofar.Total(),
+		Said:        objective.Said(o),
 	}, nil
 }

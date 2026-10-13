@@ -1,8 +1,9 @@
 # Narrowing a listing, and what looking still reaches
 
 Two commands answer with several tasks. `task list` narrows by the facts that
-come from a closed set; `task search` looks in what somebody typed themselves.
-Neither reaches what the other does, and that boundary is the whole design.
+come from a closed set; `task search` looks in everything a task says, free
+text and closed sets alike. It is the one search, the engine's, and every
+surface asks it.
 
 ## Why a listing narrows at all
 
@@ -28,8 +29,17 @@ contain the word — that was recorded as acceptable in a search. It is not
 acceptable as the only way to ask for a column, which is what it had become.
 
 So the decision reversed, and the second way of asking was removed rather than
-tolerated: looking gave up the fields a listing narrows by. There is still
-exactly one way to ask each question. It is just a different one.
+tolerated: looking gave up the fields a listing narrows by.
+
+## And reversed again
+
+On 2026-10-13 looking took the column, the priority and the labels back. The
+boards have one search box and no narrowing, so a label could only be found
+there by searching for it — and the boards had kept a rule of their own that
+did, while the command line's did not. Two rules for one word is the thing
+this repository refuses, so there is one now, the engine's, and it reaches
+everything. `search high` answers what carries priority high as well as what
+says the word; `--priority high` is still there for the exact question.
 
 ## What each one reaches
 
@@ -40,17 +50,16 @@ exactly one way to ask each question. It is just a different one.
 | deadline | | ✓ |
 | estimate | | ✓ |
 | time spent | | ✓ |
-| column / where it stands | ✓ | |
-| priority | ✓ | |
-| label | ✓ | |
+| column / where it stands | ✓ | ✓ |
+| priority | ✓ | ✓ |
+| label | ✓ | ✓ |
 | objectives served | ✓ | |
 | number | | ✓ |
 | archived | ✓ | |
 | deadline, as a range | ✓ | |
 
-The line falls between **a closed set** and **free text**. A closed set can be
-matched exactly, so it is narrowed by; free text cannot, so it is looked in as
-a substring.
+A closed set can be matched exactly, so it is narrowed by; everything a task
+says, closed or not, is looked in as a substring.
 
 A task's own number is looked in too, and it used not to be. The old reason —
 that looking for "1" would answer 1, 10, 21, and that asking by number is what
@@ -171,33 +180,20 @@ what it hangs under. `task search pipeline` answers the sub-task; the boards
 answer the work it is part of. The difference is deliberate and it is the same
 reason in both directions — say the thing that can be acted on.
 
-## One rule, and it had three implementations
+## One rule, the engine's
 
-`reading.ReachesCard` is what a search reaches, and both boards ask it. They
-did not: the engine looked in six fields, the terminal board in three and the
-window in three, so `search 1h30m` answered on the command line and nothing at
-all on either board. Nobody had decided that; it simply drifted.
+What a search looks in is `task.Said` — `objective.Said` for an objective — and
+whether what was named sits in it is `domain.Reaches`. `task search` asks them
+of the store; a board asks `engine.Reaches` of the card it already holds, whose
+`Said` the engine filled when the board was read. There is no second list of
+fields anywhere to drift.
 
+There were three once: the engine looked in six fields, the terminal board in
+three and the window in three, and then the boards in more than the engine.
 Nothing here could have caught it. Coverage and mutation measure whether the
 tests judge the code that exists, and three tested copies of one rule score
-three perfect marks — mutation *rewards* duplication. depguard forbids a
-dependency and cannot require one: it stops the window reaching the terminal,
-which makes copying five lines easier than lifting them into `reading`. The
-one rule that would have caught it — look for it before you write it — is the
-one with no check behind it.
-
-What holds the two together now is a test rather than a wish:
-`TestReaches_answersWhatTheCommandLineAnswers` builds the same facts through
-`task.AsTold` and as a `Card`, and asserts `ReachesCard` and `task.Matching`
-answer the same of every query. If one moves without the other, it fails.
-
-Its twin `reading.ReachesGoal` had been there all along, asked by both boards.
-The place to share was never missing — only the looking.
-
-What this cost: `search high` no longer answers a task carrying the high
-priority. What it bought: `search high` no longer answers a task whose
-description merely contains the word "highlight". The second was measured; the
-first is what `--priority high` is for.
+three perfect marks — mutation *rewards* duplication. The only cure was to
+keep one.
 
 An objective is narrowed the same way, minus what it serves — nothing puts an
 objective under another.

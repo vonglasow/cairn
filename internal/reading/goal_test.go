@@ -39,30 +39,15 @@ func TestSortedLeavesWhatItWasGivenAlone(t *testing.T) {
 	}
 }
 
-func TestReaches(t *testing.T) {
-	g := Goal{Title: "Ship the desktop board", Description: "before the winter"}
-	for _, query := range []string{"desktop", "DESKTOP", "winter"} {
-		if !ReachesGoal(g, query) {
-			t.Fatalf("%q did not reach it", query)
-		}
+// An objective is reached by what the engine says a search looks in, as a
+// card is.
+func TestAGoalIsReachedByWhatTheEngineSaysItCarries(t *testing.T) {
+	g := Goal{Number: 3, Title: "Ship cairn", Said: []string{"q4", "active"}}
+	if !ReachesGoal(g, "q4 active") {
+		t.Error("what the engine said does not reach the objective")
 	}
-	if ReachesGoal(g, "spec") {
-		t.Fatal("a word that is nowhere in it reached it")
-	}
-}
-
-// An objective was searched on two fields where a task is searched on all of
-// them. One word, "search", and two meanings a tab apart.
-func TestAGoalIsSearchedTheWayACardIs(t *testing.T) {
-	g := Goal{Number: 3, Title: "Ship cairn", State: "active", Priority: "high",
-		Labels: []string{"q4"}}
-	for _, word := range []string{"q4", "active", "high", "3"} {
-		if !ReachesGoal(g, word) {
-			t.Errorf("a search for %q does not reach the objective", word)
-		}
-	}
-	if ReachesGoal(g, "ship q3") {
-		t.Error("a word the objective does not carry still reached it")
+	if ReachesGoal(g, "ship") {
+		t.Error("a word the engine did not say reached the objective")
 	}
 }
 

@@ -436,7 +436,8 @@ Feature: Objectives
     number is what every other command asks for and the one thing nobody
     remembers. What an objective carries is not what a task carries — no
     parent, nothing it serves, no time spent — so what can be looked in
-    differs. The rule does not.
+    differs. The rule does not: its number, where it stands, its priority and
+    its labels are looked in like the rest, as they are on the boards.
 
     @objective-search-by-a-word
     Scenario: a word from the title is the way back to a number
@@ -451,12 +452,37 @@ Feature: Objectives
       When I run `cairn objective search first ship`
       Then it lists 1 objective
 
-    @objective-search-does-not-reach-the-priority
-    Scenario: a priority is narrowed by, not looked for
+    @objective-search-by-its-number
+    Scenario: the number is the way back when it is what somebody has
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn objective search 2`
+      Then it lists 1 objective
+      And it lists objective 2 titled "Ship the docs"
+
+    @objective-search-reaches-where-it-stands
+    Scenario: where it stands is looked in like anything else it carries
+      Given I added an objective titled "Ship cairn 1.0" with the state "on-hold"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn objective search hold`
+      Then it lists 1 objective
+      And it lists objective 1 titled "Ship cairn 1.0"
+
+    @objective-search-reaches-the-priority
+    Scenario: the priority is looked in like anything else it carries
       Given I added an objective titled "Ship cairn 1.0" with the priority "high"
+      And I added an objective titled "Ship the docs"
       When I run `cairn objective search high`
-      Then it succeeds
-      And it says there is no objective
+      Then it lists 1 objective
+      And it lists objective 1 titled "Ship cairn 1.0"
+
+    @objective-search-reaches-a-label
+    Scenario: a label is looked in like anything else it carries
+      Given I added an objective titled "Ship cairn 1.0" with the labels "team" and "urgent"
+      And I added an objective titled "Ship the docs"
+      When I run `cairn objective search urgent`
+      Then it lists 1 objective
+      And it lists objective 1 titled "Ship cairn 1.0"
 
     @objective-search-finds-nothing
     Scenario: looking for what is not there says so
