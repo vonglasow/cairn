@@ -112,7 +112,7 @@ func TestDraggingOutOfALaneReturnsATaskToAColumn(t *testing.T) {
 	w = w.MoveTo(Point{X: onto.X + onto.W/2, Y: onto.Y + onto.H/2})
 	w.LetGo(Point{X: onto.X + onto.W/2, Y: onto.Y + onto.H/2})
 
-	in, asked := f.gave("task", "edit")
+	in, asked := f.gave("task", "move")
 	if !asked {
 		t.Fatal("nothing was asked of the store")
 	}

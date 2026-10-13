@@ -3,10 +3,8 @@
 Read this before touching how tasks are ordered, or before adding anything that
 decides what to do next.
 
-None of this is implemented, and no scenario has been written for it yet. This
-file is the design, settled first so that the scenarios have something to be
-faithful to; once they exist they say what happens, and this file keeps the
-reasons, the way [mcp.md](mcp.md) does for `bdd/mcp.feature`.
+`bdd/ordering.feature` says what happens; this file keeps the reasons, the way
+[mcp.md](mcp.md) does for `bdd/mcp.feature`.
 
 ## The question this answers
 
@@ -286,6 +284,12 @@ column is refused, because a move cannot reach there.
 
 Changing the column is an edit, and it lands the task at the end of the new
 section.
+
+**Both, in one act.** `task move --state todo --after 3` changes the column and
+then places the task, in the same transaction: a place refused leaves the
+column as it was. A card dropped on a board somewhere is one gesture, and it
+was two acts — a refused place left the column changed. The move still means
+one thing; the column is only where it moves first.
 
 ## The criteria answer a question, and never write
 

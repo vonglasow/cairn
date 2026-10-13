@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 
+	"cairn/internal/domain"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 )
@@ -67,6 +68,21 @@ func (e *Engine) move(number int, at Place, target int) error {
 		return err
 	}
 	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
+}
+
+// moveInto puts a task into a column, by the same edit every column change
+// goes through, and only when it is not already there: naming the column a
+// task sits in moves it nowhere.
+func (e *Engine) moveInto(number int, state string) error {
+	was, err := e.tasks.Find(number)
+	if err != nil {
+		return err
+	}
+	if factsOf(was).state == domain.State(state) {
+		return nil
+	}
+	_, err = e.edit(number, Changes{State: &state})
+	return editReason(err)
 }
 
 // moveTo asks for the place itself, and says whether the task went anywhere.
@@ -205,9 +221,10 @@ var TaskMove = Operation{
 	Thing: "task",
 	Verb:  "move",
 	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with. It never changes the column.",
+	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act.",
 	Example: `cairn task move 3 --first
-cairn task move 3 --after 1`,
+cairn task move 3 --after 1
+cairn task move 3 --state todo --after 1`,
 	Level:   Write,
 	Needs:   AStore,
 	Again:   ChangesNothingMore,
@@ -217,10 +234,23 @@ cairn task move 3 --after 1`,
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
 		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
 		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
+		{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column to move it into first, in the same act"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
+		// A column and a place are one gesture on a board — a card dropped
+		// somewhere — and were two acts, so a refused place left the column
+		// changed. Taken in the one act, both or neither.
+		into := in.Change("state")
+		if into != nil {
+			if err := on.Engine.moveInto(n, *into); err != nil {
+				return Answer{}, err
+			}
+		}
 		at, target, err := placeFrom(in)
+		if errors.Is(err, ErrNowhereToMove) && into != nil {
+			return listing(on, Input{})
+		}
 		if err != nil {
 			return Answer{}, err
 		}

@@ -276,15 +276,11 @@ lands on what it opened and is a press there.
 follows the pointer; below that it is a click. Without the threshold, a shaky
 click would move a task.
 
-**A drop carries the column and the place.** That is `task edit --state`, then
-`task move --after`. Two acts in the trace for one gesture, and no transaction
-between them: if the second fails, the board refreshes and shows the truth —
-column changed, place not. Visible rather than silent.
-
-Carrying only the column was the alternative: one operation, one line of
-trace, faithful to an engine that refuses to change a column and a place in
-one act. It was turned down because dropping a card precisely somewhere and
-watching it land elsewhere is a small betrayal of the hand.
+**A drop carries the column and the place.** That is one `task move --state
+todo --after 3`: the column and the place in one act, so a place refused
+leaves the column as it was. It used to be an edit and then a move, with
+nothing between them, and a refused move left the task in a column it was
+never dropped in.
 
 **Sub-tasks are not drawn on the board**, so every card on it hangs under
 nothing and any card may take any place. There was a rule here that drew no

@@ -37,8 +37,8 @@ func TestEveryPointerEventItsGesture(t *testing.T) {
 	if dropped.Dragging() {
 		t.Error("a release left the card in hand")
 	}
-	if f.what("task", "edit") != 1 {
-		t.Errorf("the drop asked for %d edits", f.what("task", "edit"))
+	if f.what("task", "move") != 1 || f.what("task", "edit") != 0 {
+		t.Errorf("the drop asked for %d moves and %d edits, want one move", f.what("task", "move"), f.what("task", "edit"))
 	}
 
 	scrolled := Pointed(w, pointer.Scroll, at, CardHeight)
@@ -150,9 +150,9 @@ func TestAWindowBigEnoughSaysNothingAboutItsSize(t *testing.T) {
 	}
 }
 
-// A move the store refuses is said, and the column change that went before it
-// stands — which is what having no transaction between the two means.
-func TestAMoveRefusedAfterTheColumnChangedSaysSo(t *testing.T) {
+// A drop the store refuses is said, and it is one act: no column change is
+// asked for on its own beforehand, to stand when the place is refused.
+func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 	f := newFake()
 	f.refuseMove = errRefuse
 	w := holding(f,
@@ -166,8 +166,8 @@ func TestAMoveRefusedAfterTheColumnChangedSaysSo(t *testing.T) {
 	if w.Wrong() == nil {
 		t.Fatal("a refused move said nothing")
 	}
-	if f.what("task", "edit") != 1 {
-		t.Error("the column change did not go through before the move was tried")
+	if f.what("task", "edit") != 0 {
+		t.Error("a column change was asked for apart from the move")
 	}
 }
 
@@ -183,8 +183,8 @@ func TestATaskTheReadingDoesNotHoldStillMoves(t *testing.T) {
 	w = w.MoveTo(middleOf(w, 1, 0))
 	w.LetGo(middleOf(w, 1, 0))
 
-	if f.what("task", "edit") != 1 {
-		t.Errorf("asked for %d edits", f.what("task", "edit"))
+	if f.what("task", "move") != 1 {
+		t.Errorf("asked for %d moves", f.what("task", "move"))
 	}
 }
 

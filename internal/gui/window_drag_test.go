@@ -18,17 +18,17 @@ func TestDroppingACardInAnotherColumnChangesItsState(t *testing.T) {
 	w = w.MoveTo(middleOf(w, 1, 0))
 	w.LetGo(middleOf(w, 1, 0))
 
-	if f.what("task", "edit") != 1 {
-		t.Fatalf("the store was asked %d edits", f.what("task", "edit"))
+	if f.what("task", "move") != 1 || f.what("task", "edit") != 0 {
+		t.Fatalf("the store was asked %d moves and %d edits", f.what("task", "move"), f.what("task", "edit"))
 	}
-	in, _ := f.gave("task", "edit")
+	in, _ := f.gave("task", "move")
 	if in.Given["number"] != "1" || in.Given["state"] != "todo" {
-		t.Errorf("asked to edit %+v, want task 1 into todo", in.Given)
+		t.Errorf("asked to move %+v, want task 1 into todo", in.Given)
 	}
 }
 
-// A drop says two things at once, and the engine is told them in that order:
-// a column is an edit, a place is a move, and it refuses to do both in one act.
+// A drop says two things at once, and the engine is told both in one act: the
+// column and the place, or neither.
 func TestDroppingACardAboveAnotherCarriesBothTheColumnAndThePlace(t *testing.T) {
 	f := newFake()
 	w := holding(f,
@@ -40,16 +40,13 @@ func TestDroppingACardAboveAnotherCarriesBothTheColumnAndThePlace(t *testing.T) 
 	w = w.MoveTo(middleOf(w, 1, 1))
 	w.LetGo(middleOf(w, 1, 1))
 
-	if f.what("task", "edit") != 1 || f.what("task", "move") != 1 {
-		t.Fatalf("asked %d edits and %d moves, want one of each",
+	if f.what("task", "edit") != 0 || f.what("task", "move") != 1 {
+		t.Fatalf("asked %d edits and %d moves, want one move",
 			f.what("task", "edit"), f.what("task", "move"))
 	}
-	if f.asked[0].op.Verb != "edit" {
-		t.Error("the move was asked for before the column had changed")
-	}
 	in, _ := f.gave("task", "move")
-	if in.Given["number"] != "3" || in.Given["after"] != "1" {
-		t.Errorf("asked to move %+v, want task 3 behind task 1", in.Given)
+	if in.Given["number"] != "3" || in.Given["after"] != "1" || in.Given["state"] != "todo" {
+		t.Errorf("asked to move %+v, want task 3 into todo behind task 1", in.Given)
 	}
 }
 
@@ -87,7 +84,7 @@ func TestDroppingACardInALaneSaysWhichKindOfStopped(t *testing.T) {
 			w = w.MoveTo(inLane(w, lane))
 			w.LetGo(inLane(w, lane))
 
-			in, asked := f.gave("task", "edit")
+			in, asked := f.gave("task", "move")
 			if !asked {
 				t.Fatal("nothing was asked of the store")
 			}

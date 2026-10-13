@@ -27,8 +27,8 @@ type fake struct {
 	// different faults, and a window that muddled them would say the wrong one.
 	fail   error
 	failOp error
-	// refuseMove refuses the second half of a drop and nothing else, which is
-	// the one thing a real store cannot be asked for on demand.
+	// refuseMove refuses a move and nothing else, which a real store cannot be
+	// asked for on demand.
 	refuseMove error
 	// refuseDelete refuses a deletion and nothing else, which is how the last
 	// of several writes in one gesture is reached: the ones before it have to

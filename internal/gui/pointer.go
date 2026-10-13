@@ -492,34 +492,23 @@ func (w Window) at(p Point) int {
 
 // dropped is what a card let go somewhere means. A drop says two things at
 // once — which column, and which place among the cards there — and the engine
-// is told them in that order, because it refuses to do both in one act.
-//
-// There is no transaction between the two. If the second is refused, the task
-// has changed column and not place, and the board says so when it looks again:
-// visible rather than silent.
+// is told both in one act, so a refused place leaves the column as it was.
 func (w Window) dropped(number int, p Point) Window {
-	l := w.Layout()
-	state, place, found := w.where(l, p)
+	state, place, found := w.where(w.Layout(), p)
 	if !found {
 		return w
 	}
+	given := map[string]string{"number": strconv.Itoa(number)}
 	if state != w.stateOf(number) {
-		asked := engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(number),
-			"state":  state,
-		}}
-		if _, err := w.work.Ask(engine.TaskEdit, asked); err != nil {
-			return w.failing(err)
-		}
+		given["state"] = state
 	}
-	if len(place) > 0 {
-		given := map[string]string{"number": strconv.Itoa(number)}
-		for name, value := range place {
-			given[name] = value
-		}
-		return w.asking(engine.TaskMove, engine.Input{Given: given})
+	for name, value := range place {
+		given[name] = value
 	}
-	return w.Look()
+	if len(given) == 1 {
+		return w.Look()
+	}
+	return w.asking(engine.TaskMove, engine.Input{Given: given})
 }
 
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {

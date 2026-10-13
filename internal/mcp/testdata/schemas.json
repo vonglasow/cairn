@@ -2701,6 +2701,19 @@
         "number": {
           "description": "the number of the task",
           "type": "integer"
+        },
+        "state": {
+          "description": "the column to move it into first, in the same act",
+          "enum": [
+            "backlog",
+            "todo",
+            "current",
+            "blocked",
+            "watching",
+            "paused",
+            "done"
+          ],
+          "type": "string"
         }
       },
       "required": [

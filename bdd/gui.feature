@@ -428,7 +428,8 @@ Feature: The desktop board
   Rule: Dragging a card moves the work
 
     A drop says two things at once — which column, and which place among the
-    cards there — and the engine is told them in that order.
+    cards there — and the engine is told both in one act: when the place is
+    refused, the column stays as it was.
 
     @gui-a-small-move-is-still-a-click
     Scenario: a click that barely moves is a click
@@ -452,7 +453,8 @@ Feature: The desktop board
       Given I added a task titled "Write the spec" with the state "backlog"
       When I open the window
       And I drag the card "Write the spec" onto "TODO"
-      Then the engine was asked "task edit" for task 1
+      Then the engine was asked "task move" for task 1
+      And the engine was not asked "task edit"
       And task 1 is in the column "todo"
 
     @gui-a-drag-carries-the-place

@@ -108,8 +108,8 @@ func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 		pointer.Event{Kind: pointer.Move, Position: onto, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: onto, Buttons: pointer.ButtonPrimary},
 	)
-	if f.what("task", "edit") != 1 {
-		t.Fatalf("a drag across columns asked for %d edits", f.what("task", "edit"))
+	if f.what("task", "move") != 1 {
+		t.Fatalf("a drag across columns asked for %d moves", f.what("task", "move"))
 	}
 }
 

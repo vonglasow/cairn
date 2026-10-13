@@ -125,6 +125,38 @@ Feature: Ordering
       And it says a task is moved inside its own column
       And it says which column each of them is in
 
+  Rule: A task is moved to another column and a place in one act
+
+    Dropping a card into another column at a place is one gesture, and it was
+    two acts: a column change, then a move. When the move was refused the task
+    had changed column and not place. Named together they are one act, both
+    or neither.
+
+    @ordering-moved-into-another-column-at-a-place
+    Scenario: a task is moved into another column, behind one already there
+      Given I added a task titled "Coming from the backlog"
+      And I added a task titled "Already to do" with the state "todo"
+      And I added a task titled "Also to do" with the state "todo"
+      When I run `cairn task move 1 --state todo --after 2`
+      Then it lists the tasks in the order "Already to do", "Coming from the backlog", "Also to do"
+
+    @ordering-moved-into-another-column-lands-last
+    Scenario: a task moved into another column with no place lands last in it
+      Given I added a task titled "Coming from the backlog"
+      And I added a task titled "Already to do" with the state "todo"
+      When I run `cairn task move 1 --state todo`
+      Then it lists the tasks in the order "Already to do", "Coming from the backlog"
+
+    @ordering-moved-into-another-column-or-not-at-all
+    Scenario: a place refused leaves the task in the column it was in
+      Given I added a task titled "Coming from the backlog"
+      And I added a task titled "Already to do" with the state "todo"
+      When I run `cairn task move 1 --state todo --after 99`
+      Then it fails
+      And it says there is no such task
+      When I run `cairn task list --state backlog`
+      Then it lists task 1 titled "Coming from the backlog"
+
   Rule: A move that cannot be carried out is refused, and says why
 
     @ordering-moved-that-does-not-exist

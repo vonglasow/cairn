@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"cairn/internal/domain"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 )
@@ -542,5 +543,38 @@ func TestTaskUnfocus_letsGoOfTheTaskItWasGiven(t *testing.T) {
 	}
 	if len(answer.Held) != 1 || factsOf(answer.Held[0]).title != "Second" {
 		t.Errorf("it answered with %d tasks, want the one still held", len(answer.Held))
+	}
+}
+
+// A column and a place named together are one act: the task goes into the
+// column and to the place, and a place that cannot be had leaves it where it
+// was — the change of column with it.
+func TestTaskMove_takesAColumnAndAPlaceInOneAct(t *testing.T) {
+	e := openEngine(t)
+	first, second, third := three(t, e)
+	for _, n := range []int{second, third} {
+		if _, err := e.Ask(TaskEdit, Input{Given: map[string]string{"number": itoaEngine(n), "state": "todo"}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := e.Ask(TaskMove, Input{Given: map[string]string{
+		"number": itoaEngine(first), "state": "todo", "after": itoaEngine(second)}}); err != nil {
+		t.Fatalf("a column and a place together: %v", err)
+	}
+	kept := &domain.Narrowing{}
+	kept.InColumn("todo")
+	todo, err := e.narrowed(kept)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := titlesOfTasks(todo); !slices.Equal(got, []string{"Second", "First", "Third"}) {
+		t.Errorf("the column reads %v", got)
+	}
+	if _, err := e.Ask(TaskMove, Input{Given: map[string]string{
+		"number": itoaEngine(first), "state": "done", "after": "99"}}); err == nil {
+		t.Fatal("a place that is not there was taken")
+	}
+	if got, _ := e.tasks.Find(first); factsOf(got).state != "todo" {
+		t.Errorf("a refused move left the task in %q", factsOf(got).state)
 	}
 }
