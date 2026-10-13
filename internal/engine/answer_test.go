@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/migration"
@@ -36,7 +35,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Carries(domain.High)
 	a.Labelled("spec")
 	a.Labelled("team")
-	a.LabelsTold()
 	a.Due(deadline)
 	a.Estimated(estimate)
 	a.Spent(spent)
@@ -127,22 +125,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		oa.Titled("Ship it")
 		oa.Standing(objective.Active)
 		oa.Carries(domain.Normal)
-		oa.NotDescribed()
-		oa.NotLabelled()
-		oa.LabelsTold()
-		oa.NotDue()
-		oa.NotEstimated()
 		obj := oa.Objective()
 		backup := domain.Backup{Number: 2}
 		held := domain.Held{Tasks: 3, Objectives: 1}
-		var ca migration.AsTold
-		ca.Numbered(1)
-		ca.Named("add labels")
-		ca.Does("ALTER TABLE tasks ADD COLUMN labels")
-		ca.NotUndoable()
-		ca.NothingLost()
-		ca.Applied(time.Time{})
-		change := ca.Migration()
+		change := migration.Made(migration.Carried{Number: 1, Name: "add labels", Does: "ALTER TABLE tasks ADD COLUMN labels", Applied: true})
 
 		cases := []struct {
 			name string
@@ -199,19 +185,10 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	ta.Titled("Write the spec")
 	ta.InColumn(domain.Todo)
 	ta.Carries(domain.Normal)
-	ta.NotDescribed()
-	ta.NotLabelled()
-	ta.LabelsTold()
-	ta.NotDue()
-	ta.NotEstimated()
-	ta.NothingSpent()
-	ta.UnderNothing()
-	ta.ServesNothing()
 	built := ta.Task()
 	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
 
-	var sa task.AsTold
-	built.Tell(&sa)
+	sa := task.From(built)
 	sa.Numbered(2)
 	sa.Titled("Read it first")
 	sa.Under(1)
@@ -222,24 +199,12 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	oa.Titled("Ship it")
 	oa.Standing(objective.Active)
 	oa.Carries(domain.Normal)
-	oa.NotDescribed()
-	oa.NotLabelled()
-	oa.LabelsTold()
-	oa.NotDue()
-	oa.NotEstimated()
 	obj := oa.Objective()
 
 	backup := domain.Backup{Number: 2}
 	held := domain.Held{Tasks: 3, Objectives: 1}
 
-	var ca migration.AsTold
-	ca.Numbered(1)
-	ca.Named("add labels")
-	ca.Does("ALTER TABLE tasks ADD COLUMN labels")
-	ca.NotUndoable()
-	ca.NothingLost()
-	ca.Applied(time.Time{})
-	change := ca.Migration()
+	change := migration.Made(migration.Carried{Number: 1, Name: "add labels", Does: "ALTER TABLE tasks ADD COLUMN labels", Applied: true})
 
 	deleted := 7
 	putBack := 9
@@ -393,7 +358,7 @@ func builtTask(t *testing.T, number int, title string) task.Task {
 		t.Fatalf("NewTask(%q): %v", title, err)
 	}
 	a := &task.AsTold{}
-	built.Tell(a)
+	*a = task.From(built)
 	a.Numbered(number)
 	return a.Task()
 }

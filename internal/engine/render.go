@@ -102,7 +102,7 @@ func stoodText(t task.Task, since time.Time) string {
 	if since.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).state, domain.FormatDay(since.Local()), daysSince(since, time.Now()))
+	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).State, domain.FormatDay(since.Local()), daysSince(since, time.Now()))
 }
 
 func daysSince(since, now time.Time) string {

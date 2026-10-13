@@ -45,7 +45,7 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		if parts == nil {
 			return Answer{Task: &added, Progress: domain.Progress{}}, nil
 		}
-		n := factsOf(added).number
+		n := factsOf(added).Number
 		if err := on.Engine.settleParts(n, *parts); err != nil {
 			return Answer{}, err
 		}
@@ -479,7 +479,7 @@ func listing(on On, in Input) (Answer, error) {
 	}
 	contexts := map[int]string{}
 	for _, t := range tasks {
-		n := factsOf(t).number
+		n := factsOf(t).Number
 		contexts[n] = on.contextOf(n)
 	}
 	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts}

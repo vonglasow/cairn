@@ -215,7 +215,6 @@ func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 	told.On(1)
 	told.Did("created")
 	told.Changing("title")
-	told.WasNothing()
 	told.Became("Parent")
 	told.At(today)
 	f.acts = []trace.Act{told.Act()}

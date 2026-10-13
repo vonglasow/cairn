@@ -59,7 +59,7 @@ func (e *Engine) moveInto(number int, state string) error {
 	if err != nil {
 		return err
 	}
-	if factsOf(was).state == domain.State(state) {
+	if factsOf(was).State == domain.State(state) {
 		return nil
 	}
 	_, err = e.edit(number, Changes{State: &state})

@@ -52,45 +52,20 @@ type boundTask struct {
 	archived        bool
 }
 
-func (b *boundTask) Numbered(n int)            { b.number = n }
-func (b *boundTask) Titled(s string)           { b.title = s }
-func (b *boundTask) InColumn(s domain.State)   { b.state = string(s) }
-func (b *boundTask) Archived()                 { b.archived = true }
-func (b *boundTask) NotArchived()              { b.archived = false }
-func (b *boundTask) Carries(p domain.Priority) { b.priority = string(p) }
-func (b *boundTask) Described(s string)        { b.description = s }
-func (b *boundTask) NotDescribed()             { b.description = "" }
-func (b *boundTask) Labelled(s string)         { b.labels = append(b.labels, s) }
-func (b *boundTask) NotLabelled()              { b.labels = nil }
-func (b *boundTask) LabelsTold()               {}
-func (b *boundTask) BlockedBy(n int)           { b.blockers = append(b.blockers, n) }
-func (b *boundTask) NotBlocked()               { b.blockers = nil }
-func (b *boundTask) BlockersTold()             {}
-func (b *boundTask) Because(s string)          { b.because = s }
-func (b *boundTask) NotBecause()               { b.because = "" }
-func (b *boundTask) Due(t time.Time)           { b.deadline = domain.FormatDay(t) }
-func (b *boundTask) NotDue()                   { b.deadline = "" }
-func (b *boundTask) Estimated(d time.Duration) { b.estimate = int64(d) }
-func (b *boundTask) NotEstimated()             { b.estimate = 0 }
-func (b *boundTask) Spent(d time.Duration)     { b.spent = int64(d) }
-func (b *boundTask) NothingSpent()             { b.spent = 0 }
-func (b *boundTask) Under(n int)               { b.parent = n }
-func (b *boundTask) UnderNothing()             { b.parent = task.NoParent }
-func (b *boundTask) Serves(n int)              { b.objectives = append(b.objectives, n) }
-func (b *boundTask) ServesNothing()            { b.objectives = nil }
-func (b *boundTask) ObjectivesTold()           {}
-
 func bind(t task.Task) *boundTask {
-	b := &boundTask{}
-	t.Tell(b)
-	return b
+	c := t.Carried()
+	return &boundTask{
+		number: c.Number, parent: c.Parent, title: c.Title, description: c.Description,
+		state: string(c.State), priority: string(c.Priority), deadline: domain.FormatDay(c.Deadline),
+		labels: c.Labels, blockers: c.Blockers, objectives: c.Objectives, because: c.Because,
+		estimate: int64(c.Estimate), spent: int64(c.Spent), archived: c.Archived,
+	}
 }
 
 func renumbered(t task.Task, number int) task.Task {
-	a := &task.AsTold{}
-	t.Tell(a)
-	a.Numbered(number)
-	return a.Task()
+	c := t.Carried()
+	c.Number = number
+	return task.Made(c)
 }
 
 // Keep records a task and hands it back carrying the number it was given.
@@ -272,28 +247,18 @@ func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 		return task.Task{}, err
 	}
 
-	a := &task.AsTold{}
-	a.Numbered(number)
-	a.Titled(title)
-	a.InColumn(domain.State(state))
-	if archived {
-		a.Archived()
-	} else {
-		a.NotArchived()
+	return task.Made(task.Carried{
+		Number: number, Parent: parent, Title: title, Description: description,
+		State: domain.State(state), Priority: domain.Priority(priority),
+		Labels: noneIsNil(labels), Blockers: noneIsNil(blockers), Objectives: noneIsNil(objectives),
+		Because: because, Deadline: day, Estimate: time.Duration(estimate), Spent: time.Duration(spent),
+		Archived: archived,
+	}), nil
+}
+
+func noneIsNil[T any](s []T) []T {
+	if len(s) == 0 {
+		return nil
 	}
-	a.Carries(domain.Priority(priority))
-	domain.TellOrNot(description, a.Described, a.NotDescribed)
-	domain.TellAll(labels, a.Labelled, a.NotLabelled, a.LabelsTold)
-	domain.TellAll(blockers, a.BlockedBy, a.NotBlocked, a.BlockersTold)
-	domain.TellOrNot(because, a.Because, a.NotBecause)
-	domain.TellOrNot(day, a.Due, a.NotDue)
-	domain.TellOrNot(time.Duration(estimate), a.Estimated, a.NotEstimated)
-	domain.TellOrNot(time.Duration(spent), a.Spent, a.NothingSpent)
-	if parent == task.NoParent {
-		a.UnderNothing()
-	} else {
-		a.Under(parent)
-	}
-	domain.TellAll(objectives, a.Serves, a.ServesNothing, a.ObjectivesTold)
-	return a.Task(), nil
+	return s
 }

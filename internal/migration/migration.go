@@ -14,37 +14,20 @@ type Migration struct {
 	made    time.Time
 }
 
-// Told is the membrane of a change: one method per fact it has to tell, absence included.
-type Told interface {
-	Numbered(int)
-	Named(string)
-	Does(string)
-	Undoes(string)
-	NotUndoable()
-	Loses(string)
-	NothingLost()
-	Applied(time.Time)
-	NotApplied()
+// Carried is everything a change carries, as plain facts.
+type Carried struct {
+	Number                    int
+	Name, Does, Undoes, Loses string
+	Applied                   bool
+	Made                      time.Time
 }
 
-// Tell says every fact this change carries to the given membrane, absence included, in the order a card lays them out.
-func (m Migration) Tell(to Told) {
-	to.Numbered(m.number)
-	to.Named(m.name)
-	to.Does(m.does)
-	if m.undoes == "" {
-		to.NotUndoable()
-	} else {
-		to.Undoes(m.undoes)
-	}
-	if m.loses == "" {
-		to.NothingLost()
-	} else {
-		to.Loses(m.loses)
-	}
-	if m.applied {
-		to.Applied(m.made)
-	} else {
-		to.NotApplied()
-	}
+// Carried hands over what the change carries.
+func (m Migration) Carried() Carried {
+	return Carried{Number: m.number, Name: m.name, Does: m.does, Undoes: m.undoes, Loses: m.loses, Applied: m.applied, Made: m.made}
+}
+
+// Made is the change that carries what is given.
+func Made(c Carried) Migration {
+	return Migration{number: c.Number, name: c.Name, does: c.Does, undoes: c.Undoes, loses: c.Loses, applied: c.Applied, made: c.Made}
 }

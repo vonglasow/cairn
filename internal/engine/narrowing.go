@@ -87,7 +87,7 @@ var ErrNotOneOf = errors.New("not one of")
 func heldAmong(tasks []task.Task, inFocus []int) []int {
 	kept := make([]int, 0, len(inFocus))
 	for _, one := range tasks {
-		if number := factsOf(one).number; slices.Contains(inFocus, number) {
+		if number := factsOf(one).Number; slices.Contains(inFocus, number) {
 			kept = append(kept, number)
 		}
 	}

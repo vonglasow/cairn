@@ -10,15 +10,7 @@ import (
 )
 
 func act(did, field, was, became, through string, at time.Time) trace.Act {
-	var a trace.AsTold
-	a.On(1)
-	a.Did(did)
-	domain.TellOrNot(field, a.Changing, a.NothingNamed)
-	domain.TellOrNot(was, a.Was, a.WasNothing)
-	domain.TellOrNot(became, a.Became, a.BecameNothing)
-	domain.TellOrNot(through, a.Through, a.ByHand)
-	a.At(at)
-	return a.Act()
+	return trace.Made(trace.Carried{Task: 1, Did: did, Field: field, Was: was, Became: became, Through: through, At: at})
 }
 
 func TestSaid_isOneLineOfAHistoryTheWayAPersonReadsIt(t *testing.T) {

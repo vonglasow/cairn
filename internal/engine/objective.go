@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"time"
-
 	"cairn/internal/domain"
 	"cairn/internal/objective"
 	"cairn/internal/store"
@@ -95,45 +93,14 @@ func (e *Engine) deleteObjective(number int) error {
 	return e.objectives.DeleteObjective(number)
 }
 
-type objectiveFacts struct {
-	number             int
-	title, description string
-	state              objective.State
-	priority           domain.Priority
-	labels             []string
-	deadline           time.Time
-	estimate           time.Duration
-}
-
-func (f *objectiveFacts) Numbered(n int)             { f.number = n }
-func (f *objectiveFacts) Titled(s string)            { f.title = s }
-func (f *objectiveFacts) Standing(s objective.State) { f.state = s }
-func (f *objectiveFacts) Carries(p domain.Priority)  { f.priority = p }
-func (f *objectiveFacts) Described(s string)         { f.description = s }
-func (f *objectiveFacts) NotDescribed()              { f.description = "" }
-func (f *objectiveFacts) Labelled(l string)          { f.labels = append(f.labels, l) }
-func (f *objectiveFacts) NotLabelled()               { f.labels = nil }
-func (f *objectiveFacts) LabelsTold()                {}
-func (f *objectiveFacts) Due(t time.Time)            { f.deadline = t }
-func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} }
-func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
-func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
-
-func factsOfObjective(o objective.Objective) objectiveFacts {
-	var f objectiveFacts
-	o.Tell(&f)
-	return f
-}
+func factsOfObjective(o objective.Objective) objective.Carried { return o.Carried() }
 
 func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) (objective.Objective, error) {
-	current := factsOfObjective(o)
-	a := &objective.AsTold{}
-	o.Tell(a)
-
-	if err := applyCarried(a, "an objective", carriedChanges{
+	a := o.Carried()
+	if err := applyCarried(carriedTo{&a.Title, &a.Description, &a.Priority, &a.Labels, &a.Deadline, &a.Estimate}, "an objective", carriedChanges{
 		title: c.Title, description: c.Description, priority: c.Priority,
 		labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
-	}, current.labels, atCreation); err != nil {
+	}, atCreation); err != nil {
 		return objective.Objective{}, err
 	}
 	if c.State != nil {
@@ -141,13 +108,13 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 		if err != nil {
 			return objective.Objective{}, err
 		}
-		a.Standing(state)
+		a.State = state
 	}
-	return a.Objective(), nil
+	return objective.Made(a), nil
 }
 
 func (e *Engine) canServe(t task.Task) error {
-	served := factsOf(t).objectives
+	served := factsOf(t).Objectives
 	if len(served) == 0 {
 		return nil
 	}
@@ -190,8 +157,8 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	serves := map[int][]int{}
 	for _, t := range all {
 		f := factsOf(t)
-		serves[f.number] = f.objectives
-		for _, o := range f.objectives {
+		serves[f.Number] = f.Objectives
+		for _, o := range f.Objectives {
 			p := objectives[o]
 			p.Tasks = counted(p.Tasks, t)
 			objectives[o] = p
@@ -199,13 +166,13 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	}
 	for _, t := range all {
 		f := factsOf(t)
-		if f.parent == task.NoParent {
+		if f.Parent == task.NoParent {
 			continue
 		}
-		p := tasks[f.parent]
+		p := tasks[f.Parent]
 		p.SubTasks = counted(p.SubTasks, t)
-		tasks[f.parent] = p
-		for _, o := range serves[f.parent] {
+		tasks[f.Parent] = p
+		for _, o := range serves[f.Parent] {
 			p := objectives[o]
 			p.SubTasks = counted(p.SubTasks, t)
 			objectives[o] = p
@@ -226,11 +193,7 @@ func (e *Engine) taskProgress(number int) (domain.Progress, error) {
 	return p, nil
 }
 
-func counted(tally domain.Tally, t task.Task) domain.Tally {
-	c := task.NewCounter(tally)
-	t.Tell(c)
-	return c.Tally()
-}
+func counted(tally domain.Tally, t task.Task) domain.Tally { return task.Count(tally, t) }
 
 var objectiveAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the objective is about"},

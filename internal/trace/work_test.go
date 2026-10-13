@@ -19,10 +19,6 @@ func tookOn(task, day, hour, minute int) Act {
 	var a AsTold
 	a.On(task)
 	a.Did(FocusTaken)
-	a.NothingNamed()
-	a.WasNothing()
-	a.BecameNothing()
-	a.ByHand()
 	a.At(atOn(day, hour, minute))
 	return a.Act()
 }
@@ -33,10 +29,6 @@ func stoppedOn(task, day, hour, minute int) Act {
 	var a AsTold
 	a.On(task)
 	a.Did(FocusReleased)
-	a.NothingNamed()
-	a.WasNothing()
-	a.BecameNothing()
-	a.ByHand()
 	a.At(atOn(day, hour, minute))
 	return a.Act()
 }
@@ -48,7 +40,6 @@ func somethingElse(task, hour, minute int) Act {
 	a.Changing("priority")
 	a.Was("normal")
 	a.Became("high")
-	a.ByHand()
 	a.At(at(hour, minute))
 	return a.Act()
 }
@@ -57,10 +48,8 @@ func added(task int, day, span string, recorded time.Time) Act {
 	var a AsTold
 	a.On(task)
 	a.Did(TimeAdded)
-	a.NothingNamed()
 	a.Was(day)
 	a.Became(span)
-	a.ByHand()
 	a.At(recorded)
 	return a.Act()
 }

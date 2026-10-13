@@ -4,6 +4,7 @@ package task
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -44,57 +45,39 @@ type Task struct {
 	archived    bool
 }
 
-// Told is the membrane of a task: one method per fact it has to tell, absence included.
-type Told interface {
-	Numbered(int)
-	Titled(string)
-	InColumn(domain.State)
-	Carries(domain.Priority)
-	Described(string)
-	NotDescribed()
-	Labelled(string)
-	NotLabelled()
-	LabelsTold()
-	BlockedBy(int)
-	NotBlocked()
-	BlockersTold()
-	Because(string)
-	NotBecause()
-	Due(time.Time)
-	NotDue()
-	Estimated(time.Duration)
-	NotEstimated()
-	Spent(time.Duration)
-	NothingSpent()
-	Archived()
-	NotArchived()
-	Under(int)
-	UnderNothing()
-	Serves(int)
-	ServesNothing()
-	ObjectivesTold()
+// Carried is everything a task carries, as plain facts.
+type Carried struct {
+	Number, Parent       int
+	Title, Description   string
+	State                domain.State
+	Priority             domain.Priority
+	Labels               []string
+	Blockers, Objectives []int
+	Because              string
+	Deadline             time.Time
+	Estimate, Spent      time.Duration
+	Archived             bool
 }
 
-// Tell says every fact this task carries to the given membrane, absence included, in the order a card lays them out.
-func (t Task) Tell(to Told) {
-	to.Numbered(t.number)
-	to.Titled(t.title)
-	to.InColumn(t.state)
-	if t.archived {
-		to.Archived()
-	} else {
-		to.NotArchived()
+// Carried hands over what the task carries.
+func (t Task) Carried() Carried {
+	return Carried{
+		Number: t.number, Parent: t.parent, Title: t.title, Description: t.description,
+		State: t.state, Priority: t.priority, Labels: slices.Clone(t.labels),
+		Blockers: slices.Clone(t.blockers), Objectives: slices.Clone(t.objectives),
+		Because: t.because, Deadline: t.deadline, Estimate: t.estimate, Spent: t.timeSpent,
+		Archived: t.archived,
 	}
-	to.Carries(t.priority)
-	domain.TellOrNot(t.description, to.Described, to.NotDescribed)
-	domain.TellAll(t.labels, to.Labelled, to.NotLabelled, to.LabelsTold)
-	domain.TellAll(t.blockers, to.BlockedBy, to.NotBlocked, to.BlockersTold)
-	domain.TellOrNot(t.because, to.Because, to.NotBecause)
-	domain.TellOrNot(t.deadline, to.Due, to.NotDue)
-	domain.TellOrNot(t.estimate, to.Estimated, to.NotEstimated)
-	domain.TellOrNot(t.timeSpent, to.Spent, to.NothingSpent)
-	domain.TellOrNot(t.parent, to.Under, to.UnderNothing)
-	domain.TellAll(t.objectives, to.Serves, to.ServesNothing, to.ObjectivesTold)
+}
+
+// Made is the task that carries what is given.
+func Made(c Carried) Task {
+	return Task{
+		number: c.Number, parent: c.Parent, title: c.Title, description: c.Description,
+		state: c.State, priority: c.Priority, labels: c.Labels, blockers: c.Blockers,
+		objectives: c.Objectives, because: c.Because, deadline: c.Deadline,
+		estimate: c.Estimate, timeSpent: c.Spent, archived: c.Archived,
+	}
 }
 
 // MayCarrySubTasks says whether a task may have another hang under it.

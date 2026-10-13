@@ -18,21 +18,21 @@ type history interface {
 
 var theAttributes = []struct {
 	named string
-	value func(taskFacts) string
+	value func(task.Carried) string
 }{
-	{"title", func(f taskFacts) string { return f.title }},
-	{"description", func(f taskFacts) string { return f.description }},
-	{"column", func(f taskFacts) string { return string(f.state) }},
-	{"priority", func(f taskFacts) string { return string(f.priority) }},
-	{"labels", func(f taskFacts) string { return strings.Join(f.labels, ", ") }},
-	{"blockers", func(f taskFacts) string { return numbersOrNothing(f.blockers) }},
-	{"because", func(f taskFacts) string { return f.because }},
-	{"deadline", func(f taskFacts) string { return domain.FormatDay(f.deadline) }},
-	{"estimate", func(f taskFacts) string { return domain.FormatDuration(f.estimate) }},
-	{"time spent", func(f taskFacts) string { return domain.FormatDuration(f.timeSpent) }},
-	{"parent", func(f taskFacts) string { return numberOrNothing(f.parent) }},
-	{"objectives", func(f taskFacts) string { return numbersOrNothing(f.objectives) }},
-	{"archived", func(f taskFacts) string { return yesOrNothing(f.archived) }},
+	{"title", func(f task.Carried) string { return f.Title }},
+	{"description", func(f task.Carried) string { return f.Description }},
+	{"column", func(f task.Carried) string { return string(f.State) }},
+	{"priority", func(f task.Carried) string { return string(f.Priority) }},
+	{"labels", func(f task.Carried) string { return strings.Join(f.Labels, ", ") }},
+	{"blockers", func(f task.Carried) string { return numbersOrNothing(f.Blockers) }},
+	{"because", func(f task.Carried) string { return f.Because }},
+	{"deadline", func(f task.Carried) string { return domain.FormatDay(f.Deadline) }},
+	{"estimate", func(f task.Carried) string { return domain.FormatDuration(f.Estimate) }},
+	{"time spent", func(f task.Carried) string { return domain.FormatDuration(f.Spent) }},
+	{"parent", func(f task.Carried) string { return numberOrNothing(f.Parent) }},
+	{"objectives", func(f task.Carried) string { return numbersOrNothing(f.Objectives) }},
+	{"archived", func(f task.Carried) string { return yesOrNothing(f.Archived) }},
 }
 
 func (e *Engine) historyOf(number int) ([]trace.Act, error) {
@@ -60,7 +60,7 @@ func (e *Engine) since(day time.Time) ([]trace.Act, error) {
 
 func (e *Engine) recordCreated(t task.Task) error {
 	f := factsOf(t)
-	if err := e.record(f.number, trace.Created, "", "", ""); err != nil {
+	if err := e.record(f.Number, trace.Created, "", "", ""); err != nil {
 		return err
 	}
 	for _, a := range theAttributes {
@@ -68,7 +68,7 @@ func (e *Engine) recordCreated(t task.Task) error {
 		if value == "" {
 			continue
 		}
-		if err := e.record(f.number, trace.Created, a.named, "", value); err != nil {
+		if err := e.record(f.Number, trace.Created, a.named, "", value); err != nil {
 			return err
 		}
 	}
@@ -95,7 +95,7 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 		if from == to {
 			continue
 		}
-		if err := e.record(after.number, trace.Changed, a.named, from, to); err != nil {
+		if err := e.record(after.Number, trace.Changed, a.named, from, to); err != nil {
 			return err
 		}
 	}
@@ -103,15 +103,9 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 }
 
 func (e *Engine) record(number int, did, field, was, became string) error {
-	var a trace.AsTold
-	a.On(number)
-	a.Did(did)
-	domain.TellOrNot(field, a.Changing, a.NothingNamed)
-	domain.TellOrNot(was, a.Was, a.WasNothing)
-	domain.TellOrNot(became, a.Became, a.BecameNothing)
-	domain.TellOrNot(e.through, a.Through, a.ByHand)
-	a.At(time.Now())
-	return e.history.Record(a.Act())
+	return e.history.Record(trace.Made(trace.Carried{
+		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.through, At: time.Now(),
+	}))
 }
 
 func yesOrNothing(holds bool) string {

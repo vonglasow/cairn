@@ -2,56 +2,24 @@
 
 Read this before adding a package or a command.
 
-## A notion is a cell
+## A notion keeps its rules, and hands over its facts
 
-A task is a cell. Its state is its own — no exported field, no accessor — and
-it never hands data back. It **tells**: one method per fact it carries, absence
-included, to whoever asked to be told. Whoever wants to know something about a
-task implements that membrane and is told it.
+A task's state is its own — no exported field — and every rule about it lives
+on it: whether it may hang under another, archive, finish, serve an objective.
+What it carries it hands over as one plain record, `task.Carried`, and `Made`
+turns a record back into a task. The card a person reads, the shape a machine
+reads, the row the store keeps, what a search looks in and the tally of what is
+done all read that one record.
 
-```go
-type Told interface {
-	Numbered(int)
-	Titled(string)
-	Described(string)
-	NotDescribed()
-	Due(time.Time)
-	NotDue()
-	…
-}
+It used to tell its facts one method at a time to whoever implemented a
+membrane, absence included. Eighteen membranes copied the same fields into
+eighteen structures, and every fact added touched all of them. The rules are
+still the task's; only the copying went. An objective, an act of the trace and
+a migration work the same way.
 
-func (t Task) Tell(to Told)
-```
-
-Four membranes exist for a task today and the cell knows none of them: one
-builds the card a person reads, one the shape a machine reads, one binds the
-SQL that keeps it, one counts what is done. Adding a fifth costs the cell
-nothing, which is the whole point.
-
-The act in `internal/trace` is a cell of the same kind, and it shows what a
-membrane buys where the shapes differ: one renders a line of a task's trace,
-one a line of a period across tasks, one binds the SQL, one adds up how long
-the work ran. Four readings of the same facts, and the act knows about none of
-them.
-
-It also shows what a cell may not reach. An act names its task **by number**
-and never carries the task, which is why `internal/trace` is forbidden
-`internal/task` outright: a task may be gone by the time its acts are read, and
-an act holding one could not outlive it. That is a rule about what a notion is
-allowed to know, and it is in `.golangci.yml` where it can be enforced rather
-than remembered.
-
-An **absence is a fact that gets told**, never a silence a membrane has to
-notice. `NotDue` means there is no deadline, and a membrane that ignored it
-would render whatever it happened to start with. A set is closed the same way:
-labels are told one at a time and then `LabelsTold` says there are no more,
-because otherwise a membrane cannot place its row until it is too late. Both of
-those were found by writing them wrong first.
-
-The membrane runs the other way too. `AsTold` is told a task's facts and hands
-back the task they make — that is how the store builds one out of a row, and
-how every test builds a fixture. There is one way to make a task, and it is the
-same one whichever direction the facts are travelling.
+An act names its task **by number** and never carries the task, which is why
+`internal/trace` is forbidden `internal/task` outright: a task may be gone by
+the time its acts are read. That is in `.golangci.yml`, where it is enforced.
 
 **Errors do not go east.** Telling is for reading; a command that fails returns
 its error the way Go returns errors. That line is deliberate: pushed further,
@@ -221,10 +189,8 @@ that. It speaks in notions: it takes a `task.Task` and gives one back. No
 `*sql.Rows` crosses its boundary, or every caller would need to know the
 schema.
 
-It never reaches inside one either. A task tells the store its facts on the way
-in, and the store tells a builder a row's facts on the way out — the same
-membrane, run both directions. That is what lets a cell keep its insides to
-itself while still being written to disk.
+It never reaches inside one either. A task hands the store its record on the
+way in, and the store makes a task out of a row's record on the way out.
 
 The engine talks to a **storage interface it declares itself** for what it
 reads and writes of the notions, and `store` satisfies it. What that buys is
@@ -328,12 +294,8 @@ database — rather than everything unnamed. Each notion names every other
 notion in its list, so "a notion never imports another notion" is held for all
 four, not only for the pair somebody thought of first.
 
-Two things no linter can hold. A surface computing a rule inline instead of
-asking the engine — that one sits in `CLAUDE.md` rather than only here. And a
-cell growing an accessor: nothing stops `func (t Task) Title() string` from
-being written, and the day it is, every membrane becomes optional and the shape
-unravels one caller at a time. What guards it is that no such method exists to
-copy from.
+One thing no linter can hold: a surface computing a rule inline instead of
+asking the engine — that one sits in `CLAUDE.md` rather than only here.
 
 **Adding a package means adding its rule in the same commit.** A layer nothing
 enforces is a layer that lasts until the first hurry.

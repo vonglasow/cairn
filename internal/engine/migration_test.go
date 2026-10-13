@@ -3,31 +3,12 @@ package engine
 import (
 	"strconv"
 	"testing"
-	"time"
 
 	"cairn/internal/migration"
 )
 
-type changeFacts struct {
-	number  int
-	name    string
-	does    string
-	applied bool
-}
-
-func (f *changeFacts) Numbered(n int)    { f.number = n }
-func (f *changeFacts) Named(s string)    { f.name = s }
-func (f *changeFacts) Does(s string)     { f.does = s }
-func (f *changeFacts) Undoes(string)     {}
-func (f *changeFacts) NotUndoable()      {}
-func (f *changeFacts) Loses(string)      {}
-func (f *changeFacts) NothingLost()      {}
-func (f *changeFacts) Applied(time.Time) { f.applied = true }
-func (f *changeFacts) NotApplied()       { f.applied = false }
-
-func factsOfChange(m migration.Migration) changeFacts {
-	var f changeFacts
-	m.Tell(&f)
+func factsOfChange(m migration.Migration) migration.Carried {
+	f := m.Carried()
 	return f
 }
 
@@ -38,7 +19,7 @@ func TestMigrationShow_saysWhatAChangeDoes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if answer.Change == nil || factsOfChange(*answer.Change).number != 1 {
+	if answer.Change == nil || factsOfChange(*answer.Change).Number != 1 {
 		t.Fatalf("answer.Change = %v, want change 1", answer.Change)
 	}
 }
@@ -61,8 +42,8 @@ func TestMigrationRollback_unmakesTheLastChangeApplied(t *testing.T) {
 	rolledBack := factsOfChange(*answer.RolledBack)
 	for _, one := range list.Changes {
 		c := factsOfChange(one)
-		if c.number == rolledBack.number && c.applied {
-			t.Fatalf("change %d is still applied, want it rolled back", c.number)
+		if c.Number == rolledBack.Number && c.Applied {
+			t.Fatalf("change %d is still applied, want it rolled back", c.Number)
 		}
 	}
 }
@@ -86,8 +67,8 @@ func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 	var missing int
 	for _, one := range waiting.Changes {
 		c := factsOfChange(one)
-		if !c.applied {
-			missing = c.number
+		if !c.Applied {
+			missing = c.Number
 		}
 	}
 	if missing == 0 {

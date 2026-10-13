@@ -62,7 +62,7 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, erro
 		if err != nil {
 			return trace.Sheet{}, nil, err
 		}
-		titles[number] = factsOf(t).title
+		titles[number] = factsOf(t).Title
 	}
 	return sheet, titles, nil
 }

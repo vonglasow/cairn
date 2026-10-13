@@ -57,8 +57,7 @@ func TestAddingFields_carryAnEmptyPartsField(t *testing.T) {
 }
 
 func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
-	var told task.AsTold
-	aTask("Ship it").Tell(&told)
+	told := task.From(aTask("Ship it"))
 	told.Numbered(7)
 	added := told.Task()
 	if got := Added(Answer{Task: &added}); got != 7 {

@@ -14,8 +14,7 @@ func plan(t *testing.T) Objective {
 	if err != nil {
 		t.Fatalf("NewObjective: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Numbered(1)
 	return a.Objective()
 }
@@ -53,12 +52,10 @@ func TestText_showsWhatTheObjectiveCarries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Described("the whole thing")
 	a.Labelled("launch")
 	a.Labelled("team")
-	a.LabelsTold()
 	a.Due(deadline)
 	a.Estimated(estimate)
 	built = a.Objective()
@@ -98,9 +95,9 @@ func TestList_writesEveryObjectiveAsOneRow(t *testing.T) {
 		t.Fatalf("NewObjective: %v", err)
 	}
 	var a, b AsTold
-	first.Tell(&a)
+	a = From(first)
 	a.Numbered(1)
-	second.Tell(&b)
+	b = From(second)
 	b.Numbered(2)
 
 	got := List([]Objective{a.Objective(), b.Objective()})

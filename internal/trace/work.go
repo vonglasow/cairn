@@ -33,10 +33,8 @@ type Worked struct {
 func LastNamed(acts []Act, field string) time.Time {
 	var last time.Time
 	for _, a := range acts {
-		var f fact
-		a.Tell(&f)
-		if f.field == field {
-			last = f.at
+		if f := a.Carried(); f.Field == field {
+			last = f.At
 		}
 	}
 	return last
@@ -52,35 +50,33 @@ type span struct {
 
 // Timed works out how long the work took on each day from the first to the last, both counted whole, in the location the first is given in.
 func Timed(acts []Act, first, last, now time.Time) Sheet {
-	facts := make([]fact, 0, len(acts))
+	facts := make([]Carried, 0, len(acts))
 	for _, a := range acts {
-		var f fact
-		a.Tell(&f)
-		facts = append(facts, f)
+		facts = append(facts, a.Carried())
 	}
-	sort.SliceStable(facts, func(i, j int) bool { return facts[i].at.Before(facts[j].at) })
+	sort.SliceStable(facts, func(i, j int) bool { return facts[i].At.Before(facts[j].At) })
 
 	loc := first.Location()
 	var spans []span
 	open := map[int]time.Time{}
 	byHand := map[time.Time]map[int]time.Duration{}
 	for _, f := range facts {
-		switch f.did {
+		switch f.Did {
 		case FocusTaken:
-			if _, already := open[f.task]; !already {
-				open[f.task] = f.at
+			if _, already := open[f.Task]; !already {
+				open[f.Task] = f.At
 			}
 		case FocusReleased:
-			if from, was := open[f.task]; was {
-				spans = append(spans, cutAtMidnight(f.task, from, f.at, loc))
-				delete(open, f.task)
+			if from, was := open[f.Task]; was {
+				spans = append(spans, cutAtMidnight(f.Task, from, f.At, loc))
+				delete(open, f.Task)
 			}
 		case TimeAdded:
 			if on, length, read := addedOn(f, loc); read {
 				if byHand[on] == nil {
 					byHand[on] = map[int]time.Duration{}
 				}
-				byHand[on][f.task] += length
+				byHand[on][f.Task] += length
 			}
 		}
 	}
@@ -101,12 +97,12 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 	return sheet
 }
 
-func addedOn(f fact, loc *time.Location) (time.Time, time.Duration, bool) {
-	day, err := domain.ParseDeadline(f.was)
+func addedOn(f Carried, loc *time.Location) (time.Time, time.Duration, bool) {
+	day, err := domain.ParseDeadline(f.Was)
 	if err != nil {
 		return time.Time{}, 0, false
 	}
-	length, err := time.ParseDuration(f.became)
+	length, err := time.ParseDuration(f.Became)
 	if err != nil {
 		return time.Time{}, 0, false
 	}
@@ -187,23 +183,3 @@ func Hours(d time.Duration) string {
 	}
 	return fmt.Sprintf("%dh%02d", h, m)
 }
-
-type fact struct {
-	task        int
-	did         string
-	field       string
-	was, became string
-	at          time.Time
-}
-
-func (f *fact) On(n int)          { f.task = n }
-func (f *fact) Did(what string)   { f.did = what }
-func (f *fact) Changing(s string) { f.field = s }
-func (f *fact) NothingNamed()     { f.field = "" }
-func (f *fact) Was(v string)      { f.was = v }
-func (f *fact) WasNothing()       {}
-func (f *fact) Became(v string)   { f.became = v }
-func (f *fact) BecameNothing()    {}
-func (f *fact) Through(string)    {}
-func (f *fact) ByHand()           {}
-func (f *fact) At(when time.Time) { f.at = when }

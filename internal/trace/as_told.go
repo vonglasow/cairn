@@ -2,43 +2,32 @@ package trace
 
 import "time"
 
-// AsTold builds an act from what it is told.
-type AsTold struct {
-	act Act
-}
+// AsTold builds an act one fact at a time.
+type AsTold struct{ c Carried }
+
+// From starts a builder on what an act already carries.
+func From(a Act) AsTold { return AsTold{c: a.Carried()} }
 
 // Act hands back what was built.
-func (a *AsTold) Act() Act { return a.act }
+func (a *AsTold) Act() Act { return Made(a.c) }
 
 // On is told which task the act was performed on.
-func (a *AsTold) On(n int) { a.act.task = n }
+func (a *AsTold) On(n int) { a.c.Task = n }
 
 // Did is told what was done.
-func (a *AsTold) Did(what string) { a.act.did = what }
+func (a *AsTold) Did(what string) { a.c.Did = what }
 
 // Changing is told which attribute of the task the act is about.
-func (a *AsTold) Changing(field string) { a.act.field = field }
-
-// NothingNamed is told the act is about no attribute in particular.
-func (a *AsTold) NothingNamed() { a.act.field = "" }
+func (a *AsTold) Changing(field string) { a.c.Field = field }
 
 // Was is told what the attribute held before.
-func (a *AsTold) Was(value string) { a.act.was = value }
+func (a *AsTold) Was(value string) { a.c.Was = value }
 
-// WasNothing is told the attribute held nothing before.
-func (a *AsTold) WasNothing() { a.act.was = "" }
-
-// Became is told what the attribute holds after, or what the act carries when it is about no attribute — where a task was moved to, what it started as.
-func (a *AsTold) Became(value string) { a.act.became = value }
-
-// BecameNothing is told the attribute holds nothing after.
-func (a *AsTold) BecameNothing() { a.act.became = "" }
+// Became is told what the attribute holds after.
+func (a *AsTold) Became(value string) { a.c.Became = value }
 
 // Through is told which surface performed the act.
-func (a *AsTold) Through(surface string) { a.act.through = surface }
-
-// ByHand is told the act was performed at the terminal, which a history says nothing about.
-func (a *AsTold) ByHand() { a.act.through = "" }
+func (a *AsTold) Through(surface string) { a.c.Through = surface }
 
 // At is told when the act happened.
-func (a *AsTold) At(when time.Time) { a.act.at = when }
+func (a *AsTold) At(when time.Time) { a.c.At = when }

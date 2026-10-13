@@ -9,18 +9,15 @@ import (
 )
 
 func builtChange(applied bool) Migration {
-	var a AsTold
-	a.Numbered(2)
-	a.Named("a task can hang under another")
-	a.Does("ALTER TABLE tasks ADD COLUMN parent INTEGER NOT NULL DEFAULT 0")
-	a.Undoes("ALTER TABLE tasks DROP COLUMN parent")
-	a.Loses("which task each sub-task hangs under")
-	if applied {
-		a.Applied(time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC))
-	} else {
-		a.NotApplied()
+	c := Carried{
+		Number: 2, Name: "a task can hang under another",
+		Does:   "ALTER TABLE tasks ADD COLUMN parent INTEGER NOT NULL DEFAULT 0",
+		Undoes: "ALTER TABLE tasks DROP COLUMN parent", Loses: "which task each sub-task hangs under",
 	}
-	return a.Migration()
+	if applied {
+		c.Applied, c.Made = true, time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
+	}
+	return Made(c)
 }
 
 func TestText_showsWhatAChangeDoesAndWhatUndoingItDoes(t *testing.T) {
@@ -68,13 +65,7 @@ func TestRolledBackText_namesTheChangeAndWhatItCost(t *testing.T) {
 }
 
 func TestRolledBackText_saysNothingLostWhenNothingWas(t *testing.T) {
-	var a AsTold
-	a.Named("the shape a store starts with")
-	a.Does("CREATE TABLE tasks (...)")
-	a.NotUndoable()
-	a.NothingLost()
-	a.NotApplied()
-	got := RolledBackText(a.Migration())
+	got := RolledBackText(Made(Carried{Name: "the shape a store starts with", Does: "CREATE TABLE tasks (...)"}))
 	if strings.Contains(got, "lost:") {
 		t.Errorf("RolledBackText() = %q, want no mention of loss", got)
 	}

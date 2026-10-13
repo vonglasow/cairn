@@ -153,14 +153,9 @@ func anAct(did, field, became, through string) trace.Act {
 	if field != "" {
 		told.Changing(field)
 		told.Became(became)
-	} else {
-		told.NothingNamed()
-		told.BecameNothing()
 	}
 	if through != "" {
 		told.Through(through)
-	} else {
-		told.ByHand()
 	}
 	return told.Act()
 }

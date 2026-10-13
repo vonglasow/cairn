@@ -132,7 +132,7 @@ type Objective struct {
 func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Objective {
 	numbers := make([]int, 0, len(under))
 	for _, t := range under {
-		numbers = append(numbers, factsOf(t).number)
+		numbers = append(numbers, factsOf(t).Number)
 	}
 	return Objective{
 		Shape:    objective.OfObjective(o),

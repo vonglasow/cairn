@@ -1,10 +1,6 @@
 package task
 
-import (
-	"time"
-
-	"cairn/internal/domain"
-)
+import "cairn/internal/domain"
 
 // Shape is how a task crosses to a machine.
 type Shape struct {
@@ -29,72 +25,26 @@ type Facts struct {
 	Objectives []int    `json:"objectives" jsonschema:"the numbers of the objectives it serves; empty or null when it serves none"`
 }
 
-type shapeMembrane struct {
-	number, parent                      int
-	objectives                          []int
-	title, state, priority, description string
-	labels                              []string
-	blockers                            []int
-	because                             string
-	deadline, estimate, timeSpent       string
-	archived                            bool
-}
-
-func (m *shapeMembrane) Numbered(n int)  { m.number = n }
-func (m *shapeMembrane) Titled(s string) { m.title = s }
-func (m *shapeMembrane) Archived()       { m.archived = true }
-func (m *shapeMembrane) NotArchived()    { m.archived = false }
-
-func (m *shapeMembrane) InColumn(s domain.State)   { m.state = string(s) }
-func (m *shapeMembrane) Carries(p domain.Priority) { m.priority = string(p) }
-func (m *shapeMembrane) Described(s string)        { m.description = s }
-func (m *shapeMembrane) NotDescribed()             {}
-func (m *shapeMembrane) Labelled(s string)         { m.labels = append(m.labels, s) }
-func (m *shapeMembrane) NotLabelled()              {}
-func (m *shapeMembrane) LabelsTold() {
-	if m.labels == nil {
-		m.labels = []string{}
-	}
-}
-func (m *shapeMembrane) BlockedBy(n int) { m.blockers = append(m.blockers, n) }
-func (m *shapeMembrane) NotBlocked()     {}
-func (m *shapeMembrane) BlockersTold() {
-	if m.blockers == nil {
-		m.blockers = []int{}
-	}
-}
-func (m *shapeMembrane) Because(s string)          { m.because = s }
-func (m *shapeMembrane) NotBecause()               {}
-func (m *shapeMembrane) Due(t time.Time)           { m.deadline = domain.FormatDay(t) }
-func (m *shapeMembrane) NotDue()                   {}
-func (m *shapeMembrane) Estimated(d time.Duration) { m.estimate = domain.FormatDuration(d) }
-func (m *shapeMembrane) NotEstimated()             {}
-func (m *shapeMembrane) Spent(d time.Duration)     { m.timeSpent = domain.FormatDuration(d) }
-func (m *shapeMembrane) NothingSpent()             {}
-func (m *shapeMembrane) Under(n int)               { m.parent = n }
-func (m *shapeMembrane) UnderNothing()             {}
-func (m *shapeMembrane) Serves(n int)              { m.objectives = append(m.objectives, n) }
-func (m *shapeMembrane) ServesNothing()            {}
-func (m *shapeMembrane) ObjectivesTold() {
-	if m.objectives == nil {
-		m.objectives = []int{}
-	}
-}
-
 // OfTask turns a task into the shape a machine reads.
 func OfTask(t Task) Shape {
-	m := &shapeMembrane{}
-	t.Tell(m)
+	c := t.Carried()
 	return Shape{
 		Facts: Facts{
-			Number: m.number, Parent: m.parent, Title: m.title,
-			State: m.state, Archived: m.archived, Priority: m.priority,
-			Labels: m.labels, BlockedBy: m.blockers, Because: m.because,
-			Deadline:   m.deadline,
-			Estimate:   m.estimate,
-			TimeSpent:  m.timeSpent,
-			Objectives: m.objectives,
+			Number: c.Number, Parent: c.Parent, Title: c.Title,
+			State: string(c.State), Archived: c.Archived, Priority: string(c.Priority),
+			Labels: orNone(c.Labels), BlockedBy: orNone(c.Blockers), Because: c.Because,
+			Deadline:   domain.FormatDay(c.Deadline),
+			Estimate:   domain.FormatDuration(c.Estimate),
+			TimeSpent:  domain.FormatDuration(c.Spent),
+			Objectives: orNone(c.Objectives),
 		},
-		Description: m.description,
+		Description: c.Description,
 	}
+}
+
+func orNone[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+	return s
 }

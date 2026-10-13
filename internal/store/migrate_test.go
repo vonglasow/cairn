@@ -21,7 +21,7 @@ func olderStore(t *testing.T, title string) string {
 	}
 	defer func() { _ = db.Close() }()
 
-	if _, err := db.Exec(factsOfChange(migration.Known[0]).does); err != nil {
+	if _, err := db.Exec(factsOfChange(migration.Known[0]).Does); err != nil {
 		t.Fatalf("writing the older shape: %v", err)
 	}
 	if _, err := db.Exec(
@@ -108,14 +108,14 @@ func TestMigrations_namesEveryChangeAndItsState(t *testing.T) {
 	}
 	for i, change := range all {
 		f := factsOfChange(change)
-		if f.number != i+1 || f.name == "" || f.does == "" {
+		if f.Number != i+1 || f.Name == "" || f.Does == "" {
 			t.Errorf("change %d is incomplete: %+v", i, f)
 		}
-		if !f.applied || f.made.IsZero() {
+		if !f.Applied || f.Made.IsZero() {
 			t.Errorf("change %d should be applied and dated: %+v", i, f)
 		}
-		if want := factsOfChange(migration.Known[i]).undoes; f.undoes != want {
-			t.Errorf("change %d: Undoes = %q, want %q", i+1, f.undoes, want)
+		if want := factsOfChange(migration.Known[i]).Undoes; f.Undoes != want {
+			t.Errorf("change %d: Undoes = %q, want %q", i+1, f.Undoes, want)
 		}
 	}
 }
@@ -131,7 +131,7 @@ func TestApply_makesOneChange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
-	if want := factsOfChange(migration.Known[1]).name; name != want {
+	if want := factsOfChange(migration.Known[1]).Name; name != want {
 		t.Errorf("applied %q, want %q", name, want)
 	}
 	waiting, err := s.Waiting()
@@ -194,7 +194,7 @@ func TestApplyAll_keepsWhatAnOlderStoreHeld(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 1 || factsOf(all[0]).title != "Write the spec" {
+	if len(all) != 1 || factsOf(all[0]).Title != "Write the spec" {
 		t.Errorf("All = %v, want what the older store held", all)
 	}
 }
@@ -207,11 +207,11 @@ func TestRollBack_unmakesTheLastChangeApplied(t *testing.T) {
 	}
 	last := factsOfChange(migration.Known[len(migration.Known)-1])
 	got := factsOfChange(one)
-	if got.name != last.name {
-		t.Errorf("rolled back %q, want the last change", got.name)
+	if got.Name != last.Name {
+		t.Errorf("rolled back %q, want the last change", got.Name)
 	}
-	if got.loses != last.loses {
-		t.Errorf("Loses = %q, want %q: a rollback has to be able to say what it cost", got.loses, last.loses)
+	if got.Loses != last.Loses {
+		t.Errorf("Loses = %q, want %q: a rollback has to be able to say what it cost", got.Loses, last.Loses)
 	}
 }
 
@@ -221,12 +221,12 @@ func TestMigrations_saysWhatUndoingEachOneLoses(t *testing.T) {
 		t.Fatalf("Migrations: %v", err)
 	}
 	for i, one := range all {
-		got, want := factsOfChange(one).loses, factsOfChange(migration.Known[i]).loses
+		got, want := factsOfChange(one).Loses, factsOfChange(migration.Known[i]).Loses
 		if got != want {
 			t.Errorf("change %d: Loses = %q, want %q", i+1, got, want)
 		}
 	}
-	if got := factsOfChange(all[0]).loses; got != "" {
+	if got := factsOfChange(all[0]).Loses; got != "" {
 		t.Errorf("the first shape should lose nothing, got %q", got)
 	}
 }
@@ -334,7 +334,7 @@ func rollBackPast(t *testing.T, s *Store, name string) {
 		if _, err := s.RollBack(); err != nil {
 			t.Fatalf("RollBack: %v", err)
 		}
-		if factsOfChange(migration.Known[i]).name == name {
+		if factsOfChange(migration.Known[i]).Name == name {
 			return
 		}
 	}
@@ -356,8 +356,8 @@ func TestMigrate_makesRoomForPlacesAndTheFocus(t *testing.T) {
 
 func TestMigrate_rollingBackTheManyFocusKeepsTheFirst(t *testing.T) {
 	s := openStore(t)
-	first := factsOf(keep(t, s, "First")).number
-	second := factsOf(keep(t, s, "Second")).number
+	first := factsOf(keep(t, s, "First")).Number
+	second := factsOf(keep(t, s, "Second")).Number
 	for _, n := range []int{first, second} {
 		if err := s.AddFocus(n); err != nil {
 			t.Fatalf("AddFocus(%d): %v", n, err)
@@ -503,11 +503,7 @@ func knowing(t *testing.T, does, undoes string) {
 	t.Helper()
 	was := migration.Known
 	t.Cleanup(func() { migration.Known = was })
-	var a migration.AsTold
-	a.Named("a change written to fail half way")
-	a.Does(does)
-	a.Undoes(undoes)
-	migration.Known = []migration.Migration{was[0], a.Migration()}
+	migration.Known = []migration.Migration{was[0], migration.Made(migration.Carried{Name: "a change written to fail half way", Does: does, Undoes: undoes})}
 }
 
 func TestApply_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {

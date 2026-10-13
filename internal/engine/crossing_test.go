@@ -15,10 +15,6 @@ func anAct(task int, did string) trace.Act {
 	var a trace.AsTold
 	a.On(task)
 	a.Did(did)
-	a.NothingNamed()
-	a.WasNothing()
-	a.BecameNothing()
-	a.ByHand()
 	a.At(time.Date(2026, 3, 3, 9, 0, 0, 0, time.UTC))
 	return a.Act()
 }
@@ -69,13 +65,13 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	e := openEngine(t)
 	served := addObjective(t, e, "Ship cairn 1.0")
-	under, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(served).number)})
+	under, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(served).Number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
 	crossed := OfObjective(served, []task.Task{under}, domain.Progress{})
-	if len(crossed.Tasks) != 1 || crossed.Tasks[0] != factsOf(under).number {
+	if len(crossed.Tasks) != 1 || crossed.Tasks[0] != factsOf(under).Number {
 		t.Errorf("it names %v, want the one task under it", crossed.Tasks)
 	}
 	if text := RenderText(ObjectiveShow, Answer{Objective: &served, Under: []task.Task{under}}); !strings.Contains(text, "Write the spec") {
@@ -119,12 +115,12 @@ func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 func TestEditObjective_retitlesIt(t *testing.T) {
 	e := openEngine(t)
 	added := addObjective(t, e, "Ship cairn 1.0")
-	edited, err := e.editObjective(factsOfObjective(added).number,
+	edited, err := e.editObjective(factsOfObjective(added).Number,
 		ObjectiveChanges{Title: of("Ship cairn 1.1")})
 	if err != nil {
 		t.Fatalf("EditObjective: %v", err)
 	}
-	if got := factsOfObjective(edited).title; got != "Ship cairn 1.1" {
+	if got := factsOfObjective(edited).Title; got != "Ship cairn 1.1" {
 		t.Errorf("the title is %q, want %q", got, "Ship cairn 1.1")
 	}
 }

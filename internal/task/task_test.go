@@ -2,110 +2,11 @@ package task
 
 import (
 	"errors"
-	"fmt"
-	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"cairn/internal/domain"
 )
-
-type told struct {
-	said []string
-}
-
-func (r *told) Numbered(n int)  { r.said = append(r.said, fmt.Sprintf("Numbered(%d)", n)) }
-func (r *told) Titled(s string) { r.said = append(r.said, fmt.Sprintf("Titled(%q)", s)) }
-func (r *told) InColumn(s domain.State) {
-	r.said = append(r.said, fmt.Sprintf("InColumn(%q)", s))
-}
-func (r *told) Carries(p domain.Priority) {
-	r.said = append(r.said, fmt.Sprintf("Carries(%q)", p))
-}
-func (r *told) Archived()          { r.said = append(r.said, "Archived()") }
-func (r *told) NotArchived()       { r.said = append(r.said, "NotArchived()") }
-func (r *told) Described(s string) { r.said = append(r.said, fmt.Sprintf("Described(%q)", s)) }
-func (r *told) NotDescribed()      { r.said = append(r.said, "NotDescribed()") }
-func (r *told) Labelled(s string)  { r.said = append(r.said, fmt.Sprintf("Labelled(%q)", s)) }
-func (r *told) NotLabelled()       { r.said = append(r.said, "NotLabelled()") }
-func (r *told) LabelsTold()        { r.said = append(r.said, "LabelsTold()") }
-func (r *told) BlockedBy(n int)    { r.said = append(r.said, fmt.Sprintf("BlockedBy(%d)", n)) }
-func (r *told) NotBlocked()        { r.said = append(r.said, "NotBlocked()") }
-func (r *told) BlockersTold()      { r.said = append(r.said, "BlockersTold()") }
-func (r *told) Because(s string)   { r.said = append(r.said, fmt.Sprintf("Because(%q)", s)) }
-func (r *told) NotBecause()        { r.said = append(r.said, "NotBecause()") }
-func (r *told) Due(t time.Time)    { r.said = append(r.said, fmt.Sprintf("Due(%s)", t)) }
-func (r *told) NotDue()            { r.said = append(r.said, "NotDue()") }
-func (r *told) Estimated(d time.Duration) {
-	r.said = append(r.said, fmt.Sprintf("Estimated(%s)", d))
-}
-func (r *told) NotEstimated()         { r.said = append(r.said, "NotEstimated()") }
-func (r *told) Spent(d time.Duration) { r.said = append(r.said, fmt.Sprintf("Spent(%s)", d)) }
-func (r *told) NothingSpent()         { r.said = append(r.said, "NothingSpent()") }
-func (r *told) Under(n int)           { r.said = append(r.said, fmt.Sprintf("Under(%d)", n)) }
-func (r *told) UnderNothing()         { r.said = append(r.said, "UnderNothing()") }
-func (r *told) Serves(n int)          { r.said = append(r.said, fmt.Sprintf("Serves(%d)", n)) }
-func (r *told) ServesNothing()        { r.said = append(r.said, "ServesNothing()") }
-func (r *told) ObjectivesTold()       { r.said = append(r.said, "ObjectivesTold()") }
-
-func TestTell_saysEveryFactATaskCarries(t *testing.T) {
-	deadline, err := domain.ParseDeadline("2026-01-02")
-	if err != nil {
-		t.Fatalf("ParseDeadline: %v", err)
-	}
-
-	full := Task{
-		number: 3, parent: 1, objectives: []int{2}, title: "Write the spec",
-		description: "Say what it does", state: domain.Current, priority: domain.High,
-		labels: []string{"backend", "urgent"}, blockers: []int{4, 5},
-		because: "the client's answer", deadline: deadline,
-		estimate: 90 * time.Minute, timeSpent: 30 * time.Minute,
-	}
-	got := &told{}
-	full.Tell(got)
-
-	want := []string{
-		`Numbered(3)`, `Titled("Write the spec")`, `InColumn("current")`,
-		`NotArchived()`, `Carries("high")`, `Described("Say what it does")`,
-		`Labelled("backend")`, `Labelled("urgent")`, `LabelsTold()`,
-		`BlockedBy(4)`, `BlockedBy(5)`, `BlockersTold()`,
-		`Because("the client's answer")`,
-		fmt.Sprintf("Due(%s)", deadline), fmt.Sprintf("Estimated(%s)", 90*time.Minute),
-		fmt.Sprintf("Spent(%s)", 30*time.Minute), `Under(1)`, `Serves(2)`, `ObjectivesTold()`,
-	}
-	if len(got.said) != len(want) {
-		t.Fatalf("said = %v, want %v", got.said, want)
-	}
-	for i := range want {
-		if got.said[i] != want[i] {
-			t.Errorf("said[%d] = %q, want %q", i, got.said[i], want[i])
-		}
-	}
-
-	bare, err := NewTask("Write the spec")
-	if err != nil {
-		t.Fatalf("NewTask: %v", err)
-	}
-	got = &told{}
-	bare.Tell(got)
-
-	wantBare := []string{
-		`Numbered(0)`, `Titled("Write the spec")`, `InColumn("backlog")`,
-		`NotArchived()`, `Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
-		`NotBlocked()`, `BlockersTold()`, `NotBecause()`,
-		`NotDue()`, `NotEstimated()`, `NothingSpent()`, `UnderNothing()`,
-		`ServesNothing()`, `ObjectivesTold()`,
-	}
-	if len(got.said) != len(wantBare) {
-		t.Fatalf("said = %v, want %v", got.said, wantBare)
-	}
-	for i := range wantBare {
-		if got.said[i] != wantBare[i] {
-			t.Errorf("said[%d] = %q, want %q", i, got.said[i], wantBare[i])
-		}
-	}
-}
 
 func TestNewTask_refusesAnEmptyTitle(t *testing.T) {
 	if _, err := NewTask(""); !errors.Is(err, domain.ErrTitleRequired) {
@@ -379,9 +280,7 @@ func TestSettled_keepsDoneAndDropsEveryOtherColumn(t *testing.T) {
 		{"a task hanging under nothing is left alone", made(NoParent, domain.Current), domain.Current},
 		{"a task hanging under nothing, done", made(NoParent, domain.Done), domain.Done},
 	} {
-		var told AsTold
-		tc.task.Settled().Tell(&told)
-		if got := told.Task().state; got != tc.want {
+		if got := tc.task.Settled().state; got != tc.want {
 			t.Errorf("%s: Settled = %q, want %q", tc.what, got, tc.want)
 		}
 	}
@@ -395,8 +294,6 @@ func TestArchived_isCarriedBesideTheColumn(t *testing.T) {
 		a.InColumn(state)
 		if archived {
 			a.Archived()
-		} else {
-			a.NotArchived()
 		}
 		return a.Task()
 	}
@@ -410,20 +307,9 @@ func TestArchived_isCarriedBesideTheColumn(t *testing.T) {
 		{"done and not", made(domain.Done, false), domain.Done, false},
 		{"never done and archived", made(domain.Backlog, true), domain.Backlog, true},
 	} {
-		var back AsTold
-		tc.task.Tell(&back)
-		got := back.Task()
-		var read told
-		got.Tell(&read)
-		want := "Archived()"
-		if !tc.want {
-			want = "NotArchived()"
-		}
-		if !slices.Contains(read.said, want) {
-			t.Errorf("%s: told %v, want it to say %s", tc.what, read.said, want)
-		}
-		if said := fmt.Sprintf("InColumn(%q)", tc.state); !slices.Contains(read.said, said) {
-			t.Errorf("%s: told %v, want %s — archiving is not a column", tc.what, read.said, said)
+		got := tc.task.Carried()
+		if got.Archived != tc.want || got.State != tc.state {
+			t.Errorf("%s: carries %+v, want archived %v in %s — archiving is not a column", tc.what, got, tc.want, tc.state)
 		}
 	}
 }
@@ -439,7 +325,6 @@ func TestMayArchive_refusesWhatIsAlreadyArchived(t *testing.T) {
 	var open AsTold
 	open.Numbered(2)
 	open.Titled("Spike Argo")
-	open.NotArchived()
 	if err := open.Task().MayArchive(); err != nil {
 		t.Errorf("MayArchive on one that is not = %v", err)
 	}
@@ -450,7 +335,6 @@ func TestMayArchive_refusesAPartOnItsOwn(t *testing.T) {
 	a.Numbered(2)
 	a.Titled("Préparation")
 	a.Under(1)
-	a.NotArchived()
 	err := a.Task().MayArchive()
 	if !errors.Is(err, ErrPartGoesWithItsWork) {
 		t.Errorf("MayArchive = %v, want it to say the part goes with its work", err)
@@ -464,7 +348,6 @@ func TestMayUnarchive_refusesWhatIsOnTheBoard(t *testing.T) {
 	var here AsTold
 	here.Numbered(1)
 	here.Titled("Migration Jenkins")
-	here.NotArchived()
 	if err := here.Task().MayUnarchive(); !errors.Is(err, ErrNotArchived) {
 		t.Errorf("MayUnarchive = %v, want it to say the task is on the board", err)
 	}

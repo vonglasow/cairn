@@ -23,48 +23,22 @@ func Searchable(s engine.Snapshot) engine.Snapshot {
 
 // SearchableCard is a card saying what the engine says its task carries.
 func SearchableCard(c engine.Card) engine.Card {
-	var told task.AsTold
-	told.Numbered(c.Number)
-	told.Titled(c.Title)
-	told.InColumn(domain.State(c.State))
-	told.Carries(domain.Priority(c.Priority))
-	told.Described(c.Description)
-	for _, l := range c.Labels {
-		told.Labelled(l)
-	}
-	told.LabelsTold()
-	told.Because(c.Because)
-	if !c.Deadline.IsZero() {
-		told.Due(c.Deadline)
-	}
-	if d, err := domain.ParseEstimate(c.Estimate); err == nil {
-		told.Estimated(d)
-	}
-	if d, err := domain.ParseEstimate(c.Spent); err == nil {
-		told.Spent(d)
-	}
-	c.Said = task.Said(told.Task())
+	estimate, _ := domain.ParseEstimate(c.Estimate)
+	spent, _ := domain.ParseEstimate(c.Spent)
+	c.Said = task.Said(task.Made(task.Carried{
+		Number: c.Number, Title: c.Title, State: domain.State(c.State), Priority: domain.Priority(c.Priority),
+		Description: c.Description, Labels: c.Labels, Because: c.Because, Deadline: c.Deadline,
+		Estimate: estimate, Spent: spent,
+	}))
 	return c
 }
 
 // SearchableGoal is an objective saying what the engine says it carries.
 func SearchableGoal(g engine.Goal) engine.Goal {
-	var told objective.AsTold
-	told.Numbered(g.Number)
-	told.Titled(g.Title)
-	told.Standing(objective.State(g.State))
-	told.Carries(domain.Priority(g.Priority))
-	told.Described(g.Description)
-	for _, l := range g.Labels {
-		told.Labelled(l)
-	}
-	told.LabelsTold()
-	if !g.Deadline.IsZero() {
-		told.Due(g.Deadline)
-	}
-	if d, err := domain.ParseEstimate(g.Estimate); err == nil {
-		told.Estimated(d)
-	}
-	g.Said = objective.Said(told.Objective())
+	estimate, _ := domain.ParseEstimate(g.Estimate)
+	g.Said = objective.Said(objective.Made(objective.Carried{
+		Number: g.Number, Title: g.Title, State: objective.State(g.State), Priority: domain.Priority(g.Priority),
+		Description: g.Description, Labels: g.Labels, Deadline: g.Deadline, Estimate: estimate,
+	}))
 	return g
 }

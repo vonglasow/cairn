@@ -39,55 +39,13 @@ func keep(t *testing.T, s *Store, title string) task.Task {
 
 func changed(built task.Task, mutate func(a *task.AsTold)) task.Task {
 	a := &task.AsTold{}
-	built.Tell(a)
+	*a = task.From(built)
 	mutate(a)
 	return a.Task()
 }
 
-type taskFacts struct {
-	number, parent      int
-	title, description  string
-	state               domain.State
-	priority            domain.Priority
-	labels              []string
-	blockers            []int
-	objectives          []int
-	because             string
-	deadline            time.Time
-	estimate, timeSpent time.Duration
-}
-
-func (f *taskFacts) Numbered(n int)            { f.number = n }
-func (f *taskFacts) Titled(s string)           { f.title = s }
-func (f *taskFacts) InColumn(s domain.State)   { f.state = s }
-func (f *taskFacts) Archived()                 {}
-func (f *taskFacts) NotArchived()              {}
-func (f *taskFacts) Carries(p domain.Priority) { f.priority = p }
-func (f *taskFacts) Described(s string)        { f.description = s }
-func (f *taskFacts) NotDescribed()             { f.description = "" }
-func (f *taskFacts) Labelled(l string)         { f.labels = append(f.labels, l) }
-func (f *taskFacts) NotLabelled()              { f.labels = nil }
-func (f *taskFacts) LabelsTold()               {}
-func (f *taskFacts) BlockedBy(n int)           { f.blockers = append(f.blockers, n) }
-func (f *taskFacts) NotBlocked()               { f.blockers = nil }
-func (f *taskFacts) BlockersTold()             {}
-func (f *taskFacts) Because(s string)          { f.because = s }
-func (f *taskFacts) NotBecause()               { f.because = "" }
-func (f *taskFacts) Due(t time.Time)           { f.deadline = t }
-func (f *taskFacts) NotDue()                   { f.deadline = time.Time{} }
-func (f *taskFacts) Estimated(d time.Duration) { f.estimate = d }
-func (f *taskFacts) NotEstimated()             { f.estimate = 0 }
-func (f *taskFacts) Spent(d time.Duration)     { f.timeSpent = d }
-func (f *taskFacts) NothingSpent()             { f.timeSpent = 0 }
-func (f *taskFacts) Under(n int)               { f.parent = n }
-func (f *taskFacts) UnderNothing()             { f.parent = task.NoParent }
-func (f *taskFacts) Serves(n int)              { f.objectives = append(f.objectives, n) }
-func (f *taskFacts) ServesNothing()            { f.objectives = nil }
-func (f *taskFacts) ObjectivesTold()           {}
-
-func factsOf(t task.Task) taskFacts {
-	var f taskFacts
-	t.Tell(&f)
+func factsOf(t task.Task) task.Carried {
+	f := t.Carried()
 	return f
 }
 
@@ -95,22 +53,22 @@ func TestStore_handsBackTheTaskItKept(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
 
-	got, err := s.Find(factsOf(kept).number)
+	got, err := s.Find(factsOf(kept).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
 	facts := factsOf(got)
-	if facts.title != "Write the spec" {
-		t.Errorf("Title = %q, want the one it was given", facts.title)
+	if facts.Title != "Write the spec" {
+		t.Errorf("Title = %q, want the one it was given", facts.Title)
 	}
-	if facts.state != domain.Backlog || facts.priority != domain.Normal {
-		t.Errorf("got %q/%q, want backlog/normal", facts.state, facts.priority)
+	if facts.State != domain.Backlog || facts.Priority != domain.Normal {
+		t.Errorf("got %q/%q, want backlog/normal", facts.State, facts.Priority)
 	}
 }
 
 func TestStore_numbersTheFirstTaskOne(t *testing.T) {
 	s := openStore(t)
-	if got := factsOf(keep(t, s, "Write the spec")).number; got != 1 {
+	if got := factsOf(keep(t, s, "Write the spec")).Number; got != 1 {
 		t.Errorf("Number = %d, want 1", got)
 	}
 }
@@ -118,7 +76,7 @@ func TestStore_numbersTheFirstTaskOne(t *testing.T) {
 func TestStore_givesTheNextNumberToTheNextTask(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "First")
-	if got := factsOf(keep(t, s, "Second")).number; got != 2 {
+	if got := factsOf(keep(t, s, "Second")).Number; got != 2 {
 		t.Errorf("Number = %d, want 2", got)
 	}
 }
@@ -127,10 +85,10 @@ func TestStore_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 	s := openStore(t)
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
-	if err := s.Delete(factsOf(second).number); err != nil {
+	if err := s.Delete(factsOf(second).Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got := factsOf(keep(t, s, "Third")).number; got != 3 {
+	if got := factsOf(keep(t, s, "Third")).Number; got != 3 {
 		t.Errorf("Number = %d, want 3: a freed number is not handed out again", got)
 	}
 }
@@ -144,7 +102,7 @@ func TestStore_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 2 || factsOf(all[0]).title != "First" || factsOf(all[1]).title != "Second" {
+	if len(all) != 2 || factsOf(all[0]).Title != "First" || factsOf(all[1]).Title != "Second" {
 		t.Errorf("All = %v, want First then Second", all)
 	}
 }
@@ -160,12 +118,12 @@ func TestStore_keepsTextExactlyAsItWasGiven(t *testing.T) {
 	s := openStore(t)
 	for _, title := range []string{"Écrire la spéc — enfin !", "🧗 climb", "90% done, right?", strings.Repeat("a", 5000)} {
 		kept := keep(t, s, title)
-		got, err := s.Find(factsOf(kept).number)
+		got, err := s.Find(factsOf(kept).Number)
 		if err != nil {
 			t.Fatalf("Find: %v", err)
 		}
-		if facts := factsOf(got); facts.title != title {
-			t.Errorf("Title round-trip lost data: got %q", facts.title)
+		if facts := factsOf(got); facts.Title != title {
+			t.Errorf("Title round-trip lost data: got %q", facts.Title)
 		}
 	}
 }
@@ -190,7 +148,6 @@ func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 		a.Carries(domain.High)
 		a.Labelled("spec")
 		a.Labelled("team")
-		a.LabelsTold()
 		a.Due(deadline)
 		a.Estimated(estimate)
 	})
@@ -199,22 +156,22 @@ func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	got, err := s.Find(factsOf(kept).number)
+	got, err := s.Find(factsOf(kept).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
 	facts := factsOf(got)
-	if facts.description != "the one" || facts.state != domain.Todo || facts.priority != domain.High {
+	if facts.Description != "the one" || facts.State != domain.Todo || facts.Priority != domain.High {
 		t.Errorf("got %+v, want the attributes it was given", facts)
 	}
-	if len(facts.labels) != 2 || facts.labels[0] != "spec" || facts.labels[1] != "team" {
-		t.Errorf("Labels = %v, want [spec team]", facts.labels)
+	if len(facts.Labels) != 2 || facts.Labels[0] != "spec" || facts.Labels[1] != "team" {
+		t.Errorf("Labels = %v, want [spec team]", facts.Labels)
 	}
-	if domain.FormatDay(facts.deadline) != "2026-09-01" {
-		t.Errorf("Deadline = %v, want 2026-09-01", facts.deadline)
+	if domain.FormatDay(facts.Deadline) != "2026-09-01" {
+		t.Errorf("Deadline = %v, want 2026-09-01", facts.Deadline)
 	}
-	if domain.FormatDuration(facts.estimate) != "1h30m" {
-		t.Errorf("Estimate = %v, want 1h30m", facts.estimate)
+	if domain.FormatDuration(facts.Estimate) != "1h30m" {
+		t.Errorf("Estimate = %v, want 1h30m", facts.Estimate)
 	}
 }
 
@@ -230,21 +187,21 @@ func TestStore_roundTripsTheTimeSpent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	got, err := s.Find(factsOf(kept).number)
+	got, err := s.Find(factsOf(kept).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); facts.timeSpent != 30*time.Minute {
-		t.Errorf("TimeSpent = %v, want 30m", facts.timeSpent)
+	if facts := factsOf(got); facts.Spent != 30*time.Minute {
+		t.Errorf("TimeSpent = %v, want 30m", facts.Spent)
 	}
 
 	bare := keep(t, s, "Bare")
-	got, err = s.Find(factsOf(bare).number)
+	got, err = s.Find(factsOf(bare).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); facts.timeSpent != 0 {
-		t.Errorf("TimeSpent = %v, want none", facts.timeSpent)
+	if facts := factsOf(got); facts.Spent != 0 {
+		t.Errorf("TimeSpent = %v, want none", facts.Spent)
 	}
 }
 
@@ -254,26 +211,23 @@ func TestStore_replacesTheLabelsWhenATaskIsUpdated(t *testing.T) {
 	built = changed(built, func(a *task.AsTold) {
 		a.Labelled("spec")
 		a.Labelled("draft")
-		a.LabelsTold()
 	})
 	if err := s.Update(built); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	built = changed(built, func(a *task.AsTold) {
-		a.NotLabelled()
-		a.Labelled("team")
-		a.LabelsTold()
-	})
+	c := built.Carried()
+	c.Labels = []string{"team"}
+	built = task.Made(c)
 	if err := s.Update(built); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
 
-	got, err := s.Find(factsOf(built).number)
+	got, err := s.Find(factsOf(built).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); len(facts.labels) != 1 || facts.labels[0] != "team" {
-		t.Errorf("Labels = %v, want only [team]: what is given replaces what was there", facts.labels)
+	if facts := factsOf(got); len(facts.Labels) != 1 || facts.Labels[0] != "team" {
+		t.Errorf("Labels = %v, want only [team]: what is given replaces what was there", facts.Labels)
 	}
 }
 
@@ -298,7 +252,7 @@ func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
 	keep(t, s, "First")
 	second := keep(t, s, "Second")
 	keep(t, s, "Third")
-	if err := s.Delete(factsOf(second).number); err != nil {
+	if err := s.Delete(factsOf(second).Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 
@@ -306,7 +260,7 @@ func TestStore_deletingOneLeavesTheOthersAlone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 2 || factsOf(all[0]).title != "First" || factsOf(all[1]).title != "Third" {
+	if len(all) != 2 || factsOf(all[0]).Title != "First" || factsOf(all[1]).Title != "Third" {
 		t.Errorf("All = %v, want First and Third", all)
 	}
 }
@@ -378,7 +332,7 @@ func TestStore_reportsLabelsItCannotRead(t *testing.T) {
 		t.Fatalf("dropping labels: %v", err)
 	}
 
-	if _, err := s.Find(factsOf(kept).number); err == nil {
+	if _, err := s.Find(factsOf(kept).Number); err == nil {
 		t.Error("Find should report labels it cannot read")
 	}
 	if _, err := s.All(); err == nil {
@@ -392,7 +346,6 @@ func TestStore_reportsLabelsItCannotKeep(t *testing.T) {
 	built = changed(built, func(a *task.AsTold) {
 		a.Labelled("spec")
 		a.Labelled("spec")
-		a.LabelsTold()
 	})
 
 	if _, err := s.Keep(built); err == nil {
@@ -406,7 +359,6 @@ func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
 	built = changed(built, func(a *task.AsTold) {
 		a.Labelled("spec")
 		a.Labelled("spec")
-		a.LabelsTold()
 	})
 
 	if err := s.Update(built); err == nil {
@@ -417,11 +369,11 @@ func TestStore_reportsLabelsItCannotReplace(t *testing.T) {
 func TestStore_reportsADeadlineItCannotRead(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Write the spec")
-	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, factsOf(kept).number); err != nil {
+	if _, err := s.db.Exec(`UPDATE tasks SET deadline = 'soon' WHERE number = ?`, factsOf(kept).Number); err != nil {
 		t.Fatalf("writing a bad deadline: %v", err)
 	}
 
-	if _, err := s.Find(factsOf(kept).number); err == nil {
+	if _, err := s.Find(factsOf(kept).Number); err == nil {
 		t.Error("Find should report a deadline it cannot make sense of")
 	}
 	if _, err := s.All(); err == nil {
@@ -439,7 +391,7 @@ func TestStore_reportsLabelsItCannotClear(t *testing.T) {
 	if err := s.Update(built); err == nil {
 		t.Error("Update should report labels it cannot clear")
 	}
-	if err := s.Delete(factsOf(built).number); err == nil {
+	if err := s.Delete(factsOf(built).Number); err == nil {
 		t.Error("Delete should report labels it cannot clear")
 	}
 }
@@ -448,18 +400,18 @@ func TestStore_handsBackTheParentItWasGiven(t *testing.T) {
 	s := openStore(t)
 	under := keep(t, s, "Ship it")
 	built, _ := task.NewTask("Write the tests")
-	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).number) })
+	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).Number) })
 
 	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	got, err := s.Find(factsOf(kept).number)
+	got, err := s.Find(factsOf(kept).Number)
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); facts.parent != factsOf(under).number {
-		t.Errorf("Parent = %d, want %d", facts.parent, factsOf(under).number)
+	if facts := factsOf(got); facts.Parent != factsOf(under).Number {
+		t.Errorf("Parent = %d, want %d", facts.Parent, factsOf(under).Number)
 	}
 }
 
@@ -467,17 +419,17 @@ func TestStore_namesWhatHangsUnderATask(t *testing.T) {
 	s := openStore(t)
 	under := keep(t, s, "Ship it")
 	built, _ := task.NewTask("Write the tests")
-	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).number) })
+	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).Number) })
 	if _, err := s.Keep(built); err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
 	keep(t, s, "Unrelated")
 
-	children, err := s.Under(factsOf(under).number)
+	children, err := s.Under(factsOf(under).Number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
-	if len(children) != 1 || factsOf(children[0]).title != "Write the tests" {
+	if len(children) != 1 || factsOf(children[0]).Title != "Write the tests" {
 		t.Errorf("Under = %v, want only the sub-task", children)
 	}
 }
@@ -485,7 +437,7 @@ func TestStore_namesWhatHangsUnderATask(t *testing.T) {
 func TestStore_saysNothingHangsUnderALoneTask(t *testing.T) {
 	s := openStore(t)
 	lone := keep(t, s, "Ship it")
-	children, err := s.Under(factsOf(lone).number)
+	children, err := s.Under(factsOf(lone).Number)
 	if err != nil {
 		t.Fatalf("Under: %v", err)
 	}
@@ -646,8 +598,7 @@ func TestStore_keepsWhetherATaskIsArchived(t *testing.T) {
 	s := openStore(t)
 	kept := keep(t, s, "Migration Jenkins")
 
-	var a task.AsTold
-	kept.Tell(&a)
+	a := task.From(kept)
 	a.InColumn(domain.Done)
 	a.Archived()
 	if err := s.Update(a.Task()); err != nil {
@@ -658,48 +609,14 @@ func TestStore_keepsWhetherATaskIsArchived(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	var read told
-	found.Tell(&read)
-	if !read.archived {
+	read := found.Carried()
+	if !read.Archived {
 		t.Error("the store gave back a task that is not archived")
 	}
-	if read.state != domain.Done {
-		t.Errorf("state = %q, want it still done — archiving is not a column", read.state)
+	if read.State != domain.Done {
+		t.Errorf("state = %q, want it still done — archiving is not a column", read.State)
 	}
 }
-
-type told struct {
-	archived bool
-	state    domain.State
-}
-
-func (r *told) Numbered(int)            {}
-func (r *told) Titled(string)           {}
-func (r *told) InColumn(s domain.State) { r.state = s }
-func (r *told) Archived()               { r.archived = true }
-func (r *told) NotArchived()            { r.archived = false }
-func (r *told) Carries(domain.Priority) {}
-func (r *told) Described(string)        {}
-func (r *told) NotDescribed()           {}
-func (r *told) Labelled(string)         {}
-func (r *told) NotLabelled()            {}
-func (r *told) LabelsTold()             {}
-func (r *told) BlockedBy(int)           {}
-func (r *told) NotBlocked()             {}
-func (r *told) BlockersTold()           {}
-func (r *told) Because(string)          {}
-func (r *told) NotBecause()             {}
-func (r *told) Due(time.Time)           {}
-func (r *told) NotDue()                 {}
-func (r *told) Estimated(time.Duration) {}
-func (r *told) NotEstimated()           {}
-func (r *told) Spent(time.Duration)     {}
-func (r *told) NothingSpent()           {}
-func (r *told) Under(int)               {}
-func (r *told) UnderNothing()           {}
-func (r *told) Serves(int)              {}
-func (r *told) ServesNothing()          {}
-func (r *told) ObjectivesTold()         {}
 
 func TestWithin_letsGoOfTheStoreWhenAnActPanics(t *testing.T) {
 	s := openStore(t)

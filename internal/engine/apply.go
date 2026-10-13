@@ -47,14 +47,11 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 }
 
 func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
-	current := factsOf(t)
-	a := &task.AsTold{}
-	t.Tell(a)
-
-	if err := applyCarried(a, "a task", carriedChanges{
+	a := t.Carried()
+	if err := applyCarried(carriedTo{&a.Title, &a.Description, &a.Priority, &a.Labels, &a.Deadline, &a.Estimate}, "a task", carriedChanges{
 		title: c.Title, description: c.Description, priority: c.Priority,
 		labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
-	}, current.labels, atCreation); err != nil {
+	}, atCreation); err != nil {
 		return task.Task{}, err
 	}
 	if c.State != nil {
@@ -62,60 +59,49 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		if err != nil {
 			return task.Task{}, err
 		}
-		a.InColumn(state)
+		a.State = state
 	}
 	if c.Blocker != nil {
-		blockers, err := changedBlockers(*c.Blocker, current.blockers, atCreation)
+		blockers, err := changedBlockers(*c.Blocker, a.Blockers, atCreation)
 		if err != nil {
 			return task.Task{}, err
 		}
-		a.NotBlocked()
-		for _, blocker := range blockers {
-			a.BlockedBy(blocker)
-		}
-		a.BlockersTold()
+		a.Blockers = blockers
 	}
 	if c.Because != nil {
 		said, err := domain.Prose(*c.Because)
 		if err != nil {
 			return task.Task{}, err
 		}
-		a.Because(said)
+		a.Because = said
 	}
 	if c.Spent != nil {
 		spent, err := domain.ParseSpent(*c.Spent)
 		if err != nil {
 			return task.Task{}, err
 		}
-		a.Spent(spent.Apply(current.timeSpent))
+		a.Spent = spent.Apply(a.Spent)
 	}
 	if c.Parent != nil {
-		a.Under(*c.Parent)
+		a.Parent = *c.Parent
 	}
 	if c.Objective != nil {
-		served, err := changedNumbers(*c.Objective, current.objectives, atCreation, ErrObjectiveRequired,
+		served, err := changedNumbers(*c.Objective, a.Objectives, atCreation, ErrObjectiveRequired,
 			ErrObjectivesBothWays, ErrObjectiveSignAtBirth)
 		if err != nil {
 			return task.Task{}, err
 		}
-		a.ServesNothing()
-		for _, one := range served {
-			a.Serves(one)
-		}
-		a.ObjectivesTold()
+		a.Objectives = served
 	}
-	return a.Task(), nil
+	return task.Made(a), nil
 }
 
-type carried interface {
-	Titled(string)
-	Described(string)
-	Carries(domain.Priority)
-	NotLabelled()
-	Labelled(string)
-	LabelsTold()
-	Due(time.Time)
-	Estimated(time.Duration)
+type carriedTo struct {
+	title, description *string
+	priority           *domain.Priority
+	labels             *[]string
+	deadline           *time.Time
+	estimate           *time.Duration
 }
 
 type carriedChanges struct {
@@ -123,52 +109,48 @@ type carriedChanges struct {
 	labels                                           *[]string
 }
 
-func applyCarried(a carried, of string, c carriedChanges, labels []string, atCreation bool) error {
+func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) error {
 	if c.title != nil {
 		title, err := domain.Title(of, *c.title)
 		if err != nil {
 			return err
 		}
-		a.Titled(title)
+		*to.title = title
 	}
 	if c.description != nil {
 		said, err := domain.Prose(*c.description)
 		if err != nil {
 			return err
 		}
-		a.Described(said)
+		*to.description = said
 	}
 	if c.priority != nil {
 		priority, err := domain.ParsePriority(*c.priority)
 		if err != nil {
 			return err
 		}
-		a.Carries(priority)
+		*to.priority = priority
 	}
 	if c.labels != nil {
-		changed, err := changedLabels(*c.labels, labels, atCreation)
+		changed, err := changedLabels(*c.labels, *to.labels, atCreation)
 		if err != nil {
 			return err
 		}
-		a.NotLabelled()
-		for _, label := range changed {
-			a.Labelled(label)
-		}
-		a.LabelsTold()
+		*to.labels = changed
 	}
 	if c.deadline != nil {
 		deadline, err := domain.ParseDeadline(*c.deadline)
 		if err != nil {
 			return err
 		}
-		a.Due(deadline)
+		*to.deadline = deadline
 	}
 	if c.estimate != nil {
 		estimate, err := domain.ParseEstimate(*c.estimate)
 		if err != nil {
 			return err
 		}
-		a.Estimated(estimate)
+		*to.estimate = estimate
 	}
 	return nil
 }

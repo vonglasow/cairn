@@ -84,7 +84,10 @@ Send an object a message; do not interrogate it to decide on its behalf.
 
 Pulling fields out to compute something the object could have computed puts its
 rules in the caller — where they get duplicated, and drift the day the object
-changes.
+changes. A rule stays on the notion. Its facts, though, are handed over as one
+plain record (`task.Carried`) rather than told one method at a time: rendering
+a card or a row is not a rule, and eighteen copies of the same fields were the
+duplication this principle is meant to prevent.
 
 ## SSOT — single source of truth
 

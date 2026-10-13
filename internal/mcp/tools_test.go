@@ -7,53 +7,18 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/task"
 )
 
-type taskFacts struct {
-	title string
-}
-
-func (f *taskFacts) Numbered(int)            {}
-func (f *taskFacts) Titled(s string)         { f.title = s }
-func (f *taskFacts) InColumn(domain.State)   {}
-func (f *taskFacts) Archived()               {}
-func (f *taskFacts) NotArchived()            {}
-func (f *taskFacts) Carries(domain.Priority) {}
-func (f *taskFacts) Described(string)        {}
-func (f *taskFacts) NotDescribed()           {}
-func (f *taskFacts) Labelled(string)         {}
-func (f *taskFacts) NotLabelled()            {}
-func (f *taskFacts) LabelsTold()             {}
-func (f *taskFacts) BlockedBy(int)           {}
-func (f *taskFacts) NotBlocked()             {}
-func (f *taskFacts) BlockersTold()           {}
-func (f *taskFacts) Because(string)          {}
-func (f *taskFacts) NotBecause()             {}
-func (f *taskFacts) Due(time.Time)           {}
-func (f *taskFacts) NotDue()                 {}
-func (f *taskFacts) Estimated(time.Duration) {}
-func (f *taskFacts) NotEstimated()           {}
-func (f *taskFacts) Spent(time.Duration)     {}
-func (f *taskFacts) NothingSpent()           {}
-func (f *taskFacts) Under(int)               {}
-func (f *taskFacts) UnderNothing()           {}
-func (f *taskFacts) Serves(int)              {}
-func (f *taskFacts) ServesNothing()          {}
-func (f *taskFacts) ObjectivesTold()         {}
-
-func factsOf(t task.Task) taskFacts {
-	var f taskFacts
-	t.Tell(&f)
+func factsOf(t task.Task) task.Carried {
+	f := t.Carried()
 	return f
 }
 
@@ -131,7 +96,7 @@ func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do(TaskList): %v", err)
 	}
-	if len(answer.Tasks) != 1 || factsOf(answer.Tasks[0]).title != "From the handler" {
+	if len(answer.Tasks) != 1 || factsOf(answer.Tasks[0]).Title != "From the handler" {
 		t.Fatalf("Tasks = %v, want one titled %q", answer.Tasks, "From the handler")
 	}
 }

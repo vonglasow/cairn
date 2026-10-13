@@ -27,7 +27,6 @@ func TestOfObjective_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Described("in full")
 	a.Labelled("launch")
 	a.Labelled("team")
-	a.LabelsTold()
 	a.Due(deadline)
 	a.Estimated(estimate)
 	built := a.Objective()

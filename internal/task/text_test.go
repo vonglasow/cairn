@@ -15,8 +15,7 @@ func spec(t *testing.T) Task {
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Numbered(1)
 	return a.Task()
 }
@@ -54,12 +53,10 @@ func TestText_showsWhatTheTaskCarries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Described("the one")
 	a.Labelled("spec")
 	a.Labelled("team")
-	a.LabelsTold()
 	a.Due(deadline)
 	a.Estimated(estimate)
 	built = a.Task()
@@ -180,8 +177,7 @@ func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Numbered(2)
 	a.Spent(90 * time.Minute)
 	a.Under(1)
@@ -276,8 +272,6 @@ func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
 		a.InColumn(domain.Done)
 		if archived {
 			a.Archived()
-		} else {
-			a.NotArchived()
 		}
 		return a.Task()
 	}
@@ -298,7 +292,6 @@ func TestALineCarriesEnoughToDecideOn(t *testing.T) {
 	a.Due(time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC))
 	a.Labelled("backend")
 	a.Labelled("sprint-172")
-	a.LabelsTold()
 	line := Line(a.Task())
 	for _, said := range []string{"Write the spec", "current", "high", "2026-10-09", "backend", "sprint-172"} {
 		if !strings.Contains(line, said) {

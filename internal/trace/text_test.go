@@ -13,22 +13,18 @@ func acted(task int, did, field, was, became, through string, hour, minute int) 
 	a.On(task)
 	a.Did(did)
 	if field == "" {
-		a.NothingNamed()
 	} else {
 		a.Changing(field)
 	}
 	if was == "" {
-		a.WasNothing()
 	} else {
 		a.Was(was)
 	}
 	if became == "" {
-		a.BecameNothing()
 	} else {
 		a.Became(became)
 	}
 	if through == "" {
-		a.ByHand()
 	} else {
 		a.Through(through)
 	}
@@ -169,10 +165,7 @@ func TestAHistorySaysWhatADeletionTookWithIt(t *testing.T) {
 	var a AsTold
 	a.On(1)
 	a.Did(Deleted)
-	a.NothingNamed()
 	a.Was("title: Write the spec; priority: high")
-	a.BecameNothing()
-	a.ByHand()
 	a.At(time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC))
 	said := Text([]Act{a.Act()})
 	for _, want := range []string{"deleted", "Write the spec", "high"} {

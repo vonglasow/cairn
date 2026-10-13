@@ -21,7 +21,7 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
-	n := factsOf(kept).number
+	n := factsOf(kept).Number
 	read := func(err error) error { return err }
 	for what, err := range map[string]error{
 		"taking up task 1":         s.AddFocus(n),
@@ -52,14 +52,10 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 
 func TestTheEndOfAListToldChangesNothing(t *testing.T) {
 	b := &boundTask{labels: []string{"x"}, blockers: []int{2}, objectives: []int{3}}
-	b.LabelsTold()
-	b.BlockersTold()
-	b.ObjectivesTold()
 	if len(b.labels) != 1 || len(b.blockers) != 1 || len(b.objectives) != 1 {
 		t.Errorf("the end of a list changed it: %+v", b)
 	}
 	o := &boundObjective{labels: []string{"x"}}
-	o.LabelsTold()
 	if len(o.labels) != 1 {
 		t.Errorf("the end of a list changed it: %+v", o)
 	}

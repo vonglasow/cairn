@@ -68,7 +68,7 @@ the search box is the only way in, so somebody holding a number had no way to
 use it. Amended in use, which is where that kind of thing is found.
 
 It is looked for as a substring like everything else, so 228 answers 228 and
-1228 both. Weighed and kept: a second kind of matching in a membrane that has
+1228 both. Weighed and kept: a second kind of matching in a search that has
 one costs more than a glance at one extra answer, and being handed nothing
 costs the way back.
 

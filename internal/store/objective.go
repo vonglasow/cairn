@@ -31,31 +31,19 @@ type boundObjective struct {
 	estimate                  int64
 }
 
-func (b *boundObjective) Numbered(n int)             { b.number = n }
-func (b *boundObjective) Titled(s string)            { b.title = s }
-func (b *boundObjective) Standing(s objective.State) { b.state = string(s) }
-func (b *boundObjective) Carries(p domain.Priority)  { b.priority = string(p) }
-func (b *boundObjective) Described(s string)         { b.description = s }
-func (b *boundObjective) NotDescribed()              { b.description = "" }
-func (b *boundObjective) Labelled(s string)          { b.labels = append(b.labels, s) }
-func (b *boundObjective) NotLabelled()               { b.labels = nil }
-func (b *boundObjective) LabelsTold()                {}
-func (b *boundObjective) Due(t time.Time)            { b.deadline = domain.FormatDay(t) }
-func (b *boundObjective) NotDue()                    { b.deadline = "" }
-func (b *boundObjective) Estimated(d time.Duration)  { b.estimate = int64(d) }
-func (b *boundObjective) NotEstimated()              { b.estimate = 0 }
-
 func bindObjective(o objective.Objective) *boundObjective {
-	b := &boundObjective{}
-	o.Tell(b)
-	return b
+	c := o.Carried()
+	return &boundObjective{
+		number: c.Number, title: c.Title, description: c.Description, state: string(c.State),
+		priority: string(c.Priority), deadline: domain.FormatDay(c.Deadline), labels: c.Labels,
+		estimate: int64(c.Estimate),
+	}
 }
 
 func renumberedObjective(o objective.Objective, number int) objective.Objective {
-	a := &objective.AsTold{}
-	o.Tell(a)
-	a.Numbered(number)
-	return a.Objective()
+	c := o.Carried()
+	c.Number = number
+	return objective.Made(c)
 }
 
 // KeepObjective records an objective and hands it back carrying the number it was given.
@@ -173,16 +161,11 @@ func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error))
 		return objective.Objective{}, err
 	}
 
-	a := &objective.AsTold{}
-	a.Numbered(number)
-	a.Titled(title)
-	a.Standing(objective.State(state))
-	a.Carries(domain.Priority(priority))
-	domain.TellOrNot(description, a.Described, a.NotDescribed)
-	domain.TellAll(labels, a.Labelled, a.NotLabelled, a.LabelsTold)
-	domain.TellOrNot(day, a.Due, a.NotDue)
-	domain.TellOrNot(time.Duration(estimate), a.Estimated, a.NotEstimated)
-	return a.Objective(), nil
+	return objective.Made(objective.Carried{
+		Number: number, Title: title, Description: description, State: objective.State(state),
+		Priority: domain.Priority(priority), Labels: noneIsNil(labels), Deadline: day,
+		Estimate: time.Duration(estimate),
+	}), nil
 }
 
 // TasksServing hands back the tasks put directly under an objective, in the order they were added.

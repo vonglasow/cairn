@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"cairn/internal/domain"
 )
@@ -18,9 +17,7 @@ func Text(acts []Act) string {
 	var out strings.Builder
 	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
 	for _, a := range acts {
-		var l line
-		a.Tell(&l)
-		_, _ = fmt.Fprintln(tw, l.columns())
+		_, _ = fmt.Fprintln(tw, columns(a.Carried()))
 	}
 	_ = tw.Flush()
 	return out.String()
@@ -30,8 +27,6 @@ func Text(acts []Act) string {
 func List(acts []Act) string {
 	shown := make([]Act, 0, len(acts))
 	for _, a := range acts {
-		var f fact
-		a.Tell(&f)
 		if born(a) {
 			continue
 		}
@@ -43,69 +38,47 @@ func List(acts []Act) string {
 	var out strings.Builder
 	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
 	for _, a := range shown {
-		var l line
-		a.Tell(&l)
+		l := a.Carried()
 		_, _ = fmt.Fprintf(tw, "%s\t#%d\t%s\n",
-			domain.FormatMoment(l.at), l.task, strings.TrimPrefix(l.columns(), l.moment()+"\t"))
+			domain.FormatMoment(l.At), l.Task, strings.TrimPrefix(columns(l), domain.FormatMoment(l.At)+"\t"))
 	}
 	_ = tw.Flush()
 	return out.String()
 }
 
 func born(a Act) bool {
-	var l line
-	a.Tell(&l)
-	return l.did == Created && l.field != ""
+	l := a.Carried()
+	return l.Did == Created && l.Field != ""
 }
 
-type line struct {
-	task                             int
-	did, field, was, became, through string
-	at                               time.Time
-}
-
-func (l *line) On(n int)               { l.task = n }
-func (l *line) Did(what string)        { l.did = what }
-func (l *line) Changing(field string)  { l.field = field }
-func (l *line) NothingNamed()          { l.field = "" }
-func (l *line) Was(value string)       { l.was = value }
-func (l *line) WasNothing()            { l.was = "" }
-func (l *line) Became(value string)    { l.became = value }
-func (l *line) BecameNothing()         { l.became = "" }
-func (l *line) Through(surface string) { l.through = surface }
-func (l *line) ByHand()                { l.through = "" }
-func (l *line) At(when time.Time)      { l.at = when }
-
-func (l *line) columns() string {
+func columns(l Carried) string {
 	var out strings.Builder
-	if l.did == Created && l.field != "" {
-		fmt.Fprintf(&out, "%s\t%s\t%s", nest, l.field, l.became)
+	if l.Did == Created && l.Field != "" {
+		fmt.Fprintf(&out, "%s\t%s\t%s", nest, l.Field, l.Became)
 		return out.String()
 	}
-	fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.at), l.what())
-	if l.did == TimeAdded {
-		fmt.Fprintf(&out, "\t%s for %s", l.became, l.was)
-	} else if l.field == "" && l.became != "" {
-		fmt.Fprintf(&out, "\t%s", l.became)
-	} else if l.field == "" && l.was != "" {
-		fmt.Fprintf(&out, "\t%s", l.was)
-	} else if l.field != "" && (l.was != "" || l.became != "") {
+	fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.At), what(l))
+	if l.Did == TimeAdded {
+		fmt.Fprintf(&out, "\t%s for %s", l.Became, l.Was)
+	} else if l.Field == "" && l.Became != "" {
+		fmt.Fprintf(&out, "\t%s", l.Became)
+	} else if l.Field == "" && l.Was != "" {
+		fmt.Fprintf(&out, "\t%s", l.Was)
+	} else if l.Field != "" && (l.Was != "" || l.Became != "") {
 		fmt.Fprintf(&out, "\t%s %s %s",
-			domain.OrNothing(l.was), went, domain.OrNothing(l.became))
+			domain.OrNothing(l.Was), went, domain.OrNothing(l.Became))
 	}
-	if l.through != "" {
-		fmt.Fprintf(&out, "  (%s)", l.through)
+	if l.Through != "" {
+		fmt.Fprintf(&out, "  (%s)", l.Through)
 	}
 	return out.String()
 }
 
-func (l *line) moment() string { return domain.FormatMoment(l.at) }
-
-func (l *line) what() string {
-	if l.field != "" {
-		return l.field
+func what(l Carried) string {
+	if l.Field != "" {
+		return l.Field
 	}
-	return l.did
+	return l.Did
 }
 
 // SheetText writes how long the work took, day by day: each task's time before its title, so a title holding "1h" is never read as one, then what the day came to.

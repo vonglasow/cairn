@@ -43,31 +43,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 	applied_at TEXT NOT NULL
 );`
 
-type changeFacts struct {
-	number                    int
-	name, does, undoes, loses string
-	applied                   bool
-	made                      time.Time
-}
-
-func (f *changeFacts) Numbered(n int)  { f.number = n }
-func (f *changeFacts) Named(s string)  { f.name = s }
-func (f *changeFacts) Does(s string)   { f.does = s }
-func (f *changeFacts) Undoes(s string) { f.undoes = s }
-func (f *changeFacts) NotUndoable()    { f.undoes = "" }
-func (f *changeFacts) Loses(s string)  { f.loses = s }
-func (f *changeFacts) NothingLost()    { f.loses = "" }
-func (f *changeFacts) Applied(t time.Time) {
-	f.applied = true
-	f.made = t
-}
-func (f *changeFacts) NotApplied() { f.applied = false }
-
-func factsOfChange(m migration.Migration) changeFacts {
-	var f changeFacts
-	m.Tell(&f)
-	return f
-}
+func factsOfChange(m migration.Migration) migration.Carried { return m.Carried() }
 
 func (s *Store) settle(mustBeCurrent bool) error {
 	if err := s.makeTheLedgerWhenOpeningFindsNone(); err != nil {
@@ -162,7 +138,7 @@ func (s *Store) adoptTheUnrecordedShapeWhileOpening() error {
 	if len(applied) > 0 {
 		return nil
 	}
-	return s.record(factsOfChange(migration.Known[0]).name)
+	return s.record(factsOfChange(migration.Known[0]).Name)
 }
 
 func (s *Store) refuseAnUnknownChange() error {
@@ -172,7 +148,7 @@ func (s *Store) refuseAnUnknownChange() error {
 	}
 	known := make(map[string]bool, len(migration.Known))
 	for _, raw := range migration.Known {
-		known[factsOfChange(raw).name] = true
+		known[factsOfChange(raw).Name] = true
 	}
 	for name := range applied {
 		if !known[name] {
@@ -241,26 +217,9 @@ func (s *Store) Migrations() ([]migration.Migration, error) {
 	all := make([]migration.Migration, 0, len(migration.Known))
 	for i, raw := range migration.Known {
 		facts := factsOfChange(raw)
-		var a migration.AsTold
-		a.Numbered(i + 1)
-		a.Named(facts.name)
-		a.Does(facts.does)
-		if facts.undoes == "" {
-			a.NotUndoable()
-		} else {
-			a.Undoes(facts.undoes)
-		}
-		if facts.loses == "" {
-			a.NothingLost()
-		} else {
-			a.Loses(facts.loses)
-		}
-		if made, done := applied[facts.name]; done {
-			a.Applied(made)
-		} else {
-			a.NotApplied()
-		}
-		all = append(all, a.Migration())
+		facts.Number = i + 1
+		facts.Made, facts.Applied = applied[facts.Name]
+		all = append(all, migration.Made(facts))
 	}
 	return all, nil
 }
@@ -273,7 +232,7 @@ func (s *Store) Waiting() ([]migration.Migration, error) {
 	}
 	waiting := []migration.Migration{}
 	for _, m := range all {
-		if !factsOfChange(m).applied {
+		if !factsOfChange(m).Applied {
 			waiting = append(waiting, m)
 		}
 	}
@@ -299,17 +258,17 @@ func (s *Store) Apply(number int) (string, error) {
 		return "", err
 	}
 	facts := factsOfChange(one)
-	if facts.applied {
+	if facts.Applied {
 		return "", fmt.Errorf("change %d: %w", number, ErrAlreadyApplied)
 	}
 	waiting, err := s.Waiting()
 	if err != nil {
 		return "", err
 	}
-	if first := factsOfChange(waiting[0]).number; first < number {
+	if first := factsOfChange(waiting[0]).Number; first < number {
 		return "", fmt.Errorf("change %d: %w — apply %d first", number, ErrEarlierWaiting, first)
 	}
-	return facts.name, s.make(migration.Known[number-1])
+	return facts.Name, s.make(migration.Known[number-1])
 }
 
 // ApplyAll makes every change the store is missing, oldest first.
@@ -332,10 +291,10 @@ func (s *Store) applyAll() ([]string, error) {
 	made := []string{}
 	for _, one := range waiting {
 		facts := factsOfChange(one)
-		if err := s.make(migration.Known[facts.number-1]); err != nil {
+		if err := s.make(migration.Known[facts.Number-1]); err != nil {
 			return nil, err
 		}
-		made = append(made, facts.name)
+		made = append(made, facts.Name)
 	}
 	return made, nil
 }
@@ -346,7 +305,7 @@ func (s *Store) make(raw migration.Migration) error {
 		if err != nil {
 			return err
 		}
-		name := factsOfChange(raw).name
+		name := factsOfChange(raw).Name
 		if _, done := applied[name]; done {
 			return fmt.Errorf("%q: %w", name, ErrAlreadyApplied)
 		}
@@ -356,10 +315,10 @@ func (s *Store) make(raw migration.Migration) error {
 
 func (s *Store) makeOn(on runs, raw migration.Migration) error {
 	facts := factsOfChange(raw)
-	if _, err := on.Exec(facts.does); err != nil {
-		return fmt.Errorf("applying %q: %w", facts.name, err)
+	if _, err := on.Exec(facts.Does); err != nil {
+		return fmt.Errorf("applying %q: %w", facts.Name, err)
 	}
-	return recordOn(on, facts.name)
+	return recordOn(on, facts.Name)
 }
 
 type runs interface {
@@ -379,7 +338,7 @@ func (s *Store) RollBack() (migration.Migration, error) {
 
 func (s *Store) rollBackFrom(all []migration.Migration) (migration.Migration, error) {
 	for i := len(all) - 1; i >= 1; i-- {
-		if !factsOfChange(all[i]).applied {
+		if !factsOfChange(all[i]).Applied {
 			continue
 		}
 		raw := factsOfChange(migration.Known[i])
@@ -388,14 +347,14 @@ func (s *Store) rollBackFrom(all []migration.Migration) (migration.Migration, er
 			if err != nil {
 				return err
 			}
-			if _, still := applied[raw.name]; !still {
-				return fmt.Errorf("%q: %w", raw.name, ErrUndoneMeanwhile)
+			if _, still := applied[raw.Name]; !still {
+				return fmt.Errorf("%q: %w", raw.Name, ErrUndoneMeanwhile)
 			}
-			if _, err := kept.on.Exec(raw.undoes); err != nil {
-				return fmt.Errorf("rolling back %q: %w", raw.name, err)
+			if _, err := kept.on.Exec(raw.Undoes); err != nil {
+				return fmt.Errorf("rolling back %q: %w", raw.Name, err)
 			}
-			if _, err := kept.on.Exec(`DELETE FROM migrations WHERE name = ?`, raw.name); err != nil {
-				return fmt.Errorf("forgetting %q: %w", raw.name, err)
+			if _, err := kept.on.Exec(`DELETE FROM migrations WHERE name = ?`, raw.Name); err != nil {
+				return fmt.Errorf("forgetting %q: %w", raw.Name, err)
 			}
 			return nil
 		})

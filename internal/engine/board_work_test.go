@@ -19,8 +19,7 @@ func TestAGoalIsToldItHasADescription(t *testing.T) {
 		t.Fatal("an objective with nothing written about it was said to have a description")
 	}
 
-	var told objective.AsTold
-	built.Tell(&told)
+	told := objective.From(built)
 	told.Described("why it matters")
 	described, err := goalOf(told.Objective(), nil)
 	if err != nil {

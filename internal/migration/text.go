@@ -3,40 +3,15 @@ package migration
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"cairn/internal/domain"
 )
 
-type textFacts struct {
-	number                    int
-	name, does, undoes, loses string
-	applied                   bool
-	made                      time.Time
-}
+func textOf(m Migration) Carried { return m.Carried() }
 
-func (f *textFacts) Numbered(n int)  { f.number = n }
-func (f *textFacts) Named(s string)  { f.name = s }
-func (f *textFacts) Does(s string)   { f.does = s }
-func (f *textFacts) Undoes(s string) { f.undoes = s }
-func (f *textFacts) NotUndoable()    { f.undoes = "" }
-func (f *textFacts) Loses(s string)  { f.loses = s }
-func (f *textFacts) NothingLost()    { f.loses = "" }
-func (f *textFacts) Applied(t time.Time) {
-	f.applied = true
-	f.made = t
-}
-func (f *textFacts) NotApplied() { f.applied = false }
-
-func textOf(m Migration) textFacts {
-	var f textFacts
-	m.Tell(&f)
-	return f
-}
-
-func state(f textFacts) string {
-	if f.applied {
-		return "applied " + domain.FormatMoment(f.made)
+func state(f Carried) string {
+	if f.Applied {
+		return "applied " + domain.FormatMoment(f.Made)
 	}
 	return "waiting          "
 }
@@ -45,10 +20,10 @@ func state(f textFacts) string {
 func Text(m Migration) string {
 	f := textOf(m)
 	var out strings.Builder
-	fmt.Fprintf(&out, "#%d  %s  %s\n\n", f.number, state(f), f.name)
-	fmt.Fprintf(&out, "what it does\n%s\n\n", domain.OrNothing(strings.TrimSpace(f.does)))
-	fmt.Fprintf(&out, "what undoing it does\n%s\n\n", domain.OrNothing(strings.TrimSpace(f.undoes)))
-	fmt.Fprintf(&out, "what undoing it loses\n%s\n", domain.OrNothing(f.loses))
+	fmt.Fprintf(&out, "#%d  %s  %s\n\n", f.Number, state(f), f.Name)
+	fmt.Fprintf(&out, "what it does\n%s\n\n", domain.OrNothing(strings.TrimSpace(f.Does)))
+	fmt.Fprintf(&out, "what undoing it does\n%s\n\n", domain.OrNothing(strings.TrimSpace(f.Undoes)))
+	fmt.Fprintf(&out, "what undoing it loses\n%s\n", domain.OrNothing(f.Loses))
 	return out.String()
 }
 
@@ -58,10 +33,10 @@ func List(all []Migration, held domain.Held) string {
 	var out strings.Builder
 	for _, m := range all {
 		f := textOf(m)
-		if !f.applied {
+		if !f.Applied {
 			waiting++
 		}
-		fmt.Fprintf(&out, "#%d  %s  %s\n", f.number, state(f), f.name)
+		fmt.Fprintf(&out, "#%d  %s  %s\n", f.Number, state(f), f.Name)
 	}
 	fmt.Fprintf(&out, "\nthe store %s, %d change(s) waiting\n", domain.HeldText(held), waiting)
 	return out.String()
@@ -71,9 +46,9 @@ func List(all []Migration, held domain.Held) string {
 func RolledBackText(m Migration) string {
 	f := textOf(m)
 	var out strings.Builder
-	fmt.Fprintf(&out, "rolled back %q\n", f.name)
-	if f.loses != "" {
-		fmt.Fprintf(&out, "lost: %s — `cairn backup restore --yes` puts it back\n", f.loses)
+	fmt.Fprintf(&out, "rolled back %q\n", f.Name)
+	if f.Loses != "" {
+		fmt.Fprintf(&out, "lost: %s — `cairn backup restore --yes` puts it back\n", f.Loses)
 	}
 	return out.String()
 }

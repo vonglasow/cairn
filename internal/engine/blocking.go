@@ -46,15 +46,15 @@ func mayBlock(number int, blockers []int, blocking func(int) ([]int, error)) err
 }
 
 func blockersOf(t task.Task) []int {
-	return factsOf(t).blockers
+	return factsOf(t).Blockers
 }
 
 func (e *Engine) canBeBlocked(t task.Task) error {
 	f := factsOf(t)
-	if len(f.blockers) == 0 {
+	if len(f.Blockers) == 0 {
 		return nil
 	}
-	return mayBlock(f.number, f.blockers, func(one int) ([]int, error) {
+	return mayBlock(f.Number, f.Blockers, func(one int) ([]int, error) {
 		found, err := e.tasks.Find(one)
 		if err != nil {
 			return nil, err

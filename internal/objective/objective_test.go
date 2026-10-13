@@ -2,7 +2,6 @@ package objective
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -10,81 +9,6 @@ import (
 
 	"cairn/internal/domain"
 )
-
-type told struct {
-	said []string
-}
-
-func (r *told) Numbered(n int)  { r.said = append(r.said, fmt.Sprintf("Numbered(%d)", n)) }
-func (r *told) Titled(s string) { r.said = append(r.said, fmt.Sprintf("Titled(%q)", s)) }
-func (r *told) Standing(s State) {
-	r.said = append(r.said, fmt.Sprintf("Standing(%q)", s))
-}
-func (r *told) Carries(p domain.Priority) {
-	r.said = append(r.said, fmt.Sprintf("Carries(%q)", p))
-}
-func (r *told) Described(s string) { r.said = append(r.said, fmt.Sprintf("Described(%q)", s)) }
-func (r *told) NotDescribed()      { r.said = append(r.said, "NotDescribed()") }
-func (r *told) Labelled(s string)  { r.said = append(r.said, fmt.Sprintf("Labelled(%q)", s)) }
-func (r *told) NotLabelled()       { r.said = append(r.said, "NotLabelled()") }
-func (r *told) LabelsTold()        { r.said = append(r.said, "LabelsTold()") }
-func (r *told) Due(t time.Time)    { r.said = append(r.said, fmt.Sprintf("Due(%s)", t)) }
-func (r *told) NotDue()            { r.said = append(r.said, "NotDue()") }
-func (r *told) Estimated(d time.Duration) {
-	r.said = append(r.said, fmt.Sprintf("Estimated(%s)", d))
-}
-func (r *told) NotEstimated() { r.said = append(r.said, "NotEstimated()") }
-
-func TestTell_saysEveryFactAnObjectiveCarries(t *testing.T) {
-	deadline, err := domain.ParseDeadline("2026-01-02")
-	if err != nil {
-		t.Fatalf("ParseDeadline: %v", err)
-	}
-
-	full := Objective{
-		number: 3, title: "Ship cairn 1.0", description: "the one that unblocks the rest",
-		state: OnHold, priority: domain.High, labels: []string{"perso", "spec"},
-		deadline: deadline, estimate: 90 * time.Minute,
-	}
-	got := &told{}
-	full.Tell(got)
-
-	want := []string{
-		`Numbered(3)`, `Titled("Ship cairn 1.0")`, `Standing("on-hold")`,
-		`Carries("high")`, `Described("the one that unblocks the rest")`,
-		`Labelled("perso")`, `Labelled("spec")`, `LabelsTold()`,
-		fmt.Sprintf("Due(%s)", deadline), fmt.Sprintf("Estimated(%s)", 90*time.Minute),
-	}
-	if len(got.said) != len(want) {
-		t.Fatalf("said = %v, want %v", got.said, want)
-	}
-	for i := range want {
-		if got.said[i] != want[i] {
-			t.Errorf("said[%d] = %q, want %q", i, got.said[i], want[i])
-		}
-	}
-
-	bare, err := NewObjective("Ship cairn 1.0")
-	if err != nil {
-		t.Fatalf("NewObjective: %v", err)
-	}
-	got = &told{}
-	bare.Tell(got)
-
-	wantBare := []string{
-		`Numbered(0)`, `Titled("Ship cairn 1.0")`, `Standing("active")`,
-		`Carries("normal")`, `NotDescribed()`, `NotLabelled()`, `LabelsTold()`,
-		`NotDue()`, `NotEstimated()`,
-	}
-	if len(got.said) != len(wantBare) {
-		t.Fatalf("said = %v, want %v", got.said, wantBare)
-	}
-	for i := range wantBare {
-		if got.said[i] != wantBare[i] {
-			t.Errorf("said[%d] = %q, want %q", i, got.said[i], wantBare[i])
-		}
-	}
-}
 
 func TestObjectiveStates_areExactlyWhatParseObjectiveStateAccepts(t *testing.T) {
 	for _, name := range []string{"active", "on-hold", "reached", "dropped"} {
@@ -115,7 +39,7 @@ func TestAsTold_buildsAnObjectiveFromEveryFactItIsTold(t *testing.T) {
 	}
 
 	a := &AsTold{}
-	want.Tell(a)
+	*a = From(want)
 	got := a.Objective()
 
 	if got.number != want.number {
@@ -146,43 +70,6 @@ func TestAsTold_buildsAnObjectiveFromEveryFactItIsTold(t *testing.T) {
 	}
 	if got.estimate != want.estimate {
 		t.Errorf("Estimate = %v, want %v", got.estimate, want.estimate)
-	}
-}
-
-func TestAsTold_notDescribedMeansNoDescription(t *testing.T) {
-	a := &AsTold{}
-	a.Described("the one that unblocks the rest")
-	a.NotDescribed()
-	if got := a.Objective().description; got != "" {
-		t.Errorf("Description = %q, want none", got)
-	}
-}
-
-func TestAsTold_notDueMeansNoDeadline(t *testing.T) {
-	a := &AsTold{}
-	a.Due(time.Now())
-	a.NotDue()
-	if got := a.Objective().deadline; !got.IsZero() {
-		t.Errorf("Deadline = %v, want none", got)
-	}
-}
-
-func TestAsTold_notEstimatedMeansNoEstimate(t *testing.T) {
-	a := &AsTold{}
-	a.Estimated(90 * time.Minute)
-	a.NotEstimated()
-	if got := a.Objective().estimate; got != 0 {
-		t.Errorf("Estimate = %v, want none", got)
-	}
-}
-
-func TestAsTold_notLabelledMeansNoLabels(t *testing.T) {
-	a := &AsTold{}
-	a.Labelled("spec")
-	a.NotLabelled()
-	a.LabelsTold()
-	if got := a.Objective().labels; len(got) != 0 {
-		t.Errorf("Labels = %v, want none", got)
 	}
 }
 

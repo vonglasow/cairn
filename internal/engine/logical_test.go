@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/trace"
 )
 
 func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
@@ -28,7 +27,7 @@ func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !factsOf(*shown.Task).archived {
+	if !factsOf(*shown.Task).Archived {
 		t.Error("the task after one already off the board was left on it")
 	}
 }
@@ -60,9 +59,8 @@ func TestCreation_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, a := range acts.Acts {
-		var f actFacts
-		a.Tell(&f)
-		if f.field == "column" {
+		f := a.Carried()
+		if f.Field == "column" {
 			return
 		}
 	}
@@ -130,22 +128,6 @@ func TestTimesheet_namesWhatComesAfterATaskDeletedSince(t *testing.T) {
 	}
 }
 
-type actFacts struct{ field string }
-
-func (f *actFacts) On(int)            {}
-func (f *actFacts) Did(string)        {}
-func (f *actFacts) Changing(s string) { f.field = s }
-func (f *actFacts) NothingNamed()     {}
-func (f *actFacts) Was(string)        {}
-func (f *actFacts) WasNothing()       {}
-func (f *actFacts) Became(string)     {}
-func (f *actFacts) BecameNothing()    {}
-func (f *actFacts) Through(string)    {}
-func (f *actFacts) ByHand()           {}
-func (f *actFacts) At(time.Time)      {}
-
-var _ trace.Told = (*actFacts)(nil)
-
 func TestDeletion_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	if _, err := Do(TaskDelete, path, confirmed(given("number", "1"))); err != nil {
@@ -156,19 +138,10 @@ func TestDeletion_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 		t.Fatal(err)
 	}
 	last := acts.Acts[len(acts.Acts)-1]
-	var f deletedFacts
-	last.Tell(&f)
-	if !strings.Contains(f.was, "column: backlog") {
-		t.Errorf("the deletion holds %q, want the column past the empty description", f.was)
+	if f := last.Carried(); !strings.Contains(f.Was, "column: backlog") {
+		t.Errorf("the deletion holds %q, want the column past the empty description", f.Was)
 	}
 }
-
-type deletedFacts struct {
-	actFacts
-	was string
-}
-
-func (d *deletedFacts) Was(s string) { d.was = s }
 
 func TestDaysSince_countsTheDaysOnTheCalendar(t *testing.T) {
 	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.Local)

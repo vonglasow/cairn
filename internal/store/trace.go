@@ -4,39 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/trace"
 )
 
 const traceColumns = `task_number, did, field, was, became, through, at`
 
-type boundAct struct {
-	task                             int
-	did, field, was, became, through string
-	at                               time.Time
-}
-
-func (b *boundAct) On(n int)               { b.task = n }
-func (b *boundAct) Did(what string)        { b.did = what }
-func (b *boundAct) Changing(field string)  { b.field = field }
-func (b *boundAct) NothingNamed()          { b.field = "" }
-func (b *boundAct) Was(value string)       { b.was = value }
-func (b *boundAct) WasNothing()            { b.was = "" }
-func (b *boundAct) Became(value string)    { b.became = value }
-func (b *boundAct) BecameNothing()         { b.became = "" }
-func (b *boundAct) Through(surface string) { b.through = surface }
-func (b *boundAct) ByHand()                { b.through = "" }
-func (b *boundAct) At(when time.Time)      { b.at = when }
-
 // Record writes down one act.
 func (s *Store) Record(a trace.Act) error {
-	var b boundAct
-	a.Tell(&b)
+	b := a.Carried()
 	if _, err := s.on.Exec(
 		`INSERT INTO trace (`+traceColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		b.task, b.did, b.field, b.was, b.became, b.through,
-		b.at.UTC().Format(time.RFC3339)); err != nil {
-		return fmt.Errorf("writing down what happened to task %d: %w", b.task, err)
+		b.Task, b.Did, b.Field, b.Was, b.Became, b.Through,
+		b.At.UTC().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("writing down what happened to task %d: %w", b.Task, err)
 	}
 	return nil
 }
@@ -76,13 +56,5 @@ func scanAct(row scanner) (trace.Act, error) {
 		return trace.Act{}, fmt.Errorf("the moment %q cannot be read: %w", at, err)
 	}
 
-	var a trace.AsTold
-	a.On(task)
-	a.Did(did)
-	domain.TellOrNot(field, a.Changing, a.NothingNamed)
-	domain.TellOrNot(was, a.Was, a.WasNothing)
-	domain.TellOrNot(became, a.Became, a.BecameNothing)
-	domain.TellOrNot(through, a.Through, a.ByHand)
-	a.At(when)
-	return a.Act(), nil
+	return trace.Made(trace.Carried{Task: task, Did: did, Field: field, Was: was, Became: became, Through: through, At: when}), nil
 }

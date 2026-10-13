@@ -14,10 +14,10 @@ type Shape struct {
 func OfMigration(m Migration) Shape {
 	f := textOf(m)
 	made := ""
-	if f.applied {
-		made = domain.FormatMoment(f.made)
+	if f.Applied {
+		made = domain.FormatMoment(f.Made)
 	}
-	return Shape{Number: f.number, Name: f.name, Applied: f.applied, Made: made}
+	return Shape{Number: f.Number, Name: f.Name, Applied: f.Applied, Made: made}
 }
 
 // RolledBack names the change a rollback unmade, and what that cost.
@@ -29,5 +29,5 @@ type RolledBack struct {
 // OfRolledBack turns the change a rollback unmade into what crosses.
 func OfRolledBack(m Migration) RolledBack {
 	f := textOf(m)
-	return RolledBack{RolledBack: f.name, Lost: f.loses}
+	return RolledBack{RolledBack: f.Name, Lost: f.Loses}
 }

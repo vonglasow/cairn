@@ -22,13 +22,6 @@ func givensOn(t *testing.T) Givens {
 	return Givens{Other: func() Asker { return e }}
 }
 
-type titled struct {
-	task.AsTold
-	title string
-}
-
-func (f *titled) Titled(s string) { f.title = s }
-
 func shownText(t *testing.T, one task.Task) string {
 	t.Helper()
 	return task.Text(one, domain.Progress{})
@@ -74,9 +67,8 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 	}
 	var titles []string
 	for _, one := range all {
-		var f titled
-		one.Tell(&f)
-		titles = append(titles, f.title)
+		f := one.Carried()
+		titles = append(titles, f.Title)
 	}
 	if !slices.Contains(titles, "Task 1") || !slices.Contains(titles, "Task 2") || slices.Contains(titles, "Task 3") || slices.Contains(titles, "Task 0") {
 		t.Errorf("two tasks added to todo are %v", titles)

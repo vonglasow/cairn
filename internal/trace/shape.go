@@ -15,32 +15,9 @@ type Shape struct {
 
 // OfAct turns an act into what crosses.
 func OfAct(a Act) Shape {
-	var m shapeMembrane
-	a.Tell(&m)
-	return m.shape()
-}
-
-type shapeMembrane struct {
-	task                             int
-	did, field, was, became, through string
-	at                               time.Time
-}
-
-func (m *shapeMembrane) On(n int)               { m.task = n }
-func (m *shapeMembrane) Did(what string)        { m.did = what }
-func (m *shapeMembrane) Changing(field string)  { m.field = field }
-func (m *shapeMembrane) NothingNamed()          { m.field = "" }
-func (m *shapeMembrane) Was(value string)       { m.was = value }
-func (m *shapeMembrane) WasNothing()            { m.was = "" }
-func (m *shapeMembrane) Became(value string)    { m.became = value }
-func (m *shapeMembrane) BecameNothing()         { m.became = "" }
-func (m *shapeMembrane) Through(surface string) { m.through = surface }
-func (m *shapeMembrane) ByHand()                { m.through = "" }
-func (m *shapeMembrane) At(when time.Time)      { m.at = when }
-
-func (m *shapeMembrane) shape() Shape {
+	c := a.Carried()
 	return Shape{
-		Task: m.task, Did: m.did, Field: m.field, Was: m.was,
-		Became: m.became, Through: m.through, At: m.at.UTC().Format(time.RFC3339),
+		Task: c.Task, Did: c.Did, Field: c.Field, Was: c.Was,
+		Became: c.Became, Through: c.Through, At: c.At.UTC().Format(time.RFC3339),
 	}
 }

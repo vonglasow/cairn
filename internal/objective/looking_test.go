@@ -10,8 +10,7 @@ import (
 func carrying(t *testing.T, tell func(*AsTold)) Objective {
 	t.Helper()
 	built := plan(t)
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	tell(&a)
 	return a.Objective()
 }
@@ -56,7 +55,6 @@ func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 		{"a label", func(a *AsTold) {
 			a.Labelled("team")
 			a.Labelled("urgent")
-			a.LabelsTold()
 		}, "urgent"},
 	} {
 		if !Matching(carrying(t, tc.told), []string{tc.looked}) {
@@ -121,11 +119,6 @@ func TestMatching_anEmptyNamedThingIsNeverFound(t *testing.T) {
 
 func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	got := carrying(t, func(a *AsTold) {
-		a.NotDescribed()
-		a.NotDue()
-		a.NotEstimated()
-		a.NotLabelled()
-		a.LabelsTold()
 	})
 	if Matching(got, []string{"team"}) {
 		t.Error("Matching = true, want false: nothing carries \"team\"")
@@ -137,7 +130,6 @@ func TestSaid_isWhatASearchLooksIn(t *testing.T) {
 		a.Standing(OnHold)
 		a.Carries(domain.High)
 		a.Labelled("urgent")
-		a.LabelsTold()
 	})
 	said := Said(got)
 	for _, want := range []string{"on-hold", "high", "urgent"} {

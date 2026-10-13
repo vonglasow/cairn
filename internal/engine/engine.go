@@ -170,14 +170,9 @@ func (e *Engine) puttingAway(number int, away bool) error {
 	if err := may(); err != nil {
 		return err
 	}
-	var a task.AsTold
-	found.Tell(&a)
-	if away {
-		a.Archived()
-	} else {
-		a.NotArchived()
-	}
-	put := a.Task()
+	a := found.Carried()
+	a.Archived = away
+	put := task.Made(a)
 	if err := e.tasks.Update(put); err != nil {
 		return err
 	}
@@ -199,7 +194,7 @@ func (e *Engine) archiveEvery(kept *domain.Narrowing) (int, error) {
 	}
 	swept := 0
 	for _, one := range found {
-		if err := e.archive(factsOf(one).number); err != nil {
+		if err := e.archive(factsOf(one).Number); err != nil {
 			if errors.Is(err, task.ErrAlreadyArchived) {
 				continue
 			}
@@ -218,7 +213,7 @@ func (e *Engine) labelEvery(kept *domain.Narrowing, label string) (int, error) {
 	put := 0
 	adding := []string{"+" + label}
 	for _, one := range found {
-		if _, err := e.edit(factsOf(one).number, Changes{Labels: &adding}); err != nil {
+		if _, err := e.edit(factsOf(one).Number, Changes{Labels: &adding}); err != nil {
 			return put, err
 		}
 		put++
@@ -232,7 +227,7 @@ func (e *Engine) delete(number int) error {
 		return err
 	}
 	for _, part := range hanging {
-		if err := e.delete(factsOf(part).number); err != nil {
+		if err := e.delete(factsOf(part).Number); err != nil {
 			return err
 		}
 	}
@@ -269,8 +264,8 @@ func (e *Engine) waitingOn(number int) ([]int, error) {
 	var waiting []int
 	for _, t := range all {
 		f := factsOf(t)
-		if slices.Contains(f.blockers, number) {
-			waiting = append(waiting, f.number)
+		if slices.Contains(f.Blockers, number) {
+			waiting = append(waiting, f.Number)
 		}
 	}
 	slices.Sort(waiting)
@@ -289,7 +284,7 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, changing); err != nil {
 		return task.Task{}, err
 	}
-	if factsOf(was).parent != factsOf(t).parent {
+	if factsOf(was).Parent != factsOf(t).Parent {
 		t = t.Settled()
 	}
 	if err := t.MayHang(e.tasks.Find); err != nil {
@@ -333,7 +328,7 @@ func (e *Engine) freeIfNothingBlocksIt(was, found task.Task) (task.Task, error) 
 	if err := e.tasks.Update(free); err != nil {
 		return task.Task{}, err
 	}
-	after, err := e.tasks.Find(factsOf(found).number)
+	after, err := e.tasks.Find(factsOf(found).Number)
 	if err != nil {
 		return task.Task{}, err
 	}

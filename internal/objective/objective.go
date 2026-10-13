@@ -50,82 +50,65 @@ type Objective struct {
 	estimate    time.Duration
 }
 
-// Told is the membrane of an objective: one method per fact it has to tell, absence included.
-type Told interface {
-	Numbered(int)
-	Titled(string)
-	Standing(State)
-	Carries(domain.Priority)
-	Described(string)
-	NotDescribed()
-	Labelled(string)
-	NotLabelled()
-	LabelsTold()
-	Due(time.Time)
-	NotDue()
-	Estimated(time.Duration)
-	NotEstimated()
+// Carried is everything an objective carries, as plain facts.
+type Carried struct {
+	Number             int
+	Title, Description string
+	State              State
+	Priority           domain.Priority
+	Labels             []string
+	Deadline           time.Time
+	Estimate           time.Duration
 }
 
-// Tell says every fact this objective carries to the given membrane, absence included, in the order a card lays them out.
-func (o Objective) Tell(to Told) {
-	to.Numbered(o.number)
-	to.Titled(o.title)
-	to.Standing(o.state)
-	to.Carries(o.priority)
-	domain.TellOrNot(o.description, to.Described, to.NotDescribed)
-	domain.TellAll(o.labels, to.Labelled, to.NotLabelled, to.LabelsTold)
-	domain.TellOrNot(o.deadline, to.Due, to.NotDue)
-	domain.TellOrNot(o.estimate, to.Estimated, to.NotEstimated)
+// Carried hands over what the objective carries.
+func (o Objective) Carried() Carried {
+	return Carried{
+		Number: o.number, Title: o.title, Description: o.description, State: o.state,
+		Priority: o.priority, Labels: slices.Clone(o.labels), Deadline: o.deadline, Estimate: o.estimate,
+	}
 }
 
-// AsTold builds an objective from what it is told.
-type AsTold struct {
-	objective Objective
-	labels    []string
+// Made is the objective that carries what is given.
+func Made(c Carried) Objective {
+	return Objective{
+		number: c.Number, title: c.Title, description: c.Description, state: c.State,
+		priority: c.Priority, labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
+	}
 }
+
+// AsTold builds an objective one fact at a time.
+type AsTold struct{ c Carried }
+
+// From starts a builder on what a objective already carries.
+func From(o Objective) AsTold { return AsTold{c: o.Carried()} }
 
 // Numbered is told the objective's number.
-func (a *AsTold) Numbered(n int) { a.objective.number = n }
+func (a *AsTold) Numbered(n int) { a.c.Number = n }
 
 // Titled is told the objective's title.
-func (a *AsTold) Titled(s string) { a.objective.title = s }
+func (a *AsTold) Titled(s string) { a.c.Title = s }
 
 // Standing is told where the objective stands.
-func (a *AsTold) Standing(s State) { a.objective.state = s }
+func (a *AsTold) Standing(s State) { a.c.State = s }
 
 // Carries is told the priority the objective carries.
-func (a *AsTold) Carries(p domain.Priority) { a.objective.priority = p }
+func (a *AsTold) Carries(p domain.Priority) { a.c.Priority = p }
 
 // Described is told the objective's description.
-func (a *AsTold) Described(s string) { a.objective.description = s }
-
-// NotDescribed is told the objective carries no description.
-func (a *AsTold) NotDescribed() { a.objective.description = "" }
+func (a *AsTold) Described(s string) { a.c.Description = s }
 
 // Labelled is told one more label the objective carries.
-func (a *AsTold) Labelled(s string) { a.labels = append(a.labels, s) }
-
-// NotLabelled is told the objective carries no labels at all.
-func (a *AsTold) NotLabelled() { a.labels = nil }
-
-// LabelsTold is told there are no more labels coming, and closes the set.
-func (a *AsTold) LabelsTold() { a.objective.labels = a.labels }
+func (a *AsTold) Labelled(s string) { a.c.Labels = append(a.c.Labels, s) }
 
 // Due is told the objective's deadline.
-func (a *AsTold) Due(t time.Time) { a.objective.deadline = t }
-
-// NotDue is told the objective carries no deadline.
-func (a *AsTold) NotDue() { a.objective.deadline = time.Time{} }
+func (a *AsTold) Due(t time.Time) { a.c.Deadline = t }
 
 // Estimated is told the objective's estimate.
-func (a *AsTold) Estimated(d time.Duration) { a.objective.estimate = d }
-
-// NotEstimated is told the objective carries no estimate.
-func (a *AsTold) NotEstimated() { a.objective.estimate = 0 }
+func (a *AsTold) Estimated(d time.Duration) { a.c.Estimate = d }
 
 // Objective hands back the objective AsTold was told to build.
-func (a *AsTold) Objective() Objective { return a.objective }
+func (a *AsTold) Objective() Objective { return Made(a.c) }
 
 // NewObjective builds an objective from a title, refusing one that carries no text.
 func NewObjective(raw string) (Objective, error) {

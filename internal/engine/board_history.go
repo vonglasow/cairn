@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"time"
-
 	"cairn/internal/domain"
 	"cairn/internal/trace"
 )
@@ -14,9 +12,11 @@ type Said struct {
 
 // SaidOf is what an act says, heard through its own membrane — the only way in.
 func SaidOf(act trace.Act) Said {
-	var h saying
-	act.Tell(&h)
-	return h.said
+	c := act.Carried()
+	return Said{
+		When: domain.FormatMoment(c.At), Did: c.Did, Field: c.Field,
+		Was: domain.Shown(c.Was), Became: domain.Shown(c.Became), Through: c.Through,
+	}
 }
 
 // Line is the act on one line, the way a board writes it when it has no ink to tell the pieces apart with.
@@ -30,17 +30,3 @@ func (s Said) Line() string {
 	}
 	return out
 }
-
-type saying struct{ said Said }
-
-func (h *saying) On(int)                {}
-func (h *saying) Did(what string)       { h.said.Did = what }
-func (h *saying) Changing(field string) { h.said.Field = field }
-func (h *saying) NothingNamed()         {}
-func (h *saying) Was(value string)      { h.said.Was = domain.Shown(value) }
-func (h *saying) WasNothing()           {}
-func (h *saying) Became(value string)   { h.said.Became = domain.Shown(value) }
-func (h *saying) BecameNothing()        {}
-func (h *saying) Through(who string)    { h.said.Through = who }
-func (h *saying) ByHand()               {}
-func (h *saying) At(when time.Time)     { h.said.When = domain.FormatMoment(when) }

@@ -34,7 +34,7 @@ func (e *Engine) settleParts(parent int, said string) error {
 			if err != nil {
 				return err
 			}
-			parts[i].Number = factsOf(made).number
+			parts[i].Number = factsOf(made).Number
 			added[parts[i].Number] = true
 			continue
 		}

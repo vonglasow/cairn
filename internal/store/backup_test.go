@@ -168,7 +168,7 @@ func TestVault_putsABackupBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
-	if len(all) != 1 || factsOf(all[0]).title != "Write the spec" {
+	if len(all) != 1 || factsOf(all[0]).Title != "Write the spec" {
 		t.Errorf("All = %v, want what the backup held", all)
 	}
 }

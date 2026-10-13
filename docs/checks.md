@@ -274,13 +274,6 @@ Building the MCP server inside its command's body would block on standard
 input. A `json.Marshal` of a struct that cannot fail has an error branch that
 cannot be taken.
 
-**And a trap worth naming.** `go tool cover -func` lists **every membrane
-method at 0.0%** — `func (c *Counter) Due(time.Time) {}` and eighty others.
-They hold **zero statements between them**: they cannot be covered and they
-change no percentage. A notion tells one fact per method and most membranes
-ignore most facts, so the list is long, alarming, and empty. Read the statement
-counts, not the function list.
-
 **What does get closed** is the one class that is a real gap: code a package
 does not test because somebody else calls it. Coverage is per package, so a
 scenario in `internal/cli` that reaches the engine, the store and a notion

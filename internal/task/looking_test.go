@@ -11,8 +11,7 @@ import (
 func carrying(t *testing.T, tell func(*AsTold)) Task {
 	t.Helper()
 	built := spec(t)
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	tell(&a)
 	return a.Task()
 }
@@ -57,7 +56,6 @@ func TestMatching_reachesWhatAListingNarrowsBy(t *testing.T) {
 		{"a label", func(a *AsTold) {
 			a.Labelled("team")
 			a.Labelled("urgent")
-			a.LabelsTold()
 		}, "urgent"},
 	} {
 		if !Matching(carrying(t, tc.told), []string{tc.looked}) {
@@ -126,12 +124,6 @@ func TestMatching_anEmptyNamedThingIsNeverFound(t *testing.T) {
 
 func TestMatching_anAbsenceContributesNothing(t *testing.T) {
 	got := carrying(t, func(a *AsTold) {
-		a.NotDescribed()
-		a.NotDue()
-		a.NotEstimated()
-		a.NothingSpent()
-		a.NotLabelled()
-		a.LabelsTold()
 	})
 	if Matching(got, []string{"team"}) {
 		t.Error("Matching = true, want false: nothing carries \"team\"")
@@ -143,8 +135,7 @@ func TestMatching_looksInTheEstimate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
 	}
-	var a AsTold
-	built.Tell(&a)
+	a := From(built)
 	a.Estimated(90 * time.Minute)
 	carrying := a.Task()
 
@@ -189,7 +180,6 @@ func TestSaid_isWhatASearchLooksIn(t *testing.T) {
 		a.InColumn(domain.Current)
 		a.Carries(domain.High)
 		a.Labelled("urgent")
-		a.LabelsTold()
 	})
 	said := Said(got)
 	for _, want := range []string{"current", "high", "urgent"} {

@@ -138,10 +138,10 @@ func TestEngine_namesEveryChangeAndItsState(t *testing.T) {
 	}
 	for _, one := range all {
 		change := factsOfChange(one)
-		if change.name == "" || change.does == "" {
+		if change.Name == "" || change.Does == "" {
 			t.Errorf("a change should carry its name and what it does, got %+v", change)
 		}
-		if !change.applied {
+		if !change.Applied {
 			t.Errorf("a change on a store made today should be applied, got %+v", change)
 		}
 	}
@@ -228,7 +228,7 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 	if len(waiting) != 1 {
 		t.Fatalf("%d changes waiting, want 1", len(waiting))
 	}
-	name, err := e.apply(path, factsOfChange(waiting[0]).number)
+	name, err := e.apply(path, factsOfChange(waiting[0]).Number)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}

@@ -182,8 +182,6 @@ func anAct(did, became string) trace.Act {
 	var told trace.AsTold
 	told.On(1)
 	told.Did(did)
-	told.NothingNamed()
-	told.WasNothing()
 	told.Became(became)
 	told.At(today)
 	return told.Act()

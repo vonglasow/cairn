@@ -17,7 +17,6 @@ func standing(n int, state domain.State, because string, blockers ...int) Task {
 	for _, b := range blockers {
 		a.BlockedBy(b)
 	}
-	a.BlockersTold()
 	if because != "" {
 		a.Because(because)
 	}
@@ -87,7 +86,6 @@ func TestMayHang_isAskedOfTheTaskAndOfItsParent(t *testing.T) {
 	}
 	a.InColumn(domain.Todo)
 	a.Serves(3)
-	a.ObjectivesTold()
 	if err := a.Task().MayHang(parentOf); !errors.Is(err, ErrSubTaskServesNoObjective) {
 		t.Errorf("a part serving an objective = %v, want ErrSubTaskServesNoObjective", err)
 	}
