@@ -13,6 +13,7 @@ import (
 	"image"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 	"unicode"
@@ -275,6 +276,9 @@ var tag = new(int)
 // wrong itself rather than leaving it to a caller that is never returned to.
 func Run(work reading.Work, width, height int) {
 	leaveConsole()
+	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
+		_ = os.Setenv("IBUS_ADDRESS", address)
+	}
 	go func() { ended(loop(work, width, height), os.Stderr, os.Exit) }()
 	app.Main()
 }

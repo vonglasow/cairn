@@ -735,6 +735,17 @@ presses; Gio hands keys to IBus on X11 and to the compositor's input method on
 Wayland, and whether the letter came late, came as a range the window does
 not read, or did not come is what one press recorded there says.
 
+**On Linux and FreeBSD the window keeps IBus out** (`ibusKeptOut`). One press
+recorded on KDE under X11 with IBus running said it: no key and no text at all.
+Gio hands every key to IBus and takes the letter IBus answers with only once it
+has noted a composition — which it notes after IBus has answered, and IBus
+sends the letter first. So the first é was dropped and the second written, and
+again after every change of focus, which resets the note. Pointed at an address
+nothing listens at, Gio goes without IBus, and the keyboard's own layout writes
+the letter, dead keys and compose included. `CAIRN_IBUS=1` lets IBus back in,
+for an input method a person cannot do without; an `IBUS_ADDRESS` already set
+is left as it is.
+
 **A key is written the way the keyboard in front of the person writes it.**
 The window was written on a Mac and said ⌘ everywhere, so on Windows the help
 told somebody to press a key their keyboard does not have. What arrives was
