@@ -307,9 +307,9 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	}
 }
 
-// Asked to, the loop writes down every pointer event as it read it, and only
-// the pointer's: a key says nothing about where a card is drawn.
-func TestTheLoopWritesDownEachPointerEventWhenAsked(t *testing.T) {
+// Asked to, the loop writes down every pointer event as it read it, and
+// every event the keyboard sent, in the order they came.
+func TestTheLoopWritesDownEachEventWhenAsked(t *testing.T) {
 	f := newFake()
 	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	var traced bytes.Buffer
@@ -317,9 +317,10 @@ func TestTheLoopWritesDownEachPointerEventWhenAsked(t *testing.T) {
 		pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonPrimary},
 		key.Event{Name: "?", State: key.Press},
 	)
-	// The router says the pointer came in before it says it pressed.
-	lines := strings.Split(strings.TrimSpace(traced.String()), "\n")
-	if len(lines) != 2 || !strings.HasPrefix(lines[1], "pointer Press ") || !strings.Contains(lines[1], "held=1") {
-		t.Errorf("the loop wrote %q, want the pointer coming in and its press", traced.String())
+	said := traced.String()
+	pressed := strings.Index(said, "pointer Press ")
+	typed := strings.Index(said, `key Press name="?"`)
+	if pressed < 0 || !strings.Contains(said, "held=1") || typed < pressed {
+		t.Errorf("the loop wrote %q, want the press, then the key", said)
 	}
 }

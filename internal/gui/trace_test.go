@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 )
 
@@ -37,5 +39,30 @@ func TestPointerEventsAreWrittenDownOnlyWhenAsked(t *testing.T) {
 	}
 	if got := tracing(func(string) string { return "" }, &stderr); got != nil {
 		t.Errorf("unasked, the window writes to %v", got)
+	}
+}
+
+// What the keyboard sends is written down as it came: a key with its name and
+// state, text with the range it replaces, and what an input method says of
+// the text it holds. A letter typed once and written only on the second press,
+// on Linux, is told apart this way: by whether the system sent it, sent it
+// late, or sent it as a range the window did not read.
+func TestAKeyboardEventIsWrittenDownAsItCame(t *testing.T) {
+	for _, c := range []struct {
+		event event.Event
+		want  string
+	}{
+		{key.Event{Name: "A", State: key.Press, Modifiers: key.ModShift}, `key Press name="A" mods=Shift`},
+		{key.EditEvent{Text: "é", Range: key.Range{Start: 2, End: 3}}, `edit text="é" range=(2,3)`},
+		{key.SnippetEvent{Start: 0, End: 4}, `snippet range=(0,4)`},
+		{key.SelectionEvent{Start: 1, End: 1}, `selection range=(1,1)`},
+		{key.FocusEvent{Focus: true}, `focus true`},
+	} {
+		if got, ok := KeyTrace(c.event); !ok || got != c.want {
+			t.Errorf("the trace reads %q, %v, want %q", got, ok, c.want)
+		}
+	}
+	if _, ok := KeyTrace(pointer.Event{}); ok {
+		t.Error("a pointer event was written down as a keyboard one")
 	}
 }

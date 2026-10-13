@@ -453,6 +453,9 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 		if !ok {
 			return w, pressed, pressedAt
 		}
+		if said, ok := KeyTrace(raw); ok && traced != nil {
+			_, _ = fmt.Fprintln(traced, said)
+		}
 		switch e := raw.(type) {
 		case pointer.Event:
 			// The second button opens what can be done to what is under it,

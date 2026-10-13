@@ -726,6 +726,13 @@ what the system sent in pixels, the ratio, the point in dp, and where the card
 in hand stands after it (`PointerTrace`). A drag recorded on the machine that
 misbehaves says which of those steps went wrong.
 
+The same trace writes what the keyboard sends (`KeyTrace`): every key with its
+name, every piece of text with the range it replaces, and what an input method
+says of the text and caret it holds. On Linux an accented letter took two
+presses; Gio hands keys to IBus on X11 and to the compositor's input method on
+Wayland, and whether the letter came late, came as a range the window does
+not read, or did not come is what one press recorded there says.
+
 **A key is written the way the keyboard in front of the person writes it.**
 The window was written on a Mac and said ⌘ everywhere, so on Windows the help
 told somebody to press a key their keyboard does not have. What arrives was
