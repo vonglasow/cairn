@@ -93,7 +93,7 @@ func Locate(h Home) (Places, error) {
 // answers how they would be found, and it has to stay reachable exactly when a
 // file every other command refuses stands in the way.
 func DoFrom(op Operation, h Home, in Input, through string) (Answer, error) {
-	if err := op.Check(in); err != nil {
+	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
 	if op.Needs == AConfiguration {

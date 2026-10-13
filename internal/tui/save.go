@@ -53,7 +53,7 @@ func (b Board) savingParts(form Form) error {
 		return nil
 	}
 	for _, gone := range engine.PartsGone(*said, b.snap.Cards, form.Number) {
-		if _, err := b.work.Ask(engine.TaskDelete, engine.Numbered(gone)); err != nil {
+		if _, err := b.work.Ask(engine.TaskDelete, engine.Agreed(engine.Numbered(gone))); err != nil {
 			return err
 		}
 	}

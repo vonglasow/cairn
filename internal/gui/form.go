@@ -478,7 +478,7 @@ func (w Window) savingParts(parent int) error {
 			continue
 		}
 		for _, gone := range engine.PartsGone(field.Value, w.snap.Cards, parent) {
-			if _, err := w.work.Ask(engine.TaskDelete, engine.Numbered(gone)); err != nil {
+			if _, err := w.work.Ask(engine.TaskDelete, engine.Agreed(engine.Numbered(gone))); err != nil {
 				return err
 			}
 		}
@@ -722,7 +722,7 @@ func (w Window) deleting() Window {
 		op = engine.ObjectiveDelete
 	}
 	w.screen = OnTheBoard
-	if _, err := w.work.Ask(op, engine.Numbered(w.chosen)); err != nil {
+	if _, err := w.work.Ask(op, engine.Agreed(engine.Numbered(w.chosen))); err != nil {
 		return w.failing(err)
 	}
 	w.chosen, w.chosenGoal = 0, false

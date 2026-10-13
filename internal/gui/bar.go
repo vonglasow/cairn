@@ -521,5 +521,5 @@ func (w Window) sweeping() Window {
 	if state == "" {
 		return w
 	}
-	return w.asking(engine.TaskArchive, engine.Input{Given: map[string]string{"state": state}})
+	return w.asking(engine.TaskArchive, engine.Agreed(engine.Input{Given: map[string]string{"state": state}}))
 }

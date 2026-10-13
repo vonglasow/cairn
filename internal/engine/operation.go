@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"cairn/internal/domain"
@@ -166,6 +167,11 @@ type Answered any
 type Input struct {
 	Given  map[string]string
 	Listed map[string][]string
+	// Confirmed says the person asked was asked, and said yes: an act that
+	// asks first is refused without it. How it was asked is the surface's —
+	// --yes on the command line, a question on a board, the access an agent
+	// was given — and that it is asked is the engine's.
+	Confirmed bool
 }
 
 // Named reports whether the caller named this argument at all. A Run body asks
@@ -248,6 +254,59 @@ type Operation struct {
 	// Answers is the shape this operation hands back. A surface that describes
 	// itself to a machine says so before anything runs.
 	Answers Answered
+	// Sweeps says, of what it was given, that it reaches whatever a narrowing
+	// does rather than what was named: asked first, like what loses work.
+	Sweeps func(Input) bool
+}
+
+// Agreed is what was given, said yes to: what a surface hands over once the
+// person it asked has agreed.
+func Agreed(in Input) Input {
+	in.Confirmed = true
+	return in
+}
+
+// ErrNotConfirmed is an act that asks first, asked for without saying yes.
+var ErrNotConfirmed = Refusing("not-confirmed", "needs --yes to confirm")
+
+// AsksFirst says whether an act waits to be confirmed: one that loses work,
+// or one that sweeps up whatever a narrowing reaches. Every surface asks the
+// same of the same acts, since it is decided here.
+func (o Operation) AsksFirst(in Input) bool {
+	return o.Level == Full || o.Sweeps != nil && o.Sweeps(in)
+}
+
+// admitted is what every door checks before an act is carried out: that it
+// was given what it takes, and that it was confirmed if it asks first — both
+// before the store is opened, since a refusal has no business touching
+// anything.
+func (o Operation) admitted(in Input) error {
+	if err := o.Check(in); err != nil {
+		return err
+	}
+	return o.waiting(in)
+}
+
+// waiting refuses an act that asks first and came unconfirmed, naming what it
+// would have taken: what was named, and what was named beside it.
+func (o Operation) waiting(in Input) error {
+	if !o.AsksFirst(in) || in.Confirmed {
+		return nil
+	}
+	var named []string
+	for _, argument := range o.Takes {
+		if argument.Positional && strings.TrimSpace(in.Given[argument.Name]) != "" {
+			named = append(named, strings.TrimSpace(in.Given[argument.Name]))
+		}
+	}
+	target := strings.TrimSpace(o.Thing + " " + strings.Join(named, " "))
+	if len(named) == 0 && o.Sweeps != nil && o.Sweeps(in) {
+		target = "every " + o.Thing + " it reaches"
+	}
+	for _, more := range in.Listed["also"] {
+		target += ", " + o.Thing + " " + strings.TrimSpace(more)
+	}
+	return fmt.Errorf("%s %w", target, ErrNotConfirmed)
 }
 
 // Name is how an operation is named as a command or a tool: "task_new".
@@ -481,7 +540,7 @@ const ByHand = ""
 // threading two empty strings through all of them would say nothing a hundred
 // times.
 func DoAt(op Operation, at Places, in Input, through string) (Answer, error) {
-	if err := op.Check(in); err != nil {
+	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
 	return doAt(op, at, in, through)

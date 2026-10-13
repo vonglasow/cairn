@@ -68,7 +68,7 @@ func TestBackupDelete_deletesABackup(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	answer, err := Do(BackupDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
+	answer, err := Do(BackupDelete, path, Input{Confirmed: true, Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -96,14 +96,14 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 	}
 
 	// A number nothing carries is refused before anything else is touched.
-	if _, err := Do(BackupRestore, path, Input{Given: map[string]string{"number": "99"}}); !errors.Is(err, ErrNoSuchBackup) {
+	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, ErrNoSuchBackup) {
 		t.Fatalf("err = %v, want %v", err, ErrNoSuchBackup)
 	}
 
 	// No number given restores the most recent one. Checked before the
 	// explicit-number restore below, which backs up first and would
 	// otherwise make a newer backup "the most recent one".
-	answer, err := Do(BackupRestore, path, Input{})
+	answer, err := Do(BackupRestore, path, Input{Confirmed: true})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 
 	// A number a backup does carry restores that one, not whichever the
 	// number happens to resolve to by accident.
-	first, err := Do(BackupRestore, path, Input{Given: map[string]string{"number": "1"}})
+	first, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}

@@ -53,7 +53,7 @@ cairn task focus                 # which ones are those again?
 cairn task unfocus 3             # done with that one
 cairn task unfocus               # done with all of them
 cairn task archive 1             # archived, kept whole
-cairn task archive --state done  # the whole column in one go
+cairn task archive --state done --yes  # the whole column in one go
 cairn task label sprint-12 --state done  # mark a sprint before sweeping it
 cairn task list --archived       # only what was taken off
 cairn task unarchive 1           # back on the board

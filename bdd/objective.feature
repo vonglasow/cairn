@@ -256,7 +256,7 @@ Feature: Objectives
       And I added a task titled "Write the spec" with the objective "1"
       And I added a task titled "Write the tests" with the objective "1"
       And I edited task 1 with the state "done"
-      When I run `cairn task archive --state done`
+      When I run `cairn task archive --state done --yes`
       And I run `cairn objective show 1`
       Then it says 1 of 2 tasks are done
 

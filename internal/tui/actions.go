@@ -77,7 +77,7 @@ func (b Board) toggleFocus() tea.Cmd {
 
 // remove deletes the task the cursor is holding.
 func (b Board) remove() tea.Cmd {
-	return b.carry(engine.TaskDelete, engine.Numbered(b.task))
+	return b.carry(engine.TaskDelete, engine.Agreed(engine.Numbered(b.task)))
 }
 
 // puttingAway takes the task the cursor is on off the board, or brings it back
@@ -96,7 +96,7 @@ func (b Board) puttingAway() tea.Cmd {
 // asked it to: archiving twelve finished tasks was one gesture there and
 // twenty-four here.
 func (b Board) sweepingColumn() tea.Cmd {
-	return b.carry(engine.TaskArchive, engine.Input{Given: map[string]string{"state": engine.StateAt(b.column)}})
+	return b.carry(engine.TaskArchive, engine.Agreed(engine.Input{Given: map[string]string{"state": engine.StateAt(b.column)}}))
 }
 
 // removeGoal deletes the objective the cursor is on.
@@ -104,7 +104,7 @@ func (b Board) removeGoal() tea.Cmd {
 	if b.goal == 0 {
 		return nil
 	}
-	return b.carry(engine.ObjectiveDelete, engine.Numbered(b.goal))
+	return b.carry(engine.ObjectiveDelete, engine.Agreed(engine.Numbered(b.goal)))
 }
 
 // otherTab moves between the two tabs, and lets go of whatever the cursor was

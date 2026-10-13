@@ -394,7 +394,7 @@ func TestObjectiveDelete_deletesAnObjective(t *testing.T) {
 		t.Fatalf("Do(ObjectiveNew): %v", err)
 	}
 
-	answer, err := Do(ObjectiveDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(factsOfObjective(*added.Objective).number)}})
+	answer, err := Do(ObjectiveDelete, path, Input{Confirmed: true, Given: map[string]string{"number": strconv.Itoa(factsOfObjective(*added.Objective).number)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}

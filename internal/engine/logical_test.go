@@ -27,7 +27,7 @@ func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 	if _, err := Do(TaskArchive, path, given("number", "1")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Do(TaskArchive, path, given("state", "done", "with-archived", "true")); err != nil {
+	if _, err := Do(TaskArchive, path, confirmed(given("state", "done", "with-archived", "true"))); err != nil {
 		t.Fatalf("sweep: %v", err)
 	}
 	shown, err := Do(TaskShow, path, given("number", "2"))
@@ -138,7 +138,7 @@ func TestTimesheet_namesWhatComesAfterATaskDeletedSince(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := Do(TaskDelete, path, given("number", "1")); err != nil {
+	if _, err := Do(TaskDelete, path, confirmed(given("number", "1"))); err != nil {
 		t.Fatal(err)
 	}
 	answer, err := Do(TimesheetShow, path, Input{})
@@ -171,7 +171,7 @@ var _ trace.Told = (*actFacts)(nil)
 // of.
 func TestDeletion_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 	path := storeAt(t, "Write the spec")
-	if _, err := Do(TaskDelete, path, given("number", "1")); err != nil {
+	if _, err := Do(TaskDelete, path, confirmed(given("number", "1"))); err != nil {
 		t.Fatal(err)
 	}
 	acts, err := Do(TraceShow, path, given("number", "1"))

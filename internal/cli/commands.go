@@ -18,13 +18,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// errNotConfirmed is returned when something that loses work was asked for
-// without saying so out loud. What it was is said by naming the thing and
-// what was typed after the verb at the point it is returned, not by the
-// sentinel itself, so one sentinel serves a task deleted, a backup deleted, a
-// backup put back and a change rolled back alike.
-var errNotConfirmed = engine.Refusing("not-confirmed", "needs --yes to confirm")
-
 // groupShort is the one sentence cobra shows for each group of commands.
 // Operation carries a Short and a Does for a verb, but nothing for the thing
 // its verbs are grouped under, so the groups are named here, once — every
@@ -211,21 +204,10 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		Example: indented(op.Example),
 		Args:    argsFor(positionals),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Checked before the store is opened: removing work on a typo is
-			// not something to be helpful about, and a request refused for
-			// lack of confirmation has no business touching anything first.
-			if op.Level == engine.Full && !confirmed {
-				target := strings.TrimSpace(op.Thing + " " + strings.Join(args, " "))
-				// What is named beside it goes in the same act, so it is
-				// named in the refusal as well.
-				if also, ok := listed["also"]; ok {
-					for _, more := range *also {
-						target += ", " + op.Thing + " " + more
-					}
-				}
-				return fmt.Errorf("%s %w", target, errNotConfirmed)
-			}
 			in := inputFrom(cmd, positionals, args, given, listed, asked)
+			// Whether it asks first is the engine's to say; --yes is only how
+			// the command line says it was asked.
+			in.Confirmed = confirmed
 			if err := readDash(op, in, cmd.InOrStdin()); err != nil {
 				return err
 			}
@@ -258,8 +240,8 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		given[arg.Name] = &v
 		cmd.Flags().StringVar(&v, arg.Name, "", helpOf(arg))
 	}
-	if op.Level == engine.Full {
-		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work")
+	if op.Level == engine.Full || op.Sweeps != nil {
+		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work or reaches everything a narrowing does")
 	}
 	return cmd
 }

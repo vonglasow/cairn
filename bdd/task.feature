@@ -1495,7 +1495,7 @@ Feature: Tasks
       Given I added a task titled "Migration Jenkins" with the state "done"
       And I added a task titled "Dépôt APP" with the state "done"
       And I added a task titled "Spike Argo"
-      When I run `cairn task archive --state done`
+      When I run `cairn task archive --state done --yes`
       Then it succeeds
       And it says 2 tasks were archived
       And task 1 is archived
@@ -1508,7 +1508,7 @@ Feature: Tasks
       And I edited task 1 with the label "sprint-41"
       And I added a task titled "Dépôt APP" with the state "done"
       And I edited task 2 with the label "sprint-42"
-      When I run `cairn task archive --state done --label sprint-41`
+      When I run `cairn task archive --state done --label sprint-41 --yes`
       Then it succeeds
       And task 1 is archived
       And task 2 is not archived
@@ -1518,7 +1518,7 @@ Feature: Tasks
       Given I added a task titled "Dépôt APP" with the state "done"
       And I added a task titled "Préparation" with the parent "1"
       And I edited task 2 with the state "done"
-      When I run `cairn task archive --state done`
+      When I run `cairn task archive --state done --yes`
       Then it succeeds
       And it says 1 task were archived
       And task 1 is archived
@@ -1548,9 +1548,20 @@ Feature: Tasks
     @task-archive-reaching-nothing
     Scenario: a narrowing reaching nothing says so rather than claiming a clean sweep
       Given I added a task titled "Spike Argo"
-      When I run `cairn task archive --state done`
+      When I run `cairn task archive --state done --yes`
       Then it succeeds
       And it says 0 tasks were archived
+
+    @task-archive-a-sweep-needs-confirming
+    Scenario: archiving everything a narrowing reaches asks to be confirmed
+      Every board asks before it sweeps a column away, and the command line
+      did not: one act, two rules. The engine asks now, wherever it is asked.
+
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      When I run `cairn task archive --state done`
+      Then it fails
+      And it says how to confirm
+      And task 1 is not archived
 
     @task-archive-needs-something-to-go-on
     Scenario: archiving with neither a number nor a narrowing is refused

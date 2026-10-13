@@ -94,7 +94,7 @@ func TestTaskDelete_deletesATask(t *testing.T) {
 		t.Fatalf("Do(TaskNew): %v", err)
 	}
 
-	answer, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": strconv.Itoa(factsOf(*added.Task).number)}})
+	answer, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": strconv.Itoa(factsOf(*added.Task).number)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -379,7 +379,7 @@ func TestArchiving_takesANumberOrANarrowing(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	answer, err := Do(TaskArchive, path, Input{Given: map[string]string{"state": done}})
+	answer, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": done}})
 	if err != nil {
 		t.Fatalf("Do(TaskArchive): %v", err)
 	}
@@ -408,7 +408,7 @@ func TestArchiving_saysWhenItReachedNothing(t *testing.T) {
 	if err := e.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
-	answer, err := Do(TaskArchive, path, Input{Given: map[string]string{"state": string(domain.Done)}})
+	answer, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": string(domain.Done)}})
 	if err != nil {
 		t.Fatalf("Do(TaskArchive): %v", err)
 	}
@@ -429,7 +429,7 @@ func TestArchiving_refusesWithNothingToGoOn(t *testing.T) {
 	if err := e.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
-	if _, err := Do(TaskArchive, path, Input{}); err == nil {
+	if _, err := Do(TaskArchive, path, Input{Confirmed: true}); err == nil {
 		t.Error("archiving with nothing to go on was allowed")
 	}
 }
@@ -552,14 +552,14 @@ func TestArchiving_oneByNumber(t *testing.T) {
 	}
 	number := map[string]string{"number": strconv.Itoa(n)}
 
-	answer, err := Do(TaskArchive, path, Input{Given: number})
+	answer, err := Do(TaskArchive, path, Input{Confirmed: true, Given: number})
 	if err != nil {
 		t.Fatalf("Do(TaskArchive): %v", err)
 	}
 	if answer.Task == nil || factsOf(*answer.Task).number != n {
 		t.Fatalf("archiving answered %v, want task %d", answer.Task, n)
 	}
-	if _, err := Do(TaskArchive, path, Input{Given: number}); err == nil {
+	if _, err := Do(TaskArchive, path, Input{Confirmed: true, Given: number}); err == nil {
 		t.Error("archiving the same task twice was allowed")
 	}
 

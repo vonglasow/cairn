@@ -48,7 +48,7 @@ func TestMigrationShow_saysWhatAChangeDoes(t *testing.T) {
 func TestMigrationRollback_unmakesTheLastChangeApplied(t *testing.T) {
 	path := storeAt(t)
 
-	answer, err := Do(MigrationRollback, path, Input{})
+	answer, err := Do(MigrationRollback, path, Input{Confirmed: true})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}

@@ -93,6 +93,10 @@ But an annotation is a hint. Nothing obliges a client to honour it. So the
 access level is enforced server-side, where no client can talk it away. The two
 are not redundant: the annotation asks, the level forbids.
 
+The engine refuses an act that asks first unless it comes confirmed. A tool
+call comes confirmed: the access the server was started with is how the person
+said yes to what an agent may do, once, ahead of time.
+
 What the annotations say is read off the operation, never written per tool:
 
 | annotation | said when |

@@ -133,3 +133,9 @@ func TestTimesheetAdd_answersItsDayAndTakesBack(t *testing.T) {
 		t.Errorf("the history does not keep what was taken back:\n%s", text)
 	}
 }
+
+// confirmed is what was given, said yes to: an act that asks first goes ahead.
+func confirmed(in Input) Input {
+	in.Confirmed = true
+	return in
+}

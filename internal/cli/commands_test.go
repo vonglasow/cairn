@@ -105,12 +105,15 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 			}
 		}
 
+		// --yes is offered by what may ask first: what loses work, and what
+		// sweeps up whatever a narrowing reaches.
 		yes := cmd.Flags().Lookup("yes")
-		if op.Level == engine.Full && yes == nil {
-			t.Errorf("%s: no --yes flag, and its Level is Full", op.Line())
+		mayAsk := op.Level == engine.Full || op.Sweeps != nil
+		if mayAsk && yes == nil {
+			t.Errorf("%s: no --yes flag, and it may ask first", op.Line())
 		}
-		if op.Level != engine.Full && yes != nil {
-			t.Errorf("%s: has a --yes flag, and its Level is not Full", op.Line())
+		if !mayAsk && yes != nil {
+			t.Errorf("%s: has a --yes flag, and it never asks first", op.Line())
 		}
 	}
 

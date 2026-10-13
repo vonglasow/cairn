@@ -167,7 +167,7 @@ func (w Window) actingOnSeveral(onlyRefused bool) Window {
 		return w
 	}
 	w.taken = nil
-	return w.asking(op, engine.Several(kept))
+	return w.asking(op, engine.Agreed(engine.Several(kept)))
 }
 
 // severalHead is how the question about what is taken is headed.

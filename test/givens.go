@@ -35,7 +35,9 @@ type Givens struct {
 // ask runs one operation as somebody else, handing over what a person would
 // have typed.
 func (g Givens) ask(op engine.Operation, given map[string]string, listed map[string][]string) (engine.Answer, error) {
-	return g.Other().Ask(op, engine.Input{Given: given, Listed: listed})
+	// What a scenario says is in the store is a given, not an act anybody
+	// is asked about.
+	return g.Other().Ask(op, engine.Agreed(engine.Input{Given: given, Listed: listed}))
 }
 
 // addTask adds a task carrying what a scenario named about it.

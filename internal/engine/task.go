@@ -174,6 +174,9 @@ cairn task archive --state done`,
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
 		alsoOf("a task"),
 	}, taskNarrowing...),
+	// Every board asks before it sweeps a column away; so does the engine,
+	// wherever it is asked from.
+	Sweeps: sweepsByNarrowing,
 	Run: func(on On, in Input) (Answer, error) {
 		if n, named := in.Whole("number"); named && n != 0 {
 			numbers, err := together(in)
@@ -427,6 +430,21 @@ cairn task search spec team --state todo`,
 // than the store because a board that waited on the store would wait to draw.
 func Reaches(said []string, typed string) bool {
 	return domain.Reaches(said, strings.Fields(typed))
+}
+
+// sweepsByNarrowing says an archive reaches whatever its narrowing does: no
+// task named, and something to narrow by. Named neither, it is refused for
+// what it lacks rather than asked to be confirmed.
+func sweepsByNarrowing(in Input) bool {
+	if n, named := in.Whole("number"); named && n != 0 {
+		return false
+	}
+	for _, by := range taskNarrowing {
+		if in.Named(by.Name) {
+			return true
+		}
+	}
+	return false
 }
 
 // taskAttributes are the twelve attributes a task carries, minus title, which is

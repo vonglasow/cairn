@@ -528,7 +528,7 @@ func TestDelete_namesWhatItWasBlocking(t *testing.T) {
 	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "2"}, Listed: map[string][]string{"blocker": {"1"}}}); err != nil {
 		t.Fatal(err)
 	}
-	answer, err := Do(TaskDelete, path, given("number", "1"))
+	answer, err := Do(TaskDelete, path, confirmed(given("number", "1")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -571,13 +571,13 @@ func TestVersion_movesWhenAnotherWrites(t *testing.T) {
 // and left somebody to work out which had gone.
 func TestDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	path := storeAt(t, "First", "Second", "Third")
-	if _, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3", "99"}}}); err == nil {
+	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3", "99"}}}); err == nil {
 		t.Fatal("a deletion naming a task that does not exist went through")
 	}
 	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 3 {
 		t.Fatalf("a refused deletion of several left %d tasks of 3", len(listed.Tasks))
 	}
-	answer, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3"}}})
+	answer, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -595,13 +595,13 @@ func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 	if _, err := Do(TaskArchive, path, given("number", "3")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Do(TaskArchive, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3"}}}); err == nil {
+	if _, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"3"}}}); err == nil {
 		t.Fatal("archiving what was already archived went through")
 	}
 	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 2 {
 		t.Fatalf("a refused archiving of several left %d tasks on the board of 2", len(listed.Tasks))
 	}
-	answer, err := Do(TaskArchive, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}})
+	answer, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -618,10 +618,10 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := Do(ObjectiveDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"9"}}}); err == nil {
+	if _, err := Do(ObjectiveDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"9"}}}); err == nil {
 		t.Fatal("a deletion naming an objective that does not exist went through")
 	}
-	if _, err := Do(ObjectiveDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}}); err != nil {
+	if _, err := Do(ObjectiveDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}}); err != nil {
 		t.Fatal(err)
 	}
 	if listed, _ := Do(ObjectiveList, path, Input{}); len(listed.Objectives) != 0 {
@@ -632,11 +632,11 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 // Archiving names more tasks beside a number, never instead of one.
 func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	path := storeAt(t, "First", "Second")
-	_, err := Do(TaskArchive, path, Input{Given: map[string]string{"state": "backlog"}, Listed: map[string][]string{"also": {"2"}}})
+	_, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": "backlog"}, Listed: map[string][]string{"also": {"2"}}})
 	if !errors.Is(err, ErrAlsoWithoutNumber) {
 		t.Errorf("err = %v, want ErrAlsoWithoutNumber", err)
 	}
-	if _, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"two"}}}); err == nil {
+	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"two"}}}); err == nil {
 		t.Error("a deletion beside something that is not a number went through")
 	}
 }
@@ -646,7 +646,7 @@ func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 func TestDelete_refusesNoughtBesideTheFirst(t *testing.T) {
 	path := storeAt(t, "First", "Second")
 	for _, beside := range []string{"0", "-2"} {
-		if _, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {beside}}}); err == nil {
+		if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {beside}}}); err == nil {
 			t.Errorf("a deletion beside %q went through", beside)
 		}
 	}

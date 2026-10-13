@@ -157,6 +157,9 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 		if err != nil {
 			return refused(err), nil
 		}
+		// The access the server was started with is how an agent was asked:
+		// a tool it was given is one it may use.
+		in.Confirmed = true
 		// Named as the server's doing, so a history shows what an agent
 		// changed as something the person reading it did not do themselves.
 		answer, err := engine.DoFrom(op, home, in, throughTheServer)

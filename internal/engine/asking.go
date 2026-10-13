@@ -16,7 +16,7 @@ import "cairn/internal/store"
 // argument the operation does not take asked a different question, and telling
 // it so beats answering the question it did not ask.
 func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
-	if err := op.Check(in); err != nil {
+	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
 	defer e.taking()()
