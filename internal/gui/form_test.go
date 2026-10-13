@@ -774,24 +774,18 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	w.form = w.form.Set("parts", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
 	w = w.Save()
 
-	var added, edited, deleted []engine.Input
+	// The parts go to the engine with the task, in the one act; the part no
+	// longer named is deleted as an act of its own.
+	saved, asked := f.gave("task", "edit")
+	if !asked || saved.Given["number"] != "1" ||
+		saved.Given["parts"] != "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux" {
+		t.Errorf("the task was saved with %v", saved.Given)
+	}
+	var deleted []engine.Input
 	for _, one := range f.asked {
-		switch {
-		case one.op.Thing == "task" && one.op.Verb == "new":
-			added = append(added, one.in)
-		case one.op.Thing == "task" && one.op.Verb == "edit" && one.in.Given["number"] != "1":
-			edited = append(edited, one.in)
-		case one.op.Thing == "task" && one.op.Verb == "delete":
+		if one.op.Thing == "task" && one.op.Verb == "delete" {
 			deleted = append(deleted, one.in)
 		}
-	}
-	if len(added) != 1 || added[0].Given["title"] != "Rédiger la section Flux" ||
-		added[0].Given["parent"] != "1" {
-		t.Errorf("what was added: %v", added)
-	}
-	if len(edited) != 1 || edited[0].Given["title"] != "Relire l'ADR 0014" ||
-		edited[0].Given["state"] != "done" {
-		t.Errorf("what was changed: %v", edited)
 	}
 	if len(deleted) != 1 || deleted[0].Given["number"] != "3" {
 		t.Errorf("what was taken away: %v", deleted)

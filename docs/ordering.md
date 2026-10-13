@@ -197,6 +197,19 @@ The cost is real and small: a sub-task under way does not show up in a
 `current` section. That is the question `focus` answers, and it answers it
 better — what is being worked on is read from a mark, not from a section.
 
+## A task's parts are written with it
+
+A board writes a task's parts in its form, one a line — `#4 [x] its title` for
+a part there already, `[ ] its title` for a new one — and `task new` and `task
+edit` take those lines as `--parts`. They are settled in the act that saves the
+task: added, renamed, ticked and put in the order the lines give, column by
+column, every one of them or none. Saved one act a part, as they were, a part
+refused halfway left half of them written.
+
+A part the lines no longer name is left where it is. Deleting a task is an act
+of its own, at its own level of access, and saving a list is not a way around
+it: a board deletes those parts one by one, once the task is saved.
+
 ## A parent is not done while something under it is open
 
 A parent is done *because* what hangs under it is done. If it can be finished

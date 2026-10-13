@@ -28,9 +28,9 @@ cairn task new "Write the spec" --desc - < notes.md`,
 	Needs:   AStore,
 	Again:   DoesItAgain,
 	Answers: Task{},
-	Takes: append([]Argument{
+	Takes: append(append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
-	}, taskAttributes...),
+	}, taskAttributes...), partsArgument),
 	Run: func(on On, in Input) (Answer, error) {
 		title := ""
 		if given := in.Change("title"); given != nil {
@@ -44,9 +44,21 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
-		// Nothing hangs under a task that has just been created, so the
-		// progress is asked of nobody rather than of the store.
-		return Answer{Task: &added, Progress: domain.Progress{}}, nil
+		parts := in.Change("parts")
+		if parts == nil {
+			// Nothing hangs under a task that has just been created, so the
+			// progress is asked of nobody rather than of the store.
+			return Answer{Task: &added, Progress: domain.Progress{}}, nil
+		}
+		n := factsOf(added).number
+		if err := on.Engine.settleParts(n, *parts); err != nil {
+			return Answer{}, err
+		}
+		p, err := on.Engine.taskProgress(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &added, Progress: p}, nil
 	},
 }
 
@@ -295,10 +307,10 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
 	Answers:    Task{},
-	Takes: append([]Argument{
+	Takes: append(append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
-	}, taskAttributes...),
+	}, taskAttributes...), partsArgument),
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
 		changes, err := taskChanges(in)
@@ -306,9 +318,22 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 			return Answer{}, err
 		}
 		changes.Title = in.Change("title")
-		edited, err := on.Engine.edit(n, changes)
+		parts := in.Change("parts")
+		// Handed its parts and nothing else, a task itself is left alone:
+		// what changes is what hangs under it.
+		var edited task.Task
+		if parts != nil && !changes.named() {
+			edited, err = on.Engine.tasks.Find(n)
+		} else {
+			edited, err = on.Engine.edit(n, changes)
+		}
 		if err != nil {
 			return Answer{}, editReason(err)
+		}
+		if parts != nil {
+			if err := on.Engine.settleParts(n, *parts); err != nil {
+				return Answer{}, err
+			}
 		}
 		p, err := on.Engine.taskProgress(n)
 		if err != nil {

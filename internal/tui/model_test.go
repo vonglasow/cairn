@@ -319,12 +319,12 @@ func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
 // emptied. Read off the operation rather than listed here, so an argument added
 // to the engine and forgotten on the form fails this test.
 func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
-	form := asking(engine.TaskFields(engine.Card{
+	form := asking(engine.EditFields(engine.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
 		Estimate: "3h", Spent: "1h", Parent: 4, Objectives: []int{5},
 		Deadline: on("2026-09-02"), Description: "why",
-	}), 80, 20, plainSkin)
+	}, nil), 80, 20, plainSkin)
 	form.Number = 1
 
 	_, in := (Board{}).saving(form, engine.TaskNew, engine.TaskEdit)
@@ -870,7 +870,7 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 // them may be refused. What the store refuses is said rather than swallowed,
 // whichever of them it was.
 func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
-	for _, verb := range []string{"new", "delete"} {
+	for _, verb := range []string{"edit", "delete"} {
 		t.Run("a part the store will not "+verb, func(t *testing.T) {
 			f := newFake()
 			f.cards = []engine.Card{

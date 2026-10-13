@@ -1818,6 +1818,51 @@ Feature: Tasks
         | watching |
         | paused   |
 
+  Rule: A task's parts are written with it, in one act
+
+    A board writes a task's parts in its form, one a line: `#4 [x] its title`
+    for a part there already, `[ ] its title` for a new one. Saved, that was
+    one act for the task and one for every part, so a part refused halfway left
+    half of them written. Handed over with the task, they are taken in the same
+    act as it: every one of them, or none.
+
+    A part the lines no longer name is left where it is. Deleting a task is an
+    act of its own, asked for as one, and saving a list is not a way around it.
+
+    @task-new-with-its-parts
+    Scenario: a task is made with its parts
+      When I run `cairn task new "Ship it" --parts -` with "[ ] Write the spec" and "[x] Plan it" on standard input
+      Then it succeeds
+      And `cairn task show 2` shows "Write the spec"
+      And `cairn task show 3` shows "done"
+
+    @task-edit-with-its-parts
+    Scenario: a task's parts are renamed, ticked and added to with it
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 1 --parts -` with "#2 [x] Write it" and "[ ] Ship the docs" on standard input
+      Then it succeeds
+      And `cairn task show 2` shows "Write it"
+      And `cairn task show 2` shows "done"
+      And `cairn task show 3` shows "Ship the docs"
+
+    @task-edit-with-its-parts-deletes-none
+    Scenario: a part the lines no longer name is left where it is
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 1 --parts -` with "[ ] Another" and "[ ] One more" on standard input
+      Then it succeeds
+      And `cairn task show 2` shows "Write the spec"
+
+    @task-edit-with-its-parts-or-none-of-them
+    Scenario: a part refused leaves every part as it was
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --parts -` with "[ ] Fine" and "#99 [ ] Nowhere" on standard input
+      Then it fails
+      And it says there is no such task
+      When I run `cairn task search Fine`
+      Then it says there is no task
+
   Rule: A task says how many of its sub-tasks are done
 
     A task counts what hangs under it, never itself: a task with two sub-tasks

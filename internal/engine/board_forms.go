@@ -41,9 +41,10 @@ func AddingFields(state string) []Field {
 	return append(NewTaskFields(state), partsField(""))
 }
 
-// partsField is the field a task's parts are written in, a line each.
+// partsField is the field a task's parts are written in, a line each, handed
+// to the engine with the task — see partsArgument.
 func partsField(said string) Field {
-	return Field{Name: "parts", Value: said, Long: true}
+	return Field{Name: "parts", Arg: "parts", Value: said, Long: true}
 }
 
 // Saved is what a saved form asks for: adding or editing — one form, so the

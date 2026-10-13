@@ -45,14 +45,19 @@ func (b Board) saveTask(form Form) tea.Cmd {
 	}
 }
 
-// savingParts settles what hangs under the task with what the form's parts
-// field says — see engine.SettleParts.
+// savingParts deletes the parts the form's parts field no longer names, each
+// as an act of its own: the rest went to the engine with the task.
 func (b Board) savingParts(form Form) error {
 	said, holds := form.held["parts"]
 	if !holds || form.Adding {
 		return nil
 	}
-	return engine.SettleParts(b.work, form.Number, *said, b.snap.Cards)
+	for _, gone := range engine.PartsGone(*said, b.snap.Cards, form.Number) {
+		if _, err := b.work.Ask(engine.TaskDelete, engine.Numbered(gone)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // saving says which operation a saved form means and what it carries — see

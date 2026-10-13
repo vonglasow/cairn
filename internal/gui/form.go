@@ -470,12 +470,17 @@ func (w Window) stored() (Window, int, error) {
 	return w, number, nil
 }
 
-// savingParts settles what hangs under a task with what the form's parts
-// field says — see engine.SettleParts.
+// savingParts deletes the parts the form's parts field no longer names, each
+// as an act of its own: the rest went to the engine with the task.
 func (w Window) savingParts(parent int) error {
 	for _, field := range w.form.fields {
-		if field.Name == "parts" {
-			return engine.SettleParts(w.work, parent, field.Value, w.snap.Cards)
+		if field.Name != "parts" {
+			continue
+		}
+		for _, gone := range engine.PartsGone(field.Value, w.snap.Cards, parent) {
+			if _, err := w.work.Ask(engine.TaskDelete, engine.Numbered(gone)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

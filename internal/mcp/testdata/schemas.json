@@ -1843,6 +1843,10 @@
           "description": "the number of the task it hangs under",
           "type": "integer"
         },
+        "parts": {
+          "description": "its parts, one a line: \"#4 [x] its title\" for one there already, \"[ ] its title\" for a new one; a part not named is left where it is",
+          "type": "string"
+        },
         "priority": {
           "description": "the priority it carries",
           "enum": [
@@ -2894,6 +2898,10 @@
         "parent": {
           "description": "the number of the task it hangs under",
           "type": "integer"
+        },
+        "parts": {
+          "description": "its parts, one a line: \"#4 [x] its title\" for one there already, \"[ ] its title\" for a new one; a part not named is left where it is",
+          "type": "string"
         },
         "priority": {
           "description": "the priority it carries",

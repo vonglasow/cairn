@@ -106,8 +106,8 @@ func (w *world) reset() {
 type refusing struct {
 	held   *engine.Engine
 	refuse error
-	// refuseParts refuses adding a part and nothing else: the second half of
-	// saving a task that carries parts.
+	// refuseParts refuses adding a part and nothing else: a task saved with a
+	// new part among its parts is refused whole, as the engine would.
 	refuseParts bool
 	reads       int
 	// wrote is every operation that changes something, in order — which is
@@ -128,7 +128,7 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 	if op.Level != engine.Read && r.refuse != nil {
 		return engine.Answer{}, r.refuse
 	}
-	if r.refuseParts && op.Thing == "task" && op.Verb == "new" && in.Given["parent"] != "" {
+	if r.refuseParts && op.Thing == "task" && addsAPart(in) {
 		return engine.Answer{}, fmt.Errorf("that part cannot be added")
 	}
 	if op.Thing == "task" && op.Verb == "list" {
@@ -138,6 +138,20 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 }
 
 func (r *refusing) Version() (int64, error) { return r.held.Version() }
+
+// addsAPart says whether what was asked adds a part: a task made under
+// another, or one of the lines of a task's parts with no number on it.
+func addsAPart(in engine.Input) bool {
+	if in.Given["parent"] != "" && in.Given["number"] == "" {
+		return true
+	}
+	for _, part := range engine.PartsIn(in.Given["parts"]) {
+		if part.Number == 0 {
+			return true
+		}
+	}
+	return false
+}
 
 // ── what a scenario sets up ───────────────────────────────────────────────
 

@@ -1520,14 +1520,15 @@ Feature: The desktop board
       And the engine was asked "task edit" once
 
     @gui-a-task-added-once-whatever-its-parts
-    Scenario: a task whose parts were refused is made once, not once a beat
+    Scenario: a task whose parts were refused is not made, and not tried again every beat
       Given the store refuses to add a part
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
       And I set the field "parts" to "Book the room"
       And the window has looked at the store 6 times
-      Then there is 1 task
+      Then there are no tasks
+      And the engine was asked "task new" once
 
     @gui-a-new-task-with-no-title-is-not-made
     Scenario: a form adding a task with no title yet makes nothing
@@ -2616,7 +2617,8 @@ Feature: The desktop board
       And I drag the part "Second" onto the part "First"
       Then the parts are drawn as a list to tick, "Second" first
       When I choose "Save"
-      Then the engine was asked "task move" for task 3
+      And I double-click the card "Ship it"
+      Then the parts are drawn as a list to tick, "Second" first
 
     @gui-parts-done-and-left-in-turn-are-saved
     Scenario: parts done and left in turn are saved, each kept among its own

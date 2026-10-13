@@ -27,9 +27,7 @@ func Asked(fields []Field, op Operation) Input {
 	}
 	in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	for _, field := range fields {
-		// A field the engine has no argument for is the surface's own: the
-		// parts of a task are written as one line each and reconciled one by
-		// one, not handed over with the rest.
+		// A field the engine has no argument for is the surface's own.
 		if field.Arg == "" {
 			continue
 		}
