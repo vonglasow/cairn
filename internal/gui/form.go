@@ -8,7 +8,6 @@ package gui
 // to the engine and to the terminal's form arrives here with no line written.
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -747,44 +746,8 @@ func (w Window) ChoosingAt() int { return w.choosing }
 func (w Window) Ticked(number int) bool { return w.ticked[number] }
 
 // FieldSays is what a field reads on screen, which is not always what it
-// carries. The objectives field carries the numbers the engine takes and shows
-// the names a person knows: nobody knows an objective by its number, and the
-// one place that says what a number means is the other tab.
-func (w Window) FieldSays(field engine.Field) string {
-	var said []string
-	switch field.Arg {
-	case "objective":
-		for _, number := range engine.NumbersIn(field.Value) {
-			said = append(said, "#"+strconv.Itoa(number)+" "+w.goalTitle(number))
-		}
-	case "parent":
-		// The number and what it is called. A number alone is what somebody
-		// has to go and look up, which is the whole of why the list exists.
-		for _, number := range engine.NumbersIn(field.Value) {
-			said = append(said, "#"+strconv.Itoa(number)+" "+w.cardTitle(number))
-		}
-	default:
-		return field.Value
-	}
-	return strings.Join(said, ", ")
-}
-
-// cardTitle is what a task is called, or its number again when the snapshot
-// has never heard of it — the same rule an objective's title goes by.
-func (w Window) cardTitle(number int) string {
-	if c, found := w.snap.Card(number); found {
-		return c.Title
-	}
-	return strconv.Itoa(number)
-}
-
-// goalTitle is what an objective is called, or its number again when the
-// snapshot has never heard of it — a number that names nothing is still truer
-// than an empty space where a name should be.
-func (w Window) goalTitle(number int) string {
-	g, _ := w.snap.Goal(number)
-	return g.Title
-}
+// carries: the engine names the numbers a field holds.
+func (w Window) FieldSays(field engine.Field) string { return w.snap.Named(field) }
 
 // choosing opens the list over the form, with what the field already carries
 // ticked. Opened from the objectives field and from nowhere else: it is the

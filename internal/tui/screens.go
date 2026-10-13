@@ -353,16 +353,11 @@ func (b Board) partsHead(c engine.Card) string {
 // serves is the objectives a task counts towards.
 func (b Board) serves(c engine.Card, width int) string {
 	var out []string
-	for _, number := range c.Objectives {
-		for _, g := range b.snap.Goals {
-			if g.Number != number {
-				continue
-			}
-			out = append(out, Spread(
-				lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))+
-					" "+b.skin.Faint.Render(strconv.Itoa(g.Number))+"  "+b.skin.Bright.Render(g.Title),
-				b.skin.Says.Render(g.Counted()), width))
-		}
+	for _, g := range b.snap.Served(c) {
+		out = append(out, Spread(
+			lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))+
+				" "+b.skin.Faint.Render(strconv.Itoa(g.Number))+"  "+b.skin.Bright.Render(g.Title),
+			b.skin.Says.Render(g.Counted()), width))
 	}
 	return strings.Join(out, "\n")
 }

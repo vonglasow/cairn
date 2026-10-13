@@ -83,8 +83,8 @@ func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
 			dressed = append(dressed, s.Bright.Render(text))
 		}
 	}
-	if c.SubTotal > 0 {
-		count := fmt.Sprintf("%s%d/%d", g.SubTasks, c.SubDone, c.SubTotal)
+	if done := c.PartsDone(); done != "" {
+		count := g.SubTasks + done
 		told = append(told, count)
 		dressed = append(dressed, s.Faint.Render(count))
 	}
@@ -139,14 +139,10 @@ func fit(told []string, width int) int {
 	return len(told)
 }
 
-// inTheWay says what is stopping a task: the tasks it waits on, or the words
-// somebody wrote when it waits on something cairn does not hold.
+// inTheWay is what the engine says is stopping a task, behind its mark.
 func inTheWay(c engine.Card, g Glyphs) string {
-	if len(c.Blockers) > 0 {
-		return g.InTheWay + " " + engine.Numbers(c.Blockers)
-	}
-	if c.Because != "" {
-		return g.InTheWay + " " + c.Because
+	if way := c.InTheWay(); way != "" {
+		return g.InTheWay + " " + way
 	}
 	return ""
 }

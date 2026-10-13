@@ -149,9 +149,9 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 // Estimated at two hours and nine hours spent is a fact no overview carried.
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
 	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
-	said, over := Spent(c)
+	said, over := c.Cost()
 	if said != "9h/2h" {
-		t.Fatalf("Spent = %q, want 9h/2h", said)
+		t.Fatalf("Cost = %q, want 9h/2h", said)
 	}
 	if !over {
 		t.Fatal("nine hours against two is not said to be over")
@@ -198,30 +198,6 @@ func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	}
 	if !warn {
 		t.Error("nine hours against two is not warned about")
-	}
-}
-
-// Each half of what a task cost says something on its own, and neither is the
-// other: an estimate with no time against it is still worth knowing. Whether
-// it ran over is the card's to say — reading works it out from the lengths.
-func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
-	for _, c := range []struct {
-		what                  string
-		spent, estimate, says string
-		over                  bool
-	}{
-		{"neither", "", "", "", false},
-		{"only what it cost", "9h", "", "9h", false},
-		{"only what was reckoned", "", "2h", "2h", false},
-		{"exactly what was reckoned", "2h", "2h", "2h/2h", false},
-		{"a minute over", "2h1m", "2h", "2h1m/2h", true},
-	} {
-		t.Run(c.what, func(t *testing.T) {
-			said, over := Spent(engine.Card{Spent: c.spent, Estimate: c.estimate, Overrun: c.over})
-			if said != c.says || over != c.over {
-				t.Fatalf("Spent = %q %v, want %q %v", said, over, c.says, c.over)
-			}
-		})
 	}
 }
 

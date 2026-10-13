@@ -121,9 +121,8 @@ func Carried(c engine.Card, g Glyphs) string {
 	if c.Described() {
 		said = g.Described
 	}
-	if c.SubTotal > 0 {
-		said = strings.TrimSpace(said + " " + g.SubTasks + " " +
-			strconv.Itoa(c.SubDone) + "/" + strconv.Itoa(c.SubTotal))
+	if done := c.PartsDone(); done != "" {
+		said = strings.TrimSpace(said + " " + g.SubTasks + " " + done)
 	}
 	return said
 }
@@ -190,22 +189,6 @@ func Due(c engine.Card, now time.Time) (said string, late bool) {
 	return text, over
 }
 
-// Spent is how long a task was reckoned to take against how long it has, and
-// whether it has gone past. Empty when neither was ever written: a card saying
-// "0h/0h" says nothing and takes the room of something that would.
-func Spent(c engine.Card) (said string, over bool) {
-	if c.Spent == "" && c.Estimate == "" {
-		return "", false
-	}
-	if c.Estimate == "" {
-		return c.Spent, false
-	}
-	if c.Spent == "" {
-		return c.Estimate, false
-	}
-	return c.Spent + "/" + c.Estimate, c.Overrun
-}
-
 // FreedMark is what a blocked task wears once every task it waits on is done.
 const FreedMark = "✓ nothing blocks it"
 
@@ -257,7 +240,7 @@ func Facts(c engine.Card, now time.Time) (said string, warn bool) {
 	if due != "" {
 		pieces = append(pieces, due)
 	}
-	spent, over := Spent(c)
+	spent, over := c.Cost()
 	if spent != "" {
 		pieces = append(pieces, spent)
 	}
