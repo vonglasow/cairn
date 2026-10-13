@@ -515,7 +515,7 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	for lane, kind := range Lanes {
+	for lane, kind := range engine.Stalled {
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 	}
 	drawPlaced(gtx, th, skin, w)

@@ -78,7 +78,7 @@ func TestDroppingACardInItsOwnColumnOnlyMovesIt(t *testing.T) {
 // Which lane a card lands in is which kind of stopped it is. The terminal asks
 // with a popup because a terminal band has no room for three named lanes.
 func TestDroppingACardInALaneSaysWhichKindOfStopped(t *testing.T) {
-	for lane, kind := range Lanes {
+	for lane, kind := range engine.Stalled {
 		t.Run(kind, func(t *testing.T) {
 			f := newFake()
 			w := holding(f, card(1, "Client's answer", "todo"))

@@ -34,7 +34,7 @@ func (w Window) Landing() (Box, bool) {
 	if lane, on := l.LaneUnder(w.held.At); on {
 		return l.Lane[lane], true
 	}
-	for i := range Columns {
+	for i := range engine.Columns {
 		if !l.Column[i].In(w.held.At) {
 			continue
 		}

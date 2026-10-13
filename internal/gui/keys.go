@@ -324,7 +324,7 @@ func (w Window) walking(across, down int) Window {
 		}
 	}
 	if across != 0 {
-		for next := column + across; next >= 0 && next < Columns; next += across {
+		for next := column + across; next >= 0 && next < engine.Columns; next += across {
 			here := w.inColumn(next)
 			if len(here) == 0 {
 				continue
@@ -378,7 +378,7 @@ func (w Window) shifting(across, down int) Window {
 
 // whereInBand says which lane the chosen task sits in, and where in it.
 func (w Window) whereInBand() (lane, at int, ok bool) {
-	for i := range Lanes {
+	for i := range engine.Stalled {
 		for j, c := range w.inLane(i) {
 			if c.Number == w.chosen {
 				return i, j, true
@@ -400,7 +400,7 @@ func (w Window) walkingBand(lane, at, across, down int) Window {
 		return w
 	}
 	if across != 0 {
-		for next := lane + across; next >= 0 && next < len(Lanes); next += across {
+		for next := lane + across; next >= 0 && next < len(engine.Stalled); next += across {
 			if here := w.inLane(next); len(here) > 0 {
 				landed := min(at, len(here)-1)
 				w.chosen, w.chosenGoal = here[landed].Number, false
@@ -486,7 +486,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 			}
 		}
 	}
-	for lane := range Lanes {
+	for lane := range engine.Stalled {
 		for j, c := range w.inLane(lane) {
 			if c.Number == w.chosen {
 				return l.LaneCardAt(lane, j, w.lanes[lane]), l.Lane[lane], true

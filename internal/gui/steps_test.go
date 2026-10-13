@@ -90,8 +90,8 @@ func (w *world) bandNamed(name string) error {
 
 func (w *world) lanesRead(list string) error {
 	want := quoted(list)
-	if strings.Join(Lanes, "|") != strings.Join(want, "|") {
-		return fmt.Errorf("the lanes read %v, want %v", Lanes, want)
+	if strings.Join(engine.Stalled, "|") != strings.Join(want, "|") {
+		return fmt.Errorf("the lanes read %v, want %v", engine.Stalled, want)
 	}
 	return nil
 }
@@ -1194,7 +1194,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !somewhere {
 			return nil
 		}
-		for i := range Columns {
+		for i := range engine.Columns {
 			if w.w.Layout().Column[i].X == landing.X {
 				return fmt.Errorf("the landing at %+v is column %d's, not the box's", landing, i)
 			}
@@ -2401,7 +2401,7 @@ func (w *world) objectivesAcross() error {
 func (w *world) objectivesInsideTheBoard() error {
 	l := w.w.Layout()
 	run := l.Column[0]
-	last := l.Column[Columns-1]
+	last := l.Column[engine.Columns-1]
 	for i := range engine.Sorted(w.w.Showing().Goals) {
 		box := GoalAt(l, i, 0)
 		if box.X < run.X || box.X+box.W > last.X+last.W {

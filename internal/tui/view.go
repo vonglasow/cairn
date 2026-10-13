@@ -381,8 +381,8 @@ func (b Board) question() string {
 
 // kindPopup asks which of the three kinds of stopped a task is going into.
 func (b Board) kindPopup() string {
-	out := make([]string, 0, len(kinds))
-	for i, kind := range kinds {
+	out := make([]string, 0, len(engine.Stalled))
+	for i, kind := range engine.Stalled {
 		if i == b.choice {
 			out = append(out, b.skin.Picked.Render(" "+kind+" "))
 			continue

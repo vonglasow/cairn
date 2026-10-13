@@ -29,15 +29,6 @@ const (
 	Shortest  = 640
 )
 
-// Columns is how many stand side by side, read off reading rather than counted
-// again here.
-const Columns = engine.Columns
-
-// Lanes are the three the band holds, in the order it draws them. Naming them
-// is what the terminal needs a glyph for: a card says which kind of stopped it
-// is by which lane it sits in.
-var Lanes = engine.Stalled
-
 // CardHeight is what every card takes, whatever it carries. Fixed on purpose:
 // it is what lets a column say how many fit and which one is under the pointer
 // without drawing a thing.
@@ -89,8 +80,8 @@ type Layout struct {
 	// Tabs is the strip across the top.
 	Tabs Box
 	// Head is each column's name and count; Column is the run of cards under it.
-	Head   [Columns]Box
-	Column [Columns]Box
+	Head   [engine.Columns]Box
+	Column [engine.Columns]Box
 	// Band is the whole stalled strip, Lane each of the three inside it.
 	Band Box
 	Lane [3]Box
@@ -105,7 +96,7 @@ func TooSmall(width, height int) bool {
 
 // LayoutFor works out every size at a given window.
 func LayoutFor(width, height int) Layout {
-	column := (width - margin - margin - (Columns-1)*gap) / Columns
+	column := (width - margin - margin - (engine.Columns-1)*gap) / engine.Columns
 
 	// What is left once the tabs, the headers and the bar have taken theirs.
 	// Two gaps: one between the band of tabs and the columns, one between the
@@ -117,7 +108,7 @@ func LayoutFor(width, height int) Layout {
 
 	var l Layout
 	l.Tabs = Box{X: margin, Y: margin, W: width - margin - margin, H: tabsHigh}
-	for i := range Columns {
+	for i := range engine.Columns {
 		x := margin + i*(column+gap)
 		l.Head[i] = Box{X: x, Y: margin + tabsHigh + gap, W: column, H: headHigh}
 		l.Column[i] = Box{X: x, Y: l.Head[i].Y + headHigh, W: column, H: top}
@@ -125,14 +116,14 @@ func LayoutFor(width, height int) Layout {
 	l.Band = Box{
 		X: l.Column[1].X,
 		Y: l.Column[1].Y + top + gap,
-		W: column*(Columns-1) + (Columns-2)*gap,
+		W: column*(engine.Columns-1) + (engine.Columns-2)*gap,
 		H: band,
 	}
 	// The backlog runs past where the band stops the other three: it is the
 	// heap everything lands in, and it holds more than they do together.
 	l.Column[0].H = top + gap + band
 
-	lane := (l.Band.W - (len(Lanes)-1)*gap) / len(Lanes)
+	lane := (l.Band.W - (len(engine.Stalled)-1)*gap) / len(engine.Stalled)
 	for i := range l.Lane {
 		l.Lane[i] = Box{
 			X: l.Band.X + i*(lane+gap),
@@ -178,7 +169,7 @@ func (l Layout) LaneCardAt(lane, at, scrolled int) Box {
 // that column is scrolled. It answers false for a point that is in no column at
 // all — the gap between two of them, the bar, the tabs.
 func (l Layout) Under(p Point, scrolled int) (column, at int, found bool) {
-	for i := range Columns {
+	for i := range engine.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
@@ -208,12 +199,12 @@ func (l Layout) Written() string {
 		fmt.Fprintf(&out, "%-12s x=%-5d y=%-5d w=%-5d h=%d\n", name, b.X, b.Y, b.W, b.H)
 	}
 	say("tabs", l.Tabs)
-	for i := range Columns {
+	for i := range engine.Columns {
 		say(fmt.Sprintf("head %d", i), l.Head[i])
 		say(fmt.Sprintf("column %d", i), l.Column[i])
 	}
 	say("band", l.Band)
-	for i, name := range Lanes {
+	for i, name := range engine.Stalled {
 		say("lane "+name, l.Lane[i])
 	}
 	say("bar", l.Bar)

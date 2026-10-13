@@ -95,7 +95,7 @@ func (w Window) puttingAway() Window {
 // lanes did not, so the one run of cards that always wants acting on was the
 // one nobody could count without counting.
 func (w Window) LaneSays(kind string) string {
-	lane := slices.Index(Lanes, kind)
+	lane := slices.Index(engine.Stalled, kind)
 	if lane < 0 {
 		return kind + "  0"
 	}
@@ -118,5 +118,5 @@ func (w Window) Holds(tab Tab) int {
 		}
 		return len(worked)
 	}
-	return len(w.Showing().Cards)
+	return len(engine.OnTheBoard(w.Showing().Cards, w.archived))
 }

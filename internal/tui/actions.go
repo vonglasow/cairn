@@ -20,9 +20,6 @@ import (
 // would be a second place where a rule about a task is kept, and the two would
 // drift the first time one of them was fixed.
 
-// kinds are the three the band holds, in the order the popup offers them.
-var kinds = engine.Stalled
-
 // setState asks the engine to move a task to a column.
 func (b Board) setState(state string) tea.Cmd {
 	in := engine.Numbered(b.task)
@@ -50,7 +47,7 @@ func (b Board) choosingKind(key string) (tea.Model, tea.Cmd) {
 		if way == goUp && b.choice > 0 {
 			b.choice--
 		}
-		if way == goDown && b.choice < len(kinds)-1 {
+		if way == goDown && b.choice < len(engine.Stalled)-1 {
 			b.choice++
 		}
 		return b, nil
@@ -63,7 +60,7 @@ func (b Board) choosingKind(key string) (tea.Model, tea.Cmd) {
 		b.choosing = false
 		b.cameFrom = b.column
 		b.inBand = true
-		return b, b.setState(kinds[b.choice])
+		return b, b.setState(engine.Stalled[b.choice])
 	}
 	return b, nil
 }

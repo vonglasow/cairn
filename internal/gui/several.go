@@ -96,10 +96,10 @@ func (w Window) runs() [][]int {
 		return [][]int{goals}
 	}
 	var runs [][]int
-	for i := range Columns {
+	for i := range engine.Columns {
 		runs = append(runs, numbers(w.inColumn(i)))
 	}
-	for i := range Lanes {
+	for i := range engine.Stalled {
 		runs = append(runs, numbers(w.inLane(i)))
 	}
 	return runs

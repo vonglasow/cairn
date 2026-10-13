@@ -220,7 +220,7 @@ func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
 	if w.lanes[1] != most {
 		t.Errorf("the lane scrolled to %d, and its end is %d", w.lanes[1], most)
 	}
-	if w.scroll != [Columns]int{} {
+	if w.scroll != [engine.Columns]int{} {
 		t.Errorf("scrolling a lane moved the columns: %v", w.scroll)
 	}
 	w = w.Scroll(over, -CardHeight*100)

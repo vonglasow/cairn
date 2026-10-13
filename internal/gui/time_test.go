@@ -25,7 +25,7 @@ func many(day string, n int) engine.TimesheetDay {
 // of the band, and a month's six weeks in the same room.
 func TestTheTimePageIsLaidOutToThePixel(t *testing.T) {
 	l := LayoutFor(1200, 800)
-	left, right := l.Column[0].X, l.Column[Columns-1].X+l.Column[Columns-1].W
+	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
 	strip := TimeStrip(l)
 	if strip != (Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}) {
 		t.Errorf("the strip is %+v", strip)

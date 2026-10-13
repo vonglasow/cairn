@@ -194,7 +194,7 @@ func TaskTimeSays(one engine.TimesheetTask) string {
 // TimeStrip is the strip along the top of the time page: the board's whole
 // width, where the columns' headers are on the other pages.
 func TimeStrip(l Layout) Box {
-	left, right := l.Column[0].X, l.Column[Columns-1].X+l.Column[Columns-1].W
+	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
 	return Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}
 }
 

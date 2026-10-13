@@ -93,7 +93,7 @@ func (w Window) Placed() []Placed {
 			out = append(out, Placed{Card: c, Slot: l.CardAt(i, at, w.scroll[i]), Within: l.Column[i]})
 		}
 	}
-	for lane := range Lanes {
+	for lane := range engine.Stalled {
 		for at, c := range w.inLane(lane) {
 			out = append(out, Placed{Card: c, Slot: l.LaneCardAt(lane, at, w.lanes[lane]), Within: l.Lane[lane]})
 		}

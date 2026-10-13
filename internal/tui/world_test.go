@@ -299,8 +299,8 @@ func (w *world) typeIn(text string) error {
 }
 
 func (w *world) choose(kind string) error {
-	for range len(kinds) {
-		if kinds[w.b.choice] == kind {
+	for range len(engine.Stalled) {
+		if engine.Stalled[w.b.choice] == kind {
 			w.press("enter")
 			return nil
 		}

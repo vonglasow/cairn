@@ -317,7 +317,7 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 		// nothing was drawn where a card would be.
 		card := l.LaneCardAt(lane, 0, 0)
 		if got := ink(shot, card, back); got != 0 {
-			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", Lanes[lane], got)
+			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", engine.Stalled[lane], got)
 		}
 	}
 }
@@ -1544,5 +1544,18 @@ func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
 		if got := painted(drawn(t, c.asked), Chip(name), skin.Back) > 0; got != c.chip {
 			t.Errorf("%s: its first line on a chip is %v", c.what, got)
 		}
+	}
+}
+
+// The tasks tab counts what the board lays out, searched or not. It counted
+// every part and every archived task until a search was typed, then only the
+// work: the same tab, two counts, and the first one was not the board's.
+func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
+	w := holding(newFake(),
+		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
+		engine.Card{Number: 2, Title: "A part", State: "todo", Parent: 1},
+		engine.Card{Number: 3, Title: "Gone", State: "done", Archived: true})
+	if got := w.Holds(Tasks); got != 1 {
+		t.Errorf("the tasks tab says %d, and the board lays out 1", got)
 	}
 }

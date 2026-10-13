@@ -332,7 +332,7 @@ func TestAnObjectiveMovesWithTheGrid(t *testing.T) {
 	}
 	// The board the grid is laid out in spans every column, first to last.
 	run := GoalsRun(l)
-	if got, want := run.W, l.Column[Columns-1].X+l.Column[Columns-1].W-l.Column[0].X; got != want {
+	if got, want := run.W, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W-l.Column[0].X; got != want {
 		t.Errorf("the objectives' board is %d wide, want %d", got, want)
 	}
 	if run.H != l.Column[0].H {

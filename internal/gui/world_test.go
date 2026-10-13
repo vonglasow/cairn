@@ -53,7 +53,7 @@ type world struct {
 	file string
 	// scrolled is what each column stood at before the last gesture, so a
 	// scenario can say which one moved.
-	scrolled [Columns]int
+	scrolled [engine.Columns]int
 	// laneScrolled is the same for the three lanes of the band.
 	laneScrolled [3]int
 	// was is where the history stood before a step moved it, so a step after
@@ -96,7 +96,7 @@ func (w *world) reset() {
 	w.width, w.high = 1200, 800
 	w.system = "darwin"
 	w.today = moment
-	w.scrolled = [Columns]int{}
+	w.scrolled = [engine.Columns]int{}
 	w.laneScrolled = [3]int{}
 }
 
@@ -212,7 +212,7 @@ func (w *world) find(title string) (Point, error) {
 			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 		}
 	}
-	for lane, kind := range Lanes {
+	for lane, kind := range engine.Stalled {
 		at := 0
 		for _, c := range stalled {
 			if c.State != kind {
@@ -546,7 +546,7 @@ func (w *world) scrollOver(column string) error {
 
 // laneNamed is which of the band's lanes holds the kind of stopped named.
 func laneNamed(kind string) (int, error) {
-	for i, name := range Lanes {
+	for i, name := range engine.Stalled {
 		if name == kind {
 			return i, nil
 		}

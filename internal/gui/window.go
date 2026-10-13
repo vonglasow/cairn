@@ -93,7 +93,7 @@ type Window struct {
 	// the task whenever an objective was pointed at.
 	chosenGoal bool
 
-	scroll [Columns]int
+	scroll [engine.Columns]int
 	// lanes is the same for the three lanes of the band. They were left
 	// unscrolled once, on the grounds that a third stopped task is a sign to
 	// go and unblock something — and a lane holding more than two then hid
@@ -420,7 +420,7 @@ func (w Window) Look() Window {
 		return w.failing(err)
 	}
 	w.snap, w.version, w.err = found, found.Version, nil
-	for i := range Columns {
+	for i := range engine.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}
 	for i := range w.lanes {

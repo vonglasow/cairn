@@ -445,7 +445,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		}
 		return w
 	}
-	for i := range Columns {
+	for i := range engine.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
@@ -524,9 +524,9 @@ func (w Window) dropped(number int, p Point) Window {
 
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
-		return Lanes[lane], nil, true
+		return engine.Stalled[lane], nil, true
 	}
-	for i := range Columns {
+	for i := range engine.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}

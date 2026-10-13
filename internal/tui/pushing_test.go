@@ -18,7 +18,7 @@ func TestTheKindPopupWalksAndCancels(t *testing.T) {
 		t.Fatal("pushing the last task down asked nothing")
 	}
 	b = hit(b, "j", "j", "j")
-	if b.choice != len(kinds)-1 {
+	if b.choice != len(engine.Stalled)-1 {
 		t.Fatalf("the popup walked to %d, want its last answer", b.choice)
 	}
 	b = hit(b, "k", "k", "k")
@@ -142,10 +142,10 @@ func TestThePopupMarksTheOneItIsOn(t *testing.T) {
 	if first == second {
 		t.Fatal("the popup looks the same whichever answer it is on")
 	}
-	if !strings.Contains(first, b.skin.Picked.Render(" "+kinds[0]+" ")) {
+	if !strings.Contains(first, b.skin.Picked.Render(" "+engine.Stalled[0]+" ")) {
 		t.Fatalf("the first answer is not the one picked out:\n%q", first)
 	}
-	if !strings.Contains(second, b.skin.Picked.Render(" "+kinds[1]+" ")) {
+	if !strings.Contains(second, b.skin.Picked.Render(" "+engine.Stalled[1]+" ")) {
 		t.Fatalf("the second answer is not the one picked out:\n%q", second)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 // Where the parts of the board itself go: the tabs, the lanes, the
@@ -73,7 +74,7 @@ func OfferAt(l Layout, at int) Box {
 // scrolls, and to bring what is chosen into sight. Cut to one column's width
 // instead, three quarters of the grid went missing.
 func GoalsRun(l Layout) Box {
-	last := l.Column[Columns-1]
+	last := l.Column[engine.Columns-1]
 	return Box{
 		X: l.Column[0].X,
 		Y: l.Column[0].Y,
@@ -85,7 +86,7 @@ func GoalsRun(l Layout) Box {
 // GoalsAcross is how many objectives stand side by side. The board's own
 // columns, so an objective is the width of a card and the grid reflows with
 // the window without a sum of its own.
-func GoalsAcross() int { return Columns }
+func GoalsAcross() int { return engine.Columns }
 
 // GoalAt is where the n-th objective sits in the grid, filled across and then
 // down.

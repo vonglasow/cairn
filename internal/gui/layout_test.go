@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ func TestTheFourColumnsShareTheWidthEvenly(t *testing.T) {
 			t.Errorf("column %d starts at %d, not after column %d at %d", i, column.X, i-1, l.Column[i-1].X)
 		}
 	}
-	if got := l.Column[Columns-1].X + first.W; got > 1200 {
+	if got := l.Column[engine.Columns-1].X + first.W; got > 1200 {
 		t.Errorf("the last column ends at %d, past a window of 1200", got)
 	}
 }
@@ -66,7 +67,7 @@ func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 	if l.Band.X != l.Column[1].X {
 		t.Errorf("the band starts at %d, todo at %d", l.Band.X, l.Column[1].X)
 	}
-	if got, want := l.Band.X+l.Band.W, l.Column[Columns-1].X+l.Column[Columns-1].W; got != want {
+	if got, want := l.Band.X+l.Band.W, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W; got != want {
 		t.Errorf("the band ends at %d, the last column at %d", got, want)
 	}
 	if l.Band.Y < l.Column[1].Y+l.Column[1].H {
@@ -78,8 +79,8 @@ func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 // what says which kind of stopped it is.
 func TestTheBandIsThreeLanesSharingItsWidth(t *testing.T) {
 	l := LayoutFor(1200, 800)
-	if len(Lanes) != 3 {
-		t.Fatalf("there are %d lanes, want 3", len(Lanes))
+	if len(engine.Stalled) != 3 {
+		t.Fatalf("there are %d lanes, want 3", len(engine.Stalled))
 	}
 	for i, lane := range l.Lane {
 		if lane.W != l.Lane[0].W {

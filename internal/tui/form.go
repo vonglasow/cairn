@@ -239,7 +239,7 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	}
 	state := engine.StateAt(b.column)
 	if b.inBand {
-		state = kinds[0]
+		state = engine.Stalled[0]
 	}
 	b.form = asking(engine.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Adding = true
