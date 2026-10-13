@@ -333,11 +333,8 @@ func (w Window) BoardOffers() []string {
 	{
 		// Archive and Unarchive are the same key on the same card: the bar names
 		// which way it goes, so nobody has to work out which it will be.
-		away := "Archive"
-		if w.chosenIsArchived() {
-			away = "Unarchive"
-		}
-		offers = append(offers, "Edit", away, "Delete")
+		card, _ := w.snap.Card(w.chosen)
+		offers = append(offers, "Edit", engine.AwayOp(card).Offered(), "Delete")
 	}
 	return offers
 }

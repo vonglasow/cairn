@@ -51,15 +51,7 @@ func (w Window) menuFor() []string {
 		return []string{"Edit", "Delete"}
 	}
 	card, _ := w.snap.Card(w.chosen)
-	focus := "Focus"
-	if card.InFocus {
-		focus = "Unfocus"
-	}
-	away := "Archive"
-	if card.Archived {
-		away = "Unarchive"
-	}
-	return []string{"Edit", focus, "Move to…", "Priority…", "Labels…", away, "Delete"}
+	return []string{"Edit", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
 }
 
 // settingFrom turns the menu into the values a field of the chosen task may

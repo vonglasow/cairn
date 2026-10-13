@@ -31,3 +31,14 @@ func TestSnapshot_findsByNumber(t *testing.T) {
 		t.Error("Goal(6) was found")
 	}
 }
+
+// The word a board offers for an act is the act's own verb, so the offer and
+// what it does are one decision: what the engine says one key does to a card.
+func TestAnActIsOfferedByItsVerb(t *testing.T) {
+	if got := FocusOp(Card{InFocus: true}).Offered(); got != "Unfocus" {
+		t.Errorf("a card in focus is offered %q", got)
+	}
+	if got := AwayOp(Card{}).Offered(); got != "Archive" {
+		t.Errorf("a card on the board is offered %q", got)
+	}
+}

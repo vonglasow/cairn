@@ -75,12 +75,6 @@ func (w Window) working() Window {
 	return w.asking(engine.FocusOp(card), engine.Numbered(w.chosen))
 }
 
-// chosenIsArchived says whether the card chosen is one off the board.
-func (w Window) chosenIsArchived() bool {
-	card, _ := w.snap.Card(w.chosen)
-	return card.Archived
-}
-
 // puttingAway takes the chosen card off the board, or brings it back.
 func (w Window) puttingAway() Window {
 	card, found := w.snap.Card(w.chosen)
