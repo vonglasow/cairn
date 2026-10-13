@@ -31,7 +31,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog dist stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux notices clean
+.PHONY: release release-check next-version changelog dist stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -235,6 +235,20 @@ check:
 release-check:
 	@prek run -a --skip mutation
 	@prek run -a --stage pre-push --skip mutation-all
+
+## fixtures: open the window on a store full of believable work
+## A board of every column, parts, blockers, deadlines past and to come, tasks
+## in focus and archived — made afresh under /tmp/cairn-fixtures each time, so
+## nothing of your own is touched. See scripts/fixtures.sh.
+fixtures:
+	@scripts/fixtures.sh
+
+## trace: the same window, every pointer and keyboard event written to traces/
+## For a bug seen only on one system: the record starts with what the machine
+## is, and holds what the window made of each event. Do the one thing that goes
+## wrong, close the window, send the file it names.
+trace:
+	@FIXTURES_TRACE=1 scripts/fixtures.sh
 
 ## linux: build cairn and run its suite on Linux, in a container
 ## macOS is where cairn is written and Linux is the other half of what it says

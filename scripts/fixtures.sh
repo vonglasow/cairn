@@ -5,8 +5,17 @@
 #
 # Makes a store under folder (/tmp/cairn-fixtures when none is named) holding
 # objectives in every standing and tasks in every column, parts, blockers, a
-# deadline past and one to come, two tasks in focus and two off the board —
-# then opens the window on it. Run again, it starts from nothing.
+# deadline past and one to come, two tasks in focus and two archived — then
+# opens the window on it. Run again, it starts from nothing.
+#
+#   FIXTURES_TRACE=1 scripts/fixtures.sh     (make trace)
+#
+# opens it traced, for a bug seen only on one system: a drag drawn in the
+# wrong place on Windows, a letter typed twice on Linux. cairn is built from
+# the tree as it stands — a binary from before the trace learned something
+# cannot write it down — and the record, under traces/, starts with what the
+# machine is: its system, display session, input method, keyboard, language.
+# Do the one thing that goes wrong, close the window, send the file.
 #
 # It only ever deletes a folder it made itself: one it made carries a mark,
 # and a folder without it is refused rather than emptied — a typo in the
@@ -73,4 +82,60 @@ cairn task archive 18
 cairn task focus 1
 cairn task focus 5
 
-go run "$here/cmd/cairn" gui
+if [ -z "${FIXTURES_TRACE:-}" ]; then
+  exec go run "$here/cmd/cairn" gui
+fi
+
+mkdir -p "$here/traces"
+log="$here/traces/trace-$(date +%Y%m%d-%H%M%S).log"
+bin="$store/bin/cairn"
+case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) bin="$bin.exe" ;; esac
+(cd "$here" && go build -o "$bin" ./cmd/cairn)
+
+# Each fact on a line of its own, and a missing tool says so rather than
+# stopping the record: the machine that misbehaves is rarely the one every
+# tool is installed on.
+fact() { printf '# %-16s %s\n' "$1" "$2"; }
+ran() { "$@" 2>/dev/null | tr '\n' ' ' | sed 's/  */ /g' || true; }
+{
+  fact "recorded" "$(date '+%F %T %z')"
+  fact "commit" "$(cd "$here" && git describe --tags --always --dirty 2>/dev/null || echo unknown)"
+  fact "cairn" "$(ran "$bin" --version)"
+  fact "go" "$(go version)"
+  fact "system" "$(uname -srm)"
+  case "$(uname -s)" in
+    Darwin) fact "macos" "$(ran sw_vers -productVersion)" ;;
+    Linux)
+      fact "distribution" "$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release 2>/dev/null | tr -d '"')"
+      fact "session" "${XDG_SESSION_TYPE:-unset}"
+      fact "desktop" "${XDG_CURRENT_DESKTOP:-unset}"
+      fact "wayland" "${WAYLAND_DISPLAY:-unset}"
+      fact "x11" "${DISPLAY:-unset}"
+      fact "gtk im" "${GTK_IM_MODULE:-unset}"
+      fact "qt im" "${QT_IM_MODULE:-unset}"
+      fact "xmodifiers" "${XMODIFIERS:-unset}"
+      fact "ibus" "$(pgrep -x ibus-daemon >/dev/null && echo running || echo 'not running')"
+      fact "fcitx" "$(pgrep -f fcitx >/dev/null && echo running || echo 'not running')"
+      fact "keyboard" "$(ran setxkbmap -query)$(ran localectl status)"
+      ;;
+    MINGW* | MSYS* | CYGWIN*) fact "windows" "$(ran cmd //c ver)" ;;
+  esac
+  fact "language" "${LC_ALL:-${LANG:-unset}}"
+} >"$log"
+
+cat <<SAID
+
+The window opens on a board of believable work, and writes down every pointer
+and keyboard event. Do the one thing that goes wrong, then close the window:
+
+  a drag drawn in the wrong place   press a card, move it a few centimetres
+                                    with the button held, let go
+  a letter that takes two presses   open a task, click in its title, press é
+                                    once
+
+SAID
+
+CAIRN_GUI_TRACE=1 "$bin" gui 2>>"$log" || true
+
+echo
+echo "the record is $log — send that file"

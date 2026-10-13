@@ -403,9 +403,15 @@ build`, and [INSTALL.md](INSTALL.md) inside it — is
 The store lives in a temporary folder, so nothing here touches your own.
 
 To look at a board full of believable work rather than build one by hand,
-`scripts/fixtures.sh [folder]` makes a store under `/tmp/cairn-fixtures` (or
-the folder named) and opens the window on it. It only ever deletes a folder it
-made itself.
+`make fixtures` (or `scripts/fixtures.sh [folder]`) makes a store under
+`/tmp/cairn-fixtures` (or the folder named) and opens the window on it. It only
+ever deletes a folder it made itself.
+
+When the window misbehaves on one system only, `make trace` opens the same
+board with every pointer and keyboard event written to a file under `traces/`,
+headed by what the machine is — its system, display session, input method,
+keyboard and language. Do the one thing that goes wrong, close the window, and
+send the file it names.
 
 ```sh
 make build

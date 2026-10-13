@@ -723,7 +723,7 @@ through, nothing between the system and the drawing differs by system: Gio
 turns a move with a button held into a drag on every one, the pointer is read
 in dp with the ratio the drawing is scaled by, and the card in hand is drawn
 where the last drag put it. Rather than a fix guessed at from a Mac,
-`CAIRN_GUI_TRACE=1 cairn gui` writes every pointer event to standard error —
+`make trace` (or `CAIRN_GUI_TRACE=1 cairn gui`) writes every pointer event —
 what the system sent in pixels, the ratio, the point in dp, and where the card
 in hand stands after it (`PointerTrace`). A drag recorded on the machine that
 misbehaves says which of those steps went wrong.
