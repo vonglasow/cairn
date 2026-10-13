@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/test"
 )
 
@@ -16,7 +15,7 @@ import (
 
 func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
@@ -38,7 +37,7 @@ func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 // Nothing chosen opens nothing: there is no task to be a form about.
 func TestEditingNothingOpensNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if w = w.Choose("Edit"); w.Screen() != OnTheBoard {
 		t.Fatalf("editing nothing left the window on %v", w.Screen())
 	}
@@ -47,7 +46,7 @@ func TestEditingNothingOpensNothing(t *testing.T) {
 func TestEditingAnObjectiveAsksTheObjectivesQuestions(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}})
+	w.snap = test.Searchable(engine.Snapshot{Goals: []engine.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}})
 	w.tab = Objectives
 	w.chosen, w.chosenGoal = 3, true
 
@@ -64,7 +63,7 @@ func TestEditingAnObjectiveAsksTheObjectivesQuestions(t *testing.T) {
 
 func TestSavingAFormWritesOnceAndClosesIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
@@ -108,7 +107,7 @@ func TestAddingSavesWithoutANumber(t *testing.T) {
 
 func TestCancellingWritesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
@@ -129,7 +128,7 @@ func TestCancellingWritesNothing(t *testing.T) {
 // neither. Pressing one anyway does nothing rather than something surprising.
 func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, name := range []string{"Save", "Cancel", "something nobody offers"} {
 		if got := w.Choose(name); got.Screen() != OnTheBoard {
 			t.Errorf("%q left the window on %v", name, got.Screen())
@@ -145,7 +144,7 @@ func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 	f := newFake()
 	f.failOp = errRefuse
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
@@ -193,7 +192,7 @@ func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
 // Escape is the other way out of a form, and writes nothing.
 func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 	w = w.Key("esc")
@@ -209,7 +208,7 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 // A key nobody bound does nothing, rather than something.
 func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if got := w.Key("q"); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("an unbound key did something")
 	}
@@ -220,7 +219,7 @@ func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 
 func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.On("title").Types(" properly")
@@ -239,7 +238,7 @@ func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 // Typing with no form open goes nowhere rather than somewhere.
 func TestTypingWithNoFormOpenChangesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if got := w.Types("hello"); got.Form().ValueOf("title") != "" {
 		t.Error("typing on the board wrote into a form nobody opened")
 	}
@@ -247,7 +246,7 @@ func TestTypingWithNoFormOpenChangesNothing(t *testing.T) {
 
 func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the specx", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the specx", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
@@ -268,7 +267,7 @@ func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 // leaves "réunio", not half of an n.
 func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "réunion", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "réunion", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
@@ -285,7 +284,7 @@ func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 
 func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("tab")
@@ -309,7 +308,7 @@ func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 // type: seven columns and four priorities are values to cycle.
 func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	w = w.clicked(middleOf(w, 0, 0)).Choose("Edit").On("column")
 
 	if got := w.Key("right").Form().ValueOf("column"); got != "todo" {
@@ -335,7 +334,7 @@ func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 // Clicking a field is how the keyboard gets there with a mouse.
 func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
@@ -350,7 +349,7 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 // Enter saves, because a form is answered rather than dismissed.
 func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.Key("cmd+enter")
@@ -366,7 +365,7 @@ func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 // They were clickable only down in the bar, which is not where anybody looks.
 func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := opened.formPanel()
@@ -389,7 +388,7 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 // The same for the question asked before deleting, and for the help.
 func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
 	press := func(from Window, at int) Window {
@@ -414,7 +413,7 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 // first line.
 func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
@@ -463,10 +462,10 @@ func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{
-		Goals: []reading.Goal{{Number: 1, Title: "Ship the desktop board"}},
+	w.snap = test.Searchable(engine.Snapshot{
+		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board"}},
 	})
-	field := reading.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
+	field := engine.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
 	// Asked whole, and not for the two halves separately: a name and a number
 	// both being in there says nothing about the name belonging to that
 	// number. Measured — a test that asked that way passed with the lookup
@@ -483,9 +482,9 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{
-		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
-		Goals: []reading.Goal{
+	w.snap = test.Searchable(engine.Snapshot{
+		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
+		Goals: []engine.Goal{
 			{Number: 1, Title: "Modularité / Helm"},
 			{Number: 2, Title: "Stabiliser les environnements"},
 		},
@@ -512,7 +511,7 @@ func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
 func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}})
+	w.snap = test.Searchable(engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
@@ -532,7 +531,7 @@ func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{
+	w.snap = test.Searchable(engine.Snapshot{Cards: []engine.Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
 		{Number: 2, Title: "Write the spec", State: "todo"},
 		{Number: 3, Title: "Rewrite the tests", State: "todo"},
@@ -570,11 +569,11 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	cards := []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
+	cards := []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
 	for i := 2; i <= 45; i++ {
-		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
+		cards = append(cards, engine.Card{Number: i, Title: "Une de plus", State: "backlog"})
 	}
-	w.snap = test.Searchable(reading.Snapshot{Cards: cards})
+	w.snap = test.Searchable(engine.Snapshot{Cards: cards})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -604,11 +603,11 @@ func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	cards := []reading.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
+	cards := []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}}
 	for i := 2; i <= 45; i++ {
-		cards = append(cards, reading.Card{Number: i, Title: "Une de plus", State: "backlog"})
+		cards = append(cards, engine.Card{Number: i, Title: "Une de plus", State: "backlog"})
 	}
-	w.snap = test.Searchable(reading.Snapshot{Cards: cards})
+	w.snap = test.Searchable(engine.Snapshot{Cards: cards})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -636,7 +635,7 @@ func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 // into it would be a character nothing can draw and nobody asked for.
 func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	on := w.On("title").Key("shift+enter")
@@ -654,7 +653,7 @@ func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 // filter: told nothing, a list offers everything rather than nothing.
 func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: []reading.Card{
+	w.snap = test.Searchable(engine.Snapshot{Cards: []engine.Card{
 		{Number: 1, Title: "Write the spec", State: "todo"},
 		{Number: 2, Title: "Ship it", State: "current"},
 		{Number: 3, Title: "Rewrite the tests", State: "todo"},
@@ -678,7 +677,7 @@ func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
 // Both surfaces guard a deletion of two words and neither guarded ten minutes
 // of typing: Cancel emptied a filled form without a question.
 func TestLeavingAFilledFormAsksFirst(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	if w.Screen() != OnForm {
 		t.Fatalf("the form did not open: %v", w.Screen())
@@ -720,7 +719,7 @@ func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
 // say — and it is why writing a description in paragraphs needed ⇧⏎.
 func TestEnterDoesNotSaveTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
 
 	if after := w.Key("enter"); after.Screen() != OnForm {
@@ -738,7 +737,7 @@ func TestEnterDoesNotSaveTheForm(t *testing.T) {
 // was everywhere else: the one key a hand reaches for.
 func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
 		if field.Name == "description" {
@@ -762,9 +761,9 @@ func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
-		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
-		reading.Card{Number: 3, Title: "Trancher", State: "done", Parent: 1})
+		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
+		engine.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
+		engine.Card{Number: 3, Title: "Trancher", State: "done", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	if said := w.Form().ValueOf("parts"); said != "#2 [ ] Relire l'ADR\n#3 [x] Trancher" {
@@ -802,7 +801,7 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 // A task with nothing under it opens on an empty field rather than none: it is
 // where a first part is written.
 func TestATaskWithNoPartsStillHasTheField(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Ship it", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	if said := w.Form().ValueOf("parts"); said != "" {
 		t.Fatalf("a task with nothing under it opened holding %q", said)
@@ -814,8 +813,8 @@ func TestATaskWithNoPartsStillHasTheField(t *testing.T) {
 func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
-		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
+		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
+		engine.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	w.form = w.form.Set("parts", "")
 	// Only the deletion: the task's own edit has to go through for the part to
@@ -833,7 +832,7 @@ func TestAPartTheStoreWillNotDeleteIsSaid(t *testing.T) {
 // line.
 func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	// A one-line field: on to the next one.
@@ -866,7 +865,7 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 // be reached — down used to leave for the next field, and the only way through
 // a long text was a character at a time. Tab is what leaves.
 func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: "one\ntwo\nthree"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	at := -1
@@ -914,7 +913,7 @@ func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
 // and its end can be reached — the same box on both screens.
 func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
@@ -948,7 +947,7 @@ func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 // is.
 func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	w.form = w.form.onto(0)
@@ -977,7 +976,7 @@ func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 // is, and a press on it is not a press in the text.
 func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
@@ -1032,7 +1031,7 @@ func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 // priority — the way the terminal starts one. It used to start with neither.
 func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "In todo", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "In todo", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 	form := adding(Tasks, w.addingOn())
 	if got := form.ValueOf("column"); got != "todo" {
@@ -1045,8 +1044,8 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 		t.Errorf("a task added with nothing chosen starts in %q, want backlog", got)
 	}
 	band := holding(newFake(),
-		reading.Card{Number: 1, Title: "In todo", State: "todo"},
-		reading.Card{Number: 2, Title: "Blocked", State: "blocked"})
+		engine.Card{Number: 1, Title: "In todo", State: "todo"},
+		engine.Card{Number: 2, Title: "Blocked", State: "blocked"})
 	band = band.clicked(middleOf(band, 1, 0)).Key("down")
 	if got := adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
 		t.Errorf("a task added on the band starts in %q, want the first stopped state", got)
@@ -1059,14 +1058,14 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 func TestThePartsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Ship it", "todo"),
-		reading.Card{Number: 2, Title: "Draft the columns", State: "done", Parent: 1})
+		engine.Card{Number: 2, Title: "Draft the columns", State: "done", Parent: 1})
 	w.chosen = 1
 	w = w.Edit()
 	fields := w.form.Fields()
 	at := len(fields) - 1
 	w.form.fields[at].Value += "\nGet the nod"
 	got := w.PartsTicked()
-	if len(got) != 2 || got[0].Number != 2 || !reading.Finished(got[0]) || got[1].Title != "Get the nod" || reading.Finished(got[1]) {
+	if len(got) != 2 || got[0].Number != 2 || !engine.Finished(got[0]) || got[1].Title != "Get the nod" || engine.Finished(got[1]) {
 		t.Fatalf("the parts are drawn as %+v", got)
 	}
 	if line := SubLine(got[1]); line != "Get the nod" {
@@ -1083,7 +1082,7 @@ func TestThePartsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 // width, a line of narrow letters stopped two thirds of the way across its box.
 func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	text := strings.Repeat("iiii ", 120)
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo", Description: text}).Measuring(narrow)
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Description: text}).Measuring(narrow)
 	w = w.clicked(middleOf(w, 1, 0))
 	for _, open := range []Window{w.DoubleClick(middleOf(w, 1, 0)), w.Choose("Edit").On("description")} {
 		frame, _, lines, _, ok := open.sayingOn()
@@ -1151,8 +1150,8 @@ func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 // another field, and every other long field shows its beginning.
 func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60)
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Ship it", State: "todo", Description: text},
-		reading.Card{Number: 2, Title: "Part", State: "todo", Parent: 1})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo", Description: text},
+		engine.Card{Number: 2, Title: "Part", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, _, _, _ := w.sayingOn()
 	w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, 3*lineHigh)
@@ -1176,12 +1175,12 @@ func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
 // Beside an open objective, the work serving it is held and copied like any
 // text, and its bar is pulled like the history's.
 func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
-	var cards []reading.Card
+	var cards []engine.Card
 	for i := range 30 {
-		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
+		cards = append(cards, engine.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
+	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	var parts []string
 	for _, r := range w.Readables() {
@@ -1204,12 +1203,12 @@ func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 // tiles, as far as the point pulled to means: to its end when pulled past it,
 // and to the tile the middle of the track names when pulled there.
 func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
-	var cards []reading.Card
+	var cards []engine.Card
 	for i := range 30 {
-		cards = append(cards, reading.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
+		cards = append(cards, engine.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
+	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	track, frame := BesideBar(w.formPanel()), BesideBox(w.formPanel())
 	grip := Point{X: track.X + track.W/2, Y: track.Y + 4}
@@ -1226,7 +1225,7 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 // A field holding one of a closed set takes no text of its own: what is typed
 // there opens its list, narrowed by it, and the field keeps what it held.
 func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "priority" {
 		w = w.Key("tab")

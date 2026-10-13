@@ -10,7 +10,6 @@ import (
 	"gioui.org/io/key"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // KeysDown is told which keys are held while the pointer acts: ⌘ gathers
@@ -82,7 +81,7 @@ func (w Window) stretch(number int) Window {
 // runs is every list of cards a stretch can follow: the objectives on their
 // page, the columns and the lanes on the board.
 func (w Window) runs() [][]int {
-	numbers := func(cards []reading.Card) []int {
+	numbers := func(cards []engine.Card) []int {
 		var out []int
 		for _, c := range cards {
 			out = append(out, c.Number)
@@ -91,7 +90,7 @@ func (w Window) runs() [][]int {
 	}
 	if w.tab == Objectives {
 		var goals []int
-		for _, g := range reading.Sorted(w.Showing().Goals) {
+		for _, g := range engine.Sorted(w.Showing().Goals) {
 			goals = append(goals, g.Number)
 		}
 		return [][]int{goals}
@@ -118,14 +117,14 @@ func (w Window) askingSeveral(about Question) Window {
 }
 
 // flags is what the question about what is taken names first.
-func (w Window) flags() []reading.Flag {
+func (w Window) flags() []engine.Flag {
 	if w.question == aboutArchivingSeveral {
-		return reading.ArchivingTasks(w.snap, w.Taken())
+		return engine.ArchivingTasks(w.snap, w.Taken())
 	}
 	if w.chosenGoal {
-		return reading.DeletingGoals(w.snap, w.Taken())
+		return engine.DeletingGoals(w.snap, w.Taken())
 	}
-	return reading.DeletingTasks(w.snap, w.Taken())
+	return engine.DeletingTasks(w.snap, w.Taken())
 }
 
 // severalSays is what the question about what is taken says: a line for each
@@ -146,7 +145,7 @@ func (w Window) severalSays() []Said {
 // can go, all but what it named, or nothing. The second only when it named
 // something that could go all the same — otherwise it is the first again.
 func (w Window) severalOffers() []string {
-	if slices.ContainsFunc(w.flags(), func(f reading.Flag) bool { return !f.Refused }) {
+	if slices.ContainsFunc(w.flags(), func(f engine.Flag) bool { return !f.Refused }) {
 		return []string{"All possible", "Skip flagged", "Cancel"}
 	}
 	return []string{"All possible", "Cancel"}
@@ -155,7 +154,7 @@ func (w Window) severalOffers() []string {
 // actingOnSeveral does what was asked to what is taken, leaving out what was
 // named — every one of it, or only what cannot go — in one act.
 func (w Window) actingOnSeveral(onlyRefused bool) Window {
-	kept := reading.LeavingOut(w.Taken(), w.flags(), onlyRefused)
+	kept := engine.LeavingOut(w.Taken(), w.flags(), onlyRefused)
 	op := engine.TaskDelete
 	if w.chosenGoal {
 		op = engine.ObjectiveDelete
@@ -168,7 +167,7 @@ func (w Window) actingOnSeveral(onlyRefused bool) Window {
 		return w
 	}
 	w.taken = nil
-	return w.asking(op, reading.Several(kept))
+	return w.asking(op, engine.Several(kept))
 }
 
 // severalHead is how the question about what is taken is headed.

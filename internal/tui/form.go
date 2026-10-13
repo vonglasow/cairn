@@ -1,11 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"cairn/internal/reading"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -35,7 +34,7 @@ type Form struct {
 	asked  *huh.Form
 	held   map[string]*string
 	keep   *bool
-	fields []reading.Field
+	fields []engine.Field
 	// opened is what the fields held when the form was opened, so leaving it
 	// can tell a form somebody typed into from one they only looked at. Ten
 	// minutes of typing used to go on an esc with no question, while a
@@ -70,8 +69,8 @@ func LongTitle(name, value string) string {
 // a save hands over. The fields themselves keep what the form opened with —
 // that is what Changed compares against — and handing those over saved the
 // title and nothing else, since the board first had a form.
-func (f Form) typed() []reading.Field {
-	out := make([]reading.Field, len(f.fields))
+func (f Form) typed() []engine.Field {
+	out := make([]engine.Field, len(f.fields))
 	for i, field := range f.fields {
 		if held, there := f.held[field.Name]; there {
 			field.Value = *held
@@ -98,7 +97,7 @@ func (f Form) typedInto(name, value string) Form {
 // The fields are dealt into two columns rather than stacked into one long
 // list. A task is a dozen small facts, and a dozen small facts in a single
 // column is a scroll rather than a shape.
-func asking(fields []reading.Field, width, height int, skin Skin) Form {
+func asking(fields []engine.Field, width, height int, skin Skin) Form {
 	held := make(map[string]*string, len(fields))
 	// Save is what the last question is answered with unless somebody says
 	// otherwise: a form is opened to change something, so keeping the change is
@@ -173,7 +172,7 @@ func walkedByArrows() *huh.KeyMap {
 
 // oneField builds the one kind of field this one is: a list for a closed set, a
 // box for prose, a line for everything else.
-func oneField(field reading.Field, into *string) huh.Field {
+func oneField(field engine.Field, into *string) huh.Field {
 	if len(field.Choices) > 0 {
 		// Picked in place rather than out of a list that unrolls: seven columns
 		// and four priorities are a value to cycle, not a page to read.
@@ -233,16 +232,16 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 // again would be asking something the board already knows.
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		b.form = asking(reading.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin)
+		b.form = asking(engine.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin)
 		b.form.Adding, b.form.ForObjective = true, true
 		b.screen = OnForm
 		return b.started()
 	}
-	state := reading.StateAt(b.column)
+	state := engine.StateAt(b.column)
 	if b.inBand {
 		state = kinds[0]
 	}
-	b.form = asking(reading.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -255,7 +254,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 			if g.Number != b.goal {
 				continue
 			}
-			b.form = asking(reading.GoalFields(g), b.formWidth(), b.formHeight(), b.skin)
+			b.form = asking(engine.GoalFields(g), b.formWidth(), b.formHeight(), b.skin)
 			b.form.Number, b.form.ForObjective = g.Number, true
 			b.screen = OnForm
 			return b.started()
@@ -266,7 +265,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(reading.EditFields(held, b.snap.Cards), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.EditFields(held, b.snap.Cards), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()

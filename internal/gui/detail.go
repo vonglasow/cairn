@@ -1,9 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
-
-	"cairn/internal/reading"
 )
 
 // What the window shows of one task opened: what hangs under it and what it
@@ -275,7 +274,7 @@ func (w Window) closesOnAClickOff() bool {
 func (w Window) ServingAt() int { return w.serving }
 
 // Reading is the work as it was last read, which is what everything draws from.
-func (w Window) Reading() reading.Snapshot { return w.snap }
+func (w Window) Reading() engine.Snapshot { return w.snap }
 
 // Says is what a window too small to draw in says instead. It names both sizes
 // it needs, because "too small" without a number is something nobody can act

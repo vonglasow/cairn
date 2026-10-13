@@ -19,7 +19,6 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/test"
 )
@@ -77,7 +76,7 @@ func (w *world) reset() {
 	w.formAt = 0
 }
 
-// open builds the board and gives it its first reading.
+// open builds the board and gives it its first engine.
 //
 // It hands the reading over rather than running Init, and for a measured
 // reason: Init asks for the beat as well, and running the beat's command
@@ -94,7 +93,7 @@ func (w *world) open() {
 // refresh hands the board a fresh reading, the way its own beat would once it
 // noticed the store had moved.
 func (w *world) refresh() {
-	found, err := reading.Look(w.held)
+	found, err := engine.Look(w.held)
 	if err != nil {
 		w.t.Fatalf("looking: %v", err)
 	}
@@ -623,7 +622,7 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	if err := w.lookAgain(); err != nil {
 		t.Fatal(err)
 	}
-	parts := reading.Hanging(w.b.snap.Cards, 1)
+	parts := engine.Hanging(w.b.snap.Cards, 1)
 	if len(parts) != 2 {
 		t.Fatalf("the task carries %d parts, want 2", len(parts))
 	}

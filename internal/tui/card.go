@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 
 	"charm.land/lipgloss/v2"
 )
@@ -39,7 +39,7 @@ func StoppedGlyph(state string, g Glyphs) string {
 // The order is fixed and the state is last, so the eye finds it in the same
 // place on every card in the band rather than one column further along
 // whenever a task happens to carry a description.
-func marks(c reading.Card, g Glyphs) string {
+func marks(c engine.Card, g Glyphs) string {
 	var found []string
 	// First, and before anything else a card carries: an archived task is on a
 	// board that behaves differently from the one it looks like it is on, and
@@ -64,8 +64,8 @@ func marks(c reading.Card, g Glyphs) string {
 // the row is full has to be decided on what is drawn and not on the escape
 // codes around it — so the widths are measured first and the colour put on
 // afterwards, one fact at a time.
-func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
-	if reading.Stopped(c.State) {
+func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
+	if engine.Stopped(c.State) {
 		// A task waiting on nothing any more is the one thing about blocking
 		// that has to be acted on, so it is said in the bright ink and in place
 		// of the list of what used to be in the way.
@@ -75,7 +75,7 @@ func facts(c reading.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
-	if text, show, late := reading.CardDeadline(c, now); show {
+	if text, show, late := engine.CardDeadline(c, now); show {
 		told = append(told, text)
 		if late {
 			dressed = append(dressed, s.Late.Render(text))
@@ -141,9 +141,9 @@ func fit(told []string, width int) int {
 
 // inTheWay says what is stopping a task: the tasks it waits on, or the words
 // somebody wrote when it waits on something cairn does not hold.
-func inTheWay(c reading.Card, g Glyphs) string {
+func inTheWay(c engine.Card, g Glyphs) string {
 	if len(c.Blockers) > 0 {
-		return g.InTheWay + " " + reading.Numbers(c.Blockers)
+		return g.InTheWay + " " + engine.Numbers(c.Blockers)
 	}
 	if c.Because != "" {
 		return g.InTheWay + " " + c.Because
@@ -154,7 +154,7 @@ func inTheWay(c reading.Card, g Glyphs) string {
 // Rows is the four lines a card carries, before anything is drawn around them.
 // Separated from the frame so a test can read what a card says without reading
 // what it is boxed in.
-func Rows(c reading.Card, g Glyphs, s Skin, now time.Time, width int) []string {
+func Rows(c engine.Card, g Glyphs, s Skin, now time.Time, width int) []string {
 	var rows []string
 	number := s.Faint.Render(strconv.Itoa(c.Number))
 	mark := marks(c, g)

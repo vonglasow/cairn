@@ -70,7 +70,7 @@ already said why not.
 | a refusal's kind travels under `_meta`, not `structuredContent` | the client measures structured content against the answer's shape even on a refusal | [mcp.md](mcp.md) |
 | a tool whose answer shape cannot be derived is offered without one, rather than stopping the server | a test proves every tool derives one, so this can only happen to code nobody ran | `internal/mcp/tools.go` |
 | the two boards share where a card goes, not how the cursor walks | they draw the stalled band differently — a grid of three in the terminal, lanes under the columns in the window — so the same key is a different journey | [architecture.md](architecture.md) |
-| `internal/reading` both reads the board and builds what a board asks the engine | both boards need both halves, and neither half is used without the other | [architecture.md](architecture.md) |
+| what a board reads lives in the engine, not in a package between it and the boards | a surface is an entry point; the package in between grew decisions of its own, and its search drifted from the engine's | [architecture.md](architecture.md) |
 | the engine is one package, split into files by notion | one door (`Ask`) and one place for the rules; sub-packages wait until a file cannot be read on its own | [architecture.md](architecture.md) |
 
 ## Sharing

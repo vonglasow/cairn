@@ -165,7 +165,7 @@ the shape of their answer the moment a task held a task.
 
 ## A part that matched answers as the work it belongs to
 
-On a board. `reading.Found` is what a board shows of a search: a sub-task that
+On a board. `engine.Found` is what a board shows of a search: a sub-task that
 the query reached answers as its parent, each parent once, in the order the
 board already holds them.
 

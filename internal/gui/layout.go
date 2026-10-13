@@ -10,10 +10,9 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"strings"
-
-	"cairn/internal/reading"
 )
 
 // Everything is in dp rather than pixels, so a Retina screen and a 96-dpi one
@@ -32,12 +31,12 @@ const (
 
 // Columns is how many stand side by side, read off reading rather than counted
 // again here.
-const Columns = reading.Columns
+const Columns = engine.Columns
 
 // Lanes are the three the band holds, in the order it draws them. Naming them
 // is what the terminal needs a glyph for: a card says which kind of stopped it
 // is by which lane it sits in.
-var Lanes = reading.Stalled
+var Lanes = engine.Stalled
 
 // CardHeight is what every card takes, whatever it carries. Fixed on purpose:
 // it is what lets a column say how many fit and which one is under the pointer

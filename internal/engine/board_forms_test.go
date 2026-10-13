@@ -1,9 +1,8 @@
-package reading
+package engine
 
 import (
 	"testing"
 
-	"cairn/internal/engine"
 	"cairn/internal/task"
 )
 
@@ -41,14 +40,14 @@ func TestEditFields_bringTheParts(t *testing.T) {
 // number when it is an edit.
 func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	fields := []Field{{Name: "title", Arg: "title", Value: "  Ship it  "}}
-	op, in := Saved(fields, true, 0, engine.TaskNew, engine.TaskEdit)
+	op, in := Saved(fields, true, 0, TaskNew, TaskEdit)
 	if op.Name() != "task_new" || in.Given["title"] != "Ship it" {
 		t.Errorf("adding saved %s %v", op.Name(), in.Given)
 	}
 	if _, numbered := in.Given["number"]; numbered {
 		t.Error("adding named a number")
 	}
-	op, in = Saved(fields, false, 7, engine.ObjectiveNew, engine.ObjectiveEdit)
+	op, in = Saved(fields, false, 7, ObjectiveNew, ObjectiveEdit)
 	if op.Name() != "objective_edit" || in.Given["number"] != "7" {
 		t.Errorf("editing saved %s %v", op.Name(), in.Given)
 	}
@@ -73,10 +72,10 @@ func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
 	aTask("Ship it").Tell(&told)
 	told.Numbered(7)
 	added := told.Task()
-	if got := Added(engine.Answer{Task: &added}); got != 7 {
+	if got := Added(Answer{Task: &added}); got != 7 {
 		t.Errorf("an add of task 7 answered %d", got)
 	}
-	if got := Added(engine.Answer{}); got != 0 {
+	if got := Added(Answer{}); got != 0 {
 		t.Errorf("an answer with no task answered %d", got)
 	}
 }

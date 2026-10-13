@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/engine"
 	"image"
 	"io"
 	"strings"
@@ -16,8 +17,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-
-	"cairn/internal/reading"
 )
 
 // What the loop does with a frame's worth of events, driven through Gio's own
@@ -85,7 +84,7 @@ func at(w Window, column, index int) f32.Point {
 
 func TestAFrameOfEventsChoosesACard(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 
 	got, _, _ := frames(t, w,
@@ -99,7 +98,7 @@ func TestAFrameOfEventsChoosesACard(t *testing.T) {
 
 func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	from, onto := at(w, 0, 0), at(w, 1, 0)
 
 	frames(t, w,
@@ -118,7 +117,7 @@ func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 // loop is where that is worked out.
 func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
@@ -134,7 +133,7 @@ func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 // next one.
 func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
@@ -151,9 +150,9 @@ func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 
 func TestAFrameOfEventsScrollsAColumn(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(f, many...)
 	where := at(w, 1, 0)
@@ -170,7 +169,7 @@ func TestAFrameOfEventsScrollsAColumn(t *testing.T) {
 
 func TestAFrameOfEventsTakesAKey(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Press},
@@ -184,7 +183,7 @@ func TestAFrameOfEventsTakesAKey(t *testing.T) {
 // would do everything twice.
 func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Release},
@@ -197,7 +196,7 @@ func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 // A frame with nothing in it changes nothing.
 func TestAFrameOfNothingChangesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, pressed, _ := frames(t, w)
 	if got.Chosen() != 0 || !pressed.IsZero() || len(f.asked) != 0 {
@@ -210,7 +209,7 @@ func TestAFrameOfNothingChangesNothing(t *testing.T) {
 // never calls.
 func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	card := at(w, 1, 0)
 
 	w, _, _ = frames(t, w,
@@ -247,7 +246,7 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 // names would show a form nobody can fill in — which is what it did.
 func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w, _, _ = frames(t, w, key.EditEvent{Text: " properly"})
@@ -285,7 +284,7 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 // bottom, which is not where anybody looks.
 func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Types(" properly")
 
 	button := PanelOfferAt(w.formPanel(), 0)
@@ -311,7 +310,7 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 // every event the keyboard sent, in the order they came.
 func TestTheLoopWritesDownEachEventWhenAsked(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	var traced bytes.Buffer
 	framesTraced(t, w, &traced,
 		pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonPrimary},

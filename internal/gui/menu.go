@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // menuState is what the menu keeps: its lines, the point it was opened at,
@@ -138,9 +137,9 @@ func (w Window) fromMenu(i int) Window {
 	}
 	switch said {
 	case "Move to…":
-		return w.settingFrom("state", reading.States(), card.State)
+		return w.settingFrom("state", engine.States(), card.State)
 	case "Priority…":
-		return w.settingFrom("priority", reading.Priorities(), card.Priority)
+		return w.settingFrom("priority", engine.Priorities(), card.Priority)
 	case "Labels…":
 		w.screen = OnTheBoard
 		w = w.Edit()
@@ -159,7 +158,7 @@ func (w Window) fromMenu(i int) Window {
 }
 
 // chosenCard is the task chosen, as the board last read it.
-func (w Window) chosenCard() reading.Card {
+func (w Window) chosenCard() engine.Card {
 	card, _ := w.snap.Card(w.chosen)
 	return card
 }

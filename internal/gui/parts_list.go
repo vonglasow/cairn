@@ -11,29 +11,28 @@ import (
 	"strconv"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // partsField is which of a form's fields holds its parts, if one does.
 func (f Form) partsField() (int, bool) {
-	at := slices.IndexFunc(f.fields, func(field reading.Field) bool { return field.Name == "parts" })
+	at := slices.IndexFunc(f.fields, func(field engine.Field) bool { return field.Name == "parts" })
 	return at, at != -1
 }
 
 // parts is what the parts field says now.
-func (f Form) parts() []reading.Part {
+func (f Form) parts() []engine.Part {
 	at, ok := f.partsField()
 	if !ok {
 		return nil
 	}
-	return reading.PartsIn(f.fields[at].Value)
+	return engine.PartsIn(f.fields[at].Value)
 }
 
 // withParts writes parts back into the field.
-func (f Form) withParts(parts []reading.Part) Form {
+func (f Form) withParts(parts []engine.Part) Form {
 	if at, ok := f.partsField(); ok {
 		f.fields = slices.Clone(f.fields)
-		f.fields[at].Value = reading.PartsWritten(parts)
+		f.fields[at].Value = engine.PartsWritten(parts)
 	}
 	return f
 }
@@ -48,7 +47,7 @@ func (f Form) onParts() bool {
 func (f Form) lines() int { return len(f.parts()) + 1 }
 
 // isStruck says whether a part is struck out.
-func (f Form) isStruck(part reading.Part) bool {
+func (f Form) isStruck(part engine.Part) bool {
 	return part.Number != 0 && slices.Contains(f.struck, part.Number)
 }
 
@@ -100,7 +99,7 @@ func (w Window) tickingPart() Window {
 	}
 	before := w.form
 	w = w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(part.Number), "state": reading.PartState(part.Done)}})
+		"number": strconv.Itoa(part.Number), "state": engine.PartState(part.Done)}})
 	// Refused, the box stays as it was: it says what the store holds.
 	if w.err != nil {
 		w.form = before.ticking()
@@ -111,16 +110,16 @@ func (w Window) tickingPart() Window {
 }
 
 // openedWith tells what the form opened with that a part is done, or not.
-func (f Form) openedWith(part reading.Part) Form {
+func (f Form) openedWith(part engine.Part) Form {
 	at, _ := f.partsField()
-	opened := reading.PartsIn(f.opened[at])
+	opened := engine.PartsIn(f.opened[at])
 	for i := range opened {
 		if opened[i].Number == part.Number {
 			opened[i].Done = part.Done
 		}
 	}
 	f.opened = slices.Clone(f.opened)
-	f.opened[at] = reading.PartsWritten(opened)
+	f.opened[at] = engine.PartsWritten(opened)
 	return f
 }
 
@@ -175,7 +174,7 @@ func (f Form) committing() Form {
 		parts[f.partAt].Title = f.named.Reads()
 		return f.withParts(parts)
 	}
-	f = f.withParts(append(parts, reading.Part{Title: f.named.Reads()}))
+	f = f.withParts(append(parts, engine.Part{Title: f.named.Reads()}))
 	f.partAt, f.writingPart, f.named = f.lines()-1, true, Written{}
 	return f
 }
@@ -268,8 +267,8 @@ func (w Window) PartOn() (string, bool) {
 }
 
 // PartsGone is what is struck out, until the form is saved.
-func (w Window) PartsGone() []reading.Part {
-	return slices.DeleteFunc(w.form.parts(), func(part reading.Part) bool { return !w.form.isStruck(part) })
+func (w Window) PartsGone() []engine.Part {
+	return slices.DeleteFunc(w.form.parts(), func(part engine.Part) bool { return !w.form.isStruck(part) })
 }
 
 // onParts is what a key does with the keyboard on the list of parts, and

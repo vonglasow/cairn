@@ -9,7 +9,6 @@ import (
 
 	"cairn/internal/engine"
 	"cairn/internal/gui"
-	"cairn/internal/reading"
 )
 
 // The window it opens on, before anybody has dragged it anywhere. Wide enough
@@ -24,7 +23,7 @@ const (
 // drive the command without a display: what is worth testing is that the store
 // is found and handed over, and a window that needs a screen is not something a
 // test should need.
-var openGui = func(work reading.Work, width, height int) error {
+var openGui = func(work engine.Work, width, height int) error {
 	gui.Run(work, width, height)
 	return nil
 }

@@ -3,12 +3,11 @@ package gui
 // What a card says, worked out before anything is drawn.
 
 import (
+	"cairn/internal/engine"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"cairn/internal/reading"
 )
 
 // perGlyph is how wide one character is reckoned to be, in dp, at the size a
@@ -43,7 +42,7 @@ func TitleOf(title string, width int) string {
 // What is left out is counted rather than dropped in silence: a card saying
 // two of five labels while reading like it says all of them is a card that
 // misleads about the work.
-func Tagged(c reading.Card, width int) string {
+func Tagged(c engine.Card, width int) string {
 	room := width / perSmallGlyph
 	shown := 0
 	// Grown one at a time, counting the rest as it goes: what is left over is
@@ -91,7 +90,7 @@ const (
 
 // FocusEye is where a card's eye is drawn in its number line, and whether it
 // has one: only a card in focus does.
-func FocusEye(c reading.Card, number Box) (Box, bool) {
+func FocusEye(c engine.Card, number Box) (Box, bool) {
 	if !c.InFocus {
 		return Box{}, false
 	}
@@ -100,7 +99,7 @@ func FocusEye(c reading.Card, number Box) (Box, bool) {
 
 // NumberText is where a card's number is written: along the number line, or
 // after the eye when there is one.
-func NumberText(c reading.Card, number Box) Box {
+func NumberText(c engine.Card, number Box) Box {
 	if _, ok := FocusEye(c, number); !ok {
 		return number
 	}
@@ -110,14 +109,14 @@ func NumberText(c reading.Card, number Box) Box {
 
 // Numbered is a card's number line: its number. What a card cannot say for
 // itself is drawn beside it — see FocusEye.
-func Numbered(c reading.Card) string { return strconv.Itoa(c.Number) }
+func Numbered(c engine.Card) string { return strconv.Itoa(c.Number) }
 
 // Carried is what a card says of what it holds but does not show: that there
 // is a description to read, and how far the parts under it have got. The two
 // facts the terminal's marks carry that a window had no other way of saying —
 // the rest of them it says by where a card sits, what colour its edge is, and
 // the labels written across it.
-func Carried(c reading.Card, g Glyphs) string {
+func Carried(c engine.Card, g Glyphs) string {
 	said := ""
 	if c.Described() {
 		said = g.Described
@@ -149,7 +148,7 @@ func Marks() Glyphs { return Glyphs{Described: "≡", SubTasks: "▪"} }
 //
 // The share is rounded down: an objective one task short of finished must not
 // read 100%.
-func Counted(g reading.Goal) string {
+func Counted(g engine.Goal) string {
 	if g.Total == 0 {
 		return ""
 	}
@@ -168,7 +167,7 @@ func Counted(g reading.Goal) string {
 //
 // A part typed into a form and not yet saved has no number, and reads as its
 // title alone: a "#0" would be a number nobody gave it.
-func SubLine(c reading.Card) string {
+func SubLine(c engine.Card) string {
 	if c.Number == 0 {
 		return c.Title
 	}
@@ -180,11 +179,11 @@ func SubLine(c reading.Card) string {
 // where the terminal has written it on the card all along. Deciding what to do
 // without knowing what is due is not deciding.
 //
-// The answer is reading.Deadline's and not a second reckoning of its own: two
+// The answer is engine.Deadline's and not a second reckoning of its own: two
 // boards saying different things about the same day would be worse than one
 // board saying nothing.
-func Due(c reading.Card, now time.Time) (said string, late bool) {
-	text, show, over := reading.CardDeadline(c, now)
+func Due(c engine.Card, now time.Time) (said string, late bool) {
+	text, show, over := engine.CardDeadline(c, now)
 	if !show {
 		return "", false
 	}
@@ -194,7 +193,7 @@ func Due(c reading.Card, now time.Time) (said string, late bool) {
 // Spent is how long a task was reckoned to take against how long it has, and
 // whether it has gone past. Empty when neither was ever written: a card saying
 // "0h/0h" says nothing and takes the room of something that would.
-func Spent(c reading.Card) (said string, over bool) {
+func Spent(c engine.Card) (said string, over bool) {
 	if c.Spent == "" && c.Estimate == "" {
 		return "", false
 	}
@@ -215,17 +214,17 @@ const ServesMark = "◇"
 
 // Serves is what a task contributes to, which the detail carried and no
 // overview ever summarised.
-func Serves(c reading.Card) string {
+func Serves(c engine.Card) string {
 	if len(c.Objectives) == 0 {
 		return ""
 	}
-	return ServesMark + reading.Numbers(c.Objectives)
+	return ServesMark + engine.Numbers(c.Objectives)
 }
 
 // Standing is the mark an objective's card wears for where it stands. An
 // objective was drawn exactly like a task, so a list mixed what is running with
 // what was abandoned and nothing on either said which was which.
-func Standing(g reading.Goal) string {
+func Standing(g engine.Goal) string {
 	switch g.State {
 	case "active":
 		return "▶"
@@ -246,7 +245,7 @@ func Standing(g reading.Goal) string {
 // One string and one warning rather than a piece per ink: a card has one row
 // left and the eye reads it as one run. The warning is late or over, which are
 // the two states that ask to be acted on.
-func Facts(c reading.Card, now time.Time) (said string, warn bool) {
+func Facts(c engine.Card, now time.Time) (said string, warn bool) {
 	// Waiting on nothing any more is the one thing about a blocked task that
 	// has to be acted on, and it crowds out the rest: a task that can start is
 	// not asking how long it was reckoned to take.
@@ -271,7 +270,7 @@ func Facts(c reading.Card, now time.Time) (said string, warn bool) {
 // Standings is where an objective stands, put where a card writes its labels.
 // An objective was drawn exactly like a task and said nothing about whether it
 // was running, on hold, reached or abandoned — so a list mixed all four.
-func Standings(g reading.Goal) []string {
+func Standings(g engine.Goal) []string {
 	if mark := Standing(g); mark != "" {
 		return []string{mark + " " + g.State}
 	}

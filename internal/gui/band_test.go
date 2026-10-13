@@ -1,9 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // The band and its three lanes, and the edges of every rectangle. A point one
@@ -72,9 +71,9 @@ func TestWhichLaneAPointFallsIn(t *testing.T) {
 func TestClickingACardInALaneChoosesIt(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Client's answer", State: "blocked"},
-		reading.Card{Number: 2, Title: "Handed over", State: "watching"},
-		reading.Card{Number: 3, Title: "Not now", State: "paused"})
+		engine.Card{Number: 1, Title: "Client's answer", State: "blocked"},
+		engine.Card{Number: 2, Title: "Handed over", State: "watching"},
+		engine.Card{Number: 3, Title: "Not now", State: "paused"})
 
 	for lane, number := range map[int]int{0: 1, 1: 2, 2: 3} {
 		box := w.Layout().LaneCardAt(lane, 0, 0)
@@ -89,7 +88,7 @@ func TestClickingACardInALaneChoosesIt(t *testing.T) {
 // have been there.
 func TestClickingAnEmptyLaneChoosesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	box := w.Layout().LaneCardAt(1, 0, 0)
 	if got := w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); got.Chosen() != 0 {
@@ -105,7 +104,7 @@ func TestClickingAnEmptyLaneChoosesNothing(t *testing.T) {
 // work starts moving again.
 func TestDraggingOutOfALaneReturnsATaskToAColumn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	from := w.Layout().LaneCardAt(0, 0, 0)
 	onto := w.Layout().CardAt(2, 0, 0)
@@ -126,7 +125,7 @@ func TestDraggingOutOfALaneReturnsATaskToAColumn(t *testing.T) {
 // columns — changes nothing rather than guessing.
 func TestADropOnNothingChangesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 
 	from := middleOf(w, 0, 0)
 	w = w.PressAt(from)
@@ -144,7 +143,7 @@ func TestADropOnNothingChangesNothing(t *testing.T) {
 // Letting go having taken hold of nothing is nothing at all.
 func TestLettingGoOfNothingDoesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 
 	w = w.PressAt(Point{X: 0, Y: 0})
 	w = w.MoveTo(middleOf(w, 1, 0))
@@ -160,8 +159,8 @@ func TestLettingGoOfNothingDoesNothing(t *testing.T) {
 func TestDroppingBelowEverythingPutsItLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "backlog"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "backlog"})
 
 	onto := w.Layout().CardAt(1, 3, 0)
 	w = w.PressAt(middleOf(w, 0, 0))
@@ -181,9 +180,9 @@ func TestDroppingBelowEverythingPutsItLast(t *testing.T) {
 // asked for.
 func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 20; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(f, many...)
 
@@ -207,9 +206,9 @@ func TestScrollingSettlesBetweenItsTwoEnds(t *testing.T) {
 // leaves the columns above it where they were.
 func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 7; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "watching"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "watching"})
 	}
 	w := holding(f, many...)
 
@@ -233,7 +232,7 @@ func TestALaneSettlesBetweenItsTwoEnds(t *testing.T) {
 // A point in no column at all scrolls nothing.
 func TestScrollingOverNothingScrollsNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if got := w.Scroll(Point{X: 0, Y: 0}, CardHeight); got.scroll != w.scroll {
 		t.Error("a point in no column scrolled one")
 	}
@@ -244,8 +243,8 @@ func TestScrollingOverNothingScrollsNothing(t *testing.T) {
 func TestJustPastTheLastCardChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "todo"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "todo"})
 
 	last := w.Layout().CardAt(1, 1, 0)
 	if got := w.clicked(Point{X: last.X + 10, Y: last.Y + 10}); got.Chosen() != 2 {
@@ -263,9 +262,9 @@ func TestJustPastTheLastCardChoosesNothing(t *testing.T) {
 func TestTheSlotJustPastTheLastCardMeansLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "todo"},
-		reading.Card{Number: 3, Title: "Newcomer", State: "backlog"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "todo"},
+		engine.Card{Number: 3, Title: "Newcomer", State: "backlog"})
 
 	drop := func(slot int) map[string]string {
 		f.asked = nil

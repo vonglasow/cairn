@@ -1,14 +1,13 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // Where every piece of every panel goes. This exists because of what mutation
@@ -186,7 +185,7 @@ func TestTheParcelsAtOneSize(t *testing.T) {
 	// The form of a task being edited: a short field before the description,
 	// one after it, the description and the parts, with the rows each is
 	// given written as the height of a box, and the rule over the offers.
-	edited := reading.EditFields(reading.Card{Number: 1}, nil)
+	edited := engine.EditFields(engine.Card{Number: 1}, nil)
 	for _, at := range []int{0, 1, 2, len(edited) - 1} {
 		name, value, rows := FormPlace(over, edited, at)
 		say("form name "+edited[at].Name, name)
@@ -577,7 +576,7 @@ func TestAFieldIsABoxWithRoomInsideIt(t *testing.T) {
 // parts of a task being edited — a field the test did not ask about — that
 // ran over the offers.
 func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
-	many := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	many := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
 	many[len(many)-1].Value = strings.Repeat("#2 [ ] a part\n", 30)
 	for high := Shortest; high <= 1000; high += 7 {
 		box := Over(Narrowest, high)
@@ -585,11 +584,11 @@ func TestEveryFieldFitsInThePanelAboveWhatItOffers(t *testing.T) {
 		if offers := PanelOfferAt(box, 0); rule.Y+rule.H > offers.Y {
 			t.Errorf("the rule at %d runs into the offers at %d", rule.Y, offers.Y)
 		}
-		for _, fields := range [][]reading.Field{
-			reading.TaskFields(reading.Card{}),
-			reading.EditFields(reading.Card{Number: 1}, nil),
+		for _, fields := range [][]engine.Field{
+			engine.TaskFields(engine.Card{}),
+			engine.EditFields(engine.Card{Number: 1}, nil),
 			many,
-			reading.GoalFields(reading.Goal{}),
+			engine.GoalFields(engine.Goal{}),
 		} {
 			for i := range fields {
 				_, value, rows := FormPlace(box, fields, i)
@@ -937,9 +936,9 @@ func TestExactlyWhereTheWindowOfShownLinesStarts(t *testing.T) {
 func TestAServingCardSitsByItsRankAndItsScroll(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
-		Cards: []reading.Card{{Number: 1, Title: "Write the spec", Objectives: []int{1}}},
-		Goals: []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}},
+	w.snap = engine.Snapshot{
+		Cards: []engine.Card{{Number: 1, Title: "Write the spec", Objectives: []int{1}}},
+		Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}},
 	}
 	w.chosen, w.chosenGoal, w.screen = 1, true, OnForm
 
@@ -1060,7 +1059,7 @@ func TestATileBreathesOnBothSides(t *testing.T) {
 // section to a row, then the parts. The fields of one section share a line.
 func TestAFormReadsTitleDescriptionSectionsThenParts(t *testing.T) {
 	over := Over(1200, 800)
-	fields := reading.EditFields(reading.Card{Number: 1}, nil)
+	fields := engine.EditFields(engine.Card{Number: 1}, nil)
 	top := map[string]int{}
 	for i, field := range fields {
 		_, value, _ := FormPlace(over, fields, i)
@@ -1092,7 +1091,7 @@ func TestAFormReadsTitleDescriptionSectionsThenParts(t *testing.T) {
 func TestTheLongFieldsOfAFormAreAsTallAsWhatTheyHold(t *testing.T) {
 	over := Over(1200, 900)
 	rowsOf := func(description, parts string) (int, int) {
-		fields := reading.EditFields(reading.Card{Number: 1, Description: description}, nil)
+		fields := engine.EditFields(engine.Card{Number: 1, Description: description}, nil)
 		fields[len(fields)-1].Value = parts
 		_, _, said := FormPlace(over, fields, 1)
 		_, _, listed := FormPlace(over, fields, len(fields)-1)
@@ -1275,10 +1274,10 @@ func TestAPartCarriesABoxBeforeItsName(t *testing.T) {
 // was the only difference: a part to do read as one finished with.
 func TestWhatIsLeftIsWrittenToBeRead(t *testing.T) {
 	skin := Dark()
-	if got := SubInk(skin, reading.Card{State: "todo"}); got != skin.Ink {
+	if got := SubInk(skin, engine.Card{State: "todo"}); got != skin.Ink {
 		t.Errorf("a part to do is written in %v, want the reading ink", got)
 	}
-	if got := SubInk(skin, reading.Card{State: "done"}); got != skin.Faint {
+	if got := SubInk(skin, engine.Card{State: "done"}); got != skin.Faint {
 		t.Errorf("a part done is written in %v, want the faint ink", got)
 	}
 }
@@ -1322,7 +1321,7 @@ func TestTheContextLineSitsBesideTheOffers(t *testing.T) {
 // a part nobody ticks, and a paragraph is read just as well by scrolling.
 func TestThePartsAreGivenTheirRoomBeforeTheDescriptionGrows(t *testing.T) {
 	over := Over(Narrowest, Shortest)
-	fields := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	fields := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
 	at := len(fields) - 1
 	fields[at].Value = "#2 [ ] one\n#3 [x] two"
 	_, _, said := FormPlace(over, fields, 1)
@@ -1339,7 +1338,7 @@ func TestThePartsAreGivenTheirRoomBeforeTheDescriptionGrows(t *testing.T) {
 // screen uses: on a tall window it stops under the parts, rather than under a
 // floor of empty ground, and every field stays where the taller panel put it.
 func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
-	fields := reading.EditFields(reading.Card{Number: 1}, nil)
+	fields := engine.EditFields(engine.Card{Number: 1}, nil)
 	at := len(fields) - 1
 	tall, short := Over(1512, 945), FormOver(1512, 945, fields)
 	if short.X != tall.X || short.Y != tall.Y || short.W != tall.W || short.H >= tall.H {
@@ -1367,7 +1366,7 @@ func TestAFormIsAsTallAsWhatItHolds(t *testing.T) {
 
 // The title is written as large as a panel's heading, and nothing else is.
 func TestOnlyTheTitleOfAFormIsWrittenLarge(t *testing.T) {
-	for _, field := range reading.EditFields(reading.Card{Number: 1}, nil) {
+	for _, field := range engine.EditFields(engine.Card{Number: 1}, nil) {
 		want := reads
 		if field.Name == "title" {
 			want = heading
@@ -1382,10 +1381,10 @@ func TestOnlyTheTitleOfAFormIsWrittenLarge(t *testing.T) {
 // ends less than a line short of the rule, whatever the panel and whichever
 // form. A row counted too many or too few takes a line from it.
 func TestAFormThatWantsMoreThanItHasFillsItsPanel(t *testing.T) {
-	goal := reading.GoalFields(reading.Goal{Description: strings.Repeat("a line\n", 40)})
-	task := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+	goal := engine.GoalFields(engine.Goal{Description: strings.Repeat("a line\n", 40)})
+	task := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
 	task[len(task)-1].Value = strings.Repeat("#2 [ ] a part\n", 30)
-	for _, fields := range [][]reading.Field{goal, task} {
+	for _, fields := range [][]engine.Field{goal, task} {
 		for high := 420; high <= 640; high += 5 {
 			over := Box{X: 0, Y: 0, W: 900, H: high}
 			places, _, end := formLayout(over, fields)
@@ -1405,7 +1404,7 @@ func TestAFormThatWantsMoreThanItHasFillsItsPanel(t *testing.T) {
 
 // A form with no long field at all is laid out all the same.
 func TestAFormWithNoLongFieldIsLaidOut(t *testing.T) {
-	fields := []reading.Field{{Name: "title", Arg: "title"}, {Name: "column", Arg: "state"}}
+	fields := []engine.Field{{Name: "title", Arg: "title"}, {Name: "column", Arg: "state"}}
 	over := Over(1200, 800)
 	_, title, _ := FormPlace(over, fields, 0)
 	_, column, _ := FormPlace(over, fields, 1)
@@ -1503,7 +1502,7 @@ func TestATextInABoxIsWrappedInsideItsPadding(t *testing.T) {
 // row in the left column of an opened task left a column four letters wide.
 func TestEveryShortFieldOfAFormHasRoomToBeRead(t *testing.T) {
 	for _, box := range []Box{FormFields(Over(Narrowest, Shortest)), Over(Narrowest, Shortest), FormFields(Over(1920, 1200))} {
-		fields := reading.EditFields(reading.Card{Number: 1}, nil)
+		fields := engine.EditFields(engine.Card{Number: 1}, nil)
 		for i, field := range fields {
 			if field.Long || field.Arg == "title" {
 				continue
@@ -1546,7 +1545,7 @@ func TestTheDescriptionGivesWayToThePartsFewest(t *testing.T) {
 // a list nothing of which is in sight is a list nobody can work.
 func TestThePartsKeepALineInTheSmallestWindow(t *testing.T) {
 	for _, box := range []Box{Over(Narrowest, Shortest), FormFields(Over(Narrowest, Shortest))} {
-		fields := reading.EditFields(reading.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
+		fields := engine.EditFields(engine.Card{Number: 1, Description: strings.Repeat("a line\n", 40)}, nil)
 		at := len(fields) - 1
 		fields[at].Value = strings.Repeat("#2 [ ] a part\n", 12)
 		_, value, rows := FormPlace(box, fields, at)

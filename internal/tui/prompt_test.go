@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // The prompt at the foot of the board: a search, a command the engine knows,
@@ -48,7 +47,7 @@ func TestAKeyThatMeansNothingAtAPromptIsIgnored(t *testing.T) {
 
 func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo", Description: "about the spec"},
 		{Number: 2, Title: "Two", State: "todo", Because: "the client"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -65,7 +64,7 @@ func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 
 func TestSearchingTheObjectives(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{
+	f.goals = []engine.Goal{
 		{Number: 1, Title: "Ship the desktop board", State: "active"},
 		{Number: 2, Title: "Cut the onboarding time", State: "active"},
 	}

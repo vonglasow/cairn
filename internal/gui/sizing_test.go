@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 )
 
 // listOn opens the list of the field named, on a task's form.
-func listOn(t *testing.T, arg string, cards ...reading.Card) Window {
+func listOn(t *testing.T, arg string, cards ...engine.Card) Window {
 	t.Helper()
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -27,9 +27,9 @@ func listOn(t *testing.T, arg string, cards ...reading.Card) Window {
 // and hung under the field it answers, the way a field's list opens anywhere
 // else. It used to take most of the window whatever it held.
 func TestAListIsTheSizeOfWhatItHolds(t *testing.T) {
-	w := listOn(t, "priority", reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	w := listOn(t, "priority", engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	box := w.ChoosingBox()
-	if got := ChoosingRows(box); got != len(reading.Priorities()) {
+	if got := ChoosingRows(box); got != len(engine.Priorities()) {
 		t.Errorf("four priorities are drawn in a run of %d rows", got)
 	}
 	if over := Over(w.width, w.height); box.W > over.W/2 {
@@ -65,9 +65,9 @@ func TestAListIsTheSizeOfWhatItHolds(t *testing.T) {
 // A list longer than the window has room for stops at the panel's foot and
 // scrolls; one with nothing in it keeps a row to say so.
 func TestALongListStopsWithinTheWindow(t *testing.T) {
-	cards := []reading.Card{{Number: 1, Title: "A", State: "todo"}}
+	cards := []engine.Card{{Number: 1, Title: "A", State: "todo"}}
 	for i := 2; i <= 60; i++ {
-		cards = append(cards, reading.Card{Number: i, Title: "Another task", State: "backlog"})
+		cards = append(cards, engine.Card{Number: i, Title: "Another task", State: "backlog"})
 	}
 	w := listOn(t, "parent", cards...)
 	box, over := w.ChoosingBox(), Over(w.width, w.height)
@@ -77,7 +77,7 @@ func TestALongListStopsWithinTheWindow(t *testing.T) {
 	if rows := ChoosingRows(box); rows >= len(w.Choosing()) || rows < 3 {
 		t.Errorf("sixty tasks are drawn in a run of %d rows", rows)
 	}
-	empty := listOn(t, "objective", reading.Card{Number: 1, Title: "A", State: "todo"})
+	empty := listOn(t, "objective", engine.Card{Number: 1, Title: "A", State: "todo"})
 	if got := ChoosingRows(empty.ChoosingBox()); got != 1 {
 		t.Errorf("an empty list has a run of %d rows", got)
 	}
@@ -107,7 +107,7 @@ func TestTheBackupsListIsTheSizeOfTheBackups(t *testing.T) {
 // offers a hand's width below its last field. The history beside it is as
 // tall as the fields, and stays inside the panel.
 func TestAnOpenFormIsTheHeightOfItsFields(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	panel, over := w.formPanel(), Over(w.width, w.height)
 	_, _, end := formLayout(FormFields(over), w.Form().Fields())
@@ -126,9 +126,9 @@ func TestAnOpenFormIsTheHeightOfItsFields(t *testing.T) {
 // one too tall for that too starts at the panel's top. A list wider than the
 // room right of its field ends at the panel's right edge.
 func TestAListOpensWhereItHasRoom(t *testing.T) {
-	cards := []reading.Card{{Number: 1, Title: "A", State: "todo"}}
+	cards := []engine.Card{{Number: 1, Title: "A", State: "todo"}}
 	for i := 2; i <= 6; i++ {
-		cards = append(cards, reading.Card{Number: i, Title: "Another", State: "backlog"})
+		cards = append(cards, engine.Card{Number: i, Title: "Another", State: "backlog"})
 	}
 	w := listOn(t, "parent", cards...)
 	box, frame, over := w.ChoosingBox(), fieldFrame(w), Over(w.width, w.height)
@@ -139,14 +139,14 @@ func TestAListOpensWhereItHasRoom(t *testing.T) {
 		t.Errorf("the list is %+v, over a field at %+v", box, frame)
 	}
 	for i := 7; i <= 60; i++ {
-		cards = append(cards, reading.Card{Number: i, Title: "Another", State: "backlog"})
+		cards = append(cards, engine.Card{Number: i, Title: "Another", State: "backlog"})
 	}
 	if got := listOn(t, "parent", cards...).ChoosingBox(); got.Y != over.Y {
 		t.Errorf("a list too tall for either side starts at %d, not the panel's top %d", got.Y, over.Y)
 	}
-	long := reading.Card{Number: 2, Title: strings.Repeat("a long title ", 6), State: "backlog"}
-	right := listOn(t, "objective", reading.Card{Number: 1, Title: "A", State: "todo"}, long)
-	right.snap.Goals = []reading.Goal{{Number: 1, Title: strings.Repeat("an objective worth a long name ", 3), State: "active"}}
+	long := engine.Card{Number: 2, Title: strings.Repeat("a long title ", 6), State: "backlog"}
+	right := listOn(t, "objective", engine.Card{Number: 1, Title: "A", State: "todo"}, long)
+	right.snap.Goals = []engine.Goal{{Number: 1, Title: strings.Repeat("an objective worth a long name ", 3), State: "active"}}
 	right = right.choosingList()
 	if got := right.ChoosingBox(); got.X+got.W != over.X+over.W || got.X >= fieldFrame(right).X {
 		t.Errorf("a wide list is %+v beside a field at %+v, in %+v", got, fieldFrame(right), over)
@@ -156,8 +156,8 @@ func TestAListOpensWhereItHasRoom(t *testing.T) {
 // A row's words and the state written hard right of them have the line to
 // themselves and no more: the widest row sets the width, to the pixel.
 func TestAListIsAsWideAsItsWidestRow(t *testing.T) {
-	long := reading.Card{Number: 2, Title: strings.Repeat("a long title ", 6), State: "backlog"}
-	w := listOn(t, "parent", reading.Card{Number: 1, Title: "A", State: "todo"}, long)
+	long := engine.Card{Number: 2, Title: strings.Repeat("a long title ", 6), State: "backlog"}
+	w := listOn(t, "parent", engine.Card{Number: 1, Title: "A", State: "todo"}, long)
 	var widest Choice
 	for _, one := range w.Choosing() {
 		if one.Number == 2 {

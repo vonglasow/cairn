@@ -1,10 +1,9 @@
 package tui
 
 import (
+	"cairn/internal/engine"
 	"strings"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 func TestStandingGlyph(t *testing.T) {
@@ -43,7 +42,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestGoalRows(t *testing.T) {
-	g := reading.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
+	g := engine.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
 	rows := standing(newFake()).with(plainSkin).goalRows(g, 60)
 	if len(rows) != 4 {
 		t.Fatalf("an objective's card has %d rows, want 4", len(rows))
@@ -60,21 +59,21 @@ func TestGoalRows(t *testing.T) {
 }
 
 func TestGoalWithNothingUnderItSaysNoCount(t *testing.T) {
-	rows := standing(newFake()).with(plainSkin).goalRows(reading.Goal{Number: 1, Title: "Nothing yet"}, 60)
+	rows := standing(newFake()).with(plainSkin).goalRows(engine.Goal{Number: 1, Title: "Nothing yet"}, 60)
 	if strings.Contains(rows[3], "0/0") {
 		t.Fatalf("an objective nothing serves claimed a count: %q", rows[3])
 	}
 }
 
 func TestGoalIsAlwaysSixRows(t *testing.T) {
-	drawn := standing(newFake()).goalCard(reading.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}, 60)
+	drawn := standing(newFake()).goalCard(engine.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}, 60)
 	if got := len(strings.Split(drawn, "\n")); got != CardHeight {
 		t.Fatalf("an objective drew %d rows, want %d:\n%s", got, CardHeight, drawn)
 	}
 }
 
 func TestTheGoalUnderTheCursorIsDrawnApart(t *testing.T) {
-	g := reading.Goal{Number: 1, Title: "One"}
+	g := engine.Goal{Number: 1, Title: "One"}
 	b := standing(newFake())
 	b.goal = 1
 	elsewhere := standing(newFake())
@@ -95,7 +94,7 @@ func TestABarOfOneColumn(t *testing.T) {
 }
 
 func TestAGoalWithNothingBesideItsBar(t *testing.T) {
-	if got := strip(standing(newFake()).goalFacts(reading.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
+	if got := strip(standing(newFake()).goalFacts(engine.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
 		t.Fatalf("a bar with nothing beside it trailed something: %q", got)
 	}
 }

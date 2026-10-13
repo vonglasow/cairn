@@ -1,4 +1,4 @@
-package reading
+package engine
 
 // What a card says about a task without knowing how a card is drawn. A
 // terminal draws these facts in cells and a window draws them in pixels; that
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 )
 
 // soon is how many days ahead a deadline starts being worth a card's width.
@@ -132,7 +131,7 @@ func Tallied(parts []Card) string {
 // engine's, over what the engine said a search looks in when the card was
 // read: once it lived here three times over, and the copies drifted.
 func ReachesCard(c Card, query string) bool {
-	return engine.Reaches(c.Said, query)
+	return Reaches(c.Said, query)
 }
 
 // Finished says whether a card is done. One line, and it earns being here

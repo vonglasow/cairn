@@ -1,11 +1,10 @@
 package cli
 
 import (
+	"cairn/internal/engine"
 	"errors"
 	"strings"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // The `gui` command, without a display. What is worth testing is that it finds
@@ -22,7 +21,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work reading.Work, width, height int) error {
+	openGui = func(work engine.Work, width, height int) error {
 		handed = true
 		_, readable = work.Version()
 		if width <= 0 || height <= 0 {
@@ -47,7 +46,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(reading.Work, int, int) error { return errors.New("no display here") }
+	openGui = func(engine.Work, int, int) error { return errors.New("no display here") }
 	t.Cleanup(func() { openGui = was })
 
 	got := run(t, "gui")

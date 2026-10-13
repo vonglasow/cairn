@@ -1,4 +1,4 @@
-package reading
+package engine
 
 // What an objective says about itself, and the order a list of them goes in.
 // None of it is about drawing: the standing an objective is in, where that
@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/objective"
 )
 
@@ -50,7 +49,7 @@ func Sorted(goals []Goal) []Goal {
 // ReachesGoal says whether what was typed reaches an objective, by the same
 // rule a card is reached by.
 func ReachesGoal(g Goal, query string) bool {
-	return engine.Reaches(g.Said, query)
+	return Reaches(g.Said, query)
 }
 
 // Counted is how much of an objective is done, the way a board writes it.

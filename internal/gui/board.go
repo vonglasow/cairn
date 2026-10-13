@@ -1,10 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"slices"
 	"strconv"
-
-	"cairn/internal/reading"
 )
 
 // What the board is showing and what a card can be asked to do: a search
@@ -12,20 +11,20 @@ import (
 // lane or a page is.
 
 // Showing is the work narrowed to what a search reaches, which is what
-// everything draws from. With no search it is the whole reading.
+// everything draws from. With no search it is the whole engine.
 //
 // The narrowing is done here and not asked of the store: a search is a way of
 // looking, and a board that asked the store to search would be a board that
 // waits to draw.
-func (w Window) Showing() reading.Snapshot {
+func (w Window) Showing() engine.Snapshot {
 	if w.looking.Empty() {
 		return w.snap
 	}
-	found := reading.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
+	found := engine.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
 	// What a board shows of a search: a part that matched answers as the work
 	// it is part of, since a sub-task has no card of its own here to appear on.
-	found.Cards = reading.Found(w.snap.Cards, w.looking.Reads(), w.archived)
-	found.Goals = reading.FoundGoals(w.snap.Goals, w.looking.Reads())
+	found.Cards = engine.Found(w.snap.Cards, w.looking.Reads(), w.archived)
+	found.Goals = engine.FoundGoals(w.snap.Goals, w.looking.Reads())
 	return found
 }
 
@@ -73,7 +72,7 @@ func (w Window) working() Window {
 	if !found {
 		return w
 	}
-	return w.asking(reading.FocusOp(card), reading.Numbered(w.chosen))
+	return w.asking(engine.FocusOp(card), engine.Numbered(w.chosen))
 }
 
 // chosenIsArchived says whether the card chosen is one off the board.
@@ -88,7 +87,7 @@ func (w Window) puttingAway() Window {
 	if !found {
 		return w
 	}
-	return w.asking(reading.AwayOp(card), reading.Numbered(w.chosen))
+	return w.asking(engine.AwayOp(card), engine.Numbered(w.chosen))
 }
 
 // LaneSays is what a lane of the band writes above itself: what it is, and how

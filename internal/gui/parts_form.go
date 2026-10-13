@@ -1,9 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"slices"
-
-	"cairn/internal/reading"
 )
 
 // Where the fields of a form go, read from the top: the title across the whole
@@ -50,7 +49,7 @@ const (
 
 // FormPlace is where one field of a form is drawn: the name it is written
 // under, the line its value starts on, and how many rows it is given.
-func FormPlace(over Box, fields []reading.Field, at int) (name, value Box, rows int) {
+func FormPlace(over Box, fields []engine.Field, at int) (name, value Box, rows int) {
 	places, _, _ := formLayout(over, fields)
 	p := places[at]
 	return p.name, p.value, p.rows
@@ -59,7 +58,7 @@ func FormPlace(over Box, fields []reading.Field, at int) (name, value Box, rows 
 // FormHeads are the heads of the sections a form groups its short fields in,
 // each where it is written: a section none of the form's fields belong to has
 // no head.
-func FormHeads(over Box, fields []reading.Field) []Readable {
+func FormHeads(over Box, fields []engine.Field) []Readable {
 	_, heads, _ := formLayout(over, fields)
 	return heads
 }
@@ -67,7 +66,7 @@ func FormHeads(over Box, fields []reading.Field) []Readable {
 // FormSize is the size a field of a form is written at: the title as large as
 // a panel's heading, since it is what the task is called and the first thing
 // read; everything else at the size the board reads at.
-func FormSize(field reading.Field) int {
+func FormSize(field engine.Field) int {
 	if field.Arg == "title" {
 		return heading
 	}
@@ -107,7 +106,7 @@ type placed struct {
 }
 
 // sectionOf is which section a field is grouped in, and false for one in none.
-func sectionOf(field reading.Field) (int, bool) {
+func sectionOf(field engine.Field) (int, bool) {
 	for i, s := range formSections {
 		if slices.Contains(s.args, field.Arg) {
 			return i, true
@@ -129,7 +128,7 @@ const longHigh = 44
 // cut to what the form holds. Its top stays where it was, and so does every
 // field; what rises is the rule and the offers under it, so a tall window
 // does not put a floor of empty ground between the parts and Save.
-func FormOver(width, height int, fields []reading.Field) Box {
+func FormOver(width, height int, fields []engine.Field) Box {
 	over := Over(width, height)
 	return cutTo(over, over, fields)
 }
@@ -137,14 +136,14 @@ func FormOver(width, height int, fields []reading.Field) Box {
 // OpenOver is the panel a form open on something already there is drawn in:
 // cut the same way, to the fields laid out in its left column, with what
 // stands beside them as tall as they are.
-func OpenOver(width, height int, fields []reading.Field) Box {
+func OpenOver(width, height int, fields []engine.Field) Box {
 	over := Over(width, height)
 	return cutTo(over, FormFields(over), fields)
 }
 
 // cutTo cuts a panel to the fields laid out in a part of it, with room under
 // them for the rule and the offers.
-func cutTo(over, laid Box, fields []reading.Field) Box {
+func cutTo(over, laid Box, fields []engine.Field) Box {
 	_, _, end := formLayout(laid, fields)
 	over.H = min(over.H, end-over.Y+between+barHigh+padding)
 	return over
@@ -152,7 +151,7 @@ func cutTo(over, laid Box, fields []reading.Field) Box {
 
 // formLayout lays every field of a form out, and the heads of its sections,
 // and says where what it laid out ends.
-func formLayout(over Box, fields []reading.Field) ([]placed, []Readable, int) {
+func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 	places := make([]placed, len(fields))
 	left, full := over.X+padding, over.W-padding-padding
 	top := FirstRow(over)
@@ -236,9 +235,9 @@ func fieldsAcross(full int) int {
 }
 
 // rowsWanted is how many rows a long field asks for, from what it holds now.
-func rowsWanted(field reading.Field, wide int) int {
+func rowsWanted(field engine.Field, wide int) int {
 	if field.Name == "parts" {
-		tiles := len(reading.PartsIn(field.Value))*SubHeight + lineHigh
+		tiles := len(engine.PartsIn(field.Value))*SubHeight + lineHigh
 		return max(listedFewest, (tiles+lineHigh-1)/lineHigh)
 	}
 	inside := Inside(Framed(Box{W: wide, H: lineHigh}, 1))

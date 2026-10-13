@@ -28,7 +28,7 @@ afternoon to spend:
 - **Every size is worked out from the window** and pinned as a number in
   `parts*.go`, never in a drawing, where no test could judge it.
 - **What a board reads and asks is shared** with the terminal in
-  `internal/reading`; the window only draws and points.
+  `internal/engine`; the window only draws and points.
 - **It is tested without a screen**, by gestures on a `Window` value; the few
   tests that draw need a GPU, and a machine without one says so with
   `CAIRN_WINDOWLESS=1`.
@@ -93,7 +93,7 @@ a single binary, with no system webview and no second language; and
 denies it `store`, `database/sql`, `cobra`, `cli`, `mcp` — and `tui`: two
 surfaces do not reach each other, and `tui` and `mcp` are denied it in return.
 
-**What it does not write again**, because `internal/reading` already carries
+**What it does not write again**, because `internal/engine` already carries
 it: `Look` and the two listings turned into cards and goals, `Deal` into
 columns, `Stopped`, `Deadline`, `Sorted`, `TaskFields`/`GoalFields` with each
 field's `Arg`, `Asked` turning a saved form into what an operation takes, and
@@ -335,8 +335,8 @@ deadline, no label, no priority and no blocker among them.
 A modal dialog over the board, with *Save* and *Cancel*; `esc` cancels. One act
 in the trace per save.
 
-**The fields are not listed here.** They come from `reading.TaskFields(card)`
-and `reading.GoalFields(goal)`: the word a person reads, the closed set when
+**The fields are not listed here.** They come from `engine.TaskFields(card)`
+and `engine.GoalFields(goal)`: the word a person reads, the closed set when
 there is one, the field that wants more than one line, and `Arg` — what the
 engine calls the same thing. An attribute added to the engine and to the
 terminal's form arrives here with no line written.

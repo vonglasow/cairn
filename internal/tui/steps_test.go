@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 	"cairn/internal/task"
 )
 
@@ -32,7 +32,7 @@ func (w *world) bandNamed(name string) error {
 }
 
 func (w *world) bandCarries(want int) error {
-	_, band := reading.Deal(w.cards(), w.b.archived)
+	_, band := engine.Deal(w.cards(), w.b.archived)
 	if len(band) != want {
 		return fmt.Errorf("the band carries %d tasks, not %d", len(band), want)
 	}
@@ -40,7 +40,7 @@ func (w *world) bandCarries(want int) error {
 }
 
 func (w *world) columnCarries(column, title string) error {
-	found, ok := reading.At(w.columns(), lower(column))
+	found, ok := engine.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}
@@ -57,16 +57,16 @@ func lower(name string) string { return strings.ToLower(name) }
 
 // cards is what the board is drawing, read back through the same reading the
 // board itself draws from.
-func (w *world) cards() []reading.Card {
-	found, err := reading.Look(w.held)
+func (w *world) cards() []engine.Card {
+	found, err := engine.Look(w.held)
 	if err != nil {
 		w.t.Fatalf("looking: %v", err)
 	}
 	return found.Cards
 }
 
-func (w *world) columns() []reading.Column {
-	all, _ := reading.Deal(w.cards(), w.b.archived)
+func (w *world) columns() []engine.Column {
+	all, _ := engine.Deal(w.cards(), w.b.archived)
 	return all
 }
 
@@ -98,7 +98,7 @@ func (w *world) modeIs(name string) error {
 func (w *world) tabIs(name string) error { return w.mustSay(name) }
 
 func (w *world) cursorOnColumn(name string) error {
-	if got := reading.StateAt(w.b.Where().Column); got != lower(name) {
+	if got := engine.StateAt(w.b.Where().Column); got != lower(name) {
 		return fmt.Errorf("the cursor is on %q, not on %q", got, lower(name))
 	}
 	return nil
@@ -229,7 +229,7 @@ func (w *world) rowsOf(number int, check func([]string) error) error {
 }
 
 func (w *world) goalCardSays(number int, text string) error {
-	found, err := reading.Look(w.held)
+	found, err := engine.Look(w.held)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (w *world) boardDoesNotSay(text string) error {
 }
 
 func (w *world) columnReads(column, list string) error {
-	found, ok := reading.At(w.columns(), lower(column))
+	found, ok := engine.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}

@@ -1,4 +1,4 @@
-package reading
+package engine
 
 // What a board says before several things go in one act, and how it asks for
 // them. Read off what the board already holds: what would go with a task, what
@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-
-	"cairn/internal/engine"
 )
 
 // Flag is something one of several things about to go carries that somebody
@@ -60,7 +58,7 @@ func DeletingGoals(snap Snapshot, numbers []int) []Flag {
 	var flags []Flag
 	for _, n := range numbers {
 		if serving := len(Serving(snap.Cards, n)); serving > 0 {
-			flags = append(flags, Flag{Number: n, Says: counted(serving, "task serves", "tasks serve") + " it: it cannot go", Refused: true})
+			flags = append(flags, Flag{Number: n, Says: manyOf(serving, "task serves", "tasks serve") + " it: it cannot go", Refused: true})
 		}
 	}
 	return flags
@@ -80,7 +78,7 @@ func LeavingOut(numbers []int, flags []Flag, onlyRefused bool) []int {
 
 // Several is what several things taken together are asked of the engine as:
 // the first as the number, every other beside it.
-func Several(numbers []int) engine.Input {
+func Several(numbers []int) Input {
 	in := Numbered(numbers[0])
 	also := []string{}
 	for _, n := range numbers[1:] {
@@ -93,7 +91,7 @@ func Several(numbers []int) engine.Input {
 // goingWith names the parts a task takes with it.
 func goingWith(snap Snapshot, n int) []Flag {
 	if parts := len(Hanging(snap.Cards, n)); parts > 0 {
-		return []Flag{{Number: n, Says: "its " + counted(parts, "part goes", "parts go") + " with it"}}
+		return []Flag{{Number: n, Says: "its " + manyOf(parts, "part goes", "parts go") + " with it"}}
 	}
 	return nil
 }
@@ -106,8 +104,8 @@ func inFocus(snap Snapshot, n int) []Flag {
 	return nil
 }
 
-// counted is a count and what it counts, said in the one or the many.
-func counted(n int, one, many string) string {
+// manyOf is a count and what it counts, said in the one or the many.
+func manyOf(n int, one, many string) string {
 	if n == 1 {
 		return fmt.Sprintf("1 %s", one)
 	}

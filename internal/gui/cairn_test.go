@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,8 +10,6 @@ import (
 	"time"
 
 	"gioui.org/io/pointer"
-
-	"cairn/internal/reading"
 )
 
 // area is a polygon's area, by the shoelace.
@@ -152,7 +151,7 @@ func TestTheCairnLastsABreath(t *testing.T) {
 // its ground there — and its stones are, falling; once arrived it is the card.
 func TestTheCardsAreBuiltOnScreen(t *testing.T) {
 	start := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
-	cards := []reading.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
+	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
 	w := holding(newFake(), cards...).Born(start)
 	l := w.Layout()
 	last := PartsOf(l.CardAt(1, 2, 0)).Panel

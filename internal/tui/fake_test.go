@@ -11,7 +11,6 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 	"cairn/test"
@@ -22,8 +21,8 @@ import (
 // database, so a hundred of these run in the time one real store takes to open.
 
 type fake struct {
-	cards []reading.Card
-	goals []reading.Goal
+	cards []engine.Card
+	goals []engine.Goal
 	focus []int
 	acts  []trace.Act
 
@@ -98,13 +97,13 @@ func (f *fake) Version() (int64, error) { return f.version, f.fail }
 // person starts rather than at an empty screen.
 func standing(f *fake) Board {
 	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40)
-	// A card carries whether it is in focus, the way reading.Look marks it.
-	cards := make([]reading.Card, 0, len(f.cards))
+	// A card carries whether it is in focus, the way engine.Look marks it.
+	cards := make([]engine.Card, 0, len(f.cards))
 	for _, c := range f.cards {
 		c.InFocus = slices.Contains(f.focus, c.Number)
 		cards = append(cards, c)
 	}
-	b.snap = test.Searchable(reading.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
+	b.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
 	return b
 }
 
@@ -225,7 +224,7 @@ func pumpOne(b Board, cmd tea.Cmd) (Board, tea.Cmd) {
 // `prek run --all-files` failed the scenario "pushing a task down puts it one
 // place lower", because ten copies of the suite run at once there and a write
 // plus a re-read against real SQLite crossed five milliseconds — so the refresh
-// was thrown away and the board answered from its old reading. Nine runs in ten
+// was thrown away and the board answered from its old engine. Nine runs in ten
 // passed, which is exactly what a deadline set at the cost of the work looks
 // like.
 //

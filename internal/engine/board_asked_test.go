@@ -1,9 +1,7 @@
-package reading
+package engine
 
 import (
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 // Turning a form into what an operation takes belongs here and not to a
@@ -19,7 +17,7 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 		Labels:      []string{"api", "urgent"},
 	})
 
-	in := Asked(fields, engine.TaskEdit)
+	in := Asked(fields, TaskEdit)
 	if in.Given["desc"] != "why it matters" {
 		t.Errorf("desc = %q, want the description", in.Given["desc"])
 	}
@@ -39,7 +37,7 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 // A number nobody can read is not named at all, rather than sent for the
 // engine to refuse: one unreadable field would otherwise lose the whole form.
 func TestAskedLeavesANumberNobodyCanReadUnnamed(t *testing.T) {
-	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "nine"}}, engine.TaskEdit); in.Named("parent") {
+	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "nine"}}, TaskEdit); in.Named("parent") {
 		t.Fatal("a parent nobody can read was passed to the engine anyway")
 	}
 }
@@ -47,7 +45,7 @@ func TestAskedLeavesANumberNobodyCanReadUnnamed(t *testing.T) {
 // Empty is not unreadable. It reads as zero, which is how such a field is
 // cleared, and the engine reads it back the same way.
 func TestAskedNamesAnEmptyNumber(t *testing.T) {
-	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "  "}}, engine.TaskEdit); !in.Named("parent") {
+	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "  "}}, TaskEdit); !in.Named("parent") {
 		t.Fatal("emptying the parent said nothing at all")
 	}
 }

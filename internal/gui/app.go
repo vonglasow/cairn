@@ -9,6 +9,7 @@ package gui
 // anything wrong quietly.
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"image"
 	"io"
@@ -30,8 +31,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-
-	"cairn/internal/reading"
 )
 
 // Beat is how often the window asks the store whether anybody else has written
@@ -274,7 +273,7 @@ var tag = new(int)
 // It follows that this never returns on a desktop, and the process ends from
 // inside — which is why it hands nothing back, and why ended says what went
 // wrong itself rather than leaving it to a caller that is never returned to.
-func Run(work reading.Work, width, height int) {
+func Run(work engine.Work, width, height int) {
 	leaveConsole()
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
 		_ = os.Setenv("IBUS_ADDRESS", address)
@@ -297,7 +296,7 @@ func ended(err error, said io.Writer, exit func(int)) {
 }
 
 // loop is the window itself: the only code in this package no test runs.
-func loop(work reading.Work, width, height int) error {
+func loop(work engine.Work, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
 	traced := tracing(os.Getenv, os.Stderr)

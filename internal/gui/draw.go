@@ -23,7 +23,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 )
 
 // The sizes anything is written at, named so a drawing never carries a number
@@ -508,7 +508,7 @@ func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 }
 
 func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
 	}
@@ -600,7 +600,7 @@ func drawEye(gtx layout.Context, eye Box, ink color.NRGBA) {
 //
 // A card in a lane says nothing about which kind of stopped it is — the lane it
 // sits in says that, which is what a window has room for and a terminal has not.
-func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, chosen bool) {
+func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, chosen bool) {
 	parts := PartsOf(box)
 	fill(gtx, parts.Panel, skin.Panel)
 	fill(gtx, parts.Edge, skin.edgeOf(c))
@@ -633,7 +633,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 
 // Writing is the ink a card's title is written in. Archived, it is faint: what
 // is off the board is on screen because somebody asked, not because it is work.
-func (s Skin) Writing(c reading.Card) color.NRGBA {
+func (s Skin) Writing(c engine.Card) color.NRGBA {
 	if c.Archived {
 		return s.Faint
 	}
@@ -645,7 +645,7 @@ func (s Skin) Writing(c reading.Card) color.NRGBA {
 // stoneOf is the tone of the i-th stone of a card, the three taken in turn.
 func (s Skin) stoneOf(i int) color.NRGBA { return s.Stones[i%len(s.Stones)] }
 
-func (s Skin) edgeOf(c reading.Card) color.NRGBA {
+func (s Skin) edgeOf(c engine.Card) color.NRGBA {
 	if edge, known := s.Priority[c.Priority]; known && !c.Archived {
 		return edge
 	}
@@ -659,7 +659,7 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	// they were drawn over the band of tabs above them.
 	clipped := clip.Rect(rect(GoalsRun(l))).Push(gtx.Ops)
 	defer clipped.Pop()
-	for at, g := range reading.Sorted(w.Showing().Goals) {
+	for at, g := range engine.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
 		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen() || w.isTaken(g.Number))
 		// How much work it carries and how much is done, on the number line an
@@ -676,8 +676,8 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 // and priority where a task's go, and where it stands in the row a task's labels
 // take. Said once, here, rather than built inline wherever a goal is drawn — a
 // card's frame is the one this board draws, and an objective has no other.
-func goalFace(g reading.Goal) reading.Card {
-	return reading.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g)}
+func goalFace(g engine.Goal) engine.Card {
+	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g)}
 }
 
 // drawDragging is the card in mid-air and the line it would land on. Without
@@ -753,7 +753,7 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 // The strip carries done where a card's carries priority. It is the only fact
 // a part has left that a glance should not have to read the words for, and a
 // sub-task has no priority of its own to put there instead.
-func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c reading.Card, on bool, held Written) {
+func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, on bool, held Written) {
 	panel := SubPanel(box)
 	fill(gtx, panel, skin.Panel)
 	// Outlined where the keyboard is, the way a form lights the field it is
@@ -767,7 +767,7 @@ func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c readi
 	// back. It was the other way round, and brightness was the only
 	// difference.
 	check := SubCheck(box)
-	done := reading.Finished(c)
+	done := engine.Finished(c)
 	if done {
 		fill(gtx, check, skin.Faint)
 		say(gtx, th, skin.Panel, TickAt(check), TickedMark, small)
@@ -787,8 +787,8 @@ func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c readi
 
 // SubInk is the ink a part's name is written in: the reading ink for what is
 // left, the faint one for what is done.
-func SubInk(skin Skin, c reading.Card) color.NRGBA {
-	if reading.Finished(c) {
+func SubInk(skin Skin, c engine.Card) color.NRGBA {
+	if engine.Finished(c) {
 		return skin.Faint
 	}
 	return skin.Ink
@@ -906,7 +906,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 	places := w.partTiles()
 	for k, tile := range places[:len(places)-1] {
 		at := from + k
-		if f.isStruck(reading.Part{Number: parts[at].Number}) {
+		if f.isStruck(engine.Part{Number: parts[at].Number}) {
 			drawStruck(gtx, th, skin, tile, parts[at], on && f.partAt == at)
 			continue
 		}
@@ -953,7 +953,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 
 // drawStruck is a part struck out of the form: faint, crossed through, and
 // waiting for the form to be saved before it goes — or for backspace again.
-func drawStruck(gtx layout.Context, th *material.Theme, skin Skin, box Box, part reading.Card, on bool) {
+func drawStruck(gtx layout.Context, th *material.Theme, skin Skin, box Box, part engine.Card, on bool) {
 	panel := SubPanel(box)
 	fill(gtx, panel, skin.Panel)
 	if on {
@@ -1005,7 +1005,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		// its caret and whatever run is held; the rest from what they say. A
 		// field a list answers is never typed into, so it says its names even
 		// while the keyboard is on it — the numbers underneath are for the
-		// engine, not for reading.
+		// engine, not for engine.
 		typed := on && !chosenFromAList(fields[i])
 		said := Written{Value: w.FieldSays(fields[i])}
 		if typed {

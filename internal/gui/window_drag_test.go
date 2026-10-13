@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // Pressing, dragging and dropping: a card onto the board, a tile under a task,
@@ -123,8 +122,8 @@ func TestADropTheStoreRefusesSaysSoAndChangesNothing(t *testing.T) {
 func TestACardBeingDraggedFollowsThePointerAndShowsWhereItLands(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "backlog"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "backlog"})
 
 	if _, dragging := w.Ghost(); dragging {
 		t.Fatal("a board nobody is dragging on shows a card in mid-air")
@@ -156,7 +155,7 @@ func TestACardBeingDraggedFollowsThePointerAndShowsWhereItLands(t *testing.T) {
 // than pointing somewhere.
 func TestOverNothingThereIsNowhereToLand(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "First", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "First", State: "todo"})
 	w = w.PressAt(middleOf(w, 1, 0))
 	w = w.MoveTo(Point{X: 0, Y: 0})
 	if _, somewhere := w.Landing(); somewhere {
@@ -170,8 +169,8 @@ func TestOverNothingThereIsNowhereToLand(t *testing.T) {
 func TestWhereACardWouldLandIsSnappedToTheGrid(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "backlog"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "backlog"})
 
 	l := w.Layout()
 	for _, off := range []int{2, CardHeight / 2, CardHeight - 2} {
@@ -210,14 +209,14 @@ func TestDroppedUnder_asksNothingForAPartAlreadyThere(t *testing.T) {
 func openOnAParent(t *testing.T, parts int) Window {
 	t.Helper()
 	f := newFake()
-	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo"}}
+	cards := []engine.Card{{Number: 1, Title: "Ship it", State: "todo"}}
 	for i := range parts {
-		cards = append(cards, reading.Card{
+		cards = append(cards, engine.Card{
 			Number: i + 2, Title: fmt.Sprintf("Part %d", i+1), State: "todo", Parent: 1,
 		})
 	}
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: cards}
+	w.snap = engine.Snapshot{Cards: cards}
 	return w.clicked(middleOf(w, 1, 0)).Key("enter")
 }
 
@@ -241,9 +240,9 @@ func TestLanding_saysNothingOutsideTheBox(t *testing.T) {
 func TestDraggingAnObjectiveMovesNoTask(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
-		Cards: []reading.Card{card(1, "Write the spec", "todo")},
-		Goals: []reading.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
+	w.snap = engine.Snapshot{
+		Cards: []engine.Card{card(1, "Write the spec", "todo")},
+		Goals: []engine.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
 	}
 	w = w.Key("tab")
 	if w.Tab() != Objectives {

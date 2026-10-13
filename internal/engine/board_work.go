@@ -1,4 +1,4 @@
-package reading
+package engine
 
 import (
 	"slices"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 )
@@ -23,7 +22,7 @@ type Work interface {
 	// names no operation of its own: an operation added to the engine reaches
 	// this surface the way it reaches the command line and the agent, without
 	// a line written here.
-	Ask(engine.Operation, engine.Input) (engine.Answer, error)
+	Ask(Operation, Input) (Answer, error)
 
 	Version() (int64, error)
 }
@@ -104,13 +103,13 @@ type Snapshot struct {
 func Look(w Work) (Snapshot, error) {
 	// Everything, archived included: which of them a board draws is the
 	// board's to decide.
-	listed, err := w.Ask(engine.TaskList, engine.Input{
+	listed, err := w.Ask(TaskList, Input{
 		Given: map[string]string{"with-archived": "true"},
 	})
 	if err != nil {
 		return Snapshot{}, err
 	}
-	goals, err := w.Ask(engine.ObjectiveList, engine.Input{})
+	goals, err := w.Ask(ObjectiveList, Input{})
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -149,8 +148,8 @@ func Look(w Work) (Snapshot, error) {
 // Numbered is what every operation about one task or one objective is given.
 // Its own function because it is written five times otherwise, and a map built
 // by hand five times is a map spelt wrong once.
-func Numbered(n int) engine.Input {
-	return engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}}
+func Numbered(n int) Input {
+	return Input{Given: map[string]string{"number": strconv.Itoa(n)}}
 }
 
 // shownAll is every label as it is safe to draw. What was written before

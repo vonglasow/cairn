@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // What the pointer does: a click, a double and a triple, a press carried into
@@ -119,7 +118,7 @@ func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offe
 // goalAt says which objective a point lands on in the list.
 func (w Window) goalAt(p Point) int {
 	l := w.Layout()
-	here := reading.Sorted(w.Showing().Goals)
+	here := engine.Sorted(w.Showing().Goals)
 	for i := range here {
 		if GoalAt(l, i, w.goals).In(p) {
 			return here[i].Number
@@ -534,12 +533,12 @@ func (w Window) where(l Layout, p Point) (state string, place map[string]string,
 		here := w.inColumn(i)
 		at := (p.Y - l.Column[i].Y + w.scroll[i]) / CardHeight
 		if at <= 0 {
-			return reading.StateAt(i), map[string]string{"first": "true"}, true
+			return engine.StateAt(i), map[string]string{"first": "true"}, true
 		}
 		if at-1 < len(here) {
-			return reading.StateAt(i), map[string]string{"after": strconv.Itoa(here[at-1].Number)}, true
+			return engine.StateAt(i), map[string]string{"after": strconv.Itoa(here[at-1].Number)}, true
 		}
-		return reading.StateAt(i), map[string]string{"last": "true"}, true
+		return engine.StateAt(i), map[string]string{"last": "true"}, true
 	}
 	return "", nil, false
 }

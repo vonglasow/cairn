@@ -10,7 +10,6 @@ import (
 	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // What a gesture decides, read without drawing anything. The window keeps its
@@ -83,7 +82,7 @@ func TestAClickThatBarelyMovesIsStillAClick(t *testing.T) {
 
 func TestTheWheelScrollsOneColumnAndNoOther(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
 		many = append(many, card(i, "Task", "backlog"))
 	}
@@ -156,7 +155,7 @@ func TestAStoreOutOfReachIsSaidRatherThanDrawnEmpty(t *testing.T) {
 // is what stopped the tabs being reachable at all.
 func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	tab := TabAt(w.Layout(), 1)
 	at := Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
 
@@ -172,7 +171,7 @@ func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 // nobody wrote down.
 func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
 	at := -1
@@ -194,7 +193,7 @@ func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 // With nothing chosen there is nothing to edit, and the bar does not offer it.
 func TestTheBarOffersNothingToEditWithNothingChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, offer := range w.Offers() {
 		if offer == "Edit" {
 			t.Error("the bar offers to edit with nothing chosen")
@@ -207,7 +206,7 @@ func TestTheBarOffersNothingToEditWithNothingChosen(t *testing.T) {
 func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{
+	w.snap = engine.Snapshot{Goals: []engine.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
@@ -233,7 +232,7 @@ func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
 	w.tab = Objectives
 
 	below := GoalAt(w.Layout(), 4, 0)
@@ -246,7 +245,7 @@ func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 // already marks; the rest is what a card had no room for.
 func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{
+	w := holding(f, engine.Card{
 		Number: 1, Title: "Write the spec", State: "todo", Priority: "high",
 		Description: "The client wants two columns",
 	})
@@ -276,7 +275,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 // With nothing open there is nothing to show.
 func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if got := w.Form().Fields(); len(got) != 0 {
 		t.Errorf("a board with no detail open shows %d fields", len(got))
 	}
@@ -287,9 +286,9 @@ func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
-		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
-		Goals: []reading.Goal{
+	w.snap = engine.Snapshot{
+		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
+		Goals: []engine.Goal{
 			{Number: 3, Title: "Ship cairn", State: "active"},
 			{Number: 4, Title: "Keep it honest", State: "active"},
 		},
@@ -314,7 +313,7 @@ func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{
+	w.snap = engine.Snapshot{Goals: []engine.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
@@ -348,7 +347,7 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 // Nor can a card be picked up from behind a panel.
 func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	w = w.PressAt(middleOf(w, 1, 0))
@@ -363,7 +362,7 @@ func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
 	w.tab = Objectives
 
 	box := GoalAt(w.Layout(), 0, 0)
@@ -389,9 +388,9 @@ func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
-		Cards: []reading.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
-		Goals: []reading.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
+	w.snap = engine.Snapshot{
+		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
+		Goals: []engine.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
 	}
 
 	// On the objectives tab, the objective.
@@ -419,7 +418,7 @@ func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 // Deleting asks first, because it is the one thing here that loses work.
 func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
 	asked := w.Choose("Delete")
@@ -442,7 +441,7 @@ func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 func TestDeletingAnObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Goals: []reading.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
 	w.tab, w.chosen, w.chosenGoal = Objectives, 3, true
 
 	w = w.Choose("Delete").Choose("Delete")
@@ -454,7 +453,7 @@ func TestDeletingAnObjective(t *testing.T) {
 // Nothing chosen is nothing to delete, and the bar does not offer it.
 func TestDeletingIsNotOfferedWithNothingChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, offer := range w.Offers() {
 		if offer == "Delete" {
 			t.Error("the bar offers to delete with nothing chosen")
@@ -466,7 +465,7 @@ func TestDeletingIsNotOfferedWithNothingChosen(t *testing.T) {
 // be read rather than pointed at.
 func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.Choose("Help")
 	if w.Screen() != OnHelp {
@@ -495,7 +494,7 @@ func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 // that goes out saying the wrong number.
 func TestWhatEachPanelSaysItIs(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 7, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 7, Title: "Write the spec", State: "todo"})
 	if got := Heads(w); got != "" {
 		t.Errorf("the board is headed %q, and it is its own heading", got)
 	}
@@ -526,7 +525,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 // walk went was a difference nothing could see; with three it is the walk.
 func TestThePagesAreWalkedRound(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, c := range []struct {
 		keys []string
 		want Tab
@@ -558,8 +557,8 @@ func TestThePagesAreWalkedRound(t *testing.T) {
 func TestWhereWhatIsChosenIsDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "First", State: "todo"},
-		reading.Card{Number: 2, Title: "Second", State: "todo"})
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "todo"})
 	l := w.Layout()
 
 	first := w.clicked(middleOf(w, 1, 0))
@@ -589,7 +588,7 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	for range 40 {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 	over := BesideBox(Over(w.width, w.height))
 	at := Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
@@ -613,7 +612,7 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
 	for i := 1; i <= 60; i++ {
-		w.snap.Goals = append(w.snap.Goals, reading.Goal{Number: i, Title: "Ship it", State: "live"})
+		w.snap.Goals = append(w.snap.Goals, engine.Goal{Number: i, Title: "Ship it", State: "live"})
 	}
 	w.tab = Objectives
 	run := GoalsRun(w.Layout())
@@ -654,7 +653,7 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap.Goals = []reading.Goal{
+	w.snap.Goals = []engine.Goal{
 		{Number: 3, Title: "Ship cairn", State: "live"},
 		{Number: 4, Title: "Keep it honest", State: "live"},
 	}
@@ -667,7 +666,7 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 		t.Fatal("the chosen objective is drawn nowhere")
 	}
 	at := 0
-	for i, g := range reading.Sorted(w.snap.Goals) {
+	for i, g := range engine.Sorted(w.snap.Goals) {
 		if g.Number == 4 {
 			at = i
 		}
@@ -690,7 +689,7 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 // on — so both read the list's heading and the form said it twice.
 func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 7, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 7, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
 		w = w.Key("tab")
@@ -711,7 +710,7 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 // the question, so turning it over a modal scrolled something nobody could see.
 func TestTheWheelStopsAtAPanel(t *testing.T) {
 	f := newFake()
-	cards := []reading.Card{}
+	cards := []engine.Card{}
 	for i := 1; i <= 30; i++ {
 		cards = append(cards, card(i, "Une de plus", "backlog"))
 	}
@@ -755,8 +754,8 @@ func TestOnlyTheFirstButtonActs(t *testing.T) {
 func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{
-		Cards: []reading.Card{card(1, "Write the spec", "todo"), card(2, "Ship it", "todo")},
+	w.snap = engine.Snapshot{
+		Cards: []engine.Card{card(1, "Write the spec", "todo"), card(2, "Ship it", "todo")},
 	}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
@@ -808,14 +807,14 @@ func TestEveryBarCanBePulled(t *testing.T) {
 	for range 40 {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
-	cards := []reading.Card{{Number: 1, Title: "Ship it", State: "todo",
+	cards := []engine.Card{{Number: 1, Title: "Ship it", State: "todo",
 		Description: strings.Repeat("une ligne de description de plus ", 40)}}
 	for i := range 6 {
-		cards = append(cards, reading.Card{
+		cards = append(cards, engine.Card{
 			Number: i + 2, Title: fmt.Sprintf("Part %d", i+1), State: "todo", Parent: 1})
 	}
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: cards}
+	w.snap = engine.Snapshot{Cards: cards}
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 
 	box := Over(w.width, w.height)
@@ -886,7 +885,7 @@ func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 // Shrinking the window below what the board needs used to throw away whatever
 // was open: a form filled in for ten minutes came back as an empty board.
 func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
 	if w.Screen() != OnForm {
 		t.Fatalf("the form did not open: %v", w.Screen())
@@ -909,12 +908,12 @@ func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
 // drag at all.
 func TestTheListsBarCanBePulled(t *testing.T) {
 	f := newFake()
-	var goals []reading.Goal
+	var goals []engine.Goal
 	for i := 1; i <= 40; i++ {
-		goals = append(goals, reading.Goal{Number: i, Title: "Objective " + strconv.Itoa(i)})
+		goals = append(goals, engine.Goal{Number: i, Title: "Objective " + strconv.Itoa(i)})
 	}
 	w := New(f, 1200, 800)
-	w.snap = reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "One", State: "todo"}}, Goals: goals}
+	w.snap = engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "One", State: "todo"}}, Goals: goals}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for i, field := range w.Form().Fields() {
 		if field.Arg == "objective" {
@@ -979,7 +978,7 @@ func onLaneCard(w Window, lane, at int) Point {
 // be brought into the box, bar or no bar.
 func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 	text := strings.Repeat("une phrase de description assez longue pour replier ", 60) + "LA FIN"
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.DoubleClick(middleOf(w, 1, 0))
@@ -1007,8 +1006,8 @@ func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
 	w := holding(newFake(),
-		reading.Card{Number: 1, Title: "Long", State: "todo", Description: long},
-		reading.Card{Number: 2, Title: "Short", State: "todo", Description: "PREMIERE LIGNE"})
+		engine.Card{Number: 1, Title: "Long", State: "todo", Description: long},
+		engine.Card{Number: 2, Title: "Short", State: "todo", Description: "PREMIERE LIGNE"})
 	// Read the long one to its end, and put it away.
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, lines, _, _ := w.sayingOn()
@@ -1044,7 +1043,7 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 // Whatever the scroll holds, what is drawn is inside the text: a scroll past
 // the end is read as the end.
 func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Short", State: "todo",
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Short", State: "todo",
 		Description: "PREMIERE LIGNE"})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	w.saying = 40
@@ -1057,10 +1056,10 @@ func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
 // are done, beside what it is.
 func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
 	w := holding(newFake(),
-		reading.Card{Number: 1, Title: "Ship it", State: "todo"},
-		reading.Card{Number: 2, Title: "A", State: "done", Parent: 1},
-		reading.Card{Number: 3, Title: "B", State: "todo", Parent: 1},
-		reading.Card{Number: 4, Title: "C", State: "todo", Parent: 1})
+		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
+		engine.Card{Number: 2, Title: "A", State: "done", Parent: 1},
+		engine.Card{Number: 3, Title: "B", State: "todo", Parent: 1},
+		engine.Card{Number: 4, Title: "C", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	if got := w.UnderHead(); !strings.Contains(got, "2 to do · 1 done") {
 		t.Fatalf("the box under the task is headed %q", got)

@@ -1,12 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"slices"
 	"testing"
 
 	"gioui.org/io/pointer"
-
-	"cairn/internal/reading"
 )
 
 // The menu opens down and to the right of the point clicked, and is kept
@@ -44,7 +43,7 @@ func TestTheMenuIsWalkedBothWays(t *testing.T) {
 // A right press in the loop opens the menu on the card under it.
 func TestTheSecondButtonOpensTheMenu(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if w.Screen() != OnMenu || w.Chosen() != 1 {
 		t.Errorf("a right press left the window on %v, choosing %d", w.Screen(), w.Chosen())
@@ -74,7 +73,7 @@ func TestTheMenuIsDrawn(t *testing.T) {
 // coming in with it, opens nothing.
 func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Move, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if w.Screen() != OnTheBoard {
 		t.Errorf("a pointer moving with the second button held left the window on %v", w.Screen())
@@ -86,7 +85,7 @@ func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 // and taken at once; its labels in the list a form opens for them.
 func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
 	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)

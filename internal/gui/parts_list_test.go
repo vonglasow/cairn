@@ -1,19 +1,18 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // onTheList is task 1 opened with the parts named hanging under it, the
 // keyboard on its list of parts, in a window of the height given.
 func onTheList(t *testing.T, high int, titles ...string) Window {
 	t.Helper()
-	cards := []reading.Card{card(1, "Ship it", "todo")}
+	cards := []engine.Card{card(1, "Ship it", "todo")}
 	for i, title := range titles {
-		cards = append(cards, reading.Card{Number: i + 2, Title: title, State: "todo", Parent: 1})
+		cards = append(cards, engine.Card{Number: i + 2, Title: title, State: "todo", Parent: 1})
 	}
 	w := holding(newFake(), cards...)
 	w.height = high

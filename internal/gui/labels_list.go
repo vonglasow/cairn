@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 )
 
 // The list labels are chosen from: the one objectives are chosen from, with
@@ -34,7 +34,7 @@ func (w Window) openingLabels(held string) Window {
 			known[label] = true
 		}
 	}
-	holding := reading.Words(held)
+	holding := engine.Words(held)
 	for _, label := range holding {
 		known[label] = true
 	}

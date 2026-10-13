@@ -1,12 +1,11 @@
 package tui
 
 import (
+	"cairn/internal/engine"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"cairn/internal/reading"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -119,7 +118,7 @@ func (b Board) modeName() string {
 // tasksBoard is the four columns, the band under three of them, and the
 // objective's own card above the lot when one is open.
 func (b Board) tasksBoard(l Layout) []string {
-	all, band := reading.Deal(b.cards(), b.archived)
+	all, band := engine.Deal(b.cards(), b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
@@ -147,15 +146,15 @@ func (b Board) tasksBoard(l Layout) []string {
 }
 
 // bandRows is the stalled band: its own header, and its cards three across.
-func (b Board) bandRows(band []reading.Card, l Layout) []string {
+func (b Board) bandRows(band []engine.Card, l Layout) []string {
 	// The band starts where the second column starts: the left margin, the
 	// whole of the backlog, and the gap after it.
 	offset := margin + l.Column + 1
 	under := strings.Repeat(" ", offset)
 	held := b.inBand && b.mode == Normal
-	head := Spread(b.skin.Band.Render(reading.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
+	head := Spread(b.skin.Band.Render(engine.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
 	if held {
-		head = Spread(b.skin.HeadOn.Render("▌"+reading.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
+		head = Spread(b.skin.HeadOn.Render("▌"+engine.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
 	}
 	return []string{
 		under + head,
@@ -183,15 +182,15 @@ func (b Board) rule(width int, under bool) string {
 
 // across lays the band's cards out three to a row, and scrolls when there are
 // more of them than the band has room for.
-func (b Board) across(cards []reading.Card, l Layout) string {
+func (b Board) across(cards []engine.Card, l Layout) string {
 	return through(b.laidOut(cards, l), l.Band, l.Rows, b.bandAt)
 }
 
 // laidOut is the band's cards, three to a row, before anything is put behind a
 // window. Separated so a test can count the rows it really made rather than the
 // rows the window padded it out to.
-func (b Board) laidOut(cards []reading.Card, l Layout) string {
-	wide := reading.Columns - 1
+func (b Board) laidOut(cards []engine.Card, l Layout) string {
+	wide := engine.Columns - 1
 	var rows []string
 	for at := 0; at < len(cards); at += wide {
 		end := min(at+wide, len(cards))
@@ -206,7 +205,7 @@ func (b Board) laidOut(cards []reading.Card, l Layout) string {
 
 // stack draws one column's cards down the screen, scrolling to whatever the
 // cursor is standing on.
-func (b Board) stack(cards []reading.Card, l Layout, rows, at int) string {
+func (b Board) stack(cards []engine.Card, l Layout, rows, at int) string {
 	drawn := make([]string, 0, len(cards))
 	for _, c := range cards {
 		drawn = append(drawn, b.card(c, l))
@@ -215,7 +214,7 @@ func (b Board) stack(cards []reading.Card, l Layout, rows, at int) string {
 }
 
 // card draws one, in the frame its priority and its focus decide.
-func (b Board) card(c reading.Card, l Layout) string {
+func (b Board) card(c engine.Card, l Layout) string {
 	return b.skin.Card(l.Column, c.Priority, c.InFocus, b.chosen(c)).
 		Render(strings.Join(Rows(c, b.glyphs, b.skin, b.now(), l.Interior), "\n"))
 }
@@ -235,7 +234,7 @@ func through(content string, width, height, at int) string {
 }
 
 // chosen says whether a card is the one the cursor is holding.
-func (b Board) chosen(c reading.Card) bool { return b.mode == Insert && c.Number == b.task }
+func (b Board) chosen(c engine.Card) bool { return b.mode == Insert && c.Number == b.task }
 
 // now is what the board calls the time. Taken from the outside so a scenario
 // can say what day it is and a deadline reads the same every run.
@@ -286,7 +285,7 @@ func (b Board) objectivesList(l Layout) []string {
 }
 
 // goalCard draws one objective.
-func (b Board) goalCard(g reading.Goal, width int) string {
+func (b Board) goalCard(g engine.Goal, width int) string {
 	return b.skin.Card(width+frame, g.Priority, false, g.Number == b.goal).
 		Render(strings.Join(b.goalRows(g, width), "\n"))
 }
@@ -369,7 +368,7 @@ func (b Board) question() string {
 	}
 	if b.sweeping {
 		return " " + b.skin.Title.Render("archive every task in "+
-			strings.ToUpper(reading.StateAt(b.column))+"?") + "  " +
+			strings.ToUpper(engine.StateAt(b.column))+"?") + "  " +
 			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
 	}
 	what, number := "task", b.task

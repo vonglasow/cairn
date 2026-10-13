@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // Pushing a task: sideways into another column, down into the band and the
@@ -71,7 +70,7 @@ func TestPushingRightOutOfTheBandDoesNothing(t *testing.T) {
 
 func TestPushingPastTheLastColumnDoesNothing(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "Done", State: "done"}}
+	f.cards = []engine.Card{{Number: 1, Title: "Done", State: "done"}}
 	b := hit(standing(f), "l", "l", "l", "i", "shift+l")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing past the last column wrote %v", f.edited)
@@ -90,7 +89,7 @@ func TestPushingWithNothingHeldDoesNothing(t *testing.T) {
 
 func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
 	// current is the third column: left is todo, right is done. A push that
 	// went the other way, or one column too far, would land somewhere else.
 	left := hit(standing(f), "l", "l", "i")
@@ -111,7 +110,7 @@ func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 
 func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	b := hit(standing(f), "l", "i")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -123,7 +122,7 @@ func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 
 func TestPushingRightReachesTheLastColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
 	b := hit(standing(f), "l", "l", "i")
 	if _, cmd := b.pressed("shift+l"); cmd != nil {
 		cmd()
@@ -153,7 +152,7 @@ func TestThePopupMarksTheOneItIsOn(t *testing.T) {
 
 func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -175,7 +174,7 @@ func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 
 func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},

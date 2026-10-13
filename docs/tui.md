@@ -26,7 +26,7 @@ afternoon to spend:
 - **`hjkl` moves the cursor; `⇧hjkl` moves the task.** Sideways is a change of
   column, which is an edit; up and down is a place among its sisters.
 - **It decides nothing**: every change goes through the engine, and what a
-  board reads and asks is shared with the window in `internal/reading`.
+  board reads and asks is shared with the window in `internal/engine`.
 - **It stays true while the store changes**: a beat reads `data_version` and
   redraws when another connection wrote.
 - Frames are pinned in `internal/tui/testdata`; a change that moves one is
@@ -229,7 +229,7 @@ board. It carries no clock glyph: the glyph rendered badly and said nothing the
 **A task that is done counts no day down.** It is wanted on no day any more,
 and a `−3d` in red on it would call for an act nobody has left to do. The open
 task still says the day it was due, without the count. The window reads the
-same rule, `reading.CardDeadline`.
+same rule, `engine.CardDeadline`.
 
 ## Glyphs
 
@@ -389,7 +389,7 @@ prompt a `g` is a letter.
 Reordering inside a column is `⇧J` and `⇧K` — `task move`, behind the card
 below or at the head of the column — with the band reached only from the last
 card of a column, as above. Where a pushed card goes is worked out once, in
-`reading`, for this board and the window alike.
+the engine, for this board and the window alike.
 
 ## The form
 
@@ -805,7 +805,7 @@ of its own. It reads `PRAGMA data_version` — the store noticing that another
 connection wrote — and nobody asks cairn to do that, so it has no verb and
 should not get one. `cairn version` already means the version of the binary.
 
-**What the board reads lives in `internal/reading`, not here.** The two
+**What the board reads lives in `internal/engine`, not here.** The two
 listings turned into cards and goals, the deal into columns, which fields a
 form asks about — none of that is about a terminal, so none of it is in this
 package. What stayed is everything that measures in cells and everything that
@@ -822,7 +822,7 @@ person reads beside the box, and `Arg`, what the engine calls the same thing:
 Neither is wrong. A repeatable flag reads singular on a command line
 (`--label api --label urgent`); a box holding all of them reads plural on a
 screen. Saying it on the field is what stops a translation table existing
-somewhere else — and `reading.Asked` then builds the whole request by walking the
+somewhere else — and `engine.Asked` then builds the whole request by walking the
 form and reading each argument's `Kind` off the operation, so a field added to
 the form, or an argument added to the engine, arrives with no line written for
 it.

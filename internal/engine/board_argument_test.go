@@ -1,9 +1,7 @@
-package reading
+package engine
 
 import (
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 // A field says which engine argument it fills, so nothing has to translate one
@@ -13,7 +11,7 @@ import (
 
 func TestEveryTaskFieldNamesAnArgumentTaskEditTakes(t *testing.T) {
 	takes := map[string]bool{}
-	for _, a := range engine.TaskEdit.Takes {
+	for _, a := range TaskEdit.Takes {
 		takes[a.Name] = true
 	}
 	fields := TaskFields(Card{})
@@ -33,7 +31,7 @@ func TestEveryTaskFieldNamesAnArgumentTaskEditTakes(t *testing.T) {
 
 func TestEveryGoalFieldNamesAnArgumentObjectiveEditTakes(t *testing.T) {
 	takes := map[string]bool{}
-	for _, a := range engine.ObjectiveEdit.Takes {
+	for _, a := range ObjectiveEdit.Takes {
 		takes[a.Name] = true
 	}
 	fields := GoalFields(Goal{})

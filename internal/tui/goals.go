@@ -8,8 +8,8 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 	"cairn/internal/objective"
-	"cairn/internal/reading"
 )
 
 // An objective, drawn. The same six rows as a task, because a person who has
@@ -42,7 +42,7 @@ func (b Board) progress(done, total, width int) string {
 }
 
 // goalFacts is the bar, the count, and whatever else the width allows, dressed.
-func (b Board) goalFacts(g reading.Goal, width int) string {
+func (b Board) goalFacts(g engine.Goal, width int) string {
 	room := min(barWidth, width)
 	told := []string{}
 	dressed := []string{}
@@ -86,7 +86,7 @@ func Bar(done, total, width int) string {
 const barWidth = 28
 
 // goalRows is the four lines an objective's card carries, dressed.
-func (b Board) goalRows(g reading.Goal, width int) []string {
+func (b Board) goalRows(g engine.Goal, width int) []string {
 	var rows []string
 	mark := goalMarks(g, b.glyphs)
 	if glyph := StandingGlyph(g.State, b.glyphs); glyph != "" {
@@ -101,7 +101,7 @@ func (b Board) goalRows(g reading.Goal, width int) []string {
 }
 
 // goalMarks is the right-hand end of an objective's first row.
-func goalMarks(g reading.Goal, gl Glyphs) string {
+func goalMarks(g engine.Goal, gl Glyphs) string {
 	var found []string
 	if g.Described() {
 		found = append(found, gl.Described)

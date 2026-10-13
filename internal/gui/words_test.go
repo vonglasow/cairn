@@ -1,10 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"regexp"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // unsaid are the words the window never uses for an act: each act has one
@@ -15,7 +14,7 @@ var unsaid = regexp.MustCompile(`(?i)\badd\b|\btak(e|es|en|ing) up\b|\blet(ting)
 // The window says every act with the engine's word for it, in its help and in
 // its menu bar alike.
 func TestTheWindowSaysEveryActWithTheEnginesWord(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	var said []string
 	for _, line := range w.Choose("Help").Helping() {
 		said = append(said, line.Key+" "+line.Means)

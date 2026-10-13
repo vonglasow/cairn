@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // What the bar offers and what the help says: the pages and their heads, the
@@ -366,10 +365,10 @@ func (w Window) clickingList(p Point) Window {
 // rather than by typing. The objectives and the parent are numbers somebody
 // would otherwise have to go and look up; a column or a priority is one of a
 // closed set, and the list is where that set is read before one is picked.
-func chosenOnACalendar(field reading.Field) bool { return field.Arg == "deadline" }
+func chosenOnACalendar(field engine.Field) bool { return field.Arg == "deadline" }
 
 // chosenFromAList says whether a field is answered by a list.
-func chosenFromAList(field reading.Field) bool {
+func chosenFromAList(field engine.Field) bool {
 	return field.Arg == "objective" || field.Arg == "parent" || field.Arg == "label" || len(field.Choices) > 0
 }
 
@@ -509,7 +508,7 @@ func (w Window) sweeps() string {
 		return ""
 	}
 	state := w.stateOf(w.chosen)
-	if reading.Stopped(state) {
+	if engine.Stopped(state) {
 		return ""
 	}
 	return state

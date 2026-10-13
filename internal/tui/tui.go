@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/trace"
 
 	tea "charm.land/bubbletea/v2"
@@ -62,7 +61,7 @@ const (
 
 // Looked carries a fresh reading of the work.
 type Looked struct {
-	Snapshot reading.Snapshot
+	Snapshot engine.Snapshot
 	Err      error
 }
 
@@ -79,13 +78,13 @@ type Beat time.Time
 
 // Board is the whole screen.
 type Board struct {
-	work   reading.Work
+	work   engine.Work
 	glyphs Glyphs
 	skin   Skin
 	clock  func() time.Time
 
 	width, height int
-	snap          reading.Snapshot
+	snap          engine.Snapshot
 
 	tab    Tab
 	mode   Mode
@@ -149,7 +148,7 @@ type Board struct {
 	// How far each column, the band and the objectives are scrolled, in rows.
 	// Kept here rather than inside a viewport so that a board stays a value: a
 	// viewport is built at drawing time, from these, and thrown away.
-	offsets [reading.Columns]int
+	offsets [engine.Columns]int
 	bandAt  int
 	goalAt  int
 	helpAt  int
@@ -167,7 +166,7 @@ type Board struct {
 }
 
 // New opens a board over the work, at a given size.
-func New(w reading.Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
+func New(w engine.Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
 	return Board{
 		work:   w,
 		glyphs: glyphs,
@@ -188,7 +187,7 @@ func (b Board) Init() tea.Cmd {
 // slow.
 func (b Board) look() tea.Cmd {
 	return func() tea.Msg {
-		found, err := reading.Look(b.work)
+		found, err := engine.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -299,7 +298,7 @@ func (b Board) wonder() tea.Cmd {
 		if version == b.snap.Version {
 			return nil
 		}
-		found, err := reading.Look(b.work)
+		found, err := engine.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -361,20 +360,20 @@ func (b Board) standingAt(place int) int {
 
 // cards is every task the board is drawing, narrowed by whatever search is in
 // force and by whichever objective is open.
-func (b Board) cards() []reading.Card {
+func (b Board) cards() []engine.Card {
 	// What a board shows of a search, so that what is counted and what the
 	// arrows walk is the same set as what is drawn — a part that matched
 	// answering as the work it is part of.
-	found := reading.Found(b.snap.Cards, b.query, b.archived)
+	found := engine.Found(b.snap.Cards, b.query, b.archived)
 	if b.inside == 0 {
 		return found
 	}
-	return reading.Serving(found, b.inside)
+	return engine.Serving(found, b.inside)
 }
 
 // here is the cards the cursor is standing over: a column's, or the band's.
-func (b Board) here() []reading.Card {
-	all, band := reading.Deal(b.cards(), b.archived)
+func (b Board) here() []engine.Card {
+	all, band := engine.Deal(b.cards(), b.archived)
 	if b.inBand {
 		return band
 	}

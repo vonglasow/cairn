@@ -10,13 +10,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
 
 func twoTasks() *fake {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "First", State: "todo"},
 		{Number: 2, Title: "Second", State: "todo"},
 		{Number: 3, Title: "Waiting", State: "blocked"},
@@ -105,7 +104,7 @@ func TestQuitting(t *testing.T) {
 
 func TestTheOtherTab(t *testing.T) {
 	f := twoTasks()
-	f.goals = []reading.Goal{{Number: 7, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 7, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab")
 	if b.Where().Goal != 7 {
 		t.Fatalf("the cursor landed on objective %d, want 7", b.Where().Goal)
@@ -145,7 +144,7 @@ func TestHelpOpensAndClosesFromAnywhere(t *testing.T) {
 
 func TestHelpIsContextual(t *testing.T) {
 	f := twoTasks()
-	f.goals = []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 	onTasks := bare(hit(standing(f), "?").Draw())
 	onGoals := bare(hit(standing(f), "tab", "?").Draw())
 	if !strings.Contains(onTasks, "INSERT") {
@@ -208,7 +207,7 @@ func TestTheDetailOfATaskThatWentAway(t *testing.T) {
 
 func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "Parent", State: "todo", SubDone: 1, SubTotal: 2, Labels: []string{"spec"}, Estimate: "3h", Spent: "1h", Deadline: on("2026-09-02")},
 		{Number: 2, Title: "Child", State: "done", Parent: 1},
 	}
@@ -320,7 +319,7 @@ func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
 // emptied. Read off the operation rather than listed here, so an argument added
 // to the engine and forgotten on the form fails this test.
 func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
-	form := asking(reading.TaskFields(reading.Card{
+	form := asking(engine.TaskFields(engine.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
 		Estimate: "3h", Spent: "1h", Parent: 4, Objectives: []int{5},
@@ -349,12 +348,12 @@ func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
 	// The board declares what it needs; this is what says the engine gives it.
 	// Without it, a method renamed in the engine would only be found by opening
 	// the board by hand.
-	var _ reading.Work = (*engine.Engine)(nil)
+	var _ engine.Work = (*engine.Engine)(nil)
 }
 
 func TestRemovingAnObjective(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab", "d")
 	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
@@ -374,7 +373,7 @@ func TestRemovingNoObjectiveAtAll(t *testing.T) {
 
 func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
 	b := hit(standing(f), "tab", "d")
 	_, cmd := b.pressed("enter")
@@ -411,7 +410,7 @@ func TestAStateThatRefusesIsSaid(t *testing.T) {
 
 func TestASaveThatRefusesIsSaid(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "First", State: "todo"}}
+	f.cards = []engine.Card{{Number: 1, Title: "First", State: "todo"}}
 	f.failOp = errRefuse
 	if b := finish(hit(standing(f), "l", "i", "e"), true); b.err == nil {
 		t.Fatal("a save that could not be written was passed over")
@@ -423,7 +422,7 @@ func TestASaveThatRefusesIsSaid(t *testing.T) {
 
 func TestAnObjectiveSaveThatRefusesIsSaid(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
 	if b := finish(hit(standing(f), "tab", "e"), true); b.err == nil {
 		t.Fatal("an objective that could not be saved was passed over")
@@ -441,7 +440,7 @@ func TestTheBeatIsTwoSeconds(t *testing.T) {
 
 func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
 	b := standing(twoTasks())
-	card := reading.Card{Number: 1}
+	card := engine.Card{Number: 1}
 	if b.chosen(card) {
 		t.Fatal("a card was picked out while the cursor was on a column")
 	}
@@ -449,14 +448,14 @@ func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
 	if !b.chosen(card) {
 		t.Fatal("the card the cursor holds was not picked out")
 	}
-	if b.chosen(reading.Card{Number: 2}) {
+	if b.chosen(engine.Card{Number: 2}) {
 		t.Fatal("a card the cursor does not hold was picked out")
 	}
 }
 
 func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{
+	f.goals = []engine.Goal{
 		{Number: 1, Title: "One", State: "active"},
 		{Number: 2, Title: "Two", State: "active"},
 	}
@@ -524,7 +523,7 @@ func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
 
 func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, State: "blocked", Title: "A"},
 		{Number: 2, State: "watching", Title: "B"},
 		{Number: 3, State: "paused", Title: "C"},
@@ -539,15 +538,15 @@ func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
 func manyGoals() *fake {
 	f := newFake()
 	for i := 1; i <= 9; i++ {
-		f.goals = append(f.goals, reading.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
+		f.goals = append(f.goals, engine.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
 	}
 	return f
 }
 
 func TestLeavingAnObjectiveGoesBackToTheList(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo", Objectives: []int{3}}}
+	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo", Objectives: []int{3}}}
 	b := hit(standing(f), "tab", "enter")
 	if b.inside != 3 {
 		t.Fatalf("opening the objective left inside at %d", b.inside)
@@ -572,11 +571,11 @@ func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
 	// measures the row.
 	skin := SkinOf(Default)
 	g := GlyphsFor(Unicode)
-	todo := Rows(reading.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, 20)
+	todo := Rows(engine.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, 20)
 	if got, want := todo[0], Spread(skin.Faint.Render("1"), "", 20); got != want {
 		t.Fatalf("a card in a column has %q on its first row, want %q", got, want)
 	}
-	stalled := Rows(reading.Card{Number: 1, Title: "One", State: "blocked"}, g, skin, today, 20)
+	stalled := Rows(engine.Card{Number: 1, Title: "One", State: "blocked"}, g, skin, today, 20)
 	if stalled[0] == todo[0] {
 		t.Fatal("a stalled card is marked exactly like one in a column")
 	}
@@ -585,8 +584,8 @@ func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
 func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
 	b := standing(newFake())
 	b.skin = SkinOf(Default)
-	known := b.goalRows(reading.Goal{Number: 1, Title: "One", State: "active"}, 40)
-	unknown := b.goalRows(reading.Goal{Number: 1, Title: "One", State: "invented"}, 40)
+	known := b.goalRows(engine.Goal{Number: 1, Title: "One", State: "active"}, 40)
+	unknown := b.goalRows(engine.Goal{Number: 1, Title: "One", State: "invented"}, 40)
 	if known[0] == unknown[0] {
 		t.Fatal("a standing nobody planned for is marked like one that is known")
 	}
@@ -597,7 +596,7 @@ func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
 
 func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{
+	f.goals = []engine.Goal{
 		{Number: 1, Title: "One", State: "active"},
 		{Number: 2, Title: "Two", State: "active"},
 	}
@@ -629,7 +628,7 @@ func TestAWindowOfOneRowStillDrawsARow(t *testing.T) {
 func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 	f := newFake()
 	for i := 1; i <= 3; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "One", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "One", State: "blocked"})
 	}
 	b := standing(f)
 	// Three cards is exactly one row of three. A fourth row of nothing would be
@@ -637,7 +636,7 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != CardHeight {
 		t.Fatalf("three cards across drew %d rows, want %d", got, CardHeight)
 	}
-	f.cards = append(f.cards, reading.Card{Number: 4, Title: "Four", State: "blocked"})
+	f.cards = append(f.cards, engine.Card{Number: 4, Title: "Four", State: "blocked"})
 	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != 2*CardHeight {
 		t.Fatalf("four cards across drew %d rows, want two rows of cards", got)
 	}
@@ -645,7 +644,7 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 
 func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -673,10 +672,10 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
-	if got := b.goalFacts(reading.Goal{Number: 1}, 60); strings.Contains(got, "0/0") {
+	if got := b.goalFacts(engine.Goal{Number: 1}, 60); strings.Contains(got, "0/0") {
 		t.Fatalf("an objective nothing serves claimed a count: %q", got)
 	}
-	if got := b.goalFacts(reading.Goal{Number: 1, Done: 0, Total: 3}, 60); !strings.Contains(got, "0/3") {
+	if got := b.goalFacts(engine.Goal{Number: 1, Done: 0, Total: 3}, 60); !strings.Contains(got, "0/3") {
 		t.Fatalf("an objective nothing is done on lost its count: %q", got)
 	}
 }
@@ -684,7 +683,7 @@ func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
 func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
-	g := reading.Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
+	g := engine.Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
 	// "1/2  ⚑ ab" is nine columns, and what is left for it is the width less
 	// the bar and the two spaces beside it.
 	const room = barWidth + 2 + 9
@@ -698,7 +697,7 @@ func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 
 func TestAnObjectiveCardIsAsWideAsItIsGiven(t *testing.T) {
 	b := standing(newFake())
-	drawn := b.goalCard(reading.Goal{Number: 1, Title: "One"}, 40)
+	drawn := b.goalCard(engine.Goal{Number: 1, Title: "One"}, 40)
 	for _, row := range strings.Split(strings.TrimRight(bare(drawn), "\n"), "\n") {
 		if got := len([]rune(row)); got != 40+frame {
 			t.Fatalf("a card given 40 drew a row %d wide, want %d", got, 40+frame)
@@ -721,7 +720,7 @@ func TestEveryScreensBarIsCutToTheSameWidth(t *testing.T) {
 
 func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 40 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -739,7 +738,7 @@ func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 
 func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
 		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
 	}
@@ -776,7 +775,7 @@ func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 
 func TestEscapeClosesTheForm(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
 	b := hit(standing(f), "l", "i", "e")
 	if b.screen != OnForm {
 		t.Fatal("the form did not open")
@@ -792,7 +791,7 @@ func TestEscapeClosesTheForm(t *testing.T) {
 
 func TestEscapeClosesAnObjectivesForm(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab", "e")
 	if b.screen != OnForm {
 		t.Fatal("the objective's form did not open")
@@ -825,7 +824,7 @@ func TestTheHelpCanBeReadPastTheBottomOfTheWindow(t *testing.T) {
 
 func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
+	f.cards = []engine.Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
 	b := hit(standing(f), "l", "j", "i", "e").with(plainSkin)
 	head := b.formHead()
 	for _, want := range []string{"7", "Write the spec", "blocked", "critical"} {
@@ -838,7 +837,7 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 		t.Fatalf("a new task's head reads %q", got)
 	}
 	goals := newFake()
-	goals.goals = []reading.Goal{{Number: 2, Title: "Ship it", State: "on-hold", Priority: "low"}}
+	goals.goals = []engine.Goal{{Number: 2, Title: "Ship it", State: "on-hold", Priority: "low"}}
 	objective := hit(standing(goals), "tab", "e").with(plainSkin)
 	if got := objective.formHead(); !strings.Contains(got, "on-hold") {
 		t.Fatalf("an objective's head reads %q", got)
@@ -854,7 +853,7 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 	if b.screen != OnForm {
 		t.Fatalf("the form did not open: %v", b.screen)
 	}
-	if after := b.took(Looked{Snapshot: reading.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard {
+	if after := b.took(Looked{Snapshot: engine.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard {
 		t.Fatalf("a write that went through left the board on %v", after.screen)
 	}
 
@@ -862,7 +861,7 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 	if onDetail.screen != OnDetail {
 		t.Fatalf("the detail did not open: %v", onDetail.screen)
 	}
-	if after := onDetail.took(Looked{Snapshot: reading.Snapshot{Cards: f.cards}}); after.screen != OnDetail {
+	if after := onDetail.took(Looked{Snapshot: engine.Snapshot{Cards: f.cards}}); after.screen != OnDetail {
 		t.Fatalf("a reading coming back closed the detail: %v", after.screen)
 	}
 }
@@ -874,7 +873,7 @@ func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 	for _, verb := range []string{"new", "delete"} {
 		t.Run("a part the store will not "+verb, func(t *testing.T) {
 			f := newFake()
-			f.cards = []reading.Card{
+			f.cards = []engine.Card{
 				{Number: 1, Title: "Ship it", State: "todo"},
 				{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
 			}

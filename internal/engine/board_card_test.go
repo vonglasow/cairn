@@ -1,4 +1,4 @@
-package reading
+package engine
 
 import (
 	"fmt"
@@ -101,17 +101,17 @@ func TestServing_isTheWorkUnderOneObjective(t *testing.T) {
 		{Number: 3, Title: "Draw the band", Objectives: []int{2, 1}},
 		{Number: 4, Title: "Something else", Objectives: []int{2}},
 	}
-	got := titlesOf(Serving(cards, 1))
+	got := cardTitles(Serving(cards, 1))
 	want := []string{"Write the spec", "Draw the band"}
 	if !slices.Equal(got, want) {
 		t.Errorf("Serving(1) = %v, want %v", got, want)
 	}
 	if under := Serving(cards, 9); len(under) != 0 {
-		t.Errorf("Serving(9) = %v, want nothing under an objective nothing serves", titlesOf(under))
+		t.Errorf("Serving(9) = %v, want nothing under an objective nothing serves", cardTitles(under))
 	}
 }
 
-func titlesOf(cards []Card) []string {
+func cardTitles(cards []Card) []string {
 	var said []string
 	for _, c := range cards {
 		said = append(said, c.Title)
@@ -130,17 +130,17 @@ func TestHanging_isTheWorkUnderOneTask(t *testing.T) {
 		{Number: 4, Title: "Draw the band", Parent: 1},
 		{Number: 5, Title: "Under another", Parent: 3},
 	}
-	got := titlesOf(Hanging(cards, 1))
+	got := cardTitles(Hanging(cards, 1))
 	want := []string{"Write the spec", "Draw the band"}
 	if !slices.Equal(got, want) {
 		t.Errorf("Hanging(1) = %v, want %v", got, want)
 	}
 	if under := Hanging(cards, 2); len(under) != 0 {
-		t.Errorf("Hanging(2) = %v, want nothing under a task nothing hangs under", titlesOf(under))
+		t.Errorf("Hanging(2) = %v, want nothing under a task nothing hangs under", cardTitles(under))
 	}
 	// Not the root tasks: they hang under nothing, and nothing is not a task.
 	if under := Hanging(cards, 0); len(under) != 0 {
-		t.Errorf("Hanging(0) = %v, want nothing — no task is numbered nought", titlesOf(under))
+		t.Errorf("Hanging(0) = %v, want nothing — no task is numbered nought", cardTitles(under))
 	}
 }
 

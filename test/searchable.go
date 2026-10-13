@@ -9,19 +9,19 @@ package test
 
 import (
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 	"cairn/internal/objective"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 )
 
 // Searchable is a reading whose every card and objective says what the engine
 // says it carries.
-func Searchable(s reading.Snapshot) reading.Snapshot {
-	cards := make([]reading.Card, 0, len(s.Cards))
+func Searchable(s engine.Snapshot) engine.Snapshot {
+	cards := make([]engine.Card, 0, len(s.Cards))
 	for _, c := range s.Cards {
 		cards = append(cards, SearchableCard(c))
 	}
-	goals := make([]reading.Goal, 0, len(s.Goals))
+	goals := make([]engine.Goal, 0, len(s.Goals))
 	for _, g := range s.Goals {
 		goals = append(goals, SearchableGoal(g))
 	}
@@ -30,7 +30,7 @@ func Searchable(s reading.Snapshot) reading.Snapshot {
 }
 
 // SearchableCard is a card saying what the engine says its task carries.
-func SearchableCard(c reading.Card) reading.Card {
+func SearchableCard(c engine.Card) engine.Card {
 	var told task.AsTold
 	told.Numbered(c.Number)
 	told.Titled(c.Title)
@@ -56,7 +56,7 @@ func SearchableCard(c reading.Card) reading.Card {
 }
 
 // SearchableGoal is an objective saying what the engine says it carries.
-func SearchableGoal(g reading.Goal) reading.Goal {
+func SearchableGoal(g engine.Goal) engine.Goal {
 	var told objective.AsTold
 	told.Numbered(g.Number)
 	told.Titled(g.Title)

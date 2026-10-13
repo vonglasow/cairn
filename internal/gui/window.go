@@ -13,7 +13,7 @@ package gui
 import (
 	"time"
 
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 	"cairn/internal/trace"
 )
 
@@ -78,10 +78,10 @@ const Grip = 4
 
 // Window is everything the desktop board is, at one moment.
 type Window struct {
-	work reading.Work
+	work engine.Work
 
 	width, height int
-	snap          reading.Snapshot
+	snap          engine.Snapshot
 	version       int64
 
 	screen Screen
@@ -253,7 +253,7 @@ type Window struct {
 func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work.
-func New(work reading.Work, width, height int) Window {
+func New(work engine.Work, width, height int) Window {
 	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard()}
 	return w.sized()
 }
@@ -336,21 +336,21 @@ func (w Window) ChosenGoal() bool { return w.chosenGoal }
 // Serving is the work under the objective that is open, by title and by where
 // each task stands. Empty unless an objective is what was opened: a task is
 // served by nothing, and the question does not arise.
-func (w Window) Serving() []reading.Card {
+func (w Window) Serving() []engine.Card {
 	if !w.chosenGoal {
 		return nil
 	}
-	return reading.Serving(w.snap.Cards, w.chosen)
+	return engine.Serving(w.snap.Cards, w.chosen)
 }
 
 // Under is what the box beneath the fields holds: the work that serves an open
 // objective, or the work hanging under an open task. One box and one question
 // — what is under this — asked of whichever kind of thing was opened.
-func (w Window) Under() []reading.Card {
+func (w Window) Under() []engine.Card {
 	if w.chosenGoal {
-		return reading.Serving(w.snap.Cards, w.chosen)
+		return engine.Serving(w.snap.Cards, w.chosen)
 	}
-	return reading.Hanging(w.snap.Cards, w.chosen)
+	return engine.Hanging(w.snap.Cards, w.chosen)
 }
 
 // UnderHead is what that box is called, which depends on what is open: an
@@ -362,7 +362,7 @@ func (w Window) UnderHead() string {
 	}
 	// How many are left and how many are done, beside what the box is: the
 	// question somebody opens a task with parts to ask.
-	if tally := reading.Tallied(w.Under()); tally != "" {
+	if tally := engine.Tallied(w.Under()); tally != "" {
 		return hangingHead + "   " + tally
 	}
 	return hangingHead
@@ -415,7 +415,7 @@ func (w Window) aged() Window {
 
 // Look reads the work again and draws from what came back.
 func (w Window) Look() Window {
-	found, err := reading.Look(w.work)
+	found, err := engine.Look(w.work)
 	if err != nil {
 		return w.failing(err)
 	}
@@ -434,14 +434,14 @@ func (w Window) Look() Window {
 
 // inColumn and inLane are the cards of one column and of one lane, in the order
 // the engine keeps them.
-func (w Window) inColumn(column int) []reading.Card {
-	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+func (w Window) inColumn(column int) []engine.Card {
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	return dealt[column].Cards
 }
 
-func (w Window) inLane(lane int) []reading.Card {
-	_, stalled := reading.Deal(w.Showing().Cards, w.archived)
-	return reading.InLanes(stalled)[lane]
+func (w Window) inLane(lane int) []engine.Card {
+	_, stalled := engine.Deal(w.Showing().Cards, w.archived)
+	return engine.InLanes(stalled)[lane]
 }
 
 // stateOf is the column a task stands in now.
@@ -465,8 +465,8 @@ func (w Window) settledLane(lane, want int) int {
 }
 
 // line is one act of a task's history, written the way a person reads it —
-// see reading.SaidOf.
-func line(act trace.Act) string { return reading.SaidOf(act).Line() }
+// see engine.SaidOf.
+func line(act trace.Act) string { return engine.SaidOf(act).Line() }
 
 // abs is the distance between two points on one axis. Written without a branch:
 // a branch here has a boundary at zero that both sides agree on, so a wrong

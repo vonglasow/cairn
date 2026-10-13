@@ -1,13 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"strings"
 	"testing"
 
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
-
-	"cairn/internal/reading"
 )
 
 // A key is written the way the keyboard in front of the person writes it: ⌘ and
@@ -53,7 +52,7 @@ func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 // ⌥ with a letter writes one on a Mac too. Neither saves, cuts or archives.
 func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	chosen := w.clicked(middleOf(w, 1, 0))
 	if got := Typed(chosen, "X", key.ModCtrl|key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
 		t.Errorf("AltGr+X archived, or left the window on %v", got.Screen())
@@ -71,7 +70,7 @@ func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 // the menu it opens would otherwise be drawn under the stones.
 func TestARightPressEndsTheCairn(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if _, on := w.Intro(); on {
 		t.Error("a right press left the cairn building")

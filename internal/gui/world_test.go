@@ -23,7 +23,6 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/test"
 )
@@ -203,7 +202,7 @@ func (w *world) resize(width, high int) error {
 // find is where on screen a card sits, by the title a scenario calls it.
 func (w *world) find(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, stalled := reading.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -270,7 +269,7 @@ func (w *world) clickTab(name string) error {
 // findGoal is where an objective sits in the list, by the title a scenario
 // calls it.
 func (w *world) findGoal(title string) (Point, error) {
-	for i, g := range reading.Sorted(w.w.Reading().Goals) {
+	for i, g := range engine.Sorted(w.w.Reading().Goals) {
 		if g.Title != title {
 			continue
 		}
@@ -427,14 +426,14 @@ func (w *world) nudge(title string, by int) error {
 // slotIn is the point that drops a card into a column at a given place: the
 // head of it, or the slot a named card occupies.
 func (w *world) slotIn(column string, above string) (Point, error) {
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return Point{}, fmt.Errorf("no column called %q", column)
 	}
 	l := w.w.Layout()
 	slot := 0
 	if above != "" {
-		dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
+		dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
 		found := false
 		for i, c := range dealt[at].Cards {
 			if c.Title == above {
@@ -507,7 +506,7 @@ func (w *world) takeHoldUnder(title, below string) error {
 // under is the point just inside the slot below a card.
 func (w *world) under(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -535,7 +534,7 @@ func (w *world) takeHold(title, column string) error {
 }
 
 func (w *world) scrollOver(column string) error {
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return fmt.Errorf("no column called %q", column)
 	}
@@ -832,7 +831,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if err := w.clickGoal(title); err != nil {
 			return err
 		}
-		for i, g := range reading.Sorted(w.w.Showing().Goals) {
+		for i, g := range engine.Sorted(w.w.Showing().Goals) {
 			if g.Number == w.w.Chosen() {
 				w.was = i
 			}

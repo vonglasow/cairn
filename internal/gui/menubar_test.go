@@ -1,12 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"image/color"
 	"slices"
 	"testing"
 	"time"
-
-	"cairn/internal/reading"
 )
 
 // The menu bar holds every act the window has, grouped the way a window's
@@ -35,7 +34,7 @@ func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 // take does nothing.
 func TestALinePickedActsFromTheBoard(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
 	if got := w.Picked("New"); got.Screen() != OnForm || !got.Form().Adding {
 		t.Errorf("New left the window on %v", got.Screen())
 	}
@@ -64,7 +63,7 @@ func TestALinePickedActsFromTheBoard(t *testing.T) {
 // Where the system gives the window no menu bar, a button at the end of the
 // tabs opens the same lines as a menu; where it does, there is no button.
 func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	button := MenuButton(w.Layout())
 	if tabs := w.Layout().Tabs; button.X+button.W != tabs.X+tabs.W || button.Y < tabs.Y || button.Y+button.H > tabs.Y+tabs.H {
 		t.Errorf("the button %+v is not at the end of the tabs %+v", button, tabs)

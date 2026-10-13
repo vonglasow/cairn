@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/trace"
 )
 
@@ -18,7 +17,7 @@ import (
 // Grip is a threshold, so both sides of it are worth saying out loud.
 func TestTheExactPointAClickBecomesADrag(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	at := middleOf(w, 0, 0)
 
 	held := w.PressAt(at).MoveTo(Point{X: at.X + Grip, Y: at.Y})
@@ -39,7 +38,7 @@ func TestTheExactPointAClickBecomesADrag(t *testing.T) {
 // held.
 func TestHoldingStillIsNotDragging(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	at := middleOf(w, 0, 0)
 	if w.PressAt(at).Dragging() {
 		t.Error("a card just taken hold of is being dragged")
@@ -52,7 +51,7 @@ func TestHoldingStillIsNotDragging(t *testing.T) {
 // Moving with nothing in hand is nothing at all.
 func TestMovingWithNothingInHandDoesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	if got := w.MoveTo(Point{X: 500, Y: 500}); got.Dragging() {
 		t.Error("moving the pointer with nothing held began a drag")
 	}
@@ -62,7 +61,7 @@ func TestMovingWithNothingInHandDoesNothing(t *testing.T) {
 func TestADetailThatCannotReadTheHistorySaysSo(t *testing.T) {
 	f := newFake()
 	f.fail = errNope
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
 	if w.Wrong() == nil {
@@ -73,7 +72,7 @@ func TestADetailThatCannotReadTheHistorySaysSo(t *testing.T) {
 // Double-clicking where there is no card opens nothing.
 func TestADoubleClickOnNothingOpensNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	if got := w.doubleClicked(Point{X: 0, Y: 0}); got.Screen() != OnTheBoard {
 		t.Fatalf("double-clicking the margin left the window on %v", got.Screen())
 	}
@@ -83,7 +82,7 @@ func TestADoubleClickOnNothingOpensNothing(t *testing.T) {
 // open across a resize is a form somebody is still typing in.
 func TestResizingAWindowThatIsBigEnoughLeavesTheScreenAlone(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	if got := w.Resized(1400, 900); got.Screen() != OnForm {
@@ -131,7 +130,7 @@ func TestTheNarrowestCardThatCanCutATitle(t *testing.T) {
 // things depending on what was done to the task.
 func TestEveryShapeAHistoryLineCanTake(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	f.acts = []trace.Act{
 		anAct("added", "", "", ""),
@@ -198,9 +197,9 @@ func TestTheWindowNamesOperationsTheEngineDescribes(t *testing.T) {
 // arithmetic nobody reaches by using the board gently.
 func TestAScrolledColumnAnswersAndDrawsFromWhereItStands(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(f, many...)
 
@@ -225,11 +224,11 @@ func TestAScrolledColumnAnswersAndDrawsFromWhereItStands(t *testing.T) {
 // where it would have been unscrolled.
 func TestDroppingIntoAScrolledColumnLandsWhereItLooks(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
-	many = append(many, reading.Card{Number: 99, Title: "Newcomer", State: "backlog"})
+	many = append(many, engine.Card{Number: 99, Title: "Newcomer", State: "backlog"})
 	w := holding(f, many...)
 
 	l := w.Layout()
@@ -255,11 +254,11 @@ func TestDroppingIntoAScrolledColumnLandsWhereItLooks(t *testing.T) {
 // were scrolled to: a lane keeps its own place.
 func TestALaneIsNotScrolledByTheColumnsAboveIt(t *testing.T) {
 	f := newFake()
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
-	many = append(many, reading.Card{Number: 99, Title: "Client's answer", State: "blocked"})
+	many = append(many, engine.Card{Number: 99, Title: "Client's answer", State: "blocked"})
 	w := holding(f, many...)
 
 	box := w.Layout().LaneCardAt(0, 0, 0)
@@ -287,7 +286,7 @@ func TestTheDistanceIsNeverNegative(t *testing.T) {
 // Moving exactly Grip upward is a click, the same as moving it sideways.
 func TestTheGripIsTheSameInBothDirections(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	at := middleOf(w, 0, 0)
 	if w.PressAt(at).MoveTo(Point{X: at.X, Y: at.Y + Grip}).Dragging() {
 		t.Errorf("moving exactly %d down is still a click", Grip)

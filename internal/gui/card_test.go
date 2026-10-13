@@ -1,11 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/internal/reading"
 )
 
 // A card is one line of title and a fixed height, so a long name is cut rather
@@ -68,7 +67,7 @@ func TestASpaceAtTheCutGoesWithIt(t *testing.T) {
 // the title's gabarit left a fifth of every card's label line empty — and on a
 // card carrying three, the third was the one dropped.
 func TestTagged_measuresAtTheSizeItIsDrawnIn(t *testing.T) {
-	c := reading.Card{Labels: []string{"ado:36467", "chantier:tests-qualite", "sp26-20"}}
+	c := engine.Card{Labels: []string{"ado:36467", "chantier:tests-qualite", "sp26-20"}}
 	got := Tagged(c, 270)
 	if !strings.Contains(got, "chantier:tests-qualite") {
 		t.Errorf("Tagged = %q, want room for the second label at the size it is drawn in", got)
@@ -94,7 +93,7 @@ func TestTagged_atItsEdges(t *testing.T) {
 		{"the count is what is left, not what was dropped last",
 			[]string{"devops", "release", "suivi", "backend"}, room(14), "devops  +3"},
 	} {
-		if got := Tagged(reading.Card{Labels: c.labels}, c.room); got != c.want {
+		if got := Tagged(engine.Card{Labels: c.labels}, c.room); got != c.want {
 			t.Errorf("%s: Tagged = %q, want %q", c.what, got, c.want)
 		}
 	}
@@ -107,15 +106,15 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 	g := Marks()
 	for _, c := range []struct {
 		what string
-		card reading.Card
+		card engine.Card
 		want string
 	}{
-		{"nothing to say", reading.Card{}, ""},
-		{"a description and no parts", reading.Card{Description: "something written"}, g.Described},
-		{"parts and no description", reading.Card{SubDone: 1, SubTotal: 3}, g.SubTasks + " 1/3"},
-		{"both", reading.Card{Description: "something written", SubDone: 0, SubTotal: 2},
+		{"nothing to say", engine.Card{}, ""},
+		{"a description and no parts", engine.Card{Description: "something written"}, g.Described},
+		{"parts and no description", engine.Card{SubDone: 1, SubTotal: 3}, g.SubTasks + " 1/3"},
+		{"both", engine.Card{Description: "something written", SubDone: 0, SubTotal: 2},
 			g.Described + " " + g.SubTasks + " 0/2"},
-		{"nothing under it", reading.Card{SubDone: 0, SubTotal: 0}, ""},
+		{"nothing under it", engine.Card{SubDone: 0, SubTotal: 0}, ""},
 	} {
 		if got := Carried(c.card, g); got != c.want {
 			t.Errorf("%s: Carried = %q, want %q", c.what, got, c.want)
@@ -139,7 +138,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 		{"months away", now.AddDate(0, 3, 0), "", false},
 	} {
 		t.Run(c.what, func(t *testing.T) {
-			said, late := Due(reading.Card{Deadline: c.due}, now)
+			said, late := Due(engine.Card{Deadline: c.due}, now)
 			if said != c.says || late != c.late {
 				t.Fatalf("Due = %q %v, want %q %v", said, late, c.says, c.late)
 			}
@@ -149,7 +148,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 
 // Estimated at two hours and nine hours spent is a fact no overview carried.
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
-	c := reading.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
+	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
 	said, over := Spent(c)
 	if said != "9h/2h" {
 		t.Fatalf("Spent = %q, want 9h/2h", said)
@@ -172,7 +171,7 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 		"dropped": "✕",
 		"":        "",
 	} {
-		if got := Standing(reading.Goal{State: standing}); got != want {
+		if got := Standing(engine.Goal{State: standing}); got != want {
 			t.Errorf("%q is marked %q, want %q", standing, got, want)
 		}
 	}
@@ -182,14 +181,14 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 // what it serves — the three facts the detail carried and no overview did.
 func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	if said, warn := Facts(reading.Card{State: "blocked", Freed: true}, now); said != FreedMark || !warn {
+	if said, warn := Facts(engine.Card{State: "blocked", Freed: true}, now); said != FreedMark || !warn {
 		t.Fatalf("a card waiting on nothing any more says %q %v", said, warn)
 	}
-	said, warn := Facts(reading.Card{}, now)
+	said, warn := Facts(engine.Card{}, now)
 	if said != "" || warn {
 		t.Fatalf("a card carrying nothing says %q %v", said, warn)
 	}
-	said, warn = Facts(reading.Card{
+	said, warn = Facts(engine.Card{
 		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4},
 	}, now)
 	for _, word := range []string{"2d", "9h/2h", "◇4"} {
@@ -218,7 +217,7 @@ func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
 		{"a minute over", "2h1m", "2h", "2h1m/2h", true},
 	} {
 		t.Run(c.what, func(t *testing.T) {
-			said, over := Spent(reading.Card{Spent: c.spent, Estimate: c.estimate, Overrun: c.over})
+			said, over := Spent(engine.Card{Spent: c.spent, Estimate: c.estimate, Overrun: c.over})
 			if said != c.says || over != c.over {
 				t.Fatalf("Spent = %q %v, want %q %v", said, over, c.says, c.over)
 			}
@@ -229,10 +228,10 @@ func TestWhatATaskCostIsSaidEvenWhenOnlyHalfOfItIsKnown(t *testing.T) {
 // An objective with no standing writes nothing where it would write one, rather
 // than an empty mark taking a label's room.
 func TestAnObjectiveWithNoStandingWritesNothing(t *testing.T) {
-	if got := Standings(reading.Goal{}); got != nil {
+	if got := Standings(engine.Goal{}); got != nil {
 		t.Fatalf("an objective standing nowhere says %v", got)
 	}
-	got := Standings(reading.Goal{State: "active"})
+	got := Standings(engine.Goal{State: "active"})
 	if len(got) != 1 || !strings.Contains(got[0], "active") {
 		t.Fatalf("an active objective says %v", got)
 	}

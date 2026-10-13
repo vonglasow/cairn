@@ -14,7 +14,6 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // Form is the modal over the board while it is open.
@@ -27,7 +26,7 @@ type Form struct {
 	// Number is the task or objective being edited, and nothing when adding.
 	Number int
 
-	fields []reading.Field
+	fields []engine.Field
 	// at is the field the keyboard is on, and caret where it stands inside
 	// that field's value. Moving to another field puts the caret at its end,
 	// because somebody arriving at a field is adding to it.
@@ -119,23 +118,23 @@ func (f Form) onto(at int) Form {
 // it was asked on.
 func adding(tab Tab, state string) Form {
 	if tab == Objectives {
-		return asOpened(Form{Adding: true, ForObjective: true, fields: reading.NewGoalFields()})
+		return asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewGoalFields()})
 	}
-	return asOpened(Form{Adding: true, fields: reading.AddingFields(state)})
+	return asOpened(Form{Adding: true, fields: engine.AddingFields(state)})
 }
 
 // editing opens a form on what a task already carries, its parts included.
-func editing(c reading.Card, cards []reading.Card) Form {
-	return asOpened(Form{Number: c.Number, fields: reading.EditFields(c, cards)})
+func editing(c engine.Card, cards []engine.Card) Form {
+	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c, cards)})
 }
 
 // editingGoal is the same for an objective.
-func editingGoal(g reading.Goal) Form {
-	return asOpened(Form{Number: g.Number, ForObjective: true, fields: reading.GoalFields(g)})
+func editingGoal(g engine.Goal) Form {
+	return asOpened(Form{Number: g.Number, ForObjective: true, fields: engine.GoalFields(g)})
 }
 
 // Fields is what the form asks about, in the order it lays them out.
-func (f Form) Fields() []reading.Field { return f.fields }
+func (f Form) Fields() []engine.Field { return f.fields }
 
 // On is the field the keyboard is on.
 func (f Form) On() int { return f.at }
@@ -154,7 +153,7 @@ func (f Form) ValueOf(name string) string {
 // Set writes a field. A form is a value like everything else here, so this
 // answers the form it becomes.
 func (f Form) Set(name, value string) Form {
-	fields := make([]reading.Field, len(f.fields))
+	fields := make([]engine.Field, len(f.fields))
 	copy(fields, f.fields)
 	for i := range fields {
 		if fields[i].Name == name {
@@ -381,7 +380,7 @@ func (w Window) readingActs() Window {
 	if w.chosenGoal || w.screen != OnForm {
 		return w
 	}
-	shown, err := w.work.Ask(engine.TraceShow, reading.Numbered(w.chosen))
+	shown, err := w.work.Ask(engine.TraceShow, engine.Numbered(w.chosen))
 	if err != nil {
 		return w.failing(err)
 	}
@@ -406,7 +405,7 @@ func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == On
 // on the form alone, then on the form and its list, a task with parts opened
 // a list, then its calendar, and the window fell over each time — its tiles
 // counted the parts, and this said there were none.
-func (w Window) PartsTicked() []reading.Card {
+func (w Window) PartsTicked() []engine.Card {
 	if !formShown(w.screen) {
 		return nil
 	}
@@ -414,13 +413,13 @@ func (w Window) PartsTicked() []reading.Card {
 		if field.Name != "parts" {
 			continue
 		}
-		var cards []reading.Card
-		for _, part := range reading.PartsIn(field.Value) {
+		var cards []engine.Card
+		for _, part := range engine.PartsIn(field.Value) {
 			state := domain.Todo
 			if part.Done {
 				state = domain.Done
 			}
-			cards = append(cards, reading.Card{Number: part.Number, Title: part.Title, State: string(state)})
+			cards = append(cards, engine.Card{Number: part.Number, Title: part.Title, State: string(state)})
 		}
 		return cards
 	}
@@ -463,7 +462,7 @@ func (w Window) stored() (Window, int, error) {
 	// own made a copy a beat.
 	number := w.form.Number
 	if w.form.Adding {
-		number = reading.Added(answer)
+		number = engine.Added(answer)
 		w.form.Adding, w.form.Number = false, number
 	}
 	if err := w.savingParts(number); err != nil {
@@ -473,11 +472,11 @@ func (w Window) stored() (Window, int, error) {
 }
 
 // savingParts settles what hangs under a task with what the form's parts
-// field says — see reading.SettleParts.
+// field says — see engine.SettleParts.
 func (w Window) savingParts(parent int) error {
 	for _, field := range w.form.fields {
 		if field.Name == "parts" {
-			return reading.SettleParts(w.work, parent, field.Value, w.snap.Cards)
+			return engine.SettleParts(w.work, parent, field.Value, w.snap.Cards)
 		}
 	}
 	return nil
@@ -681,21 +680,21 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 	if w.form.ForObjective {
 		adding, editing = engine.ObjectiveNew, engine.ObjectiveEdit
 	}
-	return reading.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
+	return engine.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
 }
 
 // addingOn is the column a task added now belongs to: the one what is chosen
 // stands in, the backlog when nothing is — and the first of the stopped states
 // when what is chosen is in the band, the way the terminal adds there.
 func (w Window) addingOn() string {
-	column, inBand, _, found := reading.Where(w.Showing().Cards, w.archived, w.chosen)
+	column, inBand, _, found := engine.Where(w.Showing().Cards, w.archived, w.chosen)
 	if !found {
-		return reading.StateAt(0)
+		return engine.StateAt(0)
 	}
 	if inBand {
-		return reading.Stalled[0]
+		return engine.Stalled[0]
 	}
-	return reading.StateAt(column)
+	return engine.StateAt(column)
 }
 
 // Delete asks first, and deletes the second time. It is the one thing this
@@ -719,7 +718,7 @@ func (w Window) deleting() Window {
 		op = engine.ObjectiveDelete
 	}
 	w.screen = OnTheBoard
-	if _, err := w.work.Ask(op, reading.Numbered(w.chosen)); err != nil {
+	if _, err := w.work.Ask(op, engine.Numbered(w.chosen)); err != nil {
 		return w.failing(err)
 	}
 	w.chosen, w.chosenGoal = 0, false
@@ -751,17 +750,17 @@ func (w Window) Ticked(number int) bool { return w.ticked[number] }
 // carries. The objectives field carries the numbers the engine takes and shows
 // the names a person knows: nobody knows an objective by its number, and the
 // one place that says what a number means is the other tab.
-func (w Window) FieldSays(field reading.Field) string {
+func (w Window) FieldSays(field engine.Field) string {
 	var said []string
 	switch field.Arg {
 	case "objective":
-		for _, number := range reading.NumbersIn(field.Value) {
+		for _, number := range engine.NumbersIn(field.Value) {
 			said = append(said, "#"+strconv.Itoa(number)+" "+w.goalTitle(number))
 		}
 	case "parent":
 		// The number and what it is called. A number alone is what somebody
 		// has to go and look up, which is the whole of why the list exists.
-		for _, number := range reading.NumbersIn(field.Value) {
+		for _, number := range engine.NumbersIn(field.Value) {
 			said = append(said, "#"+strconv.Itoa(number)+" "+w.cardTitle(number))
 		}
 	default:
@@ -801,7 +800,7 @@ func (w Window) choosingList() Window {
 		// A label is named, not numbered: one made of digits is a name too.
 		w = w.openingLabels(on.Value)
 	} else {
-		for _, number := range reading.NumbersIn(on.Value) {
+		for _, number := range engine.NumbersIn(on.Value) {
 			w.ticked[number] = true
 		}
 	}
@@ -852,7 +851,7 @@ func (w Window) RowSays(one Choice) string {
 		said = TickedMark + "  "
 	}
 	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
-		said += Numbered(reading.Card{Number: one.Number}) + "  "
+		said += Numbered(engine.Card{Number: one.Number}) + "  "
 	}
 	return said + one.Title
 }
@@ -878,14 +877,14 @@ func (w Window) choices() []Choice {
 		return out
 	}
 	if w.choosingFor == "parent" {
-		for _, c := range reading.Parentable(w.snap.Cards, w.form.Number, looking) {
+		for _, c := range engine.Parentable(w.snap.Cards, w.form.Number, looking) {
 			out = append(out, Choice{Number: c.Number, Title: c.Title, State: c.State})
 		}
 		return out
 	}
 	// The same search the search box makes, so the list and the box beside it
 	// never disagree about what a word reaches.
-	for _, g := range reading.FoundGoals(w.snap.Goals, looking) {
+	for _, g := range engine.FoundGoals(w.snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
 	return out
@@ -1006,7 +1005,7 @@ func (w Window) keeping() Window {
 			numbers = append(numbers, g.Number)
 		}
 	}
-	w.form = w.form.Writes(Ending(reading.Numbers(numbers)))
+	w.form = w.form.Writes(Ending(engine.Numbers(numbers)))
 	w.screen = OnForm
 	return w
 }

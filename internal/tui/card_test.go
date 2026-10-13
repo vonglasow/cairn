@@ -1,11 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/engine"
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/internal/reading"
 
 	"charm.land/lipgloss/v2"
 )
@@ -36,18 +35,18 @@ func TestStoppedGlyph(t *testing.T) {
 
 func TestMarks(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	if got := marks(reading.Card{}, g); got != "" {
+	if got := marks(engine.Card{}, g); got != "" {
 		t.Fatalf("a card carrying nothing is marked %q", got)
 	}
-	if got := marks(reading.Card{Description: "something written"}, g); got != g.Described {
+	if got := marks(engine.Card{Description: "something written"}, g); got != g.Described {
 		t.Fatalf("a described card is marked %q", got)
 	}
-	if got := marks(reading.Card{State: "blocked"}, g); got != g.Blocked {
+	if got := marks(engine.Card{State: "blocked"}, g); got != g.Blocked {
 		t.Fatalf("a blocked card is marked %q", got)
 	}
 	// The state anchors the right-hand end, so the eye finds it in the same
 	// place whether or not there is a description beside it.
-	both := marks(reading.Card{Description: "something written", State: "paused"}, g)
+	both := marks(engine.Card{Description: "something written", State: "paused"}, g)
 	if !strings.HasSuffix(both, g.Paused) {
 		t.Fatalf("the state is not last: %q", both)
 	}
@@ -58,7 +57,7 @@ func TestMarks(t *testing.T) {
 
 func TestFactsInAColumn(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	c := reading.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
+	c := engine.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 40)
 	for _, want := range []string{"2d", g.SubTasks + "3/5", g.Label + " spec"} {
 		if !strings.Contains(got, want) {
@@ -71,7 +70,7 @@ func TestFactsInAColumn(t *testing.T) {
 // drawn late, would call for an act nobody has left to do.
 func TestFactsOfADoneTaskSayNothingOfItsDay(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	c := reading.Card{State: "done", Deadline: on("2026-08-29"), Labels: []string{"spec"}}
+	c := engine.Card{State: "done", Deadline: on("2026-08-29"), Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 40)
 	if strings.Contains(got, "3d") {
 		t.Fatalf("a done task still counts its day down: %q", got)
@@ -85,11 +84,11 @@ func TestFactsOfADoneTaskSayNothingOfItsDay(t *testing.T) {
 // about the task — but no longer counts it down nor draws it late.
 func TestDetailBandOfADoneTaskKeepsTheDayWithoutCountingIt(t *testing.T) {
 	b := Board{skin: plainSkin, glyphs: GlyphsFor(Unicode), clock: func() time.Time { return today }}
-	done := b.detailBand(reading.Card{Number: 1, Title: "Shipped", State: "done", Priority: "normal", Deadline: on("2026-08-29")})
+	done := b.detailBand(engine.Card{Number: 1, Title: "Shipped", State: "done", Priority: "normal", Deadline: on("2026-08-29")})
 	if !strings.Contains(done, "2026-08-29") || strings.Contains(done, "3d") {
 		t.Fatalf("a done task's band reads %q, want its day and no count", done)
 	}
-	open := b.detailBand(reading.Card{Number: 1, Title: "Late", State: "todo", Priority: "normal", Deadline: on("2026-08-29")})
+	open := b.detailBand(engine.Card{Number: 1, Title: "Late", State: "todo", Priority: "normal", Deadline: on("2026-08-29")})
 	if !strings.Contains(open, "2026-08-29 · −3d") {
 		t.Fatalf("an open task's band reads %q, want its day and its count", open)
 	}
@@ -97,7 +96,7 @@ func TestDetailBandOfADoneTaskKeepsTheDayWithoutCountingIt(t *testing.T) {
 
 func TestFactsDropWhatWillNotFit(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	c := reading.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
+	c := engine.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 10)
 	if strings.Contains(got, "spec") {
 		t.Fatalf("the label survived a row too narrow for it: %q", got)
@@ -109,28 +108,28 @@ func TestFactsDropWhatWillNotFit(t *testing.T) {
 
 func TestFactsInTheBand(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	blocked := facts(reading.Card{State: "blocked", Blockers: []int{12, 13}}, g, plainSkin, today, 40)
+	blocked := facts(engine.Card{State: "blocked", Blockers: []int{12, 13}}, g, plainSkin, today, 40)
 	if blocked != g.InTheWay+" 12 13" {
 		t.Fatalf("a blocked card says %q", blocked)
 	}
-	because := facts(reading.Card{State: "watching", Because: "she confirms"}, g, plainSkin, today, 40)
+	because := facts(engine.Card{State: "watching", Because: "she confirms"}, g, plainSkin, today, 40)
 	if because != g.InTheWay+" she confirms" {
 		t.Fatalf("a watched card says %q", because)
 	}
-	nothing := facts(reading.Card{State: "paused"}, g, plainSkin, today, 40)
+	nothing := facts(engine.Card{State: "paused"}, g, plainSkin, today, 40)
 	if nothing != "" {
 		t.Fatalf("a paused card with nothing in its way says %q", nothing)
 	}
 	// A stalled card says what is in the way instead of when it is due: in the
 	// band that is the only question being asked.
-	both := facts(reading.Card{State: "blocked", Blockers: []int{1}, Deadline: on("2026-09-02")}, g, plainSkin, today, 40)
+	both := facts(engine.Card{State: "blocked", Blockers: []int{1}, Deadline: on("2026-09-02")}, g, plainSkin, today, 40)
 	if strings.Contains(both, "1d") {
 		t.Fatalf("a stalled card mentioned its deadline: %q", both)
 	}
 }
 
 func TestCardRowsAreFour(t *testing.T) {
-	rows := Rows(reading.Card{Number: 14, Title: "Write the spec"}, GlyphsFor(Unicode), plainSkin, today, 20)
+	rows := Rows(engine.Card{Number: 14, Title: "Write the spec"}, GlyphsFor(Unicode), plainSkin, today, 20)
 	if len(rows) != 4 {
 		t.Fatalf("a card has %d rows, want 4", len(rows))
 	}
@@ -144,7 +143,7 @@ func TestCardRowsAreFour(t *testing.T) {
 
 func TestCardIsAlwaysSixRows(t *testing.T) {
 	l := LayoutFor(100, 40)
-	for _, c := range []reading.Card{
+	for _, c := range []engine.Card{
 		{Number: 1, Title: "Short"},
 		{Number: 2, Title: "A title long enough to run over two whole lines and then some", Description: "something written", SubDone: 1, SubTotal: 2, Labels: []string{"a", "b"}, Deadline: on("2026-09-02")},
 		{Number: 3, Title: "In focus", InFocus: true},
@@ -159,8 +158,8 @@ func TestCardIsAlwaysSixRows(t *testing.T) {
 func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
 	l := LayoutFor(100, 40)
 	b := standing(newFake()).with(plainSkin)
-	plainCard := b.card(reading.Card{Number: 1, Title: "One"}, l)
-	held := b.card(reading.Card{Number: 1, Title: "One", InFocus: true}, l)
+	plainCard := b.card(engine.Card{Number: 1, Title: "One"}, l)
+	held := b.card(engine.Card{Number: 1, Title: "One", InFocus: true}, l)
 	if !strings.Contains(held, "╔") {
 		t.Fatalf("the task in focus is not drawn with a double border:\n%s", held)
 	}
@@ -171,9 +170,9 @@ func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
 
 func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
 	l := LayoutFor(100, 40)
-	c := reading.Card{Number: 1, Title: "One", State: "todo"}
+	c := engine.Card{Number: 1, Title: "One", State: "todo"}
 	f := newFake()
-	f.cards = []reading.Card{c}
+	f.cards = []engine.Card{c}
 	held := hit(standing(f), "l", "i").with(plainSkin)
 	if held.card(c, l) == standing(f).with(plainSkin).card(c, l) {
 		t.Fatal("the card under the cursor is drawn exactly like the others")
@@ -185,8 +184,8 @@ func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
 // on them to say so.
 func TestAnArchivedTaskCarriesItsOwnMark(t *testing.T) {
 	g := GlyphsFor(Unicode)
-	live := reading.Card{Number: 1, Title: "One", State: "todo"}
-	away := reading.Card{Number: 2, Title: "Two", State: "todo", Archived: true}
+	live := engine.Card{Number: 1, Title: "One", State: "todo"}
+	away := engine.Card{Number: 2, Title: "Two", State: "todo", Archived: true}
 	if marks(live, g) == marks(away, g) {
 		t.Fatalf("an archived card is marked like a live one: %q", marks(away, g))
 	}
@@ -198,7 +197,7 @@ func TestAnArchivedTaskCarriesItsOwnMark(t *testing.T) {
 // Labels past the end of the row were dropped without a word, so a card said it
 // carried one label when it carried four.
 func TestLabelsThatDoNotFitAreCounted(t *testing.T) {
-	c := reading.Card{Number: 1, Title: "One", State: "todo",
+	c := engine.Card{Number: 1, Title: "One", State: "todo",
 		Labels: []string{"sprint-172", "backend", "urgent", "review"}}
 	row := facts(c, GlyphsFor(Unicode), PlainSkin(), today, 18)
 	if !strings.Contains(row, "+3") {
@@ -209,7 +208,7 @@ func TestLabelsThatDoNotFitAreCounted(t *testing.T) {
 // The one thing about a blocked task that has to be acted on: every task it
 // waits on is done. The command line said so and the board did not.
 func TestABlockedCardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
-	c := reading.Card{Number: 1, Title: "Ship it", State: "blocked",
+	c := engine.Card{Number: 1, Title: "Ship it", State: "blocked",
 		Blockers: []int{2}, Freed: true}
 	row := facts(c, GlyphsFor(Unicode), PlainSkin(), today, 40)
 	if !strings.Contains(row, "nothing blocks it") {
@@ -220,7 +219,7 @@ func TestABlockedCardSaysWhenNothingBlocksItAnyMore(t *testing.T) {
 // The two ends of the row that counts what it dropped: a width that holds the
 // count exactly, and one that holds nothing at all.
 func TestARowThatCountsWhatItDropped(t *testing.T) {
-	c := reading.Card{Number: 1, Title: "One", State: "todo",
+	c := engine.Card{Number: 1, Title: "One", State: "todo",
 		Labels: []string{"aaa", "bbb", "ccc"}}
 	g, s := GlyphsFor(Unicode), PlainSkin()
 
@@ -259,7 +258,7 @@ func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
 // the heading counting both.
 func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
 		{Number: 2, Title: "Draft the columns", State: "done", Parent: 1},
 		{Number: 3, Title: "Get the client's nod", State: "todo", Parent: 1},
@@ -290,7 +289,7 @@ func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 // wraps pushes the history and everything under it down a line.
 func TestALongPartIsCutToItsPanel(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "Ship it", State: "todo"},
 		{Number: 2, Title: strings.Repeat("a long name for a part ", 10), State: "todo", Parent: 1},
 	}

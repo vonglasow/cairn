@@ -1,4 +1,4 @@
-package reading
+package engine
 
 import (
 	"errors"
@@ -6,13 +6,12 @@ import (
 	"strconv"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/task"
 )
 
 // Added is the number of the task an add answered with: the parent the parts
 // written in its form are added under. Nothing for an answer with no task.
-func Added(answer engine.Answer) int {
+func Added(answer Answer) int {
 	if answer.Task == nil {
 		return 0
 	}
@@ -51,7 +50,7 @@ func SettleParts(work Work, parent int, said string, had []Card) error {
 	kept := map[int]bool{}
 	for _, part := range PartsIn(said) {
 		if part.Number == 0 {
-			if _, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{
+			if _, err := work.Ask(TaskNew, Input{Given: map[string]string{
 				"title": part.Title, "parent": strconv.Itoa(parent), "state": PartState(part.Done),
 			}}); err != nil {
 				return err
@@ -59,7 +58,7 @@ func SettleParts(work Work, parent int, said string, had []Card) error {
 			continue
 		}
 		kept[part.Number] = true
-		if _, err := work.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{
+		if _, err := work.Ask(TaskEdit, Input{Given: map[string]string{
 			"number": strconv.Itoa(part.Number), "title": part.Title, "state": PartState(part.Done),
 		}}); err != nil {
 			return err
@@ -69,7 +68,7 @@ func SettleParts(work Work, parent int, said string, had []Card) error {
 		if kept[was.Number] {
 			continue
 		}
-		if _, err := work.Ask(engine.TaskDelete, Numbered(was.Number)); err != nil {
+		if _, err := work.Ask(TaskDelete, Numbered(was.Number)); err != nil {
 			return err
 		}
 	}
@@ -121,7 +120,7 @@ func movingInto(work Work, order []int) error {
 		} else {
 			in.Given["after"] = strconv.Itoa(order[i-1])
 		}
-		if _, err := work.Ask(engine.TaskMove, in); err != nil {
+		if _, err := work.Ask(TaskMove, in); err != nil {
 			return err
 		}
 	}

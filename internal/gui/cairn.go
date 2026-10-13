@@ -11,9 +11,8 @@ package gui
 // shader of a program's own. See docs/gui.md.
 
 import (
+	"cairn/internal/engine"
 	"time"
-
-	"cairn/internal/reading"
 )
 
 const (
@@ -78,7 +77,7 @@ func Arriving(progress float64, k, n int) (fall, fade float64) {
 // Placed is a card where the board draws it: its slot, and the column or
 // lane it is seen through.
 type Placed struct {
-	Card   reading.Card
+	Card   engine.Card
 	Slot   Box
 	Within Box
 }
@@ -88,7 +87,7 @@ type Placed struct {
 func (w Window) Placed() []Placed {
 	l := w.Layout()
 	var out []Placed
-	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		for at, c := range column.Cards {
 			out = append(out, Placed{Card: c, Slot: l.CardAt(i, at, w.scroll[i]), Within: l.Column[i]})

@@ -1,4 +1,4 @@
-package reading
+package engine
 
 // The three moments of a form both boards share: opening one empty, opening
 // one on a task, and saving it. Each board drew its own form and wrote its own
@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/objective"
 )
 
@@ -51,7 +50,7 @@ func partsField(said string) Field {
 // difference is the operation and the number and nothing else — with the
 // title trimmed on its way out, since what somebody called a task does not
 // include the space they left after it.
-func Saved(fields []Field, adding bool, number int, add, edit engine.Operation) (engine.Operation, engine.Input) {
+func Saved(fields []Field, adding bool, number int, add, edit Operation) (Operation, Input) {
 	op := edit
 	if adding {
 		op = add

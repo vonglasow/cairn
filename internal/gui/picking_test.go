@@ -10,7 +10,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 	"cairn/internal/trace"
 )
 
@@ -21,9 +21,9 @@ func openTask(t *testing.T) (Window, *fake) {
 	f := newFake()
 	f.acts = []trace.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
+		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
 			Description: "Deux colonnes et une bande", Context: "/vault/1"},
-		reading.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
+		engine.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
@@ -122,7 +122,7 @@ func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 
 // A word in a field of the form is held by a double click, as on an open task.
 func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := w.formBox()
 	fields := w.Form().Fields()

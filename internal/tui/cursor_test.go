@@ -1,11 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/engine"
 	"strconv"
 	"strings"
 	"testing"
-
-	"cairn/internal/reading"
 )
 
 // Where the cursor goes: across the columns, down a column and into the band,
@@ -24,7 +23,7 @@ func TestWalkingAcrossToAnEmptyColumnLetsGo(t *testing.T) {
 
 func TestWalkingAcrossKeepsHoldWhereThereIsSomething(t *testing.T) {
 	f := twoTasks()
-	f.cards = append(f.cards, reading.Card{Number: 4, Title: "Over there", State: "current"})
+	f.cards = append(f.cards, engine.Card{Number: 4, Title: "Over there", State: "current"})
 	b := hit(standing(f), "l", "i", "l")
 	if b.Where().Task != 4 {
 		t.Fatalf("the cursor holds %d, want 4", b.Where().Task)
@@ -76,7 +75,7 @@ func TestSteppingUpAndDownAColumn(t *testing.T) {
 func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i")
-	fewer := reading.Snapshot{Cards: []reading.Card{{Number: 2, Title: "Second", State: "todo"}}}
+	fewer := engine.Snapshot{Cards: []engine.Card{{Number: 2, Title: "Second", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 2 {
 		t.Fatalf("the cursor fell to %d, want 2", after.Where().Task)
@@ -86,7 +85,7 @@ func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "j")
-	fewer := reading.Snapshot{Cards: []reading.Card{{Number: 1, Title: "First", State: "todo"}}}
+	fewer := engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "First", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 1 {
 		t.Fatalf("the cursor fell to %d, want 1", after.Where().Task)
@@ -96,7 +95,7 @@ func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 func TestTheCursorLetsGoWhenTheColumnEmpties(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i")
-	after := b.took(Looked{Snapshot: reading.Snapshot{}})
+	after := b.took(Looked{Snapshot: engine.Snapshot{}})
 	if after.Where().Mode != Normal || after.Where().Task != 0 {
 		t.Fatalf("the cursor still holds %d in mode %v", after.Where().Task, after.Where().Mode)
 	}
@@ -104,7 +103,7 @@ func TestTheCursorLetsGoWhenTheColumnEmpties(t *testing.T) {
 
 func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "backlog"},
 		{Number: 2, Title: "Four", State: "done"},
 	}
@@ -119,7 +118,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 	// And with a task in every column, the same walk in insert reaches the last
 	// one and stops there rather than walking off the end.
 	full := newFake()
-	full.cards = []reading.Card{
+	full.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "backlog"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "current"},
@@ -137,7 +136,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 
 func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 5, Title: "First", State: "todo"},
 		{Number: 3, Title: "Second", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
@@ -145,7 +144,7 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 	// The list is not in order of number, so a cursor that fell to the next
 	// number would land somewhere else entirely.
 	b := hit(standing(f), "l", "i", "j")
-	fewer := reading.Snapshot{Cards: []reading.Card{
+	fewer := engine.Snapshot{Cards: []engine.Card{
 		{Number: 5, Title: "First", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
 	}}
@@ -160,7 +159,7 @@ func TestSteppingWithATaskThatIsNotInTheColumn(t *testing.T) {
 	// somewhere different: with two, stepping on from either lands nowhere and
 	// the two cannot be told apart.
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -247,7 +246,7 @@ func TestTheObjectivesListScrollsToTheCursor(t *testing.T) {
 func TestAColumnScrollsToTheCursor(t *testing.T) {
 	f := newFake()
 	for i := 1; i <= 12; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
 	b := hit(standing(f), "l", "i")
 	if b.offsets[1] != 0 {
@@ -273,9 +272,9 @@ func TestAColumnScrollsToTheCursor(t *testing.T) {
 
 func TestTheBandScrollsToTheCursor(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 32; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked"})
 	}
 	b := hit(standing(f), "l", "i", "j")
 	if !b.Where().InBand {
@@ -291,9 +290,9 @@ func TestTheBandScrollsToTheCursor(t *testing.T) {
 
 func TestTheCursorFollowsInsideAnObjective(t *testing.T) {
 	f := newFake()
-	f.goals = []reading.Goal{{Number: 1, Title: "Ship it", State: "active"}}
+	f.goals = []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 	for i := 1; i <= 8; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Objectives: []int{1}})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Objectives: []int{1}})
 	}
 	b := hit(standing(f), "tab", "enter", "l", "i")
 	for range 7 {
@@ -309,7 +308,7 @@ func TestTheCursorFollowsInsideAnObjective(t *testing.T) {
 
 func TestWalkingAlongTheBandsFirstRow(t *testing.T) {
 	f := newFake()
-	f.cards = []reading.Card{
+	f.cards = []engine.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Blocked one", State: "blocked"},
 		{Number: 3, Title: "Blocked two", State: "blocked"},
@@ -334,9 +333,9 @@ func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
 	// Three cards to a row, so the seventh is in the third row. A band that
 	// counted rows any other way would scroll to the wrong place.
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 32; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Down twice from the first card is two rows down, which is the seventh
 	// card: three to a row.
@@ -352,9 +351,9 @@ func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
 
 func TestTheBandIsWalkedAsAGrid(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 27; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Seven stalled cards, three to a row: 20 21 22 / 23 24 25 / 26.
 	b := hit(standing(f), "l", "i", "j")
@@ -389,9 +388,9 @@ func TestTheBandIsWalkedAsAGrid(t *testing.T) {
 
 func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 24; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Four stalled: 20 21 22 / 23. Down from 22 has no card under it.
 	b := hit(standing(f), "l", "i", "j", "l", "l")
@@ -408,9 +407,9 @@ func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
 
 func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 26; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	// Six stalled: 20 21 22 / 23 24 25. Left from the head of the second row is
 	// the end of the first, and walking there would move the cursor up a row
@@ -433,7 +432,7 @@ func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
 func aColumnOf(n int) *fake {
 	f := newFake()
 	for i := 1; i <= n; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
 	return f
 }
@@ -441,9 +440,9 @@ func aColumnOf(n int) *fake {
 func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 	f := aColumnOf(4)
 	f.cards = append(f.cards,
-		reading.Card{Number: 11, Title: "Also one", State: "current"},
-		reading.Card{Number: 12, Title: "Also two", State: "current"},
-		reading.Card{Number: 13, Title: "Also three", State: "current"},
+		engine.Card{Number: 11, Title: "Also one", State: "current"},
+		engine.Card{Number: 12, Title: "Also two", State: "current"},
+		engine.Card{Number: 13, Title: "Also three", State: "current"},
 	)
 	b := hit(standing(f), "l", "i", "j", "j")
 	if b.Where().Task != 3 {
@@ -461,7 +460,7 @@ func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 
 func TestWalkingIntoAShorterColumnStopsAtItsEnd(t *testing.T) {
 	f := aColumnOf(5)
-	f.cards = append(f.cards, reading.Card{Number: 11, Title: "Only one", State: "current"})
+	f.cards = append(f.cards, engine.Card{Number: 11, Title: "Only one", State: "current"})
 	b := hit(standing(f), "l", "i", "j", "j", "j", "j")
 	if b.Where().Task != 5 {
 		t.Fatalf("the cursor is on %d, want the fifth", b.Where().Task)
@@ -505,9 +504,9 @@ func TestOneGOnItsOwnDoesNothingAndIsForgotten(t *testing.T) {
 
 func TestGoesToTheEndsOfTheBandToo(t *testing.T) {
 	f := newFake()
-	f.cards = append(f.cards, reading.Card{Number: 1, Title: "One", State: "todo"})
+	f.cards = append(f.cards, engine.Card{Number: 1, Title: "One", State: "todo"})
 	for i := 20; i < 26; i++ {
-		f.cards = append(f.cards, reading.Card{Number: i, Title: "Stalled", State: "blocked"})
+		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
 	b := hit(standing(f), "l", "i", "j", "shift+g")
 	if b.Where().Task != 25 {

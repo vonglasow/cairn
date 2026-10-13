@@ -1,6 +1,6 @@
 package tui
 
-import "cairn/internal/reading"
+import "cairn/internal/engine"
 
 // How wide and how tall everything is, worked out from the window the terminal
 // reports and worked out again every time it changes. Nothing about a size is
@@ -66,11 +66,11 @@ type Layout struct {
 
 // LayoutFor works out every size at a given window.
 func LayoutFor(width, height int) Layout {
-	column := (width - margin - (reading.Columns - 1)) / reading.Columns
+	column := (width - margin - (engine.Columns - 1)) / engine.Columns
 	return Layout{
 		Column:   column,
 		Interior: column - frame,
-		Band:     column*(reading.Columns-1) + (reading.Columns - 2),
+		Band:     column*(engine.Columns-1) + (engine.Columns - 2),
 		Top:      topRows(height),
 		Rows:     bandRows(height),
 	}

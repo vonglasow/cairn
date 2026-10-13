@@ -1,16 +1,16 @@
 package tui
 
 import (
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 	"cairn/internal/trace"
 )
 
 // line is one act, written the way the detail shows it: when, what was done,
 // what it went from and to when it was about something in particular, and who
-// did it when it was not the person reading. What the act says is
-// reading.SaidOf's to hear; how each piece is inked is the board's.
+// did it when it was not the person engine. What the act says is
+// engine.SaidOf's to hear; how each piece is inked is the board's.
 func (b Board) line(act trace.Act) string {
-	said := reading.SaidOf(act)
+	said := engine.SaidOf(act)
 	out := b.skin.Faint.Render(said.When) + "  " + b.skin.Bright.Render(said.Did)
 	if said.Field != "" {
 		out += "  " + b.skin.Says.Render(said.Field) + "  " +

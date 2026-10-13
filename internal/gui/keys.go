@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // What the keyboard does: the keys the bar offers and the few it does not,
@@ -354,12 +353,12 @@ func (w Window) shifting(across, down int) Window {
 		return w
 	}
 	showing := w.Showing().Cards
-	column, inBand, _, found := reading.Where(showing, w.archived, w.chosen)
+	column, inBand, _, found := engine.Where(showing, w.archived, w.chosen)
 	if !found {
 		return w
 	}
 	if across != 0 {
-		state, ok := reading.Beside(column, inBand, across)
+		state, ok := engine.Beside(column, inBand, across)
 		if !ok {
 			return w
 		}
@@ -369,7 +368,7 @@ func (w Window) shifting(across, down int) Window {
 	if inBand {
 		return w
 	}
-	given, ok := reading.Step(w.inColumn(column), w.chosen, down)
+	given, ok := engine.Step(w.inColumn(column), w.chosen, down)
 	if !ok {
 		return w
 	}
@@ -449,7 +448,7 @@ func (w Window) settledGoals(want int) int {
 
 // walkingGoals is the same down a list, which is what the objectives are.
 func (w Window) walkingGoals(across, down int) Window {
-	here := reading.Sorted(w.Showing().Goals)
+	here := engine.Sorted(w.Showing().Goals)
 	if len(here) == 0 {
 		return w
 	}
@@ -472,14 +471,14 @@ func (w Window) walkingGoals(across, down int) Window {
 func (w Window) WhereChosen() (box, run Box, ok bool) {
 	l := w.Layout()
 	if w.tab == Objectives {
-		for i, g := range reading.Sorted(w.Showing().Goals) {
+		for i, g := range engine.Sorted(w.Showing().Goals) {
 			if g.Number == w.chosen {
 				return GoalAt(l, i, w.goals), GoalsRun(l), true
 			}
 		}
 		return Box{}, Box{}, false
 	}
-	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {
@@ -512,7 +511,7 @@ func (w Window) asking(op engine.Operation, in engine.Input) Window {
 func (w Window) whereChosen() (column, at int) {
 	// What is walked is what is showing: under a search, the arrows reach
 	// what the search left and nothing behind it.
-	dealt, _ := reading.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {

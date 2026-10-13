@@ -4,7 +4,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // Saving is the only moment the form touches anything. What it hands over is
@@ -41,25 +40,25 @@ func (b Board) saveTask(form Form) tea.Cmd {
 		if err := b.savingParts(form); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := reading.Look(b.work)
+		found, err := engine.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
 
 // savingParts settles what hangs under the task with what the form's parts
-// field says — see reading.SettleParts.
+// field says — see engine.SettleParts.
 func (b Board) savingParts(form Form) error {
 	said, holds := form.held["parts"]
 	if !holds || form.Adding {
 		return nil
 	}
-	return reading.SettleParts(b.work, form.Number, *said, b.snap.Cards)
+	return engine.SettleParts(b.work, form.Number, *said, b.snap.Cards)
 }
 
 // saving says which operation a saved form means and what it carries — see
-// reading.Saved.
+// engine.Saved.
 func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Operation, engine.Input) {
-	return reading.Saved(form.typed(), form.Adding, form.Number, adding, editing)
+	return engine.Saved(form.typed(), form.Adding, form.Number, adding, editing)
 }
 
 // saveGoal adds or edits an objective from the form.

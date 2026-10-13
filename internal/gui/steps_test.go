@@ -18,7 +18,6 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 )
 
@@ -34,7 +33,7 @@ func quoted(list string) []string {
 func (w *world) columnsRead(list string) error {
 	want := quoted(list)
 	var got []string
-	dealt, _ := reading.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, column := range dealt {
 		got = append(got, column.Name)
 	}
@@ -44,12 +43,12 @@ func (w *world) columnsRead(list string) error {
 	return nil
 }
 
-func (w *world) cardsOf(column string) ([]reading.Card, error) {
-	at := reading.IndexOf(strings.ToLower(column))
+func (w *world) cardsOf(column string) ([]engine.Card, error) {
+	at := engine.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return nil, fmt.Errorf("no column called %q", column)
 	}
-	dealt, _ := reading.Deal(w.w.Showing().Cards, w.w.archived)
+	dealt, _ := engine.Deal(w.w.Showing().Cards, w.w.archived)
 	return dealt[at].Cards, nil
 }
 
@@ -83,8 +82,8 @@ func (w *world) columnReads(column, list string) error {
 }
 
 func (w *world) bandNamed(name string) error {
-	if reading.Band != name {
-		return fmt.Errorf("the band is named %q", reading.Band)
+	if engine.Band != name {
+		return fmt.Errorf("the band is named %q", engine.Band)
 	}
 	return nil
 }
@@ -98,7 +97,7 @@ func (w *world) lanesRead(list string) error {
 }
 
 func (w *world) laneCarries(kind, title string) error {
-	_, stalled := reading.Deal(w.w.Reading().Cards, w.w.archived)
+	_, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, c := range stalled {
 		if c.State == kind && c.Title == title {
 			return nil
@@ -129,7 +128,7 @@ func (w *world) sameHeight(column string) error {
 	if err != nil {
 		return err
 	}
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	l := w.w.Layout()
 	for i := range here {
 		if got := l.CardAt(at, i, 0).H; got != CardHeight {
@@ -144,7 +143,7 @@ func (w *world) titleEndsIn(column, ending string) error {
 	if err != nil {
 		return err
 	}
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	width := w.w.Layout().Column[at].W
 	for _, c := range here {
 		if strings.HasSuffix(TitleOf(c.Title, width), ending) {
@@ -268,7 +267,7 @@ func (w *world) detailSaysNothingServes() error {
 }
 
 // titles is what a failure prints of a run of cards.
-func titles(cards []reading.Card) []string {
+func titles(cards []engine.Card) []string {
 	var said []string
 	for _, c := range cards {
 		said = append(said, c.Title)
@@ -299,7 +298,7 @@ func (w *world) detailShows(text string) error {
 }
 
 func (w *world) isScrolled(column string) error {
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] == w.scrolled[at] {
 		return fmt.Errorf("%q did not move", column)
 	}
@@ -414,7 +413,7 @@ func (w *world) laneIsNotScrolled(kind string) error {
 }
 
 func (w *world) isNotScrolled(column string) error {
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] != w.scrolled[at] {
 		return fmt.Errorf("%q moved and should not have", column)
 	}
@@ -538,13 +537,13 @@ func (w *world) saysWhatWentWrong() error {
 // cardDimmed reads the ink the card would be written in, which is what the
 // drawing asks the skin for.
 // cardNumbered is the card a scenario names by its number.
-func (w *world) cardNumbered(n int) (reading.Card, error) {
+func (w *world) cardNumbered(n int) (engine.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Number == n {
 			return c, nil
 		}
 	}
-	return reading.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
+	return engine.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
 }
 
 // markedDescribed reads the mark a card writes beside its number.
@@ -678,7 +677,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the parts are drawn as %v, and %q is not among them", w.w.PartsTicked(), title)
 	})
 	sc.Then(`^the trace begins with the last thing done to task (\d+)$`, func(n int) error {
-		shown, err := w.held.Ask(engine.TraceShow, reading.Numbered(n))
+		shown, err := w.held.Ask(engine.TraceShow, engine.Numbered(n))
 		if err != nil {
 			return err
 		}
@@ -786,7 +785,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^it would land below "([^"]*)"$`, func(title string) error {
 		line, ok := w.w.PartLanding()
-		at := slices.IndexFunc(w.w.PartsTicked(), func(c reading.Card) bool { return c.Title == title })
+		at := slices.IndexFunc(w.w.PartsTicked(), func(c engine.Card) bool { return c.Title == title })
 		tile := w.w.partTiles()[at-w.w.partsFrom()]
 		if !ok || line.Y != tile.Y+tile.H-landingHigh {
 			return fmt.Errorf("it would land at %v (%v), and %q ends at %d", line, ok, title, tile.Y+tile.H)
@@ -801,20 +800,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the part "([^"]*)" is ticked$`, func(title string) error {
 		for _, c := range w.w.PartsTicked() {
-			if c.Title == title && reading.Finished(c) {
+			if c.Title == title && engine.Finished(c) {
 				return nil
 			}
 		}
 		return fmt.Errorf("the parts are %+v, and %q is not ticked", w.w.PartsTicked(), title)
 	})
 	sc.Then(`^the part "([^"]*)" is struck out$`, func(title string) error {
-		if !slices.ContainsFunc(w.w.PartsGone(), func(p reading.Part) bool { return p.Title == title }) {
+		if !slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
 			return fmt.Errorf("struck out are %+v, and not %q", w.w.PartsGone(), title)
 		}
 		return nil
 	})
 	sc.Then(`^the part "([^"]*)" is not struck out$`, func(title string) error {
-		if slices.ContainsFunc(w.w.PartsGone(), func(p reading.Part) bool { return p.Title == title }) {
+		if slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
 			return fmt.Errorf("%q is struck out", title)
 		}
 		return nil
@@ -1649,7 +1648,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	// Asked of every card the board deals, columns and band alike: "not in
 	// BACKLOG" would pass for a card that merely sits in another column.
 	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
-		dealt, stalled := reading.Deal(w.w.Showing().Cards, w.w.archived)
+		dealt, stalled := engine.Deal(w.w.Showing().Cards, w.w.archived)
 		for _, held := range dealt {
 			for _, c := range held.Cards {
 				if c.Title == title {
@@ -1706,7 +1705,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 func (w *world) objectivesRead(list string) error {
 	var got []string
-	for _, g := range reading.Sorted(w.w.Reading().Goals) {
+	for _, g := range engine.Sorted(w.w.Reading().Goals) {
 		got = append(got, g.Title)
 	}
 	want := quoted(list)
@@ -1808,7 +1807,7 @@ func (w *world) landsNowhere() error {
 }
 
 func (w *world) landsIn(column string) error {
-	at := reading.IndexOf(strings.ToLower(column))
+	at := engine.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return fmt.Errorf("no column called %q", column)
 	}
@@ -2187,7 +2186,7 @@ func (w *world) fieldDrawnByName(field string) error {
 		// have stopped. Two numbers and a comma cannot fill a third of this
 		// frame; two names do.
 		fields := w.w.Form().Fields()
-		at := slices.IndexFunc(fields, func(x reading.Field) bool { return x.Name == field })
+		at := slices.IndexFunc(fields, func(x engine.Field) bool { return x.Name == field })
 		box := w.w.formBox()
 		value := formValue(box, fields, at)
 		frame := Framed(value, formRows(box, fields, at))
@@ -2379,7 +2378,7 @@ func (w *world) objectivesMoved() error {
 
 // whereGoal is which of the objectives, in the order they are drawn, is chosen.
 func (w *world) whereGoal() (int, error) {
-	for i, g := range reading.Sorted(w.w.Showing().Goals) {
+	for i, g := range engine.Sorted(w.w.Showing().Goals) {
 		if g.Number == w.w.Chosen() {
 			return i, nil
 		}
@@ -2403,7 +2402,7 @@ func (w *world) objectivesInsideTheBoard() error {
 	l := w.w.Layout()
 	run := l.Column[0]
 	last := l.Column[Columns-1]
-	for i := range reading.Sorted(w.w.Showing().Goals) {
+	for i := range engine.Sorted(w.w.Showing().Goals) {
 		box := GoalAt(l, i, 0)
 		if box.X < run.X || box.X+box.W > last.X+last.W {
 			return fmt.Errorf("objective %d runs from %d to %d, and the board from %d to %d",
@@ -2418,7 +2417,7 @@ func (w *world) objectivesAllFit() error {
 		return fmt.Errorf("the objectives start scrolled to %d", got)
 	}
 	l := w.w.Layout()
-	last := len(reading.Sorted(w.w.Showing().Goals)) - 1
+	last := len(engine.Sorted(w.w.Showing().Goals)) - 1
 	box, run := GoalAt(l, last, 0), l.Column[0]
 	if box.Y+box.H > run.Y+run.H {
 		return fmt.Errorf("the last objective ends at %d and the board at %d", box.Y+box.H, run.Y+run.H)
@@ -2451,13 +2450,13 @@ func (w *world) chosenMovedDownARow() error {
 }
 
 // cardOf finds a card by its title, so a step can ask what it says.
-func (w *world) cardOf(title string) (reading.Card, error) {
+func (w *world) cardOf(title string) (engine.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title == title {
 			return c, nil
 		}
 	}
-	return reading.Card{}, fmt.Errorf("no card titled %q", title)
+	return engine.Card{}, fmt.Errorf("no card titled %q", title)
 }
 
 // cardSays reads the line of labels a card draws, at the width a card in a

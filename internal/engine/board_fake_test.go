@@ -1,10 +1,9 @@
-package reading
+package engine
 
 import (
 	"errors"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 )
@@ -15,7 +14,7 @@ import (
 // what it was asked.
 
 type fake struct {
-	asked   []asked
+	asked   []askedOf
 	tasks   []task.Task
 	goals   []objective.Objective
 	focus   []int
@@ -37,24 +36,24 @@ type fake struct {
 	versionFails error
 }
 
-// asked is one thing a reading asked the engine to do.
-type asked struct {
-	op engine.Operation
-	in engine.Input
+// askedOf is one thing a reading asked the engine to do.
+type askedOf struct {
+	op Operation
+	in Input
 }
 
 var errNope = errors.New("the store is not answering")
 
 func newFake() *fake { return &fake{} }
 
-func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
-	f.asked = append(f.asked, asked{op: op, in: in})
+func (f *fake) Ask(op Operation, in Input) (Answer, error) {
+	f.asked = append(f.asked, askedOf{op: op, in: in})
 	if f.fail != nil {
-		return engine.Answer{}, f.fail
+		return Answer{}, f.fail
 	}
 	named := op.Thing + " " + op.Verb
 	if err, refused := f.refuse[named]; refused {
-		return engine.Answer{}, err
+		return Answer{}, err
 	}
 	switch named {
 	case "task list":
@@ -64,12 +63,12 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		for _, t := range f.tasks {
 			contexts[task.OfTask(t).Number] = f.context
 		}
-		return engine.Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed,
+		return Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed,
 			Contexts: contexts, Along: f.along}, nil
 	case "objective list":
-		return engine.Answer{Objectives: f.goals, Along: f.goalsAlong}, nil
+		return Answer{Objectives: f.goals, Along: f.goalsAlong}, nil
 	}
-	return engine.Answer{}, nil
+	return Answer{}, nil
 }
 
 func (f *fake) Version() (int64, error) {

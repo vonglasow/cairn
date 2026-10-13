@@ -74,8 +74,7 @@ all of them.
 | `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
-| `internal/engine` | the operations, the calculations, where the places are found, and the only door to the store | `domain`, `config`, the notions, `store` |
-| `internal/reading` | what every board reads and no board draws: the two listings turned into cards and goals, which fields a form asks about, what a saved form asks the engine for, how the cards deal into columns and where a pushed card goes | `domain`, the notions, `engine` |
+| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, the notions, `store` |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |
@@ -83,30 +82,25 @@ all of them.
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `test` | the acceptance world the surfaces share, and the givens both boards write | `engine`, `config`, the notions |
 
-**`reading` is not a surface, and that is why it exists.** Two boards draw the
-same work — one in a terminal, one in a window — and they differ in how a box
-is drawn, not in what goes in it. That a task with nothing written about it
-carries no description mark, that a deadline four days out reads `4d`, that the
-three stopped states go under the last three columns, that a form's `labels`
-box fills the engine's `label` argument: none of it is about cells or pixels,
-and all of it would otherwise be written twice.
+**A surface is an entry point and nothing more.** The command line, the agent's
+server, the terminal board and the window are four ways in to the same
+actions. Each turns what it was given — a flag, a JSON argument, a key, a
+click — into a call to the engine, and shows what the engine answered in its
+own medium. None of them decides anything: not what a search reaches, not what
+a card says, not how long a week was. Every one of those is the engine's, said
+once, so one question asked on four surfaces cannot come back with four
+answers.
 
-So `reading` is held to something stricter than a surface. `depguard` denies it
-lipgloss, bubbletea, huh and cobra outright — not because they would break it,
-but because reaching for one is the moment it stopped being shareable. It was
-lifted out of `internal/tui` the day the second board was specified and not
-before: a package made for one consumer is a boundary guessed rather than
-measured.
+What a board reads therefore lives in the engine too: the two listings turned
+into cards and goals, that a deadline four days out reads `4d`, that the three
+stopped states go under the last three columns, that a form's `labels` box
+fills the engine's `label` argument. It used to sit in a package of its own
+between the engine and the boards, and that package grew decisions the engine
+did not know about — the boards searched with a rule the command line did not
+have. `depguard` denies the engine every drawing library outright: it says what
+a card carries, never how it is drawn.
 
-**It reads, and it builds what a board asks for — both, on purpose.** Half of
-`reading` turns what the engine answered into cards and columns; the other half
-turns a saved form or a pushed card into the operation and input the engine
-takes. The second half needs the engine's description of its operations, which
-the first does not, and splitting them was weighed: both boards use both
-halves, neither half is used without the other, and a package made of one of
-them would be a boundary with nobody on the far side of it.
-
-**Where a card goes is shared; how the cursor walks is not.** `reading.Step`,
+**Where a card goes is shared; how the cursor walks is not.** `engine.Step`,
 `Beside` and `Where` say where a pushed card lands and which column is beside
 it, once, for both boards. The cursor is each board's own, because the two
 draw the stalled band differently — the terminal as a grid of three across,

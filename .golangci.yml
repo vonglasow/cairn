@@ -147,8 +147,6 @@ linters:
               desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/migration
               desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/reading
-              desc: a task knows nothing of how a board reads it
             - pkg: cairn/internal/tui
               desc: a task knows nothing of how it is displayed
             - pkg: cairn/internal/gui
@@ -185,8 +183,6 @@ linters:
               desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/migration
               desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/reading
-              desc: an objective knows nothing of how a board reads it
             - pkg: cairn/internal/tui
               desc: an objective knows nothing of how it is displayed
             - pkg: cairn/internal/gui
@@ -223,8 +219,6 @@ linters:
               desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/trace
               desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/reading
-              desc: a change knows nothing of how a board reads it
             - pkg: cairn/internal/tui
               desc: a change knows nothing of how it is displayed
             - pkg: cairn/internal/gui
@@ -260,8 +254,6 @@ linters:
               desc: an act is not a surface
             - pkg: cairn/internal/migration
               desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/reading
-              desc: an act knows nothing of how a board reads it
             - pkg: cairn/internal/tui
               desc: an act knows nothing of how it is displayed
             - pkg: cairn/internal/gui
@@ -282,8 +274,6 @@ linters:
               desc: the store is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: the store is not a surface
-            - pkg: cairn/internal/reading
-              desc: the store must not know how anything is displayed
             - pkg: cairn/internal/tui
               desc: the store must not know how anything is displayed
             - pkg: cairn/internal/gui
@@ -294,6 +284,22 @@ linters:
         engine:
           files: ["**/internal/engine/**"]
           deny:
+            # What a board reads lives here, and says what a card carries,
+            # never how it is drawn: no drawing library, no event loop, no
+            # widget. The day somebody measures a width in cells here is the
+            # day the other surface has to undo it.
+            - pkg: charm.land/lipgloss/v2
+              desc: the engine says what a card carries, never how it is drawn
+            - pkg: charm.land/bubbletea/v2
+              desc: the engine holds no event loop and no screen
+            - pkg: charm.land/huh/v2
+              desc: the engine says which fields a form asks about, not what it looks like
+            - pkg: charm.land/bubbles/v2
+              desc: the engine holds no widget
+            - pkg: gioui.org
+              desc: the engine says what a card carries, never how it is drawn
+            - pkg: golang.org/x/image
+              desc: the engine says what a card carries, never how it is drawn
             - pkg: cairn/internal/cli
               desc: the engine is called by surfaces, it never calls them
             - pkg: cairn/internal/mcp
@@ -302,8 +308,6 @@ linters:
               desc: the engine asks the store, it does not reach a database
             - pkg: github.com/spf13/cobra
               desc: the engine is not a surface
-            - pkg: cairn/internal/reading
-              desc: the boards read the engine, it never reads them
             - pkg: cairn/internal/tui
               desc: the engine is called by surfaces, it never calls them
             - pkg: cairn/internal/gui
@@ -339,50 +343,10 @@ linters:
             - pkg: database/sql
               desc: a surface never opens a database
 
-        # What every board reads, and no board draws. `reading` turns the two
-        # listings into cards and goals, says which fields a form asks about and
-        # which engine argument each fills, and deals the cards into columns —
-        # answers a terminal and a window share, because they differ in how a
-        # box is drawn and not in what goes in it.
-        #
-        # So it is held to something stricter than a surface: it may not reach a
-        # drawing library at all. That is the line that keeps it shareable, and
-        # the day somebody measures a width in cells here is the day the second
-        # surface has to undo it.
-        reading:
-          files: ["**/internal/reading/**"]
-          deny:
-            - pkg: cairn/internal/cli
-              desc: what a board reads knows of no surface
-            - pkg: cairn/internal/mcp
-              desc: what a board reads knows of no surface
-            - pkg: cairn/internal/tui
-              desc: the board reads through this, not the other way round
-            - pkg: cairn/internal/store
-              desc: state changes through the engine, never behind it
-            - pkg: database/sql
-              desc: nothing here opens a database
-            - pkg: charm.land/lipgloss/v2
-              desc: this says what a card carries, never how it is drawn
-            - pkg: charm.land/bubbletea/v2
-              desc: this holds no event loop and no screen
-            - pkg: charm.land/huh/v2
-              desc: this says which fields a form asks about, not what it looks like
-            - pkg: github.com/spf13/cobra
-              desc: nothing here parses a command line
-            - pkg: cairn/internal/gui
-              desc: the window reads through this, not the other way round
-            - pkg: gioui.org
-              desc: this says what a card carries, never how it is drawn
-            - pkg: golang.org/x/image
-              desc: this says what a card carries, never how it is drawn
-            - pkg: charm.land/bubbles/v2
-              desc: this holds no widget
-
         # The fourth surface: the same board in a window. Held exactly as the
         # terminal one is, and forbidden it as well — two surfaces do not reach
         # each other, however alike they look. What they share sits underneath
-        # them in `reading`, which is where a second copy gets caught.
+        # them in the engine, which is where a second copy gets caught.
         gui:
           files: ["**/internal/gui/**"]
           deny:
@@ -393,7 +357,7 @@ linters:
             - pkg: cairn/internal/mcp
               desc: two surfaces do not reach each other
             - pkg: cairn/internal/tui
-              desc: what the two boards share lives in reading, not in each other
+              desc: what the two boards share lives in the engine, not in each other
             - pkg: database/sql
               desc: a surface never opens a database
             - pkg: github.com/spf13/cobra
@@ -416,7 +380,7 @@ linters:
             - pkg: github.com/spf13/cobra
               desc: the board is opened by a command, it does not parse one
             - pkg: cairn/internal/gui
-              desc: what the two boards share lives in reading, not in each other
+              desc: what the two boards share lives in the engine, not in each other
 
         # The other surface, held to the same rules, plus one of its own: it may
         # not read the command line. `cli` builds the server, so the arrow runs

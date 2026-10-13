@@ -11,7 +11,6 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
-	"cairn/internal/reading"
 )
 
 // The two screens that take the whole window without taking a form with them:
@@ -188,7 +187,7 @@ func (b Board) drawDetail() string {
 
 // detailOffers is the detail's bar. ^D and ^U are on it only when there is a
 // description for them to walk: a key on the bar does something here.
-func (b Board) detailOffers(c reading.Card) []string {
+func (b Board) detailOffers(c engine.Card) []string {
 	offers := []string{b.offer("hjkl ←↓↑→", "navigate"), b.offer("e", "edit"), b.offer("f", "focus")}
 	if c.Description != "" {
 		offers = append(offers, b.offer("^D ^U", "description"))
@@ -198,7 +197,7 @@ func (b Board) detailOffers(c reading.Card) []string {
 
 // detailLeft is what stacks down the left of the detail: what was written about
 // the task, and what hangs under it.
-func (b Board) detailLeft(c reading.Card, width int) []string {
+func (b Board) detailLeft(c engine.Card, width int) []string {
 	under := b.detailLeftUnder(c, width)
 	var out []string
 	if c.Description != "" {
@@ -228,7 +227,7 @@ const aroundTheDetail = 7
 //
 // It used to be drawn whole, and a long one ran off the bottom of the terminal
 // with everything under it.
-func (b Board) saidOn(c reading.Card, width int, under []string) ([]string, int) {
+func (b Board) saidOn(c engine.Card, width int, under []string) ([]string, int) {
 	taken := 0
 	for _, panel := range under {
 		taken += lipgloss.Height(panel)
@@ -240,7 +239,7 @@ func (b Board) saidOn(c reading.Card, width int, under []string) ([]string, int)
 
 // scrolledSaying is where the description of this task is scrolled to, kept
 // between its two ends. Another task's scroll is not this one's.
-func (b Board) scrolledSaying(c reading.Card, lines []string, rows int) int {
+func (b Board) scrolledSaying(c engine.Card, lines []string, rows int) int {
 	if b.sayingOf != c.Number {
 		return 0
 	}
@@ -271,7 +270,7 @@ func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
 
 // detailLeftUnder is the panels under the description, measured to know how
 // much room is left for it.
-func (b Board) detailLeftUnder(c reading.Card, width int) []string {
+func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 	var under []string
 	if rows := b.subTasks(c, width-4); len(rows) > 0 {
 		under = append(under, b.named(b.partsHead(c), strings.Join(rows, "\n"), width))
@@ -288,10 +287,10 @@ func (b Board) detailLeftUnder(c reading.Card, width int) []string {
 }
 
 // detailBand is the short facts, on two rows above the panels.
-func (b Board) detailBand(c reading.Card) string {
+func (b Board) detailBand(c engine.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
-	if reading.Stopped(c.State) {
+	if engine.Stopped(c.State) {
 		state = lipgloss.NewStyle().Foreground(b.skin.palette.Stopped(c.State)).
 			Render(StoppedGlyph(c.State, b.glyphs) + " " + c.State)
 	}
@@ -301,9 +300,9 @@ func (b Board) detailBand(c reading.Card) string {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
 	// The day stays once the task is done — it is a fact about the task — and
-	// only its count goes: see reading.CardDeadline.
+	// only its count goes: see engine.CardDeadline.
 	if day := domain.FormatDay(c.Deadline); day != "" {
-		text, show, late := reading.CardDeadline(c, b.now())
+		text, show, late := engine.CardDeadline(c, b.now())
 		style := b.skin.Bright
 		if late {
 			style = b.skin.Late
@@ -330,15 +329,15 @@ func (b Board) detailBand(c reading.Card) string {
 }
 
 // subTasks is what hangs under a task, each with where it stands.
-func (b Board) subTasks(c reading.Card, width int) []string {
+func (b Board) subTasks(c engine.Card, width int) []string {
 	var out []string
 	// What is left first, and a box before each, the marks the form's own
 	// field writes: what is left in the reading ink, what is done faint and
 	// struck through. The difference used to be the brightness of the ink, the
 	// other way round, and a part to do read as one finished with.
-	for _, part := range reading.Hanging(b.snap.Cards, c.Number) {
+	for _, part := range engine.Hanging(b.snap.Cards, c.Number) {
 		box, name := "[ ]", b.skin.Bright.Render(part.Title)
-		if reading.Finished(part) {
+		if engine.Finished(part) {
 			box, name = "[x]", b.skin.Faint.Strikethrough(true).Render(part.Title)
 		}
 		out = append(out, Clip(b.skin.Says.Render(box)+" "+b.skin.Faint.Render(strconv.Itoa(part.Number))+"  "+name, width))
@@ -347,12 +346,12 @@ func (b Board) subTasks(c reading.Card, width int) []string {
 }
 
 // partsHead is the panel's name, and how many of its parts are left and done.
-func (b Board) partsHead(c reading.Card) string {
-	return "SUB-TASKS   " + reading.Tallied(reading.Hanging(b.snap.Cards, c.Number))
+func (b Board) partsHead(c engine.Card) string {
+	return "SUB-TASKS   " + engine.Tallied(engine.Hanging(b.snap.Cards, c.Number))
 }
 
 // serves is the objectives a task counts towards.
-func (b Board) serves(c reading.Card, width int) string {
+func (b Board) serves(c engine.Card, width int) string {
 	var out []string
 	for _, number := range c.Objectives {
 		for _, g := range b.snap.Goals {
@@ -402,7 +401,7 @@ func (b Board) history(number, width, rows int) []string {
 // again.
 func (b Board) hearing(number int) tea.Cmd {
 	return func() tea.Msg {
-		shown, err := b.work.Ask(engine.TraceShow, reading.Numbered(number))
+		shown, err := b.work.Ask(engine.TraceShow, engine.Numbered(number))
 		return Heard{Number: number, Acts: shown.Acts, Err: err}
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 	"cairn/test"
@@ -108,15 +107,15 @@ func (f *fake) gave(thing, verb string) (engine.Input, bool) {
 
 // holding builds a window already showing these cards, so a test starts where
 // a person starts rather than at an empty screen.
-func holding(f *fake, cards ...reading.Card) Window {
+func holding(f *fake, cards ...engine.Card) Window {
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
+	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
 	return w
 }
 
 // card is one, in a column, titled.
-func card(number int, title, state string) reading.Card {
-	return reading.Card{Number: number, Title: title, State: state}
+func card(number int, title, state string) engine.Card {
+	return engine.Card{Number: number, Title: title, State: state}
 }
 
 // middleOf is the point a person would click to hit the n-th card of a column.
@@ -189,17 +188,17 @@ func (w Window) doubleClicked(at Point) Window {
 
 // formName, formValue and formRows are where a field of a form is drawn, one
 // answer of FormPlace at a time, for a test that wants only one of them.
-func formName(box Box, fields []reading.Field, at int) Box {
+func formName(box Box, fields []engine.Field, at int) Box {
 	name, _, _ := FormPlace(box, fields, at)
 	return name
 }
 
-func formValue(box Box, fields []reading.Field, at int) Box {
+func formValue(box Box, fields []engine.Field, at int) Box {
 	_, value, _ := FormPlace(box, fields, at)
 	return value
 }
 
-func formRows(box Box, fields []reading.Field, at int) int {
+func formRows(box Box, fields []engine.Field, at int) int {
 	_, _, rows := FormPlace(box, fields, at)
 	return rows
 }

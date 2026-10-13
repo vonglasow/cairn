@@ -14,7 +14,6 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // Note is what the window last said that is not something gone wrong: where a
@@ -90,7 +89,7 @@ func (w Window) onBackups(name string) Window {
 func (w Window) puttingBack() Window {
 	number := w.backups[w.backupOn].Number
 	w.screen, w.question = OnTheBoard, aboutDeleting
-	if _, err := w.work.Ask(engine.BackupRestore, reading.Numbered(number)); err != nil {
+	if _, err := w.work.Ask(engine.BackupRestore, engine.Numbered(number)); err != nil {
 		return w.failing(err)
 	}
 	return w.Look().telling(fmt.Sprintf("backup %d was restored", number))

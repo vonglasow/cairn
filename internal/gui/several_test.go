@@ -1,17 +1,16 @@
 package gui
 
 import (
+	"cairn/internal/engine"
 	"slices"
 	"testing"
 
 	"gioui.org/io/key"
-
-	"cairn/internal/reading"
 )
 
 // gathered is a board with the cards given, the first of the second column
 // chosen and the others ⌘-clicked in, in the order given.
-func gathered(cards []reading.Card, at ...Point) Window {
+func gathered(cards []engine.Card, at ...Point) Window {
 	w := holding(newFake(), cards...)
 	w = w.clicked(at[0])
 	for _, p := range at[1:] {
@@ -24,7 +23,7 @@ func gathered(cards []reading.Card, at ...Point) Window {
 // one taken as much as any other; and esc lets go of what is taken before it
 // clears a search.
 func TestWhatIsTakenIsLetGoOf(t *testing.T) {
-	cards := []reading.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
+	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
 	w := holding(newFake(), cards...)
 	w = gathered(cards, middleOf(w, 1, 0), middleOf(w, 1, 1), middleOf(w, 1, 2))
 	if got := w.Taken(); !slices.Equal(got, []int{1, 2, 3}) {
@@ -58,14 +57,14 @@ func TestWhatIsTakenIsLetGoOf(t *testing.T) {
 // click gathers instead. On the objectives page what is chosen stays an
 // objective.
 func TestAStretchStaysInItsColumn(t *testing.T) {
-	cards := []reading.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
+	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShift).clicked(middleOf(w, 0, 0)).KeysDown(0)
 	if got := w.Taken(); !slices.Equal(got, []int{1, 3}) || w.ChosenGoal() {
 		t.Errorf("a stretch across two columns took %v, chosen an objective: %v", got, w.ChosenGoal())
 	}
 	goals := New(newFake(), 1200, 800)
-	goals.snap = reading.Snapshot{Goals: []reading.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
+	goals.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
 	goals.tab = Objectives
 	goals = goals.clicked(goalMiddle(goals, 1)).KeysDown(key.ModShift).clicked(goalMiddle(goals, 2)).KeysDown(0)
 	if got := goals.Taken(); !slices.Equal(got, []int{1, 2}) || !goals.ChosenGoal() {
@@ -77,7 +76,7 @@ func TestAStretchStaysInItsColumn(t *testing.T) {
 // the rest goes in one act.
 func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 	f := newFake()
-	cards := []reading.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}
+	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(f, cards...)
 	w.archived = true
 	w = w.clicked(middleOf(w, 1, 0))

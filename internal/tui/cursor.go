@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -13,7 +13,7 @@ import (
 // lastColumn is the rightmost, done. A function rather than a constant, so the
 // gate can judge the arithmetic: a package-level constant sits outside every
 // covered block, and a wrong one would go out unjudged.
-func lastColumn() int { return reading.Columns - 1 }
+func lastColumn() int { return engine.Columns - 1 }
 
 // underTheBand says whether the stalled band lies beneath a column. It does
 // not lie under the backlog, which runs the whole height instead.
@@ -121,7 +121,7 @@ func (b Board) stepTo(way string) Board {
 }
 
 // wide is how many cards the band puts in a row.
-func wide() int { return reading.Columns - 1 }
+func wide() int { return engine.Columns - 1 }
 
 // stepInBand walks the band as what it is drawn as: a grid. Down goes down a
 // row and right goes along one, because a key that pointed down and moved the
@@ -237,7 +237,7 @@ func (b Board) follow() Board {
 	if b.inBand {
 		// The band lays its cards out three across, so what scrolls is the row
 		// a card is in and not the card itself.
-		b.bandAt = Scrolled(b.bandAt, at/(reading.Columns-1), l.Rows)
+		b.bandAt = Scrolled(b.bandAt, at/(engine.Columns-1), l.Rows)
 		return b
 	}
 	top := l.Top
@@ -321,7 +321,7 @@ func (b Board) toEdge(which func(int) int) Board {
 }
 
 // at answers where in a list the cursor's task sits, or that it is not in it.
-func (b Board) at(here []reading.Card) int {
+func (b Board) at(here []engine.Card) int {
 	for i, c := range here {
 		if c.Number == b.task {
 			return i
@@ -331,13 +331,13 @@ func (b Board) at(here []reading.Card) int {
 }
 
 // held answers the card the cursor is holding.
-func (b Board) held() (reading.Card, bool) {
+func (b Board) held() (engine.Card, bool) {
 	for _, c := range b.cards() {
 		if c.Number == b.task {
 			return c, true
 		}
 	}
-	return reading.Card{}, false
+	return engine.Card{}, false
 }
 
 // push moves the task itself. Sideways it changes column, and the state follows
@@ -368,7 +368,7 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 		return b, nil
 	}
 	here := b.here()
-	if where, ok := reading.Step(here, b.task, 1); ok {
+	if where, ok := engine.Step(here, b.task, 1); ok {
 		return b, b.moving(where)
 	}
 	if b.at(here) < 0 {
@@ -384,9 +384,9 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 // column it was pushed down from.
 func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
-		return b.land(reading.StateAt(b.cameFrom), b.cameFrom, false)
+		return b.land(engine.StateAt(b.cameFrom), b.cameFrom, false)
 	}
-	if where, ok := reading.Step(b.here(), b.task, -1); ok {
+	if where, ok := engine.Step(b.here(), b.task, -1); ok {
 		return b, b.moving(where)
 	}
 	return b, nil
@@ -400,11 +400,11 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	if way == goRight {
 		by = 1
 	}
-	state, ok := reading.Beside(b.column, b.inBand, by)
+	state, ok := engine.Beside(b.column, b.inBand, by)
 	if !ok {
 		return b, nil
 	}
-	return b.land(state, reading.IndexOf(state), false)
+	return b.land(state, engine.IndexOf(state), false)
 }
 
 // land writes the new state and puts the cursor where the task went.

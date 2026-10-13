@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 )
 
 // A month is shown as six weeks from the Monday on or before its first day:
@@ -57,7 +57,7 @@ func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 // The calendar hangs under the field it answers, the way a list does, as wide
 // as its heading with the arrows beside it, its offers, or a week of days.
 func TestTheCalendarHangsUnderItsField(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -78,7 +78,7 @@ func TestTheCalendarHangsUnderItsField(t *testing.T) {
 // A click on the deadline opens the calendar, as one on a field a list
 // answers opens the list; on any other field it only puts the keyboard there.
 func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for _, c := range []struct {
 		arg    string
@@ -100,7 +100,7 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 // over the calendar, a notch a month; off the calendar it does nothing.
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	if got := domain.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
@@ -158,7 +158,7 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 // outline the chosen card does.
 func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(reading.Card{Number: 1, Title: "Write the spec"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"}, nil)
 	shot := drawn(t, w)
 	for i, day := range MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
@@ -180,7 +180,7 @@ func TestAFormAddingIsNamedNew(t *testing.T) {
 	if got := Heads(w); got != "a deadline for the new task — October 2026" {
 		t.Errorf("the calendar of a task being added is headed %q", got)
 	}
-	w.form = editing(reading.Card{Number: 4, Title: "Ship"}, nil)
+	w.form = editing(engine.Card{Number: 4, Title: "Ship"}, nil)
 	if got := Heads(w); got != "a deadline for task 4 — October 2026" {
 		t.Errorf("the calendar of task 4 is headed %q", got)
 	}
@@ -190,7 +190,7 @@ func TestAFormAddingIsNamedNew(t *testing.T) {
 // after it: "backspace  No day" ran into "esc  Cancel" when every offer had the
 // same width whatever it said.
 func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -231,7 +231,7 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 // Under the calendar the form draws none of its offers: they would be the
 // calendar's, drawn a second time at the form's foot.
 func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	foot := PanelOfferAt(w.formPanel(), 0)
 	skin := Dark()
@@ -250,7 +250,7 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 // they are drawn: spelled for Windows, "Ctrl+Enter  Save" is wider than an
 // offer's least width, and the line used to start under it.
 func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
 	w.keyboard = KeyboardOf("windows")
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	offers := w.PanelOffers()
@@ -281,7 +281,7 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 // two read as two things to press and not one bar.
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(reading.Card{Number: 1, Title: "A"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
 	shot, skin := drawn(t, w), Dark()
 	for _, arrow := range []Box{MonthBefore(w.CalendarBox()), MonthAfter(w.CalendarBox())} {
 		chip := Box{X: arrow.X + 2, Y: arrow.Y, W: arrow.W - 4, H: 1}
@@ -301,7 +301,7 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 // it saved, as a click off any panel puts it away.
 func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -333,7 +333,7 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 // none.
 func TestACalendarOverATaskWithPartsIsDrawn(t *testing.T) {
 	w := holding(newFake(), card(1, "Ship it", "todo"),
-		reading.Card{Number: 2, Title: "Draft the columns", State: "todo", Parent: 1})
+		engine.Card{Number: 2, Title: "Draft the columns", State: "todo", Parent: 1})
 	w.chosen = 1
 	w = w.Edit()
 	for i, field := range w.Form().Fields() {

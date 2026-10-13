@@ -1,4 +1,4 @@
-package reading
+package engine
 
 import (
 	"slices"
@@ -100,7 +100,7 @@ func TestACardIsToldWhetherAnythingIsWrittenAboutIt(t *testing.T) {
 
 func TestACardKnowsWhetherItIsInHand(t *testing.T) {
 	f := newFake()
-	f.tasks = []task.Task{numbered(3, "First"), numbered(4, "Second")}
+	f.tasks = []task.Task{numberedTask(3, "First"), numberedTask(4, "Second")}
 	f.focus = []int{4}
 
 	read := found(t, f)
@@ -116,7 +116,7 @@ func TestACardKnowsWhetherItIsInHand(t *testing.T) {
 // them is marked.
 func TestEveryCardInHandIsMarked(t *testing.T) {
 	f := newFake()
-	f.tasks = []task.Task{numbered(3, "First"), numbered(4, "Second"), numbered(5, "Third")}
+	f.tasks = []task.Task{numberedTask(3, "First"), numberedTask(4, "Second"), numberedTask(5, "Third")}
 	f.focus = []int{3, 5}
 
 	read := found(t, f)
@@ -131,7 +131,7 @@ func TestEveryCardInHandIsMarked(t *testing.T) {
 // numbered builds a task carrying a number, which only the store gives one in
 // earnest — and a card that marks the focus can only be checked against two
 // tasks that are telling different numbers.
-func numbered(n int, title string) task.Task {
+func numberedTask(n int, title string) task.Task {
 	var told task.AsTold
 	aTask(title).Tell(&told)
 	told.Numbered(n)

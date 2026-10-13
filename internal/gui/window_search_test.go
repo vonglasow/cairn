@@ -3,7 +3,7 @@ package gui
 import (
 	"testing"
 
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -15,8 +15,8 @@ import (
 func TestSearchingNarrowsTheBoardToWhatItReaches(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Write the spec", State: "backlog", Description: "two columns"},
-		reading.Card{Number: 2, Title: "Ship the board", State: "backlog"})
+		engine.Card{Number: 1, Title: "Write the spec", State: "backlog", Description: "two columns"},
+		engine.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
 	w = w.Key("/")
 	if w.Screen() != OnSearch {
@@ -41,8 +41,8 @@ func TestSearchingNarrowsTheBoardToWhatItReaches(t *testing.T) {
 func TestLeavingASearchPutsEverythingBack(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		reading.Card{Number: 1, Title: "Write the spec", State: "backlog"},
-		reading.Card{Number: 2, Title: "Ship the board", State: "backlog"})
+		engine.Card{Number: 1, Title: "Write the spec", State: "backlog"},
+		engine.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
 	w = w.Key("/").Types("spec")
 	if got := len(w.Showing().Cards); got != 1 {
@@ -61,7 +61,7 @@ func TestLeavingASearchPutsEverythingBack(t *testing.T) {
 // answer is an answer.
 func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	w = w.Key("/").Types("nothing like it")
 	if got := len(w.Showing().Cards); got != 0 {
 		t.Errorf("a search that reaches nothing shows %d tasks", got)
@@ -72,7 +72,7 @@ func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 func TestASearchReachesObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(reading.Snapshot{Goals: []reading.Goal{
+	w.snap = test.Searchable(engine.Snapshot{Goals: []engine.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}})
@@ -91,7 +91,7 @@ func TestASearchReachesObjectives(t *testing.T) {
 // and one character is one rune.
 func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	f := newFake()
-	w := holding(f, reading.Card{Number: 1, Title: "réunion", State: "backlog"})
+	w := holding(f, engine.Card{Number: 1, Title: "réunion", State: "backlog"})
 
 	w = w.Key("/").Types("réu")
 	if got := w.Key("backspace").Looking(); got != "ré" {
@@ -136,7 +136,7 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 // Escape closes the search box and widens the board again, by the key as well
 // as by the offer: the two are the same act and were written apart.
 func TestEscapeOutOfTheSearchByTheKey(t *testing.T) {
-	w := holding(newFake(), reading.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("/").Types("spec")
 	if w.Screen() != OnSearch || w.Looking() == "" {
 		t.Fatalf("the search did not open: %v %q", w.Screen(), w.Looking())

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/reading"
+	"cairn/internal/engine"
 )
 
 var errNoBackup = errors.New("the backups cannot be reached")
@@ -205,9 +205,9 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 // list of backups it used to scroll the column hidden behind them. Over the
 // list of backups it scrolls the list, a line a notch, and stops at its ends.
 func TestTheWheelStaysInsideAPanel(t *testing.T) {
-	var many []reading.Card
+	var many []engine.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, reading.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(newFake(), many...)
 	l := w.Layout()

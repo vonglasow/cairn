@@ -13,7 +13,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
-	"cairn/internal/reading"
 )
 
 // What a key changes, and how. Every one of these goes back through the same
@@ -22,11 +21,11 @@ import (
 // drift the first time one of them was fixed.
 
 // kinds are the three the band holds, in the order the popup offers them.
-var kinds = reading.Stalled
+var kinds = engine.Stalled
 
 // setState asks the engine to move a task to a column.
 func (b Board) setState(state string) tea.Cmd {
-	in := reading.Numbered(b.task)
+	in := engine.Numbered(b.task)
 	in.Given["state"] = state
 	return b.carry(engine.TaskEdit, in)
 }
@@ -35,7 +34,7 @@ func (b Board) setState(state string) tea.Cmd {
 // column: that is an edit, and one act with two meanings is an act nobody can
 // undo confidently — the engine says so, and this respects it.
 func (b Board) moving(where map[string]string) tea.Cmd {
-	in := reading.Numbered(b.task)
+	in := engine.Numbered(b.task)
 	for name, value := range where {
 		in.Given[name] = value
 	}
@@ -70,18 +69,18 @@ func (b Board) choosingKind(key string) (tea.Model, tea.Cmd) {
 }
 
 // toggleFocus takes the task in hand, or lets it go when it is already the one
-// in hand. One key for both, because it is one question — see reading.FocusOp.
+// in hand. One key for both, because it is one question — see engine.FocusOp.
 func (b Board) toggleFocus() tea.Cmd {
 	card, holding := b.snap.Card(b.task)
 	if !holding {
 		return nil
 	}
-	return b.carry(reading.FocusOp(card), reading.Numbered(card.Number))
+	return b.carry(engine.FocusOp(card), engine.Numbered(card.Number))
 }
 
 // remove deletes the task the cursor is holding.
 func (b Board) remove() tea.Cmd {
-	return b.carry(engine.TaskDelete, reading.Numbered(b.task))
+	return b.carry(engine.TaskDelete, engine.Numbered(b.task))
 }
 
 // puttingAway takes the task the cursor is on off the board, or brings it back
@@ -92,7 +91,7 @@ func (b Board) puttingAway() tea.Cmd {
 	if !holding {
 		return nil
 	}
-	return b.carry(reading.AwayOp(card), reading.Numbered(card.Number))
+	return b.carry(engine.AwayOp(card), engine.Numbered(card.Number))
 }
 
 // sweeping takes every task in the column the cursor is on off the board. The
@@ -100,7 +99,7 @@ func (b Board) puttingAway() tea.Cmd {
 // asked it to: archiving twelve finished tasks was one gesture there and
 // twenty-four here.
 func (b Board) sweepingColumn() tea.Cmd {
-	return b.carry(engine.TaskArchive, engine.Input{Given: map[string]string{"state": reading.StateAt(b.column)}})
+	return b.carry(engine.TaskArchive, engine.Input{Given: map[string]string{"state": engine.StateAt(b.column)}})
 }
 
 // removeGoal deletes the objective the cursor is on.
@@ -108,7 +107,7 @@ func (b Board) removeGoal() tea.Cmd {
 	if b.goal == 0 {
 		return nil
 	}
-	return b.carry(engine.ObjectiveDelete, reading.Numbered(b.goal))
+	return b.carry(engine.ObjectiveDelete, engine.Numbered(b.goal))
 }
 
 // otherTab moves between the two tabs, and lets go of whatever the cursor was
@@ -143,8 +142,8 @@ func (b Board) firstGoal() int {
 }
 
 // goals is every objective the board is drawing, in the order it draws them.
-func (b Board) goals() []reading.Goal {
-	return reading.FoundGoals(b.snap.Goals, b.query)
+func (b Board) goals() []engine.Goal {
+	return engine.FoundGoals(b.snap.Goals, b.query)
 }
 
 // openObjective opens the board of the objective the cursor is on: the same
@@ -221,7 +220,7 @@ func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 		if _, err := b.work.Ask(op, in); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := reading.Look(b.work)
+		found, err := engine.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -236,7 +235,7 @@ func (b Board) telling(op engine.Operation, in engine.Input) tea.Cmd {
 		if err != nil {
 			return Looked{Err: err}
 		}
-		found, err := reading.Look(b.work)
+		found, err := engine.Look(b.work)
 		return Answered{Text: engine.RenderText(op, answer), Looked: Looked{Snapshot: found, Err: err}}
 	}
 }
