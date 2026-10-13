@@ -578,6 +578,23 @@ func drawStone(gtx layout.Context, stone []Point, ink color.NRGBA) {
 	paint.FillShape(gtx.Ops, ink, clip.Outline{Path: path.End()}.Op())
 }
 
+// drawEye is an eye in its box: an almond outlined, and its pupil filled.
+func drawEye(gtx layout.Context, eye Box, ink color.NRGBA) {
+	left := f32.Pt(float32(eye.X), float32(eye.Y)+float32(eye.H)/2)
+	right := f32.Pt(float32(eye.X+eye.W), left.Y)
+	middle := float32(eye.X) + float32(eye.W)/2
+	var almond clip.Path
+	almond.Begin(gtx.Ops)
+	almond.MoveTo(left)
+	almond.QuadTo(f32.Pt(middle, float32(eye.Y)-float32(eye.H)/2), right)
+	almond.QuadTo(f32.Pt(middle, float32(eye.Y+eye.H)+float32(eye.H)/2), left)
+	almond.Close()
+	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: almond.End(), Width: 1.5}.Op())
+	r := float32(eye.H) / 3
+	pupil := clip.Ellipse{Min: image.Pt(int(middle-r), int(left.Y-r)), Max: image.Pt(int(middle+r+0.5), int(left.Y+r+0.5))}
+	paint.FillShape(gtx.Ops, ink, pupil.Op(gtx.Ops))
+}
+
 // drawCard is the one shape this board is made of: a panel, a coloured edge for
 // what it carries, its number, and as much of its title as fits.
 //
@@ -594,7 +611,10 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c read
 	if chosen {
 		outline(gtx, parts.Panel, skin.Chosen)
 	}
-	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
+	if eye, ok := FocusEye(c, parts.Number); ok {
+		drawEye(gtx, eye, skin.Chosen)
+	}
+	say(gtx, th, skin.Faint, NumberText(c, parts.Number), Numbered(c), small)
 	if said := Carried(c, Marks()); said != "" {
 		say(gtx, th, skin.Faint, CountedAt(parts.Number, said), said, small)
 	}

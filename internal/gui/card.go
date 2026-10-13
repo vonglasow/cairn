@@ -77,27 +77,40 @@ const padding = 12
 
 // What a card's number line says besides the number.
 //
-// Written as a mark rather than drawn as a glyph: the eleven glyph marks the
-// terminal board draws were left out of this window on purpose, and this one
-// earns its place because it cannot be worked out by looking — a card gives no
-// sign that somebody, or some agent session, is on it.
-//
-// There were two. The other said a card hung under another, and it went when
-// sub-tasks left the board: nothing draws one there to mark.
+// The one mark a card carries before its number: an eye, drawn rather than
+// written, saying somebody, or some agent session, is on this task — it
+// cannot be worked out by looking. It was a dot, which read as nothing in
+// particular. The eleven glyph marks the terminal board draws were left out of
+// this window on purpose; there was another, saying a card hung under
+// another, and it went when sub-tasks left the board.
 const (
-	// InFocusMark says somebody, or some agent session, is on this task.
-	InFocusMark = " ●"
+	eyeWide  = 16
+	eyeHigh  = 10
+	eyeSpace = 5
 )
 
-// Numbered is a card's number line: the number, and what the card cannot say
-// for itself.
-func Numbered(c reading.Card) string {
-	line := strconv.Itoa(c.Number)
-	if c.InFocus {
-		line += InFocusMark
+// FocusEye is where a card's eye is drawn in its number line, and whether it
+// has one: only a card in focus does.
+func FocusEye(c reading.Card, number Box) (Box, bool) {
+	if !c.InFocus {
+		return Box{}, false
 	}
-	return line
+	return Box{X: number.X, Y: number.Y + (number.H-eyeHigh)/2, W: eyeWide, H: eyeHigh}, true
 }
+
+// NumberText is where a card's number is written: along the number line, or
+// after the eye when there is one.
+func NumberText(c reading.Card, number Box) Box {
+	if _, ok := FocusEye(c, number); !ok {
+		return number
+	}
+	moved := eyeWide + eyeSpace
+	return Box{X: number.X + moved, Y: number.Y, W: number.W - moved, H: number.H}
+}
+
+// Numbered is a card's number line: its number. What a card cannot say for
+// itself is drawn beside it — see FocusEye.
+func Numbered(c reading.Card) string { return strconv.Itoa(c.Number) }
 
 // Carried is what a card says of what it holds but does not show: that there
 // is a description to read, and how far the parts under it have got. The two

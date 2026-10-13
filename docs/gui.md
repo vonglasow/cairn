@@ -487,8 +487,10 @@ neither can be worked out by looking. A card gives no sign that somebody — or
 some agent session — is on it, and a sub-task looks exactly like a task while
 being the one thing that cannot be dragged wherever you like: it moves among
 its sisters and nowhere else. So the number line carries `↳` and its parent's
-number, and `●` when it is being worked on. `f` takes the chosen task up or
-lets it go, under the same key the terminal board uses.
+number, and an eye before it when it is being worked on — drawn, in the
+colour that says chosen, where a `●` read as nothing in particular
+(`FocusEye`). `f` focuses or unfocuses the chosen task, under the same key the
+terminal board uses.
 
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
