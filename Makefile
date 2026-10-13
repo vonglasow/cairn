@@ -81,6 +81,10 @@ dev:
 red:
 	@.claude/hooks/red.sh "$(PKG)" "$(RUN)" "$(MOVING)"
 
+# Every test credits every package it runs (-coverpkg=./...), scenarios
+# included; cover-check counts each block once, however many test binaries
+# reached it. See docs/checks.md.
+#
 # The profile is a real artifact, so both `cover` and `cover-check` read it
 # instead of each running the suite themselves. It is rebuilt whenever a Go
 # file or a scenario changes — a scenario is executed by the suite, so editing
@@ -92,7 +96,7 @@ red:
 # the same variable unsynchronised, which `-covermode=atomic` does not — atomic
 # only keeps the coverage counters themselves honest under concurrency.
 coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*) go.mod go.sum
-	@go test -race ./... -covermode=atomic -coverprofile=$@
+	@go test -race ./... -covermode=atomic -coverpkg=./... -coverprofile=$@
 
 ## cover: print coverage per function, then the total
 cover: coverage.out
@@ -114,10 +118,11 @@ cover-check: coverage.out
 		if (t + 0 < m + 0) { printf "\xe2\x9c\x97 coverage %s%% is below the %s%% floor\n", t, m; exit 1 } \
 		printf "\xe2\x9c\x93 coverage %s%% \xe2\x89\xa5 %s%%\n", t, m }' || failed=1; \
 	awk -v m="$(PACKAGE_COVERAGE_MIN)" ' \
-		NR > 1 { \
-			split($$1, where, ":"); pkg = where[1]; sub("/[^/]*$$", "", pkg); \
-			statements[pkg] += $$2; if ($$3 > 0) reached[pkg] += $$2 } \
+		NR > 1 { size[$$1] = $$2; if ($$3 > 0) hit[$$1] = 1 } \
 		END { \
+			for (block in size) { \
+				split(block, where, ":"); pkg = where[1]; sub("/[^/]*$$", "", pkg); \
+				statements[pkg] += size[block]; if (block in hit) reached[pkg] += size[block] } \
 			for (pkg in statements) { \
 				if (index(pkg, "cairn/cmd/") == 1) continue; \
 				share = 100 * reached[pkg] / statements[pkg]; \

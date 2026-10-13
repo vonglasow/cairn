@@ -69,11 +69,3 @@ func aTask(title string) task.Task {
 	}
 	return built
 }
-
-func aGoal(title string) objective.Objective {
-	built, err := objective.NewObjective(title)
-	if err != nil {
-		panic(err)
-	}
-	return built
-}

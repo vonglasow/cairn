@@ -2,11 +2,13 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/trace"
 	"fmt"
 	"image/color"
 	"math"
 	"slices"
 	"strings"
+	"time"
 )
 
 // PanelOffers is where the offers of the panel that has the window are drawn, and so where they are clicked.
@@ -141,4 +143,36 @@ func (w Window) On(name string) Window {
 		}
 	}
 	return w
+}
+
+func anAct(did, field, became, through string) trace.Act {
+	var told trace.AsTold
+	told.On(1)
+	told.Did(did)
+	told.At(time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC))
+	if field != "" {
+		told.Changing(field)
+		told.Became(became)
+	} else {
+		told.NothingNamed()
+		told.BecameNothing()
+	}
+	if through != "" {
+		told.Through(through)
+	} else {
+		told.ByHand()
+	}
+	return told.Act()
+}
+
+func narrow(line string, _ int) []int {
+	edges := []int{0}
+	for _, r := range line {
+		wide := 9
+		if r == 'i' {
+			wide = 3
+		}
+		edges = append(edges, edges[len(edges)-1]+wide)
+	}
+	return edges
 }

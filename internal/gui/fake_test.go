@@ -102,11 +102,6 @@ func middleOf(w Window, column, at int) Point {
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-func inLane(w Window, lane int) Point {
-	box := w.Layout().Lane[lane]
-	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
-}
-
 func (w Window) clicked(at Point) Window {
 	w, _ = tapped(w, Gesture{}, at)
 	return w

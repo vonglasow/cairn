@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"cairn/internal/domain"
-	"cairn/internal/objective"
 	"cairn/internal/task"
 )
 
@@ -89,43 +88,6 @@ func (f *taskFacts) ObjectivesTold()           {}
 func factsOf(t task.Task) taskFacts {
 	var f taskFacts
 	t.Tell(&f)
-	return f
-}
-
-func changedObjective(built objective.Objective, mutate func(a *objective.AsTold)) objective.Objective {
-	a := &objective.AsTold{}
-	built.Tell(a)
-	mutate(a)
-	return a.Objective()
-}
-
-type objectiveFacts struct {
-	number             int
-	title, description string
-	state              objective.State
-	priority           domain.Priority
-	labels             []string
-	deadline           time.Time
-	estimate           time.Duration
-}
-
-func (f *objectiveFacts) Numbered(n int)             { f.number = n }
-func (f *objectiveFacts) Titled(s string)            { f.title = s }
-func (f *objectiveFacts) Standing(s objective.State) { f.state = s }
-func (f *objectiveFacts) Carries(p domain.Priority)  { f.priority = p }
-func (f *objectiveFacts) Described(s string)         { f.description = s }
-func (f *objectiveFacts) NotDescribed()              { f.description = "" }
-func (f *objectiveFacts) Labelled(l string)          { f.labels = append(f.labels, l) }
-func (f *objectiveFacts) NotLabelled()               { f.labels = nil }
-func (f *objectiveFacts) LabelsTold()                {}
-func (f *objectiveFacts) Due(t time.Time)            { f.deadline = t }
-func (f *objectiveFacts) NotDue()                    { f.deadline = time.Time{} }
-func (f *objectiveFacts) Estimated(d time.Duration)  { f.estimate = d }
-func (f *objectiveFacts) NotEstimated()              { f.estimate = 0 }
-
-func factsOfObjective(o objective.Objective) objectiveFacts {
-	var f objectiveFacts
-	o.Tell(&f)
 	return f
 }
 

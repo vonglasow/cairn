@@ -164,13 +164,13 @@ package has no test file, which is the case mutation is blind to. And `cover-
 check` now carries a floor **per package** beside the total, so a package at
 zero fails on its own rather than being diluted by ten that are not.
 
-A scenario is what makes this easy to get wrong, and it is worth saying why:
-coverage is measured per package, from that package's own test binary. A
-scenario in `internal/cli` that reaches the engine, the store and a notion
-proves the behaviour end to end and credits **only** `internal/cli`. The code
-it runs elsewhere is exercised without being guarded — and once the scenario is
-green there is no red left to make anybody write the unit tests. Green reads as
-done.
+Coverage counts every test that runs a line, scenarios included: the profile is
+built with `-coverpkg=./...`, so a scenario in `internal/cli` that reaches the
+engine, the store and a notion credits all of them. Until 2026-10-14 it was
+measured per package from that package's own tests, which kept thousands of
+lines of unit tests asserting again what a scenario already asserted through
+the real surface; they went once the scenarios counted. Mutation is what still
+says whether a covered line is guarded.
 
 ## Thresholds
 
