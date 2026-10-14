@@ -1107,3 +1107,19 @@ func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 		t.Errorf("the estimate took %q", got.Form().Fields()[got.Form().On()].Value)
 	}
 }
+
+func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it"}, nil)}
+	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "estimate" })
+	name, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
+	if got := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explains(); got != "how long it should take" {
+		t.Errorf("the estimate's name explains %q", got)
+	}
+	if got := w.Hovering(Point{X: value.X + value.W - 1, Y: value.Y + 1}).Explains(); got != "" {
+		t.Errorf("what was typed explains %q, want nothing in the way of the typing", got)
+	}
+	tip := ExplainedAt(name, w.width)
+	if tip.Y < name.Y+name.H || tip.X+tip.W > w.width {
+		t.Errorf("the explanation %+v covers the name %+v or leaves the window", tip, name)
+	}
+}

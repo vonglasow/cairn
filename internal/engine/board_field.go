@@ -14,13 +14,14 @@ type Field struct {
 	Arg     string
 	Value   string
 	Was     string
+	Means   string
 	Choices []string
 	Long    bool
 }
 
 // TaskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
 func TaskFields(c Card) []Field {
-	return opened([]Field{
+	return opened(TaskEdit, []Field{
 		{Name: "title", Arg: "title", Value: c.Title},
 		{Name: "description", Arg: "desc", Value: c.Description, Long: true},
 		{Name: "column", Arg: "state", Value: c.State, Choices: States()},
@@ -36,16 +37,26 @@ func TaskFields(c Card) []Field {
 	})
 }
 
-func opened(fields []Field) []Field {
+func opened(op Operation, fields []Field) []Field {
 	for i := range fields {
 		fields[i].Was = fields[i].Value
+		fields[i].Means = meaning(op, fields[i].Arg)
 	}
 	return fields
 }
 
+func meaning(op Operation, arg string) string {
+	for _, a := range op.Takes {
+		if a.Name == arg {
+			return a.Means
+		}
+	}
+	return ""
+}
+
 // GoalFields is every field of an objective.
 func GoalFields(g Goal) []Field {
-	return opened([]Field{
+	return opened(ObjectiveEdit, []Field{
 		{Name: "title", Arg: "title", Value: g.Title},
 		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
 		{Name: "standing", Arg: "state", Value: g.State, Choices: Standings},

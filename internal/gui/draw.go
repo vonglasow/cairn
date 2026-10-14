@@ -807,6 +807,13 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
 	}
+	if said := w.Explains(); said != "" {
+		name, _, _ := FormPlace(box, fields, w.explaining-1)
+		tip := ExplainedAt(name, w.width)
+		fill(gtx, tip, skin.Back)
+		outline(gtx, tip, skin.Edge)
+		sayOver(gtx, th, skin.Ink, Inside(tip), said, small, 3)
+	}
 	if !w.Form().Adding {
 		if w.ChosenGoal() {
 			drawUnder(gtx, th, skin, panel, w)

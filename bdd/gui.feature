@@ -882,6 +882,25 @@ Feature: The desktop board
       And I press "esc"
       Then task 1 is called "Write the spec"
 
+    @gui-a-field-says-what-it-is
+    Scenario: the pointer resting on a field's name says what the field is
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I rest the pointer on the name of the field "estimate"
+      Then the window explains "how long it should take"
+
+    @gui-a-field-stops-explaining
+    Scenario: the pointer leaving a field's name takes its explanation away
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I rest the pointer on the name of the field "time spent"
+      And I rest the pointer on the name of the field "deadline"
+      Then the window explains "the day it is due"
+      When the pointer leaves the window
+      Then the window explains nothing
+
     @gui-adding-starts-empty
     Scenario: adding starts on an empty form and writes a new task
       When I open the window

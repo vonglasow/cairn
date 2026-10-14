@@ -87,3 +87,18 @@ func TestSaved_editingSendsOnlyWhatWasChanged(t *testing.T) {
 		t.Errorf("adding left out the time spent: %v", in.Given)
 	}
 }
+
+func TestFields_sayWhatEachOneIs(t *testing.T) {
+	for _, fields := range [][]Field{EditFields(Card{Number: 1, Title: "Ship it"}, nil), AddingFields("todo"), GoalFields(Goal{Title: "Ship"})} {
+		for _, f := range fields {
+			if f.Means == "" {
+				t.Errorf("the field %q says nothing of what it is", f.Name)
+			}
+		}
+	}
+	for _, f := range TaskFields(Card{}) {
+		if f.Name == "estimate" && f.Means != "how long it should take" {
+			t.Errorf("the estimate says %q", f.Means)
+		}
+	}
+}

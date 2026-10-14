@@ -1093,6 +1093,32 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("%s holds no task titled %q", day, title)
 	})
+	sc.Step(`^I rest the pointer on the name of the field "([^"]*)"$`, func(name string) error {
+		for i, field := range w.w.form.Fields() {
+			if field.Name == name {
+				box, _, _ := FormPlace(w.w.formBox(), w.w.form.Fields(), i)
+				w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + box.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the form has no field %q", name)
+	})
+	sc.Step(`^the pointer leaves the window$`, func() error {
+		w.w = w.w.Away()
+		return nil
+	})
+	sc.Then(`^the window explains "([^"]*)"$`, func(said string) error {
+		if got := w.w.Explains(); !strings.Contains(got, said) {
+			return fmt.Errorf("the window explains %q, want %q", got, said)
+		}
+		return nil
+	})
+	sc.Then(`^the window explains nothing$`, func() error {
+		if got := w.w.Explains(); got != "" {
+			return fmt.Errorf("the window explains %q", got)
+		}
+		return nil
+	})
 	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
 		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
 			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))

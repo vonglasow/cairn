@@ -70,14 +70,45 @@ func (w Window) Click(p Point) Window {
 // Hovering answers the window the pointer resting at a point leaves behind.
 func (w Window) Hovering(p Point) Window {
 	w.over, w.hovered = w.offerAt(p)
+	w.explaining = w.nameAt(p)
 	return w
 }
 
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
-	w.over, w.hovered = "", false
+	w.over, w.hovered, w.explaining = "", false, 0
 	return w
 }
+
+func (w Window) nameAt(p Point) int {
+	if w.screen != OnForm {
+		return 0
+	}
+	fields := w.form.Fields()
+	for i := range fields {
+		if name, _, _ := FormPlace(w.formBox(), fields, i); name.In(p) {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+// Explains is what the field whose name the pointer rests on is, as the engine says it; nothing when it rests on no field's name.
+func (w Window) Explains() string {
+	fields := w.form.Fields()
+	if w.screen != OnForm || w.explaining == 0 || w.explaining > len(fields) {
+		return ""
+	}
+	return fields[w.explaining-1].Means
+}
+
+// ExplainedAt is where a field's explanation is drawn: just under its name, kept inside the window.
+func ExplainedAt(name Box, width int) Box {
+	x := min(name.X, width-margin-tipWide)
+	return Box{X: max(margin, x), Y: name.Y + name.H + inset, W: tipWide, H: 3*lineHigh + 2*inset}
+}
+
+const tipWide = 360
 
 // Lighting says whether an offer is the one the pointer is resting on, which is the one thing in the window that says a word can be clicked.
 func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offer }

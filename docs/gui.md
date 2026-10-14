@@ -337,6 +337,13 @@ there is one, the field that wants more than one line, and `Arg` — what the
 engine calls the same thing. An attribute added to the engine and to the
 terminal's form arrives here with no line written.
 
+**A field's name says what the field is.** The pointer resting on it opens an
+explanation under it, and leaving it takes the explanation away
+(`@gui-a-field-says-what-it-is`). The words are the engine's — what the command
+line's help and an agent's schema say of the same argument (`Field.Means`) — so
+the three cannot disagree. Only the name explains: over what is being typed, an
+explanation would be in the way. The title has no name drawn, and none.
+
 A field with `Choices` is chosen from the same list as a parent, a `Long` field
 a multi-line box, the rest a line to type in. The field the keyboard is on is lit, and it is the only one:
 that is the whole of what says where typing would go.

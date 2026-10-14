@@ -114,6 +114,7 @@ type Window struct {
 	archived              bool
 	over                  string
 	hovered               bool
+	explaining            int
 	picked                Picked
 	pickingText           bool
 	wheelOn               Screen

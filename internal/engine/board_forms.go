@@ -29,7 +29,7 @@ func AddingFields(state string) []Field {
 }
 
 func partsField(said string) Field {
-	return Field{Name: "parts", Arg: "parts", Value: said, Was: said, Long: true}
+	return Field{Name: "parts", Arg: "parts", Value: said, Was: said, Means: meaning(TaskEdit, "parts"), Long: true}
 }
 
 // Saved is what a saved form asks for: adding or editing — one form, so the difference is the operation and the number and nothing else — with the title trimmed on its way out, since what somebody called a task does not include the space they left after it.
