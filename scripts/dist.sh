@@ -50,15 +50,8 @@ git archive --format=tar.gz --prefix="$name/" \
   "${extra[@]}" \
   -o "$out/$name-src.tar.gz" "$tree"
 
-# Every archive made here keeps its sum: the line of the one just made is
-# written again, the others are left as they were. Rewritten whole, the file
-# lost the sums of every earlier version the moment a later one was made.
+scripts/sums.sh "$out" "$name-src.tar.gz"
 cd "$out"
-{
-  grep -v "  $name-src.tar.gz\$" SHA256SUMS 2>/dev/null || true
-  shasum -a 256 "$name-src.tar.gz"
-} | sort -k2 >SHA256SUMS.new
-mv SHA256SUMS.new SHA256SUMS
 cat SHA256SUMS
 
 # The Homebrew formula that builds this archive. Homebrew installs only from a
@@ -69,8 +62,9 @@ cat SHA256SUMS
 sum=$(shasum -a 256 "$name-src.tar.gz" | cut -d' ' -f1)
 url="${FORMULA_URL:-file://$(pwd)}/$name-src.tar.gz"
 mkdir -p Formula
-cat >Formula/cairn.rb <<FORMULA
-class Cairn < Formula
+formula() {
+  cat <<FORMULA
+class $1 < Formula
   desc "Personal objective and task manager: a command line, an MCP server and a board"
   url "$url"
   version "${version#v}"
@@ -88,3 +82,10 @@ class Cairn < Formula
   end
 end
 FORMULA
+}
+
+# The tap keeps the latest as cairn and every minor beside it as cairn@X.Y,
+# the way it keeps gaia's, so an older minor can still be installed by name.
+minor=$(echo "${version#v}" | cut -d. -f1-2)
+formula Cairn >Formula/cairn.rb
+formula "CairnAT${minor//./}" >"Formula/cairn@$minor.rb"

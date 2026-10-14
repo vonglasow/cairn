@@ -31,7 +31,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog dist stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
+.PHONY: release release-check next-version changelog dist package desktop stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -282,6 +282,11 @@ next-version:
 ## dist: make the source archive of this version, with its notices, in ./dist
 dist: notices
 	@scripts/dist.sh $(VERSION) dist bin/THIRD_PARTY_NOTICES
+
+## package: build cairn here and make its archive for this system, with its notices, in ./dist
+## A release builds it on each system in turn — see .github/workflows/release.yml.
+package: notices
+	@scripts/package.sh $(VERSION) dist bin/THIRD_PARTY_NOTICES
 
 ## notices: write the licences of what the binary is built from, beside it
 ## What travels with a binary handed to somebody — see docs/release.md.

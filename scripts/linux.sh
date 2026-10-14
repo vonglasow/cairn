@@ -24,10 +24,7 @@ version=$(awk '/^toolchain go/ {sub("go", "", $2); print $2}' go.mod)
 docker run --rm -v "$PWD":/src -w /src \
   -e CAIRN_WINDOWLESS=1 -e GOFLAGS=-buildvcs=false -e OUTSIDE="$(id -u)" \
   "golang:$version-bookworm" bash -c '
-    apt-get update -qq >/dev/null &&
-    apt-get install -qq -y --no-install-recommends \
-      libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
-      libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev jq >/dev/null &&
+    scripts/linux-headers.sh jq &&
     useradd -m -o -u "$OUTSIDE" tester &&
     runuser -u tester -- env HOME=/home/tester PATH="$PATH" GOPATH=/home/tester/go \
       GOCACHE=/home/tester/.cache/go-build CAIRN_WINDOWLESS=1 GOFLAGS=-buildvcs=false \

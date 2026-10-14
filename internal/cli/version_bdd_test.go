@@ -186,6 +186,60 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
+		sc.Step(`^beside the archive is a Homebrew formula "([^"]*)" for version "([^"]*)"$`, func(name, version string) error {
+			said, err := os.ReadFile(filepath.Join(w.archive, "Formula", name+".rb"))
+			if err != nil {
+				return err
+			}
+			class := "class CairnAT" + strings.ReplaceAll(strings.TrimPrefix(name, "cairn@"), ".", "") + " < Formula"
+			for _, must := range []string{class, `version "` + version + `"`, `bin.install "bin/cairn"`} {
+				if !strings.Contains(string(said), must) {
+					return fmt.Errorf("the formula %s says nothing of %q:\n%s", name, must, said)
+				}
+			}
+			return nil
+		})
+
+		packed := func(version string) string {
+			ext := ".tar.gz"
+			if runtime.GOOS == "windows" {
+				ext = ".zip"
+			}
+			return "cairn-" + version + "-" + runtime.GOOS + "-" + runtime.GOARCH + ext
+		}
+		sc.Step(`^a binary archive of this repository made as version "([^"]*)" for this system$`, func(version string) error {
+			w.archive = filepath.Join(w.t.TempDir(), "dist")
+			return command(root(), "scripts/package.sh", version, w.archive)
+		})
+		sc.Step(`^the archive is named for version "([^"]*)" and this system$`, func(version string) error {
+			_, err := os.Stat(filepath.Join(w.archive, packed(version)))
+			return err
+		})
+		sc.Step(`^the binary in it says it is version "([^"]*)"$`, func(version string) error {
+			w.unpacked = w.t.TempDir()
+			if err := command(w.unpacked, "tar", "-xzf", filepath.Join(w.archive, packed(version))); err != nil {
+				return err
+			}
+			said, err := exec.Command(filepath.Join(w.unpacked, "cairn"), "--version").Output()
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(string(said), version) {
+				return fmt.Errorf("the binary says %q", said)
+			}
+			return nil
+		})
+		sc.Step(`^the checksums name it$`, func() error {
+			sums, err := os.ReadFile(filepath.Join(w.archive, "SHA256SUMS"))
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(string(sums), "  cairn-") || !strings.Contains(string(sums), runtime.GOOS+"-"+runtime.GOARCH) {
+				return fmt.Errorf("the checksums say:\n%s", sums)
+			}
+			return nil
+		})
+
 		sc.Step(`^I unpack it somewhere git has never been$`, func() error {
 			found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
 			if err != nil {
@@ -268,7 +322,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			if err := os.MkdirAll(filepath.Join(w.repo, "scripts"), 0o755); err != nil {
 				return err
 			}
-			for _, name := range []string{"release.sh", "dist.sh", "changelog.sh"} {
+			for _, name := range []string{"release.sh", "dist.sh", "changelog.sh", "sums.sh"} {
 				script, err := os.ReadFile(filepath.Join(root(), "scripts", name))
 				if err != nil {
 					return err
@@ -457,7 +511,11 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 }
 
 func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-hosted")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-hosted,@version-brew-formula-for-its-minor")
+}
+
+func TestAcceptance_Version_ComesAsABinaryForEachSystem(t *testing.T) {
+	runAcceptance(t, "version.feature", initVersion(t), "@version-binary-archive")
 }
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {

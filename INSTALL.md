@@ -52,7 +52,20 @@ go build -o cairn.exe ./cmd/cairn
 A build made this way does not know its version: it says `dev`, because the
 version is stamped by `make`. Put `cairn.exe` in a folder on your `PATH`.
 
-### With Homebrew
+### From a release
+
+Every version on GitHub comes with a binary for each system:
+`cairn-vX.Y.Z-darwin-arm64.tar.gz`, `-darwin-amd64`, `-linux-amd64`,
+`-linux-arm64`, and `-windows-amd64.zip`, with `SHA256SUMS` beside them. Nothing
+to build: unpack it and put `cairn` on your `PATH`, below. With Homebrew, from
+the tap the release fills:
+
+```sh
+brew install vonglasow/tap/cairn          # the latest
+brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
+```
+
+### With Homebrew, from an archive
 
 Beside every archive, `Formula/cairn.rb` builds it with Homebrew. Homebrew
 installs only from a tap, so make a local one once, put the formula in it, and

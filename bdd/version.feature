@@ -45,6 +45,18 @@ Feature: Version
     Given the source archive of this repository made as version "v9.9.9" to be fetched from "https://files.example.org/cairn"
     Then the formula fetches "https://files.example.org/cairn/cairn-v9.9.9-src.tar.gz"
 
+  @version-brew-formula-for-its-minor
+  Scenario: the archive comes with a formula kept at its minor version too, as the tap keeps every one
+    Given the source archive of this repository made as version "v9.9.9"
+    Then beside the archive is a Homebrew formula "cairn@9.9" for version "9.9.9"
+
+  @version-binary-archive
+  Scenario: a binary is handed over in an archive named for the system it runs on
+    Given a binary archive of this repository made as version "v9.9.9" for this system
+    Then the archive is named for version "v9.9.9" and this system
+    And the binary in it says it is version "v9.9.9"
+    And the checksums name it
+
   @version-install-reads-anywhere
   Scenario: the archive's install guide reads the same in any tool, on any system
     Given the source archive of this repository made as version "v9.9.9"
