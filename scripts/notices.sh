@@ -13,7 +13,13 @@
 # none fails the script: a notice with a hole in it is not one to ship.
 set -euo pipefail
 
-cache=$(go env GOMODCACHE)
+# Go answers in the system's own spelling, which on Windows is C:\... with its
+# backslashes; Git Bash's find takes it for no path at all, and every licence
+# looked for went missing. Spelt as the shell spells it there, it is found.
+unix() {
+  if command -v cygpath >/dev/null; then cygpath -u "$1"; else printf '%s' "$1"; fi
+}
+cache=$(unix "$(go env GOMODCACHE)")
 missing=0
 
 # escaped is a module path as the cache spells it: an upper-case letter as !
@@ -35,7 +41,7 @@ echo "Go $(go env GOVERSION) — the runtime and the standard library"
 echo "================================================================"
 # Where Go keeps its licence depends on who installed it: beside the sources,
 # or one level up when a package manager moved it.
-goroot=$(go env GOROOT)
+goroot=$(unix "$(go env GOROOT)")
 golicence=$(find "$goroot" "$goroot/.." -maxdepth 1 -name LICENSE 2>/dev/null | head -1)
 if [ -z "$golicence" ]; then
   echo "no licence file found for Go under $goroot" >&2
