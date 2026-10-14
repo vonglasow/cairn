@@ -220,6 +220,8 @@ func Of(op Operation, a Answer) any {
 		return migration.OfRolledBack(*a.RolledBack)
 	case Labelled:
 		return Labelled{Labelled: *a.Labelled}
+	case Labels:
+		return Labels{Labels: *a.Labels}
 	case Deleted:
 		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
 	case Restored:

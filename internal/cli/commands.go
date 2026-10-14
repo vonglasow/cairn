@@ -19,6 +19,7 @@ var groupShort = map[string]string{
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
 	"trace":     "Read what was done to a task, or over a period",
+	"label":     "List every label, and delete or rename one on everything carrying it",
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 	"plugin":    "Write the Claude Code plugin this cairn carries",
 }

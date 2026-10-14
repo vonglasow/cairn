@@ -325,6 +325,178 @@
       "additionalProperties": false
     }
   },
+  "label_delete": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Take a label off everything carrying it"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "the label to take off everything",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    },
+    "level": 3,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "label_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List every label, with what carries it"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "label_rename": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Rename a label on everything carrying it"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "the label to rename",
+          "type": "string"
+        },
+        "to": {
+          "description": "the name it takes",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "to"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
   "migration_apply": {
     "annotations": {
       "destructiveHint": false,

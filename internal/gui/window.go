@@ -29,6 +29,8 @@ const (
 	OnMenu
 	// OnBackups is the list of backups, one of which may be put back.
 	OnBackups
+	// OnLabels is the list of every label, one of which may be renamed or taken off everything.
+	OnLabels
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -85,6 +87,7 @@ type Window struct {
 	calendarState
 	menuState
 	backupsState
+	labelsState
 	filesState
 	timeState
 	born                            time.Time

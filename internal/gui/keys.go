@@ -40,6 +40,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnCalendar: Window.onCalendar,
 	OnMenu:     Window.onMenu,
 	OnBackups:  Window.onBackups,
+	OnLabels:   Window.onLabels,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -61,6 +62,8 @@ func (w Window) onBoard(name string) Window {
 		return w.backingUp()
 	case "shift+b":
 		return w.listingBackups()
+	case "shift+l":
+		return w.listingLabels()
 	case "cmd+e":
 		return w.exportingTasks()
 	case "cmd+o":

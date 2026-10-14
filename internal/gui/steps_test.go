@@ -1153,6 +1153,60 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
+		if w.w.Screen() != OnLabels {
+			return fmt.Errorf("the labels are not listed: the window is on %v", w.w.Screen())
+		}
+		for _, one := range w.w.LabelsCarried() {
+			if one.Label == label {
+				if one.Tasks != tasks || one.Objectives != objectives {
+					return fmt.Errorf("the label %q is carried by %+v", label, one)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the labels list no %q: %+v", label, w.w.LabelsCarried())
+	})
+	sc.Then(`^the labels list no "([^"]*)"$`, func(label string) error {
+		for _, one := range w.w.LabelsCarried() {
+			if one.Label == label {
+				return fmt.Errorf("the labels still list %q", label)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the labels are listed$`, func() error {
+		if w.w.Screen() != OnLabels {
+			return fmt.Errorf("the window is on %v", w.w.Screen())
+		}
+		return nil
+	})
+	sc.Step(`^I click the label "([^"]*)"$`, func(label string) error {
+		for i, one := range w.w.LabelsCarried() {
+			if one.Label == label {
+				row := ListRowAt(w.w.LabelsBox(), i-w.w.LabelsFrom())
+				w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("no label %q is listed", label)
+	})
+	sc.Then(`^the window asks "([^"]*)"$`, func(question string) error {
+		if w.w.Screen() != OnAsking || Heads(w.w) != question {
+			return fmt.Errorf("the window is on %v and asks %q", w.w.Screen(), Heads(w.w))
+		}
+		return nil
+	})
+	sc.Then(`^task (\d+) carries exactly the labels "([^"]*)"$`, func(n int, want string) error {
+		shown, err := w.other.Ask(engine.TaskShow, engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}})
+		if err != nil {
+			return err
+		}
+		if got := strings.Join(task.OfTask(*shown.Task).Labels, ", "); got != want {
+			return fmt.Errorf("task %d carries %q, want %q", n, got, want)
+		}
+		return nil
+	})
 	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
 		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
 			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))

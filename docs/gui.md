@@ -628,6 +628,14 @@ time shown was spent on. The page lies over the columns and draws none of them,
 so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.
 
+**Every label is seen, renamed and deleted from the window.** `⇧L`, or Labels
+in the File menu, lists them with what carries each, as `cairn label list`
+does (`labels.go`); `r` types a new name for the one the keyboard is on, `⏎`
+takes it, `esc` gives it up; `d` asks, then takes the label off every task and
+objective (`@gui-a-label-is-deleted-everywhere`). The list is the engine's
+answer, not the board's cards, so archived tasks count. It is drawn as the
+backups are, one list panel for both.
+
 **A new backup is made, and a backup restored, from the window.** Both were
 the command line's, so a person at the window went to a terminal for either.
 `⌘B` makes a new backup and says where it lies; `⇧B` lists the backups, and

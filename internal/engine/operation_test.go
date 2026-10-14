@@ -264,6 +264,9 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"config_show":        {{Config: &Config{}}},
 		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
 		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
+		"label_list":         {{Labels: &[]LabelCarried{}}},
+		"label_delete":       {{Labels: &[]LabelCarried{}}},
+		"label_rename":       {{Labels: &[]LabelCarried{}}},
 	}
 	for _, op := range All() {
 		samples, known := answered[op.Name()]

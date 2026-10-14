@@ -223,6 +223,7 @@ func All() []Operation {
 		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
+		LabelList, LabelDelete, LabelRename,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow,
@@ -310,6 +311,7 @@ type Answer struct {
 	Plugin            *string
 	Archived          *int
 	Labelled          *int
+	Labels            *[]LabelCarried
 	Applied           []string
 	Since             []trace.Act
 	Acts              []trace.Act

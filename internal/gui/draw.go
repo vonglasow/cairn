@@ -146,6 +146,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnBackups {
 		drawBackups(gtx, th, skin, w)
 	}
+	if w.Screen() == OnLabels {
+		drawLabels(gtx, th, skin, w)
+	}
 }
 
 func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
@@ -153,13 +156,29 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawPanel(gtx, th, skin, box, Heads(w))
 	from := w.BackupsFrom()
 	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
-		row := BackupRowAt(box, i)
+		row := ListRowAt(box, i)
 		ink := skin.Ink
 		if from+i == w.BackupOn() {
 			fill(gtx, row, skin.Back)
 			ink = skin.Chosen
 		}
 		say(gtx, th, ink, Inside(row), backupSays(one), reads)
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
+}
+
+func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := w.LabelsBox()
+	drawPanel(gtx, th, skin, box, Heads(w))
+	from := w.LabelsFrom()
+	for i, one := range w.LabelsCarried()[from:min(len(w.LabelsCarried()), from+w.LabelsRoom())] {
+		row := ListRowAt(box, i)
+		ink := skin.Ink
+		if from+i == w.LabelOn() {
+			fill(gtx, row, skin.Back)
+			ink = skin.Chosen
+		}
+		say(gtx, th, ink, Inside(row), LabelSays(one), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

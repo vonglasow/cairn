@@ -91,15 +91,16 @@ func (w Window) scrollingBackups(p Point, by int) Window {
 }
 
 // BackupsRoom is how many backups the list shows at once: the lines between its heading and its offers.
-func (w Window) BackupsRoom() int {
-	box := w.BackupsBox()
+func (w Window) BackupsRoom() int { return listRoom(w.BackupsBox()) }
+
+func listRoom(box Box) int {
 	return max(1, (PanelOfferAt(box, 0).Y-padding-FirstRow(box)-between)/menuRow)
 }
 
 func (w Window) clickingBackups(p Point) Window {
 	box := w.BackupsBox()
 	for i := w.backupsFrom; i < min(len(w.backups), w.backupsFrom+w.BackupsRoom()); i++ {
-		if BackupRowAt(box, i-w.backupsFrom).In(p) {
+		if ListRowAt(box, i-w.backupsFrom).In(p) {
 			w.backupOn = i
 			w.screen, w.question = OnAsking, aboutPuttingBack
 			return w
@@ -111,5 +112,5 @@ func (w Window) clickingBackups(p Point) Window {
 	return w
 }
 
-// BackupRowAt is where the i-th backup of the list is written.
-func BackupRowAt(box Box, i int) Box { return MenuRowAt(Box{X: box.X, Y: FirstRow(box), W: box.W}, i) }
+// ListRowAt is where the i-th line of a list panel in sight is written: a backup, a label.
+func ListRowAt(box Box, i int) Box { return MenuRowAt(Box{X: box.X, Y: FirstRow(box), W: box.W}, i) }

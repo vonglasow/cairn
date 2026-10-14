@@ -49,15 +49,23 @@ func (w Window) choosingWide() int {
 
 // BackupsBox is the panel of the list of backups: across the middle of the window, as long as the backups up to what the window has room for.
 func (w Window) BackupsBox() Box {
+	said := make([]string, 0, len(w.backups))
+	for _, one := range w.backups {
+		said = append(said, backupSays(one))
+	}
+	return w.listBox(said)
+}
+
+func (w Window) listBox(said []string) Box {
 	over := Over(w.width, w.height)
 	m := w.measured()
 	text := 0
-	for _, one := range w.backups {
-		text = max(text, ends(m, backupSays(one), reads))
+	for _, one := range said {
+		text = max(text, ends(m, one, reads))
 	}
 	wide := min(over.W, max(listLeast, text+4*padding, w.headWide(), w.offersWide()))
 	fixed := FirstRow(Box{}) + between + padding + barHigh + padding
-	rows := min(max(1, len(w.backups)), max(1, (over.H-fixed)/menuRow))
+	rows := min(max(1, len(said)), max(1, (over.H-fixed)/menuRow))
 	high := fixed + rows*menuRow
 	return Box{X: (w.width - wide) / 2, Y: over.Y + (over.H-high)/2, W: wide, H: high}
 }

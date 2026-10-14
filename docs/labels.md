@@ -77,8 +77,23 @@ The form's `labels` field opens a list, the one objectives are chosen from:
 - nothing is written until the form is saved, like every other field.
 
 A label exists while a task carries it. Taken off the last task that carried
-it, it is no longer offered: there is no list of labels to keep apart from the
-tasks, and no gesture that deletes a label from every task at once.
+it, it is no longer offered: there is no list of labels kept apart from the
+tasks and objectives carrying them.
+
+## Every label at once
+
+`cairn label list` lists every label, archived tasks included, with how many
+tasks and how many objectives carry it; `label rename` writes another name on
+everything carrying one, the new name written by the rule above, and a label
+renamed onto one already there becomes that one; `label delete` takes one off
+everything, and asks first, since what it takes off is put back by nobody. Each
+change is an edit of its task or objective, so a task's trace says it. The
+window reaches the same three from `⇧L` and the File menu: the list, `r` to
+rename the one the keyboard is on, `d` to take it off everything after asking.
+
+Leaving these out was decided once, the labels being nothing but what the
+tasks carry; managing them was asked for, and the answer stays that: there is
+still no list of labels kept apart, only the engine reading what is carried.
 
 ## The Claude Code plugin
 
@@ -88,5 +103,4 @@ opens from an objective's form, which carries labels too.
 
 ## Not here
 
-The list in the terminal's form; deleting a label from every task; renaming a
-label.
+The list in the terminal's form, and the list of every label in the terminal.

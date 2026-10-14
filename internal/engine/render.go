@@ -66,6 +66,8 @@ func rendered(op Operation, a Answer) string {
 		return migration.List(a.Changes, *a.Holds)
 	case Labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
+	case Labels:
+		return labelsText(*a.Labels)
 	case Deleted:
 		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
 		for _, n := range a.Also {

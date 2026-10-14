@@ -76,7 +76,7 @@ func TestTheBackupsAreDrawn(t *testing.T) {
 	shot := drawn(t, w)
 	box := w.BackupsBox()
 	corner := func(i int) Box {
-		row := BackupRowAt(box, i)
+		row := ListRowAt(box, i)
 		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
 	}
 	if ink(shot, corner(0), Dark().Back) != 0 || ink(shot, corner(1), Dark().Panel) != 0 {
@@ -90,7 +90,7 @@ func TestTheBackupsAreDrawn(t *testing.T) {
 
 func TestTheBackupsAreLaidOut(t *testing.T) {
 	box := Box{X: 100, Y: 50, W: 400, H: 300}
-	if got, want := BackupRowAt(box, 1), (Box{X: 106, Y: 100 + between + menuRow, W: 388, H: menuRow}); got != want {
+	if got, want := ListRowAt(box, 1), (Box{X: 106, Y: 100 + between + menuRow, W: 388, H: menuRow}); got != want {
 		t.Errorf("the second backup is at %+v, want %+v", got, want)
 	}
 }
@@ -108,7 +108,7 @@ func TestRestoringAsksWhatItCosts(t *testing.T) {
 
 func TestTheBackupsAnswerThePointer(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
-	row := BackupRowAt(w.BackupsBox(), 1)
+	row := ListRowAt(w.BackupsBox(), 1)
 	asked := w.Click(Point{X: row.X + 5, Y: row.Y + 5})
 	if asked.Screen() != OnAsking || asked.question != aboutPuttingBack || asked.BackupOn() != 1 {
 		t.Errorf("a click on the second backup left the window on %v asking %v about %d", asked.Screen(), asked.question, asked.BackupOn())
@@ -151,15 +151,15 @@ func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 	if got := w.BackupsRoom(); got != 19 {
 		t.Errorf("the list has room for %d, want 19", got)
 	}
-	first := BackupRowAt(w.BackupsBox(), 0)
+	first := ListRowAt(w.BackupsBox(), 0)
 	if got := w.Click(Point{X: first.X + 5, Y: first.Y + 5}).BackupOn(); got != 5 {
 		t.Errorf("a click on the first line drawn took backup %d, want the sixth, 5", got)
 	}
-	last := BackupRowAt(w.BackupsBox(), 18)
+	last := ListRowAt(w.BackupsBox(), 18)
 	if got := w.Click(Point{X: last.X + 5, Y: last.Y + 5}).BackupOn(); got != 23 {
 		t.Errorf("a click on the last line drawn took backup %d, want 23", got)
 	}
-	under := BackupRowAt(w.BackupsBox(), 19)
+	under := ListRowAt(w.BackupsBox(), 19)
 	if got := w.Click(Point{X: under.X + 5, Y: under.Y + 5}); got.Screen() != OnBackups {
 		t.Errorf("a click under the last line drawn left the window on %v", got.Screen())
 	}
@@ -173,7 +173,7 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many, backupsFrom: 5, backupOn: 6}}
 	shot := drawn(t, w)
 	corner := func(i int) Box {
-		row := BackupRowAt(w.BackupsBox(), i)
+		row := ListRowAt(w.BackupsBox(), i)
 		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
 	}
 	if ink(shot, corner(1), Dark().Back) != 0 || ink(shot, corner(0), Dark().Panel) != 0 {

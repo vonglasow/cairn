@@ -91,7 +91,7 @@ func weekKeys(name string) (mine, shared bool) {
 	switch name {
 	case "left", "right", "t", "m":
 		return true, false
-	case "tab", "shift+tab", "cmd+b", "shift+b":
+	case "tab", "shift+tab", "cmd+b", "shift+b", "shift+l":
 		return false, true
 	}
 	return false, false

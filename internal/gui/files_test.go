@@ -185,7 +185,7 @@ func TestCarryingTheTasksIsOffered(t *testing.T) {
 	if Shortcut("export") != "cmd+e" || Shortcut("import") != "cmd+o" || Shortcut("new backup") != "cmd+b" || Shortcut("backups") != "shift+b" {
 		t.Error("the shortcuts are not the keys")
 	}
-	if got := w.menuFor(); !slices.Equal(got, []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"}) {
+	if got := w.menuFor(); !slices.Equal(got, []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Labels", "Export", "Import"}) {
 		t.Errorf("the board's menu offers %v", got)
 	}
 	f := newFake()

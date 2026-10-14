@@ -63,6 +63,7 @@ var reasons = []reason{
 	{ErrParentIsSelf, KindRefused, "parent-is-self"},
 	{ErrParentIsSubTask, KindRefused, "parent-is-sub-task"},
 	{ErrNoSuchObjective, KindRefused, "no-such-objective"},
+	{ErrNoSuchLabel, KindRefused, "no-such-label"},
 	{ErrBlockerSignAtBirth, KindRefused, "blocker-sign-at-creation"},
 	{ErrBlockerRequired, KindRefused, "blocker-required"},
 	{ErrBlockedByItself, KindRefused, "blocked-by-itself"},

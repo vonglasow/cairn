@@ -124,6 +124,10 @@ func (w Window) Types(text string) Window {
 		w.looking = w.looking.Types(text)
 		return w
 	}
+	if w.screen == OnLabels && w.renaming {
+		w.renamed = w.renamed.Types(text)
+		return w
+	}
 	if w.screen == OnChoosing {
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
@@ -424,6 +428,18 @@ func (w Window) Choose(name string) Window {
 			w.screen, w.question = OnTheBoard, aboutDeleting
 			return w
 		}
+		if w.question == aboutDeletingLabel {
+			w.screen, w.question = OnLabels, aboutDeleting
+			return w
+		}
+		if w.screen == OnLabels && w.renaming {
+			w.renaming = false
+			return w
+		}
+		if w.screen == OnLabels {
+			w.screen = OnTheBoard
+			return w
+		}
 		return w.Cancel()
 	case "new":
 		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
@@ -431,6 +447,9 @@ func (w Window) Choose(name string) Window {
 	case "take":
 		if w.screen == OnCalendar {
 			return w.dated(w.day)
+		}
+		if w.screen == OnLabels {
+			return w.renamingLabel()
 		}
 		return w.taking()
 	case "keep":
@@ -470,6 +489,10 @@ func (w Window) Choose(name string) Window {
 		return w.backingUp()
 	case "backups":
 		return w.listingBackups()
+	case "labels":
+		return w.listingLabels()
+	case "rename":
+		return w.startingRename()
 	case "all possible":
 		return w.actingOnSeveral(true)
 	case "skip flagged":
@@ -483,6 +506,13 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutPuttingBack {
 			return w.puttingBack()
+		}
+		if w.question == aboutDeletingLabel {
+			return w.deletingLabel()
+		}
+		if w.screen == OnLabels {
+			w.screen, w.question = OnAsking, aboutDeletingLabel
+			return w
 		}
 		if w.question == aboutLeaving {
 			return w.throwingAway()

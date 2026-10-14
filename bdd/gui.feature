@@ -1139,7 +1139,61 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+
+  Rule: Labels are seen and managed apart from any task
+
+    @gui-labels-are-listed
+    Scenario: the labels are listed with what carries each
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I pick "Labels" in the menu bar
+      Then the labels list "doc" carried by 1 task and 0 objectives
+      And the labels list "sp26-20" carried by 1 task and 0 objectives
+
+    @gui-a-label-is-deleted-everywhere
+    Scenario: a label is taken off everything carrying it once that is agreed to
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      And I edited task 2 with the labels "release" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "sp26-20"
+      And I press "d"
+      Then the window asks "Delete the label sp26-20 everywhere?"
+      When I press "enter"
+      Then task 1 carries exactly the labels "doc"
+      And task 2 carries exactly the labels "release"
+      And the labels list no "sp26-20"
+
+    @gui-a-label-is-renamed-everywhere
+    Scenario: a label is renamed on everything carrying it
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "sp26-20"
+      And I press "r"
+      And I press "backspace" 7 times
+      And I type "Sprint 20"
+      And I press "enter"
+      Then task 1 carries exactly the labels "doc, sprint-20"
+      And the labels list "sprint-20" carried by 1 task and 0 objectives
+
+    @gui-a-rename-is-given-up
+    Scenario: escape gives a rename up and leaves the label as it was
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "sp26-20"
+      And I press "r"
+      And I type "x"
+      And I press "esc"
+      Then task 1 carries exactly the labels "doc, sp26-20"
+      And the labels are listed
 
   Rule: A new backup is made, and a backup restored, from the window
 
@@ -1238,7 +1292,7 @@ Feature: The desktop board
     Scenario: a right click where there is no card offers what the board does
       When I open the window
       And I right-click the column "TODO"
-      Then the menu offers "New", "Search", "Archived", "Help", "New backup", "Backups", "Export", "Import"
+      Then the menu offers "New", "Search", "Archived", "Help", "New backup", "Backups", "Labels", "Export", "Import"
 
     @gui-a-click-off-the-menu-closes-it
     Scenario: a click off the menu closes it and does nothing else

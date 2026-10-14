@@ -36,6 +36,11 @@ func HeadsOn(w Window, screen Screen) string {
 		return "a deadline for " + w.formNamed() + " — " + w.day.Format("January 2006")
 	case OnBackups:
 		return "Backups — enter restores one"
+	case OnLabels:
+		if w.renaming {
+			return "Rename " + w.labelChosen() + " to " + w.renamed.Reads()
+		}
+		return "Labels — r renames one, d takes it off everything"
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -47,6 +52,9 @@ func HeadsOn(w Window, screen Screen) string {
 		}
 		if w.question == aboutPuttingBack {
 			return "Restore backup " + strconv.Itoa(w.backups[w.backupOn].Number) + "?"
+		}
+		if w.question == aboutDeletingLabel {
+			return "Delete the label " + w.labelChosen() + " everywhere?"
 		}
 		if w.question == aboutSweeping {
 			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
@@ -98,6 +106,10 @@ func Shortcut(offer string) string {
 		return "cmd+b"
 	case "backups":
 		return "shift+b"
+	case "labels":
+		return "shift+l"
+	case "rename":
+		return "r"
 	case "archive", "unarchive":
 		return "x"
 	case "take":
@@ -194,6 +206,7 @@ func helping() []Said {
 		{Key: "⌘N", Means: "new"},
 		{Key: "⌘B", Means: "a new backup of the store — it says where it lies"},
 		{Key: "⇧B", Means: "the backups — enter restores one, after asking, a new backup made first"},
+		{Key: "⇧L", Means: "every label, with what carries it — r renames one everywhere, d takes it off everything, after asking"},
 		{Key: "⌘E", Means: "export every task to a file chosen in the system's dialog"},
 		{Key: "⌘O", Means: "import the tasks of a file chosen there, as new tasks"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
@@ -216,6 +229,11 @@ func (w Window) Offers() []string {
 		return []string{"Take", "No day", "Cancel"}
 	case OnBackups:
 		return []string{"Cancel"}
+	case OnLabels:
+		if w.renaming {
+			return []string{"Take", "Cancel"}
+		}
+		return []string{"Rename", "Delete", "Cancel"}
 	case OnMenu:
 		return nil
 	case OnForm:
@@ -356,6 +374,12 @@ func (w Window) Asks() []Said {
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}
+	if w.question == aboutDeletingLabel {
+		return []Said{
+			{Means: "It is taken off every task and every objective carrying it."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -381,6 +405,7 @@ const (
 	aboutDeletingSeveral
 	aboutArchivingSeveral
 	aboutPuttingBack
+	aboutDeletingLabel
 )
 
 func (w Window) sweeps() string {

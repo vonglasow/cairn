@@ -21,6 +21,12 @@ func (w Window) Click(p Point) Window {
 		}
 		return w.clickingBackups(p)
 	}
+	if w.screen == OnLabels {
+		if offer, on := w.offerAt(p); on {
+			return w.Choose(offer)
+		}
+		return w.clickingLabels(p)
+	}
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}
@@ -363,6 +369,9 @@ func (w Window) Scroll(p Point, by int) Window {
 	}
 	if w.screen == OnBackups {
 		return w.scrollingBackups(p, by)
+	}
+	if w.screen == OnLabels {
+		return w.scrollingLabels(p, by)
 	}
 	if w.screen == OnChoosing {
 		box := w.ChoosingBox()
