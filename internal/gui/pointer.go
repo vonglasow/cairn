@@ -364,7 +364,7 @@ func (w Window) at(p Point) int {
 		return w.goalAt(p)
 	}
 	if w.tab == Time {
-		return 0
+		return w.timeCardAt(p)
 	}
 	l := w.Layout()
 	if column, _, found := l.Under(p, 0); found {

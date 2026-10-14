@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	weekRow   = 40
+	weekRow   = CardHeight + lineHigh
 	barHighOf = 6
+	spentWide = 48
 	arrowWide = 32
 	rangeWide = 72
 )
@@ -202,10 +203,7 @@ func CellRoom(cell Box) int { return max(1, (cell.H-lineHigh-padding)/lineHigh) 
 // CellLines is what a day of a month says of its tasks in the room it has: as many as fit, and how many more there are on the last line when they do not all fit.
 func CellLines(tasks []engine.TimesheetTask, room int) []string {
 	var lines []string
-	shown := len(tasks)
-	if shown > room {
-		shown = room - 1
-	}
+	shown := cellShown(tasks, room)
 	for _, one := range tasks[:shown] {
 		lines = append(lines, one.Says())
 	}
@@ -241,6 +239,9 @@ func (w Window) clickingTime(p Point) Window {
 		}
 		return w
 	}
+	if number := w.timeCardAt(p); number != 0 {
+		return w.choosingAt(number)
+	}
 	if !w.monthly {
 		return w
 	}
@@ -256,14 +257,70 @@ func (w Window) clickingTime(p Point) Window {
 // WeekHeadAt is where a day says which it is and its total, at its top.
 func WeekHeadAt(day Box) Box { return Row(day, day.Y+padding, lineHigh) }
 
-// WeekRowAt is where the j-th task of a day is written, under its heading and its total.
+// WeekRowAt is where the j-th task of a day is laid out, under its heading and its total: its card, then the line saying how long it took that day.
 func WeekRowAt(day Box, j int) Box {
 	return Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}
 }
 
-// WeekBar is a task's bar: under its line, as long as its share of the longest stretch of the week.
+// DayCardAt is where the j-th task of a day is drawn as the card the board draws it as.
+func DayCardAt(day Box, j int) Box {
+	row := WeekRowAt(day, j)
+	return Box{X: row.X, Y: row.Y, W: row.W, H: CardHeight}
+}
+
+// DaySpentAt is where a task of a day says how long it took that day: under its card, before its bar.
+func DaySpentAt(row Box) Box {
+	return Box{X: row.X, Y: row.Y + CardHeight - gap, W: spentWide, H: lineHigh}
+}
+
+// WeekBar is a task's bar: under its card, after its time, as long as its share of the longest stretch of the week.
 func WeekBar(row Box, minutes, longest int) Box {
-	return Box{X: row.X, Y: row.Y + lineHigh + between, W: row.W * minutes / max(1, longest), H: barHighOf}
+	spent := DaySpentAt(row)
+	room := row.W - spent.W
+	return Box{X: spent.X + spent.W, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
+}
+
+// DayCard is a task of the time page as the board holds it, so it is drawn the way the board draws it; a task the board no longer holds is drawn from what the sheet says of it.
+func (w Window) DayCard(one engine.TimesheetTask) engine.Card {
+	if c, found := w.snap.Card(one.Number); found {
+		return c
+	}
+	return engine.Card{Number: one.Number, Title: one.Title}
+}
+
+func cellShown(tasks []engine.TimesheetTask, room int) int {
+	if len(tasks) > room {
+		return room - 1
+	}
+	return len(tasks)
+}
+
+func (w Window) timeCardAt(p Point) int {
+	l := w.Layout()
+	if w.monthly {
+		for i := range engine.MonthGrid(w.week) {
+			cell := MonthCellAt(l, i)
+			if !cell.In(p) {
+				continue
+			}
+			tasks := w.MonthDay(i).Tasks
+			for j := range cellShown(tasks, CellRoom(cell)) {
+				if CellLineAt(cell, j).In(p) {
+					return tasks[j].Number
+				}
+			}
+			return 0
+		}
+		return 0
+	}
+	for i := range 7 {
+		for j, one := range w.DayShown(i) {
+			if DayCardAt(WeekDayAt(l, i), j).In(p) {
+				return one.Number
+			}
+		}
+	}
+	return 0
 }
 
 // DayTrack is the bar beside a day of a week holding more tasks than it shows, along the tasks it shows; nothing when they all fit.

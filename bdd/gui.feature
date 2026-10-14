@@ -930,6 +930,46 @@ Feature: The desktop board
       Then the day "2026-09-29" shows "Task 20"
       And the day "2026-09-29" does not show "Task 1"
 
+    @gui-the-time-page-shows-cards
+    Scenario: a task on the time page is the card the board shows, with its time that day
+      Given I added a task titled "Write the spec" with the estimate "3h"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the day "2026-09-29" shows the card "Write the spec" for "1h30m"
+
+    @gui-a-card-of-the-week-is-chosen
+    Scenario: a click on a card of the time page chooses it, like on the board
+      Given I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I click the card "Write the spec" on the time page
+      Then the card "Write the spec" is chosen
+
+    @gui-a-card-of-the-week-opens
+    Scenario: a double-click on a card of the time page opens it, like on the board
+      Given I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I double-click the card "Write the spec" on the time page
+      Then "Write the spec" is open to be edited
+
+    @gui-a-card-of-the-month-opens
+    Scenario: a double-click on a task in a day of the month opens it
+      Given I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I click "Month" on the time page
+      And I double-click "Write the spec" in the month's day "2026-09-29"
+      Then "Write the spec" is open to be edited
+
     @gui-the-time-page-shows-a-month
     Scenario: the time page shows a month, every day with what was worked on
       Given I added a task titled "Write the spec"

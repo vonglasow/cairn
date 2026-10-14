@@ -599,21 +599,26 @@ filled outlines and opacity say it.
 **The time spent is seen a week or a month at a time, every task of it.** How
 long the work took was a table the command line printed. The third page, TIME,
 lays a week out (`week.go`): a column a day across the board's width, Monday
-first, each day's total, and each task worked on with its time and a bar as
-long as its share of the longest stretch of the week — a glance says which day
-went where. A day of more tasks than its column holds scrolls under the wheel,
+first, each day's total, and each task worked on drawn as the card the board
+draws — its priority, its eye, its labels, what it has cost — with its time that
+day under it and a bar as long as its share of the longest stretch of the week:
+a glance says which day went where. A task's lines used to be its own, a second
+way of showing the same thing (`@gui-the-time-page-shows-cards`). A day of more tasks than its column holds scrolls under the wheel,
 a task a notch, with a bar beside it: it used to cut them off at its foot
 (`@gui-a-day-scrolls-to-its-last-task`). A week alone said nothing of a month,
 so `m`, or Month in the strip along the top, lays out the month's six weeks,
 each day its total and as many of its tasks as fit, then how many more; a day
 clicked shows its week (`@gui-the-time-page-shows-a-month`). The strip's `‹ ›`
 and `←→` walk weeks or months, Today and `t` come back to today's, and the
-range shown and today are outlined. What has not happened yet is not asked for:
+range shown and today are outlined. A task is chosen with a click and opened
+with a double-click, on a week and in a day of a month alike, as on the board
+(`@gui-a-card-of-the-week-opens`, `@gui-a-card-of-the-month-opens`); a click
+beside the tasks of a month's day still shows its week. What has not happened
+yet is not asked for:
 the engine refuses a period running past today, which left the week in progress
 unreadable, so a period is read up to today. The tab says how many tasks the
 time shown was spent on. The page lies over the columns and draws none of them,
-so nothing on it chooses a card behind it, and the keys that act on a card
-reach nothing there. With three pages, `tab` and `shift+tab` walk them round,
+so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.
 
 **A new backup is made, and a backup restored, from the window.** Both were

@@ -257,3 +257,24 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 		t.Errorf("left from October shows %s", domain.FormatDay(got))
 	}
 }
+
+func TestADayOfTheWeekLaysItsTasksOutAsCards(t *testing.T) {
+	day := Box{X: 10, Y: 20, W: 150, H: 600}
+	first, second := DayCardAt(day, 0), DayCardAt(day, 1)
+	if first.H != CardHeight || first.W != day.W-2*padding || second.Y != first.Y+weekRow {
+		t.Errorf("the cards of a day are %+v then %+v", first, second)
+	}
+	if bar := WeekBar(WeekRowAt(day, 0), 30, 60); bar.Y < first.Y+first.H-gap {
+		t.Errorf("the bar %+v is drawn over the card %+v", bar, first)
+	}
+}
+
+func TestATaskOfTheTimePageIsTheCardTheBoardHolds(t *testing.T) {
+	w := Window{snap: engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "Write the spec", Estimate: "3h"}}}}
+	if c := w.DayCard(engine.TimesheetTask{Number: 1, Title: "Write the spec"}); c.Estimate != "3h" {
+		t.Errorf("the time page's card is %+v", c)
+	}
+	if c := w.DayCard(engine.TimesheetTask{Number: 9, Title: "Gone"}); c.Number != 9 || c.Title != "Gone" {
+		t.Errorf("a task the board no longer holds is %+v", c)
+	}
+}

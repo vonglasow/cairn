@@ -1031,6 +1031,68 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return nil
 	})
+	cardOfWeek := func(title string) (Point, error) {
+		l := w.w.Layout()
+		for i := range 7 {
+			for j, one := range w.w.DayShown(i) {
+				if one.Title == title {
+					box := DayCardAt(WeekDayAt(l, i), j)
+					return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
+				}
+			}
+		}
+		return Point{}, fmt.Errorf("no card titled %q is on the time page", title)
+	}
+	sc.Then(`^the day "([^"]*)" shows the card "([^"]*)" for "([^"]*)"$`, func(day, title, length string) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		for _, one := range w.w.DayShown(i) {
+			c := w.w.DayCard(one)
+			if c.Title != title {
+				continue
+			}
+			if c.Estimate == "" {
+				return fmt.Errorf("%s shows %q without what its card carries: %+v", day, title, c)
+			}
+			if !strings.Contains(one.Says(), length) {
+				return fmt.Errorf("%s says %q, want %s", day, one.Says(), length)
+			}
+			return nil
+		}
+		return fmt.Errorf("%s shows no card titled %q", day, title)
+	})
+	sc.Step(`^I click the card "([^"]*)" on the time page$`, func(title string) error {
+		at, err := cardOfWeek(title)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.clicked(at)
+		return nil
+	})
+	sc.Step(`^I double-click the card "([^"]*)" on the time page$`, func(title string) error {
+		at, err := cardOfWeek(title)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.doubleClicked(at)
+		return nil
+	})
+	sc.Step(`^I double-click "([^"]*)" in the month's day "([^"]*)"$`, func(title, day string) error {
+		i, err := dayOfMonth(day)
+		if err != nil {
+			return err
+		}
+		for j, one := range w.w.MonthDay(i).Tasks {
+			if one.Title == title {
+				box := CellLineAt(MonthCellAt(w.w.Layout(), i), j)
+				w.w = w.w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("%s holds no task titled %q", day, title)
+	})
 	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
 		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
 			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))

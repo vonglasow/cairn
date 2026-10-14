@@ -37,7 +37,11 @@ func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 	if want := (Box{X: 112, Y: 50 + 2*lineHigh + padding + weekRow, W: 176, H: weekRow}); row != want {
 		t.Errorf("the second task is at %+v, want %+v", row, want)
 	}
-	if got, want := WeekBar(row, 30, 120), (Box{X: 112, Y: row.Y + lineHigh + between, W: 44, H: barHighOf}); got != want {
+	spent := Box{X: 112, Y: row.Y + CardHeight - gap, W: spentWide, H: lineHigh}
+	if got := DaySpentAt(row); got != spent {
+		t.Errorf("the time of the second task is said at %+v, want %+v", got, spent)
+	}
+	if got, want := WeekBar(row, 30, 120), (Box{X: 112 + spentWide, Y: spent.Y + (lineHigh-barHighOf)/2, W: (176 - spentWide) / 4, H: barHighOf}); got != want {
 		t.Errorf("a quarter of the longest is drawn %+v, want %+v", got, want)
 	}
 }

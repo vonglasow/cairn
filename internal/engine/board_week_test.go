@@ -81,3 +81,9 @@ func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
 		t.Errorf("a month starting on a Sunday starts its grid on %s, want the Monday before", got)
 	}
 }
+
+func TestTimesheetTask_spentIsHowLongItTookThatDay(t *testing.T) {
+	if got := (TimesheetTask{Number: 1, Title: "Write the spec", Minutes: 90}).Spent(); got != "1h30m" {
+		t.Errorf("Spent = %q, want 1h30m", got)
+	}
+}

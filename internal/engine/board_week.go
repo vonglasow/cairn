@@ -89,7 +89,12 @@ func (d TimesheetDay) Says() string {
 	return domain.FormatDuration(time.Duration(d.Minutes) * time.Minute)
 }
 
+// Spent is how long one task took on a day, as a duration is written.
+func (t TimesheetTask) Spent() string {
+	return domain.FormatDuration(time.Duration(t.Minutes) * time.Minute)
+}
+
 // Says is one task's line on a day: its time, then which task.
 func (t TimesheetTask) Says() string {
-	return domain.FormatDuration(time.Duration(t.Minutes)*time.Minute) + "  #" + strconv.Itoa(t.Number) + " " + t.Title
+	return t.Spent() + "  #" + strconv.Itoa(t.Number) + " " + t.Title
 }

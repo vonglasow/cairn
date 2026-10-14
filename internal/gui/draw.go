@@ -186,7 +186,8 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
-			say(gtx, th, skin.Ink, Box{X: row.X, Y: row.Y, W: row.W, H: lineHigh}, one.Says(), reads)
+			drawCard(gtx, th, skin, DayCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal)
+			say(gtx, th, skin.Chosen, DaySpentAt(row), one.Spent(), small)
 			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
 		}
 		clipped.Pop()
@@ -214,8 +215,19 @@ func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 		held := w.MonthDay(i)
 		say(gtx, th, ink, CellHeadAt(cell), CellHead(day, held), reads)
 		clipped := clip.Rect(rect(cell)).Push(gtx.Ops)
+		shown := cellShown(held.Tasks, CellRoom(cell))
 		for j, line := range CellLines(held.Tasks, CellRoom(cell)) {
-			say(gtx, th, skin.Faint, CellLineAt(cell, j), line, small)
+			at := CellLineAt(cell, j)
+			if j < shown {
+				c := w.DayCard(held.Tasks[j])
+				fill(gtx, Box{X: at.X - inset, Y: at.Y, W: edgeWide, H: at.H}, skin.edgeOf(c))
+				if w.Chosen() == c.Number && !w.chosenGoal {
+					outline(gtx, at, skin.Chosen)
+				}
+				say(gtx, th, skin.Writing(c), Box{X: at.X + edgeWide, Y: at.Y, W: at.W - edgeWide, H: at.H}, line, small)
+				continue
+			}
+			say(gtx, th, skin.Faint, at, line, small)
 		}
 		clipped.Pop()
 	}
