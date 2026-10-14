@@ -78,6 +78,16 @@ install -m 755 bin/cairn ~/.local/bin/cairn     # or /usr/local/bin, with sudo
 cairn --help
 ```
 
+On Linux, the window's logo comes from a desktop entry; make it once, for the
+cairn on your `PATH`, from the folder the sources are in:
+
+```sh
+make desktop
+```
+
+macOS shows the logo in the Dock on its own, and on Windows `cairn.exe`
+carries it.
+
 cairn keeps its work in `~/.cairn` unless told otherwise; `cairn config
 show` says where. Installing a newer version leaves it where it is; a version
 that changes how it is kept says so, and `cairn migration apply` moves it on,

@@ -97,6 +97,19 @@ void cairn_open_panel(uintptr_t view, const char *extensions) {
 	}];
 }
 
+// cairn_icon shows the image given, the bytes of a PNG, as the application's
+// icon in the Dock and the switcher: a binary with no bundle around it has
+// none. The bytes are copied before this returns.
+void cairn_icon(const void *bytes, int length) {
+	NSData *data = [NSData dataWithBytes:bytes length:(NSUInteger)length];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		NSImage *image = [[NSImage alloc] initWithData:data];
+		if (image != nil) {
+			[NSApp setApplicationIconImage:image];
+		}
+	});
+}
+
 // Nothing else of the window is said to AppKit.
 */
 import "C"

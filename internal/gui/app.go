@@ -197,6 +197,8 @@ func Run(work engine.Work, width, height int) {
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
 		_ = os.Setenv("IBUS_ADDRESS", address)
 	}
+	knownAs()
+	showLogo()
 	go func() { ended(loop(work, width, height), os.Stderr, os.Exit) }()
 	app.Main()
 }

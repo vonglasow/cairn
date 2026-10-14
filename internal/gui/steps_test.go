@@ -1,8 +1,10 @@
 package gui
 
 import (
+	"bytes"
 	"fmt"
 	"image/color"
+	"image/png"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -1204,6 +1206,28 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		if got := strings.Join(task.OfTask(*shown.Task).Labels, ", "); got != want {
 			return fmt.Errorf("task %d carries %q, want %q", n, got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the window is known to the system as "([^"]*)"$`, func(name string) error {
+		if Known != name {
+			return fmt.Errorf("the window is known as %q", Known)
+		}
+		return nil
+	})
+	sc.Then(`^the icon it hands the system is cairn's logo at (\d+) pixels, its corners clear$`, func(size int) error {
+		drawn, err := png.Decode(bytes.NewReader(Logo()))
+		if err != nil {
+			return err
+		}
+		if b := drawn.Bounds(); b.Dx() != size || b.Dy() != size {
+			return fmt.Errorf("the logo is %v", b)
+		}
+		if _, _, _, a := drawn.At(1, 1).RGBA(); a != 0 {
+			return fmt.Errorf("the logo's corner is not clear")
+		}
+		if _, _, _, a := drawn.At(size/2, size/2).RGBA(); a == 0 {
+			return fmt.Errorf("the logo's middle is clear")
 		}
 		return nil
 	})

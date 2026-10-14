@@ -597,6 +597,14 @@ corners left clear. `internal/gui/logo/cairn.svg` is the one source; the PNGs
 beside it, 16 to 1024 pixels, and the Windows resource are drawn from it by
 `scripts/logo.sh`, so a build needs no drawing tool.
 
+Each system takes it its own way, and the window is known to all three as
+`cairn` (`logo.go`). Windows reads it from the `.exe`, where the resource beside
+`cmd/cairn` puts it at every size; Gio gives the window the icon the program
+carries. macOS shows a bare binary with no icon, so the window hands AppKit the
+logo when it starts (`logo_darwin.go`). A Linux desktop reads it off a desktop
+entry named after the window, on Wayland and X11 alike, which `make desktop`
+writes for the user (`scripts/desktop.sh`) — a program cannot hand it over there.
+
 **The window opens on its board being built of stones.** The content is what
 is built: each card arrives
 as stones — courses of them, each stone cut irregular and fitted to its

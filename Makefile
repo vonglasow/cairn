@@ -261,6 +261,12 @@ trace:
 linux:
 	@scripts/linux.sh
 
+## desktop: give the window its logo on a Linux desktop — a desktop entry and its icons, for this user
+## macOS takes the logo from the program and Windows from the .exe; a Linux
+## desktop reads it off an entry named after the window. See the script.
+desktop:
+	@scripts/desktop.sh $(BIN)
+
 ## release: make a version — refuse what is not one, check everything, tag it, and make its archive
 ## The one way a version is made: its number is read off the commits by svu,
 ## the tag is made only once every check has passed, and the archive lands in

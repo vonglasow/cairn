@@ -935,6 +935,14 @@ Feature: The desktop board
       And the window draws a frame 2 seconds later
       Then no cairn is being built
 
+  Rule: The window carries cairn's logo
+
+    @gui-the-window-carries-the-logo
+    Scenario: the window hands the system cairn's logo, drawn large, its corners clear
+      When I open the window
+      Then the window is known to the system as "cairn"
+      And the icon it hands the system is cairn's logo at 1024 pixels, its corners clear
+
   Rule: The time spent is seen a week or a month at a time, every task of it
 
     @gui-a-day-scrolls-to-its-last-task
