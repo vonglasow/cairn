@@ -60,6 +60,23 @@ func (w *versionWorld) stampedThere(at int, want string) error {
 	return nil
 }
 
+func (w *versionWorld) binaries(version string, systems ...string) error {
+	w.version, w.archive = version, filepath.Join(w.t.TempDir(), "dist")
+	if err := os.MkdirAll(w.archive, 0o700); err != nil {
+		return err
+	}
+	for _, system := range systems {
+		name := "cairn-" + version + "-" + system + ".tar.gz"
+		if err := os.WriteFile(filepath.Join(w.archive, name), []byte(system), 0o600); err != nil {
+			return err
+		}
+		if err := command(root(), "scripts/sums.sh", w.archive, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func root() string { return filepath.Join("..", "..") }
 
 func command(dir, name string, args ...string) error {
@@ -122,35 +139,44 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return command(root(), "scripts/dist.sh", version, w.archive)
 		})
 
-		sc.Step(`^the source archive of this repository made as version "([^"]*)" to be fetched from "([^"]*)"$`, func(version, from string) error {
-			w.archive = filepath.Join(w.t.TempDir(), "dist")
-			made := exec.Command("scripts/dist.sh", version, w.archive)
+		formula := func(name string) (string, error) {
+			said, err := os.ReadFile(filepath.Join(w.archive, "Formula", name+".rb"))
+			return string(said), err
+		}
+		sc.Step(`^the binary archives of version "([^"]*)" for macOS and Linux, on arm and on Intel$`, func(version string) error {
+			return w.binaries(version, "darwin-arm64", "darwin-amd64", "linux-arm64", "linux-amd64")
+		})
+		sc.Step(`^the binary archives of version "([^"]*)" for macOS only$`, func(version string) error {
+			return w.binaries(version, "darwin-arm64", "darwin-amd64")
+		})
+		sc.Step(`^its formula is made, fetching from "([^"]*)"$`, func(from string) error {
+			made := exec.Command("scripts/formula.sh", w.version, w.archive, from)
 			made.Dir = root()
-			made.Env = append(os.Environ(), "FORMULA_URL="+from)
-			if out, err := made.CombinedOutput(); err != nil {
-				return fmt.Errorf("%w\n%s", err, out)
+			out, err := made.CombinedOutput()
+			w.out = test.Result{Stdout: string(out)}
+			if err != nil {
+				w.out.Code = 1
 			}
 			return nil
 		})
-
-		formula := func() (string, error) {
-			said, err := os.ReadFile(filepath.Join(w.archive, "Formula", "cairn.rb"))
-			return string(said), err
-		}
-		sc.Step(`^beside the archive is a Homebrew formula for version "([^"]*)"$`, func(version string) error {
-			said, err := formula()
+		sc.Step(`^the formula "([^"]*)" is for version "([^"]*)"$`, func(name, version string) error {
+			said, err := formula(name)
 			if err != nil {
-				return err
+				return fmt.Errorf("%w\n%s", err, w.out.Stdout)
 			}
-			for _, must := range []string{"class Cairn < Formula", `version "` + version + `"`, `depends_on "go" => :build`, `system "make", "build"`, `bin.install "bin/cairn"`} {
+			class := "class Cairn < Formula"
+			if minor, ok := strings.CutPrefix(name, "cairn@"); ok {
+				class = "class CairnAT" + strings.ReplaceAll(minor, ".", "") + " < Formula"
+			}
+			for _, must := range []string{class, `version "` + version + `"`} {
 				if !strings.Contains(said, must) {
-					return fmt.Errorf("the formula says nothing of %q:\n%s", must, said)
+					return fmt.Errorf("the formula %s says nothing of %q:\n%s", name, must, said)
 				}
 			}
 			return nil
 		})
-		sc.Step(`^the formula names the archive's checksum$`, func() error {
-			said, err := formula()
+		sc.Step(`^it fetches "([^"]*)" on (macOS|Linux) on (arm|Intel), with its checksum$`, func(archive, system, cpu string) error {
+			said, err := formula("cairn")
 			if err != nil {
 				return err
 			}
@@ -158,44 +184,40 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			if err != nil {
 				return err
 			}
-			sum := strings.Fields(string(sums))[0]
-			if !strings.Contains(said, `sha256 "`+sum+`"`) {
-				return fmt.Errorf("the formula does not name %s:\n%s", sum, said)
-			}
-			return nil
-		})
-		sc.Step(`^the formula fetches the archive from where it was made$`, func() error {
-			said, err := formula()
-			if err != nil {
-				return err
-			}
-			want := `url "file://` + filepath.Join(w.archive, "cairn-v9.9.9-src.tar.gz") + `"`
-			if !strings.Contains(said, want) {
-				return fmt.Errorf("the formula does not say %s:\n%s", want, said)
-			}
-			return nil
-		})
-		sc.Step(`^the formula fetches "([^"]*)"$`, func(url string) error {
-			said, err := formula()
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(said, `url "`+url+`"`) {
-				return fmt.Errorf("the formula does not fetch %s:\n%s", url, said)
-			}
-			return nil
-		})
-
-		sc.Step(`^beside the archive is a Homebrew formula "([^"]*)" for version "([^"]*)"$`, func(name, version string) error {
-			said, err := os.ReadFile(filepath.Join(w.archive, "Formula", name+".rb"))
-			if err != nil {
-				return err
-			}
-			class := "class CairnAT" + strings.ReplaceAll(strings.TrimPrefix(name, "cairn@"), ".", "") + " < Formula"
-			for _, must := range []string{class, `version "` + version + `"`, `bin.install "bin/cairn"`} {
-				if !strings.Contains(string(said), must) {
-					return fmt.Errorf("the formula %s says nothing of %q:\n%s", name, must, said)
+			sum := ""
+			for _, l := range strings.Split(string(sums), "\n") {
+				if f := strings.Fields(l); len(f) == 2 && f[1] == archive {
+					sum = f[0]
 				}
+			}
+			on := map[string]string{"macOS": "on_macos do", "Linux": "on_linux do"}[system]
+			_, block, found := strings.Cut(said, on)
+			if !found {
+				return fmt.Errorf("the formula has no %q:\n%s", on, said)
+			}
+			_, block, _ = strings.Cut(block, map[string]string{"arm": "on_arm do", "Intel": "on_intel do"}[cpu])
+			block, _, _ = strings.Cut(block, "end")
+			if !strings.Contains(block, "/v9.9.9/"+archive+`"`) || sum == "" || !strings.Contains(block, `sha256 "`+sum+`"`) {
+				return fmt.Errorf("on %s on %s the formula says:%s", system, cpu, block)
+			}
+			return nil
+		})
+		sc.Step(`^it installs the binary, and builds nothing$`, func() error {
+			said, err := formula("cairn")
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(said, `bin.install "cairn"`) || strings.Contains(said, "depends_on") || strings.Contains(said, `system "make"`) {
+				return fmt.Errorf("the formula builds, or installs nothing:\n%s", said)
+			}
+			return nil
+		})
+		sc.Step(`^no formula was made$`, func() error {
+			if w.out.Code == 0 {
+				return fmt.Errorf("the formula was made with a system's binary missing:\n%s", w.out.Stdout)
+			}
+			if _, err := os.Stat(filepath.Join(w.archive, "Formula")); err == nil {
+				return fmt.Errorf("a formula was left behind")
 			}
 			return nil
 		})
@@ -511,7 +533,7 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 }
 
 func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-hosted,@version-brew-formula-for-its-minor")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-for-its-minor,@version-brew-formula-needs-every-binary")
 }
 
 func TestAcceptance_Version_ComesAsABinaryForEachSystem(t *testing.T) {

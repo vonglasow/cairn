@@ -65,22 +65,9 @@ brew install vonglasow/tap/cairn          # the latest
 brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
 ```
 
-### With Homebrew, from an archive
-
-Beside every archive, `Formula/cairn.rb` builds it with Homebrew. Homebrew
-installs only from a tap, so make a local one once, put the formula in it, and
-install from it:
-
-```sh
-brew tap-new --no-git "$USER/cairn"
-cp Formula/cairn.rb "$(brew --repository)/Library/Taps/$USER/homebrew-cairn/Formula/"
-brew install "$USER/cairn/cairn"
-```
-
-The formula fetches the archive from the path it was made at, or from where
-archives are hosted when it was made with `FORMULA_URL`. For a newer version,
-copy its formula over the old one and `brew upgrade cairn`. Then `cairn plugin
-write`, below, gives Claude Code the plugin this cairn carries.
+The formula installs the binary made for your system and builds nothing.
+`brew upgrade cairn` takes a newer version. Then `cairn plugin write`, below,
+gives Claude Code the plugin this cairn carries.
 
 ## Installing it
 

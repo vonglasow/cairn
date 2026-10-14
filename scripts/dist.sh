@@ -53,39 +53,3 @@ git archive --format=tar.gz --prefix="$name/" \
 scripts/sums.sh "$out" "$name-src.tar.gz"
 cd "$out"
 cat SHA256SUMS
-
-# The Homebrew formula that builds this archive. Homebrew installs only from a
-# tap, and a tap holds formulae: this one, made with the archive, can never
-# name another archive or another sum. It fetches the archive from where it
-# was made, a file on this machine, unless FORMULA_URL says where archives are
-# hosted. See docs/release.md.
-sum=$(shasum -a 256 "$name-src.tar.gz" | cut -d' ' -f1)
-url="${FORMULA_URL:-file://$(pwd)}/$name-src.tar.gz"
-mkdir -p Formula
-formula() {
-  cat <<FORMULA
-class $1 < Formula
-  desc "Personal objective and task manager: a command line, an MCP server and a board"
-  url "$url"
-  version "${version#v}"
-  sha256 "$sum"
-
-  depends_on "go" => :build
-
-  def install
-    system "make", "build"
-    bin.install "bin/cairn"
-  end
-
-  test do
-    assert_match "${version#v}", shell_output("#{bin}/cairn --version")
-  end
-end
-FORMULA
-}
-
-# The tap keeps the latest as cairn and every minor beside it as cairn@X.Y,
-# the way it keeps gaia's, so an older minor can still be installed by name.
-minor=$(echo "${version#v}" | cut -d. -f1-2)
-formula Cairn >Formula/cairn.rb
-formula "CairnAT${minor//./}" >"Formula/cairn@$minor.rb"

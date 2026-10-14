@@ -53,18 +53,16 @@ jobs:
           fetch-depth: 0
       - name: the tag itself, whose message is the version's notes
         run: git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        with:
-          go-version-file: go.mod
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: binary-*
           path: dist
           merge-multiple: true
-      - name: the source archive, its changelog and the formula, fetched from this release
-        run: make dist VERSION="$TAG" FORMULA_URL="https://github.com/${{ github.repository }}/releases/download/$TAG"
-      - name: every archive's sum
-        run: for archive in dist/cairn-v*-*-*.*; do scripts/sums.sh dist "$(basename "$archive")"; done
+      - name: every archive's sum, the changelog, and the formula fetching from this release
+        run: |
+          for archive in dist/cairn-v*-*-*.*; do scripts/sums.sh dist "$(basename "$archive")"; done
+          scripts/changelog.sh "$TAG" >dist/CHANGELOG.md
+          scripts/formula.sh "$TAG" dist "https://github.com/${{ github.repository }}/releases/download/$TAG"
       - name: the release
         env:
           GH_TOKEN: ${{ github.token }}

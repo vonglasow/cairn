@@ -7,8 +7,9 @@ on every system and publishes it (`.github/workflows/release.yml`).
 
 ## What a version is
 
-A tag on a commit of `main`, and what is made from it: the source archive, a
-binary for each system, and the Homebrew formula that installs it. A build
+A tag on a commit of `main`, and what is made from it: a binary for each
+system, and the Homebrew formula that installs it. Whoever wants to build cairn
+clones it; the release hands over what is already built. A build
 with no tag to name says the commit it came from (`git describe --always`).
 
 The number reads `vMAJOR.MINOR.PATCH`. What moves it:
@@ -95,14 +96,6 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    build needs — Go, make, a C compiler, and on Linux the graphics headers
    `scripts/linux.sh` installs — and how to put the binary on a `PATH`.
 
-   `Formula/cairn.rb`, beside the archive, is the Homebrew formula that
-   builds it: its version, its checksum, and `make build` with Go as a build
-   dependency (`@version-brew-formula`). It fetches the archive from where it
-   was made, a `file://` address on that machine, unless `FORMULA_URL` names
-   the place archives are hosted (`@version-brew-formula-hosted`). Homebrew
-   installs only from a tap, so `INSTALL.md` says how to make a local one.
-   Made with the archive, it can never name another archive or another sum.
-
    It is written in ASCII alone (`@version-install-reads-anywhere`). It is read
    before anything is installed, in whatever the machine has, and on Windows
    a tool that takes a file with no mark of its encoding for the system's code
@@ -126,11 +119,14 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    `README.md`, `INSTALL.md` and `THIRD_PARTY_NOTICES` (`@version-binary-archive`).
    GoReleaser, which gaia uses, cannot do this without its paid edition: its
    free one builds every system from one machine, which cgo rules out.
-2. **The release.** `make dist` makes the source archive, the changelog and
-   the formula, fetched from the release; every archive's sum joins
-   `SHA256SUMS` (`scripts/sums.sh`); the tag's message — the version's part of
-   the changelog — is the release's notes.
-3. **The tap.** The formula goes to `vonglasow/homebrew-tap`, the tap gaia's
+2. **The release.** It holds the binaries, `SHA256SUMS` with every one's sum
+   (`scripts/sums.sh`), and `CHANGELOG.md`; the tag's message — the version's
+   part of the changelog — is its notes. No source archive: GitHub adds its
+   own, and building is for whoever clones.
+3. **The tap.** The formula, written by `scripts/formula.sh` from the sums,
+   fetches the archive made for the system it is installed on and installs the
+   binary, building nothing (`@version-brew-formula`); with a system's archive
+   missing, none is written. It goes to `vonglasow/homebrew-tap`, the tap gaia's
    is in: `Formula/cairn.rb`, the latest, and `Formula/cairn@X.Y.rb`, kept for
    every minor (`@version-brew-formula-for-its-minor`), so
    `brew install vonglasow/tap/cairn` takes the latest and
@@ -141,7 +137,7 @@ It needs one secret, `GH_TOKEN`: a token that may push to
 workflow's own token.
 
 **While the repository is private**, the workflow runs and the release is made,
-but the formula cannot fetch an archive from it without a token, so
+but the formula cannot fetch a binary from it without a token, so
 `brew install` fails for anybody: the repository goes public once everything
 else is wired.
 

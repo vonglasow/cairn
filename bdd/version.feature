@@ -34,21 +34,27 @@ Feature: Version
     And the archive says how to build and install it
 
   @version-brew-formula
-  Scenario: the archive comes with a Homebrew formula that builds it
-    Given the source archive of this repository made as version "v9.9.9"
-    Then beside the archive is a Homebrew formula for version "9.9.9"
-    And the formula names the archive's checksum
-    And the formula fetches the archive from where it was made
-
-  @version-brew-formula-hosted
-  Scenario: the formula fetches the archive from where it is hosted, when told
-    Given the source archive of this repository made as version "v9.9.9" to be fetched from "https://files.example.org/cairn"
-    Then the formula fetches "https://files.example.org/cairn/cairn-v9.9.9-src.tar.gz"
+  Scenario: the formula installs the binary built for the system it is installed on
+    Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel
+    When its formula is made, fetching from "https://github.com/vonglasow/cairn/releases/download/v9.9.9"
+    Then the formula "cairn" is for version "9.9.9"
+    And it fetches "cairn-v9.9.9-darwin-arm64.tar.gz" on macOS on arm, with its checksum
+    And it fetches "cairn-v9.9.9-darwin-amd64.tar.gz" on macOS on Intel, with its checksum
+    And it fetches "cairn-v9.9.9-linux-arm64.tar.gz" on Linux on arm, with its checksum
+    And it fetches "cairn-v9.9.9-linux-amd64.tar.gz" on Linux on Intel, with its checksum
+    And it installs the binary, and builds nothing
 
   @version-brew-formula-for-its-minor
-  Scenario: the archive comes with a formula kept at its minor version too, as the tap keeps every one
-    Given the source archive of this repository made as version "v9.9.9"
-    Then beside the archive is a Homebrew formula "cairn@9.9" for version "9.9.9"
+  Scenario: the formula is kept at its minor version too, as the tap keeps every one
+    Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel
+    When its formula is made, fetching from "https://github.com/vonglasow/cairn/releases/download/v9.9.9"
+    Then the formula "cairn@9.9" is for version "9.9.9"
+
+  @version-brew-formula-needs-every-binary
+  Scenario: no formula is made while a system's binary is missing
+    Given the binary archives of version "v9.9.9" for macOS only
+    When its formula is made, fetching from "https://github.com/vonglasow/cairn/releases/download/v9.9.9"
+    Then no formula was made
 
   @version-binary-archive
   Scenario: a binary is handed over in an archive named for the system it runs on
