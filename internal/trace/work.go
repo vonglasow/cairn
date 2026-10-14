@@ -48,18 +48,21 @@ type span struct {
 	leftOpen bool
 }
 
-// Timed works out how long the work took on each day from the first to the last, both counted whole, in the location the first is given in.
-func Timed(acts []Act, first, last, now time.Time) Sheet {
+type work struct {
+	spans   []span
+	byHand  map[time.Time]map[int]time.Duration
+	undated map[int]time.Duration
+}
+
+func workedFrom(acts []Act, loc *time.Location, now time.Time) work {
 	facts := make([]Carried, 0, len(acts))
 	for _, a := range acts {
 		facts = append(facts, a.Carried())
 	}
 	sort.SliceStable(facts, func(i, j int) bool { return facts[i].At.Before(facts[j].At) })
 
-	loc := first.Location()
-	var spans []span
+	w := work{byHand: map[time.Time]map[int]time.Duration{}, undated: map[int]time.Duration{}}
 	open := map[int]time.Time{}
-	byHand := map[time.Time]map[int]time.Duration{}
 	for _, f := range facts {
 		switch f.Did {
 		case FocusTaken:
@@ -68,26 +71,41 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 			}
 		case FocusReleased:
 			if from, was := open[f.Task]; was {
-				spans = append(spans, cutAtMidnight(f.Task, from, f.At, loc))
+				w.spans = append(w.spans, cutAtMidnight(f.Task, from, f.At, loc))
 				delete(open, f.Task)
 			}
 		case TimeAdded:
-			if on, length, read := addedOn(f, loc); read {
-				if byHand[on] == nil {
-					byHand[on] = map[int]time.Duration{}
-				}
-				byHand[on][f.Task] += length
-			}
+			w.addedByHand(f, loc)
 		}
 	}
 	for task, from := range open {
-		spans = append(spans, cutAtMidnight(task, from, now, loc))
+		w.spans = append(w.spans, cutAtMidnight(task, from, now, loc))
 	}
+	return w
+}
 
+func (w work) addedByHand(f Carried, loc *time.Location) {
+	if f.Was == "" {
+		if length, err := time.ParseDuration(f.Became); err == nil {
+			w.undated[f.Task] += length
+		}
+		return
+	}
+	if on, length, read := addedOn(f, loc); read {
+		if w.byHand[on] == nil {
+			w.byHand[on] = map[int]time.Duration{}
+		}
+		w.byHand[on][f.Task] += length
+	}
+}
+
+// Timed works out how long the work took on each day from the first to the last, both counted whole, in the location the first is given in.
+func Timed(acts []Act, first, last, now time.Time) Sheet {
+	w := workedFrom(acts, first.Location(), now)
 	var sheet Sheet
 	for day := first; !day.After(last); day = day.AddDate(0, 0, 1) {
-		took, leftOpen := shared(spans, day, day.AddDate(0, 0, 1))
-		for task, length := range byHand[day] {
+		took, leftOpen := shared(w.spans, day, day.AddDate(0, 0, 1))
+		for task, length := range w.byHand[day] {
 			took[task] += length
 		}
 		worked := rounded(took, leftOpen)
@@ -95,6 +113,41 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 		sheet.Days = append(sheet.Days, worked)
 	}
 	return sheet
+}
+
+// Spent is the time spent on each task, all told: the time it was in focus, shared with any other in focus at once, and the time added by hand with a day or without one — a minute begun counted whole, and never less than nothing.
+func Spent(acts []Act, now time.Time) map[int]time.Duration {
+	w := workedFrom(acts, now.Location(), now)
+	var first time.Time
+	for _, s := range w.spans {
+		if first.IsZero() || s.from.Before(first) {
+			first = s.from
+		}
+	}
+	took, _ := shared(w.spans, first, now)
+	for _, day := range w.byHand {
+		for task, length := range day {
+			took[task] += length
+		}
+	}
+	for task, length := range w.undated {
+		took[task] += length
+	}
+	spent := map[int]time.Duration{}
+	for task, length := range took {
+		if length > 0 {
+			spent[task] = minuteBegun(length)
+		}
+	}
+	return spent
+}
+
+func minuteBegun(d time.Duration) time.Duration {
+	whole := d.Truncate(time.Minute)
+	if whole < d {
+		whole += time.Minute
+	}
+	return whole
 }
 
 func addedOn(f Carried, loc *time.Location) (time.Time, time.Duration, bool) {
@@ -118,26 +171,37 @@ func cutAtMidnight(task int, from, to time.Time, loc *time.Location) span {
 	return span{task: task, from: from, to: to}
 }
 
+type edge struct {
+	at    time.Time
+	task  int
+	opens bool
+}
+
 func shared(spans []span, from, to time.Time) (map[int]time.Duration, map[int]bool) {
 	took := map[int]time.Duration{}
 	leftOpen := map[int]bool{}
-	var edges []time.Time
+	var edges []edge
 	for _, s := range spans {
 		if s.to.After(from) && s.from.Before(to) {
-			edges = append(edges, maxTime(s.from, from), minTime(s.to, to))
+			edges = append(edges, edge{at: maxTime(s.from, from), task: s.task, opens: true}, edge{at: minTime(s.to, to), task: s.task})
 			leftOpen[s.task] = leftOpen[s.task] || s.leftOpen
 		}
 	}
-	sort.Slice(edges, func(i, j int) bool { return edges[i].Before(edges[j]) })
-	for i := 1; i < len(edges); i++ {
-		var in []int
-		for _, s := range spans {
-			if !s.from.After(edges[i-1]) && !s.to.Before(edges[i]) {
-				in = append(in, s.task)
+	sort.SliceStable(edges, func(i, j int) bool { return edges[i].at.Before(edges[j].at) })
+	in := map[int]int{}
+	for i, e := range edges {
+		if i > 0 && len(in) > 0 {
+			length := e.at.Sub(edges[i-1].at) / time.Duration(len(in))
+			for task := range in {
+				took[task] += length
 			}
 		}
-		for _, task := range in {
-			took[task] += edges[i].Sub(edges[i-1]) / time.Duration(len(in))
+		if e.opens {
+			in[e.task]++
+			continue
+		}
+		if in[e.task]--; in[e.task] == 0 {
+			delete(in, e.task)
 		}
 	}
 	return took, leftOpen

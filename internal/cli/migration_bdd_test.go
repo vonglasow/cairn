@@ -11,6 +11,7 @@ func initMigration(t *testing.T) func(*godog.ScenarioContext) {
 		w := newWorld(t)
 		w.register(sc)
 		w.registerStore(sc)
+		w.registerTimesheet(sc)
 	}
 }
 

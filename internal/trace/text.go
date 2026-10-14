@@ -58,7 +58,9 @@ func columns(l Carried) string {
 		return out.String()
 	}
 	fmt.Fprintf(&out, "%s\t%s", domain.FormatMoment(l.At), what(l))
-	if l.Did == TimeAdded {
+	if l.Did == TimeAdded && l.Was == "" {
+		fmt.Fprintf(&out, "\t%s", l.Became)
+	} else if l.Did == TimeAdded {
 		fmt.Fprintf(&out, "\t%s for %s", l.Became, l.Was)
 	} else if l.Field == "" && l.Became != "" {
 		fmt.Fprintf(&out, "\t%s", l.Became)

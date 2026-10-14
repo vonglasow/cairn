@@ -1858,7 +1858,7 @@
           "type": "string"
         },
         "spent": {
-          "description": "the time already spent on it; +30m adds, -15m takes off",
+          "description": "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back",
           "type": "string"
         },
         "state": {
@@ -2914,7 +2914,7 @@
           "type": "string"
         },
         "spent": {
-          "description": "the time already spent on it; +30m adds, -15m takes off",
+          "description": "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back",
           "type": "string"
         },
         "state": {

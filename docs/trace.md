@@ -34,11 +34,11 @@ So every entry carries the field, the value before, the value after, and the
 moment. The two extra columns are the whole difference between a trace you can
 read and a trace you can rebuild from, and rebuilding is what was asked for.
 
-## Nineteen acts, and reading is not one of them
+## Eighteen acts, and reading is not one of them
 
-Thirteen of them are the attributes a task carries, one act each: its title, its
+Twelve of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
-beside them, its deadline, its estimate, the time spent on it, its parent, the
+beside them, its deadline, its estimate, its parent, the
 objectives it serves, and whether it was archived — archiving and
 bringing back are changes like any other, written `yes` and nothing. Six are not
 about a field: **created**, **moved**, **focus taken**, **focus released**,
@@ -162,6 +162,16 @@ says what was typed rather than what was done. What was done without focus — a
 meeting, an afternoon nobody focused — is added by hand (`timesheet add`), and a
 focus left on too long is taken back the same way, with less than nothing. Both
 are acts in the history like any other, read back from there like the rest.
+
+**The time spent on a task is read from here, and from nowhere else.** It is
+the time the task was in focus and the time added by hand, summed over every
+day; `task edit --spent` is time added by hand today, the timesheet's `--on`
+another day. It used to be a number written on the task beside this history, and
+the two disagreed: the card said what was typed, the timesheet what was
+focused. The number written before is in the history now, as time added with no
+day — no day is invented for it, so it counts on the task and on no day of the
+sheet. A form sends only what was changed in it, since a focus still running
+makes the time it opened with already behind by the time it is saved.
 
 **A run of focus stops at the first midnight after it began.** One left open
 would otherwise count the night, and every day after it; the day it crossed

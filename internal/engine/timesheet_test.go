@@ -123,3 +123,37 @@ func confirmed(in Input) Input {
 	in.Confirmed = true
 	return in
 }
+
+func TestTimeSpent_isTheTimeOnTheTimesheetAndTheTimeWrittenOnTheTask(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(TaskNew, path, given("title", "one", "spent", "1h")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Do(TimesheetAdd, path, given("number", "1", "time", "30m", "on", "2026-09-29")); err != nil {
+		t.Fatal(err)
+	}
+	shown, err := Do(TaskShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if spent := factsOf(*shown.Task).Spent; spent != 90*time.Minute {
+		t.Errorf("the task spent %s, want 1h30m", spent)
+	}
+	if _, err := Do(TaskEdit, path, given("number", "1", "spent", "2h")); err != nil {
+		t.Fatal(err)
+	}
+	today, err := Do(TimesheetShow, path, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if day := today.Sheet.Days[0]; day.Total != 90*time.Minute {
+		t.Errorf("today came to %s, want the 1h written at the start and the 30m that made it 2h", day.Total)
+	}
+	listed, err := Do(TaskList, path, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if spent := factsOf(listed.Tasks[0]).Spent; spent != 2*time.Hour {
+		t.Errorf("the listing says %s spent, want 2h", spent)
+	}
+}

@@ -104,7 +104,7 @@ func (e *Engine) following() error {
 }
 
 func (e Engine) keptBy(s *store.Store) *Engine {
-	e.tasks, e.places, e.history, e.objectives, e.store = s, s, s, s, s
+	e.tasks, e.places, e.history, e.objectives, e.store = spentTasks{s, s}, s, s, s, s
 	return &e
 }
 
@@ -143,7 +143,10 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if err := e.recordCreated(kept); err != nil {
 		return task.Task{}, err
 	}
-	return kept, nil
+	if err := e.spendOn(factsOf(kept).Number, 0, factsOf(t).Spent); err != nil {
+		return task.Task{}, err
+	}
+	return e.tasks.Find(factsOf(kept).Number)
 }
 
 func (e *Engine) narrowed(kept *domain.Narrowing) ([]task.Task, error) {
@@ -303,6 +306,9 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if err := e.tasks.Update(t); err != nil {
+		return task.Task{}, err
+	}
+	if err := e.spendOn(number, factsOf(was).Spent, factsOf(t).Spent); err != nil {
 		return task.Task{}, err
 	}
 	found, err := e.tasks.Find(number)

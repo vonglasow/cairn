@@ -1174,9 +1174,39 @@ Feature: Tasks
       And it names task 1
       And it names task 2
 
-  Rule: Time spent on a task can be written down
+  Rule: Time spent on a task is the time it was in focus and the time added by hand
 
-    Given plainly it says what the total becomes; with a leading + or - it
+    @task-spent-counts-focus
+    Scenario: the time a task was in focus is time spent on it
+      Given a store whose task 1 was in focus from 07:00 to 08:30 UTC on 2026-09-29
+      When I run `cairn task show 1`
+      Then the task carries the time spent "1h30m"
+
+    @task-spent-by-hand-completes-focus
+    Scenario: time added by hand completes the time in focus
+      Given a store whose task 1 was in focus from 07:00 to 08:30 UTC on 2026-09-29
+      When I run `cairn task edit 1 --spent +30m`
+      Then the task carries the time spent "2h"
+
+    @task-spent-written-is-the-whole
+    Scenario: a time given plainly is the whole, the time in focus included
+      Given a store whose task 1 was in focus from 07:00 to 08:30 UTC on 2026-09-29
+      When I run `cairn task edit 1 --spent 2h`
+      Then the task carries the time spent "2h"
+
+    @task-spent-by-hand-is-on-the-timesheet
+    Scenario: time added by hand to a task is on today's timesheet
+      Given I added a task titled "Write the spec"
+      And I ran `cairn task edit 1 --spent +30m`
+      When I run `cairn timesheet show`
+      Then today gives task 1 "30m"
+
+    @task-spent-from-the-timesheet
+    Scenario: time added on the timesheet is time spent on the task
+      Given I added a task titled "Sprint review"
+      And I ran `cairn timesheet add 1 1h --on 2026-09-29`
+      When I run `cairn task show 1`
+      Then the task carries the time spent "1h"
 
     @task-spent-written
     Scenario: time spent can be written down

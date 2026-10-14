@@ -23,7 +23,7 @@ type Store struct {
 	opened os.FileInfo
 }
 
-const taskColumns = `number, parent, title, description, state, archived, priority, because, deadline, estimate, time_spent`
+const taskColumns = `number, parent, title, description, state, archived, priority, because, deadline, estimate`
 
 const taskOrder = `ORDER BY CASE state
 	WHEN 'backlog'  THEN 0
@@ -44,12 +44,12 @@ type boundTask struct {
 	title, description,
 	state, priority,
 	deadline string
-	labels          []string
-	blockers        []int
-	objectives      []int
-	because         string
-	estimate, spent int64
-	archived        bool
+	labels     []string
+	blockers   []int
+	objectives []int
+	because    string
+	estimate   int64
+	archived   bool
 }
 
 func bind(t task.Task) *boundTask {
@@ -58,7 +58,7 @@ func bind(t task.Task) *boundTask {
 		number: c.Number, parent: c.Parent, title: c.Title, description: c.Description,
 		state: string(c.State), priority: string(c.Priority), deadline: domain.FormatDay(c.Deadline),
 		labels: c.Labels, blockers: c.Blockers, objectives: c.Objectives, because: c.Because,
-		estimate: int64(c.Estimate), spent: int64(c.Spent), archived: c.Archived,
+		estimate: int64(c.Estimate), archived: c.Archived,
 	}
 }
 
@@ -73,10 +73,10 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 	b := bind(t)
 	res, err := s.on.Exec(
 		`INSERT INTO tasks (parent, title, description, state, archived, priority,
-		 because, deadline, estimate, time_spent, position)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
+		 because, deadline, estimate, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+lastPlaceAmong+`)`,
 		b.parent, b.title, b.description, b.state, b.archived, b.priority,
-		b.because, b.deadline, b.estimate, b.spent, b.state, b.parent)
+		b.because, b.deadline, b.estimate, b.state, b.parent)
 	if err != nil {
 		return task.Task{}, fmt.Errorf("keeping the task: %w", err)
 	}
@@ -116,10 +116,10 @@ func (s *Store) Update(t task.Task) error {
 	if _, err := s.on.Exec(
 		`UPDATE tasks SET parent = ?, title = ?, description = ?, state = ?,
 		 archived = ?, priority = ?, because = ?, deadline = ?, estimate = ?,
-		 time_spent = ?, position = ?
+		 position = ?
 		 WHERE number = ?`,
 		b.parent, b.title, b.description, b.state, b.archived, b.priority,
-		b.because, b.deadline, b.estimate, b.spent, place, b.number); err != nil {
+		b.because, b.deadline, b.estimate, place, b.number); err != nil {
 		return fmt.Errorf("changing the task: %w", err)
 	}
 
@@ -231,11 +231,11 @@ func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 		title, description string
 		state, priority    string
 		because, deadline  string
-		estimate, spent    int64
+		estimate           int64
 		archived           bool
 	)
 	if err := row.Scan(&number, &parent, &title, &description, &state, &archived, &priority,
-		&because, &deadline, &estimate, &spent); err != nil {
+		&because, &deadline, &estimate); err != nil {
 		return task.Task{}, err
 	}
 	day, err := domain.ParseDeadline(deadline)
@@ -251,7 +251,7 @@ func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 		Number: number, Parent: parent, Title: title, Description: description,
 		State: domain.State(state), Priority: domain.Priority(priority),
 		Labels: noneIsNil(labels), Blockers: noneIsNil(blockers), Objectives: noneIsNil(objectives),
-		Because: because, Deadline: day, Estimate: time.Duration(estimate), Spent: time.Duration(spent),
+		Because: because, Deadline: day, Estimate: time.Duration(estimate),
 		Archived: archived,
 	}), nil
 }

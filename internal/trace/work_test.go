@@ -216,3 +216,51 @@ func TestTimed_writesWhatComesAfterATaskRoundedToNothing(t *testing.T) {
 		t.Errorf("task 2 took %s, want the hour after task 1's five minutes", took)
 	}
 }
+
+func TestSpent_isTheTimeInFocusAndTheTimeAddedByHand(t *testing.T) {
+	acts := []Act{
+		took(1, 9, 0), stopped(1, 10, 30),
+		added(1, "2026-03-02", "30m", at(11, 0)),
+		added(1, "", "2h", at(11, 0)),
+		took(2, 14, 0), stopped(2, 14, 20),
+	}
+	spent := Spent(acts, at(18, 0))
+	if spent[1] != 4*time.Hour {
+		t.Errorf("task 1 spent %s, want 4h", spent[1])
+	}
+	if spent[2] != 20*time.Minute {
+		t.Errorf("task 2 spent %s, want 20m", spent[2])
+	}
+}
+
+func TestSpent_sharesTheMinutesTwoTasksOverlap(t *testing.T) {
+	spent := Spent([]Act{took(1, 9, 0), took(2, 9, 0), stopped(1, 10, 0), stopped(2, 10, 0)}, at(18, 0))
+	if spent[1] != 30*time.Minute || spent[2] != 30*time.Minute {
+		t.Errorf("spent %v, want 30m each", spent)
+	}
+}
+
+func TestSpent_countsAMinuteBegun(t *testing.T) {
+	var a AsTold
+	a.On(1)
+	a.Did(FocusReleased)
+	a.At(at(9, 0).Add(10 * time.Second))
+	spent := Spent([]Act{took(1, 9, 0), a.Act()}, at(18, 0))
+	if spent[1] != time.Minute {
+		t.Errorf("ten seconds in focus spent %s, want 1m", spent[1])
+	}
+}
+
+func TestSpent_neverFallsBelowNothing(t *testing.T) {
+	spent := Spent([]Act{added(1, "2026-03-03", "30m", at(9, 0)), added(1, "2026-03-03", "-1h", at(9, 0))}, at(18, 0))
+	if spent[1] != 0 {
+		t.Errorf("taking back more than was added spent %s, want nothing", spent[1])
+	}
+}
+
+func TestSpent_runsAFocusStillOpenToNow(t *testing.T) {
+	spent := Spent([]Act{took(1, 9, 0)}, at(9, 45))
+	if spent[1] != 45*time.Minute {
+		t.Errorf("a focus still open spent %s, want 45m", spent[1])
+	}
+}

@@ -13,13 +13,14 @@ type Field struct {
 	Name    string
 	Arg     string
 	Value   string
+	Was     string
 	Choices []string
 	Long    bool
 }
 
 // TaskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
 func TaskFields(c Card) []Field {
-	return []Field{
+	return opened([]Field{
 		{Name: "title", Arg: "title", Value: c.Title},
 		{Name: "description", Arg: "desc", Value: c.Description, Long: true},
 		{Name: "column", Arg: "state", Value: c.State, Choices: States()},
@@ -32,12 +33,19 @@ func TaskFields(c Card) []Field {
 		{Name: "time spent", Arg: "spent", Value: c.Spent},
 		{Name: "parent", Arg: "parent", Value: Maybe(c.Parent)},
 		{Name: "objectives", Arg: "objective", Value: Numbers(c.Objectives)},
+	})
+}
+
+func opened(fields []Field) []Field {
+	for i := range fields {
+		fields[i].Was = fields[i].Value
 	}
+	return fields
 }
 
 // GoalFields is every field of an objective.
 func GoalFields(g Goal) []Field {
-	return []Field{
+	return opened([]Field{
 		{Name: "title", Arg: "title", Value: g.Title},
 		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
 		{Name: "standing", Arg: "state", Value: g.State, Choices: Standings},
@@ -45,7 +53,7 @@ func GoalFields(g Goal) []Field {
 		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
 		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(g.Deadline)},
 		{Name: "estimate", Arg: "estimate", Value: g.Estimate},
-	}
+	})
 }
 
 // States is the closed set a column is picked from, read off the domain rather than listed again here.

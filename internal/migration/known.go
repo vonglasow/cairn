@@ -213,4 +213,18 @@ DROP TABLE written;`,
 		undoes: "",
 		loses:  "how each label was spelt before, and which labels had a family",
 	},
+	{
+		name: "the time spent on a task is read from its trace",
+		does: `
+INSERT INTO trace (task_number, did, field, was, became, through, at)
+	SELECT number, 'time added', '', '',
+		CASE WHEN time_spent >= 3600000000000 THEN (time_spent / 3600000000000) || 'h' ELSE '' END ||
+		CASE WHEN (time_spent / 60000000000) % 60 > 0 THEN ((time_spent / 60000000000) % 60) || 'm' ELSE '' END ||
+		CASE WHEN (time_spent / 1000000000) % 60 > 0 THEN ((time_spent / 1000000000) % 60) || 's' ELSE '' END,
+		'migration', strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	FROM tasks WHERE time_spent >= 1000000000;
+ALTER TABLE tasks DROP COLUMN time_spent;`,
+		undoes: `ALTER TABLE tasks ADD COLUMN time_spent INTEGER NOT NULL DEFAULT 0`,
+		loses:  "the time spent written on each task, which stays in its trace as time added by hand",
+	},
 }

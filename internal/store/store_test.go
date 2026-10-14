@@ -175,7 +175,7 @@ func TestStore_keepsEveryAttributeItWasGiven(t *testing.T) {
 	}
 }
 
-func TestStore_roundTripsTheTimeSpent(t *testing.T) {
+func TestStore_leavesTheTimeSpentToTheTrace(t *testing.T) {
 	s := openStore(t)
 	built, err := task.NewTask("Write the spec")
 	if err != nil {
@@ -191,17 +191,8 @@ func TestStore_roundTripsTheTimeSpent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); facts.Spent != 30*time.Minute {
-		t.Errorf("TimeSpent = %v, want 30m", facts.Spent)
-	}
-
-	bare := keep(t, s, "Bare")
-	got, err = s.Find(factsOf(bare).Number)
-	if err != nil {
-		t.Fatalf("Find: %v", err)
-	}
 	if facts := factsOf(got); facts.Spent != 0 {
-		t.Errorf("TimeSpent = %v, want none", facts.Spent)
+		t.Errorf("TimeSpent = %v, want nothing kept apart from the trace", facts.Spent)
 	}
 }
 
@@ -475,8 +466,8 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	_, refused := db.Exec(`INSERT INTO tasks (parent, title, description,
-		state, priority, deadline, estimate, time_spent)
-		VALUES (0, 'x', '', 'backlog', 'normal', '', 0, 0)`)
+		state, priority, deadline, estimate)
+		VALUES (0, 'x', '', 'backlog', 'normal', '', 0)`)
 	if refused == nil {
 		t.Fatal("writing to a read-only store was expected to fail")
 	}

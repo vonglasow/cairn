@@ -67,3 +67,23 @@ func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
 		t.Errorf("an answer with no task answered %d", got)
 	}
 }
+
+func TestSaved_editingSendsOnlyWhatWasChanged(t *testing.T) {
+	fields := TaskFields(Card{Title: "Ship it", Priority: "normal", Spent: "1h"})
+	for i := range fields {
+		if fields[i].Name == "priority" {
+			fields[i].Value = "high"
+		}
+	}
+	_, in := Saved(fields, false, 7, TaskNew, TaskEdit)
+	if in.Given["priority"] != "high" {
+		t.Errorf("the priority changed and was not sent: %v", in.Given)
+	}
+	if _, sent := in.Given["spent"]; sent {
+		t.Errorf("the time spent did not change and was sent: %v", in.Given)
+	}
+	_, in = Saved(fields, true, 0, TaskNew, TaskEdit)
+	if in.Given["spent"] != "1h" {
+		t.Errorf("adding left out the time spent: %v", in.Given)
+	}
+}

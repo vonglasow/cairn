@@ -3,6 +3,8 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,20 +32,54 @@ func (w *world) dayBlock(day string) []string {
 	return block
 }
 
+func (w *world) dayGives(day string, n int, want string) error {
+	for _, l := range w.dayBlock(day) {
+		fields := strings.Fields(l)
+		if len(fields) >= 2 && fields[0] == fmt.Sprintf("#%d", n) {
+			if fields[1] != want {
+				return fmt.Errorf("the day %s gives task %d %q, want %q:\n%s", day, n, fields[1], want, w.Out.Stdout)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("the day %s says nothing of task %d:\n%s", day, n, w.Out.Stdout)
+}
+
+func (w *world) aStoreBeforeTheTimeSpentWasReadFromTheTrace() error {
+	before, err := os.ReadFile(filepath.Join("testdata", "time-spent-before-the-trace.db"))
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(w.StorePath, before, 0o600)
+}
+
 func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	sc.Step("^I ran `([^`]*)`$", func(line string) error { return w.Seed(line) })
 
-	sc.Step(`^the day "([^"]*)" gives task (\d+) "([^"]*)"$`, func(day string, n int, want string) error {
-		for _, l := range w.dayBlock(day) {
-			fields := strings.Fields(l)
-			if len(fields) >= 2 && fields[0] == fmt.Sprintf("#%d", n) {
-				if fields[1] != want {
-					return fmt.Errorf("the day %s gives task %d %q, want %q:\n%s", day, n, fields[1], want, w.Out.Stdout)
-				}
+	sc.Step(`^the day "([^"]*)" gives task (\d+) "([^"]*)"$`, w.dayGives)
+
+	sc.Step(`^a store from before the time spent was read from the trace$`, w.aStoreBeforeTheTimeSpentWasReadFromTheTrace)
+	sc.Step(`^a store whose task 1 was in focus from 07:00 to 08:30 UTC on 2026-09-29$`, func() error {
+		if err := w.aStoreBeforeTheTimeSpentWasReadFromTheTrace(); err != nil {
+			return err
+		}
+		return w.Seed(`cairn migration apply`)
+	})
+
+	sc.Step(`^today gives task (\d+) "([^"]*)"$`, func(n int, want string) error {
+		return w.dayGives(domain.FormatDay(time.Now()), n, want)
+	})
+
+	sc.Step(`^it says (\S+) was added with no day$`, func(span string) error {
+		for _, l := range strings.Split(w.Out.Stdout, "\n") {
+			if strings.Contains(l, "time added") && strings.Contains(l, span) && !strings.Contains(l, " for ") {
 				return nil
 			}
 		}
-		return fmt.Errorf("the day %s says nothing of task %d:\n%s", day, n, w.Out.Stdout)
+		return fmt.Errorf("the history does not say %s was added with no day:\n%s", span, w.Out.Stdout)
 	})
 
 	sc.Step(`^the day "([^"]*)" comes to "([^"]*)"$`, func(day, want string) error {

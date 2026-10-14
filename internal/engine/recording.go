@@ -29,7 +29,6 @@ var theAttributes = []struct {
 	{"because", func(f task.Carried) string { return f.Because }},
 	{"deadline", func(f task.Carried) string { return domain.FormatDay(f.Deadline) }},
 	{"estimate", func(f task.Carried) string { return domain.FormatDuration(f.Estimate) }},
-	{"time spent", func(f task.Carried) string { return domain.FormatDuration(f.Spent) }},
 	{"parent", func(f task.Carried) string { return numberOrNothing(f.Parent) }},
 	{"objectives", func(f task.Carried) string { return numbersOrNothing(f.Objectives) }},
 	{"archived", func(f task.Carried) string { return yesOrNothing(f.Archived) }},

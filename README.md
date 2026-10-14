@@ -70,7 +70,7 @@ cairn task unarchive 1           # back on the board
 | `--label` | one per flag or several at once: `--label spec --label team` and `--label spec,team` are the same thing. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. Each piece of a list counts on its own, so the two forms cannot be mixed there either |
 | `--deadline` | a day: `2026-09-01` |
 | `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m`. Kept to the second, so anything finer is refused rather than rounded away |
-| `--spent` | the time already spent. Given plainly it sets the tally, `+30m` adds to it, `-15m` takes off, and taking off more than was there leaves nothing. Kept to the second, like `--estimate` |
+| `--spent` | the time spent, which is the time the task was in focus and the time added by hand. `+30m` adds time by hand today, `-15m` takes some back, and given plainly it sets the whole, the difference added today. It never falls below nothing, and a minute begun counts whole |
 | `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
 | `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
 

@@ -121,6 +121,22 @@ Feature: Changes to the shape of the store
       Then task 2 carries exactly the labels "a, ado, b, c, dette-config, obj-modularite-helm, sp26-20"
       And objective 2 carries exactly the labels "ete-2026"
 
+  Rule: The time written on a task is kept when the time spent is read from the trace
+
+    @migration-time-spent-kept
+    Scenario: the time written on a task before is still its time spent
+      Given a store from before the time spent was read from the trace
+      When I run `cairn migration apply`
+      And I run `cairn task show 2`
+      Then the task carries the time spent "2h30m"
+
+    @migration-time-spent-in-the-trace
+    Scenario: the time written on a task before is in its trace, added by hand
+      Given a store from before the time spent was read from the trace
+      When I run `cairn migration apply`
+      And I run `cairn trace show 2`
+      Then it says 2h30m was added with no day
+
   Rule: What a change will do can be read before it is made
 
     @migration-show

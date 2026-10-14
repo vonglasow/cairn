@@ -231,3 +231,10 @@ func TestList_readsOnPastABirth(t *testing.T) {
 		t.Errorf("what was done after the birth is gone:\n%s", got)
 	}
 }
+
+func TestText_saysTimeAddedWithNoDayWithoutOne(t *testing.T) {
+	line := Text([]Act{added(1, "", "2h30m", at(9, 0))})
+	if !strings.Contains(line, "time added  2h30m") || strings.Contains(line, " for") {
+		t.Errorf("time added with no day reads %q", line)
+	}
+}

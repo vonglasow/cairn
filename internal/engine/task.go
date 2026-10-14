@@ -409,7 +409,7 @@ var taskAttributes = []Argument{
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
-	{Name: "spent", Kind: Duration, Means: "the time already spent on it; +30m adds, -15m takes off"},
+	{Name: "spent", Kind: Duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
 	{Name: "parent", Kind: Number, Of: "a task", Means: "the number of the task it hangs under"},
 	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; +4 adds one, -1 takes one away"},
 }

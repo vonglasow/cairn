@@ -29,22 +29,32 @@ func AddingFields(state string) []Field {
 }
 
 func partsField(said string) Field {
-	return Field{Name: "parts", Arg: "parts", Value: said, Long: true}
+	return Field{Name: "parts", Arg: "parts", Value: said, Was: said, Long: true}
 }
 
 // Saved is what a saved form asks for: adding or editing — one form, so the difference is the operation and the number and nothing else — with the title trimmed on its way out, since what somebody called a task does not include the space they left after it.
 func Saved(fields []Field, adding bool, number int, add, edit Operation) (Operation, Input) {
-	op := edit
+	op, sent := edit, changedOf(fields)
 	if adding {
-		op = add
+		op, sent = add, fields
 	}
-	asked := Asked(fields, op)
+	asked := Asked(sent, op)
 	title, _ := valueOf(fields, "title")
 	asked.Given["title"] = strings.TrimSpace(title)
 	if !adding {
 		asked.Given["number"] = strconv.Itoa(number)
 	}
 	return op, asked
+}
+
+func changedOf(fields []Field) []Field {
+	var changed []Field
+	for _, f := range fields {
+		if f.Value != f.Was {
+			changed = append(changed, f)
+		}
+	}
+	return changed
 }
 
 func valueOf(fields []Field, name string) (string, bool) {

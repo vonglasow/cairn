@@ -313,7 +313,7 @@ func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
 	}
 }
 
-func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
+func TestSavingAFormNamesEveryArgumentEmptied(t *testing.T) {
 	form := asking(engine.EditFields(engine.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
@@ -321,15 +321,17 @@ func TestSavingAFormNamesEveryArgumentTheOperationTakes(t *testing.T) {
 		Deadline: on("2026-09-02"), Description: "why",
 	}, nil), 80, 20, plainSkin)
 	form.Number = 1
-
-	_, in := (Board{}).saving(form, engine.TaskNew, engine.TaskEdit)
-	for _, argument := range engine.TaskEdit.Takes {
-		if !in.Named(argument.Name) {
-			t.Errorf("%s was not named, so emptying it would do nothing", argument.Name)
+	for _, field := range form.fields {
+		if field.Name != "title" {
+			form = form.typedInto(field.Name, "")
 		}
 	}
-	if in.Given["state"] != "todo" || in.Given["priority"] != "high" || in.Given["parent"] != "4" {
-		t.Fatalf("a field was read back wrong: %+v", in.Given)
+
+	_, in := (Board{}).saving(form, engine.TaskNew, engine.TaskEdit)
+	for _, field := range form.fields {
+		if field.Was != "" && !in.Named(field.Arg) {
+			t.Errorf("%s was not named, so emptying it would do nothing", field.Arg)
+		}
 	}
 }
 
