@@ -110,6 +110,11 @@ func ExplainedAt(name Box, width int) Box {
 
 const tipWide = 360
 
+// OfferLit is where an offer under the pointer is lit: around its words, as wide as they are, with as much room on every side of them.
+func OfferLit(words Box, wide int) Box {
+	return Box{X: words.X - inset, Y: words.Y - inset, W: wide + 2*inset, H: lineHigh + 2*inset}
+}
+
 // Lighting says whether an offer is the one the pointer is resting on, which is the one thing in the window that says a word can be clicked.
 func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offer }
 

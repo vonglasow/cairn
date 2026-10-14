@@ -1119,6 +1119,40 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	offerBox := func(offer string) (Box, error) {
+		bar := w.w.BarOffers()
+		for i, one := range w.w.Offers() {
+			if one == offer {
+				return bar[i], nil
+			}
+		}
+		return Box{}, fmt.Errorf("the bar does not offer %q", offer)
+	}
+	sc.Step(`^I rest the pointer on the offer "([^"]*)"$`, func(offer string) error {
+		box, err := offerBox(offer)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + 2})
+		return nil
+	})
+	sc.Then(`^the offer "([^"]*)" is lit around its words, in their middle$`, func(offer string) error {
+		box, err := offerBox(offer)
+		if err != nil {
+			return err
+		}
+		if !w.w.Lighting(offer) {
+			return fmt.Errorf("the offer %q is not lit", offer)
+		}
+		said := w.w.Said(offer)
+		glyphs := w.w.measured()(said, reads)
+		wide := glyphs[len(glyphs)-1]
+		lit := OfferLit(box, wide)
+		if lit.X+inset != box.X || lit.W != wide+2*inset || lit.Y+inset != box.Y || lit.H != lineHigh+2*inset {
+			return fmt.Errorf("the offer %q is lit at %+v around words at %+v, %d wide", offer, lit, box, wide)
+		}
+		return nil
+	})
 	sc.Then(`^the day "([^"]*)" carries nothing$`, func(day string) error {
 		if d, _ := dayOfWeek(day); len(d.Tasks) > 0 {
 			return fmt.Errorf("%s carries %d tasks", day, len(d.Tasks))

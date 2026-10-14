@@ -580,7 +580,9 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 
 func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer string, w Window) {
 	if w.Lighting(offer) {
-		fill(gtx, box, skin.Panel)
+		measuring := gtx
+		measuring.Constraints = layout.Constraints{Max: image.Pt(box.W, lineHigh)}
+		fill(gtx, OfferLit(box, wide(measuring, th, w.Said(offer), reads).Size.X), skin.Panel)
 		say(gtx, th, skin.Ink, box, w.Said(offer), reads)
 		return
 	}

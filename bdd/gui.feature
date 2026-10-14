@@ -2376,6 +2376,12 @@ Feature: The desktop board
 
   Rule: A key does what the bar offers, where the bar offers it
 
+    @gui-a-lit-offer-holds-its-words-in-its-middle
+    Scenario: the offer under the pointer is lit around its words, which sit in its middle
+      When I open the window
+      And I rest the pointer on the offer "Search"
+      Then the offer "Search" is lit around its words, in their middle
+
     @gui-e-edits-an-open-task
     Scenario: a task being read is edited without closing it first
       Given I added a task titled "Write the spec"
