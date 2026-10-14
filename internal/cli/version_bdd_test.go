@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 
@@ -49,17 +48,6 @@ func (w *versionWorld) endScenario() {
 		w.restores[i]()
 	}
 	w.restores = nil
-}
-
-func (w *versionWorld) stampedThere(at int, want string) error {
-	said, err := exec.Command("make", "-s", "-C", w.unpacked, "stamps").Output()
-	if err != nil {
-		return fmt.Errorf("make stamps: %w", err)
-	}
-	if got := strings.Fields(string(said)); len(got) != 3 || got[at] != want {
-		return fmt.Errorf("make stamps answered %q, want %q in place %d", said, want, at)
-	}
-	return nil
 }
 
 func (w *versionWorld) binaries(version string, systems ...string) error {
@@ -134,11 +122,6 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^stamped with commit date "([^"]*)"$`, func(v string) error {
 			w.stamp(&w.committed, v)
 			return nil
-		})
-
-		sc.Step(`^the source archive of this repository made as version "([^"]*)"$`, func(version string) error {
-			w.archive = filepath.Join(w.t.TempDir(), "dist")
-			return command(root(), "scripts/dist.sh", version, w.archive)
 		})
 
 		formula := func(name string) (string, error) {
@@ -264,70 +247,8 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
-		sc.Step(`^I unpack it somewhere git has never been$`, func() error {
-			found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
-			if err != nil {
-				return err
-			}
-			if len(found) != 1 {
-				return fmt.Errorf("the archive made is %v, want one source archive", found)
-			}
-			w.unpacked = w.t.TempDir()
-			if err := command(w.unpacked, "tar", "-xzf", found[0]); err != nil {
-				return err
-			}
-			inside, err := filepath.Glob(filepath.Join(w.unpacked, "cairn-*"))
-			if err != nil {
-				return err
-			}
-			if len(inside) != 1 {
-				return fmt.Errorf("the archive unpacks to %v, want one directory", inside)
-			}
-			w.unpacked = inside[0]
-			if _, err := os.Stat(filepath.Join(w.unpacked, ".git")); err == nil {
-				return fmt.Errorf("the archive carries a git history")
-			}
-			return nil
-		})
-
-		sc.Step(`^a build there would be stamped with version "([^"]*)"$`, func(want string) error {
-			return w.stampedThere(0, want)
-		})
-
-		sc.Step(`^a build there would be stamped with the commit the archive was made from$`, func() error {
-			head, err := exec.Command("git", "-C", root(), "rev-parse", "HEAD").Output()
-			if err != nil {
-				return err
-			}
-			return w.stampedThere(1, strings.TrimSpace(string(head)))
-		})
-
-		sc.Step(`^a build there would be stamped with the date of that commit$`, func() error {
-			ask := exec.Command("git", "-C", root(), "show", "-s", "--format=%cd",
-				"--date=format-local:%Y-%m-%dT%H:%M:%SZ", "HEAD")
-			ask.Env = append(os.Environ(), "TZ=UTC")
-			when, err := ask.Output()
-			if err != nil {
-				return err
-			}
-			return w.stampedThere(2, strings.TrimSpace(string(when)))
-		})
-
-		sc.Step(`^the archive says how to build and install it$`, func() error {
-			said, err := os.ReadFile(filepath.Join(w.unpacked, "INSTALL.md"))
-			if err != nil {
-				return err
-			}
-			for _, must := range []string{"make build", "bin/cairn --version"} {
-				if !strings.Contains(string(said), must) {
-					return fmt.Errorf("INSTALL.md says nothing of %q", must)
-				}
-			}
-			return nil
-		})
-
-		sc.Step(`^the archive's install guide is written in ASCII alone$`, func() error {
-			said, err := os.ReadFile(filepath.Join(w.unpacked, "INSTALL.md"))
+		sc.Step(`^the install guide is written in ASCII alone$`, func() error {
+			said, err := os.ReadFile(filepath.Join(root(), "INSTALL.md"))
 			if err != nil {
 				return err
 			}
@@ -346,7 +267,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			if err := os.MkdirAll(filepath.Join(w.repo, "scripts"), 0o755); err != nil {
 				return err
 			}
-			for _, name := range []string{"release.sh", "dist.sh", "changelog.sh", "sums.sh"} {
+			for _, name := range []string{"release.sh", "changelog.sh"} {
 				script, err := os.ReadFile(filepath.Join(root(), "scripts", name))
 				if err != nil {
 					return err
@@ -381,14 +302,13 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
-		sc.Step(`^(?:I make )?its source archive(?: made)? as version "([^"]*)"$`, func(version string) error {
-			if w.archive == "" {
-				w.archive = filepath.Join(w.t.TempDir(), "dist")
-			}
-			return command(w.repo, "bash", filepath.Join("scripts", "dist.sh"), version, w.archive)
+		sc.Step(`^I ask what changed, as version "([^"]*)"$`, func(version string) error {
+			said, err := exec.Command("bash", filepath.Join(w.repo, "scripts", "changelog.sh"), version).Output()
+			w.out = test.Result{Stdout: string(said)}
+			return err
 		})
 
-		sc.Step(`^the archive's changelog says, under "([^"]*)", "([^"]*)" among the (features|fixes|breaking changes)$`, func(version, what, kind string) error {
+		sc.Step(`^the changelog says, under "([^"]*)", "([^"]*)" among the (features|fixes|breaking changes)$`, func(version, what, kind string) error {
 			section, err := w.changelogSection(version, map[string]string{
 				"features": "### Features", "fixes": "### Fixes", "breaking changes": "### Breaking changes",
 			}[kind])
@@ -401,7 +321,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
-		sc.Step(`^the archive's changelog says nothing of "([^"]*)"$`, func(what string) error {
+		sc.Step(`^the changelog says nothing of "([^"]*)"$`, func(what string) error {
 			said, err := w.changelog()
 			if err != nil {
 				return err
@@ -534,8 +454,8 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 	runAcceptance(t, "version.feature", initVersion(t), "@version-stamped")
 }
 
-func TestAcceptance_Version_ComesWithASourceArchive(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-from-a-source-archive,@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-for-its-minor,@version-brew-formula-needs-every-binary")
+func TestAcceptance_Version_ComesWithAFormula(t *testing.T) {
+	runAcceptance(t, "version.feature", initVersion(t), "@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-for-its-minor,@version-brew-formula-needs-every-binary")
 }
 
 func TestAcceptance_Version_ComesAsABinaryForEachSystem(t *testing.T) {
@@ -547,21 +467,10 @@ func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {
 }
 
 func (w *versionWorld) changelog() (string, error) {
-	found, err := filepath.Glob(filepath.Join(w.archive, "cairn-*-src.tar.gz"))
-	if err != nil {
-		return "", err
+	if w.out.Stdout == "" {
+		return "", fmt.Errorf("nothing said what changed")
 	}
-	if len(found) == 0 {
-		return "", fmt.Errorf("no source archive was made")
-	}
-	slices.Sort(found)
-	last := found[len(found)-1]
-	inside := strings.TrimSuffix(filepath.Base(last), "-src.tar.gz") + "/CHANGELOG.md"
-	said, err := exec.Command("tar", "-xzOf", last, inside).Output()
-	if err != nil {
-		return "", fmt.Errorf("the archive holds no changelog: %w", err)
-	}
-	return string(said), nil
+	return w.out.Stdout, nil
 }
 
 func (w *versionWorld) changelogSection(version, heading string) (string, error) {

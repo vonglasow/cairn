@@ -1,12 +1,11 @@
 # cairn — build/run helpers and the checks prek runs at commit time.
 
 BIN     ?= bin/cairn
-# A source archive has no git history to ask, so it carries what git would have
-# said in VERSION, COMMIT and COMMIT_DATE, and those are read first — see
-# scripts/dist.sh. The date is the commit's, in UTC, the way Go embeds it.
-VERSION ?= $(shell cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo dev)
-COMMIT  ?= $(shell cat COMMIT 2>/dev/null || git rev-parse HEAD 2>/dev/null || echo none)
-COMMIT_DATE ?= $(shell cat COMMIT_DATE 2>/dev/null || TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD 2>/dev/null)
+# What git says of the commit built: the version, the commit and its date, in
+# UTC, the way Go embeds it.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  ?= $(shell git rev-parse HEAD 2>/dev/null || echo none)
+COMMIT_DATE ?= $(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD 2>/dev/null)
 BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PKG      = cairn/internal/build
 # go install puts tools in GOPATH/bin, which is not always on PATH.
@@ -31,7 +30,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog dist package desktop stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
+.PHONY: release release-check next-version changelog package desktop stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -278,10 +277,6 @@ release:
 ## next-version: say the tag the next version would carry, read off the commits since the last
 next-version:
 	@go run github.com/caarlos0/svu/v3@$(SVU_VERSION) next --v0
-
-## dist: make the source archive of this version, with its notices, in ./dist
-dist: notices
-	@scripts/dist.sh $(VERSION) dist bin/THIRD_PARTY_NOTICES
 
 ## package: build cairn here and make its archive for this system, with its notices, in ./dist
 ## A release builds it on each system in turn — see .github/workflows/release.yml.

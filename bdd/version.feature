@@ -24,15 +24,6 @@ Feature: Version
     And it reports a real Go toolchain
     And it reports a real platform
 
-  @version-from-a-source-archive
-  Scenario: a build from a release's source archive says the release it came from
-    Given the source archive of this repository made as version "v9.9.9"
-    When I unpack it somewhere git has never been
-    Then a build there would be stamped with version "v9.9.9"
-    And a build there would be stamped with the commit the archive was made from
-    And a build there would be stamped with the date of that commit
-    And the archive says how to build and install it
-
   @version-brew-formula
   Scenario: the formula installs the binary built for the system it is installed on
     Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel
@@ -64,10 +55,8 @@ Feature: Version
     And the checksums name it
 
   @version-install-reads-anywhere
-  Scenario: the archive's install guide reads the same in any tool, on any system
-    Given the source archive of this repository made as version "v9.9.9"
-    When I unpack it somewhere git has never been
-    Then the archive's install guide is written in ASCII alone
+  Scenario: the install guide reads the same in any tool, on any system
+    Then the install guide is written in ASCII alone
 
   @version-is-made-on-main
   Scenario: a version is made from main and nowhere else
@@ -85,22 +74,18 @@ Feature: Version
     And no tag was made
 
   @version-archive-says-what-changed
-  Scenario: a version's archive says what changed, version by version
+  Scenario: a version says what changed, version by version
     Given a repository on a branch called "main"
     And a version "v0.1.0" made there
     And the commits "fix: keep the focus", "feat(gui): choose a label", "feat!: drop families" and "docs: say how"
-    When I make its source archive as version "v0.2.0"
-    Then the archive's changelog says, under "v0.2.0", "choose a label" among the features
-    And the archive's changelog says, under "v0.2.0", "drop families" among the breaking changes
-    And the archive's changelog says, under "v0.2.0", "keep the focus" among the fixes
-    And the archive's changelog says nothing of "say how"
-    And the archive's changelog says, under "v0.1.0", "begin" among the features
+    When I ask what changed, as version "v0.2.0"
+    Then the changelog says, under "v0.2.0", "choose a label" among the features
+    And the changelog says, under "v0.2.0", "drop families" among the breaking changes
+    And the changelog says, under "v0.2.0", "keep the focus" among the fixes
+    And the changelog says nothing of "say how"
+    And the changelog says, under "v0.1.0", "begin" among the features
 
   @version-sums-kept
-  Scenario: the checksums of every version made are kept beside each other
-    Given a repository on a branch called "main"
-    And a version "v0.1.0" made there
-    And its source archive made as version "v0.1.0"
-    And the commits "feat: more", "fix: less" and "docs: words"
-    When I make its source archive as version "v0.2.0"
-    Then the checksums name "cairn-v0.1.0-src.tar.gz" and "cairn-v0.2.0-src.tar.gz"
+  Scenario: the checksums of every archive of a version are kept beside each other
+    Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel
+    Then the checksums name "cairn-v9.9.9-darwin-arm64.tar.gz" and "cairn-v9.9.9-linux-amd64.tar.gz"

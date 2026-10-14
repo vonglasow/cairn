@@ -1,7 +1,8 @@
-# Installing cairn from its sources
+# Installing cairn
 
-What a version of cairn is handed over as: its sources, built where they are.
-The same archive builds on macOS, on Linux and on Windows.
+A version of cairn is handed over as a binary for each system, on its GitHub
+release; "From a release" below. Building it is for whoever clones it, on
+macOS, on Linux or on Windows.
 
 ## What it needs
 
@@ -29,14 +30,14 @@ The same archive builds on macOS, on Linux and on Windows.
 ## Building it
 
 ```sh
-tar -xzf cairn-v1.2.0-src.tar.gz
-cd cairn-v1.2.0
+git clone git@github.com:vonglasow/cairn.git
+cd cairn
 make build
 bin/cairn --version
 ```
 
-`bin/cairn --version` names the version the archive was made as, and the
-commit it was made from. The first build fetches the modules cairn is built
+`bin/cairn --version` names the version the clone is at, and the commit it
+was built from. The first build fetches the modules cairn is built
 from, so it needs the network once.
 
 ### On Windows

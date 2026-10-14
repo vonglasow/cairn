@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# release.sh — make a version: refuse what is not one, check everything, tag
-# it, and make the archive it is handed over as.
+# release.sh — make a version: refuse what is not one, check everything, and
+# tag it. Pushing the tag hands it over.
 #
 #   make release          (which runs this)
 #   make next-version     (which says what it would tag, and does nothing)
@@ -14,8 +14,8 @@
 #
 # The tag is made only once everything has passed, so a version that failed
 # its checks is not a version at all. Everything is every check but the
-# mutation sweep, which is run on its own — see make mutation. Run again on a commit already tagged, it
-# checks again and makes the archive again, under the tag that is there.
+# mutation sweep, which is run on its own — see make mutation. Run again on a
+# commit already tagged, it checks it again, under the tag that is there.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -32,7 +32,7 @@ svu() { go run "github.com/caarlos0/svu/v3@${SVU_VERSION:?SVU_VERSION names the 
 
 if tag=$(git describe --tags --exact-match 2>/dev/null); then
   [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "this commit is tagged $tag, which is not a version"
-  echo "this commit is $tag already: checking it, and making its archive again"
+  echo "this commit is $tag already: checking it again"
   fresh=false
 else
   tag=$(svu next --v0)
@@ -62,4 +62,7 @@ if $fresh; then
   echo "tagged $tag"
 fi
 
-make dist VERSION="$tag"
+# Pushing the tag is what hands the version over: GitHub builds it on every
+# system and publishes it (.github/workflows/release.yml). Pushing is left to
+# whoever made it, who decides it goes out.
+echo "push it to release it: git push origin main && git push origin $tag"

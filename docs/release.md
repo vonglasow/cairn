@@ -9,7 +9,9 @@ on every system and publishes it (`.github/workflows/release.yml`).
 
 A tag on a commit of `main`, and what is made from it: a binary for each
 system, and the Homebrew formula that installs it. Whoever wants to build cairn
-clones it; the release hands over what is already built. A build
+clones it; the release hands over what is already built. A source archive was
+made and handed over as the version until binaries were: it is gone, and
+`make dist` with it. A build
 with no tag to name says the commit it came from (`git describe --always`).
 
 The number reads `vMAJOR.MINOR.PATCH`. What moves it:
@@ -65,43 +67,15 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 4. **Tags it**, an annotated tag named by the number, and only now: a version
    whose checks failed was never a version, and a tag made before them would
    say it was. Run again on a commit tagged already, the release checks it
-   again and makes its archive again, under that tag.
+   again, under that tag.
 
-5. **Makes the archive.**
+   `INSTALL.md` says how to install a version and how to build cairn from a
+   clone. It is written in ASCII alone (`@version-install-reads-anywhere`): it
+   is read before anything is installed, in whatever the machine has, and on
+   Windows a tool that takes a file with no mark of its encoding for the
+   system's code page wrote every dash as `â€”`.
 
-   ```sh
-   make dist      # dist/cairn-v1.2.0-src.tar.gz, dist/CHANGELOG.md, dist/SHA256SUMS
-   ```
-
-   A version is handed over as **its sources**, built where they are with
-   `make build` — the same archive on macOS and on Linux, with nothing hosted
-   anywhere: the archive and its checksum go wherever colleagues fetch things
-   from. `SHA256SUMS` keeps a line for every archive made in the folder: the
-   one just made is written again, the others are left as they were — written
-   whole, it lost the sum of every earlier version the moment a later one was
-   made. It holds the tree the tag names and five files git would not give:
-
-   - `VERSION`, `COMMIT` and `COMMIT_DATE`, what `git describe`, the commit
-     and its date would have said. An archive has no history to ask, so the
-     Makefile reads them first — without them a build from it called itself
-     `dev`, made from `none`, on a date `unknown`.
-     `make stamps` says what a build would be stamped with.
-   - `CHANGELOG.md`, what changed, version by version — below.
-   - `THIRD_PARTY_NOTICES`, the licences of what cairn is built from, read by
-     `scripts/notices.sh` from the module cache for the modules the binary
-     actually links, with Go's own; every licence and notice file of a module
-     is kept, and a module with none fails it.
-
-   `INSTALL.md`, at the root of the tree and so of the archive, says what a
-   build needs — Go, make, a C compiler, and on Linux the graphics headers
-   `scripts/linux.sh` installs — and how to put the binary on a `PATH`.
-
-   It is written in ASCII alone (`@version-install-reads-anywhere`). It is read
-   before anything is installed, in whatever the machine has, and on Windows
-   a tool that takes a file with no mark of its encoding for the system's code
-   page wrote every dash as `â€”`.
-
-6. **Is pushed, by hand.** `git push origin main` and `git push origin vX.Y.Z`:
+5. **Is pushed, by hand.** `git push origin main` and `git push origin vX.Y.Z`:
    the person pushing decides the version goes out, and nothing goes out
    before. gaia, whose release runs on every push to `main`, showed what the
    other way costs — a version for every `feat`, many of them for very little.
@@ -158,7 +132,7 @@ and what was fixed — a `feat`, a `fix`, and either with a `!` or a
 `BREAKING CHANGE`. The rest, docs and tests and chores, is in the history for
 whoever wants it, and not in what somebody upgrading reads.
 
-It goes three places: into the archive and beside it in `dist/`, and into the
+It goes two places: beside the binaries in the release, and into the
 annotated tag, which carries its own version's part — `git show v1.2.0` says
 what that version brought. `make changelog` prints it with what the next
 version would bring, and makes nothing.
