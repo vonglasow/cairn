@@ -183,10 +183,14 @@ to what the clock says and never to more. Several are often in focus at once,
 one per agent session; counted in full on each, a day of three sessions read as
 three days.
 
-**Each task is rounded to the nearest quarter of an hour**, half a quarter up,
-and a day is the sum of those — the sum of what is written, so the lines add
-up to their total. A task that rounds to nothing is not written; a day nothing
-was done on is, coming to `0m`, so a week reads as a week.
+**Each task is said to the minute, a minute begun counted whole**, and a day is
+the sum of those — the sum of what is written, so the lines add up to their
+total, and a task's time spent is the sum of its days. It was rounded to the
+nearest quarter of an hour, and that hid every task worked on for less than
+seven and a half minutes: a review answered, a ticket read, gone from the day.
+Bringing a day to quarters is the sheet's business, done when it is filled in. A
+task with no time is not written; a day nothing was done on is, coming to `0m`,
+so a week reads as a week.
 
 **There is no ceiling and no kind of work.** A sheet may accept eight hours a
 day and sort them into development, fixes, meetings; cairn says the real time,

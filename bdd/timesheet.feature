@@ -4,18 +4,32 @@ Feature: How long the work took, day by day
     Given a store of my own, somewhere that is not the default place
     And nothing in it yet
 
-  Rule: A day is said task by task, each rounded, and comes to their sum
+  Rule: A day is said task by task, to the minute, and comes to their sum
 
-    @timesheet-rounds-to-the-quarter
-    Scenario: each task's time is rounded to the nearest quarter of an hour, and the day adds those up
+    @timesheet-says-the-minutes
+    Scenario: each task's time is said to the minute, and the day adds those up
       Given I added a task titled "Write the spec"
       And I added a task titled "Review the PR"
       And I ran `cairn timesheet add 1 50m --on 2026-09-29`
       And I ran `cairn timesheet add 2 53m --on 2026-09-29`
       When I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
-      Then the day "2026-09-29" gives task 1 "45m"
-      And the day "2026-09-29" gives task 2 "1h"
-      And the day "2026-09-29" comes to "1h45"
+      Then the day "2026-09-29" gives task 1 "50m"
+      And the day "2026-09-29" gives task 2 "53m"
+      And the day "2026-09-29" comes to "1h43"
+
+    @timesheet-hides-no-short-work
+    Scenario: work shorter than a quarter of an hour is said, not left out
+      Given I added a task titled "Answer the review"
+      And I ran `cairn timesheet add 1 5m --on 2026-09-29`
+      When I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
+      Then the day "2026-09-29" gives task 1 "5m"
+
+    @timesheet-a-minute-begun-counts
+    Scenario: a minute begun counts whole
+      Given I added a task titled "Answer the review"
+      And I ran `cairn timesheet add 1 10s --on 2026-09-29`
+      When I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
+      Then the day "2026-09-29" gives task 1 "1m"
 
     @timesheet-says-the-real-time-however-long
     Scenario: a long day is said as it was, with no ceiling

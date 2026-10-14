@@ -22,7 +22,7 @@ type Day struct {
 	Total time.Duration
 }
 
-// Worked is how long one task took on one day, rounded to the quarter hour, and whether it was still in focus when the day ended.
+// Worked is how long one task took on one day, to the minute begun, and whether it was still in focus when the day ended.
 type Worked struct {
 	Task     int
 	Took     time.Duration
@@ -39,8 +39,6 @@ func LastNamed(acts []Act, field string) time.Time {
 	}
 	return last
 }
-
-func quarter() time.Duration { return 15 * time.Minute }
 
 type span struct {
 	task     int
@@ -115,18 +113,29 @@ func Timed(acts []Act, first, last, now time.Time) Sheet {
 	return sheet
 }
 
-// Spent is the time spent on each task, all told: the time it was in focus, shared with any other in focus at once, and the time added by hand with a day or without one — a minute begun counted whole, and never less than nothing.
+// Spent is the time spent on each task, all told: what every day of its sheet says — the time it was in focus, shared with any other in focus at once, and the time added by hand that day — and the time added with no day, never less than nothing.
 func Spent(acts []Act, now time.Time) map[int]time.Duration {
-	w := workedFrom(acts, now.Location(), now)
-	var first time.Time
+	loc := now.Location()
+	w := workedFrom(acts, loc, now)
+	days := map[time.Time][]span{}
 	for _, s := range w.spans {
-		if first.IsZero() || s.from.Before(first) {
-			first = s.from
-		}
+		start := s.from.In(loc)
+		day := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, loc)
+		days[day] = append(days[day], s)
 	}
-	took, _ := shared(w.spans, first, now)
-	for _, day := range w.byHand {
-		for task, length := range day {
+	for day := range w.byHand {
+		days[day] = append(days[day], []span{}...)
+	}
+	took := map[int]time.Duration{}
+	for day, spans := range days {
+		focused, _ := shared(spans, day, day.AddDate(0, 0, 1))
+		for task, length := range w.byHand[day] {
+			focused[task] += length
+		}
+		for task, length := range focused {
+			if length > 0 {
+				length = minuteBegun(length)
+			}
 			took[task] += length
 		}
 	}
@@ -211,12 +220,11 @@ func rounded(took map[int]time.Duration, leftOpen map[int]bool) Day {
 	var day Day
 	for _, task := range slices.Sorted(maps.Keys(took)) {
 		length := took[task]
-		quarters := (max(0, length) + quarter()/2) / quarter()
-		if quarters == 0 {
+		if length <= 0 {
 			continue
 		}
-		day.Tasks = append(day.Tasks, Worked{Task: task, Took: quarters * quarter(), LeftOpen: leftOpen[task]})
-		day.Total += quarters * quarter()
+		day.Tasks = append(day.Tasks, Worked{Task: task, Took: minuteBegun(length), LeftOpen: leftOpen[task]})
+		day.Total += minuteBegun(length)
 	}
 	return day
 }

@@ -72,7 +72,7 @@ var TimesheetShow = Operation{
 	Thing: "timesheet",
 	Verb:  "show",
 	Short: "Say how long the work took, day by day",
-	Does:  "Say how long the work took, day by day and task by task: the time each task was in focus, the minutes several shared split between them, and what was added by hand — each rounded to the quarter hour, the day the sum of those, with no ceiling.",
+	Does:  "Say how long the work took, day by day and task by task: the time each task was in focus, the minutes several shared split between them, and what was added by hand — each to the minute begun, the day the sum of those, with no ceiling.",
 	Example: `cairn timesheet show
 cairn timesheet show --since 2026-09-01 --until 2026-09-07`,
 	Level:   Read,

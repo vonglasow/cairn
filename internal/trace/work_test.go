@@ -97,7 +97,7 @@ func TestTimed_sharesTheMinutesTwoTasksOverlap(t *testing.T) {
 	}
 }
 
-func TestTimed_roundsEachTaskToTheQuarterAndAddsThoseUp(t *testing.T) {
+func TestTimed_saysEachTaskToTheMinuteBegunAndAddsThoseUp(t *testing.T) {
 	s := Timed([]Act{
 		took(1, 9, 0), stopped(1, 9, 50),
 		took(2, 10, 0), stopped(2, 10, 53),
@@ -105,18 +105,36 @@ func TestTimed_roundsEachTaskToTheQuarterAndAddsThoseUp(t *testing.T) {
 	}, dayOf(3), dayOf(3), at(18, 0))
 	one, _, _ := worked(s, dayOf(3), 1)
 	two, _, _ := worked(s, dayOf(3), 2)
-	_, _, three := worked(s, dayOf(3), 3)
-	if one != 45*time.Minute || two != time.Hour || three || totalOf(s, dayOf(3)) != 105*time.Minute {
-		t.Errorf("task 1 %s, task 2 %s, task 3 written %v, the day %s", one, two, three, totalOf(s, dayOf(3)))
+	three, _, _ := worked(s, dayOf(3), 3)
+	if one != 50*time.Minute || two != 53*time.Minute || three != 7*time.Minute || totalOf(s, dayOf(3)) != 110*time.Minute {
+		t.Errorf("task 1 %s, task 2 %s, task 3 %s, the day %s", one, two, three, totalOf(s, dayOf(3)))
 	}
-	half := Timed([]Act{took(1, 9, 0), stopped(1, 9, 7), took(1, 9, 30), stopped(1, 9, 30)}, dayOf(3), dayOf(3), at(18, 0))
-	if _, _, written := worked(half, dayOf(3), 1); written || len(half.Days) != 1 || totalOf(half, dayOf(3)) != 0 {
-		t.Errorf("seven minutes were written: %+v", half)
+	edge := Timed([]Act{took(1, 9, 0)}, dayOf(3), dayOf(3), at(9, 7).Add(time.Second))
+	if took, _, _ := worked(edge, dayOf(3), 1); took != 8*time.Minute {
+		t.Errorf("seven minutes and a second read %s, want the eighth minute begun", took)
 	}
-	edge := Timed([]Act{took(1, 9, 0)}, dayOf(3), dayOf(3), at(9, 7).Add(30*time.Second))
-	if took, _, _ := worked(edge, dayOf(3), 1); took != 15*time.Minute {
-		t.Errorf("seven and a half minutes round to %s, want a quarter", took)
+	none := Timed([]Act{took(1, 9, 30), stopped(1, 9, 30)}, dayOf(3), dayOf(3), at(18, 0))
+	if _, _, written := worked(none, dayOf(3), 1); written {
+		t.Errorf("nothing at all was written: %+v", none)
 	}
+}
+
+func TestSpent_isWhatTheDaysOfTheSheetComeTo(t *testing.T) {
+	acts := []Act{
+		took(1, 9, 0), stoppedAfter(1, at(9, 0).Add(10*time.Second)),
+		tookOn(1, 4, 9, 0), stoppedAfter(1, atOn(4, 9, 0).Add(10*time.Second)),
+	}
+	if spent := Spent(acts, atOn(5, 0, 0)); spent[1] != 2*time.Minute {
+		t.Errorf("ten seconds on each of two days spent %s, want the minute each day says", spent[1])
+	}
+}
+
+func stoppedAfter(task int, when time.Time) Act {
+	var a AsTold
+	a.On(task)
+	a.Did(FocusReleased)
+	a.At(when)
+	return a.Act()
 }
 
 func TestTimed_stopsAFocusLeftOpenAtMidnight(t *testing.T) {

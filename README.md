@@ -185,7 +185,7 @@ cairn timesheet add 3 --on 2026-10-03 -- -30m     # too much: take some back
 ```
 
 Focus is what is measured: take it up when the work starts, let it go when it
-stops — it moves when it is done, never after the fact. Each day says each task's time, rounded to the quarter hour, and the sum
+stops — it moves when it is done, never after the fact. Each day says each task's time, to the minute begun, and the sum
 of those — the real time, every hour of it, with no ceiling and no kind of work:
 sorting a day out and bringing it down to what a sheet accepts is done when the
 sheet is filled in. Two tasks in focus at once share the minutes they overlap,

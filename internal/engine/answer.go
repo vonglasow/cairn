@@ -61,7 +61,7 @@ type Tasks struct {
 	InFocus []int `json:"in_focus"`
 }
 
-// Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — rounded to the quarter hour — and the day's, the sum of those.
+// Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — a minute begun counted whole — and the day's, the sum of those.
 type Timesheet struct {
 	Days []TimesheetDay `json:"days"`
 }
