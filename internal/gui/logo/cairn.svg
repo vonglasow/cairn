@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>cairn</title>
+<rect width="512" height="512" rx="112" fill="#121218"/>
+<circle cx="256" cy="256" r="176" fill="none" stroke="#2C2C36" stroke-width="30"/>
+<path d="M256,80 A176,176 0 1 1 80.0,256.0" fill="none" stroke="#6C9EF6" stroke-width="30" stroke-linecap="round"/>
+<clipPath id="c">
+<rect x="140" y="176" width="232" height="160" rx="22"/>
+</clipPath>
+<rect x="140" y="176" width="232" height="160" rx="22" fill="#2C2C36"/>
+<g clip-path="url(#c)">
+<polygon points="158.3,185.0 240.4,182.6 304.8,183.6 302.8,204.6 304.4,233.1 239.3,236.1 162.3,231.5 162.7,205.1" fill="#56545C" stroke="#56545C" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="318.7,182.2 349.2,184.3 362.8,181.0 367.9,207.1 366.6,231.9 344.0,237.5 316.4,235.3 315.4,207.8" fill="#7A777C" stroke="#7A777C" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="163.4,250.2 241.2,245.5 277.5,250.0 278.8,273.6 279.3,284.5 241.7,284.6 163.5,283.6 162.0,271.8" fill="#68656C" stroke="#68656C" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="292.8,251.0 328.6,246.4 364.6,249.7 368.0,261.5 362.6,282.2 324.9,282.1 291.9,280.8 293.3,261.5" fill="#56545C" stroke="#56545C" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="159.2,300.2 184.8,297.9 232.9,300.0 235.8,318.1 231.5,328.3 177.8,329.1 159.6,330.6 162.3,313.4" fill="#7A777C" stroke="#7A777C" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="245.5,299.9 315.5,295.8 366.7,295.6 365.0,306.2 367.5,329.5 322.8,332.8 248.4,331.9 244.5,310.0" fill="#56545C" stroke="#56545C" stroke-width="4" stroke-linejoin="round"/>
+<rect x="140" y="176" width="14" height="160" fill="#60B292"/>
+</g>
+<path d="M203,256 Q263,204 323,256 Q263,308 203,256 Z" fill="#121218" stroke="#121218" stroke-width="16" stroke-linejoin="round"/>
+<path d="M203,256 Q263,204 323,256 Q263,308 203,256 Z" fill="#6C9EF6"/>
+<circle cx="263" cy="256" r="20.3" fill="#121218"/>
+</svg>

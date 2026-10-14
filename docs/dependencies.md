@@ -26,6 +26,12 @@ reason no longer holds is a dependency to take out.
 | `golang.org/x/image` | measuring text in the window | the fixed-point numbers Gio measures and places text in; Gio takes them, and they are not in the standard library |
 | `github.com/cucumber/godog` | running the scenarios | every `.feature` under `bdd/` is executed as Go tests by it — the scenarios are the contract, see [workflow.md](workflow.md) |
 
+Two tools draw the logo, and only when it changes, never in a build:
+`rsvg-convert` (librsvg) draws its PNGs from the SVG, and
+`github.com/tc-hib/go-winres`, run by `go run` at a pinned version and so in no
+`go.mod`, writes the Windows resource the `.exe` carries it in. What they make is
+kept in the repository — see `scripts/logo.sh`.
+
 Four of these reasons were written down only when this table was: `cobra`,
 `fang`, `godog` and `modernc.org/sqlite` arrived with the first commit and
 nobody wrote why. They are written here as the code shows them used, not as

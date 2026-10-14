@@ -588,6 +588,15 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
+**The logo is a card in focus, built of stones, in a dial that fills.** It
+says what cairn is for rather than what it is called: the card the work is on,
+its eye the one the board draws on a card in focus, and the dial the time that
+focus measures. The card is laid in facade stones cut the way the opening cuts
+them, its priority edge on the left, on the window's own dark ground with the
+corners left clear. `internal/gui/logo/cairn.svg` is the one source; the PNGs
+beside it, 16 to 1024 pixels, and the Windows resource are drawn from it by
+`scripts/logo.sh`, so a build needs no drawing tool.
+
 **The window opens on its board being built of stones.** The content is what
 is built: each card arrives
 as stones — courses of them, each stone cut irregular and fitted to its
