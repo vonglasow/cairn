@@ -588,9 +588,8 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
-**The window opens on its board being built of stones.** Five stones stacking
-in the middle of the window said nothing of the board, and were drawn whether
-it held anything or not. Now the content is what is built: each card arrives
+**The window opens on its board being built of stones.** The content is what
+is built: each card arrives
 as stones — courses of them, each stone cut irregular and fitted to its
 neighbours like an old dry-stone wall, never bricks — falling from above the
 window into its place, one card after another, then giving way to the card
