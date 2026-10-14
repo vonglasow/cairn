@@ -42,9 +42,11 @@ echo "================================================================"
 # Where Go keeps its licence depends on who installed it: beside the sources,
 # or one level up when a package manager moved it.
 goroot=$(unix "$(go env GOROOT)")
-golicence=$(find "$goroot" "$goroot/.." -maxdepth 1 -name LICENSE 2>/dev/null | head -1)
+# Each path ends with a slash: where the toolchain folder is a link — on the
+# Windows runner it is one — find given the bare name looks no further.
+golicence=$(find "$goroot/" "$goroot/../" -maxdepth 1 -name LICENSE 2>/dev/null | head -1)
 if [ -z "$golicence" ]; then
-  echo "no licence file found for Go under $goroot, which holds: $(find "$goroot" -mindepth 1 -maxdepth 1 -exec basename {} \; | tr '\n' ' ')" >&2
+  echo "no licence file found for Go under $goroot, which holds: $(find "$goroot/" -mindepth 1 -maxdepth 1 -exec basename {} \; | tr '\n' ' ')" >&2
   missing=1
 else
   cat "$golicence"
