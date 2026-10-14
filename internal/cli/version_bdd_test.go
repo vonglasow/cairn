@@ -29,6 +29,8 @@ type versionWorld struct {
 }
 
 func newVersionWorld(t *testing.T) *versionWorld {
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
 	w := &versionWorld{t: t}
 	previous := stamps
 	w.restores = append(w.restores, func() { stamps = previous })
