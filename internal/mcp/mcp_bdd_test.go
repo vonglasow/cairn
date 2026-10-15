@@ -688,6 +688,30 @@ func (w *world) itAnswersWithItsNameAndVersion() error {
 	return nil
 }
 
+func (w *world) itTellsTheAgentWhereTheWorkGoes() error {
+	if w.session == nil {
+		return fmt.Errorf("no session: greet it first")
+	}
+	told := w.session.InitializeResult().Instructions
+	for _, want := range []string{"what was done or decided", "goes in its notes", "never in its description"} {
+		if !strings.Contains(told, want) {
+			return fmt.Errorf("instructions = %q, want them to say %q", told, want)
+		}
+	}
+	return nil
+}
+
+func (w *world) taskEditsDescriptionPointsAtTheNotes() error {
+	desc, err := schemaProperty(w.tool("task_edit"), "desc")
+	if err != nil {
+		return err
+	}
+	if said, _ := desc["description"].(string); !strings.Contains(said, "what was done or decided goes in its notes") {
+		return fmt.Errorf("desc says %q, want it to say where the work on a task goes", said)
+	}
+	return nil
+}
+
 func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := newWorld(t)
@@ -696,6 +720,8 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^it answers with its name and its version$", w.itAnswersWithItsNameAndVersion)
 		sc.Step("^I start `cairn mcp serve` and greet it without waiting$", w.startedServeAndGreetedItWithoutWaiting)
 		sc.Step("^it stops, and says nothing went wrong$", w.itStopsAndSaysNothingWentWrong)
+		sc.Step("^it tells the agent that what was done or decided on a task goes in its notes, never in its description$", w.itTellsTheAgentWhereTheWorkGoes)
+		sc.Step("^the description `task_edit` takes says what was done or decided on a task goes in its notes$", w.taskEditsDescriptionPointsAtTheNotes)
 		sc.Step("^a cairn server started with `--access (read|write|full)`$", w.aCairnServerStartedWithAccess)
 		sc.Step("^a cairn server started with no access given$", w.aCairnServerStartedWithNoAccessGiven)
 		sc.Step("^I ask it what it can do$", w.iAskItWhatItCanDo)

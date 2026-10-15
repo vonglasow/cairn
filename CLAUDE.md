@@ -27,6 +27,15 @@ no longer only written down, see
 A box you cannot tick is not a box you skip: say which one, say why, and ask
 before committing.
 
+**A task cairn worked on is held, and its work goes in its notes.** The
+board of this repository is `CAIRN_STORE=$PWD/.cairn/cairn.db` with
+`CAIRN_NOTES=$PWD/.cairn/notes`. Before working on a task, put it `current`
+and in focus — its parent too, for a sub-task. What was done or decided goes in
+its notes, `.cairn/notes/<n>/`: a dated entry `YYYY-MM-DD-<subject>.md`, and
+`summary.md` rewritten whole; **never in its description**, which says what the
+task is. When it is committed, unfocus it and put it `done`. The cairn skill
+(`plugin/claude/skills/cairn/SKILL.md`) has the rest.
+
 **Every change of state goes through `internal/engine`.** A surface parses,
 calls it, and prints — it decides nothing.
 

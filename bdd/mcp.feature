@@ -280,3 +280,16 @@ Feature: Answering a machine over MCP
       When I call `task_list`
       Then it answers that it failed
       And the answer says the store is behind
+
+  Rule: An agent is told where its work on a task goes
+
+    @mcp-greeting-says-where-the-work-goes
+    Scenario: an agent is told as it greets the server
+      When I start `cairn mcp serve` and greet it
+      Then it tells the agent that what was done or decided on a task goes in its notes, never in its description
+
+    @mcp-description-points-at-the-notes
+    Scenario: the tool that edits a task says it where the description is
+      Given a cairn server started with `--access write`
+      When I ask it what it can do
+      Then the description `task_edit` takes says what was done or decided on a task goes in its notes

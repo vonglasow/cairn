@@ -401,7 +401,7 @@ func sweepsByNarrowing(in Input) bool {
 }
 
 var taskAttributes = []Argument{
-	{Name: "desc", Kind: Text, Means: "what the task is about"},
+	{Name: "desc", Kind: Text, Means: "what the task is; what was done or decided goes in its notes"},
 	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column it sits in"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries"},

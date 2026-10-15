@@ -48,6 +48,20 @@ on one machine.
 }
 ```
 
+## It tells an agent where its work goes, as it greets it
+
+The server's greeting carries instructions, and they say one thing: a task's
+description says what the task is, and what was done or decided on it goes in
+its notes — the directory `task_show` names as its context — never in its
+description (`@mcp-greeting-says-where-the-work-goes`). `task_edit`'s `desc`
+says the same where it is filled in. An agent driving the command line reads
+it in `--desc`'s help, which is the same sentence: it is the engine's.
+
+It is said because it was not: an agent rewrote a description with a
+session's log for want of being told where else to put it — see
+[context.md](context.md). Nothing refuses a description that reads like a log:
+a description may well hold dates, and a refusal would forbid that too.
+
 ## What an agent may do is settled when the server starts
 
 One flag, three levels, `read` by default:

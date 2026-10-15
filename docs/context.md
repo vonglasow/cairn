@@ -244,7 +244,10 @@ the longest; an edit rewrites a description whole, so every entry was a read and
 a rewrite of all the others, and one careless one lost them. It went there
 because nothing said where else to put it: this contract was written down and
 nothing ran it, so no answer ever carried the place. `task show`'s description,
-which an agent reads as the tool's, now says it in so many words. That does not
+which an agent reads as the tool's, now says it in so many words, and so do the
+description's own help — on the command line and in `task_edit` — and the
+instructions the MCP server greets an agent with
+(`@context-the-description-points-at-the-notes`, [mcp.md](mcp.md)). That does not
 oblige an agent to write there — nothing in a description can — but it is the
 first thing the agent is told, at the moment it looks at the task.
 

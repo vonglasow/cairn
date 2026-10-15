@@ -1986,7 +1986,7 @@
           "type": "string"
         },
         "desc": {
-          "description": "what the task is about",
+          "description": "what the task is; what was done or decided goes in its notes",
           "type": "string"
         },
         "estimate": {
@@ -3046,7 +3046,7 @@
           "type": "string"
         },
         "desc": {
-          "description": "what the task is about",
+          "description": "what the task is; what was done or decided goes in its notes",
           "type": "string"
         },
         "estimate": {

@@ -50,6 +50,14 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says what was done or decided on a task goes in its notes$`, func() error {
+		said := strings.Join(strings.Fields(w.Out.Stdout), " ")
+		if !strings.Contains(said, "what was done or decided goes in its notes") {
+			return fmt.Errorf("the help never says where the work on a task goes:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
+
 	sc.Step(`^I moved task (\d+) under task (\d+)$`, func(n, parent int) error {
 		return w.Seed(fmt.Sprintf(`cairn task edit %d --parent %d`, n, parent))
 	})

@@ -77,3 +77,10 @@ Feature: Where a task's outside context lives
       When I run `cairn task delete 1 --yes`
       Then it succeeds
       And what was written under "~/vault/1" is still there
+
+  Rule: A description says what the task is, and its notes hold the work
+
+    @context-the-description-points-at-the-notes
+    Scenario: the help on a description says where the work goes
+      When I run `cairn task edit --help`
+      Then it says what was done or decided on a task goes in its notes

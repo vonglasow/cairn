@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"strings"
 	"testing"
 
 	"cairn/internal/task"
@@ -99,6 +100,9 @@ func TestFields_sayWhatEachOneIs(t *testing.T) {
 	for _, f := range TaskFields(Card{}) {
 		if f.Name == "estimate" && f.Means != "how long it should take" {
 			t.Errorf("the estimate says %q", f.Means)
+		}
+		if f.Name == "description" && !strings.Contains(f.Means, "what was done or decided goes in its notes") {
+			t.Errorf("the description says %q, and not where the work on the task goes", f.Means)
 		}
 	}
 }
