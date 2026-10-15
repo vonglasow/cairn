@@ -81,6 +81,7 @@ var reasons = []reason{
 	{ErrDayToCome, KindRefused, "day-to-come"},
 	{ErrNotATime, KindRefused, "not-a-time"},
 	{task.ErrMovedBehindItself, KindRefused, "moved-behind-itself"},
+	{ErrDoneHoldsNoFocus, KindRefused, "done-holds-no-focus"},
 	{task.ErrOtherColumn, KindRefused, "other-column"},
 	{task.ErrNotAmongItsSisters, KindRefused, "not-among-its-sisters"},
 	{task.ErrAlreadyArchived, KindRefused, "already-archived"},

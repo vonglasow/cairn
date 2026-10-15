@@ -261,6 +261,13 @@ now a rule the store keeps rather than one the schema makes impossible to
 break. It is kept in one statement — an insert that ignores a conflict — which
 is the smallest place it could live.
 
+**A task in `done` holds no focus.** Putting a task in `done` — by an edit, a
+move, a board — lets go of its focus in the same act, and the trace says it was
+released then; putting a task already done in focus is refused
+(`@ordering-focus-let-go-when-done`, `@ordering-focus-refused-on-done`). A
+focus is the work under way, and a done task has none left: a focus left on it
+went on counting time nobody spent.
+
 A task it names may be deleted, and it is unfocused when that happens —
 by hand, in the same statement's company as the labels. The schema declares the
 reference `ON DELETE SET NULL` and that clause never fires: SQLite leaves

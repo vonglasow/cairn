@@ -279,6 +279,37 @@ Feature: Ordering
       And it says there is no such task
       And it shows the number it could not find
 
+    @ordering-focus-let-go-when-done
+    Scenario: a task put in done is no longer in focus
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I put task 1 in focus
+      And I put task 2 in focus
+      When I run `cairn task edit 1 --state done`
+      Then it succeeds
+      When I run `cairn task list`
+      Then it marks "Second" as a task in focus
+      And it marks 1 task in focus
+
+    @ordering-focus-let-go-when-moved-to-done
+    Scenario: a task moved into done is no longer in focus
+      Given I added a task titled "First"
+      And I put task 1 in focus
+      When I run `cairn task move 1 --state done --first`
+      Then it succeeds
+      When I run `cairn task focus`
+      Then it says nothing is in focus
+
+    @ordering-focus-refused-on-done
+    Scenario: a task in done cannot be put in focus
+      Given I added a task titled "First"
+      And I edited task 1 with the state "done"
+      When I run `cairn task focus 1`
+      Then it fails
+      And it says a task that is done cannot be in focus
+      When I run `cairn task focus`
+      Then it says nothing is in focus
+
     @ordering-unfocus-when-nothing-is-in-focus
     Scenario: unfocusing nothing is not a failure
       Given I added a task titled "The only one"

@@ -98,6 +98,9 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 			return err
 		}
 	}
+	if after.State == domain.Done && before.State != domain.Done {
+		return e.letGoOf(after.Number)
+	}
 	return nil
 }
 

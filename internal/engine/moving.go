@@ -23,6 +23,9 @@ var ErrNowhereToMove = errors.New("a task is moved to the first place, behind an
 // ErrMoreThanOnePlace is returned when a move names several places at once.
 var ErrMoreThanOnePlace = errors.New("a task is moved to one place, not several")
 
+// ErrDoneHoldsNoFocus is returned when a task already done is put in focus: there is nothing left to work on.
+var ErrDoneHoldsNoFocus = errors.New("a task that is done cannot be in focus")
+
 // Place is where a move puts a task among the ones it sits with.
 type Place int
 
@@ -106,6 +109,9 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
 		return task.Task{}, err
+	}
+	if factsOf(t).State == domain.Done {
+		return task.Task{}, ErrDoneHoldsNoFocus
 	}
 	held, err := e.places.Focus()
 	if err != nil {

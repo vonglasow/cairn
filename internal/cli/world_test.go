@@ -257,6 +257,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says a task is moved inside its own column$`:                         "moved inside its own column",
 		`^it says a sub-task is moved among its sisters$`:                         "moved among its sisters",
 		`^it says where a task can be moved$`:                                     "behind another",
+		`^it says a task that is done cannot be in focus$`:                        "done cannot be in focus",
 	} {
 		wanted := want
 		sc.Step(step, func() error {
