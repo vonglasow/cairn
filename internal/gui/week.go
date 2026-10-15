@@ -20,17 +20,52 @@ type timeState struct {
 	week    time.Time
 	sheet   engine.Timesheet
 	monthly bool
+	daily   bool
 	dayFrom [7]int
 }
 
 // Monthly says the time page shows a month rather than a week.
 func (w Window) Monthly() bool { return w.monthly }
 
+// Daily says the time page shows one day rather than a week.
+func (w Window) Daily() bool { return w.daily }
+
+// TimeShown is the time spent as the page shows it: every task of the period, or only those the search reaches, each day's total counting only those.
+func (w Window) TimeShown() engine.Timesheet {
+	if w.looking.Empty() {
+		return w.sheet
+	}
+	reached := map[int]bool{}
+	for _, c := range engine.Found(w.snap.Cards, w.looking.Reads(), w.archived) {
+		reached[c.Number] = true
+	}
+	shown := engine.Timesheet{}
+	for _, d := range w.sheet.Days {
+		kept := engine.TimesheetDay{Day: d.Day}
+		for _, one := range d.Tasks {
+			if reached[one.Number] {
+				kept.Tasks = append(kept.Tasks, one)
+				kept.Minutes += one.Minutes
+			}
+		}
+		shown.Days = append(shown.Days, kept)
+	}
+	return shown
+}
+
+// DayHeld is the i-th day of the week in sight, as the page shows it.
+func (w Window) DayHeld(i int) engine.TimesheetDay {
+	return w.TimeShown().On(w.week.AddDate(0, 0, i))
+}
+
 func (w Window) readingWeek() Window {
 	if w.week.IsZero() {
 		w.week = engine.Monday(w.today())
 	}
 	since, until := w.week, w.week.AddDate(0, 0, 6)
+	if w.daily {
+		until = w.week
+	}
 	if w.monthly {
 		grid := engine.MonthGrid(w.week)
 		since, until = grid[0], grid[len(grid)-1]
@@ -46,50 +81,79 @@ func (w Window) readingWeek() Window {
 func (w Window) onWeek(name string) Window {
 	switch name {
 	case "left":
-		if w.monthly {
-			w.week = engine.MonthOn(w.week, -1)
-		} else {
-			w.week = w.week.AddDate(0, 0, -7)
-		}
+		w.week = w.stepped(-1)
 	case "right":
-		if w.monthly {
-			w.week = engine.MonthOn(w.week, 1)
-		} else {
-			w.week = w.week.AddDate(0, 0, 7)
-		}
+		w.week = w.stepped(1)
 	case "t":
 		w.week = engine.Monday(w.today())
 		if w.monthly {
 			w.week = engine.FirstOfMonth(w.today())
 		}
+		if w.daily {
+			w.week = w.today()
+		}
 	case "m":
-		w = w.turned()
+		if w.monthly {
+			w = w.ranged("Week")
+		} else {
+			w = w.ranged("Month")
+		}
+	case "d":
+		w = w.ranged("Day")
 	}
 	w.dayFrom = [7]int{}
 	return w.readingWeek()
 }
 
-func (w Window) turned() Window {
-	w.monthly = !w.monthly
-	if w.monthly {
-		today := w.today()
-		if today.Before(w.week) || !today.Before(w.week.AddDate(0, 0, 7)) {
-			today = w.week.AddDate(0, 0, 3)
+func (w Window) stepped(by int) time.Time {
+	switch {
+	case w.monthly:
+		return engine.MonthOn(w.week, by)
+	case w.daily:
+		return w.week.AddDate(0, 0, by)
+	}
+	return w.week.AddDate(0, 0, 7*by)
+}
+
+func (w Window) ranged(to string) Window {
+	today, on := w.today(), w.week
+	switch {
+	case w.monthly:
+		if sameMonth(today, w.week) {
+			on = today
 		}
-		w.week = engine.FirstOfMonth(today)
-		return w
+	case !w.daily:
+		if !today.Before(w.week) && today.Before(w.week.AddDate(0, 0, 7)) {
+			on = today
+		} else if to == "Month" {
+			on = w.week.AddDate(0, 0, 3)
+		}
 	}
-	if engine.FirstOfMonth(w.today()).Equal(w.week) {
-		w.week = engine.Monday(w.today())
-		return w
+	w.daily, w.monthly = to == "Day", to == "Month"
+	switch to {
+	case "Day":
+		w.week = on
+	case "Month":
+		w.week = engine.FirstOfMonth(on)
+	default:
+		w.week = engine.Monday(on)
 	}
-	w.week = engine.Monday(w.week)
 	return w
+}
+
+func (w Window) ranging() string {
+	switch {
+	case w.monthly:
+		return "Month"
+	case w.daily:
+		return "Day"
+	}
+	return "Week"
 }
 
 func weekKeys(name string) (mine, shared bool) {
 	switch name {
-	case "left", "right", "t", "m":
+	case "left", "right", "t", "m", "d":
 		return true, false
 	case "tab", "shift+tab", "cmd+b", "shift+b", "shift+l":
 		return false, true
@@ -117,14 +181,25 @@ func TimeChip(l Layout, name string) Box {
 		return at(end-rangeWide, rangeWide)
 	case "Week":
 		return at(end-2*rangeWide-between, rangeWide)
-	case "Today":
+	case "Day":
 		return at(end-3*rangeWide-2*between, rangeWide)
+	case "Today":
+		return at(end-4*rangeWide-4*between, rangeWide)
 	}
 	return Box{}
 }
 
 // TimeChips is every chip of the strip, in the order they are drawn.
-var TimeChips = []string{"‹", "›", "Today", "Week", "Month"}
+var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
+
+// ChipSaid is where a chip writes its name: in its middle, a line high and as wide as the name.
+func ChipSaid(chip Box, wide int) Box {
+	line := Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}
+	if wide >= chip.W {
+		return line
+	}
+	return Box{X: chip.X + (chip.W-wide)/2, Y: line.Y, W: wide, H: line.H}
+}
 
 // TimeSaid is where the strip says what is shown, between the arrows and the ranges.
 func TimeSaid(l Layout) Box {
@@ -135,6 +210,9 @@ func TimeSaid(l Layout) Box {
 
 // TimeSays is what is shown, as the strip says it: a week's first and last days, or a month.
 func TimeSays(w Window) string {
+	if w.daily {
+		return w.week.Format("Monday 2 January 2006")
+	}
 	if w.monthly {
 		return w.week.Format("January 2006")
 	}
@@ -163,12 +241,54 @@ func (w Window) DayFrom(i int) int { return w.dayFrom[i] }
 
 // DayShown is the tasks of the i-th day of the week in sight.
 func (w Window) DayShown(i int) []engine.TimesheetTask {
-	tasks, from := w.sheet.On(w.week.AddDate(0, 0, i)).Tasks, w.dayFrom[i]
+	tasks, from := w.DayHeld(i).Tasks, w.dayFrom[i]
 	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(WeekDayAt(w.Layout(), i)))]
+}
+
+// AloneShown is the tasks of the day shown alone that are in sight.
+func (w Window) AloneShown() []engine.TimesheetTask {
+	tasks, from := w.DayHeld(0).Tasks, w.dayFrom[0]
+	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(DayAloneAt(w.Layout())))]
+}
+
+// DayAloneAt is where one day is laid out when it is shown alone: the whole of what a week takes.
+func DayAloneAt(l Layout) Box {
+	strip, first := TimeStrip(l), WeekDayAt(l, 0)
+	return Box{X: strip.X, Y: first.Y, W: strip.W, H: first.H}
+}
+
+// AloneCardAt is where the j-th task of a day shown alone is drawn: the card a week draws, down the day's left and a third of it wide, so its title reads.
+func AloneCardAt(alone Box, j int) Box {
+	row := WeekRowAt(alone, j)
+	return Box{X: row.X, Y: row.Y, W: alone.W/3 - padding, H: CardHeight}
+}
+
+// AloneSpentAt is where a task of a day shown alone says how long it took: beside its card.
+func AloneSpentAt(alone Box, j int) Box {
+	card := AloneCardAt(alone, j)
+	return Box{X: card.X + card.W + padding, Y: card.Y + (CardHeight-gap-lineHigh)/2, W: spentWide, H: lineHigh}
+}
+
+// AloneBar is a task's bar on a day shown alone: after its time, across what is left of the day, as long as its share of the day's longest.
+func AloneBar(alone Box, j, minutes, longest int) Box {
+	spent := AloneSpentAt(alone, j)
+	x := spent.X + spent.W
+	room := alone.X + alone.W - padding - barWide - x
+	return Box{X: x, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
 }
 
 func (w Window) scrollingDay(p Point, by int) Window {
 	l := w.Layout()
+	if w.daily {
+		alone := DayAloneAt(l)
+		if !alone.In(p) {
+			return w
+		}
+		total := w.spareChoosing + by
+		w.spareChoosing = total % weekRow
+		w.dayFrom[0] = max(0, min(w.dayFrom[0]+total/weekRow, len(w.DayHeld(0).Tasks)-DayRoom(alone)))
+		return w
+	}
 	for i := range 7 {
 		day := WeekDayAt(l, i)
 		if !day.In(p) {
@@ -177,7 +297,7 @@ func (w Window) scrollingDay(p Point, by int) Window {
 		total := w.spareChoosing + by
 		rows := total / weekRow
 		w.spareChoosing = total % weekRow
-		w.dayFrom[i] = max(0, min(w.dayFrom[i]+rows, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks)-DayRoom(day)))
+		w.dayFrom[i] = max(0, min(w.dayFrom[i]+rows, len(w.DayHeld(i).Tasks)-DayRoom(day)))
 		return w
 	}
 	return w
@@ -216,7 +336,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 // MonthDay is the sheet's day for the i-th day of the month's six weeks.
 func (w Window) MonthDay(i int) engine.TimesheetDay {
 	day := domain.FormatDay(engine.MonthGrid(w.week)[i])
-	for _, d := range w.sheet.Days {
+	for _, d := range w.TimeShown().Days {
 		if d.Day == day {
 			return d
 		}
@@ -234,13 +354,23 @@ func (w Window) clickingTime(p Point) Window {
 		if key, ok := keyOf[chip]; ok {
 			return w.onWeek(key)
 		}
-		if (chip == "Month") != w.monthly {
-			return w.onWeek("m")
+		if chip != w.ranging() {
+			w = w.ranged(chip)
+			w.dayFrom = [7]int{}
+			return w.readingWeek()
 		}
 		return w
 	}
 	if number := w.timeCardAt(p); number != 0 {
 		return w.choosingAt(number)
+	}
+	if !w.monthly && !w.daily {
+		for i := range 7 {
+			if WeekHeadAt(WeekDayAt(l, i)).In(p) {
+				w.daily, w.week, w.dayFrom = true, w.week.AddDate(0, 0, i), [7]int{}
+				return w.readingWeek()
+			}
+		}
 	}
 	if !w.monthly {
 		return w
@@ -297,6 +427,14 @@ func cellShown(tasks []engine.TimesheetTask, room int) int {
 
 func (w Window) timeCardAt(p Point) int {
 	l := w.Layout()
+	if w.daily {
+		for j, one := range w.AloneShown() {
+			if AloneCardAt(DayAloneAt(l), j).In(p) {
+				return one.Number
+			}
+		}
+		return 0
+	}
 	if w.monthly {
 		for i := range engine.MonthGrid(w.week) {
 			cell := MonthCellAt(l, i)

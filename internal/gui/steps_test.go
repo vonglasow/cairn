@@ -997,6 +997,51 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
 	})
+	sc.Then(`^the day shown is "([^"]*)"$`, func(day string) error {
+		if !w.w.Daily() || domain.FormatDay(w.w.week) != day {
+			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily())
+		}
+		return nil
+	})
+	aloneShows := func(title string) bool {
+		for _, one := range w.w.AloneShown() {
+			if one.Title == title {
+				return true
+			}
+		}
+		return false
+	}
+	sc.Then(`^the day shown shows "([^"]*)"$`, func(title string) error {
+		if !aloneShows(title) {
+			return fmt.Errorf("the day shown does not show %q", title)
+		}
+		return nil
+	})
+	sc.Then(`^the day shown does not show "([^"]*)"$`, func(title string) error {
+		if aloneShows(title) {
+			return fmt.Errorf("the day shown shows %q", title)
+		}
+		return nil
+	})
+	sc.Step(`^I click the head of the day "([^"]*)"$`, func(day string) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		head := WeekHeadAt(WeekDayAt(w.w.Layout(), i))
+		w.w = w.w.clicked(Point{X: head.X + 4, Y: head.Y + head.H/2})
+		return w.w.Wrong()
+	})
+	sc.Then(`^the day "([^"]*)" shows a total of "([^"]*)"$`, func(day, total string) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		if got := w.w.DayHeld(i).Says(); got != total {
+			return fmt.Errorf("%s shows a total of %q, want %q", day, got, total)
+		}
+		return nil
+	})
 	sc.Then(`^the month shown is "([^"]*)"$`, func(month string) error {
 		if !w.w.Monthly() || w.w.week.Format("January 2006") != month {
 			return fmt.Errorf("the time page shows %q, monthly %v", TimeSays(w.w), w.w.Monthly())

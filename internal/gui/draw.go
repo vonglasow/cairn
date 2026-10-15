@@ -184,24 +184,34 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 }
 
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	measuring := gtx
+	measuring.Constraints.Min = image.Point{}
 	for _, chip := range TimeChips {
 		box := TimeChip(l, chip)
-		if (chip == "Month" && w.Monthly()) || (chip == "Week" && !w.Monthly()) {
-			outline(gtx, box, skin.Chosen)
+		back, ink := skin.Panel, skin.Chosen
+		if chip == w.ranging() {
+			back, ink = skin.Chosen, skin.Back
 		}
-		say(gtx, th, skin.Chosen, Inside(box), chip, reads)
+		fill(gtx, box, back)
+		outline(gtx, box, skin.Edge)
+		say(gtx, th, ink, ChipSaid(box, wide(measuring, th, chip, reads).Size.X), chip, reads)
 	}
 	say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
 	if w.Monthly() {
 		drawMonth(gtx, th, skin, l, w)
 		return
 	}
-	longest := w.sheet.Longest()
+	shown := w.TimeShown()
+	longest := shown.Longest()
+	if w.Daily() {
+		drawDayAlone(gtx, th, skin, l, w, longest)
+		return
+	}
 	for i := range 7 {
 		box := WeekDayAt(l, i)
 		day := w.week.AddDate(0, 0, i)
 		fill(gtx, box, skin.Panel)
-		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+w.sheet.On(w.week.AddDate(0, 0, i)).Says(), reads)
+		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+w.DayHeld(i).Says(), reads)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
@@ -210,10 +220,28 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
 		}
 		clipped.Pop()
-		if track, more := DayTrack(box, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks)); more {
+		if track, more := DayTrack(box, len(w.DayHeld(i).Tasks)); more {
 			fill(gtx, track, skin.Back)
-			fill(gtx, Thumb(track, len(w.sheet.On(w.week.AddDate(0, 0, i)).Tasks), DayRoom(box), w.DayFrom(i)), skin.Edge)
+			fill(gtx, Thumb(track, len(w.DayHeld(i).Tasks), DayRoom(box), w.DayFrom(i)), skin.Edge)
 		}
+	}
+}
+
+func drawDayAlone(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window, longest int) {
+	box := DayAloneAt(l)
+	held := w.DayHeld(0)
+	fill(gtx, box, skin.Panel)
+	say(gtx, th, skin.Faint, WeekHeadAt(box), held.Says(), reads)
+	clipped := clip.Rect(rect(box)).Push(gtx.Ops)
+	for j, one := range w.AloneShown() {
+		drawCard(gtx, th, skin, AloneCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal)
+		say(gtx, th, skin.Chosen, AloneSpentAt(box, j), one.Spent(), small)
+		fill(gtx, AloneBar(box, j, one.Minutes, longest), skin.Chosen)
+	}
+	clipped.Pop()
+	if track, more := DayTrack(box, len(held.Tasks)); more {
+		fill(gtx, track, skin.Back)
+		fill(gtx, Thumb(track, len(held.Tasks), DayRoom(box), w.DayFrom(0)), skin.Edge)
 	}
 }
 
@@ -507,11 +535,14 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 	}
 	measuring := gtx
 	measuring.Constraints.Min = image.Point{}
-	if eye, ok := FocusEye(c, parts.Number, wide(measuring, th, Numbered(c), small).Size.X); ok {
+	numberWide := wide(measuring, th, Numbered(c), small).Size.X
+	taken := parts.Number.X + numberWide
+	if eye, ok := FocusEye(c, parts.Number, numberWide); ok {
 		drawEye(gtx, eye, skin.Chosen)
+		taken = eye.X + eye.W
 	}
 	say(gtx, th, skin.Faint, parts.Number, Numbered(c), small)
-	if said := Carried(c, Marks()); said != "" {
+	if said := Carried(c, Marks()); said != "" && !Crowded(parts.Number, taken, said) {
 		say(gtx, th, skin.Faint, CountedAt(parts.Number, said), said, small)
 	}
 	say(gtx, th, skin.Writing(c), parts.Title, TitleOf(c.Title, parts.Panel.W), plain)
@@ -521,7 +552,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 		ink = skin.Late
 	}
 	say(gtx, th, ink, CountedAt(parts.Labels, said), said, small)
-	say(gtx, th, skin.Faint, parts.Labels, Tagged(c, LabelsRoom(parts.Labels, said)), small)
+	say(gtx, th, skin.Faint, LabelsAt(parts.Labels, said), Tagged(c, LabelsRoom(parts.Labels, said)), small)
 }
 
 // Writing is the ink a card's title is written in.

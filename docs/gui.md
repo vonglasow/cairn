@@ -639,7 +639,21 @@ with a double-click, on a week and in a day of a month alike, as on the board
 beside the tasks of a month's day still shows its week. What has not happened
 yet is not asked for:
 the engine refuses a period running past today, which left the week in progress
-unreadable, so a period is read up to today. The tab says how many tasks the
+unreadable, so a period is read up to today. A day is seen alone too: Day in the strip,
+`d`, or a click on a day's head in a week, lays that day across the page, each
+task the card the board draws, a third of the page wide so its title reads,
+with its time and its bar beside it (`@gui-the-time-page-shows-a-day`,
+`@gui-a-day-of-the-week-is-shown-alone`). The arrows then walk days; Today
+comes back to today in whichever range is shown, as a calendar's Today does,
+and Day, Week and Month say which range that is. They are buttons, drawn as
+such — filled, edged, their name in their middle — and the range shown is the
+one filled with the accent: drawn as plain words they were not seen as
+something to press. The search narrows this page as it narrows the board: a
+day keeps the tasks the search reaches, and its total counts only them
+(`@gui-the-time-page-is-searched`). A card too narrow for all it says gives up
+what has no room rather than writing it over the rest: the labels stop short of
+the facts written hard right, and the count of the parts gives way to the eye
+of a task in focus. The tab says how many tasks the
 time shown was spent on. The page lies over the columns and draws none of them,
 so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.

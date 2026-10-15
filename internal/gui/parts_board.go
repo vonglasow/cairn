@@ -125,6 +125,16 @@ func LabelsRoom(labels Box, said string) int {
 	return max(0, labels.W-CountedAt(labels, said).W-padding)
 }
 
+// LabelsAt is where a card's labels are written: its bottom row, short of the facts written hard right.
+func LabelsAt(labels Box, said string) Box {
+	return Box{X: labels.X, Y: labels.Y, W: LabelsRoom(labels, said), H: labels.H}
+}
+
+// Crowded says a card's count would be written over what its number line already holds up to taken: its number, and its eye.
+func Crowded(number Box, taken int, said string) bool {
+	return CountedAt(number, said).X < taken+eyeSpace
+}
+
 // StampedOver is how far across a history line what was done is written: past the time it happened and the two spaces after it.
 func StampedOver(stamp string) int {
 	return (len([]rune(stamp)) + 2) * perSmallGlyph

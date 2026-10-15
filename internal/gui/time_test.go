@@ -30,9 +30,9 @@ func TestTheTimePageIsLaidOutToThePixel(t *testing.T) {
 	if before != (Box{X: left, Y: strip.Y, W: arrowWide, H: barHigh}) || after.X != before.X+arrowWide+between {
 		t.Errorf("the arrows are %+v and %+v", before, after)
 	}
-	month, week, today := TimeChip(l, "Month"), TimeChip(l, "Week"), TimeChip(l, "Today")
-	if month.X+month.W != right || week.X+week.W+between != month.X || today.X+today.W+between != week.X || month.W != rangeWide {
-		t.Errorf("the ranges are %+v, %+v, %+v", today, week, month)
+	month, week, day, today := TimeChip(l, "Month"), TimeChip(l, "Week"), TimeChip(l, "Day"), TimeChip(l, "Today")
+	if month.X+month.W != right || week.X+week.W+between != month.X || day.X+day.W+between != week.X || today.X+today.W+2*between != day.X || month.W != rangeWide {
+		t.Errorf("the ranges are %+v, %+v, %+v, %+v", today, day, week, month)
 	}
 	if got := TimeChip(l, "nothing"); got != (Box{}) {
 		t.Errorf("a chip nobody named is %+v", got)
@@ -198,17 +198,18 @@ func TestTheTimePageAsksNothingOfTheFuture(t *testing.T) {
 	}
 }
 
-func TestTheRangeShownAndTodayAreOutlined(t *testing.T) {
+func TestTheRangeShownIsFilledAndTodayOutlined(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	l := w.Layout()
 	outlined := func(v Window, b Box) bool { return painted(drawn(t, v), Edges(b)[0], Dark().Chosen) == b.W }
-	if !outlined(w, TimeChip(l, "Week")) || outlined(w, TimeChip(l, "Month")) {
-		t.Error("a week shown does not outline Week alone")
+	filled := func(v Window, b Box) bool { return painted(drawn(t, v), b, Dark().Chosen) > b.W*b.H/2 }
+	if !filled(w, TimeChip(l, "Week")) || filled(w, TimeChip(l, "Month")) {
+		t.Error("a week shown does not fill Week alone")
 	}
 	m := w
 	m.monthly, m.week = true, dayNamed("2026-09-01")
-	if !outlined(m, TimeChip(l, "Month")) || outlined(m, TimeChip(l, "Week")) {
-		t.Error("a month shown does not outline Month alone")
+	if !filled(m, TimeChip(l, "Month")) || filled(m, TimeChip(l, "Week")) {
+		t.Error("a month shown does not fill Month alone")
 	}
 	grid := engine.MonthGrid(m.week)
 	today := slices.IndexFunc(grid, func(d time.Time) bool { return d.Equal(dayNamed("2026-09-30")) })
@@ -276,5 +277,69 @@ func TestATaskOfTheTimePageIsTheCardTheBoardHolds(t *testing.T) {
 	}
 	if c := w.DayCard(engine.TimesheetTask{Number: 9, Title: "Gone"}); c.Number != 9 || c.Title != "Gone" {
 		t.Errorf("a task the board no longer holds is %+v", c)
+	}
+}
+
+func TestTheRangesOfTheTimePageAreButtons(t *testing.T) {
+	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, timeState: timeState{week: dayNamed("2026-09-28")}}
+	l, skin := w.Layout(), Dark()
+	shot := drawn(t, w)
+	for _, chip := range []string{"Today", "Day", "Month"} {
+		box := TimeChip(l, chip)
+		if painted(shot, box, skin.Panel) < box.W*box.H/2 {
+			t.Errorf("%s is not drawn as a button: too little of it is filled", chip)
+		}
+	}
+	week := TimeChip(l, "Week")
+	if painted(shot, week, skin.Chosen) < week.W*week.H/2 {
+		t.Errorf("the range shown is not filled as the one chosen")
+	}
+}
+
+func TestAChipSaysItsNameInItsMiddle(t *testing.T) {
+	chip := Box{X: 100, Y: 10, W: 72, H: 30}
+	at := ChipSaid(chip, 32)
+	if at.X != 120 || at.W != 32 || at.Y != chip.Y+(chip.H-lineHigh)/2 || at.H != lineHigh {
+		t.Errorf("a name 32 wide is said at %+v in %+v", at, chip)
+	}
+	if wide := ChipSaid(chip, 90); wide.X != chip.X || wide.W != chip.W {
+		t.Errorf("a name wider than its chip is said at %+v", wide)
+	}
+}
+
+func TestANarrowCardLeavesOutWhatItHasNoRoomFor(t *testing.T) {
+	c := engine.Card{Labels: []string{"feature", "release-26.1.6", "ado", "77711"}}
+	if got := Tagged(c, 10); got != "" {
+		t.Errorf("in room for nothing the labels say %q", got)
+	}
+	if got := Tagged(c, 3*perSmallGlyph); got != "+4" {
+		t.Errorf("in room for their count the labels say %q", got)
+	}
+	number := Box{X: 0, Y: 0, W: 80, H: lineHigh}
+	if !Crowded(number, 60, "▪ 2/5") {
+		t.Errorf("a count written over what the number line already holds is not crowded")
+	}
+	if Crowded(number, 20, "▪ 2/5") {
+		t.Errorf("a count with room to spare is crowded")
+	}
+	labels := Box{X: 10, Y: 0, W: 100, H: lineHigh}
+	if at := LabelsAt(labels, "12h30m/4h"); at.X != labels.X || at.W != LabelsRoom(labels, "12h30m/4h") {
+		t.Errorf("the labels are written in %+v, past the facts' room", at)
+	}
+}
+
+func TestADayAloneHoldsItsTasksAcrossTheBoard(t *testing.T) {
+	l := LayoutFor(1200, 800)
+	strip, alone := TimeStrip(l), DayAloneAt(l)
+	if alone.X != strip.X || alone.W != strip.W || alone.Y != WeekDayAt(l, 0).Y || alone.Y+alone.H != l.Band.Y+l.Band.H {
+		t.Errorf("a day alone is %+v", alone)
+	}
+	card := AloneCardAt(alone, 1)
+	if card.X != alone.X+padding || card.W != alone.W/3-padding || card.Y != WeekRowAt(alone, 1).Y || card.H != CardHeight {
+		t.Errorf("its second card is %+v", card)
+	}
+	bar := AloneBar(alone, 1, 30, 60)
+	if bar.X <= card.X+card.W || bar.X+bar.W > alone.X+alone.W-padding {
+		t.Errorf("its second bar is %+v, beside a card at %+v", bar, card)
 	}
 }

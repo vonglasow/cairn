@@ -29,7 +29,11 @@ func Tagged(c engine.Card, width int) string {
 	for shown < len(c.Labels) && utf8.RuneCountInString(saying(c.Labels, shown+1)) <= room {
 		shown++
 	}
-	return saying(c.Labels, shown)
+	said := saying(c.Labels, shown)
+	if utf8.RuneCountInString(said) > room {
+		return ""
+	}
+	return said
 }
 
 func saying(labels []string, shown int) string {

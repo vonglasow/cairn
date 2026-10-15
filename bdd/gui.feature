@@ -1091,6 +1091,52 @@ Feature: The desktop board
       And I click the column "TODO"
       Then no card is chosen
 
+  Rule: The time spent is seen a day at a time too, and the search narrows it
+
+    @gui-the-time-page-shows-a-day
+    Scenario: the time page shows one day, and Today comes back to it
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      And I spent "1h" on task 1 on "2026-09-29"
+      And I spent "2h" on task 2 on "2026-09-30"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I click "Day" on the time page
+      Then the day shown is "2026-09-30"
+      And the day shown shows "Ship the board"
+      And the day shown does not show "Write the spec"
+      When I click "‹" on the time page
+      Then the day shown is "2026-09-29"
+      And the day shown shows "Write the spec"
+      When I click "Today" on the time page
+      Then the day shown is "2026-09-30"
+      When I click "Week" on the time page
+      Then the week shown starts on "2026-09-28"
+
+    @gui-a-day-of-the-week-is-shown-alone
+    Scenario: a click on a day's head in a week shows that day alone
+      Given today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I click the head of the day "2026-09-29"
+      Then the day shown is "2026-09-29"
+
+    @gui-the-time-page-is-searched
+    Scenario: a search narrows the time page to the tasks it reaches
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      And I spent "1h" on task 1 on "2026-09-29"
+      And I spent "2h" on task 2 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      And I press "/"
+      And I type "spec"
+      Then the day "2026-09-29" shows "Write the spec"
+      And the day "2026-09-29" does not show "Ship the board"
+      And the day "2026-09-29" shows a total of "1h"
+
   Rule: Tasks are exported from the window, and imported into it, as a file
 
     @gui-the-tasks-are-exported
