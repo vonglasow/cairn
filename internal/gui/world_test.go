@@ -771,6 +771,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.ContextAt(at)
 		return err
 	})
+	sc.Step(`^I double-click the column "([^"]*)"$`, func(name string) error {
+		at, err := column(name)
+		w.w = w.w.clicked(at).DoubleClick(at)
+		return err
+	})
 	sc.Step(`^I click the column "([^"]*)"$`, func(name string) error {
 		at, err := column(name)
 		w.w = w.w.clicked(at)

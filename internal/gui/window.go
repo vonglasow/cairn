@@ -115,6 +115,7 @@ type Window struct {
 	form                  Form
 	looking               Written
 	archived              bool
+	aimed                 string
 	over                  string
 	hovered               bool
 	explaining            int

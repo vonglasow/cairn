@@ -405,6 +405,16 @@ just added. The terminal's form does not carry it yet. Parts are never settled
 under number 0, which is no task — every task with no parent would read as a
 part the field no longer names.
 
+**A new task goes where the pointer last pointed.** A click on a column — on a
+card or on nothing — says which column the next task goes in: New, `⌘N`, or New
+from a right click adds it there, unless a card is chosen, whose column wins
+(`@gui-a-task-is-added-to-the-column-clicked`,
+`@gui-a-right-click-on-a-column-adds-there`). A double click where a column
+holds no card adds one to it at once, the way a calendar adds an event where it
+is double-clicked (`@gui-a-double-click-on-a-column-adds-there`). It went to
+the backlog whatever was clicked, so a task wanted in `todo` had to be added
+and then moved.
+
 **Every box in a row ends where the others do.** The title, the description,
 the last field of each section and the parts end on the same line, and a long
 field's bar sits beside its box, in a margin every field keeps.

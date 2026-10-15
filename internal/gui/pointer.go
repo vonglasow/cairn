@@ -70,7 +70,17 @@ func (w Window) Click(p Point) Window {
 	if w.tab == Time {
 		return w.clickingTime(p)
 	}
-	return w.choosingAt(w.at(p))
+	return w.aiming(p).choosingAt(w.at(p))
+}
+
+func (w Window) aiming(p Point) Window {
+	if w.tab != Tasks {
+		return w
+	}
+	if state, _, found := w.where(w.Layout(), p); found {
+		w.aimed = state
+	}
+	return w
 }
 
 // Hovering answers the window the pointer resting at a point leaves behind.
@@ -175,6 +185,11 @@ func (w Window) DoubleClick(p Point) Window {
 		return w
 	}
 	number := w.at(p)
+	if _, _, inColumn := w.where(w.Layout(), p); number == 0 && inColumn && w.tab == Tasks && w.screen == OnTheBoard {
+		w = w.aiming(p)
+		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
+		return w
+	}
 	if number == 0 {
 		return w
 	}

@@ -23,7 +23,7 @@ func (w Window) ContextAt(p Point) Window {
 	if w.screen != OnTheBoard {
 		return w
 	}
-	w = w.choosingAt(w.at(p))
+	w = w.aiming(p).choosingAt(w.at(p))
 	w.menu, w.menuAt, w.menuOn, w.menuSets = w.menuFor(), p, 0, ""
 	w.screen = OnMenu
 	return w

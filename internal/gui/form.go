@@ -545,6 +545,9 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 
 func (w Window) addingOn() string {
 	column, inBand, _, found := engine.Where(w.Showing().Cards, w.archived, w.chosen)
+	if !found && w.aimed != "" {
+		return w.aimed
+	}
 	if !found {
 		return engine.StateAt(0)
 	}

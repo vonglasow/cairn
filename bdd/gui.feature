@@ -1546,6 +1546,35 @@ Feature: The desktop board
       Then task 1 is called "Plan the week ahead"
       And there is 1 task
 
+    @gui-a-task-is-added-to-the-column-clicked
+    Scenario: a task added after a click on a column goes in that column
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I click the card "Write the spec"
+      And I click the column "CURRENT"
+      And I click "New"
+      And I type "Plan the week"
+      And the window has looked at the store 2 times
+      Then "CURRENT" carries "Plan the week"
+
+    @gui-a-double-click-on-a-column-adds-there
+    Scenario: a double click where a column holds no card adds a task to it
+      When I open the window
+      And I double-click the column "TODO"
+      Then the window is on the form
+      When I type "Plan the week"
+      And the window has looked at the store 2 times
+      Then "TODO" carries "Plan the week"
+
+    @gui-a-right-click-on-a-column-adds-there
+    Scenario: New, from a right click on a column, adds a task to that column
+      When I open the window
+      And I right-click the column "TODO"
+      And I click "New" in the menu
+      And I type "Plan the week"
+      And the window has looked at the store 2 times
+      Then "TODO" carries "Plan the week"
+
     @gui-a-saved-form-keeps-what-is-typed
     Scenario: saving on its own keeps the space typed at the end of a title
       Given I added a task titled "Fix the"
