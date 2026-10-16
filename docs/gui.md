@@ -353,6 +353,18 @@ line's help and an agent's schema say of the same argument (`Field.Means`) — s
 the three cannot disagree. Only the name explains: over what is being typed, an
 explanation would be in the way. The title has no name drawn, and none.
 
+**An explanation is the size of what it says, and shows what to type.**
+Amended 2026-10-16 (cairn#95). It was a box of three lines and 360 points for
+words that mostly fill one — "the day it is due" — so it hid the field under it
+for nothing, and it said what a field is without saying how it is written. It
+is now as wide as its widest line and as high as its lines, and a field typed
+into ends it on an example, in the faint ink: `e.g. 2026-12-25`, `e.g. 1h30m`,
+`e.g. +30m` (`@gui-a-field-shows-what-to-type`,
+`@gui-an-explanation-is-the-size-of-what-it-says`). The examples are the
+engine's, beside the fields of the form (`Field.Example`), so a form drawn
+anywhere else gives the same ones; a field chosen from a list gives none, the
+list being its own example.
+
 A field with `Choices` is chosen from the same list as the objectives, a `Long` field
 a multi-line box, the rest a line to type in. The field the keyboard is on is lit, and it is the only one:
 that is the whole of what says where typing would go.

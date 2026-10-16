@@ -860,12 +860,16 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
 	}
-	if said := w.Explains(); said != "" {
-		name, _, _ := FormPlace(box, fields, w.explaining-1)
-		tip := ExplainedAt(name, w.width)
+	if tip, said, ok := w.Explanation(); ok {
 		fill(gtx, tip, skin.Back)
 		outline(gtx, tip, skin.Edge)
-		sayOver(gtx, th, skin.Ink, Inside(tip), said, small, 3)
+		for i, line := range said {
+			ink := skin.Ink
+			if strings.HasPrefix(line, ExampleSays) && i == len(said)-1 && w.ExplainsBy() != "" {
+				ink = skin.Faint
+			}
+			say(gtx, th, ink, ExplainedLine(tip, i), line, small)
+		}
 	}
 	switch {
 	case !w.besideShown():

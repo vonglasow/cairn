@@ -121,10 +121,46 @@ func (w Window) Explains() string {
 	return fields[w.explaining-1].Means
 }
 
-// ExplainedAt is where a field's explanation is drawn: just under its name, kept inside the window.
-func ExplainedAt(name Box, width int) Box {
-	x := min(name.X, width-margin-tipWide)
-	return Box{X: max(margin, x), Y: name.Y + name.H + inset, W: tipWide, H: 3*lineHigh + 2*inset}
+// ExplainsBy is the example of what to type in the field whose name the pointer rests on, and nothing when there is none to give.
+func (w Window) ExplainsBy() string {
+	fields := w.form.Fields()
+	if w.Explains() == "" {
+		return ""
+	}
+	return fields[w.explaining-1].Example
+}
+
+// ExampleSays is how an explanation introduces its example.
+const ExampleSays = "e.g. "
+
+// Explanation is the box a field's explanation is drawn in and the lines it says — what the field is, then an example of what to type — as wide and as high as those lines and no more, and whether anything is explained at all.
+func (w Window) Explanation() (Box, []string, bool) {
+	said := w.Explains()
+	if said == "" {
+		return Box{}, nil, false
+	}
+	m := w.measured()
+	lines := m.Wrapped(said, tipWide-2*padding, small).Said
+	if by := w.ExplainsBy(); by != "" {
+		lines = append(lines, ExampleSays+by)
+	}
+	widest := 0
+	for _, line := range lines {
+		widest = max(widest, ends(m, line, small))
+	}
+	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), w.explaining-1)
+	return ExplainedAt(name, w.width, widest+2*padding, len(lines)), lines, true
+}
+
+// ExplainedAt is where a field's explanation is drawn: just under its name, as wide and as high as asked, kept inside the window.
+func ExplainedAt(name Box, width, wide, lines int) Box {
+	x := min(name.X, width-margin-wide)
+	return Box{X: max(margin, x), Y: name.Y + name.H + inset, W: wide, H: lines*lineHigh + 2*inset}
+}
+
+// ExplainedLine is where the line at of an explanation is written inside its box.
+func ExplainedLine(tip Box, at int) Box {
+	return Box{X: tip.X + padding, Y: tip.Y + inset + at*lineHigh, W: tip.W - 2*padding, H: lineHigh}
 }
 
 const tipWide = 360

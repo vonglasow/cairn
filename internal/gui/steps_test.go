@@ -1158,6 +1158,40 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the explanation gives the example "([^"]*)"$`, func(want string) error {
+		if got := w.w.ExplainsBy(); got != want {
+			return fmt.Errorf("the explanation gives the example %q, want %q", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the explanation is no bigger than what it says$`, func() error {
+		tip, said, ok := w.w.Explanation()
+		if !ok {
+			return fmt.Errorf("nothing is explained")
+		}
+		inside := Inside(tip)
+		if inside.H > len(said)*lineHigh+inset {
+			return fmt.Errorf("an explanation of %d lines is %d high, room for %d", len(said), tip.H, inside.H/lineHigh)
+		}
+		widest := 0
+		for _, line := range said {
+			widest = max(widest, ends(w.w.measured(), line, small))
+		}
+		if inside.W > widest+2*padding+glyphOf(small) {
+			return fmt.Errorf("an explanation whose widest line is %d is %d wide", widest, tip.W)
+		}
+		return nil
+	})
+	sc.Then(`^the explanation stays inside the window$`, func() error {
+		tip, _, ok := w.w.Explanation()
+		if !ok {
+			return fmt.Errorf("nothing is explained")
+		}
+		if tip.X < 0 || tip.Y < 0 || tip.X+tip.W > w.w.width || tip.Y+tip.H > w.w.height {
+			return fmt.Errorf("the explanation runs to %+v in a window of %dx%d", tip, w.w.width, w.w.height)
+		}
+		return nil
+	})
 	sc.Then(`^the window explains nothing$`, func() error {
 		if got := w.w.Explains(); got != "" {
 			return fmt.Errorf("the window explains %q", got)

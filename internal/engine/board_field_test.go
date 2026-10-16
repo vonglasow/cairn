@@ -109,3 +109,24 @@ func TestATaskWithNoPartsSaysNothing(t *testing.T) {
 		t.Fatalf("nothing read back as %v", back)
 	}
 }
+
+func TestFields_giveAnExampleOfWhatIsTypedInThem(t *testing.T) {
+	for _, fields := range [][]Field{TaskFields(Card{}), GoalFields(Goal{}), AddingFields("todo")} {
+		for _, f := range fields {
+			typed := len(f.Choices) == 0 && f.Name != "description" && f.Name != "objectives"
+			if typed && f.Example == "" {
+				t.Errorf("the field %q gives no example of what to type in it", f.Name)
+			}
+			if !typed && f.Example != "" {
+				t.Errorf("the field %q, which is not typed, gives the example %q", f.Name, f.Example)
+			}
+		}
+	}
+	for name, want := range map[string]string{"deadline": "2026-12-25", "estimate": "1h30m"} {
+		for _, f := range TaskFields(Card{}) {
+			if f.Name == name && f.Example != want {
+				t.Errorf("the field %q gives the example %q, want %q", name, f.Example, want)
+			}
+		}
+	}
+}

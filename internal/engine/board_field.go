@@ -17,6 +17,7 @@ type Field struct {
 	Means   string
 	Choices []string
 	Long    bool
+	Example string
 }
 
 // TaskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
@@ -40,8 +41,25 @@ func opened(op Operation, fields []Field) []Field {
 	for i := range fields {
 		fields[i].Was = fields[i].Value
 		fields[i].Means = meaning(op, fields[i].Arg)
+		if len(fields[i].Choices) == 0 {
+			fields[i].Example = typedLike[op.Thing+" "+fields[i].Arg]
+		}
 	}
 	return fields
+}
+
+var typedLike = map[string]string{
+	"task title":         "Write the spec",
+	"task label":         "spec team",
+	"task blocker":       "3 5",
+	"task because":       "the client's answer",
+	"task deadline":      "2026-12-25",
+	"task estimate":      "1h30m",
+	"task spent":         "+30m",
+	"objective title":    "Ship cairn 1.0",
+	"objective label":    "product",
+	"objective deadline": "2026-12-25",
+	"objective estimate": "40h",
 }
 
 func meaning(op Operation, arg string) string {

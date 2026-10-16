@@ -1090,7 +1090,7 @@ func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
 	if got := w.Hovering(Point{X: value.X + value.W - 1, Y: value.Y + 1}).Explains(); got != "" {
 		t.Errorf("what was typed explains %q, want nothing in the way of the typing", got)
 	}
-	tip := ExplainedAt(name, w.width)
+	tip, _, _ := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explanation()
 	if tip.Y < name.Y+name.H || tip.X+tip.W > w.width {
 		t.Errorf("the explanation %+v covers the name %+v or leaves the window", tip, name)
 	}

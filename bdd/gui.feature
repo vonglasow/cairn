@@ -940,6 +940,28 @@ Feature: The desktop board
       And I rest the pointer on the name of the field "estimate"
       Then the window explains "how long it should take"
 
+    @gui-a-field-shows-what-to-type
+    Scenario: the explanation of a field gives an example of what to type in it
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I rest the pointer on the name of the field "deadline"
+      Then the window explains "the day it is due"
+      And the explanation gives the example "2026-12-25"
+      When I rest the pointer on the name of the field "estimate"
+      Then the explanation gives the example "1h30m"
+
+    @gui-an-explanation-is-the-size-of-what-it-says
+    Scenario: an explanation is no bigger than what it says
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I rest the pointer on the name of the field "deadline"
+      Then the explanation is no bigger than what it says
+      When I rest the pointer on the name of the field "time spent"
+      Then the explanation is no bigger than what it says
+      And the explanation stays inside the window
+
     @gui-a-field-stops-explaining
     Scenario: the pointer leaving a field's name takes its explanation away
       Given I added a task titled "Write the spec"
