@@ -20,7 +20,6 @@ type Work interface {
 // Card is one task, flattened into what a board draws.
 type Card struct {
 	Number      int
-	Parent      int
 	Title       string
 	State       string
 	Archived    bool
@@ -34,6 +33,7 @@ type Card struct {
 	Overrun     bool
 	Objectives  []int
 	Description string
+	Steps       []Part
 	SubDone     int
 	SubTotal    int
 	InFocus     bool
@@ -131,7 +131,7 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 	sofar := along[told.Number]
 	return Card{
 		Number:      told.Number,
-		Parent:      told.Parent,
+		Steps:       partsOf(told.Steps),
 		Archived:    told.Archived,
 		Title:       domain.Shown(told.Title),
 		State:       told.State,
@@ -152,6 +152,17 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		Context:     contexts[told.Number],
 		Said:        task.Said(t),
 	}, nil
+}
+
+func partsOf(steps []task.Step) []Part {
+	if len(steps) == 0 {
+		return nil
+	}
+	parts := make([]Part, 0, len(steps))
+	for i, s := range steps {
+		parts = append(parts, Part{Number: i + 1, Title: domain.Shown(s.Title), Done: s.Done})
+	}
+	return parts
 }
 
 func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) {

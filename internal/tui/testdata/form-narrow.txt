@@ -3,25 +3,25 @@
  ╭────────────────────────────────────────────────────────────────────╮
  │ 4   Write the spec                                      todo  high │
  │                                                                    │
- │ ┃ title                            deadline                        │
- │ ┃ > Write the spec                 > 2026-09-03                    │
+ │ ┃ title                            because                         │
+ │ ┃ > Write the spec                 >                               │
  │                                                                    │
- │   description · 1 line             estimate                        │
- │     1 The client wants two         >                               │
+ │   description · 1 line             deadline                        │
+ │     1 The client wants two         > 2026-09-03                    │
  │       columns, not three.                                          │
- │                                    time spent                      │
+ │                                    estimate                        │
  │                                    >                               │
  │   column                                                           │
- │   todo                             parent                          │
+ │   todo                             time spent                      │
  │                                    >                               │
  │   priority                                                         │
  │   high                             objectives                      │
  │                                    >                               │
  │   labels                                                           │
- │   > spec                           parts · 2 lines                 │
- │                                      1 #12 [ ] Get the client's    │
+ │   > spec                           steps · 2 lines                 │
+ │                                      1 #2 [ ] Get the client's     │
  │   blockers                             nod                         │
- │   >                                  2 #11 [x] Draft the columns   │
+ │   >                                  2 #1 [x] Draft the columns    │
  │                                                                    │
  ╰────────────────────────────────────────────────────────────────────╯
 

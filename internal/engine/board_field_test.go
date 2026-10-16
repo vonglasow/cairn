@@ -13,15 +13,6 @@ func TestLookPassesOnWhatItCannotRead(t *testing.T) {
 	}
 }
 
-func TestMaybe(t *testing.T) {
-	if got := Maybe(0); got != "" {
-		t.Fatalf("no parent is written %q", got)
-	}
-	if got := Maybe(7); got != "7" {
-		t.Fatalf("a parent is written %q", got)
-	}
-}
-
 func TestWordsNeverAnswerNothingAtAll(t *testing.T) {
 	if got := Words("  "); got == nil || len(got) != 0 {
 		t.Fatalf("an empty field became %v, and a nil would mean nobody said anything", got)
@@ -34,7 +25,7 @@ func TestWordsNeverAnswerNothingAtAll(t *testing.T) {
 func TestGoalFieldsAreFewerAndSayNothingOfBlockers(t *testing.T) {
 	fields := GoalFields(Goal{Title: "One", State: "active"})
 	for _, f := range fields {
-		if f.Name == "blockers" || f.Name == "parent" {
+		if f.Name == "blockers" || f.Name == "steps" {
 			t.Fatalf("an objective was given a field it has not got: %q", f.Name)
 		}
 	}
@@ -80,12 +71,12 @@ func TestNumbersIn_readsBackWhatNumbersWrote(t *testing.T) {
 	}
 }
 
-func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
-	said := PartsSaid([]Card{
-		{Number: 2, Title: "Relire l'ADR", State: "todo"},
-		{Number: 3, Title: "Trancher", State: "done"},
-	})
-	want := "#2 [ ] Relire l'ADR\n#3 [x] Trancher"
+func TestTheStepsOfATaskAreWrittenWhatIsLeftFirstAndReadBackAsLines(t *testing.T) {
+	said := PartsWritten(Hanging(Card{Steps: []Part{
+		{Number: 2, Title: "Trancher", Done: true},
+		{Number: 3, Title: "Relire l'ADR"},
+	}}))
+	want := "#3 [ ] Relire l'ADR\n#2 [x] Trancher"
 	if said != want {
 		t.Fatalf("the parts read\n%q\nwant\n%q", said, want)
 	}
@@ -99,8 +90,8 @@ func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
 		title  string
 		done   bool
 	}{
-		{2, "Relire l'ADR", false},
-		{3, "Trancher", true},
+		{3, "Relire l'ADR", false},
+		{2, "Trancher", true},
 		{0, "Une nouvelle", false},
 		{0, "Déjà faite", true},
 	} {
@@ -111,7 +102,7 @@ func TestThePartsOfATaskAreWrittenAndReadBackAsLines(t *testing.T) {
 }
 
 func TestATaskWithNoPartsSaysNothing(t *testing.T) {
-	if said := PartsSaid(nil); said != "" {
+	if said := PartsWritten(Hanging(Card{})); said != "" {
 		t.Fatalf("a task with no parts reads %q", said)
 	}
 	if back := PartsIn(""); len(back) != 0 {

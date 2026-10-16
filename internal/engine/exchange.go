@@ -16,7 +16,8 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 1
+	exchangeVersion = 2
+	beforeSteps     = 1
 )
 
 // ErrNotAnExport is what reading a file that does not hold tasks written by task export is refused with.
@@ -29,7 +30,12 @@ type exchanged struct {
 	Cairn      string            `json:"cairn"`
 	Version    int               `json:"version"`
 	Objectives []objective.Shape `json:"objectives"`
-	Tasks      []task.Shape      `json:"tasks"`
+	Tasks      []filed           `json:"tasks"`
+}
+
+type filed struct {
+	task.Shape
+	Parent int `json:"parent,omitempty"`
 }
 
 // Exported says which file the tasks were written to, and what it holds.
@@ -107,16 +113,16 @@ func (e *Engine) exporting() (exchanged, error) {
 	if err != nil {
 		return exchanged{}, err
 	}
-	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []task.Shape{}, Objectives: []objective.Shape{}}
+	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []filed{}, Objectives: []objective.Shape{}}
 	served := map[int]bool{}
 	for _, t := range tasks {
 		shape := task.OfTask(t)
-		out.Tasks = append(out.Tasks, shape)
+		out.Tasks = append(out.Tasks, filed{Shape: shape})
 		for _, o := range shape.Objectives {
 			served[o] = true
 		}
 	}
-	slices.SortFunc(out.Tasks, func(a, b task.Shape) int { return a.Number - b.Number })
+	slices.SortFunc(out.Tasks, func(a, b filed) int { return a.Number - b.Number })
 	objectives, err := e.listObjectives()
 	if err != nil {
 		return exchanged{}, err
@@ -157,13 +163,46 @@ func readExport(from string) (exchanged, error) {
 	if err := json.Unmarshal(held, &read); err != nil || read.Cairn != exchangeKind {
 		return exchanged{}, ErrNotAnExport
 	}
-	if read.Version != exchangeVersion {
-		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads version %d", ErrNotAnExport, read.Version, exchangeVersion)
+	if read.Version != exchangeVersion && read.Version != beforeSteps {
+		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d and %d", ErrNotAnExport, read.Version, beforeSteps, exchangeVersion)
 	}
 	return read, nil
 }
 
+func stepsOfSubTasks(read exchanged) (exchanged, error) {
+	byNumber := map[int]bool{}
+	for _, t := range read.Tasks {
+		byNumber[t.Number] = true
+	}
+	var left, done = map[int][]task.Step{}, map[int][]task.Step{}
+	var work []filed
+	for _, t := range read.Tasks {
+		if t.Parent == 0 {
+			work = append(work, t)
+			continue
+		}
+		if !byNumber[t.Parent] {
+			return exchanged{}, fmt.Errorf("%w: task %d names task %d — task %d is not in the file", ErrExportPointsOutside, t.Number, t.Parent, t.Parent)
+		}
+		step := task.Step{Title: t.Title, Done: t.State == string(domain.Done)}
+		if step.Done {
+			done[t.Parent] = append(done[t.Parent], step)
+		} else {
+			left[t.Parent] = append(left[t.Parent], step)
+		}
+	}
+	for i, t := range work {
+		work[i].Steps = append(append(slices.Clone(t.Steps), left[t.Number]...), done[t.Number]...)
+	}
+	read.Tasks = work
+	return read, nil
+}
+
 func (e *Engine) importing(read exchanged) (domain.Held, error) {
+	read, err := stepsOfSubTasks(read)
+	if err != nil {
+		return domain.Held{}, err
+	}
 	order, err := checked(read)
 	if err != nil {
 		return domain.Held{}, err
@@ -178,11 +217,7 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	}
 	tasks := map[int]int{}
 	for _, t := range order {
-		c := fromFile(t)
-		if t.Parent != 0 {
-			parent := tasks[t.Parent]
-			c.Parent = &parent
-		}
+		c := fromFile(t.Shape)
 		if len(t.Objectives) > 0 {
 			serves := numbered(t.Objectives, objectives)
 			c.Objective = &serves
@@ -199,7 +234,7 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 		}
 	}
 	for _, t := range order {
-		if t.Archived && t.Parent == 0 {
+		if t.Archived {
 			if err := e.archive(tasks[t.Number]); err != nil {
 				return domain.Held{}, err
 			}
@@ -208,7 +243,7 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
-func (e *Engine) standing(t task.Shape, tasks map[int]int) error {
+func (e *Engine) standing(t filed, tasks map[int]int) error {
 	number := tasks[t.Number]
 	now, err := e.show(number)
 	if err != nil {
@@ -230,7 +265,7 @@ func (e *Engine) standing(t task.Shape, tasks map[int]int) error {
 	return err
 }
 
-func checked(read exchanged) ([]task.Shape, error) {
+func checked(read exchanged) ([]filed, error) {
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
 		if objectives[o.Number] {
@@ -245,7 +280,7 @@ func checked(read exchanged) ([]task.Shape, error) {
 			return nil, fmt.Errorf("objective %d: %w", o.Number, err)
 		}
 	}
-	byNumber := map[int]task.Shape{}
+	byNumber := map[int]filed{}
 	for _, t := range read.Tasks {
 		if _, twice := byNumber[t.Number]; twice {
 			return nil, fmt.Errorf("%w: task %d is in the file twice", ErrNotAnExport, t.Number)
@@ -257,15 +292,12 @@ func checked(read exchanged) ([]task.Shape, error) {
 			return nil, err
 		}
 	}
-	return parentsFirst(read.Tasks, byNumber)
+	return read.Tasks, nil
 }
 
-func checkedTask(t task.Shape, byNumber map[int]task.Shape, objectives map[int]bool) error {
+func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error {
 	outside := func(what string, n int) error {
 		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", ErrExportPointsOutside, t.Number, what, n, what, n)
-	}
-	if _, in := byNumber[t.Parent]; t.Parent != 0 && !in {
-		return outside("task", t.Parent)
 	}
 	for _, b := range t.BlockedBy {
 		if _, in := byNumber[b]; !in {
@@ -282,41 +314,17 @@ func checkedTask(t task.Shape, byNumber map[int]task.Shape, objectives map[int]b
 	}
 	made, err := task.NewTask(t.Title)
 	if err == nil {
-		_, err = apply(made, fromFile(t), creating)
+		_, err = apply(made, fromFile(t.Shape), creating)
+	}
+	for _, s := range t.Steps {
+		if err == nil {
+			_, err = task.NewStep(s.Title, s.Done)
+		}
 	}
 	if err != nil {
 		return fmt.Errorf("task %d: %w", t.Number, err)
 	}
 	return nil
-}
-
-func parentsFirst(tasks []task.Shape, byNumber map[int]task.Shape) ([]task.Shape, error) {
-	placed := map[int]bool{}
-	var order []task.Shape
-	var place func(t task.Shape, seen map[int]bool) error
-	place = func(t task.Shape, seen map[int]bool) error {
-		if placed[t.Number] {
-			return nil
-		}
-		if seen[t.Number] {
-			return fmt.Errorf("%w: task %d hangs under itself", ErrNotAnExport, t.Number)
-		}
-		seen[t.Number] = true
-		if t.Parent != 0 {
-			if err := place(byNumber[t.Parent], seen); err != nil {
-				return err
-			}
-		}
-		placed[t.Number] = true
-		order = append(order, t)
-		return nil
-	}
-	for _, t := range tasks {
-		if err := place(t, map[int]bool{}); err != nil {
-			return nil, err
-		}
-	}
-	return order, nil
 }
 
 func fromFile(t task.Shape) Changes {
@@ -330,6 +338,10 @@ func fromFile(t task.Shape) Changes {
 	}
 	if t.Estimate != "" {
 		c.Estimate = &t.Estimate
+	}
+	if len(t.Steps) > 0 {
+		steps := slices.Clone(t.Steps)
+		c.Steps = &steps
 	}
 	return c
 }

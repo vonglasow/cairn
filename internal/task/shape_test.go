@@ -25,7 +25,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 	var a task.AsTold
 	a.Numbered(1)
-	a.Under(2)
+	a.Step("Plan it", true)
 	a.Serves(3)
 	a.Titled("Write the spec")
 	a.Described("in full")
@@ -53,7 +53,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 
 	want := map[string]any{
 		"number": float64(1),
-		"parent": float64(2),
 
 		"title":       "Write the spec",
 		"description": "in full",
@@ -79,6 +78,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	blockers, ok := doc["blocked_by"].([]any)
 	if !ok || len(blockers) != 2 || blockers[0] != float64(4) || blockers[1] != float64(5) {
 		t.Errorf("blocked_by = %v, want [4 5]", doc["blocked_by"])
+	}
+	steps, ok := doc["steps"].([]any)
+	if !ok || len(steps) != 1 || steps[0].(map[string]any)["title"] != "Plan it" || steps[0].(map[string]any)["done"] != true {
+		t.Errorf("steps = %v, want one done, called Plan it", doc["steps"])
 	}
 	if doc["because"] != "the client's answer" {
 		t.Errorf("because = %v, want the words it was given", doc["because"])

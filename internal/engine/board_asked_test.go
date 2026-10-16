@@ -31,13 +31,13 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 }
 
 func TestAskedLeavesANumberNobodyCanReadUnnamed(t *testing.T) {
-	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "nine"}}, TaskEdit); in.Named("parent") {
-		t.Fatal("a parent nobody can read was passed to the engine anyway")
+	if in := Asked([]Field{{Name: "after", Arg: "after", Value: "nine"}}, TaskMove); in.Named("after") {
+		t.Fatal("a number nobody can read was passed to the engine anyway")
 	}
 }
 
 func TestAskedNamesAnEmptyNumber(t *testing.T) {
-	if in := Asked([]Field{{Name: "parent", Arg: "parent", Value: "  "}}, TaskEdit); !in.Named("parent") {
-		t.Fatal("emptying the parent said nothing at all")
+	if in := Asked([]Field{{Name: "after", Arg: "after", Value: "  "}}, TaskMove); !in.Named("after") {
+		t.Fatal("emptying a number said nothing at all")
 	}
 }

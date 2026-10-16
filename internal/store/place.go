@@ -6,19 +6,19 @@ import (
 	"fmt"
 )
 
-const sisters = `state = ? AND parent = ?`
+const sisters = `state = ?`
 
-func (s *Store) whereItSits(number int) (state string, parent, place int, err error) {
+func (s *Store) whereItSits(number int) (state string, place int, err error) {
 	row := s.on.QueryRow(
-		`SELECT state, parent, position FROM tasks WHERE number = ?`, number)
-	err = row.Scan(&state, &parent, &place)
+		`SELECT state, position FROM tasks WHERE number = ?`, number)
+	err = row.Scan(&state, &place)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", 0, 0, fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
+		return "", 0, fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
 	}
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("reading where task %d sits: %w", number, err)
+		return "", 0, fmt.Errorf("reading where task %d sits: %w", number, err)
 	}
-	return state, parent, place, nil
+	return state, place, nil
 }
 
 // MoveFirst puts a task at the head of the tasks it sits with, and says whether it went anywhere.
@@ -33,7 +33,7 @@ func (s *Store) MoveLast(number int) (bool, error) {
 
 // MoveAfter puts a task directly behind another.
 func (s *Store) MoveAfter(number, target int) (bool, error) {
-	_, _, behind, err := s.whereItSits(target)
+	_, behind, err := s.whereItSits(target)
 	if err != nil {
 		return false, err
 	}
@@ -46,11 +46,11 @@ func (s *Store) MoveAfter(number, target int) (bool, error) {
 }
 
 func (s *Store) place(number int, chosen func(from, among int) int) (bool, error) {
-	state, parent, from, err := s.whereItSits(number)
+	state, from, err := s.whereItSits(number)
 	if err != nil {
 		return false, err
 	}
-	among, err := s.countSisters(state, parent)
+	among, err := s.countSisters(state)
 	if err != nil {
 		return false, err
 	}
@@ -58,7 +58,7 @@ func (s *Store) place(number int, chosen func(from, among int) int) (bool, error
 	if to == from {
 		return false, nil
 	}
-	if err := s.makeRoom(state, parent, from, to); err != nil {
+	if err := s.makeRoom(state, from, to); err != nil {
 		return false, err
 	}
 	if _, err := s.on.Exec(
@@ -68,29 +68,29 @@ func (s *Store) place(number int, chosen func(from, among int) int) (bool, error
 	return true, nil
 }
 
-func (s *Store) countSisters(state string, parent int) (int, error) {
+func (s *Store) countSisters(state string) (int, error) {
 	var among int
 	if err := s.on.QueryRow(
-		`SELECT COUNT(*) FROM tasks WHERE `+sisters, state, parent).Scan(&among); err != nil {
+		`SELECT COUNT(*) FROM tasks WHERE `+sisters, state).Scan(&among); err != nil {
 		return 0, fmt.Errorf("counting what task sits with: %w", err)
 	}
 	return among, nil
 }
 
-func (s *Store) closeTheGapLeftIn(state string, parent, left int) error {
+func (s *Store) closeTheGapLeftIn(state string, left int) error {
 	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position - 1
-		 WHERE `+sisters+` AND position > ?`, state, parent, left); err != nil {
+		 WHERE `+sisters+` AND position > ?`, state, left); err != nil {
 		return fmt.Errorf("closing the gap left behind: %w", err)
 	}
 	return nil
 }
 
-func (s *Store) makeRoom(state string, parent, from, to int) error {
+func (s *Store) makeRoom(state string, from, to int) error {
 	if _, err := s.on.Exec(
 		`UPDATE tasks SET position = position + CASE WHEN ? < ? THEN -1 ELSE 1 END
 		 WHERE `+sisters+` AND position BETWEEN ? AND ? AND position <> ?`,
-		from, to, state, parent, min(from, to), max(from, to), from); err != nil {
+		from, to, state, min(from, to), max(from, to), from); err != nil {
 		return fmt.Errorf("making room: %w", err)
 	}
 	return nil

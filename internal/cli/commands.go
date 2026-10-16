@@ -15,6 +15,7 @@ import (
 var groupShort = map[string]string{
 	"task":      "Add, list, read, change and delete tasks",
 	"objective": "Add, list, read, change and delete objectives",
+	"step":      "Add, list, tick, rename and take away the steps of a task",
 	"backup":    "New, list, show, restore and delete backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
@@ -185,7 +186,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		cmd.Flags().StringVar(&v, arg.Name, "", helpOf(arg))
 	}
 	if op.Level == engine.Full || op.Sweeps != nil || op.Finishes {
-		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work, reaches everything a narrowing does, or puts in done what hangs under a task")
+		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work, reaches everything a narrowing does, or ticks the steps of a task put in done")
 	}
 	return cmd
 }

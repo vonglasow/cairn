@@ -84,49 +84,9 @@ func TestIndexOfAndStateAt(t *testing.T) {
 	}
 }
 
-func TestOnTheBoard_isEveryTaskHangingUnderNothing(t *testing.T) {
-	cards := []Card{
-		{Number: 1, Title: "Ship it"},
-		{Number: 2, Title: "Write the spec", Parent: 1},
-		{Number: 3, Title: "Something else"},
-	}
-	var got []string
-	for _, c := range OnTheBoard(cards, false) {
-		got = append(got, c.Title)
-	}
-	if want := []string{"Ship it", "Something else"}; !slices.Equal(got, want) {
-		t.Errorf("OnTheBoard = %v, want %v", got, want)
-	}
-}
-
-func TestDeal_leavesSubTasksOffTheBoard(t *testing.T) {
-	dealt, band := Deal([]Card{
-		{Number: 1, Title: "Ship it", State: "todo"},
-		{Number: 2, Title: "Write the spec", State: "todo", Parent: 1},
-		{Number: 3, Title: "Client's answer", State: "blocked"},
-		{Number: 4, Title: "A part of it", State: "done", Parent: 3},
-		{Number: 5, Title: "Something else", State: "done"},
-	}, false)
-	var drawn []string
-	for _, held := range dealt {
-		for _, c := range held.Cards {
-			drawn = append(drawn, c.Title)
-		}
-	}
-	for _, c := range band {
-		drawn = append(drawn, c.Title)
-	}
-	want := []string{"Ship it", "Something else", "Client's answer"}
-	if !slices.Equal(drawn, want) {
-		t.Errorf("Deal drew %v, want %v", drawn, want)
-	}
-}
-
-func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
+func TestFound_reachesATaskThroughItsSteps(t *testing.T) {
 	all := []Card{
-		{Number: 1, Title: "Ship it", Said: []string{"1", "Ship it"}},
-		{Number: 2, Title: "Write the pipeline", Parent: 1, Said: []string{"2", "Write the pipeline"}},
-		{Number: 3, Title: "Fix the pipeline", Parent: 1, Said: []string{"3", "Fix the pipeline"}},
+		{Number: 1, Title: "Ship it", Said: []string{"1", "Ship it", "Write the pipeline", "Fix the pipeline"}},
 		{Number: 4, Title: "Buy a lamp", Said: []string{"4", "Buy a lamp"}},
 	}
 	numbers := func(cards []Card) []int {
@@ -141,9 +101,9 @@ func TestFound_raisesTheWorkAPartBelongsTo(t *testing.T) {
 		query string
 		want  []int
 	}{
-		{"a word only a part carries", "pipeline", []int{1}},
-		{"two parts of one task, once", "the pipeline", []int{1}},
-		{"a word the work itself carries", "Ship", []int{1}},
+		{"a word only a step carries", "pipeline", []int{1}},
+		{"two steps of one task, once", "the pipeline", []int{1}},
+		{"a word the task itself carries", "Ship", []int{1}},
 		{"a word carried by neither", "nothing at all", nil},
 		{"a word another task carries", "lamp", []int{4}},
 		{"nothing asked for, everything laid out", "", []int{1, 4}},

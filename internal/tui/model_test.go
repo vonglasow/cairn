@@ -205,11 +205,11 @@ func TestTheDetailOfATaskThatWentAway(t *testing.T) {
 	}
 }
 
-func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
+func TestTheDetailShowsStepsAndHistory(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{
-		{Number: 1, Title: "Parent", State: "todo", SubDone: 1, SubTotal: 2, Labels: []string{"spec"}, Estimate: "3h", Spent: "1h", Deadline: on("2026-09-02")},
-		{Number: 2, Title: "Child", State: "done", Parent: 1},
+		{Number: 1, Title: "Parent", State: "todo", SubDone: 1, SubTotal: 1, Labels: []string{"spec"}, Estimate: "3h", Spent: "1h", Deadline: on("2026-09-02"),
+			Steps: []engine.Part{{Number: 1, Title: "Child", Done: true}}},
 	}
 	var told trace.AsTold
 	told.On(1)
@@ -220,7 +220,7 @@ func TestTheDetailShowsSubTasksAndHistory(t *testing.T) {
 	f.acts = []trace.Act{told.Act()}
 	b := hit(standing(f), "l", "i", "enter")
 	drawn := strip(b.Draw())
-	for _, want := range []string{"SUB-TASKS", "Child", "TRACE", "created", "title"} {
+	for _, want := range []string{"STEPS", "Child", "TRACE", "created", "title"} {
 		if !strings.Contains(drawn, want) {
 			t.Fatalf("the detail never says %q:\n%s", want, drawn)
 		}
@@ -317,9 +317,9 @@ func TestSavingAFormNamesEveryArgumentEmptied(t *testing.T) {
 	form := asking(engine.EditFields(engine.Card{
 		Number: 1, Title: "One", State: "todo", Priority: "high",
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
-		Estimate: "3h", Spent: "1h", Parent: 4, Objectives: []int{5},
+		Estimate: "3h", Spent: "1h", Objectives: []int{5},
 		Deadline: on("2026-09-02"), Description: "why",
-	}, nil), 80, 20, plainSkin)
+	}), 80, 20, plainSkin)
 	form.Number = 1
 	for _, field := range form.fields {
 		if field.Name != "title" {
@@ -826,19 +826,18 @@ func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
 	}
 }
 
-func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
-	for _, verb := range []string{"edit", "delete"} {
-		t.Run("a part the store will not "+verb, func(t *testing.T) {
+func TestAStepTheStoreRefusesIsSaid(t *testing.T) {
+	for _, verb := range []string{"edit"} {
+		t.Run("a step the store will not "+verb, func(t *testing.T) {
 			f := newFake()
 			f.cards = []engine.Card{
-				{Number: 1, Title: "Ship it", State: "todo"},
-				{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1},
+				{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}},
 			}
 			b := hit(standing(f), "l", "i", "e")
 			if b.screen != OnForm {
 				t.Fatalf("the form did not open: %v", b.screen)
 			}
-			b.form = b.form.typedInto("parts", "[ ] Rédiger la section Flux")
+			b.form = b.form.typedInto("steps", "[ ] Rédiger la section Flux")
 			f.refuseVerb = verb
 			cmd := b.saveTask(b.form)
 			if cmd == nil {
@@ -846,7 +845,7 @@ func TestAPartTheStoreRefusesIsSaid(t *testing.T) {
 			}
 			looked, ok := cmd().(Looked)
 			if !ok || looked.Err == nil {
-				t.Fatalf("a part the store refused to %s answered %v", verb, looked)
+				t.Fatalf("a step the store refused to %s answered %v", verb, looked)
 			}
 		})
 	}

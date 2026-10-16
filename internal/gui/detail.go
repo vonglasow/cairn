@@ -49,7 +49,6 @@ func (w Window) Lines() []string {
 const (
 	historyHead = "TRACE"
 	servingHead = "WHAT SERVES IT"
-	hangingHead = "WHAT HANGS UNDER IT"
 )
 
 // PanelHead is what the right column is called.

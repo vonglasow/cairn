@@ -93,8 +93,8 @@ func adding(tab Tab, state string) Form {
 	return asOpened(Form{Adding: true, fields: engine.AddingFields(state)})
 }
 
-func editing(c engine.Card, cards []engine.Card) Form {
-	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c, cards)})
+func editing(c engine.Card) Form {
+	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c)})
 }
 
 func editingGoal(g engine.Goal) Form {
@@ -263,7 +263,7 @@ func (w Window) Edit() Window {
 		return w.beside()
 	}
 	if c, found := w.snap.Card(w.chosen); found {
-		w.form, w.screen = editing(c, w.snap.Cards), OnForm
+		w.form, w.screen = editing(c), OnForm
 	}
 	return w.beside()
 }
@@ -295,13 +295,13 @@ func (w Window) Form() Form { return w.form }
 
 func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
 
-// PartsTicked is what the parts field of an open form is drawn as: a tile for each part it says now, done or not, unsaved lines included.
+// PartsTicked is what the steps field of an open form is drawn as: a tile for each step it says now, done or not, unsaved lines included.
 func (w Window) PartsTicked() []engine.Card {
 	if !formShown(w.screen) {
 		return nil
 	}
 	for _, field := range w.form.Fields() {
-		if field.Name != "parts" {
+		if field.Name != "steps" {
 			continue
 		}
 		var cards []engine.Card
@@ -349,9 +349,6 @@ func (w Window) stored() (Window, int, error) {
 			return w.failing(err), 0, err
 		}
 	}
-	if err := w.savingParts(number); err != nil {
-		return w.failing(err), 0, err
-	}
 	return w, number, nil
 }
 
@@ -361,24 +358,10 @@ func (w Window) puttingBehind(number int) error {
 	}
 	_, err := w.work.Ask(engine.TaskMove, engine.Input{Given: map[string]string{
 		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind)}})
-	if errors.Is(err, engine.ErrOtherColumn) || errors.Is(err, engine.ErrNotAmongItsSisters) {
+	if errors.Is(err, engine.ErrOtherColumn) {
 		return nil
 	}
 	return err
-}
-
-func (w Window) savingParts(parent int) error {
-	for _, field := range w.form.fields {
-		if field.Name != "parts" {
-			continue
-		}
-		for _, gone := range engine.PartsGone(field.Value, w.snap.Cards, parent) {
-			if _, err := w.work.Ask(engine.TaskDelete, engine.Agreed(engine.Numbered(gone))); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // Cancel closes whatever is open and writes nothing.
@@ -663,7 +646,6 @@ func (w Window) choosingList() Window {
 type Choice struct {
 	Number  int
 	Title   string
-	State   string
 	Creates string
 }
 
@@ -693,12 +675,6 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
-	if w.choosingFor == "parent" {
-		for _, c := range engine.Parentable(w.snap.Cards, w.form.Number, looking) {
-			out = append(out, Choice{Number: c.Number, Title: c.Title, State: c.State})
-		}
-		return out
-	}
 	for _, g := range engine.FoundGoals(w.snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
@@ -709,7 +685,7 @@ func (w Window) choices() []Choice {
 func (w Window) Filtering() Written { return w.filtering }
 
 // OneOnly says whether the open list takes one answer rather than several.
-func (w Window) OneOnly() bool { return w.choosingFor == "parent" || len(w.closedSet()) > 0 }
+func (w Window) OneOnly() bool { return len(w.closedSet()) > 0 }
 
 func (w Window) closedSet() []string {
 	if w.screen != OnChoosing {

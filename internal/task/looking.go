@@ -14,6 +14,9 @@ func Said(t Task) []string {
 		said = append(said, c.Description)
 	}
 	said = append(said, c.Labels...)
+	for _, step := range c.Steps {
+		said = append(said, step.Title)
+	}
 	for _, s := range []string{c.Because, domain.FormatDay(c.Deadline), domain.FormatDuration(c.Estimate), domain.FormatDuration(c.Spent)} {
 		if s != "" {
 			said = append(said, s)

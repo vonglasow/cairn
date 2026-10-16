@@ -27,8 +27,7 @@ task's description, and do not manage the focus by hand beyond what follows.
    - the three most recent dated entries (files named `YYYY-MM-DD-…`, newest
      first), and only the names of the older ones;
    - `ticket.md`, when there is one.
-4. A sub-task (its `parent` is not 0): read the parent's `summary.md` too, and
-   nothing else of the parent.
+4. Read its `steps` in the `task_show` answer: what is ticked and what is left.
 5. Say in a few lines where the task stands and what comes next.
 
 A missing file is not an error: a task new to this is a task with no summary
@@ -50,8 +49,23 @@ label, no access: say so, and carry on without it.
 2. Keep the first five that are not blocked (`blocked_by` empty), in the order
    the list gives — the board's order is the priority, and you rank nothing.
    A deadline already passed may be pointed out; it moves nothing.
-3. Show each as `cairn#<n> — <title>`, with its parent's title for a sub-task.
+3. Show each as `cairn#<n> — <title>`.
 4. The person picks one: attach to it as above.
+
+## Steps — splitting the work
+
+A task is split into steps: a title each, done or not, named by its place in
+the task, the first being 1. A step is not a task — it has no number on the
+board, no focus, no notes — so never make a task for a piece of the one you
+are on: add a step.
+
+- `step_new` (`cairn step new <n> "<title>"`) when the work splits into pieces;
+- `step_edit` with `done` (`cairn step edit <n> <place> --done`) as each piece
+  is finished, `title` to rename one;
+- `step_delete` for a piece that is no longer part of it.
+
+Put a task in `done` only once its steps are ticked, or say which ones were
+ticked with it: over MCP, finishing a task ticks its open steps.
 
 ## Detaching — the subject changes, or the person stops
 

@@ -897,7 +897,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -1067,7 +1067,7 @@
                     ],
                     "additionalProperties": false
                   },
-                  "sub_tasks": {
+                  "steps": {
                     "type": [
                       "null",
                       "object"
@@ -1254,7 +1254,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -1406,7 +1406,7 @@
                     ],
                     "additionalProperties": false
                   },
-                  "sub_tasks": {
+                  "steps": {
                     "type": [
                       "null",
                       "object"
@@ -1554,7 +1554,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -1627,6 +1627,285 @@
       },
       "required": [
         "plugin"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "step_delete": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Take a step away from a task"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        },
+        "step": {
+          "description": "the place of the step in its task, the first being 1",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number",
+        "step"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "integer"
+        },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "place",
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "task",
+        "steps"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "step_edit": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Tick, untick or rename a step"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "done": {
+          "description": "tick it",
+          "type": "boolean"
+        },
+        "not-done": {
+          "description": "untick it",
+          "type": "boolean"
+        },
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        },
+        "step": {
+          "description": "the place of the step in its task, the first being 1",
+          "type": "integer"
+        },
+        "title": {
+          "description": "what the step is called now",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "step"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "integer"
+        },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "place",
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "task",
+        "steps"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "step_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Name the steps of a task"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "integer"
+        },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "place",
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "task",
+        "steps"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "step_new": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Add a step to a task"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "done": {
+          "description": "add it already done",
+          "type": "boolean"
+        },
+        "number": {
+          "description": "the number of the task",
+          "type": "integer"
+        },
+        "title": {
+          "description": "what the step is called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "title"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "integer"
+        },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "place": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "place",
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "task",
+        "steps"
       ],
       "additionalProperties": false
     }
@@ -1723,10 +2002,6 @@
               "type": "integer",
               "description": "the task's number, never handed out twice"
             },
-            "parent": {
-              "type": "integer",
-              "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-            },
             "title": {
               "type": "string",
               "description": "what the task is called"
@@ -1793,6 +2068,31 @@
               "type": "string",
               "description": "what is written about the task; empty when nothing is"
             },
+            "steps": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "what the step is called"
+                  },
+                  "done": {
+                    "type": "boolean",
+                    "description": "true once the step is done"
+                  }
+                },
+                "required": [
+                  "title",
+                  "done"
+                ],
+                "additionalProperties": false
+              },
+              "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+            },
             "progress": {
               "type": [
                 "null",
@@ -1818,7 +2118,7 @@
                   ],
                   "additionalProperties": false
                 },
-                "sub_tasks": {
+                "steps": {
                   "type": [
                     "null",
                     "object"
@@ -1854,37 +2154,10 @@
                 "null",
                 "string"
               ]
-            },
-            "sub_tasks": {
-              "type": [
-                "null",
-                "array"
-              ],
-              "items": {
-                "type": "object",
-                "properties": {
-                  "number": {
-                    "type": "integer"
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "state": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "number",
-                  "title",
-                  "state"
-                ],
-                "additionalProperties": false
-              }
             }
           },
           "required": [
             "number",
-            "parent",
             "title",
             "state",
             "archived",
@@ -1897,6 +2170,7 @@
             "time_spent",
             "objectives",
             "description",
+            "steps",
             "progress"
           ],
           "additionalProperties": false
@@ -2020,14 +2294,6 @@
           },
           "type": "array"
         },
-        "parent": {
-          "description": "the number of the task it hangs under",
-          "type": "integer"
-        },
-        "parts": {
-          "description": "its parts, one a line: \"#4 [x] its title\" for one there already, \"[ ] its title\" for a new one; a part not named is left where it is",
-          "type": "string"
-        },
         "priority": {
           "description": "the priority it carries",
           "enum": [
@@ -2055,6 +2321,10 @@
           ],
           "type": "string"
         },
+        "steps": {
+          "description": "its steps, one a line: \"[x] its title\" for one done, \"[ ] its title\" for one not; they replace the steps it had",
+          "type": "string"
+        },
         "title": {
           "description": "what the task is called",
           "type": "string"
@@ -2072,10 +2342,6 @@
         "number": {
           "type": "integer",
           "description": "the task's number, never handed out twice"
-        },
-        "parent": {
-          "type": "integer",
-          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
           "type": "string",
@@ -2143,6 +2409,31 @@
           "type": "string",
           "description": "what is written about the task; empty when nothing is"
         },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "what the step is called"
+              },
+              "done": {
+                "type": "boolean",
+                "description": "true once the step is done"
+              }
+            },
+            "required": [
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+        },
         "progress": {
           "type": [
             "null",
@@ -2168,7 +2459,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -2204,37 +2495,10 @@
             "null",
             "string"
           ]
-        },
-        "sub_tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "number",
-              "title",
-              "state"
-            ],
-            "additionalProperties": false
-          }
         }
       },
       "required": [
         "number",
-        "parent",
         "title",
         "state",
         "archived",
@@ -2247,6 +2511,7 @@
         "time_spent",
         "objectives",
         "description",
+        "steps",
         "progress"
       ],
       "additionalProperties": false
@@ -2342,10 +2607,6 @@
                 "type": "integer",
                 "description": "the task's number, never handed out twice"
               },
-              "parent": {
-                "type": "integer",
-                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-              },
               "title": {
                 "type": "string",
                 "description": "what the task is called"
@@ -2412,6 +2673,31 @@
                 "type": "string",
                 "description": "what is written about the task; empty when nothing is"
               },
+              "steps": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "description": "what the step is called"
+                    },
+                    "done": {
+                      "type": "boolean",
+                      "description": "true once the step is done"
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+              },
               "progress": {
                 "type": [
                   "null",
@@ -2437,7 +2723,7 @@
                     ],
                     "additionalProperties": false
                   },
-                  "sub_tasks": {
+                  "steps": {
                     "type": [
                       "null",
                       "object"
@@ -2473,37 +2759,10 @@
                   "null",
                   "string"
                 ]
-              },
-              "sub_tasks": {
-                "type": [
-                  "null",
-                  "array"
-                ],
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "number": {
-                      "type": "integer"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "state": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "number",
-                    "title",
-                    "state"
-                  ],
-                  "additionalProperties": false
-                }
               }
             },
             "required": [
               "number",
-              "parent",
               "title",
               "state",
               "archived",
@@ -2516,6 +2775,7 @@
               "time_spent",
               "objectives",
               "description",
+              "steps",
               "progress"
             ],
             "additionalProperties": false
@@ -2754,10 +3014,6 @@
                 "type": "integer",
                 "description": "the task's number, never handed out twice"
               },
-              "parent": {
-                "type": "integer",
-                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-              },
               "title": {
                 "type": "string",
                 "description": "what the task is called"
@@ -2826,7 +3082,6 @@
             },
             "required": [
               "number",
-              "parent",
               "title",
               "state",
               "archived",
@@ -2929,10 +3184,6 @@
                 "type": "integer",
                 "description": "the task's number, never handed out twice"
               },
-              "parent": {
-                "type": "integer",
-                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-              },
               "title": {
                 "type": "string",
                 "description": "what the task is called"
@@ -3001,7 +3252,6 @@
             },
             "required": [
               "number",
-              "parent",
               "title",
               "state",
               "archived",
@@ -3083,14 +3333,6 @@
           },
           "type": "array"
         },
-        "parent": {
-          "description": "the number of the task it hangs under",
-          "type": "integer"
-        },
-        "parts": {
-          "description": "its parts, one a line: \"#4 [x] its title\" for one there already, \"[ ] its title\" for a new one; a part not named is left where it is",
-          "type": "string"
-        },
         "priority": {
           "description": "the priority it carries",
           "enum": [
@@ -3118,6 +3360,10 @@
           ],
           "type": "string"
         },
+        "steps": {
+          "description": "its steps, one a line: \"[x] its title\" for one done, \"[ ] its title\" for one not; they replace the steps it had",
+          "type": "string"
+        },
         "title": {
           "description": "what the task is called",
           "type": "string"
@@ -3135,10 +3381,6 @@
         "number": {
           "type": "integer",
           "description": "the task's number, never handed out twice"
-        },
-        "parent": {
-          "type": "integer",
-          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
         },
         "title": {
           "type": "string",
@@ -3206,6 +3448,31 @@
           "type": "string",
           "description": "what is written about the task; empty when nothing is"
         },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "what the step is called"
+              },
+              "done": {
+                "type": "boolean",
+                "description": "true once the step is done"
+              }
+            },
+            "required": [
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+        },
         "progress": {
           "type": [
             "null",
@@ -3231,7 +3498,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -3267,37 +3534,10 @@
             "null",
             "string"
           ]
-        },
-        "sub_tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "number",
-              "title",
-              "state"
-            ],
-            "additionalProperties": false
-          }
         }
       },
       "required": [
         "number",
-        "parent",
         "title",
         "state",
         "archived",
@@ -3310,6 +3550,7 @@
         "time_spent",
         "objectives",
         "description",
+        "steps",
         "progress"
       ],
       "additionalProperties": false
@@ -3404,10 +3645,6 @@
                 "type": "integer",
                 "description": "the task's number, never handed out twice"
               },
-              "parent": {
-                "type": "integer",
-                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-              },
               "title": {
                 "type": "string",
                 "description": "what the task is called"
@@ -3476,7 +3713,6 @@
             },
             "required": [
               "number",
-              "parent",
               "title",
               "state",
               "archived",
@@ -3539,10 +3775,6 @@
           "type": "integer",
           "description": "the task's number, never handed out twice"
         },
-        "parent": {
-          "type": "integer",
-          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-        },
         "title": {
           "type": "string",
           "description": "what the task is called"
@@ -3609,6 +3841,31 @@
           "type": "string",
           "description": "what is written about the task; empty when nothing is"
         },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "what the step is called"
+              },
+              "done": {
+                "type": "boolean",
+                "description": "true once the step is done"
+              }
+            },
+            "required": [
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+        },
         "progress": {
           "type": [
             "null",
@@ -3634,7 +3891,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -3670,37 +3927,10 @@
             "null",
             "string"
           ]
-        },
-        "sub_tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "number",
-              "title",
-              "state"
-            ],
-            "additionalProperties": false
-          }
         }
       },
       "required": [
         "number",
-        "parent",
         "title",
         "state",
         "archived",
@@ -3713,6 +3943,7 @@
         "time_spent",
         "objectives",
         "description",
+        "steps",
         "progress"
       ],
       "additionalProperties": false
@@ -3747,10 +3978,6 @@
           "type": "integer",
           "description": "the task's number, never handed out twice"
         },
-        "parent": {
-          "type": "integer",
-          "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
-        },
         "title": {
           "type": "string",
           "description": "what the task is called"
@@ -3817,6 +4044,31 @@
           "type": "string",
           "description": "what is written about the task; empty when nothing is"
         },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "what the step is called"
+              },
+              "done": {
+                "type": "boolean",
+                "description": "true once the step is done"
+              }
+            },
+            "required": [
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+        },
         "progress": {
           "type": [
             "null",
@@ -3842,7 +4094,7 @@
               ],
               "additionalProperties": false
             },
-            "sub_tasks": {
+            "steps": {
               "type": [
                 "null",
                 "object"
@@ -3878,37 +4130,10 @@
             "null",
             "string"
           ]
-        },
-        "sub_tasks": {
-          "type": [
-            "null",
-            "array"
-          ],
-          "items": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "number",
-              "title",
-              "state"
-            ],
-            "additionalProperties": false
-          }
         }
       },
       "required": [
         "number",
-        "parent",
         "title",
         "state",
         "archived",
@@ -3921,6 +4146,7 @@
         "time_spent",
         "objectives",
         "description",
+        "steps",
         "progress"
       ],
       "additionalProperties": false
@@ -3960,10 +4186,6 @@
               "number": {
                 "type": "integer",
                 "description": "the task's number, never handed out twice"
-              },
-              "parent": {
-                "type": "integer",
-                "description": "the number of the task this one is a part of; 0 when it is a task in its own right"
               },
               "title": {
                 "type": "string",
@@ -4031,6 +4253,31 @@
                 "type": "string",
                 "description": "what is written about the task; empty when nothing is"
               },
+              "steps": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "description": "what the step is called"
+                    },
+                    "done": {
+                      "type": "boolean",
+                      "description": "true once the step is done"
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+              },
               "progress": {
                 "type": [
                   "null",
@@ -4056,7 +4303,7 @@
                     ],
                     "additionalProperties": false
                   },
-                  "sub_tasks": {
+                  "steps": {
                     "type": [
                       "null",
                       "object"
@@ -4092,37 +4339,10 @@
                   "null",
                   "string"
                 ]
-              },
-              "sub_tasks": {
-                "type": [
-                  "null",
-                  "array"
-                ],
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "number": {
-                      "type": "integer"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "state": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "number",
-                    "title",
-                    "state"
-                  ],
-                  "additionalProperties": false
-                }
               }
             },
             "required": [
               "number",
-              "parent",
               "title",
               "state",
               "archived",
@@ -4135,6 +4355,7 @@
               "time_spent",
               "objectives",
               "description",
+              "steps",
               "progress"
             ],
             "additionalProperties": false

@@ -609,7 +609,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form shows "([^"]*)"$`, w.detailShows)
 	sc.Then(`^the work beside the form carries "([^"]*)"$`, w.detailLists)
 	sc.Then(`^the work beside the form does not carry "([^"]*)"$`, w.detailDoesNotList)
-	sc.Then(`^what hangs under it is drawn one line to a tile$`, w.servingCardsAreCards)
+	sc.Then(`^what serves it is drawn one line to a tile$`, w.servingCardsAreCards)
 	sc.Then(`^the column beside the form is headed "([^"]*)"$`, w.rightColumnHead)
 	sc.Then(`^the work beside the form says nothing serves it yet$`, w.detailSaysNothingServes)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
@@ -632,13 +632,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the parts are drawn as a list to tick, "([^"]*)" first$`, func(title string) error {
+	sc.Then(`^the steps are drawn as a list to tick, "([^"]*)" first$`, func(title string) error {
 		if parts := w.w.PartsTicked(); len(parts) == 0 || parts[0].Title != title {
 			return fmt.Errorf("the parts are drawn as %v, and %q is not first", parts, title)
 		}
 		return nil
 	})
-	sc.Then(`^the parts are drawn as a list to tick, "([^"]*)" among them$`, func(title string) error {
+	sc.Then(`^the steps are drawn as a list to tick, "([^"]*)" among them$`, func(title string) error {
 		for _, c := range w.w.PartsTicked() {
 			if c.Title == title {
 				return nil
@@ -685,21 +685,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^task (\d+) hangs under task (\d+), titled "([^"]*)"$`, func(n, parent int, want string) error {
-		found, err := w.givens().Tasks()
-		if err != nil {
-			return err
-		}
-		for _, t := range found {
-			if shape := task.OfTask(t); shape.Number == n {
-				if shape.Parent != parent || shape.Title != want {
-					return fmt.Errorf("task %d hangs under %d, titled %q", n, shape.Parent, shape.Title)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("there is no task %d", n)
-	})
 	sc.Then(`^task (\d+) is titled "([^"]*)"$`, func(n int, want string) error {
 		found, err := w.givens().Tasks()
 		if err != nil {
@@ -727,26 +712,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the parts are at their beginning$`, func() error {
+	sc.Then(`^the steps are at their beginning$`, func() error {
 		if from := w.w.partsFrom(); from != 0 {
 			return fmt.Errorf("the parts are shown from %d", from)
 		}
 		return nil
 	})
-	sc.Then(`^the parts have moved$`, func() error {
+	sc.Then(`^the steps have moved$`, func() error {
 		if from := w.w.partsFrom(); from == w.was {
 			return fmt.Errorf("the parts are still shown from %d", from)
 		}
 		return nil
 	})
-	sc.Then(`^the last part is in sight$`, func() error {
+	sc.Then(`^the last step is in sight$`, func() error {
 		parts, tiles := w.w.PartsTicked(), w.w.partTiles()
 		if last := w.w.partsFrom() + len(tiles) - 2; last != len(parts)-1 {
 			return fmt.Errorf("the last part in sight is %d of %d", last+1, len(parts))
 		}
 		return nil
 	})
-	sc.Then(`^a part is in hand, under the pointer$`, func() error {
+	sc.Then(`^a step is in hand, under the pointer$`, func() error {
 		ghost, ok := w.w.PartGhost()
 		if !ok || !ghost.In(w.pointer) {
 			return fmt.Errorf("the part in hand is drawn at %v (%v), and the pointer is at %v", ghost, ok, w.pointer)
@@ -762,13 +747,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the part the keyboard is on is "([^"]*)"$`, func(want string) error {
+	sc.Then(`^the step the keyboard is on is "([^"]*)"$`, func(want string) error {
 		if got, on := w.w.PartOn(); !on || got != want {
 			return fmt.Errorf("the keyboard is on the part %q (%v), want %q", got, on, want)
 		}
 		return nil
 	})
-	sc.Then(`^the part "([^"]*)" is ticked$`, func(title string) error {
+	sc.Then(`^the step "([^"]*)" is ticked$`, func(title string) error {
 		for _, c := range w.w.PartsTicked() {
 			if c.Title == title && engine.Finished(c) {
 				return nil
@@ -776,13 +761,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the parts are %+v, and %q is not ticked", w.w.PartsTicked(), title)
 	})
-	sc.Then(`^the part "([^"]*)" is struck out$`, func(title string) error {
+	sc.Then(`^the step "([^"]*)" is struck out$`, func(title string) error {
 		if !slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
 			return fmt.Errorf("struck out are %+v, and not %q", w.w.PartsGone(), title)
 		}
 		return nil
 	})
-	sc.Then(`^the part "([^"]*)" is not struck out$`, func(title string) error {
+	sc.Then(`^the step "([^"]*)" is not struck out$`, func(title string) error {
 		if slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
 			return fmt.Errorf("%q is struck out", title)
 		}
@@ -871,7 +856,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
-	sc.Then(`^the window asks to put what hangs under task (\d+) in done too$`, func(n int) error {
+	sc.Then(`^the window asks to put task (\d+) in done, ticking its steps$`, func(n int) error {
 		if w.w.Screen() != OnAsking || w.w.question != aboutFinishingParts {
 			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
 		}
@@ -1691,18 +1676,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			}
 		}
 		return nil
-	})
-	sc.Then(`^the row "([^"]*)" says "([^"]*)"$`, func(title, said string) error {
-		for _, one := range w.w.Choosing() {
-			if one.Title != title {
-				continue
-			}
-			if one.State != said {
-				return fmt.Errorf("the row for %q says %q, not %q", title, one.State, said)
-			}
-			return nil
-		}
-		return fmt.Errorf("the list offers no row called %q", title)
 	})
 	sc.Then(`^the row the keyboard is on is "([^"]*)"$`, func(title string) error {
 		offered, at := w.w.Choosing(), w.w.ChoosingAt()

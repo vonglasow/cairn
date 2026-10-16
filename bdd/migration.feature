@@ -137,6 +137,25 @@ Feature: Changes to the shape of the store
       And I run `cairn trace show 2`
       Then it says 2h30m was added with no day
 
+  Rule: A store's sub-tasks become steps of the task they hung under
+
+    @migration-sub-tasks-become-steps
+    Scenario: every sub-task becomes a step of its parent, done when it was, what is left first
+      Given a store from before tasks were split into steps
+      When I run `cairn migration apply`
+      Then `cairn step list 1` names step 1 "Write the tests" as not done
+      And `cairn step list 1` names step 2 "Write the spec" as done
+      And `cairn step list 4` names step 1 "Draft the post" as not done
+
+    @migration-sub-tasks-leave-the-board
+    Scenario: a sub-task is no longer a task once it is a step, nor in focus
+      Given a store from before tasks were split into steps
+      When I run `cairn migration apply`
+      Then `cairn task list` lists 2 tasks
+      And `cairn task show 3` says there is no such task
+      When I run `cairn task focus`
+      Then it says nothing is in focus
+
   Rule: What a change will do can be read before it is made
 
     @migration-show

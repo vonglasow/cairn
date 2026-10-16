@@ -19,7 +19,7 @@ var TaskNew = Operation{
 	Short: "Make a new task",
 	Does:  "Make a new task, carrying whatever of its attributes were given.",
 	Example: `cairn task new "Write the spec" --state todo --priority high --label spec --deadline 2026-09-01
-cairn task new "Write the tests" --parent 1 --objective 2
+cairn task new "Ship it" --objective 2
 cairn task new "Write the spec" --desc - < notes.md`,
 	Level:   Write,
 	Needs:   AStore,
@@ -27,7 +27,7 @@ cairn task new "Write the spec" --desc - < notes.md`,
 	Answers: Task{},
 	Takes: append(append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
-	}, taskAttributes...), partsArgument),
+	}, taskAttributes...), stepsArgument),
 	Run: func(on On, in Input) (Answer, error) {
 		title := ""
 		if given := in.Change("title"); given != nil {
@@ -41,15 +41,7 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
-		parts := in.Change("parts")
-		if parts == nil {
-			return Answer{Task: &added, Progress: domain.Progress{}}, nil
-		}
-		n := factsOf(added).Number
-		if err := on.Engine.settleParts(n, *parts); err != nil {
-			return Answer{}, err
-		}
-		p, err := on.Engine.taskProgress(n)
+		p, err := on.Engine.taskProgress(factsOf(added).Number)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -96,12 +88,12 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	},
 )
 
-// TaskShow says what a task carries, what hangs under it, how far along it is, and where its outside context lives.
+// TaskShow says what a task carries, its steps, how far along it is, and where its outside context lives.
 var TaskShow = Operation{
 	Thing:   "task",
 	Verb:    "show",
 	Short:   "Show what a task carries",
-	Does:    "Show what a task carries, what hangs under it, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
+	Does:    "Show what a task carries, its steps, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
 	Example: "cairn task show 1",
 	Level:   Read,
 	Needs:   AStore,
@@ -115,10 +107,6 @@ var TaskShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		under, err := on.Engine.under(n)
-		if err != nil {
-			return Answer{}, err
-		}
 		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
@@ -127,7 +115,7 @@ var TaskShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &shown, Under: under, Progress: p, Context: on.contextOf(n), StoodSince: since}, nil
+		return Answer{Task: &shown, Progress: p, Context: on.contextOf(n), StoodSince: since}, nil
 	},
 }
 
@@ -269,7 +257,7 @@ var TaskEdit = Operation{
 	Thing: "task",
 	Verb:  "edit",
 	Short: "Change what a task carries",
-	Does:  "Change what a task carries. Put in done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
+	Does:  "Change what a task carries. Put in done while one of its steps is still open, it is refused unless confirmed; confirmed, its steps are ticked with it.",
 	Example: `cairn task edit 1 --state current --estimate 2h
 cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
@@ -282,7 +270,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Takes: append(append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
-	}, taskAttributes...), partsArgument),
+	}, taskAttributes...), stepsArgument),
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
 		changes, err := taskChanges(in)
@@ -291,20 +279,9 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		}
 		changes.Title = in.Change("title")
 		changes.Finishing = in.Confirmed
-		parts := in.Change("parts")
-		var edited task.Task
-		if parts != nil && !changes.named() {
-			edited, err = on.Engine.tasks.Find(n)
-		} else {
-			edited, err = on.Engine.edit(n, changes)
-		}
+		edited, err := on.Engine.edit(n, changes)
 		if err != nil {
 			return Answer{}, editReason(err)
-		}
-		if parts != nil {
-			if err := on.Engine.settleParts(n, *parts); err != nil {
-				return Answer{}, err
-			}
 		}
 		p, err := on.Engine.taskProgress(n)
 		if err != nil {
@@ -412,7 +389,6 @@ var taskAttributes = []Argument{
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 	{Name: "spent", Kind: Duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
-	{Name: "parent", Kind: Number, Of: "a task", Means: "the number of the task it hangs under"},
 	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; +4 adds one, -1 takes one away"},
 }
 
@@ -449,11 +425,14 @@ func taskChanges(in Input) (Changes, error) {
 	c.Deadline = in.Change("deadline")
 	c.Estimate = in.Change("estimate")
 	c.Spent = in.Change("spent")
-	if in.Named("parent") {
-		under, _ := in.Whole("parent")
-		c.Parent = &under
-	}
 	c.Objective = in.Changed("objective")
+	if said := in.Change("steps"); said != nil {
+		steps, err := StepsIn(*said)
+		if err != nil {
+			return Changes{}, err
+		}
+		c.Steps = &steps
+	}
 	return c, nil
 }
 

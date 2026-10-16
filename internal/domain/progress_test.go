@@ -3,7 +3,7 @@ package domain
 import "testing"
 
 func TestProgress_countsWhatIsThere(t *testing.T) {
-	p := Progress{Tasks: Tally{Total: 3, Done: 1}, SubTasks: Tally{Total: 4, Done: 2}}
+	p := Progress{Tasks: Tally{Total: 3, Done: 1}, Steps: Tally{Total: 4, Done: 2}}
 	if !p.Any() {
 		t.Error("Any() = false, want true: seven things are under it")
 	}
@@ -12,8 +12,8 @@ func TestProgress_countsWhatIsThere(t *testing.T) {
 	}
 }
 
-func TestProgress_ofATaskCountsItsSubTasksOnly(t *testing.T) {
-	p := Progress{SubTasks: Tally{Total: 2, Done: 1}}
+func TestProgress_ofATaskCountsItsStepsOnly(t *testing.T) {
+	p := Progress{Steps: Tally{Total: 2, Done: 1}}
 	if got := p.Percent(); got != 50 {
 		t.Errorf("Percent() = %d, want 50", got)
 	}
@@ -75,7 +75,7 @@ func TestProgress_roundsToTheNearestWhole(t *testing.T) {
 }
 
 func TestTally_addsUpAcrossBoth(t *testing.T) {
-	p := Progress{Tasks: Tally{Total: 3, Done: 1}, SubTasks: Tally{Total: 4, Done: 2}}
+	p := Progress{Tasks: Tally{Total: 3, Done: 1}, Steps: Tally{Total: 4, Done: 2}}
 	if got := p.Total(); got != 7 {
 		t.Errorf("Total() = %d, want 7", got)
 	}
@@ -95,8 +95,8 @@ func TestOfProgress_omitsATallyWithNothingInIt(t *testing.T) {
 	if got == nil {
 		t.Fatalf("OfProgress = nil, want a shape")
 	}
-	if got.SubTasks != nil {
-		t.Errorf("SubTasks = %+v, want nil: no sub-task is under it", got.SubTasks)
+	if got.Steps != nil {
+		t.Errorf("Steps = %+v, want nil: no step is under it", got.Steps)
 	}
 	if got.Tasks == nil || *got.Tasks != (Tally{Total: 2, Done: 2}) {
 		t.Errorf("Tasks = %+v, want {2 2}", got.Tasks)
@@ -104,15 +104,15 @@ func TestOfProgress_omitsATallyWithNothingInIt(t *testing.T) {
 }
 
 func TestOfProgress_carriesTheTallyAndTheShare(t *testing.T) {
-	got := OfProgress(Progress{SubTasks: Tally{Total: 4, Done: 1}})
+	got := OfProgress(Progress{Steps: Tally{Total: 4, Done: 1}})
 	if got == nil {
 		t.Fatalf("OfProgress = nil, want a shape")
 	}
 	if got.Tasks != nil {
 		t.Errorf("Tasks = %+v, want nil: no task is under it", got.Tasks)
 	}
-	if got.SubTasks == nil || *got.SubTasks != (Tally{Total: 4, Done: 1}) {
-		t.Errorf("SubTasks = %+v, want {4 1}", got.SubTasks)
+	if got.Steps == nil || *got.Steps != (Tally{Total: 4, Done: 1}) {
+		t.Errorf("Steps = %+v, want {4 1}", got.Steps)
 	}
 	if got.Percent != 25 {
 		t.Errorf("Percent = %d, want 25", got.Percent)

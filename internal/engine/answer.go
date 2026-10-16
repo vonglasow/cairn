@@ -16,32 +16,11 @@ type Task struct {
 	Progress   *domain.ProgressShape `json:"progress"`
 	Context    string                `json:"context,omitempty"`
 	StoodSince *time.Time            `json:"in_column_since,omitempty"`
-	SubTasks   []SubTask             `json:"sub_tasks,omitempty"`
-}
-
-// SubTask is a part of the work a task names, as it crosses to a machine.
-type SubTask struct {
-	Number int    `json:"number"`
-	Title  string `json:"title"`
-	State  string `json:"state"`
 }
 
 // OfTask turns a task and how far along it is into what crosses to a machine.
 func OfTask(t task.Task, p domain.Progress) Task {
 	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p)}
-}
-
-func ofTaskUnder(t task.Task, p domain.Progress, under []task.Task) Task {
-	said := OfTask(t, p)
-	for _, u := range under {
-		shape := task.OfTask(u)
-		said.SubTasks = append(said.SubTasks, SubTask{
-			Number: shape.Number,
-			Title:  shape.Title,
-			State:  shape.State,
-		})
-	}
-	return said
 }
 
 // Row is a task as a listing carries it: its facts, and whether it says anything — not what it says.
@@ -183,7 +162,7 @@ func Of(op Operation, a Answer) any {
 		}
 		return ofFocus(held, a.Progress, heldOr(a.InFocus))
 	case Task:
-		said := ofTaskUnder(*a.Task, a.Progress, a.Under)
+		said := OfTask(*a.Task, a.Progress)
 		said.Context = a.Context
 		if !a.StoodSince.IsZero() {
 			said.StoodSince = &a.StoodSince
@@ -222,6 +201,8 @@ func Of(op Operation, a Answer) any {
 		return Labelled{Labelled: *a.Labelled}
 	case Labels:
 		return Labels{Labels: *a.Labels}
+	case Steps:
+		return ofSteps(*a.Task)
 	case Deleted:
 		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
 	case Restored:

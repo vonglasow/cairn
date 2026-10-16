@@ -6,12 +6,12 @@ import "cairn/internal/domain"
 type Shape struct {
 	Facts
 	Description string `json:"description" jsonschema:"what is written about the task; empty when nothing is"`
+	Steps       []Step `json:"steps" jsonschema:"the smaller pieces the task is split into, in their order, each done or not; empty when it has none"`
 }
 
 // Facts is everything a task carries but what it says: the part of it a listing hands over for every row.
 type Facts struct {
 	Number     int      `json:"number" jsonschema:"the task's number, never handed out twice"`
-	Parent     int      `json:"parent" jsonschema:"the number of the task this one is a part of; 0 when it is a task in its own right"`
 	Title      string   `json:"title" jsonschema:"what the task is called"`
 	State      string   `json:"state" jsonschema:"the column it stands in: backlog, todo, current, blocked, watching, paused or done"`
 	Archived   bool     `json:"archived" jsonschema:"true when it was archived: kept, and off the columns"`
@@ -30,7 +30,7 @@ func OfTask(t Task) Shape {
 	c := t.Carried()
 	return Shape{
 		Facts: Facts{
-			Number: c.Number, Parent: c.Parent, Title: c.Title,
+			Number: c.Number, Title: c.Title,
 			State: string(c.State), Archived: c.Archived, Priority: string(c.Priority),
 			Labels: orNone(c.Labels), BlockedBy: orNone(c.Blockers), Because: c.Because,
 			Deadline:   domain.FormatDay(c.Deadline),
@@ -39,6 +39,7 @@ func OfTask(t Task) Shape {
 			Objectives: orNone(c.Objectives),
 		},
 		Description: c.Description,
+		Steps:       orNone(c.Steps),
 	}
 }
 

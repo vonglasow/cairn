@@ -61,8 +61,8 @@ func TestCheck_refusesARequiredNumberGivenAsNothing(t *testing.T) {
 	if err := TaskShow.Check(given("number", "")); err == nil {
 		t.Error("task show accepted an empty number")
 	}
-	if err := TaskEdit.Check(given("number", "1", "parent", "")); err != nil {
-		t.Errorf("task edit refused a parent cleared: %v", err)
+	if err := TaskMove.Check(given("number", "1", "after", "")); err != nil {
+		t.Errorf("task move refused a number given as nothing where none is required: %v", err)
 	}
 }
 

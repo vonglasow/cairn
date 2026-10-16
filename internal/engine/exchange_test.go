@@ -4,8 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"cairn/internal/task"
 )
 
 func ran(t *testing.T, path string, asks ...func() (Operation, Input)) {
@@ -56,7 +59,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"cairn": "tasks"`, `"version": 1`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
+	for _, want := range []string{`"cairn": "tasks"`, `"version": 2`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
 		if !strings.Contains(string(written), want) {
 			t.Errorf("the file holds no %s:\n%s", want, written)
 		}
@@ -77,11 +80,11 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	ran(t, from,
 		asked(ObjectiveNew, "title", "Release 1.0"),
 		asked(TaskNew, "title", "Ship it", "objective", "1", "priority", "high", "label", "release", "deadline", "2026-12-01", "estimate", "2h", "desc", "All of it"),
-		asked(TaskNew, "title", "Write the spec", "parent", "1", "state", "done"),
+		asked(StepNew, "number", "1", "title", "Write the spec", "done", "true"),
 		asked(TaskNew, "title", "Review", "state", "todo"),
-		asked(TaskEdit, "number", "1", "blocker", "3"),
+		asked(TaskEdit, "number", "1", "blocker", "2"),
 		asked(TaskNew, "title", "Old idea"),
-		asked(TaskArchive, "number", "4"),
+		asked(TaskArchive, "number", "3"),
 	)
 	file := filepath.Join(t.TempDir(), "tasks.json")
 	ran(t, from, asked(TaskExport, "to", file))
@@ -92,10 +95,10 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if got := RenderText(TaskImport, answer); got != "4 task(s) and 1 objective(s) were added from "+file+"\n" {
+	if got := RenderText(TaskImport, answer); got != "3 task(s) and 1 objective(s) were added from "+file+"\n" {
 		t.Errorf("it says %q", got)
 	}
-	if shape, ok := Of(TaskImport, answer).(Imported); !ok || shape.Imported != file || shape.Added.Tasks != 4 || shape.Added.Objectives != 1 {
+	if shape, ok := Of(TaskImport, answer).(Imported); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
 		t.Errorf("a machine reads %#v", Of(TaskImport, answer))
 	}
 	show := func(n string) string {
@@ -107,23 +110,42 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 		return RenderText(TaskShow, got)
 	}
 	shipped := show("2")
-	for _, want := range []string{"Ship it", "high", "release", "2026-12-01", "2h", "All of it", "blocked by   #4", "objectives   #2"} {
+	for _, want := range []string{"Ship it", "high", "release", "2026-12-01", "2h", "All of it", "blocked by   #3", "objectives   #2", "(done)  1  Write the spec"} {
 		if !strings.Contains(shipped, want) {
 			t.Errorf("task 2 does not say %q:\n%s", want, shipped)
 		}
 	}
-	if part := show("3"); !strings.Contains(part, "parent       2") || !strings.Contains(part, "done") {
-		t.Errorf("the part reads:\n%s", part)
-	}
-	if old := show("5"); !strings.Contains(old, "archived") {
+	if old := show("4"); !strings.Contains(old, "archived") {
 		t.Errorf("the archived task reads:\n%s", old)
 	}
 	if here := show("1"); !strings.Contains(here, "Already here") {
 		t.Errorf("task 1 became:\n%s", here)
 	}
 	ran(t, path, asked(TaskImport, "from", file))
-	if listed, _ := Do(TaskList, path, Input{Given: map[string]string{"with-archived": "true"}}); len(listed.Tasks) < 9 {
+	if listed, _ := Do(TaskList, path, Input{Given: map[string]string{"with-archived": "true"}}); len(listed.Tasks) < 7 {
 		t.Errorf("read twice, the store lists %d tasks", len(listed.Tasks))
+	}
+}
+
+func TestTaskImport_readsTheSubTasksOfAnOlderFileAsSteps(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "tasks.json")
+	if err := os.WriteFile(file, []byte(`{"cairn": "tasks", "version": 1, "objectives": [], "tasks": [
+		{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"},
+		{"number": 2, "parent": 1, "title": "Write the spec", "state": "done", "priority": "normal"},
+		{"number": 3, "parent": 1, "title": "Write the tests", "state": "todo", "priority": "normal"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := storeAt(t)
+	answer, err := Do(TaskImport, path, Input{Given: map[string]string{"from": file}})
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	if answer.Holds.Tasks != 1 {
+		t.Errorf("%d tasks were added, want the one the others hung under", answer.Holds.Tasks)
+	}
+	want := []task.Step{{Title: "Write the tests"}, {Title: "Write the spec", Done: true}}
+	if got := stepsOf(t, path, "1"); !slices.Equal(got, want) {
+		t.Errorf("steps = %v, want %v", got, want)
 	}
 }
 
@@ -134,7 +156,7 @@ func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 	files := map[string]string{
 		"not json":       "not tasks\n",
 		"not an export":  `{"something": "else"}`,
-		"a later format": `{"cairn": "tasks", "version": 2, "tasks": []}`,
+		"a later format": `{"cairn": "tasks", "version": 3, "tasks": []}`,
 		"a broken parent": `{"cairn": "tasks", "version": 1, "objectives": [],
 			"tasks": [{"number": 1, "title": "Kept", "state": "todo", "priority": "normal"},
 			          {"number": 2, "parent": 9, "title": "Orphan", "state": "backlog", "priority": "normal"}]}`,
@@ -146,6 +168,8 @@ func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 			"tasks": [{"number": 1, "title": "Kept", "state": "nowhere", "priority": "normal"}]}`,
 		"an empty title": `{"cairn": "tasks", "version": 1, "objectives": [],
 			"tasks": [{"number": 1, "title": "", "state": "todo", "priority": "normal"}]}`,
+		"an empty step": `{"cairn": "tasks", "version": 2, "objectives": [],
+			"tasks": [{"number": 1, "title": "Kept", "state": "todo", "priority": "normal", "steps": [{"title": " ", "done": false}]}]}`,
 	}
 	for name, held := range files {
 		t.Run(name, func(t *testing.T) {

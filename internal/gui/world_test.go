@@ -104,10 +104,7 @@ func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, err
 func (r *refusing) Version() (int64, error) { return r.held.Version() }
 
 func addsAPart(in engine.Input) bool {
-	if in.Given["parent"] != "" && in.Given["number"] == "" {
-		return true
-	}
-	for _, part := range engine.PartsIn(in.Given["parts"]) {
+	for _, part := range engine.PartsIn(in.Given["steps"]) {
 		if part.Number == 0 {
 			return true
 		}
@@ -611,7 +608,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.givens().Register(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 	sc.Step(`^the store refuses what it is asked to change$`, w.storeRefuses)
-	sc.Step(`^the store refuses to add a part$`, func() error {
+	sc.Step(`^the store refuses to add a step$`, func() error {
 		w.work.refuseParts = true
 		return nil
 	})
@@ -946,16 +943,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the top of the lane "([^"]*)"$`, w.clickTopOfLane)
 	sc.Step(`^it was worked on (\d+) times$`, w.workedOn)
 	sc.Step(`^I scroll down over the description$`, func() error { return w.scrollSaying(1) })
-	sc.Step(`^I added (\d+) tasks hanging under task (\d+)$`, func(n, parent int) error {
+	sc.Step(`^I added (\d+) steps to task (\d+)$`, func(n, number int) error {
 		for i := 1; i <= n; i++ {
-			if err := w.givens().IAddedATaskHangingUnderTask(fmt.Sprintf("Part %d", i), parent); err != nil {
+			if err := w.givens().IAddedTheStepToTask(fmt.Sprintf("Step %d", i), number, false); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-	sc.Step(`^I scroll down over the parts$`, func() error { return w.scrollParts(1) })
-	sc.Step(`^I scroll down over the parts (\d+) times$`, w.scrollParts)
+	sc.Step(`^I scroll down over the steps$`, func() error { return w.scrollParts(1) })
+	sc.Step(`^I scroll down over the steps (\d+) times$`, w.scrollParts)
 	sc.Step(`^I scroll up over the description$`, func() error { return w.scrollSaying(-1) })
 	sc.Step(`^I scroll down over the description (\d+) times$`, func(n int) error {
 		for range n {
@@ -1028,7 +1025,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I put the keyboard on "([^"]*)"$`, w.keyboardOn)
-	sc.Step(`^I take hold of the part "([^"]*)" and hold it over the part "([^"]*)"$`, func(from, onto string) error {
+	sc.Step(`^I take hold of the step "([^"]*)" and hold it over the step "([^"]*)"$`, func(from, onto string) error {
 		a, err := w.partPoint(from)
 		if err != nil {
 			return err
@@ -1041,7 +1038,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b)
 		return nil
 	})
-	sc.Step(`^I drag the part "([^"]*)" onto the part "([^"]*)"$`, func(from, onto string) error {
+	sc.Step(`^I drag the step "([^"]*)" onto the step "([^"]*)"$`, func(from, onto string) error {
 		at := func(title string) (Point, error) {
 			for i, c := range w.w.PartsTicked() {
 				if c.Title == title {

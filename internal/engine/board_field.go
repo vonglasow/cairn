@@ -32,7 +32,6 @@ func TaskFields(c Card) []Field {
 		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(c.Deadline)},
 		{Name: "estimate", Arg: "estimate", Value: c.Estimate},
 		{Name: "time spent", Arg: "spent", Value: c.Spent},
-		{Name: "parent", Arg: "parent", Value: Maybe(c.Parent)},
 		{Name: "objectives", Arg: "objective", Value: Numbers(c.Objectives)},
 	})
 }
@@ -105,14 +104,6 @@ func Numbers(all []int) string {
 	return strings.Join(out, " ")
 }
 
-// Maybe writes a number, or nothing when there is none.
-func Maybe(n int) string {
-	if n == 0 {
-		return ""
-	}
-	return strconv.Itoa(n)
-}
-
 // Words splits what was typed into a field the way a shell would have split it: on spaces, and nothing cleverer.
 func Words(s string) []string {
 	found := strings.Fields(s)
@@ -122,23 +113,14 @@ func Words(s string) []string {
 	return found
 }
 
-// Part is one of the things hanging under a task, as a form holds it: its number when it already exists, what it is called, and whether it is done.
+// Part is one step of a task, as a board and a form hold it: its place in the task when it already exists, what it is called, and whether it is done.
 type Part struct {
 	Number int
 	Title  string
 	Done   bool
 }
 
-// PartsSaid writes the parts of a task as one line each, which is how they are read, ticked, renamed, added to and taken away: in the form of the task they belong to, and nowhere else.
-func PartsSaid(parts []Card) string {
-	said := make([]Part, 0, len(parts))
-	for _, c := range parts {
-		said = append(said, Part{Number: c.Number, Title: c.Title, Done: Finished(c)})
-	}
-	return PartsWritten(said)
-}
-
-// PartsWritten writes parts the way PartsIn reads them: a number when the part has one, its box, its title.
+// PartsWritten writes steps the way PartsIn reads them: a place when the step has one, its box, its title — one line each, which is how a form reads, ticks, renames, adds to and takes away the steps of its task.
 func PartsWritten(parts []Part) string {
 	lines := make([]string, 0, len(parts))
 	for _, part := range parts {

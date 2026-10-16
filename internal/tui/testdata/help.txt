@@ -22,7 +22,7 @@
  │                                             │ │                                             │
  │ INSERT — the cursor on a task               │ │ ON A CARD                                   │
  │   hjkl ←↓↑→   tasks, and the band           │ │   ≡            a description exists         │
- │   gg / G      first / last in the column    │ │   ▪            sub-tasks done / total       │
+ │   gg / G      first / last in the column    │ │   ▪            steps done / total           │
  │   ⇧hjkl       move it: sideways changes     │ │   ⚑            a label                      │
  │ column, up and down change place            │ │   ↳            what is in the way           │
  │   ⏎           the detail                    │ │   2d          a deadline close by           │

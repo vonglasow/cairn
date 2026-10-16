@@ -53,10 +53,17 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		}
 		return w.Seed("cairn task export " + w.file)
 	})
-	sc.Step(`^a file of my own holding a task that hangs under a task it does not hold$`, func() error {
+	sc.Step(`^a file of my own holding a task blocked by a task it does not hold$`, func() error {
 		w.file = filepath.Join(w.T.TempDir(), "orphan.json")
-		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 1, "objectives": [],
-			"tasks": [{"number": 1, "parent": 9, "title": "Orphan", "state": "backlog", "priority": "normal"}]}`), 0o600)
+		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 2, "objectives": [],
+			"tasks": [{"number": 1, "title": "Orphan", "state": "blocked", "priority": "normal", "blocked_by": [9]}]}`), 0o600)
+	})
+	sc.Step(`^a file of my own written before steps, holding "([^"]*)" and its sub-tasks "([^"]*)" done and "([^"]*)"$`, func(work, done, open string) error {
+		w.file = filepath.Join(w.T.TempDir(), "before-steps.json")
+		return os.WriteFile(w.file, []byte(fmt.Sprintf(`{"cairn": "tasks", "version": 1, "objectives": [], "tasks": [
+			{"number": 1, "title": %q, "state": "todo", "priority": "normal"},
+			{"number": 2, "parent": 1, "title": %q, "state": "done", "priority": "normal"},
+			{"number": 3, "parent": 1, "title": %q, "state": "todo", "priority": "normal"}]}`, work, done, open)), 0o600)
 	})
 	sc.Step(`^I import the tasks of that file$`, func() error {
 		w.Run("cairn task import " + w.file)

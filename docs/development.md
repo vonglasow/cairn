@@ -26,8 +26,10 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn objective list
 ./bin/cairn objective show 1
 ./bin/cairn task new "Write the spec" --desc "the very first" --state todo --priority high --label Spec --label team --deadline 2026-09-01 --estimate 90m
-./bin/cairn task new "Read it over" --parent 1
-./bin/cairn task new "Publish it" --parent 1
+./bin/cairn step new 1 "Read it over"
+./bin/cairn step new 1 "Publish it"
+./bin/cairn step edit 1 1 --done
+./bin/cairn step list 1
 ./bin/cairn task new "Something else"
 ./bin/cairn task list
 ./bin/cairn task show 1
@@ -62,14 +64,14 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn objective show 99
 ./bin/cairn objective new "z" --state todo
 ./bin/cairn task edit 2 --objective 1
-./bin/cairn task new "w" --parent 1 --objective 1
+./bin/cairn step edit 1 9 --done
 ./bin/cairn objective show spec
 ./bin/cairn objective
 ./bin/cairn backup new
 ./bin/cairn backup list
 ./bin/cairn backup show 1
 ./bin/cairn backup list --json
-./bin/cairn task delete 4 --yes
+./bin/cairn task delete 2 --yes
 ./bin/cairn task delete 1 --yes
 ./bin/cairn task list
 ./bin/cairn backup restore 1 --yes

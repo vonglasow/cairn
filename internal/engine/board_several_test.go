@@ -8,23 +8,20 @@ import (
 func TestDeletingTasks_namesWhatGoesWithThem(t *testing.T) {
 	snap := Snapshot{
 		Cards: []Card{
-			{Number: 1, Title: "Ship it"},
-			{Number: 2, Title: "Part", Parent: 1},
+			{Number: 1, Title: "Ship it", Steps: []Part{{Number: 1, Title: "Step"}}},
 			{Number: 3, Title: "Blocked", Blockers: []int{1}},
 			{Number: 4, Title: "Plain"},
 			{Number: 5, Title: "Waits on four", Blockers: []int{4}},
-			{Number: 6, Title: "Both", Parent: 7},
-			{Number: 7, Title: "Two parts"},
-			{Number: 8, Title: "Second part", Parent: 7},
+			{Number: 7, Title: "Two steps", Steps: []Part{{Number: 1, Title: "One"}, {Number: 2, Title: "Two"}}},
 		},
 		Focus: []int{4},
 	}
 	got := DeletingTasks(snap, []int{1, 4, 5, 7})
 	want := []Flag{
-		{Number: 1, Says: "its 1 part goes with it"},
+		{Number: 1, Says: "its 1 step goes with it"},
 		{Number: 1, Says: "task 3 waits on it"},
 		{Number: 4, Says: "it is in focus"},
-		{Number: 7, Says: "its 2 parts go with it"},
+		{Number: 7, Says: "its 2 steps go with it"},
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("DeletingTasks = %+v, want %+v", got, want)
@@ -35,15 +32,14 @@ func TestArchivingTasks_namesWhatCannotGo(t *testing.T) {
 	snap := Snapshot{
 		Cards: []Card{
 			{Number: 1, Title: "Gone", Archived: true},
-			{Number: 2, Title: "Ship it"},
-			{Number: 3, Title: "Part", Parent: 2},
+			{Number: 2, Title: "Ship it", Steps: []Part{{Number: 1, Title: "Step"}}},
 		},
 		Focus: []int{2},
 	}
 	got := ArchivingTasks(snap, []int{1, 2})
 	want := []Flag{
 		{Number: 1, Says: "it is already archived", Refused: true},
-		{Number: 2, Says: "its 1 part goes with it"},
+		{Number: 2, Says: "its 1 step goes with it"},
 		{Number: 2, Says: "it is in focus"},
 	}
 	if !slices.Equal(got, want) {

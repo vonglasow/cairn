@@ -36,8 +36,8 @@ func (p Progress) Line(about string) string {
 	if p.Tasks.Total > 0 {
 		counts = append(counts, fmt.Sprintf("%d of %d tasks", p.Tasks.Done, p.Tasks.Total))
 	}
-	if p.SubTasks.Total > 0 {
-		counts = append(counts, fmt.Sprintf("%d of %d sub-tasks", p.SubTasks.Done, p.SubTasks.Total))
+	if p.Steps.Total > 0 {
+		counts = append(counts, fmt.Sprintf("%d of %d steps", p.Steps.Done, p.Steps.Total))
 	}
 	return fmt.Sprintf("%s are done — %s is %d%% done", strings.Join(counts, " and "), about, p.Percent())
 }

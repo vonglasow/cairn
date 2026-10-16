@@ -241,7 +241,6 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 	for step, said := range map[string]string{
 		`^it says there is no such objective$`:      "there is no such objective",
 		`^it says an objective needs a title$`:      "an objective needs a title",
-		`^it says a sub-task serves no objective$`:  "a sub-task serves no objective",
 		`^it says the objective carries tasks$`:     "the objective carries tasks",
 		`^it says an objective number is expected$`: "an objective number is expected",
 	} {

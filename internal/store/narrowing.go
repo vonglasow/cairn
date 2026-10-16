@@ -76,7 +76,7 @@ func (n *narrowing) where(labels labelStore) (string, []any) {
 	return ` WHERE ` + strings.Join(clauses, ` AND `), args
 }
 
-const offTheBoard = `(archived = 1 OR parent IN (SELECT whole.number FROM tasks AS whole WHERE whole.archived = 1))`
+const offTheBoard = `archived`
 
 func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
 	var clauses []string

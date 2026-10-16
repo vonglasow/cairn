@@ -72,10 +72,11 @@ It is looked for as a substring like everything else, so 228 answers 228 and
 one costs more than a glance at one extra answer, and being handed nothing
 costs the way back.
 
-What a task *carries* about other things stays out of reach — what it hangs
-under, what it serves. Reaching those would answer every sub-task of 228 to
+What a task *carries* about other things stays out of reach — what it serves,
+what stops it. Reaching those would answer every task waiting on 228 to
 somebody looking for 228, which is the half of the old reason that was always
-true.
+true. Its steps are not about other things: they are part of what the task
+says, and a word in one reaches the task (below).
 
 ## What was archived is off every listing until it is asked for
 
@@ -103,19 +104,13 @@ names both in one object, where a name is held once, so they could not share it.
 Archiving answers one shape however many it took off: how many, and — when one
 was named — the task as it ends up.
 
-**A sweep acts on the work, not on its parts.** Both go through `sweeping`,
-which drops what hangs under something before either touches a row. One sweep
-counting parts while the other did not was a pair answering two different
-boards, and it showed: archiving a finished column took 120 tasks where
-labelling the same narrowing took 167. A part is still archived — with
-the work it belongs to, and archiving one on its own is refused by name.
-
-**A part is archived when its work is**, read that way by every listing:
-it keeps its own mark as it was, and the clause that leaves the archived out
-asks about the task and about the task it hangs under. Archiving the work used
-to mark the work alone, and its parts stayed on the board with no way off it —
-they could not be archived on their own. `--archived` answers them beside
-their work, and bringing the work back brings them back.
+**A sweep acts on what the narrowing reaches, and both sweeps reach the
+same.** Archiving and labelling go through `sweeping`, so the two answer one
+board. They once did not: while sub-tasks existed, one sweep counted them and
+the other did not, and archiving a finished column took 120 tasks where
+labelling the same narrowing took 167. Steps are no tasks, so there is nothing
+left for a sweep to count apart: a task's steps are archived with it, brought
+back with it, and never reached on their own.
 
 Both directions refuse a task already in the state asked for. Archiving twice
 was refused first, because a sweep counts what it actually took and skips the
@@ -126,19 +121,20 @@ different ways is a pair nobody can reason about. A board never meets either
 refusal — `x` reads the card and picks the verb — so they exist for the command
 line and the MCP, where a number is typed blind.
 
-## A listing names the work, not its parts
+## A listing names the tasks, not their steps
 
-A sub-task is left out of `task list`. It is a part of the work its parent
-names, read where the parent is read: `task show` names what hangs under a task
-and says which of them are done, which is the question that section answers.
-Indented under their parents, they made a listing of 219 tasks show 219 lines
-when 170 were the work and the rest its pieces.
+A step is left out of `task list` (`@task-list-leaves-steps-out`). It is a
+piece of its task, read where the task is read: `task show` names its steps and
+says which are done (`@task-show-names-its-steps`), which is the question that
+section answers. When the pieces were sub-tasks and listed under their parents,
+a listing of 219 tasks showed 219 lines when 170 were the work and the rest its
+pieces.
 
-A machine is still handed them all. `task list --json` carries every task with
-the parent it hangs under, because what is too much to read is not too much to
-be handed — and `task show --json` carries `sub_tasks`, so reading a parent
-answers what its parts are called and which are done without asking again for
-each number.
+A machine is handed them where the task is shown: `task show --json` carries
+`steps`, each a title and whether it is done
+(`@task-show-json-carries-its-steps`), so reading a task answers what its steps
+are called and which are done without asking again. `step list` answers the
+same for one task alone; see [steps.md](steps.md).
 
 ## A listing hands over the facts, and leaves what a task says to be shown
 
@@ -157,28 +153,28 @@ facts and the description) rather than cutting a listing down after the fact.
 A row carries no `progress` either, since a listing counts none and a field
 that is always null is paid for on every row.
 
-That field has a shape of its own rather than being tasks again, and not only
-for brevity: a sub-task cannot itself carry sub-tasks, and a task holding tasks
-would say it could. The type says the rule. It was found by the schema — a
-self-referential shape is one no schema can describe, and eight MCP tools lost
-the shape of their answer the moment a task held a task.
+A step has a shape of its own — a title and whether it is done — rather than
+being a task again: a task holding tasks is a shape no schema can describe, and
+eight MCP tools once lost the shape of their answer the moment a task held a
+task. The type says the rule.
 
-## A part that matched answers as the work it belongs to
+## A word in a step answers the task it belongs to
 
-On a board. `engine.Found` is what a board shows of a search: a sub-task that
-the query reached answers as its parent, each parent once, in the order the
-board already holds them.
+A step's title is part of what its task says, so `task.Said` carries it, and a
+word found only in a step reaches the task: `task search pipeline` answers the
+task one of whose steps says it (`@task-search-reaches-a-step`), and the boards
+raise that task, once however many of its steps say it
+(`@tui-searching-raises-the-task-a-step-belongs-to`,
+`@tui-searching-raises-each-task-once`,
+`@gui-searching-raises-the-task-a-step-belongs-to`).
 
-It has to, because a board draws only the work. A sub-task has no card of its
-own to appear on, so a search reaching one and drawing nothing would come back
-empty for a word plainly in the store — measured on a real store, 44 of 49
-sub-tasks carry a word their parent does not, so that is most of them.
-
-The command line does not raise anything and should not: there a line carries a
-number somebody can act on, so naming the sub-task itself says more than naming
-what it hangs under. `task search pipeline` answers the sub-task; the boards
-answer the work it is part of. The difference is deliberate and it is the same
-reason in both directions — say the thing that can be acted on.
+It has to, because a step has no number and no card of its own to appear on,
+so a search reaching one and answering nothing would come back empty for a
+word plainly in the store — measured on a real store, 44 of the 49 sub-tasks
+that became steps carry a word their task does not, so that is most of them.
+The command line and the boards used to differ here — the line named the
+sub-task, the boards its parent — and with steps there is one answer, the task,
+since it is the thing that can be acted on.
 
 ## One rule, the engine's
 
@@ -196,7 +192,7 @@ three perfect marks — mutation *rewards* duplication. The only cure was to
 keep one.
 
 An objective is narrowed the same way, minus what it serves — nothing puts an
-objective under another.
+objective under another, and an objective carries no steps.
 
 ## Everything named has to hold
 
@@ -205,40 +201,20 @@ Two facts named are two conditions, not a choice between them. `--state todo
 what carries both. This is the rule looking already followed, kept rather than
 invented, so the two commands do not disagree about what naming twice means.
 
-## A narrowed listing is flat
+## A listing is flat
 
-An unnarrowed listing is a tree: sub-tasks nested under the task they hang
-from. A narrowed one is flat, and a sub-task that matched hangs under nothing —
-what matched is what is shown, and where each task sits is not what was asked.
+No task hangs under another, so every listing is flat, narrowed or not, and
+comes back in the store's one order: the column first, then the position, then
+the number. The position is counted within a column and nothing else (see
+[ordering.md](ordering.md)), so a narrowed listing reads in the order the board
+holds — no listing has an order of its own, and the same tasks come back in the
+same order whether a filter was named or not.
 
-Bringing the parent along was weighed and left out. A parent that does not
-carry what was asked for is not part of the answer, and showing it to hold its
-child would put a task in a listing of tasks that do not match it.
-
-### The order of a flat listing is the tree's, flattened
-
-A narrowed listing comes back in the store's one order: the column first, then
-the position, then the number. The position is counted **within a column and
-under one parent**, so a sub-task and its aunt both hold position 1 — and
-flattened, they interleave:
-
-```
-$ cairn task list --state todo
-#1  Write the spec
-#3  Write the tests      # a sub-task of #1, position 1 under it
-#2  Ship it              # position 2 among the root tasks
-```
-
-Read as a tree that is exact; read flat it looks shuffled. Measured, put to the
-user, and **accepted as it is** rather than sorted by number: the alternative
-would give a narrowed listing an order of its own, so the same tasks would come
-back in two different orders depending on whether a filter was named. One order
-that reads oddly beats two that disagree.
-
-If it ever stops being acceptable, the fix is not sorting the answer: it is
-`docs/ordering.md`'s question of whether a position should be counted across a
-whole column rather than within a parent — which is a change to the order
-itself, not to how a listing is printed.
+While sub-tasks existed, an unnarrowed listing was a tree and a narrowed one
+flattened it, so a sub-task and its aunt, both at position 1 under their
+parents, interleaved and read as shuffled. That was accepted as it was rather
+than sorted by number, and the fix it pointed to — a position counted across a
+whole column — is what steps made of the order.
 
 This is the same rendering `task search` already used, and it is the same field
 of `Answer` that carries it. The field was called `Found` and is now called

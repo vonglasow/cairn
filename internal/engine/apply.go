@@ -19,15 +19,15 @@ type Changes struct {
 	Deadline    *string
 	Estimate    *string
 	Spent       *string
-	Parent      *int
 	Objective   *[]string
+	Steps       *[]task.Step
 	Finishing   bool
 }
 
 func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
-		c.Estimate != nil || c.Spent != nil || c.Parent != nil || c.Objective != nil ||
+		c.Estimate != nil || c.Spent != nil || c.Steps != nil || c.Objective != nil ||
 		c.Blocker != nil || c.Because != nil
 }
 
@@ -83,8 +83,8 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		}
 		a.Spent = spent.Apply(a.Spent)
 	}
-	if c.Parent != nil {
-		a.Parent = *c.Parent
+	if c.Steps != nil {
+		a.Steps = *c.Steps
 	}
 	if c.Objective != nil {
 		served, err := changedNumbers(*c.Objective, a.Objectives, atCreation, ErrObjectiveRequired,

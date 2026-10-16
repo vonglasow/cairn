@@ -228,7 +228,7 @@ lost on a requirement that was written down before the comparison started.
 `task show` says it as a line apart from the facts, `context  <notes>/<n>`, and
 `--json` and `task_show` as `"context"`. The boards say it too: a `CONTEXT`
 panel on the terminal's open task, and a line at the foot of the window's,
-beside its offers — not among the fields, where it cost the box of parts a row
+beside its offers — not among the fields, where it cost the steps a row
 on a window somebody works in.
 
 A surface finds the notes the way it finds the store, and hands both to the

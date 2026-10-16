@@ -57,7 +57,7 @@ func TestFactsInAColumn(t *testing.T) {
 	g := GlyphsFor(Unicode)
 	c := engine.Card{State: "todo", Deadline: on("2026-09-03"), SubDone: 3, SubTotal: 5, Labels: []string{"spec"}}
 	got := facts(c, g, plainSkin, today, 40)
-	for _, want := range []string{"2d", g.SubTasks + "3/5", g.Label + " spec"} {
+	for _, want := range []string{"2d", g.Steps + "3/5", g.Label + " spec"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("the facts row %q is missing %q", got, want)
 		}
@@ -231,16 +231,17 @@ func TestALongFieldSaysHowMuchItHolds(t *testing.T) {
 	}
 }
 
-func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
+func TestTheStepsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{
-		{Number: 1, Title: "Ship it", State: "todo"},
-		{Number: 2, Title: "Draft the columns", State: "done", Parent: 1},
-		{Number: 3, Title: "Get the client's nod", State: "todo", Parent: 1},
+		{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{
+			{Number: 1, Title: "Draft the columns", Done: true},
+			{Number: 2, Title: "Get the client's nod"},
+		}},
 	}
 	b := standing(f)
 	var rows []string
-	for _, row := range b.subTasks(f.cards[0], 60) {
+	for _, row := range b.steps(f.cards[0], 60) {
 		rows = append(rows, strip(row))
 	}
 	if len(rows) != 2 {
@@ -252,7 +253,7 @@ func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	if !strings.Contains(rows[1], "[x]") || !strings.Contains(rows[1], "Draft the columns") {
 		t.Errorf("the second row is %q, want the part done, ticked", rows[1])
 	}
-	if head := b.partsHead(f.cards[0]); !strings.Contains(head, "1 to do · 1 done") {
+	if head := b.stepsHead(f.cards[0]); !strings.Contains(head, "1 to do · 1 done") {
 		t.Errorf("the heading reads %q", head)
 	}
 }
@@ -260,8 +261,9 @@ func TestThePartsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 func TestALongPartIsCutToItsPanel(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{
-		{Number: 1, Title: "Ship it", State: "todo"},
-		{Number: 2, Title: strings.Repeat("a long name for a part ", 10), State: "todo", Parent: 1},
+		{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{
+			{Number: 1, Title: strings.Repeat("a long name for a step ", 10)},
+		}},
 	}
 	b := standing(f)
 	under := b.detailLeftUnder(f.cards[0], 40)

@@ -75,11 +75,11 @@ func StateAt(i int) string {
 	return columns[i].state
 }
 
-// OnTheBoard is what a board lays out: every task hanging under nothing.
+// OnTheBoard is what a board lays out: every task, the archived ones only when asked for.
 func OnTheBoard(cards []Card, withArchived bool) []Card {
 	var laid []Card
 	for _, c := range cards {
-		if c.Parent != 0 || (c.Archived && !withArchived) {
+		if c.Archived && !withArchived {
 			continue
 		}
 		laid = append(laid, c)
@@ -87,7 +87,7 @@ func OnTheBoard(cards []Card, withArchived bool) []Card {
 	return laid
 }
 
-// Found is what a board shows of a search: the work a query reaches, with a part that reached it answering as the work it is part of.
+// Found is what a board shows of a search: the tasks a query reaches, a word found only in a step reaching the task it belongs to.
 func Found(cards []Card, query string, withArchived bool) []Card {
 	if query == "" {
 		return OnTheBoard(cards, withArchived)
@@ -95,10 +95,6 @@ func Found(cards []Card, query string, withArchived bool) []Card {
 	reached := map[int]bool{}
 	for _, c := range cards {
 		if !ReachesCard(c, query) {
-			continue
-		}
-		if c.Parent != 0 {
-			reached[c.Parent] = true
 			continue
 		}
 		reached[c.Number] = true

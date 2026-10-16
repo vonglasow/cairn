@@ -12,7 +12,7 @@ var formSections = []struct {
 	{"STATE", []string{"state", "priority", "label"}},
 	{"TIME", []string{"deadline", "estimate", "spent"}},
 	{"BLOCKED", []string{"blocker", "because"}},
-	{"LINKS", []string{"parent", "objective"}},
+	{"LINKS", []string{"objective"}},
 }
 
 const (
@@ -48,7 +48,7 @@ func FormSize(field engine.Field) int {
 	return reads
 }
 
-// TickedPlaces is where the parts of a task being edited are drawn as tiles in their frame: one under the other from its top, from the first in sight, as many as fit above the line that adds another, and that line under the last of them.
+// TickedPlaces is where the steps of a task being edited are drawn as tiles in their frame: one under the other from its top, from the first in sight, as many as fit above the line that adds another, and that line under the last of them.
 func TickedPlaces(frame Box, parts, from int) (tiles []Box, adding Box) {
 	inside := Inside(frame)
 	shown := min(parts-from, ticksFit(frame))
@@ -60,8 +60,8 @@ func TickedPlaces(frame Box, parts, from int) (tiles []Box, adding Box) {
 
 func ticksFit(frame Box) int { return max(0, (Inside(frame).H-lineHigh)/SubHeight) }
 
-// AddingAPart is what the parts of a task being edited say under their tiles: another is added by typing a line, which is where the keyboard goes.
-const AddingAPart = "+ new part — a line of its own"
+// AddingAPart is what the steps of a task being edited say under their tiles: another is added by typing a line, which is where the keyboard goes.
+const AddingAPart = "+ new step — a line of its own"
 
 // FormRule is the line across the foot of a form, above what it offers: what says the offers are a line of their own and not one more field.
 func FormRule(over Box) Box {
@@ -181,7 +181,7 @@ func fieldsAcross(full int) int {
 }
 
 func rowsWanted(field engine.Field, wide int) int {
-	if field.Name == "parts" {
+	if field.Name == "steps" {
 		tiles := len(engine.PartsIn(field.Value))*SubHeight + lineHigh
 		return max(listedFewest, (tiles+lineHigh-1)/lineHigh)
 	}

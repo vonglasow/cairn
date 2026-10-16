@@ -63,8 +63,6 @@ func (s spentTasks) Narrowed(kept *domain.Narrowing) ([]task.Task, error) {
 	return s.told(s.tasks.Narrowed(kept))
 }
 
-func (s spentTasks) Under(number int) ([]task.Task, error) { return s.told(s.tasks.Under(number)) }
-
 func single(t task.Task, err error) ([]task.Task, error) { return []task.Task{t}, err }
 
 func (e *Engine) spendOn(number int, was, becomes time.Duration) error {

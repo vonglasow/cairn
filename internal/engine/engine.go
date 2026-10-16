@@ -25,12 +25,6 @@ var ErrLabelSignAtCreation = errors.New("a label is added or taken away only whe
 // ErrNoSuchTask is re-exported so a surface can recognise it: a surface asks the engine and may not import the store, so the engine is where the name it answers with has to live.
 var ErrNoSuchTask = store.ErrNoSuchTask
 
-// The reasons a task cannot hang where it was asked to.
-var (
-	ErrParentIsSelf    = task.ErrParentIsSelf
-	ErrParentIsSubTask = task.ErrParentIsSubTask
-)
-
 type tasks interface {
 	Keep(task.Task) (task.Task, error)
 	Update(task.Task) error
@@ -39,7 +33,6 @@ type tasks interface {
 	All() ([]task.Task, error)
 	Narrowed(*domain.Narrowing) ([]task.Task, error)
 	NothingBlocks() ([]int, error)
-	Under(int) ([]task.Task, error)
 	Close() error
 }
 
@@ -129,10 +122,6 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, creating); err != nil {
 		return task.Task{}, err
 	}
-	t = t.Settled()
-	if err := t.MayHang(e.tasks.Find); err != nil {
-		return task.Task{}, err
-	}
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
@@ -187,7 +176,7 @@ func (e *Engine) sweeping(kept *domain.Narrowing) ([]task.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return task.Work(found), nil
+	return found, nil
 }
 
 func (e *Engine) archiveEvery(kept *domain.Narrowing) (int, error) {
@@ -225,15 +214,6 @@ func (e *Engine) labelEvery(kept *domain.Narrowing, label string) (int, error) {
 }
 
 func (e *Engine) delete(number int) error {
-	hanging, err := e.tasks.Under(number)
-	if err != nil {
-		return err
-	}
-	for _, part := range hanging {
-		if err := e.delete(factsOf(part).Number); err != nil {
-			return err
-		}
-	}
 	held, err := e.places.Focus()
 	if err != nil {
 		return err
@@ -251,10 +231,6 @@ func (e *Engine) delete(number int) error {
 		}
 	}
 	return e.record(number, trace.Deleted, "", whatItHeld(gone), "")
-}
-
-func (e *Engine) under(number int) ([]task.Task, error) {
-	return e.tasks.Under(number)
 }
 
 func (e *Engine) waitingOn(number int) ([]int, error) {
@@ -275,23 +251,6 @@ func (e *Engine) waitingOn(number int) ([]int, error) {
 	return waiting, nil
 }
 
-func (e *Engine) finishUnder(number int) error {
-	under, err := e.tasks.Under(number)
-	if err != nil {
-		return err
-	}
-	done := string(domain.Done)
-	for _, part := range under {
-		if factsOf(part).State == domain.Done {
-			continue
-		}
-		if _, err := e.edit(factsOf(part).Number, Changes{State: &done, Finishing: true}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
 		return task.Task{}, ErrNothingToChange
@@ -304,12 +263,6 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, changing); err != nil {
 		return task.Task{}, err
 	}
-	if factsOf(was).Parent != factsOf(t).Parent {
-		t = t.Settled()
-	}
-	if err := t.MayHang(e.tasks.Find); err != nil {
-		return task.Task{}, err
-	}
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
@@ -320,11 +273,9 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if c.Finishing && factsOf(t).State == domain.Done {
-		if err := e.finishUnder(number); err != nil {
-			return task.Task{}, err
-		}
+		t = t.Ticked()
 	}
-	if err := was.MayFinishAs(t, e.tasks.Under); errors.Is(err, ErrSubTaskStillOpen) {
+	if err := was.MayFinishAs(t); errors.Is(err, ErrStepStillOpen) {
 		return task.Task{}, fmt.Errorf("%w; --yes puts it in done too", err)
 	} else if err != nil {
 		return task.Task{}, err

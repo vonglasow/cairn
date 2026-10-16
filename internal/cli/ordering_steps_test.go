@@ -51,22 +51,6 @@ func listedInOrder(rows []string, list string) error {
 	return nil
 }
 
-func hangingUnder(card string) string {
-	_, under, found := strings.Cut(card, "sub-tasks")
-	if !found {
-		return ""
-	}
-	return under
-}
-
-func distinct(all []string) int {
-	seen := map[string]bool{}
-	for _, one := range all {
-		seen[one] = true
-	}
-	return len(seen)
-}
-
 func columnsNamed(said string) []string {
 	named := []string{}
 	for _, state := range domain.States {
@@ -82,12 +66,6 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 		w.Run("cairn task list")
 		return listedInOrder(rowsOf(w.Out.Stdout, false), list)
 	})
-
-	sc.Step(`^it lists the sub-tasks of task (\d+) in the order (.+)$`,
-		func(n int, list string) error {
-			w.Run(fmt.Sprintf("cairn task show %d", n))
-			return listedInOrder(rowsOf(hangingUnder(w.Out.Stdout), true), list)
-		})
 
 	marked := func(title string) error {
 		for _, line := range strings.Split(w.Out.Stdout, "\n") {
@@ -115,13 +93,6 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says whose sub-task it is$`, func() error {
-		if named := numbersIn.FindAllString(w.Out.Stderr, -1); distinct(named) < 2 {
-			return fmt.Errorf("the reason names %v, want both the sub-task and its parent:\n%s",
-				named, w.Out.Stderr)
-		}
-		return nil
-	})
 }
 
 func marksExactly(out string, want int) error {

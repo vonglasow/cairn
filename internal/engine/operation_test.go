@@ -267,6 +267,10 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"label_list":         {{Labels: &[]LabelCarried{}}},
 		"label_delete":       {{Labels: &[]LabelCarried{}}},
 		"label_rename":       {{Labels: &[]LabelCarried{}}},
+		"step_new":           {{Task: of(task.Task{})}},
+		"step_list":          {{Task: of(task.Task{})}},
+		"step_edit":          {{Task: of(task.Task{})}},
+		"step_delete":        {{Task: of(task.Task{})}},
 	}
 	for _, op := range All() {
 		samples, known := answered[op.Name()]

@@ -75,9 +75,9 @@ func TestText_showsHowFarAlongItIs(t *testing.T) {
 	}
 }
 
-func TestText_countsSubTasksApartFromTasks(t *testing.T) {
-	got := Text(plan(t), domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 2}})
-	if !strings.Contains(got, "2 of 4 sub-tasks are done") {
+func TestText_countsStepsApartFromTasks(t *testing.T) {
+	got := Text(plan(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 2}})
+	if !strings.Contains(got, "2 of 4 steps are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
 	if strings.Contains(got, "0 of 0 tasks") {

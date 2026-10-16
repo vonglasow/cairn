@@ -8,15 +8,15 @@ import (
 
 func onTheList(t *testing.T, high int, titles ...string) Window {
 	t.Helper()
-	cards := []engine.Card{card(1, "Ship it", "todo")}
+	shipped := card(1, "Ship it", "todo")
 	for i, title := range titles {
-		cards = append(cards, engine.Card{Number: i + 2, Title: title, State: "todo", Parent: 1})
+		shipped.Steps = append(shipped.Steps, engine.Part{Number: i + 1, Title: title})
 	}
-	w := holding(newFake(), cards...)
+	w := holding(newFake(), shipped)
 	w.height = high
-	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).On("parts")
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).On("steps")
 	if !w.form.onParts() {
-		t.Fatal("the keyboard is not on the parts")
+		t.Fatal("the keyboard is not on the steps")
 	}
 	return w
 }
@@ -239,7 +239,7 @@ func TestATickIsDoneAtOnceOrNotAtAll(t *testing.T) {
 	w := onTheList(t, 800, "A")
 	f := w.work.(*fake)
 	ticked := w.Key("space")
-	if in, ok := f.gave("task", "edit"); !ok || in.Given["number"] != "2" || in.Given["state"] != "done" {
+	if in, ok := f.gave("step", "edit"); !ok || in.Given["number"] != "1" || in.Given["step"] != "1" || in.Given["done"] != "true" {
 		t.Errorf("ticking asked %+v", in)
 	}
 	if ticked.form.Changed() {
@@ -321,7 +321,7 @@ func TestTheWheelScrollsTheParts(t *testing.T) {
 	if got := far.partsFrom(); got != 0 {
 		t.Errorf("turned back, the parts show from %d", got)
 	}
-	walked := once.On("parts")
+	walked := once.On("steps")
 	if walked.partsFrom() != once.partsFrom() {
 		t.Errorf("putting the keyboard on the list moved it from %d to %d", once.partsFrom(), walked.partsFrom())
 	}

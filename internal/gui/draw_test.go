@@ -1177,39 +1177,6 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	}
 }
 
-func TestOnlyATaskSaysWhereItStands(t *testing.T) {
-	strip := func(w Window) Box {
-		box := w.ChoosingBox()
-		line := ChoosingLine(box, ChoosingFrom(box))
-		return Box{X: line.X + line.W*3/4, Y: line.Y, W: line.W / 4, H: line.H}
-	}
-	opened := func(arg string, snap engine.Snapshot) Window {
-		t.Helper()
-		w := New(newFake(), 1200, 800)
-		w.snap = snap
-		w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-		for w.Form().Fields()[w.Form().On()].Arg != arg {
-			w = w.Key("tab")
-		}
-		return w.Key("enter")
-	}
-
-	tasks := opened("parent", engine.Snapshot{Cards: []engine.Card{
-		{Number: 1, Title: "Write the spec", State: "todo"},
-		{Number: 2, Title: "Ship it", State: "current"},
-	}})
-	goals := opened("objective", engine.Snapshot{
-		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
-		Goals: []engine.Goal{{Number: 1, Title: "Ship it"}},
-	})
-	said := ink(drawn(t, tasks), strip(tasks), Dark().Back)
-	silent := ink(drawn(t, goals), strip(goals), Dark().Back)
-	if said <= silent {
-		t.Errorf("a task's row paints %d where a column goes and an objective's %d: "+
-			"the column is not drawn", said, silent)
-	}
-}
-
 func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -1316,8 +1283,7 @@ func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
 
 func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 	w := holding(newFake(),
-		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
-		engine.Card{Number: 2, Title: "A part", State: "todo", Parent: 1},
+		engine.Card{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "A step"}}},
 		engine.Card{Number: 3, Title: "Gone", State: "done", Archived: true})
 	if got := w.Holds(Tasks); got != 1 {
 		t.Errorf("the tasks tab says %d, and the board lays out 1", got)

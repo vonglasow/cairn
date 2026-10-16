@@ -124,7 +124,7 @@ func (b Board) legend() []string {
 	)...)
 	return append(out, b.group("ON A CARD",
 		mark(g.Described, p.Faint, "", "a description exists"),
-		mark(g.SubTasks, p.Faint, "", "sub-tasks done / total"),
+		mark(g.Steps, p.Faint, "", "steps done / total"),
 		mark(g.Label, p.Faint, "", "a label"),
 		mark(g.InTheWay, p.Faint, "", "what is in the way"),
 		"  "+b.skin.Bright.Render(pad("2d", 12))+b.skin.Says.Render("a deadline close by"),
@@ -173,7 +173,7 @@ func (b Board) detailLeft(c engine.Card, width int) []string {
 	out = append(out, under...)
 	if len(out) == 0 {
 		return []string{b.named("NOTHING WRITTEN DOWN",
-			b.skin.Faint.Render("no description, no sub-tasks, nothing served"), width)}
+			b.skin.Faint.Render("no description, no steps, nothing served"), width)}
 	}
 	return out
 }
@@ -218,8 +218,8 @@ func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
 
 func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 	var under []string
-	if rows := b.subTasks(c, width-4); len(rows) > 0 {
-		under = append(under, b.named(b.partsHead(c), strings.Join(rows, "\n"), width))
+	if rows := b.steps(c, width-4); len(rows) > 0 {
+		under = append(under, b.named(b.stepsHead(c), strings.Join(rows, "\n"), width))
 	}
 	if len(c.Objectives) > 0 {
 		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
@@ -269,11 +269,11 @@ func (b Board) detailBand(c engine.Card) string {
 	return first + "\n " + strings.Join(told, "   ")
 }
 
-func (b Board) subTasks(c engine.Card, width int) []string {
+func (b Board) steps(c engine.Card, width int) []string {
 	var out []string
-	for _, part := range engine.Hanging(b.snap.Cards, c.Number) {
+	for _, part := range engine.Hanging(c) {
 		box, name := "[ ]", b.skin.Bright.Render(part.Title)
-		if engine.Finished(part) {
+		if part.Done {
 			box, name = "[x]", b.skin.Faint.Strikethrough(true).Render(part.Title)
 		}
 		out = append(out, Clip(b.skin.Says.Render(box)+" "+b.skin.Faint.Render(strconv.Itoa(part.Number))+"  "+name, width))
@@ -281,8 +281,8 @@ func (b Board) subTasks(c engine.Card, width int) []string {
 	return out
 }
 
-func (b Board) partsHead(c engine.Card) string {
-	return "SUB-TASKS   " + engine.Tallied(engine.Hanging(b.snap.Cards, c.Number))
+func (b Board) stepsHead(c engine.Card) string {
+	return "STEPS   " + engine.Tallied(engine.Hanging(c))
 }
 
 func (b Board) serves(c engine.Card, width int) string {

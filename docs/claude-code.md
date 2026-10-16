@@ -29,7 +29,7 @@ then reads, from the task's notes directory (`task show` gives it):
 
 - `summary.md` — where the task stands: decisions, state, next step;
 - the three most recent dated entries, and the names of the older ones;
-- for a sub-task, the parent's `summary.md`, and nothing else of the parent;
+- its steps, which `task show` lists with it — what is ticked and what is left;
 - `ticket.md`, when there is one.
 
 A session that is a short aside attaches to nothing, and nothing is written.
@@ -42,8 +42,7 @@ that fails, the copy already there is read and the failure is said. No ticket
 tool is required for anything else to work. Azure DevOps only, for now.
 
 **Choosing.** Asked what to work on, Claude lists the first five tasks of the
-to-do and in-progress columns that are not blocked, in the board's order, each
-with its parent. Claude ranks nothing: the board's order is the priority, and
+to-do and in-progress columns that are not blocked, in the board's order. Claude ranks nothing: the board's order is the priority, and
 changing it is the person's act. A passed deadline may be pointed out; it
 moves nothing.
 

@@ -22,9 +22,9 @@ afternoon to spend:
 - **The mouse comes first**: no modes, no cursor to learn. A key does what the
   bar offers, where the bar offers it, and a few flat shortcuts stay.
 - **A drag is an edit**: dropped in another column it changes the state,
-  among its sisters it changes the place — the engine's two operations.
-- **Sub-tasks are not on the board**; they are lines of the form of the task
-  they belong to, and deleting a task takes them with it.
+  within its column it changes the place — the engine's two operations.
+- **Steps are not on the board**; they are tiles of the form of the task they
+  belong to, and deleting a task takes them with it.
 - **Every size is worked out from the window** and pinned as a number in
   `parts*.go`, never in a drawing, where no test could judge it.
 - **What a board reads and asks is shared** with the terminal in
@@ -229,7 +229,7 @@ under a panel moves now; the list of backups scrolls itself, a line a notch,
 and the calendar walks its months, a notch a month
 (`@gui-the-wheel-stays-inside-a-panel`).
 
-**Every bar can be pulled.** The trace's, the description's, the work under a
+**Every bar can be pulled.** The trace's, the description's, the steps of a
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
@@ -238,6 +238,10 @@ board keeps answering the mouse: a card is chosen by a click and opened by a
 double click while the box is still open and still being typed into. It used to
 swallow both, and reaching what a search had just found meant closing the box
 that found it.
+
+**A word found only in a step raises the task it belongs to**
+(`@gui-searching-raises-the-task-a-step-belongs-to`): a step's title is part
+of what its task says, and a step has no card of its own to raise.
 
 A click over the box itself belongs to what is being typed, and lets go of
 nothing. That is the whole of the exception — everywhere else on the board a
@@ -287,8 +291,8 @@ the pointer is over: the upper half of a card puts it before, the lower half
 after. A thin line across the top of the slot under the pointer said it before,
 and since the slot was a card's whole height, the last card of a column
 scrolled to its end covered its foot: there was no point anywhere that meant
-"after it", and a card could not be put last (`@gui-a-drag-reaches-the-foot-of-a-column`,
-`@gui-a-drag-reaches-the-foot-of-a-long-column`). The card in hand is never
+"after it", and a card could not be put last
+(`@gui-a-drag-reaches-the-foot-of-a-long-column`). The card in hand is never
 counted where it is going, so it is never put behind itself.
 
 **A drop carries the column and the place.** That is one `task move --state
@@ -297,17 +301,13 @@ leaves the column as it was. It used to be an edit and then a move, with
 nothing between them, and a refused move left the task in a column it was
 never dropped in.
 
-**Sub-tasks are not drawn on the board**, so every card on it hangs under
-nothing and any card may take any place. There was a rule here that drew no
-landing line where a sub-task could not go, and a mark on the card saying it
-hung under another; both went when sub-tasks left the board, since nothing
-draws one there to refuse or to mark.
-
-That rule is what made this change happen. It was right — a sub-task could only
-land among its sisters — and it read as arbitrary, because the sisters were
-scattered through the columns with nothing grouping them. Fixing the refusal
-showed that the hierarchy was invisible, and the answer turned out not to be a
-better refusal.
+**Every card on the board is a task, and any card may take any place.** A
+step is no card (`@gui-a-step-is-not-on-the-board`): it has no column and no
+place among the tasks, so nothing on the board refuses a landing or marks a
+card as belonging to another. There was such a rule while sub-tasks existed —
+a sub-task could only land among its sisters, which were scattered through the
+columns with nothing grouping them — and it read as arbitrary. That is part of
+why sub-tasks gave way to steps; see [steps.md](steps.md).
 
 **The stalled band is three lanes**, named `blocked`, `watching` and `paused`.
 Dropping into a lane *is* the answer to which kind of stopped this is. The
@@ -323,25 +323,19 @@ see. It now scrolls the way a column does, between the same two ends.
 
 ## The form
 
-**A part of the work is reached in the form of the task it belongs to, and
-nowhere else.** The form carries a field holding one line per part — `#2 [x]
-Relire l'ADR` — which is where one is ticked, renamed, added and taken away.
-Saving settles them one at a time against what the task already carried: a line
-with a number is that part, a line without is one nobody had written down yet,
-and a number the field no longer carries is a part that has gone. Each is an
-add, an edit or a delete through the engine; the engine has no argument for a
-set of parts and should not grow one.
+**A step is reached in the form of the task it belongs to, and nowhere
+else.** The form carries a `steps` field, which is where one is ticked, renamed,
+added, taken away and put in its order. Saving the form writes the steps with
+the rest of the task, in the one act that writes the task: the field says what
+the steps are, and what it no longer says is gone. There is no deletion of a
+step apart from that act.
 
-The board forced it. Parts left the board when a board of 219 tasks drew 219
-things of which 170 were the work and the rest its pieces — and once off it, a
-task carrying one could neither be changed nor deleted, because the deletion was
-refused while a part was there and nothing was left that could remove the part.
-**Deleting a task now takes its parts with it**, which is the rule archiving
-already went by: a part is archived with the work it belongs to.
-
-A part carries a title and whether it is done, and nothing else. Measured on a
-store of 219 tasks, its 49 parts were done 47 times and todo twice, with no
-deadline, no label, no priority and no blocker among them.
+A step carries a title and whether it is done, and nothing else; its place in
+the task is the only name it has, and no task's number, so its tile shows its
+title alone. Measured on a store of 219 tasks, the 49 sub-tasks that came
+before steps were done 47 times and todo twice, with no deadline, no label, no
+priority and no blocker among them — which is what a step keeps.
+**Deleting a task takes its steps with it** (`@task-delete-takes-its-steps`).
 
 A modal dialog over the board, with *Save* and *Cancel*; `esc` cancels. One act
 in the trace per save.
@@ -359,7 +353,7 @@ line's help and an agent's schema say of the same argument (`Field.Means`) — s
 the three cannot disagree. Only the name explains: over what is being typed, an
 explanation would be in the way. The title has no name drawn, and none.
 
-A field with `Choices` is chosen from the same list as a parent, a `Long` field
+A field with `Choices` is chosen from the same list as the objectives, a `Long` field
 a multi-line box, the rest a line to type in. The field the keyboard is on is lit, and it is the only one:
 that is the whole of what says where typing would go.
 
@@ -394,31 +388,28 @@ title first, across the whole width and as large as a panel's heading; the
 description under it, across the width, a line for each it says — four at the
 least, ten at the most; the short fields grouped a section to a row, the head
 of the section first and each field's name before its box — `STATE`, `TIME`,
-`BLOCKED`, `LINKS`, by what each field asks the engine for; then the parts.
+`BLOCKED`, `LINKS`, by what each field asks the engine for; then the steps.
 Under a rule at the foot, and nowhere else, is what the form offers. The panel
 is as tall as what it holds, up to the panel every other screen uses: it
-stops under the parts rather than under a floor of empty ground. `FormPlace`
+stops under the steps rather than under a floor of empty ground. `FormPlace`
 says where every field of a form goes, and everything that draws, clicks or
 measures a form asks it.
 
-It was one column, and the parts — a second long field — ran over *Save* and
+It was one column, and the steps — a second long field — ran over *Save* and
 *Cancel* in a window under eight hundred points. Then two columns, which left a
 hole under eleven fields and two frames as tall as the panel with three lines
-in them. When the window is short, the parts are given their room before the
-description grows past four lines: a part out of sight is a part nobody ticks.
+in them. When the window is short, the steps are given their room before the
+description grows past four lines: a step out of sight is a step nobody ticks.
 
-**The parts read as a list to tick while the keyboard is elsewhere** — a tile
-each, ticked or not, from what the field says now, unsaved lines included, and
-a line saying another is added by typing one. With the keyboard on them they
-are the lines being typed, `#2 [x] Relire l'ADR`, which is where a part is
-ticked, renamed, added and taken away.
+**The steps read as a list to tick** — a tile each, ticked or not, from what
+the field says now, unsaved lines included; how the tiles are worked is said
+further down, under the last thing a form holds.
 
-**A new task goes in with its parts.** The form that adds a task carries the
-same parts field as the one that edits it, empty: a task whose parts were
-written down beforehand is added with them, each line a part under the task
-just added. The terminal's form does not carry it yet. Parts are never settled
-under number 0, which is no task — every task with no parent would read as a
-part the field no longer names.
+**A new task goes in with its steps.** The form that adds a task carries the
+same steps field as the one that edits it, empty: a task whose steps were
+written down beforehand is added with them, in the act that adds it
+(`@gui-a-new-task-goes-in-with-its-steps`). The terminal's form for a new task
+does not carry it yet.
 
 **A new task goes where the pointer last pointed.** A click on a column — on a
 card or on nothing — says which column the next task goes in: New, `⌘N`, or New
@@ -434,7 +425,7 @@ behind the one above, in the act that makes it
 column in the form before it is saved goes where that column puts it.
 
 **Every box in a row ends where the others do.** The title, the description,
-the last field of each section and the parts end on the same line, and a long
+the last field of each section and the steps end on the same line, and a long
 field's bar sits beside its box, in a margin every field keeps.
 
 **Nothing written runs out of its box.** Text wraps — at a space when there is
@@ -512,16 +503,15 @@ walks the fields, as it does in the terminal.
 The columns stand a gap clear of that band. Against it, the tabs read as the
 board's first row.
 
-**A card carries two marks and no more.** The eleven the terminal board draws
-were left out of this window on purpose; these two earn their place because
-neither can be worked out by looking. A card gives no sign that somebody — or
-some agent session — is on it, and a sub-task looks exactly like a task while
-being the one thing that cannot be dragged wherever you like: it moves among
-its sisters and nowhere else. So the number line carries `↳` and its parent's
-number, and an eye before it when it is being worked on — drawn, in the
-colour that says chosen, where a `●` read as nothing in particular
-(`FocusEye`). `f` focuses or unfocuses the chosen task, under the same key the
-terminal board uses.
+**A card carries one mark on its number line and no more.** The eleven the
+terminal board draws were left out of this window on purpose; this one earns
+its place because it cannot be worked out by looking: a card gives no sign
+that somebody — or some agent session — is on it. So the number line carries
+an eye when it is being worked on — drawn, in the colour that says chosen,
+where a `●` read as nothing in particular (`FocusEye`). It carried a second,
+`↳` and the number of the task a sub-task hung under, until steps replaced
+sub-tasks and every card became a task that may go anywhere. `f` focuses or
+unfocuses the chosen task, under the same key the terminal board uses.
 
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
@@ -561,6 +551,11 @@ throwing away a form somebody has typed into both lose work; archiving a column
 does not, and is asked about for its size. *Agree* and *Cancel*
 are the two offers, `⏎` agrees, and the targets are as tall as the bar's — they
 used to be the smallest in the window, for the most destructive act in it.
+A card dropped in done while one of its steps is open is asked about too —
+"Put task 7 in done, ticking its steps?", with "Its steps not yet done are
+ticked with it." under it — and agreed to, its steps are ticked in the act that
+moves it (`@gui-a-drop-in-done-asks-about-open-steps`); see
+[steps.md](steps.md#done-with-a-step-still-open).
 A question is asked in a box as big as its sentences and its offers, not in
 the panel a form is drawn in: two lines and two words used to sit in a box
 nine tenths empty.
@@ -691,7 +686,7 @@ something to press. The search narrows this page as it narrows the board: a
 day keeps the tasks the search reaches, and its total counts only them
 (`@gui-the-time-page-is-searched`). A card too narrow for all it says gives up
 what has no room rather than writing it over the rest: the labels stop short of
-the facts written hard right, and the count of the parts gives way to the eye
+the facts written hard right, and the count of the steps gives way to the eye
 of a task in focus. The tab says how many tasks the
 time shown was spent on, from the moment the window opens: the week is read
 with every look at the store and not only once the page is opened, or the tab
@@ -729,7 +724,7 @@ until it is answered, and a window that is a value never waits: the window
 says what it wants (`FileAsked`), the loop opens the dialog on the side
 (`Filing`) and hands the answer back (`Filed`) — the one piece no test
 reaches is the call to the system, and the scenarios play the dialog the way
-they play the clipboard (`files.go`, `@gui-a-store-is-imported`).
+they play the clipboard (`files.go`, `@gui-tasks-are-imported`).
 
 **A page turned off is not drawn.** The pages the configuration turns off have
 no tab, and `tab` and a click walk only the others; the window opens on the
@@ -792,8 +787,8 @@ date typed. Tasks and objectives open the same one.
 and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at
 the beat before, is saved where it stands and opened again over what it saved,
-read back from the store: the keyboard and the caret where they were, a part
-just added with its number, and the trace beside it read again, since it
+read back from the store: the keyboard and the caret where they were, a step
+just added in its place, and the trace beside it read again, since it
 otherwise lacked the very act just saved
 (`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
@@ -890,17 +885,15 @@ a press on the bar fell through to the board behind the panel and closed the
 task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
 
-**A number somebody would have to look up is chosen from a list.** Two fields
-are answered that way — the objective a task serves, and the task it hangs
-under — and one list answers both. It carries a line that narrows it as it is
+**A number somebody would have to look up is chosen from a list.** The
+objectives a task serves are answered that way, and the list says which task
+it is for (`@gui-a-list-names-the-task-it-is-for`). It carries a line that narrows it as it is
 typed into, by the board's own matching rule rather than one of its own: a list
 that matched its own way would answer a different set from the search box two
 keystrokes away.
 
-The two differ in one thing, and the list reads it off the field: a task hangs
-under one parent, so `⏎` takes what the keyboard is on and closes; it serves as
-many objectives as it serves, so `⏎` ticks and the list stays open until `esc`.
-The field then reads `#1 Ship it` rather than `1` — the number is what the
+A task serves as many objectives as it serves, so `⏎` ticks and the list
+stays open until `esc`. The field then reads `#1 Ship it` rather than `1` — the number is what the
 engine takes and what a person has to go and look up, which is the whole of why
 the list exists.
 
@@ -913,8 +906,7 @@ list offers.
 **A closed set is chosen from the same list.** A column, a priority and an
 objective's standing open it too — on a click, or on `⏎` — offering the set in
 the domain's order, the value already held ticked and under the keyboard, and
-narrowed the same way by typing. One answer, so `⏎` takes and closes, as for a
-parent; but taking the one already held leaves it held, because a task stands
+narrowed the same way by typing. One answer, so `⏎` takes and closes; but taking the one already held leaves it held, because a task stands
 in a column whatever is done to a list. The rows say the names alone: the
 number a row is listed under is the list's, not one anybody has seen. `←`/`→`
 on the field still step through the set without opening anything.
@@ -1058,7 +1050,7 @@ or splitting it over two rows were the other two ways, and both moved every
 field below them to buy a line that was already there.
 
 **A card says what it holds and does not show.** `≡` that there is a
-description to read, `▪ 3/8` how far the parts under it have got — beside the
+description to read, `▪ 3/8` how far its steps have got — beside the
 number, where an objective's count already sits.
 
 Those two and no more. The terminal compresses ten facts into marks because a
@@ -1134,36 +1126,45 @@ so a long description reached down to the foot of the panel: the place of the
 notes could not be held, and the offers took a press as the start of a run
 rather than as a click.
 
-**What hangs under a task is the last thing its form holds**, as a list of
-tiles. A part carries a box before its name — empty, or filled and ticked —
+**A task's steps are the last thing its form holds**, as a list of
+tiles (`@gui-the-steps-read-as-a-list-to-tick`). A step carries a box before its title — empty, or filled and ticked —
 and what is left is written in the reading ink while what is done is faint and
-struck through; what is left comes first, what is done after. A box is read by
-its shape, without comparing two greys.
+struck through; what is left comes first, what is done after
+(`@gui-the-steps-left-come-first`). A box is read by its shape, without
+comparing two greys. A tile shows the title alone: a step's place is no task's
+number, and writing it there would read as one.
 
-With the keyboard on the list, the arrows walk the tiles, space ticks the one
-it is on, enter renames it in its tile, and backspace strikes it out — in its
-place, faint and crossed through — or, struck out already, brings it back. A
-tile is dragged to another place the way a card is: the part in hand follows
-the pointer, and a line says where it would land — over the tile it takes the
-place of when carried up, under it when carried down, drawn over the part in
-hand so the thing aimed never hides the aim. A click on its box ticks it. The last
-line adds one: enter, a title, enter, and the next is already waiting. A list
+With the keyboard on the list, the arrows walk the tiles
+(`@gui-the-arrows-walk-the-steps`), space ticks the one it is on, enter renames
+it in its tile (`@gui-a-step-is-renamed-in-its-tile`), and backspace strikes it
+out — in its place, faint and crossed through — or, struck out already, brings
+it back (`@gui-a-step-is-struck-out-and-back`). A tile is dragged to another
+place the way a card is: the step in hand follows the pointer, and a line says
+where it would land — over the tile it takes the place of when carried up,
+under it when carried down, drawn over the step in hand so the thing aimed
+never hides the aim (`@gui-a-step-in-hand-shows-where-it-lands`,
+`@gui-a-step-is-dragged-to-its-place`). A click on its box ticks it. The last
+line, "+ new step — a line of its own", adds one: enter, a title, enter, and
+the next is already waiting (`@gui-steps-are-added-one-after-another`). A list
 longer than its frame is scrolled the way a column is: by the wheel over it,
-wherever the keyboard is, with a bar beside it saying how much is in sight;
-the arrows move it only as far as keeps the line they reach in sight.
+wherever the keyboard is, with a bar beside it saying how much is in sight
+(`@gui-the-wheel-scrolls-the-steps`); the arrows move it only as far as keeps
+the line they reach in sight.
 
-**A tick is done at once**, and asks nothing of the form: a box ticked on a
-part says it is done, and a part done only once its task's form was saved was
-a box that lied until then. A tick the engine refuses leaves the box as it
-was. Everything else — a name, a part added, one struck out, the order — waits
-for the form to be saved and goes with a form thrown away. Saving moves the
-parts into the order the list says, column by column, and moves nothing when
-the order is the one they had.
+**A tick is done at once**, with a `step edit` of its own, and asks nothing of
+the form (`@gui-a-tick-is-kept-whatever-becomes-of-the-form`): a box ticked on
+a step says it is done, and a step done only once its task's form was saved
+was a box that lied until then. A tick the engine refuses leaves the box as it
+was. Everything else — a title, a step added, one struck out, the order — waits
+for the form to be saved and goes with a form thrown away. Saving writes the
+steps with the task, in the one act that writes it, in the order the list
+says (`@gui-steps-done-and-left-in-turn-are-saved`).
 
-The list writes the field's own lines underneath — `#2 [x] Relire l'ADR`, a
+The list writes the field's own lines underneath — `#1 [x] Relire l'ADR`, a
 new one without a number — and those lines are what is saved, the way they
-were when the list was a text to edit. A form being added carries the same
-list, so a task goes in with the parts already written down for it.
+were when the list was a text to edit; the `#n` is the step's place, read as
+nothing more than a line. A form being added carries the same list, so a task
+goes in with the steps already written down for it.
 
 The heading says what was opened: `task 7 · Ship it`, the title as it was
 saved and not as it is being typed, which the field below says.
@@ -1216,7 +1217,7 @@ an act is one transaction. Three deletions asked one after another left, when
 the third was refused, two gone and somebody to work out which.
 
 **It is asked about first, and the question names what would cost more** —
-the parts of a task, a task waiting on it, the task in focus — and **what
+the steps of a task, a task waiting on it, the task in focus — and **what
 cannot go at all** — an objective work still serves, a task already off the
 board. Read off what the board holds, the facts the engine goes by, so the
 question says before what the engine would only refuse after. The answer is

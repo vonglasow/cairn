@@ -26,7 +26,7 @@ func (c Card) Cost() (said string, over bool) {
 	return c.Spent + "/" + c.Estimate, c.Overrun
 }
 
-// PartsDone is how many of the parts under a task are done out of how many there are, and nothing when there are none.
+// PartsDone is how many of the steps of a task are done out of how many there are, and nothing when there are none.
 func (c Card) PartsDone() string {
 	if c.SubTotal == 0 {
 		return ""
@@ -53,14 +53,6 @@ func (s Snapshot) Named(f Field) string {
 		for _, n := range NumbersIn(f.Value) {
 			g, _ := s.Goal(n)
 			said = append(said, "#"+strconv.Itoa(n)+" "+g.Title)
-		}
-	case "parent":
-		for _, n := range NumbersIn(f.Value) {
-			title := strconv.Itoa(n)
-			if c, found := s.Card(n); found {
-				title = c.Title
-			}
-			said = append(said, "#"+strconv.Itoa(n)+" "+title)
 		}
 	default:
 		return f.Value

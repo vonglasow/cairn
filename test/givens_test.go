@@ -39,7 +39,8 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 		func() error { return g.IAddedATaskWithADescriptionOfLines("six", 3, "the end") },
 		func() error { return g.IAddedATaskServingObjective("seven", 1) },
 		func() error { return g.IAddedATaskWithTheStateServingObjective("eight", "watching", 1) },
-		func() error { return g.IAddedATaskHangingUnderTask("nine", 4) },
+		func() error { return g.IAddedATaskTitled("nine") },
+		func() error { return g.IAddedTheStepToTask("Read it", 4, true) },
 		func() error { return g.IEditedTaskWithTheBlocker(2, "1") },
 		func() error { return g.IEditedTaskWithTheState(1, "done") },
 		func() error { return g.IEditedTaskWithTheLabels(3, "spec", "team") },
@@ -94,6 +95,9 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 	}
 	if len(all) == 0 {
 		t.Error("nothing listed")
+	}
+	if four, err := g.Task(4); err != nil || !slices.Equal(four.Carried().Steps, []task.Step{{Title: "Read it", Done: true}}) {
+		t.Errorf("task 4 carries the steps %v, %v", four.Carried().Steps, err)
 	}
 	if _, err := g.Task(9); err == nil {
 		t.Error("task 9 was deleted and is still shown")

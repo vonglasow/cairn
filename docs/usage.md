@@ -32,17 +32,17 @@ cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"
 cairn task edit 5 --blocker -3   # the last thing out of its way puts it in todo
 cairn task new "Read the spec" --label spec,team
-cairn task new "Write the tests" --parent 1
+cairn task new "Ship it" --steps - < steps.txt   # one line a step: [ ] to do, [x] done
 cairn task new "Write the docs" --objective 1
 cairn task new "Write the spec" --objective 1 --objective 2   # it serves both
 cairn task edit 1 --objective +3   # one more, without naming the others
 cairn task list      # each row says its column, priority, deadline and labels
-                     # sub-tasks are listed under the task they hang from
+                     # a task's steps are not listed: task show names them
 cairn task list --state todo --priority high   # only what carries all of it
 cairn task list --label team --label urgent    # both labels, not either
 cairn task list --objective 1                  # only what serves it
-cairn task search spec    # looks in the title, description, deadline, estimate,
-                          # time spent — not in what --state and friends narrow by
+cairn task search spec    # looks in the title, description, steps, deadline,
+                          # estimate, time spent — not in what --state and friends narrow by
 cairn task show 1
 cairn task delete 1 --yes
 cairn task delete 1 --also 4 --yes   # several in one act: all of them, or none
@@ -72,12 +72,32 @@ cairn task unarchive 1           # back on the board
 | `--deadline` | a day: `2026-09-01` |
 | `--estimate` | a duration: `90m`, `1h30m`, `2h` — read back as `1h30m`. Kept to the second, so anything finer is refused rather than rounded away |
 | `--spent` | the time spent, which is the time the task was in focus and the time added by hand. `+30m` adds time by hand today, `-15m` takes some back, and given plainly it sets the whole, the difference added today. It never falls below nothing, and a minute begun counts whole |
-| `--parent` | the number of the task this one hangs under. One level only: a sub-task carries none of its own. Given empty, it sets the task free |
-| `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose. A sub-task never carries one |
+| `--steps` | the steps the task is split into, one a line: `[ ] its title` for one to do, `[x] its title` for one done, in their order; `-` reads them from standard input. On `edit` they replace the steps it had, and given empty it keeps none |
+| `--objective` | the number of an objective this task serves; `+4` adds one, `-1` takes one away. Given empty, it sets the task loose |
 
-A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. A description is several lines if it likes, but nothing a terminal would read as an instruction — an escape, a bell — gets in, and a label is one line like a title. A description too long to type is read from standard input, named as `-`: `cairn task new "Write the spec" --desc - < notes.md`. Given empty, an option clears what was there. `task show` says since when a task has stood in its column — `in todo since 2026-09-26 · 9 days`, `in_column_since` to a machine — read off what was done to it. Deleting a task carrying sub-tasks
-deletes them with it: a part goes with the work it belongs to. Add `--json` to any command to be answered as a
+A title is one line: a line break or a tab in it is refused, since neither survives a listing or a card. A description is several lines if it likes, but nothing a terminal would read as an instruction — an escape, a bell — gets in, and a label is one line like a title. A description too long to type is read from standard input, named as `-`: `cairn task new "Write the spec" --desc - < notes.md`. Given empty, an option clears what was there. `task show` says since when a task has stood in its column — `in todo since 2026-09-26 · 9 days`, `in_column_since` to a machine — read off what was done to it. Deleting a task
+deletes its steps with it. Add `--json` to any command to be answered as a
 machine — including when it refuses.
+
+## Steps
+
+A task is split into steps: a title each, done or not, in their order. A step
+is not a task — no number on the board, no column, no focus, no time, no notes —
+and it is named by its place in the task, the first being 1:
+
+```sh
+cairn step new 1 "Write the spec"           # behind the steps already there
+cairn step new 1 "Plan it" --done           # already done
+cairn step list 1                           # each with its place, done or not
+cairn step edit 1 2 --done                  # ticked; --not-done unticks it
+cairn step edit 1 2 --title "Plan the week" # renamed
+cairn step delete 1 2                       # the ones behind move up a place
+```
+
+`task show` names a task's steps and says how many are done. Putting a task in
+done while one of its steps is open is refused, naming the steps; `--yes` on
+`task edit` or `task move` puts it there and ticks them in the same act. See
+[docs/steps.md](steps.md).
 
 ## The order, and what you are working on
 
@@ -88,9 +108,8 @@ and a task given another column lands at the end of its new section.
 
 `task move` reorders inside a column and never changes it: changing column is an
 edit, and one act with two meanings is an act nobody can undo confidently. So
-moving a task behind one in another column is refused, and so is moving a
-sub-task behind a root task — a sub-task takes its place among its sisters,
-where its parent sits carrying the whole block.
+moving a task behind one in another column is refused. A task's steps move
+with it, in their own order.
 
 `task archive` archives a task without deleting it: the column it
 finished in, its trace and everything it carries stay. It takes a number or a
@@ -137,24 +156,23 @@ reaches what the other does, so each question has one way of being asked. See
 [docs/listing.md](listing.md) for what that boundary cost and bought.
 
 An objective takes the same options as a task, minus the ones that mean nothing
-to it: no `--state` column, no `--parent`, no `--spent`. Its `--state` is one of
+to it: no `--state` column, no `--steps`, no `--spent`. Its `--state` is one of
 `active` `on-hold` `reached` `dropped`, and a new objective is `active`.
 
 `objective show` works out how far along it is from what was put under it:
 
 ```
-progress  1 of 2 tasks and 0 of 1 sub-tasks are done — the objective is 33% done
+progress  1 of 2 tasks and 0 of 1 steps are done — the objective is 33% done
 ```
 
-Tasks and sub-tasks are counted apart — three tasks and four sub-tasks is never
+Tasks and their steps are counted apart — three tasks and four steps is never
 seven tasks — while the share is over all of them, since every one has to happen.
 The share is never rounded to `100%` while something is left, nor to `0%` once
-something is done. `task show` says the same thing about a task's sub-tasks.
+something is done. `task show` says the same thing about a task's steps.
 Nothing under it, nothing said.
 
-A task serves as many objectives as it actually serves, or hangs under another
-task, never both: a sub-task belongs to the task above it, and is counted
-towards that task's objectives through it. A task serving two counts in both,
+A task serves as many objectives as it actually serves, and its steps are
+counted towards them through it. A task serving two counts in both,
 which is the point — made to serve one, work that advanced two had to pick, and
 the objective it did not name then read low. An objective with tasks under it is
 not deleted. See [docs/objectives.md](objectives.md) for what serving

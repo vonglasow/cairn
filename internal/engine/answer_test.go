@@ -27,7 +27,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 	var a task.AsTold
 	a.Numbered(1)
-	a.Under(2)
+	a.Step("Plan it", true)
 	a.Serves(3)
 	a.Titled("Write the spec")
 	a.Described("in full")
@@ -39,7 +39,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Estimated(estimate)
 	a.Spent(spent)
 	built := a.Task()
-	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
+	progress := domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}
 
 	encoded, err := json.Marshal(OfTask(built, progress))
 	if err != nil {
@@ -53,7 +53,6 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 
 	want := map[string]any{
 		"number":      float64(1),
-		"parent":      float64(2),
 		"title":       "Write the spec",
 		"description": "in full",
 		"state":       string(domain.Todo),
@@ -75,15 +74,15 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	if !ok {
 		t.Fatalf("progress = %v, want an object", doc["progress"])
 	}
-	sub, ok := prog["sub_tasks"].(map[string]any)
+	sub, ok := prog["steps"].(map[string]any)
 	if !ok || sub["total"] != float64(4) || sub["done"] != float64(1) {
-		t.Errorf("progress.sub_tasks = %v, want {total:4 done:1}", prog["sub_tasks"])
+		t.Errorf("progress.steps = %v, want {total:4 done:1}", prog["steps"])
 	}
 	if _, present := prog["tasks"]; present {
 		t.Errorf("progress carries a count of tasks it does not have: %v", prog)
 	}
 
-	t.Run("a count of tasks with none under it does not carry sub-tasks too", func(t *testing.T) {
+	t.Run("a count of tasks with no step under it does not carry steps too", func(t *testing.T) {
 		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
@@ -96,8 +95,8 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		if !ok {
 			t.Fatalf("progress = %v, want an object", doc["progress"])
 		}
-		if _, present := prog["sub_tasks"]; present {
-			t.Errorf("progress carries a count of sub-tasks it does not have: %v", prog)
+		if _, present := prog["steps"]; present {
+			t.Errorf("progress carries a count of steps it does not have: %v", prog)
 		}
 	})
 
@@ -145,7 +144,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 					Description: "", Labels: []string{}, Deadline: "", Estimate: "",
 				},
 				Tasks:    []int{},
-				Progress: &domain.ProgressShape{SubTasks: &domain.Tally{Total: 4, Done: 1}, Percent: 25},
+				Progress: &domain.ProgressShape{Steps: &domain.Tally{Total: 4, Done: 1}, Percent: 25},
 			}},
 			{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
 			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
@@ -186,13 +185,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	ta.InColumn(domain.Todo)
 	ta.Carries(domain.Normal)
 	built := ta.Task()
-	progress := domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}}
-
-	sa := task.From(built)
-	sa.Numbered(2)
-	sa.Titled("Read it first")
-	sa.Under(1)
-	sub := sa.Task()
+	progress := domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}
 
 	var oa objective.AsTold
 	oa.Numbered(5)
@@ -215,14 +208,14 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		in   Answer
 		want string
 	}{
-		{"a task", TaskShow, Answer{Task: &built, Progress: progress}, task.Text(built, progress) + task.Under(nil)},
+		{"a task", TaskShow, Answer{Task: &built, Progress: progress}, task.Text(built, progress)},
 		{"an empty list of tasks says so", TaskList, Answer{Tasks: []task.Task{}}, "there is no task\n"},
-		{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, task.Tree([]task.Task{built}, task.Marks{})},
+		{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, task.Lines([]task.Task{built}, task.Marks{})},
 		{"a search that found nothing says so", TaskSearch, Answer{Matched: []task.Task{}}, "there is no task\n"},
 		{
-			"what a search found is listed flat, not as a tree",
-			TaskSearch, Answer{Matched: []task.Task{built, sub}},
-			task.Line(built) + "\n" + task.Line(sub) + "\n",
+			"what a search found is listed one a line",
+			TaskSearch, Answer{Matched: []task.Task{built}},
+			task.Line(built) + "\n",
 		},
 		{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress) + objective.Serving(nil)},
 		{"an empty list of objectives says so", ObjectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
@@ -238,7 +231,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"nothing waiting says so", MigrationApply, Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
 		{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
 		{"a sweep says how many", TaskArchive, Answer{Archived: &deleted}, "7 task(s) archived\n"},
-		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{}) + task.Under(nil)},
+		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{})},
 		{"how many were labelled", TaskLabel, Answer{Labelled: &deleted}, "7 task(s) labelled\n"},
 		{"nothing declared, nothing said", Operation{}, Answer{Tasks: []task.Task{built}}, ""},
 	}
@@ -384,29 +377,18 @@ func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 	}
 }
 
-func TestOfAnswer_carriesWhatHangsUnderATaskShown(t *testing.T) {
-	var parent task.AsTold
-	parent.Numbered(1)
-	parent.Titled("Ship it")
-	var under task.AsTold
-	under.Numbered(2)
-	under.Titled("Write the tests")
-	under.Under(1)
-	under.InColumn(domain.Done)
-
-	shown := parent.Task()
-	said, ok := Of(TaskShow, Answer{
-		Task:  &shown,
-		Under: []task.Task{under.Task()},
-	}).(Task)
+func TestOfAnswer_carriesTheStepsOfATaskShown(t *testing.T) {
+	var a task.AsTold
+	a.Numbered(1)
+	a.Titled("Ship it")
+	a.Step("Write the tests", true)
+	shown := a.Task()
+	said, ok := Of(TaskShow, Answer{Task: &shown}).(Task)
 	if !ok {
 		t.Fatalf("OfAnswer gave %T, want a Task", Of(TaskShow, Answer{Task: &shown}))
 	}
-	if len(said.SubTasks) != 1 {
-		t.Fatalf("SubTasks = %+v, want the one hanging under it", said.SubTasks)
-	}
-	if said.SubTasks[0].Number != 2 || said.SubTasks[0].State != string(domain.Done) {
-		t.Errorf("SubTasks[0] = %+v, want task 2 done", said.SubTasks[0])
+	if len(said.Steps) != 1 || said.Steps[0] != (task.Step{Title: "Write the tests", Done: true}) {
+		t.Errorf("Steps = %+v, want the one done", said.Steps)
 	}
 }
 

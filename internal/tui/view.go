@@ -310,7 +310,7 @@ func (b Board) question() string {
 			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
 	}
 	if b.finishing != nil {
-		return " " + b.skin.Title.Render("put task "+b.finishing.In.Given["number"]+" in done, with what is open under it?") + "  " +
+		return " " + b.skin.Title.Render("put task "+b.finishing.In.Given["number"]+" in done, ticking its steps?") + "  " +
 			b.bar(b.offer("⏎", "finish them all"), b.offer("esc", "keep them as they are"))
 	}
 	what, number := "task", b.task

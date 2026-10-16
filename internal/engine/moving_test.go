@@ -47,31 +47,34 @@ func TestFocus_isNeverHeldByATaskInDone(t *testing.T) {
 	}
 }
 
-func TestDone_confirmedFinishesWhatHangsUnderIt(t *testing.T) {
+func TestDone_confirmedTicksEveryStep(t *testing.T) {
 	path := storeAt(t, "ship it")
 	for _, title := range []string{"write the spec", "write the docs"} {
-		if _, err := Do(TaskNew, path, given("title", title, "parent", "1")); err != nil {
+		if _, err := Do(StepNew, path, given("number", "1", "title", title)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	_, err := Do(TaskEdit, path, given("number", "1", "state", "done"))
-	if !errors.Is(err, ErrSubTaskStillOpen) || !strings.Contains(err.Error(), "--yes") {
+	_, err := Do(TaskMove, path, given("number", "1", "state", "done", "first", "true"))
+	if !errors.Is(err, ErrStepStillOpen) || !strings.Contains(err.Error(), "--yes") {
 		t.Fatalf("unconfirmed: %v, want a refusal saying how to confirm", err)
 	}
-	if _, err := Do(TaskEdit, path, Agreed(given("number", "1", "state", "done"))); err != nil {
+	if _, err := Do(TaskMove, path, Agreed(given("number", "1", "state", "done", "first", "true"))); err != nil {
 		t.Fatalf("confirmed: %v", err)
 	}
-	for _, n := range []string{"1", "2", "3"} {
-		shown, err := Do(TaskShow, path, given("number", n))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if state := factsOf(*shown.Task).State; state != "done" {
-			t.Errorf("task %s is %s, want done", n, state)
+	shown, err := Do(TaskShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state := factsOf(*shown.Task).State; state != "done" {
+		t.Errorf("task 1 is %s, want done", state)
+	}
+	for _, step := range factsOf(*shown.Task).Steps {
+		if !step.Done {
+			t.Errorf("step %q is not done", step.Title)
 		}
 	}
 	if !TaskMove.Finishes || !TaskEdit.Finishes {
-		t.Error("a move or an edit into done does not say it may finish what hangs under the task")
+		t.Error("a move or an edit into done does not say it may tick the task's steps")
 	}
 }
 

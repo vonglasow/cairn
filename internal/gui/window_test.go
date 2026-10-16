@@ -620,15 +620,11 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 7, Title: "Write the spec", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
-		w = w.Key("tab")
-	}
-	open := w.Key("enter")
+	open := onTheObjectives(w)
 	if open.Screen() != OnChoosing {
 		t.Fatalf("the list did not open: %v", open.Screen())
 	}
-	if got := Heads(open); got != "a parent for task 7" {
+	if got := Heads(open); got != "objectives for task 7" {
 		t.Errorf("the list is headed %q", got)
 	}
 	if got := HeadsOn(open, OnForm); got != "task 7 · Write the spec" {
@@ -675,13 +671,10 @@ func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
 	w.snap = engine.Snapshot{
-		Cards: []engine.Card{card(1, "Write the spec", "todo"), card(2, "Ship it", "todo")},
+		Cards: []engine.Card{card(1, "Write the spec", "todo")},
+		Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}},
 	}
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "parent" {
-		w = w.Key("tab")
-	}
-	w = w.Key("enter")
+	w = onTheObjectives(w)
 	if w.Screen() != OnChoosing {
 		t.Fatalf("the list did not open: %v", w.Screen())
 	}
@@ -725,8 +718,7 @@ func TestEveryBarCanBePulled(t *testing.T) {
 	cards := []engine.Card{{Number: 1, Title: "Ship it", State: "todo",
 		Description: strings.Repeat("une ligne de description de plus ", 40)}}
 	for i := range 6 {
-		cards = append(cards, engine.Card{
-			Number: i + 2, Title: fmt.Sprintf("Part %d", i+1), State: "todo", Parent: 1})
+		cards[0].Steps = append(cards[0].Steps, engine.Part{Number: i + 1, Title: fmt.Sprintf("Step %d", i+1)})
 	}
 	w := New(f, 1200, 800)
 	w.snap = engine.Snapshot{Cards: cards}
@@ -934,21 +926,6 @@ func TestAScrollPastTheEndIsReadAsTheEnd(t *testing.T) {
 	w.saying = 40
 	if got := w.Saying(); got != 0 {
 		t.Fatalf("a scroll of 40 on a description of one line reads as %d", got)
-	}
-}
-
-func TestTheBoxUnderATaskCountsWhatIsLeft(t *testing.T) {
-	w := holding(newFake(),
-		engine.Card{Number: 1, Title: "Ship it", State: "todo"},
-		engine.Card{Number: 2, Title: "A", State: "done", Parent: 1},
-		engine.Card{Number: 3, Title: "B", State: "todo", Parent: 1},
-		engine.Card{Number: 4, Title: "C", State: "todo", Parent: 1})
-	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
-	if got := w.UnderHead(); !strings.Contains(got, "2 to do · 1 done") {
-		t.Fatalf("the box under the task is headed %q", got)
-	}
-	if got := w.Under()[0].Number; got != 3 {
-		t.Fatalf("the first part shown is %d, want the first one left, 3", got)
 	}
 }
 

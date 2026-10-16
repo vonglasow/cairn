@@ -515,22 +515,22 @@ func TestSavingHandsTheWindowBackAndARefusalGivesItBack(t *testing.T) {
 	}
 }
 
-func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
+func TestTheStepsOfATaskAreEditedInItsForm(t *testing.T) {
 	w := newWorld(t)
 	w.reset()
 	if err := w.addTask("Ship it", "", "", 0); err != nil {
 		t.Fatal(err)
 	}
-	if err := w.givens().IAddedATaskHangingUnderTask("Relire l'ADR", 1); err != nil {
+	if err := w.givens().IAddedTheStepToTask("Relire l'ADR", 1, false); err != nil {
 		t.Fatal(err)
 	}
 	w.open()
 	w.press("i")
 	w.press("e")
-	if said := w.b.form.valueOf("parts"); said != "#2 [ ] Relire l'ADR" {
+	if said := w.b.form.valueOf("steps"); said != "#1 [ ] Relire l'ADR" {
 		t.Fatalf("the form opened holding %q", said)
 	}
-	w.b.form = w.b.form.typedInto("parts", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
+	w.b.form = w.b.form.typedInto("steps", "#1 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
 	model, cmd := w.b.save()
 	w.b = model.(Board)
 	if cmd != nil {
@@ -539,19 +539,20 @@ func TestThePartsOfATaskAreEditedInItsForm(t *testing.T) {
 	if err := w.lookAgain(); err != nil {
 		t.Fatal(err)
 	}
-	parts := engine.Hanging(w.b.snap.Cards, 1)
-	if len(parts) != 2 {
-		t.Fatalf("the task carries %d parts, want 2", len(parts))
+	c, _ := w.b.snap.Card(1)
+	steps := engine.Hanging(c)
+	if len(steps) != 2 {
+		t.Fatalf("the task carries %d steps, want 2", len(steps))
 	}
-	states := map[string]string{}
-	for _, part := range parts {
-		states[part.Title] = part.State
+	done := map[string]bool{}
+	for _, step := range steps {
+		done[step.Title] = step.Done
 	}
-	if states["Relire l'ADR 0014"] != "done" {
-		t.Errorf("the part that was ticked is %q", states["Relire l'ADR 0014"])
+	if !done["Relire l'ADR 0014"] {
+		t.Errorf("the step that was ticked is not done: %v", steps)
 	}
-	if states["Rédiger la section Flux"] != "todo" {
-		t.Errorf("the part that was named is %q", states["Rédiger la section Flux"])
+	if done["Rédiger la section Flux"] {
+		t.Errorf("the step that was named is done: %v", steps)
 	}
 }
 

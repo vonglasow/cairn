@@ -73,7 +73,7 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	if got := domain.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
@@ -126,7 +126,7 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 
 func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"})
 	shot := drawn(t, w)
 	for i, day := range engine.MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
@@ -146,7 +146,7 @@ func TestAFormAddingIsNamedNew(t *testing.T) {
 	if got := Heads(w); got != "a deadline for the new task — October 2026" {
 		t.Errorf("the calendar of a task being added is headed %q", got)
 	}
-	w.form = editing(engine.Card{Number: 4, Title: "Ship"}, nil)
+	w.form = editing(engine.Card{Number: 4, Title: "Ship"})
 	if got := Heads(w); got != "a deadline for task 4 — October 2026" {
 		t.Errorf("the calendar of task 4 is headed %q", got)
 	}
@@ -235,7 +235,7 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"}, nil)
+	w.form = editing(engine.Card{Number: 1, Title: "A"})
 	shot, skin := drawn(t, w), Dark()
 	for _, arrow := range []Box{MonthBefore(w.CalendarBox()), MonthAfter(w.CalendarBox())} {
 		chip := Box{X: arrow.X + 2, Y: arrow.Y, W: arrow.W - 4, H: 1}
@@ -278,9 +278,9 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	}
 }
 
-func TestACalendarOverATaskWithPartsIsDrawn(t *testing.T) {
-	w := holding(newFake(), card(1, "Ship it", "todo"),
-		engine.Card{Number: 2, Title: "Draft the columns", State: "todo", Parent: 1})
+func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo",
+		Steps: []engine.Part{{Number: 1, Title: "Draft the columns"}}})
 	w.chosen = 1
 	w = w.Edit()
 	for i, field := range w.Form().Fields() {
@@ -293,7 +293,7 @@ func TestACalendarOverATaskWithPartsIsDrawn(t *testing.T) {
 		t.Fatalf("the deadline left the window on %v", w.Screen())
 	}
 	if parts := w.PartsTicked(); len(parts) != 1 {
-		t.Fatalf("under the calendar the parts are drawn as %+v", parts)
+		t.Fatalf("under the calendar the steps are drawn as %+v", parts)
 	}
 	drawn(t, w)
 }

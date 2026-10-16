@@ -48,8 +48,10 @@ func (a *AsTold) Estimated(d time.Duration) { a.c.Estimate = d }
 // Spent is told the time already spent on the task.
 func (a *AsTold) Spent(d time.Duration) { a.c.Spent = d }
 
-// Under is told the task the task hangs under.
-func (a *AsTold) Under(n int) { a.c.Parent = n }
+// Step is told one more of the task's steps, behind the ones already told.
+func (a *AsTold) Step(title string, done bool) {
+	a.c.Steps = append(a.c.Steps, Step{Title: title, Done: done})
+}
 
 // Serves adds an objective the task serves.
 func (a *AsTold) Serves(n int) { a.c.Objectives = append(a.c.Objectives, n) }

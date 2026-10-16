@@ -5,7 +5,7 @@ Read this before adding a package or a command.
 ## A notion keeps its rules, and hands over its facts
 
 A task's state is its own — no exported field — and every rule about it lives
-on it: whether it may hang under another, archive, finish, serve an objective.
+on it: whether it may archive, finish while a step is open, serve an objective.
 What it carries it hands over as one plain record, `task.Carried`, and `Made`
 turns a record back into a task. The card a person reads, the shape a machine
 reads, the row the store keeps, what a search looks in and the tally of what is
@@ -110,8 +110,9 @@ an agent without a line being written twice, and "one tool per command" is true
 by construction rather than by a test.
 
 The description sits with the engine and not with the notion it names, and that
-is deliberate: `task show`'s work is three readings — the task, what hangs
-under it, how far along it is — orchestrated. It does not talk about a task, it
+is deliberate: `task show`'s work is three readings — the task with its
+steps, how far along it is, since when it has stood in its column —
+orchestrated. It does not talk about a task, it
 ties three answers together, and tying things together is what the engine is
 for.
 
@@ -162,7 +163,8 @@ them: in the default journal a reader blocks a writer, so writers starve. In
 WAL the same six take fifty milliseconds.
 
 **An operation that writes is one transaction.** A task is several rows — the
-task, its labels, what blocks it, what it serves, its place among its sisters —
+task, its labels, what blocks it, what it serves, its steps, its place in its
+column —
 and what was done to it is one more. The engine runs every operation that
 writes inside one transaction, so they are kept together or not at all, and the
 transaction begins as a write: two cairns adding to one column at once take
@@ -378,25 +380,26 @@ error added anywhere fails that test until somebody has said which kind of
 answer it is. Nineteen were missing from the old list the day it was first
 checked.
 
-## A part of the work is not work in its own right
+## A step is not work in its own right
 
-A sub-task is a line of a list its task owns: a title, and whether it is done.
-It keeps a number and a row of its own in the store — so the trace of it is the
-trace of anything else, and `task show 2` still answers — and it is reachable on
-neither board except in the form of the task it hangs under.
+A step is a line of a list its task owns: a title, and whether it is done
+(`task.Step`). It has no number, no row among the tasks and no trace of its
+own; it is kept in a table of its own, `steps`, by its task's number and its
+place, and read and written with its task — as one of the links a task carries,
+the way its labels and objectives are. A change to the steps is a change to the
+task, recorded in the task's trace, inside the task's transaction.
 
 Three rules follow, and they are one rule seen from three sides:
 
-- it stands in `todo` or `done` and nowhere else. A part being "blocked" is its
-  task being blocked; a part being "current" is its task being worked on;
-- it is archived with the work it belongs to, and it goes when that work
-  is deleted. A deletion that refused while a part was there could not be
-  carried out at all once the boards stopped drawing parts;
+- it is done or not done and nothing else. A step being "blocked" is its task
+  being blocked; a step being "current" is its task being worked on;
+- it goes where its task goes — archived, brought back, moved and deleted with
+  it — and is never reached on its own by a board, a listing or a sweep;
 - what it carries beyond a title and a tick is not asked for. Measured on a
-  store of 219 tasks: its 49 parts were done 47 times and todo twice, and
-  carried no deadline, no label, no priority, no objective and no blocker.
+  store of 219 tasks: the 49 sub-tasks that came before steps were done 47
+  times and todo twice, and carried no deadline, no label, no priority, no
+  objective and no blocker.
 
-The command line and the MCP server keep `--parent`, so an agent can still cut a
-task into pieces. What they do not have is a way to reach a part that is not a
-way to reach any task, which is the point: the constraint is on where a part is
-*edited*, not on what the engine will hold.
+The rule a task keeps about them is the done rule: `MayFinishAs` refuses a task
+put in done while a step is open, and `Ticked` is what confirming does to its
+steps. See [steps.md](steps.md) for why steps replaced sub-tasks.

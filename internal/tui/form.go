@@ -184,7 +184,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(engine.EditFields(held, b.snap.Cards), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.EditFields(held), b.formWidth(), b.formHeight(), b.skin)
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()

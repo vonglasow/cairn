@@ -21,25 +21,9 @@ func (b Board) saveTask(form Form) tea.Cmd {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}
 		}
-		if err := b.savingParts(form); err != nil {
-			return Looked{Err: err}
-		}
 		found, err := engine.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
-}
-
-func (b Board) savingParts(form Form) error {
-	said, holds := form.held["parts"]
-	if !holds || form.Adding {
-		return nil
-	}
-	for _, gone := range engine.PartsGone(*said, b.snap.Cards, form.Number) {
-		if _, err := b.work.Ask(engine.TaskDelete, engine.Agreed(engine.Numbered(gone))); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Operation, engine.Input) {

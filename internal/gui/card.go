@@ -68,25 +68,25 @@ func FocusEye(c engine.Card, number Box, numberWide int) (Box, bool) {
 // Numbered is a card's number line: its number.
 func Numbered(c engine.Card) string { return strconv.Itoa(c.Number) }
 
-// Carried is what a card says of what it holds but does not show: that there is a description to read, and how far the parts under it have got.
+// Carried is what a card says of what it holds but does not show: that there is a description to read, and how far its steps have got.
 func Carried(c engine.Card, g Glyphs) string {
 	said := ""
 	if c.Described() {
 		said = g.Described
 	}
 	if done := c.PartsDone(); done != "" {
-		said = strings.TrimSpace(said + " " + g.SubTasks + " " + done)
+		said = strings.TrimSpace(said + " " + g.Steps + " " + done)
 	}
 	return said
 }
 
 // Glyphs are the marks a card writes.
 type Glyphs struct {
-	Described, SubTasks string
+	Described, Steps string
 }
 
 // Marks is the one set a window draws.
-func Marks() Glyphs { return Glyphs{Described: "≡", SubTasks: "▪"} }
+func Marks() Glyphs { return Glyphs{Described: "≡", Steps: "▪"} }
 
 // Counted is what an objective's card says of the work under it: how many tasks serve it, how many are done, and what share of it that is.
 func Counted(g engine.Goal) string {
@@ -96,13 +96,16 @@ func Counted(g engine.Goal) string {
 	return g.Counted() + " · " + strconv.Itoa(g.Percent()) + "%"
 }
 
-// SubLine is what one part of the work reads on its tile: its number, then its title, cut to the room there is.
+// SubLine is what a task serving an objective reads on its tile: its number, then its title, cut to the room there is.
 func SubLine(c engine.Card) string {
 	if c.Number == 0 {
 		return c.Title
 	}
 	return "#" + strconv.Itoa(c.Number) + "  " + c.Title
 }
+
+// StepLine is what the tile of a step says: its title alone, since the place it is named by is no task's number.
+func StepLine(c engine.Card) string { return c.Title }
 
 // Due is what a card says about when it is wanted, and whether that day has passed.
 func Due(c engine.Card, now time.Time) (said string, late bool) {

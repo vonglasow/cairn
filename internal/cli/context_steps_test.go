@@ -58,10 +58,6 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^I moved task (\d+) under task (\d+)$`, func(n, parent int) error {
-		return w.Seed(fmt.Sprintf(`cairn task edit %d --parent %d`, n, parent))
-	})
-
 	sc.Step(`^the two places are not the same$`, func() error {
 		if len(said) != 2 {
 			return fmt.Errorf("%d places were said, want 2: %v", len(said), said)

@@ -30,7 +30,7 @@ func TestTheTwoSetsSayTheSameThings(t *testing.T) {
 		"reached":    {nerd.Reached, plain.Reached},
 		"dropped":    {nerd.Dropped, plain.Dropped},
 		"described":  {nerd.Described, plain.Described},
-		"sub-tasks":  {nerd.SubTasks, plain.SubTasks},
+		"steps":      {nerd.Steps, plain.Steps},
 		"label":      {nerd.Label, plain.Label},
 		"in the way": {nerd.InTheWay, plain.InTheWay},
 	} {

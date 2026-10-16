@@ -1,36 +1,51 @@
 package store
 
-import "fmt"
+import (
+	"fmt"
+
+	"cairn/internal/task"
+)
+
+type linked struct {
+	labels               []string
+	blockers, objectives []int
+	steps                []task.Step
+}
 
 type links interface {
-	of(number int) (labels []string, blockers, objectives []int, err error)
+	of(number int) (linked, error)
 }
 
 type askedEach struct{ s *Store }
 
-func (a askedEach) of(number int) ([]string, []int, []int, error) {
+func (a askedEach) of(number int) (linked, error) {
 	labels, err := a.s.labelsOf(taskLabels, number)
 	if err != nil {
-		return nil, nil, nil, err
+		return linked{}, err
 	}
 	blockers, err := a.s.blockersOn(number)
 	if err != nil {
-		return nil, nil, nil, err
+		return linked{}, err
 	}
 	objectives, err := a.s.objectivesServedBy(number)
 	if err != nil {
-		return nil, nil, nil, err
+		return linked{}, err
 	}
-	return labels, blockers, objectives, nil
+	steps, err := a.s.stepsOf(number)
+	if err != nil {
+		return linked{}, err
+	}
+	return linked{labels: labels, blockers: blockers, objectives: objectives, steps: steps}, nil
 }
 
 type readAtOnce struct {
 	labels            map[int][]string
 	blockers, serving map[int][]int
+	steps             map[int][]task.Step
 }
 
-func (r readAtOnce) of(number int) ([]string, []int, []int, error) {
-	return r.labels[number], r.blockers[number], r.serving[number], nil
+func (r readAtOnce) of(number int) (linked, error) {
+	return linked{labels: r.labels[number], blockers: r.blockers[number], objectives: r.serving[number], steps: r.steps[number]}, nil
 }
 
 func (s *Store) everyLink() (readAtOnce, error) {
@@ -46,7 +61,11 @@ func (s *Store) everyLink() (readAtOnce, error) {
 	if err != nil {
 		return readAtOnce{}, fmt.Errorf("reading what the tasks serve: %w", err)
 	}
-	return readAtOnce{labels: labels, blockers: blockers, serving: serving}, nil
+	steps, err := s.everyStep()
+	if err != nil {
+		return readAtOnce{}, err
+	}
+	return readAtOnce{labels: labels, blockers: blockers, serving: serving, steps: steps}, nil
 }
 
 func pairs[T any](s *Store, query string) (map[int][]T, error) {

@@ -55,12 +55,19 @@ A **filter** is the opposite: `task list --objective 9` answers nothing. A filte
 says what is wanted, where an attachment writes a link, and a link to nothing is
 a fact that was never true. See [listing.md](listing.md).
 
-## The sub-task rule is untouched
+## A task's steps count towards what it serves
 
-A sub-task still serves no objective, and a set does not soften that. It belongs
-to the task above it and is counted towards that task's objectives through it —
-an objective it served alone would be one its parent might have nothing to do
-with.
+A step serves nothing of its own — it carries no objectives, being no task —
+and it counts towards every objective its task serves. `objective show` counts
+the steps apart from the tasks and both in the share: a task left open with its
+one step ticked reads "0 of 1 tasks and 1 of 1 steps are done", half of the
+objective (`@objective-progress-counts-steps`). Counting the task alone would
+leave an objective at nothing while the work under it was half done; counting
+its steps as tasks would say there were more tasks than anybody wrote.
+
+It replaces the rule that a sub-task served no objective: a sub-task was a task
+that could have been given one, and had to be refused it; a step cannot carry
+one at all. See [steps.md](steps.md).
 
 ## What was archived still counts
 

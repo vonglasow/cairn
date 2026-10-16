@@ -28,7 +28,7 @@ type Glyphs struct {
 	Reached   string
 	Dropped   string
 	Described string
-	SubTasks  string
+	Steps     string
 	Label     string
 	InTheWay  string
 	Archived  string
@@ -43,7 +43,7 @@ var nerd = Glyphs{
 	Reached:   "",
 	Dropped:   "",
 	Described: "",
-	SubTasks:  "",
+	Steps:     "",
 	Label:     "",
 	InTheWay:  "",
 }
@@ -57,7 +57,7 @@ var plain = Glyphs{
 	Reached:   "✓",
 	Dropped:   "✕",
 	Described: "≡",
-	SubTasks:  "▪",
+	Steps:     "▪",
 	Label:     "⚑",
 	InTheWay:  "↳",
 	Archived:  "▭",

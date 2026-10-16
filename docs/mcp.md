@@ -400,11 +400,10 @@ column. So the answers change by one rule:
 
 **A field that has nothing to say is there, empty.** A task's row carries all
 its fields every time; one that names nothing says so with its empty value —
-`0` for a parent when the task is its own, an empty string for a deadline or an
-estimate, an empty list or `null` for labels, blockers and objectives — and
-each field's description in the schema says which. What a whole answer may
-leave out — the context, the sub-tasks, since when a task has stood in its
-column — is left out entirely.
+an empty string for a deadline or an estimate, an empty list or `null` for
+labels, blockers, objectives and steps — and each field's description in the
+schema says which. What a whole answer may leave out — the context, since when
+a task has stood in its column — is left out entirely.
 
 **Arguments are named the way the command line names them, answers the way
 JSON does.** An argument is `due-before`, `with-archived`: it is the same

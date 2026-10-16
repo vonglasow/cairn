@@ -20,8 +20,8 @@ func openTask(t *testing.T) (Window, *fake) {
 	f.acts = []trace.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
 		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
-			Description: "Deux colonnes et une bande", Context: "/vault/1"},
-		engine.Card{Number: 2, Title: "Relire l'ADR", State: "todo", Parent: 1})
+			Description: "Deux colonnes et une bande", Context: "/vault/1",
+			Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())

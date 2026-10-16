@@ -21,6 +21,7 @@ already said why not.
 | how long a task has sat in its column is read off the trace, never stored | the one date nothing else implies, and the trace already holds it | [ordering.md](ordering.md#what-the-store-gains) |
 | no `unblock` verb | `--blocker -3` does it, and returning to `todo` belongs to the edit | [blocking.md](blocking.md#deliberately-not-there-yet) |
 | no "what makes a task doable now" | two properties were found and the list plainly does not close | [ordering.md](ordering.md#deliberately-not-here-yet) |
+| no task hangs under another; a task is split into steps, a title and a tick each | a sub-task was a whole task for what was most often one line to tick, and its parent and sisters ran through every rule and every surface | [steps.md](steps.md#why-steps-replaced-sub-tasks) |
 | no `task next` | what it would answer is already asked plainly — `--due-before`, `--state todo`, `task focus` — and choosing among them is the person's order, which cairn does not override | this page |
 
 ## What is remembered, and what is not

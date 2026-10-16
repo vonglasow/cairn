@@ -250,41 +250,33 @@ Feature: Tasks
       When I run `cairn task list`
       Then task 1 is listed before task 2
 
-    @task-list-leaves-sub-tasks-out
-    Scenario: a listing names the work, and a sub-task is part of one
+    @task-list-leaves-steps-out
+    Scenario: a listing names the tasks, never their steps
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
+      And I added the step "Write the tests" to task 1
       When I run `cairn task list`
       Then it lists 1 task
       And it lists task 1 titled "Ship it"
-      And it says nothing of task 2
+      And it does not mention "Write the tests"
 
-    @task-list-json-carries-sub-tasks
-    Scenario: a machine reading the listing is given them all
+    @task-show-names-its-steps
+    Scenario: a task's steps are named where the task is shown, done or not
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task list --json`
-      Then it writes JSON to standard output
-      And it carries 2 tasks
-
-    @task-show-names-what-hangs-under-it
-    Scenario: what hangs under a task is named where the task is shown
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I added a task titled "Write the docs" with the parent "1"
-      And I edited task 2 with the state "done"
+      And I added the step "Write the tests" to task 1
+      And I added the step "Write the docs" to task 1
+      And I ticked step 1 of task 1
       When I run `cairn task show 1`
-      Then it names task 2 as done
-      And it names task 3 as not done
+      Then it names the step "Write the tests" as done
+      And it names the step "Write the docs" as not done
 
-    @task-show-json-carries-what-hangs-under-it
-    Scenario: a machine asking about a task is told what hangs under it
+    @task-show-json-carries-its-steps
+    Scenario: a machine asking about a task is given its steps
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I edited task 2 with the state "done"
+      And I added the step "Write the tests" to task 1
+      And I ticked step 1 of task 1
       When I run `cairn task show 1 --json`
       Then it writes JSON to standard output
-      And it carries task 2 under it, done
+      And it carries the step "Write the tests", done
 
   Rule: A listing can be narrowed to what is wanted
 
@@ -340,25 +332,6 @@ Feature: Tasks
       When I run `cairn task list --label "SP26_20"`
       Then it lists 1 task
       And it lists task 1 titled "Write the spec"
-
-    @task-list-narrowed-is-flat
-    Scenario: a narrowed listing answers what matched, not where it sits
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I edited task 2 with the state "todo"
-      When I run `cairn task list --state todo`
-      Then it lists 1 task
-      And it lists task 2 titled "Write the tests"
-      And task 2 hangs under nothing in the listing
-
-    @task-list-narrowed-keeps-the-parent-out
-    Scenario: a parent that does not carry it is not brought along
-      Given I added a task titled "Ship it" with the state "todo"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I edited task 2 with the state "done"
-      When I run `cairn task list --state todo`
-      Then it lists 1 task
-      And it lists task 1 titled "Ship it"
 
     @task-list-narrowed-by-a-column-that-is-not-one
     Scenario: narrowing by something no task can be in is refused
@@ -535,13 +508,6 @@ Feature: Tasks
       When I run `cairn task search 2`
       Then it lists task 2 titled "Ship it"
 
-    @task-search-by-a-number-leaves-what-hangs-under-it-alone
-    Scenario: looking for a number does not answer what hangs under it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      When I run `cairn task search 1`
-      Then it lists 1 task
-
     @task-search-narrowed
     Scenario: a search can be narrowed by what a listing narrows by
       Given I added a task titled "Write the spec" with the state "todo"
@@ -631,13 +597,13 @@ Feature: Tasks
       When I run `cairn task search "the spec"`
       Then it lists 1 task
 
-    @task-search-reaches-a-sub-task
-    Scenario: a sub-task is looked for like any other, and listed like one
+    @task-search-reaches-a-step
+    Scenario: a word found only in a step answers the task it belongs to
       Given I added a task titled "Write the spec"
-      And I added a task titled "Read it first" with the parent "1"
+      And I added the step "Read it first" to task 1
       When I run `cairn task search first`
-      Then it lists task 2 titled "Read it first"
-      And task 2 hangs under nothing in the listing
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
 
     @task-search-finds-nothing
     Scenario: looking for what is not there says so
@@ -888,14 +854,6 @@ Feature: Tasks
       Then `cairn task show 3` says task 1 blocks it
       And `cairn task show 3` says task 2 blocks it
       And `cairn task show 3` says "the client's answer" blocks it
-
-    @task-blocker-a-sub-task
-    Scenario: a sub-task blocks like anything else
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I added a task titled "Announce it"
-      When I run `cairn task edit 3 --state blocked --blocker 2`
-      Then `cairn task show 3` says task 2 blocks it
 
     @task-blocker-itself
     Scenario: a task cannot be what is blocking it
@@ -1265,17 +1223,6 @@ Feature: Tasks
       And task 1 carries the label "sprint-41"
       And task 3 does not carry the label "sprint-41"
 
-    @task-label-leaves-parts-to-their-work
-    Scenario: a part is left out, the way a sweep leaves it out
-      Given I added a task titled "Migration Jenkins" with the state "done"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I edited task 2 with the state "done"
-      When I run `cairn task label sprint-41 --state done`
-      Then it succeeds
-      And it says 1 task was labelled
-      And task 1 carries the label "sprint-41"
-      And task 2 does not carry the label "sprint-41"
-
     @task-label-keeps-what-is-already-there
     Scenario: a label is added to the ones a task already carries
       Given I added a task titled "Migration Jenkins" with the state "done"
@@ -1380,36 +1327,6 @@ Feature: Tasks
       And task 1 is archived
       And task 2 is not archived
 
-    @task-archive-leaves-parts-to-their-parent
-    Scenario: a sweep leaves what hangs under a task to the task
-      Given I added a task titled "Dépôt APP" with the state "done"
-      And I added a task titled "Préparation" with the parent "1"
-      And I edited task 2 with the state "done"
-      When I run `cairn task archive --state done --yes`
-      Then it succeeds
-      And it says 1 task were archived
-      And task 1 is archived
-      And task 2 is not archived
-
-    @task-list-leaves-parts-of-archived-work-out
-    Scenario: the parts of archived work are archived with the work
-
-      Given I added a task titled "Dépôt APP" with the state "done"
-      And I added a task titled "Préparation" with the parent "1"
-      And I edited task 2 with the state "done"
-      And I archived task 1
-      When I run `cairn task list`
-      Then it says nothing of task 2
-      And `cairn task list --archived` lists task 2 titled "Préparation"
-
-    @task-archive-a-part-on-its-own
-    Scenario: archiving a part on its own is refused, naming the work it belongs to
-      Given I added a task titled "Dépôt APP"
-      And I added a task titled "Préparation" with the parent "1"
-      When I run `cairn task archive 2`
-      Then it fails
-      And it says task 1 is what would be archived
-
     @task-archive-reaching-nothing
     Scenario: a narrowing reaching nothing says so rather than claiming a clean sweep
       Given I added a task titled "Spike Argo"
@@ -1466,283 +1383,142 @@ Feature: Tasks
       Then it fails
       And it says the task is on the board
 
-  Rule: A task can hang under another one
+  Rule: A task is split into steps, which are not tasks
 
-    @task-sub-task-takes-done
-    Scenario Outline: a sub-task is done or it is not, and takes nothing else
+    @task-step-has-no-number
+    Scenario: a step takes no number of its own
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --state <column>`
-      Then it succeeds
-      And task 2 is in the column "<column>"
+      And I added the step "Write the tests" to task 1
+      When I run `cairn task new "Announce it"`
+      Then it numbers the task 2
 
-      Examples: what a part of the work can say about itself
-        | column |
-        | done   |
-        | todo   |
-
-    @task-sub-task-refuses-a-column-of-its-own
-    Scenario Outline: a sub-task refuses the columns that say where work stands
+    @task-delete-takes-its-steps
+    Scenario: deleting a task takes its steps, and leaves the others' alone
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --state <column>`
-      Then it fails
-      And it says a sub-task is done or it is not
-
-      Examples: where the work stands is the parent's to say
-        | column   |
-        | backlog  |
-        | current  |
-        | blocked  |
-        | watching |
-        | paused   |
-
-    @task-hanging-a-task-under-another-settles-its-column
-    Scenario: a task given a parent keeps done and loses any other column
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the state "current"
-      When I run `cairn task edit 2 --parent 1`
-      Then it succeeds
-      And task 2 is in the column "todo"
-
-    @task-hanging-a-finished-task-under-another-keeps-it-done
-    Scenario: a task already done keeps being done when it is hung under one
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the state "done"
-      When I run `cairn task edit 2 --parent 1`
-      Then it succeeds
-      And task 2 is in the column "done"
-
-    @task-parent-none
-    Scenario: a task hangs under nothing unless it is told to
-      When I run `cairn task new "Ship it"`
-      Then the task has no parent
-
-    @task-parent-add
-    Scenario: a task can be added under another
-      Given I added a task titled "Ship it"
-      When I run `cairn task new "Write the tests" --parent 1`
-      Then the task carries the parent "1"
-
-    @task-parent-edit
-    Scenario: a task can be hung under another after the fact
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests"
-      When I run `cairn task edit 2 --parent 1`
-      Then the task carries the parent "1"
-
-    @task-parent-cleared
-    Scenario: a parent given empty sets the task free
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --parent ""`
-      Then the task has no parent
-
-    @task-parent-unknown
-    Scenario: hanging a task under one that does not exist is refused
-      Given I added a task titled "Ship it"
-      When I run `cairn task new "Write the tests" --parent 99`
-      Then it fails
-      And it says there is no such task
-
-    @task-parent-itself
-    Scenario: a task cannot hang under itself
-      Given I added a task titled "Ship it"
-      When I run `cairn task edit 1 --parent 1`
-      Then it fails
-      And it says a task cannot hang under itself
-
-    @task-parent-not-a-number
-    Scenario: a parent that is not a number says so
-      Given I added a task titled "Ship it"
-      When I run `cairn task new "Write the tests" --parent spec`
-      Then it fails
-      And it says a task number is expected
-
-    @task-parent-depth
-    Scenario: a sub-task cannot carry sub-tasks
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task new "Write the first one" --parent 2`
-      Then it fails
-      And it says a sub-task cannot carry sub-tasks
-
-    @task-parent-shown
-    Scenario: showing a task names what hangs under it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task show 1`
-      Then it lists task 2 titled "Write the tests"
-
-    @task-parent-listed
-    Scenario: a sub-task keeps a number of its own, and is reached by it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task show 2`
-      Then it succeeds
-      And it lists task 2 titled "Write the tests"
-
-    @task-parent-delete-takes-the-parts
-    Scenario: deleting a task takes what hangs under it
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task delete 1 --yes`
-      Then it succeeds
-      And `cairn task show 1` says there is no such task
-      And `cairn task show 2` says there is no such task
-
-    @task-parent-delete-leaves-the-rest
-    Scenario: it takes its own parts and nothing else
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
+      And I added the step "Write the tests" to task 1
       And I added a task titled "Buy a lamp"
+      And I added the step "Measure the desk" to task 2
       When I run `cairn task delete 1 --yes`
       Then it succeeds
-      And `cairn task show 3` still reports a task titled "Buy a lamp"
+      And `cairn step list 2` shows "Measure the desk"
 
-    @task-parent-survives
-    Scenario: the link outlives the command that made it
+    @task-steps-survive
+    Scenario: a task's steps outlive the command that wrote them
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
+      And I added the step "Write the tests" to task 1
       And cairn has exited
-      When I run `cairn task show 2`
-      Then the task carries the parent "1"
+      When I run `cairn task show 1`
+      Then it names the step "Write the tests" as not done
 
-    @task-parent-json
-    Scenario: the link can be read by a machine
+  Rule: A task is not done while one of its steps is open
+
+    @task-done-refused-while-a-step-is-open
+    Scenario: a task is not finished while a step of it is still open
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task show 2 --json`
-      Then it writes JSON to standard output
-      And it carries the parent 1
-
-  Rule: A task is not done while something under it is open
-
-    @task-done-refused-while-a-sub-task-is-open
-    Scenario: a parent is not finished while a sub-task is still open
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
+      And I added the step "Write the spec" to task 1
       When I run `cairn task edit 1 --state done`
       Then it fails
-      And it says task 2 is in the way
+      And it says step 1 is in the way
       And task 1 is in the column "backlog"
 
-    @task-done-with-open-parts-says-how-to-confirm
-    Scenario: refusing a parent with a sub-task open says how to finish both
+    @task-done-with-open-steps-says-how-to-confirm
+    Scenario: refusing a task with a step open says how to finish both
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
+      And I added the step "Write the spec" to task 1
       When I run `cairn task edit 1 --state done`
       Then it fails
       And it says how to confirm
 
-    @task-done-confirmed-finishes-what-hangs-under-it
-    Scenario: a parent put in done, confirmed, takes what is still open under it along
+    @task-done-confirmed-ticks-its-steps
+    Scenario: a task put in done, confirmed, ticks every step still open
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I added a task titled "Write the docs" with the parent "1"
-      And I edited task 3 with the state "done"
+      And I added the step "Write the spec" to task 1
+      And I added the step "Write the docs" to task 1
+      And I ticked step 2 of task 1
       When I run `cairn task edit 1 --state done --yes`
       Then it succeeds
       And task 1 is in the column "done"
-      And task 2 is in the column "done"
+      And every step of task 1 is done
 
-    @task-moved-to-done-confirmed-finishes-what-hangs-under-it
-    Scenario: a parent moved into done, confirmed, takes what is still open under it along
+    @task-moved-to-done-confirmed-ticks-its-steps
+    Scenario: a task moved into done, confirmed, ticks every step still open
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
+      And I added the step "Write the spec" to task 1
       When I run `cairn task move 1 --state done --first --yes`
       Then it succeeds
       And task 1 is in the column "done"
-      And task 2 is in the column "done"
+      And every step of task 1 is done
 
-    @task-done-allowed-once-they-are-all-done
-    Scenario: a parent is finished once everything under it is
+    @task-done-allowed-once-every-step-is-done
+    Scenario: a task is finished once every step of it is
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I edited task 2 with the state "done"
+      And I added the step "Write the spec" to task 1
+      And I ticked step 1 of task 1
       When I run `cairn task edit 1 --state done`
       Then it succeeds
       And task 1 is in the column "done"
 
-    @task-done-with-nothing-under-it
-    Scenario: a task nothing hangs under is finished as it always was
+    @task-done-with-no-steps
+    Scenario: a task with no steps is finished as it always was
       Given I added a task titled "Ship it"
       When I run `cairn task edit 1 --state done`
       Then it succeeds
       And task 1 is in the column "done"
 
     @task-stopped-is-not-done
-    Scenario Outline: a parent may still be stopped while a sub-task is open
+    Scenario Outline: a task may still be stopped while a step of it is open
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
+      And I added the step "Write the spec" to task 1
       When I run `cairn task edit 1 --state <stopped>`
       Then it succeeds
       And task 1 is in the column "<stopped>"
 
-      Examples: what a parent says about itself
+      Examples: what a task says about itself
         | stopped  |
         | blocked  |
         | watching |
         | paused   |
 
-  Rule: A task's parts are written with it, in one act
+  Rule: A task's steps are written with it, in one act
 
-    @task-new-with-its-parts
-    Scenario: a task is made with its parts
-      When I run `cairn task new "Ship it" --parts -` with "[ ] Write the spec" and "[x] Plan it" on standard input
+    @task-new-with-its-steps
+    Scenario: a task is made with its steps
+      When I run `cairn task new "Ship it" --steps -` with "[ ] Write the spec" and "[x] Plan it" on standard input
       Then it succeeds
-      And `cairn task show 2` shows "Write the spec"
-      And `cairn task show 3` shows "done"
+      And `cairn task show 1` names the step "Write the spec" as not done
+      And `cairn task show 1` names the step "Plan it" as done
 
-    @task-edit-with-its-parts
-    Scenario: a task's parts are renamed, ticked and added to with it
+    @task-edit-with-its-steps
+    Scenario: a task's steps are written again with it, each line a step
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      When I run `cairn task edit 1 --parts -` with "#2 [x] Write it" and "[ ] Ship the docs" on standard input
+      And I added the step "Write the spec" to task 1
+      When I run `cairn task edit 1 --steps -` with "[x] Write it" and "[ ] Ship the docs" on standard input
       Then it succeeds
-      And `cairn task show 2` shows "Write it"
-      And `cairn task show 2` shows "done"
-      And `cairn task show 3` shows "Ship the docs"
+      And `cairn task show 1` names the step "Write it" as done
+      And `cairn task show 1` names the step "Ship the docs" as not done
+      And `cairn task show 1` does not mention "Write the spec"
 
-    @task-edit-with-its-parts-deletes-none
-    Scenario: a part the lines no longer name is left where it is
+    @task-edit-with-no-steps
+    Scenario: a task written with no steps keeps none
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      When I run `cairn task edit 1 --parts -` with "[ ] Another" and "[ ] One more" on standard input
+      And I added the step "Write the spec" to task 1
+      When I run `cairn task edit 1 --steps ""`
       Then it succeeds
-      And `cairn task show 2` shows "Write the spec"
+      And `cairn task show 1` does not mention "Write the spec"
 
-    @task-edit-with-its-parts-or-none-of-them
-    Scenario: a part refused leaves every part as it was
-      Given I added a task titled "Ship it"
-      When I run `cairn task edit 1 --parts -` with "[ ] Fine" and "#99 [ ] Nowhere" on standard input
-      Then it fails
-      And it says there is no such task
-      When I run `cairn task search Fine`
-      Then it says there is no task
-
-  Rule: A task says how many of its sub-tasks are done
+  Rule: A task says how many of its steps are done
 
     @task-progress
-    Scenario: a task says how many of its sub-tasks are done
+    Scenario: a task says how many of its steps are done
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --state done`
+      And I added the step "Write the spec" to task 1
+      And I added the step "Write the tests" to task 1
+      When I run `cairn step edit 1 1 --done`
       And I run `cairn task show 1`
-      Then it says 1 of 2 sub-tasks are done
-
-    @task-progress-counts-only-done
-    Scenario: a sub-task not done is not a sub-task done
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I edited task 2 with the state "done"
-      When I run `cairn task show 1`
-      Then it says 1 of 2 sub-tasks are done
+      Then it says 1 of 2 steps are done
 
     @task-progress-of-nothing
-    Scenario: a task with nothing under it counts nothing
+    Scenario: a task with no steps counts nothing
       Given I added a task titled "Ship it"
       When I run `cairn task show 1`
       Then it does not say how much is done
@@ -1750,27 +1526,27 @@ Feature: Tasks
     @task-progress-percent
     Scenario: how much of a task is done is also given as a share
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I added a task titled "Write the tests" with the parent "1"
-      And I added a task titled "Ship the thing" with the parent "1"
-      When I run `cairn task edit 2 --state done`
+      And I added the step "Write the spec" to task 1
+      And I added the step "Write the tests" to task 1
+      And I added the step "Ship the thing" to task 1
+      When I run `cairn step edit 1 1 --done`
       And I run `cairn task show 1`
       Then it says the task is 33% done
 
     @task-json-progress
-    Scenario: how many sub-tasks are done can be read by a machine
+    Scenario: how many steps are done can be read by a machine
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --state done`
+      And I added the step "Write the spec" to task 1
+      And I added the step "Write the tests" to task 1
+      When I run `cairn step edit 1 1 --done`
       And I run `cairn task show 1 --json`
       Then it writes JSON to standard output
-      And it carries 1 of 2 sub-tasks done
+      And it carries 1 of 2 steps done
       And it carries the share 50
       And it carries no count of tasks
 
     @task-json-progress-of-nothing
-    Scenario: a task with nothing under it carries no progress
+    Scenario: a task with no steps carries no progress
       Given I added a task titled "Ship it"
       When I run `cairn task show 1 --json`
       Then it writes JSON to standard output

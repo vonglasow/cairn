@@ -4,7 +4,7 @@
 #   scripts/fixtures.sh [folder]
 #
 # Makes a store under folder (/tmp/cairn-fixtures when none is named) holding
-# objectives in every standing and tasks in every column, parts, blockers, a
+# objectives in every standing and tasks in every column, steps, blockers, a
 # deadline past and one to come, two tasks in focus and two archived — then
 # opens the window on it. Run again, it starts from nothing.
 #
@@ -54,13 +54,13 @@ cairn objective new "Move to Postgres" --state reached --priority normal
 cairn objective new "Port to mobile" --state dropped --priority low
 
 cairn task new "Write the packaging spec" --state current --priority high --deadline "$(day -1)" --estimate 8h --spent 3h --label backend --label sprint-172 --objective 1 --desc "Three ADRs to read before starting."
-cairn task new "Read ADR 0014" --parent 1 --state todo --estimate 2h --spent 1h
-cairn task new "Settle the multi-chart question" --parent 1 --state "done" --estimate 1h --spent 4h
-cairn task new "Write the Flows section" --parent 1 --state todo
+cairn step new 1 "Read ADR 0014"
+cairn step new 1 "Settle the multi-chart question" --done
+cairn step new 1 "Write the Flows section"
 
 cairn task new "Rework the migrations" --state current --priority critical --deadline "$(day -7)" --estimate 2h --spent 9h --label store --objective 2
-cairn task new "Back up before rolling back" --parent 5 --state "done"
-cairn task new "Test a rollback on an empty store" --parent 5 --state todo
+cairn step new 2 "Back up before rolling back" --done
+cairn step new 2 "Test a rollback on an empty store"
 
 cairn task new "The client's answer on quotas" --state blocked --because "waiting on the client" --priority high --label product --objective 1
 cairn task new "Review PR 31745" --state watching --blocker 1 --priority normal --label backend
@@ -76,11 +76,11 @@ cairn task new "Switch to Postgres 16" --state "done" --priority high --label st
 cairn task new "Drop the old schema" --state "done" --label store --objective 4
 cairn task new "iOS prototype" --state "done" --priority low --objective 5
 
-cairn task archive 17
-cairn task archive 18
+cairn task archive 12
+cairn task archive 13
 
 cairn task focus 1
-cairn task focus 5
+cairn task focus 2
 
 if [ -z "${FIXTURES_TRACE:-}" ]; then
   exec go run "$here/cmd/cairn" gui

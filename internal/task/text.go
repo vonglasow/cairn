@@ -25,10 +25,6 @@ func Text(t Task, p domain.Progress) string {
 	for _, n := range c.Objectives {
 		serves = append(serves, domain.Ref(n))
 	}
-	parent := ""
-	if c.Parent != NoParent {
-		parent = fmt.Sprintf("%d", c.Parent)
-	}
 	rows = append(rows,
 		domain.Fact{Key: "priority", Value: string(c.Priority)},
 		domain.Fact{Key: "description", Value: c.Description},
@@ -37,29 +33,28 @@ func Text(t Task, p domain.Progress) string {
 		domain.Fact{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
 		domain.Fact{Key: "estimate", Value: domain.FormatDuration(c.Estimate)},
 		domain.Fact{Key: "time spent", Value: domain.FormatDuration(c.Spent)},
-		domain.Fact{Key: "parent", Value: parent},
 		domain.Fact{Key: "objectives", Value: strings.Join(serves, ", ")},
 		domain.Fact{Key: "progress", Value: p.Line("the task")},
 	)
 	return domain.Card(c.Number, c.Title, rows)
 }
 
-// DoneMark is what sets apart a sub-task that is finished.
+// DoneMark is what sets apart a step that is done.
 const DoneMark = "(done)"
 
-// Under renders what hangs beneath a task, and nothing at all when nothing does — an empty heading would read as a section somebody forgot to fill.
-func Under(tasks []Task) string {
-	if len(tasks) == 0 {
+// StepsText renders a task's steps, each with its place, and nothing at all when it has none — an empty heading would read as a section somebody forgot to fill.
+func StepsText(steps []Step) string {
+	if len(steps) == 0 {
 		return ""
 	}
 	var out strings.Builder
-	out.WriteString("\nsub-tasks\n")
-	for _, t := range tasks {
+	out.WriteString("\nsteps\n")
+	for i, s := range steps {
 		mark := strings.Repeat(" ", len(DoneMark))
-		if t.state == domain.Done {
+		if s.Done {
 			mark = DoneMark
 		}
-		fmt.Fprintf(&out, "  %s  %s\n", mark, Line(t))
+		fmt.Fprintf(&out, "  %s  %d  %s\n", mark, i+1, s.Title)
 	}
 	return out.String()
 }
@@ -74,19 +69,6 @@ const NothingBlocksMark = "  (nothing blocks it)"
 type Marks struct {
 	InFocus       []int
 	NothingBlocks []int
-}
-
-// Tree renders a listing of the work, and marks what a listing marks.
-func Tree(tasks []Task, marks Marks) string {
-	var out strings.Builder
-	for _, t := range tasks {
-		if t.parent != NoParent {
-			continue
-		}
-		out.WriteString(marked(t, marks))
-		out.WriteString("\n")
-	}
-	return out.String()
 }
 
 // Lines renders a listing flat, one task per line, marking what a listing marks.

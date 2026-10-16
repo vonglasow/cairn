@@ -38,7 +38,6 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 		"task":                     s.Update(kept),
 		"reading":                  read(func() error { _, err := s.Find(n); return err }()),
 		"reading the":              read(func() error { _, err := s.All(); return err }()),
-		"reading ":                 read(func() error { _, err := s.Under(n); return err }()),
 	} {
 		if err == nil {
 			t.Errorf("a closed store took %q without a word", what)

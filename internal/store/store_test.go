@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -387,12 +388,13 @@ func TestStore_reportsLabelsItCannotClear(t *testing.T) {
 	}
 }
 
-func TestStore_handsBackTheParentItWasGiven(t *testing.T) {
+func TestStore_handsBackTheStepsItWasGivenInTheirOrder(t *testing.T) {
 	s := openStore(t)
-	under := keep(t, s, "Ship it")
-	built, _ := task.NewTask("Write the tests")
-	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).Number) })
-
+	built, _ := task.NewTask("Ship it")
+	built = changed(built, func(a *task.AsTold) {
+		a.Step("Write the spec", true)
+		a.Step("Write the tests", false)
+	})
 	kept, err := s.Keep(built)
 	if err != nil {
 		t.Fatalf("Keep: %v", err)
@@ -401,46 +403,51 @@ func TestStore_handsBackTheParentItWasGiven(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
-	if facts := factsOf(got); facts.Parent != factsOf(under).Number {
-		t.Errorf("Parent = %d, want %d", facts.Parent, factsOf(under).Number)
+	want := []task.Step{{Title: "Write the spec", Done: true}, {Title: "Write the tests"}}
+	if steps := got.Carried().Steps; !slices.Equal(steps, want) {
+		t.Errorf("Steps = %v, want %v", steps, want)
 	}
 }
 
-func TestStore_namesWhatHangsUnderATask(t *testing.T) {
+func TestStore_writesTheStepsAgainOnUpdate(t *testing.T) {
 	s := openStore(t)
-	under := keep(t, s, "Ship it")
-	built, _ := task.NewTask("Write the tests")
-	built = changed(built, func(a *task.AsTold) { a.Under(factsOf(under).Number) })
-	if _, err := s.Keep(built); err != nil {
+	built, _ := task.NewTask("Ship it")
+	built = changed(built, func(a *task.AsTold) { a.Step("Write the spec", false) })
+	kept, err := s.Keep(built)
+	if err != nil {
 		t.Fatalf("Keep: %v", err)
 	}
-	keep(t, s, "Unrelated")
-
-	children, err := s.Under(factsOf(under).Number)
-	if err != nil {
-		t.Fatalf("Under: %v", err)
+	c := kept.Carried()
+	c.Steps = []task.Step{{Title: "Write it", Done: true}, {Title: "Ship the docs"}}
+	if err := s.Update(task.Made(c)); err != nil {
+		t.Fatalf("Update: %v", err)
 	}
-	if len(children) != 1 || factsOf(children[0]).Title != "Write the tests" {
-		t.Errorf("Under = %v, want only the sub-task", children)
+	all, err := s.All()
+	if err != nil {
+		t.Fatalf("All: %v", err)
+	}
+	if steps := all[0].Carried().Steps; !slices.Equal(steps, c.Steps) {
+		t.Errorf("Steps = %v, want %v", steps, c.Steps)
 	}
 }
 
-func TestStore_saysNothingHangsUnderALoneTask(t *testing.T) {
+func TestStore_takesAwayTheStepsOfATaskDeleted(t *testing.T) {
 	s := openStore(t)
-	lone := keep(t, s, "Ship it")
-	children, err := s.Under(factsOf(lone).Number)
+	built, _ := task.NewTask("Ship it")
+	built = changed(built, func(a *task.AsTold) { a.Step("Write the spec", false) })
+	kept, err := s.Keep(built)
 	if err != nil {
-		t.Fatalf("Under: %v", err)
+		t.Fatalf("Keep: %v", err)
 	}
-	if len(children) != 0 {
-		t.Errorf("Under = %v, want none", children)
+	if err := s.Delete(factsOf(kept).Number); err != nil {
+		t.Fatalf("Delete: %v", err)
 	}
-}
-
-func TestStore_reportsSubTasksItCannotRead(t *testing.T) {
-	s := closed(t)
-	if _, err := s.Under(1); err == nil {
-		t.Error("Under on a closed store should fail")
+	var left int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM steps`).Scan(&left); err != nil {
+		t.Fatalf("counting the steps: %v", err)
+	}
+	if left != 0 {
+		t.Errorf("%d steps are left of a task deleted", left)
 	}
 }
 
@@ -465,9 +472,9 @@ func TestUnusable_tellsAStoreOutOfReachFromAnythingElse(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	_, refused := db.Exec(`INSERT INTO tasks (parent, title, description,
+	_, refused := db.Exec(`INSERT INTO tasks (title, description,
 		state, priority, deadline, estimate)
-		VALUES (0, 'x', '', 'backlog', 'normal', '', 0)`)
+		VALUES ('x', '', 'backlog', 'normal', '', 0)`)
 	if refused == nil {
 		t.Fatal("writing to a read-only store was expected to fail")
 	}

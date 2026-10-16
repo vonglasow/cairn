@@ -10,9 +10,6 @@ import (
 // ErrNoSuchObjective is the name the engine answers with when an objective is asked for by a number nothing carries.
 var ErrNoSuchObjective = store.ErrNoSuchObjective
 
-// ErrSubTaskServesNoObjective is one rule seen from three sides: a task never carries a parent and an objective at the same time.
-var ErrSubTaskServesNoObjective = task.ErrSubTaskServesNoObjective
-
 // ErrObjectiveCarriesTasks is why an objective with work under it is not deleted: the tasks would be left pointing at a number nothing carries.
 var ErrObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
 
@@ -118,9 +115,6 @@ func (e *Engine) canServe(t task.Task) error {
 	if len(served) == 0 {
 		return nil
 	}
-	if err := t.MayServeAnObjective(); err != nil {
-		return err
-	}
 	for _, one := range served {
 		if _, err := e.objectives.FindObjective(one); err != nil {
 			return err
@@ -166,31 +160,37 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	}
 	for _, t := range all {
 		f := factsOf(t)
-		if f.Parent == task.NoParent {
+		steps := stepsTallied(f.Steps)
+		if steps.Total == 0 {
 			continue
 		}
-		p := tasks[f.Parent]
-		p.SubTasks = counted(p.SubTasks, t)
-		tasks[f.Parent] = p
-		for _, o := range serves[f.Parent] {
+		tasks[f.Number] = domain.Progress{Steps: steps}
+		for _, o := range serves[f.Number] {
 			p := objectives[o]
-			p.SubTasks = counted(p.SubTasks, t)
+			p.Steps.Total += steps.Total
+			p.Steps.Done += steps.Done
 			objectives[o] = p
 		}
 	}
 	return tasks, objectives, nil
 }
 
+func stepsTallied(steps []task.Step) domain.Tally {
+	tally := domain.Tally{Total: len(steps)}
+	for _, s := range steps {
+		if s.Done {
+			tally.Done++
+		}
+	}
+	return tally
+}
+
 func (e *Engine) taskProgress(number int) (domain.Progress, error) {
-	under, err := e.tasks.Under(number)
+	t, err := e.tasks.Find(number)
 	if err != nil {
 		return domain.Progress{}, err
 	}
-	var p domain.Progress
-	for _, sub := range under {
-		p.SubTasks = counted(p.SubTasks, sub)
-	}
-	return p, nil
+	return domain.Progress{Steps: stepsTallied(factsOf(t).Steps)}, nil
 }
 
 func counted(tally domain.Tally, t task.Task) domain.Tally { return task.Count(tally, t) }
@@ -296,7 +296,7 @@ var objectiveNarrowing = narrowedBy(objectiveAttributes, map[string]string{
 	"label":    "keep only the objectives carrying this label; named twice, only those carrying both",
 })
 
-// ObjectiveShow says what an objective carries, what hangs under it and how far along it is.
+// ObjectiveShow says what an objective carries, the tasks serving it and how far along it is.
 var ObjectiveShow = Operation{
 	Thing:   "objective",
 	Verb:    "show",

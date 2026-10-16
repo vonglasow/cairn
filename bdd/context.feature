@@ -34,7 +34,6 @@ Feature: Where a task's outside context lives
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
       And I edited task 1 with the state "blocked"
-      And I moved task 1 under task 2
       When I run `cairn task show 1`
       Then it says the context lives at "~/vault/1"
 

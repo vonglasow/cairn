@@ -53,29 +53,23 @@ func Serving(cards []Card, objective int) []Card {
 	return under
 }
 
-// Hanging is the work under one task, in the order the listing gave it.
-func Hanging(cards []Card, parent int) []Card {
-	if parent == 0 {
-		return nil
-	}
-	var left, done []Card
-	for _, c := range cards {
-		if c.Parent != parent {
+// Hanging is the steps of a task as a board shows them: what is left first, then what is done, each keeping the order it was written in, and each named by its place in the task.
+func Hanging(c Card) []Part {
+	var left, done []Part
+	for _, step := range c.Steps {
+		if step.Done {
+			done = append(done, step)
 			continue
 		}
-		if Finished(c) {
-			done = append(done, c)
-			continue
-		}
-		left = append(left, c)
+		left = append(left, step)
 	}
 	return append(left, done...)
 }
 
-// Tally counts what of the parts is left and what is done.
-func Tally(parts []Card) (left, done int) {
-	for _, c := range parts {
-		if Finished(c) {
+// Tally counts what of the steps is left and what is done.
+func Tally(parts []Part) (left, done int) {
+	for _, p := range parts {
+		if p.Done {
 			done++
 			continue
 		}
@@ -85,7 +79,7 @@ func Tally(parts []Card) (left, done int) {
 }
 
 // Tallied is that count as a heading says it, and nothing when there is nothing to count.
-func Tallied(parts []Card) string {
+func Tallied(parts []Part) string {
 	if len(parts) == 0 {
 		return ""
 	}

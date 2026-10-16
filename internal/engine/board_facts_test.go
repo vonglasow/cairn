@@ -69,8 +69,6 @@ func TestASnapshotSaysWhatAFieldsNumbersAreCalled(t *testing.T) {
 		want string
 	}{
 		{Field{Arg: "objective", Value: "1 7"}, "#1 Ship cairn, #7 "},
-		{Field{Arg: "parent", Value: "4"}, "#4 Ship it"},
-		{Field{Arg: "parent", Value: "9"}, "#9 9"},
 		{Field{Arg: "title", Value: "x"}, "x"},
 	} {
 		if got := s.Named(tc.f); got != tc.want {

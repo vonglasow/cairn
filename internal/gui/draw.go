@@ -361,9 +361,6 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		line := ChoosingLine(box, at)
 		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
-		if one.State != "" {
-			say(gtx, th, skin.Faint, CountedAt(line, one.State), one.State, small)
-		}
 		at += apart
 	}
 	clipped.Pop()
@@ -643,7 +640,7 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 	say(gtx, th, skin.Chosen, box, w.Said(offer), reads)
 }
 
-func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, on bool, held Written) {
+func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on bool, held Written) {
 	panel := SubPanel(box)
 	fill(gtx, panel, skin.Panel)
 	if on {
@@ -657,18 +654,18 @@ func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engin
 	} else {
 		outline(gtx, check, skin.Ink)
 	}
-	line := SubWriting(box)
-	said := fits(gtx, th, SubLine(c), line.W, small)
+	writ := SubWriting(box)
+	said := fits(gtx, th, line, writ.W, small)
 	held.Value = said
-	sayHolding(gtx, th, skin, SubInk(skin, c), line, held, small)
+	sayHolding(gtx, th, skin, SubInk(skin, c), writ, held, small)
 	if done {
 		loose := gtx
-		loose.Constraints = layout.Constraints{Max: image.Pt(line.W, lineHigh)}
-		fill(gtx, StruckAt(line, wide(loose, th, said, small).Size.X), skin.Faint)
+		loose.Constraints = layout.Constraints{Max: image.Pt(writ.W, lineHigh)}
+		fill(gtx, StruckAt(writ, wide(loose, th, said, small).Size.X), skin.Faint)
 	}
 }
 
-// SubInk is the ink a part's name is written in: the reading ink for what is left, the faint one for what is done.
+// SubInk is the ink a step's name, or a serving task's, is written in: the reading ink for what is left, the faint one for what is done.
 func SubInk(skin Skin, c engine.Card) color.NRGBA {
 	if engine.Finished(c) {
 		return skin.Faint
@@ -692,7 +689,7 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Win
 
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
 	for at, c := range under {
-		drawSub(gtx, th, skin, w.ServingCardAt(at), c, false,
+		drawSub(gtx, th, skin, w.ServingCardAt(at), c, SubLine(c), false,
 			w.Holding("part:"+strconv.Itoa(c.Number), SubLine(c)))
 	}
 	clipped.Pop()
@@ -753,7 +750,7 @@ func paintHeld(gtx layout.Context, th *material.Theme, skin Skin, box Box, said 
 
 func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame Box, w Window) {
 	f := w.Form()
-	sayHolding(gtx, th, skin, skin.Faint, name, Written{Value: "parts"}, small)
+	sayHolding(gtx, th, skin, skin.Faint, name, Written{Value: "steps"}, small)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
 	parts, from := w.PartsTicked(), w.partsFrom()
@@ -771,7 +768,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 			writing(gtx, th, skin, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
 			continue
 		}
-		drawSub(gtx, th, skin, tile, parts[at], on && f.partAt == at, Written{})
+		drawSub(gtx, th, skin, tile, parts[at], StepLine(parts[at]), on && f.partAt == at, Written{})
 	}
 	if field, ok := f.partsField(); ok {
 		_, value, rows := FormPlace(w.formBox(), f.Fields(), field)
@@ -794,7 +791,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 		fill(gtx, ghost, skin.Ghost)
 		outline(gtx, ghost, skin.Chosen)
 		line := SubWriting(ghost)
-		say(gtx, th, skin.Ink, line, fits(gtx, th, SubLine(parts[f.carried-1]), line.W, small), small)
+		say(gtx, th, skin.Ink, line, fits(gtx, th, StepLine(parts[f.carried-1]), line.W, small), small)
 	}
 	if line, ok := w.PartLanding(); ok {
 		fill(gtx, line, skin.Chosen)
@@ -808,7 +805,7 @@ func drawStruck(gtx layout.Context, th *material.Theme, skin Skin, box Box, part
 		outline(gtx, panel, skin.Chosen)
 	}
 	line := SubWriting(box)
-	said := fits(gtx, th, SubLine(part), line.W, small)
+	said := fits(gtx, th, StepLine(part), line.W, small)
 	say(gtx, th, skin.Faint, line, said, small)
 	loose := gtx
 	loose.Constraints = layout.Constraints{Max: image.Pt(line.W, lineHigh)}
@@ -850,7 +847,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		scrolled := w.scrolledOf(i)
 		name, value, rows := FormPlace(box, fields, i)
-		if fields[i].Name == "parts" {
+		if fields[i].Name == "steps" {
 			drawTicked(gtx, th, skin, name, Framed(value, rows), w)
 			continue
 		}

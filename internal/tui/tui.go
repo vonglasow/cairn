@@ -51,7 +51,7 @@ const (
 	Commanding
 )
 
-// Finishing is an act refused because something hanging under its task is still open, held while the person is asked whether to finish that too.
+// Finishing is an act refused because a step of its task is still open, held while the person is asked whether to tick it too.
 type Finishing struct {
 	Op engine.Operation
 	In engine.Input

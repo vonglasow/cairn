@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"cairn/internal/engine"
-	"cairn/internal/task"
 
 	"github.com/cucumber/godog"
 
@@ -124,7 +123,7 @@ func flagFor(attribute string) string {
 	return map[string]string{
 		"title": "--title", "description": "--desc", "deadline": "--deadline",
 		"estimate": "--estimate",
-		"priority": "--priority", "state": "--state", "parent": "--parent",
+		"priority": "--priority", "state": "--state",
 		"time spent": "--spent", "objective": "--objective", "blocker": "--blocker",
 		"because": "--because", "label": "--label",
 	}[attribute]
@@ -132,6 +131,7 @@ func flagFor(attribute string) string {
 
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
+	w.registerStep(sc)
 
 	sc.Step(`^a title of (\d+) characters$`, func(n int) error {
 		w.long = strings.Repeat("a", n)
@@ -152,7 +152,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return w.Seed(fmt.Sprintf(`cairn objective new "%s"`, title))
 	})
 
-	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|parent|time spent|objective) "([^"]*)"$`,
+	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|time spent|objective) "([^"]*)"$`,
 		func(title, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flagFor(attribute), value))
 		})
@@ -173,7 +173,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|parent|time spent|blocker|because|objective|label) "([^"]*)"$`,
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|time spent|blocker|because|objective|label) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
@@ -246,16 +246,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says what it can change$`:                                            "--title",
 		`^it says the labels are either replaced or changed, not both$`:           "either replaced or changed",
 		`^it says a label is added or taken away only when changing a task$`:      "only when changing a task",
-		`^it says a task cannot hang under itself$`:                               "cannot hang under itself",
 		`^it says a task cannot block itself$`:                                    "cannot block itself",
 		`^it says the objectives are either replaced or changed, not both$`:       "either replaced or changed",
 		`^it says an objective is added or taken away only when changing a task$`: "only when changing a task",
 		`^it says what is in the way and how to take it away$`:                    "take them away first: task ",
 		`^it says nothing would ever be able to start$`:                           "nothing would ever be able to start",
-		`^it says a sub-task cannot carry sub-tasks$`:                             "sub-task cannot carry sub-tasks",
 		`^it says a task cannot be moved behind itself$`:                          "cannot be moved behind itself",
 		`^it says a task is moved inside its own column$`:                         "moved inside its own column",
-		`^it says a sub-task is moved among its sisters$`:                         "moved among its sisters",
 		`^it says where a task can be moved$`:                                     "behind another",
 		`^it says a task that is done cannot be in focus$`:                        "done cannot be in focus",
 	} {
@@ -301,51 +298,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says a sub-task is done or it is not$`, func() error {
-		return test.WantContains(w.Out.Stderr, "done or it is not", "the refusal")
-	})
-
 	sc.Step(`^it says nothing of task (\d+)$`, func(n int) error {
 		if strings.Contains(w.Out.Stdout, fmt.Sprintf("#%d ", n)) {
 			return fmt.Errorf("the listing names task %d:\n%s", n, w.Out.Stdout)
 		}
 		return nil
-	})
-
-	sc.Step(`^it names task (\d+) as (done|not done)$`, func(n int, how string) error {
-		for _, line := range strings.Split(w.Out.Stdout, "\n") {
-			if !strings.Contains(line, fmt.Sprintf("#%d ", n)) {
-				continue
-			}
-			if got := strings.Contains(line, task.DoneMark); got != (how == "done") {
-				return fmt.Errorf("task %d reads %q, and it is %s", n, line, how)
-			}
-			return nil
-		}
-		return fmt.Errorf("task %d is not named at all:\n%s", n, w.Out.Stdout)
-	})
-
-	sc.Step(`^it carries task (\d+) under it, (done|not done)$`, func(n int, how string) error {
-		var said struct {
-			SubTasks []struct {
-				Number int    `json:"number"`
-				Title  string `json:"title"`
-				State  string `json:"state"`
-			} `json:"sub_tasks"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
-			return fmt.Errorf("reading what it carries: %w", err)
-		}
-		for _, under := range said.SubTasks {
-			if under.Number != n {
-				continue
-			}
-			if got := under.State == "done"; got != (how == "done") {
-				return fmt.Errorf("task %d is %q, and it is %s", n, under.State, how)
-			}
-			return nil
-		}
-		return fmt.Errorf("nothing under it is task %d: %+v", n, said.SubTasks)
 	})
 
 	sc.Step(`^I archived task (\d+)$`, func(n int) error {
@@ -417,12 +374,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return test.WantContains(w.heading(), "#"+strconv.Itoa(n), "the heading")
 	})
 
-	sc.Step(`^the task carries the (description|deadline|estimate|priority|column|parent|time spent) "([^"]*)"$`,
+	sc.Step(`^the task carries the (description|deadline|estimate|priority|column|time spent) "([^"]*)"$`,
 		func(attribute, want string) error {
 			key := map[string]string{
 				"description": "description", "deadline": "deadline",
 				"estimate": "estimate", "priority": "priority",
-				"column": "state", "parent": "parent", "time spent": "time spent",
+				"column": "state", "time spent": "time spent",
 			}[attribute]
 			if got := w.field(key); got != want {
 				return fmt.Errorf("%s = %q, want %q", key, got, want)
@@ -484,10 +441,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^the task has no (description|labels|deadline|estimate|time spent|parent)$`, func(attribute string) error {
+	sc.Step(`^the task has no (description|labels|deadline|estimate|time spent)$`, func(attribute string) error {
 		key := map[string]string{
 			"description": "description", "labels": "labels", "deadline": "deadline",
-			"estimate": "estimate", "time spent": "time spent", "parent": "parent",
+			"estimate": "estimate", "time spent": "time spent",
 		}[attribute]
 		if got := w.field(key); got != "" {
 			return fmt.Errorf("%s = %q, want none", key, got)
@@ -532,32 +489,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step("^`([^`]*)` says there is no such task$", func(line string) error {
 		w.Run(line)
 		return test.WantContains(w.Out.Stderr, "there is no such task", "the reason")
-	})
-
-	sc.Step(`^task (\d+) is listed under task (\d+)$`, func(hung, under int) error {
-		row, err := w.listedRow(hung)
-		if err != nil {
-			return err
-		}
-		if !strings.HasPrefix(row, " ") {
-			return fmt.Errorf("task %d is not listed under anything: %q", hung, row)
-		}
-		at := func(n int) int { return strings.Index(w.Out.Stdout, "#"+strconv.Itoa(n)+" ") }
-		if at(under) > at(hung) {
-			return fmt.Errorf("task %d is listed before task %d it hangs under:\n%s", hung, under, w.Out.Stdout)
-		}
-		return nil
-	})
-
-	sc.Step(`^task (\d+) hangs under nothing in the listing$`, func(n int) error {
-		row, err := w.listedRow(n)
-		if err != nil {
-			return err
-		}
-		if strings.HasPrefix(row, " ") {
-			return fmt.Errorf("task %d is listed under something: %q", n, row)
-		}
-		return nil
 	})
 
 	sc.Step(`^task (\d+) is listed before task (\d+)$`, func(first, second int) error {
@@ -739,17 +670,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it carries the parent (\d+)$`, func(n int) error {
-		var doc map[string]any
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return err
-		}
-		if got, ok := doc["parent"].(float64); !ok || int(got) != n {
-			return fmt.Errorf("parent = %v, want %d", doc["parent"], n)
-		}
-		return nil
-	})
-
 	sc.Step(`^it carries an identifier$`, func() error {
 		var doc map[string]any
 		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
@@ -860,16 +780,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says (\d+) of (\d+) (tasks|sub-tasks) are done$`,
+	sc.Step(`^it says (\d+) of (\d+) (tasks|steps) are done$`,
 		func(done, total int, kind string) error {
 			return test.WantContains(w.Out.Stdout,
 				fmt.Sprintf("%d of %d %s are done", done, total, kind), "the answer")
 		})
 
-	sc.Step(`^it says (\d+) of (\d+) tasks and (\d+) of (\d+) sub-tasks are done$`,
+	sc.Step(`^it says (\d+) of (\d+) tasks and (\d+) of (\d+) steps are done$`,
 		func(tasksDone, tasksTotal, subDone, subTotal int) error {
 			return test.WantContains(w.Out.Stdout,
-				fmt.Sprintf("%d of %d tasks and %d of %d sub-tasks are done",
+				fmt.Sprintf("%d of %d tasks and %d of %d steps are done",
 					tasksDone, tasksTotal, subDone, subTotal), "the answer")
 		})
 
@@ -884,9 +804,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it carries (\d+) of (\d+) (tasks|sub-tasks) done$`,
+	sc.Step(`^it carries (\d+) of (\d+) (tasks|steps) done$`,
 		func(done, total int, kind string) error {
-			key := map[string]string{"tasks": "tasks", "sub-tasks": "sub_tasks"}[kind]
+			key := kind
 			tally, err := w.tally(key)
 			if err != nil {
 				return err

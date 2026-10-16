@@ -31,8 +31,8 @@ func TestNarrowed_readsWhatTasksCarryAllAtOnce(t *testing.T) {
 	if len(all) != 6 {
 		t.Fatalf("read %d tasks, want 6", len(all))
 	}
-	if asked.queries > 4 {
-		t.Errorf("reading six tasks asked %d questions, want the tasks and what they carry, at most 4", asked.queries)
+	if asked.queries > 5 {
+		t.Errorf("reading six tasks asked %d questions, want the tasks and the four things they carry — labels, blockers, objectives, steps — at most 5", asked.queries)
 	}
 }
 

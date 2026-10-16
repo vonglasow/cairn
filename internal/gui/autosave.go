@@ -62,7 +62,7 @@ func (w Window) savedInPlace() Window {
 		if !found {
 			return w
 		}
-		w.form = editing(c, w.snap.Cards)
+		w.form = editing(c)
 	}
 	w.chosen, w.chosenGoal = number, kept.ForObjective
 	w.form = w.form.onto(kept.at)

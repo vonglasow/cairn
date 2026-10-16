@@ -177,8 +177,11 @@ func Agreed(in Input) Input {
 // ErrNotConfirmed is an act that asks first, asked for without saying yes.
 var ErrNotConfirmed = Refusing("not-confirmed", "needs --yes to confirm")
 
-// ErrSubTaskStillOpen is returned when a task is put in done while something hanging under it is not, and the act was not confirmed.
-var ErrSubTaskStillOpen = task.ErrSubTaskStillOpen
+// ErrStepStillOpen is returned when a task is put in done while one of its steps is not, and the act was not confirmed.
+var ErrStepStillOpen = task.ErrStepStillOpen
+
+// ErrNoSuchStep is re-exported so a surface can recognise it.
+var ErrNoSuchStep = task.ErrNoSuchStep
 
 // AsksFirst says whether an act waits to be confirmed: one that loses work, or one that sweeps up whatever a narrowing reaches.
 func (o Operation) AsksFirst(in Input) bool {
@@ -224,6 +227,7 @@ func All() []Operation {
 		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
 		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport,
+		StepNew, StepList, StepEdit, StepDelete,
 		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,

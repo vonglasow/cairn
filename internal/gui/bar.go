@@ -64,7 +64,7 @@ func HeadsOn(w Window, screen Screen) string {
 			return "About cairn"
 		}
 		if w.question == aboutFinishingParts {
-			return "Put task " + w.finishingIn.Given["number"] + " in done, with what is open under it?"
+			return "Put task " + w.finishingIn.Given["number"] + " in done, ticking its steps?"
 		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
@@ -308,7 +308,7 @@ func (w Window) clickingList(p Point) Window {
 func chosenOnACalendar(field engine.Field) bool { return field.Arg == "deadline" }
 
 func chosenFromAList(field engine.Field) bool {
-	return field.Arg == "objective" || field.Arg == "parent" || field.Arg == "label" || len(field.Choices) > 0
+	return field.Arg == "objective" || field.Arg == "label" || len(field.Choices) > 0
 }
 
 func (w Window) offerAt(p Point) (string, bool) {
@@ -395,7 +395,7 @@ func (w Window) Asks() []Said {
 	}
 	if w.question == aboutFinishingParts {
 		return []Said{
-			{Means: "What hangs under it and is not done goes to done with it."},
+			{Means: "Its steps not yet done are ticked with it."},
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}

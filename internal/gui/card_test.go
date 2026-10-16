@@ -94,9 +94,9 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 	}{
 		{"nothing to say", engine.Card{}, ""},
 		{"a description and no parts", engine.Card{Description: "something written"}, g.Described},
-		{"parts and no description", engine.Card{SubDone: 1, SubTotal: 3}, g.SubTasks + " 1/3"},
+		{"steps and no description", engine.Card{SubDone: 1, SubTotal: 3}, g.Steps + " 1/3"},
 		{"both", engine.Card{Description: "something written", SubDone: 0, SubTotal: 2},
-			g.Described + " " + g.SubTasks + " 0/2"},
+			g.Described + " " + g.Steps + " 0/2"},
 		{"nothing under it", engine.Card{SubDone: 0, SubTotal: 0}, ""},
 	} {
 		if got := Carried(c.card, g); got != c.want {
@@ -184,5 +184,15 @@ func TestAnObjectiveWithNoStandingWritesNothing(t *testing.T) {
 	got := Standings(engine.Goal{State: "active"})
 	if len(got) != 1 || !strings.Contains(got[0], "active") {
 		t.Fatalf("an active objective says %v", got)
+	}
+}
+
+func TestAStepSaysItsTitleAloneAndAServingTaskItsNumber(t *testing.T) {
+	c := engine.Card{Number: 2, Title: "Draft the columns"}
+	if got := StepLine(c); got != "Draft the columns" {
+		t.Errorf("a step reads %q: its place is not a task's number, and must not read like one", got)
+	}
+	if got := SubLine(c); got != "#2  Draft the columns" {
+		t.Errorf("a task serving an objective reads %q", got)
 	}
 }

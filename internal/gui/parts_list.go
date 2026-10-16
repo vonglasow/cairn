@@ -8,7 +8,7 @@ import (
 )
 
 func (f Form) partsField() (int, bool) {
-	at := slices.IndexFunc(f.fields, func(field engine.Field) bool { return field.Name == "parts" })
+	at := slices.IndexFunc(f.fields, func(field engine.Field) bool { return field.Name == "steps" })
 	return at, at != -1
 }
 
@@ -74,8 +74,12 @@ func (w Window) tickingPart() Window {
 		return w
 	}
 	before := w.form
-	w = w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(part.Number), "state": engine.PartState(part.Done)}})
+	ticked := "not-done"
+	if part.Done {
+		ticked = "done"
+	}
+	w = w.asking(engine.StepEdit, engine.Input{Given: map[string]string{
+		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(part.Number), ticked: "true"}})
 	if w.err != nil {
 		w.form = before.ticking()
 		return w
@@ -181,7 +185,7 @@ func (w Window) inHand() (int, bool) {
 	return from, from >= 0 && from < len(w.form.parts()) && w.held.Moved
 }
 
-// PartGhost is the part in hand, drawn under the pointer the way a card in hand is: as wide as a tile and as high.
+// PartGhost is the step in hand, drawn under the pointer the way a card in hand is: as wide as a tile and as high.
 func (w Window) PartGhost() (Box, bool) {
 	if _, ok := w.inHand(); !ok {
 		return Box{}, false
@@ -190,7 +194,7 @@ func (w Window) PartGhost() (Box, bool) {
 	return Box{X: tile.X, Y: w.held.At.Y - SubHeight/2, W: tile.W, H: SubHeight}, true
 }
 
-// PartLanding is the line saying where the part in hand would land: over the tile it would take the place of when carried up or held over its own, under it when carried down — which is where it ends up, the others moving to make room — and over the line that adds when it would go last.
+// PartLanding is the line saying where the step in hand would land: over the tile it would take the place of when carried up or held over its own, under it when carried down — which is where it ends up, the others moving to make room — and over the line that adds when it would go last.
 func (w Window) PartLanding() (Box, bool) {
 	from, ok := w.inHand()
 	to, on := w.partUnder(w.held.At)

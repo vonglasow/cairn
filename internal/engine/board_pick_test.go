@@ -35,24 +35,6 @@ func TestFoundGoals_isWhatASearchReachesInTheOrderAListKeeps(t *testing.T) {
 	}
 }
 
-func TestParentable_isWhatATaskMayHangUnder(t *testing.T) {
-	cards := []Card{
-		{Number: 1, Title: "Old", State: "backlog"},
-		{Number: 2, Title: "Now", State: "current"},
-		{Number: 3, Title: "A part", State: "todo", Parent: 2},
-		{Number: 4, Title: "Itself", State: "todo"},
-		{Number: 5, Title: "Next", State: "todo", Said: []string{"Next"}},
-		{Number: 6, Title: "Over", State: "done"},
-		{Number: 7, Title: "Stuck", State: "blocked"},
-	}
-	if got := numbersOfCards(Parentable(cards, 4, "")); !slices.Equal(got, []int{2, 5, 7, 1, 6}) {
-		t.Errorf("Parentable = %v", got)
-	}
-	if got := numbersOfCards(Parentable(cards, 4, "next")); !slices.Equal(got, []int{5}) {
-		t.Errorf("Parentable looking for next = %v", got)
-	}
-}
-
 func TestOverrun_isSpentPastTheEstimate(t *testing.T) {
 	for _, tc := range []struct {
 		estimate, spent string

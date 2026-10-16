@@ -86,9 +86,14 @@ func (g Givens) IAddedATaskWithTheStateServingObjective(title, state string, obj
 	return g.addTask(title, map[string]string{"state": state}, strconv.Itoa(objective))
 }
 
-// IAddedATaskHangingUnderTask adds a part of another task's work.
-func (g Givens) IAddedATaskHangingUnderTask(title string, under int) error {
-	return g.addTask(title, map[string]string{"parent": strconv.Itoa(under)})
+// IAddedTheStepToTask adds a step behind the ones a task already has, done or not.
+func (g Givens) IAddedTheStepToTask(title string, number int, done bool) error {
+	given := map[string]string{"number": strconv.Itoa(number), "title": title}
+	if done {
+		given["done"] = "true"
+	}
+	_, err := g.ask(engine.StepNew, given, nil)
+	return err
 }
 
 // IAddedTasksTo adds n tasks to one column, numbered in their titles.
@@ -189,8 +194,63 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, g.IAddedATaskServingObjective)
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)" serving objective (\d+)$`,
 		g.IAddedATaskWithTheStateServingObjective)
-	sc.Step(`^I added a task titled "([^"]*)" hanging under task (\d+)$`, g.IAddedATaskHangingUnderTask)
+	sc.Step(`^I added the step "([^"]*)" to task (\d+)(, done)?$`, func(title string, number int, done string) error {
+		return g.IAddedTheStepToTask(title, number, done != "")
+	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, g.IAddedTasksTo)
+	sc.Step(`^task (\d+) carries the step "([^"]*)", (done|not done)$`, func(number int, title, how string) error {
+		t, err := g.Task(number)
+		if err != nil {
+			return err
+		}
+		for _, s := range t.Carried().Steps {
+			if s.Title == title {
+				if s.Done != (how == "done") {
+					return fmt.Errorf("the step %q of task %d is done: %v, and it is %s", title, number, s.Done, how)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("task %d carries no step %q: %+v", number, title, t.Carried().Steps)
+	})
+	sc.Step(`^the steps of task (\d+) read (.+)$`, func(number int, list string) error {
+		t, err := g.Task(number)
+		if err != nil {
+			return err
+		}
+		var titles []string
+		for _, s := range t.Carried().Steps {
+			titles = append(titles, strconv.Quote(s.Title))
+		}
+		if got := strings.Join(titles, ", "); got != list {
+			return fmt.Errorf("the steps of task %d read %s, want %s", number, got, list)
+		}
+		return nil
+	})
+	sc.Step(`^no step of task (\d+) is done$`, func(number int) error {
+		t, err := g.Task(number)
+		if err != nil {
+			return err
+		}
+		for _, s := range t.Carried().Steps {
+			if s.Done {
+				return fmt.Errorf("the step %q of task %d is done", s.Title, number)
+			}
+		}
+		return nil
+	})
+	sc.Step(`^every step of task (\d+) is done$`, func(number int) error {
+		t, err := g.Task(number)
+		if err != nil {
+			return err
+		}
+		for _, s := range t.Carried().Steps {
+			if !s.Done {
+				return fmt.Errorf("the step %q of task %d is not done", s.Title, number)
+			}
+		}
+		return nil
+	})
 	sc.Step(`^I added an objective titled "([^"]*)"$`, g.IAddedAnObjectiveTitled)
 	sc.Step(`^I spent "([^"]*)" on task (\d+) on "([^"]*)"$`, g.ISpentOnTask)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)

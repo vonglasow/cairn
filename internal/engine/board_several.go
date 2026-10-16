@@ -13,7 +13,7 @@ type Flag struct {
 	Refused bool
 }
 
-// DeletingTasks is what a deletion of several tasks names first: the parts that go with one, a task waiting on one that is not going too, the task in focus.
+// DeletingTasks is what a deletion of several tasks names first: the steps that go with one, a task waiting on one that is not going too, the task in focus.
 func DeletingTasks(snap Snapshot, numbers []int) []Flag {
 	var flags []Flag
 	for _, n := range numbers {
@@ -28,7 +28,7 @@ func DeletingTasks(snap Snapshot, numbers []int) []Flag {
 	return flags
 }
 
-// ArchivingTasks is what an archiving of several tasks names first: a task already off the board cannot go again, and the parts and the focus go the way they go on a deletion.
+// ArchivingTasks is what an archiving of several tasks names first: a task already off the board cannot go again, and the steps and the focus go the way they go on a deletion.
 func ArchivingTasks(snap Snapshot, numbers []int) []Flag {
 	var flags []Flag
 	for _, n := range numbers {
@@ -76,8 +76,9 @@ func Several(numbers []int) Input {
 }
 
 func goingWith(snap Snapshot, n int) []Flag {
-	if parts := len(Hanging(snap.Cards, n)); parts > 0 {
-		return []Flag{{Number: n, Says: "its " + manyOf(parts, "part goes", "parts go") + " with it"}}
+	c, found := snap.Card(n)
+	if steps := len(c.Steps); found && steps > 0 {
+		return []Flag{{Number: n, Says: "its " + manyOf(steps, "step goes", "steps go") + " with it"}}
 	}
 	return nil
 }

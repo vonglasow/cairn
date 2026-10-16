@@ -20,9 +20,9 @@ func TestProgress_saysHowFarAlongWhatItIsAbout(t *testing.T) {
 		want string
 	}{
 		{Progress{}, ""},
-		{Progress{SubTasks: Tally{Total: 4, Done: 1}}, "1 of 4 sub-tasks are done — the task is 25% done"},
-		{Progress{Tasks: Tally{Total: 2, Done: 1}, SubTasks: Tally{Total: 2, Done: 1}},
-			"1 of 2 tasks and 1 of 2 sub-tasks are done — the task is 50% done"},
+		{Progress{Steps: Tally{Total: 4, Done: 1}}, "1 of 4 steps are done — the task is 25% done"},
+		{Progress{Tasks: Tally{Total: 2, Done: 1}, Steps: Tally{Total: 2, Done: 1}},
+			"1 of 2 tasks and 1 of 2 steps are done — the task is 50% done"},
 	} {
 		if got := tc.p.Line("the task"); got != tc.want {
 			t.Errorf("Line = %q, want %q", got, tc.want)

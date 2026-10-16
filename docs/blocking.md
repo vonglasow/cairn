@@ -50,8 +50,9 @@ A blocker can sit on a task in any column. It may block part of the work and
 not the rest, and noting that is not the same as stopping.
 
 When it blocks the whole thing, the column is what says so. The better move is
-then to split the part that is stopped into a sub-task of its own and carry on
-with the rest — which cairn suggests nowhere and refuses never. It is a working
+then to split the part that is stopped into a task of its own — a step carries
+no blocker, so the part waited on is a task, not a step — and carry on with the
+rest, which cairn suggests nowhere and refuses never. It is a working
 habit, not a rule, and encoding it would be cairn deciding how you work.
 
 ## Two columns are shut while something is in the way

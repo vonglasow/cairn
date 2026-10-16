@@ -68,6 +68,8 @@ func rendered(op Operation, a Answer) string {
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	case Labels:
 		return labelsText(*a.Labels)
+	case Steps:
+		return stepsText(*a.Task)
 	case Deleted:
 		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
 		for _, n := range a.Also {
@@ -97,7 +99,7 @@ func rendered(op Operation, a Answer) string {
 }
 
 func cardText(a Answer) string {
-	return task.Text(*a.Task, a.Progress) + task.Under(a.Under) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	return task.Text(*a.Task, a.Progress) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
 }
 
 func stoodText(t task.Task, since time.Time) string {
@@ -125,14 +127,14 @@ func heldText(held []task.Task, a Answer) string {
 	if len(held) == 0 {
 		return "nothing is in focus\n"
 	}
-	return task.Tree(held, marksOf(a))
+	return task.Lines(held, marksOf(a))
 }
 
 func tasksText(tasks []task.Task, a Answer) string {
 	if len(tasks) == 0 {
 		return "there is no task\n"
 	}
-	return task.Tree(tasks, marksOf(a))
+	return task.Lines(tasks, marksOf(a))
 }
 
 func foundText(tasks []task.Task, a Answer) string {

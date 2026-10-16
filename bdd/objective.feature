@@ -150,45 +150,6 @@ Feature: Objectives
       Then it writes JSON to standard output
       And it says the task serves objectives 1 and 2
 
-  Rule: A sub-task never serves an objective
-
-    @objective-sub-task-refused
-    Scenario: a sub-task cannot be given an objective
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      When I run `cairn task edit 2 --objective 1`
-      Then it fails
-      And it says a sub-task serves no objective
-
-    @objective-sub-task-refused-at-once
-    Scenario: a task cannot be given a parent and an objective in one go
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Ship it"
-      When I run `cairn task new "Write the spec" --parent 1 --objective 1`
-      Then it fails
-      And it says a sub-task serves no objective
-
-    @objective-parent-refused-when-serving
-    Scenario: a task serving an objective cannot be put under another
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the objective "1"
-      When I run `cairn task edit 2 --parent 1`
-      Then it fails
-      And it says a sub-task serves no objective
-      And `cairn task show 2` still carries the objective "1"
-
-    @objective-parent-allowed-once-loose
-    Scenario: a task set loose can then be put under another
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the objective "1"
-      When I run `cairn task edit 2 --objective "" --parent 1`
-      Then it succeeds
-      And the task has no objective
-      And the task carries the parent "1"
-
   Rule: An objective knows what was put under it
 
     @objective-carries-the-task
@@ -242,14 +203,14 @@ Feature: Objectives
       And I run `cairn objective show 1`
       Then it says 1 of 2 tasks are done
 
-    @objective-progress-counts-sub-tasks
-    Scenario: a sub-task is counted apart, and still counts towards the share
+    @objective-progress-counts-steps
+    Scenario: a step is counted apart, and still counts towards the share
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec" with the objective "1"
-      And I added a task titled "Write the tests" with the parent "1"
-      When I run `cairn task edit 2 --state done`
+      And I added the step "Write the tests" to task 1
+      When I run `cairn step edit 1 1 --done`
       And I run `cairn objective show 1`
-      Then it says 0 of 1 tasks and 1 of 1 sub-tasks are done
+      Then it says 0 of 1 tasks and 1 of 1 steps are done
       And it says the objective is 50% done
 
     @objective-progress-percent
@@ -336,16 +297,6 @@ Feature: Objectives
       When I run `cairn task new "Write the spec" --objective +1`
       Then it fails
       And it says an objective is added or taken away only when changing a task
-
-    @objective-sub-task-refused-two-at-once
-    Scenario: a sub-task cannot be given two objectives either
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added an objective titled "Ship the docs"
-      And I added a task titled "Ship it"
-      And I added a task titled "Write the spec" with the parent "1"
-      When I run `cairn task edit 2 --objective 1 --objective 2`
-      Then it fails
-      And it says a sub-task serves no objective
 
   Rule: An objective can be listed, read back and changed
 
@@ -624,12 +575,12 @@ Feature: Objectives
       Given I added an objective titled "Ship cairn 1.0"
       And I added a task titled "Write the spec" with the objective "1"
       And I added a task titled "Write the tests" with the objective "1"
-      And I added a task titled "Ship it" with the parent "2"
+      And I added the step "Ship it" to task 2
       When I run `cairn task edit 1 --state done`
       And I run `cairn objective show 1 --json`
       Then it writes JSON to standard output
       And it carries 1 of 2 tasks done
-      And it carries 0 of 1 sub-tasks done
+      And it carries 0 of 1 steps done
       And it carries the share 33
 
     @objective-json-progress-of-nothing

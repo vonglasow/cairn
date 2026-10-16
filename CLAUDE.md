@@ -30,7 +30,7 @@ before committing.
 **A task cairn worked on is held, and its work goes in its notes.** The
 board of this repository is `CAIRN_STORE=$PWD/.cairn/cairn.db` with
 `CAIRN_NOTES=$PWD/.cairn/notes`. Before working on a task, put it `current`
-and in focus — its parent too, for a sub-task. What was done or decided goes in
+and in focus. What was done or decided goes in
 its notes, `.cairn/notes/<n>/`: a dated entry `YYYY-MM-DD-<subject>.md`, and
 `summary.md` rewritten whole; **never in its description**, which says what the
 task is. When it is committed, unfocus it and put it `done`. The cairn skill
@@ -54,6 +54,7 @@ calls it, and prints — it decides nothing.
 | narrowing a listing, or changing what a search reaches | [docs/listing.md](docs/listing.md) |
 | touching how a label is written, or how one is put on a task | [docs/labels.md](docs/labels.md) |
 | touching what stops a task, or what starts it again | [docs/blocking.md](docs/blocking.md) |
+| touching a task's steps, or what a task is split into | [docs/steps.md](docs/steps.md) |
 | touching what a task serves, or how an objective is counted | [docs/objectives.md](docs/objectives.md) |
 | touching what showing a task says about its outside context, or where that context is looked for | [docs/context.md](docs/context.md) |
 | adding a key to the configuration, or changing how a place is addressed | [docs/config.md](docs/config.md) |

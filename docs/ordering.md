@@ -22,8 +22,8 @@ Conflating them is what made the question look hard.
 
 | | |
 |---|---|
-| **arrival** | the number. Strictly increasing and never reused — measured: delete `#2` and the next task added takes `#4`, and sub-tasks share the same run. Free, already there, and it says nothing about what to do |
-| **the criteria** | priority, deadline, labels, the objective served, how far the sub-tasks have got. They **propose**. They never decide |
+| **arrival** | the number. Strictly increasing and never reused — measured: delete `#2` and the next task added takes `#4`; a step takes none (`@task-step-has-no-number`). Free, already there, and it says nothing about what to do |
+| **the criteria** | priority, deadline, labels, the objective served, how far the steps have got. They **propose**. They never decide |
 | **the order to do** | yours, stored. This is the one that was missing |
 
 The middle row is the one that misleads. An estimate is a guess, and it fails
@@ -78,12 +78,12 @@ Each task carries an integer position, and the order is the column followed by
 the position. The positions are counted **within a column**, not across the
 store, and that is not an optimisation — it is what makes the acted design
 literal. Landing at the end of a section is one more than the largest position
-in that column, and the invariant is local: within a column and under one
-parent, positions run 1..N with no hole.
+in that column, and the invariant is local: within a column, positions run
+1..N with no hole.
 
 Holding that invariant costs one thing that is easy to leave out, and was:
 **every departure closes the gap behind it.** A task deleted, a task given
-another column, a task given another parent — each leaves a place empty, and
+another column — each leaves a place empty, and
 nothing looks wrong when it does, because the order still reads correctly with
 the places running 2, 5, 9.
 
@@ -91,9 +91,10 @@ What goes wrong comes later, and there is exactly one place it shows: a move to
 the last place aims one past the tasks in the group and finds that place
 already taken, so the task does not go last. That is what the scenarios stand
 on — one per departure, each built so the expected order comes out wrong while
-a hole is there. Measured on the way in: with the gap left open, three
-scenarios out of thirty-two fail and the other twenty-nine do not, which is
-what says they are about this and nothing else.
+a hole is there. Measured on the way in, when a task could also leave a
+parent: with the gap left open, three scenarios out of thirty-two fail and the
+other twenty-nine do not, which is what says they are about this and nothing
+else.
 
 A test walks every group after every act that can touch a place as well, and
 fails unless each runs 1..N. The invariant is worth asserting directly and not
@@ -123,7 +124,6 @@ anybody noticing.
 | a task is added | last of its group | `@ordering-added-last`, `@ordering-last-means-last-in-its-column` |
 | a task is deleted | the group closes up behind it | `@ordering-a-deletion-leaves-no-hole` |
 | the column changes | last of the new group, old group closes | `@ordering-a-column-change-lands-it-last`, `@ordering-a-column-left-leaves-no-hole` |
-| the parent changes | last of the new sisters, old sisters close | `@ordering-a-sub-task-given-another-parent`, `@ordering-a-parent-left-leaves-no-hole` |
 | a task is moved | the places shift inside the group | `@ordering-moved-first`, `@ordering-moved-after`, `@ordering-moved-last` |
 | anything else a task carries | **untouched** | `@ordering-an-ordinary-edit-moves-nothing`, `@ordering-a-title-change-moves-nothing` |
 
@@ -131,115 +131,88 @@ Two of those guards were measured rather than assumed, by breaking the code on
 purpose and counting who noticed. Neither is visible from the scenario's own
 words, so both are written here:
 
-**That a group starts at one** is held by `@ordering-moved-first` and
-`@ordering-sub-task-moved-among-its-sisters`. Turning `COALESCE(MAX, 0) + 1`
-into `COALESCE(MAX, -1) + 1` makes every group start at zero and those two turn
-red. It is caught as a side effect: neither scenario says anything about where
-a group starts, and a scenario saying it would be the same scenario written
+**That a group starts at one** is held by `@ordering-moved-first`. Turning
+`COALESCE(MAX, 0) + 1` into `COALESCE(MAX, -1) + 1` makes every group start at
+zero and it turns red — measured when a second scenario, about sisters, turned
+red with it. It is caught as a side effect: the scenario says nothing about
+where a group starts, and a scenario saying it would be the same scenario written
 twice, since the only behaviour that tells zero from one is the one they
 already describe. So it is recorded here instead.
 
-**That a departure closes the gap** is held by the three `@ordering-*-leaves-
-no-hole` scenarios. Leaving the gap open turns exactly three of the thirty-odd
-ordering scenarios red and leaves the rest green, which is what says they are
-about this and nothing else.
+**That a departure closes the gap** is held by the `@ordering-*-leaves-no-hole`
+scenarios, one per way a task leaves its group. Leaving the gap open turned
+exactly those of the thirty-odd ordering scenarios red — three, while a parent
+could be left too — and left the rest green, which is what says they are about
+this and nothing else.
 
 Neither of these lives inside gremlins' reach: both are arithmetic inside a SQL
 string, which it does not read. The mutation gate says nothing about them, and
 that is precisely why they are measured by hand and written down.
 
-## A sub-task is done or it is not
+## A step keeps the order it was written in
 
-A sub-task is a part of the work its parent names, split off to be sure the
-whole is finished. The only thing worth knowing about a part is whether it is
-done: where the work stands is the parent's to say, because a part being
-"blocked" is the parent being blocked and a part being "current" is the parent
-being worked on.
+A task's steps are not tasks — they have no column and no place on the board
+(see [steps.md](steps.md)) — so they take no part in this order. They are read
+back in the order they were written in (`@ordering-steps-keep-their-order`),
+and that order is the task's: moving a task carries its steps with it, in the
+order they had (`@ordering-a-task-carries-its-steps`).
 
-It carried all seven columns and used two. Measured on a real store of 219
-tasks: its 49 sub-tasks were `done` forty-eight times and `todo` once, never
-`current`, never stopped, never carrying a deadline or a blocker of their own.
-The model was not narrowed here so much as caught up with what the usage had
-already settled on.
+This is what sub-tasks used to cost here. A sub-task carried a column of its
+own and a place among its sisters — the sub-tasks of the same parent — so the
+fine order had a second level, the invariant held under each parent as well as
+within each column, and a move had a second refusal, a sub-task moved behind a
+task that was not its sister. Every rule on this page had a parent clause, and
+none of it was seen on a board that never drew sub-tasks as cards. Steps took
+that level away: a position is counted within a column and nothing else.
 
-A task hung under another is **settled** on the way in: `done` stays `done`,
-every other column becomes `todo`. What it was doing on its own stops being
-true the moment it becomes a part of something — except being finished, which
-stays finished. The ninth change to the store's shape does the same to what was
-already there, and does not undo: the column each sub-task stood in is gone by
-then, and putting them all back in the backlog would be inventing an answer
-rather than restoring one.
+## A task's steps are written with it
 
-## A sub-task takes its place among its sisters
+A board writes a task's steps in its form, one a line — `[x] its title` for a
+step done, `[ ] its title` for one left — and `task new` and `task edit` take
+those lines as `--steps` (`@task-new-with-its-steps`,
+`@task-edit-with-its-steps`). A leading `#n` is accepted and read as nothing
+more than a line: it is what the form writes before a step already there, and
+a step's place is no number to keep. The lines are written in the act that
+saves the task, in the order they give, every one of them or none.
 
-A sub-task carries a column of its own — measured: one can sit in `current`
-while its parent sits in the backlog — and `task list` already shows sub-tasks
-nested under their parent. Those two facts cannot both place a sub-task in the
-list: it would have to be under its parent in one section and in another
-section at the same time.
+On an edit they **replace** the steps the task had: what the lines no longer
+name is gone. A step is not a task, deleting one is no act of its own at its
+own level of access, and the list the form shows is the whole of what the task
+is split into — so saving it says the whole of it. It was the other way round
+while the lines named sub-tasks, which were tasks: a part not named was left
+where it was, and a board deleted those one by one once the task was saved.
 
-So nesting is the fine order one level down. Where the parent sits carries the
-whole block, sub-tasks order themselves among their sisters, and a sub-task's
-own column says how far along it is rather than where it goes.
+## A task is not done while one of its steps is open
 
-That is not only a resolution, it is what keeps moving from growing a second
-meaning: a sub-task is ranged among its sisters exactly as a root task is
-ranged among the tasks of its column.
+A task is done *because* its steps are done. If it can be finished with a step
+still open, then either that step was never part of it — in which case it is
+another task — or the task was closed over work nobody did.
 
-The refusal generalises with it — a sub-task cannot be moved behind a root task
-— but the reason it gives does not, and that was worth its own wording. Between
-two columns it is the column that differs; between a sub-task and a root task
-it is the level, and saying "not in that column" of two tasks that may well
-share one would be false. So this refusal names whose sub-task it is instead,
-which is also the useful thing to be told: it says where the task *can* go.
-
-The cost is real and small: a sub-task under way does not show up in a
-`current` section. That is the question `focus` answers, and it answers it
-better — what is being worked on is read from a mark, not from a section.
-
-## A task's parts are written with it
-
-A board writes a task's parts in its form, one a line — `#4 [x] its title` for
-a part there already, `[ ] its title` for a new one — and `task new` and `task
-edit` take those lines as `--parts`. They are settled in the act that saves the
-task: added, renamed, ticked and put in the order the lines give, column by
-column, every one of them or none. Saved one act a part, as they were, a part
-refused halfway left half of them written.
-
-A part the lines no longer name is left where it is. Deleting a task is an act
-of its own, at its own level of access, and saving a list is not a way around
-it: a board deletes those parts one by one, once the task is saved.
-
-## A parent is not done while something under it is open
-
-A parent is done *because* what hangs under it is done. If it can be finished
-with a sub-task still open, then either that sub-task was never part of it — in
-which case it is another task — or the parent was closed over work nobody did.
-
-Refused rather than cascaded, unless it is confirmed. Marking the children
-done on the parent's behalf would finish work nobody finished, and silently;
-the refusal names which ones are in the way, which is the useful thing to be
-told. It says where the work *is*, the same way the refusal about sisters says
-where a task *can* go — and how to say yes: `--yes` on `task edit` and `task
-move` puts what is still open under it in done too, each one an act of its own
-in the trace (`@task-done-confirmed-finishes-what-hangs-under-it`). The boards
-ask the same question where the refusal would have been shown: the window
-after a drop or a move into DONE (`@gui-a-drop-in-done-asks-about-open-parts`),
-the terminal after a push (`@tui-done-asks-about-open-parts`). Amended
-2026-10-16: the refusal alone left a parent with five parts closed by six acts,
-when the person had already decided. It is not silent, since nothing cascades
-without a yes. An agent over MCP is the exception to asking: the server
-confirms every act, the access it was started with being the agent's yes, so
-`task_edit` and `task_move` say in their description that they finish what
-hangs under the task.
+Refused rather than cascaded, unless it is confirmed
+(`@task-done-refused-while-a-step-is-open`). Ticking the steps on the task's
+behalf would finish work nobody finished, and silently; the refusal names which
+steps are in the way, by their places, which is the useful thing to be told —
+and how to say yes (`@task-done-with-open-steps-says-how-to-confirm`): `--yes`
+on `task edit` and `task move` ticks its open steps with it, in the same act
+(`@task-done-confirmed-ticks-its-steps`,
+`@task-moved-to-done-confirmed-ticks-its-steps`). The boards ask the same
+question where the refusal would have been shown: the window after a drop or a
+move into DONE (`@gui-a-drop-in-done-asks-about-open-steps`), the terminal
+after a push (`@tui-done-asks-about-open-steps`). Amended 2026-10-16, while
+the rule was about sub-tasks: the refusal alone left a parent with five parts
+closed by six acts, when the person had already decided. It is not silent,
+since nothing is ticked without a yes. An agent over MCP is the exception to
+asking: the server confirms every act, the access it was started with being
+the agent's yes, so `task_edit` and `task_move` say in their description that
+they tick the task's steps.
 
 Asked of `done` alone, and only when that is where the task lands and is not
-where it was. `blocked`, `watching` and `paused` say something about the parent
-itself; `done` is the only state that claims something about what hangs under
-it. And a parent already finished stays editable for anything else — asking the
-rule of every edit would make it fail for a reason nobody caused today, since
-the sub-task was either open when it was finished or reopened since, and
-neither is this edit's doing.
+where it was. `blocked`, `watching` and `paused` say something about the task
+itself; `done` is the only state that claims something about its steps. And a
+task already finished stays editable for anything else — asking the rule of
+every edit would make it fail for a reason nobody caused today, since the step
+was either open when it was finished or unticked since, and neither is this
+edit's doing.
 
 The rule guards the transition and not the stored state. Rows already in that
 shape are left alone: reopening work somebody marked finished, on their behalf
@@ -340,7 +313,7 @@ all.
 
 | | |
 |---|---|
-| a position on a task | 1..N with no hole, within its column and under one parent |
+| a position on a task | 1..N with no hole, within its column |
 | `focused` | a row per task being worked on, in the order they were focused |
 
 One column and one table, then, and not the two columns this design first
@@ -351,7 +324,7 @@ which records every act performed on one. See [trace.md](trace.md).
 
 `task new` places a task at the end of the backlog, `task list` and `task
 search` order by column then position, and `task edit` moves a task only when
-it leaves the tasks it sat with — a different column, or a different parent —
+it leaves the tasks it sat with — a different column —
 landing it at the end of its new group and closing the gap behind it. Editing a
 title or a priority moves nothing. Three operations join the ones already
 there: moving a task, putting one in focus or asking which one is, and letting

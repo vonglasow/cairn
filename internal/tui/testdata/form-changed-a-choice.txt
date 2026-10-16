@@ -3,28 +3,27 @@
  ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
  │ 4   Write the spec                                                               current  high │
  │                                                                                                │
- │   title                                          deadline                                      │
- │   > Write the spec                               > 2026-09-03                                  │
+ │   title                                          because                                       │
+ │   > Write the spec                               >                                             │
  │                                                                                                │
- │   description · 1 line                           estimate                                      │
- │     1 The client wants two columns, not three.   >                                             │
+ │   description · 1 line                           deadline                                      │
+ │     1 The client wants two columns, not three.   > 2026-09-03                                  │
  │                                                                                                │
- │                                                  time spent                                    │
+ │                                                  estimate                                      │
  │                                                  >                                             │
  │ ┃ column                                                                                       │
- │ ┃ ← current →                                    parent                                        │
+ │ ┃ ← current →                                    time spent                                    │
  │                                                  >                                             │
  │   priority                                                                                     │
  │   high                                           objectives                                    │
  │                                                  >                                             │
  │   labels                                                                                       │
- │   > spec                                         parts · 2 lines                               │
- │                                                    1 #12 [ ] Get the client's nod              │
- │   blockers                                         2 #11 [x] Draft the columns                 │
+ │   > spec                                         steps · 2 lines                               │
+ │                                                    1 #2 [ ] Get the client's nod               │
+ │   blockers                                         2 #1 [x] Draft the columns                  │
  │   >                                                                                            │
  │                                                                                                │
- │   because                                          save     cancel                             │
- │   >                                                                                            │
+ │                                                    save     cancel                             │
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 

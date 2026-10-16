@@ -381,7 +381,7 @@ func (w Window) walkingGoals(across, down int) Window {
 
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
 	if _, err := w.work.Ask(op, in); err != nil {
-		if op.Finishes && !in.Confirmed && errors.Is(err, engine.ErrSubTaskStillOpen) {
+		if op.Finishes && !in.Confirmed && errors.Is(err, engine.ErrStepStillOpen) {
 			w.screen, w.question = OnAsking, aboutFinishingParts
 			w.finishing, w.finishingIn = op, in
 			return w.Look()

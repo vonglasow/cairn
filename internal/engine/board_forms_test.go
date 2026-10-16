@@ -24,11 +24,11 @@ func TestNewForms_startWhereEveryBoardStartsThem(t *testing.T) {
 	}
 }
 
-func TestEditFields_bringTheParts(t *testing.T) {
-	cards := []Card{{Number: 1, Title: "Ship it"}, {Number: 2, Parent: 1, Title: "Read it", State: "todo"}}
-	parts, ok := valueOf(EditFields(cards[0], cards), "parts")
-	if !ok || parts != "#2 [ ] Read it" {
-		t.Errorf("parts = %q, %v", parts, ok)
+func TestEditFields_bringTheSteps(t *testing.T) {
+	c := Card{Number: 1, Title: "Ship it", Steps: []Part{{Number: 1, Title: "Read it"}}}
+	steps, ok := valueOf(EditFields(c), "steps")
+	if !ok || steps != "#1 [ ] Read it" {
+		t.Errorf("steps = %q, %v", steps, ok)
 	}
 }
 
@@ -47,9 +47,9 @@ func TestSaved_isTheOperationAndWhatItCarries(t *testing.T) {
 	}
 }
 
-func TestAddingFields_carryAnEmptyPartsField(t *testing.T) {
+func TestAddingFields_carryAnEmptyStepsField(t *testing.T) {
 	fields := AddingFields("todo")
-	if last := fields[len(fields)-1]; last.Name != "parts" || last.Value != "" || !last.Long {
+	if last := fields[len(fields)-1]; last.Name != "steps" || last.Value != "" || !last.Long {
 		t.Errorf("the last field of a new task is %+v", last)
 	}
 	if state, _ := valueOf(fields, "column"); state != "todo" {
@@ -90,7 +90,7 @@ func TestSaved_editingSendsOnlyWhatWasChanged(t *testing.T) {
 }
 
 func TestFields_sayWhatEachOneIs(t *testing.T) {
-	for _, fields := range [][]Field{EditFields(Card{Number: 1, Title: "Ship it"}, nil), AddingFields("todo"), GoalFields(Goal{Title: "Ship"})} {
+	for _, fields := range [][]Field{EditFields(Card{Number: 1, Title: "Ship it"}), AddingFields("todo"), GoalFields(Goal{Title: "Ship"})} {
 		for _, f := range fields {
 			if f.Means == "" {
 				t.Errorf("the field %q says nothing of what it is", f.Name)

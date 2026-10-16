@@ -38,11 +38,17 @@ read and a trace you can rebuild from, and rebuilding is what was asked for.
 
 Twelve of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
-beside them, its deadline, its estimate, its parent, the
+beside them, its deadline, its estimate, its steps, the
 objectives it serves, and whether it was archived — archiving and
 bringing back are changes like any other, written `yes` and nothing. Six are not
 about a field: **created**, **moved**, **focus taken**, **focus released**,
 **deleted**, **time added**.
+
+**Steps are one attribute.** A step added, ticked, renamed or taken away is a
+*changed* act on its task with the field `steps`, the values before and after
+written as the whole list, `[x] a; [ ] b` (`@step-traced`): a step has no
+number, so it has no trace of its own, and the list is what the task said
+before and says after. See [steps.md](steps.md).
 
 The number grows when a task gains an attribute, and nothing has to be written
 here for it to: `theAttributes` in `internal/engine/recording.go` is one list,
@@ -73,8 +79,8 @@ So a creation writes the act itself, then one act per attribute the task
 carries, each value alone in its own field. Exact, with nothing invented. What
 it costs is four lines at a birth instead of one, and that is paid back in the
 rendering: those acts are laid out **indented under the creation** and share
-its moment, the way a listing indents a sub-task. A history then reads as one
-line for the birth and one line per thing that has happened since.
+its moment. A history then reads as one line for the birth and one line per
+thing that has happened since.
 
 ## A deletion writes down what went with it
 
@@ -104,7 +110,7 @@ It works because numbers are never handed out twice — measured: delete `#2` an
 the next task added takes `#4`. So an entry naming task 7 goes on naming that
 one task after it is gone, and never quietly means another.
 
-The price is real: the trace cannot be a child that leaves with its parent, and
+The price is real: the trace cannot be a child that leaves with its task, and
 reading the history of a deleted task needs a way in that is not `task show`.
 
 ## What it replaces
@@ -130,7 +136,7 @@ over a year at twenty moves a month: 240 entries against 4,800, of which 4,560
 are noise, and the one line that says what a person did buried among them.
 
 So an entry records the act: *moved to the first place*. What that did to the
-places of its sisters is not written down.
+places of the tasks it sits with is not written down.
 
 A move to the place a task already holds is no act at all, and nothing is
 written: a card dropped back where it stood, or the only card of a column moved

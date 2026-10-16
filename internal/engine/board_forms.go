@@ -18,18 +18,18 @@ func NewGoalFields() []Field {
 	return GoalFields(Goal{State: string(objective.Active), Priority: string(domain.Normal)})
 }
 
-// EditFields is the form of a task being changed, its parts included.
-func EditFields(c Card, cards []Card) []Field {
-	return append(TaskFields(c), partsField(PartsSaid(Hanging(cards, c.Number))))
+// EditFields is the form of a task being changed, its steps included.
+func EditFields(c Card) []Field {
+	return append(TaskFields(c), stepsField(PartsWritten(Hanging(c))))
 }
 
-// AddingFields is the form of a task about to be added in a window: the new task's fields and, last, its parts — empty, and the same field its edit form has — so a task whose parts were already written down goes in with them.
+// AddingFields is the form of a task about to be added in a window: the new task's fields and, last, its steps — empty, and the same field its edit form has — so a task whose steps were already written down goes in with them.
 func AddingFields(state string) []Field {
-	return append(NewTaskFields(state), partsField(""))
+	return append(NewTaskFields(state), stepsField(""))
 }
 
-func partsField(said string) Field {
-	return Field{Name: "parts", Arg: "parts", Value: said, Was: said, Means: meaning(TaskEdit, "parts"), Long: true}
+func stepsField(said string) Field {
+	return Field{Name: "steps", Arg: "steps", Value: said, Was: said, Means: meaning(TaskEdit, "steps"), Long: true}
 }
 
 // Saved is what a saved form asks for: adding or editing — one form, so the difference is the operation and the number and nothing else — with the title trimmed on its way out, since what somebody called a task does not include the space they left after it.

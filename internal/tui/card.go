@@ -59,7 +59,7 @@ func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		}
 	}
 	if done := c.PartsDone(); done != "" {
-		count := g.SubTasks + done
+		count := g.Steps + done
 		told = append(told, count)
 		dressed = append(dressed, s.Faint.Render(count))
 	}

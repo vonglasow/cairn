@@ -12,9 +12,8 @@ import (
 
 // The reasons a move is refused, re-exported so a surface can recognise them: a surface asks the engine and may not import the task, so the names it answers with have to live here too.
 var (
-	ErrMovedBehindItself  = task.ErrMovedBehindItself
-	ErrOtherColumn        = task.ErrOtherColumn
-	ErrNotAmongItsSisters = task.ErrNotAmongItsSisters
+	ErrMovedBehindItself = task.ErrMovedBehindItself
+	ErrOtherColumn       = task.ErrOtherColumn
 )
 
 // ErrNowhereToMove is returned when a move names no place to go.
@@ -180,7 +179,7 @@ var TaskMove = Operation{
 	Thing: "task",
 	Verb:  "move",
 	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act; the tasks named under also follow it there, one behind the other, in the same act. Moved into done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
+	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act; the tasks named under also follow it there, one behind the other, in the same act. Moved into done while one of its steps is still open, it is refused unless confirmed; confirmed, its steps are ticked with it.",
 	Example: `cairn task move 3 --first
 cairn task move 3 --after 1
 cairn task move 3 --state todo --after 1`,

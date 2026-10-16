@@ -46,7 +46,7 @@ func SubWriting(b Box) Box {
 
 const checkSide = 12
 
-// StruckAt is the line through a part done: across the middle of the line its name is written on, from where the name begins and as long as it is.
+// StruckAt is the line through a step done: across the middle of the line its name is written on, from where the name begins and as long as it is.
 func StruckAt(line Box, wide int) Box {
 	return Box{X: line.X, Y: line.Y + line.H/2, W: wide, H: 1}
 }
@@ -56,7 +56,7 @@ func TickAt(check Box) Box {
 	return Box{X: check.X, Y: check.Y - 1, W: check.W + 2, H: lineHigh}
 }
 
-// SubCheck is the box before a part's name, ticked when it is done: a shape, read without comparing two greys.
+// SubCheck is the box before a step's name, ticked when it is done: a shape, read without comparing two greys.
 func SubCheck(b Box) Box {
 	panel := SubPanel(b)
 	return Box{X: panel.X + padding, Y: panel.Y + (panel.H-checkSide)/2, W: checkSide, H: checkSide}

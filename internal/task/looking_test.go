@@ -106,16 +106,6 @@ func TestMatching_aPhraseWithASpaceIsOneThing(t *testing.T) {
 	}
 }
 
-func TestMatching_anotherTasksNumberIsNeverReached(t *testing.T) {
-	child := carrying(t, func(a *AsTold) {
-		a.Numbered(2)
-		a.Under(1)
-	})
-	if Matching(child, []string{"1"}) {
-		t.Error("Matching = true, want false: the number it hangs under is not its own")
-	}
-}
-
 func TestMatching_anEmptyNamedThingIsNeverFound(t *testing.T) {
 	if Matching(spec(t), []string{""}) {
 		t.Error("Matching = true, want false: an empty name is never found")
@@ -160,10 +150,6 @@ func TestMatching_reachesItsOwnNumberAndNoOtherTasks(t *testing.T) {
 		{"its own number", numbered(1), "1", true},
 		{"a number it does not carry", numbered(1), "9", false},
 		{"its own number inside a longer one", numbered(1228), "228", true},
-		{"the number of what it hangs under", carrying(t, func(a *AsTold) {
-			a.Numbered(2)
-			a.Under(1)
-		}), "1", false},
 		{"the number of an objective it serves", carrying(t, func(a *AsTold) {
 			a.Numbered(2)
 			a.Serves(7)

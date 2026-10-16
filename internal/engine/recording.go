@@ -29,7 +29,7 @@ var theAttributes = []struct {
 	{"because", func(f task.Carried) string { return f.Because }},
 	{"deadline", func(f task.Carried) string { return domain.FormatDay(f.Deadline) }},
 	{"estimate", func(f task.Carried) string { return domain.FormatDuration(f.Estimate) }},
-	{"parent", func(f task.Carried) string { return numberOrNothing(f.Parent) }},
+	{"steps", func(f task.Carried) string { return stepsSaid(f.Steps) }},
 	{"objectives", func(f task.Carried) string { return numbersOrNothing(f.Objectives) }},
 	{"archived", func(f task.Carried) string { return yesOrNothing(f.Archived) }},
 }
@@ -117,13 +117,6 @@ func yesOrNothing(holds bool) string {
 	return ""
 }
 
-func numberOrNothing(number int) string {
-	if number == task.NoParent {
-		return ""
-	}
-	return fmt.Sprint(number)
-}
-
 func numbersOrNothing(numbers []int) string {
 	if len(numbers) == 0 {
 		return ""
@@ -133,4 +126,16 @@ func numbersOrNothing(numbers []int) string {
 		written = append(written, domain.Ref(one))
 	}
 	return strings.Join(written, ", ")
+}
+
+func stepsSaid(steps []task.Step) string {
+	said := make([]string, 0, len(steps))
+	for _, s := range steps {
+		mark := " "
+		if s.Done {
+			mark = "x"
+		}
+		said = append(said, "["+mark+"] "+s.Title)
+	}
+	return strings.Join(said, "; ")
 }

@@ -208,24 +208,13 @@ func (w Window) ContextSays() []Readable {
 // ChosenGoal says whether what is chosen is an objective rather than a task.
 func (w Window) ChosenGoal() bool { return w.chosenGoal }
 
-// Under is what the box beneath the fields holds: the work that serves an open objective, or the work hanging under an open task.
+// Under is what the box beside the fields of an open objective holds: the work that serves it.
 func (w Window) Under() []engine.Card {
-	if w.chosenGoal {
-		return engine.Serving(w.snap.Cards, w.chosen)
-	}
-	return engine.Hanging(w.snap.Cards, w.chosen)
+	return engine.Serving(w.snap.Cards, w.chosen)
 }
 
-// UnderHead is what that box is called, which depends on what is open: an objective is served, a task is hung under, and calling both by one word would make the box say less than it knows.
-func (w Window) UnderHead() string {
-	if w.chosenGoal {
-		return servingHead
-	}
-	if tally := engine.Tallied(w.Under()); tally != "" {
-		return hangingHead + "   " + tally
-	}
-	return hangingHead
-}
+// UnderHead is what that box is called.
+func (w Window) UnderHead() string { return servingHead }
 
 // Wonder asks the store whether anybody else has written to it, and reads the whole thing again only when the answer has moved.
 func (w Window) Wonder() Window {

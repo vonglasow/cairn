@@ -73,8 +73,9 @@ Conventions:
 - **Every step leaves a board that can be drawn.** The window's and the
   terminal's scenarios draw what they hold after each step, whatever the step
   was about, and a panic fails the scenario that reached it. A list opened over
-  the form of a task with parts once brought the window down in somebody's
-  hands, though every step leading there passed: nothing had drawn it.
+  the form of a task with sub-tasks, as they were then, once brought the window
+  down in somebody's hands, though every step leading there passed: nothing had
+  drawn it.
 - **A step returns its error**; it never calls `t.Fatalf`. A Goexit from inside
   godog wrecks its subtest bookkeeping and surfaces as an unreadable
   "test executed panic(nil) or runtime.Goexit".

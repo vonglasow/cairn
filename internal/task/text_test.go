@@ -70,8 +70,8 @@ func TestText_showsWhatTheTaskCarries(t *testing.T) {
 }
 
 func TestText_showsHowFarAlongItIs(t *testing.T) {
-	got := Text(spec(t), domain.Progress{SubTasks: domain.Tally{Total: 4, Done: 1}})
-	if !strings.Contains(got, "1 of 4 sub-tasks are done") {
+	got := Text(spec(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}})
+	if !strings.Contains(got, "1 of 4 steps are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
 	if strings.Contains(got, "0 of 0 tasks") {
@@ -79,13 +79,13 @@ func TestText_showsHowFarAlongItIs(t *testing.T) {
 	}
 }
 
-func TestText_countsTasksApartFromSubTasks(t *testing.T) {
+func TestText_countsTasksApartFromSteps(t *testing.T) {
 	got := Text(spec(t), domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}})
 	if !strings.Contains(got, "2 of 2 tasks are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
-	if strings.Contains(got, "0 of 0 sub-tasks") {
-		t.Errorf("text should not count sub-tasks it does not have:\n%s", got)
+	if strings.Contains(got, "0 of 0 steps") {
+		t.Errorf("text should not count steps it does not have:\n%s", got)
 	}
 }
 
@@ -95,44 +95,27 @@ func TestLine_showsTheNumberAndTheTitle(t *testing.T) {
 	}
 }
 
-func listed(number int, title string, parent int) Task {
+func listed(number int, title string) Task {
 	var a AsTold
 	a.Numbered(number)
 	a.Titled(title)
-	a.Under(parent)
 	return a.Task()
 }
 
-func TestTree_writesNothingForNoTasks(t *testing.T) {
-	if got := Tree(nil, Marks{}); got != "" {
-		t.Errorf("Tree(nil, Marks{}) = %q, want nothing", got)
+func TestLines_writesNothingForNoTasks(t *testing.T) {
+	if got := Lines(nil, Marks{}); got != "" {
+		t.Errorf("Lines(nil, Marks{}) = %q, want nothing", got)
 	}
 }
 
-func TestUnder_writesNothingForNoTasks(t *testing.T) {
-	if got := Under(nil); got != "" {
-		t.Errorf("Under(nil) = %q, want nothing", got)
-	}
-}
-
-func TestUnder_listsWhatHangsUnderATask(t *testing.T) {
-	got := Under([]Task{listed(2, "Write the tests", 1)})
-	if !strings.Contains(got, "sub-tasks") || !strings.Contains(got, "Write the tests") {
-		t.Errorf("Under is missing the sub-task:\n%s", got)
-	}
-}
-
-func TestTree_marksTheTasksInFocus(t *testing.T) {
+func TestLines_marksTheTasksInFocus(t *testing.T) {
 	tasks := []Task{
-		listed(1, "Ship it", NoParent),
-		listed(2, "Write the tests", 1),
-		listed(3, "Something else", NoParent),
+		listed(1, "Ship it"),
+		listed(2, "Write the tests"),
+		listed(3, "Something else"),
 	}
-	if got := Tree(tasks, Marks{InFocus: []int{2}}); strings.Contains(got, InFocusMark) {
-		t.Errorf("a sub-task in focus marked a listing it is not in:\n%s", got)
-	}
-	for _, inFocus := range []int{1, 3} {
-		got := Tree(tasks, Marks{InFocus: []int{inFocus}})
+	for _, inFocus := range []int{1, 2, 3} {
+		got := Lines(tasks, Marks{InFocus: []int{inFocus}})
 		if marks := strings.Count(got, InFocusMark); marks != 1 {
 			t.Errorf("with %d in focus, %d lines are marked, want exactly one:\n%s",
 				inFocus, marks, got)
@@ -148,13 +131,13 @@ func TestTree_marksTheTasksInFocus(t *testing.T) {
 	}
 }
 
-func TestTree_marksEveryTaskInFocus(t *testing.T) {
+func TestLines_marksEveryTaskInFocus(t *testing.T) {
 	tasks := []Task{
-		listed(1, "Ship it", NoParent),
-		listed(2, "Write the tests", 1),
-		listed(3, "Something else", NoParent),
+		listed(1, "Ship it"),
+		listed(2, "Write the tests"),
+		listed(3, "Something else"),
 	}
-	got := Tree(tasks, Marks{InFocus: []int{1, 3}})
+	got := Lines(tasks, Marks{InFocus: []int{1, 3}})
 	if marks := strings.Count(got, InFocusMark); marks != 2 {
 		t.Errorf("with two in focus, %d lines are marked, want two:\n%s", marks, got)
 	}
@@ -165,8 +148,8 @@ func TestTree_marksEveryTaskInFocus(t *testing.T) {
 	}
 }
 
-func TestTree_marksNothingWhenNothingIsInFocus(t *testing.T) {
-	got := Tree([]Task{listed(1, "Ship it", NoParent)}, Marks{})
+func TestLines_marksNothingWhenNothingIsInFocus(t *testing.T) {
+	got := Lines([]Task{listed(1, "Ship it")}, Marks{})
 	if strings.Contains(got, InFocusMark) {
 		t.Errorf("nothing is in focus, yet a line is marked:\n%s", got)
 	}
@@ -180,87 +163,20 @@ func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
 	a := From(built)
 	a.Numbered(2)
 	a.Spent(90 * time.Minute)
-	a.Under(1)
 	a.Serves(3)
 
 	got := Text(a.Task(), domain.Progress{})
-	for _, want := range []string{"time spent", "1h30m", "parent", "objective"} {
+	for _, want := range []string{"time spent", "1h30m", "objective"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the card does not carry %q:\n%s", want, got)
 		}
 	}
 }
 
-func TestTheHangingRules_answerNothingWhenTheTaskMayHang(t *testing.T) {
-	root := listed(1, "Ship it", NoParent)
-	if err := root.MayCarrySubTasks(); err != nil {
-		t.Errorf("a root task may carry sub-tasks, and it said %v", err)
-	}
-	under := listed(2, "Write the tests", 1)
-	if err := under.MayHangUnderItsParent(); err != nil {
-		t.Errorf("a task may hang under another, and it said %v", err)
-	}
-}
-
-func TestUnder_namesEachOneAsDoneOrNot(t *testing.T) {
-	made := func(number int, title string, state domain.State) Task {
-		var a AsTold
-		a.Numbered(number)
-		a.Titled(title)
-		a.Under(1)
-		a.InColumn(state)
-		return a.Task()
-	}
-	got := Under([]Task{
-		made(2, "Write the tests", domain.Done),
-		made(3, "Write the docs", domain.Todo),
-	})
-	for _, want := range []string{DoneMark + "  #2  Write the tests", "#3  Write the docs"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("Under =\n%s\nwant a line reading %q", got, want)
-		}
-	}
-	if strings.Contains(got, DoneMark+"  #3") {
-		t.Errorf("Under =\n%s\nand task 3 is not done", got)
-	}
-}
-
-func TestTree_leavesSubTasksOut(t *testing.T) {
-	made := func(number int, title string, parent int) Task {
-		var a AsTold
-		a.Numbered(number)
-		a.Titled(title)
-		if parent != NoParent {
-			a.Under(parent)
-		}
-		return a.Task()
-	}
-	got := Tree([]Task{
-		made(1, "Ship it", NoParent),
-		made(2, "Write the tests", 1),
-		made(3, "Something else", NoParent),
-	}, Marks{})
-	for _, want := range []string{"#1  Ship it", "#3  Something else"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("Tree =\n%s\nwant it to name %q", got, want)
-		}
-	}
-	if strings.Contains(got, "Write the tests") {
-		t.Errorf("Tree =\n%s\nand a sub-task is not laid out in a listing", got)
-	}
-}
-
-func TestUnder_keepsTheOrderItWasGiven(t *testing.T) {
-	made := func(number int, title string) Task {
-		var a AsTold
-		a.Numbered(number)
-		a.Titled(title)
-		a.Under(1)
-		return a.Task()
-	}
-	got := Under([]Task{made(3, "Write the docs"), made(2, "Write the tests")})
-	if at3, at2 := strings.Index(got, "#3"), strings.Index(got, "#2"); at3 > at2 {
-		t.Errorf("Under reordered them:\n%s", got)
+func TestStepsText_keepsTheOrderItWasGiven(t *testing.T) {
+	got := StepsText([]Step{{Title: "Write the docs"}, {Title: "Write the tests"}})
+	if docs, tests := strings.Index(got, "Write the docs"), strings.Index(got, "Write the tests"); docs > tests {
+		t.Errorf("StepsText reordered them:\n%s", got)
 	}
 }
 

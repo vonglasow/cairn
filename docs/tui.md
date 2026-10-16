@@ -24,7 +24,7 @@ afternoon to spend:
 - **The cursor holds a task's number**, never a place on screen — a redraw can
   move it, a keystroke cannot land on the wrong task.
 - **`hjkl` moves the cursor; `⇧hjkl` moves the task.** Sideways is a change of
-  column, which is an edit; up and down is a place among its sisters.
+  column, which is an edit; up and down is a place within its column.
 - **It decides nothing**: every change goes through the engine, and what a
   board reads and asks is shared with the window in `internal/engine`.
 - **It stays true while the store changes**: a beat reads `data_version` and
@@ -173,7 +173,7 @@ Always six: a border, four lines of content, a border.
 |---|---|
 | 1 | the number on the left, the marks on the right |
 | 2–3 | the title, cut at a word, `…` if it overruns |
-| 4 | the facts, in this order: deadline, sub-tasks, labels — cut when the line is full, with `+n` saying how many were left out |
+| 4 | the facts, in this order: deadline, steps, labels — cut when the line is full, with `+n` saying how many were left out |
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
@@ -268,7 +268,7 @@ edge out of line.
 | `reached` objective | `nf-oct-check` | `✓` | green |
 | `dropped` objective | `nf-oct-x` | `✕` | dim |
 | a description exists | `nf-oct-note` | `≡` | |
-| sub-tasks done / total | `nf-oct-checklist` | `▪` | |
+| steps done / total | `nf-oct-checklist` | `▪` | |
 | a label | `nf-oct-tag` | `⚑` | |
 | what is in the way | `nf-oct-blocked` | `↳` | |
 | archived | `nf-oct-archive` | `▭` | |
@@ -415,8 +415,8 @@ One form, for adding and for editing, behaving the same way both times.
  │    deadline       2026-09-02                                               │
  │    estimate       3h                                                       │
  │    time spent     1h30                                                     │
- │    parent         —                                                        │
  │    objectives     3                                                        │
+ │    steps          [x] Draft the columns                                    │
  │                                                                            │
  │                                             [ save ]          [ cancel ]   │
  └────────────────────────────────────────────────────────────────────────────┘
@@ -448,19 +448,25 @@ right — `┃` where the window is, `│` the rest of the track — and `^D` `^
 it half a box at a time. It used to be drawn whole, and a long one ran off the
 bottom of the terminal with everything under it.
 
-**On an open task the parts left come first**, each with `[ ]` before it and
-the parts done after, `[x]`, faint and struck through; the panel's name counts
-them, `SUB-TASKS   1 to do · 1 done`. The window draws the same thing with a
+**On an open task the steps left come first**, each with `[ ]` before it and
+its place, and the steps done after, `[x]`, faint and struck through; the
+panel's name counts them, `STEPS   1 to do · 1 done`
+(`@tui-the-steps-left-come-first`). The window draws the same thing with a
 box; the marks are the ones the form's field writes.
 
-**The parts of a task are edited in its form**, in a field holding one line
-each — `#2 [x] Relire l'ADR` — and nowhere else. Saving settles them against
-what the task carried: a line with a number is that part, a line without is one
-nobody had written down yet, and a number the field no longer carries is a part
-that has gone. The window does the same thing in the same words.
+**The steps of a task are edited in its form**, in the `steps` field, one line
+each — `[x] Relire l'ADR` — and nowhere else on the board. Saving writes them
+with the task, in the same act, and they replace the steps it had: a line the
+field no longer carries is a step that has gone. The window does the same
+thing in the same words. A step is no card and has no column, so nothing on
+the board stands for it (`@tui-a-step-is-not-on-the-board`).
 
-A part carries a title and whether it is done, and nothing else. Deleting a task
-takes its parts with it, by the rule archiving already went by.
+A step carries a title and whether it is done, and nothing else; see
+[steps.md](steps.md). Deleting a task takes its steps with it.
+
+**Pushing a task into done while a step is open asks first** — "put task 1 in
+done, ticking its steps?" at the foot — and `⏎` puts it there with its steps
+ticked in the same act (`@tui-done-asks-about-open-steps`).
 
 **A form somebody typed into is asked about before it goes.** `esc` on an
 untouched form closes it; `esc` on one with a change in it puts the question at
@@ -500,17 +506,17 @@ have squeezed the board and a popup would never have shown the whole trace.
  │ The third was in the mockup by accident     │ 18/08  priority   normal → high      │
  │ and nobody caught it before the review.     │ 21/08  column     backlog → todo     │
  │                                             │ 27/08  deadline   — → 02/09          │
- ├─ SUB-TASKS ────────────────────── 3/5 ──────┤ 29/08  focus      taken              │
- │ ✓ 15   Draft the columns          done      │ 29/08  focus      released           │
- │ ✓ 16   Get the client's nod       done      │ 30/08  spent      — → 1h30           │
- │ ✓ 17   Write the scenarios        done      │                                      │
- │   19   Client's answer          ⊘ blocked   │                                      │
- │   20   Ship it                    todo      │                                      │
+ ├─ STEPS   2 to do · 3 done ──────────────────┤ 29/08  focus      taken              │
+ │ [ ] 4  Client's answer                      │ 29/08  focus      released           │
+ │ [ ] 5  Ship it                              │ 30/08  spent      — → 1h30           │
+ │ [x] 1  Draft the columns                    │                                      │
+ │ [x] 2  Get the client's nod                 │                                      │
+ │ [x] 3  Write the scenarios                  │                                      │
  ├─ OBJECTIVES SERVED ─────────────────────────┤                                      │
  │ ▶ 3    Ship the desktop board     7/12      │                                      │
  └─────────────────────────────────────────────┴──────────────────────────────────────┘
 
- hjkl ←↓↑→ navigate   e edit   f focus   ⏎ open the sub-task   esc back
+ hjkl ←↓↑→ navigate   e edit   f focus   ^D ^U description   ? help   esc back
 ```
 
 Under the lists, a `CONTEXT` panel says where what was written about the task
@@ -520,9 +526,6 @@ whether or not anything is there yet. See [context.md](context.md).
 The band carries the short fields; the panels carry the lists. **A field that is
 empty is not shown** — the opposite of a card, where an absence keeps its line to
 hold the height. A full screen has no such constraint.
-
-`⏎` on a sub-task opens its detail, so the tree is walked without going back
-through the board, and `esc` climbs back one step at a time.
 
 This is the only place the trace is laid out beside the task it belongs to.
 `:trace show 14` prints the same trace, the way the command line prints it, and
@@ -590,7 +593,7 @@ because with two hundred tasks what is highlighted is usually off screen.
  │   e          the form               │                                           │
  │   f          focus or unfocus       │ ON THE CARD                               │
  │   d          delete                 │   ≡    a description exists               │
- │   esc        back to normal         │   ▪    sub-tasks done / total             │
+ │   esc        back to normal         │   ▪    steps done / total                 │
  │                                     │   ⚑    a label                            │
  │ EDIT — inside the form              │   ↳    what is in the way                 │
  │   hjkl ←↓↑→  navigate               │   2d   deadline close                     │
@@ -705,9 +708,9 @@ already serves this objective — the one place where creating a task answers a
 question, "what is missing to finish this" — and the whole thing is the board you
 already know with less in it.
 
-**Sub-tasks do not appear.** A sub-task never serves an objective in its own
-right; it counts through its parent. So the filtered board shows the tasks that
-serve it directly, and `7/12` counts those.
+**Steps do not appear.** A step is no card; it counts through its task, the
+way [objectives.md](objectives.md) says. So the filtered board shows the tasks
+that serve the objective, and `7/12` counts those.
 
 An objective's state changes through the form, not by pushing it anywhere. With
 no sections there is nowhere to push it to, and `⇧hjkl` therefore does nothing
@@ -841,8 +844,7 @@ would otherwise lose the whole form.
 
 - **`mcp serve`** — nobody starts a stdio server from a board. It stays a
   command-line command, and it is the only operation with no place here.
-- **What a card shows of its objectives and its parent.** Both were left off:
-  an objective is a link to elsewhere and there is a tab for it, and a parent
-  belongs to how a column draws its tree rather than repeated on every card.
+- **What a card shows of its objectives.** It was left off: an objective is a
+  link to elsewhere and there is a tab for it.
 - **Moving between the three stopped states.** Once a task is in the band, going
   from blocked to watching is the form's job. The popup only asks on the way in.

@@ -14,7 +14,7 @@ const (
 // CardHeight is what every card takes, whatever it carries.
 const CardHeight = 96
 
-// SubHeight is what a part of the work takes in the box under a task's fields: one line and the padding round it.
+// SubHeight is what a step takes in its box among a task's fields, and a serving task in the box beside an objective's: one line and the padding round it.
 const SubHeight = 28
 
 const (

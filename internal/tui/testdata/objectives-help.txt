@@ -22,7 +22,7 @@
                                                  │                                             │
                                                  │ ON A CARD                                   │
                                                  │   ≡            a description exists         │
-                                                 │   ▪            sub-tasks done / total       │
+                                                 │   ▪            steps done / total           │
                                                  │   ⚑            a label                      │
                                                  │   ↳            what is in the way           │
                                                  │   2d          a deadline close by           │

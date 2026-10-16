@@ -41,10 +41,10 @@ Feature: The desktop board
       Then "BACKLOG" carries "Migration Jenkins"
       And the card "Migration Jenkins" is not dimmed
 
-    @gui-a-sub-task-is-not-on-the-board
-    Scenario: a sub-task does not stand in a column of its own
+    @gui-a-step-is-not-on-the-board
+    Scenario: a step does not stand in a column of its own
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec" hanging under task 1
+      And I added the step "Write the spec" to task 1
       And I added a task titled "Something else"
       When I open the window
       Then "BACKLOG" carries "Ship it"
@@ -469,26 +469,26 @@ Feature: The desktop board
       Then task 1 is in the column "watching"
       And the lane "watching" carries "Client's answer"
 
-    @gui-a-drop-in-done-asks-about-open-parts
-    Scenario: a card dropped in DONE with parts still open asks to finish them too
+    @gui-a-drop-in-done-asks-about-open-steps
+    Scenario: a card dropped in DONE with steps still open asks to tick them too
       Given I added a task titled "Ship it" with the state "todo"
-      And I added a task titled "Write the spec" hanging under task 1
+      And I added the step "Write the spec" to task 1
       When I open the window
       And I drag the card "Ship it" onto "DONE"
-      Then the window asks to put what hangs under task 1 in done too
+      Then the window asks to put task 1 in done, ticking its steps
       When I click "Agree"
       Then task 1 is in the column "done"
-      And task 2 is in the column "done"
+      And every step of task 1 is done
 
     @gui-a-drop-in-done-can-be-called-off
-    Scenario: calling off the question leaves the card and its parts where they were
+    Scenario: calling off the question leaves the card and its steps as they were
       Given I added a task titled "Ship it" with the state "todo"
-      And I added a task titled "Write the spec" hanging under task 1
+      And I added the step "Write the spec" to task 1
       When I open the window
       And I drag the card "Ship it" onto "DONE"
       And I click "Cancel"
       Then task 1 is in the column "todo"
-      And task 2 is in the column "todo"
+      And no step of task 1 is done
 
     Scenario: a drop the engine refuses leaves the board saying what is really there
       Given I added a task titled "Write the spec" with the state "backlog"
@@ -576,7 +576,7 @@ Feature: The desktop board
       And I choose "Edit"
       Then the form asks about "title", "description", "column", "priority"
       And the form asks about "labels", "blockers", "because", "deadline"
-      And the form asks about "estimate", "time spent", "parent", "objectives"
+      And the form asks about "estimate", "time spent", "objectives"
 
     @gui-the-form-starts-on-what-is-there
     Scenario: the form starts on what the task already carries
@@ -633,7 +633,7 @@ Feature: The desktop board
       Then task 1 is in the column "todo"
 
     @gui-a-closed-set-is-chosen-from-a-list
-    Scenario: a column is chosen from a list, the way a parent is
+    Scenario: a column is chosen from a list, the way an objective is
       Given I added a task titled "Write the spec" with the state "backlog"
       When I open the window
       And I click the card "Write the spec"
@@ -660,7 +660,7 @@ Feature: The desktop board
       And the list has room for 4 rows and no more
 
     @gui-a-priority-is-found-by-typing
-    Scenario: a priority is found by typing, the way a parent is
+    Scenario: a priority is found by typing, the way an objective is
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -1722,13 +1722,13 @@ Feature: The desktop board
       Then it says nothing went wrong
       And the engine was asked "task edit" once
 
-    @gui-a-task-added-once-whatever-its-parts
-    Scenario: a task whose parts were refused is not made, and not tried again every beat
-      Given the store refuses to add a part
+    @gui-a-task-added-once-whatever-its-steps
+    Scenario: a task whose steps were refused is not made, and not tried again every beat
+      Given the store refuses to add a step
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
-      And I set the field "parts" to "Book the room"
+      And I set the field "steps" to "Book the room"
       And the window has looked at the store 6 times
       Then there are no tasks
       And the engine was asked "task new" once
@@ -1780,10 +1780,10 @@ Feature: The desktop board
       Then "BACKLOG" carries "Write the spec"
       And "BACKLOG" does not carry "Ship the board"
 
-    @gui-searching-raises-the-work-a-part-belongs-to
-    Scenario: a word found only in a part answers the work it is part of
+    @gui-searching-raises-the-task-a-step-belongs-to
+    Scenario: a word found only in a step answers the task it belongs to
       Given I added a task titled "Ship it"
-      And I added a task titled "Write the pipeline" hanging under task 1
+      And I added the step "Write the pipeline" to task 1
       And I added a task titled "Buy a lamp"
       When I open the window
       And I press "/"
@@ -2197,7 +2197,7 @@ Feature: The desktop board
       Then "Ship the desktop board" is open to be edited
       And the work beside the form carries "Write the spec"
       And the work beside the form does not carry "Buy a lamp"
-      And what hangs under it is drawn one line to a tile
+      And what serves it is drawn one line to a tile
       And the column beside the form is headed "WHAT SERVES IT"
 
     @gui-the-work-under-an-objective-scrolls
@@ -2266,26 +2266,26 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
-    @gui-a-parent-is-chosen-from-a-list
-    Scenario: the task something hangs under is chosen from a list, not typed as a number
-      Given I added a task titled "Ship it"
+    @gui-a-list-names-the-task-it-is-for
+    Scenario: the list a field opens says which task it is for
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       Then the window is choosing
-      And the panel is headed "a parent for task 2"
+      And the panel is headed "objectives for task 1"
       And the list offers "Ship it"
 
     @gui-a-list-is-corrected-like-any-other-field
     Scenario: what was typed into a list can be taken back out
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I type "shipx"
       Then the list offers nothing
       When I press "backspace"
@@ -2378,94 +2378,43 @@ Feature: The desktop board
 
     @gui-a-form-can-always-be-saved
     Scenario: a form is saved whatever field the keyboard is on
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I press "enter"
+      And I press "cmd+enter"
       Then the window is on the form
       And the bar offers "Save" under "⌘⏎"
       And the bar offers "Choose" under "⏎"
       When I press "cmd+enter"
       Then the window is on the board
-      And the engine was asked "task edit" for task 2
-
-    @gui-a-parent-is-taken-off-the-way-it-was-taken-on
-    Scenario: the task something hangs under can be taken off again
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "parent"
-      And I press "enter"
-      Then the field "parent" reads "1"
-      When I click the field "parent"
-      Then the window is choosing
-      And the list has taken 1
-      And the row the keyboard is on is "Ship it"
-      When I press "enter"
-      Then the window is on the form
-      And the field "parent" reads ""
-
-    @gui-a-list-of-tasks-offers-the-worked-on-first
-    Scenario: the list offers what is being worked on before what is waiting
-      Given I added a task titled "Un jour peut-être"
-      And I added a task titled "En cours maintenant" with the state "current"
-      And I added a task titled "À faire ensuite" with the state "todo"
-      And I added a task titled "Déjà fini" with the state "done"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "parent"
-      Then the list reads "En cours maintenant", "À faire ensuite", "Un jour peut-être", "Déjà fini"
-
-    @gui-two-in-one-column-keep-the-order-the-board-gives-them
-    Scenario: two tasks in the same column keep the order the board gives them
-      Given I added a task titled "La première" with the state "current"
-      And I added a task titled "La seconde" with the state "current"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "parent"
-      Then the list reads "La première", "La seconde"
-
-    @gui-a-list-of-tasks-says-where-each-one-stands
-    Scenario: a row says which column its task sits in
-      Given I added a task titled "En cours maintenant" with the state "current"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "parent"
-      Then the row "En cours maintenant" says "current"
+      And the engine was asked "task edit" for task 1
 
     @gui-a-space-in-a-list-is-a-space
     Scenario: a space typed into a list is a space, because a title has them
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I type "ship it"
       Then the list offers "Ship it"
 
     @gui-a-double-click-is-done-with-the-list
     Scenario: a double-click takes a row and is done, which is what a hand expects
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I double-click the list row "Ship it"
       Then the window is on the form
-      And the field "parent" names "Ship it"
+      And the field "objectives" names "Ship it"
 
     @gui-a-long-field-takes-a-line-break
     Scenario: a description is written in paragraphs, not on one line
@@ -2521,13 +2470,13 @@ Feature: The desktop board
       Then the caret is on line 2 of the field "description"
 
     @gui-a-long-list-stays-inside-its-panel
-    Scenario: a list of more tasks than fit stays inside the panel and scrolls
+    Scenario: a list of more than fit stays inside the panel and scrolls
       Given I added a task titled "Write the spec"
-      And I added 40 tasks
+      And I added 40 objectives
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       Then the list has more to show than it has room for
       And every row of the list is inside the panel
       And a bar sits beside the list
@@ -2542,83 +2491,70 @@ Feature: The desktop board
     @gui-walking-past-the-last-row-in-sight-scrolls-the-list
     Scenario: the keyboard brings a row into sight rather than leaving it below
       Given I added a task titled "Write the spec"
-      And I added 40 tasks
+      And I added 40 objectives
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I press "down" 30 times
       Then the row the keyboard is on is in sight
 
     @gui-clicking-a-field-that-a-list-answers-opens-it
     Scenario: clicking the field opens its list, which is what a pointer is for
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       Then the window is choosing
-      And the panel is headed "a parent for task 2"
+      And the panel is headed "objectives for task 1"
 
     @gui-a-list-answers-the-mouse
     Scenario: a row is chosen by clicking it, the way everything else here is
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I click the list row "Ship it"
       Then the window is choosing
       When I press "enter"
+      And I press "cmd+enter"
       Then the window is on the form
-      And the field "parent" names "Ship it"
+      And the field "objectives" names "Ship it"
 
     @gui-a-click-in-a-list-leaves-the-form-under-it-alone
     Scenario: a click inside the list does not reach the form behind it
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I click the line that narrows the list
       Then the window is choosing
-      And the form is still on the field "parent"
+      And the form is still on the field "objectives"
 
     @gui-the-list-narrows-as-it-is-typed-into
     Scenario: typing in the list keeps only what matches
-      Given I added a task titled "Ship it"
+      Given I added an objective titled "Ship it"
+      And I added an objective titled "Rewrite the tests"
       And I added a task titled "Write the spec"
-      And I added a task titled "Rewrite the tests"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "parent"
+      And I click the field "objectives"
       And I type "tests"
       Then the list offers "Rewrite the tests"
       And the list does not offer "Ship it"
 
-    @gui-choosing-a-parent-says-which-task-it-is
-    Scenario: the field says which task it was attached to, not only its number
-      Given I added a task titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "parent"
-      And I press "enter"
-      Then the window is on the form
-      And the field "parent" names "Ship it"
-      And the field "parent" reads "1"
-
     @gui-a-card-says-it-carries-more-than-it-shows
-    Scenario: a card says a description exists and how far its parts have got
+    Scenario: a card says a description exists and how far its steps have got
       Given I added a task titled "Write the spec" with the description "Two columns"
       And I added a task titled "Ship it"
-      And I added a task titled "Write the tests" hanging under task 2
-      And I edited task 3 with the state "done"
+      And I added the step "Write the tests" to task 2, done
       When I open the window
       Then the card for task 1 is marked as described
       And the card for task 2 says "1/1"
@@ -2682,149 +2618,144 @@ Feature: The desktop board
       Then the form is open on task 1
       And the field "title" reads "Write it properly"
 
-  Rule: A task opens on the work hanging under it
+  Rule: A task opens on its steps, ticked, renamed, added and taken away where they are
 
-    @gui-the-arrows-walk-the-parts
-    Scenario: the arrows walk the parts, and space ticks the one they are on
+    @gui-the-arrows-walk-the-steps
+    Scenario: the arrows walk the steps, and space ticks the one they are on
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
-      And I added a task titled "Get the nod" hanging under task 1
+      And I added the step "Draft the columns" to task 1
+      And I added the step "Get the nod" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
-      Then the part the keyboard is on is "Draft the columns"
+      And I put the keyboard on "steps"
+      Then the step the keyboard is on is "Draft the columns"
       When I press "down"
-      Then the part the keyboard is on is "Get the nod"
+      Then the step the keyboard is on is "Get the nod"
       When I press "space"
-      Then the part "Get the nod" is ticked
-      And task 3 is in the column "done"
+      Then the step "Get the nod" is ticked
+      And task 1 carries the step "Get the nod", done
 
-    @gui-a-task-with-parts-chooses-from-a-list
-    Scenario: a task with parts opens a list from its form, and the form stays drawn under it
+    @gui-a-task-with-steps-chooses-from-a-list
+    Scenario: a task with steps opens a list from its form, and the form stays drawn under it
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
+      And I added the step "Draft the columns" to task 1
       When I open the window
       And I double-click the card "Ship it"
       And I click the field "column"
       Then the window is choosing
       And the list reads "backlog", "todo", "current", "blocked", "watching", "paused", "done"
 
-    @gui-a-part-is-renamed-in-its-tile
-    Scenario: enter renames the part the keyboard is on, in its tile
+    @gui-a-step-is-renamed-in-its-tile
+    Scenario: enter renames the step the keyboard is on, in its tile
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft" hanging under task 1
+      And I added the step "Draft" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
+      And I put the keyboard on "steps"
       And I press "enter"
       And I type " the columns"
       And I press "enter"
       And I choose "Save"
-      Then task 2 hangs under task 1, titled "Draft the columns"
+      Then the steps of task 1 read "Draft the columns"
 
-    @gui-parts-are-added-one-after-another
-    Scenario: the last line adds a part, and the next is waiting behind it
+    @gui-steps-are-added-one-after-another
+    Scenario: the last line adds a step, and the next is waiting behind it
       Given I added a task titled "Ship it"
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
+      And I put the keyboard on "steps"
       And I press "enter"
       And I type "Draft the columns"
       And I press "enter"
       And I type "Get the nod"
       And I press "enter"
       And I choose "Save"
-      Then task 2 hangs under task 1, titled "Draft the columns"
-      And task 3 hangs under task 1, titled "Get the nod"
+      Then the steps of task 1 read "Draft the columns", "Get the nod"
 
-    @gui-a-part-is-struck-out-and-back
-    Scenario: backspace strikes a part out until the form is saved, and again brings it back
+    @gui-a-step-is-struck-out-and-back
+    Scenario: backspace strikes a step out until the form is saved, and again brings it back
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft" hanging under task 1
-      And I added a task titled "Keep" hanging under task 1
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
+      And I put the keyboard on "steps"
       And I press "backspace"
-      Then the part "Draft" is struck out
+      Then the step "Draft" is struck out
       When I press "backspace"
-      Then the part "Draft" is not struck out
+      Then the step "Draft" is not struck out
       When I press "down"
       And I press "backspace"
       And I choose "Save"
-      Then the engine was asked "task delete" for task 3
-      And task 2 hangs under task 1, titled "Draft"
+      Then the steps of task 1 read "Draft"
 
-    @gui-the-wheel-scrolls-the-parts
-    Scenario: the wheel scrolls the parts, wherever the keyboard is
+    @gui-the-wheel-scrolls-the-steps
+    Scenario: the wheel scrolls the steps, wherever the keyboard is
       Given a window of 1024 by 640
       And I added a task titled "Ship it"
-      And I added 12 tasks hanging under task 1
+      And I added 12 steps to task 1
       When I open the window
       And I double-click the card "Ship it"
-      Then the parts are at their beginning
-      When I scroll down over the parts
-      Then the parts have moved
-      When I scroll down over the parts 99 times
-      Then the last part is in sight
+      Then the steps are at their beginning
+      When I scroll down over the steps
+      Then the steps have moved
+      When I scroll down over the steps 99 times
+      Then the last step is in sight
 
-    @gui-a-part-in-hand-shows-where-it-lands
-    Scenario: a part in hand follows the pointer, and says where it would land
+    @gui-a-step-in-hand-shows-where-it-lands
+    Scenario: a step in hand follows the pointer, and says where it would land
       Given I added a task titled "Ship it"
-      And I added a task titled "First" hanging under task 1
-      And I added a task titled "Second" hanging under task 1
-      And I added a task titled "Third" hanging under task 1
+      And I added the step "First" to task 1
+      And I added the step "Second" to task 1
+      And I added the step "Third" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I take hold of the part "First" and hold it over the part "Third"
-      Then a part is in hand, under the pointer
+      And I take hold of the step "First" and hold it over the step "Third"
+      Then a step is in hand, under the pointer
       And it would land below "Third"
 
-    @gui-a-part-is-dragged-to-its-place
-    Scenario: a part dragged onto another takes its place
+    @gui-a-step-is-dragged-to-its-place
+    Scenario: a step dragged onto another takes its place
       Given I added a task titled "Ship it"
-      And I added a task titled "First" hanging under task 1
-      And I added a task titled "Second" hanging under task 1
+      And I added the step "First" to task 1
+      And I added the step "Second" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I drag the part "Second" onto the part "First"
-      Then the parts are drawn as a list to tick, "Second" first
+      And I drag the step "Second" onto the step "First"
+      Then the steps are drawn as a list to tick, "Second" first
       When I choose "Save"
       And I double-click the card "Ship it"
-      Then the parts are drawn as a list to tick, "Second" first
+      Then the steps are drawn as a list to tick, "Second" first
 
-    @gui-parts-done-and-left-in-turn-are-saved
-    Scenario: parts done and left in turn are saved, each kept among its own
+    @gui-steps-done-and-left-in-turn-are-saved
+    Scenario: steps done and left in turn are saved, each kept among its own
       Given I added a task titled "Ship it"
-      And I added a task titled "One" hanging under task 1
-      And I added a task titled "Two" hanging under task 1
-      And I added a task titled "Three" hanging under task 1
-      And I added a task titled "Four" hanging under task 1
-      And I added a task titled "Five" hanging under task 1
-      And I edited task 2 with the state "done"
-      And I edited task 3 with the state "done"
-      And I edited task 5 with the state "done"
+      And I added the step "One" to task 1, done
+      And I added the step "Two" to task 1, done
+      And I added the step "Three" to task 1
+      And I added the step "Four" to task 1, done
+      And I added the step "Five" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
+      And I put the keyboard on "steps"
       And I press "down"
       And I press "space"
       And I choose "Save"
       Then the window is on the board
-      And task 6 is in the column "done"
+      And task 1 carries the step "Five", done
 
     @gui-a-tick-is-kept-whatever-becomes-of-the-form
-    Scenario: a part ticked is done at once, and nothing is left to save for it
+    Scenario: a step ticked is done at once, and nothing is left to save for it
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft" hanging under task 1
+      And I added the step "Draft" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "parts"
+      And I put the keyboard on "steps"
       And I press "space"
-      Then task 2 is in the column "done"
+      Then task 1 carries the step "Draft", done
       When I press "esc"
       Then the window is on the board
-      And task 2 is in the column "done"
+      And task 1 carries the step "Draft", done
 
     @gui-an-open-task-says-its-title-in-its-heading
     Scenario: an open task says its title on the line beside its number
@@ -2842,15 +2773,14 @@ Feature: The desktop board
       And I press "cmd+c"
       Then the clipboard reads "Deux"
 
-    @gui-the-parts-left-come-first
+    @gui-the-steps-left-come-first
     Scenario: what is left comes first
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
-      And I added a task titled "Get the client's nod" hanging under task 1
-      And I edited task 2 with the state "done"
+      And I added the step "Draft the columns" to task 1, done
+      And I added the step "Get the client's nod" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      Then the parts are drawn as a list to tick, "Get the client's nod" first
+      Then the steps are drawn as a list to tick, "Get the client's nod" first
 
   Rule: The objectives a task serves are picked from a list, not typed
 
@@ -3140,10 +3070,10 @@ Feature: The desktop board
       And no line of the field "description" runs out of it
 
     @gui-the-form-keeps-its-offers-on-a-line-of-their-own
-    Scenario: the form of a task with parts fits above its offers, even in the smallest window
+    Scenario: the form of a task with steps fits above its offers, even in the smallest window
       Given a window of 1024 by 640
       And I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
+      And I added the step "Draft the columns" to task 1
       When I open the window
       And I click the card "Ship it"
       And I choose "Edit"
@@ -3153,25 +3083,25 @@ Feature: The desktop board
       And the description runs the width of the form, under the title
       And the form groups its fields under "STATE", "TIME", "BLOCKED", "LINKS"
 
-    @gui-a-new-task-goes-in-with-its-parts
-    Scenario: a new task is added with the parts already written down for it
+    @gui-a-new-task-goes-in-with-its-steps
+    Scenario: a new task is added with the steps already written down for it
       When I open the window
       And I choose "New"
       And I set the field "title" to "Ship it"
-      And I set the field "parts" to "Draft the columns"
+      And I set the field "steps" to "Draft the columns"
       And I choose "Save"
-      Then task 2 hangs under task 1, titled "Draft the columns"
+      Then the steps of task 1 read "Draft the columns"
 
-    @gui-the-parts-read-as-a-list-to-tick
-    Scenario: the parts of a task being edited read as a list to tick, written as lines underneath
+    @gui-the-steps-read-as-a-list-to-tick
+    Scenario: the steps of a task being edited read as a list to tick, written as lines underneath
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
+      And I added the step "Draft the columns" to task 1
       When I open the window
       And I click the card "Ship it"
       And I choose "Edit"
-      Then the parts are drawn as a list to tick, "Draft the columns" among them
-      When I click the field "parts"
-      Then the field "parts" reads "#2 [ ] Draft the columns"
+      Then the steps are drawn as a list to tick, "Draft the columns" among them
+      When I click the field "steps"
+      Then the field "steps" reads "#1 [ ] Draft the columns"
 
     @gui-the-bar-teaches-the-key
     Scenario: the bar says what to press, not only what can be done
@@ -3247,13 +3177,13 @@ Feature: The desktop board
     @gui-what-takes-more-can-be-left-out
     Scenario: what would take more with it is named, and can be left out
       Given I added a task titled "Ship it"
-      And I added a task titled "Draft the columns" hanging under task 1
+      And I added the step "Draft the columns" to task 1
       And I added a task titled "Other"
       When I open the window
       And I click the card "Ship it"
       And I ⌘-click the card "Other"
       And I press "d"
-      Then the question says of task 1 "its 1 part goes with it"
+      Then the question says of task 1 "its 1 step goes with it"
       When I choose "Skip flagged"
       Then "BACKLOG" carries "Ship it"
       And "BACKLOG" does not carry "Other"

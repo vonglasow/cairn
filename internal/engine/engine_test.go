@@ -315,96 +315,7 @@ func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 	}
 }
 
-func TestEngine_hangsATaskUnderAnother(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-
-	got, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).Number)})
-	if err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-	if facts := factsOf(got); facts.Parent != factsOf(under).Number {
-		t.Errorf("Parent = %d, want %d", facts.Parent, factsOf(under).Number)
-	}
-}
-
-func TestEngine_setsATaskFreeWhenTheParentIsCleared(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).Number)})
-	if err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-
-	got, err := e.edit(factsOf(hung).Number, Changes{Parent: of(task.NoParent)})
-	if err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if facts := factsOf(got); facts.Parent != task.NoParent {
-		t.Errorf("Parent = %d, want none", facts.Parent)
-	}
-}
-
-func TestEngine_refusesAParentThatDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).add("Write the tests", Changes{Parent: of(99)}); !errors.Is(err, ErrNoSuchTask) {
-		t.Errorf("err = %v, want ErrNoSuchTask", err)
-	}
-}
-
-func TestEngine_refusesATaskHangingUnderItself(t *testing.T) {
-	e := openEngine(t)
-	alone := add(t, e, "Ship it")
-	if _, err := e.edit(factsOf(alone).Number, Changes{Parent: of(factsOf(alone).Number)}); !errors.Is(err, ErrParentIsSelf) {
-		t.Errorf("err = %v, want ErrParentIsSelf", err)
-	}
-}
-
-func TestEngine_refusesToHangATaskUnderASubTask(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).Number)})
-	if err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-
-	if _, err := e.add("Write the first one", Changes{Parent: of(factsOf(hung).Number)}); !errors.Is(err, ErrParentIsSubTask) {
-		t.Errorf("err = %v, want ErrParentIsSubTask", err)
-	}
-}
-
-func TestEngine_deletesATaskOnceNothingHangsUnderIt(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-	hung, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).Number)})
-	if err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-	if err := e.delete(factsOf(hung).Number); err != nil {
-		t.Fatalf("Delete: %v", err)
-	}
-
-	if err := e.delete(factsOf(under).Number); err != nil {
-		t.Errorf("Delete: %v, want it to go now that nothing hangs under it", err)
-	}
-}
-
-func TestEngine_namesWhatHangsUnderATask(t *testing.T) {
-	e := openEngine(t)
-	under := add(t, e, "Ship it")
-	if _, err := e.add("Write the tests", Changes{Parent: of(factsOf(under).Number)}); err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-
-	got, err := e.under(factsOf(under).Number)
-	if err != nil {
-		t.Fatalf("Under: %v", err)
-	}
-	if len(got) != 1 || factsOf(got[0]).Title != "Write the tests" {
-		t.Errorf("Under = %v, want the one sub-task", got)
-	}
-}
-
-func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
+func TestEngine_reportsWhatItCannotReach(t *testing.T) {
 	e, err := Open(filepath.Join(t.TempDir(), "cairn.db"))
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -417,9 +328,6 @@ func TestEngine_reportsSubTasksItCannotReach(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	if _, err := e.under(factsOf(kept).Number); err == nil {
-		t.Error("Under on a closed store should fail")
-	}
 	if err := e.delete(factsOf(kept).Number); err == nil {
 		t.Error("Delete on a closed store should fail")
 	}
@@ -473,27 +381,6 @@ func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 func TestEngine_refusesATimeItCannotMakeSenseOf(t *testing.T) {
 	if _, err := openEngine(t).add("Write the spec", Changes{Spent: of("+ages")}); err == nil {
 		t.Error("Add with a time it cannot read should fail")
-	}
-}
-
-func TestDeletingATaskTakesItsPartsWithIt(t *testing.T) {
-	e := openEngine(t)
-	ship := factsOf(add(t, e, "Ship it")).Number
-	parent := ship
-	first := factsOf(add(t, e, "Relire l'ADR")).Number
-	second := factsOf(add(t, e, "Trancher")).Number
-	for _, part := range []int{first, second} {
-		if _, err := e.edit(part, Changes{Parent: &parent}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := e.delete(ship); err != nil {
-		t.Fatalf("deleting a task carrying parts: %v", err)
-	}
-	for _, gone := range []int{ship, first, second} {
-		if _, err := e.show(gone); err == nil {
-			t.Errorf("task %d is still there", gone)
-		}
 	}
 }
 

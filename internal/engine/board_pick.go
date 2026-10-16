@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"slices"
-
 	"cairn/internal/domain"
 )
 
@@ -18,35 +16,6 @@ func FoundGoals(goals []Goal, query string) []Goal {
 		}
 	}
 	return Sorted(found)
-}
-
-// Parentable is what the task numbered self may hang under, among what a search reaches: work on the board, never the task itself, and never a part — nothing hangs under a part.
-func Parentable(cards []Card, self int, query string) []Card {
-	var out []Card
-	for _, c := range OnTheBoard(cards, false) {
-		if c.Number == self || c.Parent != 0 {
-			continue
-		}
-		if query == "" || ReachesCard(c, query) {
-			out = append(out, c)
-		}
-	}
-	slices.SortStableFunc(out, func(a, b Card) int { return reachedFor(a.State) - reachedFor(b.State) })
-	return out
-}
-
-func reachedFor(state string) int {
-	switch domain.State(state) {
-	case domain.Current:
-		return 0
-	case domain.Todo:
-		return 1
-	case domain.Blocked, domain.Watching, domain.Paused:
-		return 2
-	case domain.Backlog:
-		return 3
-	}
-	return 4
 }
 
 func overrun(estimate, spent string) bool {

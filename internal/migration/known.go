@@ -227,4 +227,36 @@ ALTER TABLE tasks DROP COLUMN time_spent;`,
 		undoes: `ALTER TABLE tasks ADD COLUMN time_spent INTEGER NOT NULL DEFAULT 0`,
 		loses:  "the time spent written on each task, which stays in its trace as time added by hand",
 	},
+	{
+		name: "a task is split into steps, and no task hangs under another",
+		does: `
+CREATE TABLE IF NOT EXISTS steps (
+	task_number INTEGER NOT NULL REFERENCES tasks(number) ON DELETE CASCADE,
+	place       INTEGER NOT NULL,
+	title       TEXT    NOT NULL,
+	done        INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY (task_number, place)
+);
+INSERT INTO steps (task_number, place, title, done)
+	SELECT parent, ROW_NUMBER() OVER (PARTITION BY parent ORDER BY state = 'done', position, number), title, state = 'done'
+	FROM tasks WHERE parent != 0;
+INSERT INTO trace (task_number, did, field, was, became, through, at)
+	SELECT task_number, 'focus released', '', '', '', 'migration', strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	FROM focused WHERE task_number IN (SELECT number FROM tasks WHERE parent != 0);
+INSERT INTO trace (task_number, did, field, was, became, through, at)
+	SELECT number, 'deleted', '', 'became a step of task ' || parent, '', 'migration', strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	FROM tasks WHERE parent != 0;
+DELETE FROM focused WHERE task_number IN (SELECT number FROM tasks WHERE parent != 0);
+DELETE FROM blockers WHERE task_number IN (SELECT number FROM tasks WHERE parent != 0)
+	OR blocker_number IN (SELECT number FROM tasks WHERE parent != 0);
+DELETE FROM task_objectives WHERE task_number IN (SELECT number FROM tasks WHERE parent != 0);
+DELETE FROM labels WHERE task_number IN (SELECT number FROM tasks WHERE parent != 0);
+DELETE FROM tasks WHERE parent != 0;
+ALTER TABLE tasks DROP COLUMN parent;`,
+		undoes: `
+ALTER TABLE tasks ADD COLUMN parent INTEGER NOT NULL DEFAULT 0;
+DROP TABLE steps;`,
+		loses: "every step of every task, which the older shape cannot hold; " +
+			"the sub-tasks they were made from are not brought back",
+	},
 }

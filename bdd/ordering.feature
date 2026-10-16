@@ -327,54 +327,24 @@ Feature: Ordering
       Then it succeeds
       And it says nothing is in focus
 
-  Rule: A sub-task takes its place among its sisters
+  Rule: A task's steps keep the order they were written in
 
-    @ordering-sub-task-added-last
-    Scenario: a new sub-task arrives behind its sisters
-      Given I added a task titled "The parent"
-      And I added a task titled "First sister" with the parent "1"
-      And I added a task titled "Second sister" with the parent "1"
-      When I run `cairn task new "Third sister" --parent 1`
-      Then it lists the sub-tasks of task 1 in the order "First sister", "Second sister", "Third sister"
+    @ordering-steps-keep-their-order
+    Scenario: steps are read back in the order they were added
+      Given I added a task titled "Ship it"
+      And I added the step "First step" to task 1
+      And I added the step "Second step" to task 1
+      When I run `cairn step new 1 "Third step"`
+      Then the steps of task 1 read "First step", "Second step", "Third step"
 
-    @ordering-sub-task-moved-among-its-sisters
-    Scenario: a sub-task is moved among its sisters
-      Given I added a task titled "The parent"
-      And I added a task titled "First sister" with the parent "1"
-      And I added a task titled "Second sister" with the parent "1"
-      When I run `cairn task move 3 --first`
-      Then it lists the sub-tasks of task 1 in the order "Second sister", "First sister"
-
-    @ordering-sub-task-not-moved-among-root-tasks
-    Scenario: a sub-task cannot be moved behind a root task
-      Given I added a task titled "The parent"
-      And I added a task titled "A sister" with the parent "1"
-      And I added a task titled "A root task"
-      When I run `cairn task move 2 --after 3`
-      Then it fails
-      And it says a sub-task is moved among its sisters
-      And it says whose sub-task it is
-
-    @ordering-a-sub-task-given-another-parent
-    Scenario: a sub-task given another parent arrives behind its new sisters
-      Given I added a task titled "The first parent"
-      And I added a task titled "Moving over" with the parent "1"
-      And I added a task titled "Staying" with the parent "1"
-      And I added a task titled "The second parent"
-      And I added a task titled "Already there" with the parent "4"
-      And I added a task titled "Also already there" with the parent "4"
-      When I run `cairn task edit 2 --parent 4`
-      Then it lists the sub-tasks of task 4 in the order "Already there", "Also already there", "Moving over"
-      And it lists the sub-tasks of task 1 in the order "Staying"
-
-    @ordering-a-parent-carries-its-sub-tasks
-    Scenario: moving a parent carries its sub-tasks with it
-      Given I added a task titled "The parent"
-      And I added a task titled "A sister" with the parent "1"
-      And I added a task titled "Another root task"
+    @ordering-a-task-carries-its-steps
+    Scenario: moving a task carries its steps with it
+      Given I added a task titled "Ship it"
+      And I added the step "A step" to task 1
+      And I added a task titled "Another task"
       When I run `cairn task move 1 --last`
-      Then it lists the tasks in the order "Another root task", "The parent"
-      And it lists the sub-tasks of task 1 in the order "A sister"
+      Then it lists the tasks in the order "Another task", "Ship it"
+      And the steps of task 1 read "A step"
 
   Rule: A place changes only when a task joins or leaves the ones it sits with
 
@@ -425,15 +395,3 @@ Feature: Ordering
       And I edited task 2 with the state "todo"
       When I run `cairn task move 1 --last`
       Then it lists the tasks in the order "Third", "Fourth", "First", "Second"
-
-    @ordering-a-parent-left-leaves-no-hole
-    Scenario: a sub-task given another parent leaves no hole among its old sisters
-      Given I added a task titled "The parent"
-      And I added a task titled "First sister" with the parent "1"
-      And I added a task titled "Second sister" with the parent "1"
-      And I added a task titled "Third sister" with the parent "1"
-      And I added a task titled "Fourth sister" with the parent "1"
-      And I added a task titled "Another parent"
-      And I edited task 4 with the parent "6"
-      When I run `cairn task move 2 --last`
-      Then it lists the sub-tasks of task 1 in the order "Second sister", "Fourth sister", "First sister"

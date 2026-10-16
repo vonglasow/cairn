@@ -8,9 +8,9 @@
  │ The client wants two columns, not three.            ┃ │ │ 2026-09-02 03:30  changed  priority… │
  ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 04:30  changed  priority… │
  ╭───────────────────────────────────────────────────────╮ │ 2026-09-02 05:30  changed  priority… │
- │ SUB-TASKS   1 to do · 1 done                          │ │ 2026-09-02 06:30  changed  priority… │
- │ [ ] 12  Get the client's nod                          │ │ 2026-09-02 07:30  changed  priority… │
- │ [x] 11  Draft the columns                             │ │ 2026-09-02 08:30  changed  priority… │
+ │ STEPS   1 to do · 1 done                              │ │ 2026-09-02 06:30  changed  priority… │
+ │ [ ] 2  Get the client's nod                           │ │ 2026-09-02 07:30  changed  priority… │
+ │ [x] 1  Draft the columns                              │ │ 2026-09-02 08:30  changed  priority… │
  ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 09:30  changed  priority… │
                                                            │ 2026-09-02 10:30  changed  priority… │
                                                            │ 2026-09-02 11:30  changed  priority… │

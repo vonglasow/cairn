@@ -61,42 +61,22 @@ func (t Task) FreedBy(becomes Task) (domain.State, bool) {
 	return domain.Todo, true
 }
 
-// MayFinishAs refuses moving the task to done while something hanging under it is not.
-func (t Task) MayFinishAs(now Task, hanging func(int) ([]Task, error)) error {
+// ErrStepStillOpen is returned when a task is asked to be finished while one of its steps is not.
+var ErrStepStillOpen = errors.New("a step of it is not done")
+
+// MayFinishAs refuses moving the task to done while one of its steps is not.
+func (t Task) MayFinishAs(now Task) error {
 	if now.state != domain.Done || t.state == domain.Done {
 		return nil
 	}
-	under, err := hanging(now.number)
-	if err != nil {
-		return err
+	var open []string
+	for i, s := range now.steps {
+		if !s.Done {
+			open = append(open, strconv.Itoa(i+1))
+		}
 	}
-	return MayFinish(now.number, under)
-}
-
-// MayHang says whether the task may hang where it was told to: a task under nothing hangs anywhere; a part takes the column a part may, serves no objective of its own, never hangs under itself, and never under a part.
-func (t Task) MayHang(parentOf func(int) (Task, error)) error {
-	if t.parent == NoParent {
+	if len(open) == 0 {
 		return nil
 	}
-	for _, may := range []func() error{t.MayCarryItsColumn, t.MayServeAnObjective, t.MayHangUnderItsParent} {
-		if err := may(); err != nil {
-			return err
-		}
-	}
-	parent, err := parentOf(t.parent)
-	if err != nil {
-		return err
-	}
-	return parent.MayCarrySubTasks()
-}
-
-// Work is what among these is work in its own right, its parts left out: a sweep acts on the work, and a part goes with the work it belongs to.
-func Work(tasks []Task) []Task {
-	work := make([]Task, 0, len(tasks))
-	for _, one := range tasks {
-		if one.parent == NoParent {
-			work = append(work, one)
-		}
-	}
-	return work
+	return fmt.Errorf("task %d: step %s: %w", now.number, strings.Join(open, ", "), ErrStepStillOpen)
 }

@@ -92,20 +92,20 @@ func TestFromJSON_readsPastEveryKindOfField(t *testing.T) {
 	}
 }
 
-func TestListing_countsPartsTheNarrowingLeftOut(t *testing.T) {
+func TestListing_countsTheStepsOfWhatItNarrowedTo(t *testing.T) {
 	path := storeAt(t, "Ship it")
 	if _, err := Do(TaskEdit, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Do(TaskNew, path, given("title", "a part", "parent", "1")); err != nil {
+	if _, err := Do(StepNew, path, given("number", "1", "title", "a step")); err != nil {
 		t.Fatal(err)
 	}
 	listed, err := Do(TaskList, path, Input{Listed: map[string][]string{"label": {"x"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := listed.Along[1].SubTasks.Total; got != 1 {
-		t.Errorf("task 1 counts %d parts, want the one the narrowing left out", got)
+	if got := listed.Along[1].Steps.Total; got != 1 {
+		t.Errorf("task 1 counts %d steps, want its one", got)
 	}
 }
 
