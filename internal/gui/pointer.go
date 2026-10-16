@@ -194,6 +194,7 @@ func (w Window) DoubleClick(p Point) Window {
 	if _, _, inColumn := w.where(w.Layout(), p); number == 0 && inColumn && w.tab == Tasks && w.screen == OnTheBoard {
 		w = w.aiming(p)
 		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
+		w.form.behind = w.above(p)
 		return w
 	}
 	if number == 0 {
@@ -437,19 +438,32 @@ func (w Window) at(p Point) int {
 	}
 	l := w.Layout()
 	if column, _, found := l.Under(p, 0); found {
-		here := w.inColumn(column)
-		index := (p.Y - l.Column[column].Y + w.scroll[column]) / CardHeight
-		if index < len(here) {
-			return here[index].Number
-		}
-		return 0
+		return cardOn(w.inColumn(column), p.Y-l.Column[column].Y+w.scroll[column])
 	}
 	if lane, found := l.LaneUnder(p); found {
-		here := w.inLane(lane)
-		index := (p.Y - l.Lane[lane].Y + w.lanes[lane]) / CardHeight
-		if index < len(here) {
-			return here[index].Number
-		}
+		return cardOn(w.inLane(lane), p.Y-l.Lane[lane].Y+w.lanes[lane])
+	}
+	return 0
+}
+
+func cardOn(here []engine.Card, down int) int {
+	index := down / CardHeight
+	if index >= len(here) || down%CardHeight >= CardHeight-gap {
+		return 0
+	}
+	return here[index].Number
+}
+
+func (w Window) above(p Point) int {
+	l := w.Layout()
+	column, _, found := l.Under(p, 0)
+	if !found {
+		return 0
+	}
+	here := w.inColumn(column)
+	down := p.Y - l.Column[column].Y + w.scroll[column]
+	if index := down / CardHeight; index < len(here) && down%CardHeight >= CardHeight-gap {
+		return here[index].Number
 	}
 	return 0
 }

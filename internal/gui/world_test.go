@@ -205,6 +205,21 @@ func (w *world) click(title string) error {
 	return nil
 }
 
+func (w *world) between(above, below string) (Point, error) {
+	top, err := w.find(above)
+	if err != nil {
+		return Point{}, err
+	}
+	under, err := w.find(below)
+	if err != nil {
+		return Point{}, err
+	}
+	if under.X != top.X || under.Y-top.Y != CardHeight {
+		return Point{}, fmt.Errorf("%q does not sit straight under %q", below, above)
+	}
+	return Point{X: top.X, Y: top.Y + CardHeight/2 - gap/2}, nil
+}
+
 func (w *world) doubleClick(title string) error {
 	at, err := w.find(title)
 	if err != nil {
@@ -847,6 +862,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I double-click the card "([^"]*)"$`, w.doubleClick)
+	sc.Step(`^I click between the cards "([^"]*)" and "([^"]*)"$`, func(above, below string) error {
+		at, err := w.between(above, below)
+		w.w = w.w.clicked(at)
+		return err
+	})
+	sc.Step(`^I double-click between the cards "([^"]*)" and "([^"]*)"$`, func(above, below string) error {
+		at, err := w.between(above, below)
+		w.w = w.w.clicked(at).DoubleClick(at)
+		return err
+	})
 	sc.Step(`^I click outside the panel$`, func() error {
 		off := Point{X: 2, Y: 2}
 		w.w = w.w.PressAt(off).LetGo(off)

@@ -196,7 +196,9 @@ to be true.
 ## The mouse
 
 A click chooses a card, or changes tab when it lands on one. A double-click
-opens it to be edited. The wheel scrolls the column, or the lane, under the
+opens it to be edited. The space between two cards belongs to neither: a click
+there chooses nothing (`@gui-a-click-between-two-cards-chooses-neither`), where
+it used to choose the card above, which left no way to point between them. The wheel scrolls the column, or the lane, under the
 pointer.
 
 **Only the primary button presses and drags.** A right click, a middle click or
@@ -426,7 +428,10 @@ from a right click adds it there, unless a card is chosen, whose column wins
 holds no card adds one to it at once, the way a calendar adds an event where it
 is double-clicked (`@gui-a-double-click-on-a-column-adds-there`). It went to
 the backlog whatever was clicked, so a task wanted in `todo` had to be added
-and then moved.
+and then moved. A double click in the space between two cards adds it there,
+behind the one above, in the act that makes it
+(`@gui-a-double-click-between-two-cards-adds-there`); a task moved to another
+column in the form before it is saved goes where that column puts it.
 
 **Every box in a row ends where the others do.** The title, the description,
 the last field of each section and the parts end on the same line, and a long

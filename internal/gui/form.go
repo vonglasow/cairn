@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +28,7 @@ type Form struct {
 	struck      []int
 	carried     int
 	opened      []string
+	behind      int
 }
 
 // Changed says whether anything in the form differs from what it opened with.
@@ -342,11 +345,26 @@ func (w Window) stored() (Window, int, error) {
 	if w.form.Adding {
 		number = engine.Added(answer)
 		w.form.Adding, w.form.Number = false, number
+		if err := w.puttingBehind(number); err != nil {
+			return w.failing(err), 0, err
+		}
 	}
 	if err := w.savingParts(number); err != nil {
 		return w.failing(err), 0, err
 	}
 	return w, number, nil
+}
+
+func (w Window) puttingBehind(number int) error {
+	if w.form.behind == 0 {
+		return nil
+	}
+	_, err := w.work.Ask(engine.TaskMove, engine.Input{Given: map[string]string{
+		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind)}})
+	if errors.Is(err, engine.ErrOtherColumn) || errors.Is(err, engine.ErrNotAmongItsSisters) {
+		return nil
+	}
+	return err
 }
 
 func (w Window) savingParts(parent int) error {

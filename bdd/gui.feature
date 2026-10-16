@@ -1666,6 +1666,25 @@ Feature: The desktop board
       And the window has looked at the store 2 times
       Then "TODO" carries "Plan the week"
 
+    @gui-a-click-between-two-cards-chooses-neither
+    Scenario: a click in the space between two cards chooses neither of them
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship the board" with the state "todo"
+      When I open the window
+      And I click between the cards "Write the spec" and "Ship the board"
+      Then no card is chosen
+
+    @gui-a-double-click-between-two-cards-adds-there
+    Scenario: a double click between two cards adds a task between them
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship the board" with the state "todo"
+      When I open the window
+      And I double-click between the cards "Write the spec" and "Ship the board"
+      Then the window is on the form
+      When I type "Plan the week"
+      And the window has looked at the store 2 times
+      Then "TODO" reads "Write the spec", "Plan the week", "Ship the board"
+
     @gui-a-right-click-on-a-column-adds-there
     Scenario: New, from a right click on a column, adds a task to that column
       When I open the window
