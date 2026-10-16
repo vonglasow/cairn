@@ -20,11 +20,44 @@ func (w Window) Showing() engine.Snapshot {
 // Searched is the search as a written text, caret and all.
 func (w Window) Searched() Written { return w.looking }
 
+var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime}
+
+// Paged answers the window showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
+func (w Window) Paged(p engine.Pages) Window {
+	w.pages = p
+	if shown := w.Shown(); len(shown) > 0 && !slices.Contains(shown, w.tab) {
+		return w.onPage(shown[0])
+	}
+	return w
+}
+
+// Shown is the pages drawn, in order: every one the configuration did not turn off.
+func (w Window) Shown() []Tab {
+	var shown []Tab
+	for tab := range Pages {
+		if w.pages.Shows(pageOfTab[Tab(tab)]) {
+			shown = append(shown, Tab(tab))
+		}
+	}
+	return shown
+}
+
+// Blank says every page is turned off: the window is drawn, and nothing in it.
+func (w Window) Blank() bool { return w.pages.None() }
+
 func (w Window) other(by int) Window {
-	return w.onPage(Tab((int(w.tab) + by + len(Pages)) % len(Pages)))
+	shown := w.Shown()
+	if len(shown) == 0 {
+		return w
+	}
+	at := max(0, slices.Index(shown, w.tab))
+	return w.onPage(shown[(at+by+len(shown))%len(shown)])
 }
 
 func (w Window) onPage(tab Tab) Window {
+	if !w.pages.Shows(pageOfTab[tab]) {
+		return w
+	}
 	w.tab = tab
 	w.chosen, w.chosenGoal, w.taken = 0, false, nil
 	w.err, w.wrongFor = nil, 0

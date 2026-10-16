@@ -46,7 +46,7 @@ func NewRootCmd() *cobra.Command {
 		return engine.Misread(fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed))
 	})
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
-	root.AddCommand(newActionGroups()...)
+	root.AddCommand(newActionGroups(engine.PagesFrom(home()))...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())

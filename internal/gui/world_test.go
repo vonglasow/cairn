@@ -30,6 +30,7 @@ type world struct {
 	other *engine.Engine
 	work  *refusing
 	w     Window
+	pages engine.Pages
 
 	width, high  int
 	today        time.Time
@@ -157,7 +158,7 @@ func (w *world) storeRefuses() error {
 }
 
 func (w *world) open() error {
-	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today)
+	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.pages)
 	w.w = w.w.Look()
 	return w.w.Wrong()
 }
@@ -728,6 +729,20 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		if want := build.Read().Version; !strings.Contains(said, "cairn "+want) {
 			return fmt.Errorf("the window says %q, not cairn %s", said, want)
+		}
+		return nil
+	})
+	sc.Given(`^the pages turned off are "([^"]*)"$`, func(list string) error {
+		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
+		return nil
+	})
+	sc.Then(`^the window draws nothing but its ground$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		if all, ground := w.w.width*w.w.height, painted(shot, Box{W: w.w.width, H: w.w.height}, Dark().Back); ground != all {
+			return fmt.Errorf("%d of %d pixels are something other than the ground", all-ground, all)
 		}
 		return nil
 	})

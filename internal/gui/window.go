@@ -116,6 +116,7 @@ type Window struct {
 	looking               Written
 	archived              bool
 	aimed                 string
+	pages                 engine.Pages
 	finishing             engine.Operation
 	finishingIn           engine.Input
 	over                  string

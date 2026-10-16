@@ -18,6 +18,9 @@ var spellings = map[string]string{
 
 // Key is the few flat shortcuts this board keeps.
 func (w Window) Key(name string) Window {
+	if w.Blank() {
+		return w
+	}
 	if said, ok := spellings[name]; ok {
 		name = said
 	}

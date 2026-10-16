@@ -723,6 +723,13 @@ says what it wants (`FileAsked`), the loop opens the dialog on the side
 reaches is the call to the system, and the scenarios play the dialog the way
 they play the clipboard (`files.go`, `@gui-a-store-is-imported`).
 
+**A page turned off is not drawn.** The pages the configuration turns off have
+no tab, and `tab` and a click walk only the others; the window opens on the
+first page left (`@gui-a-page-off-has-no-tab`, `@gui-the-first-page-shown-opens`).
+With all three off the window is its ground and nothing else, and takes no key
+and no click (`@gui-every-page-off-is-an-empty-window`). See
+[config.md](config.md#the-pages-turned-off-one-by-one).
+
 **Every act is in the window's menu bar.** The window had none of its own, and
 a person at a window looks for what it does in its menus. File, Edit, View and
 Help hold every act the window has (`MenuBar`), each line an offer the bar, the

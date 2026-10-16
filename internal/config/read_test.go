@@ -619,3 +619,43 @@ func TestPlaces_tellsWhatNamedEachPlace(t *testing.T) {
 		})
 	}
 }
+
+func writtenConfig(t *testing.T, content string) string {
+	t.Helper()
+	home := t.TempDir()
+	path := filepath.Join(home, ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return home
+}
+
+func TestRead_saysWhichPagesAreTurnedOff(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[pages]\ntime = false\ntasks = true\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.PagesOff(); len(got) != 1 || got[0] != "time" {
+		t.Errorf("the pages off are %v, want [time]", got)
+	}
+	none, err := config.Read(t.TempDir(), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := none.PagesOff(); len(got) != 0 {
+		t.Errorf("with no file the pages off are %v", got)
+	}
+	all, err := config.Read(writtenConfig(t, "[pages]\nobjectives = false\ntime = false\ntasks = false\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(all.PagesOff(), ","); got != "tasks,objectives,time" {
+		t.Errorf("every page off reads %q, want them in the order they are drawn", got)
+	}
+	if _, err := config.Read(writtenConfig(t, "[pages]\ncalendar = false\n"), silentEnv); !errors.Is(err, config.ErrUnknownKey) {
+		t.Errorf("a page cairn does not have: %v, want ErrUnknownKey", err)
+	}
+}

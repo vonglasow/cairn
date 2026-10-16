@@ -105,7 +105,10 @@ func (w *world) laneCarries(kind, title string) error {
 
 func (w *world) tabsRead(list string) error {
 	want := quoted(list)
-	got := []string{"TASKS", "OBJECTIVES"}
+	var got []string
+	for _, tab := range w.w.Shown() {
+		got = append(got, Pages[tab])
+	}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		return fmt.Errorf("the tabs read %v, want %v", got, want)
 	}

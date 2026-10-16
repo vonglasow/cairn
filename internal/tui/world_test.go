@@ -26,6 +26,7 @@ type world struct {
 	held   *engine.Engine
 	other  *engine.Engine
 	b      Board
+	pages  engine.Pages
 	width  int
 	high   int
 	asked  bool
@@ -61,7 +62,7 @@ func (w *world) reset() {
 }
 
 func (w *world) open() {
-	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high)
+	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.pages)
 	w.opened = true
 	w.refresh()
 }
@@ -194,6 +195,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the card for task (\d+) is marked as archived$`, w.cardArchived)
 	sc.Then(`^the card for task (\d+) is drawn as the one in focus$`, w.cardInFocus)
 	sc.Then(`^the board says "([^"]*)"$`, w.boardSays)
+	sc.Given(`^the pages turned off are "([^"]*)"$`, func(list string) error {
+		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
+		return nil
+	})
+	sc.Then(`^the screen holds nothing$`, func() error {
+		if said := strings.TrimSpace(w.b.Draw()); said != "" {
+			return fmt.Errorf("the screen holds:\n%s", said)
+		}
+		return nil
+	})
 	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
 		if err := w.mustSay("CONTEXT"); err != nil {
 			return err

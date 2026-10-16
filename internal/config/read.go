@@ -1,4 +1,4 @@
-// Package config reads the file that says cairn's two places.
+// Package config reads the file that says cairn's two places, and which of its pages are turned off.
 package config
 
 import (
@@ -51,12 +51,39 @@ type Places struct {
 	notes        string
 	storeNamedBy namedBy
 	notesNamedBy namedBy
+	pagesOff     []string
 }
 
 type file struct {
 	Store *string `toml:"store"`
 	Notes *string `toml:"notes"`
+	Pages *pages  `toml:"pages"`
 }
+
+type pages struct {
+	Tasks      *bool `toml:"tasks"`
+	Objectives *bool `toml:"objectives"`
+	Time       *bool `toml:"time"`
+}
+
+func (p *pages) off() []string {
+	if p == nil {
+		return nil
+	}
+	var off []string
+	for _, page := range []struct {
+		name string
+		on   *bool
+	}{{"tasks", p.Tasks}, {"objectives", p.Objectives}, {"time", p.Time}} {
+		if page.on != nil && !*page.on {
+			off = append(off, page.name)
+		}
+	}
+	return off
+}
+
+// PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
+func (p Places) PagesOff() []string { return p.pagesOff }
 
 func acceptedKeys() []string {
 	t := reflect.TypeFor[file]()
@@ -120,6 +147,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		notes:        filepath.Join(home, DefaultFolder, defaultNotesFolder),
 		storeNamedBy: byNothing,
 		notesNamedBy: byNothing,
+		pagesOff:     f.Pages.off(),
 	}
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},

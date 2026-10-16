@@ -32,7 +32,7 @@ func (noCloseWriter) Close() error { return nil }
 // Serve builds an SDK server announcing s.Name and s.Version, and runs it over an IOTransport built on in and out.
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, &sdk.ServerOptions{Instructions: whereTheWorkGoes})
-	for _, op := range offered(s.Access) {
+	for _, op := range offered(s.Access, engine.PagesFrom(s.Home)) {
 		server.AddTool(toolFor(op), handlerFor(op, s.Home))
 	}
 	transport := &sdk.IOTransport{Reader: io.NopCloser(in), Writer: noCloseWriter{out}}

@@ -57,10 +57,13 @@ func atLeastOne() cobra.PositionalArgs {
 	}
 }
 
-func newActionGroups() []*cobra.Command {
+func newActionGroups(pages engine.Pages) []*cobra.Command {
 	var groups []*cobra.Command
 	byThing := map[string]*cobra.Command{}
 	for _, op := range engine.All() {
+		if !pages.Offers(op) {
+			continue
+		}
 		group, ok := byThing[op.Thing]
 		if !ok {
 			group = newGroupCmd(op.Thing)

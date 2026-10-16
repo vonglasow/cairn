@@ -293,3 +293,24 @@ Feature: Answering a machine over MCP
       Given a cairn server started with `--access write`
       When I ask it what it can do
       Then the description `task_edit` takes says what was done or decided on a task goes in its notes
+
+  Rule: A page turned off in the configuration offers no tool
+
+    @mcp-a-page-off-offers-none-of-its-tools
+    Scenario: the time page turned off takes its tools away, and leaves the rest
+      Given a configuration that turns the page "time" off
+      And a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it does not offer `timesheet_show`
+      And it does not offer `timesheet_add`
+      And it offers `task_list`
+
+    @mcp-every-page-off-offers-none-of-theirs
+    Scenario: every page turned off leaves none of their tools, and the rest
+      Given a configuration that turns every page off
+      And a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it does not offer `task_list`
+      And it does not offer `objective_list`
+      And it does not offer `timesheet_show`
+      And it offers `config_show`

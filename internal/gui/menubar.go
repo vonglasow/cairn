@@ -22,6 +22,9 @@ func MenuBar() []MenuGroup {
 
 // Picked does what a line of the menu bar offers, from the board.
 func (w Window) Picked(item string) Window {
+	if w.Blank() {
+		return w
+	}
 	if w.screen != OnTheBoard && w.screen != OnSearch {
 		return w
 	}

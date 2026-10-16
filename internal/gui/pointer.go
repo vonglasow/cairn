@@ -9,6 +9,9 @@ import (
 
 // Click chooses whatever is under the pointer, and nothing when there is nothing there.
 func (w Window) Click(p Point) Window {
+	if w.Blank() {
+		return w
+	}
 	if w.screen == OnTheBoard && !w.native && MenuButton(w.Layout()).In(p) {
 		return w.openingMenuBar()
 	}
@@ -147,9 +150,9 @@ func (w Window) goalAt(p Point) int {
 
 func (w Window) tabAt(p Point) (Tab, bool) {
 	l := w.Layout()
-	for tab := range Pages {
-		if TabAt(l, tab).In(p) {
-			return Tab(tab), true
+	for i, tab := range w.Shown() {
+		if TabAt(l, i).In(p) {
+			return tab, true
 		}
 	}
 	return w.tab, false
@@ -157,6 +160,9 @@ func (w Window) tabAt(p Point) (Tab, bool) {
 
 // DoubleClick opens the detail of the card under the pointer, which is where the description and the history are.
 func (w Window) DoubleClick(p Point) Window {
+	if w.Blank() {
+		return w
+	}
 	if w.screen == OnChoosing {
 		box := w.ChoosingBox()
 		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
@@ -221,6 +227,9 @@ func (w Window) holdingBy(at int, p Point, by Unit) Window {
 
 // PressAt takes hold of whatever is under the pointer, without deciding yet whether this is a click or a drag.
 func (w Window) PressAt(p Point) Window {
+	if w.Blank() {
+		return w
+	}
 	w.pressed, w.pressedOn = true, w.screen
 	if w.screen == OnChoosing {
 		w.draggingChoosing = ChoosingBar(w.ChoosingBox()).In(p)

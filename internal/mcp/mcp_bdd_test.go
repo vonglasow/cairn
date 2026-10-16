@@ -724,6 +724,12 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^the description `task_edit` takes says what was done or decided on a task goes in its notes$", w.taskEditsDescriptionPointsAtTheNotes)
 		sc.Step("^a cairn server started with `--access (read|write|full)`$", w.aCairnServerStartedWithAccess)
 		sc.Step("^a cairn server started with no access given$", w.aCairnServerStartedWithNoAccessGiven)
+		sc.Step(`^a configuration that turns the page "([^"]*)" off$`, func(page string) error {
+			return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n", page))
+		})
+		sc.Step(`^a configuration that turns every page off$`, func() error {
+			return w.WriteConfig("[pages]\ntasks = false\nobjectives = false\ntime = false\n")
+		})
 		sc.Step("^I ask it what it can do$", w.iAskItWhatItCanDo)
 		sc.Step("^every tool describes the shape of its answer$", w.everyToolDescribesItsAnswer)
 		sc.Step("^every tool says it answers one object$", w.everyToolAnswersAnObject)

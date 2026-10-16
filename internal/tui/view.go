@@ -19,6 +19,9 @@ func (b Board) View() tea.View {
 
 // Draw is the whole screen, as text.
 func (b Board) Draw() string {
+	if b.pages.None() {
+		return ""
+	}
 	if TooSmall(b.width, b.height) {
 		return b.tooSmall()
 	}
@@ -57,16 +60,15 @@ func (b Board) drawBoard() string {
 }
 
 func (b Board) tabs() string {
-	tasks, goals, spent := b.skin.TabOff.Render("tasks"), b.skin.TabOff.Render("objectives"), b.skin.TabOff.Render("time")
-	switch b.tab {
-	case Tasks:
-		tasks = b.skin.TabOn.Render("TASKS")
-	case Objectives:
-		goals = b.skin.TabOn.Render("OBJECTIVES")
-	case Time:
-		spent = b.skin.TabOn.Render("TIME")
+	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Time: "time"}
+	left := ""
+	for _, tab := range b.shown() {
+		name := b.skin.TabOff.Render(names[tab])
+		if tab == b.tab {
+			name = b.skin.TabOn.Render(strings.ToUpper(names[tab]))
+		}
+		left += " " + name
 	}
-	left := " " + tasks + " " + goals + " " + spent
 	if b.inside != 0 {
 		left += "  " + b.skin.Crumb.Render("▸ "+strconv.Itoa(b.inside))
 	}

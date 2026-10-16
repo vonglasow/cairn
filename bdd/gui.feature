@@ -78,9 +78,9 @@ Feature: The desktop board
       And the lane "watching" carries "Handed over"
 
     @gui-two-tabs
-    Scenario: there are two tabs and the work is the first
+    Scenario: there are three tabs and the work is the first
       When I open the window
-      Then the tabs read "TASKS", "OBJECTIVES"
+      Then the tabs read "TASKS", "OBJECTIVES", "TIME"
       And the tab is "TASKS"
 
     @gui-clicking-a-tab-changes-it
@@ -1257,6 +1257,31 @@ Feature: The desktop board
       And I pick "About cairn" in the menu bar
       Then the window says the version this build reports
       When I click "Close"
+      Then the window is on the board
+
+  Rule: A page turned off in the configuration is not drawn
+
+    @gui-a-page-off-has-no-tab
+    Scenario: the time page turned off has no tab, and tab walks the others
+      Given the pages turned off are "time"
+      When I open the window
+      Then the tabs read "TASKS", "OBJECTIVES"
+      When I press "tab"
+      And I press "tab"
+      Then the window is on the page "TASKS"
+
+    @gui-the-first-page-shown-opens
+    Scenario: with the tasks turned off the window opens on the objectives
+      Given the pages turned off are "tasks"
+      When I open the window
+      Then the window is on the page "OBJECTIVES"
+
+    @gui-every-page-off-is-an-empty-window
+    Scenario: every page turned off opens a window with nothing in it
+      Given the pages turned off are "tasks, objectives, time"
+      When I open the window
+      Then the window draws nothing but its ground
+      When I press "cmd+n"
       Then the window is on the board
 
   Rule: Labels are seen and managed apart from any task

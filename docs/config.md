@@ -52,7 +52,26 @@ sit under.
 They fall under one folder by default, `~/.cairn`, so what cairn keeps stays
 together and one directory is enough to move or back up by hand.
 
-## Absolute, and nothing else
+## The pages, turned off one by one
+
+```toml
+[pages]
+time = false        # tasks, objectives and time; each is on unless it says false
+```
+
+A page turned off is gone from every surface, and the engine is what says so
+(`engine.Pages`): the boards draw no tab for it and `tab` walks past it, the
+command line offers none of its commands — `task`, `objective`, `timesheet` —
+and the MCP server lists none of its tools (`bdd/pages.feature`,
+`@gui-a-page-off-has-no-tab`, `@tui-a-page-off-has-no-tab`,
+`@mcp-a-page-off-offers-none-of-its-tools`). With every page off a board opens
+with nothing in it, and only closing it does anything. What belongs to no page
+— the configuration, backups, migrations, the trace, the plugin — stays. A
+page cairn does not have is refused like any other unknown name, and `config
+show` says which pages are off. A configuration that cannot be read turns no
+page off: every command that needs it refuses anyway, and says why.
+
+
 
 A place that depends on where the command was run from answers differently
 depending on who asks, and a configuration is read from everywhere. So `notes`,
@@ -162,7 +181,10 @@ agent needs when everything else has started saying no.
   says what won and who named it, never what lost. It was sketched and left out:
   no scenario observes it, and a capability nothing observes is either specified
   or dropped.
-- **Anything but places.** Nothing about how cairn behaves belongs here. The day
-  a preference wants a home, that is a decision to take on its own.
+- **Anything but places — and the pages.** Nothing about how cairn behaves
+  belongs here. The pages were that decision, taken on its own on 2026-10-16
+  (cairn#67): which of them somebody uses is a fact about the person, read the
+  same way by every surface, so it lives where every surface already looks.
+  Any other preference is still a decision of its own.
 - **A file per project.** One file, at the place configuration lives. A store
   somewhere else is what the environment is for.

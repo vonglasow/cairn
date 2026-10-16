@@ -3,6 +3,7 @@ package tui
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -78,15 +79,44 @@ func (b Board) removeGoal() tea.Cmd {
 	return b.carry(engine.ObjectiveDelete, engine.Agreed(engine.Numbered(b.goal)))
 }
 
+var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime}
+
+// Paged answers the board showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
+func (b Board) Paged(p engine.Pages) Board {
+	b.pages = p
+	if shown := b.shown(); len(shown) > 0 && !slices.Contains(shown, b.tab) {
+		return b.onTab(shown[0])
+	}
+	return b
+}
+
+func (b Board) shown() []Tab {
+	var shown []Tab
+	for _, tab := range []Tab{Tasks, Objectives, Time} {
+		if b.pages.Shows(pageOfTab[tab]) {
+			shown = append(shown, tab)
+		}
+	}
+	return shown
+}
+
 func (b Board) otherTab() Board {
+	shown := b.shown()
+	if len(shown) == 0 {
+		return b
+	}
+	return b.onTab(shown[(max(0, slices.Index(shown, b.tab))+1)%len(shown)])
+}
+
+func (b Board) onTab(tab Tab) Board {
 	b.mode = Normal
-	switch b.tab {
-	case Tasks:
+	switch tab {
+	case Objectives:
 		b.tab = Objectives
 		b.task = 0
 		b.goal = b.firstGoal()
 		return b.follow()
-	case Objectives:
+	case Time:
 		b.tab, b.inside = Time, 0
 		if b.week.IsZero() {
 			b.week = engine.Monday(b.clock())

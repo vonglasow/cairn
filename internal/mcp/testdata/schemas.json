@@ -313,6 +313,15 @@
           ],
           "additionalProperties": false
         },
+        "pages_off": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "problem": {
           "type": "string"
         }

@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -103,6 +104,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fill(gtx, Box{W: w.width, H: w.height}, skin.Back)
 	if w.Screen() == TooSmallToDraw {
 		say(gtx, th, skin.Ink, Message(w.width, w.height), w.Says(), heading)
+		return
+	}
+	if w.Blank() {
 		return
 	}
 	l := w.Layout()
@@ -427,19 +431,19 @@ func drawPanel(gtx layout.Context, th *material.Theme, skin Skin, box Box, head 
 
 func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	fill(gtx, l.Tabs, skin.Panel)
-	for i, name := range Pages {
+	for i, page := range w.Shown() {
 		tab := TabAt(l, i)
 		ink := skin.Faint
-		if int(w.Tab()) == i {
+		if w.Tab() == page {
 			fill(gtx, tab, skin.Back)
 			for _, side := range TabSides(tab) {
 				fill(gtx, side, skin.Edge)
 			}
 			ink = skin.Ink
 		}
-		say(gtx, th, ink, TabName(tab), name+"   "+strconv.Itoa(w.Holds(Tab(i))), plain)
+		say(gtx, th, ink, TabName(tab), Pages[page]+"   "+strconv.Itoa(w.Holds(page)), plain)
 	}
-	for _, piece := range TabsLineAround(l, int(w.Tab())) {
+	for _, piece := range TabsLineAround(l, max(0, slices.Index(w.Shown(), w.Tab()))) {
 		fill(gtx, piece, skin.Edge)
 	}
 }

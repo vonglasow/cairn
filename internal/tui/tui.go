@@ -84,6 +84,7 @@ type Board struct {
 	snap          engine.Snapshot
 
 	tab    Tab
+	pages  engine.Pages
 	mode   Mode
 	screen Screen
 	prompt Prompt

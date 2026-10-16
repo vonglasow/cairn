@@ -20,6 +20,9 @@ const (
 
 // ContextAt is a right click at a point of the board: it chooses what is under the pointer, or nothing, and opens what can be done to it.
 func (w Window) ContextAt(p Point) Window {
+	if w.Blank() {
+		return w
+	}
 	if w.screen != OnTheBoard {
 		return w
 	}

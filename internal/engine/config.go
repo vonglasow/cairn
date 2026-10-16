@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strings"
 
 	"cairn/internal/config"
 )
@@ -14,10 +15,11 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, and each of its two places, alongside what named it.
 type Config struct {
-	File    string      `json:"file"`
-	Store   Emplacement `json:"store"`
-	Notes   Emplacement `json:"notes"`
-	Problem string      `json:"problem,omitempty"`
+	File     string      `json:"file"`
+	Store    Emplacement `json:"store"`
+	Notes    Emplacement `json:"notes"`
+	PagesOff []string    `json:"pages_off,omitempty"`
+	Problem  string      `json:"problem,omitempty"`
 }
 
 type placesGate struct {
@@ -49,6 +51,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	p.Tell(places)
 	g.config.Store = places.store
 	g.config.Notes = places.notes
+	g.config.PagesOff = p.PagesOff()
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -84,8 +87,12 @@ func configText(c Config) string {
 		)
 	}
 	wide := max(len(c.Store.At), len(c.Notes.At))
-	return fmt.Sprintf(
+	said := fmt.Sprintf(
 		"file    %s\n\nstore   %-*s   named by %s\nnotes   %-*s   named by %s\n",
 		c.File, wide, c.Store.At, c.Store.By, wide, c.Notes.At, c.Notes.By,
 	)
+	if len(c.PagesOff) > 0 {
+		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
+	}
+	return said
 }

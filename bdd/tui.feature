@@ -188,6 +188,25 @@ Feature: The board
       When I press "h", "j"
       Then the cursor is on the task "Fourth"
 
+  Rule: A page turned off in the configuration is not drawn
+
+    @tui-a-page-off-has-no-tab
+    Scenario: the time page turned off has no tab, and tab walks the others
+      Given the pages turned off are "time"
+      When I open the board
+      Then the board says "TASKS"
+      And the board does not say "time"
+      When I press "tab", "tab"
+      Then the board says "TASKS"
+
+    @tui-every-page-off-is-an-empty-screen
+    Scenario: every page turned off opens a board with nothing in it
+      Given the pages turned off are "tasks, objectives, time"
+      When I open the board
+      Then the screen holds nothing
+      When I press "a"
+      Then the screen holds nothing
+
   Rule: Moving a task changes where it stands
 
     @tui-moving-a-task-across-changes-its-column

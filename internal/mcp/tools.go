@@ -10,10 +10,10 @@ import (
 	"cairn/internal/engine"
 )
 
-func offered(access engine.Level) []engine.Operation {
+func offered(access engine.Level, pages engine.Pages) []engine.Operation {
 	var ops []engine.Operation
 	for _, op := range engine.All() {
-		if op.Level <= access {
+		if op.Level <= access && pages.Offers(op) {
 			ops = append(ops, op)
 		}
 	}

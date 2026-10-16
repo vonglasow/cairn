@@ -52,6 +52,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if key == "ctrl+c" {
 		return b, tea.Quit
 	}
+	if b.pages.None() {
+		return b, nil
+	}
 	if key == "?" {
 		return b.help(), nil
 	}

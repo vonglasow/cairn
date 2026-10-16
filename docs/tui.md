@@ -62,6 +62,12 @@ for each task worked on with its time, read whole rather than cut to a seventh
 of a terminal's width; `←→` (or `h l`) walk the weeks, `t` comes back to
 today's, `j k` scroll. `⇥` walks the three round. Nothing else is a tab.
 
+A page the configuration turns off has no tab, and `⇥` walks the others; the
+board opens on the first left. With all three off the screen is empty and only
+`ctrl+c` does anything (`@tui-a-page-off-has-no-tab`,
+`@tui-every-page-off-is-an-empty-screen`; see
+[config.md](config.md#the-pages-turned-off-one-by-one)).
+
 **The backups, and what a command answers.** `b` backs the store up and `⇧B`
 lists the backups, as the window's `⌘B` and `⇧B` do. A command typed at `:`
 used to run and say nothing of what it answered, so `:timesheet show` or
