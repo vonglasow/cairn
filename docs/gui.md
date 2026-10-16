@@ -804,9 +804,15 @@ just added in its place, and the trace beside it read again, since it
 otherwise lacked the very act just saved
 (`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
-(`@gui-typing-holds-the-save-off`). A task being added is made once it has a
-title, and the form goes on over it; with no title there is nothing to make
-(`@gui-a-new-task-is-made-once-it-has-a-title`). A form that saved itself has
+(`@gui-typing-holds-the-save-off`). A task being added is not: it is made when
+it is saved, by `⌘⏎`, `⌘S` or Save, and not before
+(`@gui-a-new-task-is-made-when-it-is-saved`). Amended 2026-10-16 (cairn#89,
+cairn#96): it used to be made at the first beat with a title, so its trace
+filled with the acts of its making while it was still being thought about, and
+Cancel came too late, the task being already there. Now its trace stays empty
+until it is saved (`@gui-a-new-task-has-an-empty-trace`), and Cancel, after the
+usual question, makes nothing (`@gui-cancelling-a-new-task-makes-nothing`); with
+no title there is nothing to make either. A form that saved itself has
 nothing left to lose, so `esc` closes it without the question. `⌘S` still
 saves at once, and closes. What the store refuses is said above the bar, as
 any refusal is.

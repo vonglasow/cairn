@@ -200,7 +200,7 @@ func helping() []Said {
 		{Key: "⏎ on a question", Means: "agree to it"},
 		{Key: "⏎ in a form", Means: "a new line in the description, the next field anywhere else — it never saves"},
 		{Key: "↑↓ in the description", Means: "walk its lines — tab leaves it, and the wheel and the bar scroll it"},
-		{Key: "⌘⏎ or ⌘S in a form", Means: "save now and close — a form also saves itself once the typing pauses"},
+		{Key: "⌘⏎ or ⌘S in a form", Means: "save now and close — a form being changed also saves itself once the typing pauses, a new one only then"},
 		{Key: "esc esc in a form", Means: "throw it away — set aside: ⌘Z on the same form brings it back"},
 		{Key: "⌘A ⌘C ⌘X ⌘V", Means: "hold all of a field, copy, cut, paste"},
 		{Key: "⇧←→ in a field", Means: "hold a run of text — dragging across it does the same"},

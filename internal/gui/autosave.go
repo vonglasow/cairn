@@ -7,7 +7,7 @@ import (
 )
 
 func (w Window) autosaved() Window {
-	if w.screen != OnForm || w.form.writingPart {
+	if w.screen != OnForm || w.form.writingPart || w.form.Adding {
 		w.paused = nil
 		return w
 	}

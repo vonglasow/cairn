@@ -1655,18 +1655,36 @@ Feature: The desktop board
       Then the window is on the board
       And task 1 is called "Write the spec now"
 
-    @gui-a-new-task-is-made-once-it-has-a-title
-    Scenario: a task being added is made once it has a title, and the form goes on over it
+    @gui-a-new-task-is-made-when-it-is-saved
+    Scenario: a task being added is made when it is saved, and not before
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
-      And the window has looked at the store 2 times
-      Then task 1 is called "Plan the week"
+      And the window has looked at the store 3 times
+      Then there are no tasks
       And the window is on the form
-      When I type " ahead"
-      And the window has looked at the store 2 times
-      Then task 1 is called "Plan the week ahead"
+      When I choose "Save"
+      Then task 1 is called "Plan the week"
       And there is 1 task
+
+    @gui-a-new-task-has-an-empty-trace
+    Scenario: the trace of a task being added stays empty while it is typed
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 3 times
+      Then the form writes the trace, empty
+
+    @gui-cancelling-a-new-task-makes-nothing
+    Scenario: cancelling a task being added makes nothing, however long it was typed into
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 3 times
+      And I choose "Cancel"
+      And I choose "Throw away"
+      Then the window is on the board
+      And there are no tasks
 
     @gui-a-task-is-added-to-the-column-clicked
     Scenario: a task added after a click on a column goes in that column
@@ -1676,7 +1694,7 @@ Feature: The desktop board
       And I click the column "CURRENT"
       And I click "New"
       And I type "Plan the week"
-      And the window has looked at the store 2 times
+      And I choose "Save"
       Then "CURRENT" carries "Plan the week"
 
     @gui-a-double-click-on-a-column-adds-there
@@ -1685,7 +1703,7 @@ Feature: The desktop board
       And I double-click the column "TODO"
       Then the window is on the form
       When I type "Plan the week"
-      And the window has looked at the store 2 times
+      And I choose "Save"
       Then "TODO" carries "Plan the week"
 
     @gui-a-click-between-two-cards-chooses-neither
@@ -1704,7 +1722,7 @@ Feature: The desktop board
       And I double-click between the cards "Write the spec" and "Ship the board"
       Then the window is on the form
       When I type "Plan the week"
-      And the window has looked at the store 2 times
+      And I choose "Save"
       Then "TODO" reads "Write the spec", "Plan the week", "Ship the board"
 
     @gui-a-right-click-on-a-column-adds-there
@@ -1713,7 +1731,7 @@ Feature: The desktop board
       And I right-click the column "TODO"
       And I click "New" in the menu
       And I type "Plan the week"
-      And the window has looked at the store 2 times
+      And I choose "Save"
       Then "TODO" carries "Plan the week"
 
     @gui-a-saved-form-keeps-what-is-typed
@@ -1751,6 +1769,7 @@ Feature: The desktop board
       And I press "cmd+n"
       And I type "Plan the week"
       And I set the field "steps" to "Book the room"
+      And I press "cmd+enter"
       And the window has looked at the store 6 times
       Then there are no tasks
       And the engine was asked "task new" once
