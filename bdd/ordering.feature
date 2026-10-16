@@ -310,7 +310,17 @@ Feature: Ordering
       When I run `cairn task focus`
       Then it says nothing is in focus
 
-    @ordering-unfocus-when-nothing-is-in-focus
+    @ordering-several-moved-together
+    Scenario: tasks moved together land one behind the other, in the order named
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "todo"
+      And I added a task titled "Third"
+      And I added a task titled "Fourth"
+      When I run `cairn task move 3 --state todo --after 1 --also 4`
+      Then it succeeds
+      When I run `cairn task list --state todo`
+      Then it lists the tasks in the order "First", "Third", "Fourth", "Second"
+
     Scenario: unfocusing nothing is not a failure
       Given I added a task titled "The only one"
       When I run `cairn task unfocus`

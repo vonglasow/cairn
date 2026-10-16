@@ -2875,6 +2875,13 @@
           "description": "put it directly behind this task",
           "type": "integer"
         },
+        "also": {
+          "description": "another one taken in the same act as the number — every one of them, or none",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "first": {
           "description": "put it at the head of the ones it sits with",
           "type": "boolean"

@@ -74,3 +74,25 @@ func TestDone_confirmedFinishesWhatHangsUnderIt(t *testing.T) {
 		t.Error("a move or an edit into done does not say it may finish what hangs under the task")
 	}
 }
+
+func TestMove_takesTheOthersAlongBehindIt(t *testing.T) {
+	path := storeAt(t, "first", "second", "third", "fourth")
+	in := given("number", "4", "state", "todo", "first", "true")
+	in.Listed = map[string][]string{"also": {"2"}}
+	if _, err := Do(TaskMove, path, in); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := Do(TaskList, path, given())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var order []int
+	for _, one := range listed.Tasks {
+		if factsOf(one).State == "todo" {
+			order = append(order, factsOf(one).Number)
+		}
+	}
+	if len(order) != 2 || order[0] != 4 || order[1] != 2 {
+		t.Errorf("todo holds %v, want [4 2]", order)
+	}
+}

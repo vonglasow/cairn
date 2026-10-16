@@ -431,7 +431,18 @@ Feature: The desktop board
       And the engine was not asked "task edit"
       And "TODO" reads "Second", "First"
 
-    @gui-a-drag-reaches-the-foot-of-a-column
+    @gui-cards-taken-together-are-dragged-together
+    Scenario: dragging one of the cards taken together brings the others along
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "backlog"
+      And I added a task titled "Third" with the state "backlog"
+      When I open the window
+      And I click the card "Second"
+      And I ⌘-click the card "Third"
+      And I drag the card "Second" onto "TODO"
+      Then "TODO" reads "Second", "Third", "First"
+      And "BACKLOG" does not carry "Third"
+
     Scenario: a card dropped under the last of its column goes last
       Given I added a task titled "First" with the state "todo"
       And I added a task titled "Second" with the state "todo"

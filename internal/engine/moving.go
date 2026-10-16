@@ -180,7 +180,7 @@ var TaskMove = Operation{
 	Thing: "task",
 	Verb:  "move",
 	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act. Moved into done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
+	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act; the tasks named under also follow it there, one behind the other, in the same act. Moved into done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
 	Example: `cairn task move 3 --first
 cairn task move 3 --after 1
 cairn task move 3 --state todo --after 1`,
@@ -195,9 +195,14 @@ cairn task move 3 --state todo --after 1`,
 		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
 		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
 		{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column to move it into first, in the same act"},
+		alsoOf("a task"),
 	},
 	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+		numbers, err := together(in)
+		if err != nil {
+			return Answer{}, err
+		}
+		n := numbers[0]
 		into := in.Change("state")
 		if into != nil {
 			if err := on.Engine.moveInto(n, *into, in.Confirmed); err != nil {
@@ -214,8 +219,29 @@ cairn task move 3 --state todo --after 1`,
 		if err := on.Engine.move(n, at, target); err != nil {
 			return Answer{}, err
 		}
+		if err := on.Engine.alongBehind(n, numbers[1:], in.Confirmed); err != nil {
+			return Answer{}, err
+		}
 		return listing(on, Input{})
 	},
+}
+
+func (e *Engine) alongBehind(first int, others []int, finishing bool) error {
+	led, err := e.tasks.Find(first)
+	if err != nil {
+		return err
+	}
+	state, behind := string(factsOf(led).State), first
+	for _, number := range others {
+		if err := e.moveInto(number, state, finishing); err != nil {
+			return err
+		}
+		if err := e.move(number, Behind, behind); err != nil {
+			return err
+		}
+		behind = number
+	}
+	return nil
 }
 
 // TaskFocus says which task is being worked on, or puts one there.

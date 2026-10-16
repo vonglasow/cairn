@@ -1192,6 +1192,12 @@ again. What is taken is drawn the way what is chosen is. The keyboard gathers
 nothing: `⇧` and the arrows already move a card, and the pointer is the hand
 that picks several things out of a board.
 
+**What is taken is dragged together.** Dragging one of the cards taken
+brings the others along: they leave their places with it, and land behind it,
+in the order they were taken, in one act — `task move` with the others under
+`also` (`@gui-cards-taken-together-are-dragged-together`,
+`@ordering-several-moved-together`). What is taken is let go of once it lands.
+
 **What is taken goes in one act**, deleted or archived, all of it or none: the
 engine is asked once, the first by its number and the rest under `also`, and
 an act is one transaction. Three deletions asked one after another left, when

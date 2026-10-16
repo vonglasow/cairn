@@ -466,10 +466,20 @@ func (w Window) dropped(number int, p Point) Window {
 	for name, value := range place {
 		given[name] = value
 	}
-	if len(given) == 1 {
+	var along []string
+	if w.isTaken(number) {
+		for _, other := range w.Taken() {
+			if other != number {
+				along = append(along, strconv.Itoa(other))
+			}
+		}
+		w.taken = nil
+	}
+	in := engine.Input{Given: given, Listed: map[string][]string{"also": along}}
+	if len(given) == 1 && len(along) == 0 {
 		return w.Look()
 	}
-	return w.asking(engine.TaskMove, engine.Input{Given: given})
+	return w.asking(engine.TaskMove, in)
 }
 
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
@@ -500,7 +510,7 @@ func (w Window) besideHeld(cards []engine.Card) []engine.Card {
 	}
 	kept := make([]engine.Card, 0, len(cards))
 	for _, c := range cards {
-		if c.Number != w.held.Number {
+		if c.Number != w.held.Number && (!w.isTaken(w.held.Number) || !w.isTaken(c.Number)) {
 			kept = append(kept, c)
 		}
 	}
