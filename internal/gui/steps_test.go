@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -1273,6 +1274,85 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		if _, _, _, a := drawn.At(size/2, size/2).RGBA(); a == 0 {
 			return fmt.Errorf("the logo's middle is clear")
+		}
+		return nil
+	})
+	sc.Then(`^the icon it hands X11 holds cairn's logo at (\d+), (\d+), (\d+), (\d+) and (\d+) pixels, its corners clear$`, func(a, b, c, d, e int) error {
+		held := X11Icon()
+		for _, size := range []int{a, b, c, d, e} {
+			if len(held) < 2 || held[0] != uint32(size) || held[1] != uint32(size) || len(held) < 2+size*size {
+				return fmt.Errorf("the icon does not hold the logo at %d pixels next", size)
+			}
+			pixels := held[2 : 2+size*size]
+			if pixels[0]>>24 != 0 {
+				return fmt.Errorf("the logo at %d pixels has a corner that is not clear", size)
+			}
+			if pixels[size*size/2+size/2]>>24 == 0 {
+				return fmt.Errorf("the logo at %d pixels has a clear middle", size)
+			}
+			held = held[2+size*size:]
+		}
+		if len(held) != 0 {
+			return fmt.Errorf("the icon holds %d values more than the logos named", len(held))
+		}
+		return nil
+	})
+	var data string
+	dataHome := func() string {
+		if data == "" {
+			data = w.t.TempDir()
+		}
+		return data
+	}
+	entry := func(name string) string { return filepath.Join(dataHome(), "applications", name+".desktop") }
+	sc.Step(`^the window settles in on a Linux desktop$`, func() error {
+		return SettleIn(dataHome(), "cairn")
+	})
+	sc.Given(`^a desktop entry "([^"]*)" written by somebody else$`, func(name string) error {
+		if err := os.MkdirAll(filepath.Dir(entry(name)), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(entry(name), []byte("[Desktop Entry]\nName=mine\n"), 0o644)
+	})
+	sc.Then(`^the desktop entry "([^"]*)" is the one somebody else wrote$`, func(name string) error {
+		got, err := os.ReadFile(entry(name))
+		if err != nil {
+			return err
+		}
+		if string(got) != "[Desktop Entry]\nName=mine\n" {
+			return fmt.Errorf("the entry was rewritten:\n%s", got)
+		}
+		return nil
+	})
+	sc.Then(`^the desktop entry "([^"]*)" starts "([^"]*)" and names the icon "([^"]*)"$`, func(name, starts, icon string) error {
+		got, err := os.ReadFile(entry(name))
+		if err != nil {
+			return err
+		}
+		for _, line := range []string{"Exec=" + starts, "Icon=" + icon, "StartupWMClass=" + Known} {
+			if !strings.Contains(string(got), line+"\n") {
+				return fmt.Errorf("the entry does not say %q:\n%s", line, got)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the icon "([^"]*)" is there at ([\d, ]+) and (\d+) pixels$`, func(icon, some, last string) error {
+		for _, named := range append(strings.Split(some, ", "), last) {
+			size, err := strconv.Atoi(named)
+			if err != nil {
+				return err
+			}
+			held, err := os.ReadFile(filepath.Join(dataHome(), "icons", "hicolor", named+"x"+named, "apps", icon+".png"))
+			if err != nil {
+				return err
+			}
+			drawn, err := png.Decode(bytes.NewReader(held))
+			if err != nil {
+				return err
+			}
+			if b := drawn.Bounds(); b.Dx() != size || b.Dy() != size {
+				return fmt.Errorf("the icon at %d pixels is %v", size, b)
+			}
 		}
 		return nil
 	})

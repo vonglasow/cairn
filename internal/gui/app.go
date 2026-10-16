@@ -247,6 +247,7 @@ func loop(work engine.Work, width, height int) error {
 	for {
 		event := window.Event()
 		listen(event)
+		dress(event)
 		if installMenu(event, picks, window.Invalidate) {
 			board = board.Native(true)
 		}

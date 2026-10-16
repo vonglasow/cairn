@@ -611,9 +611,20 @@ Each system takes it its own way, and the window is known to all three as
 `cairn` (`logo.go`). Windows reads it from the `.exe`, where the resource beside
 `cmd/cairn` puts it at every size; Gio gives the window the icon the program
 carries. macOS shows a bare binary with no icon, so the window hands AppKit the
-logo when it starts (`logo_darwin.go`). A Linux desktop reads it off a desktop
-entry named after the window, on Wayland and X11 alike, which `make desktop`
-writes for the user (`scripts/desktop.sh`) — a program cannot hand it over there.
+logo when it starts (`logo_darwin.go`). On Linux the window does both things a
+desktop may read it from (`logo_linux.go`, `desktop.go`). On X11 it hands the
+window manager the logo itself, at 16 to 128 pixels, as `_NET_WM_ICON`
+(`@gui-x11-is-handed-the-logo`) — Gio sets the window's class and nothing more.
+On Wayland there is no such thing outside a protocol few compositors speak
+(xdg-toplevel-icon), and a desktop takes the logo from the entry named after
+the app_id; so the window writes that entry, and the logo at every size, under
+the user's data folder each time it opens, rewriting only what changed
+(`@gui-a-linux-desktop-is-given-an-entry`). It used to be `make desktop`'s
+job, which nobody installing a binary ran, and the window had no logo. An
+entry somebody else wrote there is theirs and is left as it is
+(`@gui-an-entry-of-somebody-elses-is-kept`); cairn marks its own. The entry
+starts `cairn` when the one on the `PATH` is the one running, so an upgrade
+does not leave it pointing at a version gone.
 
 **The window opens on its board being built of stones.** The content is what
 is built: each card arrives

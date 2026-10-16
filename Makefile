@@ -30,7 +30,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog package desktop stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
+.PHONY: release release-check next-version changelog package stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -259,12 +259,6 @@ trace:
 ## it runs on; this is what checks that half. It needs Docker. See the script.
 linux:
 	@scripts/linux.sh
-
-## desktop: give the window its logo on a Linux desktop — a desktop entry and its icons, for this user
-## macOS takes the logo from the program and Windows from the .exe; a Linux
-## desktop reads it off an entry named after the window. See the script.
-desktop:
-	@scripts/desktop.sh $(BIN)
 
 ## release: make a version — refuse what is not one, check everything, tag it, and make its archive
 ## The one way a version is made: its number is read off the commits by svu,

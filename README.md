@@ -46,8 +46,6 @@ cd cairn
 make build          # bin/cairn — needs Go and a C compiler, see INSTALL.md
 ```
 
-On Linux, `make desktop` gives the window its icon in the desktop's launcher.
-
 ## Quick start
 
 ```sh

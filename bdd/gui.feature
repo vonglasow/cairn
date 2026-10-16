@@ -943,6 +943,23 @@ Feature: The desktop board
       Then the window is known to the system as "cairn"
       And the icon it hands the system is cairn's logo at 1024 pixels, its corners clear
 
+    @gui-x11-is-handed-the-logo
+    Scenario: on X11 the window hands its logo over itself, at the sizes a bar asks for
+      When I open the window
+      Then the icon it hands X11 holds cairn's logo at 16, 32, 48, 64 and 128 pixels, its corners clear
+
+    @gui-a-linux-desktop-is-given-an-entry
+    Scenario: on a Linux desktop the window writes the entry its logo is found through
+      When the window settles in on a Linux desktop
+      Then the desktop entry "cairn" starts "cairn gui" and names the icon "cairn"
+      And the icon "cairn" is there at 16, 32, 48, 64, 128, 256 and 512 pixels
+
+    @gui-an-entry-of-somebody-elses-is-kept
+    Scenario: an entry cairn did not write is left as it was
+      Given a desktop entry "cairn" written by somebody else
+      When the window settles in on a Linux desktop
+      Then the desktop entry "cairn" is the one somebody else wrote
+
   Rule: The time spent is seen a week or a month at a time, every task of it
 
     @gui-a-day-scrolls-to-its-last-task
