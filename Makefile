@@ -18,8 +18,8 @@ GREMLINS_VERSION ?= v0.6.0
 # The linter and the vulnerability scanner, named for the same reason. What
 # govulncheck finds stays current — its database is read on the day — and what
 # it is does not move under a commit nobody made (docs/checks.md).
-GOLANGCI_VERSION ?= 2.14.0
-GOVULNCHECK_VERSION ?= v1.8.0
+GOLANGCI_VERSION ?= 2.15.0
+GOVULNCHECK_VERSION ?= v1.9.0
 # What reads the next version off the commits. Named for the same reason, and
 # run with go run rather than installed: nothing to get before making one.
 SVU_VERSION ?= v3.4.1
