@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -1093,5 +1094,15 @@ func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
 	tip, _, _ := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explanation()
 	if tip.Y < name.Y+name.H || tip.X+tip.W > w.width {
 		t.Errorf("the explanation %+v covers the name %+v or leaves the window", tip, name)
+	}
+}
+
+func TestClosingTheWindowKeepsWhatWasJustTypedIntoANewTask(t *testing.T) {
+	drafts := DraftsAt(filepath.Join(t.TempDir(), "cairn.db.draft.json"))
+	w := holding(newFake()).Drafting(drafts).Key("cmd+n").Types("Plan the week")
+	w.Closing()
+	held, err := drafts.Held()
+	if err != nil || held["title"] != "Plan the week" {
+		t.Fatalf("closed straight after typing, the draft holds %v, %v", held, err)
 	}
 }

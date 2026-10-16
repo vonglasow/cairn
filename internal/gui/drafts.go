@@ -126,3 +126,20 @@ func (w Window) startingAfresh() Window {
 	w.screen, w.question = OnForm, aboutDeleting
 	return w.droppingDraft()
 }
+
+func (w Window) leavingUnsaved() Window {
+	w = w.keepingDraft()
+	if w.err != nil {
+		return w
+	}
+	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	return w
+}
+
+// Closing is the window as it closes: a task being added and not saved is kept as a draft with everything typed into it, the last keys too.
+func (w Window) Closing() Window {
+	if !formShown(w.screen) || !w.form.Adding || w.form.ForObjective {
+		return w
+	}
+	return w.keepingDraft()
+}

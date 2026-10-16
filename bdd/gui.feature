@@ -198,6 +198,17 @@ Feature: The desktop board
       Then the window is on the board
       And task 1 is called "Write the specX"
 
+    @gui-clicking-off-a-new-task-saves-nothing
+    Scenario: clicking off a task being added is leaving it unsaved: it is not made, and is kept as a draft
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And I click outside the panel
+      Then the window is on the board
+      And there are no tasks
+      When I press "cmd+n"
+      Then the window asks to pick up the task left unsaved
+
     @gui-a-click-off-the-calendar-closes-it
     Scenario: a click on the form outside the calendar closes the calendar alone
       Given I added a task titled "Write the spec"
@@ -1676,19 +1687,29 @@ Feature: The desktop board
       Then the form writes the trace, empty
 
     @gui-cancelling-a-new-task-makes-nothing
-    Scenario: cancelling a task being added makes nothing, and leaves nothing to pick up
+    Scenario: cancelling a task being added makes nothing, asks nothing, and leaves nothing to pick up
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
       And the window has looked at the store 3 times
       And I choose "Cancel"
-      And I choose "Throw away"
       Then the window is on the board
       And there are no tasks
       When the window is closed and opened again
       And I press "cmd+n"
       Then the window is on the form
       And the field "title" reads ""
+
+    @gui-escape-on-a-new-task-makes-nothing
+    Scenario: escape on a task being added is cancelling it, without a question
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And I press "esc"
+      Then the window is on the board
+      And there are no tasks
+      When I press "cmd+n"
+      Then the window is on the form
 
     @gui-a-new-task-is-kept-as-a-draft
     Scenario: a task being added and left unsaved is kept as a draft, and the next one offers to pick it up

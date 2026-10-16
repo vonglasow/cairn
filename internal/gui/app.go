@@ -253,6 +253,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, width, height int
 		}
 		switch e := event.(type) {
 		case app.DestroyEvent:
+			board.Closing()
 			return e.Err
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)

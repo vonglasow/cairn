@@ -379,11 +379,6 @@ func (w Window) Asks() []Said {
 	if w.asksAboutSeveral() {
 		return w.severalSays()
 	}
-	if w.question == aboutLeaving && w.form.Adding && !w.form.ForObjective {
-		return []Said{
-			{Means: "The new task is not made, and what was typed is gone."},
-		}
-	}
 	if w.question == aboutLeaving {
 		return []Said{
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},

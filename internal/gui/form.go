@@ -383,6 +383,9 @@ func (w Window) Cancel() Window {
 		w.form.writingPart, w.form.named = false, Written{}
 		return w
 	}
+	if w.screen == OnForm && w.form.Adding && !w.form.ForObjective {
+		return w.throwingAway()
+	}
 	if w.screen == OnForm && w.form.Changed() {
 		w.screen, w.question = OnAsking, aboutLeaving
 		return w

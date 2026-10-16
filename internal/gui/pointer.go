@@ -596,6 +596,9 @@ func (w Window) clickedOff(p Point) Window {
 	if w.screen != OnForm {
 		return w
 	}
+	if w.form.Adding && !w.form.ForObjective {
+		return w.leavingUnsaved()
+	}
 	if w.form.Changed() {
 		return w.Save()
 	}
