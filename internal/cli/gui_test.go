@@ -8,13 +8,17 @@ import (
 )
 
 func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
-	t.Setenv("CAIRN_STORE", storeFor(t))
+	store := storeFor(t)
+	t.Setenv("CAIRN_STORE", store)
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, width, height int) error {
+	openGui = func(work engine.Work, _ engine.Pages, draft string, width, height int) error {
 		handed = true
 		_, readable = work.Version()
+		if draft != store+".draft.json" {
+			t.Errorf("the window keeps its draft at %q, not beside the store", draft)
+		}
 		if width <= 0 || height <= 0 {
 			t.Errorf("the window was opened at %d by %d", width, height)
 		}
@@ -37,7 +41,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, int, int) error { return errors.New("no display here") }
+	openGui = func(engine.Work, engine.Pages, string, int, int) error { return errors.New("no display here") }
 	t.Cleanup(func() { openGui = was })
 
 	got := run(t, "gui")

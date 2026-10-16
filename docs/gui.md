@@ -811,8 +811,20 @@ cairn#96): it used to be made at the first beat with a title, so its trace
 filled with the acts of its making while it was still being thought about, and
 Cancel came too late, the task being already there. Now its trace stays empty
 until it is saved (`@gui-a-new-task-has-an-empty-trace`), and Cancel, after the
-usual question, makes nothing (`@gui-cancelling-a-new-task-makes-nothing`); with
-no title there is nothing to make either. A form that saved itself has
+usual question, makes nothing and keeps nothing to pick up
+(`@gui-cancelling-a-new-task-makes-nothing`); with no title there is nothing to
+make either.
+
+What is typed into a new task is not lost for all that: at each pause it is
+kept as a **draft**, in a file beside the store (`Places.Draft`,
+`cairn.db.draft.json`), which is not a task and is in no trace. Saved, the task
+is made and the draft goes; thrown away, it goes too; the window closed with the
+form still open, it stays, and the next new task asks whether to pick it up or
+start afresh (`@gui-a-new-task-is-kept-as-a-draft`, `@gui-a-draft-can-be-left`,
+`@gui-a-saved-task-leaves-no-draft`). Amended 2026-10-16 (cairn#96): the first
+answer to "Cancel came too late" gave up keeping the typing at all, and left
+`⌘Z` on a new form to bring back what was thrown away — the wrong way round on
+both counts. An edit's form keeps `⌘Z`; a new one has its draft instead. A form that saved itself has
 nothing left to lose, so `esc` closes it without the question. `⌘S` still
 saves at once, and closes. What the store refuses is said above the bar, as
 any refusal is.

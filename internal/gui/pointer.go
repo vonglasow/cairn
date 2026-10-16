@@ -229,8 +229,9 @@ func (w Window) DoubleClick(p Point) Window {
 	number := w.at(p)
 	if _, _, inColumn := w.where(w.Layout(), p); number == 0 && inColumn && w.tab == Tasks && w.screen == OnTheBoard {
 		w = w.aiming(p)
-		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
-		w.form.behind = w.above(p)
+		behind := w.above(p)
+		w = w.startingNew()
+		w.form.behind = behind
 		return w
 	}
 	if number == 0 {

@@ -29,6 +29,9 @@ type Places struct {
 	Home  Home
 }
 
+// Draft is where a window keeps what was typed into the form of a task being added and not saved yet: beside the store it is meant for.
+func (p Places) Draft() string { return p.Store + ".draft.json" }
+
 // Locate works out where the store and the notes live: the environment, then the configuration file, then the default place under the home, in that order.
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {

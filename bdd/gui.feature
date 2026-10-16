@@ -1676,7 +1676,7 @@ Feature: The desktop board
       Then the form writes the trace, empty
 
     @gui-cancelling-a-new-task-makes-nothing
-    Scenario: cancelling a task being added makes nothing, however long it was typed into
+    Scenario: cancelling a task being added makes nothing, and leaves nothing to pick up
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
@@ -1685,6 +1685,54 @@ Feature: The desktop board
       And I choose "Throw away"
       Then the window is on the board
       And there are no tasks
+      When the window is closed and opened again
+      And I press "cmd+n"
+      Then the window is on the form
+      And the field "title" reads ""
+
+    @gui-a-new-task-is-kept-as-a-draft
+    Scenario: a task being added and left unsaved is kept as a draft, and the next one offers to pick it up
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 3 times
+      And the window is closed and opened again
+      Then there are no tasks
+      When I press "cmd+n"
+      Then the window asks to pick up the task left unsaved
+      When I choose "Pick it up"
+      Then the window is on the form
+      And the field "title" reads "Plan the week"
+      When I choose "Save"
+      Then task 1 is called "Plan the week"
+
+    @gui-a-draft-can-be-left
+    Scenario: a draft not wanted is left, and a new task starts from nothing
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 3 times
+      And the window is closed and opened again
+      And I press "cmd+n"
+      And I choose "Start afresh"
+      Then the window is on the form
+      And the field "title" reads ""
+      When I press "esc"
+      And the window is closed and opened again
+      And I press "cmd+n"
+      Then the window is on the form
+
+    @gui-a-saved-task-leaves-no-draft
+    Scenario: a task saved leaves no draft behind it
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plan the week"
+      And the window has looked at the store 3 times
+      And I choose "Save"
+      And the window is closed and opened again
+      And I press "cmd+n"
+      Then the window is on the form
+      And the field "title" reads ""
 
     @gui-a-task-is-added-to-the-column-clicked
     Scenario: a task added after a click on a column goes in that column

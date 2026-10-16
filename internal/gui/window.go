@@ -128,6 +128,8 @@ type Window struct {
 	wheelAt               time.Time
 	question              Question
 	draft                 Form
+	drafts                Drafts
+	drafting              []string
 	taken                 []int
 	gathering, stretching bool
 	wasScreen             Screen
@@ -143,7 +145,7 @@ func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work.
 func New(work engine.Work, width, height int) Window {
-	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard()}
+	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}}
 	return w.sized()
 }
 

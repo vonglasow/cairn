@@ -155,7 +155,8 @@ func (w *world) storeRefuses() error {
 }
 
 func (w *world) open() error {
-	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.pages)
+	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.pages).
+		Drafting(DraftsAt(engine.Places{Store: w.path}.Draft()))
 	w.w = w.w.Look()
 	return w.w.Wrong()
 }
@@ -614,6 +615,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.When(`^I open the window$`, w.open)
+	sc.Step(`^the window is closed and opened again$`, w.open)
+	sc.Then(`^the window asks to pick up the task left unsaved$`, func() error {
+		if w.w.Screen() != OnAsking || w.w.question != aboutDraft {
+			return fmt.Errorf("the window is on %v, asking %v", w.w.Screen(), w.w.question)
+		}
+		return nil
+	})
 	sc.Step(`^I resize the window to (\d+) by (\d+)$`, w.resize)
 	sc.Step(`^the window draws its first frame$`, func() error {
 		w.w = w.w.Born(w.today)

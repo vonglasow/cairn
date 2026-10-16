@@ -12,8 +12,8 @@ const (
 	high = 840
 )
 
-var openGui = func(work engine.Work, pages engine.Pages, width, height int) error {
-	gui.Run(work, pages, width, height)
+var openGui = func(work engine.Work, pages engine.Pages, draft string, width, height int) error {
+	gui.Run(work, pages, gui.DraftsAt(draft), width, height)
 	return nil
 }
 
@@ -28,7 +28,11 @@ func newGuiCmd() *cobra.Command {
 				return err
 			}
 			defer func() { _ = held.Close() }()
-			return openGui(held, engine.PagesFrom(home()), wide, high)
+			at, err := engine.Locate(home())
+			if err != nil {
+				return err
+			}
+			return openGui(held, engine.PagesFrom(home()), at.Draft(), wide, high)
 		},
 	}
 }

@@ -7,13 +7,20 @@ import (
 )
 
 func (w Window) autosaved() Window {
-	if w.screen != OnForm || w.form.writingPart || w.form.Adding {
+	if w.screen != OnForm || w.form.writingPart || w.form.Adding && w.form.ForObjective {
 		w.paused = nil
 		return w
 	}
 	now := w.form.values()
 	paused := slices.Equal(now, w.paused)
 	w.paused = now
+	if w.form.Adding {
+		if !paused || slices.Equal(now, w.drafting) {
+			return w
+		}
+		w.drafting = now
+		return w.keepingDraft()
+	}
 	if !paused || !w.form.Changed() || !w.form.titled() || slices.Equal(now, w.refused) {
 		return w
 	}

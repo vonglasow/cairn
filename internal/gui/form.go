@@ -345,6 +345,11 @@ func (w Window) stored() (Window, int, error) {
 	if w.form.Adding {
 		number = engine.Added(answer)
 		w.form.Adding, w.form.Number = false, number
+		if !w.form.ForObjective {
+			if err := w.drafts.Drop(); err != nil {
+				return w.failing(err), 0, err
+			}
+		}
 		if err := w.puttingBehind(number); err != nil {
 			return w.failing(err), 0, err
 		}
@@ -390,6 +395,10 @@ func (w Window) Cancel() Window {
 }
 
 func (w Window) throwingAway() Window {
+	if w.form.Adding && !w.form.ForObjective {
+		w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+		return w.droppingDraft()
+	}
 	w.draft = w.form
 	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 	return w
@@ -443,8 +452,11 @@ func (w Window) Choose(name string) Window {
 		}
 		return w.Cancel()
 	case "new":
-		w.form, w.screen = adding(w.tab, w.addingOn()), OnForm
-		return w
+		return w.startingNew()
+	case "pick it up":
+		return w.pickingUp()
+	case "start afresh":
+		return w.startingAfresh()
 	case "take":
 		if w.screen == OnCalendar {
 			return w.dated(w.day)

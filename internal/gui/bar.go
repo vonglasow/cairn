@@ -63,6 +63,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutCairn {
 			return "About cairn"
 		}
+		if w.question == aboutDraft {
+			return "Pick up the new task left unsaved?"
+		}
 		if w.question == aboutFinishingParts {
 			return "Put task " + w.finishingIn.Given["number"] + " in done, ticking its steps?"
 		}
@@ -259,6 +262,9 @@ func (w Window) Offers() []string {
 		if w.question == aboutCairn {
 			return []string{"Close"}
 		}
+		if w.question == aboutDraft {
+			return []string{"Pick it up", "Start afresh", "Cancel"}
+		}
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
 		}
@@ -373,9 +379,20 @@ func (w Window) Asks() []Said {
 	if w.asksAboutSeveral() {
 		return w.severalSays()
 	}
+	if w.question == aboutLeaving && w.form.Adding && !w.form.ForObjective {
+		return []Said{
+			{Means: "The new task is not made, and what was typed is gone."},
+		}
+	}
 	if w.question == aboutLeaving {
 		return []Said{
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
+		}
+	}
+	if w.question == aboutDraft {
+		return []Said{
+			{Means: "What was typed into a new task, and neither saved nor thrown away, was kept."},
+			{Means: "Pick it up to go on with it, or start afresh to let it go."},
 		}
 	}
 	if w.question == aboutPuttingBack {
@@ -436,6 +453,7 @@ const (
 	aboutDeletingLabel
 	aboutFinishingParts
 	aboutCairn
+	aboutDraft
 )
 
 func (w Window) sweeps() string {
