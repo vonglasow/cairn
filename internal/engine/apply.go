@@ -21,6 +21,7 @@ type Changes struct {
 	Spent       *string
 	Parent      *int
 	Objective   *[]string
+	Finishing   bool
 }
 
 func (c Changes) named() bool {

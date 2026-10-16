@@ -116,6 +116,8 @@ type Window struct {
 	looking               Written
 	archived              bool
 	aimed                 string
+	finishing             engine.Operation
+	finishingIn           engine.Input
 	over                  string
 	hovered               bool
 	explaining            int

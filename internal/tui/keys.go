@@ -78,6 +78,14 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 			}
 			return b, b.sweepingColumn()
 		}
+		if b.finishing != nil {
+			held := *b.finishing
+			b.finishing = nil
+			if !agreed {
+				return b, b.look()
+			}
+			return b, b.carry(held.Op, engine.Agreed(held.In))
+		}
 		if !agreed {
 			return b, nil
 		}

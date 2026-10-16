@@ -510,6 +510,9 @@ func (w Window) Choose(name string) Window {
 		if w.question == aboutDeletingLabel {
 			return w.deletingLabel()
 		}
+		if w.question == aboutFinishingParts {
+			return w.finishingParts()
+		}
 		if w.screen == OnLabels {
 			w.screen, w.question = OnAsking, aboutDeletingLabel
 			return w

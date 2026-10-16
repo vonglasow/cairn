@@ -51,6 +51,12 @@ const (
 	Commanding
 )
 
+// Finishing is an act refused because something hanging under its task is still open, held while the person is asked whether to finish that too.
+type Finishing struct {
+	Op engine.Operation
+	In engine.Input
+}
+
 // Looked carries a fresh reading of the work.
 type Looked struct {
 	Snapshot engine.Snapshot
@@ -99,6 +105,7 @@ type Board struct {
 	asking           bool
 	leaving          bool
 	sweeping         bool
+	finishing        *Finishing
 	saying, sayingOf int
 	choice           int
 
@@ -165,6 +172,9 @@ func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if b.screen == OnDetail {
 			return b, b.hearing(b.task)
 		}
+		return b, nil
+	case Finishing:
+		b.asking, b.finishing = true, &m
 		return b, nil
 	case Heard:
 		b.heard = m

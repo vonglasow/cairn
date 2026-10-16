@@ -2,6 +2,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -166,6 +167,9 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := b.work.Ask(op, in); err != nil {
+			if op.Finishes && !in.Confirmed && errors.Is(err, engine.ErrSubTaskStillOpen) {
+				return Finishing{Op: op, In: in}
+			}
 			return Looked{Err: err}
 		}
 		found, err := engine.Look(b.work)

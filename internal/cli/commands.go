@@ -181,8 +181,8 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		given[arg.Name] = &v
 		cmd.Flags().StringVar(&v, arg.Name, "", helpOf(arg))
 	}
-	if op.Level == engine.Full || op.Sweeps != nil {
-		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work or reaches everything a narrowing does")
+	if op.Level == engine.Full || op.Sweeps != nil || op.Finishes {
+		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work, reaches everything a narrowing does, or puts in done what hangs under a task")
 	}
 	return cmd
 }

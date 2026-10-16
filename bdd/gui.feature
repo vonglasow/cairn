@@ -458,7 +458,27 @@ Feature: The desktop board
       Then task 1 is in the column "watching"
       And the lane "watching" carries "Client's answer"
 
-    @gui-a-drop-that-is-refused-shows-the-truth
+    @gui-a-drop-in-done-asks-about-open-parts
+    Scenario: a card dropped in DONE with parts still open asks to finish them too
+      Given I added a task titled "Ship it" with the state "todo"
+      And I added a task titled "Write the spec" hanging under task 1
+      When I open the window
+      And I drag the card "Ship it" onto "DONE"
+      Then the window asks to put what hangs under task 1 in done too
+      When I click "Agree"
+      Then task 1 is in the column "done"
+      And task 2 is in the column "done"
+
+    @gui-a-drop-in-done-can-be-called-off
+    Scenario: calling off the question leaves the card and its parts where they were
+      Given I added a task titled "Ship it" with the state "todo"
+      And I added a task titled "Write the spec" hanging under task 1
+      When I open the window
+      And I drag the card "Ship it" onto "DONE"
+      And I click "Cancel"
+      Then task 1 is in the column "todo"
+      And task 2 is in the column "todo"
+
     Scenario: a drop the engine refuses leaves the board saying what is really there
       Given I added a task titled "Write the spec" with the state "backlog"
       And the store refuses what it is asked to change

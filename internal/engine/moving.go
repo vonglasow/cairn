@@ -57,7 +57,7 @@ func (e *Engine) move(number int, at Place, target int) error {
 	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
 }
 
-func (e *Engine) moveInto(number int, state string) error {
+func (e *Engine) moveInto(number int, state string, finishing bool) error {
 	was, err := e.tasks.Find(number)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (e *Engine) moveInto(number int, state string) error {
 	if factsOf(was).State == domain.State(state) {
 		return nil
 	}
-	_, err = e.edit(number, Changes{State: &state})
+	_, err = e.edit(number, Changes{State: &state, Finishing: finishing})
 	return editReason(err)
 }
 
@@ -180,14 +180,15 @@ var TaskMove = Operation{
 	Thing: "task",
 	Verb:  "move",
 	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act.",
+	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act. Moved into done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
 	Example: `cairn task move 3 --first
 cairn task move 3 --after 1
 cairn task move 3 --state todo --after 1`,
-	Level:   Write,
-	Needs:   AStore,
-	Again:   ChangesNothingMore,
-	Answers: Tasks{},
+	Finishes: true,
+	Level:    Write,
+	Needs:    AStore,
+	Again:    ChangesNothingMore,
+	Answers:  Tasks{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
@@ -199,7 +200,7 @@ cairn task move 3 --state todo --after 1`,
 		n, _ := in.Whole("number")
 		into := in.Change("state")
 		if into != nil {
-			if err := on.Engine.moveInto(n, *into); err != nil {
+			if err := on.Engine.moveInto(n, *into, in.Confirmed); err != nil {
 				return Answer{}, err
 			}
 		}

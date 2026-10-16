@@ -59,6 +59,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutSweeping {
 			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
 		}
+		if w.question == aboutFinishingParts {
+			return "Put task " + w.finishingIn.Given["number"] + " in done, with what is open under it?"
+		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
 		if w.form.Adding {
@@ -380,6 +383,12 @@ func (w Window) Asks() []Said {
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}
+	if w.question == aboutFinishingParts {
+		return []Said{
+			{Means: "What hangs under it and is not done goes to done with it."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -406,6 +415,7 @@ const (
 	aboutArchivingSeveral
 	aboutPuttingBack
 	aboutDeletingLabel
+	aboutFinishingParts
 )
 
 func (w Window) sweeps() string {

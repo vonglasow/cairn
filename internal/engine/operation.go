@@ -165,6 +165,7 @@ type Operation struct {
 	Run        func(On, Input) (Answer, error)
 	Answers    Answered
 	Sweeps     func(Input) bool
+	Finishes   bool
 }
 
 // Agreed is what was given, said yes to: what a surface hands over once the person it asked has agreed.
@@ -175,6 +176,9 @@ func Agreed(in Input) Input {
 
 // ErrNotConfirmed is an act that asks first, asked for without saying yes.
 var ErrNotConfirmed = Refusing("not-confirmed", "needs --yes to confirm")
+
+// ErrSubTaskStillOpen is returned when a task is put in done while something hanging under it is not, and the act was not confirmed.
+var ErrSubTaskStillOpen = task.ErrSubTaskStillOpen
 
 // AsksFirst says whether an act waits to be confirmed: one that loses work, or one that sweeps up whatever a narrowing reaches.
 func (o Operation) AsksFirst(in Input) bool {

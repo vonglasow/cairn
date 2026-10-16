@@ -197,6 +197,29 @@ Feature: The board
       And I press "i", "shift+l"
       Then task 1 is in the column "todo"
 
+    @tui-done-asks-about-open-parts
+    Scenario: pushing a task into done with parts still open asks to finish them too
+      Given I added a task titled "Ship it" with the state "current"
+      And I added a task titled "Write the spec" hanging under task 1
+      When I open the board
+      And I press "l", "l", "i", "shift+l"
+      And the board looks again
+      Then the board says "put task 1 in done, with what is open under it?"
+      When I press "enter"
+      And the board looks again
+      Then task 1 is in the column "done"
+      And task 2 is in the column "done"
+
+    @tui-done-asked-about-can-be-kept
+    Scenario: saying no leaves the task and its parts where they were
+      Given I added a task titled "Ship it" with the state "current"
+      And I added a task titled "Write the spec" hanging under task 1
+      When I open the board
+      And I press "l", "l", "i", "shift+l"
+      And the board looks again
+      And I press "esc"
+      Then task 1 is in the column "current"
+
     @tui-moving-a-task-down-a-place
     Scenario: pushing a task down puts it one place lower, and leaves its column
       Given I added a task titled "First" with the state "todo"

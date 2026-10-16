@@ -307,6 +307,10 @@ func (b Board) question() string {
 			strings.ToUpper(engine.StateAt(b.column))+"?") + "  " +
 			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
 	}
+	if b.finishing != nil {
+		return " " + b.skin.Title.Render("put task "+b.finishing.In.Given["number"]+" in done, with what is open under it?") + "  " +
+			b.bar(b.offer("⏎", "finish them all"), b.offer("esc", "keep them as they are"))
+	}
 	what, number := "task", b.task
 	if b.tab == Objectives {
 		what, number = "objective", b.goal

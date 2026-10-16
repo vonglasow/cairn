@@ -269,10 +269,11 @@ var TaskEdit = Operation{
 	Thing: "task",
 	Verb:  "edit",
 	Short: "Change what a task carries",
-	Does:  "Change what a task carries.",
+	Does:  "Change what a task carries. Put in done while something hanging under it is still open, it is refused unless confirmed; confirmed, what is open under it goes to done with it.",
 	Example: `cairn task edit 1 --state current --estimate 2h
 cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
+	Finishes:   true,
 	Level:      Write,
 	Needs:      AStore,
 	Again:      ChangesNothingMore,
@@ -289,6 +290,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 			return Answer{}, err
 		}
 		changes.Title = in.Change("title")
+		changes.Finishing = in.Confirmed
 		parts := in.Change("parts")
 		var edited task.Task
 		if parts != nil && !changes.named() {

@@ -1627,6 +1627,34 @@ Feature: Tasks
       And it says task 2 is in the way
       And task 1 is in the column "backlog"
 
+    @task-done-with-open-parts-says-how-to-confirm
+    Scenario: refusing a parent with a sub-task open says how to finish both
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task edit 1 --state done`
+      Then it fails
+      And it says how to confirm
+
+    @task-done-confirmed-finishes-what-hangs-under-it
+    Scenario: a parent put in done, confirmed, takes what is still open under it along
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      And I added a task titled "Write the docs" with the parent "1"
+      And I edited task 3 with the state "done"
+      When I run `cairn task edit 1 --state done --yes`
+      Then it succeeds
+      And task 1 is in the column "done"
+      And task 2 is in the column "done"
+
+    @task-moved-to-done-confirmed-finishes-what-hangs-under-it
+    Scenario: a parent moved into done, confirmed, takes what is still open under it along
+      Given I added a task titled "Ship it"
+      And I added a task titled "Write the spec" with the parent "1"
+      When I run `cairn task move 1 --state done --first --yes`
+      Then it succeeds
+      And task 1 is in the column "done"
+      And task 2 is in the column "done"
+
     @task-done-allowed-once-they-are-all-done
     Scenario: a parent is finished once everything under it is
       Given I added a task titled "Ship it"

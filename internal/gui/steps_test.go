@@ -868,6 +868,15 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
+	sc.Then(`^the window asks to put what hangs under task (\d+) in done too$`, func(n int) error {
+		if w.w.Screen() != OnAsking || w.w.question != aboutFinishingParts {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		}
+		if head := Heads(w.w); !strings.Contains(head, strconv.Itoa(n)) {
+			return fmt.Errorf("the question reads %q, naming no task %d", head, n)
+		}
+		return nil
+	})
 	sc.Then(`^task (\d+) is called "([^"]*)"$`, w.taskCalled)
 	sc.Then(`^there (?:is|are) (\d+) tasks?$`, func(n int) error {
 		for i := 1; i <= n; i++ {

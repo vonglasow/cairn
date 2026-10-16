@@ -216,10 +216,22 @@ A parent is done *because* what hangs under it is done. If it can be finished
 with a sub-task still open, then either that sub-task was never part of it — in
 which case it is another task — or the parent was closed over work nobody did.
 
-Refused rather than cascaded. Marking the children done on the parent's behalf
-would finish work nobody finished, and silently; the refusal names which ones
-are in the way, which is the useful thing to be told. It says where the work
-*is*, the same way the refusal about sisters says where a task *can* go.
+Refused rather than cascaded, unless it is confirmed. Marking the children
+done on the parent's behalf would finish work nobody finished, and silently;
+the refusal names which ones are in the way, which is the useful thing to be
+told. It says where the work *is*, the same way the refusal about sisters says
+where a task *can* go — and how to say yes: `--yes` on `task edit` and `task
+move` puts what is still open under it in done too, each one an act of its own
+in the trace (`@task-done-confirmed-finishes-what-hangs-under-it`). The boards
+ask the same question where the refusal would have been shown: the window
+after a drop or a move into DONE (`@gui-a-drop-in-done-asks-about-open-parts`),
+the terminal after a push (`@tui-done-asks-about-open-parts`). Amended
+2026-10-16: the refusal alone left a parent with five parts closed by six acts,
+when the person had already decided. It is not silent, since nothing cascades
+without a yes. An agent over MCP is the exception to asking: the server
+confirms every act, the access it was started with being the agent's yes, so
+`task_edit` and `task_move` say in their description that they finish what
+hangs under the task.
 
 Asked of `done` alone, and only when that is where the task lands and is not
 where it was. `blocked`, `watching` and `paused` say something about the parent

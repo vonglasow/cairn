@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"strconv"
 
 	"cairn/internal/engine"
@@ -377,9 +378,21 @@ func (w Window) walkingGoals(across, down int) Window {
 
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
 	if _, err := w.work.Ask(op, in); err != nil {
+		if op.Finishes && !in.Confirmed && errors.Is(err, engine.ErrSubTaskStillOpen) {
+			w.screen, w.question = OnAsking, aboutFinishingParts
+			w.finishing, w.finishingIn = op, in
+			return w.Look()
+		}
 		return w.failing(err)
 	}
 	return w.Look()
+}
+
+func (w Window) finishingParts() Window {
+	op, in := w.finishing, w.finishingIn
+	w.screen, w.question = OnTheBoard, aboutDeleting
+	w.finishing, w.finishingIn = engine.Operation{}, engine.Input{}
+	return w.asking(op, engine.Agreed(in))
 }
 
 func (w Window) whereChosen() (column, at int) {

@@ -92,7 +92,7 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 		}
 
 		yes := cmd.Flags().Lookup("yes")
-		mayAsk := op.Level == engine.Full || op.Sweeps != nil
+		mayAsk := op.Level == engine.Full || op.Sweeps != nil || op.Finishes
 		if mayAsk && yes == nil {
 			t.Errorf("%s: no --yes flag, and it may ask first", op.Line())
 		}

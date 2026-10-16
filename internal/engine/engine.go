@@ -275,6 +275,23 @@ func (e *Engine) waitingOn(number int) ([]int, error) {
 	return waiting, nil
 }
 
+func (e *Engine) finishUnder(number int) error {
+	under, err := e.tasks.Under(number)
+	if err != nil {
+		return err
+	}
+	done := string(domain.Done)
+	for _, part := range under {
+		if factsOf(part).State == domain.Done {
+			continue
+		}
+		if _, err := e.edit(factsOf(part).Number, Changes{State: &done, Finishing: true}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
 		return task.Task{}, ErrNothingToChange
@@ -302,7 +319,14 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if err := was.MayLeaveFor(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := was.MayFinishAs(t, e.tasks.Under); err != nil {
+	if c.Finishing && factsOf(t).State == domain.Done {
+		if err := e.finishUnder(number); err != nil {
+			return task.Task{}, err
+		}
+	}
+	if err := was.MayFinishAs(t, e.tasks.Under); errors.Is(err, ErrSubTaskStillOpen) {
+		return task.Task{}, fmt.Errorf("%w; --yes puts it in done too", err)
+	} else if err != nil {
 		return task.Task{}, err
 	}
 	if err := e.tasks.Update(t); err != nil {
