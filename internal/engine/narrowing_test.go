@@ -72,7 +72,7 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 		t.Errorf("it says %v is in focus, and did not hand that task over", narrowed.InFocus)
 	}
 
-	kept, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "backlog"}})
+	kept, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "current"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}

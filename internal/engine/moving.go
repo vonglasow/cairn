@@ -125,7 +125,23 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	if err := e.record(number, trace.FocusTaken, "", "", ""); err != nil {
 		return task.Task{}, err
 	}
-	return t, nil
+	return e.broughtIntoCurrent(t)
+}
+
+var waitingForSomebody = []domain.State{domain.Backlog, domain.Todo, domain.Paused}
+
+func (e *Engine) broughtIntoCurrent(t task.Task) (task.Task, error) {
+	number := factsOf(t).Number
+	if !slices.Contains(waitingForSomebody, factsOf(t).State) {
+		return t, nil
+	}
+	if err := e.moveInto(number, string(domain.Current), false); err != nil {
+		return task.Task{}, err
+	}
+	if err := e.move(number, First, 0); err != nil {
+		return task.Task{}, err
+	}
+	return e.tasks.Find(number)
 }
 
 func (e *Engine) letGoOf(number int) error {
@@ -248,7 +264,7 @@ var TaskFocus = Operation{
 	Thing: "task",
 	Verb:  "focus",
 	Short: "Put a task in focus, or say which ones are",
-	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once.",
+	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once. A task waiting in backlog, todo or paused goes into current, at its head, as it takes the focus; one blocked or watching stays where it is, and one done is refused.",
 	Example: `cairn task focus 3
 cairn task focus`,
 	Level:   Write,

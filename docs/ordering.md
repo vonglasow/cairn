@@ -253,6 +253,18 @@ released then; putting a task already done in focus is refused
 focus is the work under way, and a done task has none left: a focus left on it
 went on counting time nobody spent.
 
+**Waiting work taking the focus goes into `current`.** Amended 2026-10-16
+(cairn#85). Taking the focus said what was being worked on and moved nothing,
+so a task picked from `todo` stayed in `todo` while it was worked on, and the
+board said it was waiting: the person, or the agent, had to move it by hand,
+and mostly did not. Now a task in `backlog`, `todo` or `paused` goes into
+`current`, at its head, in the act that focuses it, and its trace says so
+(`@ordering-focus-moves-waiting-work-into-current`,
+`@trace-focus-writes-down-the-move-into-current`). A task `blocked` or
+`watching` stays where it is: it waits on something outside, and taking it up
+does not make that something go away (`@ordering-focus-leaves-what-is-stopped-elsewhere`).
+A task already in `current` keeps its place (`@ordering-focus-does-not-reorder`).
+
 A task it names may be deleted, and it is unfocused when that happens —
 by hand, in the same statement's company as the labels. The schema declares the
 reference `ON DELETE SET NULL` and that clause never fires: SQLite leaves

@@ -201,8 +201,8 @@ Feature: Ordering
 
     @ordering-focus-says-everything-it-holds
     Scenario: asking about the focus names every task in it
-      Given I added a task titled "First"
-      And I added a task titled "Second"
+      Given I added a task titled "First" with the state "current"
+      And I added a task titled "Second" with the state "current"
       And I put task 1 in focus
       And I put task 2 in focus
       When I run `cairn task focus`
@@ -249,13 +249,41 @@ Feature: Ordering
       Then it succeeds
       And it says nothing is in focus
 
-  Rule: The focus names a task without moving it
+  Rule: The focus brings waiting work into current, and moves nothing else
+
+    @ordering-focus-moves-waiting-work-into-current
+    Scenario Outline: a task waiting to be worked on goes into current, at its head, when it takes the focus
+      Given I added a task titled "Already here" with the state "current"
+      And I added a task titled "Write the spec" with the state "<waiting>"
+      When I run `cairn task focus 2`
+      Then it succeeds
+      And task 2 is in the column "current"
+      When I run `cairn task list --state current`
+      Then it lists the tasks in the order "Write the spec", "Already here"
+
+      Examples: what says the work is waiting for somebody
+        | waiting |
+        | backlog |
+        | todo    |
+        | paused  |
+
+    @ordering-focus-leaves-what-is-stopped-elsewhere
+    Scenario Outline: a task stopped by something else stays where it is when it takes the focus
+      Given I added a task titled "Client's answer" with the state "<stopped>"
+      When I run `cairn task focus 1`
+      Then it succeeds
+      And task 1 is in the column "<stopped>"
+
+      Examples: what says the work waits on something outside
+        | stopped  |
+        | blocked  |
+        | watching |
 
     @ordering-focus-does-not-reorder
-    Scenario: the task in focus keeps its place in the list
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
+    Scenario: a task already in current keeps its place there when it takes the focus
+      Given I added a task titled "First" with the state "current"
+      And I added a task titled "Second" with the state "current"
+      And I added a task titled "Third" with the state "current"
       And I put task 3 in focus
       When I run `cairn task list`
       Then it lists the tasks in the order "First", "Second", "Third"

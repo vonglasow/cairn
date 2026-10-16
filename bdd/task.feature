@@ -349,10 +349,10 @@ Feature: Tasks
 
     @task-list-narrowed-still-says-the-focus
     Scenario: a task in focus that matched is shown as in focus
-      Given I added a task titled "Write the spec" with the state "todo"
+      Given I added a task titled "Write the spec" with the state "current"
       And I added a task titled "Ship it"
       And I put task 1 in focus
-      When I run `cairn task list --state todo --json`
+      When I run `cairn task list --state current --json`
       Then it carries 1 task
       And it says task 1 is the one in focus
 

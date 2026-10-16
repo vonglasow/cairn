@@ -20,7 +20,10 @@ task's description, and do not manage the focus by hand beyond what follows.
 
 ## Attaching — "on travaille sur cairn#123"
 
-1. `task_focus` with the number. The hook ties the session to the task.
+1. `task_focus` with the number. The hook ties the session to the task, and
+   a task waiting in `backlog`, `todo` or `paused` moves into `current` with
+   it. Do not move it yourself; a task in `blocked` or `watching` stays where
+   it is: say so, and ask whether to move it.
 2. `task_show` the task. Its `context` is the task's notes directory.
 3. Read from that directory, nothing more:
    - `summary.md` — where the task stands;

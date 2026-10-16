@@ -99,3 +99,41 @@ func TestMove_takesTheOthersAlongBehindIt(t *testing.T) {
 		t.Errorf("todo holds %v, want [4 2]", order)
 	}
 }
+
+func TestFocus_bringsWaitingWorkIntoCurrentAndLeavesTheRest(t *testing.T) {
+	for state, lands := range map[string]string{
+		"backlog": "current", "todo": "current", "paused": "current",
+		"blocked": "blocked", "watching": "watching", "current": "current",
+	} {
+		path := storeAt(t)
+		if _, err := Do(TaskNew, path, given("title", "Already here", "state", "current")); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Do(TaskNew, path, given("title", "Write the spec", "state", state)); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Do(TaskFocus, path, given("number", "2")); err != nil {
+			t.Fatalf("focusing a task in %s: %v", state, err)
+		}
+		shown, err := Do(TaskShow, path, given("number", "2"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := string(factsOf(*shown.Task).State); got != lands {
+			t.Errorf("a task in %s that takes the focus is in %s, want %s", state, got, lands)
+		}
+		if lands != "current" || state == "current" {
+			continue
+		}
+		listed, err := Do(TaskList, path, given())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(listed.Tasks) == 0 {
+			t.Fatal("nothing is listed")
+		}
+		if first := factsOf(listed.Tasks[0]).Number; first != 2 {
+			t.Errorf("a task in %s brought into current sits behind task %d, want at the head", state, first)
+		}
+	}
+}

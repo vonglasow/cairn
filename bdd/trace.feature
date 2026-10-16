@@ -42,16 +42,23 @@ Feature: The trace
 
     @trace-focus-taken-and-released
     Scenario: taking the focus and letting it go are both written down
-      Given I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" with the state "current"
       And I put task 1 in focus
       And I let the focus go
       When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released"
 
+    @trace-focus-writes-down-the-move-into-current
+    Scenario: a task brought into current by the focus says so in its trace
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I put task 1 in focus
+      When I run `cairn trace show 1`
+      Then it lists the acts in the order "created", "focus taken", "column"
+
     @trace-focus-taking-another-leaves-the-first-open
     Scenario: putting another task in focus leaves the first one open
-      Given I added a task titled "First"
-      And I added a task titled "Second"
+      Given I added a task titled "First" with the state "current"
+      And I added a task titled "Second" with the state "current"
       And I put task 1 in focus
       And I put task 2 in focus
       When I run `cairn trace show 1`
@@ -59,8 +66,8 @@ Feature: The trace
 
     @trace-focus-letting-one-go-closes-only-that-one
     Scenario: letting one task go closes its stretch and no other
-      Given I added a task titled "First"
-      And I added a task titled "Second"
+      Given I added a task titled "First" with the state "current"
+      And I added a task titled "Second" with the state "current"
       And I put task 1 in focus
       And I put task 2 in focus
       And I let task 1 go
@@ -71,7 +78,7 @@ Feature: The trace
 
     @trace-focus-closed-when-the-task-goes
     Scenario: deleting the task in focus closes the stretch, and its trace stays
-      Given I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" with the state "current"
       And I put task 1 in focus
       And I deleted task 1
       When I run `cairn trace show 1`
@@ -137,7 +144,7 @@ Feature: The trace
 
     @trace-focus-again-on-the-same-task-changes-nothing
     Scenario: putting the focus where it already is does nothing at all
-      Given I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" with the state "current"
       And I put task 1 in focus
       And I put task 1 in focus
       When I run `cairn trace show 1`
