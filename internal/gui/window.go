@@ -279,7 +279,7 @@ func (w Window) Look() Window {
 	for i := range w.lanes {
 		w.lanes[i] = w.settledLane(i, w.lanes[i])
 	}
-	if w.tab == Time {
+	if w.pages.Shows(engine.PageTime) {
 		return w.readingWeek()
 	}
 	return w

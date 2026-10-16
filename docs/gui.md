@@ -688,7 +688,10 @@ day keeps the tasks the search reaches, and its total counts only them
 what has no room rather than writing it over the rest: the labels stop short of
 the facts written hard right, and the count of the parts gives way to the eye
 of a task in focus. The tab says how many tasks the
-time shown was spent on. The page lies over the columns and draws none of them,
+time shown was spent on, from the moment the window opens: the week is read
+with every look at the store and not only once the page is opened, or the tab
+said 0 until it was clicked (`@gui-the-time-tab-counts-before-it-is-opened`).
+The page lies over the columns and draws none of them,
 so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.
 

@@ -2155,6 +2155,15 @@ Feature: The desktop board
       Then the tab "TASKS" says it holds 2
       And the tab "OBJECTIVES" says it holds 1
 
+    @gui-the-time-tab-counts-before-it-is-opened
+    Scenario: the time tab says how many tasks were worked on this week before it is opened
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship the board"
+      And I spent "1h" on each of tasks 1 to 2 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      Then the tab "TIME" says it holds 2
+
   Rule: An objective opens on the work that serves it
 
     @gui-an-objective-opens-on-what-serves-it
