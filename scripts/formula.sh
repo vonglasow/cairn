@@ -5,9 +5,10 @@
 #
 # DIR holds the binary archives of VERSION and their SHA256SUMS, as the release
 # workflow gathers them; URL is where the release serves them. The formula
-# fetches the archive made for the system it is installed on and puts the
-# binary on the PATH: nothing is built, which is what a binary is handed over
-# for — whoever wants to build cairn clones it. It is written twice, as the tap
+# fetches the archive made for the system it is installed on, puts the binary
+# on the PATH and the Claude Code plugin under its share: nothing is built,
+# which is what a binary is handed over for — whoever wants to build cairn
+# clones it. It is written twice, as the tap
 # keeps them: Formula/cairn.rb, the latest, and Formula/cairn@X.Y.rb, kept for
 # every minor. A system whose archive is missing makes no formula at all.
 set -euo pipefail
@@ -61,6 +62,18 @@ class $1 < Formula
 
   def install
     bin.install "cairn"
+    pkgshare.install "claude-plugin"
+  end
+
+  def caveats
+    <<~EOS
+      The Claude Code plugin is in #{opt_pkgshare}/claude-plugin, a path an
+      upgrade keeps and refreshes. Add it to Claude Code once:
+        claude plugin marketplace add #{opt_pkgshare}/claude-plugin
+        claude plugin install cairn@cairn
+      Claude Code reads it in place, so every brew upgrade brings the plugin
+      of the new cairn with it, from the next session on.
+    EOS
   end
 
   test do

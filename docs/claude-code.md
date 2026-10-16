@@ -226,6 +226,17 @@ cairn repository>`. `bdd/claude-plugin.feature` holds both, against the real
 binary, file by file against this folder; `claude plugin validate` accepts
 what it writes.
 
+**Installed by brew, it is already written, and an upgrade refreshes it.**
+Every release archive carries the plugin, written by the binary beside it, and
+the formula installs it under `$(brew --prefix)/opt/cairn/share/cairn/claude-plugin`
+— a path Homebrew keeps across versions and points at the new one on every
+upgrade. Added once from there, it is read by Claude Code in place at each
+session's start, so `cairn plugin write` and `/plugin marketplace update` are
+for a binary handed over without brew (cairn#90, [docs/release.md](release.md)).
+A marketplace added earlier from `claude-plugin` beside the store keeps
+working, and keeps needing `cairn plugin write` after each upgrade; to move,
+`claude plugin marketplace remove cairn`, then add the brew folder.
+
 The plugin declares the cairn MCP server, so that installing it is enough. A
 person who already declared one keeps theirs: Claude Code drops a plugin's
 server when one with the very same command is already there, and loads both

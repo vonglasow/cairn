@@ -106,6 +106,24 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    `brew install vonglasow/tap/cairn` takes the latest and
    `brew install vonglasow/tap/cairn@0.4` an older one.
 
+**The Claude Code plugin goes with the binary.** Each archive holds the
+plugin, written by the binary it is packed with (`cairn plugin write`, in
+`scripts/package.sh`), so the two are always the same version
+(`@version-archive-carries-the-plugin`). The formula shares it,
+`pkgshare.install "claude-plugin"`, and its caveats say how to add it once
+(`@version-brew-formula-installs-the-plugin`): from
+`$(brew --prefix)/opt/cairn/share/cairn/claude-plugin`, which Homebrew keeps
+from one version to the next and points at the new one on every upgrade.
+Claude Code reads a marketplace added from a folder in place, at the start of
+each session, without copying it or comparing versions
+([plugin loading](https://code.claude.com/docs/en/plugins/loading)), so a
+`brew upgrade` is the whole update (cairn#90). Two other ways were weighed and
+left. Writing the plugin from the formula's `post_install` would put it under
+the person's home, which Homebrew's sandbox keeps a formula out of. And a
+marketplace taken from this repository on GitHub would follow `main` rather
+than the cairn installed, and the binary would no longer say which plugin
+goes with it.
+
 It needs one secret, `GH_TOKEN`: a token that may push to
 `vonglasow/homebrew-tap`, as gaia's. The release itself is made with the
 workflow's own token.

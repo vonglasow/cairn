@@ -67,8 +67,18 @@ brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
 ```
 
 The formula installs the binary made for your system and builds nothing.
-`brew upgrade cairn` takes a newer version. Then `cairn plugin write`, below,
-gives Claude Code the plugin this cairn carries.
+`brew upgrade cairn` takes a newer version. It also installs the Claude Code
+plugin this cairn carries, in a folder an upgrade keeps and refreshes; add it
+to Claude Code once:
+
+```sh
+claude plugin marketplace add "$(brew --prefix)/opt/cairn/share/cairn/claude-plugin"
+claude plugin install cairn@cairn
+```
+
+Claude Code reads a plugin added from a folder in place, so each `brew
+upgrade` brings the plugin of the new cairn with it, from the next session on:
+nothing to run again. `brew info cairn` says the same.
 
 ## Installing it
 
@@ -109,7 +119,8 @@ It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
 Windows, Claude Code runs it through Git Bash, and `jq` comes with
 `winget install jqlang.jq`.
 
-The binary carries the plugin it was built with, so the sources are not needed
+Installed with Homebrew, the plugin is already there: see above. Otherwise,
+the binary carries the plugin it was built with, so the sources are not needed
 for it. Write it out, beside the store unless `--dir` names a folder:
 
 ```sh
