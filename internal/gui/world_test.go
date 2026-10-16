@@ -16,6 +16,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/build"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/task"
@@ -719,6 +720,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I pick "([^"]*)" in the menu bar$`, func(item string) error {
 		w.w = w.w.Picked(item)
 		return w.w.Wrong()
+	})
+	sc.Then(`^the window says the version this build reports$`, func() error {
+		said := Heads(w.w)
+		for _, line := range w.w.Asks() {
+			said += "\n" + line.Means
+		}
+		if want := build.Read().Version; !strings.Contains(said, "cairn "+want) {
+			return fmt.Errorf("the window says %q, not cairn %s", said, want)
+		}
+		return nil
 	})
 	sc.Step(`^I click the menu button$`, func() error {
 		button := MenuButton(w.w.Layout())

@@ -735,7 +735,11 @@ the window Gio made, its commands caught in front of Gio's window procedure and
 the keys written beside each line (`menu_windows.go`). Neither call to the
 system is driven by a test; what each line does is. Where the system gives a
 window no menu bar — Linux — a `☰` button at the end of the tabs opens the same
-lines as one menu (`MenuButton`).
+lines as one menu (`MenuButton`). Help ends on About cairn, which says which
+build this is — its version, the commit and its date, what built it for which
+system — the lines `cairn --version` prints, read from the same stamps
+(`internal/build`), in a box with only Close
+(`@gui-the-version-is-shown-from-the-menu`).
 
 **A right click says what can be done to what is under it.** What a card can
 have done to it was on the bar once the card was chosen, so a hand on the

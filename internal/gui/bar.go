@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cairn/internal/build"
 	"cairn/internal/engine"
 )
 
@@ -58,6 +59,9 @@ func HeadsOn(w Window, screen Screen) string {
 		}
 		if w.question == aboutSweeping {
 			return "Archive every task in " + strings.ToUpper(w.sweeps()) + "?"
+		}
+		if w.question == aboutCairn {
+			return "About cairn"
 		}
 		if w.question == aboutFinishingParts {
 			return "Put task " + w.finishingIn.Given["number"] + " in done, with what is open under it?"
@@ -252,6 +256,9 @@ func (w Window) Offers() []string {
 		if w.question == aboutLeaving {
 			return []string{"Throw away", "Back"}
 		}
+		if w.question == aboutCairn {
+			return []string{"Close"}
+		}
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
 		}
@@ -383,6 +390,9 @@ func (w Window) Asks() []Said {
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}
+	if w.question == aboutCairn {
+		return AboutSays(build.Read())
+	}
 	if w.question == aboutFinishingParts {
 		return []Said{
 			{Means: "What hangs under it and is not done goes to done with it."},
@@ -396,6 +406,15 @@ func (w Window) Asks() []Said {
 	return []Said{
 		{Means: "This " + what + " cannot be brought back."},
 		{Means: "Delete again to agree, or Cancel."},
+	}
+}
+
+// AboutSays is what About cairn says of a build: its version, the commit it was made from and when, and what built it for which system.
+func AboutSays(b build.Info) []Said {
+	return []Said{
+		{Means: "cairn " + b.Version},
+		{Means: "commit " + b.Commit + ", " + b.CommitDate},
+		{Means: "built " + b.Built + " with " + b.Go + " for " + b.Platform},
 	}
 }
 
@@ -416,6 +435,7 @@ const (
 	aboutPuttingBack
 	aboutDeletingLabel
 	aboutFinishingParts
+	aboutCairn
 )
 
 func (w Window) sweeps() string {

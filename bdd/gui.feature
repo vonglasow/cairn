@@ -1249,7 +1249,15 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help", "About cairn"
+
+    @gui-the-version-is-shown-from-the-menu
+    Scenario: About cairn, in the menu bar, says which version this is
+      When I open the window
+      And I pick "About cairn" in the menu bar
+      Then the window says the version this build reports
+      When I click "Close"
+      Then the window is on the board
 
   Rule: Labels are seen and managed apart from any task
 

@@ -16,7 +16,7 @@ func MenuBar() []MenuGroup {
 		{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import"}},
 		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
-		{Name: "Help", Items: []string{"Help"}},
+		{Name: "Help", Items: []string{"Help", "About cairn"}},
 	}
 }
 

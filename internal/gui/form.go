@@ -465,6 +465,9 @@ func (w Window) Choose(name string) Window {
 	case "help":
 		w.screen, w.helpFrom, w.spareHelp = OnHelp, 0, 0
 		return w
+	case "about cairn":
+		w.screen, w.question = OnAsking, aboutCairn
+		return w
 	case "clear":
 		if len(w.taken) > 0 {
 			w.taken = nil
