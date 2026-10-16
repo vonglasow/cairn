@@ -10,11 +10,11 @@
 #
 #   FIXTURES_TRACE=1 scripts/fixtures.sh     (make trace)
 #
-# opens it traced, for a bug seen only on one system: a drag drawn in the
-# wrong place on Windows, a letter typed twice on Linux. cairn is built from
-# the tree as it stands — a binary from before the trace learned something
-# cannot write it down — and the record, under traces/, starts with what the
-# machine is: its system, display session, input method, keyboard, language.
+# opens it traced, for a bug seen only on one system, such as a drag drawn in
+# the wrong place on Windows. cairn is built from the tree as it stands — a
+# binary from before the trace learned something cannot write it down — and
+# the record, under traces/, starts with what the machine is: its system,
+# display session, input method, keyboard, language.
 # Do the one thing that goes wrong, close the window, send the file.
 #
 # It only ever deletes a folder it made itself: one it made carries a mark,
@@ -130,8 +130,6 @@ and keyboard event. Do the one thing that goes wrong, then close the window:
 
   a drag drawn in the wrong place   press a card, move it a few centimetres
                                     with the button held, let go
-  a letter that takes two presses   open a task, click in its title, press é
-                                    once
 
 SAID
 
