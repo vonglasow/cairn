@@ -1863,6 +1863,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^every key the bar offers does what it offers$`, w.everyKeyTheBarOffers)
 	sc.Then(`^the trace is beside the fields$`, w.historyBesideTheFields)
+	sc.Then(`^the form writes the trace, empty$`, func() error {
+		for _, r := range w.w.Readables() {
+			if r.Key == "history" {
+				if told := w.w.Told(); told != 0 {
+					return fmt.Errorf("the trace of a task not yet saved holds %d lines", told)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the form writes no trace beside it")
+	})
 	sc.Then(`^the trace stays inside the panel$`, w.historyInsideThePanel)
 	sc.Then(`^the trace has more to show than it has room for$`, w.historyHasMore)
 	sc.Then(`^the trace has moved$`, w.historyMoved)

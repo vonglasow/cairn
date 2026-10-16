@@ -252,7 +252,7 @@ func (w Window) PressAt(p Point) Window {
 			w.picked = Picked{}
 			return w.holdingBy(at, p, Characters).inSightOfTheCaret()
 		}
-		if !w.form.Adding && BesideBar(w.formPanel()).In(p) {
+		if w.besideShown() && BesideBar(w.formPanel()).In(p) {
 			w.draggingBar, w.draggingServing = !w.form.ForObjective, w.form.ForObjective
 			return w
 		}
@@ -367,7 +367,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		if frame, ok := w.partsFrame(); ok && frame.In(p) {
 			return w.scrollingParts(by)
 		}
-		if !w.form.Adding && BesideBox(w.formPanel()).In(p) {
+		if w.besideShown() && BesideBox(w.formPanel()).In(p) {
 			if w.form.ForObjective {
 				w.serving = w.settledServing(w.serving + by)
 				return w

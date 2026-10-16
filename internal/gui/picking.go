@@ -60,7 +60,7 @@ func (r Readable) inSight() Box { return r.Box }
 
 // Readables is every piece of text the column beside an opened form writes: a task's history and the place of its notes, or the work serving an objective.
 func (w Window) Readables() []Readable {
-	if w.screen != OnForm || w.form.Adding {
+	if w.screen != OnForm || !w.besideShown() {
 		return nil
 	}
 	box := w.formPanel()

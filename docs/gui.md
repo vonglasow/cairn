@@ -1082,8 +1082,12 @@ well, both go (`@gui-a-click-off-the-form-closes-the-calendar-too`).
 eighths — in the narrowest window this board draws in, room for two short
 fields to a line — and the column beside them has the panel's full height at
 every size. Stacked, the trace got what twelve framed fields left, which is
-nothing. A form being *added* has no trace and takes the whole width, cut to
-what it holds.
+nothing. A task being *added* has the same two columns, its trace there and
+empty from the start: the form saves itself, and a trace that appeared beside
+it at the first beat moved every field out from under the person typing
+(`@gui-a-new-task-shows-its-trace-from-the-start`). Only an objective being
+added, which has no work under it yet, takes the whole width, cut to what it
+holds.
 
 The trace **scrolls**, by the wheel over it or by pulling the bar beside
 it. It is counted in lines and not in acts, because an act wraps onto as many

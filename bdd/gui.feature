@@ -1981,6 +1981,13 @@ Feature: The desktop board
       Then the trace is beside the fields
       And the trace stays inside the panel
 
+    @gui-a-new-task-shows-its-trace-from-the-start
+    Scenario: a task being added shows its trace from the start, empty, so nothing appears beside the form once it saves itself
+      When I open the window
+      And I press "cmd+n"
+      Then the form writes the trace, empty
+      And the trace is beside the fields
+
     @gui-a-long-description-scrolls
     Scenario: a description longer than its box scrolls, and says so with a bar
       Given I added a task titled "Write the spec" with a description of 20 lines

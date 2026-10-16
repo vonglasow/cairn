@@ -870,15 +870,15 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		outline(gtx, tip, skin.Edge)
 		sayOver(gtx, th, skin.Ink, Inside(tip), said, small, 3)
 	}
-	if !w.Form().Adding {
-		if w.ChosenGoal() {
-			drawUnder(gtx, th, skin, panel, w)
-		} else {
-			drawHistory(gtx, th, skin, panel, w)
-		}
-		for _, r := range w.ContextSays() {
-			sayHolding(gtx, th, skin, skin.Faint, r.Box, w.Holding(r.Key, r.Said), r.Size)
-		}
+	switch {
+	case !w.besideShown():
+	case w.Form().ForObjective:
+		drawUnder(gtx, th, skin, panel, w)
+	default:
+		drawHistory(gtx, th, skin, panel, w)
+	}
+	for _, r := range w.ContextSays() {
+		sayHolding(gtx, th, skin, skin.Faint, r.Box, w.Holding(r.Key, r.Said), r.Size)
 	}
 }
 

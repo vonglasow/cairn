@@ -170,18 +170,20 @@ func (w Window) panel() Box {
 }
 
 func (w Window) formPanel() Box {
-	if w.form.Adding {
+	if !w.besideShown() {
 		return FormOver(w.width, w.height, w.form.Fields())
 	}
 	return OpenOver(w.width, w.height, w.form.Fields())
 }
 
 func (w Window) formBox() Box {
-	if w.form.Adding {
+	if !w.besideShown() {
 		return w.formPanel()
 	}
 	return FormFields(w.formPanel())
 }
+
+func (w Window) besideShown() bool { return !w.form.Adding || !w.form.ForObjective }
 
 func (w Window) closesOnAClickOff() bool {
 	switch w.screen {
