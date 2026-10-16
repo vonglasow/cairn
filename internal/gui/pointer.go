@@ -471,17 +471,46 @@ func (w Window) where(l Layout, p Point) (state string, place map[string]string,
 		if !l.Column[i].In(p) {
 			continue
 		}
-		here := w.inColumn(i)
-		at := (p.Y - l.Column[i].Y + w.scroll[i]) / CardHeight
-		if at <= 0 {
+		here := w.besideHeld(w.inColumn(i))
+		at := w.landingAt(l, i, p, len(here))
+		if at == 0 {
 			return engine.StateAt(i), map[string]string{"first": "true"}, true
 		}
-		if at-1 < len(here) {
-			return engine.StateAt(i), map[string]string{"after": strconv.Itoa(here[at-1].Number)}, true
-		}
-		return engine.StateAt(i), map[string]string{"last": "true"}, true
+		return engine.StateAt(i), map[string]string{"after": strconv.Itoa(here[at-1].Number)}, true
 	}
 	return "", nil, false
+}
+
+func (w Window) landingAt(l Layout, column int, p Point, room int) int {
+	return max(0, min(room, (p.Y-l.Column[column].Y+w.scroll[column]+CardHeight/2)/CardHeight))
+}
+
+func (w Window) besideHeld(cards []engine.Card) []engine.Card {
+	if !w.Dragging() {
+		return cards
+	}
+	kept := make([]engine.Card, 0, len(cards))
+	for _, c := range cards {
+		if c.Number != w.held.Number {
+			kept = append(kept, c)
+		}
+	}
+	return kept
+}
+
+func (w Window) openedAt(l Layout) (column, at int, open bool) {
+	if !w.Dragging() {
+		return 0, 0, false
+	}
+	if _, inLane := l.LaneUnder(w.held.At); inLane {
+		return 0, 0, false
+	}
+	for i := range engine.Columns {
+		if l.Column[i].In(w.held.At) {
+			return i, w.landingAt(l, i, w.held.At, len(w.besideHeld(w.inColumn(i)))), true
+		}
+	}
+	return 0, 0, false
 }
 
 func (w Window) clickedOff(p Point) Window {

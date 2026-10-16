@@ -276,6 +276,19 @@ lands on what it opened and is a press there.
 follows the pointer; below that it is a click. Without the threshold, a shaky
 click would move a task.
 
+**The board makes room where the card would land.** While a card is dragged
+it leaves its place, and the column under the pointer opens a card's room
+where it would go, the cards after it moved down and the room outlined — the
+way a list a card is dragged through behaves in Trello and the like
+(`TestADragOpensRoomWhereTheCardWouldLand`). Which room is the half of a card
+the pointer is over: the upper half of a card puts it before, the lower half
+after. A thin line across the top of the slot under the pointer said it before,
+and since the slot was a card's whole height, the last card of a column
+scrolled to its end covered its foot: there was no point anywhere that meant
+"after it", and a card could not be put last (`@gui-a-drag-reaches-the-foot-of-a-column`,
+`@gui-a-drag-reaches-the-foot-of-a-long-column`). The card in hand is never
+counted where it is going, so it is never put behind itself.
+
 **A drop carries the column and the place.** That is one `task move --state
 todo --after 3`: the column and the place in one act, so a place refused
 leaves the column as it was. It used to be an edit and then a move, with

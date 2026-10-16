@@ -431,6 +431,25 @@ Feature: The desktop board
       And the engine was not asked "task edit"
       And "TODO" reads "Second", "First"
 
+    @gui-a-drag-reaches-the-foot-of-a-column
+    Scenario: a card dropped under the last of its column goes last
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "todo"
+      And I added a task titled "Third" with the state "todo"
+      When I open the window
+      And I drag the card "First" to the foot of "TODO"
+      Then "TODO" reads "Second", "Third", "First"
+
+    @gui-a-drag-reaches-the-foot-of-a-long-column
+    Scenario: a card dragged over a column longer than the window scrolls it, and goes last
+      Given I added 20 tasks to "todo"
+      And I added a task titled "Moved" with the state "backlog"
+      When I open the window
+      And I take hold of the card "Moved" and move it over "TODO"
+      And I scroll down over "TODO" 99 times
+      And I let go at the foot of "TODO"
+      Then the last card of "TODO" is "Moved"
+
     @gui-a-drop-in-a-lane-says-which-kind
     Scenario: dropping a card in a lane of the band says which kind of stopped
       Given I added a task titled "Client's answer" with the state "todo"

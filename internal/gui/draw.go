@@ -590,7 +590,7 @@ func goalFace(g engine.Goal) engine.Card {
 
 func drawDragging(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if landing, somewhere := w.Landing(); somewhere {
-		fill(gtx, landing, skin.Chosen)
+		outline(gtx, PartsOf(landing).Panel, skin.Chosen)
 	}
 	ghost, dragging := w.Ghost()
 	if !dragging {

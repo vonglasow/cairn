@@ -63,13 +63,17 @@ func (w Window) Placed() []Placed {
 	l := w.Layout()
 	var out []Placed
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	opened, room, open := w.openedAt(l)
 	for i, column := range dealt {
-		for at, c := range column.Cards {
+		for at, c := range w.besideHeld(column.Cards) {
+			if open && i == opened && at >= room {
+				at++
+			}
 			out = append(out, Placed{Card: c, Slot: l.CardAt(i, at, w.scroll[i]), Within: l.Column[i]})
 		}
 	}
 	for lane := range engine.Stalled {
-		for at, c := range w.inLane(lane) {
+		for at, c := range w.besideHeld(w.inLane(lane)) {
 			out = append(out, Placed{Card: c, Slot: l.LaneCardAt(lane, at, w.lanes[lane]), Within: l.Lane[lane]})
 		}
 	}

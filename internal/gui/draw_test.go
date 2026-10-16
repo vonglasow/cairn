@@ -1323,3 +1323,33 @@ func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 		t.Errorf("the tasks tab says %d, and the board lays out 1", got)
 	}
 }
+
+func TestADragOpensRoomWhereTheCardWouldLand(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "todo"},
+		engine.Card{Number: 3, Title: "Third", State: "backlog"})
+	l := w.Layout()
+	second := l.CardAt(1, 1, 0)
+	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
+
+	landing, ok := w.Landing()
+	if !ok || landing != (Box{X: second.X, Y: second.Y, W: second.W, H: CardHeight}) {
+		t.Errorf("the card would land in %+v, want the room %+v", landing, second)
+	}
+	slots := map[int]Box{}
+	for _, p := range w.Placed() {
+		slots[p.Card.Number] = p.Slot
+	}
+	if _, drawn := slots[3]; drawn {
+		t.Error("the card in hand is still drawn in its column")
+	}
+	if slots[1] != l.CardAt(1, 0, 0) || slots[2] != l.CardAt(1, 2, 0) {
+		t.Errorf("First is at %+v and Second at %+v: no room was made between them", slots[1], slots[2])
+	}
+	w = w.MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H*3/4})
+	if landing, _ := w.Landing(); landing.Y != l.CardAt(1, 2, 0).Y {
+		t.Errorf("over the lower half of Second the card would land at %d, want after it", landing.Y)
+	}
+}

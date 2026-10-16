@@ -378,7 +378,16 @@ func (w *world) slotIn(column string, above string) (Point, error) {
 		}
 	}
 	box := l.CardAt(at, slot, w.w.scroll[at])
-	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
+	return Point{X: box.X + box.W/2, Y: box.Y + box.H/4}, nil
+}
+
+func (w *world) footOf(column string) (Point, error) {
+	at := engine.IndexOf(strings.ToLower(column))
+	if at < 0 {
+		return Point{}, fmt.Errorf("no column called %q", column)
+	}
+	box := w.w.Layout().Column[at]
+	return Point{X: box.X + box.W/2, Y: box.Y + box.H - 4}, nil
 }
 
 func (w *world) dragOnto(title, column string) error { return w.drag(title, column, "") }
@@ -839,6 +848,48 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)"$`, w.dragOnto)
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)" above "([^"]*)"$`, w.dragAbove)
 	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)"$`, w.dragToLane)
+	sc.Step(`^I drag the card "([^"]*)" to the foot of "([^"]*)"$`, func(title, column string) error {
+		from, err := w.find(title)
+		if err != nil {
+			return err
+		}
+		foot, err := w.footOf(column)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.PressAt(from).MoveTo(foot).LetGo(foot)
+		return nil
+	})
+	sc.Step(`^I scroll down over "([^"]*)" (\d+) times$`, func(column string, n int) error {
+		for range n {
+			if err := w.scrollOver(column); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I let go at the foot of "([^"]*)"$`, func(column string) error {
+		foot, err := w.footOf(column)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.MoveTo(foot).LetGo(foot)
+		return nil
+	})
+	sc.Then(`^the last card of "([^"]*)" is "([^"]*)"$`, func(column, title string) error {
+		here, err := w.cardsOf(column)
+		if err != nil {
+			return err
+		}
+		if len(here) == 0 || here[len(here)-1].Title != title {
+			names := make([]string, 0, len(here))
+			for _, c := range here {
+				names = append(names, c.Title)
+			}
+			return fmt.Errorf("%q reads %q", column, names)
+		}
+		return nil
+	})
 	sc.Step(`^I scroll down over "([^"]*)"$`, w.scrollOver)
 	sc.Step(`^I scroll down over the lane "([^"]*)"$`, w.scrollOverLane)
 	sc.Step(`^I click the top of the lane "([^"]*)"$`, w.clickTopOfLane)

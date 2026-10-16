@@ -19,7 +19,7 @@ func (w Window) Ghost() (Box, bool) {
 	}, true
 }
 
-// Landing is the slot the card would drop into, and whether it is over one at all.
+// Landing is the room the card would drop into, a card high, the cards after it moved down to make it; and whether it is over one at all.
 func (w Window) Landing() (Box, bool) {
 	if !w.Dragging() {
 		return Box{}, false
@@ -28,17 +28,8 @@ func (w Window) Landing() (Box, bool) {
 	if lane, on := l.LaneUnder(w.held.At); on {
 		return l.Lane[lane], true
 	}
-	for i := range engine.Columns {
-		if !l.Column[i].In(w.held.At) {
-			continue
-		}
-		at := (w.held.At.Y - l.Column[i].Y) / CardHeight
-		return Box{
-			X: l.Column[i].X,
-			Y: l.Column[i].Y + at*CardHeight,
-			W: l.Column[i].W,
-			H: landingHigh,
-		}, true
+	if column, at, open := w.openedAt(l); open {
+		return l.CardAt(column, at, w.scroll[column]), true
 	}
 	return Box{}, false
 }
