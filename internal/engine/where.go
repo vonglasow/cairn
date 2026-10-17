@@ -63,25 +63,30 @@ func Locate(h Home) (Places, error) {
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.
-func DoFrom(op Operation, h Home, in Input, through string) (Answer, error) {
+func DoFrom(op Operation, h Home, in Input, acting Acting) (Answer, error) {
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
 	if op.Needs == AConfiguration {
-		return doAt(op, Places{Home: h}, in, through)
+		return doAt(op, Places{Home: h}, in, acting)
 	}
 	at, err := Locate(h)
 	if err != nil {
 		return Answer{}, err
 	}
-	return doAt(op, at, in, through)
+	return doAt(op, at, in, acting)
 }
 
-// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home, and refused the way an operation refuses it — a store behind this cairn says what to type about it.
-func Hold(h Home) (*Engine, error) {
+// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home, and refused the way an operation refuses it — a store behind this cairn says what to type about it. What it is asked to do is written down as done through that surface, by whoever acts.
+func Hold(h Home, acting Acting) (*Engine, error) {
 	at, err := Locate(h)
 	if err != nil {
 		return nil, err
 	}
-	return OpenAt(at)
+	held, err := OpenAt(at)
+	if err != nil {
+		return nil, err
+	}
+	held.acting = acting
+	return held, nil
 }

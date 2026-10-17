@@ -70,10 +70,23 @@ func columns(l Carried) string {
 		fmt.Fprintf(&out, "\t%s %s %s",
 			domain.OrNothing(l.Was), went, domain.OrNothing(l.Became))
 	}
-	if l.Through != "" {
-		fmt.Fprintf(&out, "  (%s)", l.Through)
-	}
+	out.WriteString(Credited(l.By, l.Through))
 	return out.String()
+}
+
+// Credited is what follows an act on its line: who did it and through what, as much of it as was written down, and nothing when neither was.
+func Credited(by, through string) string {
+	var said []string
+	if by != "" {
+		said = append(said, "by "+by)
+	}
+	if through != "" {
+		said = append(said, "through "+through)
+	}
+	if len(said) == 0 {
+		return ""
+	}
+	return "  (" + strings.Join(said, ", ") + ")"
 }
 
 func what(l Carried) string {

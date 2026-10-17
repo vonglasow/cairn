@@ -43,7 +43,7 @@ type Engine struct {
 	history    history
 	objectives objectives
 	store      *store.Store
-	through    string
+	acting     Acting
 	notes      string
 	home       Home
 	path       string

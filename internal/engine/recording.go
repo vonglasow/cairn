@@ -106,7 +106,7 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 
 func (e *Engine) record(number int, did, field, was, became string) error {
 	return e.history.Record(trace.Made(trace.Carried{
-		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.through, At: time.Now(),
+		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.acting.Through, By: e.acting.By, At: time.Now(),
 	}))
 }
 

@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"os/user"
 	"strconv"
 	"strings"
 	"time"
@@ -337,26 +338,46 @@ type Answer struct {
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.
 func Do(op Operation, path string, in Input) (Answer, error) {
-	return DoAt(op, Places{Store: path}, in, ByHand)
+	return DoAt(op, Places{Store: path}, in, Acting{})
 }
 
-// ByHand is the surface a history says nothing about: the person at the terminal.
-const ByHand = ""
+// Acting is where an act comes from, written down with it: the surface it came through, and who did it.
+type Acting struct {
+	Through string
+	By      string
+}
+
+// AuthorVariable is the variable that names who acts, for a script or a session to say it is the one acting.
+const AuthorVariable = "CAIRN_AUTHOR"
+
+// Author is who the acts of a surface are written down as: the one the environment names, or else the one logged in.
+func Author(h Home) string {
+	if named, ok := h.lookup()(AuthorVariable); ok && named != "" {
+		return named
+	}
+	if me, err := user.Current(); err == nil {
+		return me.Username
+	}
+	return ""
+}
+
+// Through is a surface acting for the one its home names.
+func Through(surface string, h Home) Acting { return Acting{Through: surface, By: Author(h)} }
 
 // DoAt runs an operation at the places a surface found, and says which surface asked, so what it changes is written down as that surface's doing.
-func DoAt(op Operation, at Places, in Input, through string) (Answer, error) {
+func DoAt(op Operation, at Places, in Input, acting Acting) (Answer, error) {
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
-	return doAt(op, at, in, through)
+	return doAt(op, at, in, acting)
 }
 
-func doAt(op Operation, at Places, in Input, through string) (Answer, error) {
+func doAt(op Operation, at Places, in Input, acting Acting) (Answer, error) {
 	switch op.Needs {
 	case AStoreBehind:
-		return doWith(OpenBehind, op, at, in, through)
+		return doWith(OpenBehind, op, at, in, acting)
 	case AStore:
-		return doWith(Open, op, at, in, through)
+		return doWith(Open, op, at, in, acting)
 	default:
 		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes, Plugin: at.Plugin, Home: at.Home}, in)
 	}
@@ -364,7 +385,7 @@ func doAt(op Operation, at Places, in Input, through string) (Answer, error) {
 
 func doWith(
 	open func(string) (*Engine, error),
-	op Operation, at Places, in Input, through string,
+	op Operation, at Places, in Input, acting Acting,
 ) (answer Answer, err error) {
 	eng, err := open(at.Store)
 	if err != nil {
@@ -375,6 +396,6 @@ func doWith(
 			answer, err = Answer{}, storeProblem(closed)
 		}
 	}()
-	eng.through, eng.notes, eng.home = through, at.Notes, at.Home
+	eng.acting, eng.notes, eng.home = acting, at.Notes, at.Home
 	return eng.run(op, in)
 }

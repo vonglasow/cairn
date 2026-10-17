@@ -230,3 +230,35 @@ Feature: The trace
       When I run `cairn trace list --since pasunjour`
       Then it fails
       And it says what it expects instead of "pasunjour"
+
+  Rule: Every act says who did it, and through what
+
+    @trace-says-who-acted
+    Scenario: an act says who did it and the surface it came through
+      Given the author is "alexis"
+      And I added a task titled "Write the spec"
+      When I run `cairn trace show 1`
+      Then every act says it was done by "alexis" through "cli"
+
+    @trace-author-is-the-login-by-default
+    Scenario: with nobody named, the author is the one logged in
+      Given I added a task titled "Write the spec"
+      When I run `cairn trace show 1`
+      Then every act says it was done by the one logged in, through "cli"
+
+    @trace-list-by-author
+    Scenario: what one author did is listed apart
+      Given the author is "alexis"
+      And I added a task titled "Write the spec"
+      And the author is "claude session 7f3a"
+      And I added a task titled "Ship it"
+      When I run `cairn trace list --by alexis`
+      Then it lists the acts of 1 task
+      And it says nothing of task 2
+
+    @trace-json-says-who
+    Scenario: who did an act can be read by a machine
+      Given the author is "alexis"
+      And I added a task titled "Write the spec"
+      When I run `cairn trace show 1 --json`
+      Then every act carries the author "alexis" and the surface "cli"

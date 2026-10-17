@@ -62,3 +62,22 @@ func TestGuiTakesNoArguments(t *testing.T) {
 		t.Errorf("the refusal does not name the command: %q", got.Stderr)
 	}
 }
+
+func TestGuiActsThroughTheWindow(t *testing.T) {
+	store := storeFor(t)
+	t.Setenv("CAIRN_STORE", store)
+	t.Setenv("CAIRN_AUTHOR", "alexis")
+	was := openGui
+	openGui = func(work engine.Work, _ engine.Pages, _ string, _, _ int) error {
+		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
+		return err
+	}
+	t.Cleanup(func() { openGui = was })
+	if got := run(t, "gui"); got.Code != 0 {
+		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
+	}
+	shown := run(t, "trace", "show", "1")
+	if !strings.Contains(shown.Stdout, "(by alexis, through gui)") {
+		t.Errorf("an act from the window reads:\n%s", shown.Stdout)
+	}
+}

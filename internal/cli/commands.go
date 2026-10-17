@@ -160,7 +160,7 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			if err := readDash(op, in, cmd.InOrStdin()); err != nil {
 				return err
 			}
-			answer, err := engine.DoFrom(op, home(), in, engine.ByHand)
+			answer, err := engine.DoFrom(op, home(), in, engine.Through("cli", home()))
 			if err != nil {
 				return err
 			}

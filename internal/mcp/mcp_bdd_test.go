@@ -311,7 +311,7 @@ func (w *world) iCallTaskEditWithThePriority(n int, priority string) error {
 
 func (w *world) theHistorySaysItCameThroughTheServer(n int) error {
 	w.Run(fmt.Sprintf("cairn trace show %d", n))
-	return test.WantContains(w.Out.Stdout, "(mcp)", "the history")
+	return test.WantContains(w.Out.Stdout, "through mcp)", "the history")
 }
 
 func (w *world) iCallWithTheNumber(tool string, n int) error {
@@ -766,6 +766,10 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description) "([^"]*)"$`, w.iAddedATaskTitledWith)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
 			w.iCallTaskEditWithThePriority)
+		sc.Step("^the trace of task (\\d+) says the change was made by the agent that asked$", func(n int) error {
+			w.Run(fmt.Sprintf("cairn trace show %d", n))
+			return test.WantContains(w.Out.Stdout, "(by acceptance, through mcp)", "the history")
+		})
 		sc.Step("^the trace of task (\\d+) says the change came through the server$",
 			w.theHistorySaysItCameThroughTheServer)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the deadline as nothing$",

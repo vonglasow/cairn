@@ -29,5 +29,8 @@ func (a *AsTold) Became(value string) { a.c.Became = value }
 // Through is told which surface performed the act.
 func (a *AsTold) Through(surface string) { a.c.Through = surface }
 
+// By is told who performed the act.
+func (a *AsTold) By(author string) { a.c.By = author }
+
 // At is told when the act happened.
 func (a *AsTold) At(when time.Time) { a.c.At = when }

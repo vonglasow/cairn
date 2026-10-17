@@ -52,7 +52,7 @@ func TestDoWith_saysAStoreItCouldNotClose(t *testing.T) {
 		return e, nil
 	}
 	op := Operation{Needs: AStore, Run: func(On, Input) (Answer, error) { return Answer{}, nil }}
-	if _, err := doWith(open, op, Places{Store: storeAt(t)}, Input{}, ByHand); !errors.Is(err, broken) {
+	if _, err := doWith(open, op, Places{Store: storeAt(t)}, Input{}, Acting{}); !errors.Is(err, broken) {
 		t.Errorf("doWith = %v, want the failure to close", err)
 	}
 }

@@ -100,7 +100,7 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 			return refused(err), nil
 		}
 		in.Confirmed = true
-		answer, err := engine.DoFrom(op, home, in, throughTheServer)
+		answer, err := engine.DoFrom(op, home, in, actingFor(req, home))
 		if err != nil {
 			return refused(err), nil
 		}
@@ -109,6 +109,20 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 			StructuredContent: engine.Of(op, answer),
 		}, nil
 	}
+}
+
+func actingFor(req *sdk.CallToolRequest, home engine.Home) engine.Acting {
+	if home.Lookup != nil {
+		if named, ok := home.Lookup(engine.AuthorVariable); ok && named != "" {
+			return engine.Through(throughTheServer, home)
+		}
+	}
+	if req.Session != nil {
+		if met := req.Session.InitializeParams(); met != nil && met.ClientInfo != nil && met.ClientInfo.Name != "" {
+			return engine.Acting{Through: throughTheServer, By: met.ClientInfo.Name}
+		}
+	}
+	return engine.Through(throughTheServer, home)
 }
 
 func refused(err error) *sdk.CallToolResult {

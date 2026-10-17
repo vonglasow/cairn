@@ -72,13 +72,13 @@ func TestLine_claimsNoPreviousStateForAnActAboutNoAttribute(t *testing.T) {
 	}
 }
 
-func TestLine_namesTheSurfaceOnlyWhenItWasNotTheTerminal(t *testing.T) {
-	byHand := rendered(acted(1, Changed, "priority", "normal", "high", "", 9, 15))
-	if strings.Contains(byHand, "(") {
-		t.Errorf("a line done at the terminal names a surface: %q", byHand)
+func TestLine_namesTheSurfaceWhenOneWasWritten(t *testing.T) {
+	older := rendered(acted(1, Changed, "priority", "normal", "high", "", 9, 15))
+	if strings.Contains(older, "(") {
+		t.Errorf("an act written before surfaces were names one: %q", older)
 	}
 	byAgent := rendered(acted(1, Changed, "priority", "normal", "high", "mcp", 9, 15))
-	if !strings.Contains(byAgent, "(mcp)") {
+	if !strings.Contains(byAgent, "(through mcp)") {
 		t.Errorf("a line done by an agent does not name it: %q", byAgent)
 	}
 }
@@ -184,7 +184,7 @@ func TestList_aValueOverSeveralLinesLeavesTheColumnsAfterIt(t *testing.T) {
 		})
 		lines := strings.Split(got, "\n")
 		last := lines[len(lines)-2]
-		if !strings.Contains(got, "(mcp)") {
+		if !strings.Contains(got, "(through mcp)") {
 			t.Errorf("%s no longer says the change came through the server:\n%s", name, got)
 		}
 		if gap := strings.Index(last, "  ") + 2; strings.TrimLeft(last[gap:], " ") != last[gap:] {
@@ -236,5 +236,25 @@ func TestText_saysTimeAddedWithNoDayWithoutOne(t *testing.T) {
 	line := Text([]Act{added(1, "", "2h30m", at(9, 0))})
 	if !strings.Contains(line, "time added  2h30m") || strings.Contains(line, " for") {
 		t.Errorf("time added with no day reads %q", line)
+	}
+}
+
+func TestText_saysWhoDidEachActAndThroughWhat(t *testing.T) {
+	var a AsTold
+	a.On(1)
+	a.Did(Moved)
+	a.Became("first")
+	a.Through("gui")
+	a.By("alexis")
+	a.At(time.Date(2026, 10, 17, 9, 0, 0, 0, time.UTC))
+	if got := Text([]Act{a.Act()}); !strings.Contains(got, "(by alexis, through gui)") {
+		t.Errorf("the act reads %q", got)
+	}
+	if shape := OfAct(a.Act()); shape.By != "alexis" || shape.Through != "gui" {
+		t.Errorf("a machine reads %+v", shape)
+	}
+	a.By("")
+	if got := Text([]Act{a.Act()}); !strings.Contains(got, "(through gui)") || strings.Contains(got, "by ") {
+		t.Errorf("an act with nobody named reads %q", got)
 	}
 }

@@ -7,14 +7,14 @@ import (
 	"cairn/internal/trace"
 )
 
-const traceColumns = `task_number, did, field, was, became, through, at`
+const traceColumns = `task_number, did, field, was, became, through, author, at`
 
 // Record writes down one act.
 func (s *Store) Record(a trace.Act) error {
 	b := a.Carried()
 	if _, err := s.on.Exec(
-		`INSERT INTO trace (`+traceColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		b.Task, b.Did, b.Field, b.Was, b.Became, b.Through,
+		`INSERT INTO trace (`+traceColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		b.Task, b.Did, b.Field, b.Was, b.Became, b.Through, b.By,
 		b.At.UTC().Format(time.RFC3339)); err != nil {
 		return fmt.Errorf("writing down what happened to task %d: %w", b.Task, err)
 	}
@@ -46,9 +46,9 @@ func scanAct(row scanner) (trace.Act, error) {
 	var (
 		task                             int
 		did, field, was, became, through string
-		at                               string
+		by, at                           string
 	)
-	if err := row.Scan(&task, &did, &field, &was, &became, &through, &at); err != nil {
+	if err := row.Scan(&task, &did, &field, &was, &became, &through, &by, &at); err != nil {
 		return trace.Act{}, err
 	}
 	when, err := time.Parse(time.RFC3339, at)
@@ -56,5 +56,5 @@ func scanAct(row scanner) (trace.Act, error) {
 		return trace.Act{}, fmt.Errorf("the moment %q cannot be read: %w", at, err)
 	}
 
-	return trace.Made(trace.Carried{Task: task, Did: did, Field: field, Was: was, Became: became, Through: through, At: when}), nil
+	return trace.Made(trace.Carried{Task: task, Did: did, Field: field, Was: was, Became: became, Through: through, By: by, At: when}), nil
 }

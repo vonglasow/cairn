@@ -23,7 +23,7 @@ func newGuiCmd() *cobra.Command {
 		Short: "Open the board in a window",
 		Args:  noneAtAll(),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			held, err := engine.Hold(home())
+			held, err := engine.Hold(home(), engine.Through("gui", home()))
 			if err != nil {
 				return err
 			}

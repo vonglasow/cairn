@@ -259,4 +259,12 @@ DROP TABLE steps;`,
 		loses: "every step of every task, which the older shape cannot hold; " +
 			"the sub-tasks they were made from are not brought back",
 	},
+	{
+		name: "every act says who did it",
+		does: `
+ALTER TABLE trace ADD COLUMN author TEXT NOT NULL DEFAULT '';`,
+		undoes: `
+ALTER TABLE trace DROP COLUMN author;`,
+		loses: "who did each act written since",
+	},
 }

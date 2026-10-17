@@ -1,4 +1,4 @@
-// Package trace holds the act: one thing that was done to a task, what it was before, what it became, when, and through which surface — and the membrane anything uses to read or build one.
+// Package trace holds the act: one thing that was done to a task, what it was before, what it became, when, by whom and through which surface — and the membrane anything uses to read or build one.
 package trace
 
 import "time"
@@ -29,6 +29,7 @@ type Act struct {
 	was     string
 	became  string
 	through string
+	by      string
 	at      time.Time
 }
 
@@ -36,15 +37,16 @@ type Act struct {
 type Carried struct {
 	Task                             int
 	Did, Field, Was, Became, Through string
+	By                               string
 	At                               time.Time
 }
 
 // Carried hands over what the act carries.
 func (a Act) Carried() Carried {
-	return Carried{Task: a.task, Did: a.did, Field: a.field, Was: a.was, Became: a.became, Through: a.through, At: a.at}
+	return Carried{Task: a.task, Did: a.did, Field: a.field, Was: a.was, Became: a.became, Through: a.through, By: a.by, At: a.at}
 }
 
 // Made is the act that carries what is given.
 func Made(c Carried) Act {
-	return Act{task: c.Task, did: c.Did, field: c.Field, was: c.Was, became: c.Became, through: c.Through, at: c.At}
+	return Act{task: c.Task, did: c.Did, field: c.Field, was: c.Was, became: c.Became, through: c.Through, by: c.By, at: c.At}
 }

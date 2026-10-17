@@ -320,6 +320,18 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 		sc.Then(`^the hook said nothing and succeeded$`, w.quietAndFine)
+		sc.Then(`^the trace of task (\d+) says the focus was let go by "([^"]*)"$`, func(n int, by string) error {
+			said, err := w.cairn("trace", "show", strconv.Itoa(n))
+			if err != nil {
+				return err
+			}
+			for _, line := range strings.Split(said, "\n") {
+				if strings.Contains(line, "focus released") && strings.Contains(line, "by "+by+",") {
+					return nil
+				}
+			}
+			return fmt.Errorf("no focus is let go by %q:\n%s", by, said)
+		})
 		sc.Then(`^the entry of session "([^"]*)" in the notes of task (\d+) says it was released$`, func(session string, n int) error {
 			return w.releasedEntry(session, n)
 		})

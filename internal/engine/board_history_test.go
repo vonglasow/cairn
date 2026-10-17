@@ -16,7 +16,7 @@ func act(did, field, was, became, through string, at time.Time) trace.Act {
 func TestSaid_isOneLineOfAHistoryTheWayAPersonReadsIt(t *testing.T) {
 	at := time.Date(2026, 9, 29, 9, 30, 0, 0, time.Local)
 	changed := SaidOf(act("changed", "priority", "normal", "high", "mcp", at))
-	if want := domain.FormatMoment(at) + "  changed  priority  normal → high  (mcp)"; changed.Line() != want {
+	if want := domain.FormatMoment(at) + "  changed  priority  normal → high  (through mcp)"; changed.Line() != want {
 		t.Errorf("Line = %q, want %q", changed.Line(), want)
 	}
 	if changed.Was != "normal" || changed.Became != "high" || changed.Through != "mcp" {

@@ -7,6 +7,8 @@ idle=${CAIRN_IDLE_SECONDS:-600}
 input=$(cat)
 field() { jq -r "$1 // empty" <<<"$input"; }
 session=$(field .session_id)
+# What the hook does to the board is written down as the session's doing.
+export CAIRN_AUTHOR="claude session $session"
 notes=$(cairn config show --json 2>/dev/null | jq -r .notes.at)
 waits="${TMPDIR:-/tmp}/cairn-idle-$session"
 

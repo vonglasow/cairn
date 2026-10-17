@@ -4610,6 +4610,10 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "by": {
+          "description": "keep only what this author did: a name, a login, an agent, a Claude session",
+          "type": "string"
+        },
         "since": {
           "description": "the first day to look at; today when left out",
           "type": "string"
@@ -4646,6 +4650,9 @@
                 "type": "string"
               },
               "through": {
+                "type": "string"
+              },
+              "by": {
                 "type": "string"
               },
               "at": {
@@ -4716,6 +4723,9 @@
                 "type": "string"
               },
               "through": {
+                "type": "string"
+              },
+              "by": {
                 "type": "string"
               },
               "at": {

@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"os/user"
 	"regexp"
 	"strings"
 
@@ -35,6 +37,56 @@ func namesOnly(shown string) string {
 }
 
 func (w *world) registerTrace(sc *godog.ScenarioContext) {
+	sc.Step(`^the author is "([^"]*)"$`, func(name string) error {
+		w.Setenv("CAIRN_AUTHOR", name)
+		return nil
+	})
+	everyActSays := func(said string) error {
+		acts := 0
+		for _, line := range strings.Split(w.Out.Stdout, "\n") {
+			if line == "" || strings.HasPrefix(line, " ") {
+				continue
+			}
+			acts++
+			if !strings.Contains(line, said) {
+				return fmt.Errorf("the act %q does not say %q", line, said)
+			}
+		}
+		if acts == 0 {
+			return fmt.Errorf("no act is written:\n%s", w.Out.Stdout)
+		}
+		return nil
+	}
+	sc.Step(`^every act says it was done by "([^"]*)" through "([^"]*)"$`, func(by, through string) error {
+		return everyActSays(fmt.Sprintf("(by %s, through %s)", by, through))
+	})
+	sc.Step(`^every act says it was done by the one logged in, through "([^"]*)"$`, func(through string) error {
+		me, err := user.Current()
+		if err != nil {
+			return err
+		}
+		return everyActSays(fmt.Sprintf("(by %s, through %s)", me.Username, through))
+	})
+	sc.Step(`^every act carries the author "([^"]*)" and the surface "([^"]*)"$`, func(by, through string) error {
+		var said struct {
+			Acts []struct {
+				By      string `json:"by"`
+				Through string `json:"through"`
+			} `json:"acts"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+			return err
+		}
+		if len(said.Acts) == 0 {
+			return fmt.Errorf("no act is carried:\n%s", w.Out.Stdout)
+		}
+		for _, act := range said.Acts {
+			if act.By != by || act.Through != through {
+				return fmt.Errorf("an act carries the author %q and the surface %q", act.By, act.Through)
+			}
+		}
+		return nil
+	})
 	sc.Step(`^I looked at task (\d+)$`, func(n int) error {
 		return w.Seed(fmt.Sprintf(`cairn task show %d`, n))
 	})

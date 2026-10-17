@@ -53,7 +53,7 @@ func newTuiCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			held, err := engine.Hold(home())
+			held, err := engine.Hold(home(), engine.Through("tui", home()))
 			if err != nil {
 				return err
 			}

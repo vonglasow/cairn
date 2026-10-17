@@ -160,11 +160,12 @@ Feature: Answering a machine over MCP
       And its answer holds to the shape the tool described
 
     @mcp-what-an-agent-does-is-written-down-as-its-own
-    Scenario: what an agent changes says it was not the terminal
+    Scenario: what an agent changes says it came through the server, and which agent it was
       Given I added a task titled "Write the spec"
       And a cairn server started with `--access write`
       When I call `task_edit` with the number 1 and the priority "high"
       Then the trace of task 1 says the change came through the server
+      And the trace of task 1 says the change was made by the agent that asked
 
     @mcp-says-what-it-answers
     Scenario: every tool says what shape its answer takes

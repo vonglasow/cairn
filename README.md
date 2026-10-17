@@ -96,7 +96,8 @@ time = true
 ```
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and
-`notes` for as long as they are set. Beside the store, cairn also keeps its
+`notes` for as long as they are set. `CAIRN_AUTHOR` names who the acts are
+written down as in the trace, the one logged in otherwise. Beside the store, cairn also keeps its
 backups and the draft of a task being added in the window. `cairn config show` says which
 places are in use and where each was found;
 [docs/config.md](docs/config.md) says why it works this way.

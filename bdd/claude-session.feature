@@ -94,3 +94,9 @@ Feature: A Claude Code session tied to a cairn task
       | leaves                                               |
       | ends                                                 |
       | answers and no message follows within the idle delay |
+
+  @claude-session-acts-are-the-sessions
+  Scenario: what the hook does is written down as the session's doing
+    Given session "s1" holds task 1
+    When session "s1" answers and no message follows within the idle delay
+    Then the trace of task 1 says the focus was let go by "claude session s1"

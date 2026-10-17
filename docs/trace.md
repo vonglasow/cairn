@@ -204,11 +204,31 @@ every hour of it, and holds no category. Bringing a day down and sorting it out
 is done when the sheet is filled in, by whoever fills it in — the categories
 change, and a task does not know which one it was until it is over.
 
-## It says who acted, when that is not you
+## It says who acted, and through what
 
-An agent reaches cairn over MCP and can change a task. An entry carries which
-surface did it, and shows it only when it was not the terminal: silent in the
-ordinary case, visible in the one that matters.
+Every act carries who did it and the surface it came through, and says both
+on its line: `(by alexis, through gui)` (`@trace-says-who-acted`). It used to
+carry the surface alone, and only when it was the MCP server: the terminal,
+the board in the terminal and the window all wrote nothing, so they could not
+be told apart, and nothing at all said who — a person, a script, an agent, a
+Claude session (cairn#83).
+
+The surface is `cli`, `tui`, `gui`, `mcp`, or `migration` for what a change
+of the store's shape wrote. Who is the one `CAIRN_AUTHOR` names when it is
+set, and the one logged in otherwise (`@trace-author-is-the-login-by-default`);
+over MCP, the client that greeted the server names itself — `claude-code` —
+unless `CAIRN_AUTHOR` is set for the server
+(`@mcp-what-an-agent-does-is-written-down-as-its-own`); the plugin's hook sets it to
+`claude session <id>` for what it does to the focus, so a session's acts are
+told from the person's (`@claude-session-acts-are-the-sessions`). The engine
+takes both as one value, `Acting`, from the surface that asked — `DoFrom` for
+a command, `Hold` for a board — and writes them on every act it records.
+
+What one author did is read apart: `cairn trace list --by alexis`
+(`@trace-list-by-author`), and the JSON carries `by` and `through` on every act
+(`@trace-json-says-who`). Acts written before keep what they had: no author,
+and a surface only when it was the server. The column is `author`, not `by`,
+which SQL keeps for itself.
 
 ## What the store gains
 
