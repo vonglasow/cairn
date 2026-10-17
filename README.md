@@ -67,6 +67,35 @@ Then open the same board where you prefer:
 
 `cairn <thing> <verb> --help` says the rest, with examples.
 
+## Configuration
+
+Nothing needs configuring: cairn keeps everything under `~/.cairn`. To choose
+otherwise, write `~/.config/cairn/config.toml`; every key is optional, and a
+key cairn does not know is refused rather than ignored. The whole file:
+
+```toml
+# Where cairn keeps your tasks: a file. Absolute, or under ~.
+store = "~/.cairn/cairn.db"
+
+# Where cairn looks for the notes of each task: a folder, one per task inside
+# it (~/.cairn/notes/12 for task 12). Absolute, or under ~.
+notes = "~/.cairn/notes"
+
+# The pages every surface offers: the boards' tabs, the commands, the MCP
+# tools. Each is on unless it says false.
+[pages]
+tasks = true
+objectives = true
+time = true
+```
+
+`CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and
+`notes` for as long as they are set. Beside the store, cairn also keeps its
+backups, the Claude Code plugin it writes, and the draft of a task being added
+in the window. `cairn config show` says which
+places are in use and where each was found;
+[docs/config.md](docs/config.md) says why it works this way.
+
 ## Documentation
 
 - [Using cairn](docs/usage.md) — tasks, objectives, focus and time, labels, backups
