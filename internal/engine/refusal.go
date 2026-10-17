@@ -85,6 +85,7 @@ var reasons = []reason{
 	{task.ErrNotArchived, KindRefused, "not-archived"},
 	{task.ErrStepStillOpen, KindRefused, "step-still-open"},
 	{task.ErrNoSuchStep, KindRefused, "no-such-step"},
+	{ErrConfigAlreadyThere, KindRefused, "config-already-there"},
 	{ErrDoneAndNotDone, KindRefused, "done-and-not-done"},
 	{ErrObjectiveCarriesTasks, KindRefused, "objective-carries-tasks"},
 	{ErrNoSuchBackup, KindRefused, "no-such-backup"},

@@ -201,6 +201,8 @@ func Of(op Operation, a Answer) any {
 		return Labelled{Labelled: *a.Labelled}
 	case Labels:
 		return Labels{Labels: *a.Labels}
+	case ConfigWritten:
+		return ConfigWritten{Written: *a.Written}
 	case Steps:
 		return ofSteps(*a.Task)
 	case Deleted:

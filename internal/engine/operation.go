@@ -234,7 +234,7 @@ func All() []Operation {
 		LabelList, LabelDelete, LabelRename,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
-		ConfigShow,
+		ConfigShow, ConfigInit,
 		PluginWrite,
 	}
 }
@@ -318,6 +318,7 @@ type Answer struct {
 	Exported          *string
 	Imported          *string
 	Plugin            *string
+	Written           *string
 	Archived          *int
 	Labelled          *int
 	Labels            *[]LabelCarried

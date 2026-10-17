@@ -1,7 +1,11 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"cairn/internal/config"
@@ -100,4 +104,54 @@ func configText(c Config) string {
 		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
 	}
 	return said
+}
+
+// ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.
+var ErrConfigAlreadyThere = errors.New("a configuration is already there; change it, or move it away first")
+
+// ConfigWritten says where config init wrote the configuration.
+type ConfigWritten struct {
+	Written string `json:"written"`
+}
+
+// ConfigInit writes the whole configuration file, every key set to what is used when nothing is said.
+var ConfigInit = Operation{
+	Thing:   "config",
+	Verb:    "init",
+	Short:   "Write the configuration file, every key in it",
+	Does:    "Write the configuration file where cairn reads it, every key commented and set to what cairn uses when nothing is said, to change from there. A configuration already there is never written over.",
+	Example: "cairn config init",
+	Level:   Write,
+	Needs:   AConfiguration,
+	Again:   ChangesNothingMore,
+	Answers: ConfigWritten{},
+	Run: func(on On, _ Input) (Answer, error) {
+		if on.Home.Dir == "" {
+			return Answer{}, fmt.Errorf("%w: %w", ErrStore, on.Home.Missing)
+		}
+		path := config.FileIn(on.Home.Dir)
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			return Answer{}, err
+		}
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if errors.Is(err, fs.ErrExist) {
+			return Answer{}, fmt.Errorf("%s: %w", path, ErrConfigAlreadyThere)
+		}
+		if err != nil {
+			return Answer{}, err
+		}
+		if _, err := file.WriteString(config.Example); err != nil {
+			_ = file.Close()
+			return Answer{}, err
+		}
+		if err := file.Close(); err != nil {
+			return Answer{}, err
+		}
+		return Answer{Written: &path}, nil
+	},
+}
+
+func configWrittenText(path string) string {
+	return "the configuration is written in " + path + "\n" +
+		"every key in it says what it is, set to what cairn uses when nothing is said: change what you want\n"
 }

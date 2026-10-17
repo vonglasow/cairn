@@ -52,6 +52,19 @@ sit under.
 They fall under one folder by default, `~/.cairn`, so what cairn keeps stays
 together and one directory is enough to move or back up by hand.
 
+## Written for you
+
+`cairn config init` writes the file where it is read, whole: every key,
+commented, set to what cairn uses when nothing is said
+(`@config-init-writes-every-key`). Writing one by hand meant finding its keys
+here and in the README first (cairn#99). It is the README's example to the
+byte — one constant, `config.Example`, that a test holds the README to, and
+that another holds to every key the reader accepts — so neither can drift.
+It never writes over a file already there, which may hold choices nobody
+would want reset (`@config-init-leaves-a-file-alone`); and it writes what is
+used when nothing is said, not what the environment says right now, because
+a passing choice does not settle into the file.
+
 ## The plugin's folder
 
 ```toml

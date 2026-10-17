@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"cairn/internal/config"
@@ -71,5 +73,29 @@ func TestConfigShow_asksForAConfigurationRatherThanAStore(t *testing.T) {
 		if op.Needs != NoStore {
 			t.Errorf("%s %s: Needs = %v, want NoStore unchanged", op.Thing, op.Verb, op.Needs)
 		}
+	}
+}
+
+func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
+	home := t.TempDir()
+	answer, err := ConfigInit.Run(On{Home: Home{Dir: home}}, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, err := os.ReadFile(config.FileIn(home))
+	if err != nil || string(written) != config.Example {
+		t.Fatalf("it wrote %q, %v", written, err)
+	}
+	if answer.Written == nil || *answer.Written != config.FileIn(home) {
+		t.Errorf("it says it wrote %v", answer.Written)
+	}
+	if said := RenderText(ConfigInit, answer); !strings.Contains(said, config.FileIn(home)) {
+		t.Errorf("it says %q", said)
+	}
+	if _, err := ConfigInit.Run(On{Home: Home{Dir: home}}, Input{}); !errors.Is(err, ErrConfigAlreadyThere) {
+		t.Errorf("writing it again = %v, want ErrConfigAlreadyThere", err)
+	}
+	if ConfigInit.Level != Write || ConfigInit.Needs != AConfiguration {
+		t.Errorf("config init is level %v and needs %v", ConfigInit.Level, ConfigInit.Needs)
 	}
 }

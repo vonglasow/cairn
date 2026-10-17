@@ -128,6 +128,22 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it names the file it wrote$`, func() error {
+		return test.WantContains(w.Out.Stdout, w.ConfigPath(), "the answer")
+	})
+	sc.Step(`^the file it wrote is the configuration the README shows$`, func() error {
+		written, err := os.ReadFile(w.ConfigPath())
+		if err != nil {
+			return err
+		}
+		if string(written) != config.Example {
+			return fmt.Errorf("it wrote:\n%s\nand the configuration cairn shows is:\n%s", written, config.Example)
+		}
+		return nil
+	})
+	sc.Step(`^it says a configuration is already there$`, func() error {
+		return test.WantContains(w.Out.Stderr, "already there", "the reason")
+	})
 	sc.Step(`^a configuration that says the plugin lives at "([^"]*)"$`, func(place string) error {
 		return w.WriteConfig(fmt.Sprintf("plugin = %q\n", place))
 	})

@@ -26,8 +26,14 @@ func readmeConfiguration(t *testing.T) string {
 	return block
 }
 
-func TestTheReadmeShowsAConfigurationWithEveryKeyCairnReads(t *testing.T) {
-	block := readmeConfiguration(t)
+func TestTheReadmeShowsTheConfigurationConfigInitWrites(t *testing.T) {
+	if block := readmeConfiguration(t); block != Example {
+		t.Errorf("the README shows:\n%s\nand config init writes:\n%s", block, Example)
+	}
+}
+
+func TestTheExampleHoldsEveryKeyCairnReads(t *testing.T) {
+	block := Example
 	keys := acceptedKeys()
 	pages := reflect.TypeOf(pages{})
 	for i := range pages.NumField() {
@@ -35,7 +41,7 @@ func TestTheReadmeShowsAConfigurationWithEveryKeyCairnReads(t *testing.T) {
 	}
 	for _, key := range keys {
 		if !strings.Contains(block, key) {
-			t.Errorf("the README's configuration says nothing of %q", key)
+			t.Errorf("the example says nothing of %q", key)
 		}
 	}
 	home := t.TempDir()
@@ -47,6 +53,6 @@ func TestTheReadmeShowsAConfigurationWithEveryKeyCairnReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := Read(home, func(string) (string, bool) { return "", false }); err != nil {
-		t.Errorf("the README's configuration is not one cairn reads: %v", err)
+		t.Errorf("the example is not a configuration cairn reads: %v", err)
 	}
 }

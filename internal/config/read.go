@@ -123,9 +123,12 @@ func (r Reading) Tell(to ReadingTold) {
 	to.Resolved(r.places)
 }
 
+// FileIn is where the configuration file of a home is: <home>/.config/cairn/config.toml.
+func FileIn(home string) string { return filepath.Join(home, ".config", "cairn", "config.toml") }
+
 // NewReading decodes <home>/.config/cairn/config.toml, tolerating what it cannot make sense of by reporting it through the Reading it hands back rather than returning it.
 func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, error) {
-	path := filepath.Join(home, ".config", "cairn", "config.toml")
+	path := FileIn(home)
 	data, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return Reading{}, err

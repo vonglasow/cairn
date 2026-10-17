@@ -260,6 +260,34 @@
       "additionalProperties": false
     }
   },
+  "config_init": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Write the configuration file, every key in it"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "written": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "written"
+      ],
+      "additionalProperties": false
+    }
+  },
   "config_show": {
     "annotations": {
       "destructiveHint": false,

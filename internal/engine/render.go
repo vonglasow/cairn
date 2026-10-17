@@ -68,6 +68,8 @@ func rendered(op Operation, a Answer) string {
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	case Labels:
 		return labelsText(*a.Labels)
+	case ConfigWritten:
+		return configWrittenText(*a.Written)
 	case Steps:
 		return stepsText(*a.Task)
 	case Deleted:

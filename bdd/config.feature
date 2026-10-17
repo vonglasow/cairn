@@ -66,6 +66,27 @@ Feature: Where cairn looks for its own places
       When I add a task titled "Write the spec"
       Then the configuration still says the notes live at "~/vault"
 
+  Rule: A configuration can be written for you, every key in it
+
+    @config-init-writes-every-key
+    Scenario: config init writes the whole file, every key set to what is used when nothing is said
+      When I run `cairn config init`
+      Then it succeeds
+      And it names the file it wrote
+      And the file it wrote is the configuration the README shows
+      When I run `cairn config show`
+      Then it says the store is at "~/.cairn/cairn.db", named by the file
+      And it says the plugin is at "~/.cairn/claude-plugin", named by the file
+
+    @config-init-leaves-a-file-alone
+    Scenario: config init never writes over a configuration already there
+      Given a configuration that says the store lives at "~/work/cairn.db"
+      When I run `cairn config init`
+      Then it fails
+      And it says a configuration is already there
+      When I run `cairn config show`
+      Then it says the store is at "~/work/cairn.db", named by the file
+
   Rule: The Claude Code plugin is written where the file says, or beside the store
 
     @config-names-the-plugin-folder

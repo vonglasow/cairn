@@ -70,8 +70,10 @@ Then open the same board where you prefer:
 ## Configuration
 
 Nothing needs configuring: cairn keeps everything under `~/.cairn`. To choose
-otherwise, write `~/.config/cairn/config.toml`; every key is optional, and a
-key cairn does not know is refused rather than ignored. The whole file:
+otherwise, `cairn config init` writes `~/.config/cairn/config.toml` with every
+key, set to what is used now, to change from there — never over a file
+already there. Every key is optional, and a key cairn does not know is refused
+rather than ignored. The whole file:
 
 ```toml
 # Where cairn keeps your tasks: a file. Absolute, or under ~.

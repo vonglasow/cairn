@@ -262,6 +262,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"migration_apply":    {{Applied: []string{}}},
 		"migration_rollback": {{RolledBack: of(migration.Migration{})}},
 		"config_show":        {{Config: &Config{}}},
+		"config_init":        {{Written: func() *string { s := "/config.toml"; return &s }()}},
 		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
 		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
 		"label_list":         {{Labels: &[]LabelCarried{}}},
