@@ -22,3 +22,17 @@ Feature: The Claude Code plugin comes with the binary
     When I run `cairn plugin write`
     Then it succeeds
     And the plugin written there is the plugin in this repository
+
+  Rule: The plugin written beside the store follows the cairn that serves it
+
+    @plugin-kept-current
+    Scenario: the MCP server brings a plugin an older cairn wrote to its own version
+      Given the plugin was written beside the store by an older cairn
+      When the MCP server starts
+      Then the plugin written there says the version of the cairn that wrote it
+      And the plugin written there is the plugin in this repository
+
+    @plugin-not-written-unasked
+    Scenario: the MCP server writes no plugin where nobody wrote one
+      When the MCP server starts
+      Then nothing is written beside the store

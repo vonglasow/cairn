@@ -197,16 +197,6 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			return nil
 		})
-		sc.Step(`^the formula installs the plugin among what it shares$`, func() error {
-			said, err := formula("cairn")
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(said, `pkgshare.install "claude-plugin"`) {
-				return fmt.Errorf("the formula shares no plugin:\n%s", said)
-			}
-			return nil
-		})
 		sc.Step(`^the formula says to run "([^"]*)"$`, func(line string) error {
 			said, err := formula("cairn")
 			if err != nil {
@@ -254,23 +244,6 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			if !strings.Contains(string(said), version) {
 				return fmt.Errorf("the binary says %q", said)
-			}
-			return nil
-		})
-		sc.Step(`^the archive holds the Claude Code plugin of version "([^"]*)"$`, func(version string) error {
-			unpacked := w.t.TempDir()
-			if err := command(unpacked, "tar", "-xzf", filepath.Join(w.archive, packed(version))); err != nil {
-				return err
-			}
-			manifest, err := os.ReadFile(filepath.Join(unpacked, "claude-plugin", "cairn", ".claude-plugin", "plugin.json"))
-			if err != nil {
-				return fmt.Errorf("the archive holds no plugin: %w", err)
-			}
-			if !strings.Contains(string(manifest), `"version": "`+version+`"`) {
-				return fmt.Errorf("the plugin in the archive says:\n%s", manifest)
-			}
-			if _, err := os.Stat(filepath.Join(unpacked, "claude-plugin", ".claude-plugin", "marketplace.json")); err != nil {
-				return fmt.Errorf("the plugin in the archive is not a marketplace: %w", err)
 			}
 			return nil
 		})
@@ -493,11 +466,11 @@ func TestAcceptance_Version_ReportsItsStamps(t *testing.T) {
 }
 
 func TestAcceptance_Version_ComesWithAFormula(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-for-its-minor,@version-brew-formula-needs-every-binary,@version-brew-formula-installs-the-plugin")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-install-reads-anywhere,@version-brew-formula,@version-brew-formula-for-its-minor,@version-brew-formula-needs-every-binary,@version-brew-formula-says-how-to-add-the-plugin")
 }
 
 func TestAcceptance_Version_ComesAsABinaryForEachSystem(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-binary-archive,@version-archive-carries-the-plugin")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-binary-archive")
 }
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {

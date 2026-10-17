@@ -5,10 +5,9 @@
 #
 # The window needs cgo, so a binary is built on the system it runs on and on no
 # other: the release workflow runs this once on each (.github/workflows/
-# release.yml). The archive holds the binary, stamped with VERSION, the Claude
-# Code plugin it carries, the two files that say what it is and how to install
-# it, and the licences of what it is built from when NOTICES names them; its
-# sum joins SHA256SUMS.
+# release.yml). The archive holds the binary, stamped with VERSION, the two
+# files that say what it is and how to install it, and the licences of what it
+# is built from when NOTICES names them; its sum joins SHA256SUMS.
 set -euo pipefail
 
 version=${1:?usage: scripts/package.sh VERSION OUT}
@@ -29,10 +28,6 @@ mkdir -p "$out"
 work=$(mktemp -d ./.package.XXXXXX)
 trap 'rm -rf "$work"' EXIT
 make -s build VERSION="$version" BIN="$work/$binary"
-# The plugin goes beside the binary, written by the binary itself so the two
-# cannot disagree: a Homebrew install shares it where an upgrade keeps it
-# current, and Claude Code reads a marketplace on a local path in place.
-"$work/$binary" plugin write --dir "$work/claude-plugin" >/dev/null
 cp README.md INSTALL.md "$work/"
 [ -z "$notices" ] || cp "$notices" "$work/THIRD_PARTY_NOTICES"
 out=$(cd "$out" && pwd)

@@ -67,18 +67,8 @@ brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
 ```
 
 The formula installs the binary made for your system and builds nothing.
-`brew upgrade cairn` takes a newer version. It also installs the Claude Code
-plugin this cairn carries, in a folder an upgrade keeps and refreshes; add it
-to Claude Code once:
-
-```sh
-claude plugin marketplace add "$(brew --prefix)/opt/cairn/share/cairn/claude-plugin"
-claude plugin install cairn@cairn
-```
-
-Claude Code reads a plugin added from a folder in place, so each `brew
-upgrade` brings the plugin of the new cairn with it, from the next session on:
-nothing to run again. `brew info cairn` says the same.
+`brew upgrade cairn` takes a newer version. Then `cairn plugin write`, below,
+gives Claude Code the plugin this cairn carries, once.
 
 ## Installing it
 
@@ -119,9 +109,9 @@ It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
 Windows, Claude Code runs it through Git Bash, and `jq` comes with
 `winget install jqlang.jq`.
 
-Installed with Homebrew, the plugin is already there: see above. Otherwise,
-the binary carries the plugin it was built with, so the sources are not needed
-for it. Write it out, beside the store unless `--dir` names a folder:
+The binary carries the plugin it was built with, so the sources are not needed
+for it, however cairn was installed: Homebrew, an archive on Linux or Windows,
+or a build. Write it out once, beside the store unless `--dir` names a folder:
 
 ```sh
 cairn plugin write
@@ -134,9 +124,12 @@ It says where it wrote it. Then, in Claude Code:
 /plugin install cairn@cairn
 ```
 
-Restart Claude Code afterwards. After installing a newer cairn, run `cairn
-plugin write` again, then `/plugin marketplace update cairn`, so the plugin
-matches the cairn it calls. From a copy of this repository, the repository
+Restart Claude Code afterwards. From then on cairn keeps that plugin at its
+own version: Claude Code starts `cairn mcp serve` with each session, and a
+server finding the plugin beside the store written by another version writes
+it again, so the session after an upgrade has the plugin of the new cairn.
+Nothing to run again. A plugin written with `--dir` elsewhere is not followed:
+write it again after an upgrade. From a copy of this repository, the repository
 itself is a marketplace too: `/plugin marketplace add /path/to/cairn`.
 
 The plugin declares cairn's MCP server itself. If you already declared one,

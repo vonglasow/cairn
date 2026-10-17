@@ -30,7 +30,7 @@ cairn plugin write --dir ~/claude/cairn`,
 	Run: func(on On, in Input) (Answer, error) {
 		dir := in.Given["dir"]
 		if dir == "" {
-			dir = filepath.Join(filepath.Dir(on.Path), "claude-plugin")
+			dir = PluginBeside(on.Path)
 		}
 		if err := claudeplugin.Write(dir, build.Read().Version); err != nil {
 			return Answer{}, err
@@ -44,4 +44,17 @@ func pluginText(dir string) string {
 		"in Claude Code:\n" +
 		"  /plugin marketplace add " + dir + "\n" +
 		"  /plugin install " + claudeplugin.Name + "@" + claudeplugin.Name + "\n"
+}
+
+// PluginBeside is where the plugin is written when no folder is named: beside the store, with the rest of what cairn keeps.
+func PluginBeside(store string) string { return filepath.Join(filepath.Dir(store), "claude-plugin") }
+
+// KeepPluginCurrent writes the plugin beside the store again when a cairn of another version wrote it, and says whether it did: a plugin nobody wrote there is not written.
+func KeepPluginCurrent(at Places, version string) (bool, error) {
+	dir := PluginBeside(at.Store)
+	was, written := claudeplugin.WrittenAt(dir)
+	if !written || was == version {
+		return false, nil
+	}
+	return true, claudeplugin.Write(dir, version)
 }

@@ -35,13 +35,12 @@ Feature: Version
     And it fetches "cairn-v9.9.9-linux-amd64.tar.gz" on Linux on Intel, with its checksum
     And it installs the binary, and builds nothing
 
-  @version-brew-formula-installs-the-plugin
-  Scenario: the formula puts the Claude Code plugin where an upgrade keeps it current, and says how to add it
+  @version-brew-formula-says-how-to-add-the-plugin
+  Scenario: the formula installs the binary alone, and says how to give Claude Code the plugin it carries
     Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel
     When its formula is made, fetching from "https://github.com/vonglasow/cairn/releases/download/v9.9.9"
-    Then the formula installs the plugin among what it shares
-    And the formula says to run "claude plugin marketplace add #{opt_pkgshare}/claude-plugin"
-    And the formula says to run "claude plugin install cairn@cairn"
+    Then it installs the binary, and builds nothing
+    And the formula says to run "cairn plugin write"
 
   @version-brew-formula-for-its-minor
   Scenario: the formula is kept at its minor version too, as the tap keeps every one
@@ -61,11 +60,6 @@ Feature: Version
     Then the archive is named for version "v9.9.9" and this system
     And the binary in it says it is version "v9.9.9"
     And the checksums name it
-
-  @version-archive-carries-the-plugin
-  Scenario: the archive carries the Claude Code plugin the binary carries, of the same version
-    Given a binary archive of this repository made as version "v9.9.9" for this system
-    Then the archive holds the Claude Code plugin of version "v9.9.9"
 
   @version-install-reads-anywhere
   Scenario: the install guide reads the same in any tool, on any system

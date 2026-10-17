@@ -97,6 +97,27 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			return os.WriteFile(filepath.Join(plugin, "skills", "gone.md"), []byte("an older skill"), 0o600)
 		})
+		sc.Step(`^the plugin was written beside the store by an older cairn$`, func() error {
+			if _, err := w.cairn("plugin", "write"); err != nil {
+				return err
+			}
+			plugin, err := offers(w.beside(), "cairn")
+			if err != nil {
+				return err
+			}
+			older := []byte(`{"name": "cairn", "version": "v0.0.1"}`)
+			if err := os.WriteFile(filepath.Join(plugin, manifest), older, 0o600); err != nil {
+				return err
+			}
+			return os.WriteFile(filepath.Join(plugin, "skills", "gone.md"), []byte("an older skill"), 0o600)
+		})
+		sc.Step(`^the MCP server starts$`, func() { run("mcp", "serve") })
+		sc.Step(`^nothing is written beside the store$`, func() error {
+			if _, err := os.Stat(w.beside()); err == nil {
+				return fmt.Errorf("%s was written, and nobody asked for it", w.beside())
+			}
+			return nil
+		})
 		sc.Step(`^it succeeds$`, func() error { return w.ran })
 		sc.Step(`^beside the store is a marketplace offering the plugin "([^"]*)"$`, func(name string) error {
 			_, err := offers(w.beside(), name)

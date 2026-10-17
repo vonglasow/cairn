@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"cairn/internal/build"
+	claudeplugin "cairn/plugin/claude"
 )
 
 func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTold(t *testing.T) {
@@ -61,5 +62,25 @@ func TestPluginWrite_saysTheVersionOfThisCairn(t *testing.T) {
 	}
 	if want := `"version": "` + build.Read().Version + `"`; !strings.Contains(string(held), want) {
 		t.Errorf("the plugin says:\n%s\nwant %s", held, want)
+	}
+}
+
+func TestKeepPluginCurrent_rewritesOnlyAPluginAnotherCairnWrote(t *testing.T) {
+	store := filepath.Join(t.TempDir(), "cairn.db")
+	at := Places{Store: store}
+	if rewrote, err := KeepPluginCurrent(at, "v2.0.0"); err != nil || rewrote {
+		t.Fatalf("with no plugin written, it rewrote: %v, %v", rewrote, err)
+	}
+	if _, err := os.Stat(PluginBeside(store)); err == nil {
+		t.Fatal("a plugin nobody wrote was written")
+	}
+	if err := claudeplugin.Write(PluginBeside(store), "v1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	if rewrote, err := KeepPluginCurrent(at, "v2.0.0"); err != nil || !rewrote {
+		t.Fatalf("a plugin of v1.0.0 under cairn v2.0.0 was left: %v, %v", rewrote, err)
+	}
+	if rewrote, err := KeepPluginCurrent(at, "v2.0.0"); err != nil || rewrote {
+		t.Fatalf("a plugin already current was written again: %v, %v", rewrote, err)
 	}
 }

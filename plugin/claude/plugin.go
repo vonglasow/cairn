@@ -55,6 +55,21 @@ func Write(dir, version string) error {
 	})
 }
 
+// WrittenAt is the version of the cairn that wrote the plugin into dir, and whether one was written there at all.
+func WrittenAt(dir string) (string, bool) {
+	said, err := os.ReadFile(filepath.Join(dir, Name, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		return "", false
+	}
+	var manifest struct {
+		Version string `json:"version"`
+	}
+	if json.Unmarshal(said, &manifest) != nil {
+		return "", true
+	}
+	return manifest.Version, true
+}
+
 func ours(dir string) error {
 	held, err := os.ReadDir(dir)
 	if errors.Is(err, fs.ErrNotExist) || (err == nil && len(held) == 0) {
