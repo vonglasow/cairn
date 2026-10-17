@@ -1743,6 +1743,16 @@ Feature: The desktop board
       And the window has looked at the store 3 times
       Then the form writes the trace, empty
 
+    @gui-a-new-task-shows-no-other-tasks-trace
+    Scenario: a task added after another was opened shows an empty trace, not the other's
+      Given I added a task titled "Write the spec"
+      And it was worked on 3 times
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I press "esc"
+      And I press "cmd+n"
+      Then the form writes the trace, empty
+
     @gui-cancelling-a-new-task-makes-nothing
     Scenario: cancelling a task being added makes nothing, asks nothing, and leaves nothing to pick up
       When I open the window

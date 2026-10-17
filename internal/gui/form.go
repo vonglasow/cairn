@@ -277,7 +277,7 @@ func (w Window) beside() Window {
 
 func (w Window) readingActs() Window {
 	w.acts = nil
-	if w.chosenGoal || w.screen != OnForm {
+	if w.chosenGoal || w.screen != OnForm || w.form.Adding {
 		return w
 	}
 	shown, err := w.work.Ask(engine.TraceShow, engine.Numbered(w.chosen))

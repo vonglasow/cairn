@@ -94,6 +94,7 @@ func (w Window) droppingDraft() Window {
 
 func (w Window) startingNew() Window {
 	w.form = adding(w.tab, w.addingOn())
+	w = w.beside()
 	if w.form.ForObjective {
 		w.screen = OnForm
 		return w
