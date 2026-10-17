@@ -10,11 +10,10 @@ Feature: The Claude Code plugin comes with the binary
     And the hook written there can be run
     And it says to run "/plugin marketplace add" and "/plugin install cairn@cairn"
 
-  @plugin-written-where-told
-  Scenario: the plugin is written into the folder it is told
-    When I write the plugin into a folder of my own
-    Then it succeeds
-    And that folder is a marketplace offering the plugin "cairn"
+  @plugin-has-one-place
+  Scenario: the plugin is written in one place, and no command names another
+    When I run `cairn plugin write --dir somewhere`
+    Then it fails, saying the flag is unknown
 
   @plugin-written-again
   Scenario: writing the plugin again leaves nothing an older cairn wrote
@@ -36,3 +35,10 @@ Feature: The Claude Code plugin comes with the binary
     Scenario: the MCP server writes no plugin where nobody wrote one
       When the MCP server starts
       Then nothing is written beside the store
+
+    @plugin-kept-current-where-the-configuration-says
+    Scenario: the MCP server keeps current the plugin in the folder the configuration names
+      Given a configuration that says the plugin lives in a folder of my own
+      And the plugin was written there by an older cairn
+      When the MCP server starts
+      Then the plugin in that folder says the version of the cairn that wrote it

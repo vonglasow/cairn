@@ -52,12 +52,14 @@ type Places struct {
 	storeNamedBy namedBy
 	notesNamedBy namedBy
 	pagesOff     []string
+	plugin       string
 }
 
 type file struct {
-	Store *string `toml:"store"`
-	Notes *string `toml:"notes"`
-	Pages *pages  `toml:"pages"`
+	Store  *string `toml:"store"`
+	Notes  *string `toml:"notes"`
+	Plugin *string `toml:"plugin"`
+	Pages  *pages  `toml:"pages"`
 }
 
 type pages struct {
@@ -81,6 +83,9 @@ func (p *pages) off() []string {
 	}
 	return off
 }
+
+// Plugin is the folder the file names for the Claude Code plugin, and nothing when it names none: the plugin then goes beside the store.
+func (p Places) Plugin() string { return p.plugin }
 
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
 func (p Places) PagesOff() []string { return p.pagesOff }
@@ -154,6 +159,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		{f.Notes, &answer.notes, &answer.notesNamedBy, byTheFile, ""},
 		{fromEnv(lookupEnv, StoreVariable), &answer.store, &answer.storeNamedBy, byTheEnvironment, StoreVariable},
 		{fromEnv(lookupEnv, NotesVariable), &answer.notes, &answer.notesNamedBy, byTheEnvironment, NotesVariable},
+		{f.Plugin, &answer.plugin, new(namedBy), byTheFile, ""},
 	} {
 		if c.said == nil {
 			continue

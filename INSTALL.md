@@ -111,7 +111,8 @@ Windows, Claude Code runs it through Git Bash, and `jq` comes with
 
 The binary carries the plugin it was built with, so the sources are not needed
 for it, however cairn was installed: Homebrew, an archive on Linux or Windows,
-or a build. Write it out once, beside the store unless `--dir` names a folder:
+or a build. Write it out once, beside the store, or in the folder the
+configuration's `plugin` key names (README, Configuration):
 
 ```sh
 cairn plugin write
@@ -126,10 +127,9 @@ It says where it wrote it. Then, in Claude Code:
 
 Restart Claude Code afterwards. From then on cairn keeps that plugin at its
 own version: Claude Code starts `cairn mcp serve` with each session, and a
-server finding the plugin beside the store written by another version writes
-it again, so the session after an upgrade has the plugin of the new cairn.
-Nothing to run again. A plugin written with `--dir` elsewhere is not followed:
-write it again after an upgrade. From a copy of this repository, the repository
+server finding the plugin written by another version writes it again, so the
+session after an upgrade has the plugin of the new cairn. Nothing to run
+again. From a copy of this repository, the repository
 itself is a marketplace too: `/plugin marketplace add /path/to/cairn`.
 
 The plugin declares cairn's MCP server itself. If you already declared one,

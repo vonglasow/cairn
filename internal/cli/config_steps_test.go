@@ -128,6 +128,17 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^a configuration that says the plugin lives at "([^"]*)"$`, func(place string) error {
+		return w.WriteConfig(fmt.Sprintf("plugin = %q\n", place))
+	})
+	sc.Step(`^"([^"]*)" holds the Claude Code plugin$`, func(place string) error {
+		_, err := os.Stat(filepath.Join(w.expand(place), ".claude-plugin", "marketplace.json"))
+		return err
+	})
+	sc.Step(`^it says the plugin is at "([^"]*)", named by (.+)$`, func(place, by string) error {
+		return w.namedBy(place, by)
+	})
+
 	sc.Step(`^a configuration that says the notes live at "([^"]*)"$`, func(place string) error {
 		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))
 	})

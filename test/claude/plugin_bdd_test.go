@@ -71,6 +71,43 @@ func offers(folder, name string) (string, error) {
 	return "", fmt.Errorf("the marketplace in %s offers no plugin %q", folder, name)
 }
 
+func (w *pluginWorld) olderPluginIn(folder string) error {
+	if _, err := w.cairn("plugin", "write"); err != nil {
+		return err
+	}
+	plugin, err := offers(folder, "cairn")
+	if err != nil {
+		return err
+	}
+	older := []byte(`{"name": "cairn", "version": "v0.0.1"}`)
+	if err := os.WriteFile(filepath.Join(plugin, manifest), older, 0o600); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(plugin, "skills", "gone.md"), []byte("an older skill"), 0o600)
+}
+
+func (w *pluginWorld) saysItsCairn(folder string) error {
+	written, err := offers(folder, "cairn")
+	if err != nil {
+		return err
+	}
+	var said struct {
+		Version string `json:"version"`
+	}
+	held, err := os.ReadFile(filepath.Join(written, manifest))
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(held, &said); err != nil {
+		return err
+	}
+	version, _ := w.cairn("--version")
+	if said.Version == "" || !strings.Contains(version, said.Version) {
+		return fmt.Errorf("the plugin says version %q, and the cairn that wrote it says %q", said.Version, version)
+	}
+	return nil
+}
+
 func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := &pluginWorld{sessionWorld: &sessionWorld{t: t}}
@@ -83,9 +120,32 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			w.out, w.ran = w.cairn(args...)
 		}
 		sc.Step("^I run `cairn plugin write`$", func() { run("plugin", "write") })
-		sc.Step(`^I write the plugin into a folder of my own$`, func() {
+		sc.Step("^I run `cairn plugin write --dir ([^`]*)`$", func(dir string) { run("plugin", "write", "--dir", filepath.Join(t.TempDir(), dir)) })
+		sc.Step(`^it fails, saying the flag is unknown$`, func() error {
+			if w.ran == nil || !strings.Contains(w.out, "unknown flag") {
+				return fmt.Errorf("it said %q, %w", w.out, w.ran)
+			}
+			return nil
+		})
+		sc.Step(`^a configuration that says the plugin lives in a folder of my own$`, func() error {
 			w.folder = filepath.Join(t.TempDir(), "my plugins")
-			run("plugin", "write", "--dir", w.folder)
+			home := ""
+			for _, kv := range w.env {
+				if at, ok := strings.CutPrefix(kv, "HOME="); ok {
+					home = at
+				}
+			}
+			dir := filepath.Join(home, ".config", "cairn")
+			if err := os.MkdirAll(dir, 0o700); err != nil {
+				return err
+			}
+			return os.WriteFile(filepath.Join(dir, "config.toml"), []byte(fmt.Sprintf("plugin = %q\n", w.folder)), 0o600)
+		})
+		sc.Step(`^the plugin was written there by an older cairn$`, func() error {
+			return w.olderPluginIn(w.folder)
+		})
+		sc.Step(`^the plugin in that folder says the version of the cairn that wrote it$`, func() error {
+			return w.saysItsCairn(w.folder)
 		})
 		sc.Step(`^the plugin was written beside the store with a file it no longer carries$`, func() error {
 			if _, err := w.cairn("plugin", "write"); err != nil {
@@ -98,18 +158,7 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			return os.WriteFile(filepath.Join(plugin, "skills", "gone.md"), []byte("an older skill"), 0o600)
 		})
 		sc.Step(`^the plugin was written beside the store by an older cairn$`, func() error {
-			if _, err := w.cairn("plugin", "write"); err != nil {
-				return err
-			}
-			plugin, err := offers(w.beside(), "cairn")
-			if err != nil {
-				return err
-			}
-			older := []byte(`{"name": "cairn", "version": "v0.0.1"}`)
-			if err := os.WriteFile(filepath.Join(plugin, manifest), older, 0o600); err != nil {
-				return err
-			}
-			return os.WriteFile(filepath.Join(plugin, "skills", "gone.md"), []byte("an older skill"), 0o600)
+			return w.olderPluginIn(w.beside())
 		})
 		sc.Step(`^the MCP server starts$`, func() { run("mcp", "serve") })
 		sc.Step(`^nothing is written beside the store$`, func() error {
@@ -121,10 +170,6 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^it succeeds$`, func() error { return w.ran })
 		sc.Step(`^beside the store is a marketplace offering the plugin "([^"]*)"$`, func(name string) error {
 			_, err := offers(w.beside(), name)
-			return err
-		})
-		sc.Step(`^that folder is a marketplace offering the plugin "([^"]*)"$`, func(name string) error {
-			_, err := offers(w.folder, name)
 			return err
 		})
 		sc.Step(`^the plugin written there is the plugin in this repository$`, func() error {
@@ -164,25 +209,7 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 		sc.Step(`^the plugin written there says the version of the cairn that wrote it$`, func() error {
-			written, err := offers(w.beside(), "cairn")
-			if err != nil {
-				return err
-			}
-			var said struct {
-				Version string `json:"version"`
-			}
-			held, err := os.ReadFile(filepath.Join(written, manifest))
-			if err != nil {
-				return err
-			}
-			if err := json.Unmarshal(held, &said); err != nil {
-				return err
-			}
-			version, _ := w.cairn("--version")
-			if said.Version == "" || !strings.Contains(version, said.Version) {
-				return fmt.Errorf("the plugin says version %q, and the cairn that wrote it says %q", said.Version, version)
-			}
-			return nil
+			return w.saysItsCairn(w.beside())
 		})
 		sc.Step(`^the hook written there can be run$`, func() error {
 			written, err := offers(w.beside(), "cairn")

@@ -66,6 +66,30 @@ Feature: Where cairn looks for its own places
       When I add a task titled "Write the spec"
       Then the configuration still says the notes live at "~/vault"
 
+  Rule: The Claude Code plugin is written where the file says, or beside the store
+
+    @config-names-the-plugin-folder
+    Scenario: the file says where the Claude Code plugin is written, and every command writes it there
+      Given a configuration that says the plugin lives at "~/claude/cairn"
+      When I run `cairn plugin write`
+      Then it succeeds
+      And "~/claude/cairn" holds the Claude Code plugin
+      When I run `cairn config show`
+      Then it says the plugin is at "~/claude/cairn", named by the file
+
+    @config-nothing-said-puts-the-plugin-beside-the-store
+    Scenario: nothing said, the plugin is written beside the store
+      Given a configuration that says the store lives at "~/work/cairn.db"
+      When I run `cairn config show`
+      Then it says the plugin is at "~/work/claude-plugin", named by nothing
+
+    @config-a-plugin-folder-that-is-not-absolute-is-refused
+    Scenario: a plugin folder that is not absolute is refused, and named
+      Given a configuration that says the plugin lives at "claude/cairn"
+      When I run `cairn plugin write`
+      Then it refuses, and says the place must be absolute
+      And it names "claude/cairn"
+
   Rule: Every place named is absolute
 
     @config-a-place-that-is-not-absolute-is-refused

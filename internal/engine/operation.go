@@ -289,6 +289,7 @@ type On struct {
 	Backups *Backups
 	Path    string
 	Notes   string
+	Plugin  string
 	Home    Home
 }
 
@@ -356,7 +357,7 @@ func doAt(op Operation, at Places, in Input, through string) (Answer, error) {
 	case AStore:
 		return doWith(Open, op, at, in, through)
 	default:
-		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes, Home: at.Home}, in)
+		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes, Plugin: at.Plugin, Home: at.Home}, in)
 	}
 }
 

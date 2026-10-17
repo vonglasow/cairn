@@ -313,6 +313,22 @@
           ],
           "additionalProperties": false
         },
+        "plugin": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "string"
+            },
+            "named_by": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "at",
+            "named_by"
+          ],
+          "additionalProperties": false
+        },
         "pages_off": {
           "type": [
             "null",
@@ -329,7 +345,8 @@
       "required": [
         "file",
         "store",
-        "notes"
+        "notes",
+        "plugin"
       ],
       "additionalProperties": false
     }
@@ -1608,12 +1625,7 @@
     },
     "input": {
       "additionalProperties": false,
-      "properties": {
-        "dir": {
-          "description": "the folder to write it into; beside the store when not named",
-          "type": "string"
-        }
-      },
+      "properties": {},
       "required": [],
       "type": "object"
     },

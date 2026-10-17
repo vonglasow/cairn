@@ -81,6 +81,10 @@ store = "~/.cairn/cairn.db"
 # it (~/.cairn/notes/12 for task 12). Absolute, or under ~.
 notes = "~/.cairn/notes"
 
+# Where cairn writes its Claude Code plugin, and keeps it at its own version:
+# a folder. Beside the store when it is not said. Absolute, or under ~.
+plugin = "~/.cairn/claude-plugin"
+
 # The pages every surface offers: the boards' tabs, the commands, the MCP
 # tools. Each is on unless it says false.
 [pages]
@@ -91,8 +95,7 @@ time = true
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and
 `notes` for as long as they are set. Beside the store, cairn also keeps its
-backups, the Claude Code plugin it writes, and the draft of a task being added
-in the window. `cairn config show` says which
+backups and the draft of a task being added in the window. `cairn config show` says which
 places are in use and where each was found;
 [docs/config.md](docs/config.md) says why it works this way.
 

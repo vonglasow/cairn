@@ -13,11 +13,12 @@ type Emplacement struct {
 	By string `json:"named_by"`
 }
 
-// Config is how `config show` answers: the file cairn read, and each of its two places, alongside what named it.
+// Config is how `config show` answers: the file cairn read, and each of its places, alongside what named it.
 type Config struct {
 	File     string      `json:"file"`
 	Store    Emplacement `json:"store"`
 	Notes    Emplacement `json:"notes"`
+	Plugin   Emplacement `json:"plugin"`
 	PagesOff []string    `json:"pages_off,omitempty"`
 	Problem  string      `json:"problem,omitempty"`
 }
@@ -51,6 +52,10 @@ func (g *readingGate) Resolved(p config.Places) {
 	p.Tell(places)
 	g.config.Store = places.store
 	g.config.Notes = places.notes
+	g.config.Plugin = Emplacement{At: PluginBeside(places.store.At), By: "nothing"}
+	if told := p.Plugin(); told != "" {
+		g.config.Plugin = Emplacement{At: told, By: "the file"}
+	}
 	g.config.PagesOff = p.PagesOff()
 }
 
@@ -63,7 +68,7 @@ var ConfigShow = Operation{
 	Thing:   "config",
 	Verb:    "show",
 	Short:   "Show which places cairn will use, and where it got them",
-	Does:    "Show which places cairn will use — the store and the notes — the file read, and what named each place.",
+	Does:    "Show which places cairn will use — the store, the notes and the Claude Code plugin — the file read, and what named each place.",
 	Example: "cairn config show",
 	Level:   Read,
 	Needs:   AConfiguration,
@@ -86,10 +91,10 @@ func configText(c Config) string {
 			c.File, c.Problem,
 		)
 	}
-	wide := max(len(c.Store.At), len(c.Notes.At))
+	wide := max(len(c.Store.At), len(c.Notes.At), len(c.Plugin.At))
 	said := fmt.Sprintf(
-		"file    %s\n\nstore   %-*s   named by %s\nnotes   %-*s   named by %s\n",
-		c.File, wide, c.Store.At, c.Store.By, wide, c.Notes.At, c.Notes.By,
+		"file    %s\n\nstore   %-*s   named by %s\nnotes   %-*s   named by %s\nplugin  %-*s   named by %s\n",
+		c.File, wide, c.Store.At, c.Store.By, wide, c.Notes.At, c.Notes.By, wide, c.Plugin.At, c.Plugin.By,
 	)
 	if len(c.PagesOff) > 0 {
 		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"

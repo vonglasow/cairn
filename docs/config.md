@@ -35,7 +35,7 @@ look like a fallback, which is the one thing it is not.
 environment or the default, with nothing in between. The file is a new rung, and
 a machine with a file now answers differently than it did.
 
-## Two keys, and their names
+## Two places, and their names
 
 ```toml
 # where cairn keeps your tasks
@@ -51,6 +51,22 @@ sit under.
 
 They fall under one folder by default, `~/.cairn`, so what cairn keeps stays
 together and one directory is enough to move or back up by hand.
+
+## The plugin's folder
+
+```toml
+plugin = "~/.cairn/claude-plugin"   # where cairn writes its Claude Code plugin
+```
+
+Where `cairn plugin write` writes the plugin, and where `cairn mcp serve` keeps
+it at its own version ([claude-code.md](claude-code.md)). Not said, it is
+`claude-plugin` beside the store, wherever the store is. It is a key of the
+file and nothing else — no flag, no variable — because two commands have to
+agree on it: `plugin write --dir` named a folder the server never looked at,
+and was taken out for it (cairn#98). Absolute, or under `~`, like the others
+(`@config-names-the-plugin-folder`,
+`@config-a-plugin-folder-that-is-not-absolute-is-refused`); `config show` says
+where it is and whether the file named it.
 
 ## The pages, turned off one by one
 

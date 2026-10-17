@@ -207,11 +207,14 @@ Nothing else.
 
 **The binary carries the plugin.** A person handed only the binary — by brew,
 or as a file — has no repository to add as a marketplace. So `plugin.go`, in
-the plugin's own folder, embeds its files, and `cairn plugin write [--dir D]`
-writes them out as a marketplace: `D/.claude-plugin/marketplace.json`, read
-off the plugin's manifest rather than written a second time, and the plugin
-under `D/cairn`, its hook executable. `D` is `claude-plugin` beside the store
-unless named. Then `/plugin marketplace add D` and `/plugin install
+the plugin's own folder, embeds its files, and `cairn plugin write` writes
+them out as a marketplace: `D/.claude-plugin/marketplace.json`, read off the
+plugin's manifest rather than written a second time, and the plugin under
+`D/cairn`, its hook executable. `D` is the folder the configuration's `plugin`
+key names, `claude-plugin` beside the store when it names none
+(`@config-names-the-plugin-folder`). There is no flag to name another: a
+plugin written where the configuration does not say is a plugin nothing keeps
+current (`@plugin-has-one-place`). Then `/plugin marketplace add D` and `/plugin install
 cairn@cairn`, which the command prints. The plugin installed is always the one
 the cairn it calls was built with, and says so: the manifest written, and the
 marketplace's entry for it, carry the version of the cairn that wrote them —
@@ -234,9 +237,9 @@ and, when another cairn wrote it, writes it again before answering
 says so. Claude Code reads a marketplace on a local folder in place, so the
 session after an upgrade loads the new plugin — the session that rewrote it
 still runs the one it started with. Nothing is written where nobody wrote a
-plugin (`@plugin-not-written-unasked`), and a plugin written with `--dir`
-elsewhere is not followed: the server knows only the place beside the store.
-The same for every way cairn is installed (cairn#90).
+plugin (`@plugin-not-written-unasked`); the folder the configuration names
+is followed as the one beside the store is
+(`@plugin-kept-current-where-the-configuration-says`). The same for every way cairn is installed (cairn#90).
 
 The plugin declares the cairn MCP server, so that installing it is enough. A
 person who already declared one keeps theirs: Claude Code drops a plugin's

@@ -659,3 +659,30 @@ func TestRead_saysWhichPagesAreTurnedOff(t *testing.T) {
 		t.Errorf("a page cairn does not have: %v, want ErrUnknownKey", err)
 	}
 }
+
+func TestRead_takesThePluginFolderTheFileNames(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte("plugin = \"~/claude/cairn\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := config.Read(home, silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Plugin() != filepath.Join(home, "claude", "cairn") {
+		t.Errorf("Plugin = %q", got.Plugin())
+	}
+	if unnamed, _ := config.Read(t.TempDir(), silentEnv); unnamed.Plugin() != "" {
+		t.Errorf("with nothing said, Plugin = %q, want nothing", unnamed.Plugin())
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte("plugin = \"claude/cairn\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.Read(home, silentEnv); !errors.Is(err, config.ErrNotAbsolute) {
+		t.Errorf("a plugin folder that is not absolute = %v, want ErrNotAbsolute", err)
+	}
+}

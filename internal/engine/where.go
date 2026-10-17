@@ -24,9 +24,10 @@ func (h Home) lookup() func(string) (string, bool) {
 
 // Places is where an operation finds what it reaches: the store, the root every task's outside context sits under, and the home both were found from — kept because one operation, `config show`, answers how they were found rather than where they are.
 type Places struct {
-	Store string
-	Notes string
-	Home  Home
+	Store  string
+	Notes  string
+	Plugin string
+	Home   Home
 }
 
 // Draft is where a window keeps what was typed into the form of a task being added and not saved yet: beside the store it is meant for.
@@ -54,7 +55,11 @@ func Locate(h Home) (Places, error) {
 	if !filepath.IsAbs(notes) {
 		notes = ""
 	}
-	return Places{Store: gate.store.At, Notes: notes, Home: h}, nil
+	plugin := found.Plugin()
+	if plugin == "" {
+		plugin = PluginBeside(gate.store.At)
+	}
+	return Places{Store: gate.store.At, Notes: notes, Plugin: plugin, Home: h}, nil
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.
