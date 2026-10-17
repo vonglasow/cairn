@@ -752,6 +752,39 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	menuLines := func() []string {
+		var lines []string
+		for _, group := range MenuBar(w.w.pages) {
+			lines = append(lines, group.Items...)
+		}
+		return lines
+	}
+	sc.Then(`^the menu bar offers no (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if slices.Contains(menuLines(), line) {
+				return fmt.Errorf("the menu bar offers %q: %v", line, menuLines())
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the menu bar offers (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if !slices.Contains(menuLines(), line) {
+				return fmt.Errorf("the menu bar does not offer %q: %v", line, menuLines())
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the menu bar offers nothing$`, func() error {
+		if lines := menuLines(); len(lines) > 0 {
+			return fmt.Errorf("the menu bar offers %v", lines)
+		}
+		return nil
+	})
+	sc.Step(`^I pick "([^"]*)" from the menu bar$`, func(line string) error {
+		w.w = w.w.Picked(line)
+		return nil
+	})
 	sc.Given(`^the pages turned off are "([^"]*)"$`, func(list string) error {
 		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
 		return nil

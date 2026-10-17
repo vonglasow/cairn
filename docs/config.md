@@ -90,12 +90,28 @@ time = false        # tasks, objectives and time; each is on unless it says fals
 
 A page turned off is gone from every surface, and the engine is what says so
 (`engine.Pages`): the boards draw no tab for it and `tab` walks past it, the
-command line offers none of its commands — `task`, `objective`, `timesheet` —
-and the MCP server lists none of its tools (`bdd/pages.feature`,
-`@gui-a-page-off-has-no-tab`, `@tui-a-page-off-has-no-tab`,
-`@mcp-a-page-off-offers-none-of-its-tools`). With every page off a board opens
-with nothing in it, and only closing it does anything. What belongs to no page
-— the configuration, backups, migrations, the trace, the plugin — stays. A
+command line offers none of its commands — `task` and `step` with the tasks,
+`objective`, `timesheet`, and `label` once neither tasks nor objectives are
+left to label — and the MCP server lists none of its tools (`bdd/pages.feature`,
+`@pages-off-takes-the-steps-with-the-tasks`,
+`@pages-labels-go-with-the-last-page-they-label`, `@gui-a-page-off-has-no-tab`,
+`@tui-a-page-off-has-no-tab`, `@mcp-a-page-off-offers-none-of-its-tools`).
+
+**One rule, asked by everything that offers an act.** It is `engine.Pages`:
+`Offers` for an operation, `Called` for a thing and a verb typed. The window's
+menu bar asked nothing at first — one fixed list, `MenuBar`, read by the native
+bars of macOS and Windows and by the button standing in for them — so a page
+turned off kept its lines there, and the terminal's `:` line still ran its
+commands (cairn#100). Now each line of the menu bar names the acts it does,
+and is offered while one of them is (`@gui-a-page-off-takes-its-menus`,
+`@gui-the-tasks-off-take-their-menus`); a menu left with no line goes, and the
+`:` line runs only what is offered (`@tui-a-page-off-takes-its-commands`).
+
+With every page off a board opens with nothing in it, its menu bar with
+nothing either (`@gui-every-page-off-leaves-what-belongs-to-none`), and only
+closing it does anything. What belongs to no page — the configuration,
+backups, migrations, the trace, the plugin — stays on the command line and
+for an agent. A
 page cairn does not have is refused like any other unknown name, and `config
 show` says which pages are off. A configuration that cannot be read turns no
 page off: every command that needs it refuses anyway, and says why.

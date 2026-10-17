@@ -15,7 +15,7 @@ func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
 		{Name: "Help", Items: []string{"Help", "About cairn"}},
 	}
-	got := MenuBar()
+	got := MenuBar(engine.Pages{})
 	if len(got) != len(want) {
 		t.Fatalf("the menu bar is %v", got)
 	}
@@ -62,7 +62,7 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 	}
 	opened := w.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	var all []string
-	for _, group := range MenuBar() {
+	for _, group := range MenuBar(engine.Pages{}) {
 		all = append(all, group.Items...)
 	}
 	if opened.Screen() != OnMenu || !slices.Equal(opened.Menu(), all) {

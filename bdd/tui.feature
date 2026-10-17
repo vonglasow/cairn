@@ -199,6 +199,15 @@ Feature: The board
       When I press "tab", "tab"
       Then the board says "TASKS"
 
+    @tui-a-page-off-takes-its-commands
+    Scenario: a command of a page turned off is not run from the command line
+      Given the pages turned off are "time"
+      When I open the board
+      And I press ":"
+      And I type "timesheet show"
+      And I press "enter"
+      Then the board says "not a command"
+
     @tui-every-page-off-is-an-empty-screen
     Scenario: every page turned off opens a board with nothing in it
       Given the pages turned off are "tasks, objectives, time"

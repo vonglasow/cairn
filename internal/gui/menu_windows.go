@@ -9,6 +9,8 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/io/event"
+
+	"cairn/internal/engine"
 )
 
 const (
@@ -33,7 +35,7 @@ var (
 	installed bool
 )
 
-func installMenu(e event.Event, picks chan<- string, wake func()) bool {
+func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake func()) bool {
 	view, ok := e.(app.Win32ViewEvent)
 	if !ok || !made(view.HWND) || installed {
 		return false
@@ -42,7 +44,7 @@ func installMenu(e event.Event, picks chan<- string, wake func()) bool {
 	if !made(bar) {
 		return false
 	}
-	for _, group := range MenuBar() {
+	for _, group := range MenuBar(pages) {
 		popup, _, _ := createPopupMenu.Call()
 		if !made(popup) {
 			return false

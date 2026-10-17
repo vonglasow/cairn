@@ -14,7 +14,7 @@ func TestTheWindowSaysEveryActWithTheEnginesWord(t *testing.T) {
 	for _, line := range w.Choose("Help").Helping() {
 		said = append(said, line.Key+" "+line.Means)
 	}
-	for _, group := range MenuBar() {
+	for _, group := range MenuBar(engine.Pages{}) {
 		said = append(said, group.Name)
 		said = append(said, group.Items...)
 	}

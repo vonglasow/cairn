@@ -1,6 +1,11 @@
 package gui
 
-import "strings"
+import (
+	"slices"
+	"strings"
+
+	"cairn/internal/engine"
+)
 
 // MenuGroup is one menu of the bar: its name and its lines.
 type MenuGroup struct {
@@ -10,14 +15,56 @@ type MenuGroup struct {
 
 const menuButtonWide = 40
 
-// MenuBar is every menu of the bar, in the order a window lays them out.
-func MenuBar() []MenuGroup {
-	return []MenuGroup{
-		{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import"}},
-		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
-		{Name: "Help", Items: []string{"Help", "About cairn"}},
+var menuBar = []MenuGroup{
+	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import"}},
+	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
+	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
+	{Name: "Help", Items: []string{"Help", "About cairn"}},
+}
+
+var actsOf = map[string][]engine.Operation{
+	"New":        {engine.TaskNew, engine.ObjectiveNew},
+	"New backup": {engine.BackupNew},
+	"Backups":    {engine.BackupList},
+	"Labels":     {engine.LabelList},
+	"Export":     {engine.TaskExport},
+	"Import":     {engine.TaskImport},
+	"Edit":       {engine.TaskEdit, engine.ObjectiveEdit},
+	"Focus":      {engine.TaskFocus},
+	"Archive":    {engine.TaskArchive},
+	"Delete":     {engine.TaskDelete, engine.ObjectiveDelete},
+	"Search":     {engine.TaskSearch, engine.ObjectiveSearch},
+	"Archived":   {engine.TaskList},
+}
+
+var pageOfLine = map[string]string{"Tasks": engine.PageTasks, "Objectives": engine.PageObjectives, "Time": engine.PageTime}
+
+func offered(pages engine.Pages, line string) bool {
+	if page, isOne := pageOfLine[line]; isOne {
+		return pages.Shows(page)
 	}
+	acts, acting := actsOf[line]
+	return !acting || slices.ContainsFunc(acts, pages.Offers)
+}
+
+// MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer: a line acting on a page turned off is gone, a menu left with no line goes too — the same rule as the command line's and the MCP server's (engine.Pages) — and with every page off there is none, the window holding nothing to act on.
+func MenuBar(pages engine.Pages) []MenuGroup {
+	if pages.None() {
+		return nil
+	}
+	var bar []MenuGroup
+	for _, group := range menuBar {
+		var lines []string
+		for _, line := range group.Items {
+			if offered(pages, line) {
+				lines = append(lines, line)
+			}
+		}
+		if len(lines) > 0 {
+			bar = append(bar, MenuGroup{Name: group.Name, Items: lines})
+		}
+	}
+	return bar
 }
 
 // Picked does what a line of the menu bar offers, from the board.
@@ -25,7 +72,7 @@ func (w Window) Picked(item string) Window {
 	if w.Blank() {
 		return w
 	}
-	if w.screen != OnTheBoard && w.screen != OnSearch {
+	if w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, item) {
 		return w
 	}
 	w.screen = OnTheBoard
@@ -56,7 +103,7 @@ func MenuStrokes(button Box) [3]Box {
 func (w Window) openingMenuBar() Window {
 	button := MenuButton(w.Layout())
 	w.menu = nil
-	for _, group := range MenuBar() {
+	for _, group := range MenuBar(w.pages) {
 		w.menu = append(w.menu, group.Items...)
 	}
 	w.menuAt, w.menuOn, w.screen = Point{X: button.X + button.W - menuWide, Y: button.Y + button.H}, 0, OnMenu

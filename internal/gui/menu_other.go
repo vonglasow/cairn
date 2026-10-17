@@ -2,6 +2,10 @@
 
 package gui
 
-import "gioui.org/io/event"
+import (
+	"gioui.org/io/event"
 
-func installMenu(event.Event, chan<- string, func()) bool { return false }
+	"cairn/internal/engine"
+)
+
+func installMenu(event.Event, engine.Pages, chan<- string, func()) bool { return false }

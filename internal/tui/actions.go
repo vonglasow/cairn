@@ -181,7 +181,7 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 		b.err = unknown(line)
 		return b, nil
 	}
-	op, found := engine.Called(words[0], words[1])
+	op, found := b.pages.Called(words[0], words[1])
 	if !found {
 		b.err = unknown(line)
 		return b, nil

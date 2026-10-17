@@ -15,6 +15,8 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/io/event"
+
+	"cairn/internal/engine"
 )
 
 var (
@@ -24,13 +26,13 @@ var (
 	installed bool
 )
 
-func installMenu(e event.Event, picks chan<- string, wake func()) bool {
+func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake func()) bool {
 	view, ok := e.(app.AppKitViewEvent)
 	if !ok || !made(view.View) || installed {
 		return false
 	}
 	menuPicks, menuWake, installed = picks, wake, true
-	for _, group := range MenuBar() {
+	for _, group := range MenuBar(pages) {
 		said(group.Name, func(title *C.char) { C.cairn_menu_group(title) })
 		for _, item := range group.Items {
 			tag, key := len(menuLines), macKey(item)

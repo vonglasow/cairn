@@ -248,7 +248,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, width, height int
 		event := window.Event()
 		listen(event)
 		dress(event)
-		if installMenu(event, picks, window.Invalidate) {
+		if installMenu(event, pages, picks, window.Invalidate) {
 			board = board.Native(true)
 		}
 		switch e := event.(type) {

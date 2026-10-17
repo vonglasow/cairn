@@ -13,7 +13,13 @@ const (
 	PageTime       = "time"
 )
 
-var pageOf = map[string]string{"task": PageTasks, "objective": PageObjectives, "timesheet": PageTime}
+var pagesOf = map[string][]string{
+	"task":      {PageTasks},
+	"step":      {PageTasks},
+	"objective": {PageObjectives},
+	"label":     {PageTasks, PageObjectives},
+	"timesheet": {PageTime},
+}
 
 // Pages is which of the three pages are shown: every one, unless the configuration turned it off.
 type Pages struct {
@@ -43,8 +49,17 @@ func (p Pages) None() bool {
 	return !p.Shows(PageTasks) && !p.Shows(PageObjectives) && !p.Shows(PageTime)
 }
 
-// Offers says whether an act is offered: one that belongs to a page is offered only while that page is shown, and the rest always.
+// Offers says whether an act is offered: one that belongs to pages is offered only while one of them is shown — a step with the tasks, a label while there is a task or an objective to label — and the rest always. Every surface asks it: the command line, the MCP server, the boards' tabs, menus and command lines.
 func (p Pages) Offers(op Operation) bool {
-	page, belongs := pageOf[op.Thing]
-	return !belongs || p.Shows(page)
+	pages, belongs := pagesOf[op.Thing]
+	return !belongs || slices.ContainsFunc(pages, p.Shows)
+}
+
+// Called is the act a thing and a verb name, when there is one and it is offered.
+func (p Pages) Called(thing, verb string) (Operation, bool) {
+	op, found := Called(thing, verb)
+	if !found || !p.Offers(op) {
+		return Operation{}, false
+	}
+	return op, true
 }

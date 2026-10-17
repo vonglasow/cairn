@@ -47,3 +47,21 @@ func TestPagesFrom_readsTheConfiguration(t *testing.T) {
 		t.Error("with no home, a page is off")
 	}
 }
+
+func TestPages_takeTheStepsWithTheTasksAndTheLabelsWithTheLastPageTheyLabel(t *testing.T) {
+	if PagesOff(PageTasks).Offers(StepNew) {
+		t.Error("with the tasks off, a step is still offered")
+	}
+	if !PagesOff(PageTasks).Offers(LabelList) {
+		t.Error("with the objectives still shown, the labels are not offered")
+	}
+	if PagesOff(PageTasks, PageObjectives).Offers(LabelList) {
+		t.Error("with nothing left to label, the labels are still offered")
+	}
+	if op, found := PagesOff(PageTime).Called("timesheet", "show"); found {
+		t.Errorf("with the time off, %s is still called", op.Line())
+	}
+	if _, found := PagesOff(PageTime).Called("task", "list"); !found {
+		t.Error("with the time off, task list is not called")
+	}
+}

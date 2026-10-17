@@ -1314,6 +1314,28 @@ Feature: The desktop board
       And I press "tab"
       Then the window is on the page "TASKS"
 
+    @gui-a-page-off-takes-its-menus
+    Scenario: a page turned off takes its lines out of the menu bar, and only those
+      Given the pages turned off are "time"
+      When I open the window
+      Then the menu bar offers no "Time"
+      And the menu bar offers "Tasks", "Objectives", "Focus", "Archive"
+
+    @gui-the-tasks-off-take-their-menus
+    Scenario: the tasks turned off take every line that acts on a task
+      Given the pages turned off are "tasks"
+      When I open the window
+      Then the menu bar offers no "Tasks", "Focus", "Archive", "Archived", "Export", "Import"
+      And the menu bar offers "Objectives", "New", "Edit", "Delete", "Search", "Labels"
+
+    @gui-every-page-off-leaves-what-belongs-to-none
+    Scenario: every page turned off leaves the menu bar as empty as the window
+      Given the pages turned off are "tasks, objectives, time"
+      When I open the window
+      Then the menu bar offers nothing
+      When I pick "Help" from the menu bar
+      Then the window is on the board
+
     @gui-the-first-page-shown-opens
     Scenario: with the tasks turned off the window opens on the objectives
       Given the pages turned off are "tasks"

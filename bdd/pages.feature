@@ -28,6 +28,20 @@ Feature: A page turned off in the configuration is gone from every surface
       And the help offers "config"
       And the help offers "backup"
 
+    @pages-off-takes-the-steps-with-the-tasks
+    Scenario: the tasks turned off take their steps with them
+      Given a configuration that turns the page "tasks" off
+      When I run `cairn --help`
+      Then the help does not offer "step"
+      And the help offers "label"
+
+    @pages-labels-go-with-the-last-page-they-label
+    Scenario: the labels go once neither tasks nor objectives are shown
+      Given a configuration that turns the pages "tasks" and "objectives" off
+      When I run `cairn --help`
+      Then the help does not offer "label"
+      And the help offers "timesheet"
+
     @pages-on-by-default
     Scenario: a configuration that says nothing of the pages shows them all
       Given a configuration that says the notes live at "~/vault"
