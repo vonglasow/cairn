@@ -277,6 +277,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, width, height int
 				}()
 			}
 			board = board.Born(gtx.Now)
+			board.tellingTheBars()
 			Draw(gtx, theme, skin, board)
 			if _, building := board.Intro(); building {
 				gtx.Execute(op.InvalidateCmd{})

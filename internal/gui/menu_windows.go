@@ -14,9 +14,12 @@ import (
 )
 
 const (
-	mfString    = 0x0000
-	mfPopup     = 0x0010
-	gwlpWndProc = ^uintptr(3)
+	mfString        = 0x0000
+	mfPopup         = 0x0010
+	mfEnabled       = 0x0000
+	mfGrayed        = 0x0001
+	wmInitMenuPopup = 0x0117
+	gwlpWndProc     = ^uintptr(3)
 )
 
 var (
@@ -25,6 +28,7 @@ var (
 	createPopupMenu = user32.NewProc("CreatePopupMenu")
 	appendMenu      = user32.NewProc("AppendMenuW")
 	setMenu         = user32.NewProc("SetMenu")
+	enableMenuItem  = user32.NewProc("EnableMenuItem")
 	setWindowLong   = user32.NewProc("SetWindowLongPtrW")
 	callWindowProc  = user32.NewProc("CallWindowProcW")
 
@@ -51,11 +55,11 @@ func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake fu
 		}
 		for _, item := range group.Items {
 			named := utf16Of(winTitle(item))
-			appendMenu.Call(popup, mfString, commandOf(len(menuLines)), uintptr(unsafe.Pointer(named)))
+			_, _, _ = appendMenu.Call(popup, mfString, commandOf(len(menuLines)), uintptr(unsafe.Pointer(named)))
 			menuLines = append(menuLines, item)
 		}
 		named := utf16Of(winMenu(group.Name))
-		appendMenu.Call(bar, mfPopup, popup, uintptr(unsafe.Pointer(named)))
+		_, _, _ = appendMenu.Call(bar, mfPopup, popup, uintptr(unsafe.Pointer(named)))
 	}
 	menuPicks, menuWake, installed = picks, wake, true
 	gioProc, _, _ = setWindowLong.Call(view.HWND, gwlpWndProc, windows.NewCallback(menuProc))
@@ -67,6 +71,15 @@ func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake fu
 }
 
 func menuProc(hwnd, msg, wParam, lParam uintptr) uintptr {
+	if msg == wmInitMenuPopup {
+		for at, line := range menuLines {
+			state := uintptr(mfEnabled)
+			if !lineDoable(line) {
+				state = mfGrayed
+			}
+			_, _, _ = enableMenuItem.Call(wParam, commandOf(at), state)
+		}
+	}
 	if at, ok := commandLine(msg, wParam); ok {
 		if line, ok := lineAt(menuLines, at); ok {
 			handedOver(line, menuPicks, menuWake)

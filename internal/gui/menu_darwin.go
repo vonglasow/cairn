@@ -51,6 +51,15 @@ func said(s string, to func(*C.char)) {
 	to(c)
 }
 
+//export cairnMenuDoable
+func cairnMenuDoable(tag C.int) C.int {
+	line, ok := lineAt(menuLines, int(tag))
+	if !ok || !lineDoable(line) {
+		return 0
+	}
+	return 1
+}
+
 //export cairnMenuPicked
 func cairnMenuPicked(tag C.int) {
 	line, ok := lineAt(menuLines, int(tag))

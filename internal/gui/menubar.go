@@ -3,6 +3,7 @@ package gui
 import (
 	"slices"
 	"strings"
+	"sync"
 
 	"cairn/internal/engine"
 )
@@ -69,10 +70,7 @@ func MenuBar(pages engine.Pages) []MenuGroup {
 
 // Picked does what a line of the menu bar offers, from the board.
 func (w Window) Picked(item string) Window {
-	if w.Blank() {
-		return w
-	}
-	if w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, item) {
+	if !w.Doable(item) {
 		return w
 	}
 	w.screen = OnTheBoard
@@ -80,6 +78,62 @@ func (w Window) Picked(item string) Window {
 		return w.working()
 	}
 	return w.Choose(item)
+}
+
+var tabOfLine = map[string]Tab{"Tasks": Tasks, "Objectives": Objectives, "Time": Time}
+
+// Doable says whether a line of the menu bar does something now: offered by the pages shown, on the board, and with what it acts on in sight — a card chosen to edit, a task to focus or archive, another page to go to. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
+func (w Window) Doable(line string) bool {
+	if w.Blank() || w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, line) {
+		return false
+	}
+	onTasks := w.tab == Tasks
+	chosenTask := onTasks && w.chosen != 0 && !w.chosenGoal
+	switch line {
+	case "Tasks", "Objectives", "Time":
+		return w.tab != tabOfLine[line]
+	case "New":
+		if w.tab == Objectives {
+			return w.pages.Offers(engine.ObjectiveNew)
+		}
+		return w.pages.Offers(engine.TaskNew)
+	case "Edit":
+		return w.chosen != 0
+	case "Delete":
+		return w.chosen != 0 || len(w.Taken()) > 0
+	case "Focus":
+		card, found := w.snap.Card(w.chosen)
+		return chosenTask && found && !engine.Finished(card)
+	case "Archive":
+		return chosenTask || onTasks && len(w.Taken()) > 0
+	case "Archived":
+		return onTasks
+	}
+	return true
+}
+
+var doableNow struct {
+	sync.Mutex
+	lines map[string]bool
+}
+
+// tellingTheBars hands the native menu bars what each line can do now; they read it, from the system's thread, as a menu opens.
+func (w Window) tellingTheBars() {
+	lines := map[string]bool{}
+	for _, group := range menuBar {
+		for _, line := range group.Items {
+			lines[line] = w.Doable(line)
+		}
+	}
+	doableNow.Lock()
+	defer doableNow.Unlock()
+	doableNow.lines = lines
+}
+
+func lineDoable(line string) bool {
+	doableNow.Lock()
+	defer doableNow.Unlock()
+	return doableNow.lines[line]
 }
 
 // Native says the system gave the window a menu bar of its own, so no button stands in for one.
@@ -104,7 +158,11 @@ func (w Window) openingMenuBar() Window {
 	button := MenuButton(w.Layout())
 	w.menu = nil
 	for _, group := range MenuBar(w.pages) {
-		w.menu = append(w.menu, group.Items...)
+		for _, line := range group.Items {
+			if w.Doable(line) {
+				w.menu = append(w.menu, line)
+			}
+		}
 	}
 	w.menuAt, w.menuOn, w.screen = Point{X: button.X + button.W - menuWide, Y: button.Y + button.H}, 0, OnMenu
 	return w

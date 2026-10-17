@@ -879,6 +879,42 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the menu offers %q, and not %q", w.w.Menu(), said)
 	})
+	sc.Then(`^the menu bar can do (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if !w.w.Doable(line) {
+				return fmt.Errorf("the menu bar cannot do %q on %v", line, w.w.Screen())
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the menu bar cannot do (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if w.w.Doable(line) {
+				return fmt.Errorf("the menu bar can do %q on %v", line, w.w.Screen())
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I open the menu from its button$`, func() error {
+		w.w = w.w.openingMenuBar()
+		return nil
+	})
+	sc.Then(`^the menu offers no (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if slices.Contains(w.w.Menu(), line) {
+				return fmt.Errorf("the menu offers %q: %v", line, w.w.Menu())
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the menu also offers (".*")$`, func(list string) error {
+		for _, line := range quoted(list) {
+			if !slices.Contains(w.w.Menu(), line) {
+				return fmt.Errorf("the menu does not offer %q: %v", line, w.w.Menu())
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the menu offers (".*")$`, func(list string) error {
 		var want []string
 		for _, quoted := range strings.Split(list, ", ") {

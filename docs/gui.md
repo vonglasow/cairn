@@ -756,12 +756,29 @@ the menu's own keys (`appkit_darwin.go`); on Windows the menu is a Win32 one set
 the window Gio made, its commands caught in front of Gio's window procedure and
 the keys written beside each line (`menu_windows.go`). Neither call to the
 system is driven by a test; what each line does is. Where the system gives a
-window no menu bar — Linux — a `☰` button at the end of the tabs opens the same
+window no menu bar — Linux — a `☰` button at the end of the tabs opens those
 lines as one menu (`MenuButton`). Help ends on About cairn, which says which
 build this is — its version, the commit and its date, what built it for which
 system — the lines `cairn --version` prints, read from the same stamps
 (`internal/build`), in a box with only Close
 (`@gui-the-version-is-shown-from-the-menu`).
+
+**A line of the menu bar is offered when it can be done now.** The bar was
+one fixed list, every line there whatever was in sight, so Focus stood over
+the objectives and Edit with nothing chosen, and picking them did nothing
+(cairn#101). Each line now names the acts it does (`actsOf`), which the pages
+offer or not (`engine.Pages`, cairn#100), and `Doable` says whether it does
+something now: on the board, with what it acts on in sight — a card chosen to
+edit or delete, a task to focus or archive, another page to go to
+(`@gui-the-menu-offers-what-can-be-done-now`,
+`@gui-the-menu-follows-the-page-in-sight`,
+`@gui-the-menu-waits-while-a-panel-is-open`). The `☰` menu leaves out the
+rest, and picking it from anywhere does nothing
+(`@gui-a-line-that-cannot-be-done-does-nothing`); the native bars keep their
+lines in place and grey them, reading what the window told them at its last
+frame (`tellingTheBars`) as a menu opens — AppKit through `validateMenuItem:`,
+Win32 on `WM_INITMENUPOPUP` — so a line does not move under the pointer as
+the board changes.
 
 **A right click says what can be done to what is under it.** What a card can
 have done to it was on the bar once the card was chosen, so a hand on the

@@ -63,7 +63,14 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 	opened := w.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	var all []string
 	for _, group := range MenuBar(engine.Pages{}) {
-		all = append(all, group.Items...)
+		for _, line := range group.Items {
+			if w.Doable(line) {
+				all = append(all, line)
+			}
+		}
+	}
+	if slices.Contains(all, "Edit") || !slices.Contains(all, "New") {
+		t.Fatalf("with nothing chosen the button's menu would offer %v", all)
 	}
 	if opened.Screen() != OnMenu || !slices.Equal(opened.Menu(), all) {
 		t.Fatalf("the button opened %v offering %v", opened.Screen(), opened.Menu())
@@ -201,5 +208,20 @@ func TestALinePickedIsHandedOverWithoutWaiting(t *testing.T) {
 	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("handing a line to a full loop waited")
+	}
+}
+
+func TestTheNativeBarsReadWhatCanBeDoneNow(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w.tellingTheBars()
+	if lineDoable("Edit") || !lineDoable("New") {
+		t.Fatalf("with nothing chosen the bars read Edit %v and New %v", lineDoable("Edit"), lineDoable("New"))
+	}
+	w.clicked(middleOf(w, 1, 0)).tellingTheBars()
+	if !lineDoable("Edit") {
+		t.Error("with a card chosen the bars still grey Edit")
+	}
+	if lineDoable("a line nobody has") {
+		t.Error("a line no bar holds reads as doable")
 	}
 }

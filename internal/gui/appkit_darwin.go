@@ -10,6 +10,7 @@ package gui
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 extern void cairnMenuPicked(int tag);
+extern int cairnMenuDoable(int tag);
 extern void cairnFileChosen(char *path);
 
 @interface CairnMenuTarget : NSObject
@@ -19,6 +20,11 @@ extern void cairnFileChosen(char *path);
 @implementation CairnMenuTarget
 - (void)picked:(NSMenuItem *)item {
 	cairnMenuPicked((int)[item tag]);
+}
+// validateMenuItem: is asked by AppKit as a menu opens, and before a key
+// equivalent acts: a line greyed is one the window cannot do now.
+- (BOOL)validateMenuItem:(NSMenuItem *)item {
+	return cairnMenuDoable((int)[item tag]) != 0;
 }
 @end
 

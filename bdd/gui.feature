@@ -1289,11 +1289,11 @@ Feature: The desktop board
       Then the window is on the page "OBJECTIVES"
 
     @gui-the-menu-button-stands-in-for-a-menu-bar
-    Scenario: with no menu bar of the system's, a button opens the same lines
+    Scenario: with no menu bar of the system's, a button opens the lines that can be done now
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Edit", "Focus", "Archive", "Delete", "Search", "Tasks", "Objectives", "Time", "Archived", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -1313,6 +1313,41 @@ Feature: The desktop board
       When I press "tab"
       And I press "tab"
       Then the window is on the page "TASKS"
+
+    @gui-the-menu-offers-what-can-be-done-now
+    Scenario: the menu bar offers what can be done now, and what is chosen opens the rest
+      Given I added a task titled "Write the spec"
+      When I open the window
+      Then the menu bar can do "New", "Search", "Archived", "Export", "Import", "Labels", "Objectives", "Time", "Help"
+      And the menu bar cannot do "Edit", "Focus", "Archive", "Delete", "Tasks"
+      When I click the card "Write the spec"
+      Then the menu bar can do "Edit", "Focus", "Archive", "Delete"
+
+    @gui-the-menu-follows-the-page-in-sight
+    Scenario: on the objectives, the lines that act on a task cannot be done
+      Given I added an objective titled "Ship it"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship it"
+      Then the menu bar can do "New", "Edit", "Delete", "Tasks"
+      And the menu bar cannot do "Focus", "Archive", "Archived", "Objectives"
+
+    @gui-the-menu-waits-while-a-panel-is-open
+    Scenario: with a form open, nothing of the menu bar can be done until it closes
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the menu bar cannot do "New", "Edit", "Search", "Help", "Tasks"
+
+    @gui-a-line-that-cannot-be-done-does-nothing
+    Scenario: picking a line that cannot be done now does nothing, and the button's menu does not offer it
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I pick "Edit" from the menu bar
+      Then the window is on the board
+      When I open the menu from its button
+      Then the menu offers no "Edit", "Focus", "Archive", "Delete"
+      And the menu also offers "New", "Search"
 
     @gui-a-page-off-takes-its-menus
     Scenario: a page turned off takes its lines out of the menu bar, and only those
