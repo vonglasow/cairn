@@ -1,6 +1,9 @@
 package gui
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 // Readable is one piece of text a screen writes: what it is, where its first line in sight is drawn, what it says, the lines it is laid out on, which of them is first in sight, and the size it is written at.
 type Readable struct {
@@ -78,9 +81,12 @@ func (w Window) Readables() []Readable {
 	}
 	out := []Readable{one("history", BesideHead(box), w.PanelHead(), small)}
 	inside := Inside(BesideBox(box))
-	lines, from := w.Lines(), w.History()
-	for i := from; i < Lasting(len(lines), from, w.Rows()); i++ {
-		out = append(out, one("history:"+strconv.Itoa(i), LineAt(inside, i, from), lines[i], small))
+	if told := w.traced(); len(told.Said) > 0 {
+		from := w.History()
+		first := LineAt(inside, from, from)
+		shown := Lasting(len(told.Said), from, w.Rows()) - from
+		out = append(out, Readable{Key: "trace", Said: strings.Join(told.Said, "\n"), Lines: told, From: from, Size: small,
+			Box: Box{X: first.X, Y: first.Y, W: first.W, H: max(1, shown) * lineHigh}})
 	}
 	return append(out, w.ContextSays()...)
 }
@@ -131,11 +137,28 @@ type Picked struct {
 }
 
 // Holding is a piece of text as it is drawn: with the run held in it, when the run held is in it, and plain otherwise.
-func (w Window) Holding(key, said string) Written {
+func (w Window) Holding(key, said string) Written { return w.HoldingFrom(key, said, 0) }
+
+// HoldingFrom is one line of a longer text as it is drawn, the line starting so many characters into the text: with the part of the run held that falls on it.
+func (w Window) HoldingFrom(key, said string, start int) Written {
 	if w.picked.Key != key || w.picked.From == w.picked.To {
 		return Written{Value: said}
 	}
-	return Written{Value: said, At: w.picked.To, Held: w.picked.From - w.picked.To}
+	from, to := w.picked.From-start, w.picked.To-start
+	end := len([]rune(said))
+	from, to = min(max(from, 0), end), min(max(to, 0), end)
+	return Written{Value: said, At: to, Held: from - to}
+}
+
+func (w Window) traced() Lines {
+	lines := w.Lines()
+	told := Lines{Said: lines, From: make([]int, len(lines))}
+	at := 0
+	for i, line := range lines {
+		told.From[i] = at
+		at += len([]rune(line)) + 1
+	}
+	return told
 }
 
 // Unit is what a run held with the pointer grows by: a character for a press, a word for a double click, a paragraph for a triple — dragged on, each grows by whole ones of what it began with, the way text does everywhere else.

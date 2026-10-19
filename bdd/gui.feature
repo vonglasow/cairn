@@ -3038,6 +3038,15 @@ Feature: The desktop board
       And I press "cmd+c"
       Then the clipboard reads "Deux"
 
+    @gui-a-run-of-the-trace-spans-its-lines
+    Scenario: a run dragged across the trace takes in every line it passes over
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      And I drag across the trace from the start of its first line to the end of its second
+      And I press "cmd+c"
+      Then the clipboard reads the first 2 lines of the trace
+
     @gui-the-steps-left-come-first
     Scenario: what is left comes first
       Given I added a task titled "Ship it"

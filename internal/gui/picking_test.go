@@ -41,7 +41,13 @@ func readable(t *testing.T, w Window, key string) Readable {
 }
 
 func on(r Readable, at int) Point {
-	return Point{X: r.Box.X + at*glyphOf(r.Size), Y: r.Box.Y + lineHigh/2}
+	line := 0
+	for i, from := range r.Lines.From {
+		if from <= at {
+			line = i
+		}
+	}
+	return Point{X: r.Box.X + (at-r.Lines.From[line])*glyphOf(r.Size), Y: r.Box.Y + (line-r.From)*lineHigh + lineHigh/2}
 }
 
 func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
@@ -60,7 +66,7 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 			}
 		})
 	}
-	history := readable(t, w, "history:0")
+	history := readable(t, w, "trace")
 	at := strings.Index(history.Said, "changed")
 	if at < 0 {
 		t.Fatalf("the history reads %q", history.Said)
@@ -85,7 +91,7 @@ func TestARunOfAnOpenTasksTextIsHeldByDraggingAcrossIt(t *testing.T) {
 
 func TestAllOfATextIsHeldAtOnce(t *testing.T) {
 	w, _ := openTask(t)
-	r := readable(t, w, "history:0")
+	r := readable(t, w, "trace")
 	w = w.PressAt(on(r, 0)).LetGo(on(r, 0))
 	if got, _ := w.Key("cmd+a").Key("cmd+c").Copying(); got != r.Said {
 		t.Fatalf("⌘A then ⌘C copied %q", got)
@@ -119,7 +125,7 @@ func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 }
 
 func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
-	for _, key := range []string{"field:context", "history:0"} {
+	for _, key := range []string{"field:context", "trace"} {
 		t.Run(key, func(t *testing.T) {
 			w, _ := openTask(t)
 			r := readable(t, w, key)
@@ -324,5 +330,27 @@ func TestAnOpenTaskToldNowhereSaysNoPlace(t *testing.T) {
 		if strings.HasSuffix(r.Key, ":context") {
 			t.Errorf("an open task told nowhere holds %q", r.Key)
 		}
+	}
+}
+
+func TestARunAcrossLinesIsPaintedOnEachForWhatFallsOnIt(t *testing.T) {
+	w := Window{picked: Picked{Key: "trace", From: 3, To: 8}}
+	for _, c := range []struct {
+		said  string
+		start int
+		holds string
+	}{
+		{"abcde", 0, "de"}, {"fghij", 6, "fg"}, {"klm", 12, ""}, {"wxyz", 0, "z"},
+	} {
+		if got := w.HoldingFrom("trace", c.said, c.start).Holds(); got != c.holds {
+			t.Errorf("%q from %d holds %q, want %q", c.said, c.start, got, c.holds)
+		}
+	}
+	back := Window{picked: Picked{Key: "trace", From: 8, To: 3}}
+	if got := back.HoldingFrom("trace", "abcde", 0); got.Holds() != "de" || got.At != 3 {
+		t.Errorf("a run held backwards paints %+v", got)
+	}
+	if got := w.HoldingFrom("other", "abcde", 0).Holds(); got != "" {
+		t.Errorf("another text holds %q", got)
 	}
 }

@@ -707,15 +707,15 @@ func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w W
 
 	inside := Inside(frame)
 	clipped := clip.Rect(rect(inside)).Push(gtx.Ops)
-	lines, from, rows := w.Lines(), w.History(), w.Rows()
-	for i := from; i < Lasting(len(lines), from, rows); i++ {
-		drawTold(gtx, th, skin, LineAt(inside, i, from), w.Holding("history:"+strconv.Itoa(i), lines[i]))
+	told, from, rows := w.traced(), w.History(), w.Rows()
+	for i := from; i < Lasting(len(told.Said), from, rows); i++ {
+		drawTold(gtx, th, skin, LineAt(inside, i, from), w.HoldingFrom("trace", told.Said[i], told.From[i]))
 	}
 	clipped.Pop()
 
 	track := BesideBar(box)
 	fill(gtx, track, skin.Back)
-	fill(gtx, Thumb(track, len(lines), rows, w.History()), skin.Edge)
+	fill(gtx, Thumb(track, len(told.Said), rows, w.History()), skin.Edge)
 }
 
 func drawTold(gtx layout.Context, th *material.Theme, skin Skin, box Box, held Written) {

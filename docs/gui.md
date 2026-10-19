@@ -1205,9 +1205,13 @@ other text. Not among the fields: the place is not something the task carries.
 See [context.md](context.md).
 
 **Every piece of text beside the form can be held and copied**, the way what is
-in its fields can — the trace's head and each of its lines, and the place of
-the notes. A drag across it holds a run, a double click holds a word, `⌘A`
-holds the whole of the text last pressed in, and `⌘C` copies. `Readables` lists
+in its fields can — the trace's head, the trace, and the place of the notes.
+A drag across it holds a run, a double click holds a word, a triple click a
+line, `⌘A` holds the whole of the text last pressed in, and `⌘C` copies. The
+trace is one text, its lines joined by a line break, so a run dragged over
+several lines holds every one of them and copies them as they read
+(`@gui-a-run-of-the-trace-spans-its-lines`); each line used to be a text of
+its own, and a run could not leave the line it began on (cairn#106). `Readables` lists
 every piece of it, once, laid out the way it is drawn, and what a pointer lands
 on and what is painted held are both worked out from it.
 

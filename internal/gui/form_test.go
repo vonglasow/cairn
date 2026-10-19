@@ -1000,9 +1000,9 @@ func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
 
 func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
 	w, _ := openTask(t)
-	r := readable(t, w, "history:0")
-	if got, _ := w.tripleClicked(on(r, 3)).Key("cmd+c").Copying(); got != r.Said {
-		t.Errorf("a triple click on a line of history copied %q, want %q", got, r.Said)
+	r := readable(t, w, "trace")
+	if got, _ := w.tripleClicked(on(r, 3)).Key("cmd+c").Copying(); got != r.Lines.Said[0] {
+		t.Errorf("a triple click on a line of history copied %q, want %q", got, r.Lines.Said[0])
 	}
 }
 

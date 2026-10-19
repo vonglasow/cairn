@@ -762,6 +762,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the parts are %+v, and %q is not ticked", w.w.PartsTicked(), title)
 	})
+	sc.Step(`^I drag across the trace from the start of its first line to the end of its second$`, func() error {
+		r, ok := w.w.readable("trace")
+		if !ok || len(r.Lines.Said) < 2 {
+			return fmt.Errorf("the trace is not one text of two lines or more: %+v", r)
+		}
+		from := Point{X: r.Box.X, Y: r.Box.Y + (0-r.From)*lineHigh + lineHigh/2}
+		to := Point{X: r.Box.X + r.Box.W - 1, Y: r.Box.Y + (1-r.From)*lineHigh + lineHigh/2}
+		w.w = w.w.PressAt(from).MoveTo(to).LetGo(to)
+		return nil
+	})
+	sc.Then(`^the clipboard reads the first (\d+) lines of the trace$`, func(n int) error {
+		lines := w.w.Lines()
+		if len(lines) < n {
+			return fmt.Errorf("the trace has %d lines", len(lines))
+		}
+		if want := strings.Join(lines[:n], "\n"); w.clipboard != want {
+			return fmt.Errorf("the clipboard reads %q, want %q", w.clipboard, want)
+		}
+		return nil
+	})
 	sc.Step(`^I click the step "([^"]*)"$`, func(title string) error {
 		at, err := w.stepTile(title)
 		if err != nil {
