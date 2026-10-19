@@ -133,11 +133,13 @@ func Typed(w Window, name string, with key.Modifiers) Window {
 	if with.Contain(key.ModAlt) && said == "backspace" {
 		return w.Key("alt+backspace")
 	}
-	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) {
+	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) && !deleting(said) {
 		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
 }
+
+func deleting(said string) bool { return said == "backspace" || said == "delete-forward" }
 
 func moving(said string) bool {
 	switch said {

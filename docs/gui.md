@@ -878,7 +878,11 @@ line, or back a word, in one stroke. The search reads the same keys
 (`editing.go`). For them to arrive, the window asks for ⌥ too, and a key that
 moves the caret keeps every modifier it came with. A run held across the lines
 of a description, with the pointer or with the keys, goes in one stroke
-(`@gui-a-run-held-across-lines-goes-in-one-stroke`).
+(`@gui-a-run-held-across-lines-goes-in-one-stroke`). Shift holds nothing
+when deleting. `⇧⌫` and `⇧⌦` delete as `⌫` and `⌦` do, the way they do in
+every other field, because a hand still on shift from a capital is common.
+Named `shift+backspace`, the key used to reach no binding and did nothing
+(`@gui-shift-held-still-deletes`).
 
 **A drag on Windows is not yet understood.** On Windows the card in hand was
 drawn at the top left of the window rather than under the pointer. Read

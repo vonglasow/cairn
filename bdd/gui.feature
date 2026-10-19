@@ -218,6 +218,14 @@ Feature: The desktop board
       And I type "tre"
       Then the field "title" reads "Fenêtre"
 
+    @gui-shift-held-still-deletes
+    Scenario: holding shift down while deleting still deletes
+      When I open the window
+      And I press "cmd+n"
+      And I type "Plans"
+      And I press "backspace" holding shift
+      Then the field "title" reads "Plan"
+
     @gui-a-click-off-the-calendar-closes-it
     Scenario: a click on the form outside the calendar closes the calendar alone
       Given I added a task titled "Write the spec"

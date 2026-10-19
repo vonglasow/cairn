@@ -957,6 +957,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I press "([^"]*)"$`, w.press)
+	sc.Step(`^I press "([^"]*)" holding shift$`, func(said string) error {
+		named := map[string]key.Name{"backspace": key.NameDeleteBackward, "delete": key.NameDeleteForward}[said]
+		w.w = Typed(w.w, string(named), key.ModShift)
+		return nil
+	})
 	sc.Step(`^I press "([^"]*)" (\d+) times$`, func(key string, n int) error {
 		for range n {
 			if err := w.press(key); err != nil {

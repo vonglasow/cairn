@@ -449,3 +449,13 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 		t.Fatalf("the rest of a turn of the board scrolled the description to %d", w.Saying())
 	}
 }
+
+func TestShiftHeldDoesNotStopADeletion(t *testing.T) {
+	w := holding(newFake()).Key("cmd+n").Types("Plans").Key("left")
+	if got := Typed(w, string(key.NameDeleteBackward), key.ModShift).Form().Writing().Reads(); got != "Plas" {
+		t.Errorf("⇧⌫ left %q", got)
+	}
+	if got := Typed(w, string(key.NameDeleteForward), key.ModShift).Form().Writing().Reads(); got != "Plan" {
+		t.Errorf("⇧⌦ left %q", got)
+	}
+}
