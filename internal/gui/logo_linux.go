@@ -28,7 +28,6 @@ import "C"
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"unsafe"
 
 	"gioui.org/app"
@@ -37,23 +36,12 @@ import (
 
 var x11Dressed bool
 
-func showLogo() { _ = SettleIn(DataHome(), starter()) }
-
-func starter() string {
-	self, err := os.Executable()
+func showLogo() {
+	running, err := os.Executable()
 	if err != nil {
-		return Known
+		running = Known
 	}
-	if found, err := exec.LookPath(Known); err == nil && sameFile(found, self) {
-		return Known
-	}
-	return self
-}
-
-func sameFile(a, b string) bool {
-	a, errA := filepath.EvalSymlinks(a)
-	b, errB := filepath.EvalSymlinks(b)
-	return errA == nil && errB == nil && a == b
+	_ = SettleIn(DataHome(), Starter(running, exec.LookPath))
 }
 
 func dress(e event.Event) {

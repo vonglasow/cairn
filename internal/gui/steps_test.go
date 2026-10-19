@@ -1336,8 +1336,46 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return data
 	}
 	entry := func(name string) string { return filepath.Join(dataHome(), "applications", name+".desktop") }
+	elsewhere := ""
+	place := func() string {
+		if elsewhere == "" {
+			elsewhere = w.t.TempDir()
+		}
+		return elsewhere
+	}
+	running := func() string { return filepath.Join(place(), "running", Known) }
+	pathTo := ""
+	onPath := func(name string) (string, error) {
+		if pathTo == "" {
+			return "", fmt.Errorf("%s is not on the PATH", name)
+		}
+		return pathTo, nil
+	}
+	sc.Given(`^the cairn running is the one the PATH leads to as "([^"]*)"$`, func(as string) error {
+		if err := os.MkdirAll(filepath.Dir(running()), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(running(), nil, 0o755); err != nil {
+			return err
+		}
+		pathTo = filepath.Join(place(), as)
+		if err := os.MkdirAll(filepath.Dir(pathTo), 0o755); err != nil {
+			return err
+		}
+		return os.Symlink(running(), pathTo)
+	})
+	sc.Given(`^the cairn running is not the one the PATH leads to$`, func() error {
+		pathTo = ""
+		return nil
+	})
 	sc.Step(`^the window settles in on a Linux desktop$`, func() error {
-		return SettleIn(dataHome(), "cairn")
+		return SettleIn(dataHome(), Starter(running(), onPath))
+	})
+	sc.Then(`^the desktop entry "([^"]*)" starts the full path of "([^"]*)" with "([^"]*)"$`, func(name, as, with string) error {
+		return entrySays(entry(name), "Exec="+filepath.Join(place(), as)+" "+with)
+	})
+	sc.Then(`^the desktop entry "([^"]*)" starts the cairn running with "([^"]*)"$`, func(name, with string) error {
+		return entrySays(entry(name), "Exec="+running()+" "+with)
 	})
 	sc.Given(`^a desktop entry "([^"]*)" written by somebody else$`, func(name string) error {
 		if err := os.MkdirAll(filepath.Dir(entry(name)), 0o755); err != nil {
@@ -1355,17 +1393,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the desktop entry "([^"]*)" starts "([^"]*)" and names the icon "([^"]*)"$`, func(name, starts, icon string) error {
-		got, err := os.ReadFile(entry(name))
-		if err != nil {
-			return err
-		}
-		for _, line := range []string{"Exec=" + starts, "Icon=" + icon, "StartupWMClass=" + Known} {
-			if !strings.Contains(string(got), line+"\n") {
-				return fmt.Errorf("the entry does not say %q:\n%s", line, got)
-			}
-		}
-		return nil
+	sc.Then(`^the desktop entry "([^"]*)" names the icon "([^"]*)"$`, func(name, icon string) error {
+		return entrySays(entry(name), "Icon="+icon, "StartupWMClass="+Known)
 	})
 	sc.Then(`^the icon "([^"]*)" is there at ([\d, ]+) and (\d+) pixels$`, func(icon, some, last string) error {
 		for _, named := range append(strings.Split(some, ", "), last) {
@@ -2745,4 +2774,17 @@ func (w *world) firstWordOf(key string) (Point, error) {
 		}
 	}
 	return Point{}, fmt.Errorf("the open task writes nothing called %q", key)
+}
+
+func entrySays(path string, lines ...string) error {
+	got, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	for _, line := range lines {
+		if !strings.Contains(string(got), line+"\n") {
+			return fmt.Errorf("the entry does not say %q:\n%s", line, got)
+		}
+	}
+	return nil
 }

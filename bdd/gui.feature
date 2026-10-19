@@ -1051,8 +1051,20 @@ Feature: The desktop board
     @gui-a-linux-desktop-is-given-an-entry
     Scenario: on a Linux desktop the window writes the entry its logo is found through
       When the window settles in on a Linux desktop
-      Then the desktop entry "cairn" starts "cairn gui" and names the icon "cairn"
+      Then the desktop entry "cairn" names the icon "cairn"
       And the icon "cairn" is there at 16, 32, 48, 64, 128, 256 and 512 pixels
+
+    @gui-an-entry-starts-cairn-by-the-path-it-is-found-at
+    Scenario: the entry starts the cairn on the PATH by its full path, which a desktop's own PATH need not reach
+      Given the cairn running is the one the PATH leads to as "bin/cairn"
+      When the window settles in on a Linux desktop
+      Then the desktop entry "cairn" starts the full path of "bin/cairn" with "gui"
+
+    @gui-an-entry-starts-a-cairn-off-the-path-where-it-is
+    Scenario: a cairn the PATH does not lead to is started where it is
+      Given the cairn running is not the one the PATH leads to
+      When the window settles in on a Linux desktop
+      Then the desktop entry "cairn" starts the cairn running with "gui"
 
     @gui-an-entry-of-somebody-elses-is-kept
     Scenario: an entry cairn did not write is left as it was

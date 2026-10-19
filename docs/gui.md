@@ -666,8 +666,13 @@ the user's data folder each time it opens, rewriting only what changed
 job, which nobody installing a binary ran, and the window had no logo. An
 entry somebody else wrote there is theirs and is left as it is
 (`@gui-an-entry-of-somebody-elses-is-kept`); cairn marks its own. The entry
-starts `cairn` when the one on the `PATH` is the one running, so an upgrade
-does not leave it pointing at a version gone.
+starts cairn by a full path, never by its bare name (`Starter`): a desktop
+drops an entry whose program its own `PATH` does not reach, and with it the
+logo, and Homebrew's `bin` is often on the shell's `PATH` alone. When the
+`PATH` leads to the cairn running, the entry names the path it leads by, such
+as Homebrew's link, which an upgrade keeps
+(`@gui-an-entry-starts-cairn-by-the-path-it-is-found-at`); otherwise it names
+the cairn running (`@gui-an-entry-starts-a-cairn-off-the-path-where-it-is`).
 
 **The window opens on its board being built of stones.** The content is what
 is built: each card arrives

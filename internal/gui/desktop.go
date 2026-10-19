@@ -54,6 +54,24 @@ func SettleIn(data, starts string) error {
 	return writtenIfChanged(entry, []byte(DesktopEntry(starts)))
 }
 
+// Starter is the program a desktop entry starts the window with: the full path the PATH leads to when it leads to the cairn running, which an upgrade keeps, or else the cairn running; never a bare name, which a desktop whose own PATH does not reach it would ignore the entry for.
+func Starter(running string, onPath func(string) (string, error)) string {
+	found, err := onPath(Known)
+	if err != nil || !sameFile(found, running) {
+		return running
+	}
+	if full, err := filepath.Abs(found); err == nil {
+		return full
+	}
+	return running
+}
+
+func sameFile(a, b string) bool {
+	a, errA := filepath.EvalSymlinks(a)
+	b, errB := filepath.EvalSymlinks(b)
+	return errA == nil && errB == nil && a == b
+}
+
 // DesktopEntry is the entry a Linux desktop finds the window and its logo through: named, and classed, as the window is known.
 func DesktopEntry(starts string) string {
 	if strings.ContainsAny(starts, " \t\"") {
