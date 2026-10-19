@@ -918,6 +918,15 @@ the letter, dead keys and compose included. `CAIRN_IBUS=1` lets IBus back in,
 for an input method a person cannot do without; an `IBUS_ADDRESS` already set
 is left as it is.
 
+**Without IBus, a dead key is Gio's to compose, on a press only.** Gio v0.10.3
+fed the key's release to xkb's compose state as well as its press, so a dead
+key was spent by its own release: `^` then `o` wrote `o`, and `ô` came only by
+holding `^` down while pressing `o`, leaving one more `ô` for the next `o`.
+Gio fixed it upstream (fd8b8788, ticket 712) after its last release, and cairn
+is held at that commit until a release carries it (`dependencies.md`). The fix
+lives in Gio's internal xkb, which no test here reaches; it was seen in a Linux
+container, where a French keymap typed `oo` before and `ôo` after.
+
 **A key is written the way the keyboard in front of the person writes it.**
 The window was written on a Mac and said ⌘ everywhere, so on Windows the help
 told somebody to press a key their keyboard does not have. What arrives was

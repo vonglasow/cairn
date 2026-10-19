@@ -9,7 +9,7 @@ require (
 	charm.land/bubbletea/v2 v2.0.10
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.6
-	gioui.org v0.10.3
+	gioui.org v0.10.4-0.20261005201158-fd8b878890c8
 	gioui.org/x v0.10.3
 	github.com/charmbracelet/fang v1.0.0
 	github.com/cucumber/godog v0.16.0
