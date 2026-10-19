@@ -654,7 +654,11 @@ Each system takes it its own way, and the window is known to all three as
 `cairn` (`logo.go`). Windows reads it from the `.exe`, where the resource beside
 `cmd/cairn` puts it at every size; Gio gives the window the icon the program
 carries. macOS shows a bare binary with no icon, so the window hands AppKit the
-logo when it starts (`logo_darwin.go`). On Linux the window does both things a
+logo when it starts (`logo_darwin.go`), once the application has finished
+launching: Gio makes it a Dock application then, which takes back an icon
+handed before. Which came first was a race, lost under `make dev`, whose
+`go run` starts a binary macOS has not seen, so the Dock showed the blank
+icon there and the logo under `bin/cairn`. On Linux the window does both things a
 desktop may read it from (`logo_linux.go`, `desktop.go`). On X11 it hands the
 window manager the logo itself, at 16 to 128 pixels, as `_NET_WM_ICON`
 (`@gui-x11-is-handed-the-logo`) — Gio sets the window's class and nothing more.

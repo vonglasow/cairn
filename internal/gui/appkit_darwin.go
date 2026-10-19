@@ -105,15 +105,42 @@ void cairn_open_panel(uintptr_t view, const char *extensions) {
 
 // cairn_icon shows the image given, the bytes of a PNG, as the application's
 // icon in the Dock and the switcher: a binary with no bundle around it has
-// none. The bytes are copied before this returns.
-void cairn_icon(const void *bytes, int length) {
-	NSData *data = [NSData dataWithBytes:bytes length:(NSUInteger)length];
+// none. An application that has not finished launching is made a Dock one
+// when it does, which takes back an icon handed before, so the icon waits
+// for that. The bytes are copied before this returns.
+static NSData *cairnLogo;
+static id cairnLaunched;
+
+static void cairn_dock(void) {
 	dispatch_async(dispatch_get_main_queue(), ^{
-		NSImage *image = [[NSImage alloc] initWithData:data];
+		NSImage *image = [[NSImage alloc] initWithData:cairnLogo];
 		if (image != nil) {
 			[NSApp setApplicationIconImage:image];
 		}
 	});
+}
+
+void cairn_icon(const void *bytes, int length) {
+	cairnLogo = [NSData dataWithBytes:bytes length:(NSUInteger)length];
+	if ([[NSRunningApplication currentApplication] isFinishedLaunching]) {
+		cairn_dock();
+		return;
+	}
+	NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+	cairnLaunched = [center addObserverForName:NSApplicationDidFinishLaunchingNotification
+	                                     object:nil
+	                                      queue:nil
+	                                 usingBlock:^(NSNotification *note) {
+		[[NSNotificationCenter defaultCenter] removeObserver:cairnLaunched];
+		cairnLaunched = nil;
+		cairn_dock();
+	}];
+}
+
+// cairn_icon_waits says whether the icon is still waiting for the
+// application to finish launching.
+int cairn_icon_waits(void) {
+	return cairnLaunched != nil;
 }
 
 // Nothing else of the window is said to AppKit.
