@@ -64,6 +64,10 @@ nothing more than a line (`@task-new-with-its-steps`). On an edit they
 empty the task keeps none (`@task-edit-with-no-steps`). That is the boards'
 forms too: a form shows the whole list, so saving it says the whole of it, in
 the act that saves the task. See [ordering.md](ordering.md#a-tasks-steps-are-written-with-it).
+Two acts on a board do not wait for the form: a tick, and a delete. A step
+chosen and deleted with a delete key goes at once, once agreed, through a
+`step delete` of its own, the way the command line deletes one — in the
+window's form, and on the terminal's open task (cairn#105).
 
 ## Done with a step still open
 

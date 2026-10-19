@@ -2878,22 +2878,81 @@ Feature: The desktop board
       And I choose "Save"
       Then the steps of task 1 read "Draft the columns", "Get the nod"
 
-    @gui-a-step-is-struck-out-and-back
-    Scenario: backspace strikes a step out until the form is saved, and again brings it back
+    @gui-a-step-is-deleted-once-agreed
+    Scenario: a delete key on the step clicked asks, and agreed takes it away at once, the form unsaved
       Given I added a task titled "Ship it"
       And I added the step "Draft" to task 1
       And I added the step "Keep" to task 1
       When I open the window
       And I double-click the card "Ship it"
-      And I put the keyboard on "steps"
+      And I click the step "Draft"
       And I press "backspace"
-      Then the step "Draft" is struck out
-      When I press "backspace"
-      Then the step "Draft" is not struck out
-      When I press "down"
+      Then the window asks "Delete the step “Draft”?"
+      When I press "enter"
+      Then the steps of task 1 read "Keep"
+      And the form's steps read "Keep"
+      And the form is open on task 1
+      And the last act on task 1 changed its steps from "[ ] Draft; [ ] Keep" to "[ ] Keep"
+
+    @gui-a-step-is-kept-when-its-delete-is-cancelled
+    Scenario: the forward delete asks too, and cancelled leaves the step where it was
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Keep"
+      And I press "delete"
+      Then the window asks "Delete the step “Keep”?"
+      When I press "esc"
+      Then the steps of task 1 read "Draft", "Keep"
+      And the form's steps read "Draft", "Keep"
+      And the form is open on task 1
+
+    @gui-a-step-deleted-leaves-the-rest-of-the-form-as-it-was
+    Scenario: what was typed in the form and not saved is still there once a step is deleted
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "title"
+      And I type " now"
+      And I click the step "Keep"
       And I press "backspace"
+      And I press "enter"
+      Then the field "title" reads "Ship it now"
+      And the steps of task 1 read "Draft"
+      And task 1 is titled "Ship it"
+
+    @gui-a-step-in-edit-loses-a-letter-not-itself
+    Scenario: a double click puts a step in edit, where backspace takes a letter and asks nothing
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I double-click the step "Draft"
+      And I press "backspace"
+      Then the form is open on task 1
+      When I press "enter"
       And I choose "Save"
-      Then the steps of task 1 read "Draft"
+      Then the steps of task 1 read "Draf"
+
+    @gui-a-step-never-saved-is-taken-out-of-the-list
+    Scenario: a step of a task not yet added is taken out of its list, once agreed
+      When I open the window
+      And I choose "New"
+      And I put the keyboard on "steps"
+      And I press "enter"
+      And I type "Draft"
+      And I press "enter"
+      And I type "Keep"
+      And I press "enter"
+      And I click the step "Draft"
+      And I press "backspace"
+      Then the window asks "Delete the step “Draft”?"
+      When I press "enter"
+      Then the form's steps read "Keep"
 
     @gui-the-wheel-scrolls-the-steps
     Scenario: the wheel scrolls the steps, wherever the keyboard is

@@ -8,11 +8,21 @@ import (
 
 func onTheList(t *testing.T, high int, titles ...string) Window {
 	t.Helper()
+	return onTheListHigh(t, newFake(), high, titles...)
+}
+
+func onTheListOf(t *testing.T, f *fake, titles ...string) Window {
+	t.Helper()
+	return onTheListHigh(t, f, 800, titles...)
+}
+
+func onTheListHigh(t *testing.T, f *fake, high int, titles ...string) Window {
+	t.Helper()
 	shipped := card(1, "Ship it", "todo")
 	for i, title := range titles {
 		shipped.Steps = append(shipped.Steps, engine.Part{Number: i + 1, Title: title})
 	}
-	w := holding(newFake(), shipped)
+	w := holding(f, shipped)
 	w.height = high
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).On("steps")
 	if !w.form.onParts() {
@@ -46,23 +56,82 @@ func TestTheArrowsStopAtBothEndsOfTheList(t *testing.T) {
 	}
 }
 
-func TestTickingAndStrikingKnowWhatTheyAreOn(t *testing.T) {
+func TestADeleteKeyAsksOnlyOnAPart(t *testing.T) {
 	w := onTheList(t, 800, "A")
 	adding := w.Key("down")
-	if got := adding.Key("space").Key("backspace").form.fields; fmt.Sprint(got) != fmt.Sprint(adding.form.fields) || len(adding.Key("backspace").form.struck) != 0 {
-		t.Error("space or backspace on the line that adds changed something")
+	for _, key := range []string{"space", "backspace", "delete-forward"} {
+		if got := adding.Key(key); got.Screen() != OnForm || fmt.Sprint(got.form.fields) != fmt.Sprint(adding.form.fields) {
+			t.Errorf("%s on the line that adds left the window on %v with %v", key, got.Screen(), got.form.fields)
+		}
 	}
-	struck := w.Key("backspace").Key("space")
-	if parts := struck.form.parts(); parts[0].Done {
-		t.Error("a part struck out was ticked")
+	for _, key := range []string{"backspace", "delete-forward"} {
+		asked := w.Key(key)
+		if asked.Screen() != OnAsking || Heads(asked) != "Delete the step “A”?" {
+			t.Errorf("%s on a part left the window on %v asking %q", key, asked.Screen(), Heads(asked))
+		}
+		if back := asked.Key("esc"); back.Screen() != OnForm || len(back.form.parts()) != 1 {
+			t.Errorf("cancelled, the window is on %v with %+v", back.Screen(), back.form.parts())
+		}
 	}
+}
+
+func TestAgreedAPartIsDeletedAtOnceAndTheOnesBehindMoveUp(t *testing.T) {
+	f := newFake()
+	shipped := card(1, "Ship it", "todo")
+	shipped.Steps = []engine.Part{{Number: 1, Title: "A"}, {Number: 2, Title: "B"}, {Number: 3, Title: "C"}}
+	w := holding(f, shipped)
+	w.height = 800
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).On("steps")
+	w = w.Key("down").Key("down").Key("down").Key("enter").Types("D").Key("enter").Key("esc")
+	w.form.partAt = 1
+	w = w.Key("backspace").Key("enter")
+	in, asked := f.gave("step", "delete")
+	if !asked || in.Given["number"] != "1" || in.Given["step"] != "2" {
+		t.Fatalf("the engine was asked %v %+v", asked, in)
+	}
+	if w.Screen() != OnForm {
+		t.Errorf("agreed, the window is on %v", w.Screen())
+	}
+	want := []engine.Part{{Number: 1, Title: "A"}, {Number: 2, Title: "C"}, {Title: "D"}}
+	if got := w.form.parts(); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("the form holds %+v, want %+v", got, want)
+	}
+	at, _ := w.form.partsField()
+	if got := engine.PartsIn(w.form.opened[at]); fmt.Sprint(got) != fmt.Sprint(want[:2]) {
+		t.Errorf("the form was opened on %+v, want %+v", got, want[:2])
+	}
+	if w.form.partAt != 1 {
+		t.Errorf("the keyboard is on line %d, want the step that moved up", w.form.partAt)
+	}
+}
+
+func TestAPartTheEngineWillNotDeleteStays(t *testing.T) {
+	f := newFake()
+	w := onTheListOf(t, f, "A", "B")
+	f.failOp = errRefuse
+	w = w.Key("backspace").Key("enter")
+	if got := w.form.parts(); len(got) != 2 {
+		t.Errorf("a step the engine refused to delete left %+v", got)
+	}
+	if w.Screen() != OnForm {
+		t.Errorf("refused, the window is on %v", w.Screen())
+	}
+}
+
+func TestAPartNeverSavedIsTakenOutWithoutTheEngine(t *testing.T) {
+	f := newFake()
+	w := onTheListOf(t, f, "A")
 	added := w.Key("down").Key("enter").Types("New").Key("enter").Key("esc")
-	if parts := added.form.parts(); len(parts) != 2 {
-		t.Fatalf("adding left %+v", parts)
-	}
 	added.form.partAt = 1
-	if parts := added.Key("backspace").form.parts(); len(parts) != 1 || len(added.Key("backspace").form.struck) != 0 {
-		t.Errorf("striking a part never saved left %+v struck %v", parts, added.Key("backspace").form.struck)
+	gone := added.Key("backspace").Key("enter")
+	if parts := gone.form.parts(); len(parts) != 1 || parts[0].Title != "A" {
+		t.Errorf("deleting a part never saved left %+v", parts)
+	}
+	if _, asked := f.gave("step", "delete"); asked {
+		t.Error("the engine was asked to delete a step it never had")
+	}
+	if gone.form.partAt != 1 {
+		t.Errorf("the keyboard is on line %d, want the line that adds", gone.form.partAt)
 	}
 }
 
@@ -184,13 +253,6 @@ func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 	renaming := w.Key("down").Key("enter")
 	if shot := drawn(t, renaming); painted(shot, Edges(SubPanel(tiles[1]))[0], lit) == 0 || painted(shot, Edges(SubPanel(tiles[0]))[0], lit) != 0 {
 		t.Error("the part being renamed is not the one outlined")
-	}
-	struck := w.Key("backspace")
-	if got := painted(drawn(t, struck), SubWriting(tiles[0]), Dark().Ink); got != 0 {
-		t.Errorf("a part struck out is written in the reading ink: %d points", got)
-	}
-	if painted(drawn(t, struck), Edges(SubPanel(tiles[0]))[0], lit) == 0 {
-		t.Error("a part struck out with the keyboard on it is not outlined")
 	}
 	elsewhere := w.form.onto(0)
 	w.form = elsewhere

@@ -25,7 +25,6 @@ type Form struct {
 	spareParts  int
 	writingPart bool
 	named       Written
-	struck      []int
 	carried     int
 	opened      []string
 	behind      int
@@ -35,9 +34,6 @@ type Form struct {
 func (f Form) Changed() bool {
 	if len(f.opened) != len(f.fields) {
 		return false
-	}
-	if len(f.struck) > 0 {
-		return true
 	}
 	for i := range f.fields {
 		if f.fields[i].Value != f.opened[i] {
@@ -355,7 +351,6 @@ func (w Window) Save() Window {
 }
 
 func (w Window) stored() (Window, int, error) {
-	w.form = w.form.withoutStruck()
 	op, asked := w.saving()
 	answer, err := w.work.Ask(op, asked)
 	if err != nil {
@@ -465,6 +460,10 @@ func (w Window) Choose(name string) Window {
 			w.screen, w.question = OnLabels, aboutDeleting
 			return w
 		}
+		if w.question == aboutDeletingPart {
+			w.screen, w.question = OnForm, aboutDeleting
+			return w
+		}
 		if w.screen == OnLabels && w.renaming {
 			w.renaming = false
 			return w
@@ -551,6 +550,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutFinishingParts {
 			return w.finishingParts()
+		}
+		if w.question == aboutDeletingPart {
+			return w.deletingPart()
 		}
 		if w.screen == OnLabels {
 			w.screen, w.question = OnAsking, aboutDeletingLabel

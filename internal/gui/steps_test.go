@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -761,15 +762,47 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the parts are %+v, and %q is not ticked", w.w.PartsTicked(), title)
 	})
-	sc.Then(`^the step "([^"]*)" is struck out$`, func(title string) error {
-		if !slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
-			return fmt.Errorf("struck out are %+v, and not %q", w.w.PartsGone(), title)
+	sc.Step(`^I click the step "([^"]*)"$`, func(title string) error {
+		at, err := w.stepTile(title)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.clicked(at)
+		return nil
+	})
+	sc.Step(`^I double-click the step "([^"]*)"$`, func(title string) error {
+		at, err := w.stepTile(title)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.PressAt(at).LetGo(at)
+		w.w = w.w.doubleClicked(at).LetGo(at)
+		return nil
+	})
+	sc.Then(`^the form's steps read (.+)$`, func(list string) error {
+		var want, got []string
+		for _, m := range regexp.MustCompile(`"([^"]*)"`).FindAllStringSubmatch(list, -1) {
+			want = append(want, m[1])
+		}
+		for _, part := range w.w.form.parts() {
+			got = append(got, part.Title)
+		}
+		if !slices.Equal(got, want) {
+			return fmt.Errorf("the form's steps read %q, want %q", got, want)
 		}
 		return nil
 	})
-	sc.Then(`^the step "([^"]*)" is not struck out$`, func(title string) error {
-		if slices.ContainsFunc(w.w.PartsGone(), func(p engine.Part) bool { return p.Title == title }) {
-			return fmt.Errorf("%q is struck out", title)
+	sc.Then(`^the last act on task (\d+) changed its steps from "([^"]*)" to "([^"]*)"$`, func(n int, was, became string) error {
+		shown, err := w.other.Ask(engine.TraceShow, engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}})
+		if err != nil {
+			return err
+		}
+		if len(shown.Acts) == 0 {
+			return fmt.Errorf("task %d has no act", n)
+		}
+		last := shown.Acts[len(shown.Acts)-1].Carried()
+		if last.Field != "steps" || last.Was != was || last.Became != became {
+			return fmt.Errorf("the last act on task %d is %+v", n, last)
 		}
 		return nil
 	})
@@ -2787,4 +2820,18 @@ func entrySays(path string, lines ...string) error {
 		}
 	}
 	return nil
+}
+
+func (w *world) stepTile(title string) (Point, error) {
+	parts := w.w.form.parts()
+	tiles := w.w.partTiles()
+	for i, part := range parts {
+		shown := i - w.w.partsFrom()
+		if part.Title != title || shown < 0 || shown >= len(tiles)-1 {
+			continue
+		}
+		writ := SubWriting(tiles[shown])
+		return Point{X: writ.X + writ.W/2, Y: writ.Y + writ.H/2}, nil
+	}
+	return Point{}, fmt.Errorf("no step titled %q is in sight", title)
 }

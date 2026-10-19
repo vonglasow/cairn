@@ -1226,10 +1226,21 @@ comparing two greys. A tile shows the title alone: a step's place is no task's
 number, and writing it there would read as one.
 
 With the keyboard on the list, the arrows walk the tiles
-(`@gui-the-arrows-walk-the-steps`), space ticks the one it is on, enter renames
-it in its tile (`@gui-a-step-is-renamed-in-its-tile`), and backspace strikes it
-out — in its place, faint and crossed through — or, struck out already, brings
-it back (`@gui-a-step-is-struck-out-and-back`). A tile is dragged to another
+(`@gui-the-arrows-walk-the-steps`), space ticks the one it is on, and enter
+renames it in its tile (`@gui-a-step-is-renamed-in-its-tile`), as a double
+click does; in its tile, backspace takes a letter and nothing else
+(`@gui-a-step-in-edit-loses-a-letter-not-itself`). A click selects a step, and
+backspace or the forward delete on it asks "Delete the step “Draft”?": agreed,
+it goes at once, through a `step delete` of its own, and the steps behind it
+move up a place; cancelled, nothing moves
+(`@gui-a-step-is-deleted-once-agreed`,
+`@gui-a-step-is-kept-when-its-delete-is-cancelled`). The rest of the form,
+saved or not, is left as it was
+(`@gui-a-step-deleted-leaves-the-rest-of-the-form-as-it-was`), and a step the
+task never had is taken out of the list alone
+(`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
+a step out until the form was saved, which Alexis took for a delete that did
+not happen (cairn#105). A tile is dragged to another
 place the way a card is: the step in hand follows the pointer, and a line says
 where it would land — over the tile it takes the place of when carried up,
 under it when carried down, drawn over the step in hand so the thing aimed
@@ -1246,7 +1257,7 @@ the line they reach in sight.
 the form (`@gui-a-tick-is-kept-whatever-becomes-of-the-form`): a box ticked on
 a step says it is done, and a step done only once its task's form was saved
 was a box that lied until then. A tick the engine refuses leaves the box as it
-was. Everything else — a title, a step added, one struck out, the order — waits
+was. A step deleted goes at once the same way. Everything else — a title, a step added, the order — waits
 for the form to be saved and goes with a form thrown away. Saving writes the
 steps with the task, in the one act that writes it, in the order the list
 says (`@gui-steps-done-and-left-in-turn-are-saved`).

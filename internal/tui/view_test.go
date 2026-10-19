@@ -16,14 +16,15 @@ func TestTheFootPutsTheQuestionItIsWaitingOn(t *testing.T) {
 	}
 }
 
-func TestTheDetailServesTheNavigationItOffers(t *testing.T) {
+func TestTheArrowsStayInTheOpenTask(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "enter")
 	if b.Where().Task != 1 {
 		t.Fatalf("the detail opened on %d, want task 1", b.Where().Task)
 	}
-	b = hit(b, "j")
-	if b.Where().Task != 2 {
-		t.Fatalf("j in the detail went to %d, want task 2", b.Where().Task)
+	for _, key := range []string{"j", "k", "h", "l", "down", "up", "left", "right"} {
+		if b = hit(b, key); b.Where().Task != 1 || b.screen != OnDetail {
+			t.Fatalf("%s in the detail went to task %d on %v, want task 1 still open", key, b.Where().Task, b.screen)
+		}
 	}
 }

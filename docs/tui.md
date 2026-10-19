@@ -304,6 +304,8 @@ nothing in it is held.
 
 **`hjkl` and the arrows only ever navigate.** Everywhere, in every mode, without
 exception. That rule is why no field has a letter of its own — see the form.
+On an open task they navigate inside it, and never out of it: `jk` `↓↑` walk
+its steps, `hl` `←→` do nothing, and `esc` is the way back to the board.
 
 Every key below says which mode it works in. A key absent from a mode is absent
 from that mode's bar, and pressing it there does nothing.
@@ -454,8 +456,17 @@ panel's name counts them, `STEPS   1 to do · 1 done`
 (`@tui-the-steps-left-come-first`). The window draws the same thing with a
 box; the marks are the ones the form's field writes.
 
-**The steps of a task are edited in its form**, in the `steps` field, one line
-each — `[x] Relire l'ADR` — and nowhere else on the board. Saving writes them
+**A step of an open task is chosen with `jk` `↓↑` and deleted with a delete
+key.** `›` marks the one chosen, in the order the steps are shown; `⌫` or the
+forward delete asks at the foot, "delete step 1 of task 1, “Draft”?", `⏎`
+deletes it at once through a `step delete` of its own, and `esc` keeps it
+(`@tui-a-step-is-deleted-once-agreed`,
+`@tui-a-step-is-kept-when-its-delete-is-cancelled`). Up and down used to walk
+to the task above and below from an open task, which Alexis found pointless
+inside a task (cairn#105).
+
+**The steps of a task are written in its form**, in the `steps` field, one line
+each — `[x] Relire l'ADR`. Saving writes them
 with the task, in the same act, and they replace the steps it had: a line the
 field no longer carries is a step that has gone. The window does the same
 thing in the same words. A step is no card and has no column, so nothing on
@@ -507,16 +518,16 @@ have squeezed the board and a popup would never have shown the whole trace.
  │ and nobody caught it before the review.     │ 21/08  column     backlog → todo     │
  │                                             │ 27/08  deadline   — → 02/09          │
  ├─ STEPS   2 to do · 3 done ──────────────────┤ 29/08  focus      taken              │
- │ [ ] 4  Client's answer                      │ 29/08  focus      released           │
- │ [ ] 5  Ship it                              │ 30/08  spent      — → 1h30           │
- │ [x] 1  Draft the columns                    │                                      │
- │ [x] 2  Get the client's nod                 │                                      │
- │ [x] 3  Write the scenarios                  │                                      │
+ │ › [ ] 4  Client's answer                    │ 29/08  focus      released           │
+ │   [ ] 5  Ship it                            │ 30/08  spent      — → 1h30           │
+ │   [x] 1  Draft the columns                  │                                      │
+ │   [x] 2  Get the client's nod               │                                      │
+ │   [x] 3  Write the scenarios                │                                      │
  ├─ OBJECTIVES SERVED ─────────────────────────┤                                      │
  │ ▶ 3    Ship the desktop board     7/12      │                                      │
  └─────────────────────────────────────────────┴──────────────────────────────────────┘
 
- hjkl ←↓↑→ navigate   e edit   f focus   ^D ^U description   ? help   esc back
+ jk ↓↑ steps   e edit   f focus   ⌫ delete the step   ^D ^U description   ? help   esc back
 ```
 
 Under the lists, a `CONTEXT` panel says where what was written about the task

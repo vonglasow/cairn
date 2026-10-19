@@ -758,10 +758,6 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 	places := w.partTiles()
 	for k, tile := range places[:len(places)-1] {
 		at := from + k
-		if f.isStruck(engine.Part{Number: parts[at].Number}) {
-			drawStruck(gtx, th, skin, tile, parts[at], on && f.partAt == at)
-			continue
-		}
 		if on && f.writingPart && f.partAt == at {
 			fill(gtx, SubPanel(tile), skin.Panel)
 			outline(gtx, SubPanel(tile), skin.Chosen)
@@ -796,20 +792,6 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 	if line, ok := w.PartLanding(); ok {
 		fill(gtx, line, skin.Chosen)
 	}
-}
-
-func drawStruck(gtx layout.Context, th *material.Theme, skin Skin, box Box, part engine.Card, on bool) {
-	panel := SubPanel(box)
-	fill(gtx, panel, skin.Panel)
-	if on {
-		outline(gtx, panel, skin.Chosen)
-	}
-	line := SubWriting(box)
-	said := fits(gtx, th, StepLine(part), line.W, small)
-	say(gtx, th, skin.Faint, line, said, small)
-	loose := gtx
-	loose.Constraints = layout.Constraints{Max: image.Pt(line.W, lineHigh)}
-	fill(gtx, StruckAt(line, wide(loose, th, said, small).Size.X), skin.Faint)
 }
 
 func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, m Measure, name, value Box, rows, size int, long, lit, carets bool, said, named Written, scrolled int) {

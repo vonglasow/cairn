@@ -150,12 +150,18 @@ func (b Board) drawDetail() string {
 	return strings.Join([]string{
 		b.tabs(), "", b.detailBand(held), "",
 		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
-		"", b.bar(b.detailOffers(held)...),
+		"", b.detailFoot(held),
 	}, "\n")
 }
 
 func (b Board) detailOffers(c engine.Card) []string {
-	offers := []string{b.offer("hjkl ←↓↑→", "navigate"), b.offer("e", "edit"), b.offer("f", "focus")}
+	offers := []string{b.offer("e", "edit"), b.offer("f", "focus")}
+	if len(c.Steps) > 0 {
+		offers = append([]string{b.offer("jk ↓↑", "steps")}, offers...)
+	}
+	if b.chosenStep(c) > 0 {
+		offers = append(offers, b.offer("⌫", "delete the step"))
+	}
 	if c.Description != "" {
 		offers = append(offers, b.offer("^D ^U", "description"))
 	}
@@ -271,12 +277,17 @@ func (b Board) detailBand(c engine.Card) string {
 
 func (b Board) steps(c engine.Card, width int) []string {
 	var out []string
-	for _, part := range engine.Hanging(c) {
+	chosen := b.chosenStep(c)
+	for i, part := range engine.Hanging(c) {
 		box, name := "[ ]", b.skin.Bright.Render(part.Title)
 		if part.Done {
 			box, name = "[x]", b.skin.Faint.Strikethrough(true).Render(part.Title)
 		}
-		out = append(out, Clip(b.skin.Says.Render(box)+" "+b.skin.Faint.Render(strconv.Itoa(part.Number))+"  "+name, width))
+		mark := "  "
+		if i+1 == chosen {
+			mark = b.skin.Key.Render("›") + " "
+		}
+		out = append(out, Clip(mark+b.skin.Says.Render(box)+" "+b.skin.Faint.Render(strconv.Itoa(part.Number))+"  "+name, width))
 	}
 	return out
 }
@@ -325,4 +336,46 @@ func (b Board) hearing(number int) tea.Cmd {
 
 func pad(s string, width int) string {
 	return s + strings.Repeat(" ", max(0, width-lipgloss.Width(s)))
+}
+
+// Going is a step of the open task asked to be deleted: the act that deletes it, and its title, which the question says.
+type Going struct {
+	In    engine.Input
+	Title string
+}
+
+func (b Board) detailFoot(c engine.Card) string {
+	if b.asking {
+		return b.question()
+	}
+	return b.bar(b.detailOffers(c)...)
+}
+
+func (b Board) chosenStep(c engine.Card) int { return min(b.stepOn, len(c.Steps)) }
+
+func (b Board) walkingSteps(way string) Board {
+	c, ok := b.held()
+	if !ok {
+		return b
+	}
+	switch way {
+	case goDown:
+		b.stepOn = min(len(c.Steps), b.chosenStep(c)+1)
+	case goUp:
+		b.stepOn = max(0, b.chosenStep(c)-1)
+	}
+	return b
+}
+
+func (b Board) askingToDelete() Board {
+	c, ok := b.held()
+	at := b.chosenStep(c)
+	if !ok || at == 0 {
+		return b
+	}
+	part := engine.Hanging(c)[at-1]
+	b.asking = true
+	b.going = &Going{Title: part.Title, In: engine.Input{Given: map[string]string{
+		"number": strconv.Itoa(c.Number), "step": strconv.Itoa(part.Number)}}}
+	return b
 }

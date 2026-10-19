@@ -66,6 +66,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutDraft {
 			return "Pick up the new task left unsaved?"
 		}
+		if w.question == aboutDeletingPart {
+			return "Delete the step “" + w.partTitle() + "”?"
+		}
 		if w.question == aboutFinishingParts {
 			return "Put task " + w.finishingIn.Given["number"] + " in done, ticking its steps?"
 		}
@@ -405,6 +408,12 @@ func (w Window) Asks() []Said {
 	if w.question == aboutCairn {
 		return AboutSays(build.Read())
 	}
+	if w.question == aboutDeletingPart {
+		return []Said{
+			{Means: "It goes at once, whether the form is saved or not."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	if w.question == aboutFinishingParts {
 		return []Said{
 			{Means: "Its steps not yet done are ticked with it."},
@@ -449,6 +458,7 @@ const (
 	aboutFinishingParts
 	aboutCairn
 	aboutDraft
+	aboutDeletingPart
 )
 
 func (w Window) sweeps() string {

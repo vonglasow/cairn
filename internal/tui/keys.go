@@ -81,6 +81,14 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 			}
 			return b, b.sweepingColumn()
 		}
+		if b.going != nil {
+			going := *b.going
+			b.going = nil
+			if !agreed {
+				return b, nil
+			}
+			return b, b.carry(engine.StepDelete, going.In)
+		}
 		if b.finishing != nil {
 			held := *b.finishing
 			b.finishing = nil
@@ -150,7 +158,7 @@ func (b Board) help() Board {
 
 func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 	if key == "esc" {
-		b.screen = b.wasScreen
+		b.screen, b.stepOn = b.wasScreen, 0
 		if b.screen == OnHelp {
 			b.screen = OnTheBoard
 		}
@@ -170,14 +178,15 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 			return b, nil
 		}
 		if b.screen == OnDetail {
-			b = b.stepTo(way)
-			return b, b.hearing(b.task)
+			return b.walkingSteps(way), nil
 		}
 	}
 	if b.screen == OnDetail {
 		switch key {
 		case "e":
 			return b.editForm()
+		case "backspace", "delete":
+			return b.askingToDelete(), nil
 		case "f":
 			return b, b.toggleFocus()
 		case "ctrl+d":

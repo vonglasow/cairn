@@ -107,6 +107,8 @@ type Board struct {
 	leaving          bool
 	sweeping         bool
 	finishing        *Finishing
+	going            *Going
+	stepOn           int
 	saying, sayingOf int
 	choice           int
 

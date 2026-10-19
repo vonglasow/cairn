@@ -652,6 +652,36 @@ Feature: The board
       And the board says "[ ] 2  Get the client's nod"
       And the board says "[x] 1  Draft the columns"
 
+    @tui-a-step-is-deleted-once-agreed
+    Scenario: the arrows choose a step of the open task, and a delete key takes it away once agreed
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      When I open the board
+      And I press "i", "enter", "down"
+      Then the board says "› [ ] 1  Draft"
+      When I press "backspace"
+      Then the board says "delete step 1 of task 1, “Draft”?"
+      When I press "enter"
+      And the board looks again
+      Then the steps of task 1 read "Keep"
+      And the board says "[ ] 1  Keep"
+
+    @tui-a-step-is-kept-when-its-delete-is-cancelled
+    Scenario: the forward delete asks too, and esc keeps the step
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      When I open the board
+      And I press "i", "enter", "down", "down"
+      Then the board says "› [ ] 2  Keep"
+      When I press "delete"
+      Then the board says "delete step 2 of task 1, “Keep”?"
+      When I press "esc"
+      And the board looks again
+      Then the steps of task 1 read "Draft", "Keep"
+      And the board says "› [ ] 2  Keep"
+
     @tui-the-detail-scrolls-its-description
     Scenario: a long description stays in its box, and ^D walks it to the end
       Given I added a task titled "Write the spec" with a description of 80 lines ending "LA FIN"

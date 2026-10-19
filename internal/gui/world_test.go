@@ -340,7 +340,7 @@ func asGio(name string) (string, key.Modifiers) {
 		return string(key.NameHome), with
 	case "end":
 		return string(key.NameEnd), with
-	case "delete-forward":
+	case "delete-forward", "delete":
 		return string(key.NameDeleteForward), with
 	case "esc":
 		return string(key.NameEscape), with

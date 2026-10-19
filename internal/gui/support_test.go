@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"slices"
 	"strings"
 	"time"
 )
@@ -117,11 +116,6 @@ func (w Window) PartOn() (string, bool) {
 		return "", false
 	}
 	return parts[w.form.partAt].Title, true
-}
-
-// PartsGone is what is struck out, until the form is saved.
-func (w Window) PartsGone() []engine.Part {
-	return slices.DeleteFunc(w.form.parts(), func(part engine.Part) bool { return !w.form.isStruck(part) })
 }
 
 // Hovered is the offer the pointer is resting on.

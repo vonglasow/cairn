@@ -2,7 +2,6 @@ package gui
 
 import (
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -35,9 +34,6 @@ func (f Form) values() []string {
 	var held []string
 	for _, field := range f.fields {
 		held = append(held, field.Value)
-	}
-	for _, n := range f.struck {
-		held = append(held, "struck "+strconv.Itoa(n))
 	}
 	return held
 }

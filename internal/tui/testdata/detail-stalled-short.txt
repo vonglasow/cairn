@@ -25,4 +25,4 @@
                                                            │ 2026-09-03 08:30  changed  priority… │
                                                            ╰──────────────────────────────────────╯
 
- hjkl ←↓↑→ navigate   e edit   f focus   ^D ^U description   ? help   esc back
+ e edit   f focus   ^D ^U description   ? help   esc back

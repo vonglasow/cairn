@@ -35,19 +35,6 @@ func (f Form) onParts() bool {
 
 func (f Form) lines() int { return len(f.parts()) + 1 }
 
-func (f Form) isStruck(part engine.Part) bool {
-	return part.Number != 0 && slices.Contains(f.struck, part.Number)
-}
-
-func (f Form) withoutStruck() Form {
-	if len(f.struck) == 0 {
-		return f
-	}
-	f = f.withParts(slices.DeleteFunc(f.parts(), f.isStruck))
-	f.struck = nil
-	return f
-}
-
 func (f Form) walkingParts(by int) Form {
 	if f.partAt+by < 0 {
 		return f.onto(f.at - 1)
@@ -65,7 +52,7 @@ func (f Form) ticking() Form {
 func (w Window) tickingPart() Window {
 	parts := w.form.parts()
 	at := w.form.partAt
-	if at >= len(parts) || w.form.isStruck(parts[at]) {
+	if at >= len(parts) {
 		return w
 	}
 	w.form = w.form.ticking()
@@ -101,28 +88,64 @@ func (f Form) openedWith(part engine.Part) Form {
 	return f
 }
 
-func (f Form) striking() Form {
-	parts := f.parts()
-	if f.partAt >= len(parts) {
-		return f
+func (w Window) askingToDelete() Window {
+	if w.form.partAt < len(w.form.parts()) {
+		w.screen, w.question = OnAsking, aboutDeletingPart
 	}
-	part := parts[f.partAt]
-	if part.Number == 0 {
-		return f.withParts(slices.Delete(parts, f.partAt, f.partAt+1))
+	return w
+}
+
+func (w Window) partTitle() string {
+	parts := w.form.parts()
+	if w.form.partAt >= len(parts) {
+		return ""
 	}
-	if at := slices.Index(f.struck, part.Number); at >= 0 {
-		f.struck = slices.Delete(slices.Clone(f.struck), at, at+1)
-		return f
+	return parts[w.form.partAt].Title
+}
+
+func (w Window) deletingPart() Window {
+	w.screen, w.question = OnForm, aboutDeleting
+	parts := w.form.parts()
+	at := w.form.partAt
+	if at >= len(parts) {
+		return w
 	}
-	f.struck = append(slices.Clone(f.struck), part.Number)
-	return f
+	gone := parts[at].Number
+	if gone != 0 {
+		w.err = nil
+		w = w.asking(engine.StepDelete, engine.Input{Given: map[string]string{
+			"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(gone)}})
+		if w.err != nil {
+			return w
+		}
+		field, _ := w.form.partsField()
+		w.form.opened = slices.Clone(w.form.opened)
+		w.form.opened[field] = engine.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
+	}
+	rest := slices.Delete(parts, at, at+1)
+	if gone != 0 {
+		rest = without(rest, gone)
+	}
+	w.form = w.form.withParts(rest)
+	return w
+}
+
+func without(parts []engine.Part, gone int) []engine.Part {
+	kept := make([]engine.Part, 0, len(parts))
+	for _, part := range parts {
+		if part.Number == gone {
+			continue
+		}
+		if part.Number > gone {
+			part.Number--
+		}
+		kept = append(kept, part)
+	}
+	return kept
 }
 
 func (f Form) naming() Form {
 	parts := f.parts()
-	if f.partAt < len(parts) && f.isStruck(parts[f.partAt]) {
-		return f
-	}
 	f.writingPart, f.named = true, Written{}
 	if f.partAt < len(parts) {
 		title := parts[f.partAt].Title
@@ -240,8 +263,8 @@ func (w Window) onParts(name string) (Window, bool) {
 		w = w.tickingPart()
 	case "enter":
 		w.form = w.form.naming()
-	case "backspace":
-		w.form = w.form.striking()
+	case "backspace", "delete-forward":
+		w = w.askingToDelete()
 	default:
 		return w, false
 	}

@@ -879,11 +879,6 @@ func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 	if after != heard {
 		t.Errorf("drawing three times read the history %d more times", after-heard)
 	}
-	_ = hit(b, "j")
-	last := f.asked[len(f.asked)-1]
-	if last.op.Name() != "trace_show" || last.in.Given["number"] != "2" {
-		t.Errorf("stepping to task 2 asked %v", last)
-	}
 }
 
 func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
