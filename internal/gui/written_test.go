@@ -170,3 +170,13 @@ func TestWritten_takesBackToAPlace(t *testing.T) {
 		t.Errorf("a held run is taken back alone, whatever the place: %q", got.Value)
 	}
 }
+
+func TestAReplacementTakesTheRunItNamesAndLeavesTheCaretAfterIt(t *testing.T) {
+	got := Written{Value: "Fen^", At: 4}.Replaces(3, 4, "ê")
+	if got.Value != "Fenê" || got.At != 4 || got.Held != 0 {
+		t.Fatalf("replacing the accent gave %+v", got)
+	}
+	if got := (Written{Value: "spec"}).Replaces(9, -2, "X"); got.Value != "X" || got.At != 1 {
+		t.Fatalf("a run past the ends gave %+v", got)
+	}
+}

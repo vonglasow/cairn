@@ -48,16 +48,7 @@ func framesInto(
 	var router input.Router
 	var ops op.Ops
 
-	gtx := func() layout.Context {
-		ops.Reset()
-		return layout.Context{
-			Ops:         &ops,
-			Constraints: layout.Exact(image.Pt(w.width, w.height)),
-			Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
-			Now:         now,
-			Source:      router.Source(),
-		}
-	}
+	gtx := func() layout.Context { return frameOf(&ops, &router, w, now) }
 
 	first := gtx()
 	w, pressed, pressedAt = heard(first, w, pressed, pressedAt, traced)
@@ -68,6 +59,47 @@ func framesInto(
 	w, pressed, pressedAt = heard(second, w, pressed, pressedAt, traced)
 	router.Frame(second.Ops)
 	return w, pressed, pressedAt
+}
+
+func frameOf(ops *op.Ops, router *input.Router, w Window, now time.Time) layout.Context {
+	ops.Reset()
+	return layout.Context{
+		Ops:         ops,
+		Constraints: layout.Exact(image.Pt(w.width, w.height)),
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+		Now:         now,
+		Source:      router.Source(),
+	}
+}
+
+func composing(w Window, made, dead, letter string) Window {
+	var router input.Router
+	var ops op.Ops
+	frame := func() {
+		gtx := frameOf(&ops, &router, w, time.Now())
+		w, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+		router.Frame(gtx.Ops)
+	}
+	frame()
+	before := router.EditorState()
+	at := before.Selection.Range
+	router.Queue(key.EditEvent{Range: at, Text: dead})
+	frame()
+	after := router.EditorState()
+	said := []rune(before.Snippet.Text)
+	from, to := at.Start-before.Snippet.Start, at.End-before.Snippet.Start
+	if from < 0 || to > len(said) || from > to {
+		from, to = len(said), len(said)
+	}
+	told := string(said[:from]) + dead + string(said[to:])
+	end := at.Start + len([]rune(dead))
+	if after.Snippet.Text == told && after.Selection.Range == (key.Range{Start: end, End: end}) {
+		router.Queue(key.EditEvent{Range: key.Range{Start: at.Start, End: end}, Text: made})
+	} else {
+		router.Queue(key.EditEvent{Range: after.Selection.Range, Text: letter})
+	}
+	frame()
+	return w
 }
 
 func at(w Window, column, index int) f32.Point {
@@ -227,7 +259,7 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
-	w, _, _ = frames(t, w, key.EditEvent{Text: " properly"})
+	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 14, End: 14}, Text: " properly"})
 	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
 		t.Fatalf("the title reads %q", got)
 	}
@@ -294,5 +326,37 @@ func TestTheLoopWritesDownEachEventWhenAsked(t *testing.T) {
 	typed := strings.Index(said, `key Press name="?"`)
 	if pressed < 0 || !strings.Contains(said, "held=1") || typed < pressed {
 		t.Errorf("the loop wrote %q, want the press, then the key", said)
+	}
+}
+
+func TestTheWindowTellsTheSystemTheTextBeingTyped(t *testing.T) {
+	w, _, _ := frames(t, holding(newFake()).Key("cmd+n"))
+	w = w.Types("Fenê")
+	var router input.Router
+	var ops op.Ops
+	gtx := frameOf(&ops, &router, w, time.Now())
+	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	router.Frame(gtx.Ops)
+	told := router.EditorState()
+	if told.Snippet.Text != "Fenê" || told.Snippet.Start != 0 {
+		t.Errorf("the system was told the text is %+v", told.Snippet)
+	}
+	if told.Selection.Range != (key.Range{Start: 4, End: 4}) {
+		t.Errorf("the system was told the caret is at %+v", told.Selection.Range)
+	}
+	w = w.Key("shift+left").Key("shift+left")
+	gtx = frameOf(&ops, &router, w, time.Now())
+	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	router.Frame(gtx.Ops)
+	if held := router.EditorState().Selection.Range; held != (key.Range{Start: 2, End: 4}) {
+		t.Errorf("the system was told the run held is %+v", held)
+	}
+}
+
+func TestAnEditReplacesTheRunTheSystemNamed(t *testing.T) {
+	w, _, _ := frames(t, holding(newFake()).Key("cmd+n"), key.EditEvent{Text: "Fen^"})
+	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 3, End: 4}, Text: "ê"})
+	if got := w.Form().Writing().Reads(); got != "Fenê" {
+		t.Errorf("the title reads %q", got)
 	}
 }

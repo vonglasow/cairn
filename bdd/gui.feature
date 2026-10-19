@@ -209,6 +209,15 @@ Feature: The desktop board
       When I press "cmd+n"
       Then the window asks to pick up the task left unsaved
 
+    @gui-a-dead-key-composes-one-letter
+    Scenario: a dead key and the letter after it are written as the one letter they make
+      When I open the window
+      And I press "cmd+n"
+      And I type "Fen"
+      And I compose "ê" from the dead key "^" and the letter "e"
+      And I type "tre"
+      Then the field "title" reads "Fenêtre"
+
     @gui-a-click-off-the-calendar-closes-it
     Scenario: a click on the form outside the calendar closes the calendar alone
       Given I added a task titled "Write the spec"

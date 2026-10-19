@@ -272,6 +272,24 @@ Measured, and reachable without a second machine: the scenarios drive both
 halves of one keystroke through Gio's own router, which is what made a
 Linux-only fault reproducible on a Mac.
 
+**A letter made of two keys is the system's to make, and it has to be told
+the text it is making it in.** On macOS a dead key — `^` then `e` for `ê` —
+first writes the accent as a composition, then sends the letter with the run
+the accent took, to be put in its place. Gio keeps its own idea of the text
+and the caret for that, filled from what the window tells it each frame. The
+window used to tell it nothing, and appended every edit at the caret:
+
+- after the accent, Gio's idea of the text no longer matched what it was told,
+  so it dropped the composition;
+- the `e` then arrived on its own, and the field read `^e`.
+
+`heard` now ends every frame by telling Gio the field's text and caret, after
+the frame's events and not before. Told before, it lags one frame behind and
+the composition is dropped all the same. An edit replaces the run it names.
+Linux and Windows compose before the text reaches the window, which is why the
+fault was macOS's alone. The scenario plays what macOS does, dropping the
+composition exactly when the window would have made it.
+
 A double-click is worked out here rather than asked of the system: Gio reports
 presses and says nothing about pairs of them. Two presses within 400ms and
 within the same few pixels are one gesture, and a third one more is a triple

@@ -333,6 +333,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 	for {
 		raw, ok := gtx.Event(listening()...)
 		if !ok {
+			telling(gtx, w)
 			return w, pressed, pressedAt
 		}
 		if said, ok := KeyTrace(raw); ok && traced != nil {
@@ -363,10 +364,17 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 			w = pasting(w, e.Open())
 		case key.EditEvent:
 			if takesTyping(was) {
-				w = w.Types(e.Text)
+				w = w.Edits(e.Range.Start, e.Range.End, e.Text)
 			}
 		}
 	}
+}
+
+func telling(gtx layout.Context, w Window) {
+	said, _ := w.Typed()
+	gtx.Execute(key.SnippetCmd{Tag: tag, Snippet: key.Snippet{
+		Range: key.Range{End: len([]rune(said.Value))}, Text: said.Value}})
+	gtx.Execute(key.SelectionCmd{Tag: tag, Range: key.Range{Start: said.At, End: said.At + said.Held}})
 }
 
 func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }

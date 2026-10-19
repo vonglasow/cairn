@@ -54,13 +54,16 @@ func (w Written) Types(text string) Written {
 	if text == "" {
 		return w
 	}
-	if w.Holding() {
-		w = w.cut()
-	}
+	from, to := w.Run()
+	return w.Replaces(from, to, text)
+}
+
+// Replaces puts a text in place of the run between two places and leaves the caret after it, which is how a system composing a letter takes back the accent it wrote first.
+func (w Written) Replaces(from, to int, text string) Written {
+	from, to = w.settled(min(from, to)), w.settled(max(from, to))
 	kept := []rune(w.Value)
-	at := w.settled(w.At)
-	w.Value = string(kept[:at]) + text + string(kept[at:])
-	w.At, w.Held = at+len([]rune(text)), 0
+	w.Value = string(kept[:from]) + text + string(kept[to:])
+	w.At, w.Held = from+len([]rune(text)), 0
 	return w
 }
 

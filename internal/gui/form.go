@@ -123,16 +123,36 @@ func (w Window) Types(text string) Window {
 	if text == "" {
 		return w
 	}
+	return w.writing(func(said Written) Written { return said.Types(text) })
+}
+
+// Edits puts what the system sent in place of the run it named, in the field the keyboard is on.
+func (w Window) Edits(from, to int, text string) Window {
+	return w.writing(func(said Written) Written { return said.Replaces(from, to, text) })
+}
+
+// Typed is the text the keys are writing in, which the system is told so that what it composes lands where it thinks: nothing when no text takes them.
+func (w Window) Typed() (Written, bool) {
+	var said Written
+	took := false
+	w.writing(func(on Written) Written {
+		said, took = on, true
+		return on
+	})
+	return said, took
+}
+
+func (w Window) writing(change func(Written) Written) Window {
 	if w.screen == OnSearch {
-		w.looking = w.looking.Types(text)
+		w.looking = change(w.looking)
 		return w
 	}
 	if w.screen == OnLabels && w.renaming {
-		w.renamed = w.renamed.Types(text)
+		w.renamed = change(w.renamed)
 		return w
 	}
 	if w.screen == OnChoosing {
-		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
+		w.filtering, w.choosing, w.choosingFrom = change(w.filtering), 0, 0
 		return w
 	}
 	if w.screen != OnForm {
@@ -140,14 +160,14 @@ func (w Window) Types(text string) Window {
 	}
 	if w.form.onParts() {
 		if w.form.writingPart {
-			w.form.named = w.form.named.Types(text)
+			w.form.named = change(w.form.named)
 		}
 		return w
 	}
 	if w.onAClosedSet() {
-		return w.choosingList().Types(text)
+		return w.choosingList().writing(change)
 	}
-	w.form = w.form.Writes(w.form.Writing().Types(text))
+	w.form = w.form.Writes(change(w.form.Writing()))
 	return w.inSightOfTheCaret()
 }
 

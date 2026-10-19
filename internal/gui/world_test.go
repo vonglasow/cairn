@@ -1137,12 +1137,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the keyboard says "([^"]*)" as both a key and as text$`, func(said string) error {
+		on, _ := w.w.Typed()
 		w.w, _, _ = frames(w.t, w.w,
 			key.Event{Name: key.Name(strings.ToUpper(said)), State: key.Press},
-			key.EditEvent{Text: said})
+			key.EditEvent{Range: key.Range{Start: on.At, End: on.At + on.Held}, Text: said})
 		return nil
 	})
 	sc.Step(`^I type "([^"]*)"$`, w.types)
+	sc.Step(`^I compose "([^"]*)" from the dead key "([^"]*)" and the letter "([^"]*)"$`,
+		func(made, dead, letter string) error {
+			w.w = composing(w.w, made, dead, letter)
+			return nil
+		})
 	sc.Step(`^I click the field "([^"]*)"$`, w.clickField)
 	sc.Step(`^I drag across the field "([^"]*)" from (\d+) to (\d+)$`,
 		func(name string, from, to int) error {
