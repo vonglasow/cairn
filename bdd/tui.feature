@@ -785,3 +785,27 @@ Feature: The board
       When I press "esc"
       And I press "B"
       Then the board says "#1  made"
+
+  Rule: An open task shows what is done to it elsewhere
+
+    @tui-an-open-task-shows-a-step-added-elsewhere
+    Scenario: a step added elsewhere appears on the task open on the board
+      Given I added a task titled "Ship it"
+      When I open the board
+      And I press "i", "enter"
+      And somebody else adds the step "Draft" to task 1
+      And the board looks again
+      Then the board says "[ ] 1  Draft"
+
+    @tui-a-form-keeps-what-was-typed-when-its-task-changes-elsewhere
+    Scenario: the form keeps what was typed, and takes the rest from what was done elsewhere
+      Given I added a task titled "Ship it"
+      When I open the board
+      And I press "i", "e"
+      And I set the field "title" to "Ship it now"
+      And somebody else renames task 1 "Ship it today"
+      And somebody else adds the step "Draft" to task 1
+      And the board looks again
+      Then the board says "Ship it now"
+      And the board says "[ ] Draft"
+      And the board does not say "Ship it today"

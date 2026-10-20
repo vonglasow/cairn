@@ -465,6 +465,16 @@ deletes it at once through a `step delete` of its own, and `esc` keeps it
 to the task above and below from an open task, which Alexis found pointless
 inside a task (cairn#105).
 
+**An open task follows what is done to it elsewhere.** The open task is drawn
+from each reading the beat brings (`@tui-an-open-task-shows-a-step-added-elsewhere`),
+and so is its form: a reading closes the form only when it is the one its own
+save asked for. Any other reading rebuilds it, keeping a field the person
+changed as they typed it and taking every other one from the store, with the
+keyboard left on the field it was on
+(`@tui-a-form-keeps-what-was-typed-when-its-task-changes-elsewhere`). A reading
+used to close the form whatever brought it, so a change made by an agent threw
+away what was being typed (cairn#108).
+
 **The steps of a task are written in its form**, in the `steps` field, one line
 each — `[x] Relire l'ADR`. Saving writes them
 with the task, in the same act, and they replace the steps it had: a line the

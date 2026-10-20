@@ -247,13 +247,16 @@ func (b Board) took(l Looked) Board {
 		}
 		return b
 	}
-	if b.form.asked != nil {
+	if b.form.asked != nil && !b.formStays() {
 		b.screen, b.form = OnTheBoard, Form{}
 	}
 	was := b.task
 	stood := b.at(b.here())
 	b.snap = l.Snapshot
 	b.err = nil
+	if b.form.asked != nil {
+		b = b.freshened()
+	}
 	if was != 0 && !b.holds(was) {
 		b.task = b.standingAt(stood)
 		if b.task == 0 {

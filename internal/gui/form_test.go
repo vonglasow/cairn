@@ -1106,3 +1106,38 @@ func TestClosingTheWindowKeepsWhatWasJustTypedIntoANewTask(t *testing.T) {
 		t.Fatalf("closed straight after typing, the draft holds %v, %v", held, err)
 	}
 }
+
+func TestAnOpenFormTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
+	f := newFake()
+	shipped := card(1, "Ship it", "todo")
+	w := holding(f, shipped)
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description").Types("Two")
+	at, caret := w.form.at, w.form.caret
+	shipped.Title, shipped.Description = "Ship it today", "Two columns"
+	shipped.Steps = []engine.Part{{Number: 1, Title: "Draft"}}
+	w.snap = test.Searchable(engine.Snapshot{Cards: []engine.Card{shipped}, Version: 2})
+	w = w.freshened()
+	for name, want := range map[string]string{"title": "Ship it today", "description": "Two"} {
+		if got := w.form.valueOf(name); got != want {
+			t.Errorf("the field %q reads %q, want %q", name, got, want)
+		}
+	}
+	if parts := w.form.parts(); len(parts) != 1 || parts[0].Title != "Draft" {
+		t.Errorf("the steps read %+v", parts)
+	}
+	if w.form.at != at || w.form.caret != caret {
+		t.Errorf("the keyboard moved from field %d at %d to field %d at %d", at, caret, w.form.at, w.form.caret)
+	}
+	if !w.form.Changed() {
+		t.Error("what was typed no longer counts as a change")
+	}
+	w.form = w.form.Set("description", "Two columns")
+	if w.form.Changed() {
+		t.Error("a form that now says what the store says counts as changed")
+	}
+	gone := w
+	gone.snap = test.Searchable(engine.Snapshot{Version: 3})
+	if got := gone.freshened().form.valueOf("title"); got != "Ship it today" {
+		t.Errorf("a task gone elsewhere emptied the form: %q", got)
+	}
+}

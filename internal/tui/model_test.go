@@ -807,13 +807,17 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 	}
 }
 
-func TestAReadingComingBackClosesTheFormAndNothingElse(t *testing.T) {
+func TestAReadingAfterASaveClosesTheFormAndNothingElse(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "e")
 	if b.screen != OnForm {
 		t.Fatalf("the form did not open: %v", b.screen)
 	}
-	if after := b.took(Looked{Snapshot: engine.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard {
+	if after := b.took(Looked{Snapshot: engine.Snapshot{Cards: f.cards}}); after.screen != OnForm {
+		t.Fatalf("a reading made while the form is open closed it, on %v", after.screen)
+	}
+	b.screen = OnTheBoard
+	if after := b.took(Looked{Snapshot: engine.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard || after.form.asked != nil {
 		t.Fatalf("a write that went through left the board on %v", after.screen)
 	}
 

@@ -168,6 +168,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I save the form$`, w.saveForm)
 	sc.Step(`^the board looks again$`, w.lookAgain)
+	sc.Step(`^somebody else adds the step "([^"]*)" to task (\d+)$`, func(title string, n int) error {
+		return w.givens().IAddedTheStepToTask(title, n, false)
+	})
+	sc.Step(`^somebody else renames task (\d+) "([^"]*)"$`, func(n int, title string) error {
+		_, err := w.other.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{"number": strconv.Itoa(n), "title": title}})
+		return err
+	})
 
 	sc.Then(`^the columns read (".*")$`, w.columnsRead)
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)

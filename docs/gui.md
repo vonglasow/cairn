@@ -1275,6 +1275,17 @@ goes in with the steps already written down for it.
 The heading says what was opened: `task 7 · Ship it`, the title as it was
 saved and not as it is being typed, which the field below says.
 
+**An open task follows what is done to it elsewhere** (`freshened`). Each new
+reading of the store — the beat's, when somebody else wrote — rebuilds the
+form from the task as it now stands, and reads its trace again: a step an agent
+added appears while the task is open (`@gui-an-open-task-shows-a-step-added-elsewhere`).
+A field the person has changed and not saved keeps what they typed; every other
+field takes what the store says, and what it was opened with moves along, so
+the form counts as changed only what the person changed
+(`@gui-an-open-task-keeps-what-was-typed-when-it-changes-elsewhere`). It used
+to be read once, when it opened, and had to be closed and opened again to see
+a change (cairn#108).
+
 **An objective opens on the work that serves it**, beside its form, headed
 `WHAT SERVES IT`: an objective has no trace of its own — the trace is kept
 of tasks — and what serves it is the question it is opened to answer. Each is

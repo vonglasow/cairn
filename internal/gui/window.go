@@ -270,6 +270,9 @@ func (w Window) Look() Window {
 	for i := range w.lanes {
 		w.lanes[i] = w.settledLane(i, w.lanes[i])
 	}
+	if w = w.freshened(); w.screen == OnForm && w.err == nil {
+		w = w.readingActs()
+	}
 	if w.pages.Shows(engine.PageTime) {
 		return w.readingWeek()
 	}

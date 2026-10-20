@@ -2,6 +2,7 @@ package gui
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -91,6 +92,42 @@ func adding(tab Tab, state string) Form {
 
 func editing(c engine.Card) Form {
 	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c)})
+}
+
+func (w Window) freshened() Window {
+	if w.form.Adding || w.form.Number == 0 || len(w.form.opened) != len(w.form.fields) {
+		return w
+	}
+	var fresh []engine.Field
+	if w.form.ForObjective {
+		g, found := w.snap.Goal(w.form.Number)
+		if !found {
+			return w
+		}
+		fresh = engine.GoalFields(g)
+	} else {
+		c, found := w.snap.Card(w.form.Number)
+		if !found {
+			return w
+		}
+		fresh = engine.EditFields(c)
+	}
+	if len(fresh) != len(w.form.fields) {
+		return w
+	}
+	f := w.form
+	f.fields, f.opened = slices.Clone(f.fields), slices.Clone(f.opened)
+	for i := range fresh {
+		if f.fields[i].Value == f.opened[i] && f.fields[i].Value != fresh[i].Value {
+			f.fields[i].Value = fresh[i].Value
+			if i == f.at {
+				f.caret, f.held = min(f.caret, len([]rune(fresh[i].Value))), 0
+			}
+		}
+		f.opened[i] = fresh[i].Value
+	}
+	w.form = f
+	return w
 }
 
 func editingGoal(g engine.Goal) Form {

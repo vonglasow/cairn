@@ -111,22 +111,22 @@ func (w Window) deletingPart() Window {
 		return w
 	}
 	gone := parts[at].Number
-	if gone != 0 {
-		w.err = nil
-		w = w.asking(engine.StepDelete, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(gone)}})
-		if w.err != nil {
-			return w
-		}
-		field, _ := w.form.partsField()
-		w.form.opened = slices.Clone(w.form.opened)
-		w.form.opened[field] = engine.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
-	}
 	rest := slices.Delete(parts, at, at+1)
-	if gone != 0 {
-		rest = without(rest, gone)
+	if gone == 0 {
+		w.form = w.form.withParts(rest)
+		return w
 	}
-	w.form = w.form.withParts(rest)
+	before := w.form
+	field, _ := w.form.partsField()
+	w.form = w.form.withParts(without(rest, gone))
+	w.form.opened = slices.Clone(w.form.opened)
+	w.form.opened[field] = engine.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
+	w.err = nil
+	w = w.asking(engine.StepDelete, engine.Input{Given: map[string]string{
+		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(gone)}})
+	if w.err != nil {
+		w.form = before
+	}
 	return w
 }
 

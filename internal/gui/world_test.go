@@ -1250,6 +1250,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I click (\d+) characters into the field "([^"]*)"$`, w.clickInto)
 	sc.Step(`^somebody else adds a task titled "([^"]*)"$`, w.somebodyElseAdds)
 	sc.Step(`^the window looks again$`, w.looksAgain)
+	sc.Step(`^somebody else adds the step "([^"]*)" to task (\d+)$`, func(title string, n int) error {
+		return w.givens().IAddedTheStepToTask(title, n, false)
+	})
+	sc.Step(`^somebody else renames task (\d+) "([^"]*)"$`, func(n int, title string) error {
+		_, err := w.other.Ask(engine.TaskEdit, engine.Input{Given: map[string]string{"number": strconv.Itoa(n), "title": title}})
+		return err
+	})
 
 	w.expects(sc)
 }

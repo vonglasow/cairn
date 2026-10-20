@@ -165,3 +165,12 @@ func narrow(line string, _ int) []int {
 	}
 	return edges
 }
+
+func (f Form) valueOf(name string) string {
+	for _, field := range f.fields {
+		if field.Name == name {
+			return field.Value
+		}
+	}
+	return ""
+}

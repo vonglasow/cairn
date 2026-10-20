@@ -3500,3 +3500,28 @@ Feature: The desktop board
       Then the question says of objective 1 "1 task serves it: it cannot go"
       When I choose "All possible"
       Then the objectives read "Ship cairn"
+
+  Rule: An open task shows what is done to it elsewhere
+
+    @gui-an-open-task-shows-a-step-added-elsewhere
+    Scenario: a step added elsewhere appears on the task open in the window, and in its trace
+      Given I added a task titled "Ship it"
+      When I open the window
+      And I double-click the card "Ship it"
+      And somebody else adds the step "Draft" to task 1
+      And the window looks again
+      Then the form's steps read "Draft"
+      And the trace begins with the last thing done to task 1
+
+    @gui-an-open-task-keeps-what-was-typed-when-it-changes-elsewhere
+    Scenario: what was typed stays, and what was not takes what was done elsewhere
+      Given I added a task titled "Ship it"
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "title"
+      And I type " now"
+      And somebody else renames task 1 "Ship it today"
+      And somebody else adds the step "Draft" to task 1
+      And the window looks again
+      Then the field "title" reads "Ship it now"
+      And the form's steps read "Draft"

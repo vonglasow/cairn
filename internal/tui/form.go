@@ -268,3 +268,70 @@ func (b Board) formHead() string {
 		lipgloss.NewStyle().Foreground(b.skin.palette.Priority(priority)).Render(priority)
 	return Spread(number+"   "+title, right, b.width-margin-margin-frame)
 }
+
+func (b Board) formStays() bool {
+	return b.screen == OnForm || b.leaving || b.screen == OnHelp && b.wasScreen == OnForm
+}
+
+func (b Board) freshened() Board {
+	if b.form.Adding {
+		return b
+	}
+	fresh, ok := b.freshFields()
+	if !ok {
+		return b
+	}
+	moved := false
+	for i, field := range fresh {
+		now := b.form.valueOf(field.Name)
+		if was, opened := b.form.opened[field.Name]; opened && now != was {
+			fresh[i].Value = now
+			continue
+		}
+		moved = moved || now != field.Value
+	}
+	if !moved {
+		return b
+	}
+	focused := b.form.asked.GetFocusedField().GetKey()
+	number, forObjective := b.form.Number, b.form.ForObjective
+	b.form = asking(fresh, b.formWidth(), b.formHeight(), b.skin)
+	b.form.Number, b.form.ForObjective = number, forObjective
+	b, _ = b.started()
+	for _, field := range b.freshOpened() {
+		b.form.opened[field.Name] = field.Value
+	}
+	for range 2 * len(fresh) {
+		if b.form.asked.GetFocusedField().GetKey() == focused {
+			break
+		}
+		before := b.form.asked.GetFocusedField().GetKey()
+		b.form.asked.NextField()
+		if b.form.asked.GetFocusedField().GetKey() == before {
+			b.form.asked.NextGroup()
+		}
+	}
+	return b
+}
+
+func (b Board) freshOpened() []engine.Field {
+	fresh, _ := b.freshFields()
+	return fresh
+}
+
+func (b Board) freshFields() ([]engine.Field, bool) {
+	if b.form.ForObjective {
+		for _, g := range b.goals() {
+			if g.Number == b.form.Number {
+				return engine.GoalFields(g), true
+			}
+		}
+		return nil, false
+	}
+	for _, c := range b.cards() {
+		if c.Number == b.form.Number {
+			return engine.EditFields(c), true
+		}
+	}
+	return nil, false
+}
