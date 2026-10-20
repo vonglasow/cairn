@@ -44,6 +44,11 @@ func (b Board) goalFacts(g engine.Goal, width int) string {
 		told = append(told, count)
 		dressed = append(dressed, b.skin.Bright.Render(count))
 	}
+	if g.Spent > 0 {
+		spent := domain.FormatDuration(g.Spent)
+		told = append(told, spent)
+		dressed = append(dressed, b.skin.Faint.Render(spent))
+	}
 	if day := Written(g.Deadline); day != "" {
 		told = append(told, day)
 		dressed = append(dressed, b.skin.Faint.Render(day))

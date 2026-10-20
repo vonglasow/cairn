@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"strconv"
 	"strings"
@@ -93,7 +94,11 @@ func Counted(g engine.Goal) string {
 	if g.Total == 0 {
 		return ""
 	}
-	return g.Counted() + " · " + strconv.Itoa(g.Percent()) + "%"
+	said := g.Counted() + " · " + strconv.Itoa(g.Percent()) + "%"
+	if g.Spent > 0 {
+		said += " · " + domain.FormatDuration(g.Spent)
+	}
+	return said
 }
 
 // SubLine is what a task serving an objective reads on its tile: its number, then its title, cut to the room there is.

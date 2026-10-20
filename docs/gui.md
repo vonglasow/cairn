@@ -1324,7 +1324,10 @@ trace, presented as the objective's. Measured, not reasoned about.
 rounded down, so an objective one task short of finished does not read 100%.
 An objective nothing serves carries no count at all: `0/0` and a share of
 nothing are two ways of dividing by zero, and `0%` on an objective nobody has
-started reads as a failure rather than as one waiting for its first task.
+started reads as a failure rather than as one waiting for its first task. When
+time was spent on the tasks serving it, the count says it too, `7/12 · 58% ·
+71h40m` — the sum `objective show` gives (`@gui-an-objective-card-says-the-time-spent`,
+cairn#54).
 
 Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field

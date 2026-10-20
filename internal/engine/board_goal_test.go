@@ -2,6 +2,10 @@ package engine
 
 import (
 	"testing"
+	"time"
+
+	"cairn/internal/objective"
+	"cairn/internal/task"
 )
 
 func numbersOf(goals []Goal) []int {
@@ -57,5 +61,37 @@ func TestGoal_saysHowMuchIsDone(t *testing.T) {
 	}
 	if (Goal{}).Percent() != 0 {
 		t.Error("nothing under it is not a share of anything")
+	}
+}
+
+func TestAGoalSaysTheTimeSpentOnTheTasksServingIt(t *testing.T) {
+	f := newFake()
+	spent := func(number int, d time.Duration, serves ...int) task.Task {
+		var a task.AsTold
+		a.Numbered(number)
+		a.Titled("Task")
+		a.InColumn("todo")
+		a.Spent(d)
+		for _, n := range serves {
+			a.Serves(n)
+		}
+		return a.Task()
+	}
+	f.tasks = []task.Task{spent(1, time.Hour, 1), spent(2, 30*time.Minute, 1, 2), spent(3, 2*time.Hour)}
+	var one, two objective.AsTold
+	one.Numbered(1)
+	one.Titled("Ship it")
+	two.Numbered(2)
+	two.Titled("Docs")
+	f.goals = []objective.Objective{one.Objective(), two.Objective()}
+	found, err := Look(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := found.Goals[0].Spent; got != 90*time.Minute {
+		t.Errorf("objective 1 says %v spent, want 1h30m", got)
+	}
+	if got := found.Goals[1].Spent; got != 30*time.Minute {
+		t.Errorf("objective 2 says %v spent, want 30m", got)
 	}
 }

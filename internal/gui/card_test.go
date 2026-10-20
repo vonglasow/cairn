@@ -196,3 +196,12 @@ func TestAStepSaysItsTitleAloneAndAServingTaskItsNumber(t *testing.T) {
 		t.Errorf("a task serving an objective reads %q", got)
 	}
 }
+
+func TestAnObjectivesCountSaysTheTimeSpentWhenThereIsAny(t *testing.T) {
+	if got := Counted(engine.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}); got != "1/2 · 50% · 1h30m" {
+		t.Errorf("Counted = %q", got)
+	}
+	if got := Counted(engine.Goal{Done: 1, Total: 2}); got != "1/2 · 50%" {
+		t.Errorf("Counted with no time = %q", got)
+	}
+}

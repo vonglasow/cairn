@@ -694,7 +694,9 @@ for the arguments no key can carry, not a second way of doing what a key does.
 An objective carries eight fields and one thing a task does not: **an
 advancement**, counted from the columns of the tasks that serve it. That is why
 the bar is the headline — it is the only information an objective has that
-nothing else does.
+nothing else does. Beside the count, faint, the card says the time spent on the
+tasks serving it, archived ones included, as `objective show` does
+(`@tui-an-objective-card-says-the-time-spent`, cairn#54).
 
 Same card, same six lines, same rules. The state is a glyph on the card rather
 than a section heading, so there are no sections at all: the order comes from the

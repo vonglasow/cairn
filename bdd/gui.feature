@@ -2460,6 +2460,17 @@ Feature: The desktop board
       Then the card for objective 1 says "1/2"
       And the card for objective 1 says "50%"
 
+    @gui-an-objective-card-says-the-time-spent
+    Scenario: an objective's card says the time spent on the tasks serving it
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      And I added a task titled "Ship it" serving objective 1
+      And I spent "1h" on task 1 on "2026-09-29"
+      And I spent "30m" on task 2 on "2026-09-30"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the card for objective 1 says "1h30m"
+
     @gui-an-objective-nothing-serves-carries-no-count
     Scenario: an objective nothing serves carries no count at all
       Given I added an objective titled "Ship the desktop board"

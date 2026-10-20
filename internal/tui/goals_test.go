@@ -4,6 +4,7 @@ import (
 	"cairn/internal/engine"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestStandingGlyph(t *testing.T) {
@@ -95,5 +96,15 @@ func TestABarOfOneColumn(t *testing.T) {
 func TestAGoalWithNothingBesideItsBar(t *testing.T) {
 	if got := strip(standing(newFake()).goalFacts(engine.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
 		t.Fatalf("a bar with nothing beside it trailed something: %q", got)
+	}
+}
+
+func TestAnObjectivesFactsSayTheTimeSpentWhenThereIsAny(t *testing.T) {
+	b := standing(newFake())
+	if got := strip(b.goalFacts(engine.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}, 80)); !strings.Contains(got, "1/2  1h30m") {
+		t.Errorf("the facts read %q", got)
+	}
+	if got := strip(b.goalFacts(engine.Goal{Done: 1, Total: 2}, 80)); !strings.HasSuffix(strings.TrimSpace(got), "1/2") {
+		t.Errorf("the facts with no time spent read %q", got)
 	}
 }

@@ -57,6 +57,7 @@ type Goal struct {
 	Estimate    string
 	Done        int
 	Total       int
+	Spent       time.Duration
 	Said        []string
 }
 
@@ -99,11 +100,19 @@ func Look(w Work) (Snapshot, error) {
 		}
 		found.Cards = append(found.Cards, card)
 	}
+	spent := map[int]time.Duration{}
+	for _, t := range listed.Tasks {
+		c := t.Carried()
+		for _, n := range c.Objectives {
+			spent[n] += c.Spent
+		}
+	}
 	for _, o := range goals.Objectives {
 		goal, err := goalOf(o, goals.Along)
 		if err != nil {
 			return Snapshot{}, err
 		}
+		goal.Spent = spent[goal.Number]
 		found.Goals = append(found.Goals, goal)
 	}
 	return found, nil
