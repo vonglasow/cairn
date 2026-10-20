@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/engine"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -429,4 +430,84 @@ func TestTheListMovesExactlyAsFarAsAsked(t *testing.T) {
 			t.Errorf("%d notches show from %d, want %d", notches, turned.partsFrom(), want)
 		}
 	}
+}
+
+func TestStepsAreGatheredAndStretched(t *testing.T) {
+	f := onTheList(t, 800, "A", "B", "C", "D").form
+	if got := f.takingPart(2, true, false).takenParts(); fmt.Sprint(got) != "[0 2]" {
+		t.Errorf("⌘ on C from A took %v", got)
+	}
+	if got := f.takingPart(2, true, false).takingPart(0, true, false).takenParts(); got != nil {
+		t.Errorf("⌘ on A again left %v taken", got)
+	}
+	f.partAt = 1
+	stretched := f.takingPart(3, false, true)
+	if got := stretched.takenParts(); fmt.Sprint(got) != "[1 2 3]" || stretched.partAt != 3 {
+		t.Errorf("⇧ on D from B took %v, on line %d", got, stretched.partAt)
+	}
+	if got := stretched.takingPart(0, false, false).takenParts(); got != nil {
+		t.Errorf("a plain click left %v taken", got)
+	}
+	if got := f.takingPart(4, true, false).takenParts(); got != nil {
+		t.Errorf("the line that adds was taken: %v", got)
+	}
+}
+
+func TestStepsTakenTogetherMoveAsOneBlock(t *testing.T) {
+	titles := func(f Form) string {
+		var out []string
+		for _, p := range f.parts() {
+			out = append(out, p.Title)
+		}
+		return strings.Join(out, "")
+	}
+	f := onTheList(t, 800, "A", "B", "C", "D").form
+	down := f.takingPart(1, true, false).carryingSeveral(3)
+	if titles(down) != "CDAB" || fmt.Sprint(down.takenParts()) != "[2 3]" {
+		t.Errorf("A and B carried onto D give %s, taken %v", titles(down), down.takenParts())
+	}
+	f.partAt = 2
+	up := f.takingPart(3, true, false).carryingSeveral(0)
+	if titles(up) != "CDAB" || fmt.Sprint(up.takenParts()) != "[0 1]" {
+		t.Errorf("C and D carried onto A give %s, taken %v", titles(up), up.takenParts())
+	}
+	if titles(f.takingPart(3, true, false).carryingSeveral(3)) != "ABCD" {
+		t.Error("a block carried onto itself moved")
+	}
+}
+
+func TestSeveralStepsAreDeletedInOneAct(t *testing.T) {
+	f := newFake()
+	w := onTheListOf(t, f, "A", "B", "C")
+	w = w.Key("down").Key("down").Key("down").Key("enter").Types("D").Key("enter").Key("esc")
+	w.form.partAt = 0
+	w.form = w.form.takingPart(2, true, false).takingPart(3, true, false)
+	asked := w.Key("backspace")
+	if asked.Screen() != OnAsking || Heads(asked) != "Delete 3 steps?" {
+		t.Fatalf("the delete key asked %q on %v", Heads(asked), asked.Screen())
+	}
+	gone := asked.Key("enter")
+	in, ok := f.gave("task", "edit")
+	if !ok || in.Given["number"] != "1" || titlesOf(engine.PartsIn(in.Given["steps"])) != "B" {
+		t.Fatalf("the engine was asked %v %+v", ok, in)
+	}
+	if got := gone.form.parts(); len(got) != 1 || got[0] != (engine.Part{Number: 1, Title: "B"}) {
+		t.Errorf("the form holds %+v", got)
+	}
+	if gone.form.takenParts() != nil || gone.Screen() != OnForm {
+		t.Errorf("after the delete, %v taken, on %v", gone.form.takenParts(), gone.Screen())
+	}
+	f.failOp = errRefuse
+	refused := w.Key("backspace").Key("enter")
+	if len(refused.form.parts()) != 4 {
+		t.Errorf("a delete the engine refused left %+v", refused.form.parts())
+	}
+}
+
+func titlesOf(parts []engine.Part) string {
+	var out []string
+	for _, p := range parts {
+		out = append(out, p.Title)
+	}
+	return strings.Join(out, "")
 }

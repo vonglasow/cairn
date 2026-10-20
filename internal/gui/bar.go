@@ -69,6 +69,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutHiding {
 			return "Show cairn's logo on this desktop?"
 		}
+		if w.question == aboutDeletingParts {
+			return "Delete " + strconv.Itoa(len(w.form.takenParts())) + " steps?"
+		}
 		if w.question == aboutDeletingPart {
 			return "Delete the step “" + w.partTitle() + "”?"
 		}
@@ -421,6 +424,12 @@ func (w Window) Asks() []Said {
 			{Means: "Enter replaces it with cairn's own, or Cancel keeps it until it changes."},
 		}
 	}
+	if w.question == aboutDeletingParts {
+		return []Said{
+			{Means: "They go at once, whether the form is saved or not."},
+			{Means: "Enter to agree, or Cancel."},
+		}
+	}
 	if w.question == aboutDeletingPart {
 		return []Said{
 			{Means: "It goes at once, whether the form is saved or not."},
@@ -473,6 +482,7 @@ const (
 	aboutDraft
 	aboutDeletingPart
 	aboutHiding
+	aboutDeletingParts
 )
 
 func (w Window) sweeps() string {

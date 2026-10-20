@@ -770,7 +770,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 			writing(gtx, th, skin, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
 			continue
 		}
-		drawSub(gtx, th, skin, tile, parts[at], StepLine(parts[at]), on && f.partAt == at, Written{})
+		drawSub(gtx, th, skin, tile, parts[at], StepLine(parts[at]), on && (f.partAt == at || slices.Contains(f.takenParts(), at)), Written{})
 	}
 	if field, ok := f.partsField(); ok {
 		_, value, rows := FormPlace(w.formBox(), f.Fields(), field)

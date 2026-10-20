@@ -1264,7 +1264,14 @@ saved or not, is left as it was
 task never had is taken out of the list alone
 (`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
 a step out until the form was saved, which Alexis took for a delete that did
-not happen (cairn#105). A tile is dragged to another
+not happen (cairn#105). Several steps are taken together the way cards
+are: `⌘`-click adds one or takes it back, `⇧`-click takes every step from the
+one chosen to the one clicked, and a plain click lets them go
+(`@gui-steps-stretched-to-are-taken-together`). A delete key then asks
+"Delete 3 steps?", and agreed they go in one act that writes the task's steps
+without them (`@gui-steps-taken-together-are-deleted-at-once`); dragged, they
+go together, in their order, where the one in hand lands
+(`@gui-steps-taken-together-move-together`, cairn#113). A tile is dragged to another
 place the way a card is: the step in hand follows the pointer, and a line says
 where it would land — over the tile it takes the place of when carried up,
 under it when carried down, drawn over the step in hand so the thing aimed

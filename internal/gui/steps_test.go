@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gioui.org/io/key"
 	"github.com/cucumber/godog"
 
 	"cairn/internal/domain"
@@ -789,6 +790,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		w.w = w.w.clicked(at)
 		return nil
+	})
+	sc.Step(`^I ⌘-click the step "([^"]*)"$`, func(title string) error {
+		return w.clickWith(key.ModShortcut, w.stepTile, title)
+	})
+	sc.Step(`^I ⇧-click the step "([^"]*)"$`, func(title string) error {
+		return w.clickWith(key.ModShift, w.stepTile, title)
 	})
 	sc.Step(`^I double-click the step "([^"]*)"$`, func(title string) error {
 		at, err := w.stepTile(title)

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 	"time"
 
@@ -282,6 +283,9 @@ func (w Window) PressAt(p Point) Window {
 			field, _ := w.form.partsField()
 			w = w.keepingPartInSight()
 			w.form = w.form.onto(field)
+			if w.gathering || w.stretching || !slices.Contains(w.form.takenParts(), at) {
+				w.form = w.form.takingPart(at, w.gathering, w.stretching)
+			}
 			w.form.partAt, w.form.carried = at, at+1
 			w.held = Held{From: p, At: p}
 			return w

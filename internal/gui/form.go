@@ -22,6 +22,7 @@ type Form struct {
 	caret       int
 	held        int
 	partAt      int
+	partsTaken  []int
 	partsTop    int
 	spareParts  int
 	writingPart bool
@@ -349,7 +350,7 @@ func (w Window) Form() Form { return w.form }
 func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
 
 func (w Window) formUnder() bool {
-	return formShown(w.screen) || w.screen == OnAsking && (w.question == aboutDeletingPart || w.question == aboutLeaving)
+	return formShown(w.screen) || w.screen == OnAsking && (w.question == aboutDeletingPart || w.question == aboutDeletingParts || w.question == aboutLeaving)
 }
 
 // PartsTicked is what the steps field of an open form is drawn as: a tile for each step it says now, done or not, unsaved lines included.
@@ -501,7 +502,7 @@ func (w Window) Choose(name string) Window {
 			w.screen, w.question = OnLabels, aboutDeleting
 			return w
 		}
-		if w.question == aboutDeletingPart {
+		if w.question == aboutDeletingPart || w.question == aboutDeletingParts {
 			w.screen, w.question = OnForm, aboutDeleting
 			return w
 		}
@@ -597,6 +598,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutDeletingPart {
 			return w.deletingPart()
+		}
+		if w.question == aboutDeletingParts {
+			return w.deletingParts()
 		}
 		if w.question == aboutHiding {
 			return w.answeringHiding(true)

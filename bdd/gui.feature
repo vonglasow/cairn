@@ -2969,6 +2969,58 @@ Feature: The desktop board
       And the form's steps read "Draft", "Keep"
       And the form is open on task 1
 
+    @gui-steps-taken-together-are-deleted-at-once
+    Scenario: steps ⌘-clicked together are deleted in one go, once agreed
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I ⌘-click the step "Review"
+      And I press "backspace"
+      Then the window asks "Delete 2 steps?"
+      When I press "enter"
+      Then the steps of task 1 read "Keep"
+      And the form's steps read "Keep"
+      And the last act on task 1 changed its steps from "[ ] Draft; [ ] Keep; [ ] Review" to "[ ] Keep"
+
+    @gui-steps-stretched-to-are-taken-together
+    Scenario: a ⇧-click takes every step from the one chosen to the one clicked
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      And I added the step "Ship" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Keep"
+      And I ⇧-click the step "Ship"
+      And I press "delete"
+      Then the window asks "Delete 3 steps?"
+      When I press "esc"
+      Then the steps of task 1 read "Draft", "Keep", "Review", "Ship"
+      When I press "backspace"
+      And I press "enter"
+      Then the steps of task 1 read "Draft"
+
+    @gui-steps-taken-together-move-together
+    Scenario: steps taken together are dragged together, in their order
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      And I added the step "Ship" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I ⌘-click the step "Keep"
+      And I drag the step "Keep" onto the step "Ship"
+      Then the form's steps read "Review", "Ship", "Draft", "Keep"
+      When I choose "Save"
+      Then the steps of task 1 read "Review", "Ship", "Draft", "Keep"
+
     @gui-a-step-deleted-leaves-the-rest-of-the-form-as-it-was
     Scenario: what was typed in the form and not saved is still there once a step is deleted
       Given I added a task titled "Ship it"

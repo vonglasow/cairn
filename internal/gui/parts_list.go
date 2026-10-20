@@ -89,6 +89,10 @@ func (f Form) openedWith(part engine.Part) Form {
 }
 
 func (w Window) askingToDelete() Window {
+	if w.form.takenParts() != nil {
+		w.screen, w.question = OnAsking, aboutDeletingParts
+		return w
+	}
 	if w.form.partAt < len(w.form.parts()) {
 		w.screen, w.question = OnAsking, aboutDeletingPart
 	}
@@ -187,10 +191,16 @@ func (w Window) lettingGoOfAPart(p Point) Window {
 	from, moved := w.form.carried-1, w.held.Moved
 	w.form.carried, w.held = 0, Held{}
 	if moved {
-		if to, on := w.partUnder(p); on {
+		if to, on := w.partUnder(p); on && slices.Contains(w.form.takenParts(), from) {
+			w.form = w.form.carryingSeveral(to)
+		} else if on {
+			w.form.partsTaken = nil
 			w.form = w.form.carrying(from, to)
 		}
 		return w
+	}
+	if !w.gathering && !w.stretching {
+		w.form.partsTaken = nil
 	}
 	if from == w.form.lines()-1 {
 		w.form = w.form.naming()
@@ -326,4 +336,110 @@ func (w Window) partUnder(p Point) (int, bool) {
 		return i + w.partsFrom(), true
 	}
 	return 0, false
+}
+
+func (f Form) takingPart(at int, gathering, stretching bool) Form {
+	parts := f.parts()
+	switch {
+	case at >= len(parts):
+		f.partsTaken = nil
+	case gathering:
+		taken := slices.Clone(f.partsTaken)
+		if len(taken) == 0 && f.partAt < len(parts) {
+			taken = []int{f.partAt}
+		}
+		if i := slices.Index(taken, at); i >= 0 {
+			taken = slices.Delete(taken, i, i+1)
+		} else {
+			taken = append(taken, at)
+		}
+		slices.Sort(taken)
+		f.partsTaken = taken
+	case stretching:
+		from := min(f.partAt, len(parts)-1)
+		f.partsTaken = nil
+		for i := min(from, at); i <= max(from, at); i++ {
+			f.partsTaken = append(f.partsTaken, i)
+		}
+	default:
+		f.partsTaken = nil
+	}
+	f.partAt = at
+	return f
+}
+
+func (f Form) takenParts() []int {
+	if len(f.partsTaken) < 2 {
+		return nil
+	}
+	return f.partsTaken
+}
+
+func (f Form) carryingSeveral(to int) Form {
+	parts, taken := f.parts(), f.takenParts()
+	if taken == nil || slices.Contains(taken, to) {
+		return f
+	}
+	var block, rest []engine.Part
+	for i, p := range parts {
+		if slices.Contains(taken, i) {
+			block = append(block, p)
+			continue
+		}
+		rest = append(rest, p)
+	}
+	at := len(rest)
+	if to < len(parts) {
+		at = 0
+		for i := range to {
+			if !slices.Contains(taken, i) {
+				at++
+			}
+		}
+		if to > taken[0] {
+			at++
+		}
+	}
+	f.partsTaken = nil
+	for i := range block {
+		f.partsTaken = append(f.partsTaken, at+i)
+	}
+	f.partAt = at + len(block) - 1
+	return f.withParts(slices.Insert(rest, at, block...))
+}
+
+func (w Window) deletingParts() Window {
+	w.screen, w.question = OnForm, aboutDeleting
+	taken, parts := w.form.takenParts(), w.form.parts()
+	var gone []int
+	var rest []engine.Part
+	for i, p := range parts {
+		if !slices.Contains(taken, i) {
+			rest = append(rest, p)
+		} else if p.Number != 0 {
+			gone = append(gone, p.Number)
+		}
+	}
+	renumbered := func(ps []engine.Part) []engine.Part {
+		for k := len(gone) - 1; k >= 0; k-- {
+			ps = without(ps, gone[k])
+		}
+		return ps
+	}
+	before := w.form
+	w.form = w.form.withParts(renumbered(rest))
+	w.form.partsTaken, w.form.partAt = nil, min(taken[0], len(rest))
+	if len(gone) == 0 {
+		return w
+	}
+	field, _ := w.form.partsField()
+	kept := engine.PartsWritten(renumbered(engine.PartsIn(before.opened[field])))
+	w.form.opened = slices.Clone(w.form.opened)
+	w.form.opened[field] = kept
+	w.err = nil
+	w = w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{"number": strconv.Itoa(w.form.Number), "steps": kept}})
+	if w.err != nil {
+		w.form = before
+	}
+	return w
 }
