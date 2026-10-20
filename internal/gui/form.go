@@ -348,9 +348,13 @@ func (w Window) Form() Form { return w.form }
 
 func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
 
+func (w Window) formUnder() bool {
+	return formShown(w.screen) || w.screen == OnAsking && (w.question == aboutDeletingPart || w.question == aboutLeaving)
+}
+
 // PartsTicked is what the steps field of an open form is drawn as: a tile for each step it says now, done or not, unsaved lines included.
 func (w Window) PartsTicked() []engine.Card {
-	if !formShown(w.screen) {
+	if !w.formUnder() {
 		return nil
 	}
 	for _, field := range w.form.Fields() {

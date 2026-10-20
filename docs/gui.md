@@ -1234,7 +1234,10 @@ With the keyboard on the list, the arrows walk the tiles
 renames it in its tile (`@gui-a-step-is-renamed-in-its-tile`), as a double
 click does; in its tile, backspace takes a letter and nothing else
 (`@gui-a-step-in-edit-loses-a-letter-not-itself`). A click selects a step, and
-backspace or the forward delete on it asks "Delete the step “Draft”?": agreed,
+backspace or the forward delete on it asks "Delete the step “Draft”?", over
+the form, which stays drawn behind the question as it does behind "Throw away
+what you typed?" (`@gui-the-form-stays-behind-the-question-that-deletes-a-step`,
+cairn#110): agreed,
 it goes at once, through a `step delete` of its own, and the steps behind it
 move up a place; cancelled, nothing moves
 (`@gui-a-step-is-deleted-once-agreed`,

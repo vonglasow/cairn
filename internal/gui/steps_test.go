@@ -1730,6 +1730,22 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the list of objectives is open$`, w.listOpen)
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
+	sc.Then(`^the form is drawn behind the question$`, func() error {
+		asked, over := w.w.QuestionBox(), Over(w.w.width, w.w.height)
+		fields := w.w.Form().Fields()
+		frame := Framed(formValue(over, fields, 0), formRows(over, fields, 0))
+		if frame.Y+frame.H > asked.Y {
+			return fmt.Errorf("the first field reaches %d and the question starts at %d: they overlap, so this proves nothing", frame.Y+frame.H, asked.Y)
+		}
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		if painted(shot, frame, Dark().Edge) == 0 {
+			return fmt.Errorf("the form's first field is gone behind the question")
+		}
+		return nil
+	})
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
 	sc.Then(`^the label "([^"]*)" is (not )?ticked$`, func(label, not string) error {

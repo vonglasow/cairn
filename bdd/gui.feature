@@ -2894,6 +2894,17 @@ Feature: The desktop board
       And the form is open on task 1
       And the last act on task 1 changed its steps from "[ ] Draft; [ ] Keep" to "[ ] Keep"
 
+    @gui-the-form-stays-behind-the-question-that-deletes-a-step
+    Scenario: the form is still drawn while the window asks to delete a step
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I press "backspace"
+      Then the window asks "Delete the step “Draft”?"
+      And the form is drawn behind the question
+
     @gui-a-step-is-kept-when-its-delete-is-cancelled
     Scenario: the forward delete asks too, and cancelled leaves the step where it was
       Given I added a task titled "Ship it"

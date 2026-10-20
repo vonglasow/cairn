@@ -129,7 +129,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnSearch {
 		drawSearch(gtx, th, skin, l, w)
 	}
-	if formShown(w.Screen()) {
+	if w.formUnder() {
 		drawForm(gtx, th, skin, w)
 	}
 	if w.Screen() == OnHelp {
