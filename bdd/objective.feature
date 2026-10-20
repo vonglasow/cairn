@@ -520,6 +520,61 @@ Feature: Objectives
       And it says the objective carries tasks
       And `cairn objective show 1` still reports an objective titled "Ship cairn 1.0"
 
+  Rule: An objective says the time spent on it and what is left of it
+
+    @objective-says-the-time-spent-on-it
+    Scenario: the time spent on an objective is the time spent on every task serving it
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I edited task 1 with the time spent "1h30m"
+      And I edited task 2 with the time spent "45m"
+      When I run `cairn objective show 1`
+      Then the objective carries the time spent "2h15m"
+
+    @objective-says-what-is-left
+    Scenario: what is left is every task not done, the next one due named
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I added a task titled "Ship it" with the objective "1"
+      And I edited task 1 with the state "done"
+      And I edited task 2 with the deadline "2026-11-20"
+      And I edited task 3 with the deadline "2026-11-05"
+      When I run `cairn objective show 1`
+      Then the objective carries the left "2 tasks, the next due 2026-11-05 (#3)"
+
+    @objective-with-nothing-left-says-so
+    Scenario: an objective whose every task is done has nothing left
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective show 1`
+      Then the objective carries the left "nothing"
+
+    @objective-list-says-how-far-along
+    Scenario: the list says how far along each objective is
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Ship the docs"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective list`
+      Then the row for objective 1 says "50% done"
+      And the row for objective 2 says nothing of how far along it is
+
+    @objective-json-says-the-time-and-what-is-left
+    Scenario: a machine reads the time spent on an objective, what is left of it, and how far along the list is
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I edited task 1 with the time spent "1h30m"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective show 1 --json`
+      Then the JSON objective carries the time spent "1h30m" and leaves the tasks "2"
+      When I run `cairn objective list --json`
+      Then the JSON list gives objective 1 at 50% done
+
   Rule: An objective outlives the command that created it
 
     @objective-survives

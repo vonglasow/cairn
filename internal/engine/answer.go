@@ -103,8 +103,10 @@ type Focus struct {
 // Objective is how an objective crosses to a machine.
 type Objective struct {
 	objective.Shape
-	Tasks    []int                 `json:"tasks"`
-	Progress *domain.ProgressShape `json:"progress"`
+	Tasks     []int                 `json:"tasks"`
+	Progress  *domain.ProgressShape `json:"progress"`
+	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
+	Left      []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
 }
 
 // OfObjective turns an objective into what crosses.
@@ -114,9 +116,11 @@ func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Ob
 		numbers = append(numbers, factsOf(t).Number)
 	}
 	return Objective{
-		Shape:    objective.OfObjective(o),
-		Tasks:    numbers,
-		Progress: domain.OfProgress(p),
+		Shape:     objective.OfObjective(o),
+		Tasks:     numbers,
+		Progress:  domain.OfProgress(p),
+		TimeSpent: domain.FormatDuration(reviewOf(under).Spent),
+		Left:      leftOf(under),
 	}
 }
 
@@ -184,9 +188,9 @@ func Of(op Operation, a Answer) any {
 		return OfObjective(*a.Objective, a.Under, a.Progress)
 	case Objectives:
 		if a.MatchedObjectives != nil {
-			return Objectives{Objectives: ofObjectives(a.MatchedObjectives)}
+			return Objectives{Objectives: ofObjectives(a.MatchedObjectives, a.Along)}
 		}
-		return Objectives{Objectives: ofObjectives(a.Objectives)}
+		return Objectives{Objectives: ofObjectives(a.Objectives, a.Along)}
 	case BackupShape:
 		return OfBackup(*a.Backup, a.Holds)
 	case Kept:
@@ -268,10 +272,10 @@ func listed(numbers []int) []int {
 	return numbers
 }
 
-func ofObjectives(all []objective.Objective) []Objective {
+func ofObjectives(all []objective.Objective, along map[int]domain.Progress) []Objective {
 	out := make([]Objective, 0, len(all))
 	for _, o := range all {
-		out = append(out, OfObjective(o, nil, domain.Progress{}))
+		out = append(out, OfObjective(o, nil, along[o.Carried().Number]))
 	}
 	return out
 }

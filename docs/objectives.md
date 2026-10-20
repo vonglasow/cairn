@@ -78,6 +78,28 @@ leaves every objective exactly as far along as it was; `objective show` still
 lists them. Counting only what is on the board would make an objective go
 backwards every time somebody tidied up.
 
+## The time spent on it, and what is left of it
+
+An objective was written up by hand to be reviewed — "Temps passé sur #1 :
+71h40m" in a description — because nothing said it (cairn#54). `objective show`
+now says both, from its tasks:
+
+- **time spent** adds the time of every task serving it, archived ones
+  included, the way progress counts them: the time was spent whatever became of
+  the card. It is the same time `task show` says of each, read from the trace
+  (`@objective-says-the-time-spent-on-it`).
+- **left** counts the tasks neither done nor archived, and names the soonest
+  deadline among them with its task — `2 tasks, the next due 2026-11-05 (#3)`
+  (`@objective-says-what-is-left`); an objective whose every task is done has
+  `nothing` left (`@objective-with-nothing-left-says-so`). An archived task that
+  was open is not counted there: archiving it took it out of the work.
+
+A script reads them as `time_spent` and `left`, the numbers of those tasks
+(`@objective-json-says-the-time-and-what-is-left`). `objective list` says how far
+along each objective is, `· 50% done`, and carries its `progress` in JSON; an
+objective with nothing to count says nothing of it
+(`@objective-list-says-how-far-along`).
+
 ## Where it lives, and what the migration does
 
 In a table of its own, `task_objectives`, the same shape as the labels and the

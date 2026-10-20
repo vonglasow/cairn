@@ -124,7 +124,7 @@ func (e *Engine) canServe(t task.Task) error {
 }
 
 func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
-	return e.objectives.TasksServing(number)
+	return spentTasks{history: e.history}.told(e.objectives.TasksServing(number))
 }
 
 func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
@@ -410,4 +410,30 @@ var ObjectiveDelete = Operation{
 		}
 		return Answer{Deleted: &numbers[0], Also: numbers[1:]}, nil
 	},
+}
+
+func reviewOf(under []task.Task) objective.Review {
+	var r objective.Review
+	for _, t := range under {
+		c := t.Carried()
+		r.Spent += c.Spent
+		if c.Archived || c.State == domain.Done {
+			continue
+		}
+		r.Left.Tasks++
+		if !c.Deadline.IsZero() && (r.Left.Due.IsZero() || c.Deadline.Before(r.Left.Due)) {
+			r.Left.Due, r.Left.On = c.Deadline, c.Number
+		}
+	}
+	return r
+}
+
+func leftOf(under []task.Task) []int {
+	left := []int{}
+	for _, t := range under {
+		if c := t.Carried(); !c.Archived && c.State != domain.Done {
+			left = append(left, c.Number)
+		}
+	}
+	return left
 }

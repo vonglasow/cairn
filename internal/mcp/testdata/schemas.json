@@ -969,6 +969,20 @@
             "percent"
           ],
           "additionalProperties": false
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+        },
+        "left": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks serving it that are neither done nor archived"
         }
       },
       "required": [
@@ -981,7 +995,9 @@
         "deadline",
         "estimate",
         "tasks",
-        "progress"
+        "progress",
+        "time_spent",
+        "left"
       ],
       "additionalProperties": false
     }
@@ -1139,6 +1155,20 @@
                   "percent"
                 ],
                 "additionalProperties": false
+              },
+              "time_spent": {
+                "type": "string",
+                "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+              },
+              "left": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks serving it that are neither done nor archived"
               }
             },
             "required": [
@@ -1151,7 +1181,9 @@
               "deadline",
               "estimate",
               "tasks",
-              "progress"
+              "progress",
+              "time_spent",
+              "left"
             ],
             "additionalProperties": false
           }
@@ -1326,6 +1358,20 @@
             "percent"
           ],
           "additionalProperties": false
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+        },
+        "left": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks serving it that are neither done nor archived"
         }
       },
       "required": [
@@ -1338,7 +1384,9 @@
         "deadline",
         "estimate",
         "tasks",
-        "progress"
+        "progress",
+        "time_spent",
+        "left"
       ],
       "additionalProperties": false
     }
@@ -1478,6 +1526,20 @@
                   "percent"
                 ],
                 "additionalProperties": false
+              },
+              "time_spent": {
+                "type": "string",
+                "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+              },
+              "left": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks serving it that are neither done nor archived"
               }
             },
             "required": [
@@ -1490,7 +1552,9 @@
               "deadline",
               "estimate",
               "tasks",
-              "progress"
+              "progress",
+              "time_spent",
+              "left"
             ],
             "additionalProperties": false
           }
@@ -1626,6 +1690,20 @@
             "percent"
           ],
           "additionalProperties": false
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+        },
+        "left": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks serving it that are neither done nor archived"
         }
       },
       "required": [
@@ -1638,7 +1716,9 @@
         "deadline",
         "estimate",
         "tasks",
-        "progress"
+        "progress",
+        "time_spent",
+        "left"
       ],
       "additionalProperties": false
     }

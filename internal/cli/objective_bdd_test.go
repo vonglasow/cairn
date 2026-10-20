@@ -153,7 +153,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return fmt.Errorf("task %d is not among what is under the objective:\n%s", task, block)
 	})
 
-	sc.Step(`^the objective carries the (description|deadline|estimate|priority|state|label) "([^"]*)"$`,
+	sc.Step(`^the objective carries the (description|deadline|estimate|priority|state|label|time spent|left) "([^"]*)"$`,
 		func(attribute, want string) error {
 			if attribute == "label" {
 				return w.wantLabel(want)
@@ -161,6 +161,58 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 			return w.wantField(attribute, want)
 		})
 
+	sc.Step(`^the row for objective (\d+) says "([^"]*)"$`, func(n int, want string) error {
+		row, err := w.listedRow(n)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(row, want) {
+			return fmt.Errorf("the row for objective %d is %q, and does not say %q", n, row, want)
+		}
+		return nil
+	})
+	sc.Step(`^the row for objective (\d+) says nothing of how far along it is$`, func(n int) error {
+		row, err := w.listedRow(n)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(row, "done") {
+			return fmt.Errorf("the row for objective %d is %q", n, row)
+		}
+		return nil
+	})
+	sc.Step(`^the JSON objective carries the time spent "([^"]*)" and leaves the tasks "([^"]*)"$`, func(spent, left string) error {
+		var got struct {
+			TimeSpent string `json:"time_spent"`
+			Left      []int  `json:"left"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &got); err != nil {
+			return err
+		}
+		if got.TimeSpent != spent || fmt.Sprint(got.Left) != "["+left+"]" {
+			return fmt.Errorf("the JSON says %+v", got)
+		}
+		return nil
+	})
+	sc.Step(`^the JSON list gives objective (\d+) at (\d+)% done$`, func(n, percent int) error {
+		var got struct {
+			Objectives []struct {
+				Number   int `json:"number"`
+				Progress *struct {
+					Percent int `json:"percent"`
+				} `json:"progress"`
+			} `json:"objectives"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &got); err != nil {
+			return err
+		}
+		for _, o := range got.Objectives {
+			if o.Number == n && o.Progress != nil && o.Progress.Percent == percent {
+				return nil
+			}
+		}
+		return fmt.Errorf("the JSON list says %s", w.Out.Stdout)
+	})
 	sc.Step(`^the objective is (active|on-hold|reached|dropped)$`, func(want string) error {
 		return w.wantField("state", want)
 	})

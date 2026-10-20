@@ -106,7 +106,7 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if text := objective.Text(goal, domain.Progress{}); !strings.Contains(text, "Ship it") {
+	if text := objective.Text(goal, domain.Progress{}, objective.Review{}); !strings.Contains(text, "Ship it") {
 		t.Errorf("the objective reads %q", text)
 	}
 	if _, err := g.Objective(9); err == nil {

@@ -48,12 +48,12 @@ func rendered(op Operation, a Answer) string {
 		}
 		return tasksText(a.Tasks, a)
 	case Objective:
-		return objective.Text(*a.Objective, a.Progress) + objective.Serving(linesOf(a.Under))
+		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under))
 	case Objectives:
 		if a.MatchedObjectives != nil {
-			return objectivesText(a.MatchedObjectives)
+			return objectivesText(a.MatchedObjectives, a.Along)
 		}
-		return objectivesText(a.Objectives)
+		return objectivesText(a.Objectives, a.Along)
 	case BackupShape:
 		return backupLine(*a.Backup, *a.Holds)
 	case Kept:
@@ -158,11 +158,11 @@ func linesOf(tasks []task.Task) []string {
 	return out
 }
 
-func objectivesText(all []objective.Objective) string {
+func objectivesText(all []objective.Objective, along map[int]domain.Progress) string {
 	if len(all) == 0 {
 		return "there is no objective\n"
 	}
-	return objective.List(all)
+	return objective.List(all, along)
 }
 
 func backupLine(b domain.Backup, holds domain.Held) string {
