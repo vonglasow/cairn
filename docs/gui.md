@@ -1265,9 +1265,13 @@ task never had is taken out of the list alone
 (`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
 a step out until the form was saved, which Alexis took for a delete that did
 not happen (cairn#105). Several steps are taken together the way cards
-are: `⌘`-click adds one or takes it back, `⇧`-click takes every step from the
-one chosen to the one clicked, and a plain click lets them go
-(`@gui-steps-stretched-to-are-taken-together`). A delete key then asks
+are: `⌘`-click adds one or lets that one alone go, the others kept and the
+keyboard moved off it so it is no longer outlined
+(`@gui-a-step-taken-is-let-go-alone`); `⇧`-click takes every step from the
+one chosen to the one clicked; `⌘A` takes them all
+(`@gui-every-step-is-taken-at-once`); and a plain click lets them go
+(`@gui-steps-stretched-to-are-taken-together`). A step let go used to stay
+outlined, being the one the keyboard was on, and read as still taken. A delete key then asks
 "Delete 3 steps?", and agreed they go in one act that writes the task's steps
 without them (`@gui-steps-taken-together-are-deleted-at-once`); dragged, they
 go together, in their order, where the one in hand lands

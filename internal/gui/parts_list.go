@@ -275,6 +275,8 @@ func (w Window) onParts(name string) (Window, bool) {
 		w.form = w.form.naming()
 	case "backspace", "delete-forward":
 		w = w.askingToDelete()
+	case "cmd+a":
+		w.form = w.form.takingAll()
 	default:
 		return w, false
 	}
@@ -350,9 +352,13 @@ func (f Form) takingPart(at int, gathering, stretching bool) Form {
 		}
 		if i := slices.Index(taken, at); i >= 0 {
 			taken = slices.Delete(taken, i, i+1)
-		} else {
-			taken = append(taken, at)
+			f.partsTaken = taken
+			if len(taken) > 0 {
+				f.partAt = taken[len(taken)-1]
+			}
+			return f
 		}
+		taken = append(taken, at)
 		slices.Sort(taken)
 		f.partsTaken = taken
 	case stretching:
@@ -442,4 +448,17 @@ func (w Window) deletingParts() Window {
 		w.form = before
 	}
 	return w
+}
+
+func (f Form) takingAll() Form {
+	n := len(f.parts())
+	if n < 2 {
+		return f
+	}
+	f.partsTaken = nil
+	for i := range n {
+		f.partsTaken = append(f.partsTaken, i)
+	}
+	f.partAt = n - 1
+	return f
 }

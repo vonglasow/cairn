@@ -511,3 +511,29 @@ func titlesOf(parts []engine.Part) string {
 	}
 	return strings.Join(out, "")
 }
+
+func TestAStepLetGoOfIsNoLongerOutlined(t *testing.T) {
+	w := onTheList(t, 800, "A", "B", "C")
+	w.form = w.form.takingPart(1, true, false).takingPart(2, true, false).takingPart(1, true, false)
+	if got := w.form.takenParts(); fmt.Sprint(got) != "[0 2]" || w.form.partAt == 1 {
+		t.Fatalf("⌘ on B again left %v taken, the keyboard on line %d", got, w.form.partAt)
+	}
+	lit := Dark().Chosen
+	tiles := w.partTiles()
+	shot := drawn(t, w)
+	for i, want := range []bool{true, false, true} {
+		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], lit) != 0; got != want {
+			t.Errorf("step %d is outlined: %v, want %v", i, got, want)
+		}
+	}
+}
+
+func TestEveryStepIsTakenAtOnce(t *testing.T) {
+	w := onTheList(t, 800, "A", "B", "C").Key("cmd+a")
+	if got := w.form.takenParts(); fmt.Sprint(got) != "[0 1 2]" {
+		t.Errorf("⌘A took %v", got)
+	}
+	if one := onTheList(t, 800, "A").Key("cmd+a"); one.form.takenParts() != nil {
+		t.Errorf("⌘A on one step took %v", one.form.takenParts())
+	}
+}

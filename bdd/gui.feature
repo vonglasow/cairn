@@ -3005,6 +3005,36 @@ Feature: The desktop board
       And I press "enter"
       Then the steps of task 1 read "Draft"
 
+    @gui-a-step-taken-is-let-go-alone
+    Scenario: a ⌘-click on a step taken lets that one go, and keeps the others
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I ⌘-click the step "Keep"
+      And I ⌘-click the step "Review"
+      And I ⌘-click the step "Keep"
+      And I press "backspace"
+      Then the window asks "Delete 2 steps?"
+      When I press "enter"
+      Then the steps of task 1 read "Keep"
+
+    @gui-every-step-is-taken-at-once
+    Scenario: ⌘A takes every step of the list
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Keep"
+      And I press "cmd+a"
+      And I press "backspace"
+      Then the window asks "Delete 3 steps?"
+
     @gui-steps-taken-together-move-together
     Scenario: steps taken together are dragged together, in their order
       Given I added a task titled "Ship it"

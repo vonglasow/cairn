@@ -285,8 +285,10 @@ func (w Window) PressAt(p Point) Window {
 			w.form = w.form.onto(field)
 			if w.gathering || w.stretching || !slices.Contains(w.form.takenParts(), at) {
 				w.form = w.form.takingPart(at, w.gathering, w.stretching)
+			} else {
+				w.form.partAt = at
 			}
-			w.form.partAt, w.form.carried = at, at+1
+			w.form.carried = at + 1
 			w.held = Held{From: p, At: p}
 			return w
 		}
