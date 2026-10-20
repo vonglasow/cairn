@@ -100,6 +100,26 @@ along each objective is, `· 50% done`, and carries its `progress` in JSON; an
 objective with nothing to count says nothing of it
 (`@objective-list-says-how-far-along`).
 
+## A review over a period
+
+`objective report N --since DAY [--until DAY]` writes what a review of an
+objective needs, over the days asked — the probation objectives are reviewed
+on a date, and the time was being added up by hand for it:
+
+- how far along it is, its deadline, and what is left, as `show` says them;
+- the time spent on its tasks in the period and in all, then **month by
+  month** — the timesheet's days, those of its tasks only, folded into months
+  (`@objective-report-says-the-time-month-by-month`);
+- the tasks **put in done in the period** and still done, each with the day it
+  was, read from the trace's column changes
+  (`@objective-report-names-what-was-done-in-the-period`,
+  `@objective-report-before-the-work-names-nothing-done`).
+
+The first day is asked for, never guessed (`@objective-report-needs-the-first-day`);
+the last is today when left out. A script reads it as `objective`, `since`,
+`until`, `time_spent`, `months` and `done`
+(`@objective-report-reads-by-a-machine`).
+
 ## Where it lives, and what the migration does
 
 In a table of its own, `task_objectives`, the same shape as the labels and the

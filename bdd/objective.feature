@@ -575,6 +575,58 @@ Feature: Objectives
       When I run `cairn objective list --json`
       Then the JSON list gives objective 1 at 50% done
 
+  Rule: An objective is reviewed over a period
+
+    @objective-report-says-the-time-month-by-month
+    Scenario: the time spent on an objective's tasks in a period is said month by month
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I added a task titled "Elsewhere"
+      And I ran `cairn timesheet add 1 2h --on 2026-07-30`
+      And I ran `cairn timesheet add 1 1h30m --on 2026-08-04`
+      And I ran `cairn timesheet add 2 45m --on 2026-09-10`
+      And I ran `cairn timesheet add 3 3h --on 2026-09-10`
+      When I run `cairn objective report 1 --since 2026-08-01 --until 2026-09-30`
+      Then it succeeds
+      And the objective carries the time spent "2h15m in the period, 4h15m in all"
+      And the month "2026-08" says "1h30m"
+      And the month "2026-09" says "45m"
+      And it says nothing of the month "2026-07"
+
+    @objective-report-names-what-was-done-in-the-period
+    Scenario: the tasks done in the period are named, and what is left is said
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I added a task titled "Draw the board" with the objective "1"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective report 1 --since 2026-10-01`
+      Then the report names task 1 as done in the period
+      And the objective carries the left "1 task, none due"
+
+    @objective-report-before-the-work-names-nothing-done
+    Scenario: a period that ends before anything was done names nothing done in it
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective report 1 --since 2026-08-01 --until 2026-08-31`
+      Then the report names nothing as done in the period
+
+    @objective-report-needs-the-first-day
+    Scenario: a review needs the day its period starts
+      Given I added an objective titled "Ship cairn 1.0"
+      When I run `cairn objective report 1`
+      Then it fails
+
+    @objective-report-reads-by-a-machine
+    Scenario: a review can be read by a machine
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I ran `cairn timesheet add 1 1h30m --on 2026-08-04`
+      And I edited task 1 with the state "done"
+      When I run `cairn objective report 1 --since 2026-08-01 --json`
+      Then the JSON report gives the month "2026-08" at "1h30m" and task 1 done
+
   Rule: An objective outlives the command that created it
 
     @objective-survives

@@ -15,6 +15,7 @@ func initObjective(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := newWorld(t)
 		w.register(sc)
+		w.registerTimesheet(sc)
 		w.registerObjective(sc)
 	}
 }
@@ -161,6 +162,50 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 			return w.wantField(attribute, want)
 		})
 
+	sc.Step(`^the month "([^"]*)" says "([^"]*)"$`, func(month, want string) error {
+		return w.wantField(month, want)
+	})
+	sc.Step(`^it says nothing of the month "([^"]*)"$`, func(month string) error {
+		if strings.Contains(w.Out.Stdout, month) {
+			return fmt.Errorf("it speaks of %s:\n%s", month, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the report names task (\d+) as done in the period$`, func(n int) error {
+		_, done, found := strings.Cut(w.Out.Stdout, "done in the period\n")
+		if !found || !strings.Contains(done, fmt.Sprintf("#%d ", n)) {
+			return fmt.Errorf("task %d is not named as done in the period:\n%s", n, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the report names nothing as done in the period$`, func() error {
+		if !strings.Contains(w.Out.Stdout, "nothing was done in the period") {
+			return fmt.Errorf("the report reads:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the JSON report gives the month "([^"]*)" at "([^"]*)" and task (\d+) done$`, func(month, spent string, n int) error {
+		var got struct {
+			Objective struct {
+				Number int `json:"number"`
+			} `json:"objective"`
+			Months []struct {
+				Month     string `json:"month"`
+				TimeSpent string `json:"time_spent"`
+			} `json:"months"`
+			Done []struct {
+				Number int `json:"number"`
+			} `json:"done"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &got); err != nil {
+			return err
+		}
+		months := fmt.Sprint(got.Months)
+		if got.Objective.Number != 1 || !strings.Contains(months, "{"+month+" "+spent+"}") || len(got.Done) != 1 || got.Done[0].Number != n {
+			return fmt.Errorf("the JSON report says %s", w.Out.Stdout)
+		}
+		return nil
+	})
 	sc.Step(`^the row for objective (\d+) says "([^"]*)"$`, func(n int, want string) error {
 		row, err := w.listedRow(n)
 		if err != nil {

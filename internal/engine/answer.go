@@ -159,6 +159,8 @@ func Of(op Operation, a Answer) any {
 		return *a.Config
 	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named)
+	case Review:
+		return OfReview(*a.Objective, a.Under, a.Progress, *a.Period)
 	case Focus:
 		held := a.Held
 		if a.Task != nil {

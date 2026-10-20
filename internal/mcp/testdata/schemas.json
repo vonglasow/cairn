@@ -1391,6 +1391,245 @@
       "additionalProperties": false
     }
   },
+  "objective_report": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Review an objective over a period"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the objective",
+          "type": "integer"
+        },
+        "since": {
+          "description": "the first day of the period",
+          "type": "string"
+        },
+        "until": {
+          "description": "the last day of the period; today when left out",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "since"
+      ],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "objective": {
+          "type": "object",
+          "properties": {
+            "number": {
+              "type": "integer",
+              "description": "the objective's number, never handed out twice"
+            },
+            "title": {
+              "type": "string",
+              "description": "what the objective is called"
+            },
+            "state": {
+              "type": "string",
+              "description": "where it stands: active, on-hold, reached or dropped"
+            },
+            "priority": {
+              "type": "string",
+              "description": "low, normal, high or critical"
+            },
+            "description": {
+              "type": "string",
+              "description": "what is written about it; empty when nothing is"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
+            },
+            "deadline": {
+              "type": "string",
+              "description": "the day it is due, as 2026-12-01; empty when it has none"
+            },
+            "estimate": {
+              "type": "string",
+              "description": "how long it was expected to take, as 40h; empty when nobody said"
+            },
+            "tasks": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            },
+            "progress": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "tasks": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "steps": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "done"
+                  ],
+                  "additionalProperties": false
+                },
+                "percent": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "percent"
+              ],
+              "additionalProperties": false
+            },
+            "time_spent": {
+              "type": "string",
+              "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+            },
+            "left": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks serving it that are neither done nor archived"
+            }
+          },
+          "required": [
+            "number",
+            "title",
+            "state",
+            "priority",
+            "description",
+            "labels",
+            "deadline",
+            "estimate",
+            "tasks",
+            "progress",
+            "time_spent",
+            "left"
+          ],
+          "additionalProperties": false
+        },
+        "since": {
+          "type": "string"
+        },
+        "until": {
+          "type": "string"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "the time spent on its tasks in the period, as 1h30m; empty when none was"
+        },
+        "months": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "month": {
+                "type": "string",
+                "description": "the month, as 2026-08"
+              },
+              "time_spent": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "month",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "done": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "on": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "on"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "objective",
+        "since",
+        "until",
+        "time_spent",
+        "months",
+        "done"
+      ],
+      "additionalProperties": false
+    }
+  },
   "objective_search": {
     "annotations": {
       "destructiveHint": false,

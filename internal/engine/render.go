@@ -30,6 +30,8 @@ func rendered(op Operation, a Answer) string {
 		return configText(*a.Config)
 	case Timesheet:
 		return trace.SheetText(*a.Sheet, a.Named)
+	case Review:
+		return objective.Report(*a.Objective, a.Progress, reviewOf(a.Under), *a.Period)
 	case Focus:
 		if a.Task != nil {
 			return cardText(a)

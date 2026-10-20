@@ -229,7 +229,7 @@ func All() []Operation {
 		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport,
 		StepNew, StepList, StepEdit, StepDelete,
-		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
+		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		LabelList, LabelDelete, LabelRename,
@@ -333,6 +333,7 @@ type Answer struct {
 	Contexts          map[int]string
 	Config            *Config
 	Sheet             *trace.Sheet
+	Period            *objective.Period
 	Named             map[int]string
 }
 
