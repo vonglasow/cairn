@@ -589,6 +589,12 @@ moves it (`@gui-a-drop-in-done-asks-about-open-steps`); see
 A question is asked in a box as big as its sentences and its offers, not in
 the panel a form is drawn in: two lines and two words used to sit in a box
 nine tenths empty.
+**A question stands out from what is behind it**: everything under it is
+dimmed by a veil (`Skin.Veil`), and its box is outlined twice over in the
+colour of what is chosen
+(`@gui-a-question-stands-out-from-what-is-behind-it`). It was drawn like a
+form, the same ground and the same edge, and over a form it blended into it
+(cairn#111).
 
 The question about a form is answered the way a hand leaving a form answers.
 `esc` again throws it away and `⏎` goes back to it (*Throw away* and *Back*):

@@ -37,6 +37,7 @@ type Skin struct {
 	Wrong              color.NRGBA
 	Late               color.NRGBA
 	Ghost              color.NRGBA
+	Veil               color.NRGBA
 	Priority           map[string]color.NRGBA
 	Stones             []color.NRGBA
 }
@@ -53,6 +54,7 @@ func Dark() Skin {
 		Wrong:  color.NRGBA{R: 255, G: 110, B: 160, A: 255},
 		Late:   color.NRGBA{R: 240, G: 186, B: 96, A: 255},
 		Ghost:  color.NRGBA{R: 72, G: 88, B: 124, A: 255},
+		Veil:   color.NRGBA{R: 6, G: 6, B: 10, A: 160},
 		Stones: []color.NRGBA{
 			{R: 86, G: 84, B: 92, A: 255},
 			{R: 104, G: 101, B: 108, A: 255},
@@ -136,7 +138,11 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawHelp(gtx, th, skin, w)
 	}
 	if w.Screen() == OnAsking {
-		drawSaid(gtx, th, skin, w, w.Asks(), w.QuestionBox())
+		fill(gtx, Box{W: w.width, H: w.height}, skin.Veil)
+		asked := w.QuestionBox()
+		drawSaid(gtx, th, skin, w, w.Asks(), asked)
+		outline(gtx, asked, skin.Chosen)
+		outline(gtx, Box{X: asked.X + 1, Y: asked.Y + 1, W: asked.W - 2, H: asked.H - 2}, skin.Chosen)
 	}
 	if w.Screen() == OnChoosing {
 		drawChoosing(gtx, th, skin, w)

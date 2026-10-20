@@ -2905,6 +2905,17 @@ Feature: The desktop board
       Then the window asks "Delete the step “Draft”?"
       And the form is drawn behind the question
 
+    @gui-a-question-stands-out-from-what-is-behind-it
+    Scenario: a question is outlined in the colour of what is chosen, over a window dimmed behind it
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I press "backspace"
+      Then the question is outlined in the colour of what is chosen
+      And what is behind the question is dimmed
+
     @gui-a-step-is-kept-when-its-delete-is-cancelled
     Scenario: the forward delete asks too, and cancelled leaves the step where it was
       Given I added a task titled "Ship it"

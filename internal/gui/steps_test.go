@@ -1741,8 +1741,37 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if painted(shot, frame, Dark().Edge) == 0 {
+		if paintedNear(shot, frame, dimmed(Dark().Edge), 6) == 0 {
 			return fmt.Errorf("the form's first field is gone behind the question")
+		}
+		return nil
+	})
+	sc.Then(`^the question is outlined in the colour of what is chosen$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		asked := w.w.QuestionBox()
+		inner := Box{X: asked.X + 1, Y: asked.Y + 1, W: asked.W - 2, H: asked.H - 2}
+		for _, edges := range [][4]Box{Edges(asked), Edges(inner)} {
+			for _, edge := range edges {
+				if painted(shot, edge, Dark().Chosen) < edge.W*edge.H/2 {
+					return fmt.Errorf("the question's edge %+v is not drawn in the colour of what is chosen", edge)
+				}
+			}
+		}
+		return nil
+	})
+	sc.Then(`^what is behind the question is dimmed$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		over := Over(w.w.width, w.w.height)
+		fields := w.w.Form().Fields()
+		frame := Framed(formValue(over, fields, 0), formRows(over, fields, 0))
+		if painted(shot, frame, Dark().Edge) != 0 || paintedNear(shot, frame, dimmed(Dark().Edge), 6) == 0 {
+			return fmt.Errorf("the form behind the question is drawn as bright as without it")
 		}
 		return nil
 	})

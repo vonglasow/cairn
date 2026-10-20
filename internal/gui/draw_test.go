@@ -1319,3 +1319,26 @@ func TestADragOpensRoomWhereTheCardWouldLand(t *testing.T) {
 		t.Errorf("over the lower half of Second the card would land at %d, want after it", landing.Y)
 	}
 }
+
+func paintedNear(shot *image.RGBA, b Box, want color.NRGBA, by int) int {
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			got := shot.RGBAAt(x, y)
+			if within(got.R, want.R, by) && within(got.G, want.G, by) && within(got.B, want.B, by) {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func within(a, b uint8, by int) bool { return max(int(a)-int(b), int(b)-int(a)) <= by }
+
+func dimmed(c color.NRGBA) color.NRGBA {
+	veil := Dark().Veil
+	mix := func(under, over uint8) uint8 {
+		return uint8((int(under)*(255-int(veil.A)) + int(over)*int(veil.A)) / 255)
+	}
+	return color.NRGBA{R: mix(c.R, veil.R), G: mix(c.G, veil.G), B: mix(c.B, veil.B), A: 255}
+}
