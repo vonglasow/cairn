@@ -675,7 +675,18 @@ the user's data folder each time it opens, rewriting only what changed
 (`@gui-a-linux-desktop-is-given-an-entry`). It used to be `make desktop`'s
 job, which nobody installing a binary ran, and the window had no logo. An
 entry somebody else wrote there is theirs and is left as it is
-(`@gui-an-entry-of-somebody-elses-is-kept`); cairn marks its own. The entry
+(`@gui-an-entry-of-somebody-elses-is-kept`); cairn marks its own. But an entry
+of theirs that shows another icon hides the logo, which is how one written by
+hand on a KDE desktop, `Icon=view-list-details`, kept the logo out of sight
+with nothing saying why (cairn#109). So when the window opens and finds one,
+it asks "Show cairn's logo on this desktop?" (`Settling`, `Hiding`): agreed,
+cairn writes its own entry over it
+(`@gui-an-entry-hiding-the-logo-is-replaced-once-agreed`); refused, the entry
+stays and a sum of it is kept under `$XDG_DATA_HOME/cairn/entry-kept`, so the
+question comes back only once the entry has changed
+(`@gui-an-entry-kept-is-asked-about-again-only-once-it-changes`). An entry of
+theirs that shows the logo is left without a word
+(`@gui-an-entry-showing-the-logo-asks-nothing`). The entry
 starts cairn by a full path, never by its bare name (`Starter`): a desktop
 drops an entry whose program its own `PATH` does not reach, and with it the
 logo, and Homebrew's `bin` is often on the shell's `PATH` alone. When the

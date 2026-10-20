@@ -505,6 +505,9 @@ func (w Window) Choose(name string) Window {
 			w.screen, w.question = OnForm, aboutDeleting
 			return w
 		}
+		if w.question == aboutHiding {
+			return w.answeringHiding(false)
+		}
 		if w.screen == OnLabels && w.renaming {
 			w.renaming = false
 			return w
@@ -594,6 +597,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.question == aboutDeletingPart {
 			return w.deletingPart()
+		}
+		if w.question == aboutHiding {
+			return w.answeringHiding(true)
 		}
 		if w.screen == OnLabels {
 			w.screen, w.question = OnAsking, aboutDeletingLabel

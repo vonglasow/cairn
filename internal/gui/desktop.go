@@ -2,7 +2,9 @@ package gui
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"image/color"
 	"image/png"
@@ -47,11 +49,55 @@ func SettleIn(data, starts string) error {
 			return err
 		}
 	}
-	entry := filepath.Join(data, "applications", Known+".desktop")
+	entry := entryIn(data)
 	if was, err := os.ReadFile(entry); err == nil && !strings.Contains(string(was), writtenByCairn) {
 		return nil
 	}
 	return writtenIfChanged(entry, []byte(DesktopEntry(starts)))
+}
+
+func entryIn(data string) string { return filepath.Join(data, "applications", Known+".desktop") }
+
+func keptIn(data string) string { return filepath.Join(data, Known, "entry-kept") }
+
+// Entry is a desktop entry somebody other than cairn wrote, as far as cairn's logo goes: the folder it was found under, the icon it shows, and a sum of what it says, which a refusal to replace it is remembered by.
+type Entry struct {
+	Data, Icon string
+	sum        string
+	hides      bool
+}
+
+// Hiding reads the entry the desktop finds the window through, and says whether it is somebody else's and shows another icon than cairn's logo.
+func Hiding(data string) Entry {
+	was, err := os.ReadFile(entryIn(data))
+	if err != nil || strings.Contains(string(was), writtenByCairn) {
+		return Entry{Data: data}
+	}
+	icon := ""
+	for line := range strings.Lines(string(was)) {
+		if said, ok := strings.CutPrefix(strings.TrimSpace(line), "Icon="); ok && icon == "" {
+			icon = said
+		}
+	}
+	sum := sha256.Sum256(was)
+	return Entry{Data: data, Icon: icon, sum: hex.EncodeToString(sum[:]), hides: icon != Known}
+}
+
+// Asks says whether the person is to be asked about the entry: it hides the logo, and it is not the one they last chose to keep.
+func (e Entry) Asks() bool {
+	if !e.hides {
+		return false
+	}
+	kept, err := os.ReadFile(keptIn(e.Data))
+	return err != nil || strings.TrimSpace(string(kept)) != e.sum
+}
+
+// Kept remembers that the entry is to be left as it is, until it changes.
+func (e Entry) Kept() error { return writtenIfChanged(keptIn(e.Data), []byte(e.sum+"\n")) }
+
+// Replaced writes cairn's own entry over it, starting the window with starts.
+func (e Entry) Replaced(starts string) error {
+	return writtenIfChanged(entryIn(e.Data), []byte(DesktopEntry(starts)))
 }
 
 // Starter is the program a desktop entry starts the window with: the full path the PATH leads to when it leads to the cairn running, which an upgrade keeps, or else the cairn running; never a bare name, which a desktop whose own PATH does not reach it would ignore the entry for.
@@ -123,4 +169,26 @@ func X11Icon() []uint32 {
 		}
 	}
 	return held
+}
+
+// Settling settles the window in on a Linux desktop under data, started with starts, and asks about an entry somebody else wrote that hides the logo, unless something else is being asked already.
+func (w Window) Settling(data, starts string) Window {
+	_ = SettleIn(data, starts)
+	if hiding := Hiding(data); hiding.Asks() && w.screen != OnAsking {
+		w.hiding, w.starts = hiding, starts
+		w.screen, w.question = OnAsking, aboutHiding
+	}
+	return w
+}
+
+func (w Window) answeringHiding(replace bool) Window {
+	w.screen, w.question = OnTheBoard, aboutDeleting
+	err := w.hiding.Kept()
+	if replace {
+		err = w.hiding.Replaced(w.starts)
+	}
+	if err != nil {
+		return w.failing(err)
+	}
+	return w
 }

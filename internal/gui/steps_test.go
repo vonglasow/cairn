@@ -1436,6 +1436,29 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return os.WriteFile(entry(name), []byte("[Desktop Entry]\nName=mine\n"), 0o644)
 	})
+	sc.Given(`^a desktop entry "([^"]*)" written by somebody else, showing the icon "([^"]*)"$`, func(name, icon string) error {
+		if err := os.MkdirAll(filepath.Dir(entry(name)), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(entry(name), []byte("[Desktop Entry]\nName=Cairn\nIcon="+icon+"\nExec=cairn gui\n"), 0o644)
+	})
+	sc.Step(`^the window opens on a Linux desktop$`, func() error {
+		if err := w.open(); err != nil {
+			return err
+		}
+		w.w = w.w.Settling(dataHome(), Starter(running(), onPath))
+		return nil
+	})
+	sc.Step(`^somebody changes the desktop entry "([^"]*)"$`, func(name string) error {
+		was, err := os.ReadFile(entry(name))
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(entry(name), append(was, []byte("Comment=Mes tâches\n")...), 0o644)
+	})
+	sc.Then(`^the desktop entry "([^"]*)" still shows the icon "([^"]*)"$`, func(name, icon string) error {
+		return entrySays(entry(name), "Icon="+icon)
+	})
 	sc.Then(`^the desktop entry "([^"]*)" is the one somebody else wrote$`, func(name string) error {
 		got, err := os.ReadFile(entry(name))
 		if err != nil {

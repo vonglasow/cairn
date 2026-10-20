@@ -6,4 +6,6 @@ import "gioui.org/io/event"
 
 func showLogo() {}
 
+func desktopHome() (data, starts string, ok bool) { return "", "", false }
+
 func dress(event.Event) {}

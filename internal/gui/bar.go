@@ -66,6 +66,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutDraft {
 			return "Pick up the new task left unsaved?"
 		}
+		if w.question == aboutHiding {
+			return "Show cairn's logo on this desktop?"
+		}
 		if w.question == aboutDeletingPart {
 			return "Delete the step “" + w.partTitle() + "”?"
 		}
@@ -408,6 +411,16 @@ func (w Window) Asks() []Said {
 	if w.question == aboutCairn {
 		return AboutSays(build.Read())
 	}
+	if w.question == aboutHiding {
+		shows := "shows no icon"
+		if w.hiding.Icon != "" {
+			shows = "shows the icon “" + w.hiding.Icon + "” instead"
+		}
+		return []Said{
+			{Means: "Its desktop entry, " + Known + ".desktop, was not written by cairn and " + shows + "."},
+			{Means: "Enter replaces it with cairn's own, or Cancel keeps it until it changes."},
+		}
+	}
 	if w.question == aboutDeletingPart {
 		return []Said{
 			{Means: "It goes at once, whether the form is saved or not."},
@@ -459,6 +472,7 @@ const (
 	aboutCairn
 	aboutDraft
 	aboutDeletingPart
+	aboutHiding
 )
 
 func (w Window) sweeps() string {

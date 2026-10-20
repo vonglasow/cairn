@@ -1066,6 +1066,33 @@ Feature: The desktop board
       When the window settles in on a Linux desktop
       Then the desktop entry "cairn" starts the cairn running with "gui"
 
+    @gui-an-entry-hiding-the-logo-is-replaced-once-agreed
+    Scenario: an entry somebody else wrote that hides the logo is replaced, once agreed
+      Given a desktop entry "cairn" written by somebody else, showing the icon "view-list-details"
+      When the window opens on a Linux desktop
+      Then the window asks "Show cairn's logo on this desktop?"
+      When I press "enter"
+      Then the desktop entry "cairn" names the icon "cairn"
+      And the window is on the board
+
+    @gui-an-entry-kept-is-asked-about-again-only-once-it-changes
+    Scenario: an entry kept as it is is asked about again only once it has changed
+      Given a desktop entry "cairn" written by somebody else, showing the icon "view-list-details"
+      When the window opens on a Linux desktop
+      And I press "esc"
+      Then the desktop entry "cairn" still shows the icon "view-list-details"
+      When the window opens on a Linux desktop
+      Then the window is on the board
+      When somebody changes the desktop entry "cairn"
+      And the window opens on a Linux desktop
+      Then the window asks "Show cairn's logo on this desktop?"
+
+    @gui-an-entry-showing-the-logo-asks-nothing
+    Scenario: an entry somebody else wrote that shows cairn's logo is left without a word
+      Given a desktop entry "cairn" written by somebody else, showing the icon "cairn"
+      When the window opens on a Linux desktop
+      Then the window is on the board
+
     @gui-an-entry-of-somebody-elses-is-kept
     Scenario: an entry cairn did not write is left as it was
       Given a desktop entry "cairn" written by somebody else

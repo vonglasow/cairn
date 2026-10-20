@@ -119,6 +119,8 @@ type Window struct {
 	pages                 engine.Pages
 	finishing             engine.Operation
 	finishingIn           engine.Input
+	hiding                Entry
+	starts                string
 	over                  string
 	hovered               bool
 	explaining            int

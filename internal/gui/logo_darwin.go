@@ -18,6 +18,8 @@ import (
 
 func showLogo() { C.cairn_icon(unsafe.Pointer(&logo[0]), C.int(len(logo))) }
 
+func desktopHome() (data, starts string, ok bool) { return "", "", false }
+
 func logoWaitsForLaunch() bool { return C.cairn_icon_waits() != 0 }
 
 func dress(event.Event) {}

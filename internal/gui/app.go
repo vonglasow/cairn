@@ -221,6 +221,9 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, width, height int
 
 	theme, skin := Theme(), Dark()
 	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).Look()
+	if data, starts, ok := desktopHome(); ok {
+		board = board.Settling(data, starts)
+	}
 
 	files, listen := systemFiles(window)
 	filed := make(chan Filed, 1)

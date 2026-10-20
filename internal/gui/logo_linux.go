@@ -36,12 +36,14 @@ import (
 
 var x11Dressed bool
 
-func showLogo() {
+func showLogo() {}
+
+func desktopHome() (data, starts string, ok bool) {
 	running, err := os.Executable()
 	if err != nil {
 		running = Known
 	}
-	_ = SettleIn(DataHome(), Starter(running, exec.LookPath))
+	return DataHome(), Starter(running, exec.LookPath), true
 }
 
 func dress(e event.Event) {
