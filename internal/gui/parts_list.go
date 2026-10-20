@@ -40,7 +40,7 @@ func (f Form) walkingParts(by int) Form {
 		return f.onto(f.at - 1)
 	}
 	f.partAt = min(f.lines()-1, f.partAt+by)
-	return f
+	return f.takingTheOneOn()
 }
 
 func (f Form) ticking() Form {
@@ -89,12 +89,13 @@ func (f Form) openedWith(part engine.Part) Form {
 }
 
 func (w Window) askingToDelete() Window {
-	if w.form.takenParts() != nil {
-		w.screen, w.question = OnAsking, aboutDeletingParts
-		return w
-	}
-	if w.form.partAt < len(w.form.parts()) {
+	switch taken := w.form.selectedParts(); len(taken) {
+	case 0:
+	case 1:
+		w.form.partAt = taken[0]
 		w.screen, w.question = OnAsking, aboutDeletingPart
+	default:
+		w.screen, w.question = OnAsking, aboutDeletingParts
 	}
 	return w
 }
@@ -117,12 +118,12 @@ func (w Window) deletingPart() Window {
 	gone := parts[at].Number
 	rest := slices.Delete(parts, at, at+1)
 	if gone == 0 {
-		w.form = w.form.withParts(rest)
+		w.form = w.form.withParts(rest).takingTheOneOn()
 		return w
 	}
 	before := w.form
 	field, _ := w.form.partsField()
-	w.form = w.form.withParts(without(rest, gone))
+	w.form = w.form.withParts(without(rest, gone)).takingTheOneOn()
 	w.form.opened = slices.Clone(w.form.opened)
 	w.form.opened[field] = engine.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
 	w.err = nil
@@ -194,13 +195,12 @@ func (w Window) lettingGoOfAPart(p Point) Window {
 		if to, on := w.partUnder(p); on && slices.Contains(w.form.takenParts(), from) {
 			w.form = w.form.carryingSeveral(to)
 		} else if on {
-			w.form.partsTaken = nil
-			w.form = w.form.carrying(from, to)
+			w.form = w.form.carrying(from, to).takingTheOneOn()
 		}
 		return w
 	}
 	if !w.gathering && !w.stretching {
-		w.form.partsTaken = nil
+		w.form = w.form.takingTheOneOn()
 	}
 	if from == w.form.lines()-1 {
 		w.form = w.form.naming()
@@ -346,19 +346,12 @@ func (f Form) takingPart(at int, gathering, stretching bool) Form {
 	case at >= len(parts):
 		f.partsTaken = nil
 	case gathering:
-		taken := slices.Clone(f.partsTaken)
-		if len(taken) == 0 && f.partAt < len(parts) {
-			taken = []int{f.partAt}
-		}
+		taken := slices.Clone(f.selectedParts())
 		if i := slices.Index(taken, at); i >= 0 {
 			taken = slices.Delete(taken, i, i+1)
-			f.partsTaken = taken
-			if len(taken) > 0 {
-				f.partAt = taken[len(taken)-1]
-			}
-			return f
+		} else {
+			taken = append(taken, at)
 		}
-		taken = append(taken, at)
 		slices.Sort(taken)
 		f.partsTaken = taken
 	case stretching:
@@ -368,17 +361,30 @@ func (f Form) takingPart(at int, gathering, stretching bool) Form {
 			f.partsTaken = append(f.partsTaken, i)
 		}
 	default:
-		f.partsTaken = nil
+		f.partsTaken = []int{at}
 	}
 	f.partAt = at
 	return f
 }
 
+func (f Form) selectedParts() []int {
+	n := len(f.parts())
+	return slices.DeleteFunc(slices.Clone(f.partsTaken), func(i int) bool { return i >= n })
+}
+
 func (f Form) takenParts() []int {
-	if len(f.partsTaken) < 2 {
-		return nil
+	if taken := f.selectedParts(); len(taken) >= 2 {
+		return taken
 	}
-	return f.partsTaken
+	return nil
+}
+
+func (f Form) takingTheOneOn() Form {
+	f.partsTaken = nil
+	if f.partAt < len(f.parts()) {
+		f.partsTaken = []int{f.partAt}
+	}
+	return f
 }
 
 func (f Form) carryingSeveral(to int) Form {
@@ -434,7 +440,8 @@ func (w Window) deletingParts() Window {
 	}
 	before := w.form
 	w.form = w.form.withParts(renumbered(rest))
-	w.form.partsTaken, w.form.partAt = nil, min(taken[0], len(rest))
+	w.form.partAt = min(taken[0], len(rest))
+	w.form = w.form.takingTheOneOn()
 	if len(gone) == 0 {
 		return w
 	}

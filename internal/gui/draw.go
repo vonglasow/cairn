@@ -646,9 +646,13 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 	say(gtx, th, skin.Chosen, box, w.Said(offer), reads)
 }
 
-func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on bool, held Written) {
+func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on, picked bool, held Written) {
 	panel := SubPanel(box)
-	fill(gtx, panel, skin.Panel)
+	ground := skin.Panel
+	if picked {
+		ground = skin.Ghost
+	}
+	fill(gtx, panel, ground)
 	if on {
 		outline(gtx, panel, skin.Chosen)
 	}
@@ -695,7 +699,7 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Win
 
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
 	for at, c := range under {
-		drawSub(gtx, th, skin, w.ServingCardAt(at), c, SubLine(c), false,
+		drawSub(gtx, th, skin, w.ServingCardAt(at), c, SubLine(c), false, false,
 			w.Holding("part:"+strconv.Itoa(c.Number), SubLine(c)))
 	}
 	clipped.Pop()
@@ -770,7 +774,7 @@ func drawTicked(gtx layout.Context, th *material.Theme, skin Skin, name, frame B
 			writing(gtx, th, skin, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
 			continue
 		}
-		drawSub(gtx, th, skin, tile, parts[at], StepLine(parts[at]), on && (f.partAt == at || slices.Contains(f.takenParts(), at)), Written{})
+		drawSub(gtx, th, skin, tile, parts[at], StepLine(parts[at]), on && f.partAt == at, on && slices.Contains(f.selectedParts(), at), Written{})
 	}
 	if field, ok := f.partsField(); ok {
 		_, value, rows := FormPlace(w.formBox(), f.Fields(), field)

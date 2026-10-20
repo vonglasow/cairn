@@ -76,10 +76,14 @@ func (f Form) onto(at int) Form {
 		f = f.committing()
 		f.writingPart = false
 	}
-	if at != f.at {
+	arriving := at != f.at
+	if arriving {
 		f.partAt = 0
 	}
 	f.at = min(len(f.fields)-1, max(0, at))
+	if arriving && f.onParts() {
+		f = f.takingTheOneOn()
+	}
 	f.caret, f.held = len([]rune(f.fields[f.at].Value)), 0
 	return f
 }

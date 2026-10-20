@@ -1265,17 +1265,23 @@ task never had is taken out of the list alone
 (`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
 a step out until the form was saved, which Alexis took for a delete that did
 not happen (cairn#105). Several steps are taken together the way cards
-are: `⌘`-click adds one or lets that one alone go, the others kept and the
-keyboard moved off it so it is no longer outlined
-(`@gui-a-step-taken-is-let-go-alone`); `⇧`-click takes every step from the
-one chosen to the one clicked; `⌘A` takes them all
-(`@gui-every-step-is-taken-at-once`); and a plain click lets them go
-(`@gui-steps-stretched-to-are-taken-together`). A step let go used to stay
-outlined, being the one the keyboard was on, and read as still taken. A delete key then asks
-"Delete 3 steps?", and agreed they go in one act that writes the task's steps
-without them (`@gui-steps-taken-together-are-deleted-at-once`); dragged, they
-go together, in their order, where the one in hand lands
-(`@gui-steps-taken-together-move-together`, cairn#113). A tile is dragged to another
+are, and **what is taken is not what the keyboard is on**: a step taken is
+filled (`Skin.Ghost`), the one the keyboard is on is outlined, and a step can
+be either or both. A click takes that step alone and puts the keyboard on it;
+`⌘`-click adds one or lets it go, down to none, the keyboard following the
+click (`@gui-a-step-taken-is-let-go-alone`, `@gui-the-last-step-taken-can-be-let-go`);
+`⇧`-click takes every step from the one the keyboard is on to the one clicked
+(`@gui-steps-stretched-to-are-taken-together`); `⌘A` takes them all
+(`@gui-every-step-is-taken-at-once`); the arrows move the keyboard and take
+the step they reach, so a keyboard alone deletes where it is. A delete key
+acts on what is taken and on nothing else: one step asks "Delete the step
+“Draft”?", several "Delete 3 steps?", and agreed they go in one act that
+writes the task's steps without them
+(`@gui-steps-taken-together-are-deleted-at-once`); dragged, steps taken go
+together, in their order, where the one in hand lands
+(`@gui-steps-taken-together-move-together`). One outline used to say both
+things, so the last step let go stayed outlined and a delete key still took
+it (cairn#113). A tile is dragged to another
 place the way a card is: the step in hand follows the pointer, and a line says
 where it would land — over the tile it takes the place of when carried up,
 under it when carried down, drawn over the step in hand so the thing aimed

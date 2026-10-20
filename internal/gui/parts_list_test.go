@@ -84,7 +84,7 @@ func TestAgreedAPartIsDeletedAtOnceAndTheOnesBehindMoveUp(t *testing.T) {
 	w.height = 800
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).On("steps")
 	w = w.Key("down").Key("down").Key("down").Key("enter").Types("D").Key("enter").Key("esc")
-	w.form.partAt = 1
+	w.form = w.form.takingPart(1, false, false)
 	w = w.Key("backspace").Key("enter")
 	in, asked := f.gave("step", "delete")
 	if !asked || in.Given["number"] != "1" || in.Given["step"] != "2" {
@@ -123,7 +123,7 @@ func TestAPartNeverSavedIsTakenOutWithoutTheEngine(t *testing.T) {
 	f := newFake()
 	w := onTheListOf(t, f, "A")
 	added := w.Key("down").Key("enter").Types("New").Key("enter").Key("esc")
-	added.form.partAt = 1
+	added.form = added.form.takingPart(1, false, false)
 	gone := added.Key("backspace").Key("enter")
 	if parts := gone.form.parts(); len(parts) != 1 || parts[0].Title != "A" {
 		t.Errorf("deleting a part never saved left %+v", parts)
@@ -466,12 +466,11 @@ func TestStepsTakenTogetherMoveAsOneBlock(t *testing.T) {
 	if titles(down) != "CDAB" || fmt.Sprint(down.takenParts()) != "[2 3]" {
 		t.Errorf("A and B carried onto D give %s, taken %v", titles(down), down.takenParts())
 	}
-	f.partAt = 2
-	up := f.takingPart(3, true, false).carryingSeveral(0)
+	up := f.takingPart(2, false, false).takingPart(3, true, false).carryingSeveral(0)
 	if titles(up) != "CDAB" || fmt.Sprint(up.takenParts()) != "[0 1]" {
 		t.Errorf("C and D carried onto A give %s, taken %v", titles(up), up.takenParts())
 	}
-	if titles(f.takingPart(3, true, false).carryingSeveral(3)) != "ABCD" {
+	if titles(f.takingPart(2, false, false).takingPart(3, true, false).carryingSeveral(3)) != "ABCD" {
 		t.Error("a block carried onto itself moved")
 	}
 }
@@ -480,8 +479,7 @@ func TestSeveralStepsAreDeletedInOneAct(t *testing.T) {
 	f := newFake()
 	w := onTheListOf(t, f, "A", "B", "C")
 	w = w.Key("down").Key("down").Key("down").Key("enter").Types("D").Key("enter").Key("esc")
-	w.form.partAt = 0
-	w.form = w.form.takingPart(2, true, false).takingPart(3, true, false)
+	w.form = w.form.takingPart(0, false, false).takingPart(2, true, false).takingPart(3, true, false)
 	asked := w.Key("backspace")
 	if asked.Screen() != OnAsking || Heads(asked) != "Delete 3 steps?" {
 		t.Fatalf("the delete key asked %q on %v", Heads(asked), asked.Screen())
@@ -512,19 +510,54 @@ func titlesOf(parts []engine.Part) string {
 	return strings.Join(out, "")
 }
 
-func TestAStepLetGoOfIsNoLongerOutlined(t *testing.T) {
+func TestTheStepsTakenAreFilledAndTheOneTheKeyboardIsOnIsOutlined(t *testing.T) {
 	w := onTheList(t, 800, "A", "B", "C")
 	w.form = w.form.takingPart(1, true, false).takingPart(2, true, false).takingPart(1, true, false)
-	if got := w.form.takenParts(); fmt.Sprint(got) != "[0 2]" || w.form.partAt == 1 {
+	if got := w.form.selectedParts(); fmt.Sprint(got) != "[0 2]" || w.form.partAt != 1 {
 		t.Fatalf("⌘ on B again left %v taken, the keyboard on line %d", got, w.form.partAt)
 	}
-	lit := Dark().Chosen
 	tiles := w.partTiles()
 	shot := drawn(t, w)
-	for i, want := range []bool{true, false, true} {
-		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], lit) != 0; got != want {
-			t.Errorf("step %d is outlined: %v, want %v", i, got, want)
+	for i, want := range []struct{ filled, outlined bool }{{true, false}, {false, true}, {true, false}} {
+		middle := Box{X: tiles[i].X + tiles[i].W - 12, Y: tiles[i].Y + tiles[i].H/2, W: 4, H: 2}
+		if got := painted(shot, middle, Dark().Ghost) != 0; got != want.filled {
+			t.Errorf("step %d is filled: %v, want %v", i, got, want.filled)
 		}
+		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], Dark().Chosen) != 0; got != want.outlined {
+			t.Errorf("step %d is outlined: %v, want %v", i, got, want.outlined)
+		}
+	}
+}
+
+func TestTheLastStepTakenCanBeLetGo(t *testing.T) {
+	w := onTheList(t, 800, "A", "B")
+	w.form = w.form.takingPart(0, true, false)
+	if got := w.form.selectedParts(); len(got) != 0 {
+		t.Fatalf("⌘ on the only step taken left %v", got)
+	}
+	if asked := w.Key("backspace"); asked.Screen() != OnForm {
+		t.Errorf("a delete key with nothing taken asked %q", Heads(asked))
+	}
+}
+
+func TestTheArrowsTakeTheStepTheyReach(t *testing.T) {
+	w := onTheList(t, 800, "A", "B", "C")
+	if got := w.form.selectedParts(); fmt.Sprint(got) != "[0]" {
+		t.Errorf("the keyboard on the list took %v", got)
+	}
+	if got := w.Key("down").form.selectedParts(); fmt.Sprint(got) != "[1]" {
+		t.Errorf("down took %v", got)
+	}
+	if got := w.Key("down").Key("down").Key("down").form.selectedParts(); len(got) != 0 {
+		t.Errorf("the line that adds took %v", got)
+	}
+}
+
+func TestADeleteKeyDeletesTheOneStepTakenWhereverTheKeyboardIs(t *testing.T) {
+	w := onTheList(t, 800, "A", "B", "C")
+	w.form = w.form.takingPart(2, false, false).takingPart(1, true, false).takingPart(1, true, false)
+	if asked := w.Key("backspace"); Heads(asked) != "Delete the step “C”?" {
+		t.Errorf("the delete key asked %q", Heads(asked))
 	}
 }
 

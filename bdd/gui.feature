@@ -3022,6 +3022,18 @@ Feature: The desktop board
       When I press "enter"
       Then the steps of task 1 read "Keep"
 
+    @gui-the-last-step-taken-can-be-let-go
+    Scenario: a ⌘-click lets the last step taken go, and a delete key then deletes nothing
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I ⌘-click the step "Draft"
+      And I press "backspace"
+      Then the form is open on task 1
+      And the steps of task 1 read "Draft"
+
     @gui-every-step-is-taken-at-once
     Scenario: ⌘A takes every step of the list
       Given I added a task titled "Ship it"
