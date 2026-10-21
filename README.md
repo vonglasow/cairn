@@ -93,6 +93,13 @@ plugin = "~/.cairn/claude-plugin"
 tasks = true
 objectives = true
 time = true
+
+# Sprints: when a board opens or the tasks are listed, a task that went done
+# before the sprint under way began is archived. Off unless start is said;
+# a sprint lasts 14 days unless days says otherwise.
+# [sprint]
+# start = 2026-10-21
+# days = 14
 ```
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and

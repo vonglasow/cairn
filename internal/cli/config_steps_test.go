@@ -198,6 +198,19 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, "absolute", "the reason")
 	})
 
+	sc.Step(`^a configuration whose sprints begin on (\d{4}-\d{2}-\d{2}) and last (\d+) days$`, func(day string, length int) error {
+		return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %s\ndays = %d\n", day, length))
+	})
+	sc.Step(`^a configuration whose sprints begin on "([^"]*)"$`, func(day string) error {
+		return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %q\n", day))
+	})
+	sc.Step(`^it says the sprints begin on (\d{4}-\d{2}-\d{2}), every (\d+) days$`, func(day string, length int) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%s, every %d days", day, length), "the sprints")
+	})
+	sc.Step(`^it says there are no sprints$`, func() error {
+		return test.WantContains(w.Out.Stdout, "no sprints", "the sprints")
+	})
+
 	sc.Step(`^it names "([^"]*)"$`, func(place string) error {
 		return test.WantContains(w.Out.Stderr, place, "the reason")
 	})

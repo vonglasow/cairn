@@ -137,6 +137,43 @@ absoluteness rule for free, since an empty string is not an absolute path.
 simply nothing: it leaves the answer as it was worked out. The file is written;
 the environment is not.
 
+## Sprints, and what they archive
+
+```toml
+[sprint]
+start = 2026-10-21   # the day the first sprint began
+days = 14            # how long each lasts; 14 when it is not said
+```
+
+A done column fills up: 55 tasks sat there next to 129 archived before anybody
+swept it by hand (cairn#56). With sprints said, a task that went done before
+the sprint under way began is archived: sprints follow one another from
+`start`, every `days` calendar days, and the moment a task went done is its
+last move into `done` in the trace. The sweep runs when a board opens
+(`engine.Hold`) and when the tasks are listed, through the command line or the
+MCP server (`@sprint-archives-what-was-done-before-it`), through the same act
+as `task archive`, written down as done through `sprint`
+(`@sprint-archive-is-said-in-the-trace`). Nothing said, nothing is archived on
+its own (`@sprint-none-archives-nothing`), nor before the first sprint has
+begun (`@sprint-not-begun-archives-nothing`). A sprint that does not begin on a
+day, or lasts no day, is refused like any key the file gets wrong
+(`@config-a-sprint-of-no-days-is-refused`,
+`@config-a-sprint-must-begin-on-a-day`), and `config show` says them
+(`@config-show-says-the-sprints`).
+
+Calendar days, not working days: a sprint is a span of the calendar, and
+counting working days would ask which days are holidays, which cairn does not
+know. The day a sprint began is not kept anywhere: it is computed from `start`
+each time, so changing `start` or `days` takes effect at the next sweep.
+
+Today is the day the clock says, unless `CAIRN_TODAY` names another, written
+2026-11-04: a script, or a scenario, stands on that day to see what the sweep
+would do then. A scenario cannot move the trace back — it asks the engine,
+which only writes the present, and never opens the store — so it moves today
+forward instead (`@sprint-archives-what-was-done-before-it`,
+`@sprint-keeps-what-went-done-in-it`). A day it cannot read is taken as no day
+named.
+
 ## The environment names the same two places
 
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the

@@ -366,6 +366,25 @@
             "type": "string"
           }
         },
+        "sprint": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "days": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "start",
+            "days"
+          ],
+          "additionalProperties": false
+        },
         "problem": {
           "type": "string"
         }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 
@@ -90,6 +91,15 @@ func (w *World) WriteConfig(content string) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(content), 0o600)
+}
+
+// Sprints poses a configuration whose first sprint begins that many days from today, a negative count being in the past; a length of 0 leaves it unsaid.
+func (w *World) Sprints(length, from int) error {
+	start := time.Now().AddDate(0, 0, from).Format(time.DateOnly)
+	if length == 0 {
+		return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %s\n", start))
+	}
+	return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %s\ndays = %d\n", start, length))
 }
 
 // AStoreFromAnOlderCairn turns the store into one an older cairn would have written, holding one task: the task added and the last change to the shape undone, through the real commands.
@@ -213,6 +223,17 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^it says how to use it$`, w.ItSaysHowToUseIt)
 	sc.Step(`^it says what it expects instead of "([^"]*)"$`, w.ItSaysWhatItExpectsInsteadOf)
 	sc.Step("^`([^`]*)` lists (\\d+) tasks?$", w.LineListsTasks)
+	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
+		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))
+		return nil
+	})
+	sc.Step(`^sprints of (\d+) days, the first one begun (\d+) days ago$`, func(length, ago int) error {
+		return w.Sprints(length, -ago)
+	})
+	sc.Step(`^sprints of (\d+) days, the first one beginning in (\d+) days$`, w.Sprints)
+	sc.Step(`^a sprint begun (\d+) days ago, its length not said$`, func(ago int) error {
+		return w.Sprints(0, -ago)
+	})
 }
 
 func (w *World) afterScenario(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {

@@ -1383,6 +1383,73 @@ Feature: Tasks
       Then it fails
       And it says the task is on the board
 
+
+  Rule: A sprint archives what was done before it began
+
+    @sprint-archives-what-was-done-before-it
+    Scenario: what went done before the sprint began is archived once the tasks are listed
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And I added a task titled "Spike Argo" with the state "todo"
+      And sprints of 14 days, the first one begun 10 days ago
+      And it is 10 days from now
+      When I run `cairn task list`
+      Then it lists 1 task
+      And task 1 is archived
+      And task 2 is not archived
+
+    @sprint-keeps-what-went-done-in-it
+    Scenario: what went done in the sprint under way stays on the board
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And sprints of 14 days, the first one begun 10 days ago
+      And it is 3 days from now
+      When I run `cairn task list`
+      Then it lists 1 task
+      And task 1 is not archived
+
+    @sprint-archive-is-said-in-the-trace
+    Scenario: the trace says a sprint archived the task
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And sprints of 14 days, the first one begun 10 days ago
+      And it is 10 days from now
+      When I run `cairn task list`
+      And I run `cairn trace show 1`
+      Then an act says it was archived through "sprint"
+
+    @sprint-lasts-14-days-unless-told
+    Scenario: a sprint whose length is not said lasts 14 days
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And a sprint begun 10 days ago, its length not said
+      And it is 4 days from now
+      When I run `cairn task list`
+      Then task 1 is archived
+
+    @sprint-leaves-the-rest-alone
+    Scenario: only what is done is archived by a sprint
+      Given I added a task titled "Migration Jenkins" with the state "todo"
+      And I added a task titled "Spike Argo" with the state "done"
+      And I edited task 2 with the state "current"
+      And sprints of 14 days, the first one begun 10 days ago
+      And it is 10 days from now
+      When I run `cairn task list`
+      Then it lists 2 tasks
+      And task 1 is not archived
+      And task 2 is not archived
+
+    @sprint-none-archives-nothing
+    Scenario: with no sprint configured, nothing is archived on its own
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And it is 40 days from now
+      When I run `cairn task list`
+      Then task 1 is not archived
+
+    @sprint-not-begun-archives-nothing
+    Scenario: before the first sprint begins, nothing is archived on its own
+      Given I added a task titled "Migration Jenkins" with the state "done"
+      And sprints of 14 days, the first one beginning in 3 days
+      When I run `cairn task list`
+      Then it lists 1 task
+      And task 1 is not archived
+
   Rule: A task is split into steps, which are not tasks
 
     @task-step-has-no-number

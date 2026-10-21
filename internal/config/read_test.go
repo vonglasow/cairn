@@ -686,3 +686,35 @@ func TestRead_takesThePluginFolderTheFileNames(t *testing.T) {
 		t.Errorf("a plugin folder that is not absolute = %v, want ErrNotAbsolute", err)
 	}
 }
+
+func TestRead_saysWhenTheSprintsBeginAndHowLongTheyLast(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[sprint]\nstart = 2026-10-21\ndays = 10\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, days, ok := read.Sprint()
+	if !ok || start != "2026-10-21" || days != 10 {
+		t.Errorf("the sprints begin on %q and last %d days (%v)", start, days, ok)
+	}
+	unsaid, err := config.Read(writtenConfig(t, "[sprint]\nstart = 2026-10-21\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, days, _ := unsaid.Sprint(); days != 14 {
+		t.Errorf("a sprint whose length is not said lasts %d days, want 14", days)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if _, _, ok := none.Sprint(); ok {
+		t.Error("with no file, there are sprints")
+	}
+	for _, refused := range []struct{ written, names string }{
+		{"[sprint]\nstart = 2026-10-21\ndays = 0\n", "sprint.days"},
+		{"[sprint]\nstart = \"soon\"\n", "sprint.start"},
+		{"[sprint]\ndays = 14\n", "sprint.start"},
+	} {
+		_, err := config.Read(writtenConfig(t, refused.written), silentEnv)
+		if !errors.Is(err, config.ErrSprint) || !strings.Contains(err.Error(), refused.names) {
+			t.Errorf("%q gives %v, want ErrSprint naming %s", refused.written, err, refused.names)
+		}
+	}
+}

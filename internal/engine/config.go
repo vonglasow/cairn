@@ -24,7 +24,14 @@ type Config struct {
 	Notes    Emplacement `json:"notes"`
 	Plugin   Emplacement `json:"plugin"`
 	PagesOff []string    `json:"pages_off,omitempty"`
+	Sprint   *Sprint     `json:"sprint,omitempty"`
 	Problem  string      `json:"problem,omitempty"`
+}
+
+// Sprint is the day the first sprint began and how many days each lasts.
+type Sprint struct {
+	Start string `json:"start"`
+	Days  int    `json:"days"`
 }
 
 type placesGate struct {
@@ -61,6 +68,9 @@ func (g *readingGate) Resolved(p config.Places) {
 		g.config.Plugin = Emplacement{At: told, By: "the file"}
 	}
 	g.config.PagesOff = p.PagesOff()
+	if start, days, ok := p.Sprint(); ok {
+		g.config.Sprint = &Sprint{Start: start, Days: days}
+	}
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -103,7 +113,10 @@ func configText(c Config) string {
 	if len(c.PagesOff) > 0 {
 		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
 	}
-	return said
+	if c.Sprint == nil {
+		return said + "\nno sprints: nothing is archived on its own\n"
+	}
+	return said + fmt.Sprintf("\nsprints     %s, every %d days\n", c.Sprint.Start, c.Sprint.Days)
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

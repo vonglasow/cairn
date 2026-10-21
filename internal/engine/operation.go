@@ -398,5 +398,10 @@ func doWith(
 		}
 	}()
 	eng.acting, eng.notes, eng.home = acting, at.Notes, at.Home
+	if op.Thing == TaskList.Thing && op.Verb == TaskList.Verb {
+		if err := eng.sprintSwept(); err != nil {
+			return Answer{}, storeProblem(err)
+		}
+	}
 	return eng.run(op, in)
 }

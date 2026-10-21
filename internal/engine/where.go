@@ -88,5 +88,9 @@ func Hold(h Home, acting Acting) (*Engine, error) {
 		return nil, err
 	}
 	held.acting = acting
+	if err := held.sprintSwept(); err != nil {
+		_ = held.Close()
+		return nil, storeProblem(err)
+	}
 	return held, nil
 }

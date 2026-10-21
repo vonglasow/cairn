@@ -225,6 +225,33 @@ Feature: Where cairn looks for its own places
       And I ask it to show task 1
       Then no configuration was posed
 
+  Rule: A sprint begins on a day and lasts a number of days
+
+    @config-show-says-the-sprints
+    Scenario: the sprints configured are shown
+      Given a configuration whose sprints begin on 2026-10-21 and last 10 days
+      When I run `cairn config show`
+      Then it says the sprints begin on 2026-10-21, every 10 days
+
+    @config-show-says-there-are-no-sprints
+    Scenario: with no sprint configured, it says there is none
+      When I run `cairn config show`
+      Then it says there are no sprints
+
+    @config-a-sprint-of-no-days-is-refused
+    Scenario: a sprint lasting no day is refused
+      Given a configuration whose sprints begin on 2026-10-21 and last 0 days
+      When I run `cairn task list`
+      Then it fails
+      And it names "sprint.days"
+
+    @config-a-sprint-must-begin-on-a-day
+    Scenario: a sprint that does not begin on a day is refused
+      Given a configuration whose sprints begin on "soon"
+      When I run `cairn task list`
+      Then it fails
+      And it names "sprint.start"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-names-the-file-it-reads

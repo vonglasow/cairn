@@ -311,6 +311,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^task (\d+) is archived$`, func(n int) error { return w.archived(n, true) })
 	sc.Step(`^task (\d+) is not archived$`, func(n int) error { return w.archived(n, false) })
+	sc.Step(`^an act says it was archived through "([^"]*)"$`, func(through string) error {
+		for _, line := range strings.Split(w.Out.Stdout, "\n") {
+			if strings.Contains(line, "archived") && strings.Contains(line, ", through "+through+")") {
+				return nil
+			}
+		}
+		return fmt.Errorf("no act says it was archived through %s:\n%s", through, w.Out.Stdout)
+	})
 
 	sc.Step(`^it says (\d+) tasks? were archived$`, func(n int) error {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d", n), "what it shows")
