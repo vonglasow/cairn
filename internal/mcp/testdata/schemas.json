@@ -366,7 +366,7 @@
             "type": "string"
           }
         },
-        "sprint": {
+        "archive": {
           "type": [
             "null",
             "object"

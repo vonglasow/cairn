@@ -34,10 +34,10 @@ var ErrUnknownKey = errors.New("not a key cairn knows")
 // ErrNotTOML is returned when the file's content cannot be made sense of as TOML at all — not a specific rule the file broke, just the syntax itself.
 var ErrNotTOML = errors.New("not a file cairn can make sense of")
 
-// ErrSprint is returned when the file names sprints that do not begin on a day, or last no day at all.
-var ErrSprint = errors.New("a sprint begins on a day, written 2026-10-21, and lasts one day or more")
+// ErrArchive is returned when the file counts the days archiving waits for from something that is not a day, or in periods of no day at all.
+var ErrArchive = errors.New("archiving counts from a day, written 2026-10-21, in periods of one day or more")
 
-const defaultSprintDays = 14
+const defaultArchiveDays = 14
 
 // ErrNotAbsolute is returned when a place the file names is not absolute, even once a leading "~" has been expanded — a configuration is read from everywhere, so what it names has to mean one thing regardless of where a command runs from.
 var ErrNotAbsolute = errors.New("must be absolute")
@@ -58,24 +58,24 @@ type Places struct {
 	notesNamedBy namedBy
 	pagesOff     []string
 	plugin       string
-	sprintStart  string
-	sprintDays   int
+	archiveStart string
+	archiveDays  int
 }
 
 type file struct {
-	Store  *string `toml:"store"`
-	Notes  *string `toml:"notes"`
-	Plugin *string `toml:"plugin"`
-	Pages  *pages  `toml:"pages"`
-	Sprint *sprint `toml:"sprint"`
+	Store   *string  `toml:"store"`
+	Notes   *string  `toml:"notes"`
+	Plugin  *string  `toml:"plugin"`
+	Pages   *pages   `toml:"pages"`
+	Archive *archive `toml:"archive"`
 }
 
-type sprint struct {
+type archive struct {
 	Start any    `toml:"start"`
 	Days  *int64 `toml:"days"`
 }
 
-func (s *sprint) read() (string, int, error) {
+func (s *archive) read() (string, int, error) {
 	if s == nil {
 		return "", 0, nil
 	}
@@ -85,17 +85,17 @@ func (s *sprint) read() (string, int, error) {
 		start = said
 	case string:
 		if err := start.UnmarshalText([]byte(said)); err != nil {
-			return "", 0, fmt.Errorf("sprint.start %q: %w", said, ErrSprint)
+			return "", 0, fmt.Errorf("archive.start %q: %w", said, ErrArchive)
 		}
 	default:
-		return "", 0, fmt.Errorf("sprint.start %v: %w", said, ErrSprint)
+		return "", 0, fmt.Errorf("archive.start %v: %w", said, ErrArchive)
 	}
-	days := int64(defaultSprintDays)
+	days := int64(defaultArchiveDays)
 	if s.Days != nil {
 		days = *s.Days
 	}
 	if days < 1 {
-		return "", 0, fmt.Errorf("sprint.days %d: %w", days, ErrSprint)
+		return "", 0, fmt.Errorf("archive.days %d: %w", days, ErrArchive)
 	}
 	return start.String(), int(days), nil
 }
@@ -125,9 +125,9 @@ func (p *pages) off() []string {
 // Plugin is the folder the file names for the Claude Code plugin, and nothing when it names none: the plugin then goes beside the store.
 func (p Places) Plugin() string { return p.plugin }
 
-// Sprint is the day the first sprint begins, written 2026-10-21, and how many days each lasts; nothing when the file names no sprint.
-func (p Places) Sprint() (string, int, bool) {
-	return p.sprintStart, p.sprintDays, p.sprintDays > 0
+// Archive is the day the file counts from, written 2026-10-21, and how many days each period lasts; nothing when the file does not archive on its own.
+func (p Places) Archive() (string, int, bool) {
+	return p.archiveStart, p.archiveDays, p.archiveDays > 0
 }
 
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
@@ -193,13 +193,13 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		}
 	}
 
-	start, days, err := f.Sprint.read()
+	start, days, err := f.Archive.read()
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
 	answer := Places{
-		sprintStart:  start,
-		sprintDays:   days,
+		archiveStart: start,
+		archiveDays:  days,
 		store:        filepath.Join(home, DefaultFolder, defaultFile),
 		notes:        filepath.Join(home, DefaultFolder, defaultNotesFolder),
 		storeNamedBy: byNothing,

@@ -94,10 +94,11 @@ tasks = true
 objectives = true
 time = true
 
-# Sprints: when a board opens or the tasks are listed, a task that went done
-# before the sprint under way began is archived. Off unless start is said;
-# a sprint lasts 14 days unless days says otherwise.
-# [sprint]
+# Archiving on its own: days are counted from start, in periods of that many
+# days, and when a board opens or the tasks are listed, a task that went done
+# before the period under way began is archived. Off unless start is said;
+# a period lasts 14 days unless days says otherwise.
+# [archive]
 # start = 2026-10-21
 # days = 14
 ```

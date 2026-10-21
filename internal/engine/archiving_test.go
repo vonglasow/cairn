@@ -15,7 +15,7 @@ func midnight(at time.Time) time.Time {
 	return time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.Local)
 }
 
-func archivedThroughSprint(t *testing.T, e *Engine, number int) bool {
+func archivedOnItsOwn(t *testing.T, e *Engine, number int) bool {
 	t.Helper()
 	acts, err := e.historyOf(number)
 	if err != nil {
@@ -23,7 +23,7 @@ func archivedThroughSprint(t *testing.T, e *Engine, number int) bool {
 	}
 	for _, act := range acts {
 		if c := act.Carried(); c.Field == "archived" && c.Became == "yes" {
-			if c.Through != throughSprint || c.By != "alexis" {
+			if c.Through != throughArchive || c.By != "alexis" {
 				t.Errorf("task %d was archived by %q through %q", number, c.By, c.Through)
 			}
 			return true
@@ -32,7 +32,7 @@ func archivedThroughSprint(t *testing.T, e *Engine, number int) bool {
 	return false
 }
 
-func TestASprintArchivesWhatWentDoneBeforeItBegan(t *testing.T) {
+func TestWhatWentDoneBeforeThePeriodUnderWayIsArchived(t *testing.T) {
 	e := openEngine(t)
 	e.acting = Acting{Through: "cli", By: "alexis"}
 	add(t, e, "Migration Jenkins")
@@ -41,22 +41,22 @@ func TestASprintArchivesWhatWentDoneBeforeItBegan(t *testing.T) {
 		t.Fatal(err)
 	}
 	today := midnight(time.Now())
-	if err := e.sweptBySprint(today, 14, today.AddDate(0, 0, 5)); err != nil {
+	if err := e.sweptByPeriod(today, 14, today.AddDate(0, 0, 5)); err != nil {
 		t.Fatal(err)
 	}
-	if archivedThroughSprint(t, e, 1) {
-		t.Fatal("a task that went done in the sprint under way was archived")
+	if archivedOnItsOwn(t, e, 1) {
+		t.Fatal("a task that went done in the period under way was archived")
 	}
-	if err := e.sweptBySprint(today, 14, today.AddDate(0, 0, 20)); err != nil {
+	if err := e.sweptByPeriod(today, 14, today.AddDate(0, 0, 20)); err != nil {
 		t.Fatal(err)
 	}
-	if !archivedThroughSprint(t, e, 1) {
-		t.Error("a task that went done before the sprint under way is not archived")
+	if !archivedOnItsOwn(t, e, 1) {
+		t.Error("a task that went done before the period under way is not archived")
 	}
-	if archivedThroughSprint(t, e, 2) {
+	if archivedOnItsOwn(t, e, 2) {
 		t.Error("a task never done was archived")
 	}
-	if err := e.sweptBySprint(today, 14, today.AddDate(0, 0, 40)); err != nil {
+	if err := e.sweptByPeriod(today, 14, today.AddDate(0, 0, 40)); err != nil {
 		t.Errorf("a task already archived stops the sweep: %v", err)
 	}
 	if e.acting.Through != "cli" {
@@ -64,7 +64,7 @@ func TestASprintArchivesWhatWentDoneBeforeItBegan(t *testing.T) {
 	}
 }
 
-func TestABoardOpeningSweepsTheSprint(t *testing.T) {
+func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := Open(path)
 	if err != nil {
@@ -86,7 +86,7 @@ func TestABoardOpeningSweepsTheSprint(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now().AddDate(0, 0, -20).Format(time.DateOnly)
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[sprint]\nstart = %s\n", start), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	held, err := Hold(Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}, Acting{Through: "tui", By: "alexis"})
@@ -94,18 +94,18 @@ func TestABoardOpeningSweepsTheSprint(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = held.Close() }()
-	if !archivedThroughSprint(t, held, 1) {
-		t.Error("opening a board left a task done before the sprint under way on it")
+	if !archivedOnItsOwn(t, held, 1) {
+		t.Error("opening a board left a task done before the period under way on it")
 	}
 }
 
-func TestConfigShowSaysTheSprints(t *testing.T) {
-	said := configText(Config{Sprint: &Sprint{Start: "2026-10-21", Days: 10}})
-	if !strings.Contains(said, "sprints     2026-10-21, every 10 days") {
+func TestConfigShowSaysWhatIsArchivedOnItsOwn(t *testing.T) {
+	said := configText(Config{Archive: &Archive{Start: "2026-10-21", Days: 10}})
+	if !strings.Contains(said, "archive     every 10 days from 2026-10-21") {
 		t.Errorf("config show says:\n%s", said)
 	}
-	if said := configText(Config{}); !strings.Contains(said, "no sprints") {
-		t.Errorf("with no sprint, config show says:\n%s", said)
+	if said := configText(Config{}); !strings.Contains(said, "nothing is archived on its own") {
+		t.Errorf("with no archiving, config show says:\n%s", said)
 	}
 }
 

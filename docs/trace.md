@@ -214,8 +214,8 @@ be told apart, and nothing at all said who — a person, a script, an agent, a
 Claude session (cairn#83).
 
 The surface is `cli`, `tui`, `gui`, `mcp`, `migration` for what a change
-of the store's shape wrote, or `sprint` for a task the sprints archived on
-their own (see [config.md](config.md#sprints-and-what-they-archive)). Who is the one `CAIRN_AUTHOR` names when it is
+of the store's shape wrote, or `archive` for a task archived on its own
+(see [config.md](config.md#archiving-on-its-own)). Who is the one `CAIRN_AUTHOR` names when it is
 set, and the one logged in otherwise (`@trace-author-is-the-login-by-default`);
 over MCP, the client that greeted the server names itself — `claude-code` —
 unless `CAIRN_AUTHOR` is set for the server

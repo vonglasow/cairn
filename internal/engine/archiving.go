@@ -9,9 +9,9 @@ import (
 	"cairn/internal/trace"
 )
 
-const throughSprint = "sprint"
+const throughArchive = "archive"
 
-// TodayVariable is the variable that names the day cairn takes for today when it sweeps the sprints, for a script or a scenario to stand on another day.
+// TodayVariable is the variable that names the day cairn takes for today when it archives on its own, for a script or a scenario to stand on another day.
 const TodayVariable = "CAIRN_TODAY"
 
 func today(h Home) time.Time {
@@ -23,7 +23,7 @@ func today(h Home) time.Time {
 	return time.Now()
 }
 
-func (e *Engine) sprintSwept() error {
+func (e *Engine) archivingSwept() error {
 	if e.home.Dir == "" {
 		return nil
 	}
@@ -31,7 +31,7 @@ func (e *Engine) sprintSwept() error {
 	if err != nil {
 		return nil
 	}
-	said, days, ok := read.Sprint()
+	said, days, ok := read.Archive()
 	if !ok {
 		return nil
 	}
@@ -39,17 +39,17 @@ func (e *Engine) sprintSwept() error {
 	if err != nil {
 		return err
 	}
-	return e.sweptBySprint(start, days, today(e.home))
+	return e.sweptByPeriod(start, days, today(e.home))
 }
 
-func (e *Engine) sweptBySprint(start time.Time, days int, now time.Time) error {
-	begun, ok := domain.SprintUnderWay(start, days, now)
+func (e *Engine) sweptByPeriod(start time.Time, days int, now time.Time) error {
+	begun, ok := domain.PeriodUnderWay(start, days, now)
 	if !ok {
 		return nil
 	}
 	return e.store.Within(func(kept *store.Store) error {
 		in := e.keptBy(kept)
-		in.acting.Through = throughSprint
+		in.acting.Through = throughArchive
 		var done domain.Narrowing
 		done.InColumn(string(domain.Done))
 		found, err := in.tasks.Narrowed(&done)

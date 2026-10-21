@@ -225,32 +225,32 @@ Feature: Where cairn looks for its own places
       And I ask it to show task 1
       Then no configuration was posed
 
-  Rule: A sprint begins on a day and lasts a number of days
+  Rule: Archiving on its own counts from a day, in periods of a number of days
 
-    @config-show-says-the-sprints
-    Scenario: the sprints configured are shown
-      Given a configuration whose sprints begin on 2026-10-21 and last 10 days
+    @config-show-says-what-is-archived-on-its-own
+    Scenario: archiving on its own is shown
+      Given a configuration that archives every 10 days from 2026-10-21
       When I run `cairn config show`
-      Then it says the sprints begin on 2026-10-21, every 10 days
+      Then it says it archives every 10 days from 2026-10-21
 
-    @config-show-says-there-are-no-sprints
-    Scenario: with no sprint configured, it says there is none
+    @config-show-says-nothing-is-archived-on-its-own
+    Scenario: with no archiving configured, it says nothing is archived on its own
       When I run `cairn config show`
-      Then it says there are no sprints
+      Then it says nothing is archived on its own
 
-    @config-a-sprint-of-no-days-is-refused
-    Scenario: a sprint lasting no day is refused
-      Given a configuration whose sprints begin on 2026-10-21 and last 0 days
+    @config-archiving-in-periods-of-no-day-is-refused
+    Scenario: archiving in periods of no day is refused
+      Given a configuration that archives every 0 days from 2026-10-21
       When I run `cairn task list`
       Then it fails
-      And it names "sprint.days"
+      And it names "archive.days"
 
-    @config-a-sprint-must-begin-on-a-day
-    Scenario: a sprint that does not begin on a day is refused
-      Given a configuration whose sprints begin on "soon"
+    @config-archiving-counts-from-a-day
+    Scenario: archiving that does not count from a day is refused
+      Given a configuration that archives counting from "soon"
       When I run `cairn task list`
       Then it fails
-      And it names "sprint.start"
+      And it names "archive.start"
 
   Rule: Showing the configuration says what cairn will use, and where it got it
 

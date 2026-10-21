@@ -2,8 +2,8 @@ package domain
 
 import "time"
 
-// SprintUnderWay is the day the sprint under way at now began, sprints of that many days following one another from start; nothing before the first has begun.
-func SprintUnderWay(start time.Time, days int, now time.Time) (time.Time, bool) {
+// PeriodUnderWay is the day the period under way at now began, periods of that many days following one another from start; nothing before start.
+func PeriodUnderWay(start time.Time, days int, now time.Time) (time.Time, bool) {
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, start.Location())
 	if days < 1 || today.Before(start) {
 		return time.Time{}, false

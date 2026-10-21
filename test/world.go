@@ -93,13 +93,13 @@ func (w *World) WriteConfig(content string) error {
 	return os.WriteFile(path, []byte(content), 0o600)
 }
 
-// Sprints poses a configuration whose first sprint begins that many days from today, a negative count being in the past; a length of 0 leaves it unsaid.
-func (w *World) Sprints(length, from int) error {
+// Archiving poses a configuration that archives on its own, counting periods of that length from that many days from today, a negative count being in the past; a length of 0 leaves it unsaid.
+func (w *World) Archiving(length, from int) error {
 	start := time.Now().AddDate(0, 0, from).Format(time.DateOnly)
 	if length == 0 {
-		return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %s\n", start))
+		return w.WriteConfig(fmt.Sprintf("[archive]\nstart = %s\n", start))
 	}
-	return w.WriteConfig(fmt.Sprintf("[sprint]\nstart = %s\ndays = %d\n", start, length))
+	return w.WriteConfig(fmt.Sprintf("[archive]\nstart = %s\ndays = %d\n", start, length))
 }
 
 // AStoreFromAnOlderCairn turns the store into one an older cairn would have written, holding one task: the task added and the last change to the shape undone, through the real commands.
@@ -227,12 +227,12 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))
 		return nil
 	})
-	sc.Step(`^sprints of (\d+) days, the first one begun (\d+) days ago$`, func(length, ago int) error {
-		return w.Sprints(length, -ago)
+	sc.Step(`^archiving every (\d+) days, counted from (\d+) days ago$`, func(length, ago int) error {
+		return w.Archiving(length, -ago)
 	})
-	sc.Step(`^sprints of (\d+) days, the first one beginning in (\d+) days$`, w.Sprints)
-	sc.Step(`^a sprint begun (\d+) days ago, its length not said$`, func(ago int) error {
-		return w.Sprints(0, -ago)
+	sc.Step(`^archiving every (\d+) days, counted from (\d+) days from now$`, w.Archiving)
+	sc.Step(`^archiving counted from (\d+) days ago, every so many days not said$`, func(ago int) error {
+		return w.Archiving(0, -ago)
 	})
 }
 
