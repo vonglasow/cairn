@@ -3047,6 +3047,23 @@ Feature: The desktop board
       And I press "backspace"
       Then the window asks "Delete 3 steps?"
 
+    @gui-steps-taken-outlast-a-save
+    Scenario: the steps taken are still taken once the form has saved itself
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I put the keyboard on "title"
+      And I type " now"
+      And I click the step "Keep"
+      And I press "cmd+a"
+      And the window has looked at the store 2 times
+      Then task 1 is called "Ship it now"
+      When I press "backspace"
+      Then the window asks "Delete 3 steps?"
+
     @gui-steps-taken-together-move-together
     Scenario: steps taken together are dragged together, in their order
       Given I added a task titled "Ship it"

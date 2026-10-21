@@ -72,7 +72,7 @@ func (w Window) savedInPlace() Window {
 	typed := kept.fields[kept.at].Value
 	w.form = w.form.Writes(Written{Value: typed, At: kept.caret})
 	w.form.opened[kept.at] = typed
-	w.form.partAt, w.form.partsTop = kept.partAt, kept.partsTop
+	w.form.partAt, w.form.partsTop, w.form.partsTaken = kept.partAt, kept.partsTop, kept.partsTaken
 	w.paused = w.form.values()
 	return w.readingActs()
 }

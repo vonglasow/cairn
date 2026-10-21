@@ -861,7 +861,8 @@ and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at
 the beat before, is saved where it stands and opened again over what it saved,
 read back from the store: the keyboard and the caret where they were, a step
-just added in its place, and the trace beside it read again, since it
+just added in its place, the steps taken still taken
+(`@gui-steps-taken-outlast-a-save`, cairn#114), and the trace beside it read again, since it
 otherwise lacked the very act just saved
 (`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
