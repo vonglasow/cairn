@@ -2416,6 +2416,16 @@
               },
               "description": "the numbers of the tasks in its way; empty or null when none is"
             },
+            "linked": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to; empty or null when none is"
+            },
             "because": {
               "type": "string",
               "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -2542,6 +2552,7 @@
             "priority",
             "labels",
             "blocked_by",
+            "linked",
             "because",
             "deadline",
             "estimate",
@@ -2661,6 +2672,13 @@
           },
           "type": "array"
         },
+        "link": {
+          "description": "the number of a task it is linked to; +3 adds one, -3 takes one away",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "number": {
           "description": "the number of the task",
           "type": "integer"
@@ -2756,6 +2774,16 @@
             "type": "integer"
           },
           "description": "the numbers of the tasks in its way; empty or null when none is"
+        },
+        "linked": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks it is linked to; empty or null when none is"
         },
         "because": {
           "type": "string",
@@ -2883,6 +2911,7 @@
         "priority",
         "labels",
         "blocked_by",
+        "linked",
         "because",
         "deadline",
         "estimate",
@@ -3021,6 +3050,16 @@
                 },
                 "description": "the numbers of the tasks in its way; empty or null when none is"
               },
+              "linked": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks it is linked to; empty or null when none is"
+              },
               "because": {
                 "type": "string",
                 "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -3147,6 +3186,7 @@
               "priority",
               "labels",
               "blocked_by",
+              "linked",
               "because",
               "deadline",
               "estimate",
@@ -3428,6 +3468,16 @@
                 },
                 "description": "the numbers of the tasks in its way; empty or null when none is"
               },
+              "linked": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks it is linked to; empty or null when none is"
+              },
               "because": {
                 "type": "string",
                 "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -3466,6 +3516,7 @@
               "priority",
               "labels",
               "blocked_by",
+              "linked",
               "because",
               "deadline",
               "estimate",
@@ -3598,6 +3649,16 @@
                 },
                 "description": "the numbers of the tasks in its way; empty or null when none is"
               },
+              "linked": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks it is linked to; empty or null when none is"
+              },
               "because": {
                 "type": "string",
                 "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -3636,6 +3697,7 @@
               "priority",
               "labels",
               "blocked_by",
+              "linked",
               "because",
               "deadline",
               "estimate",
@@ -3699,6 +3761,13 @@
         },
         "label": {
           "description": "a label it carries",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "link": {
+          "description": "the number of a task it is linked to; +3 adds one, -3 takes one away",
           "items": {
             "type": "string"
           },
@@ -3795,6 +3864,16 @@
             "type": "integer"
           },
           "description": "the numbers of the tasks in its way; empty or null when none is"
+        },
+        "linked": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks it is linked to; empty or null when none is"
         },
         "because": {
           "type": "string",
@@ -3922,6 +4001,7 @@
         "priority",
         "labels",
         "blocked_by",
+        "linked",
         "because",
         "deadline",
         "estimate",
@@ -4059,6 +4139,16 @@
                 },
                 "description": "the numbers of the tasks in its way; empty or null when none is"
               },
+              "linked": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks it is linked to; empty or null when none is"
+              },
               "because": {
                 "type": "string",
                 "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -4097,6 +4187,7 @@
               "priority",
               "labels",
               "blocked_by",
+              "linked",
               "because",
               "deadline",
               "estimate",
@@ -4189,6 +4280,16 @@
           },
           "description": "the numbers of the tasks in its way; empty or null when none is"
         },
+        "linked": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks it is linked to; empty or null when none is"
+        },
         "because": {
           "type": "string",
           "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -4315,6 +4416,7 @@
         "priority",
         "labels",
         "blocked_by",
+        "linked",
         "because",
         "deadline",
         "estimate",
@@ -4392,6 +4494,16 @@
           },
           "description": "the numbers of the tasks in its way; empty or null when none is"
         },
+        "linked": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks it is linked to; empty or null when none is"
+        },
         "because": {
           "type": "string",
           "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
@@ -4518,6 +4630,7 @@
         "priority",
         "labels",
         "blocked_by",
+        "linked",
         "because",
         "deadline",
         "estimate",
@@ -4600,6 +4713,16 @@
                   "type": "integer"
                 },
                 "description": "the numbers of the tasks in its way; empty or null when none is"
+              },
+              "linked": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks it is linked to; empty or null when none is"
               },
               "because": {
                 "type": "string",
@@ -4727,6 +4850,7 @@
               "priority",
               "labels",
               "blocked_by",
+              "linked",
               "because",
               "deadline",
               "estimate",

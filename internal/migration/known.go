@@ -267,4 +267,19 @@ ALTER TABLE trace ADD COLUMN author TEXT NOT NULL DEFAULT '';`,
 ALTER TABLE trace DROP COLUMN author;`,
 		loses: "who did each act written since",
 	},
+	{
+		name: "two tasks can be linked",
+		does: `
+CREATE TABLE IF NOT EXISTS links (
+	low  INTEGER NOT NULL,
+	high INTEGER NOT NULL,
+	PRIMARY KEY (low, high),
+	CHECK (low < high)
+);
+CREATE INDEX IF NOT EXISTS links_by_high ON links (high);`,
+		undoes: `
+DROP INDEX IF EXISTS links_by_high;
+DROP TABLE IF EXISTS links;`,
+		loses: "which tasks are linked",
+	},
 }

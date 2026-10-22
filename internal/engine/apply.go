@@ -15,6 +15,7 @@ type Changes struct {
 	Priority    *string
 	Labels      *[]string
 	Blocker     *[]string
+	Link        *[]string
 	Because     *string
 	Deadline    *string
 	Estimate    *string
@@ -28,7 +29,7 @@ func (c Changes) named() bool {
 	return c.Title != nil || c.Description != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
 		c.Estimate != nil || c.Spent != nil || c.Steps != nil || c.Objective != nil ||
-		c.Blocker != nil || c.Because != nil
+		c.Blocker != nil || c.Link != nil || c.Because != nil
 }
 
 const (
@@ -68,6 +69,13 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 			return task.Task{}, err
 		}
 		a.Blockers = blockers
+	}
+	if c.Link != nil {
+		linked, err := changedLinks(*c.Link, a.Linked, atCreation)
+		if err != nil {
+			return task.Task{}, err
+		}
+		a.Linked = linked
 	}
 	if c.Because != nil {
 		said, err := domain.Prose(*c.Because)

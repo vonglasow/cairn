@@ -385,6 +385,7 @@ var taskAttributes = []Argument{
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries"},
 	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; +3 adds one, -3 takes one away"},
+	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; +3 adds one, -3 takes one away"},
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
@@ -421,6 +422,7 @@ func taskChanges(in Input) (Changes, error) {
 	c.Priority = in.Change("priority")
 	c.Labels = in.Changed("label")
 	c.Blocker = in.Changed("blocker")
+	c.Link = in.Changed("link")
 	c.Because = in.Change("because")
 	c.Deadline = in.Change("deadline")
 	c.Estimate = in.Change("estimate")

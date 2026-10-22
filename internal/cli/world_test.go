@@ -125,13 +125,35 @@ func flagFor(attribute string) string {
 		"estimate": "--estimate",
 		"priority": "--priority", "state": "--state",
 		"time spent": "--spent", "objective": "--objective", "blocker": "--blocker",
-		"because": "--because", "label": "--label",
+		"because": "--because", "label": "--label", "link": "--link",
 	}[attribute]
 }
 
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 	w.registerStep(sc)
+
+	sc.Step(`^it says the (\w+) went from "([^"]*)" to "([^"]*)"$`,
+		func(field, was, became string) error {
+			for _, said := range []string{field, was, became} {
+				if err := test.WantContains(w.Out.Stdout, said, "the change"); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+	sc.Step(`^it carries (\d+) acts?$`, func(want int) error {
+		if got := actsIn(w.Out.Stdout); len(got) != want {
+			return fmt.Errorf("%d acts, want %d:\n%s", len(got), want, w.Out.Stdout)
+		}
+		return nil
+	})
+
+	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", func(command, want string) error {
+		w.Run(command)
+		return test.WantContains(w.Out.Stdout, want, "the answer of "+command)
+	})
 
 	sc.Step(`^a title of (\d+) characters$`, func(n int) error {
 		w.long = strings.Repeat("a", n)
@@ -173,7 +195,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
 
-	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|time spent|blocker|because|objective|label) "([^"]*)"$`,
+	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|time spent|blocker|because|objective|label|link) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
@@ -247,6 +269,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		`^it says the labels are either replaced or changed, not both$`:           "either replaced or changed",
 		`^it says a label is added or taken away only when changing a task$`:      "only when changing a task",
 		`^it says a task cannot block itself$`:                                    "cannot block itself",
+		`^it says a task cannot be linked to itself$`:                             "cannot be linked to itself",
 		`^it says the objectives are either replaced or changed, not both$`:       "either replaced or changed",
 		`^it says an objective is added or taken away only when changing a task$`: "only when changing a task",
 		`^it says what is in the way and how to take it away$`:                    "take them away first: task ",

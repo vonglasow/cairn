@@ -108,8 +108,9 @@ in [ordering.md](ordering.md#a-task-is-not-done-while-one-of-its-steps-is-open).
 - **Objectives**: a task's steps count towards what it serves, apart from the
   tasks (`@objective-progress-counts-steps`). See
   [objectives.md](objectives.md).
-- **Export and import**: the export file is version 2, each task carrying its
-  `steps` and none a `parent`. Import still reads a version 1 file, and its
+- **Export and import**: the export file has carried each task's `steps`, and
+  none a `parent`, since version 2 (version 3 adds its links, see
+  [links.md](links.md)). Import still reads a version 1 file, and its
   sub-tasks come in as steps of their parent, those left first, then those done
   (`@exchange-import-reads-sub-tasks-as-steps`).
 - **The boards**: neither draws a step as a card

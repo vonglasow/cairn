@@ -23,6 +23,7 @@ type Task struct {
 	priority    domain.Priority
 	labels      []string
 	blockers    []int
+	linked      []int
 	because     string
 	deadline    time.Time
 	estimate    time.Duration
@@ -44,6 +45,7 @@ type Carried struct {
 	Estimate, Spent      time.Duration
 	Archived             bool
 	Steps                []Step
+	Linked               []int
 }
 
 // Carried hands over what the task carries.
@@ -54,6 +56,7 @@ func (t Task) Carried() Carried {
 		Blockers: slices.Clone(t.blockers), Objectives: slices.Clone(t.objectives),
 		Because: t.because, Deadline: t.deadline, Estimate: t.estimate, Spent: t.timeSpent,
 		Archived: t.archived, Steps: slices.Clone(t.steps),
+		Linked: slices.Clone(t.linked),
 	}
 }
 
@@ -64,6 +67,7 @@ func Made(c Carried) Task {
 		state: c.State, priority: c.Priority, labels: c.Labels, blockers: c.Blockers,
 		objectives: c.Objectives, because: c.Because, deadline: c.Deadline,
 		estimate: c.Estimate, timeSpent: c.Spent, archived: c.Archived, steps: c.Steps,
+		linked: c.Linked,
 	}
 }
 

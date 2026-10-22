@@ -898,6 +898,103 @@ Feature: Tasks
       And the task is in the "todo" column
       And `cairn task show 2` says task 1 blocks it
 
+  Rule: Two tasks can be linked
+
+    @task-link-at-creation
+    Scenario: a task opened with a link says so, and so does the other
+      Given I added a task titled "Ship it"
+      When I run `cairn task new "Ship it again" --link 1`
+      Then it succeeds
+      And `cairn task show 2` says "linked       #1"
+      And `cairn task show 1` says "linked       #2"
+
+    @task-link-in-json
+    Scenario: a machine asking about a task is given what it is linked to
+      Given I added a task titled "Ship it"
+      And I added a task titled "Ship it again"
+      And I edited task 2 with the link "1"
+      When I run `cairn task show 1 --json`
+      Then it writes JSON to standard output
+      And it carries the link to task 2
+
+    @task-link-added-and-taken-away
+    Scenario: a link is added by one side and taken away by the other
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I run `cairn task edit 2 --link +1`
+      Then it succeeds
+      And `cairn task show 1` says "linked       #2"
+      When I run `cairn task edit 1 --link -2`
+      Then it succeeds
+      And `cairn task show 2` says "linked       —"
+      And `cairn task show 1` says "linked       —"
+
+    @task-link-replaced
+    Scenario: links named plainly replace the ones a task had, on the other side too
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the link "1"
+      When I run `cairn task edit 3 --link 2`
+      Then it succeeds
+      And `cairn task show 3` says "linked       #2"
+      And `cairn task show 2` says "linked       #3"
+      And `cairn task show 1` says "linked       —"
+
+    @task-link-twice
+    Scenario: linking two tasks already linked changes nothing
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the link "1"
+      When I run `cairn task edit 1 --link +2`
+      Then it succeeds
+      When I run `cairn trace show 1`
+      Then it carries 2 acts
+
+    @task-link-itself
+    Scenario: a task cannot be linked to itself
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --link 1`
+      Then it fails
+      And it says a task cannot be linked to itself
+
+    @task-link-nothing
+    Scenario: a task cannot be linked to a task that is not there
+      Given I added a task titled "Ship it"
+      When I run `cairn task edit 1 --link 9`
+      Then it fails
+      And it says there is no such task
+
+    @task-link-nothing-at-creation
+    Scenario: a task opened with a link to nothing is not opened
+      Given I added a task titled "Ship it"
+      When I run `cairn task new "Ship it again" --link 9`
+      Then it fails
+      And it says there is no such task
+      And `cairn task list` lists 1 task
+
+    @task-link-any-column
+    Scenario: a task done or archived can be linked
+      Given I added a task titled "Ship it"
+      And I added a task titled "Old idea"
+      And I edited task 1 with the state "done"
+      And I archived task 2
+      When I run `cairn task new "It does not hold" --link 1 --link 2`
+      Then it succeeds
+      And `cairn task show 1` says "linked       #3"
+      And `cairn task show 2` says "linked       #3"
+
+    @task-link-gone-with-the-task
+    Scenario: deleting a task takes its links away from the others, and says so in their trace
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the link "1"
+      And `cairn task show 1` says "linked       #2"
+      When I run `cairn task delete 2 --yes`
+      Then `cairn task show 1` says "linked       —"
+      When I run `cairn trace show 1`
+      Then it says the links went from "#2" to "—"
+
   Rule: A blocked task is not picked back up by accident
 
     @task-blocked-cannot-go-back-to-work

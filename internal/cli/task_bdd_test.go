@@ -11,6 +11,7 @@ func initTask(t *testing.T) func(*godog.ScenarioContext) {
 		w := newWorld(t)
 		w.register(sc)
 		w.registerBlocking(sc)
+		w.registerLinking(sc)
 		w.registerTimesheet(sc)
 	}
 }

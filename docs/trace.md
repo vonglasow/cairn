@@ -34,11 +34,11 @@ So every entry carries the field, the value before, the value after, and the
 moment. The two extra columns are the whole difference between a trace you can
 read and a trace you can rebuild from, and rebuilding is what was asked for.
 
-## Eighteen acts, and reading is not one of them
+## Nineteen acts, and reading is not one of them
 
-Twelve of them are the attributes a task carries, one act each: its title, its
+Thirteen of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
-beside them, its deadline, its estimate, its steps, the
+beside them, the tasks it is linked to, its deadline, its estimate, its steps, the
 objectives it serves, and whether it was archived — archiving and
 bringing back are changes like any other, written `yes` and nothing. Six are not
 about a field: **created**, **moved**, **focus taken**, **focus released**,
@@ -137,6 +137,15 @@ are noise, and the one line that says what a person did buried among them.
 
 So an entry records the act: *moved to the first place*. What that did to the
 places of the tasks it sits with is not written down.
+
+**A link is written on both tasks it joins.** It is the one act cairn writes on
+a task nobody named: `task edit 2 --link +1` writes `links — → #1` on task 2
+and `links — → #2` on task 1 (`@trace-a-link-is-written-on-both-tasks`). It
+is not a consequence like a shifted place: a link has no direction, so it is
+an attribute of both tasks, and task 1's own `links` changed. The same holds
+when a task is deleted: each task it was linked to is written `#2 → —`
+(`@task-link-gone-with-the-task`), where the blockers a deleted task held are
+let go of without a word. See [links.md](links.md).
 
 A move to the place a task already holds is no act at all, and nothing is
 written: a card dropped back where it stood, or the only card of a column moved

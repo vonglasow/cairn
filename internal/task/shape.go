@@ -18,6 +18,7 @@ type Facts struct {
 	Priority   string   `json:"priority" jsonschema:"low, normal, high or critical"`
 	Labels     []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
 	BlockedBy  []int    `json:"blocked_by" jsonschema:"the numbers of the tasks in its way; empty or null when none is"`
+	Linked     []int    `json:"linked" jsonschema:"the numbers of the tasks it is linked to; empty or null when none is"`
 	Because    string   `json:"because" jsonschema:"what is in its way that is not a task cairn holds; empty when nothing is said"`
 	Deadline   string   `json:"deadline" jsonschema:"the last day it may be done, as 2026-09-01; empty when it has none"`
 	Estimate   string   `json:"estimate" jsonschema:"how long it was expected to take, as 1h30m; empty when nobody said"`
@@ -32,7 +33,7 @@ func OfTask(t Task) Shape {
 		Facts: Facts{
 			Number: c.Number, Title: c.Title,
 			State: string(c.State), Archived: c.Archived, Priority: string(c.Priority),
-			Labels: orNone(c.Labels), BlockedBy: orNone(c.Blockers), Because: c.Because,
+			Labels: orNone(c.Labels), BlockedBy: orNone(c.Blockers), Linked: orNone(c.Linked), Because: c.Because,
 			Deadline:   domain.FormatDay(c.Deadline),
 			Estimate:   domain.FormatDuration(c.Estimate),
 			TimeSpent:  domain.FormatDuration(c.Spent),

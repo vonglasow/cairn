@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ var theAttributes = []struct {
 	{"priority", func(f task.Carried) string { return string(f.Priority) }},
 	{"labels", func(f task.Carried) string { return strings.Join(f.Labels, ", ") }},
 	{"blockers", func(f task.Carried) string { return numbersOrNothing(f.Blockers) }},
+	{"links", func(f task.Carried) string { return numbersOrNothing(f.Linked) }},
 	{"because", func(f task.Carried) string { return f.Because }},
 	{"deadline", func(f task.Carried) string { return domain.FormatDay(f.Deadline) }},
 	{"estimate", func(f task.Carried) string { return domain.FormatDuration(f.Estimate) }},
@@ -71,7 +73,7 @@ func (e *Engine) recordCreated(t task.Task) error {
 			return err
 		}
 	}
-	return nil
+	return e.recordOtherEnds(f.Number, nil, f.Linked)
 }
 
 func whatItHeld(t task.Task) string {
@@ -98,10 +100,51 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 			return err
 		}
 	}
+	if err := e.recordOtherEnds(after.Number, before.Linked, after.Linked); err != nil {
+		return err
+	}
 	if after.State == domain.Done && before.State != domain.Done {
 		return e.letGoOf(after.Number)
 	}
 	return nil
+}
+
+func (e *Engine) recordOtherEnds(n int, was, became []int) error {
+	for _, other := range gainedOrLost(was, became) {
+		found, err := e.tasks.Find(other)
+		if err != nil {
+			return err
+		}
+		after := factsOf(found).Linked
+		before := without(after, n)
+		if !slices.Contains(became, other) {
+			before = append(slices.Clone(after), n)
+			slices.Sort(before)
+		}
+		if err := e.record(other, trace.Changed, "links", numbersOrNothing(before), numbersOrNothing(after)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func gainedOrLost(was, became []int) []int {
+	var differing []int
+	for _, one := range was {
+		if !slices.Contains(became, one) {
+			differing = append(differing, one)
+		}
+	}
+	for _, one := range became {
+		if !slices.Contains(was, one) {
+			differing = append(differing, one)
+		}
+	}
+	return differing
+}
+
+func without(numbers []int, n int) []int {
+	return slices.DeleteFunc(slices.Clone(numbers), func(one int) bool { return one == n })
 }
 
 func (e *Engine) record(number int, did, field, was, became string) error {

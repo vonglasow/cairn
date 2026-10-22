@@ -16,7 +16,7 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 2
+	exchangeVersion = 3
 	beforeSteps     = 1
 )
 
@@ -163,8 +163,8 @@ func readExport(from string) (exchanged, error) {
 	if err := json.Unmarshal(held, &read); err != nil || read.Cairn != exchangeKind {
 		return exchanged{}, ErrNotAnExport
 	}
-	if read.Version != exchangeVersion && read.Version != beforeSteps {
-		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d and %d", ErrNotAnExport, read.Version, beforeSteps, exchangeVersion)
+	if read.Version < beforeSteps || read.Version > exchangeVersion {
+		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", ErrNotAnExport, read.Version, beforeSteps, exchangeVersion)
 	}
 	return read, nil
 }
@@ -258,6 +258,10 @@ func (e *Engine) standing(t filed, tasks map[int]int) error {
 		blockers := numbered(t.BlockedBy, tasks)
 		c.Blocker = &blockers
 	}
+	if len(t.Linked) > 0 {
+		links := plusAll(numbered(t.Linked, tasks))
+		c.Link = &links
+	}
 	if !c.named() {
 		return nil
 	}
@@ -299,7 +303,7 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 	outside := func(what string, n int) error {
 		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", ErrExportPointsOutside, t.Number, what, n, what, n)
 	}
-	for _, b := range t.BlockedBy {
+	for _, b := range slices.Concat(t.BlockedBy, t.Linked) {
 		if _, in := byNumber[b]; !in {
 			return outside("task", b)
 		}
@@ -365,6 +369,14 @@ func numbered(old []int, now map[int]int) []string {
 	out := make([]string, 0, len(old))
 	for _, n := range old {
 		out = append(out, strconv.Itoa(now[n]))
+	}
+	return out
+}
+
+func plusAll(numbers []string) []string {
+	out := make([]string, 0, len(numbers))
+	for _, n := range numbers {
+		out = append(out, "+"+n)
 	}
 	return out
 }

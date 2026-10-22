@@ -140,6 +140,19 @@ Feature: The trace
       When I run `cairn trace show 2`
       Then it lists the acts in the order "created", "blockers", "column", "blockers", "column"
 
+  Rule: A link is written down on both tasks it joins
+
+    @trace-a-link-is-written-on-both-tasks
+    Scenario: a link is written in the trace of both tasks
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the link "1"
+      When I run `cairn trace show 2`
+      Then it says the links went from "—" to "#1"
+      When I run `cairn trace show 1`
+      Then it says the links went from "—" to "#2"
+      And it carries 2 acts
+
   Rule: What changed nothing is not written down
 
     @trace-focus-again-on-the-same-task-changes-nothing

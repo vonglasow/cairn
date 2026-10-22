@@ -48,6 +48,7 @@ type boundTask struct {
 	blockers   []int
 	objectives []int
 	steps      []task.Step
+	linked     []int
 	because    string
 	estimate   int64
 	archived   bool
@@ -58,7 +59,7 @@ func bind(t task.Task) *boundTask {
 	return &boundTask{
 		number: c.Number, title: c.Title, description: c.Description,
 		state: string(c.State), priority: string(c.Priority), deadline: domain.FormatDay(c.Deadline),
-		labels: c.Labels, blockers: c.Blockers, objectives: c.Objectives, steps: c.Steps, because: c.Because,
+		labels: c.Labels, blockers: c.Blockers, objectives: c.Objectives, steps: c.Steps, linked: c.Linked, because: c.Because,
 		estimate: int64(c.Estimate), archived: c.Archived,
 	}
 }
@@ -95,6 +96,9 @@ func (s *Store) Keep(t task.Task) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if err := s.keepSteps(int(number), b.steps); err != nil {
+		return task.Task{}, err
+	}
+	if err := s.keepLinksOn(int(number), b.linked); err != nil {
 		return task.Task{}, err
 	}
 	return renumbered(t, int(number)), nil
@@ -145,6 +149,9 @@ func (s *Store) Update(t task.Task) error {
 	if err := s.keepSteps(b.number, b.steps); err != nil {
 		return err
 	}
+	if err := s.keepLinksOn(b.number, b.linked); err != nil {
+		return err
+	}
 	return s.keepServedBy(b.number, b.objectives)
 }
 
@@ -167,6 +174,9 @@ func (s *Store) Delete(number int) error {
 		return err
 	}
 	if err := s.releaseBlockersOn(number); err != nil {
+		return err
+	}
+	if err := s.releaseLinksOn(number); err != nil {
 		return err
 	}
 	if _, err := s.on.Exec(clearServing, number); err != nil {
@@ -248,7 +258,7 @@ func (s *Store) scanTask(row scanner, carried links) (task.Task, error) {
 		State: domain.State(state), Priority: domain.Priority(priority),
 		Labels: noneIsNil(with.labels), Blockers: noneIsNil(with.blockers), Objectives: noneIsNil(with.objectives),
 		Because: because, Deadline: day, Estimate: time.Duration(estimate),
-		Archived: archived, Steps: noneIsNil(with.steps),
+		Archived: archived, Steps: noneIsNil(with.steps), Linked: noneIsNil(with.linked),
 	}), nil
 }
 

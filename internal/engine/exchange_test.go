@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -25,7 +26,7 @@ func asked(op Operation, pairs ...string) func() (Operation, Input) {
 	return func() (Operation, Input) {
 		in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
 		for i := 0; i+1 < len(pairs); i += 2 {
-			if pairs[i] == "label" || pairs[i] == "objective" || pairs[i] == "blocker" {
+			if pairs[i] == "label" || pairs[i] == "objective" || pairs[i] == "blocker" || pairs[i] == "link" {
 				in.Listed[pairs[i]] = append(in.Listed[pairs[i]], pairs[i+1])
 				continue
 			}
@@ -59,7 +60,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"cairn": "tasks"`, `"version": 2`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
+	for _, want := range []string{`"cairn": "tasks"`, `"version": 3`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
 		if !strings.Contains(string(written), want) {
 			t.Errorf("the file holds no %s:\n%s", want, written)
 		}
@@ -156,7 +157,7 @@ func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 	files := map[string]string{
 		"not json":       "not tasks\n",
 		"not an export":  `{"something": "else"}`,
-		"a later format": `{"cairn": "tasks", "version": 3, "tasks": []}`,
+		"a later format": `{"cairn": "tasks", "version": 4, "tasks": []}`,
 		"a broken parent": `{"cairn": "tasks", "version": 1, "objectives": [],
 			"tasks": [{"number": 1, "title": "Kept", "state": "todo", "priority": "normal"},
 			          {"number": 2, "parent": 9, "title": "Orphan", "state": "backlog", "priority": "normal"}]}`,
@@ -202,4 +203,50 @@ func TestTaskImport_namesTheTaskTheFileDoesNotHold(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "task 9 is not in the file") {
 		t.Errorf("it answered %v", err)
 	}
+}
+
+func TestAnImportBringsTheLinksAtTheirNewNumbers(t *testing.T) {
+	from := storeAt(t)
+	ran(t, from,
+		asked(TaskNew, "title", "Ship it"),
+		asked(TaskNew, "title", "Write the tests"),
+		asked(TaskNew, "title", "It does not hold", "link", "1", "link", "2"),
+	)
+	file := filepath.Join(t.TempDir(), "tasks.json")
+	ran(t, from, asked(TaskExport, "to", file))
+	path := storeAt(t)
+	ran(t, path, asked(TaskNew, "title", "Already here"))
+	if _, err := Do(TaskImport, path, Input{Given: map[string]string{"from": file}}); err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	for n, want := range map[string][]int{"4": {2, 3}, "2": {4}, "3": {4}} {
+		got, err := Do(TaskShow, path, Input{Given: map[string]string{"number": n}})
+		if err != nil {
+			t.Fatalf("task show %s: %v", n, err)
+		}
+		if text := RenderText(TaskShow, got); !strings.Contains(text, "linked       "+linkedLine(want)) {
+			t.Errorf("task %s does not say linked to %v:\n%s", n, want, text)
+		}
+	}
+	outside := filepath.Join(t.TempDir(), "outside.json")
+	held := `{"cairn": "tasks", "version": 3, "objectives": [],
+		"tasks": [{"number": 1, "title": "Kept", "state": "todo", "priority": "normal", "linked": [9]}]}`
+	if err := os.WriteFile(outside, []byte(held), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Do(TaskImport, path, Input{Given: map[string]string{"from": outside}})
+	if !errors.Is(err, ErrExportPointsOutside) || !strings.Contains(err.Error(), "task 9 is not in the file") {
+		t.Errorf("it answered %v", err)
+	}
+	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 4 {
+		t.Errorf("refused, it still added: %d tasks", len(listed.Tasks))
+	}
+}
+
+func linkedLine(numbers []int) string {
+	parts := make([]string, 0, len(numbers))
+	for _, n := range numbers {
+		parts = append(parts, "#"+strconv.Itoa(n))
+	}
+	return strings.Join(parts, ", ")
 }

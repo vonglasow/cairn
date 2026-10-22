@@ -156,23 +156,6 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says the (\w+) went from "([^"]*)" to "([^"]*)"$`,
-		func(field, was, became string) error {
-			for _, said := range []string{field, was, became} {
-				if err := test.WantContains(w.Out.Stdout, said, "the change"); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-
-	sc.Step(`^it carries (\d+) acts?$`, func(want int) error {
-		if got := actsIn(w.Out.Stdout); len(got) != want {
-			return fmt.Errorf("%d acts, want %d:\n%s", len(got), want, w.Out.Stdout)
-		}
-		return nil
-	})
-
 	sc.Step(`^it lists the acts in the order (.+)$`, func(list string) error {
 		acts := actsIn(w.Out.Stdout)
 		named := titlesNamed(list)

@@ -125,6 +125,9 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
+	if err := e.canBeLinked(t); err != nil {
+		return task.Task{}, err
+	}
 	kept, err := e.tasks.Keep(t)
 	if err != nil {
 		return task.Task{}, err
@@ -225,6 +228,9 @@ func (e *Engine) delete(number int) error {
 	if err := e.tasks.Delete(number); err != nil {
 		return err
 	}
+	if err := e.recordOtherEnds(number, factsOf(gone).Linked, nil); err != nil {
+		return err
+	}
 	if slices.Contains(held, number) {
 		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
 			return err
@@ -267,6 +273,9 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if err := e.canBeBlocked(t); err != nil {
+		return task.Task{}, err
+	}
+	if err := e.canBeLinked(t); err != nil {
 		return task.Task{}, err
 	}
 	if err := was.MayLeaveFor(t); err != nil {

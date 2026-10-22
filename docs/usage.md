@@ -31,6 +31,8 @@ cairn task edit 1 --title "Write the other spec" --desc "" --state current --pri
 cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"
 cairn task edit 5 --blocker -3   # the last thing out of its way puts it in todo
+cairn task new "It does not hold" --link 4 --label bug   # task 4 says it too
+cairn task edit 6 --link +2 --link -4
 cairn task new "Read the spec" --label spec,team
 cairn task new "Ship it" --steps - < steps.txt   # one line a step: [ ] to do, [x] done
 cairn task new "Write the docs" --objective 1
@@ -67,6 +69,7 @@ cairn task unarchive 1           # back on the board
 | `--state` | `backlog` `todo` `current` `blocked` `watching` `paused` `done` — a new task starts in `backlog` |
 | `--blocker` | the number of a task in its way; `+3` adds one, `-3` takes one away |
 | `--because` | what is in its way and is not a task cairn holds |
+| `--link` | the number of a task it is linked to, shown on both; `+3` adds one, `-3` takes one away. A link has no kind and no direction, and any two tasks can be linked but a task and itself |
 | `--priority` | `low` `normal` `high` `critical` — a new task carries `normal` |
 | `--label` | one per flag or several at once: `--label spec --label team` and `--label spec,team` are the same thing. Lower-cased, deduplicated, sorted. Given plainly it replaces the whole set; on `edit`, `+urgent` adds one and `-spec` takes one away, leaving the rest alone. Each piece of a list counts on its own, so the two forms cannot be mixed there either |
 | `--deadline` | a day: `2026-09-01` |

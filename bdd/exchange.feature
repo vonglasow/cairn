@@ -104,3 +104,27 @@ Feature: Tasks carried from one store to another
       Then it fails
       And it says task 9 is not in the file
       And `cairn task list` lists 1 task
+
+    @exchange-a-link-comes-with-its-tasks
+    Scenario: linked tasks come back linked, at their new numbers
+      Given I added a task titled "Already here"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn task new "Ship it"
+        cairn task new "Write the tests"
+        cairn task new "It does not hold" --link 1 --link 2
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn task show 4` says "linked       #2, #3"
+      And `cairn task show 2` says "linked       #4"
+      And `cairn task show 3` says "linked       #4"
+
+    @exchange-a-link-outside-the-file
+    Scenario: a file whose task is linked to a task it does not hold is refused before anything is added
+      Given I added a task titled "Already here"
+      And a file of my own holding a task linked to a task it does not hold
+      When I import the tasks of that file
+      Then it fails
+      And it says task 9 is not in the file
+      And `cairn task list` lists 1 task

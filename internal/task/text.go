@@ -15,12 +15,15 @@ func Text(t Task, p domain.Progress) string {
 	if c.Archived {
 		rows = append(rows, domain.Fact{Key: "archived", Value: "yes"})
 	}
-	var blocked, serves []string
+	var blocked, serves, linked []string
 	for _, n := range c.Blockers {
 		blocked = append(blocked, domain.Ref(n))
 	}
 	if c.Because != "" {
 		blocked = append(blocked, c.Because)
+	}
+	for _, n := range c.Linked {
+		linked = append(linked, domain.Ref(n))
 	}
 	for _, n := range c.Objectives {
 		serves = append(serves, domain.Ref(n))
@@ -30,6 +33,7 @@ func Text(t Task, p domain.Progress) string {
 		domain.Fact{Key: "description", Value: c.Description},
 		domain.Fact{Key: "labels", Value: strings.Join(c.Labels, ", ")},
 		domain.Fact{Key: "blocked by", Value: strings.Join(blocked, ", ")},
+		domain.Fact{Key: "linked", Value: strings.Join(linked, ", ")},
 		domain.Fact{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
 		domain.Fact{Key: "estimate", Value: domain.FormatDuration(c.Estimate)},
 		domain.Fact{Key: "time spent", Value: domain.FormatDuration(c.Spent)},

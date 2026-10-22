@@ -129,3 +129,17 @@ func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
 		}
 	}
 }
+
+func TestOfTaskCarriesTheLinks(t *testing.T) {
+	linked := task.OfTask(task.Made(task.Carried{Number: 1, Linked: []int{2, 5}}))
+	if !reflect.DeepEqual(linked.Linked, []int{2, 5}) {
+		t.Errorf("linked = %v, want [2 5]", linked.Linked)
+	}
+	encoded, err := json.Marshal(task.OfTask(task.Made(task.Carried{Number: 1})))
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if got := string(encoded); !strings.Contains(got, `"linked":[]`) {
+		t.Errorf(`"linked":[] should be there, got %s`, got)
+	}
+}

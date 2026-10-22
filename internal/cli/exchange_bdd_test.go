@@ -58,6 +58,11 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 2, "objectives": [],
 			"tasks": [{"number": 1, "title": "Orphan", "state": "blocked", "priority": "normal", "blocked_by": [9]}]}`), 0o600)
 	})
+	sc.Step(`^a file of my own holding a task linked to a task it does not hold$`, func() error {
+		w.file = filepath.Join(w.T.TempDir(), "linked-outside.json")
+		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 3, "objectives": [],
+			"tasks": [{"number": 1, "title": "Orphan", "state": "todo", "priority": "normal", "linked": [9]}]}`), 0o600)
+	})
 	sc.Step(`^a file of my own written before steps, holding "([^"]*)" and its sub-tasks "([^"]*)" done and "([^"]*)"$`, func(work, done, open string) error {
 		w.file = filepath.Join(w.T.TempDir(), "before-steps.json")
 		return os.WriteFile(w.file, []byte(fmt.Sprintf(`{"cairn": "tasks", "version": 1, "objectives": [], "tasks": [
@@ -75,9 +80,5 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^it says task (\d+) is not in the file$`, func(n int) error {
 		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d is not in the file", n), "the reason")
-	})
-	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", func(command, want string) error {
-		w.Run(command)
-		return test.WantContains(w.Out.Stdout, want, "the answer of "+command)
 	})
 }

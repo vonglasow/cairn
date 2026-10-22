@@ -215,3 +215,13 @@ func TestALineCarriesEnoughToDecideOn(t *testing.T) {
 		}
 	}
 }
+
+func TestTextSaysWhatItIsLinkedTo(t *testing.T) {
+	linked := Made(Carried{Number: 2, Title: "Write the spec", Linked: []int{1, 3}})
+	if got := Text(linked, domain.Progress{}); !strings.Contains(got, "linked       #1, #3\n") {
+		t.Errorf("text should say what it is linked to:\n%s", got)
+	}
+	if got := Text(spec(t), domain.Progress{}); !strings.Contains(got, "linked       —\n") {
+		t.Errorf("text should say it is linked to nothing:\n%s", got)
+	}
+}
