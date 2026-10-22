@@ -14,6 +14,13 @@ Feature: Changes to the shape of the store
       And it says the store is behind
       And it says to run `cairn migration apply`
 
+    @store-behind-says-what-to-run-on-a-line-of-its-own
+    Scenario: what to run stands alone on its line, to be copied whole
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn task list`
+      Then it exits with code 3
+      And a line of what it says is `cairn migration apply` and nothing else
+
     @store-behind-refused-by-a-surface-that-holds-the-store
     Scenario Outline: the boards say what to run too
       Given a store from an older cairn, holding a task titled "Write the spec"

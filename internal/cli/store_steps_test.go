@@ -245,6 +245,15 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d change(s) waiting", n), "the answer")
 	})
 
+	sc.Step("^a line of what it says is `([^`]*)` and nothing else$", func(what string) error {
+		for _, line := range strings.Split(w.Out.Stderr, "\n") {
+			if strings.TrimSpace(line) == what {
+				return nil
+			}
+		}
+		return fmt.Errorf("no line says only %q:\n%s", what, w.Out.Stderr)
+	})
+
 	sc.Step("^it says to run `([^`]*)`$", func(what string) error {
 		return test.WantContains(w.Out.Stderr, what, "the reason")
 	})

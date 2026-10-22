@@ -109,7 +109,24 @@ func (e *Engine) backupFirst(path string) error {
 // Told adds what somebody has to type about a store that cannot be used as it stands.
 func Told(err error) error {
 	if errors.Is(err, ErrStoreBehind) {
-		return fmt.Errorf("%w — run `cairn migration apply`", err)
+		return typed{err, "cairn migration apply"}
 	}
 	return err
+}
+
+type typed struct {
+	err     error
+	command string
+}
+
+func (t typed) Error() string { return fmt.Sprintf("%s — run `%s`", t.err, t.command) }
+func (t typed) Unwrap() error { return t.err }
+
+// ToType splits a refusal that names a command to type into what it says and that command, so a person can be shown the command alone on its line.
+func ToType(err error) (said, command string, ok bool) {
+	var t typed
+	if !errors.As(err, &t) {
+		return err.Error(), "", false
+	}
+	return t.err.Error(), t.command, true
 }

@@ -78,8 +78,22 @@ func leadingMinus(err error) (string, bool) {
 
 func saidToAPerson(w io.Writer, styles fang.Styles, err error) {
 	styles.ErrorText = styles.ErrorText.UnsetTransform()
-	fang.DefaultErrorHandler(w, styles, shownError{err})
+	said, command, ok := engine.ToType(err)
+	if !ok {
+		fang.DefaultErrorHandler(w, styles, shownError{err})
+		return
+	}
+	fang.DefaultErrorHandler(w, styles, shownError{typedApart{said, err}})
+	_, _ = fmt.Fprintf(w, "  To go on, run:\n\n    %s\n\n", domain.Shown(command))
 }
+
+type typedApart struct {
+	said string
+	err  error
+}
+
+func (t typedApart) Error() string { return t.said }
+func (t typedApart) Unwrap() error { return t.err }
 
 type shownError struct{ err error }
 
