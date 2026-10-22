@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/objective"
@@ -24,7 +25,7 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	n := factsOf(kept).Number
 	read := func(err error) error { return err }
 	for what, err := range map[string]error{
-		"taking up task 1":         s.AddFocus(n),
+		"taking up task 1":         s.AddFocus(n, time.Now()),
 		"letting go of task 1":     s.DropFocus(n),
 		"letting go of everything": s.ClearFocus(),
 		"":                         s.Delete(n),

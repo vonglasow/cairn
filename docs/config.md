@@ -174,6 +174,49 @@ archived then. A scenario cannot move the trace back — it asks the engine,
 which only writes the present, and never opens the store — so it moves today
 forward instead. A day it cannot read is taken as no day named.
 
+## Letting go of a focus on its own
+
+```toml
+[focus]
+idle = "2h"          # a focus unused for longer than this is let go
+day_ends = "20:00"   # a focus left open past this time of day is let go
+```
+
+A focus nobody let go of counts time nobody spent. On the board of this
+repository, days ended `left_open_at_midnight`: 14h30 counted on two tasks at
+once on 2026-09-30 (cairn#51), and the timesheet's only remedy was to cut at
+midnight and to add a negative time by hand. With `[focus]` said, a focus is
+let go on its own, and the release is written **where the focus was last
+used**, never at the moment it is noticed: what the timesheet measures is
+still the work, not the hour somebody came back. Both keys are opt-in; neither
+said, nothing is let go on its own (`@focus-kept-when-nothing-is-said`).
+
+What a focus last saw is kept beside it, as `seen` (a stored stamp): set when
+the focus is taken, and moved at every operation run through the command line
+or the MCP server, reads included — an agent reading the board is working —
+and at every act written from any surface. A board left open and following the
+store is not activity, so a board left open overnight does not keep a focus
+alive. The check runs at the start of every operation, when a board opens, and
+before a board writes: a focus is let go when it has gone unused for longer than
+`idle` (`@focus-let-go-when-idle`, `@focus-kept-while-used`), or when the first
+day end after its last use has passed (`@focus-let-go-at-the-end-of-the-day`).
+The release is an act like any other, written through `focus`, and checking
+marks nothing used: only an operation does. The Claude hook keeps its own
+ten-minute release on top, and the timesheet's midnight cut stays as a
+backstop.
+
+`idle` is a duration, written as Go writes them (`90m`, `2h`), and `day_ends` a
+time of day written `20:00`; anything else is refused when an operation reads
+the configuration, naming the key (`@config-a-focus-limit-that-cannot-be-read-is-refused`),
+unlike archiving, which ignores a configuration it cannot read — a limit that
+silently did not apply would cost the time it was written to save. `config
+show` says it (`@config-show-says-when-a-focus-is-let-go`).
+
+A day is the day of the clock, which is `CAIRN_NOW` — a moment, written
+2026-11-04T09:30:00Z — when it names one: a scenario stands later to see what
+would be let go then, counted from the real moment each time. `CAIRN_TODAY`
+stays a date, for archiving.
+
 ## The environment names the same two places
 
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the

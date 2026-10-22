@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/store"
 	"cairn/internal/task"
 	"cairn/internal/trace"
 )
@@ -43,7 +45,9 @@ type places interface {
 	MoveLast(int) (bool, error)
 	MoveAfter(int, int) (bool, error)
 	Focus() ([]int, error)
-	AddFocus(int) error
+	AddFocus(int, time.Time) error
+	FocusSeen() ([]store.Held, error)
+	TouchFocus(time.Time) error
 	DropFocus(int) error
 	ClearFocus() error
 }
@@ -119,10 +123,11 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	if slices.Contains(held, number) {
 		return t, nil
 	}
-	if err := e.places.AddFocus(number); err != nil {
+	at := e.clock()
+	if err := e.places.AddFocus(number, at); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.record(number, trace.FocusTaken, "", "", ""); err != nil {
+	if err := e.recordAt(at, number, trace.FocusTaken, "", "", ""); err != nil {
 		return task.Task{}, err
 	}
 	return e.broughtIntoCurrent(t)

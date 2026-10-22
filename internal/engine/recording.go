@@ -103,7 +103,7 @@ func (e *Engine) recordChanges(was, became task.Task) error {
 	if err := e.recordOtherEnds(after.Number, before.Linked, after.Linked); err != nil {
 		return err
 	}
-	if after.State == domain.Done && before.State != domain.Done {
+	if (after.State == domain.Done || after.State == domain.Blocked) && before.State != after.State {
 		return e.letGoOf(after.Number)
 	}
 	return nil
@@ -148,8 +148,12 @@ func without(numbers []int, n int) []int {
 }
 
 func (e *Engine) record(number int, did, field, was, became string) error {
+	return e.recordAt(time.Now(), number, did, field, was, became)
+}
+
+func (e *Engine) recordAt(at time.Time, number int, did, field, was, became string) error {
 	return e.history.Record(trace.Made(trace.Carried{
-		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.acting.Through, By: e.acting.By, At: time.Now(),
+		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.acting.Through, By: e.acting.By, At: at,
 	}))
 }
 

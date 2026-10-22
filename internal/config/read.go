@@ -37,6 +37,9 @@ var ErrNotTOML = errors.New("not a file cairn can make sense of")
 // ErrArchive is returned when the file counts the days archiving waits for from something that is not a day, or in periods of no day at all.
 var ErrArchive = errors.New("archiving counts from a day, written 2026-10-21, in periods of one day or more")
 
+// ErrFocus is returned when the file says a focus is let go after something that is not a duration, or at something that is not a time of day.
+var ErrFocus = errors.New("a focus is let go after a duration, written 2h, and at a time of day, written 20:00")
+
 const defaultArchiveDays = 14
 
 // ErrNotAbsolute is returned when a place the file names is not absolute, even once a leading "~" has been expanded — a configuration is read from everywhere, so what it names has to mean one thing regardless of where a command runs from.
@@ -60,6 +63,8 @@ type Places struct {
 	plugin       string
 	archiveStart string
 	archiveDays  int
+	focusIdle    string
+	focusDayEnds string
 }
 
 type file struct {
@@ -68,6 +73,12 @@ type file struct {
 	Plugin  *string  `toml:"plugin"`
 	Pages   *pages   `toml:"pages"`
 	Archive *archive `toml:"archive"`
+	Focus   *focus   `toml:"focus"`
+}
+
+type focus struct {
+	Idle    string `toml:"idle"`
+	DayEnds string `toml:"day_ends"`
 }
 
 type archive struct {
@@ -129,6 +140,9 @@ func (p Places) Plugin() string { return p.plugin }
 func (p Places) Archive() (string, int, bool) {
 	return p.archiveStart, p.archiveDays, p.archiveDays > 0
 }
+
+// Focus is how long a focus may stay unused, written 2h, and the time of day it is let go at, written 20:00, exactly as the file wrote them; nothing for what the file does not say.
+func (p Places) Focus() (string, string) { return p.focusIdle, p.focusDayEnds }
 
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
 func (p Places) PagesOff() []string { return p.pagesOff }
@@ -197,7 +211,13 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
+	var said focus
+	if f.Focus != nil {
+		said = *f.Focus
+	}
 	answer := Places{
+		focusIdle:    said.Idle,
+		focusDayEnds: said.DayEnds,
 		archiveStart: start,
 		archiveDays:  days,
 		store:        filepath.Join(home, DefaultFolder, defaultFile),

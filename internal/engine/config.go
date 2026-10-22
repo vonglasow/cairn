@@ -19,19 +19,26 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, and each of its places, alongside what named it.
 type Config struct {
-	File     string      `json:"file"`
-	Store    Emplacement `json:"store"`
-	Notes    Emplacement `json:"notes"`
-	Plugin   Emplacement `json:"plugin"`
-	PagesOff []string    `json:"pages_off,omitempty"`
-	Archive  *Archive    `json:"archive,omitempty"`
-	Problem  string      `json:"problem,omitempty"`
+	File     string       `json:"file"`
+	Store    Emplacement  `json:"store"`
+	Notes    Emplacement  `json:"notes"`
+	Plugin   Emplacement  `json:"plugin"`
+	PagesOff []string     `json:"pages_off,omitempty"`
+	Archive  *Archive     `json:"archive,omitempty"`
+	Focus    *FocusLimits `json:"focus,omitempty"`
+	Problem  string       `json:"problem,omitempty"`
 }
 
 // Archive is the day archiving counts from, and how many days each period lasts.
 type Archive struct {
 	Start string `json:"start"`
 	Days  int    `json:"days"`
+}
+
+// FocusLimits is how long a focus may stay unused, and the time of day it is let go at, as the file wrote them.
+type FocusLimits struct {
+	Idle    string `json:"idle,omitempty"`
+	DayEnds string `json:"day_ends,omitempty"`
 }
 
 type placesGate struct {
@@ -70,6 +77,9 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.PagesOff = p.PagesOff()
 	if start, days, ok := p.Archive(); ok {
 		g.config.Archive = &Archive{Start: start, Days: days}
+	}
+	if idle, dayEnds := p.Focus(); idle != "" || dayEnds != "" {
+		g.config.Focus = &FocusLimits{Idle: idle, DayEnds: dayEnds}
 	}
 }
 
@@ -114,9 +124,24 @@ func configText(c Config) string {
 		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
 	}
 	if c.Archive == nil {
-		return said + "\nnothing is archived on its own\n"
+		said += "\nnothing is archived on its own\n"
+	} else {
+		said += fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
 	}
-	return said + fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
+	return said + c.Focus.text()
+}
+
+func (f *FocusLimits) text() string {
+	switch {
+	case f == nil:
+		return "\nnothing is let go on its own\n"
+	case f.Idle != "" && f.DayEnds != "":
+		return fmt.Sprintf("\nfocus       let go after %s unused, and at %s\n", f.Idle, f.DayEnds)
+	case f.Idle != "":
+		return fmt.Sprintf("\nfocus       let go after %s unused\n", f.Idle)
+	default:
+		return fmt.Sprintf("\nfocus       let go at %s\n", f.DayEnds)
+	}
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

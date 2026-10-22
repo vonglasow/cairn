@@ -30,6 +30,9 @@ type world struct {
 	board *engine.Engine
 	file  string
 	was   []byte
+
+	focusIdle    string
+	focusDayEnds string
 }
 
 func newWorld(t *testing.T) *world {
@@ -132,6 +135,7 @@ func flagFor(attribute string) string {
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 	w.registerStep(sc)
+	w.registerFocusLetGo(sc)
 
 	sc.Step(`^it says the (\w+) went from "([^"]*)" to "([^"]*)"$`,
 		func(field, was, became string) error {

@@ -385,6 +385,21 @@
           ],
           "additionalProperties": false
         },
+        "focus": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "idle": {
+              "type": "string"
+            },
+            "day_ends": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
         "problem": {
           "type": "string"
         }

@@ -101,6 +101,14 @@ time = true
 # [archive]
 # start = 2026-10-21
 # days = 14
+
+# Letting go of a focus on its own: a focus nobody let go of is let go at the
+# moment it was last used, once it has been unused for idle (a duration, such
+# as 2h) or once a day has ended at day_ends (a time of day, such as 20:00).
+# Nothing is let go on its own unless one of them is said.
+# [focus]
+# idle = "2h"
+# day_ends = "20:00"
 ```
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and

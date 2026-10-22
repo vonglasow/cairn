@@ -137,3 +137,18 @@ func TestFocus_bringsWaitingWorkIntoCurrentAndLeavesTheRest(t *testing.T) {
 		}
 	}
 }
+
+func TestFocus_isLetGoOfByATaskMovedIntoBlocked(t *testing.T) {
+	path := storeAt(t, "one", "two")
+	for _, n := range []string{"1", "2"} {
+		if _, err := Do(TaskFocus, path, given("number", n)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := Do(TaskEdit, path, given("number", "1", "state", "blocked", "because", "an answer")); err != nil {
+		t.Fatal(err)
+	}
+	if held := heldIn(t, path); len(held) != 1 || held[0] != 2 {
+		t.Errorf("in focus after one was blocked: %v, want [2]", held)
+	}
+}

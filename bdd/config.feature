@@ -252,6 +252,22 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "archive.start"
 
+  Rule: A focus is let go on its own only when the configuration says when
+
+    @config-show-says-when-a-focus-is-let-go
+    Scenario: config show says when a focus is let go on its own
+      Given focus is let go after "2h" unused
+      And the working day ends at "20:00"
+      When I run `cairn config show`
+      Then it says "focus       let go after 2h unused, and at 20:00"
+
+    @config-a-focus-limit-that-cannot-be-read-is-refused
+    Scenario: a focus limit that is not a duration is refused
+      Given focus is let go after "two hours" unused
+      When I run `cairn task list`
+      Then it fails
+      And it names "focus.idle"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-names-the-file-it-reads

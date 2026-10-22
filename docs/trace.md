@@ -173,7 +173,11 @@ agent. The scenarios are in `bdd/timesheet.feature`.
 unfocused when it stops, at the moment it is done and no other. Placing it after
 the fact was built and taken back out the same day: a focus that can be put at
 any moment past is a timesheet anybody can write, and the time it measures
-says what was typed rather than what was done. What was done without focus — a
+says what was typed rather than what was done. The one release written in the
+past is a focus let go on its own (`[focus]`, see
+[config](config.md#letting-go-of-a-focus-on-its-own)): it is written at the
+focus's last use, through `focus`, which is the last moment anything said the
+work went on, so the sheet still says what was done. What was done without focus — a
 meeting, an afternoon nobody focused — is added by hand (`timesheet add`), and a
 focus left on too long is taken back the same way, with less than nothing. Both
 are acts in the history like any other, read back from there like the rest.

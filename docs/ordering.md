@@ -253,6 +253,16 @@ released then; putting a task already done in focus is refused
 focus is the work under way, and a done task has none left: a focus left on it
 went on counting time nobody spent.
 
+**A task moved into `blocked` lets go of its focus as well**, in the same act
+(`@focus-let-go-when-blocked`): it waits on something outside, and the clock
+should not run while it does. Taking the focus on a task already blocked stays
+allowed (below). A known gap, kept for review: the Claude hook takes the focus
+again at each prompt, so in a hooked session a blocked task is taken up again on
+the next one. Refusing the focus to a blocked task, as a done one is refused,
+would reverse cairn#85 and is not done here. `watching` and `paused` keep their
+focus. A focus nobody lets go of is let go on its own, when the configuration
+says so: see [config](config.md#letting-go-of-a-focus-on-its-own).
+
 **Waiting work taking the focus goes into `current`.** Amended 2026-10-16
 (cairn#85). Taking the focus said what was being worked on and moved nothing,
 so a task picked from `todo` stayed in `todo` while it was worked on, and the
