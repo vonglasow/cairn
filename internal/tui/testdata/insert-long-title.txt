@@ -1,0 +1,40 @@
+  TASKS   objectives   time                                                                 INSERT
+
+ BACKLOG                0 TODO                   1 CURRENT                0 DONE                   0
+ ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────
+                          ┏━━━━━━━━━━━━━━━━━━━━━━┓
+                          ┃ 1                    ┃
+                          ┃ A title far longer   ┃
+                          ┃ than any column …    ┃
+                          ┃                      ┃
+                          ┗━━━━━━━━━━━━━━━━━━━━━━┛
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                          STALLED                                                                  0
+                          ──────────────────────────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+ A title far longer than any column could ever hope to show in full, even over two lines of a card
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   d delete   x archive   ? help   esc back

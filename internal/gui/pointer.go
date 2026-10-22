@@ -91,12 +91,50 @@ func (w Window) aiming(p Point) Window {
 func (w Window) Hovering(p Point) Window {
 	w.over, w.hovered = w.offerAt(p)
 	w.explaining = w.nameAt(p)
+	w.resting, w.restingSlot = w.cutTitleAt(p)
 	return w
+}
+
+// Bubble is the whole title of the cut card the pointer rests on, and nothing when it rests on none.
+func (w Window) Bubble() string { return w.resting }
+
+// BubbleBox is where the bubble is drawn and the lines it says, and whether there is one.
+func (w Window) BubbleBox() (Box, []string, bool) {
+	if w.resting == "" {
+		return Box{}, nil, false
+	}
+	m := w.measured()
+	room := min(2*w.restingSlot.W, w.width-2*margin) - 2*padding
+	lines := m.Wrapped(w.resting, room, plain).Said
+	widest := 0
+	for _, line := range lines {
+		widest = max(widest, ends(m, line, plain))
+	}
+	wide := widest + 2*padding
+	high := len(lines)*lineHigh + 2*inset
+	x := max(margin, min(w.restingSlot.X, w.width-margin-wide))
+	y := w.restingSlot.Y - high - inset
+	if y < margin {
+		y = w.restingSlot.Y + w.restingSlot.H + inset
+	}
+	return Box{X: x, Y: max(margin, min(y, w.height-margin-high)), W: wide, H: high}, lines, true
+}
+
+func (w Window) cutTitleAt(p Point) (string, Box) {
+	if w.screen != OnTheBoard || w.tab != Tasks {
+		return "", Box{}
+	}
+	for _, placed := range w.Placed() {
+		if placed.Within.In(p) && placed.Slot.In(p) && TitleOf(placed.Card.Title, placed.Slot.W) != placed.Card.Title {
+			return placed.Card.Title, placed.Slot
+		}
+	}
+	return "", Box{}
 }
 
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
-	w.over, w.hovered, w.explaining = "", false, 0
+	w.over, w.hovered, w.explaining, w.resting, w.restingSlot = "", false, 0, "", Box{}
 	return w
 }
 

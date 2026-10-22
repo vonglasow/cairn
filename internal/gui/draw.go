@@ -159,6 +159,13 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnLabels {
 		drawLabels(gtx, th, skin, w)
 	}
+	if bubble, said, ok := w.BubbleBox(); ok {
+		fill(gtx, bubble, skin.Panel)
+		outline(gtx, bubble, skin.Edge)
+		for i, line := range said {
+			say(gtx, th, skin.Ink, ExplainedLine(bubble, i), line, plain)
+		}
+	}
 }
 
 func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {

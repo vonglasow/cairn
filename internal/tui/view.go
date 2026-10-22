@@ -56,7 +56,7 @@ func (b Board) drawBoard() string {
 	default:
 		out = append(out, b.tasksBoard(l)...)
 	}
-	return strings.Join(append(out, "", b.foot()), "\n")
+	return strings.Join(append(out, b.titleLine(), b.foot()), "\n")
 }
 
 func (b Board) tabs() string {
@@ -335,4 +335,25 @@ func (b Board) kindPopup() string {
 		out = append(out, b.skin.Faint.Render(" "+kind+" "))
 	}
 	return " " + b.skin.Title.Render("which kind of stopped?") + "  " + strings.Join(out, " ")
+}
+
+func (b Board) titleLine() string {
+	title := b.wholeTitle()
+	if title == "" {
+		return ""
+	}
+	return " " + b.skin.Faint.Render(Clip(title, b.width-margin-margin))
+}
+
+// wholeTitle is the title of the card under the cursor in insert mode when the card cuts it, and nothing otherwise.
+func (b Board) wholeTitle() string {
+	c, ok := b.held()
+	if !ok || b.mode != Insert {
+		return ""
+	}
+	lines := Wrap(c.Title, LayoutFor(b.width, b.height).Interior, titleLines)
+	if !strings.HasSuffix(lines[titleLines-1], ellipsis) {
+		return ""
+	}
+	return c.Title
 }

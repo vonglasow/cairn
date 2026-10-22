@@ -249,6 +249,13 @@ func (w *world) cardInFocus(number int) error {
 
 func (w *world) boardSays(text string) error { return w.mustSay(text) }
 
+func (w *world) boardSaysOnce(text string) error {
+	if got := strings.Count(w.screen(), text); got != 1 {
+		return fmt.Errorf("the board says %q %d times, not once:\n%s", text, got, w.screen())
+	}
+	return nil
+}
+
 func (w *world) boardDoesNotSay(text string) error {
 	if strings.Contains(w.screen(), text) {
 		return fmt.Errorf("the board says %q where it should not:\n%s", text, w.screen())

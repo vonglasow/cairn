@@ -124,6 +124,8 @@ type Window struct {
 	over                  string
 	hovered               bool
 	explaining            int
+	resting               string
+	restingSlot           Box
 	picked                Picked
 	pickingText           bool
 	wheelOn               Screen

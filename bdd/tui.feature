@@ -435,6 +435,20 @@ Feature: The board
       Then the card for task 1 says "1"
       And the card for task 1 says "Write the spec"
 
+    @tui-a-cut-title-is-read-whole-in-insert
+    Scenario: the card under the cursor gives its whole title when the card cuts it
+      Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      When I open the board
+      And I press "i"
+      Then the board says "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+
+    @tui-a-title-that-fits-is-not-said-twice
+    Scenario: a title the card holds whole is not written again
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i"
+      Then the board says "Write the spec" once
+
     @tui-a-card-marks-a-description-without-showing-it
     Scenario: a description is marked, never drawn
       Given I added a task titled "Write the spec" with the description "The client wants two columns"

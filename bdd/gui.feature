@@ -133,6 +133,20 @@ Feature: The desktop board
       When I open the window
       Then "BACKLOG" carries a card whose title ends in "…"
 
+    @gui-a-cut-title-is-read-whole-under-the-pointer
+    Scenario: a card whose title is cut shows it whole while the pointer rests on it
+      Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      When I open the window
+      And I rest the pointer on the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      Then a bubble shows "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+
+    @gui-a-title-that-fits-has-no-bubble
+    Scenario: a card whose title fits shows no bubble
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I rest the pointer on the card "Write the spec"
+      Then no bubble shows
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so

@@ -127,6 +127,13 @@ fit, where the n-th one is, and which card is under the pointer, without
 drawing anything. The price is the same as the terminal's — a long title is
 cut.
 
+A cut title is still readable: while the pointer rests on a card whose title
+was cut, a small bubble drawn above everything else says it whole, wrapped
+over as many lines as it needs and kept inside the window. A card whose title
+fits gets none. The cards keep their height, and the title is not lost to it.
+Scenarios: `@gui-a-cut-title-is-read-whole-under-the-pointer`,
+`@gui-a-title-that-fits-has-no-bubble`.
+
 Variable height was the alternative and would have cut nothing, at the cost of
 a column's geometry depending on its contents: scrolling and drop targets
 computed instead of multiplied, and two columns no longer sharing a grid, which

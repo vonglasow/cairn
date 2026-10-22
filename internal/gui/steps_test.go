@@ -1208,6 +1208,27 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the form has no field %q", name)
 	})
+	sc.Step(`^I rest the pointer on the card "([^"]*)"$`, func(title string) error {
+		for _, placed := range w.w.Placed() {
+			if placed.Card.Title == title {
+				w.w = w.w.Hovering(Point{X: placed.Slot.X + placed.Slot.W/2, Y: placed.Slot.Y + placed.Slot.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the board holds no card titled %q", title)
+	})
+	sc.Then(`^a bubble shows "([^"]*)"$`, func(said string) error {
+		if got := w.w.Bubble(); got != said {
+			return fmt.Errorf("the bubble shows %q, not %q", got, said)
+		}
+		return nil
+	})
+	sc.Then(`^no bubble shows$`, func() error {
+		if got := w.w.Bubble(); got != "" {
+			return fmt.Errorf("a bubble shows %q", got)
+		}
+		return nil
+	})
 	sc.Step(`^the pointer leaves the window$`, func() error {
 		w.w = w.w.Away()
 		return nil

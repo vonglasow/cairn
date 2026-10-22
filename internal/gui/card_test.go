@@ -205,3 +205,37 @@ func TestAnObjectivesCountSaysTheTimeSpentWhenThereIsAny(t *testing.T) {
 		t.Errorf("Counted with no time = %q", got)
 	}
 }
+
+func TestTheBubbleHoldsACutTitleWhole(t *testing.T) {
+	long := strings.Repeat("far too long ", 12)
+	w := holding(newFake(), card(1, long, "backlog"), card(2, "Write the spec", "backlog"))
+	cut := w.Hovering(middleOf(w, 0, 0))
+	if cut.Bubble() != long {
+		t.Fatalf("the bubble over a cut title holds %q", cut.Bubble())
+	}
+	if got := w.Hovering(middleOf(w, 0, 1)).Bubble(); got != "" {
+		t.Fatalf("a title that fits has the bubble %q", got)
+	}
+	if got := cut.Away().Bubble(); got != "" {
+		t.Fatalf("the bubble stays after the pointer left: %q", got)
+	}
+}
+
+func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
+	long := strings.Repeat("far too long ", 12)
+	w := holding(newFake(), card(1, "first", "backlog"), card(2, "second", "backlog"), card(3, long, "backlog"))
+	w = w.Hovering(middleOf(w, 0, 2))
+	bubble, lines, ok := w.BubbleBox()
+	if !ok || len(lines) < 2 {
+		t.Fatalf("the cut title has no bubble of several lines: %v %v", ok, lines)
+	}
+	if bubble.X < 0 || bubble.Y < 0 || bubble.X+bubble.W > w.width || bubble.Y+bubble.H > w.height {
+		t.Fatalf("the bubble %v is not inside the window", bubble)
+	}
+	shot := drawn(t, w)
+	got := shot.RGBAAt(bubble.X, bubble.Y+bubble.H/2)
+	edge := Dark().Edge
+	if got.R != edge.R || got.G != edge.G || got.B != edge.B {
+		t.Fatalf("the bubble's edge is %v where %v was drawn over the cards", got, edge)
+	}
+}

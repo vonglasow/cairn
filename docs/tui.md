@@ -177,6 +177,8 @@ Always six: a border, four lines of content, a border.
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
+A terminal has no reliable pointer to hover with, so a cut title is read another way: in insert mode, when the card under the cursor cuts its title, the board writes the whole title on the line just above the bar, in the row that is otherwise blank, so the board does not grow. A title the card holds whole adds nothing. A title wider than the window is cut at its width with `…`; the line never wraps. Tags: `@tui-a-cut-title-is-read-whole-in-insert`, `@tui-a-title-that-fits-is-not-said-twice`.
+
 A fixed height was chosen over a snug one, and it bought something that was not
 free before: **navigation becomes arithmetic.** A card is six rows, so `j` and
 `k` know where they land, and how far a column has to scroll for the one under
