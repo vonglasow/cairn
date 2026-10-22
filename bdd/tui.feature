@@ -12,6 +12,11 @@ Feature: The board
       When I open the board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
+    @tui-columns-stand-apart
+    Scenario: a rule stands between each two columns
+      When I open the board
+      Then a rule stands between each two columns
+
     @tui-archived-are-off-the-board-until-asked-for
     Scenario: what was archived comes back when it is asked for
       Given I added a task titled "Migration Jenkins"

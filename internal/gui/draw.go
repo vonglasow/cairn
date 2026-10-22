@@ -33,6 +33,7 @@ const (
 // Skin is every colour the window uses, in one place, so a second theme is a second Skin and not a search through the drawing.
 type Skin struct {
 	Back, Panel, Edge  color.NRGBA
+	Ground, GroundEdge color.NRGBA
 	Ink, Faint, Chosen color.NRGBA
 	Wrong              color.NRGBA
 	Late               color.NRGBA
@@ -45,16 +46,18 @@ type Skin struct {
 // Dark is the one skin there is.
 func Dark() Skin {
 	return Skin{
-		Back:   color.NRGBA{R: 18, G: 18, B: 24, A: 255},
-		Panel:  color.NRGBA{R: 44, G: 44, B: 54, A: 255},
-		Edge:   color.NRGBA{R: 104, G: 104, B: 122, A: 255},
-		Ink:    color.NRGBA{R: 226, G: 226, B: 236, A: 255},
-		Faint:  color.NRGBA{R: 160, G: 160, B: 178, A: 255},
-		Chosen: color.NRGBA{R: 108, G: 158, B: 246, A: 255},
-		Wrong:  color.NRGBA{R: 255, G: 110, B: 160, A: 255},
-		Late:   color.NRGBA{R: 240, G: 186, B: 96, A: 255},
-		Ghost:  color.NRGBA{R: 72, G: 88, B: 124, A: 255},
-		Veil:   color.NRGBA{R: 6, G: 6, B: 10, A: 160},
+		Back:       color.NRGBA{R: 18, G: 18, B: 24, A: 255},
+		Panel:      color.NRGBA{R: 44, G: 44, B: 54, A: 255},
+		Edge:       color.NRGBA{R: 104, G: 104, B: 122, A: 255},
+		Ground:     color.NRGBA{R: 28, G: 28, B: 36, A: 255},
+		GroundEdge: color.NRGBA{R: 54, G: 54, B: 66, A: 255},
+		Ink:        color.NRGBA{R: 226, G: 226, B: 236, A: 255},
+		Faint:      color.NRGBA{R: 160, G: 160, B: 178, A: 255},
+		Chosen:     color.NRGBA{R: 108, G: 158, B: 246, A: 255},
+		Wrong:      color.NRGBA{R: 255, G: 110, B: 160, A: 255},
+		Late:       color.NRGBA{R: 240, G: 186, B: 96, A: 255},
+		Ghost:      color.NRGBA{R: 72, G: 88, B: 124, A: 255},
+		Veil:       color.NRGBA{R: 6, G: 6, B: 10, A: 160},
 		Stones: []color.NRGBA{
 			{R: 86, G: 84, B: 92, A: 255},
 			{R: 104, G: 101, B: 108, A: 255},
@@ -461,11 +464,13 @@ func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
+		ground(gtx, skin, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
 		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
 	}
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	ground(gtx, skin, l.Band)
 	for lane, kind := range engine.Stalled {
 		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 	}
@@ -895,6 +900,11 @@ func rect(b Box) image.Rectangle {
 
 func fill(gtx layout.Context, b Box, with color.NRGBA) {
 	paint.FillShape(gtx.Ops, with, clip.Rect(rect(b)).Op())
+}
+
+func ground(gtx layout.Context, skin Skin, b Box) {
+	fill(gtx, b, skin.Ground)
+	outline(gtx, b, skin.GroundEdge)
 }
 
 func outline(gtx layout.Context, b Box, with color.NRGBA) {

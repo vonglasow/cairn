@@ -54,3 +54,29 @@ func TestUnderTheBand(t *testing.T) {
 		}
 	}
 }
+
+func TestColumnsAreJoinedByARuleOnEveryRow(t *testing.T) {
+	b := Board{skin: plainSkin}
+	got := b.apart([]string{"a\nb", "c\nd", "e\nf"})
+	if got != "a│c│e\nb│d│f" {
+		t.Fatalf("the columns are joined as %q", got)
+	}
+}
+
+func TestTheRuleStopsWhereTheBandStarts(t *testing.T) {
+	b := standing(newFake())
+	b.width, b.height = 100, 40
+	l := LayoutFor(b.width, b.height)
+	ruled := 0
+	for _, line := range strings.Split(bare(b.Draw()), "\n") {
+		if strings.Contains(line, "│") {
+			ruled++
+		}
+		if strings.Contains(line, engine.Band) && strings.Contains(line, "│") {
+			t.Fatalf("the rule runs through the band: %q", line)
+		}
+	}
+	if want := 2 + l.Top; ruled != want {
+		t.Fatalf("the rule stands on %d rows, want the header, the rule and %d of cards", ruled, l.Top)
+	}
+}

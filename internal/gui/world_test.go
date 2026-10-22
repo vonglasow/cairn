@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"os"
 	"path/filepath"
 	"slices"
@@ -789,6 +790,19 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
 		return nil
 	})
+	sc.Then(`^every column stands on a ground of its own$`, func() error {
+		l := w.w.Layout()
+		for i := range l.Column {
+			head, body := l.Head[i], l.Column[i]
+			if err := w.standsApart(Box{X: head.X, Y: head.Y, W: head.W, H: head.H + body.H}); err != nil {
+				return fmt.Errorf("column %d: %w", i, err)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^the band stands on a ground of its own$`, func() error {
+		return w.standsApart(w.w.Layout().Band)
+	})
 	sc.Then(`^the window draws nothing but its ground$`, func() error {
 		shot, err := drawnInAStep(w.w)
 		if err != nil {
@@ -1397,4 +1411,29 @@ func (w *world) answerDialog(d dialog) error {
 	}
 	w.w = w.w.FileTaken().Filed(Filing(ask, d))
 	return w.w.Wrong()
+}
+
+func (w *world) standsApart(b Box) error {
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	skin := Dark()
+	for _, c := range []struct {
+		what string
+		at   Point
+		want color.NRGBA
+	}{
+		{"top, inside", Point{X: b.X + b.W - 3, Y: b.Y + 3}, skin.Ground},
+		{"bottom, inside", Point{X: b.X + b.W - 3, Y: b.Y + b.H - 3}, skin.Ground},
+		{"left edge", Point{X: b.X, Y: b.Y + b.H/2}, skin.GroundEdge},
+		{"just outside on the left", Point{X: b.X - 1, Y: b.Y + b.H/2}, skin.Back},
+		{"just outside above", Point{X: b.X + b.W/2, Y: b.Y - 1}, skin.Back},
+	} {
+		got := shot.RGBAAt(c.at.X, c.at.Y)
+		if got.R != c.want.R || got.G != c.want.G || got.B != c.want.B {
+			return fmt.Errorf("%s at %d,%d is %d,%d,%d, want %d,%d,%d", c.what, c.at.X, c.at.Y, got.R, got.G, got.B, c.want.R, c.want.G, c.want.B)
+		}
+	}
+	return nil
 }

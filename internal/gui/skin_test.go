@@ -20,6 +20,8 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			{"ink on the board", skin.Back, skin.Ink},
 			{"faint on a panel", skin.Panel, skin.Faint},
 			{"faint on the board", skin.Back, skin.Faint},
+			{"ink on a column", skin.Ground, skin.Ink},
+			{"faint on a column", skin.Ground, skin.Faint},
 			{"an offer on the board", skin.Back, skin.Chosen},
 			{"an error on the board", skin.Back, skin.Wrong},
 			{"a day gone by, on a panel", skin.Panel, skin.Late},
@@ -40,6 +42,9 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			{"an edge against the board", skin.Back, skin.Edge, 3},
 			{"an edge against a panel", skin.Panel, skin.Edge, 2},
 			{"a panel against the board", skin.Back, skin.Panel, 1.3},
+			{"a column against the board", skin.Back, skin.Ground, 1.08},
+			{"a panel against a column", skin.Ground, skin.Panel, 1.15},
+			{"a column's edge against its ground", skin.Ground, skin.GroundEdge, 1.2},
 		}
 		for _, c := range shapes {
 			if got := Contrast(c.said, c.on); got < c.at {

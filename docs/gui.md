@@ -120,6 +120,17 @@ The terminal's shape, larger. Four columns — backlog, todo, current, done —
 the backlog full height, the stalled band across the last three. Three tabs:
 tasks, objectives, and the time spent.
 
+**Each column and the band stand on a ground of their own.** A region reads as
+a group when it has a ground or an edge of its own (common region, Nielsen
+Norman Group), and that beats proximity alone. In a dark theme a lighter tonal
+surface does what a shadow does elsewhere, so every column, its header
+included, and the band are drawn on one uniform ground lighter than the
+window's, edged by a thin low-contrast line, and the cards stay the lightest
+layer. The gap between columns stays: it is the gutter. There are no vertical
+rules and no alternating tints, which would imply a meaning nobody gave them.
+The ground and its edge are skin tokens, checked for contrast with the others
+(`@gui-columns-stand-apart`).
+
 **Cards keep a fixed height.** In the terminal that is what makes moving the
 cursor arithmetic rather than measurement; with a mouse that reason is gone,
 and it was kept anyway for what it still buys: a column can say how many cards

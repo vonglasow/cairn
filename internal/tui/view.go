@@ -105,20 +105,16 @@ func (b Board) tasksBoard(l Layout) []string {
 		out = append(out, b.insideBand(), "")
 		top = max(0, top-insideRows)
 	}
-	heads := make([]string, 0, len(all))
-	rules := make([]string, 0, len(all))
-	stacks := make([]string, 0, len(all))
+	columns := make([]string, 0, len(all))
 	for i, column := range all {
 		under := !b.inBand && b.mode == Normal && b.column == i
-		heads = append(heads, b.header(column.Name, len(column.Cards), l.Column, under))
-		rules = append(rules, b.rule(l.Column, under))
-		stacks = append(stacks, b.stack(column.Cards, l, top, b.offsets[i]))
+		columns = append(columns, strings.Join([]string{
+			b.header(column.Name, len(column.Cards), l.Column, under),
+			b.rule(l.Column, under),
+			b.stack(column.Cards, l, top, b.offsets[i]),
+		}, "\n"))
 	}
-	out = append(out,
-		" "+strings.Join(heads, " "),
-		" "+strings.Join(rules, " "),
-		lipgloss.NewStyle().PaddingLeft(margin).Render(lipgloss.JoinHorizontal(lipgloss.Top, spaced(stacks)...)),
-	)
+	out = append(out, lipgloss.NewStyle().PaddingLeft(margin).Render(b.apart(columns)))
 	return append(out, b.bandRows(band, l)...)
 }
 
@@ -356,4 +352,21 @@ func (b Board) wholeTitle() string {
 		return ""
 	}
 	return c.Title
+}
+
+// apart sets columns side by side with a dim rule in the one-cell gap between each two, on every row.
+func (b Board) apart(columns []string) string {
+	height := 0
+	for _, column := range columns {
+		height = max(height, lipgloss.Height(column))
+	}
+	gap := b.skin.Rule.Render(strings.TrimSuffix(strings.Repeat("│\n", height), "\n"))
+	var out []string
+	for i, column := range columns {
+		if i > 0 {
+			out = append(out, gap)
+		}
+		out = append(out, column)
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Top, out...)
 }

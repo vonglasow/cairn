@@ -123,6 +123,14 @@ for each other. That mistake was already paid for once in this repository, on
 quarter of the width to say that nothing is being worked on, and that is worth a
 quarter of the width.
 
+**A dim rule stands between each two columns**, in the cell the gap already
+was, so no column lost a cell to it, and it stops where the band starts rather
+than cutting it (`@tui-columns-stand-apart`). A box round each column would take
+two cells a column, a wider gap a cell more, and a terminal has no subtle tint
+to set one column off from the next; a single line in the faint colour is the
+cheapest edge there is. The objective's own board is drawn by the same code and
+has the same rules.
+
 ## Width
 
 Everything is worked out from the width the terminal reports, and reported again

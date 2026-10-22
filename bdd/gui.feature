@@ -147,6 +147,14 @@ Feature: The desktop board
       And I rest the pointer on the card "Write the spec"
       Then no bubble shows
 
+  Rule: Each column and the band stand on a ground of their own
+
+    @gui-columns-stand-apart
+    Scenario: each column is drawn on a ground of its own, edged, apart from the window's
+      When I open the window
+      Then every column stands on a ground of its own
+      And the band stands on a ground of its own
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so

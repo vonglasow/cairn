@@ -112,20 +112,23 @@ func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 	back := Dark().Back
 	l := w.Layout()
 
-	for what, box := range map[string]Box{
-		"the tabs":            l.Tabs,
-		"the todo header":     l.Head[1],
-		"the first todo card": l.CardAt(1, 0, 0),
-		"the blocked lane":    l.Lane[0],
-		"the bar":             l.Bar,
+	for what, on := range map[string]struct {
+		box    Box
+		ground color.NRGBA
+	}{
+		"the tabs":            {l.Tabs, back},
+		"the todo header":     {l.Head[1], Dark().Ground},
+		"the first todo card": {l.CardAt(1, 0, 0), Dark().Ground},
+		"the blocked lane":    {l.Lane[0], Dark().Ground},
+		"the bar":             {l.Bar, back},
 	} {
-		if got := ink(shot, box, back); got == 0 {
+		if got := ink(shot, on.box, on.ground); got == 0 {
 			t.Errorf("%s is blank", what)
 		}
 	}
 
 	empty := l.CardAt(3, 0, 0)
-	if got := ink(shot, empty, back); got != 0 {
+	if got := ink(shot, inside(empty), Dark().Ground); got != 0 {
 		t.Errorf("an empty column drew %d pixels where its first card would be", got)
 	}
 }
@@ -144,6 +147,8 @@ func TestAWindowTooSmallDrawsItsMessageAndNoBoard(t *testing.T) {
 		t.Errorf("a window too small drew %d pixels of board along its bottom", got)
 	}
 }
+
+func inside(b Box) Box { return Box{X: b.X + 1, Y: b.Y, W: b.W - 2, H: b.H} }
 
 func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
 	count := 0
@@ -263,14 +268,14 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	shot := drawn(t, w)
-	back := Dark().Back
+	back := Dark().Ground
 	l := w.Layout()
 	if got := ink(shot, l.Lane[0], back); got == 0 {
 		t.Error("the blocked lane is empty and holds a blocked task")
 	}
 	for _, lane := range []int{1, 2} {
 		card := l.LaneCardAt(lane, 0, 0)
-		if got := ink(shot, card, back); got != 0 {
+		if got := ink(shot, inside(card), back); got != 0 {
 			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", engine.Stalled[lane], got)
 		}
 	}
@@ -429,11 +434,11 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 
 	box := w.Layout().CardAt(1, 0, 0)
 	twice := Box{X: box.X * 2, Y: box.Y * 2, W: box.W * 2, H: box.H * 2}
-	if got := ink(shot, twice, Dark().Back); got == 0 {
+	if got := ink(shot, twice, Dark().Ground); got == 0 {
 		t.Error("nothing was drawn where two pixels to the dp puts the first card")
 	}
-	empty := Box{X: box.X, Y: box.Y + box.H/2, W: box.W, H: box.H / 4}
-	if got := ink(shot, empty, Dark().Back); got != 0 {
+	empty := Box{X: box.X, Y: box.Y + box.H/2, W: box.W / 2, H: box.H / 4}
+	if got := ink(shot, empty, Dark().Ground); got != 0 {
 		t.Errorf("%d pixels were drawn as though one pixel were one dp", got)
 	}
 }
@@ -618,12 +623,12 @@ func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 		engine.Card{Number: 1, Title: "Write the spec", State: "backlog"},
 		engine.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
-	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), Dark().Back)
+	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), Dark().Ground)
 	if both == 0 {
 		t.Fatal("the second card is not drawn to begin with")
 	}
 	narrowed := w.Key("/").Types("spec")
-	if got := ink(drawn(t, narrowed), narrowed.Layout().CardAt(0, 1, 0), Dark().Back); got != 0 {
+	if got := ink(drawn(t, narrowed), inside(narrowed.Layout().CardAt(0, 1, 0)), Dark().Ground); got != 0 {
 		t.Errorf("a search left %d pixels of a card it does not reach", got)
 	}
 }

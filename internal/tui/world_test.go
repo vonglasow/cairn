@@ -177,6 +177,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Then(`^the columns read (".*")$`, w.columnsRead)
+	sc.Then(`^a rule stands between each two columns$`, w.ruleBetweenColumns)
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)
 	sc.Then(`^the band carries (\d+) tasks?$`, w.bandCarries)
 	sc.Then(`^"([^"]*)" carries "([^"]*)"$`, w.columnCarries)

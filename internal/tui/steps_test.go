@@ -282,3 +282,28 @@ func (w *world) columnReads(column, list string) error {
 	}
 	return nil
 }
+
+func (w *world) ruleBetweenColumns() error {
+	l := LayoutFor(w.width, w.high)
+	lines := strings.Split(w.screen(), "\n")
+	head := -1
+	for i, line := range lines {
+		if strings.Contains(line, "BACKLOG") {
+			head = i
+			break
+		}
+	}
+	if head < 0 {
+		return fmt.Errorf("no column header on the board:\n%s", w.screen())
+	}
+	for gap := 0; gap < engine.Columns-1; gap++ {
+		at := margin + l.Column + gap*(l.Column+1)
+		for _, line := range lines[head : head+2+l.Top] {
+			runes := []rune(line)
+			if len(runes) <= at || runes[at] != '│' {
+				return fmt.Errorf("no rule at column %d of %q:\n%s", at, line, w.screen())
+			}
+		}
+	}
+	return nil
+}
