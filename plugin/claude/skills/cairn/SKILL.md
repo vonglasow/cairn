@@ -70,6 +70,13 @@ are on: add a step.
 Put a task in `done` only once its steps are ticked, or say which ones were
 ticked with it: over MCP, finishing a task ticks its open steps.
 
+## Done does not reopen
+
+A task done whose work does not hold is not reopened: open a new task linked
+to it. `task_new` with `link` (`cairn task new "…" --link <n>`), put the label
+`bug` on it by hand, and the task done stays done. Moving a task out of `done`
+is only for one put there by mistake.
+
 ## Detaching — the subject changes, or the person stops
 
 1. Update `summary.md` in the task's notes: the decisions taken, where the

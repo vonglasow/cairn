@@ -828,13 +828,17 @@ the board changes.
 have done to it was on the bar once the card was chosen, so a hand on the
 mouse went to the card and then down to the foot of the window. A right press
 chooses what is under it and opens a menu beside the pointer (`menu.go`):
-Edit, Focus or Unfocus, Move to…, Priority…, Labels…, Archive or Unarchive,
-Delete on a task; Edit and Delete on an objective; the board's own offers
+Edit, New linked task, Focus or Unfocus, Move to…, Priority…, Labels…, Archive
+or Unarchive, Delete on a task; Edit and Delete on an objective; the board's own offers
 where there is neither. Every line is an act the bar, a key or a drag already
 does, done the same way. Move to… and Priority… turn the menu into the values
 the task may take, but the one it holds, and the one clicked is set at once;
 Labels… opens the list of its labels, as the form does
-(`@gui-a-card-is-moved-from-its-menu`). The arrows and
+(`@gui-a-card-is-moved-from-its-menu`). New linked task is `o` on a chosen card:
+the form of a new task, in `todo`, its `links` already holding the card's
+number (`@gui-a-cards-menu-opens-a-linked-task`, `@gui-o-opens-a-linked-task`);
+an unsaved new task held is asked about as for any other, and the link stays
+whichever the answer. See [links.md](links.md). The arrows and
 `j k` walk it, `⏎` takes a line, `esc` or a click off it closes it and does
 nothing else.
 

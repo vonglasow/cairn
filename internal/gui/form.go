@@ -479,6 +479,8 @@ func (w Window) Choose(name string) Window {
 	switch strings.ToLower(name) {
 	case "edit":
 		return w.Edit()
+	case "new linked task":
+		return w.startingLinked()
 	case "save":
 		return w.Save()
 	case "cmd+enter":

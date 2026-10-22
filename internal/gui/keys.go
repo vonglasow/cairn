@@ -62,6 +62,10 @@ func (w Window) onBoard(name string) Window {
 		if w.chosen != 0 && !w.chosenGoal {
 			return w.working()
 		}
+	case "o":
+		if w.chosen != 0 && !w.chosenGoal {
+			return w.startingLinked()
+		}
 	case "cmd+b":
 		return w.backingUp()
 	case "shift+b":

@@ -135,6 +135,14 @@ Feature: Answering a machine over MCP
       Then it answers without an error
       And `cairn task list` lists 1 task
 
+    @mcp-a-task-opened-with-a-link
+    Scenario: a task opened through the MCP with a link is linked
+      Given a cairn server started with `--access write`
+      And I added a task titled "Ship it"
+      When I call `task_new` with the title "It does not hold" and the link 1
+      Then it answers without an error
+      And `cairn task show 1` says "linked       #2"
+
     @mcp-what-it-answers
     Scenario: what a tool answers is what the command prints
       Given I added a task titled "Write the spec"

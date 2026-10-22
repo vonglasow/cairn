@@ -274,6 +274,8 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 		return b.editForm()
 	case "f":
 		return b, b.toggleFocus()
+	case "o":
+		return b.linkedForm()
 	case "d":
 		if b.task != 0 {
 			b.asking = true

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -104,5 +105,19 @@ func TestFields_sayWhatEachOneIs(t *testing.T) {
 		if f.Name == "description" && !strings.Contains(f.Means, "what was done or decided goes in its notes") {
 			t.Errorf("the description says %q, and not where the work on the task goes", f.Means)
 		}
+	}
+}
+
+func TestANewTaskFormCanComeLinked(t *testing.T) {
+	fields := LinkedTaskFields(4)
+	if state, _ := valueOf(fields, "column"); state != "todo" {
+		t.Errorf("a linked task starts in %q, want todo", state)
+	}
+	if links, _ := valueOf(fields, "links"); links != "4" {
+		t.Errorf("a linked task comes linked to %q, want 4", links)
+	}
+	op, in := Saved(fields, true, 0, TaskNew, TaskEdit)
+	if op.Name() != "task_new" || !slices.Equal(in.Listed["link"], []string{"4"}) || in.Given["state"] != "todo" {
+		t.Errorf("saving it asked %s %v", op.Name(), in.Given)
 	}
 }

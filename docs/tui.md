@@ -316,6 +316,7 @@ from that mode's bar, and pressing it there does nothing.
 | `i` | ✓ | | ✓ | enter insert · on objectives, open the objective |
 | `⇧hjkl` `⇧←↓↑→` | | ✓ | | move the task anywhere; its state follows where it lands |
 | `a` | ✓ | | ✓ | add — the column under the cursor gives the state |
+| `o` | | ✓ | | a new task linked to this one, in `todo` — last in the bar, the first left out when the bar is narrow; see [links.md](links.md) |
 | `x` | | ✓ | | archive or unarchive the task |
 | `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
 | `⇧X` | ✓ | | | archive every task in the column — it asks first |
@@ -413,6 +414,7 @@ One form, for adding and for editing, behaving the same way both times.
  │    priority       high                                                     │
  │    labels         spec  infra                                              │
  │    blockers       —                                                        │
+ │    links          —                                                        │
  │    because        —                                                        │
  │    deadline       2026-09-02                                               │
  │    estimate       3h                                                       │

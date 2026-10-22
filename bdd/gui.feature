@@ -604,7 +604,7 @@ Feature: The desktop board
       And I choose "Edit"
       Then the form asks about "title", "description", "column", "priority"
       And the form asks about "labels", "blockers", "because", "deadline"
-      And the form asks about "estimate", "time spent", "objectives"
+      And the form asks about "estimate", "time spent", "links", "objectives"
 
     @gui-the-form-starts-on-what-is-there
     Scenario: the form starts on what the task already carries
@@ -1541,7 +1541,7 @@ Feature: The desktop board
       When I open the window
       And I right-click the card "Write the spec"
       Then the card "Write the spec" is chosen
-      And the menu offers "Edit", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      And the menu offers "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
@@ -1552,7 +1552,7 @@ Feature: The desktop board
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Edit", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      Then the menu offers "Edit", "New linked task", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-card-is-moved-from-its-menu
     Scenario: a card's menu moves it to another column, and sets its priority
@@ -1567,6 +1567,39 @@ Feature: The desktop board
       And I click "Priority…" in the menu
       And I click "high" in the menu
       Then task 1 carries the priority "high"
+
+    @gui-a-cards-menu-opens-a-linked-task
+    Scenario: a card's menu opens a new task linked to it
+      Given I added a task titled "Ship it" with the state "done"
+      When I open the window
+      And I right-click the card "Ship it"
+      And I click "New linked task" in the menu
+      And I set the field "title" to "It does not hold"
+      And I choose "Save"
+      Then task 2 is linked to task 1
+
+    @gui-o-opens-a-linked-task
+    Scenario: o on a chosen card opens a new task linked to it, in todo
+      Given I added a task titled "Ship it" with the state "done"
+      When I open the window
+      And I click the card "Ship it"
+      And I press "o"
+      And I set the field "title" to "It does not hold"
+      And I choose "Save"
+      Then task 2 is in the column "todo"
+      And task 2 is linked to task 1
+      And task 1 is linked to task 2
+
+    @gui-the-form-links-a-task
+    Scenario: a link typed in the window's form links the two tasks
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the window
+      And I click the card "Ship it"
+      And I choose "Edit"
+      And I set the field "links" to "1"
+      And I choose "Save"
+      Then task 2 is linked to task 1
 
     @gui-labels-from-a-cards-menu
     Scenario: a card's menu opens the list of its labels

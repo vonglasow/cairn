@@ -12,7 +12,7 @@ var formSections = []struct {
 	{"STATE", []string{"state", "priority", "label"}},
 	{"TIME", []string{"deadline", "estimate", "spent"}},
 	{"BLOCKED", []string{"blocker", "because"}},
-	{"LINKS", []string{"objective"}},
+	{"LINKS", []string{"link", "objective"}},
 }
 
 const (

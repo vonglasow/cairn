@@ -13,6 +13,17 @@ func NewTaskFields(state string) []Field {
 	return TaskFields(Card{State: state, Priority: string(domain.Normal)})
 }
 
+// LinkedTaskFields is the form of a task about to be added linked to another: in todo, where a task that came of one done starts again, and the link already written.
+func LinkedTaskFields(number int) []Field {
+	fields := AddingFields(string(domain.Todo))
+	for i := range fields {
+		if fields[i].Name == "links" {
+			fields[i].Value = strconv.Itoa(number)
+		}
+	}
+	return fields
+}
+
 // NewGoalFields is the form of an objective about to be added: active, which is where an objective starts, at normal priority.
 func NewGoalFields() []Field {
 	return GoalFields(Goal{State: string(objective.Active), Priority: string(domain.Normal)})

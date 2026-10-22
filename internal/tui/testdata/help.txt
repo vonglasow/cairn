@@ -27,14 +27,14 @@
  │ column, up and down change place            │ │   ↳            what is in the way           │
  │   ⏎           the detail                    │ │   2d          a deadline close by           │
  │   e           the form                      │ │   −3d         one that has passed           │
- │   f           focus or unfocus              │ │   ╔═╗         the task in focus             │
- │   d           delete                        │ ╰─────────────────────────────────────────────╯
+ │   o           a task linked to it           │ │   ╔═╗         the task in focus             │
+ │   f           focus or unfocus              │ ╰─────────────────────────────────────────────╯
+ │   d           delete                        │
  │   x           archive or unarchive          │
  │   esc         back to normal                │
  │                                             │
  │ DETAIL — one task, open                     │
  │   ^D ^U       walk its description, half a  │
  │ box at a time                               │
- │                                             │
 
  ↓↑ read on   esc close

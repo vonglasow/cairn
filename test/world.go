@@ -209,6 +209,12 @@ func (w *World) LineListsTasks(line string, n int) error {
 	return CountsTasks(w.Out.Stdout, n)
 }
 
+// CommandSays runs a command line and fails unless its answer mentions what is wanted.
+func (w *World) CommandSays(command, want string) error {
+	w.Run(command)
+	return WantContains(w.Out.Stdout, want, "the answer of "+command)
+}
+
 // Register declares the steps more than one surface claims, and puts the world back when the scenario ends.
 func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.After(w.afterScenario)
@@ -222,6 +228,7 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^it fails$`, w.ItFailed)
 	sc.Step(`^it says how to use it$`, w.ItSaysHowToUseIt)
 	sc.Step(`^it says what it expects instead of "([^"]*)"$`, w.ItSaysWhatItExpectsInsteadOf)
+	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", w.CommandSays)
 	sc.Step("^`([^`]*)` lists (\\d+) tasks?$", w.LineListsTasks)
 	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))

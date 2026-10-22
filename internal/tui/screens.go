@@ -76,6 +76,7 @@ func (b Board) helpKeys() []string {
 		b.says("⇧hjkl", "move it: sideways changes column, up and down change place"),
 		b.says("⏎", "the detail"),
 		b.says("e", "the form"),
+		b.says("o", "a task linked to it"),
 		b.says("f", "focus or unfocus"),
 		b.says("d", "delete"),
 		b.says("x", "archive or unarchive"),

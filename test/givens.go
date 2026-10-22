@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -198,6 +199,16 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 		return g.IAddedTheStepToTask(title, number, done != "")
 	})
 	sc.Step(`^I added (\d+) tasks to "([^"]*)"$`, g.IAddedTasksTo)
+	sc.Step(`^task (\d+) is linked to task (\d+)$`, func(number, other int) error {
+		t, err := g.Task(number)
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(t.Carried().Linked, other) {
+			return fmt.Errorf("task %d is linked to %v, not to task %d", number, t.Carried().Linked, other)
+		}
+		return nil
+	})
 	sc.Step(`^task (\d+) carries the step "([^"]*)", (done|not done)$`, func(number int, title, how string) error {
 		t, err := g.Task(number)
 		if err != nil {

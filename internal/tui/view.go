@@ -276,7 +276,7 @@ func (b Board) offers() []string {
 		return []string{
 			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
 			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("d", "delete"),
-			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"),
+			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"), b.offer("o", "linked"),
 		}
 	}
 	out := []string{

@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"cairn/internal/engine"
 )
 
 // Drafts keeps what was typed into the form of a task being added, past the window closing, until it is saved or thrown away.
@@ -143,4 +145,12 @@ func (w Window) Closing() Window {
 		return w
 	}
 	return w.keepingDraft()
+}
+
+// startingLinked is a new task begun from the chosen one: in todo, linked to it, asking first about a draft left unsaved.
+func (w Window) startingLinked() Window {
+	number := w.chosen
+	w = w.startingNew()
+	w.form = asOpened(Form{Adding: true, fields: engine.LinkedTaskFields(number)})
+	return w
 }

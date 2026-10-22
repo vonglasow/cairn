@@ -167,6 +167,13 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	return b.started()
 }
 
+func (b Board) linkedForm() (Board, tea.Cmd) {
+	b.form = asking(engine.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin)
+	b.form.Adding = true
+	b.screen = OnForm
+	return b.started()
+}
+
 func (b Board) editForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
 		for _, g := range b.goals() {

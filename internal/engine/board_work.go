@@ -26,6 +26,7 @@ type Card struct {
 	Priority    string
 	Labels      []string
 	Blockers    []int
+	Linked      []int
 	Because     string
 	Deadline    time.Time
 	Estimate    string
@@ -148,6 +149,7 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		Description: domain.Shown(told.Description),
 		Labels:      shownAll(told.Labels),
 		Blockers:    told.BlockedBy,
+		Linked:      told.Linked,
 		Because:     domain.Shown(told.Because),
 		Deadline:    due,
 		Estimate:    told.Estimate,

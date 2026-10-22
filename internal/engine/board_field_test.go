@@ -130,3 +130,27 @@ func TestFields_giveAnExampleOfWhatIsTypedInThem(t *testing.T) {
 		}
 	}
 }
+
+func TestTheTaskFormAsksForItsLinks(t *testing.T) {
+	names := func(fields []Field) []string {
+		var all []string
+		for _, f := range fields {
+			all = append(all, f.Name)
+		}
+		return all
+	}
+	edit := EditFields(Card{Number: 1, Linked: []int{3, 5}})
+	at := slices.Index(names(edit), "links")
+	if at < 1 || edit[at-1].Name != "blockers" {
+		t.Fatalf("links are not right after blockers: %v", names(edit))
+	}
+	if f := edit[at]; f.Arg != "link" || f.Value != "3 5" || f.Was != "3 5" || f.Example != "3 5" {
+		t.Errorf("the links field is %+v", f)
+	}
+	if got, _ := valueOf(AddingFields("todo"), "links"); got != "" {
+		t.Errorf("a new task asks for links already filled: %q", got)
+	}
+	if _, ok := valueOf(AddingFields("todo"), "links"); !ok {
+		t.Error("a new task's form has no links field")
+	}
+}

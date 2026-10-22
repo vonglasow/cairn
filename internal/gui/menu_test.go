@@ -77,7 +77,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
-	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
+	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)
 	}
 	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))
@@ -100,7 +100,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	if labelling.Screen() != OnChoosing || labelling.choosingFor != "label" {
 		t.Errorf("Labels… left the window on %v choosing %q", labelling.Screen(), labelling.choosingFor)
 	}
-	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[2] != "Move to…" {
+	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[3] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
 	}
 }

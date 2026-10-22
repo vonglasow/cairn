@@ -186,7 +186,9 @@ from the documentation, which is silent on most of it:
 
 One skill, `cairn`, whose description carries the words above so that
 "task cairn" and `cairn#123` call it. It holds the three gestures — attaching,
-choosing, detaching — and the rule of words. Nothing mechanical is in it.
+choosing, detaching — the rule of words, and one rule about a task done: it is
+not reopened, a task linked to it is opened instead (see
+[links.md](links.md)). Nothing mechanical is in it.
 
 ## Where it lives, and how it is installed
 

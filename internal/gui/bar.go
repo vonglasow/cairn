@@ -203,6 +203,7 @@ func helping() []Said {
 		{Key: "^D ^U on an open task", Means: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Key: "e", Means: "edit what is chosen, on the board or on an open task"},
 		{Key: "f", Means: "focus or unfocus what is chosen — several in focus at once is fine"},
+		{Key: "o", Means: "open a new task linked to what is chosen — in todo, the two seen from either side"},
 		{Key: "d", Means: "delete what is chosen — it asks first"},
 		{Key: "x", Means: "archive or unarchive what is chosen"},
 		{Key: "⇧X", Means: "archive every task in that card's column — it asks first"},

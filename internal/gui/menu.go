@@ -40,7 +40,7 @@ func (w Window) menuFor() []string {
 		return []string{"Edit", "Delete"}
 	}
 	card, _ := w.snap.Card(w.chosen)
-	return []string{"Edit", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
+	return []string{"Edit", "New linked task", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
 }
 
 func (w Window) settingFrom(field string, values []string, held string) Window {

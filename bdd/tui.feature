@@ -572,6 +572,30 @@ Feature: The board
       And I save the form
       Then task 1 is in the column "todo"
 
+  Rule: Two tasks are linked from the form, and a card opens a task linked to it
+
+    @tui-the-form-links-a-task
+    Scenario: a link typed in the form links the two tasks
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the board
+      And I press "i", "j", "e"
+      And I set the field "links" to "1"
+      And I save the form
+      Then task 2 is linked to task 1
+      And task 1 is linked to task 2
+
+    @tui-o-opens-a-linked-task
+    Scenario: o on a card opens a new task linked to it, in todo
+      Given I added a task titled "Ship it" with the state "done"
+      When I open the board
+      And I press "l", "l", "l", "i", "o"
+      And I set the field "title" to "It does not hold"
+      And I save the form
+      Then task 2 is in the column "todo"
+      And task 2 is linked to task 1
+      And task 1 is linked to task 2
+
   Rule: A form is filled in the same way as the window's
 
     @tui-enter-writes-a-line-in-the-description

@@ -42,3 +42,8 @@ Feature: The Claude Code plugin comes with the binary
       And the plugin was written there by an older cairn
       When the MCP server starts
       Then the plugin in that folder says the version of the cairn that wrote it
+
+  @plugin-the-skill-says-open-a-linked-task
+  Scenario: the skill tells an agent to open a linked task rather than reopen one done
+    When I read the cairn skill
+    Then the skill says "A task done whose work does not hold is not reopened: open a new task linked to it"

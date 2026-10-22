@@ -19,6 +19,26 @@ notes already told.
 Moving a task out of `done` stays possible, with no reason asked: it is for a
 task put there by mistake, its work never committed.
 
+## Opening one from a task
+
+Every surface opens a task already linked:
+
+- the command line and the MCP: `task new "…" --link 105`, `task_new` with
+  `link` (`@mcp-a-task-opened-with-a-link`);
+- the board in the terminal: `o` on a card, in insert mode, opens the form of a
+  new task in `todo` with `links` already holding the card
+  (`@tui-o-opens-a-linked-task`);
+- the window: `o` on a chosen card, or New linked task in its right-click menu,
+  right after Edit (`@gui-o-opens-a-linked-task`,
+  `@gui-a-cards-menu-opens-a-linked-task`).
+
+It opens in `todo` whatever the card's column: what comes of a task done is
+work to pick up, not a task done. Both forms carry a `links` field, under the
+blockers in the terminal and first in the LINKS section of the window, so a
+link is put or taken away there as any field is (`@tui-the-form-links-a-task`,
+`@gui-the-form-links-a-task`). The cairn skill tells an agent the same
+(`@plugin-the-skill-says-open-a-linked-task`).
+
 ## No kind, no direction
 
 A link does not say "found in", "duplicates" or "follows". The task's labels
@@ -54,4 +74,6 @@ named plainly replaces the task's links on the other tasks too
 ## Deliberately not there yet
 
 - A search does not reach links, and no listing is narrowed by them.
+- The boards show a task's links in its form only: neither detail shows them,
+  as neither shows its blockers, and no line is drawn between two cards.
 - An objective is not linked.

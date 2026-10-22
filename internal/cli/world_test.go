@@ -150,11 +150,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", func(command, want string) error {
-		w.Run(command)
-		return test.WantContains(w.Out.Stdout, want, "the answer of "+command)
-	})
-
 	sc.Step(`^a title of (\d+) characters$`, func(n int) error {
 		w.long = strings.Repeat("a", n)
 		return nil

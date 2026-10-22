@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -159,6 +160,11 @@ func (w *world) iCallTaskAddWithTheTitle(title string) error {
 
 func (w *world) iCallTaskAddWithTheTitleAndTheLabels(title, first, second string) error {
 	_ = w.callTool("task_new", map[string]any{"title": title, "label": []any{first, second}})
+	return nil
+}
+
+func (w *world) iCallTaskAddWithTheTitleAndTheLink(title string, number int) error {
+	_ = w.callTool("task_new", map[string]any{"title": title, "link": []any{strconv.Itoa(number)}})
 	return nil
 }
 
@@ -751,6 +757,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `task_new` with the title \"([^\"]*)\"$", w.iCallTaskAddWithTheTitle)
 		sc.Step("^I call `task_new` with the title \"([^\"]*)\" and the labels \"([^\"]*)\" and \"([^\"]*)\"$",
 			w.iCallTaskAddWithTheTitleAndTheLabels)
+		sc.Step("^I call `task_new` with the title \"([^\"]*)\" and the link (\\d+)$", w.iCallTaskAddWithTheTitleAndTheLink)
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\"$", w.iCallTaskSearchLookingFor)
 		sc.Step("^I call `task_search` looking for nothing$", w.iCallTaskSearchLookingForNothing)
 		sc.Step("^it answers with a task carrying both labels$", w.itAnswersWithATaskCarryingBothLabels)

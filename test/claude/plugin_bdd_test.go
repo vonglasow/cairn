@@ -167,6 +167,21 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			return nil
 		})
+		sc.Step(`^I read the cairn skill$`, func() error {
+			if _, err := w.cairn("plugin", "write"); err != nil {
+				return err
+			}
+			written, err := offers(w.beside(), "cairn")
+			if err != nil {
+				return err
+			}
+			said, err := os.ReadFile(filepath.Join(written, "skills", "cairn", "SKILL.md"))
+			w.out = string(said)
+			return err
+		})
+		sc.Step(`^the skill says "([^"]*)"$`, func(want string) error {
+			return test.WantContains(w.out, want, "the skill")
+		})
 		sc.Step(`^it succeeds$`, func() error { return w.ran })
 		sc.Step(`^beside the store is a marketplace offering the plugin "([^"]*)"$`, func(name string) error {
 			_, err := offers(w.beside(), name)
