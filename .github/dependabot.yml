@@ -1,0 +1,75 @@
+# What proposes the versions everything here is pinned at, once a week — see
+# docs/checks.md. Each update waits three days after its release, so a version
+# withdrawn by its makers is seldom proposed; a security update does not wait.
+# Minor and patch updates come as one pull request per ecosystem, a major one
+# on its own.
+version: 2
+updates:
+  # What cairn is built from.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      modules:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+
+  # The tools the checks and the release run, named in tools/go.mod. Only the
+  # tools themselves: what each is built from is its makers' to choose, and
+  # follows when the tool moves. A tool's line is marked indirect there, which
+  # is why each is allowed by name.
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    allow:
+      - dependency-name: github.com/golangci/golangci-lint/v2
+        dependency-type: all
+      - dependency-name: golang.org/x/vuln
+        dependency-type: all
+      - dependency-name: github.com/go-gremlins/gremlins
+        dependency-type: all
+      - dependency-name: github.com/caarlos0/svu/v3
+        dependency-type: all
+      - dependency-name: golang.org/x/tools
+        dependency-type: all
+      - dependency-name: github.com/tc-hib/go-winres
+        dependency-type: all
+    groups:
+      tools:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+
+  # The actions the workflows run, each named by its commit.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+
+  # The hooks .pre-commit-config.yaml names by commit; local and builtin ones
+  # carry no revision and are left alone.
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      hooks:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]

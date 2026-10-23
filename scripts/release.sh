@@ -28,7 +28,7 @@ die() {
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || die "a version is made on main"
 [ -z "$(git status --porcelain)" ] || die "a version is made from a clean tree"
 
-svu() { go run "github.com/caarlos0/svu/v3@${SVU_VERSION:?SVU_VERSION names the svu to use}" "$@"; }
+svu() { go tool -modfile=tools/go.mod svu "$@"; }
 
 if tag=$(git describe --tags --exact-match 2>/dev/null); then
   [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "this commit is tagged $tag, which is not a version"

@@ -11,7 +11,6 @@ here has to be remembered.
 | check | what it answers |
 |---|---|
 | `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files` | is the file well formed? |
-| `tools-present` | are the linter and the scanner the versions the Makefile names? |
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
 | `shellcheck` | does a shell script hold up to static analysis? |
 | `no-go-testing` | does non-test code import `testing`? |
@@ -28,7 +27,7 @@ here has to be remembered.
 | `mutation-all` | at push only: would a test have noticed if *any* line were wrong? |
 
 **They run in that order, and the first to fail stops the rest** (`fail_fast`
-in `prek.toml`). Cheapest first: a missing import is reported in a second,
+in `.pre-commit-config.yaml`). Cheapest first: a missing import is reported in a second,
 rather than after semgrep, the suite and the mutation gate have run for
 nothing.
 
@@ -42,7 +41,7 @@ tests, so that one run covers them too.
 shell script, the Claude Code plugin, or `go.mod` changes — the suite runs the
 scripts and the plugin's hook; `govulncheck`, `harness-check` and `windows-check` when `go.mod` or `go.sum`
 does; `golangci-lint` when `.golangci.yml` does. Each says so with `files` in
-`prek.toml`. Filtered on Go alone they ran nothing at all for a commit that
+`.pre-commit-config.yaml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.
 
 ## Before the commit: a test seen red
@@ -79,19 +78,28 @@ then `make red PKG=…` — and nothing has to be set up first.
 Without these, the hooks cannot run and nothing can be committed:
 
 ```sh
-brew install prek golangci-lint goimports govulncheck jq
-go install github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0
+brew install prek jq
 prek install -t pre-commit -t commit-msg -t pre-push
 ```
 
-`gremlins` lands in `$(go env GOPATH)/bin`, which is not always on `PATH` — the
-Makefile looks there on its own, so only a direct call needs the full path.
+Go is the rest. golangci-lint, govulncheck, gremlins, goimports, svu and
+go-winres are named, each at its version, in `tools/go.mod`, and run from it
+with `go tool -modfile=tools/go.mod <tool>`: built the first time a hook asks,
+from the cache after that. Nothing is installed by hand, so nothing installed
+by hand drifts from what the repository says. A module of its own, so what the
+tools are built from never enters cairn's graph and govulncheck does not judge
+cairn by it.
 
 `jq` is read by `scripts/mutation.sh` and by both hooks under `.claude/hooks`.
 
-Two are not installed by hand: prek builds `semgrep` and `commitlint` in
-environments of its own, from the revisions pinned in `prek.toml`. commitlint
-needs Node on `PATH` for that.
+Two are not built from `tools/go.mod`: prek builds `semgrep`, `shellcheck` and
+`commitlint` in environments of its own, from the revisions pinned in
+`.pre-commit-config.yaml`. commitlint needs Node on `PATH` for that.
+
+golangci-lint advises against being built this way, since a module it shares
+its dependencies with can change what it finds. It shares them with nothing
+here: `tools/go.mod` holds the tools alone. One place for every version was
+worth more than its advice.
 
 **What the tools find stays current; what the tools are is pinned.** Two
 different things used to be said as one:
@@ -101,40 +109,49 @@ different things used to be said as one:
   having moved, and that is the right way round — the finding was already true
   yesterday. The rules are the registry's Go and secrets packs, named rather
   than chosen by `--config auto`, which reported home to choose them.
-- the tools themselves are not. Each hook repository in `prek.toml` is named by
-  the commit it was at, never by a tag a maintainer can move; commitlint's
-  configuration carries its version; gremlins, golangci-lint and govulncheck
-  are the versions the Makefile names (`GREMLINS_VERSION`, `GOLANGCI_VERSION`,
-  `GOVULNCHECK_VERSION`), and `gremlins-present` and `tools-present` refuse
-  another. brew upgrades the last two on its own; a lint rule that appeared
-  overnight then failed a commit for a reason no commit made. Moving them is
-  installing the new version and changing the Makefile's line, in one commit. A tool that
-  changed its own behaviour found nothing that was true yesterday — what
-  `scripts/mutation.sh` works around was read in one version's source, and
-  another can quietly undo it. They move when somebody moves them:
-  `prek update --freeze`, and the Makefile's line.
+- the tools themselves are not. Each hook repository in
+  `.pre-commit-config.yaml` is named by the commit it was at, never by a tag a
+  maintainer can move; commitlint's configuration carries its version; the Go
+  tools are the versions `tools/go.mod` names. A tool that changed its own
+  behaviour found nothing that was true yesterday — what `scripts/mutation.sh`
+  works around was read in one version's source, and another can quietly
+  undo it.
+
+### Who moves them
+
+**Dependabot proposes, weekly, and the pull request is judged like a commit**
+(`.github/dependabot.yml`). It reads four places: `go.mod` for what cairn is
+built from, `tools/go.mod` for the tools — only the tools, by name, not what
+each is built from — the workflows' actions, and the hooks of
+`.pre-commit-config.yaml`, which is why that file is YAML: Dependabot reads no
+other. An update waits three days after its release, so a version its makers
+withdraw is seldom proposed; a security update does not wait. Minor and patch
+come as one pull request per place, a major one alone. Nothing merges on its
+own.
+
+**`check.yml` runs every hook on every file of a pull request**, on Linux, but
+the mutation of what changed: a pull request has no `HEAD` to change lines
+since, and the full sweep is the push's. A change Dependabot made was made on
+no machine, so no hook judged it before this.
+
+Left to a person: Go itself, the `toolchain` line of both `go.mod`, which
+Dependabot does not move; prek and jq; commitlint's own dependencies; the
+runners' images.
 
 ### When Go itself moves
 
-`govulncheck`, `golangci-lint` and `gremlins` are Go programs, and each one
-parses the sources it is pointed at. A tool built against an older Go cannot
-read a module written for a newer one, and it says so in its own words rather
-than in anything about this repository:
+A Go program built against an older Go cannot read a module written for a
+newer one. The tools no longer meet that: `go tool` builds them with the Go
+that runs it, the one `go.mod` names, so a Go upgrade moves them with it. What
+remains is Go itself:
 
 | what it says | what it means |
 |---|---|
-| `Loading packages failed, possibly due to a mismatch between the Go version used to build govulncheck and the Go version on PATH` | govulncheck is behind |
-| `panic: file requires newer Go version go1.27 (application built with go1.26)` | golangci-lint is behind |
 | `go.mod requires go >= 1.26.6 (running go 1.26.5; GOTOOLCHAIN=local)` | Go itself is behind, and `GOTOOLCHAIN=local` forbids it from fetching the one the module asks for |
 
-So a Go upgrade is not one command but four: the toolchain, then the three
-tools above, by the same lines that installed them. None of it is a reason to
-skip a hook — every one of these is a tool that cannot read the code, not a
-check that found nothing.
-
 Measured, on the day Go went from 1.26.5 to 1.27.1: five advisories appeared
-against the standard library, and the two brew-installed tools then refused to
-run at all. The hour that cost is the reason this section exists.
+against the standard library, and the two tools then installed by brew refused
+to run at all. The hour that cost is why the tools are now built by Go.
 
 ## The three that are not the same question
 
@@ -282,7 +299,7 @@ functions in it while every suite was green.
 
 ## Adding a check
 
-**Every check belongs in `prek.toml`.** Adding a tool that verifies anything
+**Every check belongs in `.pre-commit-config.yaml`.** Adding a tool that verifies anything
 means wiring it there in the same commit. A check that has to be remembered is
 a check that will not run.
 
@@ -334,7 +351,7 @@ mutation judges only what changed since `HEAD` — on a clean tree, nothing.
 
 Mutation is the slow one. Every package, every commit, took fourteen minutes
 and grew with the suite — long enough to be worked around. So it is split, and
-the split is fixed in `prek.toml`, not left to whoever runs it:
+the split is fixed in `.pre-commit-config.yaml`, not left to whoever runs it:
 
 - **at commit**, only the mutants on lines changed since `HEAD`, in the
   packages holding them. Measured: about a minute instead of fourteen. A

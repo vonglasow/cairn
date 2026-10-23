@@ -17,9 +17,9 @@ other does not, and the difference is found much later by someone who trusted
 the wrong one.
 
 This applies across files, not just within them. A command defined in the
-Makefile and repeated in `prek.toml` is a duplicate. A profile built by two
-targets is a duplicate. When a check needs a command, it calls the one that
-already exists.
+Makefile and repeated in `.pre-commit-config.yaml` is a duplicate. A profile
+built by two targets is a duplicate. When a check needs a command, it calls
+the one that already exists.
 
 ## YAGNI — you aren't gonna need it
 

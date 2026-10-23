@@ -8,21 +8,14 @@ COMMIT  ?= $(shell git rev-parse HEAD 2>/dev/null || echo none)
 COMMIT_DATE ?= $(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD 2>/dev/null)
 BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PKG      = cairn/internal/build
-# go install puts tools in GOPATH/bin, which is not always on PATH.
-GREMLINS ?= $(shell command -v gremlins || echo "$$(go env GOPATH)/bin/gremlins")
-# The version the mutation gate is judged with. Named, never @latest: what
-# scripts/mutation.sh works around was read in this version's source, and a
-# gate that changed under a commit nobody made would pass or fail for a reason
-# that is not in this repository.
-GREMLINS_VERSION ?= v0.6.0
-# The linter and the vulnerability scanner, named for the same reason. What
-# govulncheck finds stays current — its database is read on the day — and what
-# it is does not move under a commit nobody made (docs/checks.md).
-GOLANGCI_VERSION ?= 2.15.0
-GOVULNCHECK_VERSION ?= v1.9.0
-# What reads the next version off the commits. Named for the same reason, and
-# run with go run rather than installed: nothing to get before making one.
-SVU_VERSION ?= v3.4.1
+# Every tool the checks and the release run is a Go program named, at its
+# version, in tools/go.mod, and run from there: nothing installed by hand to
+# drift from it, and one file Dependabot moves (docs/checks.md). A module of its
+# own, so what the tools are built from never enters cairn's graph.
+TOOL     = go tool -modfile=$(CURDIR)/tools/go.mod
+# gremlins is handed to scripts/mutation.sh as a path, built the first time it
+# is asked for.
+GREMLINS ?= $(shell $(TOOL) -n gremlins)
 # The two coverage floors, in total and per package. Why each is where it is,
 # and why the second sits below the first, is said once, in docs/checks.md.
 # Raise them deliberately; never lower them to get a commit through.
@@ -30,7 +23,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog package stamps tools-present help build run dev red cover cover-check tested-check harness-check windows-check quiet-check gremlins-present mutation mutation-changed check linux fixtures trace notices clean
+.PHONY: release release-check next-version changelog package stamps help build run dev red cover cover-check tested-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures trace notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -52,7 +45,7 @@ build:
 
 ## changelog: say what changed, version by version, and what the next version would bring
 changelog:
-	@scripts/changelog.sh "$$(go run github.com/caarlos0/svu/v3@$(SVU_VERSION) next --v0)"
+	@scripts/changelog.sh "$$($(TOOL) svu next --v0)"
 
 ## stamps: say the version, the commit and its date a build here would be stamped with
 stamps:
@@ -188,26 +181,6 @@ harness-check:
 	fi
 	@echo "✓ the binary does not reach the test harness"
 
-## gremlins-present: both mutation targets need it, so they ask once here.
-gremlins-present:
-	@command -v $(GREMLINS) >/dev/null || { \
-		echo "gremlins not found — go install github.com/go-gremlins/gremlins/cmd/gremlins@$(GREMLINS_VERSION)"; \
-		exit 1; \
-	}
-	@go version -m $$(command -v $(GREMLINS)) | grep -q "gremlins[[:space:]]*$(GREMLINS_VERSION)" || { \
-		echo "gremlins is not $(GREMLINS_VERSION) — go install github.com/go-gremlins/gremlins/cmd/gremlins@$(GREMLINS_VERSION)"; \
-		exit 1; \
-	}
-
-## tools-present: refuse to judge with a linter or a scanner other than the one named here
-## brew upgrades both on its own, and a lint rule that appeared overnight would
-## fail — or pass — a commit for a reason that is not in this repository.
-tools-present:
-	@golangci-lint --version 2>/dev/null | grep -q "version $(GOLANGCI_VERSION) " || { \
-		echo "golangci-lint is not $(GOLANGCI_VERSION) — see docs/checks.md, Getting them"; exit 1; }
-	@govulncheck -version 2>/dev/null | grep -q "govulncheck@$(GOVULNCHECK_VERSION)" || { \
-		echo "govulncheck is not $(GOVULNCHECK_VERSION) — go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)"; exit 1; }
-
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%.
@@ -215,13 +188,13 @@ tools-present:
 ## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
 ## they are passed as flags. That is measured, not assumed — see the comment
 ## there before moving them back.
-mutation: gremlins-present
+mutation:
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh
 
 ## mutation-changed: the same judgement on the lines changed since HEAD only, in
 ## the packages they are in. It is what a commit runs; the full sweep above is
 ## what a push runs, so nothing leaves the machine without every package judged.
-mutation-changed: gremlins-present
+mutation-changed:
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
 
 ## check: every hook prek has, on every file — the commit's, then the push's.
@@ -266,11 +239,11 @@ linux:
 ## ./dist. What each step is, and why, is docs/release.md; the steps are
 ## scripts/release.sh.
 release:
-	@SVU_VERSION=$(SVU_VERSION) scripts/release.sh
+	@scripts/release.sh
 
 ## next-version: say the tag the next version would carry, read off the commits since the last
 next-version:
-	@go run github.com/caarlos0/svu/v3@$(SVU_VERSION) next --v0
+	@$(TOOL) svu next --v0
 
 ## package: build cairn here and make its archive for this system, with its notices, in ./dist
 ## A release builds it on each system in turn — see .github/workflows/release.yml.

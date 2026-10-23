@@ -1,0 +1,40 @@
+# The checks a commit runs, run again on every pull request — see
+# docs/checks.md. A change Dependabot proposes was made on no machine, so no
+# hook judged it; this is what does. Every hook prek has at commit, on every
+# file, but the mutation of what changed: a pull request has no HEAD to change
+# lines since, and the full sweep is the push's. On Linux, so the half of what
+# cairn says it runs on that is not where it is written is judged each time.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  prek:
+    runs-on: ubuntu-24.04
+    env:
+      # Drawing off screen needs a GPU the runner does not have; the tests that
+      # draw say so and are skipped, as in scripts/linux.sh.
+      CAIRN_WINDOWLESS: "1"
+      SKIP: mutation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: the graphics headers the window is built against, and jq
+        run: scripts/linux-headers.sh jq
+      # The prek this action was released with, checked against the sum it
+      # carries: it moves when Dependabot moves the action.
+      - uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
+        with:
+          prek-version: latest-known
+          extra-args: --all-files

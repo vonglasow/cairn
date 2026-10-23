@@ -95,7 +95,7 @@ already said why not.
 | `&&`/`||` and `continue`/`break` mutated in the core only | that is where the rules are; the surfaces gave mostly mutants no test can tell apart | [checks.md](checks.md#thresholds) |
 | packages are mutated one after another | gremlins already uses every core inside a package; two at once only made timeouts | [checks.md](checks.md#running-them-by-hand) |
 | Linux is checked by hand, in a container, before a version | it needs Docker, which no hook may assume | [release.md](release.md) |
-| the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `prek.toml` |
+| the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `.pre-commit-config.yaml` |
 | a form's commands are raced against five milliseconds in the terminal board's tests | a cursor blink is among them and is a timer nobody can wait out, and a command cannot say what it is before it runs; raising the deadline made the suite twelve times slower, as the test itself says | `internal/tui/fake_test.go`, `quickly` |
 
 ## Known and not yet answered

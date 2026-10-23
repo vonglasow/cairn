@@ -17,5 +17,5 @@ for size in 16 32 48 64 128 256 512 1024; do
 done
 
 cd cmd/cairn
-go run github.com/tc-hib/go-winres@v0.3.3 simply \
+go tool -modfile=../../tools/go.mod go-winres simply \
   --icon "../../$logo/cairn-256.png" --arch amd64,arm64 --out rsrc
