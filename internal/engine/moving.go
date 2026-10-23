@@ -117,7 +117,7 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if slices.Contains(held, number) {
-		return t, nil
+		return t, e.renewed(number)
 	}
 	if err := e.places.AddFocus(number); err != nil {
 		return task.Task{}, err
@@ -264,7 +264,7 @@ var TaskFocus = Operation{
 	Thing: "task",
 	Verb:  "focus",
 	Short: "Put a task in focus, or say which ones are",
-	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once. A task waiting in backlog, todo or paused goes into current, at its head, as it takes the focus; one blocked or watching stays where it is, and one done is refused.",
+	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once. A task waiting in backlog, todo or paused goes into current, at its head, as it takes the focus; one blocked or watching stays where it is, and one done is refused. Each task in focus says how long its session has been up; focusing one already in focus renews its session once it is past the length the configuration gives.",
 	Example: `cairn task focus 3
 cairn task focus`,
 	Level:   Write,
@@ -291,7 +291,11 @@ cairn task focus`,
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &t, Progress: p, InFocus: &held}, nil
+		sessions, err := on.Engine.sessions()
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Task: &t, Progress: p, InFocus: &held, Sessions: sessions}, nil
 	},
 }
 
@@ -350,5 +354,9 @@ func whatIsInFocus(on On) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	return Answer{Held: held, InFocus: &numbers}, nil
+	sessions, err := on.Engine.sessions()
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Held: held, InFocus: &numbers, Sessions: sessions}, nil
 }

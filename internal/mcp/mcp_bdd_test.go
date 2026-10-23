@@ -378,13 +378,16 @@ func (w *world) theTaskHasNoDeadline() error {
 }
 
 func textOf(res *sdk.CallToolResult) string {
-	if res == nil || len(res.Content) == 0 {
+	if res == nil {
 		return ""
 	}
-	if tc, ok := res.Content[0].(*sdk.TextContent); ok {
-		return tc.Text
+	var said strings.Builder
+	for _, one := range res.Content {
+		if tc, ok := one.(*sdk.TextContent); ok {
+			said.WriteString(tc.Text)
+		}
 	}
-	return ""
+	return said.String()
 }
 
 func (w *world) itAnswersWithNTasks(n int) error {
@@ -786,6 +789,12 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^it answers that it failed$`, w.itAnswersThatItFailed)
 		sc.Step(`^it says the refusal is "([^"]*)", because "([^"]*)"$`, w.itSaysTheRefusalIs)
 		sc.Step(`^the answer says (.+)$`, w.theAnswerSays)
+		sc.Step(`^the answer does not say "([^"]*)"$`, func(what string) error {
+			if strings.Contains(textOf(w.result), what) {
+				return fmt.Errorf("the answer says %q:\n%s", what, textOf(w.result))
+			}
+			return nil
+		})
 		sc.Step(`^the call itself fails$`, w.theCallItselfFails)
 		sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`,
 			w.AStoreFromAnOlderCairn)

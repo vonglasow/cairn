@@ -36,6 +36,13 @@ task's description, and do not manage the focus by hand beyond what follows.
 A missing file is not an error: a task new to this is a task with no summary
 yet.
 
+## A focus session that asks to be renewed
+
+An answer may end with "this focus session has been up 2h: renew it by
+focusing task N again, or end it by unfocusing task N". Still working on task
+N: `task_focus` with N renews it. Not: `task_unfocus` with N. Answer it
+before anything else, and do not ask the person unless you cannot tell.
+
 ## The ticket — only when asked
 
 Read the external ticket only when the person asks for it ("charge le

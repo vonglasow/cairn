@@ -297,6 +297,8 @@ type On struct {
 // Answer is what an operation answered.
 type Answer struct {
 	Task              *task.Task
+	Sessions          []FocusSession
+	Asked             []string
 	Context           string
 	StoodSince        time.Time
 	Tasks             []task.Task
@@ -403,5 +405,10 @@ func doWith(
 			return Answer{}, storeProblem(err)
 		}
 	}
-	return eng.run(op, in)
+	answer, err = eng.run(op, in)
+	if err != nil || op.Needs != AStore {
+		return answer, err
+	}
+	answer.Asked, err = eng.asked()
+	return answer, err
 }

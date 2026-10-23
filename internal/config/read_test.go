@@ -718,3 +718,17 @@ func TestRead_saysFromWhenAndHowOftenDoneTasksAreArchived(t *testing.T) {
 		}
 	}
 }
+
+func TestRead_saysHowLongAFocusSessionLasts(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[focus]\nsession = \"1h\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.FocusSession(); got != "1h" {
+		t.Errorf("a focus session lasts %q, want 1h", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.FocusSession(); got != "" {
+		t.Errorf("with no file, a focus session lasts %q", got)
+	}
+}

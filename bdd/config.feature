@@ -252,6 +252,20 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "archive.start"
 
+  Rule: A focus session asks to be renewed only when the configuration says after how long
+
+    @config-show-says-how-long-a-focus-session-lasts
+    Scenario: config show says how long a focus session lasts before it asks to be renewed
+      Given focus sessions last "1h"
+      Then `cairn config show` says "focus       asks to be renewed after 1h"
+
+    @config-a-focus-session-that-cannot-be-read-is-refused
+    Scenario: a focus session length that is not a duration is refused
+      Given focus sessions last "an hour"
+      When I run `cairn task focus`
+      Then it fails
+      And it names "focus.session"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-names-the-file-it-reads

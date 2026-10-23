@@ -13,6 +13,8 @@ const (
 	FocusTaken = "focus taken"
 	// FocusReleased is that task being let go.
 	FocusReleased = "focus released"
+	// FocusRenewed is a focus said to go on past its session's length: the session starts again, the time runs on.
+	FocusRenewed = "focus renewed"
 	// Deleted is a task being removed.
 	Deleted = "deleted"
 	// Changed is one attribute of a task taking another value.

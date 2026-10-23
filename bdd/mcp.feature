@@ -303,6 +303,28 @@ Feature: Answering a machine over MCP
       When I ask it what it can do
       Then the description `task_edit` takes says what was done or decided on a task goes in its notes
 
+  Rule: An agent is asked to renew a focus session past its length, whatever it calls
+
+    @mcp-any-answer-asks-to-renew-a-focus-session
+    Scenario: any answer asks the agent to renew a focus session past its length
+      Given a cairn server started with no access given
+      And focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      And it is 2 hours later
+      When I call `task_list`
+      Then the answer says this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1
+
+    @mcp-no-answer-asks-within-a-focus-sessions-length
+    Scenario: no answer asks anything of a focus session within its length
+      Given a cairn server started with no access given
+      And focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      And it is 30 minutes later
+      When I call `task_list`
+      Then the answer does not say "renew"
+
   Rule: A page turned off in the configuration offers no tool
 
     @mcp-a-page-off-offers-none-of-its-tools

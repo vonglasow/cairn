@@ -37,6 +37,9 @@ var ErrNotTOML = errors.New("not a file cairn can make sense of")
 // ErrArchive is returned when the file counts the days archiving waits for from something that is not a day, or in periods of no day at all.
 var ErrArchive = errors.New("archiving counts from a day, written 2026-10-21, in periods of one day or more")
 
+// ErrFocus is returned when the file says a focus session lasts something that is not a duration.
+var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
+
 const defaultArchiveDays = 14
 
 // ErrNotAbsolute is returned when a place the file names is not absolute, even once a leading "~" has been expanded — a configuration is read from everywhere, so what it names has to mean one thing regardless of where a command runs from.
@@ -60,6 +63,7 @@ type Places struct {
 	plugin       string
 	archiveStart string
 	archiveDays  int
+	focusSession string
 }
 
 type file struct {
@@ -68,6 +72,11 @@ type file struct {
 	Plugin  *string  `toml:"plugin"`
 	Pages   *pages   `toml:"pages"`
 	Archive *archive `toml:"archive"`
+	Focus   *focus   `toml:"focus"`
+}
+
+type focus struct {
+	Session string `toml:"session"`
 }
 
 type archive struct {
@@ -129,6 +138,9 @@ func (p Places) Plugin() string { return p.plugin }
 func (p Places) Archive() (string, int, bool) {
 	return p.archiveStart, p.archiveDays, p.archiveDays > 0
 }
+
+// FocusSession is how long a focus session lasts before it asks to be renewed, written 1h, exactly as the file wrote it; nothing when the file does not say.
+func (p Places) FocusSession() string { return p.focusSession }
 
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
 func (p Places) PagesOff() []string { return p.pagesOff }
@@ -198,6 +210,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		return Reading{path: path, err: err}, nil
 	}
 	answer := Places{
+		focusSession: f.Focus.session(),
 		archiveStart: start,
 		archiveDays:  days,
 		store:        filepath.Join(home, DefaultFolder, defaultFile),
@@ -303,4 +316,11 @@ func expandTilde(value, home string) string {
 		return value
 	}
 	return filepath.Join(home, rest)
+}
+
+func (f *focus) session() string {
+	if f == nil {
+		return ""
+	}
+	return f.Session
 }

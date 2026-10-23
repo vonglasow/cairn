@@ -96,8 +96,9 @@ type Acts struct {
 
 // Focus is how the task being worked on crosses, or the fact that none is.
 type Focus struct {
-	Tasks   []Task `json:"tasks"`
-	InFocus []int  `json:"in_focus"`
+	Tasks    []Task         `json:"tasks"`
+	InFocus  []int          `json:"in_focus"`
+	Sessions []FocusSession `json:"sessions"`
 }
 
 // Objective is how an objective crosses to a machine.
@@ -166,7 +167,7 @@ func Of(op Operation, a Answer) any {
 		if a.Task != nil {
 			held = []task.Task{*a.Task}
 		}
-		return ofFocus(held, a.Progress, heldOr(a.InFocus))
+		return ofFocus(held, a.Progress, heldOr(a.InFocus), a.Sessions)
 	case Task:
 		said := OfTask(*a.Task, a.Progress)
 		said.Context = a.Context
@@ -240,13 +241,16 @@ func ofActs(acts []trace.Act) []trace.Shape {
 	return out
 }
 
-func ofFocus(held []task.Task, p domain.Progress, numbers []int) Focus {
+func ofFocus(held []task.Task, p domain.Progress, numbers []int, sessions []FocusSession) Focus {
 	out := make([]Task, 0, len(held))
 	for _, t := range held {
 		out = append(out, OfTask(t, p))
 		p = domain.Progress{}
 	}
-	return Focus{Tasks: out, InFocus: listed(numbers)}
+	if sessions == nil {
+		sessions = []FocusSession{}
+	}
+	return Focus{Tasks: out, InFocus: listed(numbers), Sessions: sessions}
 }
 
 func ofTasks(tasks []task.Task, inFocus *[]int) Tasks {

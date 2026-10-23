@@ -261,7 +261,9 @@ prompt, so in a hooked session a blocked task is taken up again on the next
 one. Refusing the focus to a blocked task, as a done one is refused, would
 reverse cairn#85 and is not done here. `watching` and `paused` keep their focus.
 A focus is never let go at a time of day nor after a while unused: working at
-20:00 is ordinary, and no clock can tell that the work stopped (cairn#51).
+20:00 is ordinary, and no clock can tell that the work stopped (cairn#51). A
+focus session past its length asks instead: see
+[config](config.md#a-focus-session-that-asks-to-be-renewed).
 
 **Waiting work taking the focus goes into `current`.** Amended 2026-10-16
 (cairn#85). Taking the focus said what was being worked on and moved nothing,

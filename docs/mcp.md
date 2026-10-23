@@ -284,6 +284,17 @@ A test now runs every operation `All()` names and checks that what `Of` builds i
 the operation said it answers. The description and the behaviour check each
 other.
 
+## A focus session past its length asks, in every answer
+
+Once a focus session has been up for the length `[focus] session` gives, every
+answer carries one more text after its own: the question whether to renew the
+session or end it (`@mcp-any-answer-asks-to-renew-a-focus-session`, see
+[config](config.md#a-focus-session-that-asks-to-be-renewed)). It goes in the
+text, not the structured answer: the text is what an agent reads whatever it
+called, while the structured shape is the tool's own and says only what the
+tool answers. The engine says the question (`Answer.Asked`); the server only
+puts it after the answer.
+
 ## Why the SDK, written down
 
 `CLAUDE.md` asks for a written reason before a dependency, so here it is — and

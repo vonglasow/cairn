@@ -132,6 +132,7 @@ func flagFor(attribute string) string {
 func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 	w.registerStep(sc)
+	w.registerSession(sc)
 
 	sc.Step(`^it says the (\w+) went from "([^"]*)" to "([^"]*)"$`,
 		func(field, was, became string) error {
@@ -194,10 +195,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		func(n int, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
-
-	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
-		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
-	})
 
 	sc.Step(`^I deleted task (\d+)$`, func(n int) error {
 		return w.Seed(fmt.Sprintf(`cairn task delete %d --yes`, n))

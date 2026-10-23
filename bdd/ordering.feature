@@ -365,6 +365,46 @@ Feature: Ordering
       And I run `cairn task list --json`
       Then it says no task in it is in focus
 
+  Rule: A focus says how long its session has been up, and past the length the configuration gives it asks to be renewed
+
+    @focus-session-says-how-long-it-has-been-up
+    Scenario: the focus says how long its session has been up
+      Given I added a task titled "Ship it"
+      And I put task 1 in focus
+      When it is 3 hours later
+      And I run `cairn task focus --json`
+      Then the focus session of task 1 has been up "3h"
+      And the focus session of task 1 asks nothing
+
+    @focus-session-asks-to-be-renewed-past-its-length
+    Scenario: a focus session past its length asks to be renewed or ended
+      Given focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      When it is 2 hours later
+      And I run `cairn task focus --json`
+      Then the focus session of task 1 asks "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
+
+    @focus-session-within-its-length-asks-nothing
+    Scenario: a focus session within its length asks nothing
+      Given focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      When it is 30 minutes later
+      And I run `cairn task focus --json`
+      Then the focus session of task 1 asks nothing
+
+    @focus-session-renewed
+    Scenario: focusing a task again past its session's length renews the session
+      Given focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      When it is 2 hours later
+      And I run `cairn task focus 1`
+      And I run `cairn task focus --json`
+      Then the focus session of task 1 asks nothing
+      And `cairn trace show 1` says "focus renewed"
+
   Rule: A task's steps keep the order they were written in
 
     @ordering-steps-keep-their-order

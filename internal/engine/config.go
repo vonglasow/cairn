@@ -19,13 +19,19 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, and each of its places, alongside what named it.
 type Config struct {
-	File     string      `json:"file"`
-	Store    Emplacement `json:"store"`
-	Notes    Emplacement `json:"notes"`
-	Plugin   Emplacement `json:"plugin"`
-	PagesOff []string    `json:"pages_off,omitempty"`
-	Archive  *Archive    `json:"archive,omitempty"`
-	Problem  string      `json:"problem,omitempty"`
+	File     string       `json:"file"`
+	Store    Emplacement  `json:"store"`
+	Notes    Emplacement  `json:"notes"`
+	Plugin   Emplacement  `json:"plugin"`
+	PagesOff []string     `json:"pages_off,omitempty"`
+	Archive  *Archive     `json:"archive,omitempty"`
+	Focus    *FocusConfig `json:"focus,omitempty"`
+	Problem  string       `json:"problem,omitempty"`
+}
+
+// FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it.
+type FocusConfig struct {
+	Session string `json:"session"`
 }
 
 // Archive is the day archiving counts from, and how many days each period lasts.
@@ -71,6 +77,9 @@ func (g *readingGate) Resolved(p config.Places) {
 	if start, days, ok := p.Archive(); ok {
 		g.config.Archive = &Archive{Start: start, Days: days}
 	}
+	if session := p.FocusSession(); session != "" {
+		g.config.Focus = &FocusConfig{Session: session}
+	}
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -114,9 +123,14 @@ func configText(c Config) string {
 		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
 	}
 	if c.Archive == nil {
-		return said + "\nnothing is archived on its own\n"
+		said += "\nnothing is archived on its own\n"
+	} else {
+		said += fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
 	}
-	return said + fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
+	if c.Focus != nil {
+		said += fmt.Sprintf("\nfocus       asks to be renewed after %s\n", c.Focus.Session)
+	}
+	return said
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

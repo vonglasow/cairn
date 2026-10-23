@@ -174,6 +174,39 @@ archived then. A scenario cannot move the trace back — it asks the engine,
 which only writes the present, and never opens the store — so it moves today
 forward instead. A day it cannot read is taken as no day named.
 
+## A focus session that asks to be renewed
+
+```toml
+[focus]
+session = "1h"   # how long a focus session lasts before it asks
+```
+
+A focus left open counts time nobody spent, but no clock can tell that the work
+stopped: cutting it at a time of day, or after a while unused, was built and
+taken back the same day (cairn#51). The question goes to whoever holds the
+focus instead. Each task in focus has a session, up since the focus was taken
+or last renewed, read from the trace; the focus answer says it for every task
+in focus (`sessions`, with `since` and `up`,
+`@focus-session-says-how-long-it-has-been-up`). Once a session has been up for
+`session`, it asks to be renewed or ended (`ask`,
+`@focus-session-asks-to-be-renewed-past-its-length`), and every answer the MCP
+server gives carries that question after its own text, whatever tool was
+called (`@mcp-any-answer-asks-to-renew-a-focus-session`): an agent rarely calls
+`task_focus`. Focusing the task again renews the session, written `focus
+renewed` in the trace (`@focus-session-renewed`); within its length it writes
+nothing. The time runs on through a renewal: only a release stops it. Nothing
+said, nothing is asked. A length that is not a duration is refused, naming
+`focus.session` (`@config-a-focus-session-that-cannot-be-read-is-refused`), and
+`config show` says it (`@config-show-says-how-long-a-focus-session-lasts`).
+
+The Claude hook takes the focus at each prompt, so a prompt past the length
+renews the session: a person writing is a person at work. The question is left
+for an agent working alone for longer than a session.
+
+Now is the clock, unless `CAIRN_NOW` names another moment, written in RFC 3339:
+a scenario stands later to see a session grow, and the acts written meanwhile
+are written at that moment.
+
 ## The environment names the same two places
 
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the

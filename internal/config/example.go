@@ -26,4 +26,10 @@ time = true
 # [archive]
 # start = 2026-10-21
 # days = 14
+
+# How long a focus session lasts before cairn asks, in every answer the MCP
+# server gives, to renew it by focusing the task again or to end it.
+# Nothing is asked unless it is said.
+# [focus]
+# session = "1h"
 `

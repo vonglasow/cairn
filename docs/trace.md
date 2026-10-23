@@ -42,7 +42,9 @@ beside them, the tasks it is linked to, its deadline, its estimate, its steps, t
 objectives it serves, and whether it was archived — archiving and
 bringing back are changes like any other, written `yes` and nothing. Six are not
 about a field: **created**, **moved**, **focus taken**, **focus released**,
-**deleted**, **time added**.
+**focus renewed**, **deleted**, **time added**. A focus renewed restarts the
+focus's session and leaves its time running (see
+[config](config.md#a-focus-session-that-asks-to-be-renewed)).
 
 **Steps are one attribute.** A step added, ticked, renamed or taken away is a
 *changed* act on its task with the field `steps`, the values before and after

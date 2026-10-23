@@ -282,3 +282,11 @@ func TestSpent_runsAFocusStillOpenToNow(t *testing.T) {
 		t.Errorf("a focus still open spent %s, want 45m", spent[1])
 	}
 }
+
+func TestSpent_runsOnThroughARenewedFocus(t *testing.T) {
+	renewed := Made(Carried{Task: 1, Did: FocusRenewed, At: at(10, 0)})
+	acts := []Act{took(1, 9, 0), renewed, stopped(1, 11, 0)}
+	if spent := Spent(acts, at(18, 0)); spent[1] != 2*time.Hour {
+		t.Errorf("task 1 spent %s across a renewal, want 2h", spent[1])
+	}
+}

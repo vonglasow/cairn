@@ -385,6 +385,21 @@
           ],
           "additionalProperties": false
         },
+        "focus": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "session": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "session"
+          ],
+          "additionalProperties": false
+        },
         "problem": {
           "type": "string"
         }
@@ -3207,11 +3222,44 @@
           "items": {
             "type": "integer"
           }
+        },
+        "sessions": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "integer"
+              },
+              "since": {
+                "type": "string",
+                "description": "when the focus was taken, or last renewed"
+              },
+              "up": {
+                "type": "string",
+                "description": "how long the session has been up, as 1h30m; empty under a minute"
+              },
+              "ask": {
+                "type": "string",
+                "description": "once the session is past its length: whether to renew it or end it"
+              }
+            },
+            "required": [
+              "task",
+              "since",
+              "up"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
         "tasks",
-        "in_focus"
+        "in_focus",
+        "sessions"
       ],
       "additionalProperties": false
     }
@@ -4871,11 +4919,44 @@
           "items": {
             "type": "integer"
           }
+        },
+        "sessions": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "integer"
+              },
+              "since": {
+                "type": "string",
+                "description": "when the focus was taken, or last renewed"
+              },
+              "up": {
+                "type": "string",
+                "description": "how long the session has been up, as 1h30m; empty under a minute"
+              },
+              "ask": {
+                "type": "string",
+                "description": "once the session is past its length: whether to renew it or end it"
+              }
+            },
+            "required": [
+              "task",
+              "since",
+              "up"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
         "tasks",
-        "in_focus"
+        "in_focus",
+        "sessions"
       ],
       "additionalProperties": false
     }

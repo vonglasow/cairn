@@ -104,10 +104,11 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 		if err != nil {
 			return refused(err), nil
 		}
-		return &sdk.CallToolResult{
-			Content:           []sdk.Content{&sdk.TextContent{Text: engine.RenderText(op, answer)}},
-			StructuredContent: engine.Of(op, answer),
-		}, nil
+		said := []sdk.Content{&sdk.TextContent{Text: engine.RenderText(op, answer)}}
+		for _, ask := range answer.Asked {
+			said = append(said, &sdk.TextContent{Text: ask})
+		}
+		return &sdk.CallToolResult{Content: said, StructuredContent: engine.Of(op, answer)}, nil
 	}
 }
 

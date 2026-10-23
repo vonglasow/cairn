@@ -12,6 +12,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
+	"cairn/internal/engine"
 )
 
 // World carries what one scenario needs between its steps.
@@ -215,6 +216,21 @@ func (w *World) CommandSays(command, want string) error {
 	return WantContains(w.Out.Stdout, want, "the answer of "+command)
 }
 
+// FocusSessionsLast poses a configuration in which a focus session asks to be renewed once it has been up that long.
+func (w *World) FocusSessionsLast(length string) error {
+	return w.WriteConfig(fmt.Sprintf("[focus]\nsession = %q\n", length))
+}
+
+// ItIsLater moves the moment cairn takes for now that far ahead of the clock.
+func (w *World) ItIsLater(count int, unit string) error {
+	later := time.Duration(count) * time.Minute
+	if unit == "hours" {
+		later = time.Duration(count) * time.Hour
+	}
+	w.Setenv(engine.NowVariable, time.Now().Add(later).Format(time.RFC3339))
+	return nil
+}
+
 // Register declares the steps more than one surface claims, and puts the world back when the scenario ends.
 func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.After(w.afterScenario)
@@ -230,6 +246,11 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^it says what it expects instead of "([^"]*)"$`, w.ItSaysWhatItExpectsInsteadOf)
 	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", w.CommandSays)
 	sc.Step("^`([^`]*)` lists (\\d+) tasks?$", w.LineListsTasks)
+	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
+		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
+	})
+	sc.Step(`^focus sessions last "([^"]*)"$`, w.FocusSessionsLast)
+	sc.Step(`^it is (\d+) (minutes|hours) later$`, w.ItIsLater)
 	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))
 		return nil
