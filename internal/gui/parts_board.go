@@ -45,6 +45,13 @@ func LaneName(l Layout, lane int) Box {
 	return Box{X: l.Lane[lane].X, Y: l.Band.Y, W: l.Lane[lane].W, H: laneHigh}
 }
 
+const nameDrop = 7
+
+// ColumnName is the room a column's name is centred in: the whole width of its head, from a few pixels under its top edge.
+func ColumnName(head Box) Box {
+	return Box{X: head.X, Y: head.Y + nameDrop, W: head.W, H: head.H - nameDrop}
+}
+
 // OfferAt is where one of the bar's offers sits.
 func OfferAt(l Layout, at int) Box {
 	return Box{X: l.Bar.X + at*offerWide, Y: l.Bar.Y, W: offerWide, H: l.Bar.H}

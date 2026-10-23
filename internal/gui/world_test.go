@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"image"
 	"image/color"
 	"os"
 	"path/filepath"
@@ -800,6 +801,23 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^every column's name is centred in its head$`, func() error {
+		return w.everyColumnsName(func(head, name Box) error {
+			left, right := name.X-head.X, head.X+head.W-(name.X+name.W)
+			if left-right > 2 || right-left > 2 {
+				return fmt.Errorf("the name stands %dpx from the left and %dpx from the right", left, right)
+			}
+			return nil
+		})
+	})
+	sc.Then(`^every column's name stands clear of the edge above it$`, func() error {
+		return w.everyColumnsName(func(head, name Box) error {
+			if clear := name.Y - head.Y; clear < 6 {
+				return fmt.Errorf("the name stands %dpx under the edge, want 6px at least", clear)
+			}
+			return nil
+		})
+	})
 	sc.Then(`^the band stands on a ground of its own$`, func() error {
 		return w.standsApart(w.w.Layout().Band)
 	})
@@ -1436,4 +1454,38 @@ func (w *world) standsApart(b Box) error {
 		}
 	}
 	return nil
+}
+
+func (w *world) everyColumnsName(holds func(head, name Box) error) error {
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	for i, head := range w.w.Layout().Head {
+		inside := Box{X: head.X + 1, Y: head.Y + 1, W: head.W - 2, H: head.H - 1}
+		name, ok := inkedIn(shot, inside, Dark().Ground)
+		if !ok {
+			return fmt.Errorf("column %d: its head carries no name", i)
+		}
+		if err := holds(head, name); err != nil {
+			return fmt.Errorf("column %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+func inkedIn(shot *image.RGBA, b Box, ground color.NRGBA) (Box, bool) {
+	left, top, right, bottom := b.X+b.W, b.Y+b.H, b.X-1, b.Y-1
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			if got := shot.RGBAAt(x, y); got.R == ground.R && got.G == ground.G && got.B == ground.B {
+				continue
+			}
+			left, right, top, bottom = min(left, x), max(right, x), min(top, y), max(bottom, y)
+		}
+	}
+	if right < left {
+		return Box{}, false
+	}
+	return Box{X: left, Y: top, W: right - left + 1, H: bottom - top + 1}, true
 }

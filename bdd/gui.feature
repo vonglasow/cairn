@@ -155,6 +155,12 @@ Feature: The desktop board
       Then every column stands on a ground of its own
       And the band stands on a ground of its own
 
+    @gui-a-columns-name-sits-centred-clear-of-its-edge
+    Scenario: each column's name sits centred in its head, clear of the edge above it
+      When I open the window
+      Then every column's name is centred in its head
+      And every column's name stands clear of the edge above it
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so

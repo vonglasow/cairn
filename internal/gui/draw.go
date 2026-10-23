@@ -465,7 +465,7 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		ground(gtx, skin, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
-		say(gtx, th, skin.Faint, l.Head[i], column.Name+"  "+strconv.Itoa(len(column.Cards)), reads)
+		sayCentred(gtx, th, skin.Faint, ColumnName(l.Head[i]), column.Name+"  "+strconv.Itoa(len(column.Cards)), small)
 	}
 }
 
@@ -975,7 +975,15 @@ func say(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said st
 	sayOver(gtx, th, ink, b, said, size, 1)
 }
 
+func sayCentred(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int) {
+	sayAligned(gtx, th, ink, b, said, size, 1, text.Middle)
+}
+
 func sayOver(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size, lines int) {
+	sayAligned(gtx, th, ink, b, said, size, lines, text.Start)
+}
+
+func sayAligned(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size, lines int, along text.Alignment) {
 	if said == "" {
 		return
 	}
@@ -989,5 +997,6 @@ func sayOver(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 	label := material.Label(th, unit.Sp(float32(size)), said)
 	label.Color = ink
 	label.MaxLines = lines
+	label.Alignment = along
 	label.Layout(inner)
 }

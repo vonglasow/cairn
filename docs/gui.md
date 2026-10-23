@@ -130,6 +130,10 @@ layer. The gap between columns stays: it is the gutter. There are no vertical
 rules and no alternating tints, which would imply a meaning nobody gave them.
 The ground and its edge are skin tokens, checked for contrast with the others
 (`@gui-columns-stand-apart`).
+Once the head had an edge of its own, a name written from its corner read as
+pressed against it (cairn#118): each column's name is centred across its head,
+seven pixels under the edge, at the size the band's lanes are named in
+(`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
 
 **Cards keep a fixed height.** In the terminal that is what makes moving the
 cursor arithmetic rather than measurement; with a mouse that reason is gone,

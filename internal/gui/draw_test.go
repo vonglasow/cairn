@@ -437,7 +437,7 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 	if got := ink(shot, twice, Dark().Ground); got == 0 {
 		t.Error("nothing was drawn where two pixels to the dp puts the first card")
 	}
-	empty := Box{X: box.X, Y: box.Y + box.H/2, W: box.W / 2, H: box.H / 4}
+	empty := Box{X: box.X + box.W/2, Y: box.Y + box.H/2, W: box.W/2 - 2, H: box.H / 4}
 	if got := ink(shot, empty, Dark().Ground); got != 0 {
 		t.Errorf("%d pixels were drawn as though one pixel were one dp", got)
 	}
