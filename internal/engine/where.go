@@ -88,10 +88,6 @@ func Hold(h Home, acting Acting) (*Engine, error) {
 		return nil, err
 	}
 	held.acting = acting
-	if err := held.focusKept(); err != nil {
-		_ = held.Close()
-		return nil, err
-	}
 	if err := held.archivingSwept(); err != nil {
 		_ = held.Close()
 		return nil, storeProblem(err)

@@ -282,12 +282,4 @@ DROP INDEX IF EXISTS links_by_high;
 DROP TABLE IF EXISTS links;`,
 		loses: "which tasks are linked",
 	},
-	{
-		name: "a focus says when it was last used",
-		does: `
-ALTER TABLE focused ADD COLUMN seen TEXT NOT NULL DEFAULT '';`,
-		undoes: `
-ALTER TABLE focused DROP COLUMN seen;`,
-		loses: "when each focus was last used",
-	},
 }

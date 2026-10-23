@@ -148,12 +148,8 @@ func without(numbers []int, n int) []int {
 }
 
 func (e *Engine) record(number int, did, field, was, became string) error {
-	return e.recordAt(time.Now(), number, did, field, was, became)
-}
-
-func (e *Engine) recordAt(at time.Time, number int, did, field, was, became string) error {
 	return e.history.Record(trace.Made(trace.Carried{
-		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.acting.Through, By: e.acting.By, At: at,
+		Task: number, Did: did, Field: field, Was: was, Became: became, Through: e.acting.Through, By: e.acting.By, At: time.Now(),
 	}))
 }
 

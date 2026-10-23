@@ -11,11 +11,6 @@ func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
 	if err := e.following(); err != nil {
 		return Answer{}, Told(err)
 	}
-	if op.Level != Read && op.Needs == AStore {
-		if err := e.focusKept(); err != nil {
-			return Answer{}, err
-		}
-	}
 	return e.run(op, in)
 }
 

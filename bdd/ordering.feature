@@ -355,7 +355,7 @@ Feature: Ordering
       Then it succeeds
       And it says nothing is in focus
 
-  Rule: A focus nobody let go of is let go on its own, when it was last used
+  Rule: A task blocked lets go of its focus
 
     @focus-let-go-when-blocked
     Scenario: a task blocked lets go of the focus it held
@@ -364,45 +364,6 @@ Feature: Ordering
       When I run `cairn task edit 1 --state blocked --because "the client's answer"`
       And I run `cairn task list --json`
       Then it says no task in it is in focus
-
-    @focus-let-go-when-idle
-    Scenario: a focus unused past the idle limit is let go when it was last used
-      Given focus is let go after "2h" unused
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 3 hours later
-      And I run `cairn task list --json`
-      Then it says no task in it is in focus
-      And the focus of task 1 was let go through "focus" when it was taken
-
-    @focus-kept-while-used
-    Scenario: a focus used within the idle limit is kept
-      Given focus is let go after "2h" unused
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 90 minutes later
-      And I run `cairn task list`
-      And it is 180 minutes later
-      And I run `cairn task list --json`
-      Then it says task 1 is the one in focus
-
-    @focus-let-go-at-the-end-of-the-day
-    Scenario: a focus left open past the day's end is let go when it was last used
-      Given the working day ends at "20:00"
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 48 hours later
-      And I run `cairn task list --json`
-      Then it says no task in it is in focus
-      And the focus of task 1 was let go through "focus" when it was taken
-
-    @focus-kept-when-nothing-is-said
-    Scenario: without a limit, a focus is kept however long
-      Given I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 48 hours later
-      And I run `cairn task list --json`
-      Then it says task 1 is the one in focus
 
   Rule: A task's steps keep the order they were written in
 

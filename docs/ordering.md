@@ -256,12 +256,12 @@ went on counting time nobody spent.
 **A task moved into `blocked` lets go of its focus as well**, in the same act
 (`@focus-let-go-when-blocked`): it waits on something outside, and the clock
 should not run while it does. Taking the focus on a task already blocked stays
-allowed (below). A known gap, kept for review: the Claude hook takes the focus
-again at each prompt, so in a hooked session a blocked task is taken up again on
-the next one. Refusing the focus to a blocked task, as a done one is refused,
-would reverse cairn#85 and is not done here. `watching` and `paused` keep their
-focus. A focus nobody lets go of is let go on its own, when the configuration
-says so: see [config](config.md#letting-go-of-a-focus-on-its-own).
+allowed (below). A known gap: the Claude hook takes the focus again at each
+prompt, so in a hooked session a blocked task is taken up again on the next
+one. Refusing the focus to a blocked task, as a done one is refused, would
+reverse cairn#85 and is not done here. `watching` and `paused` keep their focus.
+A focus is never let go at a time of day nor after a while unused: working at
+20:00 is ordinary, and no clock can tell that the work stopped (cairn#51).
 
 **Waiting work taking the focus goes into `current`.** Amended 2026-10-16
 (cairn#85). Taking the focus said what was being worked on and moved nothing,

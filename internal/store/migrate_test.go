@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"cairn/internal/migration"
 	"cairn/internal/objective"
@@ -360,7 +359,7 @@ func TestMigrate_rollingBackTheManyFocusKeepsTheFirst(t *testing.T) {
 	first := factsOf(keep(t, s, "First")).Number
 	second := factsOf(keep(t, s, "Second")).Number
 	for _, n := range []int{first, second} {
-		if err := s.AddFocus(n, time.Now()); err != nil {
+		if err := s.AddFocus(n); err != nil {
 			t.Fatalf("AddFocus(%d): %v", n, err)
 		}
 	}

@@ -398,11 +398,6 @@ func doWith(
 		}
 	}()
 	eng.acting, eng.notes, eng.home = acting, at.Notes, at.Home
-	if op.Needs != AStoreBehind {
-		if err := eng.focusKept(); err != nil {
-			return Answer{}, err
-		}
-	}
 	if op.Thing == TaskList.Thing && op.Verb == TaskList.Verb {
 		if err := eng.archivingSwept(); err != nil {
 			return Answer{}, storeProblem(err)

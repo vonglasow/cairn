@@ -718,18 +718,3 @@ func TestRead_saysFromWhenAndHowOftenDoneTasksAreArchived(t *testing.T) {
 		}
 	}
 }
-
-func TestRead_saysAfterHowLongAndAtWhatHourAFocusIsLetGo(t *testing.T) {
-	read, err := config.Read(writtenConfig(t, "[focus]\nidle = \"2h\"\nday_ends = \"20:00\"\n"), silentEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	idle, dayEnds := read.Focus()
-	if idle != "2h" || dayEnds != "20:00" {
-		t.Errorf("a focus is let go after %q unused and at %q", idle, dayEnds)
-	}
-	none, _ := config.Read(t.TempDir(), silentEnv)
-	if idle, dayEnds := none.Focus(); idle != "" || dayEnds != "" {
-		t.Errorf("with no file, a focus is let go after %q and at %q", idle, dayEnds)
-	}
-}
