@@ -16,7 +16,7 @@ already said why not.
 | decided | why, in one line | where |
 |---|---|---|
 | no urgency field | it says what the priority and the column already say | [ordering.md](ordering.md#weighed-and-left-out) |
-| no recurrence, no work that never finishes | cairn models work that reaches `done`; turning a real problem into a mechanism was not asked for | [ordering.md](ordering.md#weighed-and-left-out) |
+| no recurrence, no work that never finishes | cairn models work that reaches `done`; turning a real problem into a mechanism was not asked for, and a meeting that comes back belongs to the calendar | [ordering.md](ordering.md#weighed-and-left-out) |
 | no precedence between two tasks | measured: it constrains without ordering | [ordering.md](ordering.md#weighed-and-left-out) |
 | how long a task has sat in its column is read off the trace, never stored | the one date nothing else implies, and the trace already holds it | [ordering.md](ordering.md#what-the-store-gains) |
 | no `unblock` verb | `--blocker -3` does it, and returning to `todo` belongs to the edit | [blocking.md](blocking.md#deliberately-not-there-yet) |
@@ -73,6 +73,7 @@ already said why not.
 | a tool above the access level is absent, not refused | a refusal invites another try; an absence ends it | [mcp.md](mcp.md#what-an-agent-may-do-is-settled-when-the-server-starts) |
 | a refusal's kind travels under `_meta`, not `structuredContent` | the client measures structured content against the answer's shape even on a refusal | [mcp.md](mcp.md) |
 | a tool whose answer shape cannot be derived is offered without one, rather than stopping the server | a test proves every tool derives one, so this can only happen to code nobody ran | `internal/mcp/tools.go` |
+| the Claude sessions holding a task are the hook's, not the engine's | the engine would write and read the session entries in a task's notes, which cairn never looks at; it keeps only what every surface needs, letting go of a focus and asking for a session to be renewed | [claude-code.md](claude-code.md#where-it-lives-and-how-it-is-installed) |
 | the two boards share where a card goes, not how the cursor walks | they draw the stalled band differently — a grid of three in the terminal, lanes under the columns in the window — so the same key is a different journey | [architecture.md](architecture.md) |
 | what a board reads lives in the engine, not in a package between it and the boards | a surface is an entry point; the package in between grew decisions of its own, and its search drifted from the engine's | [architecture.md](architecture.md) |
 | the engine is one package, split into files by notion | one door (`Ask`) and one place for the rules; sub-packages wait until a file cannot be read on its own | [architecture.md](architecture.md) |

@@ -361,7 +361,7 @@ go of it.
 | **urgency as a field** | it says what `priority` and the column already say |
 | **`estimate` minus `time spent`** | it goes negative the moment the estimate is passed, and reads as finished |
 | **a precedence between two tasks** | measured: `4 before 2` is satisfied by 12 of the 24 orders of four tasks. It constrains; it does not order |
-| **recurrence** | a real problem was named — sorting email never reaches `done` — and turning it into a mechanism was not asked for |
+| **recurrence** | a real problem was named — sorting email never reaches `done` — and turning it into a mechanism was not asked for; weighed again on 2026-10-23 for 1-1s and weekly syncs, and left out: a meeting that comes back belongs to the calendar |
 | **the date a task was created, the date a priority was set, the date anything last changed** | four dates were offered and four were taken, which is a menu artefact. Creation nearly doubles the number, and a priority's date is a special case of the last change. One carries a signal nothing else does: how long a task has sat where it is |
 | **the criteria ordering the list themselves** | they are a force of proposal, not gospel — and nothing that writes can be that |
 

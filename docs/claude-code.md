@@ -207,6 +207,15 @@ The plugin is independent of cairn's code: it reaches cairn only through its
 command line and its MCP server. Needed: `cairn` and `jq` on the `PATH`.
 Nothing else.
 
+**The sessions are the hook's, not the engine's.** Which Claude session holds
+a task, that another one still working on it keeps it in focus, and letting go
+after a while with no prompt are the hook's rules. Moving them into the engine,
+as session verbs, was weighed and left out on 2026-10-23: it would have the
+engine write and read the session entries in a task's notes, which cairn never
+looks at ([context.md](context.md)). What the engine took instead is what any
+surface needs: it lets go of a focus whose task is done or blocked, and asks
+for a session past its length to be renewed ([ordering.md](ordering.md)).
+
 **The binary carries the plugin.** A person handed only the binary — by brew,
 or as a file — has no repository to add as a marketplace. So `plugin.go`, in
 the plugin's own folder, embeds its files, and `cairn plugin write` writes
