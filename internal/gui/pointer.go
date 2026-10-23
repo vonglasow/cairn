@@ -112,10 +112,11 @@ func (w Window) BubbleBox() (Box, []string, bool) {
 	}
 	wide := widest + 2*padding
 	high := len(lines)*lineHigh + 2*inset
-	x := max(margin, min(w.restingSlot.X, w.width-margin-wide))
-	y := w.restingSlot.Y - high - inset
+	title := PartsOf(w.restingSlot).Title
+	x := max(margin, min(title.X-padding, w.width-margin-wide))
+	y := title.Y - high - inset
 	if y < margin {
-		y = w.restingSlot.Y + w.restingSlot.H + inset
+		y = title.Y + title.H + inset
 	}
 	return Box{X: x, Y: max(margin, min(y, w.height-margin-high)), W: wide, H: high}, lines, true
 }

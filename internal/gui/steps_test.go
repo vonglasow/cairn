@@ -1223,6 +1223,38 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	titleOfCard := func(title string) (Box, Box, error) {
+		bubble, _, shown := w.w.BubbleBox()
+		if !shown {
+			return Box{}, Box{}, fmt.Errorf("no bubble shows")
+		}
+		for _, placed := range w.w.Placed() {
+			if placed.Card.Title == title {
+				return bubble, PartsOf(placed.Slot).Title, nil
+			}
+		}
+		return Box{}, Box{}, fmt.Errorf("no card titled %q is on the board", title)
+	}
+	sc.Then(`^the bubble stands just above the title of the card "([^"]*)"$`, func(title string) error {
+		bubble, under, err := titleOfCard(title)
+		if err != nil {
+			return err
+		}
+		if gap := under.Y - (bubble.Y + bubble.H); gap < 0 || gap > 6 {
+			return fmt.Errorf("the bubble ends %dpx above the title, want 0 to 6", gap)
+		}
+		return nil
+	})
+	sc.Then(`^the bubble's text begins where the title of the card "([^"]*)" begins$`, func(title string) error {
+		bubble, under, err := titleOfCard(title)
+		if err != nil {
+			return err
+		}
+		if begins := ExplainedLine(bubble, 0).X; begins != under.X {
+			return fmt.Errorf("the bubble's text begins at %d, the title at %d", begins, under.X)
+		}
+		return nil
+	})
 	sc.Then(`^no bubble shows$`, func() error {
 		if got := w.w.Bubble(); got != "" {
 			return fmt.Errorf("a bubble shows %q", got)

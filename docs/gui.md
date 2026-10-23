@@ -157,8 +157,13 @@ A cut title is still readable: while the pointer rests on a card whose title
 was cut, a small bubble drawn above everything else says it whole, wrapped
 over as many lines as it needs and kept inside the window. A card whose title
 fits gets none. The cards keep their height, and the title is not lost to it.
-Scenarios: `@gui-a-cut-title-is-read-whole-under-the-pointer`,
-`@gui-a-title-that-fits-has-no-bubble`.
+It stands just above the title, its text beginning where the title's does, so
+the eye goes from the cut words to the whole ones without a jump; placed above
+the card, it stood a line of number away from what it completes (cairn#123).
+Where there is no room above, it goes just under the title. Scenarios:
+`@gui-a-cut-title-is-read-whole-under-the-pointer`,
+`@gui-a-title-that-fits-has-no-bubble`,
+`@gui-the-bubble-stands-just-above-the-title`.
 
 Variable height was the alternative and would have cut nothing, at the cost of
 a column's geometry depending on its contents: scrolling and drop targets

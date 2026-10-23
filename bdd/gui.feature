@@ -140,6 +140,14 @@ Feature: The desktop board
       And I rest the pointer on the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       Then a bubble shows "A title far longer than any column could ever hope to show in full, even over two lines of a card"
 
+    @gui-the-bubble-stands-just-above-the-title
+    Scenario: the bubble of a cut title stands just above the title, its text where the title's begins
+      Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      When I open the window
+      And I rest the pointer on the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      Then the bubble stands just above the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      And the bubble's text begins where the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card" begins
+
     @gui-a-title-that-fits-has-no-bubble
     Scenario: a card whose title fits shows no bubble
       Given I added a task titled "Write the spec"
