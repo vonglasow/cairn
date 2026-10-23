@@ -26,13 +26,14 @@ import (
 )
 
 type world struct {
-	t     *testing.T
-	path  string
-	held  *engine.Engine
-	other *engine.Engine
-	work  *refusing
-	w     Window
-	pages engine.Pages
+	t      *testing.T
+	path   string
+	held   *engine.Engine
+	other  *engine.Engine
+	work   *refusing
+	w      Window
+	opened Box
+	pages  engine.Pages
 
 	width, high  int
 	today        time.Time
@@ -1095,6 +1096,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I drag the trace's bar to the bottom$`, w.dragHistoryBar)
+	sc.Step(`^I drag the form from a place that holds no text (\d+) to the right and (\d+) down$`, func(right, down int) error {
+		box := w.w.formPanel()
+		from := Point{X: box.X + 3, Y: box.Y + 3}
+		if w.w.textAt(from) {
+			return fmt.Errorf("the point %v of the form holds a text", from)
+		}
+		return w.dragForm(from, right, down)
+	})
+	sc.Step(`^I drag the form from its heading (\d+) to the right and (\d+) down$`, func(right, down int) error {
+		head := Heading(w.w.formPanel())
+		return w.dragForm(Point{X: head.X + 4, Y: head.Y + head.H/2}, right, down)
+	})
+	sc.Step(`^the form stands (\d+) to the right and (\d+) lower than it opened$`, func(right, down int) error {
+		return w.formStandsBy(right, down)
+	})
+	sc.Step(`^the form stands where it opened$`, func() error { return w.formStandsBy(0, 0) })
+	sc.Step(`^the form stands wholly inside the window$`, func() error {
+		box := w.w.formPanel()
+		if box.X < 0 || box.Y < 0 || box.X+box.W > w.w.width || box.Y+box.H > w.w.height {
+			return fmt.Errorf("the form stands at %v in a window of %d by %d", box, w.w.width, w.w.height)
+		}
+		return nil
+	})
 	sc.Step(`^I drag the description's bar to the bottom$`, w.dragSayingBar)
 	sc.Step(`^I scroll up over the description (\d+) times$`, func(n int) error {
 		for range n {
@@ -1488,4 +1512,25 @@ func inkedIn(shot *image.RGBA, b Box, ground color.NRGBA) (Box, bool) {
 		return Box{}, false
 	}
 	return Box{X: left, Y: top, W: right - left + 1, H: bottom - top + 1}, true
+}
+
+func (w *world) dragForm(from Point, right, down int) error {
+	w.opened = w.w.formPanel()
+	to := Point{X: from.X + right, Y: from.Y + down}
+	w.w = w.w.PressAt(from)
+	w.w = w.w.MoveTo(Point{X: from.X + right/2, Y: from.Y + down/2})
+	w.w = w.w.MoveTo(to)
+	w.w = w.w.LetGo(to)
+	return nil
+}
+
+func (w *world) formStandsBy(right, down int) error {
+	if w.w.Screen() != OnForm {
+		return fmt.Errorf("the form is no longer open: the window is on %v", w.w.Screen())
+	}
+	now := w.w.formPanel()
+	if got := (Point{X: now.X - w.opened.X, Y: now.Y - w.opened.Y}); got != (Point{X: right, Y: down}) {
+		return fmt.Errorf("the form moved by %v, want %d right and %d down", got, right, down)
+	}
+	return nil
 }

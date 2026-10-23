@@ -338,6 +338,10 @@ func (w Window) PressAt(p Point) Window {
 			w.draggingBar, w.draggingServing = !w.form.ForObjective, w.form.ForObjective
 			return w
 		}
+		if w.formPanel().In(p) && !w.textAt(p) {
+			w.draggingForm, w.dragged, w.formGrip, w.held = true, false, p, Held{From: p, At: p}
+			return w
+		}
 		return w.picking(p)
 	}
 	if w.screen != OnTheBoard {
@@ -352,6 +356,9 @@ func (w Window) PressAt(p Point) Window {
 
 // MoveTo follows the pointer, and past Grip says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
+	if w.draggingForm {
+		return w.movingForm(p)
+	}
 	if w.draggingBar {
 		track := BesideBar(w.formPanel())
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
@@ -396,6 +403,13 @@ func (w Window) MoveTo(p Point) Window {
 
 // LetGo drops the card, or lets a click be a click.
 func (w Window) LetGo(p Point) Window {
+	if w.draggingForm {
+		w.draggingForm, w.held, w.pressed = false, Held{}, false
+		if w.dragged {
+			return w
+		}
+		return w.Click(p)
+	}
 	if w.pickingText {
 		w.pickingText = false
 		return w

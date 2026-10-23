@@ -97,6 +97,13 @@ func OpenOver(width, height int, fields []engine.Field) Box {
 	return cutTo(over, FormFields(over), fields)
 }
 
+// Shifted is a panel moved by so much, and held wholly inside a window of that size.
+func Shifted(b Box, by Point, width, height int) Box {
+	b.X = max(0, min(b.X+by.X, width-b.W))
+	b.Y = max(0, min(b.Y+by.Y, height-b.H))
+	return b
+}
+
 func cutTo(over, laid Box, fields []engine.Field) Box {
 	_, _, end := formLayout(laid, fields)
 	over.H = min(over.H, end-over.Y+between+barHigh+padding)

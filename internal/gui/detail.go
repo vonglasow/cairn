@@ -169,10 +169,24 @@ func (w Window) panel() Box {
 }
 
 func (w Window) formPanel() Box {
+	return Shifted(w.formOpensIn(), w.formMoved, w.width, w.height)
+}
+
+func (w Window) formOpensIn() Box {
 	if !w.besideShown() {
 		return FormOver(w.width, w.height, w.form.Fields())
 	}
 	return OpenOver(w.width, w.height, w.form.Fields())
+}
+
+func (w Window) movingForm(p Point) Window {
+	opens := w.formOpensIn()
+	moved := Shifted(opens, Point{X: w.formMoved.X + p.X - w.formGrip.X, Y: w.formMoved.Y + p.Y - w.formGrip.Y}, w.width, w.height)
+	w.formMoved, w.formGrip = Point{X: moved.X - opens.X, Y: moved.Y - opens.Y}, p
+	if abs(p.X-w.held.From.X) > Grip || abs(p.Y-w.held.From.Y) > Grip {
+		w.dragged = true
+	}
+	return w
 }
 
 func (w Window) formBox() Box {

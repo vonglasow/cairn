@@ -113,6 +113,8 @@ type Window struct {
 	pressedOn             Screen
 	acts                  []string
 	form                  Form
+	formMoved, formGrip   Point
+	draggingForm, dragged bool
 	looking               Written
 	archived              bool
 	aimed                 string

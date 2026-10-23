@@ -1037,6 +1037,29 @@ Feature: The desktop board
       And I choose "Save"
       Then "BACKLOG" carries "Write the spec"
 
+  Rule: A form is moved by dragging it where it holds no text
+
+    @gui-the-form-moves-when-dragged-by-its-ground
+    Scenario: the form moves with the pointer dragged from a place that holds no text
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from a place that holds no text 80 to the right and 40 down
+      Then the form stands 80 to the right and 40 lower than it opened
+
+    @gui-the-form-stays-when-its-text-is-dragged
+    Scenario: dragging from one of the form's texts leaves the form where it opened
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from its heading 80 to the right and 40 down
+      Then the form stands where it opened
+
+    @gui-the-form-stays-inside-the-window
+    Scenario: a form dragged far stays wholly inside the window
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from a place that holds no text 5000 to the right and 5000 down
+      Then the form stands wholly inside the window
+
   Rule: The window opens on its board being built of stones
 
     @gui-the-window-opens-on-a-cairn

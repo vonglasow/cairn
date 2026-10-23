@@ -135,6 +135,17 @@ pressed against it (cairn#118): each column's name is centred across its head,
 seven pixels under the edge, at the size the band's lanes are named in
 (`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
 
+**A form is moved by dragging it where it holds no text** (cairn#119). A press
+inside the form on nothing written — no field, no heading, no offer, no text
+of its trace — takes the form by its ground, and the pointer carries it
+(`@gui-the-form-moves-when-dragged-by-its-ground`); a press on a text still
+holds the text (`@gui-the-form-stays-when-its-text-is-dragged`). The form is
+held wholly inside the window (`@gui-the-form-stays-inside-the-window`). The
+place is kept by the window, not the form, so the next form opens where the
+last was left, until the window closes; it is written nowhere. A press that
+does not move past the grip is a click, as it was. Everything a form draws or
+reaches is placed from its panel, so moving the panel moves it all.
+
 **Cards keep a fixed height.** In the terminal that is what makes moving the
 cursor arithmetic rather than measurement; with a mouse that reason is gone,
 and it was kept anyway for what it still buys: a column can say how many cards

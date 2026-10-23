@@ -112,6 +112,27 @@ func (w Window) measured() Measure {
 	return w.measure
 }
 
+func (w Window) textAt(p Point) bool {
+	if _, on := w.readableAt(p); on {
+		return true
+	}
+	if _, on := w.offerAt(p); on {
+		return true
+	}
+	if _, on := w.fieldAt(p); on {
+		return true
+	}
+	if Heading(w.formPanel()).In(p) {
+		return true
+	}
+	for _, head := range FormHeads(w.formBox(), w.form.Fields()) {
+		if head.Box.In(p) {
+			return true
+		}
+	}
+	return false
+}
+
 func (w Window) readableAt(p Point) (Readable, bool) {
 	for _, r := range w.Readables() {
 		if r.inSight().In(p) {
