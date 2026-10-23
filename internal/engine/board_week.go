@@ -96,5 +96,15 @@ func (t TimesheetTask) Spent() string {
 
 // Says is one task's line on a day: its time, then which task.
 func (t TimesheetTask) Says() string {
-	return t.Spent() + "  #" + strconv.Itoa(t.Number) + " " + t.Title
+	return t.Spent() + "  #" + strconv.Itoa(t.Number) + " " + t.Shown()
 }
+
+// Shown is the task's title as the sheet writes it: said to be deleted when it was.
+func (t TimesheetTask) Shown() string {
+	if t.Deleted {
+		return t.Title + deletedMark
+	}
+	return t.Title
+}
+
+const deletedMark = " (deleted)"

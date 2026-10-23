@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync"
 
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/store"
 	"cairn/internal/task"
@@ -236,7 +237,19 @@ func (e *Engine) delete(number int) error {
 			return err
 		}
 	}
-	return e.record(number, trace.Deleted, "", whatItHeld(gone), "")
+	went := whatItHeld(gone)
+	if e.timeGoesWithTasks() {
+		went += "; " + trace.WentWithItsTime
+	}
+	return e.record(number, trace.Deleted, "", went, "")
+}
+
+func (e *Engine) timeGoesWithTasks() bool {
+	if e.home.Dir == "" {
+		return false
+	}
+	read, err := config.Read(e.home.Dir, e.home.lookup())
+	return err == nil && read.TimeDeleted() == config.TimeTaken
 }
 
 func (e *Engine) waitingOn(number int) ([]int, error) {

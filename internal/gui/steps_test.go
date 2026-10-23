@@ -1140,7 +1140,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		l := w.w.Layout()
 		for i := range 7 {
 			for j, one := range w.w.DayShown(i) {
-				if one.Title == title {
+				if w.w.DayCard(one).Title == title {
 					box := DayCardAt(WeekDayAt(l, i), j)
 					return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 				}

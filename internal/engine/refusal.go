@@ -108,6 +108,7 @@ var reasons = []reason{
 	{config.ErrNotAbsolute, KindRefused, "config-not-absolute"},
 	{config.ErrArchive, KindRefused, "config-archive"},
 	{config.ErrFocus, KindRefused, "config-focus"},
+	{config.ErrTime, KindRefused, "config-time"},
 }
 
 // RefusalOf says what kind of answer a failure is, and which one when cairn foresaw it.

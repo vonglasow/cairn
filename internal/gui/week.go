@@ -362,6 +362,9 @@ func (w Window) clickingTime(p Point) Window {
 		return w
 	}
 	if number := w.timeCardAt(p); number != 0 {
+		if w.goneOnTime(number) {
+			return w.telling("task " + strconv.Itoa(number) + " was deleted")
+		}
 		return w.choosingAt(number)
 	}
 	if !w.monthly && !w.daily {
@@ -415,7 +418,18 @@ func (w Window) DayCard(one engine.TimesheetTask) engine.Card {
 	if c, found := w.snap.Card(one.Number); found {
 		return c
 	}
-	return engine.Card{Number: one.Number, Title: one.Title}
+	return engine.Card{Number: one.Number, Title: one.Shown()}
+}
+
+func (w Window) goneOnTime(number int) bool {
+	for _, day := range w.sheet.Days {
+		for _, one := range day.Tasks {
+			if one.Number == number {
+				return one.Deleted
+			}
+		}
+	}
+	return false
 }
 
 func cellShown(tasks []engine.TimesheetTask, room int) int {

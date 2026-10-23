@@ -79,6 +79,27 @@ Feature: How long the work took, day by day
       And I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
       Then the day "2026-09-29" gives task 1 "30m"
 
+  Rule: A deleted task keeps its time, unless the configuration says it takes it with it
+
+    @timesheet-a-deleted-task-keeps-its-time-and-says-it-is-gone
+    Scenario: a task deleted keeps its time on the sheet, said to be deleted
+      Given I added a task titled "Write the spec"
+      And I ran `cairn timesheet add 1 1h --on 2026-09-29`
+      When I run `cairn task delete 1 --yes`
+      And I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
+      Then the day "2026-09-29" gives task 1 "1h"
+      And `cairn timesheet show --since 2026-09-29 --until 2026-09-29` says "Write the spec (deleted)"
+
+    @timesheet-a-task-deleted-with-its-time-leaves-the-sheet
+    Scenario: a task deleted takes its time with it when the configuration says so
+      Given a deleted task takes its time with it
+      And I added a task titled "Write the spec"
+      And I ran `cairn timesheet add 1 1h --on 2026-09-29`
+      When I run `cairn task delete 1 --yes`
+      And I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
+      Then the day "2026-09-29" says nothing of task 1
+      And `cairn trace show 1` says "time: taken"
+
   Rule: A machine reads it too
 
     @timesheet-travels-in-the-json

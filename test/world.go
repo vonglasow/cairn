@@ -250,6 +250,10 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
 	})
 	sc.Step(`^focus sessions last "([^"]*)"$`, w.FocusSessionsLast)
+	sc.Step(`^a deleted task takes its time with it$`, func() error { return w.WriteConfig("[time]\ndeleted = \"taken\"\n") })
+	sc.Step(`^the time of a deleted task is "([^"]*)"$`, func(said string) error {
+		return w.WriteConfig(fmt.Sprintf("[time]\ndeleted = %q\n", said))
+	})
 	sc.Step(`^it is (\d+) (minutes|hours) later$`, w.ItIsLater)
 	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))

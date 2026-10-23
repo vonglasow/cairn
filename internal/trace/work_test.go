@@ -290,3 +290,23 @@ func TestSpent_runsOnThroughARenewedFocus(t *testing.T) {
 		t.Errorf("task 1 spent %s across a renewal, want 2h", spent[1])
 	}
 }
+
+func TestTimed_leavesOutATaskDeletedWithItsTime(t *testing.T) {
+	gone := Made(Carried{Task: 1, Did: Deleted, Was: "title: Write the spec; column: todo; " + WentWithItsTime, At: at(12, 0)})
+	kept := Made(Carried{Task: 2, Did: Deleted, Was: "title: Ship it; column: todo", At: at(12, 0)})
+	acts := WithoutTimeTaken([]Act{took(1, 9, 0), stopped(1, 10, 0), took(2, 10, 0), stopped(2, 11, 0), gone, kept})
+	spent := Spent(acts, at(18, 0))
+	if spent[1] != 0 || spent[2] != time.Hour {
+		t.Errorf("spent = %v, want nothing on task 1, deleted with its time, and 1h on task 2", spent)
+	}
+}
+
+func TestTitleWent_isTheTitleADeletionTookWithIt(t *testing.T) {
+	gone := Made(Carried{Task: 1, Did: Deleted, Was: "title: Write the spec; column: todo"})
+	if got := TitleWent([]Act{gone}, 1); got != "Write the spec" {
+		t.Errorf("TitleWent = %q", got)
+	}
+	if got := TitleWent([]Act{gone}, 2); got != "" {
+		t.Errorf("TitleWent of a task never deleted = %q", got)
+	}
+}

@@ -41,30 +41,31 @@ func (e *Engine) addTime(number int, day time.Time, length string) error {
 	return e.record(number, trace.TimeAdded, "", domain.FormatDay(day), length)
 }
 
-func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, error) {
+func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, map[int]bool, error) {
 	acts, err := e.since(first)
 	if err != nil {
-		return trace.Sheet{}, nil, err
+		return trace.Sheet{}, nil, nil, err
 	}
-	sheet := trace.Timed(acts, first, last, time.Now())
+	sheet := trace.Timed(trace.WithoutTimeTaken(acts), first, last, time.Now())
 	worked := map[int]bool{}
 	for _, day := range sheet.Days {
 		for _, w := range day.Tasks {
 			worked[w.Task] = true
 		}
 	}
-	titles := map[int]string{}
+	titles, gone := map[int]string{}, map[int]bool{}
 	for _, number := range slices.Sorted(maps.Keys(worked)) {
 		t, err := e.tasks.Find(number)
 		if errors.Is(err, ErrNoSuchTask) {
+			titles[number], gone[number] = trace.TitleWent(acts, number), true
 			continue
 		}
 		if err != nil {
-			return trace.Sheet{}, nil, err
+			return trace.Sheet{}, nil, nil, err
 		}
 		titles[number] = factsOf(t).Title
 	}
-	return sheet, titles, nil
+	return sheet, titles, gone, nil
 }
 
 // TimesheetShow says how long the work took, day by day.
@@ -92,11 +93,11 @@ cairn timesheet show --since 2026-09-01 --until 2026-09-07`,
 		if err != nil {
 			return Answer{}, err
 		}
-		sheet, titles, err := on.Engine.timed(first, last)
+		sheet, titles, gone, err := on.Engine.timed(first, last)
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Sheet: &sheet, Named: titles}, nil
+		return Answer{Sheet: &sheet, Named: titles, Gone: gone}, nil
 	},
 }
 
@@ -130,10 +131,10 @@ cairn timesheet add 3 --on 2026-09-01 -- -30m`,
 		if err := on.Engine.addTime(n, day, in.Given["time"]); err != nil {
 			return Answer{}, err
 		}
-		sheet, titles, err := on.Engine.timed(day, day)
+		sheet, titles, gone, err := on.Engine.timed(day, day)
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Sheet: &sheet, Named: titles}, nil
+		return Answer{Sheet: &sheet, Named: titles, Gone: gone}, nil
 	},
 }

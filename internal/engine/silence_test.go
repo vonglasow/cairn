@@ -27,7 +27,7 @@ func TestTimed_saysAStoreItCouldNotRead(t *testing.T) {
 	broken := errors.New("disk on fire")
 	e.tasks = failingFind{tasks: e.tasks, err: broken}
 	day := time.Date(2026, 9, 29, 0, 0, 0, 0, time.Local)
-	if _, _, err := e.timed(day, day); !errors.Is(err, broken) {
+	if _, _, _, err := e.timed(day, day); !errors.Is(err, broken) {
 		t.Errorf("Timed = %v, want the store's failure", err)
 	}
 }

@@ -60,6 +60,17 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	sc.Step("^I ran `([^`]*)`$", func(line string) error { return w.Seed(line) })
 
 	sc.Step(`^the day "([^"]*)" gives task (\d+) "([^"]*)"$`, w.dayGives)
+	sc.Step(`^the day "([^"]*)" says nothing of task (\d+)$`, func(day string, n int) error {
+		if err := w.ItSucceeded(); err != nil {
+			return err
+		}
+		for _, l := range w.dayBlock(day) {
+			if fields := strings.Fields(l); len(fields) > 0 && fields[0] == fmt.Sprintf("#%d", n) {
+				return fmt.Errorf("the day %s still says %q", day, l)
+			}
+		}
+		return nil
+	})
 
 	sc.Step(`^a store from before the time spent was read from the trace$`, w.aStoreBeforeTheTimeSpentWasReadFromTheTrace)
 	sc.Step(`^a store whose task 1 was in focus from 07:00 to 08:30 UTC on 2026-09-29$`, func() error {

@@ -93,7 +93,7 @@ func OfReview(o objective.Objective, under []task.Task, p domain.Progress, in ob
 }
 
 func (e *Engine) periodOf(under []task.Task, first, last time.Time) (objective.Period, error) {
-	sheet, _, err := e.timed(first, last)
+	sheet, _, _, err := e.timed(first, last)
 	if err != nil {
 		return objective.Period{}, err
 	}

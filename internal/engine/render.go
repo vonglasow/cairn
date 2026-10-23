@@ -29,7 +29,7 @@ func rendered(op Operation, a Answer) string {
 	case Config:
 		return configText(*a.Config)
 	case Timesheet:
-		return trace.SheetText(*a.Sheet, a.Named)
+		return trace.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
 	case Review:
 		return objective.Report(*a.Objective, a.Progress, reviewOf(a.Under), *a.Period)
 	case Focus:
@@ -191,4 +191,15 @@ func appliedText(made []string) string {
 		fmt.Fprintf(&out, "applied %q\n", name)
 	}
 	return out.String()
+}
+
+func namedAsShown(titles map[int]string, gone map[int]bool) map[int]string {
+	shown := make(map[int]string, len(titles))
+	for number, title := range titles {
+		shown[number] = title
+		if gone[number] {
+			shown[number] = title + deletedMark
+		}
+	}
+	return shown
 }

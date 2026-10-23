@@ -58,15 +58,16 @@ type TimesheetTask struct {
 	Title              string `json:"title"`
 	Minutes            int    `json:"minutes"`
 	LeftOpenAtMidnight bool   `json:"left_open_at_midnight"`
+	Deleted            bool   `json:"deleted,omitempty" jsonschema:"the task was deleted, keeping its time; its title is the one it went with"`
 }
 
-func ofSheet(s trace.Sheet, titles map[int]string) Timesheet {
+func ofSheet(s trace.Sheet, titles map[int]string, gone map[int]bool) Timesheet {
 	days := make([]TimesheetDay, 0, len(s.Days))
 	for _, d := range s.Days {
 		day := TimesheetDay{Day: domain.FormatDay(d.Day), Minutes: int(d.Total.Minutes()), Tasks: []TimesheetTask{}}
 		for _, w := range d.Tasks {
 			day.Tasks = append(day.Tasks, TimesheetTask{Number: w.Task, Title: titles[w.Task],
-				Minutes: int(w.Took.Minutes()), LeftOpenAtMidnight: w.LeftOpen})
+				Minutes: int(w.Took.Minutes()), LeftOpenAtMidnight: w.LeftOpen, Deleted: gone[w.Task]})
 		}
 		days = append(days, day)
 	}
@@ -159,7 +160,7 @@ func Of(op Operation, a Answer) any {
 	case Config:
 		return *a.Config
 	case Timesheet:
-		return ofSheet(*a.Sheet, a.Named)
+		return ofSheet(*a.Sheet, a.Named, a.Gone)
 	case Review:
 		return OfReview(*a.Objective, a.Under, a.Progress, *a.Period)
 	case Focus:

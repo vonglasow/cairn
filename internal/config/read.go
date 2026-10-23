@@ -37,6 +37,15 @@ var ErrNotTOML = errors.New("not a file cairn can make sense of")
 // ErrArchive is returned when the file counts the days archiving waits for from something that is not a day, or in periods of no day at all.
 var ErrArchive = errors.New("archiving counts from a day, written 2026-10-21, in periods of one day or more")
 
+// ErrTime is returned when the file says a deleted task does something with its time other than keep it or take it.
+var ErrTime = errors.New(`a deleted task's time is "kept" or "taken"`)
+
+// TimeKept and TimeTaken are what a deleted task may do with its time: leave it on the sheet, or take it with it.
+const (
+	TimeKept  = "kept"
+	TimeTaken = "taken"
+)
+
 // ErrFocus is returned when the file says a focus session lasts something that is not a duration.
 var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
 
@@ -64,6 +73,7 @@ type Places struct {
 	archiveStart string
 	archiveDays  int
 	focusSession string
+	timeDeleted  string
 }
 
 type file struct {
@@ -73,6 +83,11 @@ type file struct {
 	Pages   *pages   `toml:"pages"`
 	Archive *archive `toml:"archive"`
 	Focus   *focus   `toml:"focus"`
+	Time    *timed   `toml:"time"`
+}
+
+type timed struct {
+	Deleted string `toml:"deleted"`
 }
 
 type focus struct {
@@ -138,6 +153,9 @@ func (p Places) Plugin() string { return p.plugin }
 func (p Places) Archive() (string, int, bool) {
 	return p.archiveStart, p.archiveDays, p.archiveDays > 0
 }
+
+// TimeDeleted is what a deleted task does with its time: TimeKept, unless the file says TimeTaken.
+func (p Places) TimeDeleted() string { return p.timeDeleted }
 
 // FocusSession is how long a focus session lasts before it asks to be renewed, written 1h, exactly as the file wrote it; nothing when the file does not say.
 func (p Places) FocusSession() string { return p.focusSession }
@@ -209,7 +227,12 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
+	deleted, err := f.Time.deleted()
+	if err != nil {
+		return Reading{path: path, err: err}, nil
+	}
 	answer := Places{
+		timeDeleted:  deleted,
 		focusSession: f.Focus.session(),
 		archiveStart: start,
 		archiveDays:  days,
@@ -323,4 +346,14 @@ func (f *focus) session() string {
 		return ""
 	}
 	return f.Session
+}
+
+func (t *timed) deleted() (string, error) {
+	if t == nil || t.Deleted == "" {
+		return TimeKept, nil
+	}
+	if t.Deleted != TimeKept && t.Deleted != TimeTaken {
+		return "", fmt.Errorf("time.deleted %q: %w", t.Deleted, ErrTime)
+	}
+	return t.Deleted, nil
 }

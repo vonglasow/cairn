@@ -1183,6 +1183,18 @@ Feature: The desktop board
       And I click the card "Write the spec" on the time page
       Then the card "Write the spec" is chosen
 
+    @gui-a-deleted-tasks-time-says-so
+    Scenario: the time of a deleted task says it was deleted, and a click on it says so
+      Given I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      And I deleted task 1
+      When I open the window
+      And I click the tab "TIME"
+      And I click the card "Write the spec (deleted)" on the time page
+      Then the window tells "task 1 was deleted"
+      And no card is chosen
+
     @gui-a-card-of-the-week-opens
     Scenario: a double-click on a card of the time page opens it, like on the board
       Given I added a task titled "Write the spec"

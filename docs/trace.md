@@ -115,6 +115,21 @@ one task after it is gone, and never quietly means another.
 The price is real: the trace cannot be a child that leaves with its task, and
 reading the history of a deleted task needs a way in that is not `task show`.
 
+**A deleted task keeps its time on the sheet, said to be deleted**
+(`@timesheet-a-deleted-task-keeps-its-time-and-says-it-is-gone`): its row
+carries the title its deletion took with it, `deleted` in the JSON and
+"(deleted)" after the title, and the window says "task 7 was deleted" rather
+than choose a card that is gone (`@gui-a-deleted-tasks-time-says-so`). For
+whoever would rather five minutes on a task made by mistake left with it,
+`[time] deleted = "taken"` makes every deletion take its time
+(`@timesheet-a-task-deleted-with-its-time-leaves-the-sheet`): the deletion
+writes `time: taken` last among what went with the task, and the sheet leaves
+every act of that task out. Its history is still there to read; only the
+sheet stops counting it, and only because the configuration asked. A task
+deleted before the key was set keeps its time. Taking the time back with one
+`time added` of less than nothing per day was weighed and left: as many acts
+as days, and a row at nothing left behind (cairn#122).
+
 ## What it replaces
 
 | what stops needing its own place | where it comes from instead |

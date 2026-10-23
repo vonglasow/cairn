@@ -732,3 +732,20 @@ func TestRead_saysHowLongAFocusSessionLasts(t *testing.T) {
 		t.Errorf("with no file, a focus session lasts %q", got)
 	}
 }
+
+func TestRead_saysWhatADeletedTaskDoesWithItsTime(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[time]\ndeleted = \"taken\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.TimeDeleted(); got != config.TimeTaken {
+		t.Errorf("a deleted task's time is %q, want taken", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.TimeDeleted(); got != config.TimeKept {
+		t.Errorf("with no file, a deleted task's time is %q, want kept", got)
+	}
+	if _, err := config.Read(writtenConfig(t, "[time]\ndeleted = \"gone\"\n"), silentEnv); !errors.Is(err, config.ErrTime) {
+		t.Errorf("err = %v, want ErrTime", err)
+	}
+}

@@ -32,4 +32,9 @@ time = true
 # Nothing is asked unless it is said.
 # [focus]
 # session = "1h"
+
+# What a deleted task does with its time: "kept" on the sheet, said to be
+# deleted, or "taken" with it, as though it had never been spent.
+# [time]
+# deleted = "kept"
 `

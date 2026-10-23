@@ -26,7 +26,13 @@ type Config struct {
 	PagesOff []string     `json:"pages_off,omitempty"`
 	Archive  *Archive     `json:"archive,omitempty"`
 	Focus    *FocusConfig `json:"focus,omitempty"`
+	Time     *TimeConfig  `json:"time,omitempty"`
 	Problem  string       `json:"problem,omitempty"`
+}
+
+// TimeConfig is what a deleted task does with its time, when the file says it takes it.
+type TimeConfig struct {
+	Deleted string `json:"deleted"`
 }
 
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it.
@@ -77,6 +83,9 @@ func (g *readingGate) Resolved(p config.Places) {
 	if start, days, ok := p.Archive(); ok {
 		g.config.Archive = &Archive{Start: start, Days: days}
 	}
+	if p.TimeDeleted() == config.TimeTaken {
+		g.config.Time = &TimeConfig{Deleted: config.TimeTaken}
+	}
 	if session := p.FocusSession(); session != "" {
 		g.config.Focus = &FocusConfig{Session: session}
 	}
@@ -126,6 +135,9 @@ func configText(c Config) string {
 		said += "\nnothing is archived on its own\n"
 	} else {
 		said += fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
+	}
+	if c.Time != nil {
+		said += "\ntime        a deleted task takes its time with it\n"
 	}
 	if c.Focus != nil {
 		said += fmt.Sprintf("\nfocus       asks to be renewed after %s\n", c.Focus.Session)

@@ -207,6 +207,20 @@ Now is the clock, unless `CAIRN_NOW` names another moment, written in RFC 3339:
 a scenario stands later to see a session grow, and the acts written meanwhile
 are written at that moment.
 
+## What a deleted task does with its time
+
+```toml
+[time]
+deleted = "taken"   # or "kept", what is done when it is not said
+```
+
+Kept, a deleted task's time stays on the sheet, said to be deleted; taken, it
+leaves with the task. See [trace](trace.md#the-trace-outlives-the-task). Any
+other value is refused naming `time.deleted`
+(`@config-what-a-deleted-task-does-with-its-time-is-one-of-two`), and
+`config show` says when it is taken
+(`@config-show-says-a-deleted-task-takes-its-time`).
+
 ## The environment names the same two places
 
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the

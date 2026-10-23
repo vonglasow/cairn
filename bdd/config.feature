@@ -266,6 +266,20 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "focus.session"
 
+  Rule: A deleted task takes its time with it only when the configuration says so
+
+    @config-show-says-a-deleted-task-takes-its-time
+    Scenario: config show says a deleted task takes its time with it
+      Given a deleted task takes its time with it
+      Then `cairn config show` says "time        a deleted task takes its time with it"
+
+    @config-what-a-deleted-task-does-with-its-time-is-one-of-two
+    Scenario: what a deleted task does with its time is refused unless kept or taken
+      Given the time of a deleted task is "gone"
+      When I run `cairn task list`
+      Then it fails
+      And it names "time.deleted"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-names-the-file-it-reads

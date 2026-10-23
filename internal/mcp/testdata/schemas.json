@@ -400,6 +400,21 @@
           ],
           "additionalProperties": false
         },
+        "time": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "deleted": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "deleted"
+          ],
+          "additionalProperties": false
+        },
         "problem": {
           "type": "string"
         }
@@ -5028,6 +5043,10 @@
                     },
                     "left_open_at_midnight": {
                       "type": "boolean"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "the task was deleted, keeping its time; its title is the one it went with"
                     }
                   },
                   "required": [
@@ -5115,6 +5134,10 @@
                     },
                     "left_open_at_midnight": {
                       "type": "boolean"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "the task was deleted, keeping its time; its title is the one it went with"
                     }
                   },
                   "required": [
