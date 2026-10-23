@@ -45,15 +45,8 @@ repos:
         entry: scripts/rewrote.sh go tool -modfile=tools/go.mod goimports -l -w
         language: system
         files: '\.go$'
-      # `cairn/test` imports testing outside a _test.go file, deliberately and
-      # with nowhere else to go. `make harness-check` is what guards it instead.
-      - id: no-go-testing
-        name: "Check files aren't using go's testing package"
-        entry: 'testing\.T'
-        language: pygrep
-        files: 'test_.*\.go$'
-        exclude: '^test/'
-      # Its configuration decides what it refuses, so changing it is judged too.
+      # Its configuration decides what it refuses, so changing it is judged too,
+      # depguard's rule that only a test imports testing among it.
       - id: golangci-lint
         name: golangci-lint
         entry: go tool -modfile=tools/go.mod golangci-lint run
@@ -105,8 +98,8 @@ repos:
         language: system
         pass_filenames: false
         files: '\.go$'
-      # The binary must not be made of the test harness. Cheap, and it is what
-      # replaced `no-go-testing` for `cairn/test` — see the target's comment.
+      # The binary must not be made of the test harness, the one place outside a
+      # _test.go file that may import testing. Cheap — see the target's comment.
       - id: harness-check
         name: the binary does not reach the harness
         entry: make harness-check

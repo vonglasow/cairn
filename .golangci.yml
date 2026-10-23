@@ -49,8 +49,8 @@ linters:
             # already carries here. Widened on purpose so a title can refuse to
             # be more than one line.
             - unicode
-            # Only reachable from _test.go: the `no-go-testing` hook refuses
-            # `testing` anywhere else, so allowing it here cannot leak into
+            # Only reachable from _test.go: the `testing` rule below refuses
+            # it anywhere else, so allowing it here cannot leak into
             # production code.
             - testing
 
@@ -110,8 +110,8 @@ linters:
             - strings
             - github.com/pelletier/go-toml/v2
             # Only reachable from _test.go: its tests sit in package
-            # config_test and import it back, and `no-go-testing` refuses
-            # `testing` anywhere else.
+            # config_test and import it back, and the `testing` rule below
+            # refuses `testing` anywhere else.
             - cairn/internal/config
             - strconv
             - testing
@@ -404,6 +404,16 @@ linters:
               desc: two surfaces do not reach each other
             - pkg: cairn/internal/gui
               desc: two surfaces do not reach each other
+
+        # What the binary is made of is never a test. The harness under test/
+        # is the one place outside a _test.go file that is one, deliberately and
+        # with nowhere else to go; `make harness-check` keeps the binary from
+        # reaching it.
+        testing:
+          files: ["$all", "!$test", "!**/test/**"]
+          deny:
+            - pkg: testing
+              desc: only a test, or the harness under test/, imports testing
 
     revive:
       rules:

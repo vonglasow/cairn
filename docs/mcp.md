@@ -361,10 +361,10 @@ one thing that cannot be reached without a real godog run: `test.Suite`
 describes the run, and each surface keeps the four lines that fail its own test
 when it does not pass.
 
-`no-go-testing` is told to leave `test/` alone, since it does import `testing`
-on purpose.
+depguard's `testing` rule, which refuses the import anywhere but a test, leaves
+`test/` alone, since it does import `testing` on purpose.
 
-What replaces that guard is narrower and truer to the worry behind it — not
+What guards `test/` instead is narrower and truer to the worry behind it — not
 "nothing imports testing", but "nothing the binary is made of imports the
 harness":
 

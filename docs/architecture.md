@@ -327,9 +327,9 @@ its own steps, and only what more than one of them claims lives there.
 Two consequences, both measured rather than expected:
 
 - It imports `testing` outside a `_test.go` file, because Go compiles a
-  package's test files only for that package. `no-go-testing` is told to leave
-  it alone, and `make harness-check` replaces it with the narrower thing that
-  worry was always about: `go list -deps ./cmd/cairn` must not reach
+  package's test files only for that package. depguard's `testing` rule, which
+  refuses the import anywhere but a test, leaves it alone, and `make
+  harness-check` adds the narrower thing that worry was always about: `go list -deps ./cmd/cairn` must not reach
   `cairn/test`.
 - It is measured like any other package. A package with no test of its own
   still appears in the coverage profile at 0%, so a harness nothing tested took

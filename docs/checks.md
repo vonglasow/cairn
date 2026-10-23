@@ -13,8 +13,7 @@ here has to be remembered.
 | `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files` | is the file well formed? |
 | `go-fmt`, `go-imports` | is it formatted the way Go formats? |
 | `shellcheck` | does a shell script hold up to static analysis? |
-| `no-go-testing` | does non-test code import `testing`? |
-| `golangci-lint` | does it hold up to static analysis, comments included? |
+| `golangci-lint` | does it hold up to static analysis, comments included — and does anything but a test import `testing`? |
 | `semgrep` | is there a known bad pattern, or a secret written into a file? |
 | `tested-check` | does every package have a test file at all? |
 | `harness-check` | is the binary free of the test harness? |
