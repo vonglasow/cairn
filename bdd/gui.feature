@@ -1061,6 +1061,20 @@ Feature: The desktop board
       And I drag the form from its heading 80 to the right and 40 down
       Then the form stands where it opened
 
+    @gui-the-form-moves-when-dragged-beside-its-heading
+    Scenario: the form moves when dragged from its heading's line, past the heading's words
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from its heading's line past its words 80 to the right and 40 down
+      Then the form stands 80 to the right and 40 lower than it opened
+
+    @gui-the-form-moves-when-dragged-beside-a-fields-name
+    Scenario: the form moves when dragged from a field's name line, past the name
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from the line naming "description" past its name 80 to the right and 40 down
+      Then the form stands 80 to the right and 40 lower than it opened
+
     @gui-the-form-stays-inside-the-window
     Scenario: a form dragged far stays wholly inside the window
       When I open the window

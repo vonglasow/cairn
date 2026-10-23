@@ -143,7 +143,12 @@ holds the text (`@gui-the-form-stays-when-its-text-is-dragged`). The form is
 held wholly inside the window (`@gui-the-form-stays-inside-the-window`). The
 place is kept by the window, not the form, so the next form opens where the
 last was left, until the window closes; it is written nowhere. A press that
-does not move past the grip is a click, as it was. Everything a form draws or
+does not move past the grip is a click, as it was. A text is where its words are,
+not the line it sits on: past the heading's words, or past a field's name on
+the line that names it, the form is taken (cairn#124,
+`@gui-the-form-moves-when-dragged-beside-its-heading`,
+`@gui-the-form-moves-when-dragged-beside-a-fields-name`); a field's input, and
+the trace beside, keep their whole box. Everything a form draws or
 reaches is placed from its panel, so moving the panel moves it all.
 
 **Cards keep a fixed height.** In the terminal that is what makes moving the

@@ -76,6 +76,11 @@ func (w Window) offersWide() int {
 	return wide
 }
 
+// WordsOf is the part of a box its words take: from its start, as wide as they are written at that size, never wider than the box.
+func WordsOf(m Measure, b Box, said string, size int) Box {
+	return Box{X: b.X, Y: b.Y, W: min(b.W, ends(m, said, size)), H: b.H}
+}
+
 func ends(m Measure, said string, size int) int {
 	edges := m(said, size)
 	return edges[len(edges)-1]

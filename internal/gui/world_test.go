@@ -1111,6 +1111,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^the form stands (\d+) to the right and (\d+) lower than it opened$`, func(right, down int) error {
 		return w.formStandsBy(right, down)
 	})
+	sc.Step(`^I drag the form from its heading's line past its words (\d+) to the right and (\d+) down$`, func(right, down int) error {
+		head := Heading(w.w.formPanel())
+		from := Point{X: head.X + ends(w.w.measured(), HeadsOn(w.w, OnForm), heading) + 20, Y: head.Y + head.H/2}
+		if _, on := w.w.offerAt(from); on {
+			return fmt.Errorf("the point %v past the heading is an offer", from)
+		}
+		return w.dragForm(from, right, down)
+	})
+	sc.Step(`^I drag the form from the line naming "([^"]*)" past its name (\d+) to the right and (\d+) down$`, func(name string, right, down int) error {
+		fields := w.w.form.Fields()
+		for i, field := range fields {
+			if field.Name != name {
+				continue
+			}
+			named, _, _ := FormPlace(w.w.formBox(), fields, i)
+			from := Point{X: named.X + named.W - 4, Y: named.Y + named.H/2}
+			if _, on := w.w.offerAt(from); on {
+				return fmt.Errorf("the point %v past the name %q is an offer", from, name)
+			}
+			return w.dragForm(from, right, down)
+		}
+		return fmt.Errorf("no field of the form is named %q", name)
+	})
 	sc.Step(`^the form stands where it opened$`, func() error { return w.formStandsBy(0, 0) })
 	sc.Step(`^the form stands wholly inside the window$`, func() error {
 		box := w.w.formPanel()

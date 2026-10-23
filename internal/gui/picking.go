@@ -122,7 +122,7 @@ func (w Window) textAt(p Point) bool {
 	if _, on := w.fieldAt(p); on {
 		return true
 	}
-	if Heading(w.formPanel()).In(p) {
+	if WordsOf(w.measured(), Heading(w.formPanel()), HeadsOn(w, OnForm), heading).In(p) {
 		return true
 	}
 	for _, head := range FormHeads(w.formBox(), w.form.Fields()) {

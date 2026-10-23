@@ -274,7 +274,7 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	for i := range fields {
 		name, value, rows := FormPlace(box, fields, i)
 		value.H = lineHigh * rows
-		if name.In(p) || value.In(p) {
+		if WordsOf(w.measured(), name, fields[i].Name, small).In(p) || value.In(p) {
 			return i, true
 		}
 	}
