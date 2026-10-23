@@ -64,6 +64,11 @@ one step ticked reads "0 of 1 tasks and 1 of 1 steps are done", half of the
 objective (`@objective-progress-counts-steps`). Counting the task alone would
 leave an objective at nothing while the work under it was half done; counting
 its steps as tasks would say there were more tasks than anybody wrote.
+The boards' objective cards did just that until cairn#120 — "1/5" over two
+tasks and three steps, beside a list of two — and now write them apart the
+same way, shorter: "0/1 · 1/2 steps", the share after it counting both
+(`@gui-an-objective-card-counts-steps-apart`,
+`@tui-an-objective-card-counts-steps-apart`).
 
 It replaces the rule that a sub-task served no objective: a sub-task was a task
 that could have been given one, and had to be refused it; a step cannot carry

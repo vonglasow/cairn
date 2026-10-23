@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cairn/internal/domain"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 )
@@ -93,5 +94,15 @@ func TestAGoalSaysTheTimeSpentOnTheTasksServingIt(t *testing.T) {
 	}
 	if got := found.Goals[1].Spent; got != 30*time.Minute {
 		t.Errorf("objective 2 says %v spent, want 30m", got)
+	}
+}
+
+func TestAGoalCountsTheStepsOfItsTasksApart(t *testing.T) {
+	g := Goal{Done: 1, Total: 3, Steps: domain.Tally{Total: 2, Done: 1}}
+	if got := g.Counted(); got != "0/1 · 1/2 steps" {
+		t.Errorf("Counted = %q, want the task and its steps apart", got)
+	}
+	if got := (Goal{Done: 1, Total: 2}).Counted(); got != "1/2" {
+		t.Errorf("Counted with no step = %q, want 1/2", got)
 	}
 }

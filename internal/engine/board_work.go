@@ -58,6 +58,7 @@ type Goal struct {
 	Estimate    string
 	Done        int
 	Total       int
+	Steps       domain.Tally
 	Spent       time.Duration
 	Said        []string
 }
@@ -194,6 +195,7 @@ func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) 
 		Estimate:    told.Estimate,
 		Done:        sofar.Done(),
 		Total:       sofar.Total(),
+		Steps:       sofar.Steps,
 		Said:        objective.Said(o),
 	}, nil
 }

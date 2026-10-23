@@ -39,8 +39,14 @@ func ReachesGoal(g Goal, query string) bool {
 	return Reaches(g.Said, query)
 }
 
-// Counted is how much of an objective is done, the way a board writes it.
-func (g Goal) Counted() string { return strconv.Itoa(g.Done) + "/" + strconv.Itoa(g.Total) }
+// Counted is how much of an objective is done, the way a board writes it: its tasks, then the steps of its tasks apart, a step being no task.
+func (g Goal) Counted() string {
+	tasks := strconv.Itoa(g.Done-g.Steps.Done) + "/" + strconv.Itoa(g.Total-g.Steps.Total)
+	if g.Steps.Total == 0 {
+		return tasks
+	}
+	return tasks + " · " + strconv.Itoa(g.Steps.Done) + "/" + strconv.Itoa(g.Steps.Total) + " steps"
+}
 
 // Percent is the share of it done, by the domain's rule: 0 and 100 are kept for nothing done and everything done.
 func (g Goal) Percent() int {

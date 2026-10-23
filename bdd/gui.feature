@@ -2521,6 +2521,16 @@ Feature: The desktop board
       Then the card for objective 1 says "1/2"
       And the card for objective 1 says "50%"
 
+    @gui-an-objective-card-counts-steps-apart
+    Scenario: an objective counts the steps of its tasks apart from its tasks
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      And I added the step "Read the ADR" to task 1, done
+      And I added the step "Write it" to task 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the card for objective 1 says "0/1 · 1/2 steps"
+
     @gui-an-objective-card-says-the-time-spent
     Scenario: an objective's card says the time spent on the tasks serving it
       Given I added an objective titled "Ship the desktop board"
