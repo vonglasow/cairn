@@ -200,7 +200,7 @@ func helping() []Said {
 		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a trace"},
 		{Key: "wheel on a trace", Means: "scroll it — the bar beside it can be pulled too"},
 		{Key: "on an open task", Means: "every text can be held: drag across it, double-click a word, triple-click a paragraph — ⌘A holds it all, ⌘C copies"},
-		{Key: "drag a form", Means: "move it, from anywhere in it that holds no text — it keeps that place while the window is open"},
+		{Key: "drag a form", Means: "move it, from anywhere in it that holds no text — it keeps that place until it closes"},
 		{Key: "^D ^U on an open task", Means: "walk its description half a box at a time — the wheel and the bar do too"},
 		{Key: "e", Means: "edit what is chosen, on the board or on an open task"},
 		{Key: "f", Means: "focus or unfocus what is chosen — several in focus at once is fine"},

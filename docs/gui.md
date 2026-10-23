@@ -140,9 +140,10 @@ inside the form on nothing written — no field, no heading, no offer, no text
 of its trace — takes the form by its ground, and the pointer carries it
 (`@gui-the-form-moves-when-dragged-by-its-ground`); a press on a text still
 holds the text (`@gui-the-form-stays-when-its-text-is-dragged`). The form is
-held wholly inside the window (`@gui-the-form-stays-inside-the-window`). The
-place is kept by the window, not the form, so the next form opens where the
-last was left, until the window closes; it is written nowhere. A press that
+held wholly inside the window (`@gui-the-form-stays-inside-the-window`). A form
+keeps its place until it is closed; the next one opens where a form opens,
+whatever the last was moved to (cairn#125, `@gui-a-form-reopens-where-it-belongs`),
+and the place is written nowhere. A press that
 does not move past the grip is a click, as it was. A text is where its words are,
 not the line it sits on: past the heading's words, or past a field's name on
 the line that names it, the form is taken (cairn#124,

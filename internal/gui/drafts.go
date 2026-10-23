@@ -95,7 +95,7 @@ func (w Window) droppingDraft() Window {
 }
 
 func (w Window) startingNew() Window {
-	w.form = adding(w.tab, w.addingOn())
+	w.form, w.formMoved = adding(w.tab, w.addingOn()), Point{}
 	w = w.beside()
 	if w.form.ForObjective {
 		w.screen = OnForm
@@ -151,6 +151,6 @@ func (w Window) Closing() Window {
 func (w Window) startingLinked() Window {
 	number := w.chosen
 	w = w.startingNew()
-	w.form = asOpened(Form{Adding: true, fields: engine.LinkedTaskFields(number)})
+	w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.LinkedTaskFields(number)}), Point{}
 	return w
 }

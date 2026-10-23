@@ -1135,6 +1135,15 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return fmt.Errorf("no field of the form is named %q", name)
 	})
 	sc.Step(`^the form stands where it opened$`, func() error { return w.formStandsBy(0, 0) })
+	sc.Step(`^the form stands where a form opens$`, func() error {
+		if w.w.Screen() != OnForm {
+			return fmt.Errorf("no form is open: the window is on %v", w.w.Screen())
+		}
+		if now, opens := w.w.formPanel(), w.w.formOpensIn(); now != opens {
+			return fmt.Errorf("the form stands at %v, a form opens at %v", now, opens)
+		}
+		return nil
+	})
 	sc.Step(`^the form stands wholly inside the window$`, func() error {
 		box := w.w.formPanel()
 		if box.X < 0 || box.Y < 0 || box.X+box.W > w.w.width || box.Y+box.H > w.w.height {

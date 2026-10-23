@@ -1075,6 +1075,15 @@ Feature: The desktop board
       And I drag the form from the line naming "description" past its name 80 to the right and 40 down
       Then the form stands 80 to the right and 40 lower than it opened
 
+    @gui-a-form-reopens-where-it-belongs
+    Scenario: a form moved then closed opens again where a form opens
+      When I open the window
+      And I press "cmd+n"
+      And I drag the form from a place that holds no text 80 to the right and 40 down
+      And I press "esc"
+      And I press "cmd+n"
+      Then the form stands where a form opens
+
     @gui-the-form-stays-inside-the-window
     Scenario: a form dragged far stays wholly inside the window
       When I open the window

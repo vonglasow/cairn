@@ -316,12 +316,12 @@ func (w Window) Edit() Window {
 	}
 	if w.chosenGoal {
 		if g, found := w.snap.Goal(w.chosen); found {
-			w.form, w.screen = editingGoal(g), OnForm
+			w.form, w.screen, w.formMoved = editingGoal(g), OnForm, Point{}
 		}
 		return w.beside()
 	}
 	if c, found := w.snap.Card(w.chosen); found {
-		w.form, w.screen = editing(c), OnForm
+		w.form, w.screen, w.formMoved = editing(c), OnForm, Point{}
 	}
 	return w.beside()
 }
