@@ -169,7 +169,7 @@ func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 	if at < 0 {
 		t.Fatalf("the bar offers %v, and none of them edits", w.Offers())
 	}
-	box := OfferAt(w.Layout(), at)
+	box := w.BarOffers()[at]
 	w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	if w.Screen() != OnForm {
 		t.Fatalf("clicking Edit left the window on %v", w.Screen())

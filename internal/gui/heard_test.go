@@ -242,7 +242,7 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 	if offer < 0 {
 		t.Fatalf("the bar offers %v", w.Offers())
 	}
-	box := OfferAt(w.Layout(), offer)
+	box := w.BarOffers()[offer]
 	on := f32.Pt(float32(box.X+box.W/2), float32(box.Y+box.H/2))
 
 	w, _, _ = frames(t, w,
