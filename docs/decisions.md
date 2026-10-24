@@ -24,6 +24,8 @@ already said why not.
 | no task hangs under another; a task is split into steps, a title and a tick each | a sub-task was a whole task for what was most often one line to tick, and its parent and sisters ran through every rule and every surface | [steps.md](steps.md#why-steps-replaced-sub-tasks) |
 | a link between two tasks has no kind and no direction; a task done is never reopened, a linked task is opened | a kind would say again what a label already says, and reopening a task rewrites the period, the time and the story it was finished in | [links.md](links.md) |
 | no `task next` | what it would answer is already asked plainly — `--due-before`, `--state todo`, `task focus` — and choosing among them is the person's order, which cairn does not override | this page |
+| no follow-up day and no person awaited on a task watched | its `because` says who, its deadline says when, and both boards already mark a deadline passed | [blocking.md](blocking.md#three-words-for-stopped-not-one) |
+| no ticket field; a ticket is named in the title or the description | the search reaches both, and a link is between two tasks, never to a place outside cairn | [links.md](links.md) |
 
 ## What is remembered, and what is not
 
@@ -33,6 +35,7 @@ already said why not.
 | no undo, and no putting a deleted task back | reading and undoing are two different asks; the history makes it possible to work out, nothing does it | [trace.md](trace.md#deliberately-not-here-yet) |
 | a deletion keeps what the task held, whole, in its last act, and nothing purges it | the history of a task is the reason the trace exists, and a deletion that kept nothing made even putting it back by hand impossible; a purge — `trace purge`, a task named, `--yes` — is built the day something written by mistake has to go, not before. Until then, what must not be kept is not written | [trace.md](trace.md#a-deletion-writes-down-what-went-with-it) |
 | the timesheet gives the hours raw, by day and task | what a good day looks like is a judgement; grouping by objective or label was not asked for | [trace.md](trace.md#deliberately-not-here-yet) |
+| no stand-up or weekly report in cairn | the trace (`trace list --since`) and the timesheet (`timesheet show --since --until`) already hand an agent every fact one would hold; writing it up is the /daily and /weekly skills', and the same report in two places is one too many | [trace.md](trace.md#deliberately-not-here-yet) |
 | cairn says where a task's notes go and never looks there | a cairn that read them would compete with the harness it plugs into; counting the notes is looking | [context.md](context.md#it-never-looks-so-there-is-nothing-here-that-can-fail) |
 
 ## The store

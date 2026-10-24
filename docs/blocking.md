@@ -23,6 +23,18 @@ of vocabulary bought against one lost question.
 Their place in the reading order is in [ordering.md](ordering.md): after the
 three you can act on, before what is history.
 
+**A task watched is followed up with what it already carries.** Who or what
+it waits on is its `because`; the day to look again is its deadline, which
+both boards write in red once it has passed; what is due a look today is
+`task list --state watching --due-before 2026-10-24`, on that day.
+
+```sh
+cairn task edit 7 --state watching --because "Bob, for the review" --deadline 2026-10-28
+```
+
+A follow-up day and a person awaited, as fields of their own, were weighed on
+2026-10-24 and left out: they would have said again what these two say.
+
 ## Two kinds of blocker, two flags
 
 A task is stopped by another task, or by something that is not in cairn at all.
