@@ -69,8 +69,22 @@ func (w *versionWorld) binaries(version string, systems ...string) error {
 
 func root() string { return filepath.Join("..", "..") }
 
+// apart runs a program for a scenario outside the repository being committed:
+// a hook runs the suite with GIT_INDEX_FILE, GIT_DIR and the like naming the
+// commit under way, and a git a scenario ran inherited them — its `git add .`
+// in a repository of its own wrote into that commit's index, and the commit
+// held the scenario's two scripts instead of the tree.
+func apart(run *exec.Cmd) *exec.Cmd {
+	for _, v := range os.Environ() {
+		if !strings.HasPrefix(v, "GIT_") {
+			run.Env = append(run.Env, v)
+		}
+	}
+	return run
+}
+
 func command(dir, name string, args ...string) error {
-	run := exec.Command(name, args...)
+	run := apart(exec.Command(name, args...))
 	run.Dir = dir
 	if out, err := run.CombinedOutput(); err != nil {
 		return fmt.Errorf("%s %v: %w\n%s", name, args, err, out)
@@ -314,7 +328,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^I ask what changed, as version "([^"]*)"$`, func(version string) error {
-			said, err := exec.Command("bash", filepath.Join(w.repo, "scripts", "changelog.sh"), version).Output()
+			said, err := apart(exec.Command("bash", filepath.Join(w.repo, "scripts", "changelog.sh"), version)).Output()
 			w.out = test.Result{Stdout: string(said)}
 			return err
 		})
@@ -361,7 +375,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^I make a release there$`, func() error {
-			run := exec.Command("bash", filepath.Join(w.repo, "scripts", "release.sh"))
+			run := apart(exec.Command("bash", filepath.Join(w.repo, "scripts", "release.sh")))
 			run.Dir = w.repo
 			out, err := run.CombinedOutput()
 			w.out = test.Result{Stderr: string(out), Code: exitOK}
@@ -379,7 +393,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^no tag was made$`, func() error {
-			tags, err := exec.Command("git", "-C", w.repo, "tag").Output()
+			tags, err := apart(exec.Command("git", "-C", w.repo, "tag")).Output()
 			if err != nil {
 				return err
 			}
