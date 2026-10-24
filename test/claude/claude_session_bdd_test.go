@@ -22,6 +22,7 @@ import (
 const (
 	idleSeconds = 1
 	settle      = 1500 * time.Millisecond
+	letGoAtMost = 30 * time.Second
 )
 
 var (
@@ -54,6 +55,7 @@ type sessionWorld struct {
 	tasks  int
 	said   string
 	failed error
+	waits  string
 }
 
 func (w *sessionWorld) reset() {
@@ -67,7 +69,23 @@ func (w *sessionWorld) reset() {
 		"CAIRN_STORE="+filepath.Join(home, "cairn.db"),
 		"CAIRN_NOTES="+w.notes,
 		"CAIRN_IDLE_SECONDS="+strconv.Itoa(idleSeconds),
+		"TMPDIR="+home,
 	)
+	w.waits = home
+}
+
+// idleOver waits out the delay a session's answer starts, then for the hook's
+// wait to end: letting go runs cairn in the background, which a machine busy
+// with every other suite can take seconds to finish, so a fixed margin read
+// the focus before it was let go.
+func (w *sessionWorld) idleOver(session string) error {
+	time.Sleep(time.Duration(idleSeconds) * time.Second)
+	for deadline := time.Now().Add(letGoAtMost); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		if waiting, _ := filepath.Glob(filepath.Join(w.waits, "cairn-idle-"+session+".*")); len(waiting) == 0 {
+			return nil
+		}
+	}
+	return fmt.Errorf("session %q still waits %v after its idle delay", session, letGoAtMost)
 }
 
 func (w *sessionWorld) cairn(args ...string) (string, error) {
@@ -287,8 +305,7 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		})
 		sc.When(`^session "([^"]*)" answers and no message follows within the idle delay$`, func(session string) error {
 			w.event(session, "Stop")
-			time.Sleep(time.Duration(idleSeconds)*time.Second + settle)
-			return nil
+			return w.idleOver(session)
 		})
 		sc.When(`^session "([^"]*)" answers and a message follows within the idle delay$`, func(session string) error {
 			w.event(session, "Stop")
