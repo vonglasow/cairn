@@ -475,7 +475,7 @@ deletes it at once through a `step delete` of its own, and `esc` keeps it
 (`@tui-a-step-is-deleted-once-agreed`,
 `@tui-a-step-is-kept-when-its-delete-is-cancelled`). Up and down used to walk
 to the task above and below from an open task, which was pointless inside a
-task (cairn#105).
+task.
 
 **An open task follows what is done to it elsewhere.** The open task is drawn
 from each reading the beat brings (`@tui-an-open-task-shows-a-step-added-elsewhere`),
@@ -485,7 +485,7 @@ changed as they typed it and taking every other one from the store, with the
 keyboard left on the field it was on
 (`@tui-a-form-keeps-what-was-typed-when-its-task-changes-elsewhere`). A reading
 used to close the form whatever brought it, so a change made by an agent threw
-away what was being typed (cairn#108).
+away what was being typed.
 
 **The steps of a task are written in its form**, in the `steps` field, one line
 each — `[x] Relire l'ADR`. Saving writes them
@@ -600,7 +600,7 @@ label was impossible on either board.
 The counts in the headers are the counts of what matched, and the foot says how
 much of the store that is. Typing narrows as you go.
 
-**`⇧F` filters the board by what a task carries** (cairn#59): its column, its
+**`⇧F` filters the board by what a task carries**: its column, its
 priority, a label, an objective, a day it is due by — today, in a week, in a
 month. The foot becomes the five filters, `←→` choosing one and `↑↓` walking its
 values, each opening on `any`; the board narrows as they move, the way the
@@ -720,7 +720,7 @@ advancement**, counted from the columns of the tasks that serve it. That is why
 the bar is the headline — it is the only information an objective has that
 nothing else does. Beside the count, faint, the card says the time spent on the
 tasks serving it, archived ones included, as `objective show` does
-(`@tui-an-objective-card-says-the-time-spent`, cairn#54).
+(`@tui-an-objective-card-says-the-time-spent`).
 
 Same card, same six lines, same rules. The state is a glyph on the card rather
 than a section heading, so there are no sections at all: the order comes from the

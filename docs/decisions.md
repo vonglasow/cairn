@@ -85,9 +85,9 @@ already said why not.
 
 | decided | why, in one line | where |
 |---|---|---|
-| no decentralised store (IPFS), no CRDT library, no synced store file | public by default and undeletable; every CRDT engine fitting SQLite needs C; a file synced mid-write is a corrupt store | [sharing.md](sharing.md#study-1--a-decentralised-store-16) |
-| sharing, when it is needed, is the trace merged over a relay of the same binary | the trace is already a log, and a relay is where a deletion reaches everybody | [sharing.md](sharing.md#study-1--a-decentralised-store-16) |
-| no blockchain | colleagues of one employer trust each other, and a chain cannot forget what the GDPR says must be forgettable | [sharing.md](sharing.md#study-2--a-blockchain-17) |
+| no decentralised store (IPFS), no CRDT library, no synced store file | public by default and undeletable; every CRDT engine fitting SQLite needs C; a file synced mid-write is a corrupt store | [sharing.md](sharing.md#study-1--a-decentralised-store) |
+| sharing, when it is needed, is the trace merged over a relay of the same binary | the trace is already a log, and a relay is where a deletion reaches everybody | [sharing.md](sharing.md#study-1--a-decentralised-store) |
+| no blockchain | colleagues of one employer trust each other, and a chain cannot forget what the GDPR says must be forgettable | [sharing.md](sharing.md#study-2--a-blockchain) |
 
 ## The checks
 

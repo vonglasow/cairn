@@ -128,7 +128,7 @@ every act of that task out. Its history is still there to read; only the
 sheet stops counting it, and only because the configuration asked. A task
 deleted before the key was set keeps its time. Taking the time back with one
 `time added` of less than nothing per day was weighed and left: as many acts
-as days, and a row at nothing left behind (cairn#122).
+as days, and a row at nothing left behind.
 
 ## What it replaces
 
@@ -237,7 +237,7 @@ on its line: `(by sam, through gui)` (`@trace-says-who-acted`). It used to
 carry the surface alone, and only when it was the MCP server: the terminal,
 the board in the terminal and the window all wrote nothing, so they could not
 be told apart, and nothing at all said who — a person, a script, an agent, a
-Claude session (cairn#83).
+Claude session.
 
 The surface is `cli`, `tui`, `gui`, `mcp`, `migration` for what a change
 of the store's shape wrote, or `archive` for a task archived on its own

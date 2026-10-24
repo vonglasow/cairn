@@ -92,6 +92,26 @@ Feature: Version
     And the changelog says nothing of "say how"
     And the changelog says, under "v0.1.0", "begin" among the features
 
+  @version-a-commit-replaces-another-of-the-same-version
+  Scenario: a commit that replaces another of the same version is said in its place
+    Given a repository on a branch called "main"
+    And a version "v0.1.0" made there
+    And the commits "feat(focus): let go at its last use"
+    And the commit "fix(focus): let go only when blocked", replacing "feat(focus): let go at its last use"
+    When I ask what changed, as version "v0.2.0"
+    Then the changelog says, under "v0.2.0", "let go only when blocked" among the features
+    And the changelog says nothing of "at its last use"
+
+  @version-a-commit-replacing-one-already-out-is-said-as-what-it-is
+  Scenario: a commit that replaces one of a version already out leaves that version's notes as they were
+    Given a repository on a branch called "main"
+    And the commits "feat(focus): let go at its last use"
+    And a version "v0.1.0" made there
+    And the commit "fix(focus): let go only when blocked", replacing "feat(focus): let go at its last use"
+    When I ask what changed, as version "v0.2.0"
+    Then the changelog says, under "v0.2.0", "let go only when blocked" among the fixes
+    And the changelog says, under "v0.1.0", "let go at its last use" among the features
+
   @version-sums-kept
   Scenario: the checksums of every archive of a version are kept beside each other
     Given the binary archives of version "v9.9.9" for macOS and Linux, on arm and on Intel

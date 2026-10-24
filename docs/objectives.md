@@ -64,7 +64,7 @@ one step ticked reads "0 of 1 tasks and 1 of 1 steps are done", half of the
 objective (`@objective-progress-counts-steps`). Counting the task alone would
 leave an objective at nothing while the work under it was half done; counting
 its steps as tasks would say there were more tasks than anybody wrote.
-The boards' objective cards did just that until cairn#120 — "1/5" over two
+The boards' objective cards used to do just that — "1/5" over two
 tasks and three steps, beside a list of two — and now write them apart the
 same way, shorter: "0/1 · 1/2 steps", the share after it counting both
 (`@gui-an-objective-card-counts-steps-apart`,
@@ -86,7 +86,7 @@ backwards every time somebody tidied up.
 ## The time spent on it, and what is left of it
 
 An objective was written up by hand to be reviewed — "Temps passé sur #1 :
-71h40m" in a description — because nothing said it (cairn#54). `objective show`
+71h40m" in a description — because nothing said it. `objective show`
 now says both, from its tasks:
 
 - **time spent** adds the time of every task serving it, archived ones

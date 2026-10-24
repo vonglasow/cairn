@@ -327,6 +327,15 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 
+		sc.Step(`^the commit "([^"]*)", replacing "([^"]*)"$`, func(message, replaced string) error {
+			hash, err := apart(exec.Command("git", "-C", w.repo, "log", "--format=%h", "--fixed-strings", "--grep", replaced)).Output()
+			if err != nil || strings.TrimSpace(string(hash)) == "" {
+				return fmt.Errorf("no commit says %q: %w", replaced, err)
+			}
+			return command(w.repo, "git", "-c", "user.name=t", "-c", "user.email=t@t",
+				"commit", "-q", "--allow-empty", "-m", message, "-m", "Replaces: "+strings.TrimSpace(string(hash)))
+		})
+
 		sc.Step(`^I ask what changed, as version "([^"]*)"$`, func(version string) error {
 			said, err := apart(exec.Command("bash", filepath.Join(w.repo, "scripts", "changelog.sh"), version)).Output()
 			w.out = test.Result{Stdout: string(said)}
@@ -517,5 +526,5 @@ func (w *versionWorld) changelogSection(version, heading string) (string, error)
 }
 
 func TestAcceptance_Version_SaysWhatChangedAndKeepsEverySum(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-archive-says-what-changed,@version-sums-kept")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-archive-says-what-changed,@version-a-commit-replaces-another-of-the-same-version,@version-a-commit-replacing-one-already-out-is-said-as-what-it-is,@version-sums-kept")
 }

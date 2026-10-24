@@ -25,7 +25,7 @@ not a sister, a sub-task that could not serve an objective and had to be
 refused one, a sweep that counted sub-tasks while another did not, a search
 that answered the sub-task on the command line and its parent on the boards.
 And the boards never showed sub-tasks as cards anyway: they were lines of their
-parent's form already. Decided with the owner on 2026-10-16 (cairn#91): what
+parent's form already. Decided with the owner on 2026-10-16: what
 the usage had settled on became the model, and the rest went.
 
 What was given up, said plainly: a piece of a task can no longer be focused,
@@ -67,7 +67,7 @@ the act that saves the task. See [ordering.md](ordering.md#a-tasks-steps-are-wri
 Two acts on a board do not wait for the form: a tick, and a delete. A step
 chosen and deleted with a delete key goes at once, once agreed, through a
 `step delete` of its own, the way the command line deletes one — in the
-window's form, and on the terminal's open task (cairn#105).
+window's form, and on the terminal's open task.
 
 ## Done with a step still open
 

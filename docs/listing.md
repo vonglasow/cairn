@@ -328,7 +328,7 @@ either board.
 
 **The boards filter by the same narrowing.** Beside the search, both boards
 offer the closed set a listing narrows by — column, priority, label, objective,
-a day due by — as filters walked through their values (cairn#59). They narrow
+a day due by — as filters walked through their values. They narrow
 what the board already holds, in memory, but by the narrowing `task list`
 builds from the same flags (`engine.Filters.Kept`, through `keeping`), told to
 each card instead of to SQL: one rule, read twice.

@@ -250,7 +250,7 @@ session after an upgrade loads the new plugin — the session that rewrote it
 still runs the one it started with. Nothing is written where nobody wrote a
 plugin (`@plugin-not-written-unasked`); the folder the configuration names
 is followed as the one beside the store is
-(`@plugin-kept-current-where-the-configuration-says`). The same for every way cairn is installed (cairn#90).
+(`@plugin-kept-current-where-the-configuration-says`). The same for every way cairn is installed.
 
 The plugin declares the cairn MCP server, so that installing it is enough. A
 person who already declared one keeps theirs: Claude Code drops a plugin's

@@ -115,8 +115,7 @@ writes the plugin beside the store again whenever another version wrote it
 (`@plugin-kept-current`), and Claude Code reads a marketplace on a local folder
 in place, at the start of each session
 ([plugin loading](https://code.claude.com/docs/en/plugins/loading)). One way,
-whatever installed cairn: Homebrew, an archive on Linux or Windows, a build
-(cairn#90). Shipping the plugin in the archive for Homebrew to share under
+whatever installed cairn: Homebrew, an archive on Linux or Windows, a build. Shipping the plugin in the archive for Homebrew to share under
 `opt/cairn/share` was tried first and left: it covered brew alone, and gave a
 second place for the same plugin.
 
@@ -145,6 +144,16 @@ holds to their shape. Newest first, each version says what breaks, what is new
 and what was fixed — a `feat`, a `fix`, and either with a `!` or a
 `BREAKING CHANGE`. The rest, docs and tests and chores, is in the history for
 whoever wants it, and not in what somebody upgrading reads.
+
+**A commit that takes another's place says so**, with a line of its own in
+its body: `Replaces: <hash>`. When both are in the same version, the one
+replaced is not said at all and the one replacing it is said under the other's
+kind — a feature reworked by a fix before it went out is still a feature, and
+saying both said a thing was shipped and then taken back
+(`@version-a-commit-replaces-another-of-the-same-version`). When the one
+replaced went out in a version before, that version's notes are out already:
+the one replacing it is said as what it is
+(`@version-a-commit-replacing-one-already-out-is-said-as-what-it-is`).
 
 It goes two places: beside the binaries in the release, and into the
 annotated tag, which carries its own version's part — `git show v1.2.0` says

@@ -131,12 +131,11 @@ rules and no alternating tints, which would imply a meaning nobody gave them.
 The ground and its edge are skin tokens, checked for contrast with the others
 (`@gui-columns-stand-apart`).
 Once the head had an edge of its own, a name written from its corner read as
-pressed against it (cairn#118): each column's name is centred across its head,
+pressed against it: each column's name is centred across its head,
 seven pixels under the edge, at the size the band's lanes are named in
 (`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
 
-**A column, or a lane, is widened by dragging the gutter beside it**
-(cairn#126). The gutter is the gap between two columns, from the top of the
+**A column, or a lane, is widened by dragging the gutter beside it**. The gutter is the gap between two columns, from the top of the
 head to the foot of the column on its left — right of the backlog it runs
 beside the band too, since the band begins where the todo does — and the gap
 between two lanes of the band. Dragged, it gives the one on its left what it
@@ -153,19 +152,18 @@ columns as wide as each other (`@gui-columns-open-as-wide-as-each-other`). On
 the tasks page only; the pointer does not change shape over a
 gutter, since the window sets no cursor anywhere.
 
-**A form is moved by dragging it where it holds no text** (cairn#119). A press
+**A form is moved by dragging it where it holds no text**. A press
 inside the form on nothing written — no field, no heading, no offer, no text
 of its trace — takes the form by its ground, and the pointer carries it
 (`@gui-the-form-moves-when-dragged-by-its-ground`); a press on a text still
 holds the text (`@gui-the-form-stays-when-its-text-is-dragged`). The form is
 held wholly inside the window (`@gui-the-form-stays-inside-the-window`). A form
 keeps its place until it is closed; the next one opens where a form opens,
-whatever the last was moved to (cairn#125, `@gui-a-form-reopens-where-it-belongs`),
+whatever the last was moved to (`@gui-a-form-reopens-where-it-belongs`),
 and the place is written nowhere. A press that
 does not move past the grip is a click, as it was. A text is where its words are,
 not the line it sits on: past the heading's words, or past a field's name on
-the line that names it, the form is taken (cairn#124,
-`@gui-the-form-moves-when-dragged-beside-its-heading`,
+the line that names it, the form is taken (`@gui-the-form-moves-when-dragged-beside-its-heading`,
 `@gui-the-form-moves-when-dragged-beside-a-fields-name`); a field's input, and
 the trace beside, keep their whole box. Everything a form draws or
 reaches is placed from its panel, so moving the panel moves it all.
@@ -183,7 +181,7 @@ over as many lines as it needs and kept inside the window. A card whose title
 fits gets none. The cards keep their height, and the title is not lost to it.
 It stands just above the title, its text beginning where the title's does, so
 the eye goes from the cut words to the whole ones without a jump; placed above
-the card, it stood a line of number away from what it completes (cairn#123).
+the card, it stood a line of number away from what it completes.
 Where there is no room above, it goes just under the title. Scenarios:
 `@gui-a-cut-title-is-read-whole-under-the-pointer`,
 `@gui-a-title-that-fits-has-no-bubble`,
@@ -295,7 +293,7 @@ and the calendar walks its months, a notch a month
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
-**The board is filtered by what a task carries** (cairn#59). `⇧F`, the bar's
+**The board is filtered by what a task carries**. `⇧F`, the bar's
 Filter or the menu bar's opens the filters: column, priority, label, objective,
 and a day the work is due by — today, in a week, in a month. A line is chosen
 by the arrows or a click, its value walked by `←` `→` or a click, each opening
@@ -446,7 +444,7 @@ the three cannot disagree. Only the name explains: over what is being typed, an
 explanation would be in the way. The title has no name drawn, and none.
 
 **An explanation is the size of what it says, and shows what to type.**
-Amended 2026-10-16 (cairn#95). It was a box of three lines and 360 points for
+Amended 2026-10-16. It was a box of three lines and 360 points for
 words that mostly fill one — "the day it is due" — so it hid the field under it
 for nothing, and it said what a field is without saying how it is written. It
 is now as wide as its widest line and as high as its lines, and a field typed
@@ -667,8 +665,7 @@ nine tenths empty.
 dimmed by a veil (`Skin.Veil`), and its box is outlined twice over in the
 colour of what is chosen
 (`@gui-a-question-stands-out-from-what-is-behind-it`). It was drawn like a
-form, the same ground and the same edge, and over a form it blended into it
-(cairn#111).
+form, the same ground and the same edge, and over a form it blended into it.
 
 The question about a form is answered the way a hand leaving a form answers.
 `esc` again throws it away and `⏎` goes back to it (*Throw away* and *Back*):
@@ -752,7 +749,7 @@ entry somebody else wrote there is theirs and is left as it is
 (`@gui-an-entry-of-somebody-elses-is-kept`); cairn marks its own. But an entry
 of theirs that shows another icon hides the logo, which is how one written by
 hand on a KDE desktop, `Icon=view-list-details`, kept the logo out of sight
-with nothing saying why (cairn#109). So when the window opens and finds one,
+with nothing saying why. So when the window opens and finds one,
 it asks "Show cairn's logo on this desktop?" (`Settling`, `Hiding`): agreed,
 cairn writes its own entry over it
 (`@gui-an-entry-hiding-the-logo-is-replaced-once-agreed`); refused, the entry
@@ -883,9 +880,8 @@ system — the lines `cairn --version` prints, read from the same stamps
 
 **A line of the menu bar is offered when it can be done now.** The bar was
 one fixed list, every line there whatever was in sight, so Focus stood over
-the objectives and Edit with nothing chosen, and picking them did nothing
-(cairn#101). Each line now names the acts it does (`actsOf`), which the pages
-offer or not (`engine.Pages`, cairn#100), and `Doable` says whether it does
+the objectives and Edit with nothing chosen, and picking them did nothing. Each line now names the acts it does (`actsOf`), which the pages
+offer or not (`engine.Pages`), and `Doable` says whether it does
 something now: on the board, with what it acts on in sight — a card chosen to
 edit or delete, a task to focus or archive, another page to go to
 (`@gui-the-menu-offers-what-can-be-done-now`,
@@ -940,14 +936,13 @@ window (`Beat`, two seconds) a form that was changed, and holds what it held at
 the beat before, is saved where it stands and opened again over what it saved,
 read back from the store: the keyboard and the caret where they were, a step
 just added in its place, the steps taken still taken
-(`@gui-steps-taken-outlast-a-save`, cairn#114), and the trace beside it read again, since it
+(`@gui-steps-taken-outlast-a-save`), and the trace beside it read again, since it
 otherwise lacked the very act just saved
 (`@gui-a-form-that-saved-itself-shows-it`). Waiting for a beat with no typing
 keeps a save from landing in the middle of a word
 (`@gui-typing-holds-the-save-off`). A task being added is not: it is made when
 it is saved, by `⌘⏎`, `⌘S` or Save, and not before
-(`@gui-a-new-task-is-made-when-it-is-saved`). Amended 2026-10-16 (cairn#89,
-cairn#96): it used to be made at the first beat with a title, so its trace
+(`@gui-a-new-task-is-made-when-it-is-saved`). Amended 2026-10-16: it used to be made at the first beat with a title, so its trace
 filled with the acts of its making while it was still being thought about, and
 Cancel came too late, the task being already there. Now its trace stays empty
 until it is saved (`@gui-a-new-task-has-an-empty-trace`), and Cancel or `esc`
@@ -965,7 +960,7 @@ form (`@gui-clicking-off-a-new-task-saves-nothing`), which saves an edit but is
 not a decision to make a task, or by closing the window, which keeps the last
 keys too — it stays, and the next new task asks whether to pick it up or start
 afresh (`@gui-a-new-task-is-kept-as-a-draft`, `@gui-a-draft-can-be-left`,
-`@gui-a-saved-task-leaves-no-draft`). Amended 2026-10-16 (cairn#96): the first
+`@gui-a-saved-task-leaves-no-draft`). Amended 2026-10-16: the first
 answer to "Cancel came too late" gave up keeping the typing at all, and left
 `⌘Z` on a new form to bring back what was thrown away — the wrong way round on
 both counts. An edit's form keeps `⌘Z`; a new one has its draft instead. A form that saved itself has
@@ -1307,7 +1302,7 @@ line, `⌘A` holds the whole of the text last pressed in, and `⌘C` copies. The
 trace is one text, its lines joined by a line break, so a run dragged over
 several lines holds every one of them and copies them as they read
 (`@gui-a-run-of-the-trace-spans-its-lines`); each line used to be a text of
-its own, and a run could not leave the line it began on (cairn#106). `Readables` lists
+its own, and a run could not leave the line it began on. `Readables` lists
 every piece of it, once, laid out the way it is drawn, and what a pointer lands
 on and what is painted held are both worked out from it.
 
@@ -1332,8 +1327,7 @@ click does; in its tile, backspace takes a letter and nothing else
 (`@gui-a-step-in-edit-loses-a-letter-not-itself`). A click selects a step, and
 backspace or the forward delete on it asks "Delete the step “Draft”?", over
 the form, which stays drawn behind the question as it does behind "Throw away
-what you typed?" (`@gui-the-form-stays-behind-the-question-that-deletes-a-step`,
-cairn#110): agreed,
+what you typed?" (`@gui-the-form-stays-behind-the-question-that-deletes-a-step`): agreed,
 it goes at once, through a `step delete` of its own, and the steps behind it
 move up a place; cancelled, nothing moves
 (`@gui-a-step-is-deleted-once-agreed`,
@@ -1343,7 +1337,7 @@ saved or not, is left as it was
 task never had is taken out of the list alone
 (`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
 a step out until the form was saved, which read as a delete that did not
-happen (cairn#105). Several steps are taken together the way cards
+happen. Several steps are taken together the way cards
 are, and **what is taken is not what the keyboard is on**: a step taken is
 filled (`Skin.Ghost`), the one the keyboard is on is outlined, and a step can
 be either or both. A click takes that step alone and puts the keyboard on it;
@@ -1360,7 +1354,7 @@ writes the task's steps without them
 together, in their order, where the one in hand lands
 (`@gui-steps-taken-together-move-together`). One outline used to say both
 things, so the last step let go stayed outlined and a delete key still took
-it (cairn#113). A tile is dragged to another
+it. A tile is dragged to another
 place the way a card is: the step in hand follows the pointer, and a line says
 where it would land — over the tile it takes the place of when carried up,
 under it when carried down, drawn over the step in hand so the thing aimed
@@ -1400,7 +1394,7 @@ field takes what the store says, and what it was opened with moves along, so
 the form counts as changed only what the person changed
 (`@gui-an-open-task-keeps-what-was-typed-when-it-changes-elsewhere`). It used
 to be read once, when it opened, and had to be closed and opened again to see
-a change (cairn#108).
+a change.
 
 **An objective opens on the work that serves it**, beside its form, headed
 `WHAT SERVES IT`: an objective has no trace of its own — the trace is kept
@@ -1422,8 +1416,7 @@ An objective nothing serves carries no count at all: `0/0` and a share of
 nothing are two ways of dividing by zero, and `0%` on an objective nobody has
 started reads as a failure rather than as one waiting for its first task. When
 time was spent on the tasks serving it, the count says it too, `7/12 · 58% ·
-71h40m` — the sum `objective show` gives (`@gui-an-objective-card-says-the-time-spent`,
-cairn#54).
+71h40m` — the sum `objective show` gives (`@gui-an-objective-card-says-the-time-spent`).
 
 Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field

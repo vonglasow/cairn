@@ -259,14 +259,13 @@ should not run while it does. Taking the focus on a task already blocked stays
 allowed (below). A known gap: the Claude hook takes the focus again at each
 prompt, so in a hooked session a blocked task is taken up again on the next
 one. Refusing the focus to a blocked task, as a done one is refused, would
-reverse cairn#85 and is not done here. `watching` and `paused` keep their focus.
+take back the focus a blocked task is allowed (below), and is not done here. `watching` and `paused` keep their focus.
 A focus is never let go at a time of day nor after a while unused: working at
-20:00 is ordinary, and no clock can tell that the work stopped (cairn#51). A
+20:00 is ordinary, and no clock can tell that the work stopped. A
 focus session past its length asks instead: see
 [config](config.md#a-focus-session-that-asks-to-be-renewed).
 
-**Waiting work taking the focus goes into `current`.** Amended 2026-10-16
-(cairn#85). Taking the focus said what was being worked on and moved nothing,
+**Waiting work taking the focus goes into `current`.** Amended 2026-10-16. Taking the focus said what was being worked on and moved nothing,
 so a task picked from `todo` stayed in `todo` while it was worked on, and the
 board said it was waiting: the person, or the agent, had to move it by hand,
 and mostly did not. Now a task in `backlog`, `todo` or `paused` goes into

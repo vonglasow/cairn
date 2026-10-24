@@ -19,7 +19,7 @@ What cairn is, and what any sharing must not break:
   order ([trace.md](trace.md)). It is the natural thing to share: acts can be
   merged where a state cannot.
 
-## Study 1 — a decentralised store (#16)
+## Study 1 — a decentralised store
 
 **IPFS, with IPNS for what changes.** Content is public by default: whoever
 holds an address fetches it, and a private swarm limits who joins without
@@ -65,7 +65,7 @@ Until somebody needs to share a board, none of it is worth building: the
 backups ([gui.md](gui.md)) already hand a whole store over, and the MCP server
 lets an agent work in it.
 
-## Study 2 — a blockchain (#17)
+## Study 2 — a blockchain
 
 What one brings is a record nobody owns, that nobody can alter after the fact,
 for writers who do not trust each other and have no third party to trust. A

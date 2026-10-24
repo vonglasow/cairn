@@ -57,7 +57,7 @@ together and one directory is enough to move or back up by hand.
 `cairn config init` writes the file where it is read, whole: every key,
 commented, set to what cairn uses when nothing is said
 (`@config-init-writes-every-key`). Writing one by hand meant finding its keys
-here and in the README first (cairn#99). It is the README's example to the
+here and in the README first. It is the README's example to the
 byte — one constant, `config.Example`, that a test holds the README to, and
 that another holds to every key the reader accepts — so neither can drift.
 It never writes over a file already there, which may hold choices nobody
@@ -76,7 +76,7 @@ it at its own version ([claude-code.md](claude-code.md)). Not said, it is
 `claude-plugin` beside the store, wherever the store is. It is a key of the
 file and nothing else — no flag, no variable — because two commands have to
 agree on it: `plugin write --dir` named a folder the server never looked at,
-and was taken out for it (cairn#98). Absolute, or under `~`, like the others
+and was taken out for it. Absolute, or under `~`, like the others
 (`@config-names-the-plugin-folder`,
 `@config-a-plugin-folder-that-is-not-absolute-is-refused`); `config show` says
 where it is and whether the file named it.
@@ -102,7 +102,7 @@ left to label — and the MCP server lists none of its tools (`bdd/pages.feature
 menu bar asked nothing at first — one fixed list, `MenuBar`, read by the native
 bars of macOS and Windows and by the button standing in for them — so a page
 turned off kept its lines there, and the terminal's `:` line still ran its
-commands (cairn#100). Now each line of the menu bar names the acts it does,
+commands. Now each line of the menu bar names the acts it does,
 and is offered while one of them is (`@gui-a-page-off-takes-its-menus`,
 `@gui-the-tasks-off-take-their-menus`); a menu left with no line goes, and the
 `:` line runs only what is offered (`@tui-a-page-off-takes-its-commands`).
@@ -146,7 +146,7 @@ days = 14            # how long each period lasts; 14 when it is not said
 ```
 
 A done column fills up: 55 tasks sat there next to 129 archived before anybody
-swept it by hand (cairn#56). With `[archive]` said, days are counted from
+swept it by hand. With `[archive]` said, days are counted from
 `start` in periods of `days` calendar days, and a task that went done before
 the period under way began is archived. The periods are arbitrary: nothing in
 cairn gives them a meaning beyond the boundary they draw. The moment a task
@@ -183,7 +183,7 @@ session = "1h"   # how long a focus session lasts before it asks
 
 A focus left open counts time nobody spent, but no clock can tell that the work
 stopped: cutting it at a time of day, or after a while unused, was built and
-taken back the same day (cairn#51). The question goes to whoever holds the
+taken back the same day. The question goes to whoever holds the
 focus instead. Each task in focus has a session, up since the focus was taken
 or last renewed, read from the trace; the focus answer says it for every task
 in focus (`sessions`, with `since` and `up`,
@@ -311,8 +311,7 @@ agent needs when everything else has started saying no.
   no scenario observes it, and a capability nothing observes is either specified
   or dropped.
 - **Anything but places — and the pages.** Nothing about how cairn behaves
-  belongs here. The pages were that decision, taken on its own on 2026-10-16
-  (cairn#67): which of them somebody uses is a fact about the person, read the
+  belongs here. The pages were that decision, taken on its own on 2026-10-16: which of them somebody uses is a fact about the person, read the
   same way by every surface, so it lives where every surface already looks.
   Any other preference is still a decision of its own.
 - **A file per project.** One file, at the place configuration lives. A store
