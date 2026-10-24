@@ -39,7 +39,7 @@ var TraceList = Operation{
 	Does:  "List what was done from a day onward, today when none is given, across every task, each act saying who did it and through what — or only what one author did.",
 	Example: `cairn trace list
 cairn trace list --since 2026-09-01
-cairn trace list --by alexis`,
+cairn trace list --by sam`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Acts{},

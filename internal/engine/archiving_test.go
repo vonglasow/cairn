@@ -23,7 +23,7 @@ func archivedOnItsOwn(t *testing.T, e *Engine, number int) bool {
 	}
 	for _, act := range acts {
 		if c := act.Carried(); c.Field == "archived" && c.Became == "yes" {
-			if c.Through != throughArchive || c.By != "alexis" {
+			if c.Through != throughArchive || c.By != "sam" {
 				t.Errorf("task %d was archived by %q through %q", number, c.By, c.Through)
 			}
 			return true
@@ -34,7 +34,7 @@ func archivedOnItsOwn(t *testing.T, e *Engine, number int) bool {
 
 func TestWhatWentDoneBeforeThePeriodUnderWayIsArchived(t *testing.T) {
 	e := openEngine(t)
-	e.acting = Acting{Through: "cli", By: "alexis"}
+	e.acting = Acting{Through: "cli", By: "sam"}
 	add(t, e, "Migration Jenkins")
 	add(t, e, "Spike Argo")
 	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
@@ -70,7 +70,7 @@ func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.acting = Acting{Through: "cli", By: "alexis"}
+	e.acting = Acting{Through: "cli", By: "sam"}
 	add(t, e, "Migration Jenkins")
 	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	held, err := Hold(Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}, Acting{Through: "tui", By: "alexis"})
+	held, err := Hold(Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}, Acting{Through: "tui", By: "sam"})
 	if err != nil {
 		t.Fatal(err)
 	}

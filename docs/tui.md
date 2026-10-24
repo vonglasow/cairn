@@ -474,8 +474,8 @@ forward delete asks at the foot, "delete step 1 of task 1, “Draft”?", `⏎`
 deletes it at once through a `step delete` of its own, and `esc` keeps it
 (`@tui-a-step-is-deleted-once-agreed`,
 `@tui-a-step-is-kept-when-its-delete-is-cancelled`). Up and down used to walk
-to the task above and below from an open task, which Alexis found pointless
-inside a task (cairn#105).
+to the task above and below from an open task, which was pointless inside a
+task (cairn#105).
 
 **An open task follows what is done to it elsewhere.** The open task is drawn
 from each reading the beat brings (`@tui-an-open-task-shows-a-step-added-elsewhere`),

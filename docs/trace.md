@@ -233,7 +233,7 @@ change, and a task does not know which one it was until it is over.
 ## It says who acted, and through what
 
 Every act carries who did it and the surface it came through, and says both
-on its line: `(by alexis, through gui)` (`@trace-says-who-acted`). It used to
+on its line: `(by sam, through gui)` (`@trace-says-who-acted`). It used to
 carry the surface alone, and only when it was the MCP server: the terminal,
 the board in the terminal and the window all wrote nothing, so they could not
 be told apart, and nothing at all said who — a person, a script, an agent, a
@@ -251,7 +251,7 @@ told from the person's (`@claude-session-acts-are-the-sessions`). The engine
 takes both as one value, `Acting`, from the surface that asked — `DoFrom` for
 a command, `Hold` for a board — and writes them on every act it records.
 
-What one author did is read apart: `cairn trace list --by alexis`
+What one author did is read apart: `cairn trace list --by sam`
 (`@trace-list-by-author`), and the JSON carries `by` and `through` on every act
 (`@trace-json-says-who`). Acts written before keep what they had: no author,
 and a surface only when it was the server. The column is `author`, not `by`,

@@ -1330,8 +1330,8 @@ saved or not, is left as it was
 (`@gui-a-step-deleted-leaves-the-rest-of-the-form-as-it-was`), and a step the
 task never had is taken out of the list alone
 (`@gui-a-step-never-saved-is-taken-out-of-the-list`). Backspace used to strike
-a step out until the form was saved, which Alexis took for a delete that did
-not happen (cairn#105). Several steps are taken together the way cards
+a step out until the form was saved, which read as a delete that did not
+happen (cairn#105). Several steps are taken together the way cards
 are, and **what is taken is not what the keyboard is on**: a step taken is
 filled (`Skin.Ghost`), the one the keyboard is on is outlined, and a step can
 be either or both. A click takes that step alone and puts the keyboard on it;

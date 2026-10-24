@@ -1,7 +1,7 @@
 {
   "name": "cairn",
   "owner": {
-    "name": "Alexis von Glasow"
+    "name": "cairn"
   },
   "description": "cairn, the personal objective and task manager, for Claude Code.",
   "plugins": [

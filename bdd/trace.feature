@@ -248,10 +248,10 @@ Feature: The trace
 
     @trace-says-who-acted
     Scenario: an act says who did it and the surface it came through
-      Given the author is "alexis"
+      Given the author is "sam"
       And I added a task titled "Write the spec"
       When I run `cairn trace show 1`
-      Then every act says it was done by "alexis" through "cli"
+      Then every act says it was done by "sam" through "cli"
 
     @trace-author-is-the-login-by-default
     Scenario: with nobody named, the author is the one logged in
@@ -261,17 +261,17 @@ Feature: The trace
 
     @trace-list-by-author
     Scenario: what one author did is listed apart
-      Given the author is "alexis"
+      Given the author is "sam"
       And I added a task titled "Write the spec"
       And the author is "claude session 7f3a"
       And I added a task titled "Ship it"
-      When I run `cairn trace list --by alexis`
+      When I run `cairn trace list --by sam`
       Then it lists the acts of 1 task
       And it says nothing of task 2
 
     @trace-json-says-who
     Scenario: who did an act can be read by a machine
-      Given the author is "alexis"
+      Given the author is "sam"
       And I added a task titled "Write the spec"
       When I run `cairn trace show 1 --json`
-      Then every act carries the author "alexis" and the surface "cli"
+      Then every act carries the author "sam" and the surface "cli"

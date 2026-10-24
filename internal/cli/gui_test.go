@@ -66,7 +66,7 @@ func TestGuiTakesNoArguments(t *testing.T) {
 func TestGuiActsThroughTheWindow(t *testing.T) {
 	store := storeFor(t)
 	t.Setenv("CAIRN_STORE", store)
-	t.Setenv("CAIRN_AUTHOR", "alexis")
+	t.Setenv("CAIRN_AUTHOR", "sam")
 	was := openGui
 	openGui = func(work engine.Work, _ engine.Pages, _ string, _, _ int) error {
 		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
@@ -77,7 +77,7 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
 	}
 	shown := run(t, "trace", "show", "1")
-	if !strings.Contains(shown.Stdout, "(by alexis, through gui)") {
+	if !strings.Contains(shown.Stdout, "(by sam, through gui)") {
 		t.Errorf("an act from the window reads:\n%s", shown.Stdout)
 	}
 }

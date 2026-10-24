@@ -25,7 +25,7 @@ func TestAuthor_isTheOneNamedOrTheOneLoggedIn(t *testing.T) {
 
 func TestActs_sayWhoDidThemAndThroughWhat(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
-	if _, err := DoAt(TaskNew, Places{Store: path}, given("title", "Write the spec"), Acting{Through: "gui", By: "alexis"}); err != nil {
+	if _, err := DoAt(TaskNew, Places{Store: path}, given("title", "Write the spec"), Acting{Through: "gui", By: "sam"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := DoAt(TaskNew, Places{Store: path}, given("title", "Ship it"), Acting{Through: "mcp", By: "claude-code"}); err != nil {
@@ -36,7 +36,7 @@ func TestActs_sayWhoDidThemAndThroughWhat(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, act := range shown.Acts {
-		if c := act.Carried(); c.By != "alexis" || c.Through != "gui" {
+		if c := act.Carried(); c.By != "sam" || c.Through != "gui" {
 			t.Errorf("an act of task 1 says %q through %q", c.By, c.Through)
 		}
 	}
@@ -57,7 +57,7 @@ func TestActs_sayWhoDidThemAndThroughWhat(t *testing.T) {
 func TestHold_writesDownWhatItIsAskedAsDoneThroughItsSurface(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	h := Home{Dir: t.TempDir(), Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}
-	held, err := Hold(h, Acting{Through: "tui", By: "alexis"})
+	held, err := Hold(h, Acting{Through: "tui", By: "sam"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestHold_writesDownWhatItIsAskedAsDoneThroughItsSurface(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c := shown.Acts[0].Carried(); c.Through != "tui" || c.By != "alexis" {
+	if c := shown.Acts[0].Carried(); c.Through != "tui" || c.By != "sam" {
 		t.Errorf("an act from the board says %q through %q", c.By, c.Through)
 	}
 }
@@ -79,8 +79,14 @@ func TestSaidOf_aBoardLineSaysWhoDidTheAct(t *testing.T) {
 	a.On(1)
 	a.Did(trace.FocusTaken)
 	a.Through("gui")
-	a.By("alexis")
-	if got := SaidOf(a.Act()).Line(); !strings.HasSuffix(got, "(by alexis, through gui)") {
+	a.By("sam")
+	if got := SaidOf(a.Act()).Line(); !strings.HasSuffix(got, "(by sam, through gui)") {
 		t.Errorf("a board reads %q", got)
+	}
+}
+
+func TestTraceList_showsReadingOneAuthorWithAnExample(t *testing.T) {
+	if !strings.Contains(TraceList.Example, "cairn trace list --by sam") {
+		t.Fatalf("the example does not show reading one author: %q", TraceList.Example)
 	}
 }

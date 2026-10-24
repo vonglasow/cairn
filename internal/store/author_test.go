@@ -13,7 +13,7 @@ func TestStore_keepsWhoDidAnAct(t *testing.T) {
 	a.On(1)
 	a.Did(trace.Created)
 	a.Through("gui")
-	a.By("alexis")
+	a.By("sam")
 	a.At(time.Date(2026, 10, 17, 9, 0, 0, 0, time.UTC))
 	if err := s.Record(a.Act()); err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestStore_keepsWhoDidAnAct(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := acts[0].Carried(); got.By != "alexis" || got.Through != "gui" {
+	if got := acts[0].Carried(); got.By != "sam" || got.Through != "gui" {
 		t.Errorf("the act read back says %q through %q", got.By, got.Through)
 	}
 }

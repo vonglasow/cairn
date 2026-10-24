@@ -245,12 +245,12 @@ func TestText_saysWhoDidEachActAndThroughWhat(t *testing.T) {
 	a.Did(Moved)
 	a.Became("first")
 	a.Through("gui")
-	a.By("alexis")
+	a.By("sam")
 	a.At(time.Date(2026, 10, 17, 9, 0, 0, 0, time.UTC))
-	if got := Text([]Act{a.Act()}); !strings.Contains(got, "(by alexis, through gui)") {
+	if got := Text([]Act{a.Act()}); !strings.Contains(got, "(by sam, through gui)") {
 		t.Errorf("the act reads %q", got)
 	}
-	if shape := OfAct(a.Act()); shape.By != "alexis" || shape.Through != "gui" {
+	if shape := OfAct(a.Act()); shape.By != "sam" || shape.Through != "gui" {
 		t.Errorf("a machine reads %+v", shape)
 	}
 	a.By("")
