@@ -351,12 +351,20 @@ func (w Window) PressAt(p Point) Window {
 	if w.tab == Objectives {
 		return w
 	}
+	if widening, on := gutterAt(w.Layout(), p); on && w.tab == Tasks {
+		w.widening = widening
+		return w
+	}
 	w.held = Held{Number: w.at(p), From: p, At: p}
 	return w
 }
 
 // MoveTo follows the pointer, and past Grip says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
+	if w.widening.On {
+		w.widths = w.widening.To(p)
+		return w
+	}
 	if w.draggingForm {
 		return w.movingForm(p)
 	}
@@ -404,6 +412,10 @@ func (w Window) MoveTo(p Point) Window {
 
 // LetGo drops the card, or lets a click be a click.
 func (w Window) LetGo(p Point) Window {
+	if w.widening.On {
+		w.widening, w.pressed = Widening{}, false
+		return w
+	}
 	if w.draggingForm {
 		w.draggingForm, w.held, w.pressed = false, Held{}, false
 		if w.dragged {

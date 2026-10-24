@@ -169,6 +169,73 @@ Feature: The desktop board
       Then every column's name is centred in its head
       And every column's name stands clear of the edge above it
 
+  Rule: A column, or a lane, is widened by dragging the gutter beside it
+
+    @gui-a-column-widens-when-its-gutter-is-dragged
+    Scenario: the gutter between two columns, dragged, gives one what it takes from the other
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      Then "todo" is 60 wider than it opened
+      And "current" is 60 narrower than it opened
+      And "backlog" is as wide as it opened
+
+    @gui-a-lane-widens-when-its-gutter-is-dragged
+    Scenario: the gutter between two lanes of the band, dragged, gives one what it takes from the other
+      When I open the window
+      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
+      Then the "blocked" lane is 40 wider than it opened
+      And the "watching" lane is 40 narrower than it opened
+
+    @gui-a-lane-widened-leaves-the-columns-as-they-were
+    Scenario: a lane widened after a column leaves that column as it was dragged
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
+      Then "todo" is 60 wider than it opened
+      And the "blocked" lane is 40 wider than it opened
+
+    @gui-a-column-dragged-past-its-neighbour-keeps-a-card-in-sight
+    Scenario: a gutter dragged across a whole column leaves that column the narrowest a column goes
+      When I open the window
+      And I drag the gutter between "todo" and "current" 5000 to the right
+      Then "current" is the narrowest a column goes
+
+    @gui-a-column-dragged-past-itself-keeps-a-card-in-sight
+    Scenario: a gutter dragged back across its own column leaves it the narrowest a column goes
+      When I open the window
+      And I drag the gutter between "todo" and "current" 5000 to the left
+      Then "todo" is the narrowest a column goes
+
+    @gui-the-backlog-widens-from-beside-the-band
+    Scenario: the gutter right of the backlog is taken beside the band too
+      When I open the window
+      And I drag the gutter between "backlog" and "todo" from beside the band 60 to the right
+      Then "backlog" is 60 wider than it opened
+      And the band starts where "todo" does
+
+    @gui-columns-keep-their-shares-when-the-window-shrinks
+    Scenario: a window made smaller makes every column smaller, each keeping its share
+      When I open the window
+      And I drag the gutter between "todo" and "current" 120 to the right
+      And I resize the window to 1100 by 800
+      Then "todo" is wider than "current"
+      And the columns fill the window's width
+
+    @gui-a-gutter-dragged-picks-no-card
+    Scenario: dragging a gutter takes hold of no card
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      Then "todo" carries "Write the spec"
+      And no card is being dragged
+
+    @gui-columns-open-as-wide-as-each-other
+    Scenario: the widths a person gave are not kept from one window to the next
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And the window is closed and opened again
+      Then every column is as wide as the others
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so

@@ -1347,6 +1347,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	w.expects(sc)
+	w.gutters(sc)
 }
 
 func (w *world) workedOn(times int) error {

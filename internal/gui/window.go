@@ -115,6 +115,8 @@ type Window struct {
 	form                  Form
 	formMoved, formGrip   Point
 	draggingForm, dragged bool
+	widths                Widths
+	widening              Widening
 	looking               Written
 	archived              bool
 	aimed                 string
@@ -176,7 +178,7 @@ func (w Window) sized() Window {
 }
 
 // Layout is every size this window draws from.
-func (w Window) Layout() Layout { return LayoutFor(w.width, w.height) }
+func (w Window) Layout() Layout { return LaidOut(w.width, w.height, w.widths) }
 
 // Screen says what has the window.
 func (w Window) Screen() Screen { return w.screen }

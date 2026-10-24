@@ -196,6 +196,7 @@ func helping() []Said {
 		{Key: "double-click", Means: "open it, and see everything it carries"},
 		{Key: "drag", Means: "move it — the column it lands in is its new state"},
 		{Key: "drag into a lane", Means: "blocked, watching or paused"},
+		{Key: "drag a gutter", Means: "widen the column or lane on one side of it, narrow the other — until the window closes"},
 		{Key: "right click", Means: "what can be done to what is under it — the board's offers where there is nothing"},
 		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a trace"},
 		{Key: "wheel on a trace", Means: "scroll it — the bar beside it can be pulled too"},

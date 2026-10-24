@@ -135,6 +135,24 @@ pressed against it (cairn#118): each column's name is centred across its head,
 seven pixels under the edge, at the size the band's lanes are named in
 (`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
 
+**A column, or a lane, is widened by dragging the gutter beside it**
+(cairn#126). The gutter is the gap between two columns, from the top of the
+head to the foot of the column on its left — right of the backlog it runs
+beside the band too, since the band begins where the todo does — and the gap
+between two lanes of the band. Dragged, it gives the one on its left what it
+takes from the one on its right, and nothing else moves
+(`@gui-a-column-widens-when-its-gutter-is-dragged`,
+`@gui-a-lane-widens-when-its-gutter-is-dragged`). Neither goes under
+`NarrowestColumn`, room for a card's title
+(`@gui-a-column-dragged-past-its-neighbour-keeps-a-card-in-sight`). What is
+kept is each one's share, not its width: a window made smaller makes every
+column smaller, nothing holds it back, and a column no longer readable is the
+person's to widen again (`@gui-columns-keep-their-shares-when-the-window-shrinks`).
+The widths are the window's, not the store's: a window opened again has its
+columns as wide as each other (`@gui-columns-open-as-wide-as-each-other`). On
+the tasks page only; the pointer does not change shape over a
+gutter, since the window sets no cursor anywhere.
+
 **A form is moved by dragging it where it holds no text** (cairn#119). A press
 inside the form on nothing written — no field, no heading, no offer, no text
 of its trace — takes the form by its ground, and the pointer carries it
