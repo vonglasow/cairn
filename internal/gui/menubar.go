@@ -19,7 +19,7 @@ const menuButtonWide = 40
 var menuBar = []MenuGroup{
 	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import"}},
 	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived"}},
+	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter"}},
 	{Name: "Help", Items: []string{"Help", "About cairn"}},
 }
 
@@ -36,6 +36,7 @@ var actsOf = map[string][]engine.Operation{
 	"Delete":     {engine.TaskDelete, engine.ObjectiveDelete},
 	"Search":     {engine.TaskSearch, engine.ObjectiveSearch},
 	"Archived":   {engine.TaskList},
+	"Filter":     {engine.TaskList},
 }
 
 var pageOfLine = map[string]string{"Tasks": engine.PageTasks, "Objectives": engine.PageObjectives, "Time": engine.PageTime}

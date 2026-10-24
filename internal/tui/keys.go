@@ -111,6 +111,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if b.choosing {
 		return b.choosingKind(key)
 	}
+	if b.filtering {
+		return b.filteringBy(key), nil
+	}
 	if b.prompt != NoPrompt {
 		return b.typing(key)
 	}
@@ -222,6 +225,8 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		return b.addForm()
 	case "shift+a":
 		return b.showingArchived(), nil
+	case "shift+f":
+		return b.openingFilters(), nil
 	case "shift+x":
 		if b.tab != Objectives {
 			b.asking, b.sweeping = true, true

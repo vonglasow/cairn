@@ -11,30 +11,30 @@
  │   ⇧X          archive every task in this    │ │                                             │
  │ column — it asks first                      │ │ STALLED — the top right of a card           │
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
- │   ⇥           next tab — tasks, objectives, │ │   ◉  watching  handed over, needs a look    │
- │ the time spent                              │ │   ‖  paused    waiting on your decision     │
- │   :           command — what it answers is  │ │                                             │
- │ said until esc                              │ │ OBJECTIVES                                  │
- │   b           a new backup of the store     │ │   ▶  active    being worked towards         │
- │   ⇧B          the backups                   │ │   ‖  on-hold   not for now                  │
- │   ←→ t on timewalk the weeks, back to       │ │   ✓  reached   done with                    │
- │ today's                                     │ │   ✕  dropped   given up                     │
- │                                             │ │                                             │
- │ INSERT — the cursor on a task               │ │ ON A CARD                                   │
- │   hjkl ←↓↑→   tasks, and the band           │ │   ≡            a description exists         │
- │   gg / G      first / last in the column    │ │   ▪            steps done / total           │
- │   ⇧hjkl       move it: sideways changes     │ │   ⚑            a label                      │
- │ column, up and down change place            │ │   ↳            what is in the way           │
- │   ⏎           the detail                    │ │   2d          a deadline close by           │
- │   e           the form                      │ │   −3d         one that has passed           │
- │   o           a task linked to it           │ │   ╔═╗         the task in focus             │
- │   f           focus or unfocus              │ ╰─────────────────────────────────────────────╯
+ │   ⇧F          filter — ←→ which, ↑↓ its     │ │   ◉  watching  handed over, needs a look    │
+ │ value, ⌫ clears all                         │ │   ‖  paused    waiting on your decision     │
+ │   ⇥           next tab — tasks, objectives, │ │                                             │
+ │ the time spent                              │ │ OBJECTIVES                                  │
+ │   :           command — what it answers is  │ │   ▶  active    being worked towards         │
+ │ said until esc                              │ │   ‖  on-hold   not for now                  │
+ │   b           a new backup of the store     │ │   ✓  reached   done with                    │
+ │   ⇧B          the backups                   │ │   ✕  dropped   given up                     │
+ │   ←→ t on timewalk the weeks, back to       │ │                                             │
+ │ today's                                     │ │ ON A CARD                                   │
+ │                                             │ │   ≡            a description exists         │
+ │ INSERT — the cursor on a task               │ │   ▪            steps done / total           │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ⚑            a label                      │
+ │   gg / G      first / last in the column    │ │   ↳            what is in the way           │
+ │   ⇧hjkl       move it: sideways changes     │ │   2d          a deadline close by           │
+ │ column, up and down change place            │ │   −3d         one that has passed           │
+ │   ⏎           the detail                    │ │   ╔═╗         the task in focus             │
+ │   e           the form                      │ ╰─────────────────────────────────────────────╯
+ │   o           a task linked to it           │
+ │   f           focus or unfocus              │
  │   d           delete                        │
  │   x           archive or unarchive          │
  │   esc         back to normal                │
  │                                             │
  │ DETAIL — one task, open                     │
- │   ^D ^U       walk its description, half a  │
- │ box at a time                               │
 
  ↓↑ read on   esc close

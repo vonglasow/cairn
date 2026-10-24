@@ -295,6 +295,18 @@ and the calendar walks its months, a notch a month
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
+**The board is filtered by what a task carries** (cairn#59). `⇧F`, the bar's
+Filter or the menu bar's opens the filters: column, priority, label, objective,
+and a day the work is due by — today, in a week, in a month. A line is chosen
+by the arrows or a click, its value walked by `←` `→` or a click, each opening
+on `any`; the board narrows as they move (`@gui-a-filter-narrows-the-board`),
+two together keep what both reach (`@gui-filters-narrow-together`), and `⌫`, or
+No filter, puts every one back on `any` (`@gui-every-filter-is-cleared-at-once`).
+Closed, they stay in force, written beside the tabs — `filtered by priority
+high · label backend` (`@gui-the-board-says-what-filters-it`) — and the search
+narrows what they kept (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
+(`engine.Filters`): what each keeps is what `task list` keeps with the same flag.
+
 **A search does not take the window.** It narrows the board in place, so the
 board keeps answering the mouse: a card is chosen by a click and opened by a
 double click while the box is still open and still being typed into. It used to

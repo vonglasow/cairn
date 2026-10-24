@@ -37,6 +37,8 @@ func HeadsOn(w Window, screen Screen) string {
 		return "a deadline for " + w.formNamed() + " — " + w.day.Format("January 2006")
 	case OnBackups:
 		return "Backups — enter restores one"
+	case OnFiltering:
+		return "Filters — ← → change one, ⌫ clears them all"
 	case OnLabels:
 		if w.renaming {
 			return "Rename " + w.labelChosen() + " to " + w.renamed.Reads()
@@ -127,6 +129,10 @@ func Shortcut(offer string) string {
 		return "shift+b"
 	case "labels":
 		return "shift+l"
+	case "filter":
+		return "shift+f"
+	case "no filter":
+		return "backspace"
 	case "rename":
 		return "r"
 	case "archive", "unarchive":
@@ -196,6 +202,7 @@ func helping() []Said {
 		{Key: "double-click", Means: "open it, and see everything it carries"},
 		{Key: "drag", Means: "move it — the column it lands in is its new state"},
 		{Key: "drag into a lane", Means: "blocked, watching or paused"},
+		{Key: "⇧F", Means: "filter the board by column, priority, label, objective or due day — ← → change one, ⌫ clears them all"},
 		{Key: "drag a gutter", Means: "widen the column or lane on one side of it, narrow the other — until the window closes"},
 		{Key: "right click", Means: "what can be done to what is under it — the board's offers where there is nothing"},
 		{Key: "wheel", Means: "scroll what is under the pointer — a column, a lane, the objectives, a trace"},
@@ -251,6 +258,8 @@ func (w Window) Offers() []string {
 		return []string{"Take", "No day", "Cancel"}
 	case OnBackups:
 		return []string{"Cancel"}
+	case OnFiltering:
+		return []string{"No filter", "Close"}
 	case OnLabels:
 		if w.renaming {
 			return []string{"Take", "Cancel"}
@@ -291,7 +300,7 @@ func (w Window) Offers() []string {
 
 // BoardOffers is what the bar under the board says, whatever is open over it.
 func (w Window) BoardOffers() []string {
-	offers := []string{"New", "Search", "Archived", "Help"}
+	offers := []string{"New", "Search", "Filter", "Archived", "Help"}
 	if !w.looking.Empty() || len(w.Taken()) > 0 {
 		offers = append(offers, "Clear")
 	}

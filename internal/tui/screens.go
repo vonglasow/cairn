@@ -64,6 +64,7 @@ func (b Board) helpKeys() []string {
 		b.says("⇧A", "show what was archived"),
 		b.says("⇧X", "archive every task in this column — it asks first"),
 		b.says("/", "search"),
+		b.says("⇧F", "filter — ←→ which, ↑↓ its value, ⌫ clears all"),
 		b.says("⇥", "next tab — tasks, objectives, the time spent"),
 		b.says(":", "command — what it answers is said until esc"),
 		b.says("b", "a new backup of the store"),

@@ -58,6 +58,13 @@ func (g Givens) IAddedATaskWithTheState(title, state string) error {
 	return g.addTask(title, map[string]string{"state": state})
 }
 
+// IAddedATaskCarrying adds a task in a column, at a priority, carrying a label.
+func (g Givens) IAddedATaskCarrying(title, state, priority, label string) error {
+	given := map[string]string{"title": title, "state": state, "priority": priority}
+	_, err := g.ask(engine.TaskNew, given, map[string][]string{"label": {label}})
+	return err
+}
+
 // IAddedATaskWithTheDescription adds a task with something written about it.
 func (g Givens) IAddedATaskWithTheDescription(title, description string) error {
 	return g.addTask(title, map[string]string{"desc": description})
@@ -188,6 +195,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)"$`, g.IAddedATaskTitled)
 	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, g.IAddedATaskWithTheEstimate)
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, g.IAddedATaskWithTheState)
+	sc.Step(`^I added a task titled "([^"]*)" in "([^"]*)" at the priority "([^"]*)" carrying the label "([^"]*)"$`, g.IAddedATaskCarrying)
 	sc.Step(`^I added a task titled "([^"]*)" with the description "([^"]*)"$`, g.IAddedATaskWithTheDescription)
 	sc.Step(`^I added a task titled "([^"]*)" with the paragraphs "([^"]*)" and "([^"]*)"$`, g.IAddedATaskWithTheParagraphs)
 	sc.Step(`^I added a task titled "([^"]*)" with a description of (\d+) lines ending "([^"]*)"$`,

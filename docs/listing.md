@@ -326,6 +326,13 @@ look in six fields with one word, so one word, "search", meant two things
 depending on where it was typed — and searching by label was impossible on
 either board.
 
+**The boards filter by the same narrowing.** Beside the search, both boards
+offer the closed set a listing narrows by — column, priority, label, objective,
+a day due by — as filters walked through their values (cairn#59). They narrow
+what the board already holds, in memory, but by the narrowing `task list`
+builds from the same flags (`engine.Filters.Kept`, through `keeping`), told to
+each card instead of to SQL: one rule, read twice.
+
 ## Where the narrowing happens
 
 In SQL, in `internal/store/narrowing.go`, not by reading everything and

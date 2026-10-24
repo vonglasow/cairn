@@ -31,6 +31,12 @@ func (w Window) Click(p Point) Window {
 		}
 		return w.clickingLabels(p)
 	}
+	if w.screen == OnFiltering {
+		if offer, on := w.offerAt(p); on {
+			return w.Choose(offer)
+		}
+		return w.clickingFilters(p)
+	}
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}

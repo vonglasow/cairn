@@ -131,6 +131,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawDragging(gtx, th, skin, w)
 	}
 	drawBar(gtx, th, skin, l, w)
+	if said := w.FilteredBy(); said != "" && w.Tab() != Objectives {
+		say(gtx, th, skin.Faint, FilteredSaid(l), "filtered by "+said, reads)
+	}
 	if w.Screen() == OnSearch {
 		drawSearch(gtx, th, skin, l, w)
 	}
@@ -161,6 +164,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	if w.Screen() == OnLabels {
 		drawLabels(gtx, th, skin, w)
+	}
+	if w.Screen() == OnFiltering {
+		drawFilters(gtx, th, skin, w)
 	}
 	if bubble, said, ok := w.BubbleBox(); ok {
 		fill(gtx, bubble, skin.Panel)
@@ -199,6 +205,21 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			ink = skin.Chosen
 		}
 		say(gtx, th, ink, Inside(row), LabelSays(one), reads)
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
+}
+
+func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := w.FiltersBox()
+	drawPanel(gtx, th, skin, box, Heads(w))
+	for i, f := range w.Filters() {
+		row := ListRowAt(box, i)
+		ink := skin.Ink
+		if i == w.FilterOn() {
+			fill(gtx, row, skin.Back)
+			ink = skin.Chosen
+		}
+		say(gtx, th, ink, Inside(row), FilterSays(f), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

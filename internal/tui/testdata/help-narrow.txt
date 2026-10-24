@@ -15,16 +15,16 @@
  │ task in this column — it asks │ │   ⊘  blocked   waiting on     │
  │ first                         │ │ somebody else                 │
  │   /           search          │ │   ◉  watching  handed over,   │
- │   ⇥           next tab —      │ │ needs a look                  │
- │ tasks, objectives, the time   │ │   ‖  paused    waiting on     │
- │ spent                         │ │ your decision                 │
- │   :           command — what  │ │                               │
- │ it answers is said until esc  │ │ OBJECTIVES                    │
- │   b           a new backup of │ │   ▶  active    being worked   │
- │ the store                     │ │ towards                       │
- │   ⇧B          the backups     │ │   ‖  on-hold   not for now    │
- │   ←→ t on timewalk the weeks, │ │   ✓  reached   done with      │
- │ back to today's               │ │   ✕  dropped   given up       │
- │                               │ │                               │
+ │   ⇧F          filter — ←→     │ │ needs a look                  │
+ │ which, ↑↓ its value, ⌫ clears │ │   ‖  paused    waiting on     │
+ │ all                           │ │ your decision                 │
+ │   ⇥           next tab —      │ │                               │
+ │ tasks, objectives, the time   │ │ OBJECTIVES                    │
+ │ spent                         │ │   ▶  active    being worked   │
+ │   :           command — what  │ │ towards                       │
+ │ it answers is said until esc  │ │   ‖  on-hold   not for now    │
+ │   b           a new backup of │ │   ✓  reached   done with      │
+ │ the store                     │ │   ✕  dropped   given up       │
+ │   ⇧B          the backups     │ │                               │
 
  ↓↑ read on   esc close

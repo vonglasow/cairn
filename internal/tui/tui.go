@@ -102,6 +102,10 @@ type Board struct {
 	query    string
 	archived bool
 
+	filters   engine.Filters
+	filterOn  int
+	filtering bool
+
 	choosing         bool
 	asking           bool
 	leaving          bool
@@ -284,7 +288,11 @@ func (b Board) standingAt(place int) int {
 }
 
 func (b Board) cards() []engine.Card {
-	found := engine.Found(b.snap.Cards, b.query, b.archived)
+	cards := b.snap.Cards
+	if kept, err := b.filters.Kept(cards); err == nil {
+		cards = kept
+	}
+	found := engine.Found(cards, b.query, b.archived)
 	if b.inside == 0 {
 		return found
 	}

@@ -36,15 +36,16 @@ func (w Window) Key(name string) Window {
 }
 
 var screens = map[Screen]func(Window, string) Window{
-	OnTheBoard: Window.onBoard,
-	OnForm:     func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
-	OnSearch:   Window.onSearch,
-	OnChoosing: Window.inChoosing,
-	OnHelp:     Window.inHelp,
-	OnCalendar: Window.onCalendar,
-	OnMenu:     Window.onMenu,
-	OnBackups:  Window.onBackups,
-	OnLabels:   Window.onLabels,
+	OnTheBoard:  Window.onBoard,
+	OnForm:      func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
+	OnSearch:    Window.onSearch,
+	OnChoosing:  Window.inChoosing,
+	OnHelp:      Window.inHelp,
+	OnCalendar:  Window.onCalendar,
+	OnMenu:      Window.onMenu,
+	OnBackups:   Window.onBackups,
+	OnLabels:    Window.onLabels,
+	OnFiltering: Window.onFilters,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -72,6 +73,8 @@ func (w Window) onBoard(name string) Window {
 		return w.listingBackups()
 	case "shift+l":
 		return w.listingLabels()
+	case "shift+f":
+		return w.filteringBoard()
 	case "cmd+e":
 		return w.exportingTasks()
 	case "cmd+o":

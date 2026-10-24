@@ -85,6 +85,9 @@ func (b Board) modeName() string {
 	if b.screen == OnForm {
 		return "EDIT"
 	}
+	if b.filtering {
+		return "FILTER"
+	}
 	if b.prompt == Searching {
 		return "SEARCH"
 	}
@@ -246,6 +249,9 @@ func (b Board) foot() string {
 	if b.choosing {
 		return b.kindPopup()
 	}
+	if b.filtering {
+		return b.filtersLine()
+	}
 	if b.prompt != NoPrompt {
 		return b.promptLine()
 	}
@@ -335,6 +341,9 @@ func (b Board) kindPopup() string {
 
 func (b Board) titleLine() string {
 	title := b.wholeTitle()
+	if title == "" && b.filters.Narrows() && !b.filtering {
+		return " " + b.skin.Faint.Render(Clip("filtered by "+b.filters.Said(), b.width-margin-margin))
+	}
 	if title == "" {
 		return ""
 	}

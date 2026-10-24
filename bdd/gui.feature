@@ -236,6 +236,71 @@ Feature: The desktop board
       And the window is closed and opened again
       Then every column is as wide as the others
 
+  Rule: The board is filtered by column, priority, label, objective and due day, and every filter is cleared at once
+
+    Background:
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      And I added a task titled "Review the plan" in "todo" at the priority "normal" carrying the label "backend"
+      And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
+
+    @gui-a-filter-narrows-the-board
+    Scenario: a filter keeps only the cards it reaches
+      When I open the window
+      And I set the filter "priority" to "high"
+      Then "todo" carries "Write the spec"
+      And "todo" does not carry "Review the plan"
+      And "current" carries "Ship it"
+
+    @gui-filters-narrow-together
+    Scenario: two filters keep only what both reach
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      Then "todo" carries "Write the spec"
+      And "current" does not carry "Ship it"
+
+    @gui-every-filter-is-cleared-at-once
+    Scenario: one act takes every filter away
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I clear every filter
+      Then "todo" carries "Review the plan"
+      And "current" carries "Ship it"
+      And the board says it is filtered by ""
+
+    @gui-the-board-says-what-filters-it
+    Scenario: the board says what it is filtered by, once the filters are closed
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      Then the board says it is filtered by "priority high · label backend"
+
+    @gui-a-filter-walks-back-to-its-last-value
+    Scenario: a filter walked back from any comes to its last value
+      When I open the window
+      And I press "shift+f"
+      And I press "down"
+      And I press "left"
+      Then the board says it is filtered by "priority critical"
+
+    @gui-the-filters-open-from-the-menu-bar
+    Scenario: the menu bar opens the filters
+      When I open the window
+      And I pick "Filter" in the menu bar
+      Then the window shows the filters
+
+    @gui-a-filter-and-a-search-narrow-together
+    Scenario: a search narrows what the filters kept
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I press "/"
+      And I type "spec"
+      Then "todo" carries "Write the spec"
+      And "current" does not carry "Ship it"
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so
@@ -1510,7 +1575,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Filter", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -3765,7 +3830,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I double-click the card "Write the spec"
-      Then the bar under the board reads "New", "Search", "Archived", "Help", "Edit", "Archive", "Delete"
+      Then the bar under the board reads "New", "Search", "Filter", "Archived", "Help", "Edit", "Archive", "Delete"
       And the bar under the board answers nothing
       And the bar offers "Save" under "⌘⏎"
 

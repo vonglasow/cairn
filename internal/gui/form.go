@@ -548,6 +548,11 @@ func (w Window) Choose(name string) Window {
 	case "search":
 		w.screen = OnSearch
 		return w
+	case "filter":
+		return w.filteringBoard()
+	case "no filter":
+		w.filters = w.filters.Cleared()
+		return w
 	case "help":
 		w.screen, w.helpFrom, w.spareHelp = OnHelp, 0, 0
 		return w

@@ -31,6 +31,8 @@ const (
 	OnBackups
 	// OnLabels is the list of every label, one of which may be renamed or taken off everything.
 	OnLabels
+	// OnFiltering is the board's filters, each walked through its values, the board narrowing as they move.
+	OnFiltering
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -117,6 +119,8 @@ type Window struct {
 	draggingForm, dragged bool
 	widths                Widths
 	widening              Widening
+	filters               engine.Filters
+	filterOn              int
 	looking               Written
 	archived              bool
 	aimed                 string

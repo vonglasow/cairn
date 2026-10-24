@@ -6,13 +6,17 @@ import (
 	"strconv"
 )
 
-// Showing is the work narrowed to what a search reaches, which is what everything draws from.
+// Showing is the work narrowed to what the filters keep and a search reaches, which is what everything draws from.
 func (w Window) Showing() engine.Snapshot {
-	if w.looking.Empty() {
+	if w.looking.Empty() && !w.filters.Narrows() {
 		return w.snap
 	}
+	cards := w.snap.Cards
+	if kept, err := w.filters.Kept(cards); err == nil {
+		cards = kept
+	}
 	found := engine.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
-	found.Cards = engine.Found(w.snap.Cards, w.looking.Reads(), w.archived)
+	found.Cards = engine.Found(cards, w.looking.Reads(), w.archived)
 	found.Goals = engine.FoundGoals(w.snap.Goals, w.looking.Reads())
 	return found
 }

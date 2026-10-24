@@ -600,6 +600,18 @@ label was impossible on either board.
 The counts in the headers are the counts of what matched, and the foot says how
 much of the store that is. Typing narrows as you go.
 
+**`⇧F` filters the board by what a task carries** (cairn#59): its column, its
+priority, a label, an objective, a day it is due by — today, in a week, in a
+month. The foot becomes the five filters, `←→` choosing one and `↑↓` walking its
+values, each opening on `any`; the board narrows as they move, the way the
+search narrows as it is typed, and `⌫` puts every one back on `any` at once
+(`@tui-a-filter-narrows-the-board`, `@tui-every-filter-is-cleared-at-once`).
+`esc` closes them and leaves them in force, said above the foot — `filtered by
+priority high · label backend` (`@tui-the-board-says-what-filters-it`). A search
+narrows what they kept. What a filter keeps is what `task list` keeps with the
+same flag: the engine's `Filters` judges a card by the narrowing the listing is
+read with, so the two cannot disagree.
+
 A flat list of results was turned down for losing the column each match is in,
 which is most of what a board is for. Highlighting without hiding was turned down
 because with two hundred tasks what is highlighted is usually off screen.

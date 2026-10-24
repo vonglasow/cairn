@@ -873,3 +873,48 @@ Feature: The board
       Then the board says "Ship it now"
       And the board says "[ ] Draft"
       And the board does not say "Ship it today"
+
+  Rule: The board is filtered by column, priority, label, objective and due day, and every filter is cleared at once
+
+    Background:
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      And I added a task titled "Review the plan" in "todo" at the priority "normal" carrying the label "backend"
+      And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
+
+    @tui-a-filter-narrows-the-board
+    Scenario: a filter keeps only the cards it reaches, as it is changed
+      When I open the board
+      And I press "shift+f", "l", "j", "j", "j"
+      Then the mode is "FILTER"
+      And the board says "priority high"
+      And the board says "Write the spec"
+      And the board says "Ship it"
+      And the board says nothing of "Review the plan"
+
+    @tui-filters-narrow-together
+    Scenario: two filters keep only what both reach
+      When I open the board
+      And I press "shift+f", "l", "j", "j", "j", "l", "j"
+      Then the board says "Write the spec"
+      And the board says nothing of "Ship it"
+
+    @tui-every-filter-is-cleared-at-once
+    Scenario: one key takes every filter away
+      When I open the board
+      And I press "shift+f", "l", "j", "j", "j", "l", "j", "backspace"
+      Then the board says "Review the plan"
+      And the board says "Ship it"
+
+    @tui-the-board-says-what-filters-it
+    Scenario: the board says what it is filtered by, once the filters are closed
+      When I open the board
+      And I press "shift+f", "l", "j", "j", "j", "esc"
+      Then the mode is "NORMAL"
+      And the board says "filtered by priority high"
+      And the board says nothing of "Review the plan"
+
+    @tui-a-filter-walks-back-to-its-last-value
+    Scenario: a filter walked back from any comes to its last value
+      When I open the board
+      And I press "shift+f", "l", "k", "esc"
+      Then the board says "filtered by priority critical"
