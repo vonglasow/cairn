@@ -41,6 +41,11 @@ updates:
         dependency-type: all
       - dependency-name: github.com/tc-hib/go-winres
         dependency-type: all
+      - dependency-name: github.com/tc-hib/go-winres
+        dependency-type: all
+      # Read by go-winres; allowed by name so its security updates can come.
+      - dependency-name: golang.org/x/image
+        dependency-type: all
     groups:
       tools:
         applies-to: version-updates
