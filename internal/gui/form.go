@@ -550,6 +550,8 @@ func (w Window) Choose(name string) Window {
 		return w
 	case "filter":
 		return w.filteringBoard()
+	case "reset sizes":
+		return w.resized(Sizes{})
 	case "no filter":
 		w.filters = w.filters.Cleared()
 		return w

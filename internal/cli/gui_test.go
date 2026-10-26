@@ -3,6 +3,8 @@ package cli
 import (
 	"cairn/internal/engine"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -13,8 +15,11 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, draft string, width, height int) error {
+	openGui = func(work engine.Work, _ engine.Pages, draft, sizes string, width, height int) error {
 		handed = true
+		if sizes != "" {
+			t.Errorf("with nothing configured, the window keeps its sizes at %q", sizes)
+		}
 		_, readable = work.Version()
 		if draft != store+".draft.json" {
 			t.Errorf("the window keeps its draft at %q, not beside the store", draft)
@@ -41,7 +46,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, string, int, int) error { return errors.New("no display here") }
+	openGui = func(engine.Work, engine.Pages, string, string, int, int) error { return errors.New("no display here") }
 	t.Cleanup(func() { openGui = was })
 
 	got := run(t, "gui")
@@ -68,7 +73,7 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", store)
 	t.Setenv("CAIRN_AUTHOR", "sam")
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, _ string, _, _ int) error {
+	openGui = func(work engine.Work, _ engine.Pages, _, _ string, _, _ int) error {
 		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
 		return err
 	}
@@ -79,5 +84,32 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 	shown := run(t, "trace", "show", "1")
 	if !strings.Contains(shown.Stdout, "(by sam, through gui)") {
 		t.Errorf("an act from the window reads:\n%s", shown.Stdout)
+	}
+}
+
+func TestGuiKeepsTheSizesBesideTheStoreWhenTheConfigurationSaysSo(t *testing.T) {
+	store := storeFor(t)
+	t.Setenv("CAIRN_STORE", store)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	path := filepath.Join(home, ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("[window]\nkeep_sizes = true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var kept string
+	was := openGui
+	openGui = func(_ engine.Work, _ engine.Pages, _, sizes string, _, _ int) error {
+		kept = sizes
+		return nil
+	}
+	t.Cleanup(func() { openGui = was })
+	if got := run(t, "gui"); got.Code != 0 {
+		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
+	}
+	if kept != store+".sizes.json" {
+		t.Errorf("the window keeps its sizes at %q, not beside the store", kept)
 	}
 }

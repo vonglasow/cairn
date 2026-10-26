@@ -19,7 +19,7 @@ const menuButtonWide = 40
 var menuBar = []MenuGroup{
 	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import"}},
 	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter"}},
+	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", "Reset sizes"}},
 	{Name: "Help", Items: []string{"Help", "About cairn"}},
 }
 
@@ -107,7 +107,7 @@ func (w Window) Doable(line string) bool {
 		return chosenTask && found && !engine.Finished(card)
 	case "Archive":
 		return chosenTask || onTasks && len(w.Taken()) > 0
-	case "Archived":
+	case "Archived", "Reset sizes":
 		return onTasks
 	}
 	return true

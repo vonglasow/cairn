@@ -245,6 +245,9 @@ func (w Window) DoubleClick(p Point) Window {
 	if w.Blank() {
 		return w
 	}
+	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.tab == Tasks && w.screen == OnTheBoard {
+		return w.resized(widening.Evened())
+	}
 	if w.screen == OnChoosing {
 		box := w.ChoosingBox()
 		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
@@ -357,7 +360,7 @@ func (w Window) PressAt(p Point) Window {
 	if w.tab == Objectives {
 		return w
 	}
-	if widening, on := gutterAt(w.Layout(), p); on && w.tab == Tasks {
+	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.tab == Tasks {
 		w.widening = widening
 		return w
 	}
@@ -368,7 +371,7 @@ func (w Window) PressAt(p Point) Window {
 // MoveTo follows the pointer, and past Grip says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
 	if w.widening.On {
-		w.widths = w.widening.To(p)
+		w.sizes = w.widening.To(p)
 		return w
 	}
 	if w.draggingForm {
@@ -420,7 +423,7 @@ func (w Window) MoveTo(p Point) Window {
 func (w Window) LetGo(p Point) Window {
 	if w.widening.On {
 		w.widening, w.pressed = Widening{}, false
-		return w
+		return w.resized(w.sizes)
 	}
 	if w.draggingForm {
 		w.draggingForm, w.held, w.pressed = false, Held{}, false

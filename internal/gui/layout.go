@@ -53,26 +53,26 @@ func TooSmall(width, height int) bool {
 	return width < Narrowest || height < Shortest
 }
 
-// Widths is how wide a person dragged each column and each lane, in dp at the size the window then had: what the board keeps of them is their shares, so a window resized keeps them in proportion. Zero, every column and every lane is as wide as the others.
-type Widths struct {
-	Column [engine.Columns]int
-	Lane   [3]int
+// Sizes is how wide a person dragged each column and each lane, and how tall the columns above the band and the band, in dp at the size the window then had: what the board keeps of them is their shares, so a window resized keeps them in proportion. Zero, every column and every lane is as wide as the others, and the band as tall as it opens.
+type Sizes struct {
+	Column [engine.Columns]int `json:"columns"`
+	Lane   [3]int              `json:"lanes"`
+	Band   [2]int              `json:"band"`
 }
 
 // NarrowestColumn is the narrowest a gutter dragged leaves a column or a lane: room for a card's title, even when the window is wide enough for more.
 const NarrowestColumn = 120
 
 // LayoutFor works out every size at a given window, every column as wide as the others.
-func LayoutFor(width, height int) Layout { return LaidOut(width, height, Widths{}) }
+func LayoutFor(width, height int) Layout { return LaidOut(width, height, Sizes{}) }
 
 // LaidOut works out every size at a given window, each column and lane given its share of the widths a person dragged.
-func LaidOut(width, height int, by Widths) Layout {
+func LaidOut(width, height int, by Sizes) Layout {
 	room := width - margin - margin - (engine.Columns-1)*gap
 	columns := sharesOf(room, by.Column[:])
 
 	usable := max(0, height-margin-margin-tabsHigh-headHigh-barHigh-gap-gap)
-	band := bandHigh
-	top := usable - band - gap
+	top, band := split(usable-gap, by.Band)
 
 	var l Layout
 	l.Tabs = Box{X: margin, Y: margin, W: width - margin - margin, H: tabsHigh}
@@ -99,6 +99,18 @@ func LaidOut(width, height int, by Widths) Layout {
 	}
 	l.Bar = Box{X: margin, Y: height - margin - barHigh, W: width - margin - margin, H: barHigh}
 	return l
+}
+
+// LowestBand is the shortest the edge above the band, dragged, leaves it: its lanes' names and a card's room under them. The columns above it keep a card's room too.
+const LowestBand = laneHigh + CardHeight
+
+func split(room int, given [2]int) (top, band int) {
+	band = bandHigh
+	if total := given[0] + given[1]; total > 0 {
+		band = room * given[1] / total
+	}
+	band = max(min(band, room-CardHeight), LowestBand)
+	return room - band, band
 }
 
 func sharesOf(room int, widths []int) []int {
@@ -132,6 +144,18 @@ func Gutter(l Layout, column int) Box {
 func LaneGutter(l Layout, lane int) Box {
 	left, right := l.Lane[lane], l.Lane[lane+1]
 	return Box{X: left.X + left.W, Y: l.Band.Y, W: right.X - left.X - left.W, H: l.Band.H}
+}
+
+// BandEdge is the gap between the columns and the band, as wide as the band: what is dragged to make the band taller and the columns above it shorter.
+func BandEdge(l Layout) Box {
+	return Box{X: l.Band.X, Y: l.Column[1].Y + l.Column[1].H, W: l.Band.W, H: l.Band.Y - l.Column[1].Y - l.Column[1].H}
+}
+
+// Raised is the heights of the columns above the band and of the band after the edge between them was dragged up by so much: the band takes what the columns give, neither going under what it must hold.
+func Raised(top, band, by int) [2]int {
+	pair := top + band
+	band = max(min(band+by, pair-CardHeight), LowestBand)
+	return [2]int{pair - band, band}
 }
 
 // Widened is the widths after the gutter right of one of these boxes was dragged by so much: the box on its left takes what the one on its right gives, neither going under NarrowestColumn, and every other keeps what it had.

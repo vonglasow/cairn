@@ -415,6 +415,21 @@
           ],
           "additionalProperties": false
         },
+        "window": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "keep_sizes": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "keep_sizes"
+          ],
+          "additionalProperties": false
+        },
         "problem": {
           "type": "string"
         }

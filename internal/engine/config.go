@@ -19,20 +19,26 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, and each of its places, alongside what named it.
 type Config struct {
-	File     string       `json:"file"`
-	Store    Emplacement  `json:"store"`
-	Notes    Emplacement  `json:"notes"`
-	Plugin   Emplacement  `json:"plugin"`
-	PagesOff []string     `json:"pages_off,omitempty"`
-	Archive  *Archive     `json:"archive,omitempty"`
-	Focus    *FocusConfig `json:"focus,omitempty"`
-	Time     *TimeConfig  `json:"time,omitempty"`
-	Problem  string       `json:"problem,omitempty"`
+	File     string        `json:"file"`
+	Store    Emplacement   `json:"store"`
+	Notes    Emplacement   `json:"notes"`
+	Plugin   Emplacement   `json:"plugin"`
+	PagesOff []string      `json:"pages_off,omitempty"`
+	Archive  *Archive      `json:"archive,omitempty"`
+	Focus    *FocusConfig  `json:"focus,omitempty"`
+	Time     *TimeConfig   `json:"time,omitempty"`
+	Window   *WindowConfig `json:"window,omitempty"`
+	Problem  string        `json:"problem,omitempty"`
 }
 
 // TimeConfig is what a deleted task does with its time, when the file says it takes it.
 type TimeConfig struct {
 	Deleted string `json:"deleted"`
+}
+
+// WindowConfig is whether the window opens with the sizes it was left with, when the file says it does.
+type WindowConfig struct {
+	KeepSizes bool `json:"keep_sizes"`
 }
 
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it.
@@ -89,6 +95,9 @@ func (g *readingGate) Resolved(p config.Places) {
 	if session := p.FocusSession(); session != "" {
 		g.config.Focus = &FocusConfig{Session: session}
 	}
+	if p.KeepSizes() {
+		g.config.Window = &WindowConfig{KeepSizes: true}
+	}
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -141,6 +150,9 @@ func configText(c Config) string {
 	}
 	if c.Focus != nil {
 		said += fmt.Sprintf("\nfocus       asks to be renewed after %s\n", c.Focus.Session)
+	}
+	if c.Window != nil {
+		said += "\nwindow      opens with the sizes it was left with\n"
 	}
 	return said
 }

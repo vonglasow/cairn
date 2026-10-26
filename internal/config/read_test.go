@@ -749,3 +749,21 @@ func TestRead_saysWhatADeletedTaskDoesWithItsTime(t *testing.T) {
 		t.Errorf("err = %v, want ErrTime", err)
 	}
 }
+
+func TestRead_saysWhetherTheWindowKeepsItsSizes(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[window]\nkeep_sizes = true\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !read.KeepSizes() {
+		t.Error("keep_sizes = true does not keep the window's sizes")
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if none.KeepSizes() {
+		t.Error("with no file, the window keeps its sizes")
+	}
+	_, err = config.Read(writtenConfig(t, "[window]\nkeep_sizes = \"always\"\n"), silentEnv)
+	if !errors.Is(err, config.ErrKeepSizes) || !strings.Contains(err.Error(), "window.keep_sizes") {
+		t.Errorf("err = %v, want ErrKeepSizes naming window.keep_sizes", err)
+	}
+}

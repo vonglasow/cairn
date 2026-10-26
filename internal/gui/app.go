@@ -194,14 +194,14 @@ const reach = 1 << 20
 var tag = new(int)
 
 // Run opens a window and keeps it until it is closed.
-func Run(work engine.Work, pages engine.Pages, drafts Drafts, width, height int) {
+func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, width, height int) {
 	leaveConsole()
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
 		_ = os.Setenv("IBUS_ADDRESS", address)
 	}
 	knownAs()
 	showLogo()
-	go func() { ended(loop(work, pages, drafts, width, height), os.Stderr, os.Exit) }()
+	go func() { ended(loop(work, pages, drafts, sizes, width, height), os.Stderr, os.Exit) }()
 	app.Main()
 }
 
@@ -214,13 +214,17 @@ func ended(err error, said io.Writer, exit func(int)) {
 	exit(1)
 }
 
-func loop(work engine.Work, pages engine.Pages, drafts Drafts, width, height int) error {
+func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
 	traced := tracing(os.Getenv, os.Stderr)
 
 	theme, skin := Theme(), Dark()
-	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).Look()
+	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme))
+	if sizes != nil {
+		board = board.KeepingSizes(sizes)
+	}
+	board = board.Look()
 	if data, starts, ok := desktopHome(); ok {
 		board = board.Settling(data, starts)
 	}

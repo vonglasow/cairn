@@ -148,7 +148,45 @@ kept is each one's share, not its width: a window made smaller makes every
 column smaller, nothing holds it back, and a column no longer readable is the
 person's to widen again (`@gui-columns-keep-their-shares-when-the-window-shrinks`).
 The widths are the window's, not the store's: a window opened again has its
-columns as wide as each other (`@gui-columns-open-as-wide-as-each-other`). On
+columns as wide as each other (`@gui-columns-open-as-wide-as-each-other`),
+unless the configuration says to keep them (below).
+
+**The band is made taller by dragging the edge above it.** The edge is the gap
+between todo, current and done and the band, as wide as the band. Dragged, it
+gives the band what it takes from the three columns above it, and the backlog,
+which runs the window's height, stays as it was
+(`@gui-the-band-grows-when-its-edge-is-dragged`). The band never goes under its
+lanes' names and a card's room, nor the columns under a card's room
+(`LowestBand`, `@gui-the-band-dragged-down-keeps-a-card-in-sight`,
+`@gui-the-columns-dragged-up-keep-a-card-in-sight`). What is kept is the
+band's share of the height, the way a column keeps its share of the width
+(`@gui-the-band-keeps-its-share-when-the-window-shrinks`). Its height had been
+fixed, two cards, which is right for a person who keeps little stopped and
+wrong for one who keeps a great deal.
+
+**A size given is taken back by a double-click, or all at once by the menu.**
+A double-click on a gutter between columns makes every column as wide as the
+others, on one between lanes every lane, and on the edge above the band gives
+the band the height it opens with — what that gutter shares and nothing else
+(`@gui-a-double-click-on-a-gutter-evens-the-columns`,
+`@gui-a-double-click-on-a-lane-gutter-evens-the-lanes`,
+`@gui-a-double-click-on-the-band-edge-gives-it-back-its-height`). `Reset
+sizes`, in the View menu, takes back every one of them
+(`@gui-reset-sizes-takes-every-size-back`). A size dragged by hand is not
+easily dragged back exactly, and a way back that has to be found again by
+hand is no way back.
+
+**The sizes are kept from one window to the next when the configuration says
+so** — `[window] keep_sizes = true`, see [config.md](config.md). They are then
+written beside the store, `cairn.db.sizes.json` (`Places.Sizes`), every time a
+gutter is let go of or a size is taken back, and read when the window opens
+(`@gui-the-sizes-are-kept-when-the-configuration-says-so`). A reset is kept
+like any other size (`@gui-sizes-reset-are-not-kept`). Off by default, because
+some want the board as it starts each time and some the board as they left
+it, and the first was the behaviour already there
+(`@gui-the-band-opens-as-tall-as-ever`). Not in the store: the store may be
+shared, and how wide one person likes a column is nobody else's. Not in the
+configuration file either, which a person writes and cairn only reads. On
 the tasks page only; the pointer does not change shape over a
 gutter, since the window sets no cursor anywhere.
 

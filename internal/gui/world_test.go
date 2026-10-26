@@ -45,6 +45,7 @@ type world struct {
 	was          int
 	pointer      Point
 	theme        *material.Theme
+	keepSizes    bool
 }
 
 func newWorld(t *testing.T) *world { return &world{t: t, width: 1200, high: 800} }
@@ -70,6 +71,7 @@ func (w *world) reset() {
 	w.work = &refusing{held: held}
 	w.w = Window{}
 	w.width, w.high = 1200, 800
+	w.keepSizes = false
 	w.system = "darwin"
 	w.today = moment
 	w.scrolled = [engine.Columns]int{}
@@ -160,6 +162,9 @@ func (w *world) storeRefuses() error {
 func (w *world) open() error {
 	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.pages).
 		Drafting(DraftsAt(engine.Places{Store: w.path}.Draft()))
+	if w.keepSizes {
+		w.w = w.w.KeepingSizes(SizesAt(engine.Places{Store: w.path}.Sizes()))
+	}
 	w.w = w.w.Look()
 	return w.w.Wrong()
 }

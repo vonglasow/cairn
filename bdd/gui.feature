@@ -236,6 +236,99 @@ Feature: The desktop board
       And the window is closed and opened again
       Then every column is as wide as the others
 
+  Rule: The band is made taller or shorter by dragging the edge above it
+
+    @gui-the-band-grows-when-its-edge-is-dragged
+    Scenario: the edge between the columns and the band, dragged up, gives the band what it takes from the columns
+      When I open the window
+      And I drag the edge above the band 100 up
+      Then the band is 100 taller than it opened
+      And "todo" is 100 shorter than it opened
+      And "backlog" is as tall as it opened
+
+    @gui-the-band-dragged-down-keeps-a-card-in-sight
+    Scenario: the edge dragged past the band leaves a card's room in its lanes
+      When I open the window
+      And I drag the edge above the band 5000 down
+      Then the band's lanes hold one card's room
+
+    @gui-the-columns-dragged-up-keep-a-card-in-sight
+    Scenario: the edge dragged past the columns leaves a card's room in them
+      When I open the window
+      And I drag the edge above the band 5000 up
+      Then "todo" holds one card's room
+
+    @gui-the-band-keeps-its-share-when-the-window-shrinks
+    Scenario: a window made shorter keeps the share the band was given
+      When I open the window
+      And I drag the edge above the band 200 up
+      And I resize the window to 1200 by 700
+      Then the band is taller than it opens at 1200 by 700
+
+  Rule: A size given is taken back by a double-click or by the menu
+
+    @gui-a-double-click-on-a-gutter-evens-the-columns
+    Scenario: a double-click on a gutter between columns makes every column as wide as the others
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I double-click the gutter between "todo" and "current"
+      Then every column is as wide as the others
+
+    @gui-a-double-click-on-a-lane-gutter-evens-the-lanes
+    Scenario: a double-click on a gutter between lanes makes every lane as wide as the others
+      When I open the window
+      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I double-click the gutter between the "blocked" and "watching" lanes
+      Then every lane is as wide as the others
+      And "todo" is 60 wider than it opened
+
+    @gui-a-double-click-on-the-band-edge-gives-it-back-its-height
+    Scenario: a double-click on the edge above the band gives the band the height it opened with
+      When I open the window
+      And I drag the edge above the band 100 up
+      And I double-click the edge above the band
+      Then the band is as tall as it opened
+
+    @gui-reset-sizes-takes-every-size-back
+    Scenario: Reset sizes, in the menu, takes back every width and the band's height
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
+      And I drag the edge above the band 100 up
+      And I pick "Reset sizes" from the menu bar
+      Then every column is as wide as the others
+      And every lane is as wide as the others
+      And the band is as tall as it opened
+
+  Rule: The sizes are kept from one window to the next only when the configuration says so
+
+    @gui-the-sizes-are-kept-when-the-configuration-says-so
+    Scenario: with keep_sizes on, a window opened again has the sizes the last one was left with
+      Given the configuration keeps the window's sizes
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I drag the edge above the band 100 up
+      And the window is closed and opened again
+      Then "todo" is 60 wider than it opened
+      And the band is 100 taller than it opened
+
+    @gui-sizes-reset-are-not-kept
+    Scenario: with keep_sizes on, sizes reset stay reset in the next window
+      Given the configuration keeps the window's sizes
+      When I open the window
+      And I drag the gutter between "todo" and "current" 60 to the right
+      And I pick "Reset sizes" from the menu bar
+      And the window is closed and opened again
+      Then every column is as wide as the others
+
+    @gui-the-band-opens-as-tall-as-ever
+    Scenario: without keep_sizes, the band's height is not kept from one window to the next
+      When I open the window
+      And I drag the edge above the band 100 up
+      And the window is closed and opened again
+      Then the band is as tall as it opened
+
   Rule: The board is filtered by column, priority, label, objective and due day, and every filter is cleared at once
 
     Background:
@@ -1594,7 +1687,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Filter", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is

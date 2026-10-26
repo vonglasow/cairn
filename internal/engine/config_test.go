@@ -99,3 +99,13 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 		t.Errorf("config init is level %v and needs %v", ConfigInit.Level, ConfigInit.Needs)
 	}
 }
+
+func TestConfigShowSaysTheWindowKeepsItsSizes(t *testing.T) {
+	said := configText(Config{Window: &WindowConfig{KeepSizes: true}})
+	if !strings.Contains(said, "window      opens with the sizes it was left with") {
+		t.Errorf("config show says:\n%s", said)
+	}
+	if said := configText(Config{}); strings.Contains(said, "window") {
+		t.Errorf("with the sizes not kept, config show says:\n%s", said)
+	}
+}

@@ -238,6 +238,21 @@ in a folder iCloud or Dropbox keeps in step, and two machines can each see
 half a write. The store goes on a local disk; what travels between machines is
 a backup, which is one file written whole.
 
+## The window's sizes, kept or not
+
+```toml
+[window]
+keep_sizes = true   # the window opens as wide and as tall as it was left
+```
+
+Off unless it says true. On, the window keeps how wide each column and each
+lane was dragged and how tall the band, in a file beside the store
+(`cairn.db.sizes.json`), and the next window opens with them; off, every window
+opens as it starts. Either way, a double-click on a gutter or `Reset sizes`
+takes them back ([gui.md](gui.md)). Anything but `true` or `false` is refused,
+naming `window.keep_sizes` (`@config-keep-sizes-is-yes-or-no`), and `config
+show` says when it is on (`@config-show-says-the-window-keeps-its-sizes`).
+
 ## TOML, because a person opens this file
 
 This file is for someone to read and change, so it has to be able to carry a

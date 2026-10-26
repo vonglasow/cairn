@@ -46,6 +46,9 @@ const (
 	TimeTaken = "taken"
 )
 
+// ErrKeepSizes is returned when the file says whether the window keeps its sizes with something that is neither true nor false.
+var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
+
 // ErrFocus is returned when the file says a focus session lasts something that is not a duration.
 var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
 
@@ -74,6 +77,7 @@ type Places struct {
 	archiveDays  int
 	focusSession string
 	timeDeleted  string
+	keepSizes    bool
 }
 
 type file struct {
@@ -84,6 +88,22 @@ type file struct {
 	Archive *archive `toml:"archive"`
 	Focus   *focus   `toml:"focus"`
 	Time    *timed   `toml:"time"`
+	Window  *window  `toml:"window"`
+}
+
+type window struct {
+	KeepSizes any `toml:"keep_sizes"`
+}
+
+func (w *window) keepSizes() (bool, error) {
+	if w == nil || w.KeepSizes == nil {
+		return false, nil
+	}
+	keep, ok := w.KeepSizes.(bool)
+	if !ok {
+		return false, fmt.Errorf("window.keep_sizes %v: %w", w.KeepSizes, ErrKeepSizes)
+	}
+	return keep, nil
 }
 
 type timed struct {
@@ -160,6 +180,9 @@ func (p Places) TimeDeleted() string { return p.timeDeleted }
 // FocusSession is how long a focus session lasts before it asks to be renewed, written 1h, exactly as the file wrote it; nothing when the file does not say.
 func (p Places) FocusSession() string { return p.focusSession }
 
+// KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
+func (p Places) KeepSizes() bool { return p.keepSizes }
+
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
 func (p Places) PagesOff() []string { return p.pagesOff }
 
@@ -231,7 +254,12 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
+	keep, err := f.Window.keepSizes()
+	if err != nil {
+		return Reading{path: path, err: err}, nil
+	}
 	answer := Places{
+		keepSizes:    keep,
 		timeDeleted:  deleted,
 		focusSession: f.Focus.session(),
 		archiveStart: start,

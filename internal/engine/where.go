@@ -33,6 +33,18 @@ type Places struct {
 // Draft is where a window keeps what was typed into the form of a task being added and not saved yet: beside the store it is meant for.
 func (p Places) Draft() string { return p.Store + ".draft.json" }
 
+// Sizes is where a window keeps how wide and how tall it was left, when the configuration says to: beside the store it showed.
+func (p Places) Sizes() string { return p.Store + ".sizes.json" }
+
+// KeepsSizes says whether the configuration has the window open with the sizes it was left with; a configuration that cannot be read keeps none, and says so where it is read for its places.
+func KeepsSizes(h Home) bool {
+	if h.Dir == "" {
+		return false
+	}
+	read, err := config.Read(h.Dir, h.lookup())
+	return err == nil && read.KeepSizes()
+}
+
 // Locate works out where the store and the notes live: the environment, then the configuration file, then the default place under the home, in that order.
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {

@@ -112,6 +112,12 @@ time = true
 # deleted, or "taken" with it, as though it had never been spent.
 # [time]
 # deleted = "kept"
+
+# Whether the window opens with the columns, the lanes and the band as wide
+# and as tall as it was left with, rather than as they start. Kept in a file
+# beside the store. Off unless it says true.
+# [window]
+# keep_sizes = true
 ```
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and

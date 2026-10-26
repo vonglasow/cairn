@@ -280,6 +280,20 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "time.deleted"
 
+  Rule: The window keeps its sizes only when the configuration says so
+
+    @config-show-says-the-window-keeps-its-sizes
+    Scenario: config show says the window opens with the sizes it was left with
+      Given the window keeps its sizes
+      Then `cairn config show` says "window      opens with the sizes it was left with"
+
+    @config-keep-sizes-is-yes-or-no
+    Scenario: keep_sizes that is not true or false is refused
+      Given the window's keep_sizes is "always"
+      When I run `cairn task list`
+      Then it fails
+      And it names "window.keep_sizes"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-names-the-file-it-reads

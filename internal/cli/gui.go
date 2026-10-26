@@ -12,9 +12,16 @@ const (
 	high = 840
 )
 
-var openGui = func(work engine.Work, pages engine.Pages, draft string, width, height int) error {
-	gui.Run(work, pages, gui.DraftsAt(draft), width, height)
+var openGui = func(work engine.Work, pages engine.Pages, draft, sizes string, width, height int) error {
+	gui.Run(work, pages, gui.DraftsAt(draft), sizesAt(sizes), width, height)
 	return nil
+}
+
+func sizesAt(path string) gui.SizesKept {
+	if path == "" {
+		return nil
+	}
+	return gui.SizesAt(path)
 }
 
 func newGuiCmd() *cobra.Command {
@@ -32,7 +39,11 @@ func newGuiCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return openGui(held, engine.PagesFrom(home()), at.Draft(), wide, high)
+			sizes := ""
+			if engine.KeepsSizes(home()) {
+				sizes = at.Sizes()
+			}
+			return openGui(held, engine.PagesFrom(home()), at.Draft(), sizes, wide, high)
 		},
 	}
 }

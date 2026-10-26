@@ -250,6 +250,10 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
 	})
 	sc.Step(`^focus sessions last "([^"]*)"$`, w.FocusSessionsLast)
+	sc.Step(`^the window keeps its sizes$`, func() error { return w.WriteConfig("[window]\nkeep_sizes = true\n") })
+	sc.Step(`^the window's keep_sizes is "([^"]*)"$`, func(said string) error {
+		return w.WriteConfig(fmt.Sprintf("[window]\nkeep_sizes = %q\n", said))
+	})
 	sc.Step(`^a deleted task takes its time with it$`, func() error { return w.WriteConfig("[time]\ndeleted = \"taken\"\n") })
 	sc.Step(`^the time of a deleted task is "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[time]\ndeleted = %q\n", said))

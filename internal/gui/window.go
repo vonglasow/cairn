@@ -117,7 +117,8 @@ type Window struct {
 	form                  Form
 	formMoved, formGrip   Point
 	draggingForm, dragged bool
-	widths                Widths
+	sizes                 Sizes
+	kept                  SizesKept
 	widening              Widening
 	filters               engine.Filters
 	filterOn              int
@@ -157,7 +158,7 @@ func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work.
 func New(work engine.Work, width, height int) Window {
-	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}}
+	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}}
 	return w.sized()
 }
 
@@ -182,7 +183,7 @@ func (w Window) sized() Window {
 }
 
 // Layout is every size this window draws from.
-func (w Window) Layout() Layout { return LaidOut(w.width, w.height, w.widths) }
+func (w Window) Layout() Layout { return LaidOut(w.width, w.height, w.sizes) }
 
 // Screen says what has the window.
 func (w Window) Screen() Screen { return w.screen }
