@@ -34,6 +34,21 @@ func (w *world) bandCarries(want int) error {
 	return nil
 }
 
+func (w *world) bandReads(list string) error {
+	_, band := engine.Deal(w.cards(), w.b.archived)
+	var got, want []string
+	for _, c := range band {
+		got = append(got, c.Title)
+	}
+	for _, title := range strings.Split(list, ",") {
+		want = append(want, strings.Trim(strings.TrimSpace(title), `"`))
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		return fmt.Errorf("the band reads %q, want %q", got, want)
+	}
+	return nil
+}
+
 func (w *world) columnCarries(column, title string) error {
 	found, ok := engine.At(w.columns(), lower(column))
 	if !ok {

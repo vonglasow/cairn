@@ -1325,6 +1325,29 @@ func TestADragOpensRoomWhereTheCardWouldLand(t *testing.T) {
 	}
 }
 
+func TestADragOpensRoomInALaneWhereTheCardWouldLand(t *testing.T) {
+	f := newFake()
+	w := holding(f,
+		engine.Card{Number: 1, Title: "First", State: "blocked"},
+		engine.Card{Number: 2, Title: "Second", State: "blocked"},
+		engine.Card{Number: 3, Title: "Third", State: "backlog"})
+	l := w.Layout()
+	second := l.LaneCardAt(0, 1, 0)
+	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
+
+	landing, ok := w.Landing()
+	if !ok || landing != (Box{X: second.X, Y: second.Y, W: second.W, H: CardHeight}) {
+		t.Errorf("the card would land in %+v, want the room %+v", landing, second)
+	}
+	slots := map[int]Box{}
+	for _, p := range w.Placed() {
+		slots[p.Card.Number] = p.Slot
+	}
+	if slots[1] != l.LaneCardAt(0, 0, 0) || slots[2] != l.LaneCardAt(0, 2, 0) {
+		t.Errorf("First is at %+v and Second at %+v: no room was made between them", slots[1], slots[2])
+	}
+}
+
 func paintedNear(shot *image.RGBA, b Box, want color.NRGBA, by int) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -1346,4 +1369,23 @@ func dimmed(c color.NRGBA) color.NRGBA {
 		return uint8((int(under)*(255-int(veil.A)) + int(over)*int(veil.A)) / 255)
 	}
 	return color.NRGBA{R: mix(c.R, veil.R), G: mix(c.G, veil.G), B: mix(c.B, veil.B), A: 255}
+}
+
+func TestACardDroppedOverItsOwnLowerHalfStaysBehindTheOneBefore(t *testing.T) {
+	for name, slot := range map[string]func(Layout, int) Box{
+		"column": func(l Layout, at int) Box { return l.CardAt(1, at, 0) },
+		"lane":   func(l Layout, at int) Box { return l.LaneCardAt(0, at, 0) },
+	} {
+		state := map[string]string{"column": "todo", "lane": "blocked"}[name]
+		f := newFake()
+		w := holding(f, card(1, "First", state), card(2, "Second", state))
+		own := slot(w.Layout(), 1)
+		w = w.PressAt(Point{X: own.X + own.W/2, Y: own.Y + own.H/2})
+		lower := Point{X: own.X + own.W/2, Y: own.Y + own.H*3/4}
+		w.MoveTo(lower).LetGo(lower)
+		in, asked := f.gave("task", "move")
+		if !asked || in.Given["after"] != "1" {
+			t.Errorf("in a %s, a card let go over its own lower half was moved with %v, want behind task 1", name, in.Given)
+		}
+	}
 }

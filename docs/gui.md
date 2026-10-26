@@ -383,7 +383,10 @@ and since the slot was a card's whole height, the last card of a column
 scrolled to its end covered its foot: there was no point anywhere that meant
 "after it", and a card could not be put last
 (`@gui-a-drag-reaches-the-foot-of-a-long-column`). The card in hand is never
-counted where it is going, so it is never put behind itself.
+counted where it is going, so it is never put behind itself. That holds until the
+drop itself: the place is worked out while the card is still in hand, and a
+card let go over the lower half of its own slot used to be sent behind itself,
+and refused (`TestACardDroppedOverItsOwnLowerHalfStaysBehindTheOneBefore`).
 
 **A drop carries the column and the place.** That is one `task move --state
 todo --after 3`: the column and the place in one act, so a place refused
@@ -410,6 +413,14 @@ rows of stopped work, and a third read as a sign to go and unblock something
 rather than to scroll. What a lane held past its second card was then out of
 reach: the wheel did nothing over it and the arrows chose cards nobody could
 see. It now scrolls the way a column does, between the same two ends.
+
+**A lane takes a place the way a column does.** A card dragged over a lane
+opens a card's room where it would land, and the drop carries the lane and the
+place in one `task move` (`@gui-a-drag-in-a-lane-carries-the-place`,
+`TestADragOpensRoomInALaneWhereTheCardWouldLand`). A drop used to carry the
+lane alone: the card went last, and one dropped in its own lane did not move,
+so the order of what was stopped could not be set from the window at all
+(`@gui-a-drag-within-a-lane-only-moves`).
 
 ## The form
 

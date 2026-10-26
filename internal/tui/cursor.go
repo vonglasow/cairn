@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"slices"
+
 	"cairn/internal/engine"
 
 	tea "charm.land/bubbletea/v2"
@@ -291,6 +293,9 @@ func (b Board) push(way string) (tea.Model, tea.Cmd) {
 
 func (b Board) pushDown() (tea.Model, tea.Cmd) {
 	if b.inBand {
+		if where, ok := engine.Step(b.ofItsKind(), b.task, 1); ok {
+			return b, b.moving(where)
+		}
 		return b, nil
 	}
 	here := b.here()
@@ -306,12 +311,24 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 
 func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
+		if where, ok := engine.Step(b.ofItsKind(), b.task, -1); ok {
+			return b, b.moving(where)
+		}
 		return b.land(engine.StateAt(b.cameFrom), b.cameFrom, false)
 	}
 	if where, ok := engine.Step(b.here(), b.task, -1); ok {
 		return b, b.moving(where)
 	}
 	return b, nil
+}
+
+func (b Board) ofItsKind() []engine.Card {
+	held, _ := b.held()
+	lane := slices.Index(engine.Stalled, held.State)
+	if lane < 0 {
+		return nil
+	}
+	return engine.InLanes(b.here())[lane]
 }
 
 func (b Board) sideways(way string) (tea.Model, tea.Cmd) {

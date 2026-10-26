@@ -444,6 +444,30 @@ func (w *world) dragToLane(title, kind string) error {
 	return nil
 }
 
+func (w *world) dragToLaneAbove(title, kind, above string) error {
+	from, err := w.find(title)
+	if err != nil {
+		return err
+	}
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	_, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
+	for at, c := range engine.InLanes(stalled)[lane] {
+		if c.Title != above {
+			continue
+		}
+		box := w.w.Layout().LaneCardAt(lane, at, w.w.lanes[lane])
+		onto := Point{X: box.X + box.W/2, Y: box.Y + box.H/4}
+		w.w = w.w.PressAt(from)
+		w.w = w.w.MoveTo(onto)
+		w.w = w.w.LetGo(onto)
+		return nil
+	}
+	return fmt.Errorf("no card titled %q in the lane %q", above, kind)
+}
+
 func (w *world) takeHoldUnder(title, below string) error {
 	from, err := w.find(title)
 	if err != nil {
@@ -1011,6 +1035,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)"$`, w.dragOnto)
 	sc.Step(`^I drag the card "([^"]*)" onto "([^"]*)" above "([^"]*)"$`, w.dragAbove)
 	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)"$`, w.dragToLane)
+	sc.Step(`^I drag the card "([^"]*)" onto the lane "([^"]*)" above "([^"]*)"$`, w.dragToLaneAbove)
 	sc.Step(`^I drag the card "([^"]*)" to the foot of "([^"]*)"$`, func(title, column string) error {
 		from, err := w.find(title)
 		if err != nil {

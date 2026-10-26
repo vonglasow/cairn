@@ -453,11 +453,10 @@ func (w Window) LetGo(p Point) Window {
 	if w.form.carried != 0 {
 		return w.lettingGoOfAPart(p)
 	}
-	held := w.held
-	w.held = Held{}
-	if held.Number != 0 && held.Moved {
-		return w.dropped(held.Number, p)
+	if w.Dragging() {
+		return w.dropped(w.held.Number, p)
 	}
+	w.held = Held{}
 	return w.Click(p)
 }
 
@@ -584,6 +583,7 @@ func (w Window) above(p Point) int {
 
 func (w Window) dropped(number int, p Point) Window {
 	state, place, found := w.where(w.Layout(), p)
+	w.held = Held{}
 	if !found {
 		return w
 	}
@@ -612,24 +612,28 @@ func (w Window) dropped(number int, p Point) Window {
 
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
-		return engine.Stalled[lane], nil, true
+		here := w.besideHeld(w.inLane(lane))
+		return engine.Stalled[lane], placeAfter(here, landed(l.Lane[lane], w.lanes[lane], p, len(here))), true
 	}
 	for i := range engine.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
 		here := w.besideHeld(w.inColumn(i))
-		at := w.landingAt(l, i, p, len(here))
-		if at == 0 {
-			return engine.StateAt(i), map[string]string{"first": "true"}, true
-		}
-		return engine.StateAt(i), map[string]string{"after": strconv.Itoa(here[at-1].Number)}, true
+		return engine.StateAt(i), placeAfter(here, landed(l.Column[i], w.scroll[i], p, len(here))), true
 	}
 	return "", nil, false
 }
 
-func (w Window) landingAt(l Layout, column int, p Point, room int) int {
-	return max(0, min(room, (p.Y-l.Column[column].Y+w.scroll[column]+CardHeight/2)/CardHeight))
+func placeAfter(here []engine.Card, at int) map[string]string {
+	if at == 0 {
+		return map[string]string{"first": "true"}
+	}
+	return map[string]string{"after": strconv.Itoa(here[at-1].Number)}
+}
+
+func landed(body Box, scrolled int, p Point, room int) int {
+	return max(0, min(room, (p.Y-body.Y+scrolled+CardHeight/2)/CardHeight))
 }
 
 func (w Window) besideHeld(cards []engine.Card) []engine.Card {
@@ -654,10 +658,21 @@ func (w Window) openedAt(l Layout) (column, at int, open bool) {
 	}
 	for i := range engine.Columns {
 		if l.Column[i].In(w.held.At) {
-			return i, w.landingAt(l, i, w.held.At, len(w.besideHeld(w.inColumn(i)))), true
+			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.besideHeld(w.inColumn(i)))), true
 		}
 	}
 	return 0, 0, false
+}
+
+func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
+	if !w.Dragging() {
+		return 0, 0, false
+	}
+	lane, in := l.LaneUnder(w.held.At)
+	if !in {
+		return 0, 0, false
+	}
+	return lane, landed(l.Lane[lane], w.lanes[lane], w.held.At, len(w.besideHeld(w.inLane(lane)))), true
 }
 
 func (w Window) clickedOff(p Point) Window {

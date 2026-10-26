@@ -95,6 +95,23 @@ func (w *world) lanesRead(list string) error {
 	return nil
 }
 
+func (w *world) laneReads(kind, list string) error {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return err
+	}
+	_, stalled := engine.Deal(w.w.Showing().Cards, w.w.archived)
+	var got []string
+	for _, c := range engine.InLanes(stalled)[lane] {
+		got = append(got, c.Title)
+	}
+	want := quoted(list)
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		return fmt.Errorf("the lane %q reads %v, want %v", kind, got, want)
+	}
+	return nil
+}
+
 func (w *world) laneCarries(kind, title string) error {
 	_, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, c := range stalled {
@@ -596,6 +613,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the card "([^"]*)" is not dimmed$`, w.cardNotDimmed)
 	sc.Then(`^"([^"]*)" reads (".*")$`, w.columnReads)
+	sc.Then(`^the lane "([^"]*)" reads (".*")$`, w.laneReads)
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)
 	sc.Then(`^the band's lanes read (".*")$`, w.lanesRead)
 	sc.Then(`^the lane "([^"]*)" carries "([^"]*)"$`, w.laneCarries)

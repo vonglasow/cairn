@@ -287,6 +287,35 @@ Feature: The board
       And I press "shift+k"
       Then task 1 is in the column "current"
 
+    @tui-moving-a-task-down-among-its-kind-in-the-band
+    Scenario: pushing a task down in the band puts it one place lower among the tasks of its kind
+      Given I added a task titled "First" with the state "blocked"
+      And I added a task titled "Second" with the state "blocked"
+      And I added a task titled "Elsewhere" with the state "watching"
+      When I open the board
+      And I press "l", "j", "i", "shift+j"
+      Then task 1 is in the column "blocked"
+      And the band reads "Second", "First", "Elsewhere"
+
+    @tui-moving-a-task-up-among-its-kind-in-the-band
+    Scenario: pushing a task up in the band puts it one place higher among the tasks of its kind
+      Given I added a task titled "Elsewhere" with the state "blocked"
+      And I added a task titled "First" with the state "paused"
+      And I added a task titled "Second" with the state "paused"
+      When I open the board
+      And I press "l", "j", "i", "l", "l", "shift+k"
+      Then task 3 is in the column "paused"
+      And the band reads "Elsewhere", "Second", "First"
+
+    @tui-the-last-of-its-kind-in-the-band-stays
+    Scenario: pushing down the last task of its kind in the band moves nothing
+      Given I added a task titled "First" with the state "blocked"
+      And I added a task titled "Second" with the state "watching"
+      When I open the board
+      And I press "l", "j", "i", "shift+j"
+      Then task 1 is in the column "blocked"
+      And the band reads "First", "Second"
+
     @tui-out-of-the-band-leftmost-goes-to-the-backlog
     Scenario: pushing left out of the band reaches the backlog
       Given I added a task titled "Write the spec" with the state "blocked"

@@ -399,7 +399,14 @@ prompt a `g` is a letter.
 - Pushing a task **into** the band opens a popup asking which of the three states
   it lands in. Merely navigating into the band asks nothing — you must be able to
   look at what is stalled without answering a question.
-- `⇧K` out of the band returns it to **the column the cursor came from**:
+- **Inside the band, `⇧J` and `⇧K` change a task's place among the tasks of its
+  own kind**, and never its kind (`@tui-moving-a-task-down-among-its-kind-in-the-band`,
+  `@tui-moving-a-task-up-among-its-kind-in-the-band`). The band reads its three
+  kinds one after another, and a place is counted within a state, so a step
+  past a task of another kind would land nowhere the engine keeps. The last of
+  its kind goes no lower (`@tui-the-last-of-its-kind-in-the-band-stays`): below
+  it is another kind, and changing the kind is the popup's answer, not a push.
+- `⇧K` from the first of its kind takes it out of the band, to **the column the cursor came from**:
   todo → stalled → todo. That memory lives on the cursor, not on the task, so it
   dies with the session.
 - `⇧H` from the leftmost card in the band sends it to the **backlog**, even
@@ -407,7 +414,8 @@ prompt a `g` is a letter.
 
 Reordering inside a column is `⇧J` and `⇧K` — `task move`, behind the card
 below or at the head of the column — with the band reached only from the last
-card of a column, as above. Where a pushed card goes is worked out once, in
+card of a column, as above, and the same keys reordering inside the band among
+a task's own kind. Where a pushed card goes is worked out once, in
 the engine, for this board and the window alike.
 
 ## The form

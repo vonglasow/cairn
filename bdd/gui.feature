@@ -665,6 +665,25 @@ Feature: The desktop board
       Then task 1 is in the column "watching"
       And the lane "watching" carries "Client's answer"
 
+    @gui-a-drag-in-a-lane-carries-the-place
+    Scenario: dropping a card above another in a lane puts it there
+      Given I added a task titled "First" with the state "blocked"
+      And I added a task titled "Second" with the state "blocked"
+      And I added a task titled "Third" with the state "todo"
+      When I open the window
+      And I drag the card "Third" onto the lane "blocked" above "Second"
+      Then the lane "blocked" reads "First", "Third", "Second"
+
+    @gui-a-drag-within-a-lane-only-moves
+    Scenario: dropping a card in its own lane changes the place and not the state
+      Given I added a task titled "First" with the state "watching"
+      And I added a task titled "Second" with the state "watching"
+      When I open the window
+      And I drag the card "Second" onto the lane "watching" above "First"
+      Then the engine was asked "task move" for task 2
+      And the engine was not asked "task edit"
+      And the lane "watching" reads "Second", "First"
+
     @gui-a-drop-in-done-asks-about-open-steps
     Scenario: a card dropped in DONE with steps still open asks to tick them too
       Given I added a task titled "Ship it" with the state "todo"

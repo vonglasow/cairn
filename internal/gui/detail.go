@@ -25,8 +25,8 @@ func (w Window) Landing() (Box, bool) {
 		return Box{}, false
 	}
 	l := w.Layout()
-	if lane, on := l.LaneUnder(w.held.At); on {
-		return l.Lane[lane], true
+	if lane, at, open := w.openedInLane(l); open {
+		return l.LaneCardAt(lane, at, w.lanes[lane]), true
 	}
 	if column, at, open := w.openedAt(l); open {
 		return l.CardAt(column, at, w.scroll[column]), true
