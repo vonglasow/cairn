@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"cairn/internal/config"
+	"cairn/internal/debug"
 )
 
 // Home is what a surface knows about where it runs: the home directory, or why there is none, and how to read the environment.
@@ -35,6 +37,15 @@ func (p Places) Draft() string { return p.Store + ".draft.json" }
 
 // Sizes is where a window keeps how wide and how tall it was left, when the configuration says to: beside the store it showed.
 func (p Places) Sizes() string { return p.Store + ".sizes.json" }
+
+// Debug is the folder debug mode writes its files in: beside the store, with the rest of what cairn keeps.
+func (p Places) Debug() string { return filepath.Join(filepath.Dir(p.Store), "debug") }
+
+// Debugging says whether debug mode is on for this launch: the environment says so, and nothing else does.
+func Debugging(h Home) bool {
+	said, ok := h.lookup()(debug.Variable)
+	return ok && said != ""
+}
 
 // KeepsSizes says whether the configuration has the window open with the sizes it was left with; a configuration that cannot be read keeps none, and says so where it is read for its places.
 func KeepsSizes(h Home) bool {
@@ -75,7 +86,8 @@ func Locate(h Home) (Places, error) {
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.
-func DoFrom(op Operation, h Home, in Input, acting Acting) (Answer, error) {
+func DoFrom(op Operation, h Home, in Input, acting Acting) (answer Answer, err error) {
+	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}

@@ -443,6 +443,43 @@
       "additionalProperties": false
     }
   },
+  "debug_report": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Pack what debug mode wrote down into one archive to send"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "to": {
+          "description": "the folder to write the archive in; the current one when not said",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "written": {
+          "type": "string"
+        },
+        "files": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "written",
+        "files"
+      ],
+      "additionalProperties": false
+    }
+  },
   "label_delete": {
     "annotations": {
       "destructiveHint": true,

@@ -136,3 +136,31 @@ func TestNeedsATerminal_readsWhatAFileIs(t *testing.T) {
 		t.Errorf("a character device: %v, want it taken", err)
 	}
 }
+
+func TestTui_writesItsKeysDownInDebugMode(t *testing.T) {
+	was := openTui
+	t.Cleanup(func() { openTui = was })
+	t.Setenv("HOME", t.TempDir())
+	store := storeFor(t)
+	t.Setenv("CAIRN_STORE", store)
+	t.Setenv("CAIRN_DEBUG", "1")
+
+	openTui = func(_ *cobra.Command, model tea.Model) error {
+		_, _ = model.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+		return nil
+	}
+	if r := run(t, "tui"); r.Code != exitOK {
+		t.Fatalf("board exit = %d (%s)", r.Code, r.Stderr)
+	}
+	entries, err := os.ReadDir(engine.Places{Store: store}.Debug())
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("the debug folder holds %v, %v", entries, err)
+	}
+	read, err := os.ReadFile(engine.Places{Store: store}.Debug() + "/" + entries[0].Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(read, []byte("board key ?")) {
+		t.Errorf("the key pressed is not written down:\n%s", read)
+	}
+}

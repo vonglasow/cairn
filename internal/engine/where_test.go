@@ -39,3 +39,22 @@ func TestKeepsSizes_readsTheConfiguration(t *testing.T) {
 		t.Error("with no home, the window keeps its sizes")
 	}
 }
+
+func TestDebugging_isTheEnvironmentsToSay(t *testing.T) {
+	said := func(value string) Home {
+		return Home{Lookup: func(k string) (string, bool) { return value, k == "CAIRN_DEBUG" && value != "" }}
+	}
+	if !Debugging(said("1")) {
+		t.Error("CAIRN_DEBUG=1 does not turn debug mode on")
+	}
+	if Debugging(said("")) || Debugging(Home{}) {
+		t.Error("debug mode is on with nothing said")
+	}
+}
+
+func TestPlaces_keepTheDebugFolderBesideTheStore(t *testing.T) {
+	at := Places{Store: filepath.Join("/somewhere", "cairn.db")}
+	if got := at.Debug(); got != filepath.Join("/somewhere", "debug") {
+		t.Errorf("the debug folder is %q", got)
+	}
+}

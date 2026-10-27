@@ -116,6 +116,34 @@ linters:
             - strconv
             - testing
 
+        # What debug mode writes down, and where it keeps its files. It knows
+        # nobody of ours: the engine says whether it is on and where the folder
+        # is, and a surface hands it what it saw. An allow-list, like config.
+        debug:
+          files: ["**/internal/debug/**"]
+          allow:
+            - context
+            - fmt
+            - io
+            - os
+            - path/filepath
+            - slices
+            - strconv
+            - strings
+            - sync
+            - time
+            - unicode/utf8
+            # The mask: a salt drawn for each file, and what is written made of
+            # it and the text, so the same text reads the same in one file and
+            # differently in the next.
+            - crypto/rand
+            - crypto/sha256
+            # Only reachable from _test.go, as for domain.
+            - bytes
+            - errors
+            - regexp
+            - testing
+
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the
         # title rule it shares with an objective, and nothing else — a task

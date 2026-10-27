@@ -72,6 +72,8 @@ func rendered(op Operation, a Answer) string {
 		return labelsText(*a.Labels)
 	case ConfigWritten:
 		return configWrittenText(*a.Written)
+	case DebugReported:
+		return fmt.Sprintf("debug report written to %s, %d debug file(s) in it\n", *a.Written, *a.Packed)
 	case Steps:
 		return stepsText(*a.Task)
 	case Deleted:

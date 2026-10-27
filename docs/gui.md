@@ -599,8 +599,8 @@ binary, a console program, which the command line needs; started from the
 Explorer, Windows gave the window a console of its own, empty, beside it. The
 window lets go of a console nobody else is attached to as it starts
 (`leaveConsole`), so that one goes, after a flash; a console shared with the
-shell `cairn gui` was typed in stays, and what the window says there — a
-`CAIRN_GUI_TRACE` among it — still reaches whoever typed it.
+shell `cairn gui` was typed in stays, and what the window says there — where
+debug mode wrote down, among it — still reaches whoever typed it.
 
 **Every character the window writes has a face cairn carries.** Go's own
 faces lack the keys of a Mac keyboard, a tick and a cross; a character no face
@@ -1038,15 +1038,17 @@ drawn at the top left of the window rather than under the pointer. Read
 through, nothing between the system and the drawing differs by system: Gio
 turns a move with a button held into a drag on every one, the pointer is read
 in dp with the ratio the drawing is scaled by, and the card in hand is drawn
-where the last drag put it. Rather than a fix guessed at from a Mac,
-`make trace` (or `CAIRN_GUI_TRACE=1 cairn gui`) writes every pointer event —
-what the system sent in pixels, the ratio, the point in dp, and where the card
-in hand stands after it (`PointerTrace`). A drag recorded on the machine that
-misbehaves says which of those steps went wrong.
+where the last drag put it. Rather than a fix guessed at from a Mac, debug
+mode (`CAIRN_DEBUG=1 cairn gui`, [debug.md](debug.md)) writes down every
+press, drag, release and scroll — what the system sent in pixels, the ratio,
+the point in dp, and where the card in hand stands after it (`PointerTrace`);
+never the pointer merely passing over (`PointerNoted`). A drag recorded on the
+machine that misbehaves says which of those steps went wrong.
 
-The same trace writes what the keyboard sends (`KeyTrace`): every key with its
-name, every piece of text with the range it replaces, and what an input method
-says of the text and caret it holds. On Linux an accented letter took two
+The same file holds what the keyboard sends (`KeyTrace`): every key with its
+name, every piece of text — as its length, never as itself — with the range
+it replaces, and what an input method says of the text and caret it holds;
+and, each time it changes, what the window shows (`Seen`). On Linux an accented letter took two
 presses; Gio hands keys to IBus on X11 and to the compositor's input method on
 Wayland, and whether the letter came late, came as a range the window does
 not read, or did not come is what one press recorded there says.

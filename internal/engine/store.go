@@ -69,7 +69,8 @@ func (e *Engine) change(number int) (migration.Migration, error) { return e.stor
 func (e *Engine) held() (domain.Held, error) { return e.store.Held() }
 
 // Version says whether the store has moved since it was last asked.
-func (e *Engine) Version() (int64, error) {
+func (e *Engine) Version() (version int64, err error) {
+	defer func() { noteVersion(version, err) }()
 	defer e.taking()()
 	if err := e.following(); err != nil {
 		return 0, Told(err)

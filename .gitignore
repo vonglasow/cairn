@@ -7,8 +7,6 @@ coverage.out
 /dist/
 /mutation-report/
 
-# what make trace records on a machine the window misbehaves on
-/traces/
 
 # red receipts: proof a test failed, not history worth keeping
 /.claude/red/

@@ -6,14 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	rdebug "runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"cairn/internal/build"
+	"cairn/internal/debug"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
@@ -133,6 +136,21 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		return refusing(c, err)
 	})
 
+	if written := debugging(root, args, stderr); written != nil {
+		engine.NoteTo(written)
+		ctx = context.WithValue(ctx, notedKey{}, written)
+		defer func() {
+			engine.NoteTo(nil)
+			written.Leave(stderr)
+		}()
+		defer func() {
+			if stopped := recover(); stopped != nil {
+				written.Panicked(stopped, rdebug.Stack())
+				panic(stopped)
+			}
+		}()
+	}
+
 	err := fang.Execute(ctx, root, fang.WithErrorHandler(
 		func(w io.Writer, styles fang.Styles, err error) {
 			machine := asMachine
@@ -145,4 +163,39 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			saidToAPerson(w, styles, err)
 		}))
 	return codeFor(err)
+}
+
+type notedKey struct{}
+
+func notedIn(ctx context.Context) *debug.Log {
+	written, _ := ctx.Value(notedKey{}).(*debug.Log)
+	return written
+}
+
+func debugging(root *cobra.Command, args []string, stderr io.Writer) *debug.Log {
+	if !engine.Debugging(home()) {
+		return nil
+	}
+	at, err := engine.Locate(home())
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "debug: cannot write down: %v\n", err)
+		return nil
+	}
+	var command []string
+	if c, _, err := root.Find(args); err == nil && c != root {
+		command = strings.Fields(strings.TrimPrefix(c.CommandPath(), root.Name()+" "))
+	}
+	surface := strings.Join(command, " ")
+	if surface == "" {
+		surface = root.Name()
+	}
+	written, err := debug.Open(at.Debug(), surface, time.Now())
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "debug: cannot write down in %s: %v\n", at.Debug(), err)
+		return nil
+	}
+	for _, fact := range engine.DebugHeader(at, written.Args(command, args)) {
+		written.Fact(fact[0], fact[1])
+	}
+	return written
 }

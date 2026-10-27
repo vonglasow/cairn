@@ -1,12 +1,14 @@
 package gui
 
 import (
+	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"fmt"
 	"image"
 	"io"
 	"os"
 	"runtime"
+	rdebug "runtime/debug"
 	"strings"
 	"time"
 	"unicode"
@@ -194,14 +196,29 @@ const reach = 1 << 20
 var tag = new(int)
 
 // Run opens a window and keeps it until it is closed.
-func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, width, height int) {
+func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int) {
 	leaveConsole()
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
 		_ = os.Setenv("IBUS_ADDRESS", address)
 	}
 	knownAs()
 	showLogo()
-	go func() { ended(loop(work, pages, drafts, sizes, width, height), os.Stderr, os.Exit) }()
+	go func() {
+		leaving := func(code int) {
+			if noted != nil {
+				noted.Leave(os.Stderr)
+			}
+			os.Exit(code)
+		}
+		defer func() {
+			if stopped := recover(); stopped != nil && noted != nil {
+				noted.Panicked(stopped, rdebug.Stack())
+				noted.Leave(os.Stderr)
+				panic(stopped)
+			}
+		}()
+		ended(loop(work, pages, drafts, sizes, noted, width, height), os.Stderr, leaving)
+	}()
 	app.Main()
 }
 
@@ -214,10 +231,10 @@ func ended(err error, said io.Writer, exit func(int)) {
 	exit(1)
 }
 
-func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, width, height int) error {
+func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int) error {
 	window := new(app.Window)
 	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
-	traced := tracing(os.Getenv, os.Stderr)
+	seen := ""
 
 	theme, skin := Theme(), Dark()
 	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme))
@@ -277,7 +294,11 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 			if due(looked, gtx.Now) {
 				board, looked = board.Wonder(), gtx.Now
 			}
-			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt, traced)
+			board, pressed, pressedAt = heard(gtx, board, pressed, pressedAt, noted)
+			if now := board.Seen(); noted != nil && now != seen {
+				noted.Say("window", now)
+				seen = now
+			}
 			if ask, asked := board.FileAsked(); asked {
 				board = board.FileTaken()
 				go func() {
@@ -321,7 +342,7 @@ func listening() []event.Filter {
 	}
 }
 
-func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, traced io.Writer) (Window, time.Time, Point) {
+func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, noted *debug.Log) (Window, time.Time, Point) {
 	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, tag)
 	area.Pop()
@@ -345,8 +366,10 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 			telling(gtx, w)
 			return w, pressed, pressedAt
 		}
-		if said, ok := KeyTrace(raw); ok && traced != nil {
-			_, _ = fmt.Fprintln(traced, said)
+		if noted != nil {
+			if said, ok := KeyTrace(raw, noted.Typed); ok {
+				noted.Say("window", said)
+			}
 		}
 		switch e := raw.(type) {
 		case pointer.Event:
@@ -362,8 +385,8 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, tra
 				Dp(e.Position, gtx.Metric.PxPerDp),
 				Turned(e.Scroll.Y, gtx.Metric.PxPerDp), gtx.Now)
 			pressed, pressedAt = g.At, g.Where
-			if traced != nil {
-				_, _ = fmt.Fprintln(traced, PointerTrace(e, gtx.Metric.PxPerDp, w))
+			if noted != nil && PointerNoted(e.Kind) {
+				noted.Say("window", PointerTrace(e, gtx.Metric.PxPerDp, w))
 			}
 		case key.Event:
 			if e.State == key.Press {

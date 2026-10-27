@@ -1,10 +1,10 @@
 package gui
 
 import (
-	"bytes"
+	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"image"
-	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +24,7 @@ func frames(t *testing.T, w Window, events ...event.Event) (Window, time.Time, P
 	return framesAt(t, w, time.Time{}, Point{}, time.Now(), events...)
 }
 
-func framesTraced(t *testing.T, w Window, traced io.Writer, events ...event.Event) Window {
+func framesTraced(t *testing.T, w Window, traced *debug.Log, events ...event.Event) Window {
 	t.Helper()
 	w, _, _ = framesInto(t, w, time.Time{}, Point{}, time.Now(), traced, events...)
 	return w
@@ -41,7 +41,7 @@ func framesAt(
 
 func framesInto(
 	t *testing.T, w Window,
-	pressed time.Time, pressedAt Point, now time.Time, traced io.Writer,
+	pressed time.Time, pressedAt Point, now time.Time, traced *debug.Log,
 	events ...event.Event,
 ) (Window, time.Time, Point) {
 	t.Helper()
@@ -313,15 +313,27 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	}
 }
 
-func TestTheLoopWritesDownEachEventWhenAsked(t *testing.T) {
+func TestTheLoopWritesDownEachEventInDebugMode(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	var traced bytes.Buffer
-	framesTraced(t, w, &traced,
+	traced, err := debug.Open(t.TempDir(), "gui", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	framesTraced(t, w, traced,
+		pointer.Event{Kind: pointer.Move, Position: at(w, 1, 0)},
 		pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonPrimary},
 		key.Event{Name: "?", State: key.Press},
 	)
-	said := traced.String()
+	_ = traced.Close()
+	read, err := os.ReadFile(traced.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	said := string(read)
+	if strings.Contains(said, "pointer Move") {
+		t.Errorf("a hover was written down: %q", said)
+	}
 	pressed := strings.Index(said, "pointer Press ")
 	typed := strings.Index(said, `key Press name="?"`)
 	if pressed < 0 || !strings.Contains(said, "held=1") || typed < pressed {

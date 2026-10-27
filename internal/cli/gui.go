@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
+	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"cairn/internal/gui"
 )
@@ -12,8 +13,8 @@ const (
 	high = 840
 )
 
-var openGui = func(work engine.Work, pages engine.Pages, draft, sizes string, width, height int) error {
-	gui.Run(work, pages, gui.DraftsAt(draft), sizesAt(sizes), width, height)
+var openGui = func(work engine.Work, pages engine.Pages, draft, sizes string, noted *debug.Log, width, height int) error {
+	gui.Run(work, pages, gui.DraftsAt(draft), sizesAt(sizes), noted, width, height)
 	return nil
 }
 
@@ -29,7 +30,7 @@ func newGuiCmd() *cobra.Command {
 		Use:   "gui",
 		Short: "Open the board in a window",
 		Args:  noneAtAll(),
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			held, err := engine.Hold(home(), engine.Through("gui", home()))
 			if err != nil {
 				return err
@@ -43,7 +44,7 @@ func newGuiCmd() *cobra.Command {
 			if engine.KeepsSizes(home()) {
 				sizes = at.Sizes()
 			}
-			return openGui(held, engine.PagesFrom(home()), at.Draft(), sizes, wide, high)
+			return openGui(held, engine.PagesFrom(home()), at.Draft(), sizes, notedIn(cmd.Context()), wide, high)
 		},
 	}
 }

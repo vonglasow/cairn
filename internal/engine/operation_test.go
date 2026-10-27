@@ -264,6 +264,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"migration_rollback": {{RolledBack: of(migration.Migration{})}},
 		"config_show":        {{Config: &Config{}}},
 		"config_init":        {{Written: func() *string { s := "/config.toml"; return &s }()}},
+		"debug_report":       {{Written: func() *string { s := "/cairn-debug.zip"; return &s }(), Packed: of(2)}},
 		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
 		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
 		"label_list":         {{Labels: &[]LabelCarried{}}},

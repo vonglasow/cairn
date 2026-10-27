@@ -35,7 +35,7 @@ func newMCPServeCmd() *cobra.Command {
 				return err
 			}
 			keepingThePluginCurrent(cmd.ErrOrStderr())
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home()}
+			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home(), Noted: notedIn(cmd.Context())}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}

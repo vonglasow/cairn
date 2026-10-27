@@ -66,6 +66,7 @@ calls it, and prints — it decides nothing.
 | adding a dependency, or wondering why one is there | [docs/dependencies.md](docs/dependencies.md) |
 | sharing a board with other people, syncing a store, or anything decentralised | [docs/sharing.md](docs/sharing.md) |
 | proposing something cairn does not do, or wondering why it does not | [docs/decisions.md](docs/decisions.md) |
+| touching what debug mode writes down, or where | [docs/debug.md](docs/debug.md) |
 | making a version, or handing a binary to anybody | [docs/release.md](docs/release.md) |
 
 Those files carry the detail. This one carries what holds regardless of the

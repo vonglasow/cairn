@@ -235,7 +235,7 @@ func All() []Operation {
 		LabelList, LabelDelete, LabelRename,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
-		ConfigShow, ConfigInit,
+		ConfigShow, ConfigInit, DebugReport,
 		PluginWrite,
 	}
 }
@@ -338,6 +338,7 @@ type Answer struct {
 	Period            *objective.Period
 	Named             map[int]string
 	Gone              map[int]bool
+	Packed            *int
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.
@@ -369,7 +370,8 @@ func Author(h Home) string {
 func Through(surface string, h Home) Acting { return Acting{Through: surface, By: Author(h)} }
 
 // DoAt runs an operation at the places a surface found, and says which surface asked, so what it changes is written down as that surface's doing.
-func DoAt(op Operation, at Places, in Input, acting Acting) (Answer, error) {
+func DoAt(op Operation, at Places, in Input, acting Acting) (answer Answer, err error) {
+	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}

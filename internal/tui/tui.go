@@ -1,8 +1,10 @@
 package tui
 
 import (
+	rdebug "runtime/debug"
 	"time"
 
+	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"cairn/internal/trace"
 
@@ -135,7 +137,8 @@ type Board struct {
 	saidAt int
 	timeAt int
 
-	err error
+	err   error
+	noted *debug.Log
 }
 
 // New opens a board over the work, at a given size.
@@ -168,8 +171,26 @@ func tick() tea.Cmd {
 
 func beat() time.Duration { return 2 * time.Second }
 
-// Update takes a message and answers the board it leaves behind.
+// Update takes a message and answers the board it leaves behind; in debug mode it writes down each key, each resize, and what the board shows each time that changes.
 func (b Board) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if b.noted == nil {
+		return b.update(msg)
+	}
+	defer func() {
+		if stopped := recover(); stopped != nil {
+			b.noted.Panicked(stopped, rdebug.Stack())
+			panic(stopped)
+		}
+	}()
+	b.noting(msg)
+	next, cmd := b.update(msg)
+	if after, ok := next.(Board); ok && after.Seen() != b.Seen() {
+		b.noted.Say("board", after.Seen())
+	}
+	return next, cmd
+}
+
+func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		b.width, b.height = m.Width, m.Height

@@ -127,12 +127,29 @@ backups and the draft of a task being added in the window. `cairn config show` s
 places are in use and where each was found;
 [docs/config.md](docs/config.md) says why it works this way.
 
+## Reporting a bug
+
+When cairn does something wrong, run it again in debug mode, do the one thing
+that goes wrong, then pack what was written down:
+
+```sh
+CAIRN_DEBUG=1 cairn gui      # or tui, or any command
+cairn debug report           # writes cairn-debug-….zip in the current folder
+```
+
+Send the archive with the report. It says what the machine and the store are
+and what cairn did, and nothing anybody wrote: every title, description and
+text typed is replaced by a fingerprint and a length. Debug mode keeps its
+files in `debug/` beside the store, the last twenty, and stops with the
+command it was turned on for. [docs/debug.md](docs/debug.md) says more.
+
 ## Documentation
 
 - [Using cairn](docs/usage.md) — tasks, objectives, focus and time, labels, backups
 - [Installing in detail](INSTALL.md) — what a build needs on each system
 - [The MCP server](docs/mcp.md) and [the Claude Code plugin](docs/claude-code.md)
 - [Making a release](docs/release.md)
+- [Debug mode](docs/debug.md) — what it writes down, and what it never does
 
 ## Contributing
 

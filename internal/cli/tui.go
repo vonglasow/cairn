@@ -58,7 +58,7 @@ func newTuiCmd() *cobra.Command {
 				return err
 			}
 			defer func() { _ = held.Close() }()
-			return openTui(cmd, tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(home())))
+			return openTui(cmd, tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(home())).Noting(notedIn(cmd.Context())))
 		},
 	}
 	cmd.Flags().StringVar(&icons, "icons", string(tui.NerdFont), "which glyphs to draw with: nerdfont or unicode")

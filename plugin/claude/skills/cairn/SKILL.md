@@ -84,6 +84,15 @@ to it. `task_new` with `link` (`cairn task new "…" --link <n>`), put the label
 `bug` on it by hand, and the task done stays done. Moving a task out of `done`
 is only for one put there by mistake.
 
+## When cairn itself misbehaves
+
+When the person says cairn did something wrong — a board drawn oddly, a key
+that does nothing, an answer that cannot be right — do not guess at the
+cause from here. Ask them to run what went wrong again with `CAIRN_DEBUG=1`
+in front (`CAIRN_DEBUG=1 cairn gui`), to do the one thing that goes wrong,
+and then `debug_report` (or `cairn debug report`) packs what was written
+down into one archive; say where it is. Nothing a person wrote is in it.
+
 ## Detaching — the subject changes, or the person stops
 
 1. Update `summary.md` in the task's notes: the decisions taken, where the

@@ -1,9 +1,14 @@
 package engine
 
-import "cairn/internal/store"
+import (
+	"time"
+
+	"cairn/internal/store"
+)
 
 // Ask runs an operation against the store this engine is open on.
-func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
+func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
+	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
