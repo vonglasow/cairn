@@ -27,6 +27,7 @@ import (
 type world struct {
 	*test.World
 	long  string
+	said  string
 	board *engine.Engine
 	file  string
 	was   []byte

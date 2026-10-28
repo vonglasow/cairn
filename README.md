@@ -72,8 +72,10 @@ Then open the same board where you prefer:
 Nothing needs configuring: cairn keeps everything under `~/.cairn`. To choose
 otherwise, `cairn config init` writes `~/.config/cairn/config.toml` with every
 key, set to what is used now, to change from there — never over a file
-already there. Every key is optional, and a key cairn does not know is refused
-rather than ignored. The whole file:
+already there. Every table is written, and a key with no value of its own is
+commented under its table: take the comment off and it is read there. Every key
+is optional, and a key cairn does not know is refused rather than ignored — one
+written under the wrong table is told where it belongs. The whole file:
 
 ```toml
 # Where cairn keeps your tasks: a file. Absolute, or under ~.
@@ -96,35 +98,35 @@ time = true
 
 # Archiving on its own: days are counted from start, in periods of that many
 # days, and when a board opens or the tasks are listed, a task that went done
-# before the period under way began is archived. Off unless start is said;
-# a period lasts 14 days unless days says otherwise.
-# [archive]
+# before the period under way began is archived. Off unless start is said.
+[archive]
 # start = 2026-10-21
-# days = 14
+days = 14
 
 # How long a focus session lasts before cairn asks, in every answer the MCP
 # server gives, to renew it by focusing the task again or to end it.
 # Nothing is asked unless it is said.
-# [focus]
+[focus]
 # session = "1h"
 
 # What a deleted task does with its time: "kept" on the sheet, said to be
 # deleted, or "taken" with it, as though it had never been spent.
-# [time]
-# deleted = "kept"
+[time]
+deleted = "kept"
 
 # Whether the window opens with the columns, the lanes and the band as wide
 # and as tall as it was left with, rather than as they start. Kept in a file
-# beside the store. Off unless it says true.
-# [window]
-# keep_sizes = true
+# beside the store.
+[window]
+keep_sizes = false
 ```
 
 `CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and
 `notes` for as long as they are set. `CAIRN_AUTHOR` names who the acts are
 written down as in the trace, the one logged in otherwise. Beside the store, cairn also keeps its
-backups and the draft of a task being added in the window. `cairn config show` says which
-places are in use and where each was found;
+backups and the draft of a task being added in the window. `cairn config show` says the
+whole configuration in use, written as the file is, every key with its value
+and each place with what named it;
 [docs/config.md](docs/config.md) says why it works this way.
 
 ## Reporting a bug

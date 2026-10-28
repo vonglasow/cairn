@@ -78,6 +78,27 @@ Feature: Where cairn looks for its own places
       Then it says the store is at "~/.cairn/cairn.db", named by the file
       And it says the plugin is at "~/.cairn/claude-plugin", named by the file
 
+    @config-init-a-key-uncommented-is-read-under-its-table
+    Scenario Outline: any key of the file config init wrote, taken out of its comment, is read under its own table
+      Given `cairn config init` wrote the configuration
+      And I take the comment off the key "<key>" in it
+      When I run `cairn task list`
+      Then it succeeds
+      When I run `cairn config show`
+      Then it says "<key>" is "<value>"
+
+      Examples:
+        | key        | value      |
+        | start      | 2026-10-21 |
+        | session    | 1h         |
+
+    @config-init-a-value-changed-is-read
+    Scenario: a value changed in the file config init wrote is read
+      Given `cairn config init` wrote the configuration
+      And I change "keep_sizes" to "true" in it
+      When I run `cairn config show`
+      Then it says "keep_sizes" is "true"
+
     @config-init-leaves-a-file-alone
     Scenario: config init never writes over a configuration already there
       Given a configuration that says the store lives at "~/work/cairn.db"
@@ -157,6 +178,13 @@ Feature: Where cairn looks for its own places
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
       Then it refuses, and names the file it could not make sense of
+
+    @config-a-key-under-the-wrong-table-names-its-own
+    Scenario: a key cairn knows, written under another table, is refused with the table it belongs under
+      Given a configuration that says "keep_sizes" is "true" under "[pages]"
+      When I run `cairn task list`
+      Then it refuses, and names "pages.keep_sizes"
+      And it names "[window]"
 
     @config-an-unknown-name-is-refused
     Scenario: a name cairn does not know is refused rather than passed over
@@ -257,7 +285,8 @@ Feature: Where cairn looks for its own places
     @config-show-says-how-long-a-focus-session-lasts
     Scenario: config show says how long a focus session lasts before it asks to be renewed
       Given focus sessions last "1h"
-      Then `cairn config show` says "focus       asks to be renewed after 1h"
+      When I run `cairn config show`
+      Then it says "session" is "1h"
 
     @config-a-focus-session-that-cannot-be-read-is-refused
     Scenario: a focus session length that is not a duration is refused
@@ -271,7 +300,8 @@ Feature: Where cairn looks for its own places
     @config-show-says-a-deleted-task-takes-its-time
     Scenario: config show says a deleted task takes its time with it
       Given a deleted task takes its time with it
-      Then `cairn config show` says "time        a deleted task takes its time with it"
+      When I run `cairn config show`
+      Then it says "deleted" is "taken"
 
     @config-what-a-deleted-task-does-with-its-time-is-one-of-two
     Scenario: what a deleted task does with its time is refused unless kept or taken
@@ -285,7 +315,8 @@ Feature: Where cairn looks for its own places
     @config-show-says-the-window-keeps-its-sizes
     Scenario: config show says the window opens with the sizes it was left with
       Given the window keeps its sizes
-      Then `cairn config show` says "window      opens with the sizes it was left with"
+      When I run `cairn config show`
+      Then it says "keep_sizes" is "true"
 
     @config-keep-sizes-is-yes-or-no
     Scenario: keep_sizes that is not true or false is refused
@@ -295,6 +326,32 @@ Feature: Where cairn looks for its own places
       And it names "window.keep_sizes"
 
   Rule: Showing the configuration says what cairn will use, and where it got it
+
+    @config-show-says-every-key
+    Scenario: config show says every key of the configuration, with the value cairn uses
+      When I run `cairn config show`
+      Then it says every key of the configuration, under its table:
+        | table   | line                |
+        |         | store = "           |
+        |         | notes = "           |
+        |         | plugin = "          |
+        | pages   | tasks = true        |
+        | pages   | objectives = true   |
+        | pages   | time = true         |
+        | archive | days = 14           |
+        | time    | deleted = "kept"    |
+        | window  | keep_sizes = false  |
+      And it says nothing is archived on its own
+      And it says a focus session is never asked to be renewed
+
+    @config-show-reads-as-a-configuration
+    Scenario: what config show says is a configuration cairn reads as the same
+      Given a configuration that archives every 10 days from 2026-10-21
+      And that same configuration keeps the window's sizes
+      When I run `cairn config show`
+      And I write what it said as the configuration
+      And I run `cairn config show`
+      Then it says the same keys and values as before
 
     @config-show-names-the-file-it-reads
     Scenario: it says which file it read

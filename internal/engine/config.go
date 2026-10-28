@@ -17,38 +17,45 @@ type Emplacement struct {
 	By string `json:"named_by"`
 }
 
-// Config is how `config show` answers: the file cairn read, and each of its places, alongside what named it.
+// Config is how `config show` answers: the file cairn read, each of its places alongside what named it, and every other key with the value cairn uses — what the file says, or what is used when it says nothing.
 type Config struct {
-	File     string        `json:"file"`
-	Store    Emplacement   `json:"store"`
-	Notes    Emplacement   `json:"notes"`
-	Plugin   Emplacement   `json:"plugin"`
-	PagesOff []string      `json:"pages_off,omitempty"`
-	Archive  *Archive      `json:"archive,omitempty"`
-	Focus    *FocusConfig  `json:"focus,omitempty"`
-	Time     *TimeConfig   `json:"time,omitempty"`
-	Window   *WindowConfig `json:"window,omitempty"`
-	Problem  string        `json:"problem,omitempty"`
+	File    string        `json:"file"`
+	Store   Emplacement   `json:"store"`
+	Notes   Emplacement   `json:"notes"`
+	Plugin  Emplacement   `json:"plugin"`
+	Pages   *PagesConfig  `json:"pages,omitempty"`
+	Archive *Archive      `json:"archive,omitempty"`
+	Focus   *FocusConfig  `json:"focus,omitempty"`
+	Time    *TimeConfig   `json:"time,omitempty"`
+	Window  *WindowConfig `json:"window,omitempty"`
+	Problem string        `json:"problem,omitempty"`
 }
 
-// TimeConfig is what a deleted task does with its time, when the file says it takes it.
+// PagesConfig is whether each page is on.
+type PagesConfig struct {
+	Tasks      bool `json:"tasks"`
+	Objectives bool `json:"objectives"`
+	Time       bool `json:"time"`
+}
+
+// TimeConfig is what a deleted task does with its time: kept, or taken.
 type TimeConfig struct {
 	Deleted string `json:"deleted"`
 }
 
-// WindowConfig is whether the window opens with the sizes it was left with, when the file says it does.
+// WindowConfig is whether the window opens with the sizes it was left with.
 type WindowConfig struct {
 	KeepSizes bool `json:"keep_sizes"`
 }
 
-// FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it.
+// FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it; nothing when it is not said.
 type FocusConfig struct {
-	Session string `json:"session"`
+	Session string `json:"session,omitempty"`
 }
 
-// Archive is the day archiving counts from, and how many days each period lasts.
+// Archive is the day archiving counts from, nothing when it is not said and nothing is archived on its own, and how many days each period lasts.
 type Archive struct {
-	Start string `json:"start"`
+	Start string `json:"start,omitempty"`
 	Days  int    `json:"days"`
 }
 
@@ -85,19 +92,13 @@ func (g *readingGate) Resolved(p config.Places) {
 	if told := p.Plugin(); told != "" {
 		g.config.Plugin = Emplacement{At: told, By: "the file"}
 	}
-	g.config.PagesOff = p.PagesOff()
-	if start, days, ok := p.Archive(); ok {
-		g.config.Archive = &Archive{Start: start, Days: days}
-	}
-	if p.TimeDeleted() == config.TimeTaken {
-		g.config.Time = &TimeConfig{Deleted: config.TimeTaken}
-	}
-	if session := p.FocusSession(); session != "" {
-		g.config.Focus = &FocusConfig{Session: session}
-	}
-	if p.KeepSizes() {
-		g.config.Window = &WindowConfig{KeepSizes: true}
-	}
+	pages := p.Pages()
+	g.config.Pages = &PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: pages[2]}
+	start, days, _ := p.Archive()
+	g.config.Archive = &Archive{Start: start, Days: days}
+	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted()}
+	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
+	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -108,8 +109,8 @@ func (g *readingGate) NotUnderstood(_ string, err error) {
 var ConfigShow = Operation{
 	Thing:   "config",
 	Verb:    "show",
-	Short:   "Show which places cairn will use, and where it got them",
-	Does:    "Show which places cairn will use — the store, the notes and the Claude Code plugin — the file read, and what named each place.",
+	Short:   "Show the whole configuration cairn uses, and where it got its places",
+	Does:    "Show the whole configuration cairn uses, written as the file is: every key under its table with the value in force — what the file says, or what is used when it says nothing — the file read, and what named each place: the file, the environment, or nothing.",
 	Example: "cairn config show",
 	Level:   Read,
 	Needs:   AConfiguration,
@@ -132,29 +133,47 @@ func configText(c Config) string {
 			c.File, c.Problem,
 		)
 	}
-	wide := max(len(c.Store.At), len(c.Notes.At), len(c.Plugin.At))
-	said := fmt.Sprintf(
-		"file    %s\n\nstore   %-*s   named by %s\nnotes   %-*s   named by %s\nplugin  %-*s   named by %s\n",
-		c.File, wide, c.Store.At, c.Store.By, wide, c.Notes.At, c.Notes.By, wide, c.Plugin.At, c.Plugin.By,
-	)
-	if len(c.PagesOff) > 0 {
-		said += "\npages off   " + strings.Join(c.PagesOff, ", ") + "\n"
+	places := [][2]string{
+		{fmt.Sprintf("store = %q", c.Store.At), c.Store.By},
+		{fmt.Sprintf("notes = %q", c.Notes.At), c.Notes.By},
+		{fmt.Sprintf("plugin = %q", c.Plugin.At), c.Plugin.By},
 	}
-	if c.Archive == nil {
-		said += "\nnothing is archived on its own\n"
-	} else {
-		said += fmt.Sprintf("\narchive     every %d days from %s\n", c.Archive.Days, c.Archive.Start)
+	wide := 0
+	for _, p := range places {
+		wide = max(wide, len(p[0]))
 	}
-	if c.Time != nil {
-		said += "\ntime        a deleted task takes its time with it\n"
+	var said strings.Builder
+	fmt.Fprintf(&said, "# the configuration cairn uses, every key with the value in force\n# the file it reads: %s\n\n", c.File)
+	for _, p := range places {
+		fmt.Fprintf(&said, "%-*s   # named by %s\n", wide, p[0], p[1])
+	}
+	if c.Pages != nil {
+		fmt.Fprintf(&said, "\n[pages]\ntasks = %t\nobjectives = %t\ntime = %t\n", c.Pages.Tasks, c.Pages.Objectives, c.Pages.Time)
+	}
+	if c.Archive != nil {
+		said.WriteString("\n[archive]\n")
+		if c.Archive.Start == "" {
+			said.WriteString("# start is not said: nothing is archived on its own\n")
+		} else {
+			fmt.Fprintf(&said, "start = %s\n", c.Archive.Start)
+		}
+		fmt.Fprintf(&said, "days = %d\n", c.Archive.Days)
 	}
 	if c.Focus != nil {
-		said += fmt.Sprintf("\nfocus       asks to be renewed after %s\n", c.Focus.Session)
+		said.WriteString("\n[focus]\n")
+		if c.Focus.Session == "" {
+			said.WriteString("# session is not said: a focus session is never asked to be renewed\n")
+		} else {
+			fmt.Fprintf(&said, "session = %q\n", c.Focus.Session)
+		}
+	}
+	if c.Time != nil {
+		fmt.Fprintf(&said, "\n[time]\ndeleted = %q\n", c.Time.Deleted)
 	}
 	if c.Window != nil {
-		said += "\nwindow      opens with the sizes it was left with\n"
+		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t\n", c.Window.KeepSizes)
 	}
-	return said
+	return said.String()
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

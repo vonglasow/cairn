@@ -710,7 +710,7 @@ func TestRead_saysFromWhenAndHowOftenDoneTasksAreArchived(t *testing.T) {
 	for _, refused := range []struct{ written, names string }{
 		{"[archive]\nstart = 2026-10-21\ndays = 0\n", "archive.days"},
 		{"[archive]\nstart = \"soon\"\n", "archive.start"},
-		{"[archive]\ndays = 14\n", "archive.start"},
+		{"[archive]\ndays = 0\n", "archive.days"},
 	} {
 		_, err := config.Read(writtenConfig(t, refused.written), silentEnv)
 		if !errors.Is(err, config.ErrArchive) || !strings.Contains(err.Error(), refused.names) {

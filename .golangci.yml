@@ -107,12 +107,14 @@ linters:
             - os
             - path/filepath
             - reflect
+            - slices
             - strings
             - github.com/pelletier/go-toml/v2
             # Only reachable from _test.go: its tests sit in package
             # config_test and import it back, and the `testing` rule below
             # refuses `testing` anywhere else.
             - cairn/internal/config
+            - regexp
             - strconv
             - testing
 

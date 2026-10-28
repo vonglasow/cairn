@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/cucumber/godog"
@@ -205,7 +206,10 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("[archive]\nstart = %q\n", day))
 	})
 	sc.Step(`^it says it archives every (\d+) days from (\d{4}-\d{2}-\d{2})$`, func(length int, day string) error {
-		return test.WantContains(w.Out.Stdout, fmt.Sprintf("every %d days from %s", length, day), "the archiving")
+		if err := w.saysKey("start", day); err != nil {
+			return err
+		}
+		return w.saysKey("days", fmt.Sprint(length))
 	})
 	sc.Step(`^it says nothing is archived on its own$`, func() error {
 		return test.WantContains(w.Out.Stdout, "nothing is archived on its own", "the archiving")
@@ -228,6 +232,41 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 
 	sc.Step(`^it says the notes are at "([^"]*)", named by (.+)$`, func(place, by string) error {
 		return w.namedBy(place, by)
+	})
+
+	sc.Step("^`cairn config init` wrote the configuration$", func() error {
+		w.Run("cairn config init")
+		if w.Out.Code != exitOK {
+			return fmt.Errorf("config init: exit %d (%s)", w.Out.Code, w.Out.Stderr)
+		}
+		return nil
+	})
+	sc.Step(`^I take the comment off the key "([^"]*)" in it$`, func(key string) error {
+		return w.rewriteConfig(`(?m)^# (`+regexp.QuoteMeta(key)+` = .*)$`, "$1")
+	})
+	sc.Step(`^I change "([^"]*)" to "([^"]*)" in it$`, func(key, value string) error {
+		return w.rewriteConfig(`(?m)^`+regexp.QuoteMeta(key)+` = .*$`, key+" = "+value)
+	})
+	sc.Step(`^it says "([^"]*)" is "([^"]*)"$`, w.saysKey)
+	sc.Step(`^a configuration that says "([^"]*)" is "([^"]*)" under "(\[[^"]*\])"$`, func(key, value, table string) error {
+		return w.WriteConfig(fmt.Sprintf("%s\n%s = %s\n", table, key, value))
+	})
+	sc.Step(`^that same configuration keeps the window's sizes$`, func() error {
+		return w.appendConfig("[window]\nkeep_sizes = true\n")
+	})
+	sc.Step(`^it says every key of the configuration, under its table:$`, w.saysEveryKey)
+	sc.Step(`^it says a focus session is never asked to be renewed$`, func() error {
+		return test.WantContains(w.Out.Stdout, "never asked to be renewed", "the focus")
+	})
+	sc.Step(`^I write what it said as the configuration$`, func() error {
+		w.said = w.Out.Stdout
+		return w.WriteConfig(w.Out.Stdout)
+	})
+	sc.Step(`^it says the same keys and values as before$`, func() error {
+		if was, now := keysAndValues(w.said), keysAndValues(w.Out.Stdout); was != now {
+			return fmt.Errorf("it said:\n%s\nand now says:\n%s", was, now)
+		}
+		return nil
 	})
 
 	sc.Step(`^the structured answer carries the file it read, each place, and what named it$`,
@@ -295,4 +334,67 @@ func (w *world) namedBy(place, by string) error {
 		return fmt.Errorf("the card does not name %q:\n%s", place, w.Out.Stdout)
 	}
 	return test.WantContains(w.Out.Stdout, "named by "+by, "the card")
+}
+
+func (w *world) rewriteConfig(pattern, with string) error {
+	read, err := os.ReadFile(w.configPath())
+	if err != nil {
+		return err
+	}
+	re := regexp.MustCompile(pattern)
+	if !re.Match(read) {
+		return fmt.Errorf("the configuration has no line %s:\n%s", pattern, read)
+	}
+	done := false
+	changed := re.ReplaceAllFunc(read, func(line []byte) []byte {
+		if done {
+			return line
+		}
+		done = true
+		return re.ReplaceAll(line, []byte(with))
+	})
+	return os.WriteFile(w.configPath(), changed, 0o600)
+}
+
+func (w *world) saysKey(key, value string) error {
+	line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(w.expand(value)) + `"?\s*(#.*)?$`)
+	if !line.MatchString(w.Out.Stdout) {
+		return fmt.Errorf("the answer does not say %s is %s:\n%s", key, value, w.Out.Stdout)
+	}
+	return nil
+}
+
+func (w *world) saysEveryKey(table *godog.Table) error {
+	under := map[string][]string{}
+	current := ""
+	for _, l := range strings.Split(w.Out.Stdout, "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, "[") && strings.HasSuffix(l, "]") {
+			current = strings.Trim(l, "[]")
+			continue
+		}
+		under[current] = append(under[current], l)
+	}
+	for _, row := range table.Rows[1:] {
+		at, want := row.Cells[0].Value, row.Cells[1].Value
+		found := false
+		for _, l := range under[at] {
+			found = found || strings.HasPrefix(l, want)
+		}
+		if !found {
+			return fmt.Errorf("the answer does not say %q under [%s]:\n%s", want, at, w.Out.Stdout)
+		}
+	}
+	return nil
+}
+
+func keysAndValues(said string) string {
+	var kept []string
+	for _, l := range strings.Split(said, "\n") {
+		l, _, _ = strings.Cut(l, "#")
+		if l = strings.TrimSpace(l); l != "" {
+			kept = append(kept, l)
+		}
+	}
+	return strings.Join(kept, "\n")
 }

@@ -100,12 +100,79 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	}
 }
 
-func TestConfigShowSaysTheWindowKeepsItsSizes(t *testing.T) {
-	said := configText(Config{Window: &WindowConfig{KeepSizes: true}})
-	if !strings.Contains(said, "window      opens with the sizes it was left with") {
-		t.Errorf("config show says:\n%s", said)
+func shownWith(t *testing.T, content string) Config {
+	t.Helper()
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
 	}
-	if said := configText(Config{}); strings.Contains(said, "window") {
-		t.Errorf("with the sizes not kept, config show says:\n%s", said)
+	if content != "" {
+		if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	answer, err := ConfigShow.Run(On{Home: Home{Dir: home, Lookup: func(string) (string, bool) { return "", false }}}, Input{})
+	if err != nil || answer.Config == nil {
+		t.Fatalf("config show: %v", err)
+	}
+	return *answer.Config
+}
+
+func TestConfigShow_answersEveryTableWhenTheFileSaysNothing(t *testing.T) {
+	c := shownWith(t, "")
+	if c.Pages == nil || *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: true}) {
+		t.Errorf("Pages = %+v, want every page on", c.Pages)
+	}
+	if c.Archive == nil || *c.Archive != (Archive{Days: 14}) {
+		t.Errorf("Archive = %+v, want no start, in periods of 14 days", c.Archive)
+	}
+	if c.Focus == nil || c.Focus.Session != "" {
+		t.Errorf("Focus = %+v, want a session that is not said", c.Focus)
+	}
+	if c.Time == nil || c.Time.Deleted != "kept" {
+		t.Errorf("Time = %+v, want a deleted task's time kept", c.Time)
+	}
+	if c.Window == nil || c.Window.KeepSizes {
+		t.Errorf("Window = %+v, want the sizes not kept", c.Window)
+	}
+}
+
+func TestConfigShow_answersWhatTheFileSays(t *testing.T) {
+	c := shownWith(t, "[pages]\ntime = false\n[archive]\nstart = 2026-10-21\ndays = 7\n[focus]\nsession = \"1h\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
+	if *c.Pages != (PagesConfig{Tasks: true, Objectives: true}) || *c.Archive != (Archive{Start: "2026-10-21", Days: 7}) ||
+		c.Focus.Session != "1h" || c.Time.Deleted != "taken" || !c.Window.KeepSizes {
+		t.Errorf("config show answers %+v %+v %+v %+v %+v", c.Pages, c.Archive, c.Focus, c.Time, c.Window)
+	}
+}
+
+func TestConfigText_saysEveryKeyUnderItsTable(t *testing.T) {
+	said := configText(shownWith(t, ""))
+	for _, line := range []string{"\n[pages]\ntasks = true\nobjectives = true\ntime = true\n", "\n[archive]\n", "days = 14", "\n[focus]\n", "\n[time]\ndeleted = \"kept\"\n", "\n[window]\nkeep_sizes = false\n", "store = \"", "notes = \"", "plugin = \""} {
+		if !strings.Contains(said, line) {
+			t.Errorf("config show does not say %q:\n%s", line, said)
+		}
+	}
+}
+
+func TestConfigText_readsBackAsTheSameConfiguration(t *testing.T) {
+	first := shownWith(t, "notes = \"/x/notes\"\n[pages]\nobjectives = false\n[archive]\nstart = 2026-10-21\ndays = 10\n[focus]\nsession = \"45m\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
+	again := shownWith(t, configText(first))
+	if again.Problem != "" {
+		t.Fatalf("what config show says is refused as a configuration: %s\n%s", again.Problem, configText(first))
+	}
+	if again.Store.At != first.Store.At || again.Notes.At != first.Notes.At || again.Plugin.At != first.Plugin.At ||
+		*again.Pages != *first.Pages || *again.Archive != *first.Archive || *again.Focus != *first.Focus ||
+		*again.Time != *first.Time || *again.Window != *first.Window {
+		t.Errorf("read back, it says:\n%s\nwhere it said:\n%s", configText(again), configText(first))
+	}
+}
+
+func TestConfigText_saysWhatNamedEachPlaceAndWhatIsNotSaid(t *testing.T) {
+	said := configText(shownWith(t, ""))
+	for _, words := range []string{"named by nothing", "nothing is archived on its own", "never asked to be renewed"} {
+		if !strings.Contains(said, words) {
+			t.Errorf("config show does not say %q:\n%s", words, said)
+		}
 	}
 }

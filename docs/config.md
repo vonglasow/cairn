@@ -55,8 +55,18 @@ together and one directory is enough to move or back up by hand.
 ## Written for you
 
 `cairn config init` writes the file where it is read, whole: every key,
-commented, set to what cairn uses when nothing is said
-(`@config-init-writes-every-key`). Writing one by hand meant finding its keys
+explained, set to what cairn uses when nothing is said
+(`@config-init-writes-every-key`). **Every table is written out of its
+comment**, and only a key that has no value of its own — the day archiving
+counts from, how long a focus session lasts — is commented, under its table.
+The file was first written with every table after `[pages]` commented whole:
+taking the comment off `keep_sizes = true` alone put it under `[pages]`, and
+every command then refused the file. Now any key taken out of its comment is
+read where it stands (`@config-init-a-key-uncommented-is-read-under-its-table`,
+`@config-init-a-value-changed-is-read`), and a test takes each commented key of
+the example out of its comment in turn. A key cairn knows written under the
+wrong table is refused with the table it belongs under
+(`@config-a-key-under-the-wrong-table-names-its-own`). Writing one by hand meant finding its keys
 here and in the README first. It is the README's example to the
 byte — one constant, `config.Example`, that a test holds the README to, and
 that another holds to every key the reader accepts — so neither can drift.
@@ -156,7 +166,8 @@ or the MCP server (`@archive-what-went-done-before-the-period`,
 `@archive-keeps-what-went-done-in-the-period`), through the same act as
 `task archive`, written down as done through `archive`
 (`@archive-on-its-own-is-said-in-the-trace`). Nothing said, nothing is
-archived on its own (`@archive-nothing-on-its-own-unless-told`), nor before
+archived on its own (`@archive-nothing-on-its-own-unless-told`) — `days` alone
+is read, and archives nothing — nor before
 the day the count starts (`@archive-nothing-before-the-count-starts`). A start
 that is not a day, or periods of no day, are refused like any key the file
 gets wrong (`@config-archiving-in-periods-of-no-day-is-refused`,
@@ -218,7 +229,7 @@ Kept, a deleted task's time stays on the sheet, said to be deleted; taken, it
 leaves with the task. See [trace](trace.md#the-trace-outlives-the-task). Any
 other value is refused naming `time.deleted`
 (`@config-what-a-deleted-task-does-with-its-time-is-one-of-two`), and
-`config show` says when it is taken
+`config show` says which it is
 (`@config-show-says-a-deleted-task-takes-its-time`).
 
 ## The environment names the same two places
@@ -251,7 +262,7 @@ lane was dragged and how tall the band, in a file beside the store
 opens as it starts. Either way, a double-click on a gutter or `Reset sizes`
 takes them back ([gui.md](gui.md)). Anything but `true` or `false` is refused,
 naming `window.keep_sizes` (`@config-keep-sizes-is-yes-or-no`), and `config
-show` says when it is on (`@config-show-says-the-window-keeps-its-sizes`).
+show` says whether it is on (`@config-show-says-the-window-keeps-its-sizes`).
 
 ## TOML, because a person opens this file
 
@@ -296,8 +307,15 @@ absence, and a caller that cannot tell them apart looks for the wrong problem.
 
 ## `config show` reports where every other command refuses
 
-`cairn config show` says which places cairn will use and what named each one:
-the file, the environment, or nothing. It is the only command that does not
+`cairn config show` says the whole configuration cairn uses, written as the
+file is: every key under its table with the value in force — what the file
+says, or what is used when it says nothing — and, beside each place, what
+named it: the file, the environment, or nothing
+(`@config-show-says-every-key`). A key with no value is said as a comment that
+says what that means. It used to say the places and, in words of its own, only
+what the file changed: what cairn really used could not be read off it. What it
+says is a configuration cairn reads as the same
+(`@config-show-reads-as-a-configuration`), so it can be copied into the file. It is the only command that does not
 refuse a configuration it cannot make sense of — and that exception is the
 point, not an oversight. A person reaches for it *because* something is not
 where they expected it, so a diagnostic that answers with the same refusal the

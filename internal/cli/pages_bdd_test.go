@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -39,12 +40,16 @@ func initPages(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 		sc.Step(`^it says the pages turned off are "([^"]*)"$`, func(pages string) error {
-			for _, line := range strings.Split(w.Out.Stdout, "\n") {
-				if rest, ok := strings.CutPrefix(line, "pages off"); ok && strings.TrimSpace(rest) == pages {
-					return nil
+			off := strings.Split(pages, ", ")
+			for _, page := range []string{"tasks", "objectives", "time"} {
+				want := fmt.Sprintf("\n%s = %t\n", page, !slices.Contains(off, page))
+				_, under, _ := strings.Cut(w.Out.Stdout, "\n[pages]")
+				under, _, _ = strings.Cut(under+"\n[", "\n[")
+				if !strings.Contains(under+"\n", want) {
+					return fmt.Errorf("it does not say the pages %q are off:\n%s", pages, w.Out.Stdout)
 				}
 			}
-			return fmt.Errorf("it does not say the pages %q are off:\n%s", pages, w.Out.Stdout)
+			return nil
 		})
 	}
 }

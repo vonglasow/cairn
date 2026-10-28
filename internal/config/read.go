@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -121,10 +122,19 @@ type archive struct {
 
 func (s *archive) read() (string, int, error) {
 	if s == nil {
-		return "", 0, nil
+		return "", defaultArchiveDays, nil
+	}
+	days := int64(defaultArchiveDays)
+	if s.Days != nil {
+		days = *s.Days
+	}
+	if days < 1 {
+		return "", 0, fmt.Errorf("archive.days %d: %w", days, ErrArchive)
 	}
 	var start toml.LocalDate
 	switch said := s.Start.(type) {
+	case nil:
+		return "", int(days), nil
 	case toml.LocalDate:
 		start = said
 	case string:
@@ -133,13 +143,6 @@ func (s *archive) read() (string, int, error) {
 		}
 	default:
 		return "", 0, fmt.Errorf("archive.start %v: %w", said, ErrArchive)
-	}
-	days := int64(defaultArchiveDays)
-	if s.Days != nil {
-		days = *s.Days
-	}
-	if days < 1 {
-		return "", 0, fmt.Errorf("archive.days %d: %w", days, ErrArchive)
 	}
 	return start.String(), int(days), nil
 }
@@ -169,9 +172,18 @@ func (p *pages) off() []string {
 // Plugin is the folder the file names for the Claude Code plugin, and nothing when it names none: the plugin then goes beside the store.
 func (p Places) Plugin() string { return p.plugin }
 
-// Archive is the day the file counts from, written 2026-10-21, and how many days each period lasts; nothing when the file does not archive on its own.
+// Archive is the day the file counts from, written 2026-10-21, and how many days each period lasts, and whether anything is archived on its own: only when the file says the day.
 func (p Places) Archive() (string, int, bool) {
-	return p.archiveStart, p.archiveDays, p.archiveDays > 0
+	return p.archiveStart, p.archiveDays, p.archiveStart != ""
+}
+
+// Pages says whether each page is on, in the order the boards draw them: tasks, objectives, time.
+func (p Places) Pages() [3]bool {
+	on := [3]bool{true, true, true}
+	for i, page := range []string{"tasks", "objectives", "time"} {
+		on[i] = !slices.Contains(p.pagesOff, page)
+	}
+	return on
 }
 
 // TimeDeleted is what a deleted task does with its time: TimeKept, unless the file says TimeTaken.
@@ -193,6 +205,26 @@ func acceptedKeys() []string {
 		keys = append(keys, t.Field(i).Tag.Get("toml"))
 	}
 	return keys
+}
+
+func belongs(key string) string {
+	t := reflect.TypeFor[file]()
+	for i := range t.NumField() {
+		field := t.Field(i)
+		if field.Tag.Get("toml") == key && field.Type.Elem().Kind() != reflect.Struct {
+			return key + " belongs before any table"
+		}
+		if field.Type.Elem().Kind() != reflect.Struct {
+			continue
+		}
+		table := field.Type.Elem()
+		for j := range table.NumField() {
+			if table.Field(j).Tag.Get("toml") == key {
+				return fmt.Sprintf("%s belongs under [%s]", key, field.Tag.Get("toml"))
+			}
+		}
+	}
+	return "cairn accepts " + strings.Join(acceptedKeys(), ", ")
 }
 
 // Reading is the tolerant primitive Read is a gate over: it carries the path of the file it read, and either the emplacements the file named or the problem that stood in the way — never both, since emplacements resolved alongside a rule the file broke are not emplacements worth trusting.
@@ -235,8 +267,9 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		if err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&f); err != nil {
 			var strict *toml.StrictMissingError
 			if errors.As(err, &strict) {
-				return Reading{path: path, err: fmt.Errorf("%q: %w — cairn accepts %s",
-					strings.Join(strict.Errors[0].Key(), "."), ErrUnknownKey, strings.Join(acceptedKeys(), ", "))}, nil
+				key := strict.Errors[0].Key()
+				return Reading{path: path, err: fmt.Errorf("%q: %w — %s",
+					strings.Join(key, "."), ErrUnknownKey, belongs(key[len(key)-1]))}, nil
 			}
 			var decode *toml.DecodeError
 			if errors.As(err, &decode) {

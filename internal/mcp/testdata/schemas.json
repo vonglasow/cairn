@@ -294,7 +294,7 @@
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": true,
-      "title": "Show which places cairn will use, and where it got them"
+      "title": "Show the whole configuration cairn uses, and where it got its places"
     },
     "input": {
       "additionalProperties": false,
@@ -357,14 +357,28 @@
           ],
           "additionalProperties": false
         },
-        "pages_off": {
+        "pages": {
           "type": [
             "null",
-            "array"
+            "object"
           ],
-          "items": {
-            "type": "string"
-          }
+          "properties": {
+            "tasks": {
+              "type": "boolean"
+            },
+            "objectives": {
+              "type": "boolean"
+            },
+            "time": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "tasks",
+            "objectives",
+            "time"
+          ],
+          "additionalProperties": false
         },
         "archive": {
           "type": [
@@ -380,7 +394,6 @@
             }
           },
           "required": [
-            "start",
             "days"
           ],
           "additionalProperties": false
@@ -395,9 +408,6 @@
               "type": "string"
             }
           },
-          "required": [
-            "session"
-          ],
           "additionalProperties": false
         },
         "time": {

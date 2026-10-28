@@ -101,10 +101,10 @@ func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 
 func TestConfigShowSaysWhatIsArchivedOnItsOwn(t *testing.T) {
 	said := configText(Config{Archive: &Archive{Start: "2026-10-21", Days: 10}})
-	if !strings.Contains(said, "archive     every 10 days from 2026-10-21") {
+	if !strings.Contains(said, "[archive]\nstart = 2026-10-21\ndays = 10\n") {
 		t.Errorf("config show says:\n%s", said)
 	}
-	if said := configText(Config{}); !strings.Contains(said, "nothing is archived on its own") {
+	if said := configText(Config{Archive: &Archive{Days: 14}}); !strings.Contains(said, "nothing is archived on its own") {
 		t.Errorf("with no archiving, config show says:\n%s", said)
 	}
 }
