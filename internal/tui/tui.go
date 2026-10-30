@@ -53,12 +53,6 @@ const (
 	Commanding
 )
 
-// Finishing is an act refused because a step of its task is still open, held while the person is asked whether to tick it too.
-type Finishing struct {
-	Op engine.Operation
-	In engine.Input
-}
-
 // Looked carries a fresh reading of the work.
 type Looked struct {
 	Snapshot engine.Snapshot
@@ -112,7 +106,7 @@ type Board struct {
 	asking           bool
 	leaving          bool
 	sweeping         bool
-	finishing        *Finishing
+	agreeing         *engine.Agreeing
 	going            *Going
 	stepOn           int
 	saying, sayingOf int
@@ -201,8 +195,8 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return b, b.hearing(b.task)
 		}
 		return b, nil
-	case Finishing:
-		b.asking, b.finishing = true, &m
+	case engine.Agreeing:
+		b.asking, b.agreeing = true, &m
 		return b, nil
 	case Heard:
 		b.heard = m

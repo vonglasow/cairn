@@ -152,3 +152,18 @@ func (r *refusing) Error() string { return r.sentence }
 
 // Refusing makes a refusal a surface foresaw: what it says, and the words a machine branches on.
 func Refusing(reason, sentence string) error { return &refusing{reason: reason, sentence: sentence} }
+
+// Agreeing is what a refusal asks the person, and the act that goes ahead once they agree.
+type Agreeing struct {
+	Reason string
+	Op     Operation
+	In     Input
+}
+
+// AgreeingTo says whether a refusal is a question for the person, and the act that agrees to it.
+func AgreeingTo(op Operation, in Input, err error) (Agreeing, bool) {
+	if !op.Finishes || in.Confirmed || !errors.Is(err, ErrStepStillOpen) {
+		return Agreeing{}, false
+	}
+	return Agreeing{Reason: RefusalOf(err).Reason, Op: op, In: Agreed(in)}, true
+}

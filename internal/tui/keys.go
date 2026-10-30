@@ -89,13 +89,13 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 			}
 			return b, b.carry(engine.StepDelete, going.In)
 		}
-		if b.finishing != nil {
-			held := *b.finishing
-			b.finishing = nil
+		if b.agreeing != nil {
+			held := *b.agreeing
+			b.agreeing = nil
 			if !agreed {
 				return b, b.look()
 			}
-			return b, b.carry(held.Op, engine.Agreed(held.In))
+			return b, b.carry(held.Op, held.In)
 		}
 		if !agreed {
 			return b, nil

@@ -137,3 +137,29 @@ func TestRefusalOf_givesOneReasonForAValueOutsideItsSet(t *testing.T) {
 		}
 	}
 }
+
+func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) {
+	open := fmt.Errorf("task 4: %w", ErrStepStillOpen)
+	finishing := Operation{Thing: "task", Verb: "move", Finishes: true}
+	asked := Input{Given: map[string]string{"number": "4"}}
+
+	got, ok := AgreeingTo(finishing, asked, open)
+	if !ok || got.Reason != "step-still-open" || got.Op.Name() != finishing.Name() || !got.In.Confirmed || got.In.Given["number"] != "4" {
+		t.Errorf("AgreeingTo(finishing, asked, open) = %+v, %v, want the same act confirmed for step-still-open", got, ok)
+	}
+
+	for what, c := range map[string]struct {
+		op  Operation
+		in  Input
+		err error
+	}{
+		"an act that does not finish": {Operation{Thing: "task", Verb: "show"}, asked, open},
+		"an act already confirmed":    {finishing, Agreed(asked), open},
+		"another refusal":             {finishing, asked, ErrNoSuchTask},
+		"no refusal":                  {finishing, asked, nil},
+	} {
+		if got, ok := AgreeingTo(c.op, c.in, c.err); ok || got.Reason != "" || got.In.Confirmed {
+			t.Errorf("%s: AgreeingTo = %+v, %v, want nothing to agree to", what, got, ok)
+		}
+	}
+}

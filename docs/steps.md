@@ -84,8 +84,11 @@ finishes as before (`@task-done-allowed-once-every-step-is-done`,
 The boards ask rather than refuse: the terminal "put task N in done, ticking
 its steps?" (`@tui-done-asks-about-open-steps`), the window "Put task N in
 done, ticking its steps?" with "Its steps not yet done are ticked with it."
-(`@gui-a-drop-in-done-asks-about-open-steps`). The MCP server confirms by
-itself, as it does every act. Why the rule is a refusal and not a cascade is
+(`@gui-a-drop-in-done-asks-about-open-steps`). That this refusal is a question,
+and that agreeing runs the same act confirmed, is the engine's to say
+(`engine.AgreeingTo`), not each board's: both used to test the act, the
+confirmation and the refusal themselves, the same rule written twice. The MCP
+server confirms by itself, as it does every act. Why the rule is a refusal and not a cascade is
 in [ordering.md](ordering.md#a-task-is-not-done-while-one-of-its-steps-is-open).
 
 ## How they cross

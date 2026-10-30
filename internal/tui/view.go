@@ -315,8 +315,8 @@ func (b Board) question() string {
 		return " " + b.skin.Title.Render("delete step "+b.going.In.Given["step"]+" of task "+b.going.In.Given["number"]+", “"+b.going.Title+"”?") + "  " +
 			b.bar(b.offer("⏎", "delete it"), b.offer("esc", "keep it"))
 	}
-	if b.finishing != nil {
-		return " " + b.skin.Title.Render("put task "+b.finishing.In.Given["number"]+" in done, ticking its steps?") + "  " +
+	if b.agreeing != nil {
+		return " " + b.skin.Title.Render("put task "+b.agreeing.In.Given["number"]+" in done, ticking its steps?") + "  " +
 			b.bar(b.offer("⏎", "finish them all"), b.offer("esc", "keep them as they are"))
 	}
 	what, number := "task", b.task

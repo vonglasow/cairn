@@ -437,3 +437,21 @@ func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
 		t.Fatalf("left out of the watching lane chose %d, want the blocked one", got)
 	}
 }
+
+func TestTheWindowKeepsTheEnginesAgreeingAfterARefusal(t *testing.T) {
+	f := newFake()
+	f.failOp = engine.ErrStepStillOpen
+	w := Window{work: f}
+	w = w.asking(engine.TaskMove, engine.Input{Given: map[string]string{"number": "4"}})
+	if w.Screen() != OnAsking || w.question != aboutFinishingParts {
+		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	}
+	if w.agreeing.Reason != "step-still-open" || !w.agreeing.In.Confirmed || w.agreeing.In.Given["number"] != "4" {
+		t.Errorf("the window holds %+v", w.agreeing)
+	}
+	f.failOp = nil
+	w.finishingParts()
+	if in, ok := f.gave("task", "move"); !ok || !in.Confirmed || in.Given["number"] != "4" || f.what("task", "move") != 2 {
+		t.Errorf("agreeing asked %+v after %d moves", in, f.what("task", "move"))
+	}
+}

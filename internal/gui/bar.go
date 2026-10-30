@@ -78,7 +78,7 @@ func HeadsOn(w Window, screen Screen) string {
 			return "Delete the step “" + w.partTitle() + "”?"
 		}
 		if w.question == aboutFinishingParts {
-			return "Put task " + w.finishingIn.Given["number"] + " in done, ticking its steps?"
+			return "Put task " + w.agreeing.In.Given["number"] + " in done, ticking its steps?"
 		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:

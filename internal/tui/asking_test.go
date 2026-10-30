@@ -117,3 +117,25 @@ func TestReadingTheHistoryAsksTraceShow(t *testing.T) {
 		t.Errorf("number = %q, want 14", got.in.Given["number"])
 	}
 }
+
+func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
+	f := newFake()
+	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
+	op := engine.Operation{Thing: "task", Verb: "done", Finishes: true}
+	in := engine.Agreed(engine.Input{Given: map[string]string{"number": "1"}})
+	model, _ := standing(f).Update(engine.Agreeing{Reason: "step-still-open", Op: op, In: in})
+	b := model.(Board)
+	if !b.asking {
+		t.Fatal("the board is not asking")
+	}
+	if _, cmd := b.pressed("enter"); cmd != nil {
+		cmd()
+	}
+	if len(f.asked) == 0 {
+		t.Fatal("the board asked for nothing")
+	}
+	got := f.asked[0]
+	if got.op.Verb != "done" || got.in.Given["number"] != "1" || !got.in.Confirmed {
+		t.Errorf("asked %q %v confirmed=%v, want done 1 confirmed", got.op.Verb, got.in.Given, got.in.Confirmed)
+	}
+}

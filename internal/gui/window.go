@@ -126,8 +126,7 @@ type Window struct {
 	archived              bool
 	aimed                 string
 	pages                 engine.Pages
-	finishing             engine.Operation
-	finishingIn           engine.Input
+	agreeing              engine.Agreeing
 	hiding                Entry
 	starts                string
 	over                  string

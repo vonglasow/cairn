@@ -2,7 +2,6 @@
 package tui
 
 import (
-	"errors"
 	"slices"
 	"strings"
 
@@ -197,8 +196,8 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := b.work.Ask(op, in); err != nil {
-			if op.Finishes && !in.Confirmed && errors.Is(err, engine.ErrStepStillOpen) {
-				return Finishing{Op: op, In: in}
+			if agreeing, asks := engine.AgreeingTo(op, in, err); asks {
+				return agreeing
 			}
 			return Looked{Err: err}
 		}
