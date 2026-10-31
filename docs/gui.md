@@ -497,6 +497,9 @@ priority and no blocker among them — which is what a step keeps.
 
 A modal dialog over the board, with *Save* and *Cancel*; `esc` cancels. One act
 in the trace per save.
+The form's heading ends in a cross, at the top right, where a dialog's close
+sits on Windows and in Material (a Mac sheet has none); it is a 24-point target
+and does what *Cancel* does, asking first when something was typed.
 
 **The fields are not listed here.** They come from `engine.TaskFields(card)`
 and `engine.GoalFields(goal)`: the word a person reads, the closed set when

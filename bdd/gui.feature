@@ -3953,6 +3953,25 @@ Feature: The desktop board
       When I choose "Back"
       Then the window is on the form
 
+    @gui-a-form-is-closed-by-its-cross
+    Scenario: the cross at the top of a form closes a form nobody typed into
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the form's cross
+      Then the window is on the board
+
+    @gui-a-filled-form-closed-by-its-cross-asks-first
+    Scenario: the cross asks first when something was typed
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I set the field "title" to "Something else"
+      And I click the form's cross
+      Then the panel is headed "Throw away what you typed?"
+
     @gui-esc-twice-sets-what-was-typed-aside
     Scenario: esc twice throws a form away, and its form brings what was typed back
       Given I added a task titled "Write the spec"

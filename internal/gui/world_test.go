@@ -1302,6 +1302,11 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return w.dragForm(from, right, down)
 	})
+	sc.Step(`^I click the form's cross$`, func() error {
+		cross := FormClose(w.w.formPanel())
+		w.w = w.w.clicked(Point{X: cross.X + cross.W/2, Y: cross.Y + cross.H/2})
+		return nil
+	})
 	sc.Step(`^I drag the form from its heading (\d+) to the right and (\d+) down$`, func(right, down int) error {
 		head := Heading(w.w.formPanel())
 		return w.dragForm(Point{X: head.X + 4, Y: head.Y + head.H/2}, right, down)

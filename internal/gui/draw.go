@@ -470,9 +470,13 @@ func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 }
 
 func drawPanel(gtx layout.Context, th *material.Theme, skin Skin, box Box, head string) {
+	drawPanelHeaded(gtx, th, skin, box, Heading(box), head)
+}
+
+func drawPanelHeaded(gtx layout.Context, th *material.Theme, skin Skin, box, heading Box, head string) {
 	fill(gtx, box, skin.Panel)
 	outline(gtx, box, skin.Edge)
-	sayStyled(gtx, th, skin.Ink, Heading(box), head, HeadingSize, HeadingWeight, 1, text.Start)
+	sayStyled(gtx, th, skin.Ink, heading, head, HeadingSize, HeadingWeight, 1, text.Start)
 	fill(gtx, Ruled(box), skin.Edge)
 }
 
@@ -560,6 +564,18 @@ func drawStone(gtx layout.Context, stone []Point, ink color.NRGBA) {
 	}
 	path.Close()
 	paint.FillShape(gtx.Ops, ink, clip.Outline{Path: path.End()}.Op())
+}
+
+func drawCross(gtx layout.Context, cross Box, ink color.NRGBA) {
+	reach := float32(cross.W) / 4
+	x, y := float32(cross.X)+float32(cross.W)/2, float32(cross.Y)+float32(cross.H)/2
+	var strokes clip.Path
+	strokes.Begin(gtx.Ops)
+	strokes.MoveTo(f32.Pt(x-reach, y-reach))
+	strokes.LineTo(f32.Pt(x+reach, y+reach))
+	strokes.MoveTo(f32.Pt(x+reach, y-reach))
+	strokes.LineTo(f32.Pt(x-reach, y+reach))
+	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: 1.5}.Op())
 }
 
 func drawEye(gtx layout.Context, eye Box, ink color.NRGBA) {
@@ -874,7 +890,8 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, m Measure, n
 
 func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	panel, box := w.formPanel(), w.formBox()
-	drawPanel(gtx, th, skin, panel, HeadsOn(w, OnForm))
+	drawPanelHeaded(gtx, th, skin, panel, FormHeading(panel), HeadsOn(w, OnForm))
+	drawCross(gtx, FormClose(panel), skin.Faint)
 	fields := w.Form().Fields()
 	for i := range fields {
 		on := i == w.Form().On()

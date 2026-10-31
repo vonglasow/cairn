@@ -53,6 +53,9 @@ func (w Window) Click(p Point) Window {
 		w, _ = w.dayClicked(p)
 		return w
 	}
+	if w.screen == OnForm && FormClose(w.formPanel()).In(p) {
+		return w.Choose("Cancel")
+	}
 	if at, on := w.fieldAt(p); on {
 		reached := w.reaching(at, p)
 		w.form = w.form.onto(at)

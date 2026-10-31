@@ -118,3 +118,17 @@ const between = 6
 const apart = 32
 
 const longRows = 4
+
+const closeWide = 24
+
+// FormClose is the box at the right end of a form's heading that closes it, no smaller than a pointer can be sure of.
+func FormClose(box Box) Box {
+	head := Heading(box)
+	return Box{X: head.X + head.W - closeWide, Y: head.Y + (head.H-closeWide)/2, W: closeWide, H: closeWide}
+}
+
+// FormHeading is a form's heading less the box that closes it, so its words never run under the cross.
+func FormHeading(box Box) Box {
+	head := Heading(box)
+	return Box{X: head.X, Y: head.Y, W: head.W - closeWide - between, H: head.H}
+}
