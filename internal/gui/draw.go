@@ -255,14 +255,11 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	measuring := gtx
 	measuring.Constraints.Min = image.Point{}
 	for _, chip := range TimeChips {
-		box := TimeChip(l, chip)
-		back, ink := skin.Panel, skin.Chosen
+		look := buttonPlain
 		if chip == w.ranging() {
-			back, ink = skin.Chosen, skin.Back
+			look = buttonOn
 		}
-		fill(gtx, box, back)
-		outline(gtx, box, skin.Edge)
-		say(gtx, th, ink, ChipSaid(box, wide(measuring, th, chip, reads).Size.X), chip, reads)
+		drawButton(gtx, th, skin, TimeChip(l, chip), chip, look)
 	}
 	say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
 	if w.Monthly() {
@@ -378,13 +375,11 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		{MonthBefore(box), "‹", false},
 		{MonthAfter(box), "›", false},
 	} {
-		back, ink := skin.Panel, skin.Chosen
+		look := buttonPlain
 		if chip.on {
-			back, ink = skin.Chosen, skin.Back
+			look = buttonOn
 		}
-		fill(gtx, chip.at, back)
-		outline(gtx, chip.at, skin.Edge)
-		sayStyled(gtx, th, ink, ChipSaid(chip.at, chip.at.W), chip.says, plain, font.SemiBold, 1, text.Middle)
+		drawButton(gtx, th, skin, chip.at, chip.says, look)
 	}
 	if cells := w.CalendarCells(); len(cells) > 0 {
 		for i, cell := range cells {
@@ -731,7 +726,7 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		under := w.barAlong(w.BoardOffers())
 		for i, offer := range w.BoardOffers() {
-			say(gtx, th, skin.Faint, under[i], w.Said(offer), reads)
+			drawButton(gtx, th, skin, Button(under[i]), w.Said(offer), buttonFaint)
 		}
 		return
 	}
@@ -742,14 +737,35 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 }
 
 func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer string, w Window) {
+	look := buttonPlain
 	if w.Lighting(offer) {
-		measuring := gtx
-		measuring.Constraints = layout.Constraints{Max: image.Pt(box.W, lineHigh)}
-		fill(gtx, OfferLit(box, wide(measuring, th, w.Said(offer), reads).Size.X), skin.Panel)
-		say(gtx, th, skin.Ink, box, w.Said(offer), reads)
-		return
+		look = buttonLit
 	}
-	say(gtx, th, skin.Chosen, box, w.Said(offer), reads)
+	drawButton(gtx, th, skin, Button(box), w.Said(offer), look)
+}
+
+type buttonLook int
+
+const (
+	buttonPlain buttonLook = iota
+	buttonOn
+	buttonLit
+	buttonFaint
+)
+
+func drawButton(gtx layout.Context, th *material.Theme, skin Skin, button Box, said string, look buttonLook) {
+	back, ink, edge := skin.Panel, skin.Chosen, skin.Edge
+	switch look {
+	case buttonOn:
+		back, ink = skin.Chosen, skin.Back
+	case buttonLit:
+		ink, edge = skin.Ink, skin.Chosen
+	case buttonFaint:
+		ink = skin.Faint
+	}
+	fill(gtx, button, back)
+	outline(gtx, button, edge)
+	sayCentred(gtx, th, ink, ButtonSaid(button), said, reads)
 }
 
 func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on, picked bool, held Written) {

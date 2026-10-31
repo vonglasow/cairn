@@ -201,6 +201,12 @@ func TimeChip(l Layout, name string) Box {
 // TimeChips is every chip of the strip, in the order they are drawn.
 var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
 
+// Button is what an offer is drawn as in the room it is given: as tall, and a gap short of the next one.
+func Button(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H} }
+
+// ButtonSaid is where a button writes its words: a line high, across it, in its middle.
+func ButtonSaid(button Box) Box { return ChipSaid(button, button.W) }
+
 // ChipSaid is where a chip writes its name: in its middle, a line high and as wide as the name.
 func ChipSaid(chip Box, wide int) Box {
 	line := Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}

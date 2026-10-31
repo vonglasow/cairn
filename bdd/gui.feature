@@ -3388,10 +3388,22 @@ Feature: The desktop board
   Rule: A key does what the bar offers, where the bar offers it
 
     @gui-a-lit-offer-holds-its-words-in-its-middle
-    Scenario: the offer under the pointer is lit around its words, which sit in its middle
+    Scenario: the offer under the pointer is a button edged in the chosen ink, its words in its middle
       When I open the window
       And I rest the pointer on the offer "Search"
-      Then the offer "Search" is lit around its words, in their middle
+      Then the offer "Search" is a lit button, its words in its middle
+
+    @gui-every-offer-is-a-button
+    Scenario: what the board, a form and the calendar offer are drawn as the same buttons
+      Given I added a task titled "Write the spec"
+      When I open the window
+      Then every offer of the bar is drawn as a button
+      When I click the card "Write the spec"
+      And I choose "Edit"
+      Then every offer of the panel is drawn as a button
+      When I click the field "deadline"
+      Then every offer of the panel is drawn as a button
+      And the calendar's month, year and arrows are drawn as buttons
 
     @gui-e-edits-an-open-task
     Scenario: a task being read is edited without closing it first

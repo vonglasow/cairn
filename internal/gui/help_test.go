@@ -80,10 +80,3 @@ func TestTheHelpWalksBackUp(t *testing.T) {
 		t.Errorf("up left the help %d lines down, want 1", got)
 	}
 }
-
-func TestALitOfferIsDrawnAroundItsWords(t *testing.T) {
-	lit := OfferLit(Box{X: 100, Y: 700, W: 110, H: 32}, 60)
-	if lit != (Box{X: 100 - inset, Y: 700 - inset, W: 60 + 2*inset, H: lineHigh + 2*inset}) {
-		t.Errorf("an offer 60 wide is lit at %+v", lit)
-	}
-}

@@ -328,6 +328,16 @@ Gio is asked for `Move`, `Enter` and `Leave`, the window keeps which offer the
 pointer is over, and the drawing decides what that looks like — a value, like
 everything else here, so a scenario can ask.
 
+**Every offer is a button, and one kind of button.** The bar's offers, a
+panel's `Save` and `Cancel`, the calendar's month, year and arrows and the time
+strip's chips were words in one place, words lit on hover in another, chips in
+a third. They are now drawn by one function (`drawButton`, `Button`): a box as
+tall as the room given, a gap short of the next, edged, its words in its
+middle. Under the pointer its edge takes the chosen ink; the one in force (a
+range, an open grid) is filled; the board's offers behind an open panel are
+written faint (`@gui-every-offer-is-a-button`,
+`@gui-a-lit-offer-holds-its-words-in-its-middle`).
+
 **A turn of the wheel belongs to what it began on.** A trackpad goes on
 sending after the fingers leave it, and a task put away with `esc` while it was
 still sending handed the rest of the turn to the board: the column under the

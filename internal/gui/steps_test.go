@@ -1396,7 +1396,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + 2})
 		return nil
 	})
-	sc.Then(`^the offer "([^"]*)" is lit around its words, in their middle$`, func(offer string) error {
+	sc.Then(`^the offer "([^"]*)" is a lit button, its words in its middle$`, func(offer string) error {
 		box, err := offerBox(offer)
 		if err != nil {
 			return err
@@ -1404,14 +1404,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !w.w.Lighting(offer) {
 			return fmt.Errorf("the offer %q is not lit", offer)
 		}
-		said := w.w.Said(offer)
-		glyphs := w.w.measured()(said, reads)
-		wide := glyphs[len(glyphs)-1]
-		lit := OfferLit(box, wide)
-		if lit.X+inset != box.X || lit.W != wide+2*inset || lit.Y+inset != box.Y || lit.H != lineHigh+2*inset {
-			return fmt.Errorf("the offer %q is lit at %+v around words at %+v, %d wide", offer, lit, box, wide)
+		button := Button(box)
+		if words := ButtonSaid(button); words.Y-button.Y != button.Y+button.H-words.Y-words.H {
+			return fmt.Errorf("the offer %q writes at %+v in a button at %+v", offer, words, button)
 		}
-		return nil
+		return buttonsDrawn(w.w, []Box{button}, Dark().Chosen)
+	})
+	sc.Then(`^every offer of the (bar|panel) is drawn as a button$`, func(where string) error {
+		slots := w.w.BarOffers()
+		if where == "panel" {
+			slots = w.w.offersAlong(w.w.panel())
+		}
+		var buttons []Box
+		for _, slot := range slots {
+			buttons = append(buttons, Button(slot))
+		}
+		return buttonsDrawn(w.w, buttons, Dark().Edge)
+	})
+	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
+		box := w.w.CalendarBox()
+		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Edge)
 	})
 	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
 		if w.w.Screen() != OnLabels {
@@ -3105,6 +3117,21 @@ func (w *world) stripedWide(title string, wide int) error {
 	past := Box{X: at.X + wide, Y: at.Y + 1, W: 1, H: at.H - 2}
 	if got := painted(shot, past, want); got != 0 {
 		return fmt.Errorf("the stripe goes on past %d points, for %d pixels", wide, got)
+	}
+	return nil
+}
+
+func buttonsDrawn(w Window, buttons []Box, edge color.NRGBA) error {
+	shot, err := drawnInAStep(w)
+	if err != nil {
+		return err
+	}
+	for _, button := range buttons {
+		for _, side := range Edges(button) {
+			if got := painted(shot, side, edge); got != side.W*side.H {
+				return fmt.Errorf("the button at %+v is edged on %d of %d pixels of %+v", button, got, side.W*side.H, side)
+			}
+		}
 	}
 	return nil
 }
