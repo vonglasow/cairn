@@ -275,8 +275,21 @@ func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	measuring := gtx
 	measuring.Constraints.Min = image.Point{}
+	control := RangesControl(l)
+	rounded(gtx, control, buttonRadius+segmentInset, skin.Pill)
 	for _, chip := range TimeChips {
-		drawButton(gtx, th, skin, TimeChip(l, chip), chip, lookOf(chip == w.ranging()))
+		at := TimeChip(l, chip)
+		switch chip {
+		case "Day", "Week", "Month":
+			ink := skin.Faint
+			if chip == w.ranging() {
+				rounded(gtx, Box{X: at.X, Y: at.Y + segmentInset, W: at.W, H: at.H - 2*segmentInset}, buttonRadius, lighter(skin.Pill))
+				ink = skin.Ink
+			}
+			sayStyled(gtx, th, ink, ButtonSaid(at), chip, reads, font.Medium, 1, text.Middle)
+		default:
+			drawButton(gtx, th, skin, at, chip, buttonPlain)
+		}
 	}
 	if w.Monthly() {
 		drawButton(gtx, th, skin, TimeChip(l, "the month"), w.week.Month().String(), lookOf(w.grid == viewMonths))

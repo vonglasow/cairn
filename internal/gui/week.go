@@ -222,6 +222,14 @@ func TimeCellAt(l Layout, i int) Box {
 	return Box{X: strip.X + (i%3)*(wide+gap), Y: top + (i/3)*(high+gap), W: wide, H: high}
 }
 
+// RangesControl is the ground Day, Week and Month stand on together, one control of three segments rather than three buttons.
+func RangesControl(l Layout) Box {
+	day, month := TimeChip(l, "Day"), TimeChip(l, "Month")
+	return Box{X: day.X - segmentInset, Y: day.Y, W: month.X + month.W + segmentInset - day.X + segmentInset, H: day.H}
+}
+
+const segmentInset = 2
+
 // TimeChips is every chip of the strip, in the order they are drawn.
 var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
 
