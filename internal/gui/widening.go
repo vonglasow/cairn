@@ -14,24 +14,70 @@ type Widening struct {
 }
 
 func gutterAt(l Layout, was Sizes, p Point) (Widening, bool) {
-	taken := Widening{On: true, From: p, Taken: l, Was: was}
-	for at := range engine.Columns - 1 {
-		if Gutter(l, at).In(p) {
-			taken.At = at
+	for _, grab := range grabsOf(l) {
+		if grab.Box.In(p) {
+			taken := grab.Takes
+			taken.On, taken.From, taken.Taken, taken.Was = true, p, l, was
 			return taken, true
 		}
-	}
-	for at := range len(l.Lane) - 1 {
-		if LaneGutter(l, at).In(p) {
-			taken.Lane, taken.At = true, at
-			return taken, true
-		}
-	}
-	if BandEdge(l).In(p) {
-		taken.Band = true
-		return taken, true
 	}
 	return Widening{}, false
+}
+
+// Pointer is the shape the pointer takes over a point of the window.
+type Pointer int
+
+// The shapes the pointer takes: the plain arrow, sideways arrows for a gutter, up-and-down ones for the band's edge.
+const (
+	Arrow Pointer = iota
+	ColResize
+	RowResize
+)
+
+// Grab is a place a drag can take hold of, and the widening it starts there.
+type Grab struct {
+	Box   Box
+	Takes Widening
+}
+
+func grabsOf(l Layout) []Grab {
+	var grabs []Grab
+	for at := range engine.Columns - 1 {
+		grabs = append(grabs, Grab{Gutter(l, at), Widening{At: at}})
+	}
+	for at := range len(l.Lane) - 1 {
+		grabs = append(grabs, Grab{LaneGutter(l, at), Widening{Lane: true, At: at}})
+	}
+	return append(grabs, Grab{BandEdge(l), Widening{Band: true}})
+}
+
+// Pointer is the shape the pointer takes while this gutter, or the band's edge, is held or hovered: up and down for the band, sideways for the rest.
+func (g Widening) Pointer() Pointer {
+	if g.Band {
+		return RowResize
+	}
+	return ColResize
+}
+
+// Grabs are the places of the board a drag takes hold of: the gutters between columns and between lanes, and the band's edge.
+func (w Window) Grabs() []Grab {
+	if w.Blank() || w.tab != Tasks || w.screen != OnTheBoard {
+		return nil
+	}
+	return grabsOf(w.Layout())
+}
+
+// PointerAt is the shape the pointer calls for at p: the one of the gutter or the edge being dragged wherever it is, otherwise the one of the grab it is over.
+func (w Window) PointerAt(p Point) Pointer {
+	if w.widening.On {
+		return w.widening.Pointer()
+	}
+	for _, grab := range w.Grabs() {
+		if grab.Box.In(p) {
+			return grab.Takes.Pointer()
+		}
+	}
+	return Arrow
 }
 
 // To is the sizes the board takes with the pointer at p: the columns, the lanes, or the band, as they were when the gutter was taken, with the pair beside it given what the pointer went; everything else as it was.

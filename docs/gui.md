@@ -144,7 +144,10 @@ beside the band too, since the band begins where the todo does — and the gap
 between two lanes of the band. Dragged, it gives the one on its left what it
 takes from the one on its right, and nothing else moves
 (`@gui-a-column-widens-when-its-gutter-is-dragged`,
-`@gui-a-lane-widens-when-its-gutter-is-dragged`). Neither goes under
+`@gui-a-lane-widens-when-its-gutter-is-dragged`). Over a gutter the pointer
+takes the shape for widening sideways, and keeps it wherever it goes while the
+gutter is dragged (`Window.PointerAt`, `@gui-a-gutter-shows-it-can-be-dragged`,
+`@gui-a-lane-gutter-shows-it-can-be-dragged`). Neither goes under
 `NarrowestColumn`, room for a card's title
 (`@gui-a-column-dragged-past-its-neighbour-keeps-a-card-in-sight`). What is
 kept is each one's share, not its width: a window made smaller makes every
@@ -165,7 +168,9 @@ lanes' names and a card's room, nor the columns under a card's room
 band's share of the height, the way a column keeps its share of the width
 (`@gui-the-band-keeps-its-share-when-the-window-shrinks`). Its height had been
 fixed, two cards, which is right for a person who keeps little stopped and
-wrong for one who keeps a great deal.
+wrong for one who keeps a great deal. Over the edge the pointer takes the shape
+for resizing up and down, the one the drag of the edge keeps
+(`@gui-the-bands-edge-shows-it-can-be-dragged`).
 
 **A size given is taken back by a double-click, or all at once by the menu.**
 A double-click on a gutter between columns makes every column as wide as the
@@ -190,8 +195,7 @@ it, and the first was the behaviour already there
 (`@gui-the-band-opens-as-tall-as-ever`). Not in the store: the store may be
 shared, and how wide one person likes a column is nobody else's. Not in the
 configuration file either, which a person writes and cairn only reads. On
-the tasks page only; the pointer does not change shape over a
-gutter, since the window sets no cursor anywhere.
+the tasks page only.
 
 **A form is moved by dragging it where it holds no text**. A press
 inside the form on nothing written — no field, no heading, no offer, no text

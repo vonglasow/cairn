@@ -351,6 +351,8 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, not
 	event.Op(gtx.Ops, tag)
 	area.Pop()
 
+	cursors(gtx, w)
+
 	was := w.screen
 
 	gtx.Execute(key.FocusCmd{Tag: tag})
@@ -404,6 +406,27 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, not
 			}
 		}
 	}
+}
+
+func cursors(gtx layout.Context, w Window) {
+	if w.widening.On {
+		area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+		cursorOf(w.PointerAt(Point{})).Add(gtx.Ops)
+		area.Pop()
+		return
+	}
+	for _, grab := range w.Grabs() {
+		area := clip.Rect(rect(grab.Box)).Push(gtx.Ops)
+		cursorOf(grab.Takes.Pointer()).Add(gtx.Ops)
+		area.Pop()
+	}
+}
+
+func cursorOf(p Pointer) pointer.Cursor {
+	if p == RowResize {
+		return pointer.CursorRowResize
+	}
+	return pointer.CursorColResize
 }
 
 func telling(gtx layout.Context, w Window) {

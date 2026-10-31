@@ -80,6 +80,23 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		drag(beside, by)
 		return nil
 	})
+	sc.Step(`^the pointer over the gutter after "([^"]*)" is the one for widening sideways$`, func(name string) error {
+		at, err := column(name)
+		if err != nil {
+			return err
+		}
+		return pointerIs(w.w, Gutter(w.w.Layout(), at), ColResize)
+	})
+	sc.Step(`^the pointer over the gutter after the "([^"]*)" lane is the one for widening sideways$`, func(name string) error {
+		at, err := laneNamed(name)
+		if err != nil {
+			return err
+		}
+		return pointerIs(w.w, LaneGutter(w.w.Layout(), at), ColResize)
+	})
+	sc.Step(`^the pointer over the band's edge is the one for resizing up and down$`, func() error {
+		return pointerIs(w.w, BandEdge(w.w.Layout()), RowResize)
+	})
 	sc.Step(`^the band starts where "todo" does$`, func() error {
 		l := w.w.Layout()
 		if l.Band.X != l.Column[1].X {
@@ -278,4 +295,11 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+}
+
+func pointerIs(w Window, over Box, want Pointer) error {
+	if got := w.PointerAt(Point{X: over.X + over.W/2, Y: over.Y + over.H/2}); got != want {
+		return fmt.Errorf("the pointer over %+v is %v, not %v", over, got, want)
+	}
+	return nil
 }

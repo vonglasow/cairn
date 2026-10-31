@@ -233,6 +233,16 @@ Feature: The desktop board
       Then "todo" is wider than "current"
       And the columns fill the window's width
 
+    @gui-a-gutter-shows-it-can-be-dragged
+    Scenario: the pointer over a column's gutter says the column can be widened
+      When I open the window
+      Then the pointer over the gutter after "todo" is the one for widening sideways
+
+    @gui-a-lane-gutter-shows-it-can-be-dragged
+    Scenario: the pointer over a lane's gutter says the lane can be widened
+      When I open the window
+      Then the pointer over the gutter after the "blocked" lane is the one for widening sideways
+
     @gui-a-gutter-dragged-picks-no-card
     Scenario: dragging a gutter takes hold of no card
       Given I added a task titled "Write the spec" with the state "todo"
@@ -276,6 +286,11 @@ Feature: The desktop board
       And I drag the edge above the band 200 up
       And I resize the window to 1200 by 700
       Then the band is taller than it opens at 1200 by 700
+
+    @gui-the-bands-edge-shows-it-can-be-dragged
+    Scenario: the pointer over the band's edge says the band can be made taller
+      When I open the window
+      Then the pointer over the band's edge is the one for resizing up and down
 
   Rule: A size given is taken back by a double-click or by the menu
 
