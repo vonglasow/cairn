@@ -173,8 +173,6 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		fill(gtx, Box{W: w.width, H: w.height}, skin.Veil)
 		asked := w.QuestionBox()
 		drawSaid(gtx, th, skin, w, w.Asks(), asked)
-		outline(gtx, asked, skin.Chosen)
-		outline(gtx, Box{X: asked.X + 1, Y: asked.Y + 1, W: asked.W - 2, H: asked.H - 2}, skin.Chosen)
 	}
 	if w.Screen() == OnChoosing {
 		drawChoosing(gtx, th, skin, w)
@@ -379,16 +377,21 @@ func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 
 func drawMenu(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.MenuBox()
-	fill(gtx, box, skin.Panel)
-	outline(gtx, box, skin.Edge)
+	raised(gtx, box, bubbleRadius+2, skin.Panel)
 	for i, said := range w.Menu() {
 		row := MenuRowAt(box, i)
 		ink := skin.Ink
+		if said == "Delete" {
+			ink = skin.Wrong
+		}
 		if i == w.MenuOn() {
-			fill(gtx, row, skin.Back)
-			ink = skin.Chosen
+			rounded(gtx, row, rowRadius, skin.Pill)
 		}
 		say(gtx, th, ink, Inside(row), said, reads)
+		if key := MenuKey(said); key != "" {
+			spelled := w.keyboard.Spelled(Pretty(key))
+			drawKeyChip(gtx, th, skin, Box{X: row.X + row.W - KeyChipWide(spelled) - inset*2, Y: row.Y, H: row.H}, spelled)
+		}
 	}
 }
 

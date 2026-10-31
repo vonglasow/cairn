@@ -3713,14 +3713,14 @@ Feature: The desktop board
       And the form is drawn behind the question
 
     @gui-a-question-stands-out-from-what-is-behind-it
-    Scenario: a question is outlined in the colour of what is chosen, over a window dimmed behind it
+    Scenario: a question stands raised over a window dimmed behind it, its answer that destroys in red
       Given I added a task titled "Ship it"
       And I added the step "Draft" to task 1
       When I open the window
       And I double-click the card "Ship it"
       And I click the step "Draft"
       And I press "backspace"
-      Then the question is outlined in the colour of what is chosen
+      Then the question stands raised, its corners rounded
       And what is behind the question is dimmed
 
     @gui-a-step-is-kept-when-its-delete-is-cancelled

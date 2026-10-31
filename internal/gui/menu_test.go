@@ -51,9 +51,9 @@ func TestTheMenuIsDrawn(t *testing.T) {
 	shot := drawn(t, w)
 	corner := func(i int) Box {
 		row := MenuRowAt(w.MenuBox(), i)
-		return Box{X: row.X + 1, Y: row.Y + 1, W: 1, H: 1}
+		return Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}
 	}
-	if got := ink(shot, corner(0), Dark().Back); got != 0 {
+	if got := ink(shot, corner(0), Dark().Pill); got != 0 {
 		t.Error("the line the keyboard is on is not lit")
 	}
 	if got := ink(shot, corner(1), Dark().Panel); got != 0 {
@@ -102,5 +102,26 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	}
 	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[3] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
+	}
+}
+
+func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	at := middleOf(w, 1, 0)
+	w = w.ContextAt(at)
+	box := w.MenuBox()
+	row := MenuRowAt(box, 0)
+	shot := drawn(t, w)
+	if painted(shot, Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+		t.Error("the menu's lit line does not stand on a pill")
+	}
+	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+		t.Error("the menu's corner is not rounded")
+	}
+	if got := MenuKey("Edit"); got != "e" {
+		t.Errorf("the menu's Edit line says the key %q", got)
+	}
+	if got := MenuKey("Delete"); got != "cmd+backspace" {
+		t.Errorf("the menu's Delete line says the key %q", got)
 	}
 }

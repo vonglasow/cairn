@@ -2079,19 +2079,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the question is outlined in the colour of what is chosen$`, func() error {
+	sc.Then(`^the question stands raised, its corners rounded$`, func() error {
 		shot, err := drawnInAStep(w.w)
 		if err != nil {
 			return err
 		}
 		asked := w.w.QuestionBox()
-		inner := Box{X: asked.X + 1, Y: asked.Y + 1, W: asked.W - 2, H: asked.H - 2}
-		for _, edges := range [][4]Box{Edges(asked), Edges(inner)} {
-			for _, edge := range edges {
-				if painted(shot, edge, Dark().Chosen) < edge.W*edge.H/2 {
-					return fmt.Errorf("the question's edge %+v is not drawn in the colour of what is chosen", edge)
-				}
-			}
+		if painted(shot, Box{X: asked.X, Y: asked.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+			return fmt.Errorf("the question's corner at %+v is not rounded", asked)
+		}
+		if painted(shot, Box{X: asked.X + asked.W/2, Y: asked.Y + 2, W: 1, H: 1}, Dark().Panel) != 1 {
+			return fmt.Errorf("the question at %+v does not stand on a panel's ground", asked)
+		}
+		if painted(shot, Edges(asked)[0], Dark().Chosen) != 0 {
+			return fmt.Errorf("the question is still edged in the accent")
 		}
 		return nil
 	})

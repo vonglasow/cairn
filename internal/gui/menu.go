@@ -84,6 +84,27 @@ func (w Window) settingFrom(field string, values []string, held string) Window {
 	return w
 }
 
+// MenuKey is the key that does what a line of the menu does, which the line says at its right: the menu is where a key is learned.
+func MenuKey(line string) string {
+	switch line {
+	case "Edit":
+		return "e"
+	case "New linked task":
+		return "o"
+	case "Focus", "Unfocus":
+		return "f"
+	case "Move to…":
+		return "m"
+	case "Priority…":
+		return "p"
+	case "Labels…":
+		return "l"
+	case "Archive", "Unarchive":
+		return "x"
+	}
+	return Shortcut(line)
+}
+
 // Menu is what the open menu offers, line by line.
 func (w Window) Menu() []string { return w.menu }
 
