@@ -109,7 +109,7 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 	if len(w.Offers()) == 0 {
 		t.Fatal("a search offers nothing, so nothing can be pointed at")
 	}
-	at := OfferAt(w.Layout(), len(w.Offers())-1)
+	at := w.BarOffers()[len(w.Offers())-1]
 	got := w.clicked(Point{X: at.X + 10, Y: at.Y + at.H/2})
 	if got.Screen() == OnSearch {
 		t.Error("clicking the last offer left the window in the search")

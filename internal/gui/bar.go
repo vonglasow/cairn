@@ -419,7 +419,50 @@ func (w Window) BarOffers() []Box { return w.barAlong(w.Offers()) }
 
 func (w Window) barAlong(offers []string) []Box {
 	l := w.Layout()
-	return laidAlong(w.widthsOf(offers), func(i int) Box { return OfferAt(l, i) }, l.Bar.X)
+	widths := make([]int, len(offers))
+	total := 0
+	for i, offer := range offers {
+		widths[i] = w.hintWide(offer)
+		total += widths[i]
+	}
+	return laidAlong(widths, func(i int) Box { return OfferAt(l, i) }, l.Bar.X+l.Bar.W-barInset-total)
+}
+
+const (
+	barInset   = 8
+	barRadius  = 10
+	chipInset  = 4
+	hintSpace  = 6
+	hintMargin = 14
+)
+
+func (w Window) hintWide(offer string) int {
+	return KeyChipWide(w.keyOf(offer)) + hintSpace + ends(w.measured(), offer, reads) + hintMargin
+}
+
+func (w Window) keyOf(offer string) string {
+	if key := Shortcut(offer); key != "" {
+		return w.keyboard.Spelled(Pretty(key))
+	}
+	return ""
+}
+
+// KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono and a little room either side.
+func KeyChipWide(key string) int {
+	if key == "" {
+		return 0
+	}
+	return monoWide(key, small) + 2*chipInset
+}
+
+// CommandSays is what the command bar's line says at rest: the task chosen, by its number and title, or what can be typed into it.
+func (w Window) CommandSays() string {
+	if w.chosen != 0 && !w.chosenGoal {
+		if c, ok := w.snap.Card(w.chosen); ok {
+			return "#" + strconv.Itoa(c.Number) + " · " + c.Title
+		}
+	}
+	return "Command, number or title…"
 }
 
 func laidAlong(widths []int, slot func(int) Box, x int) []Box {

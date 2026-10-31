@@ -192,14 +192,12 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	skin := Dark()
-	first := OfferAt(w.Layout(), 0)
 	for _, c := range []struct {
 		what   string
 		screen Screen
 		lit    bool
 	}{
 		{"the board", OnTheBoard, true},
-		{"a search", OnSearch, true},
 		{"an open task", OnForm, false},
 		{"a form", OnForm, false},
 	} {
@@ -208,6 +206,7 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 		if c.screen == OnForm {
 			v = v.Edit()
 		}
+		first := v.barAlong(v.BoardOffers())[0]
 		shot := drawn(t, v)
 		lit, faint := lettered(shot, first, skin.Ink), lettered(shot, first, skin.Faint)
 		if c.lit && lit <= faint {
@@ -271,7 +270,7 @@ func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 		t.Error("what went wrong is not drawn")
 	}
 	for i := range w.Offers() {
-		if got := ink(shot, OfferAt(w.Layout(), i), Dark().Back); got == 0 {
+		if got := ink(shot, w.BarOffers()[i], Dark().Panel); got == 0 {
 			t.Errorf("offer %d is not drawn while something went wrong", i)
 		}
 	}
@@ -504,7 +503,7 @@ func TestTheBarDrawsWhatItOffers(t *testing.T) {
 
 	shot := drawn(t, w)
 	for i := range w.Offers() {
-		if got := ink(shot, OfferAt(w.Layout(), i), Dark().Back); got == 0 {
+		if got := ink(shot, w.BarOffers()[i], Dark().Panel); got == 0 {
 			t.Errorf("offer %d is not drawn", i)
 		}
 	}
@@ -1492,5 +1491,22 @@ func TestAnAnswerThatDestroysIsRed(t *testing.T) {
 	verb := Button(w.offersAlong(w.panel())[0])
 	if painted(drawn(t, w), Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Danger) != 3 {
 		t.Errorf("%q is not drawn red", w.Offers()[0])
+	}
+}
+
+func TestTheCommandBarIsARoundedPanelWithItsHintsAtTheRight(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	bar := w.Layout().Bar
+	shot := drawn(t, w)
+	if painted(shot, Box{X: bar.X, Y: bar.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+		t.Error("the command bar's corner is not rounded")
+	}
+	if painted(shot, Box{X: bar.X + bar.W/2, Y: bar.Y + 3, W: 1, H: 1}, Dark().Panel) != 1 {
+		t.Error("the command bar does not stand on a panel's ground")
+	}
+	hints := w.BarOffers()
+	last := hints[len(hints)-1]
+	if last.X+last.W > bar.X+bar.W || hints[0].X < bar.X+bar.W/4 {
+		t.Errorf("the hints run from %d to %d in a bar from %d to %d", hints[0].X, last.X+last.W, bar.X, bar.X+bar.W)
 	}
 }

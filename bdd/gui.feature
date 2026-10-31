@@ -3452,18 +3452,25 @@ Feature: The desktop board
 
   Rule: A key does what the bar offers, where the bar offers it
 
-    @gui-a-lit-offer-holds-its-words-in-its-middle
-    Scenario: the offer under the pointer is a button edged in the chosen ink, its words in its middle
-      When I open the window
-      And I rest the pointer on the offer "Search"
-      Then the offer "Search" is a lit button, its words in its middle
-
-    @gui-every-offer-is-a-button
-    Scenario: what the board, a form and the calendar offer are drawn as the same buttons
+    @gui-the-command-bar-names-what-is-chosen
+    Scenario: the command bar at the window's foot names the task chosen, or asks for a command
       Given I added a task titled "Write the spec"
       When I open the window
-      Then every offer of the bar is drawn as a button
+      Then the command bar reads "Command, number or title…"
       When I click the card "Write the spec"
+      Then the command bar reads "#1 · Write the spec"
+
+    @gui-a-lit-offer-holds-its-words-in-its-middle
+    Scenario: the hint of the command bar under the pointer is lit, its key on a chip
+      When I open the window
+      And I rest the pointer on the offer "Search"
+      Then the offer "Search" is a lit hint, its key on a chip
+
+    @gui-every-offer-is-a-button
+    Scenario: what a form and the calendar offer are drawn as the same buttons
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
       And I choose "Edit"
       Then every offer of the panel is drawn as a button
       When I click the field "deadline"

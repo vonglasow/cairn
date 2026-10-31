@@ -800,25 +800,52 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		fill(gtx, WrongBox(l), skin.Back)
 		sayOver(gtx, th, skin.Ink, WrongBox(l), w.Note(), reads, 2)
 	}
+	bar := l.Bar
+	rounded(gtx, bar, barRadius, skin.GroundEdge)
+	rounded(gtx, Box{X: bar.X + 1, Y: bar.Y + 1, W: bar.W - 2, H: bar.H - 2}, barRadius-1, skin.Panel)
+	offers, faint := w.Offers(), false
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
-		under := w.barAlong(w.BoardOffers())
-		for i, offer := range w.BoardOffers() {
-			drawButton(gtx, th, skin, Button(under[i]), w.Said(offer), buttonFaint)
-		}
-		return
+		offers, faint = w.BoardOffers(), true
 	}
-	bar := w.BarOffers()
-	for i, offer := range w.Offers() {
-		drawOffer(gtx, th, skin, bar[i], offer, w)
+	along := w.barAlong(offers)
+	chip := drawKeyChip(gtx, th, skin, Box{X: bar.X + barInset, Y: bar.Y, W: 0, H: bar.H}, w.keyboard.Spelled(Pretty("cmd+k")))
+	end := bar.X + bar.W
+	if len(along) > 0 {
+		end = along[0].X
+	}
+	from := chip.X + chip.W + hintSpace
+	sayIn(gtx, th, skin.Low, Box{X: from, Y: bar.Y + (bar.H-lineHigh)/2, W: max(0, end-hintMargin-from), H: lineHigh}, w.CommandSays(), reads, font.Font{}, text.Start)
+	for i, offer := range offers {
+		drawHint(gtx, th, skin, along[i], w.keyOf(offer), offer, faint, !faint && w.Lighting(offer))
 	}
 }
 
-func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer string, w Window) {
-	look := buttonPlain
-	if w.Lighting(offer) {
-		look = buttonLit
+func drawKeyChip(gtx layout.Context, th *material.Theme, skin Skin, row Box, key string) Box {
+	chip := Box{X: row.X, Y: row.Y + (row.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
+	if key == "" {
+		return Box{X: row.X, Y: chip.Y, H: chipHigh}
 	}
-	drawButton(gtx, th, skin, Button(box), w.Said(offer), look)
+	rounded(gtx, chip, chipRadius, skin.Pill)
+	sayIn(gtx, th, skin.Ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+	return chip
+}
+
+const (
+	chipHigh   = 18
+	chipRadius = 4
+)
+
+func drawHint(gtx layout.Context, th *material.Theme, skin Skin, at Box, key, word string, faint, lit bool) {
+	if lit {
+		rounded(gtx, Box{X: at.X, Y: at.Y + 3, W: at.W - hintSpace, H: at.H - 6}, chipRadius+2, skin.Hover)
+	}
+	chip := drawKeyChip(gtx, th, skin, Box{X: at.X + hintSpace/2, Y: at.Y, H: at.H}, key)
+	ink := skin.Ink
+	if faint {
+		ink = skin.Faint
+	}
+	from := chip.X + chip.W + hintSpace
+	sayIn(gtx, th, ink, Box{X: from, Y: at.Y + (at.H-lineHigh)/2, W: at.X + at.W - from, H: lineHigh}, word, reads, font.Font{}, text.Start)
 }
 
 type buttonLook int

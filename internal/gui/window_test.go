@@ -770,8 +770,7 @@ func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 	if _, over := w.Hovered(); over {
 		t.Fatal("something is hovered before the pointer has moved")
 	}
-	l := w.Layout()
-	first := OfferAt(l, 0)
+	first := w.BarOffers()[0]
 	w = Pointed(w, pointer.Move, Point{X: first.X + first.W/2, Y: first.Y + first.H/2}, 0)
 	said, over := w.Hovered()
 	if !over || said != w.Offers()[0] {
@@ -847,7 +846,7 @@ func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
 			t.Fatalf("%q is lit before the pointer has moved", offer)
 		}
 	}
-	first := OfferAt(w.Layout(), 0)
+	first := w.BarOffers()[0]
 	w = w.Hovering(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if !w.Lighting(offers[0]) {
 		t.Fatalf("%q is not lit with the pointer on it", offers[0])

@@ -1453,7 +1453,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + 2})
 		return nil
 	})
-	sc.Then(`^the offer "([^"]*)" is a lit button, its words in its middle$`, func(offer string) error {
+	sc.Then(`^the offer "([^"]*)" is a lit hint, its key on a chip$`, func(offer string) error {
 		box, err := offerBox(offer)
 		if err != nil {
 			return err
@@ -1461,23 +1461,24 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !w.w.Lighting(offer) {
 			return fmt.Errorf("the offer %q is not lit", offer)
 		}
-		button := Button(box)
-		if words := ButtonSaid(button); words.Y-button.Y != button.Y+button.H-words.Y-words.H {
-			return fmt.Errorf("the offer %q writes at %+v in a button at %+v", offer, words, button)
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
 		}
-		return buttonsDrawn(w.w, []Box{button}, lighter(Dark().Pill))
+		if painted(shot, Box{X: box.X + 1, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Hover) != 1 {
+			return fmt.Errorf("the hint %q at %+v is not lit", offer, box)
+		}
+		chip := Box{X: box.X + hintSpace/2 + chipInset - 2, Y: box.Y + box.H/2 - chipHigh/2 + 2, W: 1, H: 1}
+		if painted(shot, chip, Dark().Pill) != 1 {
+			return fmt.Errorf("the key of %q is not on a chip at %+v", offer, chip)
+		}
+		return nil
 	})
-	sc.Then(`^every offer of the (bar|panel) is drawn as a button$`, func(where string) error {
-		slots := w.w.BarOffers()
-		if where == "panel" {
-			slots = w.w.offersAlong(w.w.panel())
-		}
+	sc.Then(`^every offer of the panel is drawn as a button$`, func() error {
+		slots := w.w.offersAlong(w.w.panel())
 		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Pill, buttonOn: Dark().Chosen, buttonDanger: Dark().Danger}
 		for i, slot := range slots {
-			look := buttonPlain
-			if where == "panel" {
-				look = w.w.OfferLook(i, w.w.Offers()[i])
-			}
+			look := w.w.OfferLook(i, w.w.Offers()[i])
 			if err := buttonsDrawn(w.w, []Box{Button(slot)}, grounds[look]); err != nil {
 				return err
 			}
@@ -1925,6 +1926,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			if wide := Reckoned(row.Means, reads); wide[len(wide)-1] > value.W {
 				return fmt.Errorf("line %d, %q, is %d wide in a column of %d", i, row.Means, wide[len(wide)-1], value.W)
 			}
+		}
+		return nil
+	})
+	sc.Then(`^the command bar reads "([^"]*)"$`, func(said string) error {
+		if got := w.w.CommandSays(); got != said {
+			return fmt.Errorf("the command bar reads %q", got)
 		}
 		return nil
 	})

@@ -407,7 +407,7 @@ func (w *world) clickOffer(name string) error {
 		if offer != name {
 			continue
 		}
-		box := OfferAt(w.w.Layout(), i)
+		box := w.w.BarOffers()[i]
 		if s := w.w.screen; s != OnTheBoard && s != OnSearch {
 			box = w.w.PanelOffers()[i]
 		}

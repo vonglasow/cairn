@@ -760,6 +760,17 @@ on the tint: the eye after its number was a pictogram nobody read as being
 worked on, and was too small to find from across the board. `f` focuses or
 unfocuses the chosen task, under the same key the terminal board uses.
 
+**The bar at the window's foot is the command bar.** It is a rounded panel
+across the foot: at its left the key that opens it, `⌘K`, on a chip, and a
+line saying the task chosen — `#152 · Choose the month…` — or that a command,
+a number or a title can be typed (`CommandSays`,
+`@gui-the-command-bar-names-what-is-chosen`); at its right, the offers of the
+moment as hints, each its key on a chip and its word, lit under the pointer,
+and done by a click as by the key (`barAlong`, `drawHint`,
+`@gui-a-lit-offer-holds-its-words-in-its-middle`). Under an open panel the
+board's hints stay, faint. Until the palette lands, every offer the bar had
+is still a hint, so nothing became reachable by key alone.
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen
