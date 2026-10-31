@@ -38,6 +38,7 @@ afternoon to spend:
 - [What it is for](#what-it-is-for)
 - [Why Gio](#why-gio)
 - [Where it lives](#where-it-lives)
+- [The look](#the-look)
 - [The window](#the-window)
 - [The mouse](#the-mouse)
 - [The form](#the-form)
@@ -113,6 +114,29 @@ answers through the same four switches — `Choose`, `Offers`, `Click`,
 
 `cairn gui` is a command in `internal/cli`, built like `cairn tui`, with the
 same seam (`var openGui = func(…)`) so a test never needs a window.
+
+## The look
+
+The window follows one design, settled on 2026-10-31 for v0.10.0: calm,
+told apart by tone rather than by lines. Its tokens are `Dark()`'s:
+
+| token | is | value |
+|---|---|---|
+| `Back` | the window | `#0c0d0f` |
+| `Ground` | a column's or a lane's ground | `#17181b` |
+| `Card` / `Hover` / `Tint` | a card, under the pointer, in focus | `#1f2024` / `#25262b` / `#1e243c` |
+| `Panel` | anything raised: a panel, a menu, the command bar | `#26282d` |
+| `Field` / `Pill` | an input, a label or a button | `#131417` / `#303238` |
+| `Edge` | the edge of a control | `#60626a` |
+| `Ink` / `Faint` / `Low` | text, secondary text, numbers and counts | `#e7e7ea` / `#9a9ba2` / `#5f6067` |
+| `Chosen` / `Selected` | the accent (focus, primary button) / the keyboard's ring | `#7b93ff` / `#8d8f9c` |
+
+The design's own mock-up was darker still; `skin_test.go` holds every
+shape to a contrast it can be told apart at (a panel 1.3 against the
+board, an edge 3), so the tones were raised to meet it rather than the
+thresholds lowered. Shapes are rounded (`rounded`): a card 8, a column 10,
+a panel 12. A raised panel casts a shadow (`raised`): Gio has no blur, so
+the shadow is three rounded boxes under it, wider and fainter as they go.
 
 ## The window
 

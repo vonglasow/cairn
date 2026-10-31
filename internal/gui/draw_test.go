@@ -1389,3 +1389,61 @@ func TestACardDroppedOverItsOwnLowerHalfStaysBehindTheOneBefore(t *testing.T) {
 		}
 	}
 }
+
+func drawnOps(t *testing.T, wide, high int, do func(gtx layout.Context)) *image.RGBA {
+	t.Helper()
+	window := offScreen(t, wide, high)
+	defer window.Release()
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(wide, high)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	do(gtx)
+	if err := window.Frame(gtx.Ops); err != nil {
+		t.Fatal(err)
+	}
+	shot := image.NewRGBA(image.Rect(0, 0, wide, high))
+	if err := window.Screenshot(shot); err != nil {
+		t.Fatal(err)
+	}
+	return shot
+}
+
+func TestARoundedBoxLeavesItsCornersToWhatIsUnder(t *testing.T) {
+	skin := Dark()
+	box := Box{X: 10, Y: 10, W: 60, H: 40}
+	shot := drawnOps(t, 80, 60, func(gtx layout.Context) {
+		fill(gtx, Box{W: 80, H: 60}, skin.Back)
+		rounded(gtx, box, 8, skin.Card)
+	})
+	if painted(shot, Box{X: 10, Y: 10, W: 1, H: 1}, skin.Back) != 1 {
+		t.Error("the corner of a rounded box is painted")
+	}
+	if painted(shot, Box{X: 40, Y: 30, W: 1, H: 1}, skin.Card) != 1 || painted(shot, Box{X: 10, Y: 30, W: 1, H: 1}, skin.Card) != 1 {
+		t.Error("a rounded box is not painted inside its edges")
+	}
+}
+
+func TestARaisedPanelCastsAShadowUnderIt(t *testing.T) {
+	skin := Dark()
+	box := Box{X: 20, Y: 10, W: 60, H: 40}
+	shot := drawnOps(t, 100, 80, func(gtx layout.Context) {
+		fill(gtx, Box{W: 100, H: 80}, skin.Back)
+		raised(gtx, box, 12, skin.Panel)
+	})
+	under := shot.RGBAAt(50, box.Y+box.H+4)
+	if under.R >= skin.Back.R && under.G >= skin.Back.G {
+		t.Errorf("under the panel reads %v, no darker than the window's %v", under, skin.Back)
+	}
+	if painted(shot, Box{X: 50, Y: 30, W: 1, H: 1}, skin.Panel) != 1 {
+		t.Error("the panel itself is not painted")
+	}
+}
+
+func TestTheSkinTellsItsStatesApart(t *testing.T) {
+	skin := Dark()
+	pairs := [][2]color.NRGBA{{skin.Card, skin.Ground}, {skin.Card, skin.Hover}, {skin.Card, skin.Tint}, {skin.Selected, skin.Chosen}, {skin.Ground, skin.Back}, {skin.Pill, skin.Card}}
+	for _, pair := range pairs {
+		if pair[0] == pair[1] {
+			t.Errorf("two states share %v", pair[0])
+		}
+	}
+}

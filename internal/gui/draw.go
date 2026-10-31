@@ -40,9 +40,12 @@ const HeadingWeight = font.Bold
 type Skin struct {
 	Back, Panel, Edge  color.NRGBA
 	Ground, GroundEdge color.NRGBA
-	Ink, Faint, Chosen color.NRGBA
-	Wrong              color.NRGBA
-	Late               color.NRGBA
+	Card, Hover, Field color.NRGBA
+	Ink, Faint, Low    color.NRGBA
+	Chosen, Selected   color.NRGBA
+	Tint, Pill         color.NRGBA
+	Wrong, Danger      color.NRGBA
+	Late, Done         color.NRGBA
 	Ghost              color.NRGBA
 	Veil               color.NRGBA
 	Priority           map[string]color.NRGBA
@@ -52,28 +55,37 @@ type Skin struct {
 // Dark is the one skin there is.
 func Dark() Skin {
 	return Skin{
-		Back:       color.NRGBA{R: 18, G: 18, B: 24, A: 255},
-		Panel:      color.NRGBA{R: 44, G: 44, B: 54, A: 255},
-		Edge:       color.NRGBA{R: 104, G: 104, B: 122, A: 255},
-		Ground:     color.NRGBA{R: 28, G: 28, B: 36, A: 255},
-		GroundEdge: color.NRGBA{R: 54, G: 54, B: 66, A: 255},
-		Ink:        color.NRGBA{R: 226, G: 226, B: 236, A: 255},
-		Faint:      color.NRGBA{R: 160, G: 160, B: 178, A: 255},
-		Chosen:     color.NRGBA{R: 108, G: 158, B: 246, A: 255},
-		Wrong:      color.NRGBA{R: 255, G: 110, B: 160, A: 255},
+		Back:       color.NRGBA{R: 12, G: 13, B: 15, A: 255},
+		Panel:      color.NRGBA{R: 38, G: 40, B: 45, A: 255},
+		Edge:       color.NRGBA{R: 96, G: 98, B: 106, A: 255},
+		Ground:     color.NRGBA{R: 23, G: 24, B: 27, A: 255},
+		GroundEdge: color.NRGBA{R: 40, G: 41, B: 46, A: 255},
+		Card:       color.NRGBA{R: 31, G: 32, B: 36, A: 255},
+		Hover:      color.NRGBA{R: 37, G: 38, B: 43, A: 255},
+		Field:      color.NRGBA{R: 19, G: 20, B: 23, A: 255},
+		Ink:        color.NRGBA{R: 231, G: 231, B: 234, A: 255},
+		Faint:      color.NRGBA{R: 154, G: 155, B: 162, A: 255},
+		Low:        color.NRGBA{R: 95, G: 96, B: 103, A: 255},
+		Chosen:     color.NRGBA{R: 123, G: 147, B: 255, A: 255},
+		Selected:   color.NRGBA{R: 141, G: 143, B: 156, A: 255},
+		Tint:       color.NRGBA{R: 30, G: 36, B: 60, A: 255},
+		Pill:       color.NRGBA{R: 48, G: 50, B: 56, A: 255},
+		Wrong:      color.NRGBA{R: 255, G: 155, B: 152, A: 255},
+		Danger:     color.NRGBA{R: 58, G: 31, B: 34, A: 255},
 		Late:       color.NRGBA{R: 240, G: 186, B: 96, A: 255},
-		Ghost:      color.NRGBA{R: 72, G: 88, B: 124, A: 255},
-		Veil:       color.NRGBA{R: 6, G: 6, B: 10, A: 160},
+		Done:       color.NRGBA{R: 127, G: 182, B: 159, A: 255},
+		Ghost:      color.NRGBA{R: 42, G: 51, B: 80, A: 255},
+		Veil:       color.NRGBA{R: 6, G: 7, B: 9, A: 158},
 		Stones: []color.NRGBA{
 			{R: 86, G: 84, B: 92, A: 255},
 			{R: 104, G: 101, B: 108, A: 255},
 			{R: 122, G: 119, B: 124, A: 255},
 		},
 		Priority: map[string]color.NRGBA{
-			string(domain.Critical): {R: 236, G: 96, B: 96, A: 255},
-			string(domain.High):     {R: 236, G: 168, B: 72, A: 255},
-			string(domain.Normal):   {R: 96, G: 178, B: 146, A: 255},
-			string(domain.Low):      {R: 140, G: 146, B: 172, A: 255},
+			string(domain.Critical): {R: 229, G: 96, B: 94, A: 255},
+			string(domain.High):     {R: 229, G: 162, B: 74, A: 255},
+			string(domain.Normal):   {R: 79, G: 174, B: 140, A: 255},
+			string(domain.Low):      {R: 125, G: 130, B: 150, A: 255},
 		},
 	}
 }
@@ -1027,6 +1039,23 @@ func fill(gtx layout.Context, b Box, with color.NRGBA) {
 func ground(gtx layout.Context, skin Skin, b Box) {
 	fill(gtx, b, skin.Ground)
 	outline(gtx, b, skin.GroundEdge)
+}
+
+func rounded(gtx layout.Context, b Box, radius int, with color.NRGBA) {
+	paint.FillShape(gtx.Ops, with, clip.UniformRRect(rect(b), radius).Op(gtx.Ops))
+}
+
+var shadows = []struct {
+	down, spread int
+	alpha        uint8
+}{{18, 10, 18}, {10, 4, 35}, {4, 0, 60}}
+
+func raised(gtx layout.Context, b Box, radius int, with color.NRGBA) {
+	for _, s := range shadows {
+		under := Box{X: b.X - s.spread, Y: b.Y + s.down - s.spread, W: b.W + 2*s.spread, H: b.H + 2*s.spread}
+		rounded(gtx, under, radius+s.spread, color.NRGBA{A: s.alpha})
+	}
+	rounded(gtx, b, radius, with)
 }
 
 func outline(gtx layout.Context, b Box, with color.NRGBA) {
