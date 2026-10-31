@@ -107,19 +107,19 @@ func TestADayScrollsToItsLastTask(t *testing.T) {
 func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	f := newFake()
 	w := Window{work: f, tab: Time, width: 1200, height: 800, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-10-12")}}
-	month := w.onWeek("m")
+	month := w.onWeek("3")
 	if !month.Monthly() || month.week.Format("January 2006") != "October 2026" {
-		t.Fatalf("m shows %v, monthly %v", month.week, month.Monthly())
+		t.Fatalf("3 shows %v, monthly %v", month.week, month.Monthly())
 	}
 	in, _ := f.gave("timesheet", "show")
 	grid := engine.MonthGrid(dayNamed("2026-10-01"))
 	if in.Given["since"] != domain.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
-	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.week.Format("January 2006") != "October 2026" {
+	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("3"); got.week.Format("January 2006") != "October 2026" {
 		t.Errorf("the week of 28 September turned to %s", got.week.Format("January 2006"))
 	}
-	if got := (Window{work: f, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("m"); got.week.Format("January 2006") != "September 2026" {
+	if got := (Window{work: f, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("3"); got.week.Format("January 2006") != "September 2026" {
 		t.Errorf("the week of 28 September, today the 30th, turned to %s", got.week.Format("January 2006"))
 	}
 	if got := month.onWeek("right").week.Format("January 2006"); got != "November 2026" {
@@ -128,11 +128,11 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	if got := month.onWeek("left").onWeek("t").week.Format("January 2006"); got != "October 2026" {
 		t.Errorf("t shows %s", got)
 	}
-	if got := month.onWeek("m"); got.Monthly() || domain.FormatDay(got.week) != "2026-10-12" {
-		t.Errorf("m again shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
+	if got := month.onWeek("2"); got.Monthly() || domain.FormatDay(got.week) != "2026-10-12" {
+		t.Errorf("2 shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
 	}
 	later := month.onWeek("right").onWeek("right")
-	if got := later.onWeek("m"); domain.FormatDay(got.week) != "2026-11-30" {
+	if got := later.onWeek("2"); domain.FormatDay(got.week) != "2026-11-30" {
 		t.Errorf("the week of December shown is %s", domain.FormatDay(got.week))
 	}
 	l := w.Layout()

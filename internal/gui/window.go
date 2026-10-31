@@ -99,6 +99,8 @@ type Window struct {
 	configurationState
 	timeState
 	palette                         paletteState
+	going                           bool
+	goneAt                          time.Time
 	born                            time.Time
 	introOver                       bool
 	paused                          []string

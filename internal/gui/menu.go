@@ -2,6 +2,7 @@ package gui
 
 import (
 	"strconv"
+	"strings"
 
 	"cairn/internal/engine"
 )
@@ -43,6 +44,36 @@ func (w Window) menuFor() []string {
 	return []string{"Edit", "New linked task", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
 }
 
+func (w Window) labellingChosen() Window {
+	return w.formOnto("label").choosingList()
+}
+
+func (w Window) datingChosen() Window {
+	return w.formOnto("deadline").openingCalendar()
+}
+
+func (w Window) formOnto(arg string) Window {
+	w.screen = OnTheBoard
+	w = w.Edit()
+	for at, field := range w.form.Fields() {
+		if field.Arg == arg {
+			w.form = w.form.onto(at)
+		}
+	}
+	return w
+}
+
+// settingUnderTheCard opens the values a field of the chosen task takes in a menu under its card, the keyboard's way to what the right-click menu offers.
+func (w Window) settingUnderTheCard(field string, values []string, held string) Window {
+	for _, placed := range w.Placed() {
+		if placed.Card.Number == w.chosen {
+			w.menuAt = Point{X: placed.Slot.X, Y: placed.Slot.Y + placed.Slot.H}
+		}
+	}
+	w.screen = OnMenu
+	return w.settingFrom(field, values, held)
+}
+
 func (w Window) settingFrom(field string, values []string, held string) Window {
 	w.menu, w.menuOn, w.menuSets = nil, 0, field
 	for _, value := range values {
@@ -76,6 +107,13 @@ func MenuRowAt(box Box, i int) Box {
 }
 
 func (w Window) onMenu(name string) Window {
+	if w.menuSets == "state" {
+		for i, value := range w.menu {
+			if len(name) == 1 && strings.HasPrefix(value, name) {
+				return w.fromMenu(i)
+			}
+		}
+	}
 	switch name {
 	case "down", "j":
 		w.menuOn = min(len(w.menu)-1, w.menuOn+1)
@@ -113,14 +151,7 @@ func (w Window) fromMenu(i int) Window {
 	case "Priority…":
 		return w.settingFrom("priority", engine.Priorities(), card.Priority)
 	case "Labels…":
-		w.screen = OnTheBoard
-		w = w.Edit()
-		for at, field := range w.form.Fields() {
-			if field.Arg == "label" {
-				w.form = w.form.onto(at)
-			}
-		}
-		return w.choosingList()
+		return w.labellingChosen()
 	}
 	w.screen = OnTheBoard
 	if said == "Focus" || said == "Unfocus" {

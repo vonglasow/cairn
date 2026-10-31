@@ -357,11 +357,11 @@ func TestACardIsMovedWithTheKeyboard(t *testing.T) {
 func TestADeletionIsAgreedToWithEnter(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
-	w = w.clicked(middleOf(w, 1, 0)).Key("d")
+	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
 	if w.Screen() != OnAsking {
 		t.Fatalf("d left the window on %v", w.Screen())
 	}
-	if again := w.Key("d"); len(f.asked) != 0 {
+	if again := w.Key("cmd+backspace"); len(f.asked) != 0 {
 		t.Errorf("a second d deleted without being agreed to: %v, screen %v", f.asked, again.Screen())
 	}
 	if agreed := w.Key("enter"); agreed.Screen() != OnTheBoard {

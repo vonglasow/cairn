@@ -798,6 +798,18 @@ the palette (`SearchPill`, `@gui-a-slash-in-the-palette-searches-the-board`,
 chooses that task on the board and brings it into sight; `⏎` again opens it
 (`@gui-a-number-chooses-its-task`).
 
+**One letter, one verb, and no letter destroys.** On a chosen task `m` opens
+its columns under its card, a column's first letter moving it there; `p`
+its priorities; `l` its labels; `t` its deadline's calendar — the values the
+right-click menu offers, the same writes (`settingUnderTheCard`,
+`@gui-m-moves-the-chosen-task`, `@gui-p-sets-the-priority`,
+`@gui-l-opens-the-labels-and-t-the-calendar`). Deleting is `⌘⌫` and asks
+first; `d` deleted, one slip of a finger from losing a task, and now does
+nothing on the board (`@gui-d-deletes-nothing`). `g` then `t`, `o` or `i`,
+within a second, goes to a page; on TIME, `1`, `2` and `3` show a day, a week
+or a month, where `d` and `m` did (`@gui-g-goes-to-a-page`). Arrows walk the
+board; `h j k l` were left out, `l` being the labels.
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen

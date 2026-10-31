@@ -1912,7 +1912,7 @@ Feature: The desktop board
       When I open the window
       And I press "shift+l"
       And I click the label "sp26-20"
-      And I press "d"
+      And I press "cmd+backspace"
       Then the window asks "Delete the label sp26-20 everywhere?"
       When I press "enter"
       Then task 1 carries exactly the labels "doc"
@@ -3519,6 +3519,64 @@ Feature: The desktop board
       Then the card "Ship it" is chosen
       And the command bar is shut
 
+    @gui-d-deletes-nothing
+    Scenario: one letter destroys nothing: d no longer deletes, cmd+backspace asks first
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "d"
+      Then the window is on the board
+      When I press "cmd+backspace"
+      Then the panel is headed "Delete task 1?"
+
+    @gui-m-moves-the-chosen-task
+    Scenario: m opens the columns under the chosen card, and a column's letter moves it there
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "m"
+      Then the menu offers "backlog", "current", "blocked", "watching", "paused", "done"
+      When I press "d"
+      Then the engine was asked "task edit" for task 1
+
+    @gui-p-sets-the-priority
+    Scenario: p opens the priorities under the chosen card
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "p"
+      And I press "down"
+      And I press "enter"
+      Then the engine was asked "task edit" for task 1
+
+    @gui-l-opens-the-labels-and-t-the-calendar
+    Scenario: l opens the chosen task's labels and t its deadline's calendar
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "l"
+      Then the window is choosing
+      When I press "esc"
+      And I press "esc"
+      And I click the card "Write the spec"
+      And I press "t"
+      Then the calendar is open
+
+    @gui-g-goes-to-a-page
+    Scenario: g then a page's letter goes to that page
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "g"
+      And I press "o"
+      Then the window is on the page "OBJECTIVES"
+      When I press "g"
+      And I press "i"
+      Then the window is on the page "TIME"
+      When I press "2"
+      Then the time page shows a week
+      When I press "3"
+      Then the time page shows a month
+
     @gui-esc-shuts-the-palette
     Scenario: esc shuts the command bar, having done nothing
       Given I added a task titled "Write the spec"
@@ -4368,7 +4426,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "First"
       And I ⌘-click the card "Third"
-      And I press "d"
+      And I press "cmd+backspace"
       Then the panel is headed "Delete 2 tasks?"
       When I choose "All possible"
       Then "BACKLOG" does not carry "First"
@@ -4383,7 +4441,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Ship it"
       And I ⌘-click the card "Other"
-      And I press "d"
+      And I press "cmd+backspace"
       Then the question says of task 1 "its 1 step goes with it"
       When I choose "Skip flagged"
       Then "BACKLOG" carries "Ship it"
@@ -4396,7 +4454,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "First"
       And I ⌘-click the card "Second"
-      And I press "d"
+      And I press "cmd+backspace"
       And I choose "Cancel"
       Then "BACKLOG" carries "First"
       And "BACKLOG" carries "Second"
@@ -4423,7 +4481,7 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship cairn"
       And I ⌘-click the objective "Keep it honest"
-      And I press "d"
+      And I press "cmd+backspace"
       Then the question says of objective 1 "1 task serves it: it cannot go"
       When I choose "All possible"
       Then the objectives read "Ship cairn"

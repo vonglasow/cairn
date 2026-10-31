@@ -139,7 +139,7 @@ func Shortcut(offer string) string {
 	case "edit":
 		return "e"
 	case "delete":
-		return "d"
+		return "cmd+backspace"
 	case "quit":
 		return "cmd+q"
 	case "agree", "apply":
@@ -167,6 +167,8 @@ func Pretty(key string) string {
 	switch key {
 	case "cmd+enter":
 		return "⌘⏎"
+	case "cmd+backspace":
+		return "⌘⌫"
 	case "enter":
 		return "⏎"
 	}
@@ -210,7 +212,9 @@ func helping() []Said {
 		{Key: "e", Means: "edit what is chosen, on the board or on an open task"},
 		{Key: "f", Means: "focus or unfocus what is chosen — several in focus at once is fine"},
 		{Key: "o", Means: "open a new task linked to what is chosen — in todo, the two seen from either side"},
-		{Key: "d", Means: "delete what is chosen — it asks first"},
+		{Key: "⌘⌫", Means: "delete what is chosen — it asks first; no single letter deletes anything"},
+		{Key: "m p l t", Means: "move what is chosen, or set its priority, labels, deadline"},
+		{Key: "⌘K", Means: "the command bar — a slash first searches · g then t o i goes to a page"},
 		{Key: "x", Means: "archive or unarchive what is chosen"},
 		{Key: "⇧X", Means: "archive every task in that card's column — it asks first"},
 		{Key: "←→↑↓", Means: "walk the board, the band included"},
@@ -232,14 +236,14 @@ func helping() []Said {
 		{Key: "⌘N", Means: "new"},
 		{Key: "⌘B", Means: "a new backup of the store — it says where it lies"},
 		{Key: "⇧B", Means: "the backups — enter restores one, after asking, a new backup made first"},
-		{Key: "⇧L", Means: "every label, with what carries it — r renames one everywhere, d takes it off everything, after asking"},
+		{Key: "⇧L", Means: "every label, with what carries it — r renames one everywhere, ⌘⌫ takes it off everything, after asking"},
 		{Key: "⌘,", Means: "the configuration in use, key by key — its file is opened or written from there"},
 		{Key: "⌘E", Means: "export every task to a file chosen in the system's dialog"},
 		{Key: "⌘O", Means: "import the tasks of a file chosen there, as new tasks"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
 		{Key: "⏎ in a search", Means: "keep what it narrowed and go back to the board"},
 		{Key: "tab", Means: "the next page — shift+tab the one before"},
-		{Key: "←→ on TIME", Means: "the week before or after — t this week"},
+		{Key: "←→ on TIME", Means: "the week before or after — t this week, 1 2 3 a day, a week, a month"},
 		{Key: "tab, ↑↓ in a form", Means: "walk its fields — inside the description ↑↓ walk its lines"},
 		{Key: "←→", Means: "change a field that has a closed set"},
 		{Key: "esc", Means: "back out of whatever is open"},

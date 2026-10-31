@@ -1929,6 +1929,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the calendar is open$`, func() error {
+		if w.w.Screen() != OnCalendar {
+			return fmt.Errorf("the window is on %v", w.w.Screen())
+		}
+		return nil
+	})
+	sc.Then(`^the time page shows a (week|month)$`, func(what string) error {
+		if w.w.Tab() != Time || w.w.Monthly() != (what == "month") || w.w.Daily() {
+			return fmt.Errorf("the time page on %v shows monthly %v daily %v", w.w.Tab(), w.w.Monthly(), w.w.Daily())
+		}
+		return nil
+	})
 	sc.Then(`^the window is searching "([^"]*)"$`, func(said string) error {
 		if w.w.Screen() != OnSearch || w.w.Searched().Reads() != said {
 			return fmt.Errorf("the window is on %v searching %q", w.w.Screen(), w.w.Searched().Reads())

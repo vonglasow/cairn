@@ -103,14 +103,12 @@ func (w Window) onWeek(name string) Window {
 		if w.daily {
 			w.week = w.today()
 		}
-	case "m":
-		if w.monthly {
-			w = w.ranged("Week")
-		} else {
-			w = w.ranged("Month")
-		}
-	case "d":
+	case "1":
 		w = w.ranged("Day")
+	case "2":
+		w = w.ranged("Week")
+	case "3":
+		w = w.ranged("Month")
 	}
 	w.dayFrom = [7]int{}
 	return w.readingWeek()
@@ -168,7 +166,7 @@ func (w Window) ranging() string {
 
 func weekKeys(name string) (mine, shared bool) {
 	switch name {
-	case "left", "right", "t", "m", "d":
+	case "left", "right", "t", "1", "2", "3":
 		return true, false
 	case "tab", "shift+tab", "cmd+b", "shift+b", "shift+l":
 		return false, true

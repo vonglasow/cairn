@@ -2,9 +2,12 @@ package gui
 
 import (
 	"strconv"
+	"time"
 
 	"cairn/internal/engine"
 )
+
+var goingTo = map[string]Tab{"t": Tasks, "o": Objectives, "i": Time}
 
 var spellings = map[string]string{
 	"ctrl+n":       "cmd+n",
@@ -25,6 +28,12 @@ func (w Window) Key(name string) Window {
 	}
 	if w.screen == OnPalette {
 		return w.onPalette(name)
+	}
+	if w.screen == OnTheBoard && w.going {
+		w.going = false
+		if page, ok := goingTo[name]; ok && w.now.Sub(w.goneAt) <= time.Second {
+			return w.onPage(page)
+		}
 	}
 	for _, offer := range w.Offers() {
 		if Shortcut(offer) == name {
@@ -61,7 +70,22 @@ func (w Window) onBoard(name string) Window {
 			return w
 		}
 	}
+	if card, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal && w.tab == Tasks {
+		switch name {
+		case "m":
+			return w.settingUnderTheCard("state", engine.States(), card.State)
+		case "p":
+			return w.settingUnderTheCard("priority", engine.Priorities(), card.Priority)
+		case "l":
+			return w.labellingChosen()
+		case "t":
+			return w.datingChosen()
+		}
+	}
 	switch name {
+	case "g":
+		w.going, w.goneAt = true, w.now
+		return w
 	case "f":
 		if w.chosen != 0 && !w.chosenGoal {
 			return w.working()
