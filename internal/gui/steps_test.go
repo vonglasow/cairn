@@ -1124,6 +1124,29 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
 	})
+	sc.Then(`^the time page offers the twelve months$`, func() error {
+		if got := w.w.TimeCells(); len(got) != 12 || got[0] != "Jan" {
+			return fmt.Errorf("the time page offers %v", got)
+		}
+		return nil
+	})
+	sc.Step(`^I click the cell "([^"]*)" on the time page$`, func(name string) error {
+		for i, cell := range w.w.TimeCells() {
+			if cell == name {
+				box := TimeCellAt(w.w.Layout(), i)
+				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				return w.w.Wrong()
+			}
+		}
+		return fmt.Errorf("the time page offers %v, not %q", w.w.TimeCells(), name)
+	})
+	sc.Then(`^every cell of the time page is drawn as a button$`, func() error {
+		var cells []Box
+		for i := range w.w.TimeCells() {
+			cells = append(cells, TimeCellAt(w.w.Layout(), i))
+		}
+		return buttonsDrawn(w.w, cells, Dark().Edge)
+	})
 	sc.Then(`^the day shown is "([^"]*)"$`, func(day string) error {
 		if !w.w.Daily() || domain.FormatDay(w.w.week) != day {
 			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily())

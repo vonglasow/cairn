@@ -876,7 +876,13 @@ a task a notch, with a bar beside it: it used to cut them off at its foot
 (`@gui-a-day-scrolls-to-its-last-task`). A week alone said nothing of a month,
 so `m`, or Month in the strip along the top, lays out the month's six weeks,
 each day its total and as many of its tasks as fit, then how many more; a day
-clicked shows its week (`@gui-the-time-page-shows-a-month`). The strip's `‹ ›`
+clicked shows its week (`@gui-the-time-page-shows-a-month`). A month shown
+names itself with the date picker's two buttons, its month and its year, and
+they open the same grids in the room of its days: the twelve months, or twelve
+years, the `‹ ›` paging a year or twelve, a pick going back down a level
+(`gridCells`, `gridPicked`, shared with the deadline's calendar,
+`@gui-the-time-month-is-chosen-from-the-twelve`). The pointer alone opens them
+there, `m` being the Month range already. The strip's `‹ ›`
 and `←→` walk weeks or months, Today and `t` come back to today's, and the
 range shown and today are outlined. A task is chosen with a click and opened
 with a double-click, on a week and in a day of a month alike, as on the board

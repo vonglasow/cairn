@@ -1570,6 +1570,24 @@ Feature: The desktop board
       When I click the month's day "2026-09-03"
       Then the week shown starts on "2026-08-31"
 
+    @gui-the-time-month-is-chosen-from-the-twelve
+    Scenario: the month and the year of the time page are buttons opening the grids the date picker has
+      Given today is "2026-09-16"
+      When I open the window
+      And I click the tab "TIME"
+      And I click "Month" on the time page
+      And I click "the month" on the time page
+      Then the time page offers the twelve months
+      And every cell of the time page is drawn as a button
+      When I click the cell "Mar" on the time page
+      Then the month shown is "March 2026"
+      When I click "the year" on the time page
+      And I click "‹" on the time page
+      And I click the cell "2014" on the time page
+      Then the time page offers the twelve months
+      When I click the cell "Mar" on the time page
+      Then the month shown is "March 2014"
+
     @gui-the-time-page-is-walked-by-the-pointer
     Scenario: the arrows at the top of the time page, and Today, walk what it shows
       Given today is "2026-09-16"

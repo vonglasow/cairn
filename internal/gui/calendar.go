@@ -251,15 +251,17 @@ func CalendarCell(box Box, i int) Box {
 }
 
 // CalendarCells is what the calendar offers to choose from instead of its days: nothing while it shows days.
-func (w Window) CalendarCells() []string {
-	if w.view == viewYears {
+func (w Window) CalendarCells() []string { return gridCells(w.view, w.day) }
+
+func gridCells(view calendarView, day time.Time) []string {
+	if view == viewYears {
 		years := make([]string, 12)
 		for i := range years {
-			years[i] = strconv.Itoa(w.firstYear() + i)
+			years[i] = strconv.Itoa(firstYear(day) + i)
 		}
 		return years
 	}
-	if w.view != viewMonths {
+	if view != viewMonths {
 		return nil
 	}
 	names := make([]string, 12)
@@ -269,29 +271,31 @@ func (w Window) CalendarCells() []string {
 	return names
 }
 
-func (w Window) firstYear() int { return w.day.Year() - 4 }
+func firstYear(day time.Time) int { return day.Year() - 4 }
 
 // CalendarMarked is the cell of the grid shown that holds the day the calendar is on.
-func (w Window) CalendarMarked() string {
-	if w.view == viewYears {
-		return strconv.Itoa(w.day.Year())
+func (w Window) CalendarMarked() string { return gridMarked(w.view, w.day) }
+
+func gridMarked(view calendarView, day time.Time) string {
+	if view == viewYears {
+		return strconv.Itoa(day.Year())
 	}
-	return w.day.Month().String()[:3]
+	return day.Month().String()[:3]
+}
+
+func gridPicked(view calendarView, day time.Time, i int) (time.Time, calendarView) {
+	if view == viewYears {
+		return engine.MonthOn(day, (firstYear(day)+i-day.Year())*12), viewMonths
+	}
+	return engine.MonthOn(day, i+1-int(day.Month())), viewDays
 }
 
 func (w Window) cellClicked(p Point) (Window, bool) {
 	for i := range w.CalendarCells() {
-		if !CalendarCell(w.CalendarBox(), i).In(p) {
-			continue
-		}
-		if w.view == viewYears {
-			w.day = engine.MonthOn(w.day, (w.firstYear()+i-w.day.Year())*12)
-			w.view = viewMonths
+		if CalendarCell(w.CalendarBox(), i).In(p) {
+			w.day, w.view = gridPicked(w.view, w.day, i)
 			return w, true
 		}
-		w.day = engine.MonthOn(w.day, i+1-int(w.day.Month()))
-		w.view = viewDays
-		return w, true
 	}
 	return w, false
 }

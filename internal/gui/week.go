@@ -22,6 +22,7 @@ type timeState struct {
 	monthly bool
 	daily   bool
 	dayFrom [7]int
+	grid    calendarView
 }
 
 // Monthly says the time page shows a month rather than a week.
@@ -94,6 +95,7 @@ func (w Window) onWeek(name string) Window {
 	case "right":
 		w.week = w.stepped(1)
 	case "t":
+		w.grid = viewDays
 		w.week = engine.Monday(w.today())
 		if w.monthly {
 			w.week = engine.FirstOfMonth(w.today())
@@ -116,6 +118,10 @@ func (w Window) onWeek(name string) Window {
 
 func (w Window) stepped(by int) time.Time {
 	switch {
+	case w.monthly && w.grid == viewYears:
+		return engine.MonthOn(w.week, 144*by)
+	case w.monthly && w.grid == viewMonths:
+		return engine.MonthOn(w.week, 12*by)
 	case w.monthly:
 		return engine.MonthOn(w.week, by)
 	case w.daily:
@@ -138,7 +144,7 @@ func (w Window) ranged(to string) Window {
 			on = w.week.AddDate(0, 0, 3)
 		}
 	}
-	w.daily, w.monthly = to == "Day", to == "Month"
+	w.daily, w.monthly, w.grid = to == "Day", to == "Month", viewDays
 	switch to {
 	case "Day":
 		w.week = on
@@ -194,8 +200,28 @@ func TimeChip(l Layout, name string) Box {
 		return at(end-3*rangeWide-2*between, rangeWide)
 	case "Today":
 		return at(end-4*rangeWide-4*between, rangeWide)
+	case "the month":
+		return at(TimeSaid(l).X, nameWide)
+	case "the year":
+		return at(TimeSaid(l).X+nameWide+inset, yearWide)
 	}
 	return Box{}
+}
+
+// TimeCells is what the month of the time page offers to choose from instead of its days, as the date picker does: nothing while it shows days.
+func (w Window) TimeCells() []string {
+	if !w.monthly {
+		return nil
+	}
+	return gridCells(w.grid, w.week)
+}
+
+// TimeCellAt is the i-th of those twelve cells, three across and four down, in the room the month's days take.
+func TimeCellAt(l Layout, i int) Box {
+	strip := TimeStrip(l)
+	top := strip.Y + strip.H + between
+	wide, high := (strip.W-2*gap)/3, (l.Band.Y+l.Band.H-top-3*gap)/4
+	return Box{X: strip.X + (i%3)*(wide+gap), Y: top + (i/3)*(high+gap), W: wide, H: high}
 }
 
 // TimeChips is every chip of the strip, in the order they are drawn.
@@ -379,6 +405,11 @@ func (w Window) clickingTime(p Point) Window {
 		}
 		return w
 	}
+	if w.monthly {
+		if picked, on := w.timeGridClicked(l, p); on {
+			return picked
+		}
+	}
 	if number := w.timeCardAt(p); number != 0 {
 		if w.goneOnTime(number) {
 			return w.telling("task " + strconv.Itoa(number) + " was deleted")
@@ -517,3 +548,24 @@ func CellHeadAt(cell Box) Box { return Row(cell, cell.Y+inset, lineHigh) }
 func CellLineAt(cell Box, j int) Box { return Row(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh) }
 
 func sameMonth(a, b time.Time) bool { return a.Year() == b.Year() && a.Month() == b.Month() }
+
+func (w Window) timeGridClicked(l Layout, p Point) (Window, bool) {
+	for name, view := range map[string]calendarView{"the month": viewMonths, "the year": viewYears} {
+		if !TimeChip(l, name).In(p) {
+			continue
+		}
+		if w.grid == view {
+			view = viewDays
+		}
+		w.grid = view
+		return w, true
+	}
+	for i := range w.TimeCells() {
+		if TimeCellAt(l, i).In(p) {
+			w.week, w.grid = gridPicked(w.grid, w.week, i)
+			w.dayFrom = [7]int{}
+			return w.readingWeek(), true
+		}
+	}
+	return w, w.grid != viewDays
+}

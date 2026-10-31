@@ -255,13 +255,14 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	measuring := gtx
 	measuring.Constraints.Min = image.Point{}
 	for _, chip := range TimeChips {
-		look := buttonPlain
-		if chip == w.ranging() {
-			look = buttonOn
-		}
-		drawButton(gtx, th, skin, TimeChip(l, chip), chip, look)
+		drawButton(gtx, th, skin, TimeChip(l, chip), chip, lookOf(chip == w.ranging()))
 	}
-	say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
+	if w.Monthly() {
+		drawButton(gtx, th, skin, TimeChip(l, "the month"), w.week.Month().String(), lookOf(w.grid == viewMonths))
+		drawButton(gtx, th, skin, TimeChip(l, "the year"), strconv.Itoa(w.week.Year()), lookOf(w.grid == viewYears))
+	} else {
+		say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
+	}
 	if w.Monthly() {
 		drawMonth(gtx, th, skin, l, w)
 		return
@@ -310,6 +311,12 @@ func drawDayAlone(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w
 }
 
 func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
+	if cells := w.TimeCells(); len(cells) > 0 {
+		for i, cell := range cells {
+			drawButton(gtx, th, skin, TimeCellAt(l, i), cell, lookOf(cell == gridMarked(w.grid, w.week)))
+		}
+		return
+	}
 	for i, name := range Weekdays[:w.pages.WeekDays()] {
 		say(gtx, th, skin.Faint, MonthWeekdayAt(l, i), name, reads)
 	}
@@ -375,19 +382,11 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		{MonthBefore(box), "‹", false},
 		{MonthAfter(box), "›", false},
 	} {
-		look := buttonPlain
-		if chip.on {
-			look = buttonOn
-		}
-		drawButton(gtx, th, skin, chip.at, chip.says, look)
+		drawButton(gtx, th, skin, chip.at, chip.says, lookOf(chip.on))
 	}
 	if cells := w.CalendarCells(); len(cells) > 0 {
 		for i, cell := range cells {
-			look := buttonPlain
-			if cell == w.CalendarMarked() {
-				look = buttonOn
-			}
-			drawButton(gtx, th, skin, CalendarCell(box, i), cell, look)
+			drawButton(gtx, th, skin, CalendarCell(box, i), cell, lookOf(cell == w.CalendarMarked()))
 		}
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
@@ -746,6 +745,13 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 }
 
 type buttonLook int
+
+func lookOf(on bool) buttonLook {
+	if on {
+		return buttonOn
+	}
+	return buttonPlain
+}
 
 const (
 	buttonPlain buttonLook = iota
