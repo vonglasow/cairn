@@ -66,7 +66,7 @@ func (w Window) listBox(said []string) Box {
 	return Box{X: (w.width - wide) / 2, Y: over.Y + (over.H-high)/2, W: wide, H: high}
 }
 
-func (w Window) headWide() int { return ends(w.measured(), Heads(w), heading) + 2*padding }
+func (w Window) headWide() int { return ends(w.headMeasured(), Heads(w), HeadingSize) + 2*padding }
 
 func (w Window) offersWide() int {
 	wide := 2 * padding

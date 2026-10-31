@@ -30,6 +30,12 @@ const (
 	heading = 16
 )
 
+// HeadingSize is the size every panel's heading is drawn at.
+const HeadingSize = 18
+
+// HeadingWeight is the weight every panel's heading is drawn in.
+const HeadingWeight = font.Bold
+
 // Skin is every colour the window uses, in one place, so a second theme is a second Skin and not a search through the drawing.
 type Skin struct {
 	Back, Panel, Edge  color.NRGBA
@@ -80,11 +86,16 @@ func Theme() *material.Theme {
 }
 
 // Measured is the Measure of a theme's face: each line shaped the way a label shapes it, at the same size and in the same dp, and an edge read after every cluster of characters the face draws as one.
-func Measured(th *material.Theme) Measure {
+func Measured(th *material.Theme) Measure { return measuredIn(th, font.Normal) }
+
+// MeasuredHeadings is the Measure of the same face in the weight a panel's heading is drawn in.
+func MeasuredHeadings(th *material.Theme) Measure { return measuredIn(th, HeadingWeight) }
+
+func measuredIn(th *material.Theme, weight font.Weight) Measure {
 	return func(line string, size int) []int {
 		edges := []int{0}
 		th.Shaper.LayoutString(text.Parameters{
-			Font: font.Font{Typeface: th.Face}, PxPerEm: fixed.I(size),
+			Font: font.Font{Typeface: th.Face, Weight: weight}, PxPerEm: fixed.I(size),
 			MaxLines: 1, MaxWidth: math.MaxInt32,
 		}, line)
 		for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
@@ -459,7 +470,7 @@ func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawPanel(gtx layout.Context, th *material.Theme, skin Skin, box Box, head string) {
 	fill(gtx, box, skin.Panel)
 	outline(gtx, box, skin.Edge)
-	say(gtx, th, skin.Ink, Heading(box), head, heading)
+	sayStyled(gtx, th, skin.Ink, Heading(box), head, HeadingSize, HeadingWeight, 1, text.Start)
 	fill(gtx, Ruled(box), skin.Edge)
 }
 
@@ -1005,6 +1016,10 @@ func sayOver(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 }
 
 func sayAligned(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size, lines int, along text.Alignment) {
+	sayStyled(gtx, th, ink, b, said, size, font.Normal, lines, along)
+}
+
+func sayStyled(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, weight font.Weight, lines int, along text.Alignment) {
 	if said == "" {
 		return
 	}
@@ -1017,6 +1032,7 @@ func sayAligned(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, 
 	inner.Constraints = layout.Exact(image.Pt(b.W, b.H))
 	label := material.Label(th, unit.Sp(float32(size)), said)
 	label.Color = ink
+	label.Font.Weight = weight
 	label.MaxLines = lines
 	label.Alignment = along
 	label.Layout(inner)

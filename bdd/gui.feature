@@ -880,6 +880,13 @@ Feature: The desktop board
 
   Rule: A form is the whole of a task
 
+    @gui-a-forms-heading-stands-out
+    Scenario: the heading naming the task stands out above its form
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the form is headed "task 1" in bold, larger than its fields
+
     @gui-editing-is-reachable-from-the-board
     Scenario: a chosen task is edited without knowing a shortcut
       Given I added a task titled "Write the spec"

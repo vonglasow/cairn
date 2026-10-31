@@ -471,6 +471,12 @@ so the order of what was stopped could not be set from the window at all
 
 ## The form
 
+**A panel's heading stands out from what it holds.** Every panel, the form
+included, writes its heading in bold, at 18 where a field is written at 16 or
+less (`HeadingSize`, `HeadingWeight`), and the drawing and the measure of the
+heading's words read those two alone
+(`@gui-a-forms-heading-stands-out`).
+
 **A step is reached in the form of the task it belongs to, and nowhere
 else.** The form carries a `steps` field, which is where one is ticked, renamed,
 added, taken away and put in its order. Saving the form writes the steps with

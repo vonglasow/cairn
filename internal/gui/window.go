@@ -81,7 +81,7 @@ type Window struct {
 	saying                                              int
 	spareHistory, spareSaying, spareChoosing, spareHelp int
 	helpFrom                                            int
-	measure                                             Measure
+	measure, measureHeads                               Measure
 	keyboard                                            Keyboard
 	now                                                 time.Time
 	told                                                string

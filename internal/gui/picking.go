@@ -105,6 +105,19 @@ func wrapIn(m Measure, said string, b Box, size int) Lines {
 	return m.Wrapped(said, b.W-padding-padding, size)
 }
 
+// MeasuringHeadings gives the window the face its panels' headings are drawn in, which is not the weight the rest is drawn in.
+func (w Window) MeasuringHeadings(m Measure) Window {
+	w.measureHeads = m
+	return w
+}
+
+func (w Window) headMeasured() Measure {
+	if w.measureHeads == nil {
+		return w.measured()
+	}
+	return w.measureHeads
+}
+
 func (w Window) measured() Measure {
 	if w.measure == nil {
 		return Reckoned
@@ -122,7 +135,7 @@ func (w Window) textAt(p Point) bool {
 	if _, on := w.fieldAt(p); on {
 		return true
 	}
-	if WordsOf(w.measured(), Heading(w.formPanel()), HeadsOn(w, OnForm), heading).In(p) {
+	if WordsOf(w.headMeasured(), Heading(w.formPanel()), HeadsOn(w, OnForm), HeadingSize).In(p) {
 		return true
 	}
 	for _, head := range FormHeads(w.formBox(), w.form.Fields()) {

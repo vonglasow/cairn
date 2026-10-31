@@ -238,7 +238,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 	seen := ""
 
 	theme, skin := Theme(), Dark()
-	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme))
+	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme))
 	if sizes != nil {
 		board = board.KeepingSizes(sizes)
 	}

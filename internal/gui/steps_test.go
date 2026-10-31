@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"github.com/cucumber/godog"
 
@@ -510,6 +511,24 @@ func (w *world) formAsksAbout(list string) error {
 	return nil
 }
 
+func (w *world) formHeadedBold(want string) error {
+	if w.w.Screen() != OnForm {
+		return fmt.Errorf("no form is open")
+	}
+	if got := HeadsOn(w.w, OnForm); !strings.HasPrefix(got, want) {
+		return fmt.Errorf("the form is headed %q, want it to begin %q", got, want)
+	}
+	if HeadingWeight < font.Bold {
+		return fmt.Errorf("the heading is drawn at weight %d, want bold", HeadingWeight)
+	}
+	for _, f := range w.w.Form().Fields() {
+		if HeadingSize <= FormSize(f) {
+			return fmt.Errorf("the heading is %d, no larger than the field %q at %d", HeadingSize, f.Name, FormSize(f))
+		}
+	}
+	return nil
+}
+
 func (w *world) fieldReads(name, value string) error {
 	if got := w.w.Form().ValueOf(name); got != value {
 		return fmt.Errorf("the field %q reads %q, want %q", name, got, value)
@@ -992,6 +1011,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the form asks about (".*")$`, w.formAsksAbout)
+	sc.Then(`^the form is headed "([^"]*)" in bold, larger than its fields$`, w.formHeadedBold)
 	sc.Then(`^the field "([^"]*)" reads "([^"]*)"$`, w.fieldReads)
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
