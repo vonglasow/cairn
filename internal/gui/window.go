@@ -141,6 +141,8 @@ type Window struct {
 	resting               string
 	restingSlot           Box
 	pointed               Box
+	bubbled               []string
+	bubbledFrom           Box
 	picked                Picked
 	pickingText           bool
 	wheelOn               Screen

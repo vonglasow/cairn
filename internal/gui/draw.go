@@ -196,10 +196,15 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawConfiguration(gtx, th, skin, w)
 	}
 	if bubble, said, ok := w.BubbleBox(); ok {
-		fill(gtx, bubble, skin.Panel)
-		outline(gtx, bubble, skin.Edge)
+		raised(gtx, bubble, bubbleRadius, skin.Panel)
 		for i, line := range said {
 			say(gtx, th, skin.Ink, ExplainedLine(bubble, i), line, plain)
+		}
+	}
+	if bubble, pills, ok := w.LabelsBubbleBox(); ok {
+		raised(gtx, bubble, bubbleRadius, skin.Panel)
+		for i, pill := range pills {
+			drawPill(gtx, th, skin, pill, w.bubbled[i], skin.Pill)
 		}
 	}
 }
@@ -693,46 +698,26 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 	}
 
 	mono := font.Font{Typeface: MonoFace}
-	measuring := gtx
-	measuring.Constraints.Min = image.Point{}
-	monoWide := func(said string) int { return wideIn(measuring, th, said, small, mono) }
-	number := "#" + Numbered(c)
-	if c.Described() {
-		number += " " + Marks().Described
-	}
-	sayIn(gtx, th, skin.Low, parts.Number, number, small, mono, text.Start)
-	x := parts.Number.X + monoWide(number) + pillGap*2
-
-	said, warn := Facts(c, gtx.Now)
-	factsWide := 0
-	if said != "" {
-		factsWide = monoWide(said)
+	laid := CardRowOf(c, parts.Number, m, gtx.Now)
+	sayIn(gtx, th, skin.Low, parts.Number, laid.Number, small, mono, text.Start)
+	if laid.Facts != "" {
 		ink := skin.Low
-		if warn {
+		if laid.Late {
 			ink = skin.Late
 		}
-		sayIn(gtx, th, ink, FactsAt(parts.Number, factsWide), said, small, mono, text.End)
-		factsWide += pillGap * 2
+		sayIn(gtx, th, ink, laid.FactsAt, laid.Facts, small, mono, text.End)
 	}
-	shown, more := Pills(c.Labels, parts.Number.X+parts.Number.W-factsWide-x, wideAt(small))
-	pillY := parts.Number.Y + (parts.Number.H-pillHigh)/2
-	for _, label := range shown {
-		pill := Box{X: x, Y: pillY, W: ends(m, label, small) + 2*pillPad, H: pillHigh}
-		rounded(gtx, pill, pillHigh/2, skin.Pill)
-		sayCentred(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, label, small)
-		x += pill.W + pillGap
+	for i, pill := range laid.Pills {
+		drawPill(gtx, th, skin, pill, laid.Shown[i], skin.Pill)
 	}
-	if more > 0 {
-		count := "+" + strconv.Itoa(more)
-		pill := Box{X: x, Y: pillY, W: ends(m, count, small) + 2*pillPad, H: pillHigh}
-		rounded(gtx, pill, pillHigh/2, skin.Edge)
-		rounded(gtx, Box{X: pill.X + 1, Y: pill.Y + 1, W: pill.W - 2, H: pill.H - 2}, pillHigh/2-1, ground)
-		sayCentred(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, count, small)
+	if laid.Count != "" {
+		rounded(gtx, laid.More, pillHigh/2, skin.Edge)
+		drawPill(gtx, th, skin, Box{X: laid.More.X + 1, Y: laid.More.Y + 1, W: laid.More.W - 2, H: laid.More.H - 2}, laid.Count, ground)
 	}
 
 	if c.SubTotal > 0 {
 		done := strconv.Itoa(c.SubDone) + "/" + strconv.Itoa(c.SubTotal)
-		counted := monoWide(done)
+		counted := monoWide(done, small)
 		track := Box{X: parts.Steps.X, Y: parts.Steps.Y + (parts.Steps.H-trackHigh)/2, W: parts.Steps.W - counted - pillGap*2, H: trackHigh}
 		rounded(gtx, track, trackHigh, skin.Pill)
 		if c.SubDone > 0 {
@@ -743,18 +728,14 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 }
 
 const (
+	bubbleRadius = 8
 	stripeRadius = 3
 	trackHigh    = 3
 )
 
-func wideIn(gtx layout.Context, th *material.Theme, said string, size int, face font.Font) int {
-	recorded := op.Record(gtx.Ops)
-	label := material.Label(th, unit.Sp(float32(size)), said)
-	label.MaxLines = 1
-	label.Font = face
-	dims := label.Layout(gtx)
-	recorded.Stop()
-	return dims.Size.X
+func drawPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string, ground color.NRGBA) {
+	rounded(gtx, pill, pill.H/2, ground)
+	sayCentred(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, said, small)
 }
 
 // Writing is the ink a card's title is written in.

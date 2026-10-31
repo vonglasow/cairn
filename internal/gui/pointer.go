@@ -103,6 +103,7 @@ func (w Window) Hovering(p Point) Window {
 	w.explaining = w.nameAt(p)
 	w.resting, w.restingSlot = w.cutTitleAt(p)
 	w.pointed = w.slotAt(p)
+	w.bubbled, w.bubbledFrom = w.countAt(p)
 	return w
 }
 
@@ -150,6 +151,56 @@ func (w Window) titleCut(c engine.Card, slot Box) bool {
 	return strings.HasSuffix(lines[len(lines)-1], "…") && !strings.HasSuffix(c.Title, "…")
 }
 
+func (w Window) countAt(p Point) ([]string, Box) {
+	if w.screen != OnTheBoard || w.tab != Tasks {
+		return nil, Box{}
+	}
+	for _, placed := range w.Placed() {
+		if !placed.Within.In(p) || !placed.Slot.In(p) {
+			continue
+		}
+		if more := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now).More; more.In(p) {
+			return placed.Card.Labels, more
+		}
+	}
+	return nil, Box{}
+}
+
+// LabelsBubbled is every label of the card whose count the pointer rests on, and nothing when it rests on none.
+func (w Window) LabelsBubbled() []string { return w.bubbled }
+
+// LabelsBubbleBox is where the bubble of those labels is drawn, under their count, and each label's pill in it, wrapped to its width.
+func (w Window) LabelsBubbleBox() (Box, []Box, bool) {
+	if len(w.bubbled) == 0 {
+		return Box{}, nil, false
+	}
+	m := w.measured()
+	inner := labelsBubbleWide - 2*inset*2
+	var pills []Box
+	x, y := 0, 0
+	for _, label := range w.bubbled {
+		wide := min(inner, ends(m, label, small)+2*pillPad)
+		if x > 0 && x+wide > inner {
+			x, y = 0, y+pillHigh+pillGap
+		}
+		pills = append(pills, Box{X: x, Y: y, W: wide, H: pillHigh})
+		x += wide + pillGap
+	}
+	high := y + pillHigh + 2*inset*2
+	at := Point{X: min(w.bubbledFrom.X, w.width-margin-labelsBubbleWide), Y: w.bubbledFrom.Y + w.bubbledFrom.H + inset}
+	if at.Y+high > w.height-margin {
+		at.Y = w.bubbledFrom.Y - inset - high
+	}
+	box := Box{X: at.X, Y: at.Y, W: labelsBubbleWide, H: high}
+	for i := range pills {
+		pills[i].X += box.X + 2*inset
+		pills[i].Y += box.Y + 2*inset
+	}
+	return box, pills, true
+}
+
+const labelsBubbleWide = 180
+
 func (w Window) slotAt(p Point) Box {
 	if w.screen != OnTheBoard || w.tab != Tasks {
 		return Box{}
@@ -165,6 +216,7 @@ func (w Window) slotAt(p Point) Box {
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
 	w.over, w.hovered, w.explaining, w.resting, w.restingSlot, w.pointed = "", false, 0, "", Box{}, Box{}
+	w.bubbled, w.bubbledFrom = nil, Box{}
 	return w
 }
 

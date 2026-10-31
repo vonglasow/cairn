@@ -1149,6 +1149,37 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return buttonsDrawn(w.w, cells, Dark().Edge)
 	})
+	sc.Step(`^I rest the pointer on the (count of labels|title) of "([^"]*)"$`, func(what, title string) error {
+		for _, placed := range w.w.Placed() {
+			if placed.Card.Title != title {
+				continue
+			}
+			parts := PartsOf(placed.Slot)
+			at := Point{X: parts.Title.X + 4, Y: parts.Title.Y + 4}
+			if what == "count of labels" {
+				more := CardRowOf(placed.Card, parts.Number, w.w.measured(), moment).More
+				if more == (Box{}) {
+					return fmt.Errorf("the card for %q counts no labels", title)
+				}
+				at = Point{X: more.X + more.W/2, Y: more.Y + more.H/2}
+			}
+			w.w = w.w.Hovering(at)
+			return nil
+		}
+		return fmt.Errorf("the board carries no card called %q", title)
+	})
+	sc.Then(`^a bubble shows the labels (".*")$`, func(list string) error {
+		if got := w.w.LabelsBubbled(); strings.Join(got, "|") != strings.Join(quoted(list), "|") {
+			return fmt.Errorf("the bubble shows the labels %v", got)
+		}
+		return nil
+	})
+	sc.Then(`^no bubble shows labels$`, func() error {
+		if got := w.w.LabelsBubbled(); len(got) != 0 {
+			return fmt.Errorf("a bubble shows the labels %v", got)
+		}
+		return nil
+	})
 	sc.Then(`^the day shown is "([^"]*)"$`, func(day string) error {
 		if !w.w.Daily() || domain.FormatDay(w.w.week) != day {
 			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily())

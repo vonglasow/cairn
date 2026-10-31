@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"unicode/utf8"
+
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"strconv"
@@ -98,6 +100,49 @@ const (
 	pillGap     = 4
 	pillHigh    = 16
 )
+
+// CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
+type CardRow struct {
+	Number  string
+	Shown   []string
+	Pills   []Box
+	More    Box
+	Count   string
+	Facts   string
+	FactsAt Box
+	Late    bool
+}
+
+// CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
+func CardRowOf(c engine.Card, row Box, m Measure, now time.Time) CardRow {
+	out := CardRow{Number: "#" + Numbered(c)}
+	if c.Described() {
+		out.Number += " " + Marks().Described
+	}
+	x := row.X + monoWide(out.Number, small) + 2*pillGap
+	end := row.X + row.W
+	out.Facts, out.Late = Facts(c, now)
+	if out.Facts != "" {
+		out.FactsAt = FactsAt(row, monoWide(out.Facts, small))
+		end = out.FactsAt.X - 2*pillGap
+	}
+	wide := func(said string) int { return ends(m, said, small) }
+	shown, more := Pills(c.Labels, end-x, wide)
+	top := row.Y + (row.H-pillHigh)/2
+	for _, label := range shown {
+		pill := Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
+		out.Shown, out.Pills = append(out.Shown, label), append(out.Pills, pill)
+		x += pill.W + pillGap
+	}
+	if more > 0 {
+		out.Count = "+" + strconv.Itoa(more)
+		out.More = Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
+	}
+	return out
+}
+
+// monoWide is how wide Go Mono writes said at size: every glyph of it advances three fifths of an em.
+func monoWide(said string, size int) int { return utf8.RuneCountInString(said) * size * 3 / 5 }
 
 const padding = 12
 

@@ -60,6 +60,26 @@ func TestACardInFocusStandsOnTheTint(t *testing.T) {
 	}
 }
 
+func TestTheCountOfLabelsOpensABubbleOfThemAll(t *testing.T) {
+	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
+	w := holding(newFake(), c)
+	parts := PartsOf(w.Layout().CardAt(1, 0, 0))
+	more := CardRowOf(c, parts.Number, w.measured(), w.now).More
+	w = w.Hovering(Point{X: more.X + more.W/2, Y: more.Y + more.H/2})
+	box, pills, ok := w.LabelsBubbleBox()
+	if !ok || len(pills) != 3 {
+		t.Fatalf("resting on the count opens %v pills in %+v", len(pills), box)
+	}
+	for _, pill := range pills {
+		if pill.X < box.X || pill.X+pill.W > box.X+box.W || pill.Y+pill.H > box.Y+box.H {
+			t.Errorf("a pill %+v runs out of its bubble %+v", pill, box)
+		}
+	}
+	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + box.H - 3, W: 1, H: 1}, Dark().Panel) != 1 {
+		t.Error("the bubble is not drawn")
+	}
+}
+
 func TestOnlyACardWithStepsDrawsItsBar(t *testing.T) {
 	with := engine.Card{Number: 1, Title: "Write the spec", State: "todo", SubDone: 1, SubTotal: 3}
 	without := engine.Card{Number: 2, Title: "Ship it", State: "todo"}

@@ -3433,6 +3433,16 @@ Feature: The desktop board
       When I open the window
       Then the card "Write the spec" says "+1"
 
+    @gui-the-count-of-labels-opens-them-all
+    Scenario: resting the pointer on a card's count of labels shows every label it carries
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
+      When I open the window
+      And I rest the pointer on the count of labels of "Write the spec"
+      Then a bubble shows the labels "an-altogether-overlong-label", "another-just-as-long-one"
+      When I rest the pointer on the title of "Write the spec"
+      Then no bubble shows labels
+
     @gui-focus-shows-on-the-card
     Scenario: a card says it is being worked on
       Given I added a task titled "Write the spec"

@@ -216,9 +216,9 @@ func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
 		t.Fatalf("the bubble %v is not inside the window", bubble)
 	}
 	shot := drawn(t, w)
-	got := shot.RGBAAt(bubble.X, bubble.Y+bubble.H/2)
-	edge := Dark().Edge
-	if got.R != edge.R || got.G != edge.G || got.B != edge.B {
-		t.Fatalf("the bubble's edge is %v where %v was drawn over the cards", got, edge)
+	got := shot.RGBAAt(bubble.X+2, bubble.Y+bubble.H/2)
+	ground := Dark().Panel
+	if got.R != ground.R || got.G != ground.G || got.B != ground.B {
+		t.Fatalf("the bubble's ground is %v where %v was drawn over the cards", got, ground)
 	}
 }

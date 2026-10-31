@@ -269,7 +269,13 @@ the card, it stood a line of number away from what it completes.
 Where there is no room above, it goes just under the title. Scenarios:
 `@gui-a-cut-title-is-read-whole-under-the-pointer`,
 `@gui-a-title-that-fits-has-no-bubble`,
-`@gui-the-bubble-stands-just-above-the-title`.
+`@gui-the-bubble-stands-just-above-the-title`. The labels a card leaves out
+are read the same way: resting on its `+n` opens a bubble under it holding
+every label it carries as pills, wrapped to 180 points
+(`LabelsBubbleBox`, `@gui-the-count-of-labels-opens-them-all`). Both bubbles
+are raised panels, rounded and shadowed, rather than boxes with an edge; the
+row of a card is laid out once (`CardRowOf`) for the drawing and for the
+pointer, so what is drawn and what answers it cannot drift.
 
 Variable height was the alternative and would have cut nothing, at the cost of
 a column's geometry depending on its contents: scrolling and drop targets
