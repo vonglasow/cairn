@@ -624,7 +624,7 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	if open.Screen() != OnChoosing {
 		t.Fatalf("the list did not open: %v", open.Screen())
 	}
-	if got := Heads(open); got != "objectives for task 7" {
+	if got := Heads(open); got != "" {
 		t.Errorf("the list is headed %q", got)
 	}
 	if got := HeadsOn(open, OnForm); got != "task 7 · Write the spec" {

@@ -2074,7 +2074,7 @@ Feature: The desktop board
       And I right-click the card "Write the spec"
       And I click "Labels…" in the menu
       Then the window is choosing
-      And the panel is headed "labels for task 1"
+      And the list has no heading
 
     @gui-a-menu-is-walked-with-the-keys
     Scenario: the menu is walked with the arrows, enter takes a line and esc closes it
@@ -2113,6 +2113,17 @@ Feature: The desktop board
       And I click the field "deadline"
       Then the calendar is open on "2026-10-12"
       And the calendar hangs under the field "deadline"
+
+    @gui-the-calendar-is-headed-by-its-month
+    Scenario: the calendar has no heading but its month, its year and its arrows, each tall enough for its words
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      Then the calendar has no heading
+      And the calendar's month, year and arrows stand whole in a row at its top
 
     @gui-the-pointer-walks-the-months
     Scenario: the arrows of its heading and the wheel walk the calendar's months
@@ -3045,8 +3056,8 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
-    @gui-a-list-names-the-task-it-is-for
-    Scenario: the list a field opens says which task it is for
+    @gui-a-list-has-no-heading
+    Scenario: the list a field opens has no heading, the field it hangs from saying what it is for
       Given I added an objective titled "Ship it"
       And I added a task titled "Write the spec"
       When I open the window
@@ -3054,21 +3065,21 @@ Feature: The desktop board
       And I choose "Edit"
       And I click the field "objectives"
       Then the window is choosing
-      And the panel is headed "objectives for task 1"
+      And the list has no heading
+      And the list begins at the top of its panel
       And the list offers "Ship it"
 
     @gui-a-list-is-corrected-like-any-other-field
     Scenario: what was typed into a list can be taken back out
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "objectives"
-      And I type "shipx"
-      Then the list offers nothing
+      And I click the field "labels"
+      And I type "backendx"
+      Then the list does not offer "backend"
       When I press "backspace"
-      Then the list offers "Ship it"
+      Then the list offers "backend"
 
     @gui-enter-takes-and-cmd-enter-keeps
     Scenario: enter takes a row and the list is kept when they are all in
@@ -3172,16 +3183,19 @@ Feature: The desktop board
       Then the window is on the board
       And the engine was asked "task edit" for task 1
 
-    @gui-a-space-in-a-list-is-a-space
-    Scenario: a space typed into a list is a space, because a title has them
+    @gui-objectives-are-chosen-without-a-search
+    Scenario: the objectives are picked from their list, with no search to type into
       Given I added an objective titled "Ship it"
+      And I added an objective titled "Rewrite the tests"
       And I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "objectives"
-      And I type "ship it"
+      Then the list offers no search
+      When I type "tests"
       Then the list offers "Ship it"
+      And the list offers "Rewrite the tests"
 
     @gui-a-double-click-is-done-with-the-list
     Scenario: a double-click takes a row and is done, which is what a hand expects
@@ -3287,7 +3301,7 @@ Feature: The desktop board
       And I choose "Edit"
       And I click the field "objectives"
       Then the window is choosing
-      And the panel is headed "objectives for task 1"
+      And the list has no heading
 
     @gui-a-list-answers-the-mouse
     Scenario: a row is chosen by clicking it, the way everything else here is
@@ -3306,28 +3320,38 @@ Feature: The desktop board
 
     @gui-a-click-in-a-list-leaves-the-form-under-it-alone
     Scenario: a click inside the list does not reach the form behind it
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "objectives"
+      And I click the field "labels"
       And I click the line that narrows the list
       Then the window is choosing
-      And the form is still on the field "objectives"
+      And the form is still on the field "labels"
+
+    @gui-a-click-off-a-list-closes-it
+    Scenario: a click off the list closes it, as Cancel does, and leaves the form open
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "priority"
+      And I click the field "title"
+      Then the window is on the form
+      And the field "priority" reads "normal"
 
     @gui-the-list-narrows-as-it-is-typed-into
     Scenario: typing in the list keeps only what matches
-      Given I added an objective titled "Ship it"
-      And I added an objective titled "Rewrite the tests"
-      And I added a task titled "Write the spec"
+      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the labels "release" and "sp26-20"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
-      And I click the field "objectives"
-      And I type "tests"
-      Then the list offers "Rewrite the tests"
-      And the list does not offer "Ship it"
+      And I click the field "labels"
+      And I type "rel"
+      Then the list offers "release"
+      And the list does not offer "backend"
 
     @gui-a-card-says-it-carries-more-than-it-shows
     Scenario: a card says a description exists and how far its steps have got
@@ -3847,7 +3871,7 @@ Feature: The desktop board
       And I put the keyboard on "labels"
       And I press "enter"
       Then the window is choosing
-      And the panel is headed "labels for task 1"
+      And the list has no heading
       And the list reads "backend", "release", "sp26-20"
       And the label "backend" is ticked
       And the label "release" is not ticked

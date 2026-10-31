@@ -11,30 +11,12 @@ import (
 // Pages is what the two tabs are called, in the order they are drawn.
 var Pages = []string{"TASKS", "OBJECTIVES", "TIME"}
 
-func (w Window) formNamed() string {
-	if w.form.Adding {
-		return "the new " + w.formKind()
-	}
-	return w.formKind() + " " + strconv.Itoa(w.form.Number)
-}
-
 // Heads is what the panel that is open says it is, written across its top.
 func Heads(w Window) string { return HeadsOn(w, w.screen) }
 
 // HeadsOn is what a given panel says it is, whether or not it is the one on top.
 func HeadsOn(w Window, screen Screen) string {
 	switch screen {
-	case OnChoosing:
-		what := "objectives for"
-		if w.choosingFor == "label" {
-			what = "labels for"
-		}
-		if w.OneOnly() {
-			what = "a " + w.form.Fields()[w.form.On()].Name + " for"
-		}
-		return what + " " + w.formNamed()
-	case OnCalendar:
-		return "a deadline for " + w.formNamed()
 	case OnBackups:
 		return "Backups — enter restores one"
 	case OnFiltering:
@@ -346,6 +328,9 @@ func (w Window) BoardOffers() []string {
 
 func (w Window) clickingList(p Point) Window {
 	box := w.ChoosingBox()
+	if !box.In(p) {
+		return w.clickedOff(p)
+	}
 	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 		w.choosing = at
 		return w

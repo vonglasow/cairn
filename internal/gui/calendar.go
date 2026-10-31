@@ -9,12 +9,14 @@ import (
 )
 
 const (
-	dayHigh   = 38
-	dayInset  = 6
-	weeks     = 6
-	monthWide = 28
-	nameWide  = 100
-	yearWide  = 56
+	dayHigh       = 38
+	dayInset      = 6
+	weeks         = 6
+	monthWide     = 32
+	nameWide      = 120
+	yearWide      = 64
+	calendarHead  = 32
+	calendarLeast = 336
 )
 
 type calendarView int
@@ -41,10 +43,20 @@ func (w Window) At(now time.Time) Window {
 
 func (w Window) today() time.Time { return engine.DayOf(w.now) }
 
-// CalendarFor is the panel the calendar is drawn in at a corner, as wide as given: a heading, the weekdays, six weeks and the offers.
+// CalendarFor is the panel the calendar is drawn in at a corner, as wide as given: the month and the arrows, the weekdays, six weeks and the offers.
 func CalendarFor(x, y, wide int) Box {
-	high := FirstRow(Box{Y: y}) - y + lineHigh + between + weeks*dayHigh + padding + barHigh + padding
+	high := calendarTop(Box{Y: y}) - y + lineHigh + between + weeks*dayHigh + padding + barHigh + padding
 	return Box{X: x, Y: y, W: wide, H: high}
+}
+
+// CalendarHead is the row across the calendar's top, in place of a heading: the month and the year left, the arrows right.
+func CalendarHead(box Box) Box {
+	return Box{X: box.X + padding, Y: box.Y + padding, W: box.W - padding - padding, H: calendarHead}
+}
+
+func calendarTop(box Box) int {
+	head := CalendarHead(box)
+	return head.Y + head.H + between
 }
 
 // CalendarBox is the calendar's panel in this window: hung under the field it answers, the way a list is, rather than in the middle of the window, far from the field it fills in.
@@ -55,9 +67,7 @@ func (w Window) CalendarBox() Box {
 }
 
 func (w Window) calendarWide() int {
-	longest := w
-	longest.day = time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
-	return max(longest.headWide()+nameWide+yearWide+2*monthWide, w.offersWide())
+	return max(calendarLeast, padding+nameWide+inset+yearWide+between+monthWide+inset+monthWide+padding, w.offersWide())
 }
 
 func (w Window) hung(wide, high int) Point {
@@ -76,12 +86,12 @@ func dayWide(box Box) int { return (box.W - padding - padding) / 7 }
 
 // WeekdayAt is where a weekday's name is written, above its column.
 func WeekdayAt(box Box, i int) Box {
-	return Box{X: box.X + padding + i*dayWide(box), Y: FirstRow(box), W: dayWide(box) - dayInset, H: lineHigh}
+	return Box{X: box.X + padding + i*dayWide(box), Y: calendarTop(box), W: dayWide(box) - dayInset, H: lineHigh}
 }
 
 // DayAt is where the i-th day of the grid is drawn.
 func DayAt(box Box, i int) Box {
-	top := FirstRow(box) + lineHigh + between
+	top := calendarTop(box) + lineHigh + between
 	return Box{
 		X: box.X + padding + (i%7)*dayWide(box),
 		Y: top + (i/7)*dayHigh,
@@ -90,16 +100,16 @@ func DayAt(box Box, i int) Box {
 	}
 }
 
-// MonthAfter is the arrow at the end of the heading that walks to the next month; MonthBefore the one before it, walking back.
+// MonthAfter is the arrow at the right end of the calendar's head that walks to the next month.
 func MonthAfter(box Box) Box {
-	head := Heading(box)
-	return Box{X: box.X + box.W - padding - monthWide, Y: head.Y, W: monthWide, H: titleHi}
+	head := CalendarHead(box)
+	return Box{X: head.X + head.W - monthWide, Y: head.Y, W: monthWide, H: head.H}
 }
 
 // MonthBefore is the arrow walking back a month, left of the one walking on.
 func MonthBefore(box Box) Box {
 	after := MonthAfter(box)
-	after.X -= monthWide
+	after.X -= monthWide + inset
 	return after
 }
 
@@ -216,16 +226,16 @@ func (w Window) dayClicked(p Point) (Window, bool) {
 	return w, false
 }
 
-// CalendarMonth is the month's name in the heading, which a click opens the twelve months from.
+// CalendarMonth is the month's name at the left of the calendar's head, which a click opens the twelve months from.
 func CalendarMonth(box Box) Box {
-	year := CalendarYear(box)
-	return Box{X: year.X - nameWide, Y: year.Y, W: nameWide, H: titleHi}
+	head := CalendarHead(box)
+	return Box{X: head.X, Y: head.Y, W: nameWide, H: head.H}
 }
 
-// CalendarYear is the year in the heading, left of the arrows.
+// CalendarYear is the year beside the month's name, which a click opens the years from.
 func CalendarYear(box Box) Box {
-	before := MonthBefore(box)
-	return Box{X: before.X - yearWide, Y: before.Y, W: yearWide, H: titleHi}
+	month := CalendarMonth(box)
+	return Box{X: month.X + month.W + inset, Y: month.Y, W: yearWide, H: month.H}
 }
 
 // CalendarCell is the i-th of the twelve cells, three across and four down, a month or a year is chosen from; they take the room of the weekdays and the six weeks.
@@ -234,7 +244,7 @@ func CalendarCell(box Box, i int) Box {
 	high := (lineHigh + between + weeks*dayHigh) / 4
 	return Box{
 		X: box.X + padding + (i%3)*wide,
-		Y: FirstRow(box) + (i/3)*high,
+		Y: calendarTop(box) + (i/3)*high,
 		W: wide - dayInset,
 		H: high - dayInset,
 	}

@@ -367,13 +367,24 @@ func drawMenu(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 
 func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.CalendarBox()
-	drawPanel(gtx, th, skin, box, Heads(w))
-	for _, arrow := range []struct {
+	drawPanelBare(gtx, skin, box)
+	for _, chip := range []struct {
 		at   Box
 		says string
-	}{{MonthBefore(box), "‹"}, {MonthAfter(box), "›"}, {CalendarMonth(box), w.day.Month().String()}, {CalendarYear(box), strconv.Itoa(w.day.Year())}} {
-		fill(gtx, Box{X: arrow.at.X + 2, Y: arrow.at.Y, W: arrow.at.W - 4, H: arrow.at.H}, skin.Back)
-		say(gtx, th, skin.Chosen, Inside(arrow.at), arrow.says, heading)
+		on   bool
+	}{
+		{CalendarMonth(box), w.day.Month().String(), w.view == viewMonths},
+		{CalendarYear(box), strconv.Itoa(w.day.Year()), w.view == viewYears},
+		{MonthBefore(box), "‹", false},
+		{MonthAfter(box), "›", false},
+	} {
+		back, ink := skin.Panel, skin.Chosen
+		if chip.on {
+			back, ink = skin.Chosen, skin.Back
+		}
+		fill(gtx, chip.at, back)
+		outline(gtx, chip.at, skin.Edge)
+		sayStyled(gtx, th, ink, ChipSaid(chip.at, chip.at.W), chip.says, plain, font.SemiBold, 1, text.Middle)
 	}
 	if cells := w.CalendarCells(); len(cells) > 0 {
 		for i, cell := range cells {
@@ -412,7 +423,7 @@ const TickedMark = "✓"
 
 func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.ChoosingBox()
-	drawPanel(gtx, th, skin, box, Heads(w))
+	drawPanelBare(gtx, skin, box)
 
 	if !box.Unsearched {
 		looking := ChoosingLooking(box)
@@ -498,13 +509,17 @@ func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawPanelOffers(gtx, th, skin, box, w)
 }
 
+func drawPanelBare(gtx layout.Context, skin Skin, box Box) {
+	fill(gtx, box, skin.Panel)
+	outline(gtx, box, skin.Edge)
+}
+
 func drawPanel(gtx layout.Context, th *material.Theme, skin Skin, box Box, head string) {
 	drawPanelHeaded(gtx, th, skin, box, Heading(box), head)
 }
 
 func drawPanelHeaded(gtx layout.Context, th *material.Theme, skin Skin, box, heading Box, head string) {
-	fill(gtx, box, skin.Panel)
-	outline(gtx, box, skin.Edge)
+	drawPanelBare(gtx, skin, box)
 	sayStyled(gtx, th, skin.Ink, heading, head, HeadingSize, HeadingWeight, 1, text.Start)
 	fill(gtx, Ruled(box), skin.Edge)
 }

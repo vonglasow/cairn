@@ -685,6 +685,8 @@ func (w Window) clickedOff(p Point) Window {
 	overForm := w.screen == OnChoosing || w.screen == OnCalendar
 	if w.screen == OnCalendar {
 		w.screen = OnForm
+	} else if w.screen == OnChoosing {
+		w = w.Choose("Cancel")
 	} else if w.screen != OnForm {
 		w = w.Choose("Close")
 	}

@@ -430,33 +430,6 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 	}
 }
 
-func TestTheObjectivesListNarrowsAsItIsTypedInto(t *testing.T) {
-	f := newFake()
-	w := New(f, 1200, 800)
-	w.snap = test.Searchable(engine.Snapshot{
-		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
-		Goals: []engine.Goal{
-			{Number: 1, Title: "Modularité / Helm"},
-			{Number: 2, Title: "Stabiliser les environnements"},
-		},
-	})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
-		w = w.Key("tab")
-	}
-	w = w.Key("enter")
-	if got := w.Choosing(); len(got) != 2 {
-		t.Fatalf("the list offers %d objectives, want both", len(got))
-	}
-	narrowed := w.Types("helm")
-	if got := narrowed.Choosing(); len(got) != 1 || got[0].Number != 1 {
-		t.Errorf("narrowed to \"helm\", the list offers %v", goalTitles(got))
-	}
-	if got := w.Types("HELM").Choosing(); len(got) != 1 {
-		t.Errorf("narrowed to \"HELM\", the list offers %v", goalTitles(got))
-	}
-}
-
 func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
@@ -579,21 +552,15 @@ func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 	}
 }
 
-func TestChoices_offersEverythingUntilItIsToldWhatToLookFor(t *testing.T) {
+func TestChoices_offersEveryObjectiveWhateverIsTyped(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.snap = test.Searchable(engine.Snapshot{
 		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Rewrite the tests", State: "active"}},
 	})
 	w = onTheObjectives(w)
-	if got := w.Choosing(); len(got) != 2 {
-		t.Fatalf("told nothing, the list offers %v, want both", goalTitles(got))
-	}
-	if got := w.Types("ship").Choosing(); len(got) != 1 || got[0].Number != 1 {
-		t.Errorf("told \"ship\", the list offers %v", goalTitles(got))
-	}
-	if got := w.Types("zzz").Choosing(); len(got) != 0 {
-		t.Errorf("told something nothing carries, the list offers %v", goalTitles(got))
+	if got := w.Types("ship").Choosing(); len(got) != 2 {
+		t.Errorf("typed \"ship\", the list offers %v, want both", goalTitles(got))
 	}
 }
 

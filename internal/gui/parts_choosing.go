@@ -24,9 +24,9 @@ func ChoosingLine(box Box, at int) Box {
 	return Box{X: run.X + padding, Y: at, W: run.W - padding - padding, H: lineHigh}
 }
 
-// ChoosingLooking is the line at the top of a list that narrows it, above the first row and inside the same panel.
+// ChoosingLooking is the line at the top of a list that narrows it, above the first row and inside the same panel, which has no heading.
 func ChoosingLooking(box Box) Box {
-	return Box{X: box.X + padding, Y: FirstRow(box) - inset, W: box.W - padding - padding, H: lineHigh + inset + inset}
+	return Box{X: box.X + padding, Y: box.Y + padding, W: box.W - padding - padding, H: lineHigh + inset + inset}
 }
 
 // ChoosingRun is the room a list's rows have: from under the line that narrows them to above the offers along the panel's foot.
@@ -58,7 +58,7 @@ func ChoosingAtPoint(box Box, rows, from int, p Point) (int, bool) {
 // ChoosingFrom is where a list's own rows begin, under the line that narrows them.
 func ChoosingFrom(box Box) int {
 	if box.Unsearched {
-		return FirstRow(box)
+		return box.Y + padding + inset
 	}
 	looking := ChoosingLooking(box)
 	return looking.Y + looking.H + between

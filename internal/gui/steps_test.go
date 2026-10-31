@@ -1928,6 +1928,35 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the (list|calendar) has no heading$`, func(string) error {
+		if said := Heads(w.w); said != "" {
+			return fmt.Errorf("the panel is headed %q", said)
+		}
+		return nil
+	})
+	sc.Then(`^the list begins at the top of its panel$`, func() error {
+		box := w.w.ChoosingBox()
+		if run := ChoosingRun(box); run.Y != box.Y+padding {
+			return fmt.Errorf("the list's rows begin at %d, its panel at %d", run.Y, box.Y)
+		}
+		return nil
+	})
+	sc.Then(`^the calendar's month, year and arrows stand whole in a row at its top$`, func() error {
+		box := w.w.CalendarBox()
+		row := []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}
+		for i, one := range row {
+			if one.Y != box.Y+padding || Inside(one).H < heading*5/4 {
+				return fmt.Errorf("%+v is not a whole line at the top of %+v", one, box)
+			}
+			if one.Y+one.H > WeekdayAt(box, 0).Y || one.X < box.X || one.X+one.W > box.X+box.W {
+				return fmt.Errorf("%+v leaves the head of %+v", one, box)
+			}
+			if i > 0 && row[i-1].X+row[i-1].W > one.X {
+				return fmt.Errorf("%+v runs over %+v", row[i-1], one)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the list offers (a|no) search$`, func(which string) error {
 		if got := w.w.ChoosingSearched(); got != (which == "a") {
 			return fmt.Errorf("the list searched is %v, want %v", got, which == "a")

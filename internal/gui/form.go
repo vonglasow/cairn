@@ -896,5 +896,5 @@ func (w Window) keeping() Window {
 	return w
 }
 
-// ChoosingSearched says whether the open list has a line to type into.
-func (w Window) ChoosingSearched() bool { return len(w.closedSet()) == 0 }
+// ChoosingSearched says whether the open list has a line to type into: only the labels', a label being written as often as picked.
+func (w Window) ChoosingSearched() bool { return w.choosingFor == "label" }

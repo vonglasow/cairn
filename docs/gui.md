@@ -1065,9 +1065,14 @@ knowing what date next Friday falls on. A click on the field, `⏎` on it, or
 Choose, opens a month at a time hung under the field, the way a list is — it
 first opened in the middle of the window, far from the field it fills in, and
 only by a key (`calendar.go`, `@gui-a-click-on-a-deadline-opens-the-calendar`).
-Its days share its width, a week at least seven of them at their narrowest; its
-heading holds the month and the year as two boxes of fixed widths, so they and
-the `‹ ›` arrows at its end do not move from one month to the next. Those arrows and the
+Its days share its width, a week at least seven of them at their narrowest. It
+has no heading: the field it hangs from and its tooltip already say what it is
+for. Its top row holds the month and the year left, as two chips of fixed
+widths, and the `‹ ›` arrows right, so none moves from one month to the next —
+the order of a date picker such as Material's. The row is 32 high and its words
+14 and semibold, centred: the month and the year used to be written at 16 in
+boxes 22 high, and were cut (`CalendarHead`,
+`@gui-the-calendar-is-headed-by-its-month`). Those arrows and the
 wheel walk the months for a hand on the mouse
 (`@gui-the-pointer-walks-the-months`). Six weeks from the Monday on or
 before the first, so no row moves from one month to the next; the arrows walk
@@ -1080,16 +1085,14 @@ date typed. Tasks and objectives open the same one.
 
 **The month and the year are words to click.** Walking to a date months away
 by the arrows is a long way, and a calendar on a phone or in a browser lets the
-name be tapped. The month's name and the year, in the heading left of the
-arrows, are chips: the month's opens the twelve months, three across and four
+name be tapped. The month's name and the year, at the left of the calendar's
+top row, are chips, filled while their grid is open: the month's opens the twelve months, three across and four
 down, the year's the twelve years from four before the one shown, and a pick
 goes back down one level — a year to its months, a month to its days
 (`@gui-a-calendar-month-is-chosen-from-the-twelve`,
-`@gui-a-calendar-year-is-chosen-from-a-grid`). In a grid the arrows of the
-heading page a year, or twelve years, and the keyboard does as in the days:
+`@gui-a-calendar-year-is-chosen-from-a-grid`). In a grid the arrows page a year, or twelve years, and the keyboard does as in the days:
 the arrows move, `⏎` picks, `m` and `y` open the grids, `esc` goes back to the
-days and does not close the calendar. The heading no longer carries the month,
-because a word that is clicked needs a box of its own. The days have more room
+days and does not close the calendar. The days have more room
 to be hit and read: 32 high and 6 apart, where they were 28 and 4, and the
 panel still sits whole in the smallest window the layouts are drawn at.
 
@@ -1233,11 +1236,19 @@ task — and the scenario passed anyway, because the end of a description nobody
 is showing is zero, which is where an untouched window already sits.
 
 **A number somebody would have to look up is chosen from a list.** The
-objectives a task serves are answered that way, and the list says which task
-it is for (`@gui-a-list-names-the-task-it-is-for`). It carries a line that narrows it as it is
-typed into, by the board's own matching rule rather than one of its own: a list
-that matched its own way would answer a different set from the search box two
-keystrokes away.
+objectives a task serves are answered that way. The list has no heading: it
+hangs from the field that says what it is for, and the heading repeated that
+in larger words than anything in the list; its rows begin at its top
+(`@gui-a-list-has-no-heading`). The objectives are picked, not searched: what
+is typed into their list narrows nothing
+(`@gui-objectives-are-chosen-without-a-search`). The list of labels keeps a
+line that narrows it as it is typed into, by the board's own matching rule
+rather than one of its own: a list that matched its own way would answer a
+different set from the search box two keystrokes away.
+
+**A click off a list closes it, as Cancel does.** A list, like a native select,
+is left by a click anywhere outside it; a click on the form under it leaves
+the form open (`@gui-a-click-off-a-list-closes-it`).
 
 A task serves as many objectives as it serves, so `⏎` ticks and the list
 stays open until `esc`. The field then reads `#1 Ship it` rather than `1` — the number is what the
@@ -1255,10 +1266,9 @@ objective's standing open it too — on a click, or on `⏎` — offering the se
 the domain's order, the value already held ticked and under the keyboard, with
 no line to search by: a closed list is a handful of fixed values, and a search
 to type into only weighs on the field
-(`@gui-a-closed-list-is-chosen-without-a-search`), where the list of labels,
-objectives, blockers and links grows with use and keeps its search whatever
-its length today (`@gui-an-open-list-keeps-its-search`); the kind of list
-decides, not its length. One answer, so `⏎` takes and closes; but taking the one already held leaves it held, because a task stands
+(`@gui-a-closed-list-is-chosen-without-a-search`), where the list of labels
+grows with use, is written into as often as picked, and keeps its search
+whatever its length today (`@gui-an-open-list-keeps-its-search`). One answer, so `⏎` takes and closes; but taking the one already held leaves it held, because a task stands
 in a column whatever is done to a list. The rows say the names alone: the
 number a row is listed under is the list's, not one anybody has seen. `←`/`→`
 on the field still step through the set without opening anything.
@@ -1275,7 +1285,7 @@ It used to take three quarters of the form whatever it offered: four
 priorities sat in a panel made for fifty tasks, most of the form hidden behind
 its empty rows. It now hangs under the field it answers, the way a field's
 list opens anywhere else — above it when there is no room below — as wide as
-its widest row, its heading and its offers, and as tall as its rows
+its widest row and its offers, and as tall as its rows
 (`ChoosingBox`, `@gui-a-list-is-the-size-of-what-it-holds`). It is sized on
 what it offers before anything narrows it, so typing does not move every row
 from under the pointer. The list of backups is sized the same way, across the

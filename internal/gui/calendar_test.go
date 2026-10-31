@@ -22,10 +22,13 @@ func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	if got, want := WeekdayAt(box, 2), (Box{X: 218, Y: 100, W: 47, H: 18}); got != want {
 		t.Errorf("Wednesday is written at %+v, want %+v", got, want)
 	}
-	if got, want := MonthAfter(box), (Box{X: 460, Y: 62, W: monthWide, H: titleHi}); got != want {
+	if got, want := MonthAfter(box), (Box{X: 456, Y: 62, W: monthWide, H: calendarHead}); got != want {
 		t.Errorf("the next month is offered at %+v, want %+v", got, want)
 	}
-	if got, want := MonthBefore(box), (Box{X: 460 - monthWide, Y: 62, W: monthWide, H: titleHi}); got != want {
+	if got, want := CalendarMonth(box), (Box{X: 112, Y: 62, W: nameWide, H: calendarHead}); got != want {
+		t.Errorf("the month is offered at %+v, want %+v", got, want)
+	}
+	if got, want := MonthBefore(box), (Box{X: 456 - monthWide - inset, Y: 62, W: monthWide, H: calendarHead}); got != want {
 		t.Errorf("the month before is offered at %+v, want %+v", got, want)
 	}
 	if got := len(engine.MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
@@ -138,18 +141,6 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 	}
 }
 
-func TestAFormAddingIsNamedNew(t *testing.T) {
-	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = adding(Tasks, "backlog")
-	if got := Heads(w); got != "a deadline for the new task" {
-		t.Errorf("the calendar of a task being added is headed %q", got)
-	}
-	w.form = editing(engine.Card{Number: 4, Title: "Ship"})
-	if got := Heads(w); got != "a deadline for task 4" {
-		t.Errorf("the calendar of task 4 is headed %q", got)
-	}
-}
-
 func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -235,15 +226,10 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = editing(engine.Card{Number: 1, Title: "A"})
 	shot, skin := drawn(t, w), Dark()
-	for _, arrow := range []Box{MonthBefore(w.CalendarBox()), MonthAfter(w.CalendarBox())} {
-		chip := Box{X: arrow.X + 2, Y: arrow.Y, W: arrow.W - 4, H: 1}
-		if got := painted(shot, chip, skin.Back); got != chip.W {
-			t.Errorf("the chip at %+v has %d of %d pixels", chip, got, chip.W)
-		}
-		for _, edge := range []Box{{X: arrow.X + 1, Y: arrow.Y, W: 1, H: 1}, {X: arrow.X + arrow.W - 2, Y: arrow.Y, W: 1, H: 1}} {
-			if painted(shot, edge, skin.Back) != 0 {
-				t.Errorf("the chip reaches %+v, past its room", edge)
-			}
+	box := w.CalendarBox()
+	for _, chip := range []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
+		if got := painted(shot, Edges(chip)[0], skin.Edge); got != chip.W {
+			t.Errorf("the chip at %+v is edged on %d of %d pixels", chip, got, chip.W)
 		}
 	}
 }
