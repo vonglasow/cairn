@@ -418,6 +418,8 @@ func cursors(gtx layout.Context, w Window) {
 		area.Pop()
 		return
 	}
+	scaled := inDp(gtx)
+	defer scaled.Pop()
 	for _, grab := range w.Grabs() {
 		area := clip.Rect(rect(grab.Box)).Push(gtx.Ops)
 		cursorOf(grab.Takes.Pointer()).Add(gtx.Ops)

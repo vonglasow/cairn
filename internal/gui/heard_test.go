@@ -372,3 +372,25 @@ func TestAnEditReplacesTheRunTheSystemNamed(t *testing.T) {
 		t.Errorf("the title reads %q", got)
 	}
 }
+
+func TestThePointerOverAGutterOnADenseScreenIsTheOneForWidening(t *testing.T) {
+	w := holding(newFake())
+	var router input.Router
+	var ops op.Ops
+	gtx := frameOf(&ops, &router, w, time.Now())
+	gtx.Metric = unit.Metric{PxPerDp: 2, PxPerSp: 2}
+	gtx.Constraints = layout.Exact(image.Pt(2*w.width, 2*w.height))
+	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	router.Frame(gtx.Ops)
+	over := Gutter(w.Layout(), 0)
+	router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse,
+		Position: f32.Pt(float32(2*(over.X+over.W/2)), float32(2*(over.Y+over.H/2)))})
+	gtx = frameOf(&ops, &router, w, time.Now())
+	gtx.Metric = unit.Metric{PxPerDp: 2, PxPerSp: 2}
+	gtx.Constraints = layout.Exact(image.Pt(2*w.width, 2*w.height))
+	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	router.Frame(gtx.Ops)
+	if got := router.Cursor(); got != pointer.CursorColResize {
+		t.Errorf("the pointer over the gutter at two pixels a point is %v", got)
+	}
+}

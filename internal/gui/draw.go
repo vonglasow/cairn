@@ -112,7 +112,7 @@ func measuredIn(th *material.Theme, weight font.Weight) Measure {
 
 // Draw puts the whole window on screen.
 func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	scaled := op.Affine(f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(gtx.Metric.PxPerDp, gtx.Metric.PxPerDp))).Push(gtx.Ops)
+	scaled := inDp(gtx)
 	defer scaled.Pop()
 
 	gtx.Metric = unit.Metric{PxPerDp: 1, PxPerSp: 1}
@@ -972,6 +972,10 @@ func drawPanelOffers(gtx layout.Context, th *material.Theme, skin Skin, box Box,
 	for i, offer := range w.Offers() {
 		drawOffer(gtx, th, skin, along[i], offer, w)
 	}
+}
+
+func inDp(gtx layout.Context) op.TransformStack {
+	return op.Affine(f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(gtx.Metric.PxPerDp, gtx.Metric.PxPerDp))).Push(gtx.Ops)
 }
 
 func rect(b Box) image.Rectangle {
