@@ -1929,6 +1929,32 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the window is searching "([^"]*)"$`, func(said string) error {
+		if w.w.Screen() != OnSearch || w.w.Searched().Reads() != said {
+			return fmt.Errorf("the window is on %v searching %q", w.w.Screen(), w.w.Searched().Reads())
+		}
+		return nil
+	})
+	sc.Then(`^the search "([^"]*)" is kept as a pill$`, func(said string) error {
+		if _, ok := w.w.SearchPill(); !ok || w.w.Screen() != OnTheBoard || w.w.Searched().Reads() != said {
+			return fmt.Errorf("the window on %v keeps the search %q, pill %v", w.w.Screen(), w.w.Searched().Reads(), ok)
+		}
+		return nil
+	})
+	sc.Step(`^I click the cross of the search's pill$`, func() error {
+		pill, ok := w.w.SearchPill()
+		if !ok {
+			return fmt.Errorf("no search is kept as a pill")
+		}
+		w.w = w.w.clicked(Point{X: pill.X + pill.W - pillCross/2, Y: pill.Y + pill.H/2})
+		return nil
+	})
+	sc.Then(`^no search is kept$`, func() error {
+		if _, ok := w.w.SearchPill(); ok || !w.w.Searched().Empty() {
+			return fmt.Errorf("the search %q is kept", w.w.Searched().Reads())
+		}
+		return nil
+	})
 	sc.Then(`^the command bar is (open|shut)$`, func(how string) error {
 		if open := w.w.Screen() == OnPalette; open != (how == "open") {
 			return fmt.Errorf("the command bar open is %v, the window on %v", open, w.w.Screen())

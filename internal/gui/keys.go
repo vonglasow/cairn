@@ -123,6 +123,9 @@ func (w Window) onSearch(name string) Window {
 	}
 	switch name {
 	case "backspace":
+		if w.looking.Empty() {
+			return w.openingPalette()
+		}
 		w.looking = w.looking.Back()
 	case "left":
 		return w.walks(-1)

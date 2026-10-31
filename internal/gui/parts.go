@@ -104,8 +104,6 @@ const offerWide = 110
 
 const contextNamed = 64
 
-const searchWide = 76
-
 const chipAt = 3
 
 const inset = 4

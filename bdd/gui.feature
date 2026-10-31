@@ -3486,6 +3486,39 @@ Feature: The desktop board
       And I press "enter"
       Then the window is on the form
 
+    @gui-a-slash-in-the-palette-searches-the-board
+    Scenario: a slash typed first in the command bar turns it into the board's search
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the window
+      And I press "cmd+k"
+      And I type "/spec"
+      Then the window is searching "spec"
+      And the board says nothing of "Ship it"
+
+    @gui-a-search-kept-is-a-pill
+    Scenario: enter keeps the search as a pill above the board, and its cross clears it
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the window
+      And I press "/"
+      And I type "spec"
+      And I press "enter"
+      Then the search "spec" is kept as a pill
+      When I click the cross of the search's pill
+      Then no search is kept
+
+    @gui-a-number-chooses-its-task
+    Scenario: a task's number typed in the command bar chooses it on the board
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the window
+      And I press "cmd+k"
+      And I type "#2"
+      And I press "enter"
+      Then the card "Ship it" is chosen
+      And the command bar is shut
+
     @gui-esc-shuts-the-palette
     Scenario: esc shuts the command bar, having done nothing
       Given I added a task titled "Write the spec"

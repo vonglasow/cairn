@@ -104,6 +104,8 @@ func Shortcut(offer string) string {
 	switch strings.ToLower(offer) {
 	case "new":
 		return "cmd+n"
+	case "keep search":
+		return "enter"
 	case "search":
 		return "/"
 	case "help":
@@ -341,7 +343,7 @@ func (w Window) Offers() []string {
 	case OnHelp:
 		return []string{"Close"}
 	case OnSearch:
-		return []string{"Close"}
+		return []string{"Keep search", "Close"}
 	}
 	return w.BoardOffers()
 }

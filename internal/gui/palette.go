@@ -55,7 +55,7 @@ func (w Window) PaletteRows() []PaletteRow {
 	found := map[int]bool{}
 	if n, err := strconv.Atoi(strings.TrimPrefix(typed, "#")); err == nil && strings.HasPrefix(typed, "#") {
 		if c, ok := w.snap.Card(n); ok {
-			rows, found[n] = append(rows, w.taskRow(c)), true
+			rows, found[n] = append(rows, choosingRow(c)), true
 		}
 	}
 	for _, action := range w.actionRows() {
@@ -85,6 +85,39 @@ func (w Window) taskRow(c engine.Card) PaletteRow {
 
 func reaching(said, typed string) bool {
 	return strings.TrimSpace(typed) == "" || engine.Reaches([]string{said}, typed)
+}
+
+func choosingRow(c engine.Card) PaletteRow {
+	number := c.Number
+	return PaletteRow{Group: paletteTasksGroup, Says: "#" + strconv.Itoa(number) + "  " + c.Title, does: func(w Window) Window {
+		w.taken, w.chosen, w.chosenGoal = nil, number, false
+		return w.chosenInSight()
+	}}
+}
+
+func (w Window) chosenInSight() Window {
+	for column := range engine.Columns {
+		for at, c := range w.inColumn(column) {
+			if c.Number == w.chosen {
+				return w.following(column, at)
+			}
+		}
+	}
+	if lane, at, ok := w.whereInBand(); ok {
+		return w.followingLane(lane, at)
+	}
+	return w
+}
+
+// typedIntoPalette is the open command bar with what is typed into it changed: a slash typed first turns it into the board's search, with what follows the slash.
+func (w Window) typedIntoPalette(typed Written) Window {
+	if said := typed.Reads(); w.palette.waiting == "" && strings.HasPrefix(said, "/") {
+		w = w.shuttingPalette()
+		w.screen, w.looking = OnSearch, Written{}.Types(strings.TrimPrefix(said, "/"))
+		return w
+	}
+	w.palette.typed, w.palette.row = typed, 0
+	return w
 }
 
 func pressing(key string) func(Window) Window { return func(w Window) Window { return w.Key(key) } }
@@ -175,8 +208,7 @@ func (w Window) boardLabels() []string {
 
 func (w Window) onPalette(name string) Window {
 	if edit, ok := textKey(name); ok {
-		w.palette.typed, w.palette.row = edit(w.palette.typed), 0
-		return w
+		return w.typedIntoPalette(edit(w.palette.typed))
 	}
 	rows := w.PaletteRows()
 	switch name {
@@ -291,4 +323,34 @@ func (w Window) clickingPalette(p Point) Window {
 		}
 	}
 	return w
+}
+
+const pillCross = 18
+
+// SearchPill is the pill a search kept stands as, at the right of the tabs, its cross clearing it, and whether a search is kept at all.
+func (w Window) SearchPill() (Box, bool) {
+	if w.screen != OnTheBoard || w.looking.Empty() {
+		return Box{}, false
+	}
+	l := w.Layout()
+	tab := TabAt(l, 0)
+	wide := ends(w.measured(), w.looking.Reads(), small) + 2*pillPad + pillCross
+	end := l.Tabs.X + l.Tabs.W
+	if !w.native {
+		end = MenuButton(l).X - between
+	}
+	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
+}
+
+const searchPillHigh = 22
+
+func (w Window) clickingSearchPill(p Point) (Window, bool) {
+	pill, ok := w.SearchPill()
+	if !ok || !pill.In(p) {
+		return w, false
+	}
+	if p.X >= pill.X+pill.W-pillCross {
+		w.looking = Written{}
+	}
+	return w, true
 }

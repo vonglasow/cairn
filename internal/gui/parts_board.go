@@ -86,23 +86,22 @@ func GoalRows(goals int) int {
 	return (goals + across - 1) / across
 }
 
-// Searching is where what is being looked for is written: a line along the bottom, taking the rest of the bar beside the one offer that closes it.
-func Searching(l Layout) Box {
-	b := l.Bar
-	kept := offerWide + padding
-	b.X, b.W = b.X+kept, b.W-kept
-	return b
-}
+// Searching is where what is being looked for is written: the command bar itself, the search being what it turns into after a slash.
+func Searching(l Layout) Box { return l.Bar }
 
-// SearchWord is where the box says what it is, and SearchInto where what is being looked for is typed.
+// SearchWord is the chip at the left of that bar saying it searches, a slash, and SearchInto where what is being looked for is typed, short of the hints at its right.
 func SearchWord(b Box) Box {
-	return Box{X: b.X + padding, Y: b.Y + (b.H-lineHigh)/2, W: searchWide, H: lineHigh}
+	return Box{X: b.X + barInset, Y: b.Y + (b.H-chipHigh)/2, W: KeyChipWide("/"), H: chipHigh}
 }
 
-// SearchInto is the rest of that box, which is what is typed into.
+// SearchInto is the rest of the bar's line after that chip, which is what is typed into.
 func SearchInto(b Box) Box {
-	return Box{X: b.X + padding + searchWide, Y: b.Y + (b.H-lineHigh)/2, W: b.W - padding - padding - searchWide, H: lineHigh}
+	word := SearchWord(b)
+	from := word.X + word.W + hintSpace
+	return Box{X: from, Y: b.Y + (b.H-lineHigh)/2, W: b.X + b.W - searchHints - from, H: lineHigh}
 }
+
+const searchHints = 240
 
 // WrongBox is where a refusal is written: two lines just above the bar, growing upwards so the foot of the window stays where it is.
 func WrongBox(l Layout) Box {

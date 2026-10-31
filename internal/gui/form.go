@@ -182,8 +182,7 @@ func (w Window) Typed() (Written, bool) {
 
 func (w Window) writing(change func(Written) Written) Window {
 	if w.screen == OnPalette {
-		w.palette.typed, w.palette.row = change(w.palette.typed), 0
-		return w
+		return w.typedIntoPalette(change(w.palette.typed))
 	}
 	if w.screen == OnSearch {
 		w.looking = change(w.looking)
@@ -580,6 +579,9 @@ func (w Window) Choose(name string) Window {
 		return w
 	case "about cairn":
 		w.screen, w.question = OnAsking, aboutCairn
+		return w
+	case "keep search":
+		w.screen = OnTheBoard
 		return w
 	case "clear":
 		if len(w.taken) > 0 {

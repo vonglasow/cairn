@@ -158,8 +158,10 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if said := w.FilteredBy(); said != "" && w.Tab() != Objectives {
 		say(gtx, th, skin.Faint, FilteredSaid(l), "filtered by "+said, reads)
 	}
-	if w.Screen() == OnSearch {
-		drawSearch(gtx, th, skin, l, w)
+	if pill, ok := w.SearchPill(); ok {
+		rounded(gtx, pill, pill.H/2, skin.Pill)
+		sayIn(gtx, th, skin.Faint, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, w.looking.Reads(), small, font.Font{}, text.Start)
+		drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
 	}
 	if w.formUnder() {
 		drawForm(gtx, th, skin, w)
@@ -477,15 +479,6 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fill(gtx, track, skin.Back)
 	fill(gtx, Thumb(track, len(offered), w.ChoosingRoom(), from), skin.Edge)
 	drawPanelOffers(gtx, th, skin, box, w)
-}
-
-func drawSearch(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	box := Searching(l)
-	fill(gtx, box, skin.Panel)
-	outline(gtx, box, skin.Chosen)
-	say(gtx, th, skin.Faint, SearchWord(box), "SEARCH", small)
-	into := SearchInto(box)
-	writing(gtx, th, skin, w.measured(), into, w.Searched(), true, reads, 1, Follow)
 }
 
 func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said []Said, box Box) {
@@ -811,13 +804,18 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		offers, faint = w.BoardOffers(), true
 	}
 	along := w.barAlong(offers)
-	chip := drawKeyChip(gtx, th, skin, Box{X: bar.X + barInset, Y: bar.Y, W: 0, H: bar.H}, w.keyboard.Spelled(Pretty("cmd+k")))
-	end := bar.X + bar.W
-	if len(along) > 0 {
-		end = along[0].X
+	if w.Screen() == OnSearch {
+		drawKeyChip(gtx, th, skin, Box{X: bar.X + barInset, Y: bar.Y, H: bar.H}, "/")
+		writing(gtx, th, skin, w.measured(), SearchInto(bar), w.Searched(), true, reads, 1, Follow)
+	} else {
+		chip := drawKeyChip(gtx, th, skin, Box{X: bar.X + barInset, Y: bar.Y, W: 0, H: bar.H}, w.keyboard.Spelled(Pretty("cmd+k")))
+		end := bar.X + bar.W
+		if len(along) > 0 {
+			end = along[0].X
+		}
+		from := chip.X + chip.W + hintSpace
+		sayIn(gtx, th, skin.Low, Box{X: from, Y: bar.Y + (bar.H-lineHigh)/2, W: max(0, end-hintMargin-from), H: lineHigh}, w.CommandSays(), reads, font.Font{}, text.Start)
 	}
-	from := chip.X + chip.W + hintSpace
-	sayIn(gtx, th, skin.Low, Box{X: from, Y: bar.Y + (bar.H-lineHigh)/2, W: max(0, end-hintMargin-from), H: lineHigh}, w.CommandSays(), reads, font.Font{}, text.Start)
 	for i, offer := range offers {
 		drawHint(gtx, th, skin, along[i], w.keyOf(offer), offer, faint, !faint && w.Lighting(offer))
 	}

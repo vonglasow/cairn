@@ -787,6 +787,17 @@ otherwise the key it stands for, so the palette does nothing the keys do not
 (`palette.go`, `@gui-the-palette-moves-the-chosen-task`,
 `@gui-the-palette-opens-a-task-found-by-title`, `@gui-esc-shuts-the-palette`).
 
+**The search is the command bar after a slash.** `/` on the board, or a slash
+typed first in the palette, turns the bar into the board's search: a `/` chip
+at its left, what is typed after it, and `⏎ keep` and `esc` at its right; the
+board narrows at each letter as it always did. `⏎` keeps the search and gives
+the keys back to the board, the search standing as a pill at the right of
+the tabs whose cross clears it; `⌫` with nothing left to delete goes back to
+the palette (`SearchPill`, `@gui-a-slash-in-the-palette-searches-the-board`,
+`@gui-a-search-kept-is-a-pill`). A task's number, `#152`, typed in the palette
+chooses that task on the board and brings it into sight; `⏎` again opens it
+(`@gui-a-number-chooses-its-task`).
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen
