@@ -1184,8 +1184,13 @@ list offers.
 
 **A closed set is chosen from the same list.** A column, a priority and an
 objective's standing open it too — on a click, or on `⏎` — offering the set in
-the domain's order, the value already held ticked and under the keyboard, and
-narrowed the same way by typing. One answer, so `⏎` takes and closes; but taking the one already held leaves it held, because a task stands
+the domain's order, the value already held ticked and under the keyboard, with
+no line to search by: a closed list is a handful of fixed values, and a search
+to type into only weighs on the field
+(`@gui-a-closed-list-is-chosen-without-a-search`), where the list of labels,
+objectives, blockers and links grows with use and keeps its search whatever
+its length today (`@gui-an-open-list-keeps-its-search`); the kind of list
+decides, not its length. One answer, so `⏎` takes and closes; but taking the one already held leaves it held, because a task stands
 in a column whatever is done to a list. The rows say the names alone: the
 number a row is listed under is the list's, not one anybody has seen. `←`/`→`
 on the field still step through the set without opening anything.
@@ -1193,7 +1198,8 @@ on the field still step through the set without opening anything.
 **The field itself takes no text.** Typed into, a priority once read
 `normal2h`: a value the store refuses, and one no row of the list matches, so
 the list opened on its first row and `⏎` took `low`. What is typed or pasted on
-such a field opens its list narrowed by it; a key that takes text away does
+such a field opens its list, whole, and narrows nothing
+(`@gui-a-priority-is-not-found-by-typing`); a key that takes text away does
 nothing there.
 
 **A list is the size of what it holds, up to what the window has room for.**

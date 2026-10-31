@@ -190,6 +190,9 @@ func (w Window) writing(change func(Written) Written) Window {
 		return w
 	}
 	if w.screen == OnChoosing {
+		if !w.ChoosingSearched() {
+			return w
+		}
 		w.filtering, w.choosing, w.choosingFrom = change(w.filtering), 0, 0
 		return w
 	}
@@ -875,3 +878,6 @@ func (w Window) keeping() Window {
 	w.screen = OnForm
 	return w
 }
+
+// ChoosingSearched says whether the open list has a line to type into.
+func (w Window) ChoosingSearched() bool { return len(w.closedSet()) == 0 }

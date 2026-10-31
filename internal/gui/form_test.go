@@ -1058,8 +1058,8 @@ func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 		w = w.Key("tab")
 	}
 	w = w.Types("h")
-	if w.Screen() != OnChoosing || w.filtering.Value != "h" {
-		t.Fatalf("typing h left the window on %v narrowed by %q", w.Screen(), w.filtering.Value)
+	if w.Screen() != OnChoosing || w.filtering.Value != "" || len(w.Choosing()) != 4 {
+		t.Fatalf("typing h left the window on %v narrowed by %q to %d", w.Screen(), w.filtering.Value, len(w.Choosing()))
 	}
 	if got := w.Key("esc").Form().Fields()[w.Form().On()].Value; got != "normal" {
 		t.Errorf("the field reads %q once the list is put away", got)
@@ -1070,8 +1070,8 @@ func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 			t.Errorf("%s left the field reading %q", name, got)
 		}
 	}
-	if got := w.Key("cmd+v").Pasted("crit"); got.Screen() != OnChoosing || got.filtering.Value != "crit" {
-		t.Errorf("pasting left the window on %v narrowed by %q", got.Screen(), got.filtering.Value)
+	if got := w.Key("cmd+v").Pasted("crit"); got.Screen() != OnChoosing || got.filtering.Value != "" || len(got.Choosing()) != 4 {
+		t.Errorf("pasting left the window on %v narrowed by %q to %d", got.Screen(), got.filtering.Value, len(got.Choosing()))
 	}
 	for w.Form().Fields()[w.Form().On()].Arg != "estimate" {
 		w = w.Key("tab")

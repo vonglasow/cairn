@@ -986,20 +986,41 @@ Feature: The desktop board
       And the list hangs under the field "priority"
       And the list has room for 4 rows and no more
 
-    @gui-a-priority-is-found-by-typing
-    Scenario: a priority is found by typing, the way an objective is
+    @gui-a-closed-list-is-chosen-without-a-search
+    Scenario: the priority is chosen from its few values, with no search to type into
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "priority"
+      Then the window is choosing
+      And the list offers no search
+
+    @gui-an-open-list-keeps-its-search
+    Scenario: the labels are still searched as they are chosen
+      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "labels"
+      Then the window is choosing
+      And the list offers a search
+
+    @gui-a-priority-is-not-found-by-typing
+    Scenario: typing into a closed list narrows nothing, there being no search for it
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "priority"
       And I type "hi"
-      Then the list reads "high"
-      When I press "enter"
+      Then the list reads "low", "normal", "high", "critical"
+      When I press "down"
+      And I press "enter"
       Then the field "priority" reads "high"
 
     @gui-a-closed-set-takes-no-free-text
-    Scenario: typing on a field with a closed set opens its list, narrowed
+    Scenario: typing on a field with a closed set opens its list, whole
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -1010,7 +1031,7 @@ Feature: The desktop board
       Then the form is still on the field "priority"
       When I type "h"
       Then the window is choosing
-      And the list reads "high"
+      And the list reads "low", "normal", "high", "critical"
       When I press "esc"
       Then the field "priority" reads "normal"
 

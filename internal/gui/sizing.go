@@ -3,20 +3,21 @@ package gui
 const listLeast = 240
 
 // ChoosingFor is the panel of a list at a corner, as wide as given and as tall as a run of rows needs between its heading and its offers.
-func ChoosingFor(x, y, wide, rows int) Box {
-	top := ChoosingFrom(Box{X: x, Y: y, W: wide}) - inset
-	return Box{X: x, Y: y, W: wide, H: top - y + rows*apart + padding + barHigh + padding}
+func ChoosingFor(x, y, wide, rows int, searched bool) Box {
+	top := ChoosingFrom(Box{X: x, Y: y, W: wide, Unsearched: !searched}) - inset
+	return Box{X: x, Y: y, W: wide, H: top - y + rows*apart + padding + barHigh + padding, Unsearched: !searched}
 }
 
 // ChoosingBox is the panel of the list open on a form: under the field it answers, or above it when the window has no room below, and inside the panel the form is drawn in.
 func (w Window) ChoosingBox() Box {
 	over := Over(w.width, w.height)
-	most := max(1, (over.H-ChoosingFor(0, 0, 0, 0).H)/apart)
+	searched := w.ChoosingSearched()
+	most := max(1, (over.H-ChoosingFor(0, 0, 0, 0, searched).H)/apart)
 	rows := min(max(1, len(w.listed())), most)
 	wide := min(over.W, w.choosingWide())
-	high := ChoosingFor(0, 0, wide, rows).H
+	high := ChoosingFor(0, 0, wide, rows, searched).H
 	at := w.hung(wide, high)
-	return ChoosingFor(at.X, at.Y, wide, rows)
+	return ChoosingFor(at.X, at.Y, wide, rows, searched)
 }
 
 // Hung is where a panel opened from a field goes: a gap under it when it ends inside the panel there, a gap above it otherwise.

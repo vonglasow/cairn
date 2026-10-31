@@ -1928,6 +1928,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the field "([^"]*)" is drawn by name and not by number$`, w.fieldDrawnByName)
 	sc.Then(`^the list offers "([^"]*)"$`, w.listOffers)
+	sc.Then(`^the list offers (a|no) search$`, func(which string) error {
+		if got := w.w.ChoosingSearched(); got != (which == "a") {
+			return fmt.Errorf("the list searched is %v, want %v", got, which == "a")
+		}
+		return nil
+	})
 	sc.Then(`^the label "([^"]*)" is (not )?ticked$`, func(label, not string) error {
 		for _, one := range w.w.Choosing() {
 			if one.Title == label {

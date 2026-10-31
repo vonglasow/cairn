@@ -30,8 +30,11 @@ const (
 // Point is somewhere in the window.
 type Point struct{ X, Y int }
 
-// Box is a rectangle of the window, in dp.
-type Box struct{ X, Y, W, H int }
+// Box is a rectangle of the window, in dp, and says of a list's panel whether it was drawn without a line to search by.
+type Box struct {
+	X, Y, W, H int
+	Unsearched bool
+}
 
 // In says whether a point falls inside.
 func (b Box) In(p Point) bool {

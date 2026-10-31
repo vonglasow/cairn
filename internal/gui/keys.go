@@ -232,6 +232,9 @@ func (w Window) Pasted(text string) Window {
 		return w
 	}
 	if w.screen == OnChoosing {
+		if !w.ChoosingSearched() {
+			return w
+		}
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
 		return w
 	}

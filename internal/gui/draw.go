@@ -385,10 +385,12 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.ChoosingBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
 
-	looking := ChoosingLooking(box)
-	fill(gtx, looking, skin.Back)
-	outline(gtx, looking, skin.Edge)
-	writing(gtx, th, skin, w.measured(), Inside(looking), w.Filtering(), true, reads, 1, Follow)
+	if !box.Unsearched {
+		looking := ChoosingLooking(box)
+		fill(gtx, looking, skin.Back)
+		outline(gtx, looking, skin.Edge)
+		writing(gtx, th, skin, w.measured(), Inside(looking), w.Filtering(), true, reads, 1, Follow)
+	}
 
 	at := ChoosingFrom(box)
 	offered := w.Choosing()

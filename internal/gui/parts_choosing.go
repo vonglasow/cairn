@@ -57,6 +57,9 @@ func ChoosingAtPoint(box Box, rows, from int, p Point) (int, bool) {
 
 // ChoosingFrom is where a list's own rows begin, under the line that narrows them.
 func ChoosingFrom(box Box) int {
+	if box.Unsearched {
+		return FirstRow(box)
+	}
 	looking := ChoosingLooking(box)
 	return looking.Y + looking.H + between
 }

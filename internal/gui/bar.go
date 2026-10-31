@@ -340,7 +340,7 @@ func (w Window) clickingList(p Point) Window {
 		w.choosing = at
 		return w
 	}
-	if looking := ChoosingLooking(box); looking.In(p) {
+	if looking := ChoosingLooking(box); !box.Unsearched && looking.In(p) {
 		w.filtering = w.filtering.CaretAt(into(Inside(looking), p, w.filtering.Reads(), w.measured()))
 	}
 	return w
