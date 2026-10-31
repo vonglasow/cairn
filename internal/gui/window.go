@@ -140,6 +140,7 @@ type Window struct {
 	explaining            int
 	resting               string
 	restingSlot           Box
+	pointed               Box
 	picked                Picked
 	pickingText           bool
 	wheelOn               Screen

@@ -1,33 +1,40 @@
 package gui
 
 const (
-	edgeWide = 5
-	numberAt = 6
-	titleAt  = 28
-	labelsAt = 54
-	lineHigh = 18
-	titleHi  = 22
+	edgeWide   = 5
+	edgeInset  = 6
+	cardRadius = 8
+	cardLeft   = 16
+	cardRight  = 11
+	titleAt    = 8
+	rowAt      = 50
+	stepsAt    = 74
+	stepsHigh  = 6
+	lineHigh   = 18
+	titleHi    = 22
 )
 
 const tabWide = 140
 
 const namesWide = 170
 
-// Parts is where the pieces of a card go inside the box it was given.
+// Parts is where the pieces of a card go inside the box it was given: its title on two lines at the top, its row of number, labels and facts under it, and the bar of its steps at its foot.
 type Parts struct {
-	Panel, Edge, Number, Title, Labels Box
+	Panel, Edge, Number, Title, Labels, Steps Box
 }
 
 // PartsOf shares out a card's box.
 func PartsOf(box Box) Parts {
 	panel := Box{X: box.X, Y: box.Y, W: box.W, H: box.H - gap}
-	inside := panel.W - padding - padding
+	left, inside := panel.X+cardLeft, panel.W-cardLeft-cardRight
+	row := Box{X: left, Y: panel.Y + rowAt, W: inside, H: lineHigh}
 	return Parts{
 		Panel:  panel,
-		Edge:   Box{X: panel.X, Y: panel.Y, W: edgeWide, H: panel.H},
-		Number: Box{X: panel.X + padding, Y: panel.Y + numberAt, W: inside, H: lineHigh},
-		Title:  Box{X: panel.X + padding, Y: panel.Y + titleAt, W: inside, H: titleHi},
-		Labels: Box{X: panel.X + padding, Y: panel.Y + labelsAt, W: inside, H: lineHigh},
+		Edge:   Box{X: panel.X, Y: panel.Y + edgeInset, W: edgeWide, H: panel.H - 2*edgeInset},
+		Title:  Box{X: left, Y: panel.Y + titleAt, W: inside, H: 2 * lineHigh},
+		Number: row,
+		Labels: row,
+		Steps:  Box{X: left, Y: panel.Y + stepsAt, W: inside, H: stepsHigh},
 	}
 }
 

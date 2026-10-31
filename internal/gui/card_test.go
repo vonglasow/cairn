@@ -7,80 +7,63 @@ import (
 	"time"
 )
 
-func TestATitleThatFitsIsLeftAlone(t *testing.T) {
-	if got := TitleOf("Write the spec", 285); got != "Write the spec" {
-		t.Fatalf("a title that fits was written %q", got)
+func eightEach(said string) int { return 8 * len([]rune(said)) }
+
+func TestATitleThatFitsTakesOneLine(t *testing.T) {
+	if got := TitleLines("Write the spec", 200, eightEach); len(got) != 1 || got[0] != "Write the spec" {
+		t.Fatalf("a title that fits was laid out %q", got)
 	}
 }
 
-func TestATitleTooLongIsCutAndSaysSo(t *testing.T) {
-	long := strings.Repeat("a", 60)
-	got := TitleOf(long, 285)
-	if !strings.HasSuffix(got, "…") {
-		t.Fatalf("a title that was cut does not say so: %q", got)
-	}
-	if len([]rune(got)) != 32 {
-		t.Fatalf("the cut title is %d characters, and the room is 32", len([]rune(got)))
+func TestATitleTooLongForOneLineTakesTwo(t *testing.T) {
+	got := TitleLines("Write the spec of the board", 120, eightEach)
+	if len(got) != 2 || got[0] != "Write the spec" || got[1] != "of the board" {
+		t.Fatalf("a title of two lines was laid out %q", got)
 	}
 }
 
-func TestTheCutFallsWhereTheRoomEnds(t *testing.T) {
-	room := (285 - padding - padding) / perGlyph
-	exactly := strings.Repeat("a", room)
-	if got := TitleOf(exactly, 285); got != exactly {
-		t.Errorf("a title of exactly the room was cut to %q", got)
+func TestATitleTooLongForTwoLinesIsCutAndSaysSo(t *testing.T) {
+	got := TitleLines("Fix the band lane scroll when the window is resized", 120, eightEach)
+	if len(got) != 2 || !strings.HasSuffix(got[1], "…") || eightEach(got[1]) > 120 {
+		t.Fatalf("a title of three lines was laid out %q", got)
 	}
-	one := strings.Repeat("a", room+1)
-	if got := TitleOf(one, 285); got == one {
-		t.Error("a title one past the room was not cut")
+	if strings.HasSuffix(got[1], " …") {
+		t.Errorf("the cut left a space before the ellipsis: %q", got[1])
+	}
+}
+
+func TestAWordLongerThanTheLineIsBroken(t *testing.T) {
+	got := TitleLines(strings.Repeat("a", 40), 80, eightEach)
+	if len(got) != 2 || eightEach(got[0]) > 80 || !strings.HasSuffix(got[1], "…") {
+		t.Fatalf("a word longer than two lines was laid out %q", got)
 	}
 }
 
 func TestACardWithNoRoomAnswersTheTitleWhole(t *testing.T) {
-	if got := TitleOf("Write the spec", 0); got != "Write the spec" {
+	if got := TitleLines("Write the spec", 0, eightEach); len(got) != 1 || got[0] != "Write the spec" {
 		t.Fatalf("a card with no room answered %q", got)
 	}
-	if got := TitleOf("Write the spec", padding+padding+perGlyph); got != "Write the spec" {
-		t.Fatalf("a card with room for one answered %q", got)
-	}
 }
 
-func TestASpaceAtTheCutGoesWithIt(t *testing.T) {
-	room := (285 - padding - padding) / perGlyph
-	title := strings.Repeat("a", room-1) + " more"
-	got := TitleOf(title, 285)
-	if strings.HasSuffix(got, " …") {
-		t.Fatalf("the cut left a space before the ellipsis: %q", got)
-	}
-}
-
-func TestTagged_measuresAtTheSizeItIsDrawnIn(t *testing.T) {
-	c := engine.Card{Labels: []string{"ado:36467", "chantier:tests-qualite", "sp26-20"}}
-	got := Tagged(c, 270)
-	if !strings.Contains(got, "chantier:tests-qualite") {
-		t.Errorf("Tagged = %q, want room for the second label at the size it is drawn in", got)
-	}
-}
-
-func TestTagged_atItsEdges(t *testing.T) {
-	room := func(glyphs int) int { return glyphs * perSmallGlyph }
+func TestAtMostTwoLabelsArePills(t *testing.T) {
 	for _, c := range []struct {
 		what   string
 		labels []string
 		room   int
-		want   string
+		shown  []string
+		more   int
 	}{
-		{"nothing to say", nil, room(20), ""},
-		{"one that fits", []string{"devops"}, room(20), "devops"},
-		{"two that fit", []string{"devops", "release"}, room(20), "devops  release"},
-		{"exactly the room there is", []string{"devops", "release"}, room(15), "devops  release"},
-		{"one glyph short of it", []string{"devops", "release"}, room(14), "devops  +1"},
-		{"none of them fits", []string{"an-altogether-overlong-label"}, room(4), "+1"},
-		{"the count is what is left, not what was dropped last",
-			[]string{"devops", "release", "suivi", "backend"}, room(14), "devops  +3"},
+		{"nothing to say", nil, 200, nil, 0},
+		{"one that fits", []string{"devops"}, 200, []string{"devops"}, 0},
+		{"two that fit", []string{"devops", "release"}, 200, []string{"devops", "release"}, 0},
+		{"two at most, then how many more", []string{"devops", "release", "gui", "bug"}, 400, []string{"devops", "release"}, 2},
+		{"room for one and the count", []string{"devops", "release", "gui"}, 110, []string{"devops"}, 2},
+		{"room for the count alone", []string{"an-altogether-overlong-label"}, 40, nil, 1},
+		{"room for nothing", []string{"devops"}, 10, nil, 0},
 	} {
-		if got := Tagged(engine.Card{Labels: c.labels}, c.room); got != c.want {
-			t.Errorf("%s: Tagged = %q, want %q", c.what, got, c.want)
+		shown, more := Pills(c.labels, c.room, eightEach)
+		if strings.Join(shown, ",") != strings.Join(c.shown, ",") || more != c.more {
+			t.Errorf("%s: pills %q and %d more, want %q and %d", c.what, shown, more, c.shown, c.more)
 		}
 	}
 }

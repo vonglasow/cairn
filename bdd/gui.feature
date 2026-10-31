@@ -128,7 +128,7 @@ Feature: The desktop board
       Then every card in "BACKLOG" is the same height
 
     @gui-a-long-title-is-cut
-    Scenario: a title too long for its card is cut rather than wrapped
+    Scenario: a title too long for the two lines of its card is cut at the end of the second
       Given I added a task titled "A title far longer than any column could ever hope to show in full"
       When I open the window
       Then "BACKLOG" carries a card whose title ends in "…"

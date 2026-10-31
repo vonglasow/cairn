@@ -3,6 +3,7 @@ package gui
 import (
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"cairn/internal/engine"
@@ -101,6 +102,7 @@ func (w Window) Hovering(p Point) Window {
 	w.over, w.hovered = w.offerAt(p)
 	w.explaining = w.nameAt(p)
 	w.resting, w.restingSlot = w.cutTitleAt(p)
+	w.pointed = w.slotAt(p)
 	return w
 }
 
@@ -135,16 +137,34 @@ func (w Window) cutTitleAt(p Point) (string, Box) {
 		return "", Box{}
 	}
 	for _, placed := range w.Placed() {
-		if placed.Within.In(p) && placed.Slot.In(p) && TitleOf(placed.Card.Title, placed.Slot.W) != placed.Card.Title {
+		if placed.Within.In(p) && placed.Slot.In(p) && w.titleCut(placed.Card, placed.Slot) {
 			return placed.Card.Title, placed.Slot
 		}
 	}
 	return "", Box{}
 }
 
+func (w Window) titleCut(c engine.Card, slot Box) bool {
+	m := w.measured()
+	lines := TitleLines(c.Title, TitleRoom(c, PartsOf(slot).Title), func(said string) int { return ends(m, said, reads) })
+	return strings.HasSuffix(lines[len(lines)-1], "…") && !strings.HasSuffix(c.Title, "…")
+}
+
+func (w Window) slotAt(p Point) Box {
+	if w.screen != OnTheBoard || w.tab != Tasks {
+		return Box{}
+	}
+	for _, placed := range w.Placed() {
+		if placed.Within.In(p) && placed.Slot.In(p) {
+			return placed.Slot
+		}
+	}
+	return Box{}
+}
+
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
-	w.over, w.hovered, w.explaining, w.resting, w.restingSlot = "", false, 0, "", Box{}
+	w.over, w.hovered, w.explaining, w.resting, w.restingSlot, w.pointed = "", false, 0, "", Box{}, Box{}
 	return w
 }
 

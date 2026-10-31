@@ -282,13 +282,20 @@ accent stripe at three or four pixels and anything under reads as a border; five
 is clearly an accent at this window's scale, and still well inside the padding
 before the text. The card's outline is drawn over the stripe's first column.
 
-**A card is three lines**: its number, its title, and the labels it carries.
-The third fills room the fixed height already paid for and left empty, and it
-answers the question a board is asked most — which sprint, which chantier, which
-ADO ticket — without opening anything. What does not fit is counted rather than
-dropped in silence: `77594  ado  pipelines  +1`. `Tagged` cuts the line
-and the scenarios read it, so what is asserted is the decision rather than the
-pixels.
+**A card is its title, then a row, then its steps.** The title comes first,
+in the reading ink and a medium weight, on two lines at most, and is cut with
+an ellipsis at the end of the second (`TitleLines`,
+`@gui-a-long-title-is-cut`); the whole of it is a bubble away. Under it, one
+row: the number in figures, faint (`#152`), the description's mark after it,
+then the labels as pills, two at most and then `+n` in an outlined pill for
+the rest (`Pills`), and the facts at the row's right end. A label is shown
+only when the count of those left out still fits beside it, so what is left
+out is always counted rather than dropped in silence. At the foot, only when
+the task has steps, a thin bar filling with the steps done and `k/n` beside it;
+a task with no step has no bar and no empty line. The card stands on a rounded
+ground (8), striped at its left by its priority (5 points, its right corners
+rounded), lit under the pointer, ringed in a neutral grey when the keyboard is
+on it, and tinted when it is in focus.
 
 The right-hand end of that third line carries **what is due, what the work has
 cost against what it was reckoned to cost, and what it serves** — `2d  9h/2h
@@ -724,14 +731,13 @@ walks the fields, as it does in the terminal.
 The columns stand a gap clear of that band. Against it, the tabs read as the
 board's first row.
 
-**A card carries one mark on its number line and no more.** The eleven the
-terminal board draws were left out of this window on purpose; this one earns
-its place because it cannot be worked out by looking: a card gives no sign
-that somebody — or some agent session — is on it. So the number line carries
-an eye when it is being worked on — drawn, in the colour that says chosen,
-where a `●` read as nothing in particular (`FocusEye`). It carried a second,
-`↳` and the number of the task a sub-task hung under, until steps replaced
-sub-tasks and every card became a task that may go anywhere. `f` focuses or
+**A card in focus ends its title with a cairn.** The terminal board's eleven
+marks were left out of this window on purpose; this one earns its place
+because it cannot be worked out by looking: a card gives no sign that somebody
+— or some agent session — is on it. A small cairn of three stones, in the
+accent, follows the last word of its title (`FocusMark`), and the card stands
+on the tint: the eye after its number was a pictogram nobody read as being
+worked on, and was too small to find from across the board. `f` focuses or
 unfocuses the chosen task, under the same key the terminal board uses.
 
 **A key does what the bar offers, where the bar offers it.** The bar is what
@@ -903,7 +909,7 @@ filled outlines and opacity say it.
 long the work took was a table the command line printed. The third page, TIME,
 lays a week out (`week.go`): a column a day across the board's width, Monday
 first, each day's total, and each task worked on drawn as the card the board
-draws — its priority, its eye, its labels, what it has cost — with its time that
+draws — its priority, its cairn, its labels, what it has cost — with its time that
 day under it and a bar as long as its share of the longest stretch of the week:
 a glance says which day went where. A task's lines used to be its own, a second
 way of showing the same thing (`@gui-the-time-page-shows-cards`). A day of more tasks than its column holds scrolls under the wheel,
@@ -938,8 +944,8 @@ something to press. The search narrows this page as it narrows the board: a
 day keeps the tasks the search reaches, and its total counts only them
 (`@gui-the-time-page-is-searched`). A card too narrow for all it says gives up
 what has no room rather than writing it over the rest: the labels stop short of
-the facts written hard right, and the count of the steps gives way to the eye
-of a task in focus. The tab says how many tasks the
+the facts written hard right, and the title leaves room for the cairn of a
+task in focus. The tab says how many tasks the
 time shown was spent on, from the moment the window opens: the week is read
 with every look at the store and not only once the page is opened, or the tab
 said 0 until it was clicked (`@gui-the-time-tab-counts-before-it-is-opened`).

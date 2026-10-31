@@ -307,24 +307,10 @@ func TestAChipSaysItsNameInItsMiddle(t *testing.T) {
 	}
 }
 
-func TestANarrowCardLeavesOutWhatItHasNoRoomFor(t *testing.T) {
-	c := engine.Card{Labels: []string{"feature", "release-26.1.6", "ado", "77711"}}
-	if got := Tagged(c, 10); got != "" {
-		t.Errorf("in room for nothing the labels say %q", got)
-	}
-	if got := Tagged(c, 3*perSmallGlyph); got != "+4" {
-		t.Errorf("in room for their count the labels say %q", got)
-	}
-	number := Box{X: 0, Y: 0, W: 80, H: lineHigh}
-	if !Crowded(number, 60, "▪ 2/5") {
-		t.Errorf("a count written over what the number line already holds is not crowded")
-	}
-	if Crowded(number, 20, "▪ 2/5") {
-		t.Errorf("a count with room to spare is crowded")
-	}
-	labels := Box{X: 10, Y: 0, W: 100, H: lineHigh}
-	if at := LabelsAt(labels, "12h30m/4h"); at.X != labels.X || at.W != LabelsRoom(labels, "12h30m/4h") {
-		t.Errorf("the labels are written in %+v, past the facts' room", at)
+func TestTheFactsOfACardStandAtTheRightOfItsRow(t *testing.T) {
+	row := Box{X: 10, Y: 0, W: 100, H: lineHigh}
+	if at := FactsAt(row, 30); at.X != row.X+row.W-30 || at.W != 30 {
+		t.Errorf("facts 30 wide are written in %+v", at)
 	}
 }
 

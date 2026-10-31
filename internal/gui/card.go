@@ -6,64 +6,120 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 const perGlyph = 8
 
 const perSmallGlyph = 7
 
-// TitleOf is a title cut to what a card of this width can show, ending in an ellipsis when it had to be cut.
-func TitleOf(title string, width int) string {
-	room := (width - padding - padding) / perGlyph
-	if room < 2 || utf8.RuneCountInString(title) <= room {
-		return title
+// TitleLines is a title laid out on the two lines a card gives it, at room wide each as wide measures it: whole when it fits, broken between words, and cut with an ellipsis at the end of the second line when it is longer still.
+func TitleLines(title string, room int, wide func(string) int) []string {
+	if room <= 0 || wide(title) <= room {
+		return []string{title}
 	}
-	kept := []rune(title)[:room-1]
-	return strings.TrimRight(string(kept), " ") + "…"
+	first, rest := firstLine(title, room, wide)
+	if wide(rest) <= room {
+		return []string{first, rest}
+	}
+	return []string{first, cutToFit(rest, room, wide)}
 }
 
-// Tagged is the labels a card says it carries, cut to what its width holds.
-func Tagged(c engine.Card, width int) string {
-	room := width / perSmallGlyph
-	shown := 0
-	for shown < len(c.Labels) && utf8.RuneCountInString(saying(c.Labels, shown+1)) <= room {
-		shown++
+func firstLine(title string, room int, wide func(string) int) (string, string) {
+	words := strings.Fields(title)
+	line := ""
+	for i, word := range words {
+		next := word
+		if line != "" {
+			next = line + " " + word
+		}
+		if wide(next) > room {
+			if line == "" {
+				kept := runesFitting([]rune(word), room, wide)
+				return string(kept), strings.Join(append([]string{string([]rune(word)[len(kept):])}, words[i+1:]...), " ")
+			}
+			return line, strings.Join(words[i:], " ")
+		}
+		line = next
 	}
-	said := saying(c.Labels, shown)
-	if utf8.RuneCountInString(said) > room {
-		return ""
-	}
-	return said
+	return line, ""
 }
 
-func saying(labels []string, shown int) string {
-	line := strings.Join(labels[:shown], "  ")
-	left := len(labels) - shown
-	if left == 0 {
-		return line
+func runesFitting(runes []rune, room int, wide func(string) int) []rune {
+	n := len(runes)
+	for n > 1 && wide(string(runes[:n])) > room {
+		n--
 	}
-	said := "+" + strconv.Itoa(left)
-	if line == "" {
-		return said
-	}
-	return line + "  " + said
+	return runes[:n]
 }
+
+func cutToFit(said string, room int, wide func(string) int) string {
+	runes := []rune(said)
+	for n := len(runes); n > 0; n-- {
+		cut := strings.TrimRight(string(runes[:n]), " ") + "…"
+		if wide(cut) <= room {
+			return cut
+		}
+	}
+	return "…"
+}
+
+// Pills is how many of a card's labels its row has room for as pills, two at most, and how many it leaves out: the count gets a pill of its own, so a label is only shown when the count still fits beside it.
+func Pills(labels []string, room int, wide func(string) int) ([]string, int) {
+	pill := func(said string) int { return wide(said) + 2*pillPad }
+	count := func(left int) int { return pill("+" + strconv.Itoa(left)) }
+	used, shown := 0, 0
+	for i := range min(pillsAtMost, len(labels)) {
+		need := used + pill(labels[i])
+		if i > 0 {
+			need += pillGap
+		}
+		with := need
+		if left := len(labels) - i - 1; left > 0 {
+			with += pillGap + count(left)
+		}
+		if with > room {
+			break
+		}
+		used, shown = need, i+1
+	}
+	more := len(labels) - shown
+	if more > 0 && shown == 0 && count(more) > room {
+		more = 0
+	}
+	if shown == 0 {
+		return nil, more
+	}
+	return labels[:shown], more
+}
+
+const (
+	pillsAtMost = 2
+	pillPad     = 7
+	pillGap     = 4
+	pillHigh    = 16
+)
 
 const padding = 12
 
 const (
-	eyeWide  = 16
-	eyeHigh  = 10
-	eyeSpace = 5
+	markSide  = 13
+	markSpace = 5
 )
 
-// FocusEye is where the eye of a card in focus is drawn: after its number, on the number line.
-func FocusEye(c engine.Card, number Box, numberWide int) (Box, bool) {
+// FocusMark is where the cairn of a card in focus stands: after the last line of its title, as wide as that line is.
+func FocusMark(c engine.Card, title Box, lines, lastWide int) (Box, bool) {
 	if !c.InFocus {
 		return Box{}, false
 	}
-	return Box{X: number.X + numberWide + eyeSpace, Y: number.Y + (number.H-eyeHigh)/2, W: eyeWide, H: eyeHigh}, true
+	return Box{X: title.X + lastWide + markSpace, Y: title.Y + (lines-1)*lineHigh + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
+}
+
+// TitleRoom is how wide a card's title may run: the card's room for it, less the cairn's when the card is in focus.
+func TitleRoom(c engine.Card, title Box) int {
+	if c.InFocus {
+		return title.W - markSide - markSpace
+	}
+	return title.W
 }
 
 // Numbered is a card's number line: its number.

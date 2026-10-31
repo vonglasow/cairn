@@ -223,7 +223,7 @@ func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	box := w.Layout().CardAt(1, 0, 0)
-	edge := Dark().Chosen
+	edge := Dark().Selected
 
 	plain := painted(drawn(t, w), box, edge)
 	chosen := painted(drawn(t, w.clicked(middleOf(w, 1, 0))), box, edge)
@@ -357,7 +357,7 @@ func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 	box := w.Layout().LaneCardAt(0, 0, 0)
-	edge := Dark().Chosen
+	edge := Dark().Selected
 
 	plain := painted(drawn(t, w), box, edge)
 	chosen := painted(drawn(t, w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
@@ -614,7 +614,7 @@ func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	w.tab = Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	edge := Dark().Chosen
+	edge := Dark().Selected
 	plain := painted(drawn(t, w), first, edge)
 
 	chosen := w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
@@ -1175,10 +1175,10 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 		number := PartsOf(w.Layout().CardAt(1, at, 0)).Number
 		return Box{X: number.X + number.W/2, Y: number.Y, W: number.W / 2, H: number.H}
 	}
-	if got := ink(shot, beside(0), Dark().Panel); got != 0 {
+	if got := ink(shot, beside(0), Dark().Card); got != 0 {
 		t.Errorf("a card carrying nothing drew %d pixels beside its number", got)
 	}
-	if got := ink(shot, beside(1), Dark().Panel); got == 0 {
+	if got := ink(shot, PartsOf(w.Layout().CardAt(1, 1, 0)).Steps, Dark().Card); got == 0 {
 		t.Error("a card carrying a description and its parts drew nothing beside its number")
 	}
 }

@@ -166,9 +166,11 @@ func (w *world) titleEndsIn(column, ending string) error {
 		return err
 	}
 	at := engine.IndexOf(strings.ToLower(column))
-	width := w.w.Layout().Column[at].W
+	title := PartsOf(w.w.Layout().CardAt(at, 0, 0)).Title
+	m := w.w.measured()
 	for _, c := range here {
-		if strings.HasSuffix(TitleOf(c.Title, width), ending) {
+		lines := TitleLines(c.Title, TitleRoom(c, title), func(said string) int { return ends(m, said, reads) })
+		if strings.HasSuffix(lines[len(lines)-1], ending) {
 			return nil
 		}
 	}
@@ -3106,7 +3108,9 @@ func (w *world) cardSays(title, said string) error {
 		return err
 	}
 	facts, _ := Facts(c, moment)
-	line := Tagged(c, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W) + "  " + facts
+	m := w.w.measured()
+	shown, more := Pills(c.Labels, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W, func(said string) int { return ends(m, said, small) })
+	line := strings.Join(shown, "  ") + "  +" + strconv.Itoa(more) + "  " + facts
 	if !strings.Contains(line, said) {
 		return fmt.Errorf("the card for %q reads %q, and says nothing of %q", title, line, said)
 	}
@@ -3121,8 +3125,8 @@ func (w *world) cardSaysInFocus(title string) error {
 	if !c.InFocus {
 		return fmt.Errorf("%q does not say it is being worked on", title)
 	}
-	if _, eye := FocusEye(c, Box{W: 200, H: lineHigh}, 20); !eye {
-		return fmt.Errorf("the card for %q draws no eye, and says nothing about being worked on", title)
+	if _, mark := FocusMark(c, Box{W: 200, H: 2 * lineHigh}, 1, 20); !mark {
+		return fmt.Errorf("the card for %q draws no cairn, and says nothing about being worked on", title)
 	}
 	return nil
 }
@@ -3177,9 +3181,9 @@ func (w *world) stripedWide(title string, wide int) error {
 	if err != nil {
 		return err
 	}
-	at := PartsOf(w.w.Layout().CardAt(engine.IndexOf(card.State), 0, 0)).Panel
+	at := PartsOf(w.w.Layout().CardAt(engine.IndexOf(card.State), 0, 0)).Edge
 	want := Dark().Priority[card.Priority]
-	stripe := Box{X: at.X + 1, Y: at.Y + 1, W: wide - 1, H: at.H - 2}
+	stripe := Box{X: at.X, Y: at.Y + stripeRadius, W: wide, H: at.H - 2*stripeRadius}
 	if got := painted(shot, stripe, want); got != stripe.W*stripe.H {
 		return fmt.Errorf("the stripe fills %d of %d pixels of its %d points", got, stripe.W*stripe.H, wide)
 	}
