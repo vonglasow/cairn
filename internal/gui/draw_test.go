@@ -1057,11 +1057,14 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	first := ChoosingRow(box, ChoosingFrom(box))
 	shot := drawn(t, w)
 
-	if painted(shot, first, Dark().Chosen) == 0 {
-		t.Error("the row the keyboard is on is not lit")
+	if painted(shot, Box{X: first.X + first.W/2, Y: first.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+		t.Error("the row the keyboard is on does not stand on a pill")
+	}
+	if painted(shot, Box{X: first.X, Y: first.Y, W: 1, H: 1}, Dark().Pill) != 0 {
+		t.Error("the lit row's corner is not rounded")
 	}
 	second := ChoosingRow(box, ChoosingFrom(box)+apart)
-	if got := painted(shot, second, Dark().Chosen); got != 0 {
+	if got := painted(shot, second, Dark().Pill); got != 0 {
 		t.Errorf("%d pixels lit a row the keyboard is not on", got)
 	}
 

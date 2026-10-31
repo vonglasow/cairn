@@ -466,8 +466,7 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		one := offered[i]
 		row := ChoosingRow(box, at)
 		if i == w.ChoosingAt() {
-			fill(gtx, row, skin.Back)
-			outline(gtx, row, skin.Chosen)
+			rounded(gtx, row, rowRadius, skin.Pill)
 		}
 		line := ChoosingLine(box, at)
 		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
@@ -726,6 +725,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 }
 
 const (
+	rowRadius    = 6
 	fieldHalo    = 3
 	bubbleRadius = 8
 	stripeRadius = 3
