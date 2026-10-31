@@ -29,6 +29,9 @@ func (w Window) Click(p Point) Window {
 	if cleared, on := w.clickingSearchPill(p); on {
 		return cleared
 	}
+	if cleared, on := w.clickingFilterPill(p); on {
+		return cleared
+	}
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())
 	}

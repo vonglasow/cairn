@@ -67,3 +67,54 @@ func (w Window) FiltersBox() Box {
 	}
 	return w.listBox(said)
 }
+
+// FilterPill is a filter in force as the pill it stands as at the right of the tabs: where, what it says, and which filter it is.
+type FilterPill struct {
+	Box  Box
+	Said string
+	At   int
+}
+
+// FilterPills is every filter in force as a pill, right to left from the search's pill, or from the end of the tabs when nothing is searched.
+func (w Window) FilterPills() []FilterPill {
+	if w.screen != OnTheBoard || w.tab == Objectives {
+		return nil
+	}
+	l := w.Layout()
+	tab := TabAt(l, 0)
+	end := l.Tabs.X + l.Tabs.W
+	if !w.native {
+		end = MenuButton(l).X - between
+	}
+	if search, ok := w.SearchPill(); ok {
+		end = search.X - pillGap
+	}
+	var pills []FilterPill
+	for i := len(w.filters) - 1; i >= 0; i-- {
+		f := w.filters[i]
+		if f.At == 0 {
+			continue
+		}
+		said := f.Name + ": " + f.Says()
+		wide := ends(w.measured(), said, small) + 2*pillPad + pillCross
+		end -= wide
+		pills = append([]FilterPill{{Box: Box{X: end, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, Said: said, At: i}}, pills...)
+		end -= pillGap
+	}
+	return pills
+}
+
+func (w Window) clickingFilterPill(p Point) (Window, bool) {
+	for _, pill := range w.FilterPills() {
+		if !pill.Box.In(p) {
+			continue
+		}
+		if p.X >= pill.Box.X+pill.Box.W-pillCross {
+			kept := append(engine.Filters{}, w.filters...)
+			kept[pill.At].At = 0
+			w.filters = kept
+		}
+		return w, true
+	}
+	return w, false
+}

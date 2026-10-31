@@ -12,13 +12,6 @@ func TabAt(l Layout, at int) Box {
 	return Box{X: l.Tabs.X + at*tabWide, Y: l.Tabs.Y + between, W: tabWide, H: l.Tabs.H - between}
 }
 
-// FilteredSaid is where the board writes what it is filtered by: in the tabs' band, from past the last of the three tabs to its end.
-func FilteredSaid(l Layout) Box {
-	last := TabAt(l, len(Pages)-1)
-	x := last.X + last.W + padding
-	return Box{X: x, Y: last.Y + (last.H-lineHigh)/2, W: l.Tabs.X + l.Tabs.W - x, H: lineHigh}
-}
-
 // TabName is where a tab's name and what it holds are written inside it.
 func TabName(b Box) Box {
 	return Box{X: b.X + padding, Y: b.Y + (b.H-lineHigh)/2, W: b.W - padding - padding, H: lineHigh}

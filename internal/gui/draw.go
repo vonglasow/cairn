@@ -155,13 +155,11 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawDragging(gtx, th, skin, w)
 	}
 	drawBar(gtx, th, skin, l, w)
-	if said := w.FilteredBy(); said != "" && w.Tab() != Objectives {
-		say(gtx, th, skin.Faint, FilteredSaid(l), "filtered by "+said, reads)
+	for _, pill := range w.FilterPills() {
+		drawClearingPill(gtx, th, skin, pill.Box, pill.Said)
 	}
 	if pill, ok := w.SearchPill(); ok {
-		rounded(gtx, pill, pill.H/2, skin.Pill)
-		sayIn(gtx, th, skin.Faint, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, w.looking.Reads(), small, font.Font{}, text.Start)
-		drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
+		drawClearingPill(gtx, th, skin, pill, w.looking.Reads())
 	}
 	if w.formUnder() {
 		drawForm(gtx, th, skin, w)
@@ -1360,4 +1358,10 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		sayIn(gtx, th, ink, Box{X: line.Box.X + padding/2, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: line.Box.W - padding, H: lineHigh}, rows[line.Row].Says, reads, font.Font{}, text.Start)
 	}
+}
+
+func drawClearingPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string) {
+	rounded(gtx, pill, pill.H/2, skin.Pill)
+	sayIn(gtx, th, skin.Faint, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, said, small, font.Font{}, text.Start)
+	drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
 }

@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/engine"
 	"slices"
+	"strings"
 	"testing"
 
 	"gioui.org/io/pointer"
@@ -123,5 +124,23 @@ func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
 	}
 	if got := MenuKey("Delete"); got != "cmd+backspace" {
 		t.Errorf("the menu's Delete line says the key %q", got)
+	}
+}
+
+func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
+	w = w.Key("shift+f")
+	for w.Filters()[w.FilterOn()].Name != "priority" {
+		w = w.Key("down")
+	}
+	w = w.Key("right").Key("esc")
+	pills := w.FilterPills()
+	if len(pills) != 1 || !strings.HasPrefix(pills[0].Said, "priority: ") {
+		t.Fatalf("the filters in force are %+v", pills)
+	}
+	cross := pills[0].Box
+	w = w.clicked(Point{X: cross.X + cross.W - pillCross/2, Y: cross.Y + cross.H/2})
+	if len(w.FilterPills()) != 0 || w.FilteredBy() != "" {
+		t.Errorf("the cross left the board filtered by %q", w.FilteredBy())
 	}
 }

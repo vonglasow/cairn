@@ -53,9 +53,11 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 			return fmt.Errorf("the board says it is filtered by %q", got)
 		}
 		l := w.w.Layout()
-		said, last := FilteredSaid(l), TabAt(l, len(w.w.Shown())-1)
-		if said.X < last.X+last.W || said.Y < l.Tabs.Y || said.Y+said.H > l.Tabs.Y+l.Tabs.H || said.W <= 0 {
-			return fmt.Errorf("what filters the board is written at %+v, not in the tabs' band right of the last tab %+v", said, last)
+		last := TabAt(l, len(w.w.Shown())-1)
+		for _, pill := range w.w.FilterPills() {
+			if said := pill.Box; said.X < last.X+last.W || said.Y < l.Tabs.Y || said.Y+said.H > l.Tabs.Y+l.Tabs.H {
+				return fmt.Errorf("the filter %q stands at %+v, not in the tabs' band right of the last tab %+v", pill.Said, said, last)
+			}
 		}
 		return nil
 	})
