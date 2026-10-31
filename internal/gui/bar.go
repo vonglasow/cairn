@@ -34,7 +34,7 @@ func HeadsOn(w Window, screen Screen) string {
 		}
 		return what + " " + w.formNamed()
 	case OnCalendar:
-		return "a deadline for " + w.formNamed() + " — " + w.day.Format("January 2006")
+		return "a deadline for " + w.formNamed()
 	case OnBackups:
 		return "Backups — enter restores one"
 	case OnFiltering:

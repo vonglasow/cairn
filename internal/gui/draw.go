@@ -353,9 +353,20 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	for _, arrow := range []struct {
 		at   Box
 		says string
-	}{{MonthBefore(box), "‹"}, {MonthAfter(box), "›"}} {
+	}{{MonthBefore(box), "‹"}, {MonthAfter(box), "›"}, {CalendarMonth(box), w.day.Month().String()}, {CalendarYear(box), strconv.Itoa(w.day.Year())}} {
 		fill(gtx, Box{X: arrow.at.X + 2, Y: arrow.at.Y, W: arrow.at.W - 4, H: arrow.at.H}, skin.Back)
 		say(gtx, th, skin.Chosen, Inside(arrow.at), arrow.says, heading)
+	}
+	if cells := w.CalendarCells(); len(cells) > 0 {
+		for i, cell := range cells {
+			at := CalendarCell(box, i)
+			if cell == w.CalendarMarked() {
+				outline(gtx, at, skin.Chosen)
+			}
+			say(gtx, th, skin.Ink, Inside(at), cell, reads)
+		}
+		drawPanelOffers(gtx, th, skin, box, w)
+		return
 	}
 	for i, name := range Weekdays {
 		say(gtx, th, skin.Faint, WeekdayAt(box, i), name, reads)

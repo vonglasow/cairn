@@ -1019,9 +1019,9 @@ knowing what date next Friday falls on. A click on the field, `⏎` on it, or
 Choose, opens a month at a time hung under the field, the way a list is — it
 first opened in the middle of the window, far from the field it fills in, and
 only by a key (`calendar.go`, `@gui-a-click-on-a-deadline-opens-the-calendar`).
-Its days share its width, a week at least seven of them at their narrowest; it
-is measured on the longest month's heading, so it and the `‹ ›` arrows at the
-end of its heading do not move from one month to the next. Those arrows and the
+Its days share its width, a week at least seven of them at their narrowest; its
+heading holds the month and the year as two boxes of fixed widths, so they and
+the `‹ ›` arrows at its end do not move from one month to the next. Those arrows and the
 wheel walk the months for a hand on the mouse
 (`@gui-the-pointer-walks-the-months`). Six weeks from the Monday on or
 before the first, so no row moves from one month to the next; the arrows walk
@@ -1031,6 +1031,21 @@ takes a day, `⌫` leaves no day and `esc` leaves the field as it was. It opens
 on the day the field holds, or today. Today is what the window was last told
 it is, each frame (`At`), so a scenario names its own. The field still takes a
 date typed. Tasks and objectives open the same one.
+
+**The month and the year are words to click.** Walking to a date months away
+by the arrows is a long way, and a calendar on a phone or in a browser lets the
+name be tapped. The month's name and the year, in the heading left of the
+arrows, are chips: the month's opens the twelve months, three across and four
+down, the year's the twelve years from four before the one shown, and a pick
+goes back down one level — a year to its months, a month to its days
+(`@gui-a-calendar-month-is-chosen-from-the-twelve`,
+`@gui-a-calendar-year-is-chosen-from-a-grid`). In a grid the arrows of the
+heading page a year, or twelve years, and the keyboard does as in the days:
+the arrows move, `⏎` picks, `m` and `y` open the grids, `esc` goes back to the
+days and does not close the calendar. The heading no longer carries the month,
+because a word that is clicked needs a box of its own. The days have more room
+to be hit and read: 32 high and 6 apart, where they were 28 and 4, and the
+panel still sits whole in the smallest window the layouts are drawn at.
 
 **A form saves itself.** `⌘S` was the only way a change reached the store,
 and every other place a person writes in saves on its own. On each beat of the

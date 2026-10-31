@@ -10,16 +10,16 @@ import (
 
 func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	box := CalendarFor(100, 50, 400)
-	if want := (Box{X: 100, Y: 50, W: 400, H: 322}); box != want {
+	if want := (Box{X: 100, Y: 50, W: 400, H: 358}); box != want {
 		t.Errorf("the calendar is %+v, want %+v", box, want)
 	}
-	if got, want := DayAt(box, 0), (Box{X: 112, Y: 124, W: 49, H: 28}); got != want {
+	if got, want := DayAt(box, 0), (Box{X: 112, Y: 124, W: 47, H: 32}); got != want {
 		t.Errorf("the first day is at %+v, want %+v", got, want)
 	}
-	if got, want := DayAt(box, 9), (Box{X: 218, Y: 156, W: 49, H: 28}); got != want {
+	if got, want := DayAt(box, 9), (Box{X: 218, Y: 162, W: 47, H: 32}); got != want {
 		t.Errorf("the tenth day is at %+v, want %+v", got, want)
 	}
-	if got, want := WeekdayAt(box, 2), (Box{X: 218, Y: 100, W: 49, H: 18}); got != want {
+	if got, want := WeekdayAt(box, 2), (Box{X: 218, Y: 100, W: 47, H: 18}); got != want {
 		t.Errorf("Wednesday is written at %+v, want %+v", got, want)
 	}
 	if got, want := MonthAfter(box), (Box{X: 460, Y: 62, W: monthWide, H: titleHi}); got != want {
@@ -44,9 +44,7 @@ func TestTheCalendarHangsUnderItsField(t *testing.T) {
 	if box.X != frame.X || box.Y != frame.Y+frame.H+between {
 		t.Errorf("the calendar is at %+v, under a field at %+v", box, frame)
 	}
-	september := w
-	september.day = time.Date(2026, time.September, 30, 0, 0, 0, 0, time.UTC)
-	want := max(september.headWide()+2*monthWide, w.offersWide())
+	want := max(w.headWide()+nameWide+yearWide+2*monthWide, w.offersWide())
 	if box.W != want || box.H != CalendarFor(0, 0, want).H {
 		t.Errorf("the calendar is %dx%d, want %d wide", box.W, box.H, want)
 	}
@@ -143,11 +141,11 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 func TestAFormAddingIsNamedNew(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
 	w.form = adding(Tasks, "backlog")
-	if got := Heads(w); got != "a deadline for the new task — October 2026" {
+	if got := Heads(w); got != "a deadline for the new task" {
 		t.Errorf("the calendar of a task being added is headed %q", got)
 	}
 	w.form = editing(engine.Card{Number: 4, Title: "Ship"})
-	if got := Heads(w); got != "a deadline for task 4 — October 2026" {
+	if got := Heads(w); got != "a deadline for task 4" {
 		t.Errorf("the calendar of task 4 is headed %q", got)
 	}
 }
@@ -296,4 +294,61 @@ func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
 		t.Fatalf("under the calendar the steps are drawn as %+v", parts)
 	}
 	drawn(t, w)
+}
+
+func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
+	w := Window{screen: OnCalendar, width: 1024, height: 640, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
+	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	box := w.CalendarBox()
+	day, next := DayAt(box, 0), DayAt(box, 1)
+	if day.H < 32 {
+		t.Errorf("a day is %d high, want at least 32", day.H)
+	}
+	if gap := next.X - day.X - day.W; gap < 6 {
+		t.Errorf("days are %d apart, want at least 6", gap)
+	}
+	if over := Over(w.width, w.height); box.Y < over.Y || box.Y+box.H > over.Y+over.H || box.X < 0 || box.X+box.W > w.width {
+		t.Errorf("the calendar at %+v leaves the window %+v", box, over)
+	}
+}
+
+func TestTheCalendarsGridsAreWalkedAndLeftByTheKeyboard(t *testing.T) {
+	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
+	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
+	months := w.Key("m")
+	if got := months.CalendarCells(); len(got) != 12 || got[0] != "Jan" {
+		t.Fatalf("m offers %v, want the twelve months", got)
+	}
+	if got := domain.FormatDay(months.Key("left").Key("down").day); got != "2026-12-12" {
+		t.Errorf("left then down in the months reach %s, want 2026-12-12", got)
+	}
+	if got := domain.FormatDay(months.Key("up").day); got != "2026-07-12" {
+		t.Errorf("up in the months reaches %s, want 2026-07-12", got)
+	}
+	if got := domain.FormatDay(months.clicked(middle(MonthAfter(months.CalendarBox()))).day); got != "2027-10-12" {
+		t.Errorf("the arrow in the months reaches %s, want a year on", got)
+	}
+	if got := months.Key("enter"); got.view != viewDays || got.Screen() != OnCalendar {
+		t.Errorf("enter on a month leaves the calendar on view %d, screen %v", got.view, got.Screen())
+	}
+	if got := months.Key("esc"); got.view != viewDays || got.Screen() != OnCalendar || domain.FormatDay(got.day) != "2026-10-12" {
+		t.Errorf("esc in the months leaves view %d, screen %v", got.view, got.Screen())
+	}
+	years := w.Key("y")
+	if got := domain.FormatDay(years.Key("right").Key("down").day); got != "2030-10-12" {
+		t.Errorf("right then down in the years reach %s, want 2030-10-12", got)
+	}
+	if got := domain.FormatDay(years.clicked(middle(MonthBefore(years.CalendarBox()))).day); got != "2014-10-12" {
+		t.Errorf("the arrow in the years reaches %s, want twelve years back", got)
+	}
+	if got := years.Key("enter"); got.view != viewMonths {
+		t.Errorf("enter on a year leaves view %d, want the months", got.view)
+	}
+	if got := years.Key("esc"); got.view != viewDays || got.Screen() != OnCalendar {
+		t.Errorf("esc in the years leaves view %d, screen %v", got.view, got.Screen())
+	}
+	if got := w.Key("esc"); got.Screen() != OnForm {
+		t.Errorf("esc on the days leaves screen %v, want the form", got.Screen())
+	}
 }

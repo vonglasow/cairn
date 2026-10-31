@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"strconv"
 	"time"
 
 	"cairn/internal/domain"
@@ -8,17 +9,28 @@ import (
 )
 
 const (
-	dayHigh   = 32
-	dayInset  = 4
+	dayHigh   = 38
+	dayInset  = 6
 	weeks     = 6
 	monthWide = 28
+	nameWide  = 100
+	yearWide  = 56
+)
+
+type calendarView int
+
+const (
+	viewDays calendarView = iota
+	viewMonths
+	viewYears
 )
 
 // Weekdays is the head of the calendar's columns, Monday first.
 var Weekdays = [7]string{"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
 
 type calendarState struct {
-	day time.Time
+	day  time.Time
+	view calendarView
 }
 
 // At is the window told what moment it is: the day a calendar opens on when the field holds none, and the day it marks as today.
@@ -45,7 +57,7 @@ func (w Window) CalendarBox() Box {
 func (w Window) calendarWide() int {
 	longest := w
 	longest.day = time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
-	return max(longest.headWide()+2*monthWide, w.offersWide())
+	return max(longest.headWide()+nameWide+yearWide+2*monthWide, w.offersWide())
 }
 
 func (w Window) hung(wide, high int) Point {
@@ -95,9 +107,13 @@ func (w Window) monthClicked(p Point) (Window, bool) {
 	box := w.CalendarBox()
 	switch {
 	case MonthBefore(box).In(p):
-		w.day = engine.MonthOn(w.day, -1)
+		w.day = engine.MonthOn(w.day, -w.pageMonths())
 	case MonthAfter(box).In(p):
-		w.day = engine.MonthOn(w.day, 1)
+		w.day = engine.MonthOn(w.day, w.pageMonths())
+	case CalendarMonth(box).In(p):
+		w.view = viewMonths
+	case CalendarYear(box).In(p):
+		w.view = viewYears
 	default:
 		return w, false
 	}
@@ -125,8 +141,44 @@ func (w Window) openingCalendar() Window {
 	return w
 }
 
+var gridSteps = map[string]int{"left": -1, "right": 1, "up": -3, "down": 3}
+
+func (w Window) cellMonths() int {
+	if w.view == viewYears {
+		return 12
+	}
+	return 1
+}
+
+func (w Window) pageMonths() int {
+	switch w.view {
+	case viewYears:
+		return 144
+	case viewMonths:
+		return 12
+	}
+	return 1
+}
+
+func (w Window) backFromGrid() Window {
+	if w.view == viewYears {
+		w.view = viewMonths
+		return w
+	}
+	w.view = viewDays
+	return w
+}
+
 func (w Window) onCalendar(name string) Window {
+	if by, walking := gridSteps[name]; walking && w.view != viewDays {
+		w.day = engine.MonthOn(w.day, by*w.cellMonths())
+		return w
+	}
 	switch name {
+	case "m":
+		w.view = viewMonths
+	case "y":
+		w.view = viewYears
 	case "left":
 		w.day = w.day.AddDate(0, 0, -1)
 	case "right":
@@ -152,11 +204,84 @@ func (w Window) dated(day time.Time) Window {
 }
 
 func (w Window) dayClicked(p Point) (Window, bool) {
+	if w.view != viewDays {
+		return w.cellClicked(p)
+	}
 	box := w.CalendarBox()
 	for i, day := range engine.MonthGrid(w.day) {
 		if DayAt(box, i).In(p) {
 			return w.dated(day), true
 		}
+	}
+	return w, false
+}
+
+// CalendarMonth is the month's name in the heading, which a click opens the twelve months from.
+func CalendarMonth(box Box) Box {
+	year := CalendarYear(box)
+	return Box{X: year.X - nameWide, Y: year.Y, W: nameWide, H: titleHi}
+}
+
+// CalendarYear is the year in the heading, left of the arrows.
+func CalendarYear(box Box) Box {
+	before := MonthBefore(box)
+	return Box{X: before.X - yearWide, Y: before.Y, W: yearWide, H: titleHi}
+}
+
+// CalendarCell is the i-th of the twelve cells, three across and four down, a month or a year is chosen from; they take the room of the weekdays and the six weeks.
+func CalendarCell(box Box, i int) Box {
+	wide := (box.W - padding - padding) / 3
+	high := (lineHigh + between + weeks*dayHigh) / 4
+	return Box{
+		X: box.X + padding + (i%3)*wide,
+		Y: FirstRow(box) + (i/3)*high,
+		W: wide - dayInset,
+		H: high - dayInset,
+	}
+}
+
+// CalendarCells is what the calendar offers to choose from instead of its days: nothing while it shows days.
+func (w Window) CalendarCells() []string {
+	if w.view == viewYears {
+		years := make([]string, 12)
+		for i := range years {
+			years[i] = strconv.Itoa(w.firstYear() + i)
+		}
+		return years
+	}
+	if w.view != viewMonths {
+		return nil
+	}
+	names := make([]string, 12)
+	for i := range names {
+		names[i] = time.Month(i + 1).String()[:3]
+	}
+	return names
+}
+
+func (w Window) firstYear() int { return w.day.Year() - 4 }
+
+// CalendarMarked is the cell of the grid shown that holds the day the calendar is on.
+func (w Window) CalendarMarked() string {
+	if w.view == viewYears {
+		return strconv.Itoa(w.day.Year())
+	}
+	return w.day.Month().String()[:3]
+}
+
+func (w Window) cellClicked(p Point) (Window, bool) {
+	for i := range w.CalendarCells() {
+		if !CalendarCell(w.CalendarBox(), i).In(p) {
+			continue
+		}
+		if w.view == viewYears {
+			w.day = engine.MonthOn(w.day, (w.firstYear()+i-w.day.Year())*12)
+			w.view = viewMonths
+			return w, true
+		}
+		w.day = engine.MonthOn(w.day, i+1-int(w.day.Month()))
+		w.view = viewDays
+		return w, true
 	}
 	return w, false
 }

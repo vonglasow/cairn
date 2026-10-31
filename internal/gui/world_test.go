@@ -850,6 +850,72 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the form has no field %q", name)
 	})
+	sc.Step(`^I click the calendar's month$`, func() error {
+		box := CalendarMonth(w.w.CalendarBox())
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Then(`^the calendar offers the twelve months$`, func() error {
+		want := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+		if got := w.w.CalendarCells(); !slices.Equal(got, want) {
+			return fmt.Errorf("the calendar offers %v, want %v", got, want)
+		}
+		return nil
+	})
+	sc.Step(`^I click the month "([^"]*)"$`, func(name string) error {
+		i := slices.Index(w.w.CalendarCells(), name)
+		if i < 0 {
+			return fmt.Errorf("the calendar offers no %q", name)
+		}
+		box := CalendarCell(w.w.CalendarBox(), i)
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Then(`^the calendar shows ([A-Z][a-z]+)$`, func(month string) error {
+		if w.w.Screen() != OnCalendar || len(w.w.CalendarCells()) != 0 {
+			return fmt.Errorf("the calendar is not showing its days")
+		}
+		if got := w.w.day.Month().String(); got != month {
+			return fmt.Errorf("the calendar shows %s, want %s", got, month)
+		}
+		return nil
+	})
+	sc.Step(`^I click the calendar's year$`, func() error {
+		box := CalendarYear(w.w.CalendarBox())
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Then(`^the calendar offers the years around the one shown$`, func() error {
+		shown := strconv.Itoa(w.w.day.Year())
+		got := w.w.CalendarCells()
+		if len(got) != 12 || !slices.Contains(got, shown) {
+			return fmt.Errorf("the calendar offers %v, want twelve years around %s", got, shown)
+		}
+		for i := 1; i < len(got); i++ {
+			if got[i-1] >= got[i] {
+				return fmt.Errorf("the years %v are not in order", got)
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I click the year "([^"]*)"$`, func(year string) error {
+		i := slices.Index(w.w.CalendarCells(), year)
+		if i < 0 {
+			return fmt.Errorf("the calendar offers no %q", year)
+		}
+		box := CalendarCell(w.w.CalendarBox(), i)
+		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		return nil
+	})
+	sc.Then(`^the calendar offers the twelve months of (\d+)$`, func(year string) error {
+		if got := strconv.Itoa(w.w.day.Year()); got != year {
+			return fmt.Errorf("the calendar is in %s, want %s", got, year)
+		}
+		if got := w.w.CalendarCells(); len(got) != 12 || got[0] != "Jan" {
+			return fmt.Errorf("the calendar offers %v, want the twelve months", got)
+		}
+		return nil
+	})
 	sc.Step(`^I click the next month on the calendar$`, func() error {
 		box := MonthAfter(w.w.CalendarBox())
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})

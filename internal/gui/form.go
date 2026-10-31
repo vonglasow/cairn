@@ -502,6 +502,10 @@ func (w Window) Choose(name string) Window {
 	case "no day":
 		return w.dated(time.Time{})
 	case "cancel":
+		if w.screen == OnCalendar && w.view != viewDays {
+			w.view = viewDays
+			return w
+		}
 		if w.screen == OnCalendar {
 			w.screen = OnForm
 			return w
@@ -540,6 +544,9 @@ func (w Window) Choose(name string) Window {
 	case "start afresh":
 		return w.startingAfresh()
 	case "take":
+		if w.screen == OnCalendar && w.view != viewDays {
+			return w.backFromGrid()
+		}
 		if w.screen == OnCalendar {
 			return w.dated(w.day)
 		}

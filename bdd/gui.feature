@@ -2133,6 +2133,32 @@ Feature: The desktop board
       Then the window is on the form
       And the field "deadline" reads "2026-11-22"
 
+    @gui-a-calendar-month-is-chosen-from-the-twelve
+    Scenario: clicking the month in the calendar offers the twelve months
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I click the calendar's month
+      Then the calendar offers the twelve months
+      When I click the month "Mar"
+      Then the calendar shows March
+
+    @gui-a-calendar-year-is-chosen-from-a-grid
+    Scenario: clicking the year in the calendar offers the years around it
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I click the calendar's year
+      Then the calendar offers the years around the one shown
+      When I click the year "2028"
+      Then the calendar offers the twelve months of 2028
+
     @gui-a-calendar-opens-on-the-day-held
     Scenario: the calendar opens on the day the field holds, and t goes back to today
       Given I added a task titled "Write the spec"
