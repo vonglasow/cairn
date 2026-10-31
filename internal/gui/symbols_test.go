@@ -62,3 +62,20 @@ func covered(faces []font.FontFace, r rune) bool {
 	}
 	return false
 }
+
+func TestTheWindowWritesInFigtree(t *testing.T) {
+	weights := map[font.Weight]bool{}
+	for _, face := range Faces() {
+		if face.Font.Typeface == TextFace {
+			weights[face.Font.Weight] = true
+		}
+	}
+	for _, weight := range []font.Weight{font.Normal, font.Medium, font.SemiBold} {
+		if !weights[weight] {
+			t.Errorf("Figtree is not carried at weight %v", weight)
+		}
+	}
+	if Theme().Face != TextFace {
+		t.Errorf("the window writes in %q", Theme().Face)
+	}
+}

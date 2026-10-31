@@ -1076,7 +1076,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if !ok {
 			return fmt.Errorf("a column's head carries no name")
 		}
-		want := 2*(column.Y-head.Y) + column.H
+		want := column.Y - head.Y
 		for i, lane := range l.Lane {
 			top := Box{X: lane.X, Y: l.Band.Y, W: lane.W, H: lane.Y - l.Band.Y}
 			name, ok := inkedIn(shot, Box{X: top.X + 1, Y: top.Y + 1, W: top.W - 2, H: top.H - 1}, Dark().Ground)
@@ -1086,8 +1086,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			if clear := name.Y - top.Y; clear < 6 {
 				return fmt.Errorf("lane %d: the name stands %dpx under the edge, want 6px at least", i, clear)
 			}
-			if mid := 2*(name.Y-top.Y) + name.H; mid-want > 1 || want-mid > 1 {
-				return fmt.Errorf("lane %d: the name is centred %d half-pixels under the edge, a column's %d", i, mid, want)
+			if cap := name.Y - top.Y; cap-want > 1 || want-cap > 1 {
+				return fmt.Errorf("lane %d: the name's capitals stand %dpx under the edge, a column's %d", i, cap, want)
 			}
 			if left, right := name.X-top.X, top.X+top.W-(name.X+name.W); left-right > 2 || right-left > 2 {
 				return fmt.Errorf("lane %d: the name stands %dpx from the left and %dpx from the right", i, left, right)

@@ -138,6 +138,14 @@ thresholds lowered. Shapes are rounded (`rounded`): a card 8, a column 10,
 a panel 12. A raised panel casts a shadow (`raised`): Gio has no blur, so
 the shadow is three rounded boxes under it, wider and fainter as they go.
 
+Words are written in Figtree, at 400, 500 and 600 (`TextFace`, `Faces`);
+Go's faces follow it for what it lacks, then the symbols. Figtree's strokes
+are thinner than Go's: no pixel of a word is the ink's exact colour, so a
+test looking for words counts the pixels near it (`lettered`), and one
+looking for a shape still counts them exactly (`painted`). A line is laid
+out a little taller than its box and clipped to it (`textSlack`), Figtree
+standing a point taller than the line Go was given.
+
 ## The window
 
 The terminal's shape, larger. Four columns — backlog, todo, current, done —

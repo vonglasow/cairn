@@ -94,6 +94,7 @@ func Dark() Skin {
 func Theme() *material.Theme {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(Faces()))
+	th.Face = TextFace
 	return th
 }
 
@@ -1138,6 +1139,9 @@ func sayAligned(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, 
 	sayStyled(gtx, th, ink, b, said, size, font.Normal, lines, along)
 }
 
+// textSlack is how much taller than its box a line may be laid out, the box still clipping it: Figtree stands a point taller than the box a line of Go was given.
+const textSlack = 4
+
 func sayStyled(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, weight font.Weight, lines int, along text.Alignment) {
 	if said == "" {
 		return
@@ -1148,7 +1152,7 @@ func sayStyled(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, s
 	defer offset.Pop()
 
 	inner := gtx
-	inner.Constraints = layout.Exact(image.Pt(b.W, b.H))
+	inner.Constraints = layout.Constraints{Min: image.Pt(b.W, 0), Max: image.Pt(b.W, b.H+textSlack)}
 	label := material.Label(th, unit.Sp(float32(size)), said)
 	label.Color = ink
 	label.Font.Weight = weight

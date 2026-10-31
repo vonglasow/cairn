@@ -162,6 +162,20 @@ func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
 	return count
 }
 
+// lettered counts the pixels of words in an ink: a face's strokes are anti-aliased, and a thin one never covers a whole pixel, so a pixel within a few steps of the ink counts. Shapes are counted exactly, by painted.
+func lettered(shot *image.RGBA, b Box, want color.NRGBA) int {
+	close := func(a, b uint8) bool { return a >= b-min(b, 12) && a <= b+min(255-b, 12) }
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			if got := shot.RGBAAt(x, y); close(got.R, want.R) && close(got.G, want.G) && close(got.B, want.B) {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -195,7 +209,7 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 			v = v.Edit()
 		}
 		shot := drawn(t, v)
-		lit, faint := painted(shot, first, skin.Chosen), painted(shot, first, skin.Faint)
+		lit, faint := lettered(shot, first, skin.Chosen), lettered(shot, first, skin.Faint)
 		if c.lit && (lit == 0 || faint != 0) {
 			t.Errorf("over %s the bar has %d lit and %d faint", c.what, lit, faint)
 		}
@@ -639,7 +653,7 @@ func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 	w = w.Key("/").Types("spec")
 
 	shot := drawn(t, w)
-	if got := painted(shot, Searching(w.Layout()), Dark().Ink); got == 0 {
+	if got := lettered(shot, Searching(w.Layout()), Dark().Ink); got == 0 {
 		t.Error("what is being searched for is not shown along the bottom")
 	}
 	if got := painted(shot, Message(w.width, w.height), Dark().Ink); got != 0 {
@@ -762,10 +776,10 @@ func TestASearchSaysWhatItIs(t *testing.T) {
 	if got := painted(on, box, Dark().Panel); got <= off {
 		t.Errorf("the search drew %d pixels of box and the bar behind it %d", painted(on, box, Dark().Panel), off)
 	}
-	if got := painted(on, SearchWord(box), Dark().Faint); got == 0 {
+	if got := lettered(on, SearchWord(box), Dark().Faint); got == 0 {
 		t.Error("the search box does not say what it is")
 	}
-	typed := painted(drawn(t, w.Key("/").Types("spec")), SearchInto(box), Dark().Ink)
+	typed := lettered(drawn(t, w.Key("/").Types("spec")), SearchInto(box), Dark().Ink)
 	if typed == 0 {
 		t.Error("what was typed was not drawn where the search box types")
 	}
@@ -898,11 +912,11 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	frame, track := BesideBox(box), BesideBar(box)
 	shot := drawn(t, w)
 
-	if painted(shot, Inside(frame), Dark().Faint) == 0 {
+	if lettered(shot, Inside(frame), Dark().Faint) == 0 {
 		t.Error("nothing of the history was drawn in its box")
 	}
 	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: lineHigh}
-	if got := painted(shot, under, Dark().Faint); got != 0 {
+	if got := lettered(shot, under, Dark().Faint); got != 0 {
 		t.Errorf("%d pixels of history ran out of the bottom of its box", got)
 	}
 
@@ -918,7 +932,7 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	if painted(ended, low, Dark().Edge) == 0 {
 		t.Error("the grip is not at the bottom of a history scrolled to its end")
 	}
-	if painted(ended, Inside(frame), Dark().Faint) == 0 {
+	if lettered(ended, Inside(frame), Dark().Faint) == 0 {
 		t.Error("a history scrolled to its end shows nothing")
 	}
 }
@@ -1001,7 +1015,7 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 
 	frame := BesideBox(Over(w.width, w.height))
 	shot := drawn(t, w)
-	if painted(shot, Inside(frame), Dark().Faint) == 0 {
+	if lettered(shot, Inside(frame), Dark().Faint) == 0 {
 		t.Error("the box says nothing where an objective nothing serves should say so")
 	}
 	if got := painted(shot, Box{X: frame.X, Y: frame.Y, W: edgeWide, H: frame.H}, Dark().Chosen); got != 0 {
@@ -1022,7 +1036,7 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 		t.Fatalf("Counted = %q", said)
 	}
 	box := CountedAt(PartsOf(GoalAt(w.Layout(), 0, 0)).Number, said)
-	if painted(drawn(t, w), box, Dark().Faint) == 0 {
+	if lettered(drawn(t, w), box, Dark().Faint) == 0 {
 		t.Error("the count was not drawn on the objective's card")
 	}
 }

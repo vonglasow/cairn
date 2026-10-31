@@ -244,7 +244,7 @@ func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 		t.Error("the part the keyboard is on is not the one outlined")
 	}
 	adding := w.Key("down").Key("down")
-	if painted(drawn(t, adding), tiles[2], lit) == 0 || painted(shot, tiles[2], lit) != 0 {
+	if lettered(drawn(t, adding), tiles[2], lit) == 0 || lettered(shot, tiles[2], lit) != 0 {
 		t.Error("the line that adds is not lit while the keyboard is on it, and only then")
 	}
 	writing := adding.Key("enter").Types("New part")
