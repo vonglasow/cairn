@@ -1929,6 +1929,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the command bar is (open|shut)$`, func(how string) error {
+		if open := w.w.Screen() == OnPalette; open != (how == "open") {
+			return fmt.Errorf("the command bar open is %v, the window on %v", open, w.w.Screen())
+		}
+		return nil
+	})
+	sc.Then(`^the command bar offers the task "([^"]*)"$`, func(title string) error {
+		for _, row := range w.w.PaletteRows() {
+			if row.Group == paletteTasksGroup && strings.HasSuffix(row.Says, title) {
+				return nil
+			}
+		}
+		return fmt.Errorf("the command bar offers %v", w.w.PaletteRows())
+	})
 	sc.Then(`^the command bar reads "([^"]*)"$`, func(said string) error {
 		if got := w.w.CommandSays(); got != said {
 			return fmt.Errorf("the command bar reads %q", got)

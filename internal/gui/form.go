@@ -181,6 +181,10 @@ func (w Window) Typed() (Written, bool) {
 }
 
 func (w Window) writing(change func(Written) Written) Window {
+	if w.screen == OnPalette {
+		w.palette.typed, w.palette.row = change(w.palette.typed), 0
+		return w
+	}
 	if w.screen == OnSearch {
 		w.looking = change(w.looking)
 		return w

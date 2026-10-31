@@ -771,6 +771,22 @@ and done by a click as by the key (`barAlong`, `drawHint`,
 board's hints stay, faint. Until the palette lands, every offer the bar had
 is still a hint, so nothing became reachable by key alone.
 
+**`⌘K` opens the command bar into a palette.** A click on the bar's line does
+the same. It rises from the bar as a panel two thirds of the window wide over
+a lighter veil, what is typed at its head, and offers, in this order: the
+actions on the task chosen (`Move #152 to…`, `Priority of #152…`,
+`Label #152 with…`, `Edit`, `Focus`, `Archive`, `Delete`) and the board's own
+(`New task`, `Search`, `Filters`, `Labels`, `Help`…); then, once something is
+typed, the tasks it reaches by the engine's own rule (`engine.Reaches`), five
+at most, `#152` putting that task first; then what was done from it lately
+(`PaletteRows`). `↑↓` walk the lines, `⏎` does one, `esc` — or `⌫` on nothing
+typed — shuts it. An action that needs a value asks for it in the same place:
+the columns, the four priorities, the board's labels and one to create, each
+written through `task edit` as the right-click menu writes it; an action is
+otherwise the key it stands for, so the palette does nothing the keys do not
+(`palette.go`, `@gui-the-palette-moves-the-chosen-task`,
+`@gui-the-palette-opens-a-task-found-by-title`, `@gui-esc-shuts-the-palette`).
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen

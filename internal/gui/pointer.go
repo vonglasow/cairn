@@ -20,6 +20,12 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnMenu {
 		return w.clickingMenu(p)
 	}
+	if w.screen == OnPalette {
+		return w.clickingPalette(p)
+	}
+	if w.screen == OnTheBoard && CommandLine(w.Layout(), w.BarOffers()).In(p) {
+		return w.openingPalette()
+	}
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())
 	}

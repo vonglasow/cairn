@@ -441,4 +441,6 @@ func telling(gtx layout.Context, w Window) {
 	gtx.Execute(key.SelectionCmd{Tag: tag, Range: key.Range{Start: said.At, End: said.At + said.Held}})
 }
 
-func takesTyping(s Screen) bool { return s == OnForm || s == OnSearch || s == OnChoosing }
+func takesTyping(s Screen) bool {
+	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette
+}

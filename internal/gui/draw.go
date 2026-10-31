@@ -195,6 +195,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnConfiguration {
 		drawConfiguration(gtx, th, skin, w)
 	}
+	if w.Screen() == OnPalette {
+		drawPalette(gtx, th, skin, w)
+	}
 	if bubble, said, ok := w.BubbleBox(); ok {
 		raised(gtx, bubble, bubbleRadius, skin.Panel)
 		for i, line := range said {
@@ -1312,4 +1315,28 @@ func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 	label.MaxLines = lines
 	label.Alignment = along
 	label.Layout(inner)
+}
+
+func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	fill(gtx, Box{W: w.width, H: w.height}, color.NRGBA{R: skin.Veil.R, G: skin.Veil.G, B: skin.Veil.B, A: skin.Veil.A / 2})
+	box := w.PaletteBox()
+	raised(gtx, box, panelRadius, skin.Panel)
+	writing(gtx, th, skin, w.measured(), PaletteTyped(box), w.palette.typed, true, reads, 1, Follow)
+	sayIn(gtx, th, skin.Low, Box{X: box.X + box.W - padding - paletteShut, Y: PaletteTyped(box).Y, W: paletteShut, H: lineHigh}, "esc to close", small, font.Font{}, text.End)
+	fill(gtx, Box{X: box.X, Y: box.Y + paletteHead - 1, W: box.W, H: 1}, skin.GroundEdge)
+	clipped := clip.Rect(rect(Box{X: box.X, Y: box.Y + paletteHead, W: box.W, H: box.H - paletteHead})).Push(gtx.Ops)
+	defer clipped.Pop()
+	rows := w.PaletteRows()
+	for _, line := range w.PaletteLines() {
+		if line.Row < 0 {
+			sayIn(gtx, th, skin.Low, Box{X: line.Box.X, Y: line.Box.Y + line.Box.H - lineHigh, W: line.Box.W, H: lineHigh}, strings.ToUpper(line.Group), small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Start)
+			continue
+		}
+		ink := skin.Faint
+		if line.Row == w.palette.row {
+			rounded(gtx, line.Box, chipRadius+2, skin.Pill)
+			ink = skin.Ink
+		}
+		sayIn(gtx, th, ink, Box{X: line.Box.X + padding/2, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: line.Box.W - padding, H: lineHigh}, rows[line.Row].Says, reads, font.Font{}, text.Start)
+	}
 }

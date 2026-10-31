@@ -36,6 +36,8 @@ const (
 	OnFiltering
 	// OnConfiguration is the configuration in use, key by key, read from the window, with the file to be opened or written.
 	OnConfiguration
+	// OnPalette is the command bar opened: a command, a number or a title typed, and what answers it.
+	OnPalette
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -96,6 +98,7 @@ type Window struct {
 	filesState
 	configurationState
 	timeState
+	palette                         paletteState
 	born                            time.Time
 	introOver                       bool
 	paused                          []string

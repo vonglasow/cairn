@@ -287,6 +287,8 @@ func (w Window) destroys() bool {
 // Offers is what the bar says can be done here.
 func (w Window) Offers() []string {
 	switch w.screen {
+	case OnPalette:
+		return nil
 	case OnChoosing:
 		return []string{"Take", "Keep", "Cancel"}
 	case OnCalendar:

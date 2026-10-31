@@ -3460,6 +3460,41 @@ Feature: The desktop board
       When I click the card "Write the spec"
       Then the command bar reads "#1 · Write the spec"
 
+    @gui-the-palette-moves-the-chosen-task
+    Scenario: the command bar opened by cmd+k moves the chosen task to a column named in it
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "cmd+k"
+      Then the command bar is open
+      When I type "move"
+      And I press "enter"
+      And I type "done"
+      And I press "enter"
+      Then the engine was asked "task edit" for task 1
+      And the command bar is shut
+
+    @gui-the-palette-opens-a-task-found-by-title
+    Scenario: the command bar finds a task by its title and opens it
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      When I open the window
+      And I press "cmd+k"
+      And I type "ship"
+      Then the command bar offers the task "Ship it"
+      When I press "down"
+      And I press "enter"
+      Then the window is on the form
+
+    @gui-esc-shuts-the-palette
+    Scenario: esc shuts the command bar, having done nothing
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+k"
+      And I press "esc"
+      Then the command bar is shut
+      And the engine was not asked "task edit"
+
     @gui-a-lit-offer-holds-its-words-in-its-middle
     Scenario: the hint of the command bar under the pointer is lit, its key on a chip
       When I open the window

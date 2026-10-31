@@ -23,6 +23,9 @@ func (w Window) Key(name string) Window {
 	if said, ok := spellings[name]; ok {
 		name = said
 	}
+	if w.screen == OnPalette {
+		return w.onPalette(name)
+	}
 	for _, offer := range w.Offers() {
 		if Shortcut(offer) == name {
 			return w.Choose(offer)
@@ -73,6 +76,8 @@ func (w Window) onBoard(name string) Window {
 		return w.listingBackups()
 	case "shift+l":
 		return w.listingLabels()
+	case "cmd+k":
+		return w.openingPalette()
 	case "cmd+,":
 		return w.openingConfiguration()
 	case "shift+f":
