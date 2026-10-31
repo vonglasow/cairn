@@ -983,6 +983,39 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return nil
 		})
 	})
+	sc.Then(`^every lane's name stands as clear of its edges as a column's name does$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		l := w.w.Layout()
+		head := l.Head[0]
+		column, ok := inkedIn(shot, Box{X: head.X + 1, Y: head.Y + 1, W: head.W - 2, H: head.H - 1}, Dark().Ground)
+		if !ok {
+			return fmt.Errorf("a column's head carries no name")
+		}
+		want := 2*(column.Y-head.Y) + column.H
+		for i, lane := range l.Lane {
+			top := Box{X: lane.X, Y: l.Band.Y, W: lane.W, H: lane.Y - l.Band.Y}
+			name, ok := inkedIn(shot, Box{X: top.X + 1, Y: top.Y + 1, W: top.W - 2, H: top.H - 1}, Dark().Ground)
+			if !ok {
+				return fmt.Errorf("lane %d: carries no name", i)
+			}
+			if clear := name.Y - top.Y; clear < 6 {
+				return fmt.Errorf("lane %d: the name stands %dpx under the edge, want 6px at least", i, clear)
+			}
+			if mid := 2*(name.Y-top.Y) + name.H; mid-want > 1 || want-mid > 1 {
+				return fmt.Errorf("lane %d: the name is centred %d half-pixels under the edge, a column's %d", i, mid, want)
+			}
+			if left, right := name.X-top.X, top.X+top.W-(name.X+name.W); left-right > 2 || right-left > 2 {
+				return fmt.Errorf("lane %d: the name stands %dpx from the left and %dpx from the right", i, left, right)
+			}
+			if below := top.Y + top.H - (name.Y + name.H); below < 1 {
+				return fmt.Errorf("lane %d: the name is cut by the lane's body", i)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the band stands on a ground of its own$`, func() error {
 		return w.standsApart(w.w.Layout().Band)
 	})

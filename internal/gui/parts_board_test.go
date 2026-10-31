@@ -4,7 +4,7 @@ import "testing"
 
 func TestColumnName_spansItsHeadClearOfItsTopEdge(t *testing.T) {
 	head := Box{X: 100, Y: 40, W: 200, H: 28}
-	got := ColumnName(head)
+	got := NameIn(head)
 	if got.X != head.X || got.W != head.W {
 		t.Errorf("the name runs from %d over %d, want the head's width", got.X, got.W)
 	}

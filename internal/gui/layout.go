@@ -22,7 +22,7 @@ const (
 	gap       = 12
 	tabsHigh  = 40
 	headHigh  = 28
-	laneHigh  = 22
+	laneHigh  = headHigh
 	barHigh   = 32
 	bandCards = 2
 )

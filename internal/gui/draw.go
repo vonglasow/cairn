@@ -486,14 +486,14 @@ func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w 
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		ground(gtx, skin, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
-		sayCentred(gtx, th, skin.Faint, ColumnName(l.Head[i]), column.Name+"  "+strconv.Itoa(len(column.Cards)), small)
+		sayCentred(gtx, th, skin.Faint, NameIn(l.Head[i]), column.Name+"  "+strconv.Itoa(len(column.Cards)), small)
 	}
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	ground(gtx, skin, l.Band)
 	for lane, kind := range engine.Stalled {
-		say(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
+		sayCentred(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
 	}
 	drawPlaced(gtx, th, skin, w)
 }

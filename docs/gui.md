@@ -134,6 +134,9 @@ Once the head had an edge of its own, a name written from its corner read as
 pressed against it: each column's name is centred across its head,
 seven pixels under the edge, at the size the band's lanes are named in
 (`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
+The band's lanes follow the same rule, through the same function: each lane's
+name is centred across its lane, seven pixels under the band's top edge, in a
+head as high as a column's (`NameIn`, `@gui-a-lanes-name-sits-as-a-columns-does`).
 
 **A column, or a lane, is widened by dragging the gutter beside it**. The gutter is the gap between two columns, from the top of the
 head to the foot of the column on its left — right of the backlog it runs

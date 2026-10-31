@@ -175,6 +175,12 @@ Feature: The desktop board
       Then every column's name is centred in its head
       And every column's name stands clear of the edge above it
 
+    @gui-a-lanes-name-sits-as-a-columns-does
+    Scenario: each lane of the band names itself the way a column does, clear of its edges
+      Given I added a task titled "Wait for the review" with the state "blocked"
+      When I open the window
+      Then every lane's name stands as clear of its edges as a column's name does
+
   Rule: A column, or a lane, is widened by dragging the gutter beside it
 
     @gui-a-column-widens-when-its-gutter-is-dragged

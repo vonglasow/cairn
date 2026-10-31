@@ -49,13 +49,13 @@ func TabName(b Box) Box {
 
 // LaneName is where a lane's name is written, above the cards in it.
 func LaneName(l Layout, lane int) Box {
-	return Box{X: l.Lane[lane].X, Y: l.Band.Y, W: l.Lane[lane].W, H: laneHigh}
+	return NameIn(Box{X: l.Lane[lane].X, Y: l.Band.Y, W: l.Lane[lane].W, H: laneHigh})
 }
 
 const nameDrop = 7
 
-// ColumnName is the room a column's name is centred in: the whole width of its head, from a few pixels under its top edge.
-func ColumnName(head Box) Box {
+// NameIn is the room a heading is centred in: the whole width of its head, from a few pixels under its top edge, for a column and a lane alike.
+func NameIn(head Box) Box {
 	return Box{X: head.X, Y: head.Y + nameDrop, W: head.W, H: head.H - nameDrop}
 }
 
