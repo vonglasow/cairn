@@ -4,6 +4,7 @@ import (
 	"cairn/internal/engine"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 // Showing is the work narrowed to what the filters keep and a search reaches, which is what everything draws from.
@@ -45,6 +46,42 @@ func (w Window) Shown() []Tab {
 	}
 	return shown
 }
+
+// Titled is a column's or a page's name as the window writes it: in words, not shouted.
+func Titled(name string) string {
+	if name == "" {
+		return name
+	}
+	lower := strings.ToLower(name)
+	return strings.ToUpper(lower[:1]) + lower[1:]
+}
+
+// ColumnHeads is what each column's head says: its name, then how many cards it holds.
+func (w Window) ColumnHeads() []string {
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	heads := make([]string, 0, len(dealt))
+	for _, column := range dealt {
+		heads = append(heads, Titled(column.Name)+" "+strconv.Itoa(len(column.Cards)))
+	}
+	return heads
+}
+
+// EmptySays is what a column holding nothing says in place of its cards: how to make the first task on a board holding none, nothing at all on a column holding some.
+func (w Window) EmptySays(column int) string {
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	if column < 0 || column >= len(dealt) || len(dealt[column].Cards) > 0 {
+		return ""
+	}
+	if len(w.Showing().Cards) == 0 && column == engine.IndexOf("todo") {
+		return "No task yet. " + w.keyboard.Spelled(Pretty(Shortcut("new"))) + " makes one."
+	}
+	return nothingHere
+}
+
+const nothingHere = "Nothing here"
+
+// Dimmed says a card is drawn at half strength: its work is behind it, done or archived.
+func Dimmed(c engine.Card) bool { return c.Archived || c.State == "done" }
 
 // Blank says every page is turned off: the window is drawn, and nothing in it.
 func (w Window) Blank() bool { return w.pages.None() }

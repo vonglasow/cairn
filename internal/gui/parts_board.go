@@ -19,29 +19,6 @@ func FilteredSaid(l Layout) Box {
 	return Box{X: x, Y: last.Y + (last.H-lineHigh)/2, W: l.Tabs.X + l.Tabs.W - x, H: lineHigh}
 }
 
-// TabsLine is the line closing the band, run the width of the window.
-func TabsLine(l Layout) Box {
-	return Box{X: l.Tabs.X, Y: l.Tabs.Y + l.Tabs.H - 1, W: l.Tabs.W, H: 1}
-}
-
-// TabsLineAround is that line in the two pieces it is drawn in: the tab somebody is on breaks it, which is the whole of the folder.
-func TabsLineAround(l Layout, at int) [2]Box {
-	line, tab := TabsLine(l), TabAt(l, at)
-	return [2]Box{
-		{X: line.X, Y: line.Y, W: max(0, tab.X-line.X), H: line.H},
-		{X: tab.X + tab.W, Y: line.Y, W: max(0, line.X+line.W-tab.X-tab.W), H: line.H},
-	}
-}
-
-// TabSides is the three sides a tab is drawn with: a folder is open at the bottom, which is where the page it opens onto begins.
-func TabSides(b Box) [3]Box {
-	return [3]Box{
-		{X: b.X, Y: b.Y, W: b.W, H: 1},
-		{X: b.X, Y: b.Y, W: 1, H: b.H},
-		{X: b.X + b.W - 1, Y: b.Y, W: 1, H: b.H},
-	}
-}
-
 // TabName is where a tab's name and what it holds are written inside it.
 func TabName(b Box) Box {
 	return Box{X: b.X + padding, Y: b.Y + (b.H-lineHigh)/2, W: b.W - padding - padding, H: lineHigh}
@@ -52,12 +29,25 @@ func LaneName(l Layout, lane int) Box {
 	return NameIn(Box{X: l.Lane[lane].X, Y: l.Band.Y, W: l.Lane[lane].W, H: laneHigh})
 }
 
-const nameDrop = 7
+const (
+	nameDrop  = 7
+	nameInset = 10
+)
 
-// NameIn is the room a heading is centred in: the whole width of its head, from a few pixels under its top edge, for a column and a lane alike.
+// NameIn is the room a heading is written in: its name at the left, its count at the right, a few pixels inside its edges, for a column and a lane alike.
 func NameIn(head Box) Box {
-	return Box{X: head.X, Y: head.Y + nameDrop, W: head.W, H: head.H - nameDrop}
+	return Box{X: head.X + nameInset, Y: head.Y + nameDrop, W: head.W - 2*nameInset, H: head.H - nameDrop}
 }
+
+// LaneGround is the ground a lane of the band stands on: its head and its cards.
+func LaneGround(l Layout, lane int) Box {
+	return Box{X: l.Lane[lane].X, Y: l.Band.Y, W: l.Lane[lane].W, H: l.Lane[lane].Y + l.Lane[lane].H - l.Band.Y}
+}
+
+// EmptyAt is where a column or a lane holding nothing says so: where its first card would be.
+func EmptyAt(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W, H: emptyHigh} }
+
+const emptyHigh = 44
 
 // OfferAt is where one of the bar's offers sits.
 func OfferAt(l Layout, at int) Box {

@@ -533,38 +533,56 @@ func drawPanelHeaded(gtx layout.Context, th *material.Theme, skin Skin, box, hea
 }
 
 func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	fill(gtx, l.Tabs, skin.Panel)
 	for i, page := range w.Shown() {
 		tab := TabAt(l, i)
 		ink := skin.Faint
 		if w.Tab() == page {
-			fill(gtx, tab, skin.Back)
-			for _, side := range TabSides(tab) {
-				fill(gtx, side, skin.Edge)
-			}
+			rounded(gtx, tab, tabRadius, skin.Pill)
 			ink = skin.Ink
 		}
-		say(gtx, th, ink, TabName(tab), Pages[page]+"   "+strconv.Itoa(w.Holds(page)), plain)
-	}
-	for _, piece := range TabsLineAround(l, max(0, slices.Index(w.Shown(), w.Tab()))) {
-		fill(gtx, piece, skin.Edge)
+		room, name := TabName(tab), Titled(Pages[page])
+		sayStyled(gtx, th, ink, room, name, reads, font.Medium, 1, text.Start)
+		counted := ends(w.measured(), name, reads) + countGap
+		sayIn(gtx, th, skin.Low, Box{X: room.X + counted, Y: room.Y, W: max(0, room.W-counted), H: room.H}, strconv.Itoa(w.Holds(page)), small, font.Font{Typeface: MonoFace}, text.Start)
 	}
 }
+
+const (
+	tabRadius = 6
+	countGap  = 6
+)
 
 func drawColumns(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		ground(gtx, skin, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
-		sayCentred(gtx, th, skin.Faint, NameIn(l.Head[i]), column.Name+"  "+strconv.Itoa(len(column.Cards)), small)
+		drawHead(gtx, th, skin, NameIn(l.Head[i]), Titled(column.Name), len(column.Cards))
+		if said := w.EmptySays(i); said != "" {
+			drawEmpty(gtx, th, skin, EmptyAt(l.CardAt(i, 0, 0)), said)
+		}
 	}
 }
 
 func drawBand(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	ground(gtx, skin, l.Band)
 	for lane, kind := range engine.Stalled {
-		sayCentred(gtx, th, skin.Faint, LaneName(l, lane), w.LaneSays(kind), small)
+		ground(gtx, skin, LaneGround(l, lane))
+		held := len(w.inLane(lane))
+		drawHead(gtx, th, skin, LaneName(l, lane), Titled(kind), held)
+		if held == 0 {
+			drawEmpty(gtx, th, skin, EmptyAt(l.LaneCardAt(lane, 0, 0)), nothingHere)
+		}
 	}
 	drawPlaced(gtx, th, skin, w)
+}
+
+func drawHead(gtx layout.Context, th *material.Theme, skin Skin, room Box, name string, held int) {
+	sayStyled(gtx, th, skin.Faint, room, name, small, font.Medium, 1, text.Start)
+	sayIn(gtx, th, skin.Low, room, strconv.Itoa(held), small, font.Font{Typeface: MonoFace}, text.End)
+}
+
+func drawEmpty(gtx layout.Context, th *material.Theme, skin Skin, at Box, said string) {
+	dashed(gtx, at, skin.Edge)
+	sayCentred(gtx, th, skin.Low, Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, said, small)
 }
 
 func drawPlaced(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
@@ -579,7 +597,13 @@ func drawPlaced(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
 		clipped := clip.Rect(rect(p.Within)).Push(gtx.Ops)
 		if !building {
-			drawCard(gtx, th, skin, p.Slot, p.Card, chosen)
+			if Dimmed(p.Card) {
+				half := paint.PushOpacity(gtx.Ops, 0.5)
+				drawCard(gtx, th, skin, p.Slot, p.Card, chosen)
+				half.Pop()
+			} else {
+				drawCard(gtx, th, skin, p.Slot, p.Card, chosen)
+			}
 			clipped.Pop()
 			continue
 		}
@@ -1037,9 +1061,25 @@ func fill(gtx layout.Context, b Box, with color.NRGBA) {
 	paint.FillShape(gtx.Ops, with, clip.Rect(rect(b)).Op())
 }
 
-func ground(gtx layout.Context, skin Skin, b Box) {
-	fill(gtx, b, skin.Ground)
-	outline(gtx, b, skin.GroundEdge)
+func ground(gtx layout.Context, skin Skin, b Box) { rounded(gtx, b, groundRadius, skin.Ground) }
+
+const (
+	groundRadius = 10
+	dash         = 4
+	dashGap      = 3
+)
+
+func dashed(gtx layout.Context, b Box, with color.NRGBA) {
+	for x := b.X; x < b.X+b.W; x += dash + dashGap {
+		long := min(dash, b.X+b.W-x)
+		fill(gtx, Box{X: x, Y: b.Y, W: long, H: 1}, with)
+		fill(gtx, Box{X: x, Y: b.Y + b.H - 1, W: long, H: 1}, with)
+	}
+	for y := b.Y; y < b.Y+b.H; y += dash + dashGap {
+		long := min(dash, b.Y+b.H-y)
+		fill(gtx, Box{X: b.X, Y: y, W: 1, H: long}, with)
+		fill(gtx, Box{X: b.X + b.W - 1, Y: y, W: 1, H: long}, with)
+	}
 }
 
 func rounded(gtx layout.Context, b Box, radius int, with color.NRGBA) {
@@ -1143,6 +1183,14 @@ func sayAligned(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, 
 const textSlack = 4
 
 func sayStyled(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, weight font.Weight, lines int, along text.Alignment) {
+	sayWith(gtx, th, ink, b, said, size, font.Font{Weight: weight}, lines, along)
+}
+
+func sayIn(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, face font.Font, along text.Alignment) {
+	sayWith(gtx, th, ink, b, said, size, face, 1, along)
+}
+
+func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
 	if said == "" {
 		return
 	}
@@ -1155,7 +1203,10 @@ func sayStyled(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, s
 	inner.Constraints = layout.Constraints{Min: image.Pt(b.W, 0), Max: image.Pt(b.W, b.H+textSlack)}
 	label := material.Label(th, unit.Sp(float32(size)), said)
 	label.Color = ink
-	label.Font.Weight = weight
+	label.Font.Weight = face.Weight
+	if face.Typeface != "" {
+		label.Font.Typeface = face.Typeface
+	}
 	label.MaxLines = lines
 	label.Alignment = along
 	label.Layout(inner)

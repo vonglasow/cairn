@@ -1048,14 +1048,51 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^every column's name is centred in its head$`, func() error {
+	sc.Then(`^every column's name stands at the left of its head$`, func() error {
 		return w.everyColumnsName(func(head, name Box) error {
-			left, right := name.X-head.X, head.X+head.W-(name.X+name.W)
-			if left-right > 2 || right-left > 2 {
-				return fmt.Errorf("the name stands %dpx from the left and %dpx from the right", left, right)
+			if left := name.X - head.X; left < 6 || left > 16 {
+				return fmt.Errorf("the name starts %dpx into its head, want 6 to 16", left)
 			}
 			return nil
 		})
+	})
+	sc.Then(`^the column heads read (".*")$`, func(list string) error {
+		if got := w.w.ColumnHeads(); strings.Join(got, "|") != strings.Join(quoted(list), "|") {
+			return fmt.Errorf("the column heads read %v", got)
+		}
+		return nil
+	})
+	sc.Then(`^the column "([^"]*)" says "([^"]*)"$`, func(column, said string) error {
+		if got := w.w.EmptySays(engine.IndexOf(column)); got != said {
+			return fmt.Errorf("the column %q says %q", column, got)
+		}
+		return nil
+	})
+	sc.Then(`^the column "([^"]*)" says nothing$`, func(column string) error {
+		if got := w.w.EmptySays(engine.IndexOf(column)); got != "" {
+			return fmt.Errorf("the column %q says %q", column, got)
+		}
+		return nil
+	})
+	sc.Then(`^the card "([^"]*)" is drawn (at half strength|whole)$`, func(title, how string) error {
+		for _, c := range w.w.Showing().Cards {
+			if c.Title == title {
+				if Dimmed(c) != (how == "at half strength") {
+					return fmt.Errorf("%q dimmed is %v", title, Dimmed(c))
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the board carries no card called %q", title)
+	})
+	sc.Then(`^every lane stands on a ground of its own$`, func() error {
+		l := w.w.Layout()
+		for i, lane := range l.Lane {
+			if err := w.standsApart(LaneGround(l, i)); err != nil {
+				return fmt.Errorf("lane %d (%+v): %w", i, lane, err)
+			}
+		}
+		return nil
 	})
 	sc.Then(`^every column's name stands clear of the edge above it$`, func() error {
 		return w.everyColumnsName(func(head, name Box) error {
@@ -1072,14 +1109,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		l := w.w.Layout()
 		head := l.Head[0]
-		column, ok := inkedIn(shot, Box{X: head.X + 1, Y: head.Y + 1, W: head.W - 2, H: head.H - 1}, Dark().Ground)
+		column, ok := inkedIn(shot, Box{X: head.X + headClear, Y: head.Y + headClear, W: head.W - 2*headClear, H: head.H - headClear}, Dark().Ground)
 		if !ok {
 			return fmt.Errorf("a column's head carries no name")
 		}
 		want := column.Y - head.Y
 		for i, lane := range l.Lane {
 			top := Box{X: lane.X, Y: l.Band.Y, W: lane.W, H: lane.Y - l.Band.Y}
-			name, ok := inkedIn(shot, Box{X: top.X + 1, Y: top.Y + 1, W: top.W - 2, H: top.H - 1}, Dark().Ground)
+			name, ok := inkedIn(shot, Box{X: top.X + headClear, Y: top.Y + headClear, W: top.W - 2*headClear, H: top.H - headClear}, Dark().Ground)
 			if !ok {
 				return fmt.Errorf("lane %d: carries no name", i)
 			}
@@ -1097,9 +1134,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			}
 		}
 		return nil
-	})
-	sc.Then(`^the band stands on a ground of its own$`, func() error {
-		return w.standsApart(w.w.Layout().Band)
 	})
 	sc.Then(`^the window draws nothing but its ground$`, func() error {
 		shot, err := drawnInAStep(w.w)
@@ -1786,9 +1820,10 @@ func (w *world) standsApart(b Box) error {
 		at   Point
 		want color.NRGBA
 	}{
-		{"top, inside", Point{X: b.X + b.W - 3, Y: b.Y + 3}, skin.Ground},
-		{"bottom, inside", Point{X: b.X + b.W - 3, Y: b.Y + b.H - 3}, skin.Ground},
-		{"left edge", Point{X: b.X, Y: b.Y + b.H/2}, skin.GroundEdge},
+		{"top, inside", Point{X: b.X + b.W - 6, Y: b.Y + 6}, skin.Ground},
+		{"bottom, inside", Point{X: b.X + b.W - 6, Y: b.Y + b.H - 6}, skin.Ground},
+		{"the left edge, inside", Point{X: b.X, Y: b.Y + b.H/2}, skin.Ground},
+		{"the top left corner, rounded off", Point{X: b.X, Y: b.Y}, skin.Back},
 		{"just outside on the left", Point{X: b.X - 1, Y: b.Y + b.H/2}, skin.Back},
 		{"just outside above", Point{X: b.X + b.W/2, Y: b.Y - 1}, skin.Back},
 	} {
@@ -1800,13 +1835,16 @@ func (w *world) standsApart(b Box) error {
 	return nil
 }
 
+// headClear is how far inside a head its name is looked for: past the rounding of its ground's corners, which is not ink.
+const headClear = 5
+
 func (w *world) everyColumnsName(holds func(head, name Box) error) error {
 	shot, err := drawnInAStep(w.w)
 	if err != nil {
 		return err
 	}
 	for i, head := range w.w.Layout().Head {
-		inside := Box{X: head.X + 1, Y: head.Y + 1, W: head.W - 2, H: head.H - 1}
+		inside := Box{X: head.X + headClear, Y: head.Y + headClear, W: head.W - 2*headClear, H: head.H - headClear}
 		name, ok := inkedIn(shot, inside, Dark().Ground)
 		if !ok {
 			return fmt.Errorf("column %d: its head carries no name", i)

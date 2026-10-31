@@ -128,8 +128,8 @@ func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 	}
 
 	empty := l.CardAt(3, 0, 0)
-	if got := ink(shot, inside(empty), Dark().Ground); got != 0 {
-		t.Errorf("an empty column drew %d pixels where its first card would be", got)
+	if got := painted(shot, inside(empty), Dark().Panel); got != 0 {
+		t.Errorf("an empty column drew %d pixels of a card where its first card would be", got)
 	}
 }
 
@@ -289,7 +289,7 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	}
 	for _, lane := range []int{1, 2} {
 		card := l.LaneCardAt(lane, 0, 0)
-		if got := ink(shot, inside(card), back); got != 0 {
+		if got := painted(shot, inside(card), Dark().Panel); got != 0 {
 			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", engine.Stalled[lane], got)
 		}
 	}
@@ -332,14 +332,14 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
-	open := Dark().Back
+	open := Dark().Pill
 
 	shot := drawn(t, w)
 	if painted(shot, TabAt(l, 0), open) == 0 {
 		t.Error("the tab being looked at is not open")
 	}
 	if got := painted(shot, TabAt(l, 1), open); got != 0 {
-		t.Errorf("the other tab drew %d pixels of an open folder", got)
+		t.Errorf("the other tab drew %d pixels of an open tab", got)
 	}
 
 	second := TabAt(l, 1)
@@ -349,7 +349,7 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 		t.Error("after clicking it, the second tab is not open")
 	}
 	if got := painted(shot, TabAt(l, 0), open); got != 0 {
-		t.Errorf("the first tab still drew %d pixels of an open folder", got)
+		t.Errorf("the first tab still drew %d pixels of an open tab", got)
 	}
 }
 
@@ -452,8 +452,8 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 		t.Error("nothing was drawn where two pixels to the dp puts the first card")
 	}
 	empty := Box{X: box.X + box.W/2, Y: box.Y + box.H/2, W: box.W/2 - 2, H: box.H / 4}
-	if got := ink(shot, empty, Dark().Ground); got != 0 {
-		t.Errorf("%d pixels were drawn as though one pixel were one dp", got)
+	if got := painted(shot, empty, Dark().Panel); got != 0 {
+		t.Errorf("%d pixels of a card were drawn as though one pixel were one dp", got)
 	}
 }
 
@@ -724,37 +724,24 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	}
 }
 
-func TestTheOpenTabIsAFolderAndNotAColouredWord(t *testing.T) {
+func TestTheOpenTabStandsOnAPill(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 	shot := drawn(t, w)
 
-	if got := painted(shot, TabAt(l, 0), Dark().Back); got == 0 {
-		t.Error("the open tab does not carry the page's own ground")
+	open, shut := TabAt(l, 0), TabAt(l, 1)
+	if got := painted(shot, Box{X: open.X + 3, Y: open.Y + open.H/2, W: 4, H: 1}, Dark().Pill); got != 4 {
+		t.Error("the open tab does not stand on a pill")
 	}
-	if got := painted(shot, TabAt(l, 1), Dark().Back); got != 0 {
-		t.Errorf("a shut tab drew %d pixels of the page's ground", got)
+	if got := painted(shot, Box{X: open.X, Y: open.Y, W: 1, H: 1}, Dark().Back); got != 1 {
+		t.Error("the open tab's pill is not rounded")
 	}
-	if got := painted(shot, TabAt(l, 1), Dark().Panel); got == 0 {
-		t.Error("a shut tab does not sit in the band")
+	if got := painted(shot, shut, Dark().Pill); got != 0 {
+		t.Errorf("a shut tab drew %d pixels of a pill", got)
 	}
-	for i, side := range TabSides(TabAt(l, 0)) {
-		if got := painted(shot, side, Dark().Edge); got == 0 {
-			t.Errorf("side %d of the open tab was not drawn", i)
-		}
-	}
-	for i, piece := range TabsLineAround(l, 0) {
-		if piece.W == 0 {
-			continue
-		}
-		if got := painted(shot, piece, Dark().Edge); got == 0 {
-			t.Errorf("piece %d of the line closing the band was not drawn", i)
-		}
-	}
-	under := Box{X: TabAt(l, 0).X + 2, Y: TabsLine(l).Y, W: TabAt(l, 0).W - 4, H: 1}
-	if got := painted(shot, under, Dark().Edge); got != 0 {
-		t.Errorf("%d pixels of line run under the open tab, which shuts the folder", got)
+	if got := painted(shot, Box{X: shut.X, Y: shut.Y + shut.H/2, W: 3, H: 1}, Dark().Back); got != 3 {
+		t.Error("a shut tab does not stand on the window's ground")
 	}
 }
 

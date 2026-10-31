@@ -156,19 +156,23 @@ tasks, objectives, and the time spent.
 a group when it has a ground or an edge of its own (common region, Nielsen
 Norman Group), and that beats proximity alone. In a dark theme a lighter tonal
 surface does what a shadow does elsewhere, so every column, its header
-included, and the band are drawn on one uniform ground lighter than the
-window's, edged by a thin low-contrast line, and the cards stay the lightest
-layer. The gap between columns stays: it is the gutter. There are no vertical
-rules and no alternating tints, which would imply a meaning nobody gave them.
-The ground and its edge are skin tokens, checked for contrast with the others
-(`@gui-columns-stand-apart`).
-Once the head had an edge of its own, a name written from its corner read as
-pressed against it: each column's name is centred across its head,
-seven pixels under the edge, at the size the band's lanes are named in
-(`@gui-a-columns-name-sits-centred-clear-of-its-edge`).
-The band's lanes follow the same rule, through the same function: each lane's
-name is centred across its lane, seven pixels under the band's top edge, in a
-head as high as a column's (`NameIn`, `@gui-a-lanes-name-sits-as-a-columns-does`).
+included, and every lane of the band stand on a ground of their own, lighter
+than the window's and rounded (10), with no edge: the tone says it, and the
+cards stay the lightest layer. The gap between columns stays: it is the
+gutter. There are no vertical rules and no alternating tints, which would
+imply a meaning nobody gave them. The ground is a skin token, checked for
+contrast with the others (`@gui-columns-stand-apart`).
+Each head names its column in words, 'Backlog' rather than 'BACKLOG', at its
+left, ten pixels in and seven under its top, and counts its cards at its
+right in figures (`ColumnHeads`, `@gui-a-columns-head-names-and-counts-it`);
+a centred name, which #142 set, gave the count no place of its own. The
+band's lanes follow the same rule through the same function (`NameIn`,
+`@gui-a-lanes-name-sits-as-a-columns-does`). A column or a lane holding
+nothing says 'Nothing here' in a dashed box where its first card would be,
+and a board holding no task says how to make one, in todo
+(`EmptySays`, `@gui-an-empty-column-says-so`,
+`@gui-an-empty-board-says-how-to-start`). A card in done, or archived, is
+drawn at half strength: its work is behind it (`Dimmed`, `@gui-done-is-dimmed`).
 
 **A column, or a lane, is widened by dragging the gutter beside it**. The gutter is the gap between two columns, from the top of the
 head to the foot of the column on its left — right of the backlog it runs
@@ -708,11 +712,10 @@ They had none at all: the wheel did nothing over them and the arrows walked
 past the bottom of the window. The arrows walk the grid — across to the next,
 down to the one a row below.
 
-**The tabs are folders, not two words one of which is coloured.** A band
-closed by a line runs the width of the window, and the tab somebody is on is a
-block carrying the page's own ground whose bottom breaks that line. It does not
-stand out by its colour, it stands out by opening onto the page — which is what
-says *you are on this page* rather than *this word is selected*. Each says how
+**The tab somebody is on stands on a pill.** The tabs were folders, a band
+closed by a line that the open tab broke; the design has no band and no line,
+and the page's tab stands on a rounded pill with its words in the ink, the
+others faint on the window's ground. Each writes its name in words and how
 much its page holds, counted off what is showing, so a search narrows what the
 tabs claim as well. `tab` walks to the next page and `shift+tab` to the one
 before, round the end rather than stopping at it; inside a form `tab` still

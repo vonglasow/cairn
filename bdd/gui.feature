@@ -164,16 +164,38 @@ Feature: The desktop board
   Rule: Each column and the band stand on a ground of their own
 
     @gui-columns-stand-apart
-    Scenario: each column is drawn on a ground of its own, edged, apart from the window's
+    Scenario: each column and each lane is drawn on a rounded ground of its own, apart from the window's
       When I open the window
       Then every column stands on a ground of its own
-      And the band stands on a ground of its own
+      And every lane stands on a ground of its own
 
-    @gui-a-columns-name-sits-centred-clear-of-its-edge
-    Scenario: each column's name sits centred in its head, clear of the edge above it
+    @gui-a-columns-head-names-and-counts-it
+    Scenario: each column's head names it at its left, in words, and counts its cards at its right
+      Given I added a task titled "Write the spec" with the state "todo"
       When I open the window
-      Then every column's name is centred in its head
+      Then the column heads read "Backlog 0", "Todo 1", "Current 0", "Done 0"
+      And every column's name stands at the left of its head
       And every column's name stands clear of the edge above it
+
+    @gui-an-empty-column-says-so
+    Scenario: a column holding nothing says so rather than standing blank
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      Then the column "current" says "Nothing here"
+      And the column "todo" says nothing
+
+    @gui-an-empty-board-says-how-to-start
+    Scenario: a board holding no task says how to make the first one
+      When I open the window
+      Then the column "todo" says "No task yet. ⌘N makes one."
+
+    @gui-done-is-dimmed
+    Scenario: a card in done is drawn at half strength, the work behind it
+      Given I added a task titled "Ship it" with the state "done"
+      And I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      Then the card "Ship it" is drawn at half strength
+      And the card "Write the spec" is drawn whole
 
     @gui-a-lanes-name-sits-as-a-columns-does
     Scenario: each lane of the band names itself the way a column does, clear of its edges

@@ -15,8 +15,11 @@ var symbolsFont []byte
 //go:embed fonts/*.ttf
 var textFonts embed.FS
 
-// TextFace is the typeface the window writes its words in.
-const TextFace = "Figtree"
+// TextFace is the typeface the window writes its words in; MonoFace the one its figures, counts and keys are written in.
+const (
+	TextFace = "Figtree"
+	MonoFace = "Go Mono"
+)
 
 // Faces is every face the window writes in, read once: Figtree first, then Go's own for figures and what Figtree lacks, then the symbols.
 var Faces = sync.OnceValue(func() []font.FontFace {
