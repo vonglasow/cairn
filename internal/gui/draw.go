@@ -796,8 +796,7 @@ func drawDragging(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if !dragging {
 		return
 	}
-	fill(gtx, ghost, skin.Ghost)
-	outline(gtx, ghost, skin.Chosen)
+	raised(gtx, ghost, cardRadius, skin.Ghost)
 	for _, c := range w.Reading().Cards {
 		if c.Number != w.held.Number {
 			continue

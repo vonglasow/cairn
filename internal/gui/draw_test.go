@@ -1516,3 +1516,19 @@ func TestTheCommandBarIsARoundedPanelWithItsHintsAtTheRight(t *testing.T) {
 		t.Errorf("the hints run from %d to %d in a bar from %d to %d", hints[0].X, last.X+last.W, bar.X, bar.X+bar.W)
 	}
 }
+
+func TestTheCardInHandIsRaised(t *testing.T) {
+	w := holding(newFake(),
+		engine.Card{Number: 1, Title: "First", State: "todo"},
+		engine.Card{Number: 2, Title: "Second", State: "backlog"})
+	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(middleOf(w, 1, 0))
+	shot := drawn(t, w)
+	ghost, _ := w.Ghost()
+	under := shot.RGBAAt(ghost.X+ghost.W/2, ghost.Y+ghost.H+4)
+	if under.R >= Dark().Ground.R {
+		t.Errorf("under the card in hand reads %v: it casts no shadow", under)
+	}
+	if painted(shot, Box{X: ghost.X, Y: ghost.Y, W: 1, H: 1}, Dark().Ghost) != 0 {
+		t.Error("the card in hand's corner is not rounded")
+	}
+}
