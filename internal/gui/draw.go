@@ -716,15 +716,18 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 	}
 
 	if c.SubTotal > 0 {
-		done := strconv.Itoa(c.SubDone) + "/" + strconv.Itoa(c.SubTotal)
-		counted := monoWide(done, small)
-		track := Box{X: parts.Steps.X, Y: parts.Steps.Y + (parts.Steps.H-trackHigh)/2, W: parts.Steps.W - counted - pillGap*2, H: trackHigh}
-		rounded(gtx, track, trackHigh, skin.Pill)
-		if c.SubDone > 0 {
-			rounded(gtx, Box{X: track.X, Y: track.Y, W: max(trackHigh, track.W*c.SubDone/c.SubTotal), H: track.H}, trackHigh, skin.Done)
-		}
-		sayIn(gtx, th, skin.Low, Box{X: parts.Steps.X + parts.Steps.W - counted, Y: parts.Steps.Y + (parts.Steps.H-lineHigh)/2, W: counted, H: lineHigh}, done, small, mono, text.End)
+		drawProgress(gtx, th, skin, parts.Steps, c.SubDone, c.SubTotal, strconv.Itoa(c.SubDone)+"/"+strconv.Itoa(c.SubTotal))
 	}
+}
+
+func drawProgress(gtx layout.Context, th *material.Theme, skin Skin, at Box, done, total int, said string) {
+	counted := monoWide(said, small)
+	track := Box{X: at.X, Y: at.Y + (at.H-trackHigh)/2, W: max(0, at.W-counted-pillGap*2), H: trackHigh}
+	rounded(gtx, track, trackHigh, skin.Pill)
+	if done > 0 {
+		rounded(gtx, Box{X: track.X, Y: track.Y, W: max(trackHigh, track.W*done/total), H: track.H}, trackHigh, skin.Done)
+	}
+	sayIn(gtx, th, skin.Low, Box{X: at.X + at.W - counted, Y: at.Y + (at.H-lineHigh)/2, W: counted, H: lineHigh}, said, small, font.Font{Typeface: MonoFace}, text.End)
 }
 
 const (
@@ -763,14 +766,15 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	for at, g := range engine.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
 		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
-		if said := Counted(g); said != "" {
-			say(gtx, th, skin.Faint, CountedAt(PartsOf(box).Number, said), said, small)
+		if g.Total > 0 {
+			drawProgress(gtx, th, skin, PartsOf(box).Steps, g.Done, g.Total, Counted(g))
 		}
 	}
 }
 
 func goalFace(g engine.Goal) engine.Card {
-	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g)}
+	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g),
+		Deadline: g.Deadline}
 }
 
 func drawDragging(gtx layout.Context, th *material.Theme, skin Skin, w Window) {

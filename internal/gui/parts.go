@@ -69,12 +69,6 @@ func SubCheck(b Box) Box {
 	return Box{X: panel.X + padding, Y: panel.Y + (panel.H-checkSide)/2, W: checkSide, H: checkSide}
 }
 
-// CountedAt is where an objective's count sits on its number line: hard right, so that it and the number are read as two separate things rather than as one run of digits.
-func CountedAt(number Box, said string) Box {
-	wide := len([]rune(said)) * perGlyph
-	return Box{X: number.X + number.W - wide, Y: number.Y, W: wide, H: number.H}
-}
-
 // Over is the panel a detail or a form is drawn in: the middle of the window, with the board still showing around it.
 func Over(width, height int) Box {
 	return Box{X: width / 8, Y: height / 12, W: width * 3 / 4, H: height * 5 / 6}

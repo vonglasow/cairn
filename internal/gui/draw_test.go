@@ -1018,9 +1018,12 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	if said != "7/12 · 58%" {
 		t.Fatalf("Counted = %q", said)
 	}
-	box := CountedAt(PartsOf(GoalAt(w.Layout(), 0, 0)).Number, said)
-	if lettered(drawn(t, w), box, Dark().Faint) == 0 {
-		t.Error("the count was not drawn on the objective's card")
+	steps := PartsOf(GoalAt(w.Layout(), 0, 0)).Steps
+	if painted(drawn(t, w), steps, Dark().Done) == 0 {
+		t.Error("the objective's card draws no bar of the tasks done")
+	}
+	if lettered(drawn(t, w), steps, Dark().Low) == 0 {
+		t.Error("the objective's card does not say its count beside its bar")
 	}
 }
 
