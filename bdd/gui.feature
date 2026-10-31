@@ -183,6 +183,11 @@ Feature: The desktop board
 
   Rule: A column, or a lane, is widened by dragging the gutter beside it
 
+    @gui-every-gutter-is-as-narrow
+    Scenario: every gutter, between columns, between lanes and above the band, is 8 points wide
+      When I open the window
+      Then every gutter is 8 points wide
+
     @gui-a-column-widens-when-its-gutter-is-dragged
     Scenario: the gutter between two columns, dragged, gives one what it takes from the other
       When I open the window

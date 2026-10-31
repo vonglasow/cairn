@@ -19,7 +19,7 @@ const SubHeight = 28
 
 const (
 	margin    = 12
-	gap       = 12
+	gap       = 8
 	tabsHigh  = 40
 	headHigh  = 28
 	laneHigh  = headHigh

@@ -94,6 +94,18 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		}
 		return pointerIs(w.w, LaneGutter(w.w.Layout(), at), ColResize)
 	})
+	sc.Step(`^every gutter is (\d+) points wide$`, func(wide int) error {
+		for _, grab := range grabsOf(w.w.Layout()) {
+			across := grab.Box.W
+			if grab.Takes.Band {
+				across = grab.Box.H
+			}
+			if across != wide {
+				return fmt.Errorf("the gutter %+v is %d points wide, not %d", grab.Box, across, wide)
+			}
+		}
+		return nil
+	})
 	sc.Step(`^the pointer over the band's edge is the one for resizing up and down$`, func() error {
 		return pointerIs(w.w, BandEdge(w.w.Layout()), RowResize)
 	})

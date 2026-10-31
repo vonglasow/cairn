@@ -141,7 +141,10 @@ head as high as a column's (`NameIn`, `@gui-a-lanes-name-sits-as-a-columns-does`
 **A column, or a lane, is widened by dragging the gutter beside it**. The gutter is the gap between two columns, from the top of the
 head to the foot of the column on its left — right of the backlog it runs
 beside the band too, since the band begins where the todo does — and the gap
-between two lanes of the band. Dragged, it gives the one on its left what it
+between two lanes of the band. Every gutter, and the edge above the band, is
+8 points: the gap of a board such as Trello's or GitHub's, enough to tell two
+columns apart and to be taken by the pointer (`@gui-every-gutter-is-as-narrow`).
+Dragged, it gives the one on its left what it
 takes from the one on its right, and nothing else moves
 (`@gui-a-column-widens-when-its-gutter-is-dragged`,
 `@gui-a-lane-widens-when-its-gutter-is-dragged`). Over a gutter the pointer

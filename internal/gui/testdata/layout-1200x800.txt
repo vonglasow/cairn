@@ -1,14 +1,14 @@
 tabs         x=12    y=12    w=1176  h=40
-head 0       x=12    y=64    w=285   h=28
-column 0     x=12    y=92    w=285   h=652
-head 1       x=309   y=64    w=285   h=28
-column 1     x=309   y=92    w=285   h=426
-head 2       x=606   y=64    w=285   h=28
-column 2     x=606   y=92    w=285   h=426
-head 3       x=903   y=64    w=285   h=28
-column 3     x=903   y=92    w=285   h=426
-band         x=309   y=530   w=879   h=214
-lane blocked x=309   y=558   w=285   h=186
-lane watching x=606   y=558   w=285   h=186
-lane paused  x=903   y=558   w=285   h=186
+head 0       x=12    y=60    w=288   h=28
+column 0     x=12    y=88    w=288   h=660
+head 1       x=308   y=60    w=288   h=28
+column 1     x=308   y=88    w=288   h=438
+head 2       x=604   y=60    w=288   h=28
+column 2     x=604   y=88    w=288   h=438
+head 3       x=900   y=60    w=288   h=28
+column 3     x=900   y=88    w=288   h=438
+band         x=308   y=534   w=880   h=214
+lane blocked x=308   y=562   w=288   h=186
+lane watching x=604   y=562   w=288   h=186
+lane paused  x=900   y=562   w=288   h=186
 bar          x=12    y=756   w=1176  h=32
