@@ -32,7 +32,13 @@ Feature: Changes to the shape of the store
       Examples:
         | command |
         | tui     |
-        | gui     |
+
+    @store-behind-opens-the-window
+    Scenario: `cairn gui` on a store behind opens the window
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I run `cairn gui`
+      Then the window is opened on that store
+      And 1 change is still waiting
 
     @store-behind-untouched
     Scenario: refusing changes nothing about the store

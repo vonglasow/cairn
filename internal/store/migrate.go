@@ -67,7 +67,7 @@ func (s *Store) settle(mustBeCurrent bool) error {
 	if !mustBeCurrent {
 		return nil
 	}
-	return s.refuseIfBehind()
+	return s.Current()
 }
 
 func (s *Store) makeTheLedgerWhenOpeningFindsNone() error {
@@ -159,7 +159,8 @@ func (s *Store) refuseAnUnknownChange() error {
 	return nil
 }
 
-func (s *Store) refuseIfBehind() error {
+// Current says whether the store has every change this cairn knows, and by how many it is behind when it has not.
+func (s *Store) Current() error {
 	waiting, err := s.Waiting()
 	if err != nil {
 		return err

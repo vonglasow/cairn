@@ -80,6 +80,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutFinishingParts {
 			return "Put task " + w.agreeing.In.Given["number"] + " in done, ticking its steps?"
 		}
+		if w.question == aboutApplying {
+			return "Apply what this store is waiting for?"
+		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
 		if w.form.Adding {
@@ -145,7 +148,9 @@ func Shortcut(offer string) string {
 		return "e"
 	case "delete":
 		return "d"
-	case "agree":
+	case "quit":
+		return "cmd+q"
+	case "agree", "apply":
 		return "enter"
 	case "choose":
 		return "enter"
@@ -285,6 +290,9 @@ func (w Window) Offers() []string {
 		}
 		if w.question == aboutDraft {
 			return []string{"Pick it up", "Start afresh", "Cancel"}
+		}
+		if w.question == aboutApplying {
+			return []string{"Apply", "Quit"}
 		}
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
@@ -454,6 +462,12 @@ func (w Window) Asks() []Said {
 			{Means: "Enter to agree, or Cancel."},
 		}
 	}
+	if w.question == aboutApplying {
+		return []Said{
+			{Means: "Waiting: " + strings.Join(w.waiting, ", ") + "."},
+			{Means: "A backup is set aside first."},
+		}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -495,6 +509,7 @@ const (
 	aboutDeletingPart
 	aboutHiding
 	aboutDeletingParts
+	aboutApplying
 )
 
 func (w Window) sweeps() string {

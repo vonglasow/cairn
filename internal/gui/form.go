@@ -477,6 +477,9 @@ func (w Window) recoverable() bool {
 // Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
 	switch strings.ToLower(name) {
+	case "quit":
+		w.quitting = true
+		return w
 	case "edit":
 		return w.Edit()
 	case "new linked task":
@@ -593,7 +596,7 @@ func (w Window) Choose(name string) Window {
 		return w.actingOnSeveral(true)
 	case "skip flagged":
 		return w.actingOnSeveral(false)
-	case "delete", "agree":
+	case "delete", "agree", "apply":
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutDeletingSeveral)
 		}
@@ -606,8 +609,8 @@ func (w Window) Choose(name string) Window {
 		if w.question == aboutDeletingLabel {
 			return w.deletingLabel()
 		}
-		if w.question == aboutFinishingParts {
-			return w.finishingParts()
+		if w.question == aboutFinishingParts || w.question == aboutApplying {
+			return w.agreed()
 		}
 		if w.question == aboutDeletingPart {
 			return w.deletingPart()

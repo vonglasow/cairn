@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cairn/internal/engine"
+	"cairn/internal/migration"
 	"cairn/internal/trace"
 )
 
@@ -127,6 +128,8 @@ type Window struct {
 	aimed                 string
 	pages                 engine.Pages
 	agreeing              engine.Agreeing
+	quitting              bool
+	waiting               []string
 	hiding                Entry
 	starts                string
 	over                  string
@@ -269,10 +272,16 @@ func (w Window) aged() Window {
 	return w
 }
 
+// Leaving says whether the window has been asked to close, by a question whose only other way was to leave.
+func (w Window) Leaving() bool { return w.quitting }
+
 // Look reads the work again and draws from what came back.
 func (w Window) Look() Window {
 	found, err := engine.Look(w.work)
 	if err != nil {
+		if agreeing, ok := engine.AgreeingTo(engine.Operation{}, engine.Input{}, err); ok && w.screen != OnAsking {
+			return w.agreeingTo(agreeing)
+		}
 		return w.failing(err)
 	}
 	w.snap, w.version, w.err = found, found.Version, nil
@@ -287,6 +296,27 @@ func (w Window) Look() Window {
 	}
 	if w.pages.Shows(engine.PageTime) {
 		return w.readingWeek()
+	}
+	return w
+}
+
+func (w Window) agreeingTo(agreeing engine.Agreeing) Window {
+	if agreeing.Reason == engine.RefusalOf(engine.ErrStoreBehind).Reason {
+		return w.applying(agreeing)
+	}
+	w.screen, w.question, w.agreeing = OnAsking, aboutFinishingParts, agreeing
+	return w
+}
+
+func (w Window) applying(agreeing engine.Agreeing) Window {
+	w.screen, w.question, w.agreeing, w.err = OnAsking, aboutApplying, agreeing, nil
+	w.waiting = nil
+	if listed, err := w.work.Ask(engine.MigrationList, engine.Input{}); err == nil {
+		for _, m := range listed.Changes {
+			if shape := migration.OfMigration(m); !shape.Applied {
+				w.waiting = append(w.waiting, shape.Name)
+			}
+		}
 	}
 	return w
 }

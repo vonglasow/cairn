@@ -58,6 +58,9 @@ func newTuiCmd() *cobra.Command {
 				return err
 			}
 			defer func() { _ = held.Close() }()
+			if _, err := engine.Look(held); err != nil {
+				return err
+			}
 			return openTui(cmd, tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(home())).Noting(notedIn(cmd.Context())))
 		},
 	}

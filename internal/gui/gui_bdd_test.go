@@ -16,7 +16,7 @@ func initGui(t *testing.T) func(*godog.ScenarioContext) {
 
 func TestAcceptance_Gui(t *testing.T) {
 	t.Parallel()
-	if test.Suite(t, "gui.feature", initGui(t), "").Run() != 0 {
+	if test.Suite(t, "gui.feature", initGui(t), "~@later").Run() != 0 {
 		t.Fatal("the window's scenarios did not all pass")
 	}
 }

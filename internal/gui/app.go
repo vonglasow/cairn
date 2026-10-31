@@ -21,6 +21,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -313,6 +314,9 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 				gtx.Execute(op.InvalidateCmd{})
 			}
 			e.Frame(gtx.Ops)
+			if board.Leaving() {
+				window.Perform(system.ActionClose)
+			}
 		}
 	}
 }

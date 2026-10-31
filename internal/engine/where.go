@@ -101,7 +101,7 @@ func DoFrom(op Operation, h Home, in Input, acting Acting) (answer Answer, err e
 	return doAt(op, at, in, acting)
 }
 
-// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home, and refused the way an operation refuses it — a store behind this cairn says what to type about it. What it is asked to do is written down as done through that surface, by whoever acts.
+// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home and held even when it is behind this cairn, so that the change waiting can be asked for; the archive is swept only on a store that is up to date. What it is asked to do is written down as done through that surface, by whoever acts.
 func Hold(h Home, acting Acting) (*Engine, error) {
 	at, err := Locate(h)
 	if err != nil {
@@ -112,9 +112,23 @@ func Hold(h Home, acting Acting) (*Engine, error) {
 		return nil, err
 	}
 	held.acting = acting
-	if err := held.archivingSwept(); err != nil {
-		_ = held.Close()
-		return nil, storeProblem(err)
+	held.sweepOwed = true
+	if held.store.Current() == nil {
+		if err := held.sweepIfOwed(); err != nil {
+			_ = held.Close()
+			return nil, err
+		}
 	}
 	return held, nil
+}
+
+func (e *Engine) sweepIfOwed() error {
+	if !e.sweepOwed {
+		return nil
+	}
+	if err := e.archivingSwept(); err != nil {
+		return storeProblem(err)
+	}
+	e.sweepOwed = false
+	return nil
 }

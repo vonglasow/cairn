@@ -185,6 +185,14 @@ place in one step.
 changes a store; opening one only looks. The ledger is the single exception,
 created when it is missing because nothing can be recorded without it.
 
+A one-shot command is refused a store behind when it opens it. A board holds
+its engine for hours, and the store can fall behind under it, so a held engine
+opens a store behind (`Hold`, through `OpenBehind`) and checks again on every
+ask instead: an operation that `Needs` a current store is refused
+`ErrStoreBehind` while a change waits, and the board turns that refusal into
+a question (`engine.AgreeingTo`). The archive sweep `Hold` owes waits until
+the store is current, since it writes.
+
 ## The store is spoken to through an interface the engine owns
 
 `internal/store` is where SQLite lives, and it is the only place that knows

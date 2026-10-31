@@ -1871,6 +1871,35 @@ Feature: The desktop board
       Then the window is on the board
       And there is 1 backup
 
+  Rule: A store behind the window is offered the changes it waits for
+
+    @gui-a-store-behind-is-offered-its-changes
+    Scenario: a window opened on a store behind offers to apply what is waiting
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I open the window
+      Then the window asks to apply the change that is waiting, naming it
+      When I click "Apply"
+      Then "BACKLOG" carries "Write the spec"
+      And a backup was set aside
+      And no change is waiting
+
+    @gui-a-store-behind-is-left-as-it-was-when-quit
+    Scenario: quitting instead leaves the store as it was
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I open the window
+      And I click "Quit"
+      Then the window is leaving
+      And no backup was set aside
+      And 1 change is still waiting
+
+    @gui-a-store-behind-holds-the-board-back
+    Scenario: nothing on the board is reached while the question stands
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+n"
+      Then the window asks to apply the change that is waiting, naming it
+      And 1 change is still waiting
+
   Rule: A right click says what can be done to what is under it
 
     @gui-a-right-click-on-a-card

@@ -2,12 +2,96 @@ package gui
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"gioui.org/io/key"
 
 	"cairn/internal/engine"
+	"cairn/internal/migration"
 )
+
+type behind struct {
+	*fake
+	waiting []string
+	current *bool
+}
+
+func (b behind) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	if b.current != nil && op.Thing == engine.MigrationApply.Thing && op.Verb == engine.MigrationApply.Verb {
+		_, _ = b.fake.Ask(op, in)
+		*b.current = true
+		return engine.Answer{}, nil
+	}
+	if b.current != nil && *b.current {
+		return b.fake.Ask(op, in)
+	}
+	if op.Thing == engine.MigrationList.Thing && op.Verb == engine.MigrationList.Verb {
+		var changes []migration.Migration
+		for i, name := range b.waiting {
+			changes = append(changes, migration.Made(migration.Carried{Number: 3 + i, Name: name}))
+		}
+		return engine.Answer{Changes: changes}, nil
+	}
+	return engine.Answer{}, engine.Told(engine.ErrStoreBehind)
+}
+
+func TestTheWindowAsksToApplyWhatIsWaitingWhenItsLookIsRefused(t *testing.T) {
+	w := Window{work: behind{fake: newFake(), waiting: []string{"add-the-estimate"}}}.Look()
+	if w.Screen() != OnAsking || w.question != aboutApplying {
+		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	}
+	if w.agreeing.Op.Verb != engine.MigrationApply.Verb || w.agreeing.Op.Thing != engine.MigrationApply.Thing {
+		t.Errorf("the window holds %+v", w.agreeing)
+	}
+	if w.Wrong() != nil {
+		t.Errorf("the window says it went wrong: %v", w.Wrong())
+	}
+	if head := Heads(w) + " " + sentences(w.Asks()); !strings.Contains(head, "add-the-estimate") {
+		t.Errorf("the question reads %q, naming no change", head)
+	}
+	for range 2 * Lingers() {
+		w = w.aged()
+	}
+	if w.Screen() != OnAsking || w.question != aboutApplying {
+		t.Errorf("after the beats the window is on %v asking %v", w.Screen(), w.question)
+	}
+}
+
+func TestTheWindowNamesEveryChangeWaitingInOneSentence(t *testing.T) {
+	w := Window{work: behind{fake: newFake(), waiting: []string{"add-the-estimate", "split-into-steps"}}}.Look()
+	if head := Heads(w); head != "Apply what this store is waiting for?" {
+		t.Errorf("the question is headed %q", head)
+	}
+	if said := sentences(w.Asks()); !strings.HasPrefix(said, "Waiting: add-the-estimate, split-into-steps.") {
+		t.Errorf("the question reads %q", said)
+	}
+}
+
+func TestTheWindowLeavesWhenQuitIsChosen(t *testing.T) {
+	var current bool
+	asked := behind{newFake(), []string{"add-the-estimate"}, &current}
+	w := Window{work: asked}.Look()
+	if w.Leaving() {
+		t.Fatal("the window is leaving before anything was chosen")
+	}
+	for name, left := range map[string]Window{"chosen": w.Choose("Quit"), "pressed": w.Key(Shortcut("Quit"))} {
+		if !left.Leaving() {
+			t.Errorf("quit %s and the window is not leaving", name)
+		}
+		if current {
+			t.Errorf("quit %s and the change was applied", name)
+		}
+	}
+}
+
+func sentences(said []Said) string {
+	var out []string
+	for _, s := range said {
+		out = append(out, s.Means)
+	}
+	return strings.Join(out, " ")
+}
 
 func TestEEditsWhateverIsChosen(t *testing.T) {
 	f := newFake()
@@ -450,8 +534,32 @@ func TestTheWindowKeepsTheEnginesAgreeingAfterARefusal(t *testing.T) {
 		t.Errorf("the window holds %+v", w.agreeing)
 	}
 	f.failOp = nil
-	w.finishingParts()
+	w.agreed()
 	if in, ok := f.gave("task", "move"); !ok || !in.Confirmed || in.Given["number"] != "4" || f.what("task", "move") != 2 {
 		t.Errorf("agreeing asked %+v after %d moves", in, f.what("task", "move"))
+	}
+}
+
+func TestTheWindowAppliesWhatIsWaitingOnceAgreed(t *testing.T) {
+	var current bool
+	f := newFake()
+	w := Window{work: behind{f, []string{"add-the-estimate"}, &current}}.Look()
+	if w.question != aboutApplying {
+		t.Fatalf("the window asks %v", w.question)
+	}
+	w = w.Choose("agree")
+	if _, ok := f.gave(engine.MigrationApply.Thing, engine.MigrationApply.Verb); !ok {
+		t.Fatalf("agreeing did not apply the change")
+	}
+	if w.Screen() != OnTheBoard || w.agreeing.Op.Verb != "" || w.Wrong() != nil {
+		t.Errorf("the window is on %v holding %+v, wrong: %v", w.Screen(), w.agreeing, w.Wrong())
+	}
+	if w.Showing().Version != f.version {
+		t.Errorf("the board was not drawn again")
+	}
+	var late bool
+	w = Window{work: behind{newFake(), []string{"add-the-estimate"}, &late}}.asking(engine.TaskMove, engine.Input{})
+	if w.Screen() != OnAsking || w.question != aboutApplying {
+		t.Errorf("an act refused for a store behind lands on %v asking %v", w.Screen(), w.question)
 	}
 }

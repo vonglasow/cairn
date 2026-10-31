@@ -50,14 +50,15 @@ type Engine struct {
 	path       string
 	turn       *sync.Mutex
 	followed   int64
+	sweepOwed  bool
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not: a command about tasks does not change the shape of the store on the way past.
 func Open(path string) (*Engine, error) { return openWith(path, store.Open) }
 
-// OpenAt opens the store the way Open does, and keeps where the notes are and what they were found from, for a surface that holds an engine open — a board — rather than one per call.
+// OpenAt opens the store the way OpenBehind does, whatever shape it is in, and keeps where the notes are and what they were found from, for a surface that holds an engine open — a board — rather than one per call.
 func OpenAt(at Places) (*Engine, error) {
-	e, err := Open(at.Store)
+	e, err := OpenBehind(at.Store)
 	if err != nil {
 		return nil, Told(err)
 	}

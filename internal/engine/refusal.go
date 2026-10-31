@@ -162,6 +162,9 @@ type Agreeing struct {
 
 // AgreeingTo says whether a refusal is a question for the person, and the act that agrees to it.
 func AgreeingTo(op Operation, in Input, err error) (Agreeing, bool) {
+	if errors.Is(err, ErrStoreBehind) {
+		return Agreeing{Reason: RefusalOf(err).Reason, Op: MigrationApply, In: Input{}}, true
+	}
 	if !op.Finishes || in.Confirmed || !errors.Is(err, ErrStepStillOpen) {
 		return Agreeing{}, false
 	}

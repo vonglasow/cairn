@@ -250,7 +250,8 @@ When cairn knows a change a store on disk does not, it says so and stops —
 `the store is behind this cairn`, then `cairn migration apply` on a line of its
 own, so it is copied whole rather than cut where the message wraps
 (`@store-behind-says-what-to-run-on-a-line-of-its-own`); a machine reading the
-refusal as JSON gets it in one sentence. Nothing about the
+refusal as JSON gets it in one sentence. The window asks instead: opened on
+such a store, it offers to apply what is waiting, or to quit. Nothing about the
 shape of your store changes unless you asked for it. `apply` and `rollback` set
 a backup aside first, and so does `backup restore` before replacing anything, so
 picking the wrong one costs a command rather than the work it overwrote.

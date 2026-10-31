@@ -16,6 +16,14 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 	if err := e.following(); err != nil {
 		return Answer{}, Told(err)
 	}
+	if op.Needs == AStore {
+		if err := e.store.Current(); err != nil {
+			return Answer{}, Told(err)
+		}
+		if err := e.sweepIfOwed(); err != nil {
+			return Answer{}, Told(err)
+		}
+	}
 	return e.run(op, in)
 }
 

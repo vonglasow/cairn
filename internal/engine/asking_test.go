@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -125,5 +126,20 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	}
 	if len(listed.Tasks) != 2 {
 		t.Errorf("%d tasks in the store, want the one put back and the one added after", len(listed.Tasks))
+	}
+}
+
+func TestAsk_aStoreFallenBehindIsRefusedToWhatNeedsItCurrent(t *testing.T) {
+	path := behindStore(t)
+	held, err := OpenBehind(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = held.Close() })
+	if _, err := held.Ask(TaskList, Input{}); !errors.Is(err, ErrStoreBehind) {
+		t.Errorf("Ask(TaskList) on a store behind = %v, want ErrStoreBehind", err)
+	}
+	if _, err := held.Ask(MigrationList, Input{}); err != nil {
+		t.Errorf("Ask(MigrationList) on a store behind = %v, want it to pass", err)
 	}
 }

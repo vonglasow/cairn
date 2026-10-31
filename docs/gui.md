@@ -886,6 +886,25 @@ the command line's, so a person at the window went to a terminal for either.
 store holds first, as it always does (`backups.go`). What it tells is said above the bar in
 the ink of what is read, and goes as a refusal does.
 
+**A store behind the window is offered the changes it waits for.** A newer
+cairn — the MCP server Claude Code restarted, a terminal — may apply a change
+to the store while an older window stays open, and the next window opened on
+an older store used to be refused at the door, or worse, kept drawing a board
+the store no longer had the tables for. Now `cairn gui` opens on such a store
+(`@store-behind-opens-the-window`) and the window asks "Apply what this store
+is waiting for?", naming each change, a backup set aside first. "Apply" runs
+`migration apply` and the board comes back
+(`@gui-a-store-behind-is-offered-its-changes`); "Quit" (`⌘Q`) closes the
+window and leaves the store as it was
+(`@gui-a-store-behind-is-left-as-it-was-when-quit`). Nothing else is reached
+while the question stands (`@gui-a-store-behind-holds-the-board-back`), and
+it is never aged away the way a refusal is: it is not an error, it is a
+question. Which refusal is a question, and which act agrees to it, is the
+engine's to say (`engine.AgreeingTo`), as for a task finished with a step
+still open; the engine also refuses, on every ask, what needs a current store
+while changes wait. The terminal board still refuses such a store until it
+asks the same question.
+
 **Tasks are exported, and imported, as a file chosen in the system's
 dialog.** `⌘E` and `⌘O`, on the bar of a board with nothing chosen and on a
 right click on the board, open the system's own file dialog (AppKit's panels

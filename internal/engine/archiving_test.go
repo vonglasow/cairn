@@ -123,3 +123,72 @@ func TestTodayIsTheDayTheEnvironmentNames(t *testing.T) {
 		t.Errorf("with a day that is not one, today is %v", got)
 	}
 }
+
+func TestHold_holdsAStoreBehind(t *testing.T) {
+	path := behindStore(t)
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now().AddDate(0, 0, -20).Format(time.DateOnly)
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	held, err := Hold(Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}, Acting{Through: "tui", By: "sam"})
+	if err != nil {
+		t.Fatalf("Hold: %v", err)
+	}
+	defer func() { _ = held.Close() }()
+	waiting, err := held.store.Waiting()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(waiting) != 1 {
+		t.Errorf("%d changes waiting after holding, want the 1 that was", len(waiting))
+	}
+}
+
+func TestHold_sweepsTheArchiveOnceTheStoreIsCurrent(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.acting = Acting{Through: "cli", By: "sam"}
+	add(t, e, "Migration Jenkins")
+	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
+		t.Fatal(err)
+	}
+	ago := time.Now().AddDate(0, 0, -10)
+	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.rollBack(path); err != nil {
+		t.Fatal(err)
+	}
+	_ = e.Close()
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now().AddDate(0, 0, -20).Format(time.DateOnly)
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	held, err := Hold(Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}, Acting{Through: "tui", By: "sam"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = held.Close() }()
+	if _, err := held.Ask(MigrationApply, Input{}); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if _, err := held.Ask(TaskList, Input{}); err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !archivedOnItsOwn(t, held, 1) {
+		t.Error("a held engine whose store became current left a task done before the period under way on the board")
+	}
+}

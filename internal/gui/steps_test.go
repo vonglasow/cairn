@@ -17,6 +17,7 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/migration"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 )
@@ -940,6 +941,28 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		if head := Heads(w.w); !strings.Contains(head, strconv.Itoa(n)) {
 			return fmt.Errorf("the question reads %q, naming no task %d", head, n)
+		}
+		return nil
+	})
+	sc.Then(`^the window is leaving$`, func() error {
+		if !w.w.Leaving() {
+			return fmt.Errorf("the window is not leaving")
+		}
+		return nil
+	})
+	sc.Then(`^the window asks to apply the change that is waiting, naming it$`, func() error {
+		if w.w.Screen() != OnAsking || w.w.question != aboutApplying {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		}
+		listed, err := w.work.Ask(engine.MigrationList, engine.Input{})
+		if err != nil {
+			return err
+		}
+		said := Heads(w.w) + " " + sentences(w.w.Asks())
+		for _, m := range listed.Changes {
+			if shape := migration.OfMigration(m); !shape.Applied && !strings.Contains(said, shape.Name) {
+				return fmt.Errorf("the question reads %q, naming no %q", said, shape.Name)
+			}
 		}
 		return nil
 	})

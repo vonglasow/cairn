@@ -163,3 +163,12 @@ func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) 
 		}
 	}
 }
+
+func TestAgreeingTo_aStoreBehindIsAgreedToByApplying(t *testing.T) {
+	behind := Told(fmt.Errorf("%w by 2 change(s)", ErrStoreBehind))
+
+	got, ok := AgreeingTo(TaskList, Input{}, behind)
+	if !ok || got.Reason != "store-behind" || got.Op.Name() != MigrationApply.Name() || got.In.Given["number"] != "" {
+		t.Errorf("AgreeingTo(TaskList, Input{}, behind) = %+v, %v, want migration apply for store-behind", got, ok)
+	}
+}

@@ -126,6 +126,46 @@ func (w *world) givens() test.Givens {
 	return test.Givens{Other: func() test.Asker { return w.other }}
 }
 
+func (w *world) aStoreFromAnOlderCairn(title string) error {
+	if err := w.addTask(title, "", ""); err != nil {
+		return err
+	}
+	if _, err := w.held.Ask(engine.MigrationRollback, engine.Agreed(engine.Input{})); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(filepath.Dir(w.path), "backups")); err != nil {
+		return err
+	}
+	_ = w.held.Close()
+	_ = w.other.Close()
+	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
+	if err != nil {
+		return err
+	}
+	other, err := engine.OpenBehind(w.path)
+	if err != nil {
+		return err
+	}
+	w.held, w.other, w.work = held, other, &refusing{held: held}
+	return nil
+}
+
+func (w *world) backupsKept() (int, error) {
+	kept, err := w.work.Ask(engine.BackupList, engine.Input{})
+	return len(kept.Backups), err
+}
+
+func (w *world) changesWaiting() (int, error) {
+	listed, err := w.work.Ask(engine.MigrationList, engine.Input{})
+	waiting := 0
+	for _, c := range listed.Changes {
+		if !c.Carried().Applied {
+			waiting++
+		}
+	}
+	return waiting, err
+}
+
 func (w *world) addTask(title, state, desc string) error {
 	given := map[string]string{"title": title}
 	if state != "" {
@@ -646,6 +686,31 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Given(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.aStoreFromAnOlderCairn)
+	sc.Then(`^a backup was set aside$`, func() error {
+		if n, err := w.backupsKept(); err != nil || n == 0 {
+			return fmt.Errorf("%d backups were set aside, want one: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^no backup was set aside$`, func() error {
+		if n, err := w.backupsKept(); err != nil || n != 0 {
+			return fmt.Errorf("%d backups were set aside, want none: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^no change is waiting$`, func() error {
+		if n, err := w.changesWaiting(); err != nil || n != 0 {
+			return fmt.Errorf("%d changes are waiting, want none: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^(\d+) changes? (?:is|are) still waiting$`, func(want int) error {
+		if n, err := w.changesWaiting(); err != nil || n != want {
+			return fmt.Errorf("%d changes are waiting, want %d: %w", n, want, err)
+		}
+		return nil
+	})
 	sc.When(`^I open the window$`, w.open)
 	sc.Step(`^the window is closed and opened again$`, w.open)
 	sc.Then(`^the window asks to pick up the task left unsaved$`, func() error {

@@ -388,16 +388,14 @@ func (w Window) walkingGoals(across, down int) Window {
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
 	if _, err := w.work.Ask(op, in); err != nil {
 		if agreeing, ok := engine.AgreeingTo(op, in, err); ok {
-			w.screen, w.question = OnAsking, aboutFinishingParts
-			w.agreeing = agreeing
-			return w.Look()
+			return w.agreeingTo(agreeing).Look()
 		}
 		return w.failing(err)
 	}
 	return w.Look()
 }
 
-func (w Window) finishingParts() Window {
+func (w Window) agreed() Window {
 	agreeing := w.agreeing
 	w.screen, w.question = OnTheBoard, aboutDeleting
 	w.agreeing = engine.Agreeing{}

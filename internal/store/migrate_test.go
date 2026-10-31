@@ -628,3 +628,20 @@ func TestOpen_refusesAnotherApplicationsDatabase(t *testing.T) {
 		t.Errorf("%d tables, %v: want the other application's one table and nothing of cairn's", n, err)
 	}
 }
+
+func TestCurrent_aStoreBehindSaysByHowMany(t *testing.T) {
+	s := openStore(t)
+	if err := s.Current(); err != nil {
+		t.Fatalf("Current on a store with nothing waiting: %v", err)
+	}
+	if _, err := s.RollBack(); err != nil {
+		t.Fatalf("RollBack: %v", err)
+	}
+	err := s.Current()
+	if !errors.Is(err, ErrStoreBehind) {
+		t.Fatalf("err = %v, want ErrStoreBehind", err)
+	}
+	if !strings.Contains(err.Error(), "by 1 change(s)") {
+		t.Errorf("err = %q, want it to say by 1 change(s)", err)
+	}
+}
