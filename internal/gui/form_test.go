@@ -1108,3 +1108,23 @@ func TestAnOpenFormTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 		t.Errorf("a task gone elsewhere emptied the form: %q", got)
 	}
 }
+
+func TestAFieldIsARoundedInputAndTheOneTheKeyboardIsOnIsRinged(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	fields := w.Form().Fields()
+	shot := drawn(t, w)
+	_, value, rows := FormPlace(w.formBox(), fields, 1)
+	frame := Framed(value, rows)
+	if painted(shot, Box{X: frame.X, Y: frame.Y, W: 1, H: 1}, Dark().Field) != 0 {
+		t.Error("a field's corner is not rounded")
+	}
+	if painted(shot, Box{X: frame.X + frame.W - 4, Y: frame.Y + frame.H/2, W: 1, H: 1}, Dark().Field) != 1 {
+		t.Error("a field does not stand on the field's ground")
+	}
+	_, on, onRows := FormPlace(w.formBox(), fields, w.Form().On())
+	ringed := Framed(on, onRows)
+	if painted(shot, Box{X: ringed.X + ringed.W/2, Y: ringed.Y, W: 1, H: 1}, Dark().Chosen) != 1 {
+		t.Error("the field the keyboard is on is not ringed in the accent")
+	}
+}

@@ -832,7 +832,7 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	shot := drawn(t, w)
 	on, off := frameOf("title"), frameOf("priority")
 	for what, frame := range map[string]Box{"the field typed into": on, "a field not typed into": off} {
-		if got := painted(shot, frame, Dark().Back); got == 0 {
+		if got := painted(shot, frame, Dark().Field); got == 0 {
 			t.Errorf("%s is not drawn in a box", what)
 		}
 	}
@@ -1195,13 +1195,13 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	}
 	inside := Inside(Framed(value, 1))
 
-	loose := ink(drawn(t, w), inside, Dark().Back)
-	held := ink(drawn(t, w.Key("cmd+a")), inside, Dark().Back)
+	loose := ink(drawn(t, w), inside, Dark().Field)
+	held := ink(drawn(t, w.Key("cmd+a")), inside, Dark().Field)
 	if held <= loose {
 		t.Errorf("holding the whole field painted %d pixels and letting go %d: "+
 			"the run is not drawn", held, loose)
 	}
-	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, Dark().Back)
+	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, Dark().Field)
 	if some <= loose || some >= held {
 		t.Errorf("a run of two characters painted %d, between %d and %d expected",
 			some, loose, held)

@@ -2930,7 +2930,7 @@ func (w *world) formBehindTheList() error {
 	if err != nil {
 		return err
 	}
-	if painted(shot, frame, Dark().Edge) == 0 {
+	if painted(shot, frame, Dark().Field) == 0 {
 		return fmt.Errorf("the form's first field is gone: the list covered it rather than sitting on it")
 	}
 	return nil

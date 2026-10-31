@@ -726,6 +726,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 }
 
 const (
+	fieldHalo    = 3
 	bubbleRadius = 8
 	stripeRadius = 3
 	trackHigh    = 3
@@ -1064,13 +1065,16 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, m Measure, n
 	if long {
 		frame, bar = Saying(value, rows)
 	}
-	ink, edge := skin.Faint, skin.Edge
+	ink, edge := skin.Low, skin.GroundEdge
 	if lit {
 		ink, edge = skin.Chosen, skin.Chosen
+		halo := skin.Chosen
+		halo.A = 38
+		rounded(gtx, Box{X: frame.X - fieldHalo, Y: frame.Y - fieldHalo, W: frame.W + 2*fieldHalo, H: frame.H + 2*fieldHalo}, buttonRadius+fieldHalo, halo)
 	}
 	sayHolding(gtx, th, skin, ink, name, named, small)
-	fill(gtx, frame, skin.Back)
-	outline(gtx, frame, edge)
+	rounded(gtx, frame, buttonRadius, edge)
+	rounded(gtx, Box{X: frame.X + 1, Y: frame.Y + 1, W: frame.W - 2, H: frame.H - 2}, buttonRadius-1, skin.Field)
 	writing(gtx, th, skin, m, Inside(frame), said, carets, size, rows, scrolled)
 	if long {
 		lines := wrapIn(m, said.Reads(), Inside(frame), size)
@@ -1103,7 +1107,6 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	for _, head := range FormHeads(box, fields) {
 		say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
 	}
-	fill(gtx, FormRule(panel), skin.Edge)
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
 	}
