@@ -683,14 +683,30 @@ Feature: The board
     Scenario: deleting asks before it takes the task away
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "d"
+      And I press "i", "D"
       Then the board says "delete task 1?"
       And the board carries 1 task
       When I press "esc"
       Then the board carries 1 task
-      When I press "d", "enter"
+      When I press "D", "enter"
       And the board looks again
       Then the board carries 0 tasks
+
+    @tui-d-deletes-nothing
+    Scenario: one letter destroys nothing: d no longer deletes, D asks first
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "i", "d"
+      Then the board carries 1 task
+      And the board says nothing of "delete task 1?"
+
+    @tui-m-moves-by-a-columns-letter
+    Scenario: m then a column's first letter moves the chosen task there
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the board
+      And I press "l", "i", "m", "d"
+      And the board looks again
+      Then "DONE" carries "Write the spec"
 
     @tui-a-filled-form-asks-before-it-is-thrown-away
     Scenario: a form somebody typed into is asked about before it goes

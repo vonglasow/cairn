@@ -9,7 +9,7 @@
  │   ⏎           open it                       │ │   ▌ high                                    │
  │   a           a new objective               │ │   ▌ critical                                │
  │   e           the form                      │ │                                             │
- │   d           delete                        │ │ STALLED — the top right of a card           │
+ │   D           delete                        │ │ STALLED — the top right of a card           │
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
  │   ⇥           next tab                      │ │   ◉  watching  handed over, needs a look    │
  │   :           command                       │ │   ‖  paused    waiting on your decision     │

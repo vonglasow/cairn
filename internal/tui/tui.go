@@ -104,6 +104,7 @@ type Board struct {
 
 	choosing         bool
 	asking           bool
+	setting          string
 	leaving          bool
 	sweeping         bool
 	agreeing         *engine.Agreeing

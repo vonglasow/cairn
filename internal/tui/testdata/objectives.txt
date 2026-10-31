@@ -37,4 +37,4 @@
 
 
 
- hjkl ←↓↑→ objectives   ⏎ open   a new   e edit   d delete   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ objectives   ⏎ open   a new   e edit   D delete   / search   ⇥ tab   ? help   : command

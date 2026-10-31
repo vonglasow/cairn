@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -273,7 +274,7 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		if b.tab == Objectives {
 			return b.editForm()
 		}
-	case "d":
+	case "D", "shift+d":
 		if b.tab == Objectives && b.goal != 0 {
 			b.asking = true
 			return b, nil
@@ -283,6 +284,9 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 }
 
 func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
+	if b.setting != "" {
+		return b.settingByLetter(key)
+	}
 	if way, ok := shifted(key); ok {
 		return b.push(way)
 	}
@@ -302,9 +306,19 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 		return b, b.toggleFocus()
 	case "o":
 		return b.linkedForm()
-	case "d":
+	case "D", "shift+d":
 		if b.task != 0 {
 			b.asking = true
+		}
+		return b, nil
+	case "m":
+		if b.task != 0 {
+			b.setting = "state"
+		}
+		return b, nil
+	case "p":
+		if b.task != 0 {
+			b.setting = "priority"
 		}
 		return b, nil
 	case "x":
@@ -367,4 +381,20 @@ func trimLast(s string) string {
 		return s
 	}
 	return string(runes[:len(runes)-1])
+}
+
+func (b Board) settingByLetter(key string) (tea.Model, tea.Cmd) {
+	field := b.setting
+	b.setting = ""
+	values := engine.States()
+	if field == "priority" {
+		values = engine.Priorities()
+	}
+	for _, value := range values {
+		if len(key) == 1 && strings.HasPrefix(value, key) {
+			return b, b.telling(engine.TaskEdit, engine.Input{Given: map[string]string{
+				"number": strconv.Itoa(b.task), field: value}})
+		}
+	}
+	return b, nil
 }

@@ -270,14 +270,14 @@ func (b Board) offers() []string {
 	if b.tab == Objectives {
 		return []string{
 			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("a", "new"),
-			b.offer("e", "edit"), b.offer("d", "delete"), b.offer("/", "search"),
+			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("/", "search"),
 			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"),
 		}
 	}
 	if b.mode == Insert {
 		return []string{
 			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
-			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("d", "delete"),
+			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("D", "delete"),
 			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"), b.offer("o", "linked"),
 		}
 	}

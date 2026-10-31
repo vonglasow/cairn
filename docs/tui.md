@@ -338,7 +338,9 @@ from that mode's bar, and pressing it there does nothing.
 | `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
 | `⇧X` | ✓ | | | archive every task in the column — it asks first |
 | `e` | | ✓ | ✓ | the form |
-| `d` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out |
+| `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter |
+| `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
+| `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
 | `f` | | ✓ | | focus or unfocus — an objective has none |
 | `⏎` | | ✓ | ✓ | the detail · on objectives, open the objective |
 | `/` | ✓ | | ✓ | search |

@@ -47,7 +47,7 @@ func TestTakingTheFocusAndLettingItGo(t *testing.T) {
 func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i", "d")
+	b := hit(standing(f), "l", "i", "D")
 	_, cmd := b.pressed("enter")
 	looked, ok := cmd().(Looked)
 	if !ok || looked.Err == nil {
@@ -60,7 +60,7 @@ func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 
 func TestDeleting(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "d")
+	b := hit(standing(f), "l", "i", "D")
 	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
 	}
@@ -72,7 +72,7 @@ func TestDeleting(t *testing.T) {
 func TestAFailureIsSaidRatherThanSwallowed(t *testing.T) {
 	f := twoTasks()
 	f.fail = errNope
-	b := hit(standing(f), "l", "i", "d")
+	b := hit(standing(f), "l", "i", "D")
 	_, cmd := b.pressed("enter")
 	msg := cmd()
 	looked, ok := msg.(Looked)
@@ -348,7 +348,7 @@ func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
 func TestRemovingAnObjective(t *testing.T) {
 	f := newFake()
 	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	b := hit(standing(f), "tab", "d")
+	b := hit(standing(f), "tab", "D")
 	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
 	}
@@ -360,7 +360,7 @@ func TestRemovingAnObjective(t *testing.T) {
 func TestRemovingNoObjectiveAtAll(t *testing.T) {
 	f := newFake()
 	b := hit(standing(f), "tab")
-	if _, cmd := b.pressed("d"); cmd != nil {
+	if _, cmd := b.pressed("D"); cmd != nil {
 		t.Fatal("delete asked for something with no objective under the cursor")
 	}
 }
@@ -369,7 +369,7 @@ func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := newFake()
 	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	f.failOp = errRefuse
-	b := hit(standing(f), "tab", "d")
+	b := hit(standing(f), "tab", "D")
 	_, cmd := b.pressed("enter")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("an objective that could not be deleted was passed over")

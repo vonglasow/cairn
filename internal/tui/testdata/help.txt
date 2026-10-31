@@ -31,10 +31,10 @@
  │   e           the form                      │ ╰─────────────────────────────────────────────╯
  │   o           a task linked to it           │
  │   f           focus or unfocus              │
- │   d           delete                        │
+ │   m then a lettermove it to the column it   │
+ │ begins                                      │
+ │   p then a letterits priority               │
+ │   D           delete                        │
  │   x           archive or unarchive          │
- │   esc         back to normal                │
- │                                             │
- │ DETAIL — one task, open                     │
 
  ↓↑ read on   esc close

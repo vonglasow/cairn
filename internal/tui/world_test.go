@@ -524,9 +524,9 @@ func TestDeletingIsAskedAboutFirst(t *testing.T) {
 	}
 	w.open()
 	w.press("i")
-	w.press("d")
+	w.press("D")
 	if !w.b.Asking() {
-		t.Fatal("d deleted without asking")
+		t.Fatal("D deleted without asking")
 	}
 	w.press("esc")
 	if w.b.Asking() {
@@ -535,7 +535,7 @@ func TestDeletingIsAskedAboutFirst(t *testing.T) {
 	if w.b.Where().Showing == 0 {
 		t.Error("the task went even though the question was backed out of")
 	}
-	w.press("d")
+	w.press("D")
 	w.press("enter")
 	if err := w.lookAgain(); err != nil {
 		t.Fatal(err)

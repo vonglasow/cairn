@@ -6,7 +6,7 @@ import (
 )
 
 func TestTheFootPutsTheQuestionItIsWaitingOn(t *testing.T) {
-	b := hit(standing(twoTasks()), "l", "i", "d")
+	b := hit(standing(twoTasks()), "l", "i", "D")
 	drawn := b.Draw()
 	if !strings.Contains(drawn, "delete task 1?") {
 		t.Fatalf("the foot does not ask about the deletion:\n%s", drawn)
