@@ -21,17 +21,12 @@ Feature: Changes to the shape of the store
       Then it exits with code 3
       And a line of what it says is `cairn migration apply` and nothing else
 
-    @store-behind-refused-by-a-surface-that-holds-the-store
-    Scenario Outline: the boards say what to run too
+    @store-behind-opens-the-board
+    Scenario: `cairn tui` on a store behind opens the board
       Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn <command>`
-      Then it exits with code 3
-      And it says the store is behind
-      And it says to run `cairn migration apply`
-
-      Examples:
-        | command |
-        | tui     |
+      When I run `cairn tui`
+      Then the board is opened on that store
+      And 1 change is still waiting
 
     @store-behind-opens-the-window
     Scenario: `cairn gui` on a store behind opens the window

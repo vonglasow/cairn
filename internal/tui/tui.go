@@ -190,6 +190,10 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		b.width, b.height = m.Width, m.Height
 		return b, nil
 	case Looked:
+		if agreeing, asks := engine.AgreeingTo(engine.Operation{}, engine.Input{}, m.Err); asks {
+			b.asking, b.agreeing = true, &agreeing
+			return b, nil
+		}
 		b = b.took(m)
 		if b.screen == OnDetail {
 			return b, b.hearing(b.task)
@@ -265,6 +269,9 @@ func (b Board) took(l Looked) Board {
 			b.screen = OnForm
 		}
 		return b
+	}
+	if b.aboutStore() {
+		b.asking, b.agreeing = false, nil
 	}
 	if b.form.asked != nil && !b.formStays() {
 		b.screen, b.form = OnTheBoard, Form{}

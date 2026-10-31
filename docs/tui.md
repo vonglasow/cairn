@@ -509,6 +509,20 @@ A step carries a title and whether it is done, and nothing else; see
 done, ticking its steps?" at the foot — and `⏎` puts it there with its steps
 ticked in the same act (`@tui-done-asks-about-open-steps`).
 
+**A store the board does not match is asked about, as the window does.**
+`cairn tui` opens on a store behind (`@store-behind-opens-the-board`), and a
+store rolled back under an open board is noticed at its next look
+(`@tui-a-store-put-behind-while-open-is-noticed`): the foot asks "apply what
+this store is waiting for?", `⏎` applies it, a backup set aside first
+(`@tui-a-store-behind-is-offered-its-changes`), and `esc` leaves the board
+with the store as it was (`@tui-a-store-behind-is-left-as-it-was-when-quit`).
+An apply that fails is said, and asked again. A store a newer cairn changed
+says "this store comes from a newer cairn", and only `esc` does anything
+(`@tui-a-store-from-a-newer-cairn-stops-the-board`). No other key is reached
+while either stands. The changes waiting are not named on the foot: naming
+them would read the store inside the board's update; `cairn migration list`
+names them. Why: [gui.md](gui.md).
+
 **A form somebody typed into is asked about before it goes.** `esc` on an
 untouched form closes it; `esc` on one with a change in it puts the question at
 the foot, and `esc` again gives the form back with everything still in it. The

@@ -947,3 +947,43 @@ Feature: The board
       When I open the board
       And I press "shift+f", "l", "k", "esc"
       Then the board says "filtered by priority critical"
+
+  Rule: A store the board does not match is asked about, or said
+
+    @tui-a-store-behind-is-offered-its-changes
+    Scenario: a board opened on a store behind offers to apply what is waiting
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I open the board
+      Then the board says "apply what this store is waiting for?"
+      When I press "enter"
+      And the board looks again
+      Then task 1 is in the column "backlog"
+      And a backup was set aside
+      And no change is waiting
+
+    @tui-a-store-behind-is-left-as-it-was-when-quit
+    Scenario: leaving instead leaves the store as it was
+      Given a store from an older cairn, holding a task titled "Write the spec"
+      When I open the board
+      And I press "esc"
+      Then the board is leaving
+      And no backup was set aside
+      And 1 change is still waiting
+
+    @tui-a-store-put-behind-while-open-is-noticed
+    Scenario: a store put behind while the board is open is noticed
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And another cairn rolls the last change back
+      And the board looks again
+      Then the board says "apply what this store is waiting for?"
+
+    @tui-a-store-from-a-newer-cairn-stops-the-board
+    Scenario: a store a newer cairn changed stops the board
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And another cairn applies a change this cairn does not know
+      And the board looks again
+      Then the board says "this store comes from a newer cairn"
+      When I press "enter"
+      Then the board says "this store comes from a newer cairn"

@@ -55,6 +55,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if b.pages.None() {
 		return b, nil
 	}
+	if b.asking && b.aboutStore() {
+		return b.answeringStore(key)
+	}
 	if key == "?" {
 		return b.help(), nil
 	}
@@ -121,6 +124,24 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 		return b.inInsert(key)
 	}
 	return b.inNormal(key)
+}
+
+func (b Board) aboutStore() bool {
+	return b.aboutReason(engine.ErrStoreBehind) || b.aboutReason(engine.ErrNewerStore)
+}
+
+func (b Board) aboutReason(err error) bool {
+	return b.agreeing != nil && b.agreeing.Reason == engine.RefusalOf(err).Reason
+}
+
+func (b Board) answeringStore(key string) (tea.Model, tea.Cmd) {
+	if key == "esc" {
+		return b, tea.Quit
+	}
+	if (key == "enter" || key == "return") && b.aboutReason(engine.ErrStoreBehind) {
+		return b, b.carry(b.agreeing.Op, b.agreeing.In)
+	}
+	return b, nil
 }
 
 func (b Board) jumping(key string) (bool, tea.Model, tea.Cmd) {

@@ -16,7 +16,7 @@ func initTui(t *testing.T) func(*godog.ScenarioContext) {
 
 func TestAcceptance_Board(t *testing.T) {
 	t.Parallel()
-	if test.Suite(t, "tui.feature", initTui(t), "").Run() != 0 {
+	if test.Suite(t, "tui.feature", initTui(t), "~@later").Run() != 0 {
 		t.Fatal("the board's scenarios did not all pass")
 	}
 }

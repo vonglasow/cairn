@@ -2,14 +2,18 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"cairn/internal/debug"
 	"cairn/internal/engine"
+	"cairn/internal/tui"
 	"cairn/test"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/cucumber/godog"
+	"github.com/spf13/cobra"
 )
 
 func initMigration(t *testing.T) func(*godog.ScenarioContext) {
@@ -24,6 +28,7 @@ func initMigration(t *testing.T) func(*godog.ScenarioContext) {
 
 func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 	var draft string
+	var board *tui.Looked
 	opened := false
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		draft, opened = "", false
@@ -33,7 +38,24 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 			return nil
 		}
 		t.Cleanup(func() { openGui = was })
+		board = nil
+		wasTui := openTui
+		openTui = func(_ *cobra.Command, model tea.Model) error {
+			first, _ := model.Init()().(tea.BatchMsg)[0]().(tui.Looked)
+			board = &first
+			return nil
+		}
+		t.Cleanup(func() { openTui = wasTui })
 		return ctx, nil
+	})
+	sc.Step(`^the board is opened on that store$`, func() error {
+		if board == nil {
+			return fmt.Errorf("the board was never opened:\n%s%s", w.Out.Stdout, w.Out.Stderr)
+		}
+		if !errors.Is(board.Err, engine.ErrStoreBehind) {
+			return fmt.Errorf("the board was not opened on a store behind: %w", board.Err)
+		}
+		return nil
 	})
 	sc.Step(`^the window is opened on that store$`, func() error {
 		if !opened {

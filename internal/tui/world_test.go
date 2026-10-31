@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ type world struct {
 	asked  bool
 	formAt int
 	opened bool
+	left   bool
 }
 
 func newWorld(t *testing.T) *world {
@@ -59,6 +61,7 @@ func (w *world) reset() {
 	w.b = Board{}
 	w.asked = false
 	w.formAt = 0
+	w.left = false
 }
 
 func (w *world) open() {
@@ -68,13 +71,7 @@ func (w *world) open() {
 }
 
 func (w *world) refresh() {
-	found, err := engine.Look(w.held)
-	if err != nil {
-		w.t.Fatalf("looking: %v", err)
-	}
-	model, cmd := w.b.Update(Looked{Snapshot: found})
-	w.b = model.(Board)
-	w.settle(cmd)
+	w.settle(w.b.look())
 }
 
 func (w *world) settle(cmd tea.Cmd) {
@@ -83,6 +80,7 @@ func (w *world) settle(cmd tea.Cmd) {
 		if msg == nil {
 			return
 		}
+		w.noticeQuit(msg)
 		if batch, ok := msg.(tea.BatchMsg); ok {
 			var next tea.Cmd
 			for _, one := range batch {
@@ -93,6 +91,7 @@ func (w *world) settle(cmd tea.Cmd) {
 				if inner == nil {
 					continue
 				}
+				w.noticeQuit(inner)
 				model, after := w.b.Update(inner)
 				w.b = model.(Board)
 				next = after
@@ -103,6 +102,12 @@ func (w *world) settle(cmd tea.Cmd) {
 		model, after := w.b.Update(msg)
 		w.b = model.(Board)
 		cmd = after
+	}
+}
+
+func (w *world) noticeQuit(msg tea.Msg) {
+	if _, quits := msg.(tea.QuitMsg); quits {
+		w.left = true
 	}
 }
 
@@ -168,6 +173,39 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
 	sc.Step(`^I save the form$`, w.saveForm)
 	sc.Step(`^the board looks again$`, w.lookAgain)
+	sc.Given(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.aStoreFromAnOlderCairn)
+	sc.When(`^another cairn rolls the last change back$`, w.anotherCairnRollsTheLastChangeBack)
+	sc.When(`^another cairn applies a change this cairn does not know$`, w.aChangeThisCairnDoesNotKnow)
+	sc.Then(`^a backup was set aside$`, func() error {
+		if n, err := w.backupsKept(); err != nil || n == 0 {
+			return fmt.Errorf("%d backups were set aside, want one: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^no backup was set aside$`, func() error {
+		if n, err := w.backupsKept(); err != nil || n != 0 {
+			return fmt.Errorf("%d backups were set aside, want none: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^no change is waiting$`, func() error {
+		if n, err := w.changesWaiting(); err != nil || n != 0 {
+			return fmt.Errorf("%d changes are waiting, want none: %w", n, err)
+		}
+		return nil
+	})
+	sc.Then(`^(\d+) changes? (?:is|are) still waiting$`, func(want int) error {
+		if n, err := w.changesWaiting(); err != nil || n != want {
+			return fmt.Errorf("%d changes are waiting, want %d: %w", n, want, err)
+		}
+		return nil
+	})
+	sc.Then(`^the board is leaving$`, func() error {
+		if !w.left {
+			return errors.New("the board did not ask to leave")
+		}
+		return nil
+	})
 	sc.Step(`^somebody else adds the step "([^"]*)" to task (\d+)$`, func(title string, n int) error {
 		return w.givens().IAddedTheStepToTask(title, n, false)
 	})
@@ -230,7 +268,88 @@ func (w *world) aWindow(width, high int) error {
 }
 
 func (w *world) givens() test.Givens {
-	return test.Givens{Other: func() test.Asker { return w.other }}
+	return test.Givens{Other: func() test.Asker { return elsewhere{w} }}
+}
+
+type elsewhere struct{ w *world }
+
+func (s elsewhere) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	answer, err := s.w.other.Ask(op, in)
+	if !errors.Is(err, engine.ErrNewerStore) {
+		return answer, err
+	}
+	err = test.AsANewerCairn(unknownChange, func() error {
+		answer, err = s.w.other.Ask(op, in)
+		return err
+	})
+	return answer, err
+}
+
+func (w *world) aStoreFromAnOlderCairn(title string) error {
+	if err := w.addTask(title, "", "", 0); err != nil {
+		return err
+	}
+	if _, err := w.held.Ask(engine.MigrationRollback, engine.Agreed(engine.Input{})); err != nil {
+		return err
+	}
+	if err := w.forgetBackups(); err != nil {
+		return err
+	}
+	return w.reopen()
+}
+
+func (w *world) forgetBackups() error {
+	return os.RemoveAll(filepath.Join(filepath.Dir(w.path), "backups"))
+}
+
+func (w *world) reopen() error {
+	_ = w.held.Close()
+	_ = w.other.Close()
+	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
+	if err != nil {
+		return err
+	}
+	other, err := engine.OpenBehind(w.path)
+	if err != nil {
+		return err
+	}
+	w.held, w.other = held, other
+	return nil
+}
+
+func (w *world) anotherCairnRollsTheLastChangeBack() error {
+	if _, err := w.other.Ask(engine.MigrationRollback, engine.Agreed(engine.Input{})); err != nil {
+		return err
+	}
+	return w.forgetBackups()
+}
+
+const unknownChange = "never heard of"
+
+func (w *world) aChangeThisCairnDoesNotKnow() error {
+	if err := test.AsANewerCairn(unknownChange, func() error {
+		_, err := w.other.Ask(engine.MigrationApply, engine.Input{})
+		return err
+	}); err != nil {
+		return err
+	}
+	return w.forgetBackups()
+}
+
+func (w *world) backupsKept() (int, error) {
+	kept, err := w.held.Ask(engine.BackupList, engine.Input{})
+	return len(kept.Backups), err
+}
+
+func (w *world) changesWaiting() (int, error) {
+	listed, err := w.held.Ask(engine.MigrationList, engine.Input{})
+	waiting := 0
+	for _, c := range listed.Changes {
+		if !c.Carried().Applied {
+			waiting++
+		}
+	}
+	return waiting, err
 }
 
 func (w *world) addTask(title, state, desc string, serving int) error {

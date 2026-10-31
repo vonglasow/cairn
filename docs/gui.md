@@ -908,8 +908,8 @@ it is never aged away the way a refusal is: it is not an error, it is a
 question. Which refusal is a question, and which act agrees to it, is the
 engine's to say (`engine.AgreeingTo`), as for a task finished with a step
 still open; the engine also refuses, on every ask, what needs a current store
-while changes wait. The terminal board still refuses such a store until it
-asks the same question.
+while changes wait. The terminal board asks the same, see
+[tui.md](tui.md).
 
 The same holds while the window is open: a store another cairn rolls back
 under it is noticed at the next beat, and asked about

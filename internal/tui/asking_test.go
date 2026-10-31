@@ -2,7 +2,11 @@ package tui
 
 import (
 	"cairn/internal/engine"
+	"errors"
+	"strings"
 	"testing"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
@@ -137,5 +141,77 @@ func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
 	got := f.asked[0]
 	if got.op.Verb != "done" || got.in.Given["number"] != "1" || !got.in.Confirmed {
 		t.Errorf("asked %q %v confirmed=%v, want done 1 confirmed", got.op.Verb, got.in.Given, got.in.Confirmed)
+	}
+}
+
+func TestALookRefusedForAStoreBehindIsAskedAbout(t *testing.T) {
+	f := newFake()
+	f.fail = engine.ErrStoreBehind
+	b := pump(standing(f), standing(f).look())
+	if !b.asking {
+		t.Fatalf("the board is not asking, and says %q", strip(b.Draw()))
+	}
+	if said := strip(b.foot()); !strings.Contains(said, "apply what this store is waiting for?") {
+		t.Errorf("the foot says %q", said)
+	}
+}
+
+func TestAFailedApplyIsSaidAndTheStoreIsAskedAboutAgain(t *testing.T) {
+	f := newFake()
+	f.fail = engine.ErrStoreBehind
+	b := pump(standing(f), standing(f).look())
+	f.fail, f.failOp = nil, errNope
+	b = hit(b, "enter")
+	if !b.asking || !b.aboutStore() {
+		t.Fatalf("the board stopped asking after the apply failed, and says %q", strip(b.foot()))
+	}
+	if !errors.Is(b.err, errNope) {
+		t.Errorf("the board said %v, want what failed", b.err)
+	}
+	f.failOp = nil
+	b = hit(b, "enter")
+	if b.asking {
+		t.Errorf("the question stands after the apply went through: %q", strip(b.foot()))
+	}
+}
+
+func TestEscOnAStoreBehindLeavesTheBoardAndTouchesNothing(t *testing.T) {
+	f := newFake()
+	f.fail = engine.ErrStoreBehind
+	b := pump(standing(f), standing(f).look())
+	asked := len(f.asked)
+	_, cmd := b.pressed("esc")
+	if cmd == nil {
+		t.Fatal("esc on the question asked for nothing")
+	}
+	if _, quits := cmd().(tea.QuitMsg); !quits {
+		t.Errorf("esc asked for %T, not to quit", cmd())
+	}
+	if len(f.asked) != asked {
+		t.Errorf("leaving asked the store %d more times", len(f.asked)-asked)
+	}
+}
+
+func TestAStoreFromANewerCairnIsSaidAndOnlyLeftWithEsc(t *testing.T) {
+	f := newFake()
+	f.fail = engine.ErrNewerStore
+	b := pump(standing(f), standing(f).look())
+	if said := strip(b.foot()); !strings.Contains(said, "this store comes from a newer cairn") {
+		t.Fatalf("the foot says %q", said)
+	}
+	asked := len(f.asked)
+	after, cmd := b.pressed("enter")
+	if cmd != nil {
+		t.Errorf("enter on a store from a newer cairn asked for %T", cmd())
+	}
+	if len(f.asked) != asked || !after.(Board).asking {
+		t.Errorf("enter went ahead: asking=%v, asked %d more", after.(Board).asking, len(f.asked)-asked)
+	}
+	_, cmd = b.pressed("esc")
+	if cmd == nil {
+		t.Fatal("esc asked for nothing")
+	}
+	if _, quits := cmd().(tea.QuitMsg); !quits {
+		t.Errorf("esc asked for %T, not to quit", cmd())
 	}
 }
