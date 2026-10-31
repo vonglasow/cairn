@@ -230,6 +230,12 @@ a column's geometry depending on its contents: scrolling and drop targets
 computed instead of multiplied, and two columns no longer sharing a grid, which
 shows the moment a card is dragged from one to the other.
 
+**A card's priority is a stripe five points wide** down its left side
+(`@gui-a-card-carries-its-priority-in-a-broad-stripe`). Kanban boards keep an
+accent stripe at three or four pixels and anything under reads as a border; five
+is clearly an accent at this window's scale, and still well inside the padding
+before the text. The card's outline is drawn over the stripe's first column.
+
 **A card is three lines**: its number, its title, and the labels it carries.
 The third fills room the fixed height already paid for and left empty, and it
 answers the question a board is asked most — which sprint, which chantier, which

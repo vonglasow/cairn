@@ -621,6 +621,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the tabs read (".*")$`, w.tabsRead)
 	sc.Then(`^the tab is "([^"]*)"$`, w.tabIs)
 	sc.Then(`^every card in "([^"]*)" is the same height$`, w.sameHeight)
+	sc.Then(`^the card "([^"]*)" is striped in its priority's colour (\d+) points wide$`, w.stripedWide)
 	sc.Then(`^"([^"]*)" carries a card whose title ends in "([^"]*)"$`, w.titleEndsIn)
 	sc.Then(`^it says the window is too small$`, w.tooSmall)
 	sc.Then(`^it says what size it needs$`, w.saysWhatItNeeds)
@@ -3029,4 +3030,26 @@ func (w *world) stepTile(title string) (Point, error) {
 		return Point{X: writ.X + writ.W/2, Y: writ.Y + writ.H/2}, nil
 	}
 	return Point{}, fmt.Errorf("no step titled %q is in sight", title)
+}
+
+func (w *world) stripedWide(title string, wide int) error {
+	card, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	at := PartsOf(w.w.Layout().CardAt(engine.IndexOf(card.State), 0, 0)).Panel
+	want := Dark().Priority[card.Priority]
+	stripe := Box{X: at.X + 1, Y: at.Y + 1, W: wide - 1, H: at.H - 2}
+	if got := painted(shot, stripe, want); got != stripe.W*stripe.H {
+		return fmt.Errorf("the stripe fills %d of %d pixels of its %d points", got, stripe.W*stripe.H, wide)
+	}
+	past := Box{X: at.X + wide, Y: at.Y + 1, W: 1, H: at.H - 2}
+	if got := painted(shot, past, want); got != 0 {
+		return fmt.Errorf("the stripe goes on past %d points, for %d pixels", wide, got)
+	}
+	return nil
 }

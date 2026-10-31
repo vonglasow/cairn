@@ -1,7 +1,7 @@
 package gui
 
 const (
-	edgeWide = 3
+	edgeWide = 5
 	numberAt = 6
 	titleAt  = 28
 	labelsAt = 54

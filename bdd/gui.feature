@@ -155,6 +155,12 @@ Feature: The desktop board
       And I rest the pointer on the card "Write the spec"
       Then no bubble shows
 
+    @gui-a-card-carries-its-priority-in-a-broad-stripe
+    Scenario: a card's priority is a stripe broad enough to be seen at a glance
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      When I open the window
+      Then the card "Write the spec" is striped in its priority's colour 5 points wide
+
   Rule: Each column and the band stand on a ground of their own
 
     @gui-columns-stand-apart
