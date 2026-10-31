@@ -1058,10 +1058,10 @@ What is typed into a new task is not lost for all that: at each pause it is
 kept as a **draft**, in a file beside the store (`Places.Draft`,
 `cairn.db.draft.json`), which is not a task and is in no trace. Saved, the task
 is made and the draft goes; cancelled, it goes too; left — by a click off the
-form (`@gui-clicking-off-a-new-task-saves-nothing`), which saves an edit but is
-not a decision to make a task, or by closing the window, which keeps the last
-keys too — it stays, and the next new task asks whether to pick it up or start
-afresh (`@gui-a-new-task-is-kept-as-a-draft`, `@gui-a-draft-can-be-left`,
+form once the question has been agreed to
+(`@gui-clicking-off-a-new-task-saves-nothing`), which is not a decision to make
+a task, or by closing the window, which keeps the last keys too — it stays,
+and the next new task asks whether to pick it up or start afresh (`@gui-a-new-task-is-kept-as-a-draft`, `@gui-a-draft-can-be-left`,
 `@gui-a-saved-task-leaves-no-draft`). Amended 2026-10-16: the first
 answer to "Cancel came too late" gave up keeping the typing at all, and left
 `⌘Z` on a new form to bring back what was thrown away — the wrong way round on
@@ -1364,9 +1364,16 @@ beside the form what was done to it. There used to be a panel to read a task
 in and a form to change it, one gesture apart; a task is opened to be worked
 on, and the second gesture was a gesture spent for nothing. A form nobody typed
 into is put away by `esc` or a click off it, the way the reading panel was. A
-form typed into is put away by a click off it too, what was typed saved as it
-goes — it used to stay, for fear of losing it, and saving is what the form does
-on its own anyway (`clickedOff`, `@gui-clicking-off-a-form-keeps-it`). A click
+form typed into is not put away by a click off it without a word: it asks what
+Cancel, `esc` and the cross ask, "Throw away what you typed?", and "Back" gives
+the form back with everything in it (`clickedOff`,
+`@gui-a-click-off-a-filled-form-asks-first`,
+`@gui-clicking-off-a-form-typed-into-throws-nothing-away`). A click off was the
+one way out that decided for the person — it used to save an edit, and keep a
+new task as a draft, without asking — and a click is the easiest gesture to
+make by mistake, so every way out of a filled form now asks the one question.
+A new task thrown away that way is still kept as a draft, as closing the window
+keeps it. A click
 off the calendar or a list closes it and gives the form back; off the form as
 well, both go (`@gui-a-click-off-the-form-closes-the-calendar-too`).
 

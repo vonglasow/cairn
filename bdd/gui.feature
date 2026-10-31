@@ -474,8 +474,8 @@ Feature: The desktop board
       And I click outside the panel
       Then the help is closed
 
-    @gui-clicking-off-a-form-keeps-it
-    Scenario: clicking off a form keeps what was typed, saved, and puts it away
+    @gui-clicking-off-a-form-typed-into-throws-nothing-away
+    Scenario: clicking off a form somebody typed into asks first, and what is thrown away leaves the task as it was
       Given I added a task titled "Write the spec"
       When I open the window
       And I click the card "Write the spec"
@@ -483,15 +483,18 @@ Feature: The desktop board
       And I put the keyboard on "title"
       And I type "X"
       And I click outside the panel
+      And I choose "Throw away"
       Then the window is on the board
-      And task 1 is called "Write the specX"
+      And task 1 is titled "Write the spec"
 
     @gui-clicking-off-a-new-task-saves-nothing
-    Scenario: clicking off a task being added is leaving it unsaved: it is not made, and is kept as a draft
+    Scenario: clicking off a task being added asks first, and what is thrown away is not made and is kept as a draft
       When I open the window
       And I press "cmd+n"
       And I type "Plan the week"
       And I click outside the panel
+      Then the panel is headed "Throw away what you typed?"
+      When I choose "Throw away"
       Then the window is on the board
       And there are no tasks
       When I press "cmd+n"
@@ -3939,6 +3942,18 @@ Feature: The desktop board
       Then the field "title" reads "Write the specs"
 
   Rule: Losing work is asked about first
+
+    @gui-a-click-off-a-filled-form-asks-first
+    Scenario: clicking off a form somebody typed into asks before it goes
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I set the field "title" to "Something else"
+      And I click outside the panel
+      Then the panel is headed "Throw away what you typed?"
+      When I choose "Back"
+      Then the field "title" reads "Something else"
 
     @gui-a-filled-form-asks-before-it-is-thrown-away
     Scenario: a form somebody typed into is asked about before it goes

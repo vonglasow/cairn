@@ -273,7 +273,7 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 		t.Error("a click on the calendar's own ground closed it")
 	}
 	typed := w.Key("esc").On("title").Types("x")
-	if left := typed.Click(Point{X: 2, Y: 2}); left.Screen() != OnTheBoard || f.what("task", "edit") != 1 {
+	if left := typed.Click(Point{X: 2, Y: 2}); left.Screen() != OnAsking || f.what("task", "edit") != 0 {
 		t.Errorf("a click off a form typed into left the window on %v, %d edits asked", left.Screen(), f.what("task", "edit"))
 	}
 }

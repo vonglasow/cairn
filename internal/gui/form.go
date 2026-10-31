@@ -462,6 +462,9 @@ func (w Window) Cancel() Window {
 }
 
 func (w Window) throwingAway() Window {
+	if w.screen == OnAsking && w.form.Adding && !w.form.ForObjective {
+		return w.leavingUnsaved()
+	}
 	if w.form.Adding && !w.form.ForObjective {
 		w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
 		return w.droppingDraft()
