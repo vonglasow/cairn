@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -646,8 +647,10 @@ func drawPlaced(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawStone(gtx layout.Context, stone []Point, ink color.NRGBA) {
 	var path clip.Path
 	path.Begin(gtx.Ops)
+	top, bottom, left := stone[0].Y, stone[0].Y, stone[0].X
 	for i, p := range stone {
 		at := f32.Pt(float32(p.X), float32(p.Y))
+		top, bottom, left = min(top, p.Y), max(bottom, p.Y), min(left, p.X)
 		if i == 0 {
 			path.MoveTo(at)
 			continue
@@ -655,7 +658,24 @@ func drawStone(gtx layout.Context, stone []Point, ink color.NRGBA) {
 		path.LineTo(at)
 	}
 	path.Close()
-	paint.FillShape(gtx.Ops, ink, clip.Outline{Path: path.End()}.Op())
+	outlined := clip.Outline{Path: path.End()}.Op().Push(gtx.Ops)
+	paint.LinearGradientOp{
+		Stop1: f32.Pt(0, float32(top)), Color1: lighter(ink),
+		Stop2: f32.Pt(0, float32(bottom)), Color2: darker(ink),
+	}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	moved := op.Offset(image.Pt(left, top)).Push(gtx.Ops)
+	grainOp().Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	moved.Pop()
+	outlined.Pop()
+}
+
+var grainOp = sync.OnceValue(func() paint.ImageOp { return paint.NewImageOp(StoneGrain()) })
+
+func darker(c color.NRGBA) color.NRGBA {
+	down := func(v uint8) uint8 { return uint8(max(0, int(v)-22)) }
+	return color.NRGBA{R: down(c.R), G: down(c.G), B: down(c.B), A: c.A}
 }
 
 func drawCross(gtx layout.Context, cross Box, ink color.NRGBA) {

@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"image"
+	"sync"
 	"time"
 )
 
@@ -9,9 +11,9 @@ const (
 	arriveOver  = 0.45
 	falling     = 0.35
 	settling    = 0.2
-	stoneGap    = 1
-	stoneWobble = 4
-	stoneLeast  = 48
+	stoneGap    = 0
+	stoneWobble = 2
+	stoneLeast  = 40
 )
 
 // IntroLasts is how long the board takes to build.
@@ -142,7 +144,7 @@ func (r *stoneRand) below(n int) int { return int(r.next() % uint32(max(1, n))) 
 func (r *stoneRand) between(lo, hi int) int { return lo + r.below(hi-lo+1) }
 
 func (r *stoneRand) stone(cell Box) []Point {
-	in := func() int { return stoneGap + 1 + r.below(stoneWobble) }
+	in := func() int { return stoneGap + r.below(stoneWobble) }
 	x0, x1 := cell.X+in(), cell.X+cell.W-1-in()
 	y0, y1 := cell.Y+in(), cell.Y+cell.H-1-in()
 	mid := cell.X + cell.W/2 + r.between(-cell.W/6, cell.W/6)
@@ -155,3 +157,39 @@ func (r *stoneRand) stone(cell Box) []Point {
 		{X: cell.X + in(), Y: cell.Y + cell.H - 1 - in()},
 	}
 }
+
+const grainSide = 128
+
+// StoneGrain is the grain every stone is painted with over its tone, the same on every run: a mottle a little lighter here and there, and pits a little darker, as a dressed stone has.
+var StoneGrain = sync.OnceValue(func() *image.RGBA {
+	grain := image.NewRGBA(image.Rect(0, 0, grainSide, grainSide))
+	r := stoneRand(2026)
+	lattice := make([]float64, (grainSide/grainCell+2)*(grainSide/grainCell+2))
+	for i := range lattice {
+		lattice[i] = float64(r.below(1000)) / 1000
+	}
+	across := grainSide/grainCell + 2
+	at := func(x, y int) float64 { return lattice[y*across+x] }
+	for y := range grainSide {
+		for x := range grainSide {
+			cx, cy := x/grainCell, y/grainCell
+			fx, fy := float64(x%grainCell)/grainCell, float64(y%grainCell)/grainCell
+			top := at(cx, cy)*(1-fx) + at(cx+1, cy)*fx
+			bottom := at(cx, cy+1)*(1-fx) + at(cx+1, cy+1)*fx
+			mottle := top*(1-fy) + bottom*fy
+			offset := grain.PixOffset(x, y)
+			if r.below(100) < grainPits {
+				grain.Pix[offset+3] = uint8(40 + r.below(50))
+				continue
+			}
+			light := uint8(max(0, mottle-0.45) * 120)
+			grain.Pix[offset], grain.Pix[offset+1], grain.Pix[offset+2], grain.Pix[offset+3] = light, light, light, light
+		}
+	}
+	return grain
+})
+
+const (
+	grainCell = 16
+	grainPits = 9
+)

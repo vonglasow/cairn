@@ -972,8 +972,12 @@ A board with no task opens on nothing being built
 (`@gui-no-task-no-cairn`). It lasts a breath (`IntroLasts`, 1.8 s), starts on
 the first frame a screen draws (`Born`), which no scenario draws, and the
 first key or press ends it and still does what it does — it is never in the
-way. Drawn rather than shaded: Gio runs no shader of a program's own, and
-filled outlines and opacity say it.
+way. Drawn rather than shaded: Gio runs no shader of a program's own, so a
+stone is its outline filled with a gradient, lighter at its top as a stone
+lit from above, and a grain painted over it — one image of mottle and pits,
+made once from a fixed seed (`StoneGrain`). The joints are tight, a pixel or
+two between neighbours, as a wall of dressed stone is laid; once landed,
+the stones give way to the redesigned card.
 
 **The time spent is seen a week or a month at a time, every task of it.** How
 long the work took was a table the command line printed. The third page, TIME,

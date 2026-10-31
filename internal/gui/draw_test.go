@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"bytes"
 	"cairn/internal/engine"
 	"fmt"
 	"image"
@@ -1530,5 +1531,50 @@ func TestTheCardInHandIsRaised(t *testing.T) {
 	}
 	if painted(shot, Box{X: ghost.X, Y: ghost.Y, W: 1, H: 1}, Dark().Ghost) != 0 {
 		t.Error("the card in hand's corner is not rounded")
+	}
+}
+
+func TestStonesSitCloseInTheirCourse(t *testing.T) {
+	panel := Box{X: 10, Y: 10, W: 220, H: 80}
+	stones := StonesOf(panel, 7)
+	for i := 1; i < len(stones); i++ {
+		left, right := stones[i-1], stones[i]
+		if right[0].X < left[2].X {
+			continue
+		}
+		if gap := right[0].X - left[2].X; gap > 3 {
+			t.Errorf("stones %d and %d stand %d apart in their course", i-1, i, gap)
+		}
+	}
+}
+
+func TestTheStonesGrainIsTheSameEveryRunAndNotFlat(t *testing.T) {
+	first, again := StoneGrain(), StoneGrain()
+	if !bytes.Equal(first.Pix, again.Pix) {
+		t.Error("the grain changes from one run to the next")
+	}
+	seen := map[uint8]bool{}
+	for i := 3; i < len(first.Pix); i += 4 {
+		seen[first.Pix[i]] = true
+	}
+	if len(seen) < 8 {
+		t.Errorf("the grain has %d levels: it is flat", len(seen))
+	}
+}
+
+func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
+	stone := []Point{{X: 10, Y: 10}, {X: 50, Y: 9}, {X: 90, Y: 10}, {X: 90, Y: 40}, {X: 50, Y: 41}, {X: 10, Y: 40}}
+	shot := drawnOps(t, 100, 50, func(gtx layout.Context) {
+		fill(gtx, Box{W: 100, H: 50}, Dark().Back)
+		drawStone(gtx, stone, Dark().stoneOf(1))
+	})
+	colours := map[color.RGBA]bool{}
+	for y := 14; y < 36; y++ {
+		for x := 14; x < 86; x++ {
+			colours[shot.RGBAAt(x, y)] = true
+		}
+	}
+	if len(colours) < 6 {
+		t.Errorf("a stone is drawn in %d colours: flat", len(colours))
 	}
 }
