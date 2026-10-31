@@ -87,6 +87,18 @@ func TestOpen_refusesAStoreFromANewerCairn(t *testing.T) {
 	}
 }
 
+func TestCurrent_aStoreANewerCairnChangedSaysSo(t *testing.T) {
+	s := openStore(t)
+	if _, err := s.db.Exec(
+		`INSERT INTO migrations (name, applied_at) VALUES ('never heard of', '2099-01-01T00:00:00Z')`); err != nil {
+		t.Fatalf("writing a change from the future: %v", err)
+	}
+
+	if err := s.Current(); !errors.Is(err, ErrNewerStore) {
+		t.Errorf("Current = %v, want ErrNewerStore", err)
+	}
+}
+
 func TestMigrations_refusesALedgerThatDoesNotSayWhen(t *testing.T) {
 	s := openStore(t)
 	if _, err := s.db.Exec(`UPDATE migrations SET applied_at = 'yesterday'`); err != nil {

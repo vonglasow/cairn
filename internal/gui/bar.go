@@ -83,6 +83,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutApplying {
 			return "Apply what this store is waiting for?"
 		}
+		if w.question == aboutNewer {
+			return "This store comes from a newer cairn"
+		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
 		if w.form.Adding {
@@ -294,6 +297,9 @@ func (w Window) Offers() []string {
 		if w.question == aboutApplying {
 			return []string{"Apply", "Quit"}
 		}
+		if w.question == aboutNewer {
+			return []string{"Quit"}
+		}
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
 		}
@@ -468,6 +474,11 @@ func (w Window) Asks() []Said {
 			{Means: "A backup is set aside first."},
 		}
 	}
+	if w.question == aboutNewer {
+		return []Said{
+			{Means: "Close this window and open cairn again: it is the newer one that can read it."},
+		}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -510,6 +521,7 @@ const (
 	aboutHiding
 	aboutDeletingParts
 	aboutApplying
+	aboutNewer
 )
 
 func (w Window) sweeps() string {

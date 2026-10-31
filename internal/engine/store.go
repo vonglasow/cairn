@@ -75,6 +75,9 @@ func (e *Engine) Version() (version int64, err error) {
 	if err := e.following(); err != nil {
 		return 0, Told(err)
 	}
+	if e.refused != nil {
+		return 0, nil
+	}
 	moved, err := e.store.Version()
 	return moved + e.followed<<32, err
 }

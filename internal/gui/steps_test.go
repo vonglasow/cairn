@@ -944,6 +944,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the window says the store comes from a newer cairn$`, func() error {
+		if w.w.Screen() != OnAsking || w.w.question != aboutNewer {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		}
+		return nil
+	})
 	sc.Then(`^the window is leaving$`, func() error {
 		if !w.w.Leaving() {
 			return fmt.Errorf("the window is not leaving")

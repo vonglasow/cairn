@@ -164,6 +164,15 @@ func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) 
 	}
 }
 
+func TestAgreeingTo_aStoreFromANewerCairnHasNoActToAgreeWith(t *testing.T) {
+	newer := Told(fmt.Errorf("%w: written by a later cairn", ErrNewerStore))
+
+	got, ok := AgreeingTo(TaskList, Input{}, newer)
+	if !ok || got.Reason != "store-newer" || got.Op.Run != nil || got.Op.Name() != (Operation{}).Name() {
+		t.Errorf("AgreeingTo(TaskList, Input{}, newer) = %+v, %v, want a question for store-newer with no act", got, ok)
+	}
+}
+
 func TestAgreeingTo_aStoreBehindIsAgreedToByApplying(t *testing.T) {
 	behind := Told(fmt.Errorf("%w by 2 change(s)", ErrStoreBehind))
 

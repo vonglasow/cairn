@@ -301,8 +301,13 @@ func (w Window) Look() Window {
 }
 
 func (w Window) agreeingTo(agreeing engine.Agreeing) Window {
+	w = w.Closing()
 	if agreeing.Reason == engine.RefusalOf(engine.ErrStoreBehind).Reason {
 		return w.applying(agreeing)
+	}
+	if agreeing.Reason == engine.RefusalOf(engine.ErrNewerStore).Reason {
+		w.screen, w.question, w.agreeing, w.err = OnAsking, aboutNewer, agreeing, nil
+		return w
 	}
 	w.screen, w.question, w.agreeing = OnAsking, aboutFinishingParts, agreeing
 	return w

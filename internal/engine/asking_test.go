@@ -84,7 +84,7 @@ func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
 	value := reflect.ValueOf(*e)
 	for i := range value.NumField() {
 		field := value.Type().Field(i)
-		if field.Type.Kind() != reflect.Interface && field.Type != reflect.TypeOf(kept) {
+		if field.Type == reflect.TypeFor[error]() || field.Type.Kind() != reflect.Interface && field.Type != reflect.TypeOf(kept) {
 			continue
 		}
 		if value.Field(i).IsNil() {

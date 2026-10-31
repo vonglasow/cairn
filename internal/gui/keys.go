@@ -399,7 +399,12 @@ func (w Window) agreed() Window {
 	agreeing := w.agreeing
 	w.screen, w.question = OnTheBoard, aboutDeleting
 	w.agreeing = engine.Agreeing{}
-	return w.asking(agreeing.Op, agreeing.In)
+	w = w.asking(agreeing.Op, agreeing.In)
+	if failed := w.err; failed != nil {
+		w = w.Look()
+		w.err = failed
+	}
+	return w
 }
 
 func (w Window) whereChosen() (column, at int) {

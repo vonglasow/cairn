@@ -191,7 +191,10 @@ opens a store behind (`Hold`, through `OpenBehind`) and checks again on every
 ask instead: an operation that `Needs` a current store is refused
 `ErrStoreBehind` while a change waits, and the board turns that refusal into
 a question (`engine.AgreeingTo`). The archive sweep `Hold` owes waits until
-the store is current, since it writes.
+the store is current, since it writes. A store carrying a change this cairn
+does not know is refused to everything, migrations included, on every ask;
+`Hold` keeps one met at open without opening it, so the board can say so and
+nothing reaches it.
 
 ## The store is spoken to through an interface the engine owns
 

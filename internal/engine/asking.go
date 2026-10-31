@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"time"
 
 	"cairn/internal/store"
@@ -16,10 +17,15 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 	if err := e.following(); err != nil {
 		return Answer{}, Told(err)
 	}
-	if op.Needs == AStore {
-		if err := e.store.Current(); err != nil {
+	if e.refused != nil && op.Needs != NoStore {
+		return Answer{}, Told(e.refused)
+	}
+	if op.Needs != NoStore {
+		if err := e.store.Current(); err != nil && (op.Needs == AStore || errors.Is(err, ErrNewerStore)) {
 			return Answer{}, Told(err)
 		}
+	}
+	if op.Needs == AStore {
 		if err := e.sweepIfOwed(); err != nil {
 			return Answer{}, Told(err)
 		}

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -19,6 +20,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/build"
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/task"
@@ -123,7 +125,21 @@ func (w *world) aWindow(width, high int) error {
 }
 
 func (w *world) givens() test.Givens {
-	return test.Givens{Other: func() test.Asker { return w.other }}
+	return test.Givens{Other: func() test.Asker { return standing{w} }}
+}
+
+type standing struct{ w *world }
+
+func (s standing) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	answer, err := s.w.other.Ask(op, in)
+	if !errors.Is(err, engine.ErrNewerStore) {
+		return answer, err
+	}
+	err = test.AsANewerCairn(unknownChange, func() error {
+		answer, err = s.w.other.Ask(op, in)
+		return err
+	})
+	return answer, err
 }
 
 func (w *world) aStoreFromAnOlderCairn(title string) error {
@@ -133,9 +149,17 @@ func (w *world) aStoreFromAnOlderCairn(title string) error {
 	if _, err := w.held.Ask(engine.MigrationRollback, engine.Agreed(engine.Input{})); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(filepath.Dir(w.path), "backups")); err != nil {
+	if err := w.forgetBackups(); err != nil {
 		return err
 	}
+	return w.reopen()
+}
+
+func (w *world) forgetBackups() error {
+	return os.RemoveAll(filepath.Join(filepath.Dir(w.path), "backups"))
+}
+
+func (w *world) reopen() error {
 	_ = w.held.Close()
 	_ = w.other.Close()
 	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
@@ -147,6 +171,43 @@ func (w *world) aStoreFromAnOlderCairn(title string) error {
 		return err
 	}
 	w.held, w.other, w.work = held, other, &refusing{held: held}
+	return nil
+}
+
+func (w *world) anotherCairnRollsTheLastChangeBack() error {
+	if _, err := w.other.Ask(engine.MigrationRollback, engine.Agreed(engine.Input{})); err != nil {
+		return err
+	}
+	return w.forgetBackups()
+}
+
+const unknownChange = "never heard of"
+
+func (w *world) aChangeThisCairnDoesNotKnow() error {
+	if err := test.AsANewerCairn(unknownChange, func() error {
+		_, err := w.other.Ask(engine.MigrationApply, engine.Input{})
+		return err
+	}); err != nil {
+		return err
+	}
+	return w.forgetBackups()
+}
+
+func (w *world) aStoreANewerCairnChanged(title string) error {
+	if err := w.addTask(title, "", ""); err != nil {
+		return err
+	}
+	if err := w.aChangeThisCairnDoesNotKnow(); err != nil {
+		return err
+	}
+	_ = w.held.Close()
+	held, err := engine.Hold(engine.Home{Dir: filepath.Dir(w.path), Lookup: func(name string) (string, bool) {
+		return w.path, name == config.StoreVariable
+	}}, engine.Through("gui", engine.Home{}))
+	if err != nil {
+		return err
+	}
+	w.held, w.work = held, &refusing{held: held}
 	return nil
 }
 
@@ -687,6 +748,15 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Given(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.aStoreFromAnOlderCairn)
+	sc.When(`^another cairn rolls the last change back$`, w.anotherCairnRollsTheLastChangeBack)
+	sc.When(`^another cairn applies a change this cairn does not know$`, w.aChangeThisCairnDoesNotKnow)
+	sc.Given(`^a store a newer cairn changed, holding a task titled "([^"]*)"$`, w.aStoreANewerCairnChanged)
+	sc.Then(`^the only answer it offers is "([^"]*)"$`, func(answer string) error {
+		if got := w.w.Offers(); len(got) != 1 || got[0] != answer {
+			return fmt.Errorf("the window offers %q, want only %q", got, answer)
+		}
+		return nil
+	})
 	sc.Then(`^a backup was set aside$`, func() error {
 		if n, err := w.backupsKept(); err != nil || n == 0 {
 			return fmt.Errorf("%d backups were set aside, want one: %w", n, err)

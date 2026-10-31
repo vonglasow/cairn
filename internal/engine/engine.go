@@ -51,6 +51,7 @@ type Engine struct {
 	turn       *sync.Mutex
 	followed   int64
 	sweepOwed  bool
+	refused    error
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not: a command about tasks does not change the shape of the store on the way past.
@@ -83,6 +84,9 @@ func (e *Engine) taking() func() {
 }
 
 func (e *Engine) following() error {
+	if e.refused != nil {
+		return nil
+	}
 	replaced, err := e.store.Replaced()
 	if err != nil || !replaced {
 		return err
@@ -113,6 +117,9 @@ func storeProblem(err error) error {
 // Close releases the store.
 func (e *Engine) Close() error {
 	defer e.taking()()
+	if e.refused != nil {
+		return nil
+	}
 	return e.tasks.Close()
 }
 

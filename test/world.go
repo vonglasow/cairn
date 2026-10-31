@@ -13,6 +13,7 @@ import (
 
 	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/migration"
 )
 
 // World carries what one scenario needs between its steps.
@@ -112,6 +113,16 @@ func (w *World) AStoreFromAnOlderCairn(title string) error {
 		return err
 	}
 	return w.ForgetBackups()
+}
+
+// AsANewerCairn runs do as a cairn that knows one change more than this one, named name: a store that change is applied to in do comes, once do returns, from a cairn newer than this one. It changes what every cairn in the process knows while do runs, so it belongs to tests that do not run in parallel.
+func AsANewerCairn(name string, do func() error) error {
+	known := migration.Known
+	migration.Known = append(known[:len(known):len(known)], migration.Made(migration.Carried{
+		Number: len(known) + 1, Name: name, Does: "SELECT 1", Undoes: "SELECT 1",
+	}))
+	defer func() { migration.Known = known }()
+	return do()
 }
 
 // ForgetBackups removes every backup beside the store, so a scenario counts only what it caused.

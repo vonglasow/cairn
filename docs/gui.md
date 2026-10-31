@@ -905,6 +905,18 @@ still open; the engine also refuses, on every ask, what needs a current store
 while changes wait. The terminal board still refuses such a store until it
 asks the same question.
 
+The same holds while the window is open: a store another cairn rolls back
+under it is noticed at the next beat, and asked about
+(`@gui-a-store-put-behind-while-open-is-noticed`). A store a newer cairn
+changed — under the window (`@gui-a-store-from-a-newer-cairn-stops-the-window`)
+or before it opened (`@gui-a-store-from-a-newer-cairn-at-open`) — cannot be
+read or written by this one: the window says "This store comes from a newer
+cairn", offers only "Quit", and nothing dragged or typed reaches the store,
+which the engine refuses whole (`Hold` keeps such a store without opening
+it). An apply that fails is said, and the question is asked again; a question
+that comes while a task is being added keeps what was typed as its draft, as
+a window closing does.
+
 **Tasks are exported, and imported, as a file chosen in the system's
 dialog.** `⌘E` and `⌘O`, on the bar of a board with nothing chosen and on a
 right click on the board, open the system's own file dialog (AppKit's panels

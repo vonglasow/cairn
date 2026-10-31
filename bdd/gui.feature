@@ -1900,6 +1900,32 @@ Feature: The desktop board
       Then the window asks to apply the change that is waiting, naming it
       And 1 change is still waiting
 
+    @gui-a-store-put-behind-while-open-is-noticed
+    Scenario: a store put behind while the window is open is noticed
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And another cairn rolls the last change back
+      And the window looks again
+      Then the window asks to apply the change that is waiting, naming it
+
+    @gui-a-store-from-a-newer-cairn-stops-the-window
+    Scenario: a store a newer cairn changed while open stops the window
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And another cairn applies a change this cairn does not know
+      And the window looks again
+      Then the window says the store comes from a newer cairn
+      And the only answer it offers is "Quit"
+      When I drag the card "Write the spec" onto "DONE"
+      Then task 1 is in the column "backlog"
+
+    @gui-a-store-from-a-newer-cairn-at-open
+    Scenario: a window opened on a store from a newer cairn says so
+      Given a store a newer cairn changed, holding a task titled "Write the spec"
+      When I open the window
+      Then the window says the store comes from a newer cairn
+      And the only answer it offers is "Quit"
+
   Rule: A right click says what can be done to what is under it
 
     @gui-a-right-click-on-a-card

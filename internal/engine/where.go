@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"cairn/internal/config"
@@ -101,13 +102,16 @@ func DoFrom(op Operation, h Home, in Input, acting Acting) (answer Answer, err e
 	return doAt(op, at, in, acting)
 }
 
-// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home and held even when it is behind this cairn, so that the change waiting can be asked for; the archive is swept only on a store that is up to date. What it is asked to do is written down as done through that surface, by whoever acts.
+// Hold opens the store a surface that stays on screen holds for as long as it is open: found from the home and held even when it is behind this cairn, so that the change waiting can be asked for, and held without being opened when a newer cairn changed it, so that it can be said; the archive is swept once the store is up to date. What it is asked to do is written down as done through that surface, by whoever acts.
 func Hold(h Home, acting Acting) (*Engine, error) {
 	at, err := Locate(h)
 	if err != nil {
 		return nil, err
 	}
 	held, err := OpenAt(at)
+	if errors.Is(err, ErrNewerStore) {
+		return &Engine{path: at.Store, notes: at.Notes, home: at.Home, acting: acting, turn: &sync.Mutex{}, refused: err}, nil
+	}
 	if err != nil {
 		return nil, err
 	}

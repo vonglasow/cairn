@@ -61,13 +61,10 @@ func (s *Store) settle(mustBeCurrent bool) error {
 	if err := s.adoptTheUnrecordedShapeWhileOpening(); err != nil {
 		return err
 	}
-	if err := s.refuseAnUnknownChange(); err != nil {
-		return err
+	if mustBeCurrent {
+		return s.Current()
 	}
-	if !mustBeCurrent {
-		return nil
-	}
-	return s.Current()
+	return s.refuseAnUnknownChange()
 }
 
 func (s *Store) makeTheLedgerWhenOpeningFindsNone() error {
@@ -159,8 +156,11 @@ func (s *Store) refuseAnUnknownChange() error {
 	return nil
 }
 
-// Current says whether the store has every change this cairn knows, and by how many it is behind when it has not.
+// Current says whether the store has every change this cairn knows and none it does not, and by how many it is behind when it has not.
 func (s *Store) Current() error {
+	if err := s.refuseAnUnknownChange(); err != nil {
+		return err
+	}
 	waiting, err := s.Waiting()
 	if err != nil {
 		return err

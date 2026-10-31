@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"errors"
+	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,6 +39,22 @@ func (b behind) Ask(op engine.Operation, in engine.Input) (engine.Answer, error)
 	return engine.Answer{}, engine.Told(engine.ErrStoreBehind)
 }
 
+func TestAQuestionThatComesWhileAddingKeepsTheDraft(t *testing.T) {
+	drafts := DraftsAt(filepath.Join(t.TempDir(), "cairn.db.draft.json"))
+	current := false
+	f := newFake()
+	w := holding(f).Drafting(drafts).Key("cmd+n").Types("Plan the week")
+	w.work = behind{f, []string{"add-the-estimate"}, &current}
+	w = w.Look()
+	if w.Screen() != OnAsking || w.question != aboutApplying {
+		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	}
+	held, err := drafts.Held()
+	if err != nil || held["title"] != "Plan the week" {
+		t.Errorf("the question came and the draft holds %v, %v", held, err)
+	}
+}
+
 func TestTheWindowAsksToApplyWhatIsWaitingWhenItsLookIsRefused(t *testing.T) {
 	w := Window{work: behind{fake: newFake(), waiting: []string{"add-the-estimate"}}}.Look()
 	if w.Screen() != OnAsking || w.question != aboutApplying {
@@ -55,6 +74,63 @@ func TestTheWindowAsksToApplyWhatIsWaitingWhenItsLookIsRefused(t *testing.T) {
 	}
 	if w.Screen() != OnAsking || w.question != aboutApplying {
 		t.Errorf("after the beats the window is on %v asking %v", w.Screen(), w.question)
+	}
+}
+
+type unappliable struct{ behind }
+
+func (u unappliable) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	if op.Thing == engine.MigrationApply.Thing && op.Verb == engine.MigrationApply.Verb {
+		return engine.Answer{}, errors.New("disk full")
+	}
+	return u.behind.Ask(op, in)
+}
+
+func TestTheWindowAsksAgainWhenApplyingFails(t *testing.T) {
+	var current bool
+	w := Window{work: unappliable{behind{newFake(), []string{"add-the-estimate"}, &current}}}.Look()
+	if w.question != aboutApplying {
+		t.Fatalf("the window asks %v", w.question)
+	}
+	w = w.Choose("Apply")
+	if w.Screen() != OnAsking || w.question != aboutApplying {
+		t.Fatalf("after a failed apply the window is on %v asking %v", w.Screen(), w.question)
+	}
+	if w.agreeing.Op.Verb != engine.MigrationApply.Verb || w.agreeing.Op.Thing != engine.MigrationApply.Thing {
+		t.Errorf("the window holds %+v", w.agreeing)
+	}
+	if w.Wrong() == nil || !strings.Contains(w.Wrong().Error(), "disk full") {
+		t.Errorf("the failure is not said: %v", w.Wrong())
+	}
+}
+
+type newer struct{ *fake }
+
+func (n newer) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	return engine.Answer{}, engine.Told(fmt.Errorf("%w: a change it does not know", engine.ErrNewerStore))
+}
+
+func TestTheWindowSaysAStoreFromANewerCairnAndOffersOnlyToQuit(t *testing.T) {
+	f := newFake()
+	w := Window{work: newer{f}}.Look()
+	if w.Screen() != OnAsking || w.question != aboutNewer {
+		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	}
+	if offers := w.Offers(); len(offers) != 1 || offers[0] != "Quit" {
+		t.Errorf("the window offers %q, want only Quit", offers)
+	}
+	if w.Wrong() != nil {
+		t.Errorf("the window says it went wrong: %v", w.Wrong())
+	}
+	for range 2 * Lingers() {
+		w = w.aged()
+	}
+	if w.Screen() != OnAsking || w.question != aboutNewer {
+		t.Errorf("after the beats the window is on %v asking %v", w.Screen(), w.question)
+	}
+	w = w.Choose("agree")
+	if w.Screen() != OnAsking || w.question != aboutNewer || len(f.wrote()) != 0 {
+		t.Errorf("agreeing left the window on %v asking %v after %d writes", w.Screen(), w.question, len(f.wrote()))
 	}
 }
 
