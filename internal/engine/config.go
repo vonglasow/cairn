@@ -38,9 +38,10 @@ type PagesConfig struct {
 	Time       bool `json:"time"`
 }
 
-// TimeConfig is what a deleted task does with its time: kept, or taken.
+// TimeConfig is what a deleted task does with its time, kept or taken, and whether a week is drawn with its weekend, shown or hidden.
 type TimeConfig struct {
-	Deleted string `json:"deleted"`
+	Deleted  string `json:"deleted"`
+	Weekends string `json:"weekends"`
 }
 
 // WindowConfig is whether the window opens with the sizes it was left with.
@@ -96,7 +97,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Pages = &PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: pages[2]}
 	start, days, _ := p.Archive()
 	g.config.Archive = &Archive{Start: start, Days: days}
-	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted()}
+	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
 }
@@ -168,7 +169,7 @@ func configText(c Config) string {
 		}
 	}
 	if c.Time != nil {
-		fmt.Fprintf(&said, "\n[time]\ndeleted = %q\n", c.Time.Deleted)
+		fmt.Fprintf(&said, "\n[time]\ndeleted = %q\nweekends = %q\n", c.Time.Deleted, c.Time.Weekends)
 	}
 	if c.Window != nil {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t\n", c.Window.KeepSizes)

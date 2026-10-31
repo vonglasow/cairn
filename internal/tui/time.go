@@ -52,7 +52,7 @@ func (b Board) readingWeek() tea.Cmd {
 
 func (b Board) timeWeek(l Layout) []string {
 	var lines []string
-	for i := range 7 {
+	for i := range b.pages.WeekDays() {
 		day := b.week.AddDate(0, 0, i)
 		on := timeOn(b.sheet, day)
 		lines = append(lines, " "+b.skin.Title.Render(day.Format("Mon 02/01"))+"  "+b.skin.Faint.Render(on.Total))

@@ -767,3 +767,20 @@ func TestRead_saysWhetherTheWindowKeepsItsSizes(t *testing.T) {
 		t.Errorf("err = %v, want ErrKeepSizes naming window.keep_sizes", err)
 	}
 }
+
+func TestRead_saysWhetherTheWeekendsAreShown(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[time]\nweekends = \"hidden\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.TimeWeekends(); got != config.WeekendsHidden {
+		t.Errorf("the weekends are %q, want hidden", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.TimeWeekends(); got != config.WeekendsShown {
+		t.Errorf("with no file, the weekends are %q, want shown", got)
+	}
+	if _, err := config.Read(writtenConfig(t, "[time]\nweekends = \"sometimes\"\n"), silentEnv); !errors.Is(err, config.ErrWeekends) {
+		t.Errorf("err = %v, want ErrWeekends", err)
+	}
+}

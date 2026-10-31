@@ -85,3 +85,32 @@ func TestTheWeekAnswersItsOwnKeys(t *testing.T) {
 		t.Errorf("a key with no card to act on left the window on %v", got.Screen())
 	}
 }
+
+func TestAWeekWithoutItsWeekendIsCutInFive(t *testing.T) {
+	w := Window{tab: Time, width: 1200, height: 800, pages: engine.Pages{}.WithoutWeekends(), timeState: timeState{week: dayNamed("2026-09-28")}}
+	days := w.WeekDays()
+	if len(days) != 5 || domain.FormatDay(days[0]) != "2026-09-28" || domain.FormatDay(days[4]) != "2026-10-02" {
+		t.Fatalf("the week shows %v, want Monday to Friday", days)
+	}
+	l := w.Layout()
+	first, last := WeekDayAt(l, 0), WeekDayAt(l, 4)
+	right := l.Column[engine.Columns-1].X + l.Column[engine.Columns-1].W
+	if gapLeft := right - (last.X + last.W); gapLeft < 0 || gapLeft >= 5 {
+		t.Errorf("the fifth day ends %d short of the board's right edge", gapLeft)
+	}
+	if first.W <= WeekDayAt(LayoutFor(1200, 800), 0).W {
+		t.Errorf("a day is %d wide, no wider than one of seven", first.W)
+	}
+	if saturday := MonthCellAt(l, 5); saturday != (Box{}) {
+		t.Errorf("a Saturday of a month is laid out at %+v", saturday)
+	}
+	if MonthCellAt(l, 7).X != MonthCellAt(l, 0).X || MonthCellAt(l, 4).X+MonthCellAt(l, 4).W > right {
+		t.Errorf("a month's weeks are not laid out in five columns")
+	}
+	if got := TimeSays(w); got != "28 Sep – 2 Oct 2026" {
+		t.Errorf("the strip says %q, want the week to end on its Friday", got)
+	}
+	drawn(t, w)
+	w.monthly = true
+	drawn(t, w)
+}

@@ -109,6 +109,7 @@ var reasons = []reason{
 	{config.ErrArchive, KindRefused, "config-archive"},
 	{config.ErrFocus, KindRefused, "config-focus"},
 	{config.ErrTime, KindRefused, "config-time"},
+	{config.ErrWeekends, KindRefused, "config-weekends"},
 	{config.ErrKeepSizes, KindRefused, "config-window"},
 }
 

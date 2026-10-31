@@ -110,9 +110,12 @@ days = 14
 # session = "1h"
 
 # What a deleted task does with its time: "kept" on the sheet, said to be
-# deleted, or "taken" with it, as though it had never been spent.
+# deleted, or "taken" with it, as though it had never been spent. And whether a
+# week of the time page shows its Saturday and Sunday: "shown", or "hidden" for
+# a week of five working days.
 [time]
 deleted = "kept"
+weekends = "shown"
 
 # Whether the window opens with the columns, the lanes and the band as wide
 # and as tall as it was left with, rather than as they start. Kept in a file

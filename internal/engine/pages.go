@@ -21,9 +21,10 @@ var pagesOf = map[string][]string{
 	"timesheet": {PageTime},
 }
 
-// Pages is which of the three pages are shown: every one, unless the configuration turned it off.
+// Pages is which of the three pages are shown, every one unless the configuration turned it off, and how many days a week of the time page shows.
 type Pages struct {
-	off []string
+	off       []string
+	noWeekend bool
 }
 
 // PagesOff is the pages shown when the ones named are turned off.
@@ -38,7 +39,21 @@ func PagesFrom(h Home) Pages {
 	if err != nil {
 		return Pages{}
 	}
-	return Pages{off: read.PagesOff()}
+	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == config.WeekendsHidden}
+}
+
+// WeekDays is how many days a week of the time page shows, counted from Monday: seven, or five once the configuration hides the weekends.
+func (p Pages) WeekDays() int {
+	if p.noWeekend {
+		return 5
+	}
+	return 7
+}
+
+// WithoutWeekends is the pages shown with a week cut to its five working days.
+func (p Pages) WithoutWeekends() Pages {
+	p.noWeekend = true
+	return p
 }
 
 // Shows says whether a page is drawn.

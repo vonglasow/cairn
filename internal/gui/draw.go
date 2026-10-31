@@ -259,9 +259,8 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		drawDayAlone(gtx, th, skin, l, w, longest)
 		return
 	}
-	for i := range 7 {
+	for i, day := range w.WeekDays() {
 		box := WeekDayAt(l, i)
-		day := w.week.AddDate(0, 0, i)
 		fill(gtx, box, skin.Panel)
 		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+w.DayHeld(i).Says(), reads)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
@@ -298,11 +297,14 @@ func drawDayAlone(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w
 }
 
 func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
-	for i, name := range Weekdays {
+	for i, name := range Weekdays[:w.pages.WeekDays()] {
 		say(gtx, th, skin.Faint, MonthWeekdayAt(l, i), name, reads)
 	}
 	for i, day := range engine.MonthGrid(w.week) {
 		cell := MonthCellAt(l, i)
+		if cell == (Box{}) {
+			continue
+		}
 		fill(gtx, cell, skin.Panel)
 		if day.Equal(w.today()) {
 			outline(gtx, cell, skin.Chosen)

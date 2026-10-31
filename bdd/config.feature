@@ -310,6 +310,23 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "time.deleted"
 
+  Rule: The weekends are left out of a week only when the configuration says so
+
+    @config-weekends-hidden-or-shown
+    Scenario: config show says the weekends are hidden, and shown when nothing is said
+      When I run `cairn config show`
+      Then it says "weekends" is "shown"
+      Given the weekends are hidden
+      When I run `cairn config show`
+      Then it says "weekends" is "hidden"
+
+    @config-weekends-is-one-of-two
+    Scenario: weekends that is neither shown nor hidden is refused
+      Given the weekends are "sometimes"
+      When I run `cairn task list`
+      Then it fails
+      And it names "time.weekends"
+
   Rule: The window keeps its sizes only when the configuration says so
 
     @config-show-says-the-window-keeps-its-sizes
@@ -340,6 +357,7 @@ Feature: Where cairn looks for its own places
         | pages   | time = true         |
         | archive | days = 14           |
         | time    | deleted = "kept"    |
+        | time    | weekends = "shown"  |
         | window  | keep_sizes = false  |
       And it says nothing is archived on its own
       And it says a focus session is never asked to be renewed

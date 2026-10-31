@@ -889,6 +889,19 @@ of a task in focus. The tab says how many tasks the
 time shown was spent on, from the moment the window opens: the week is read
 with every look at the store and not only once the page is opened, or the tab
 said 0 until it was clicked (`@gui-the-time-tab-counts-before-it-is-opened`).
+A company's week is five days, and Google Calendar lets
+a week and a month leave out Saturday and Sunday for it (Settings, View
+options, Show weekends, on by default; the day view is untouched), so the
+configuration does the same: `[time] weekends = "hidden"` cuts the week to five
+columns, Monday to Friday, each wider, and the month to five columns a week, and
+the strip says the week ends on its Friday (`@gui-a-week-without-its-weekend`).
+The days a week shows are the engine's to say (`Pages.WeekDays`), the one
+question both boards ask, so the terminal's week is not a second answer. Only
+what is drawn is left out: the week is still read whole, so time spent on a
+Saturday is not lost from any total that counts it, and the hidden days' cards
+are simply not drawn. There is no toggle on the strip: the window has no writer
+for the configuration yet, so the key is set in the file (see
+[config.md](config.md#the-weekends-of-a-week)).
 The page lies over the columns and draws none of them,
 so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
 which with two was a difference nothing could see.

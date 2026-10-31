@@ -65,3 +65,17 @@ func TestBackupsAreReachedFromTheBoard(t *testing.T) {
 		t.Error("B listed no backup")
 	}
 }
+
+func TestTheTimeTabLaysOutFiveDaysWhenTheWeekendsAreHidden(t *testing.T) {
+	b := standing(newFake()).Paged(engine.Pages{}.WithoutWeekends())
+	said := hit(b, "tab", "tab").Draw()
+	monday := engine.Monday(today)
+	if !strings.Contains(said, monday.AddDate(0, 0, 4).Format("Mon 02/01")) {
+		t.Errorf("the week does not lay out its Friday:\n%s", said)
+	}
+	for _, day := range []int{5, 6} {
+		if strings.Contains(said, monday.AddDate(0, 0, day).Format("Mon 02/01")) {
+			t.Errorf("the week lays out its weekend day %d:\n%s", day, said)
+		}
+	}
+}

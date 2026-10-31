@@ -857,6 +857,21 @@ Feature: The board
       When I press "t"
       Then the board says "Tue 01/09"
 
+    @tui-a-week-without-its-weekend
+    Scenario: with the weekends hidden, the time tab lays out a week as five days, Monday to Friday
+      Given the weekends are hidden
+      And I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-08-29"
+      When I open the board
+      And I press "tab"
+      And I press "tab"
+      And I press "left"
+      Then the board says "Mon 24/08"
+      And the board says "Fri 28/08"
+      And the board does not say "Sat 29/08"
+      And the board does not say "Sun 30/08"
+      And the board does not say "Write the spec"
+
     @tui-a-command-says-its-answer
     Scenario: a command typed at the prompt says what it answered, until esc
       Given I added a task titled "Write the spec"

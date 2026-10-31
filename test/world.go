@@ -269,6 +269,10 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^the time of a deleted task is "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[time]\ndeleted = %q\n", said))
 	})
+	sc.Step(`^the weekends are hidden$`, func() error { return w.WriteConfig("[time]\nweekends = \"hidden\"\n") })
+	sc.Step(`^the weekends are "([^"]*)"$`, func(said string) error {
+		return w.WriteConfig(fmt.Sprintf("[time]\nweekends = %q\n", said))
+	})
 	sc.Step(`^it is (\d+) (minutes|hours) later$`, w.ItIsLater)
 	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))

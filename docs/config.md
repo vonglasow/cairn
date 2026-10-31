@@ -232,6 +232,28 @@ other value is refused naming `time.deleted`
 `config show` says which it is
 (`@config-show-says-a-deleted-task-takes-its-time`).
 
+## The weekends of a week
+
+```toml
+[time]
+weekends = "hidden"   # or "shown", what is done when it is not said
+```
+
+Google Calendar has an option for the company calendar, Show weekends, on by
+default: off, the week and month views lose Saturday and Sunday and the day
+view does not. cairn's time page does the same, in the window and in the
+terminal's time tab alike: hidden, a week is five days, Monday to Friday, and a
+month five columns a week. Whether the weekends are shown is answered once by
+the engine, which hands the boards how many days a week shows
+(`Pages.WeekDays`, read from the configuration beside which pages are on), and
+both lay out only those. Hiding is drawing less, not counting less: the week is
+still read whole, so time spent on a Saturday stays in any total that counts the
+week, and the hidden days' cards are simply not drawn. Any other value is
+refused naming `time.weekends`
+(`@config-weekends-is-one-of-two`), and `config show` says which it is
+(`@config-weekends-hidden-or-shown`). The window has no toggle for it: it has
+no writer for the configuration yet, so the key is set in the file.
+
 ## The environment names the same two places
 
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the

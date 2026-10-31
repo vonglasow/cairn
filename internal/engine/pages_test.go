@@ -65,3 +65,23 @@ func TestPages_takeTheStepsWithTheTasksAndTheLabelsWithTheLastPageTheyLabel(t *t
 		t.Error("with the time off, task list is not called")
 	}
 }
+
+func TestPages_aWeekShowsFiveDaysWhenTheConfigurationHidesTheWeekends(t *testing.T) {
+	if got := (Pages{}).WeekDays(); got != 7 {
+		t.Errorf("with nothing said, a week shows %d days, want 7", got)
+	}
+	if got := PagesOff(PageTasks).WithoutWeekends().WeekDays(); got != 5 {
+		t.Errorf("without its weekend, a week shows %d days, want 5", got)
+	}
+	home := t.TempDir()
+	path := filepath.Join(home, ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("[time]\nweekends = \"hidden\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := PagesFrom(Home{Dir: home}).WeekDays(); got != 5 {
+		t.Errorf("read from the file, a week shows %d days, want 5", got)
+	}
+}

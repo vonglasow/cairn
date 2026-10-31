@@ -1600,6 +1600,16 @@ Feature: The desktop board
       And the day "2026-10-02" carries "Ship the board" for "2h"
       And the day "2026-09-28" carries nothing
 
+    @gui-a-week-without-its-weekend
+    Scenario: with the weekends hidden, the time page shows a week as five days, Monday to Friday
+      Given the weekends are hidden
+      And I added a task titled "Write the spec"
+      And I spent "1h" on task 1 on "2026-10-03"
+      And today is "2026-10-03"
+      When I open the window
+      And I click the tab "TIME"
+      Then the week shows the days "Mon 28/09, Tue 29/09, Wed 30/09, Thu 01/10, Fri 02/10"
+
     @gui-the-weeks-are-walked
     Scenario: the arrows walk the weeks, and t comes back to this one
       Given today is "2026-10-14"

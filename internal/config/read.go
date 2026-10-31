@@ -47,6 +47,15 @@ const (
 	TimeTaken = "taken"
 )
 
+// ErrWeekends is returned when the file says the weekends are something other than shown or hidden.
+var ErrWeekends = errors.New(`the weekends are "shown" or "hidden"`)
+
+// WeekendsShown and WeekendsHidden are what a week may do with its Saturday and Sunday: draw them, or leave them out.
+const (
+	WeekendsShown  = "shown"
+	WeekendsHidden = "hidden"
+)
+
 // ErrKeepSizes is returned when the file says whether the window keeps its sizes with something that is neither true nor false.
 var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
 
@@ -78,6 +87,7 @@ type Places struct {
 	archiveDays  int
 	focusSession string
 	timeDeleted  string
+	timeWeekends string
 	keepSizes    bool
 }
 
@@ -108,7 +118,8 @@ func (w *window) keepSizes() (bool, error) {
 }
 
 type timed struct {
-	Deleted string `toml:"deleted"`
+	Deleted  string `toml:"deleted"`
+	Weekends string `toml:"weekends"`
 }
 
 type focus struct {
@@ -188,6 +199,9 @@ func (p Places) Pages() [3]bool {
 
 // TimeDeleted is what a deleted task does with its time: TimeKept, unless the file says TimeTaken.
 func (p Places) TimeDeleted() string { return p.timeDeleted }
+
+// TimeWeekends says whether a week is drawn with its Saturday and Sunday.
+func (p Places) TimeWeekends() string { return p.timeWeekends }
 
 // FocusSession is how long a focus session lasts before it asks to be renewed, written 1h, exactly as the file wrote it; nothing when the file does not say.
 func (p Places) FocusSession() string { return p.focusSession }
@@ -287,6 +301,10 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
+	weekends, err := f.Time.weekends()
+	if err != nil {
+		return Reading{path: path, err: err}, nil
+	}
 	keep, err := f.Window.keepSizes()
 	if err != nil {
 		return Reading{path: path, err: err}, nil
@@ -294,6 +312,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	answer := Places{
 		keepSizes:    keep,
 		timeDeleted:  deleted,
+		timeWeekends: weekends,
 		focusSession: f.Focus.session(),
 		archiveStart: start,
 		archiveDays:  days,
@@ -417,4 +436,14 @@ func (t *timed) deleted() (string, error) {
 		return "", fmt.Errorf("time.deleted %q: %w", t.Deleted, ErrTime)
 	}
 	return t.Deleted, nil
+}
+
+func (t *timed) weekends() (string, error) {
+	if t == nil || t.Weekends == "" {
+		return WeekendsShown, nil
+	}
+	if t.Weekends != WeekendsShown && t.Weekends != WeekendsHidden {
+		return "", fmt.Errorf("time.weekends %q: %w", t.Weekends, ErrWeekends)
+	}
+	return t.Weekends, nil
 }

@@ -1018,6 +1018,20 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.Picked(line)
 		return nil
 	})
+	sc.Given(`^the weekends are hidden$`, func() error {
+		w.pages = w.pages.WithoutWeekends()
+		return nil
+	})
+	sc.Then(`^the week shows the days "([^"]*)"$`, func(want string) error {
+		var shown []string
+		for _, day := range w.w.WeekDays() {
+			shown = append(shown, day.Format("Mon 02/01"))
+		}
+		if got := strings.Join(shown, ", "); got != want {
+			return fmt.Errorf("the week shows %s, want %s", got, want)
+		}
+		return nil
+	})
 	sc.Given(`^the pages turned off are "([^"]*)"$`, func(list string) error {
 		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
 		return nil

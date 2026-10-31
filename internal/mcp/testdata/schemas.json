@@ -418,10 +418,14 @@
           "properties": {
             "deleted": {
               "type": "string"
+            },
+            "weekends": {
+              "type": "string"
             }
           },
           "required": [
-            "deleted"
+            "deleted",
+            "weekends"
           ],
           "additionalProperties": false
         },

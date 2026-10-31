@@ -111,3 +111,11 @@ func TestRead_pagesAreSaidOneByOne(t *testing.T) {
 		t.Errorf("Pages() = %v, want tasks and time on, objectives off", got)
 	}
 }
+
+func TestTheExample_writesWeekendsShownUnderTime(t *testing.T) {
+	_, under, _ := strings.Cut(Example, "\n[time]\n")
+	under, _, _ = strings.Cut(under, "\n[window]\n")
+	if !regexp.MustCompile(`(?m)^weekends = "shown"$`).MatchString(under) {
+		t.Errorf("the example does not write weekends = \"shown\" under [time]:\n%s", Example)
+	}
+}

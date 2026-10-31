@@ -25,6 +25,7 @@ const (
 	laneHigh  = headHigh
 	barHigh   = 32
 	bandCards = 2
+	daysAWeek = 7
 )
 
 // Point is somewhere in the window.
@@ -49,6 +50,7 @@ type Layout struct {
 	Band   Box
 	Lane   [3]Box
 	Bar    Box
+	Days   int
 }
 
 // TooSmall says whether the board can be drawn in this window at all.
@@ -77,7 +79,7 @@ func LaidOut(width, height int, by Sizes) Layout {
 	usable := max(0, height-margin-margin-tabsHigh-headHigh-barHigh-gap-gap)
 	top, band := split(usable-gap, by.Band)
 
-	var l Layout
+	l := Layout{Days: daysAWeek}
 	l.Tabs = Box{X: margin, Y: margin, W: width - margin - margin, H: tabsHigh}
 	x := margin
 	for i := range engine.Columns {

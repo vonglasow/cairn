@@ -243,6 +243,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the card for task (\d+) is drawn as the one in focus$`, w.cardInFocus)
 	sc.Then(`^the board says "([^"]*)"$`, w.boardSays)
 	sc.Then(`^the board says "([^"]*)" once$`, w.boardSaysOnce)
+	sc.Given(`^the weekends are hidden$`, func() error {
+		w.pages = w.pages.WithoutWeekends()
+		return nil
+	})
 	sc.Given(`^the pages turned off are "([^"]*)"$`, func(list string) error {
 		w.pages = engine.PagesOff(strings.Split(list, ", ")...)
 		return nil

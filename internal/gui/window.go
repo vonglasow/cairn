@@ -185,7 +185,11 @@ func (w Window) sized() Window {
 }
 
 // Layout is every size this window draws from.
-func (w Window) Layout() Layout { return LaidOut(w.width, w.height, w.sizes) }
+func (w Window) Layout() Layout {
+	l := LaidOut(w.width, w.height, w.sizes)
+	l.Days = w.pages.WeekDays()
+	return l
+}
 
 // Screen says what has the window.
 func (w Window) Screen() Screen { return w.screen }

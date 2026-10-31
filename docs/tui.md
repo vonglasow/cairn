@@ -62,6 +62,13 @@ for each task worked on with its time, read whole rather than cut to a seventh
 of a terminal's width; `←→` (or `h l`) walk the weeks, `t` comes back to
 today's, `j k` scroll. `⇥` walks the three round. Nothing else is a tab.
 
+The week is laid out as the window lays it out, and learned once: with
+`[time] weekends = "hidden"` it is five days, Monday to Friday, the days the
+engine says a week shows (`Pages.WeekDays`), as Google Calendar's "Show weekends"
+off does for a company's week (`@tui-a-week-without-its-weekend`). The week is
+still read whole: time spent on a Saturday is not lost from a total, its lines
+are only not drawn (see [config.md](config.md#the-weekends-of-a-week)).
+
 A page the configuration turns off has no tab, and `⇥` walks the others; the
 board opens on the first left. With all three off the screen is empty and only
 `ctrl+c` does anything (`@tui-a-page-off-has-no-tab`,

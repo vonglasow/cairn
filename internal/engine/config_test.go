@@ -176,3 +176,19 @@ func TestConfigText_saysWhatNamedEachPlaceAndWhatIsNotSaid(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigShow_saysWhetherTheWeekendsAreShown(t *testing.T) {
+	if c := shownWith(t, ""); c.Time == nil || c.Time.Weekends != "shown" {
+		t.Errorf("Time = %+v, want the weekends shown", c.Time)
+	}
+	c := shownWith(t, "[time]\nweekends = \"hidden\"\n")
+	if c.Time.Weekends != "hidden" {
+		t.Errorf("Time = %+v, want the weekends hidden", c.Time)
+	}
+	if said := configText(c); !strings.Contains(said, "\n[time]\ndeleted = \"kept\"\nweekends = \"hidden\"\n") {
+		t.Errorf("config show does not say the weekends are hidden:\n%s", said)
+	}
+	if again := shownWith(t, configText(c)); again.Problem != "" || again.Time.Weekends != "hidden" {
+		t.Errorf("read back, the weekends are %+v (%s)", again.Time, again.Problem)
+	}
+}

@@ -53,6 +53,15 @@ func (w Window) TimeShown() engine.Timesheet {
 	return shown
 }
 
+// WeekDays is the days of the week in sight that the page lays out.
+func (w Window) WeekDays() []time.Time {
+	days := make([]time.Time, w.pages.WeekDays())
+	for i := range days {
+		days[i] = w.week.AddDate(0, 0, i)
+	}
+	return days
+}
+
 // DayHeld is the i-th day of the week in sight, as the page shows it.
 func (w Window) DayHeld(i int) engine.TimesheetDay {
 	return w.TimeShown().On(w.week.AddDate(0, 0, i))
@@ -216,7 +225,7 @@ func TimeSays(w Window) string {
 	if w.monthly {
 		return w.week.Format("January 2006")
 	}
-	last := w.week.AddDate(0, 0, 6)
+	last := w.week.AddDate(0, 0, w.pages.WeekDays()-1)
 	if w.week.Year() != last.Year() {
 		return w.week.Format("2 Jan 2006") + " – " + last.Format("2 Jan 2006")
 	}
@@ -226,10 +235,10 @@ func TimeSays(w Window) string {
 	return w.week.Format("2") + " – " + last.Format("2 Jan 2006")
 }
 
-// WeekDayAt is where the i-th day of the week is laid out: the board's whole width, from under the strip to the foot of the band, cut in seven.
+// WeekDayAt is where the i-th day of the week is laid out: the board's whole width, from under the strip to the foot of the band, cut in as many days as a week shows.
 func WeekDayAt(l Layout, i int) Box {
 	strip := TimeStrip(l)
-	wide, top := (strip.W-6*gap)/7, strip.Y+strip.H+between
+	wide, top := (strip.W-(l.Days-1)*gap)/l.Days, strip.Y+strip.H+between
 	return Box{X: strip.X + i*(wide+gap), Y: top, W: wide, H: l.Band.Y + l.Band.H - top}
 }
 
@@ -289,7 +298,7 @@ func (w Window) scrollingDay(p Point, by int) Window {
 		w.dayFrom[0] = max(0, min(w.dayFrom[0]+total/weekRow, len(w.DayHeld(0).Tasks)-DayRoom(alone)))
 		return w
 	}
-	for i := range 7 {
+	for i := range w.WeekDays() {
 		day := WeekDayAt(l, i)
 		if !day.In(p) {
 			continue
@@ -309,11 +318,14 @@ func MonthWeekdayAt(l Layout, i int) Box {
 	return Box{X: cell.X, Y: cell.Y - lineHigh, W: cell.W, H: lineHigh}
 }
 
-// MonthCellAt is where the i-th day of a month's six weeks is laid out.
+// MonthCellAt is where the i-th day of a month's six weeks is laid out; a day the week does not show is laid out nowhere.
 func MonthCellAt(l Layout, i int) Box {
+	if i%7 >= l.Days {
+		return Box{}
+	}
 	strip := TimeStrip(l)
 	top := strip.Y + strip.H + between + lineHigh
-	wide, high := (strip.W-6*gap)/7, (l.Band.Y+l.Band.H-top-5*gap)/6
+	wide, high := (strip.W-(l.Days-1)*gap)/l.Days, (l.Band.Y+l.Band.H-top-5*gap)/6
 	return Box{X: strip.X + (i%7)*(wide+gap), Y: top + (i/7)*(high+gap), W: wide, H: high}
 }
 
@@ -368,7 +380,7 @@ func (w Window) clickingTime(p Point) Window {
 		return w.choosingAt(number)
 	}
 	if !w.monthly && !w.daily {
-		for i := range 7 {
+		for i := range w.WeekDays() {
 			if WeekHeadAt(WeekDayAt(l, i)).In(p) {
 				w.daily, w.week, w.dayFrom = true, w.week.AddDate(0, 0, i), [7]int{}
 				return w.readingWeek()
@@ -465,7 +477,7 @@ func (w Window) timeCardAt(p Point) int {
 		}
 		return 0
 	}
-	for i := range 7 {
+	for i := range w.WeekDays() {
 		for j, one := range w.DayShown(i) {
 			if DayCardAt(WeekDayAt(l, i), j).In(p) {
 				return one.Number
