@@ -749,8 +749,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if box.W >= over.W || box.H >= over.H/2 {
 			return fmt.Errorf("the question is %v in a window whose panels are %v", box, over)
 		}
-		for i := range w.w.Offers() {
-			if offer := PanelOfferAt(box, i); offer.X+offer.W > box.X+box.W || offer.Y+offer.H > box.Y+box.H {
+		for i, offer := range w.w.offersAlong(box) {
+			if offer.X < box.X || offer.X+offer.W > box.X+box.W || offer.Y+offer.H > box.Y+box.H {
 				return fmt.Errorf("offer %d at %v runs out of the question %v", i, offer, box)
 			}
 		}
@@ -1147,7 +1147,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.TimeCells() {
 			cells = append(cells, TimeCellAt(w.w.Layout(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Edge)
+		return buttonsDrawn(w.w, cells, Dark().Pill, Dark().Chosen)
 	})
 	sc.Step(`^I rest the pointer on the (count of labels|title) of "([^"]*)"$`, func(what, title string) error {
 		for _, placed := range w.w.Placed() {
@@ -1465,18 +1465,24 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if words := ButtonSaid(button); words.Y-button.Y != button.Y+button.H-words.Y-words.H {
 			return fmt.Errorf("the offer %q writes at %+v in a button at %+v", offer, words, button)
 		}
-		return buttonsDrawn(w.w, []Box{button}, Dark().Chosen)
+		return buttonsDrawn(w.w, []Box{button}, lighter(Dark().Pill))
 	})
 	sc.Then(`^every offer of the (bar|panel) is drawn as a button$`, func(where string) error {
 		slots := w.w.BarOffers()
 		if where == "panel" {
 			slots = w.w.offersAlong(w.w.panel())
 		}
-		var buttons []Box
-		for _, slot := range slots {
-			buttons = append(buttons, Button(slot))
+		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Pill, buttonOn: Dark().Chosen, buttonDanger: Dark().Danger}
+		for i, slot := range slots {
+			look := buttonPlain
+			if where == "panel" {
+				look = w.w.OfferLook(i, w.w.Offers()[i])
+			}
+			if err := buttonsDrawn(w.w, []Box{Button(slot)}, grounds[look]); err != nil {
+				return err
+			}
 		}
-		return buttonsDrawn(w.w, buttons, Dark().Edge)
+		return nil
 	})
 	sc.Then(`^the day held is drawn as a filled button$`, func() error {
 		shot, err := drawnInAStep(w.w)
@@ -1484,7 +1490,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.day))
-		middle := Box{X: at.X + 1, Y: at.Y + 1, W: at.W - 2, H: 2}
+		middle := Box{X: at.X + buttonRadius, Y: at.Y + 1, W: at.W - 2*buttonRadius, H: 2}
 		if got := painted(shot, middle, Dark().Chosen); got != middle.W*middle.H {
 			return fmt.Errorf("the day held, at %+v, is filled on %d of %d pixels", at, got, middle.W*middle.H)
 		}
@@ -1496,10 +1502,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if inside := (Box{X: at.X + 1, Y: at.Y + 1, W: at.W - 2, H: 2}); painted(shot, inside, Dark().Panel) != inside.W*inside.H {
+		if inside := (Box{X: at.X + buttonRadius, Y: at.Y + 3, W: at.W - 2*buttonRadius, H: 2}); painted(shot, inside, Dark().Panel) != inside.W*inside.H {
 			return fmt.Errorf("today, at %+v, is filled", at)
 		}
-		return buttonsDrawn(w.w, []Box{at}, Dark().Edge)
+		if edge := (Box{X: at.X + buttonRadius, Y: at.Y, W: at.W - 2*buttonRadius, H: 1}); painted(shot, edge, Dark().Selected) != edge.W {
+			return fmt.Errorf("today, at %+v, is not ringed", at)
+		}
+		return nil
 	})
 	sc.Then(`^the other days are drawn without a box$`, func() error {
 		shot, err := drawnInAStep(w.w)
@@ -1521,11 +1530,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.CalendarCells() {
 			cells = append(cells, CalendarCell(w.w.CalendarBox(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Edge)
+		return buttonsDrawn(w.w, cells, Dark().Pill, Dark().Chosen)
 	})
 	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
 		box := w.w.CalendarBox()
-		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Edge)
+		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Pill, Dark().Chosen)
 	})
 	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
 		if w.w.Screen() != OnLabels {
@@ -3225,16 +3234,19 @@ func (w *world) stripedWide(title string, wide int) error {
 	return nil
 }
 
-func buttonsDrawn(w Window, buttons []Box, edge color.NRGBA) error {
+func buttonsDrawn(w Window, buttons []Box, grounds ...color.NRGBA) error {
 	shot, err := drawnInAStep(w)
 	if err != nil {
 		return err
 	}
 	for _, button := range buttons {
-		for _, side := range Edges(button) {
-			if got := painted(shot, side, edge); got != side.W*side.H {
-				return fmt.Errorf("the button at %+v is edged on %d of %d pixels of %+v", button, got, side.W*side.H, side)
-			}
+		row := Box{X: button.X + buttonRadius, Y: button.Y + 2, W: button.W - 2*buttonRadius, H: 1}
+		got := 0
+		for _, ground := range grounds {
+			got += painted(shot, row, ground)
+		}
+		if got != row.W {
+			return fmt.Errorf("the button at %+v stands on %d of %d pixels of its ground along %+v", button, got, row.W, row)
 		}
 	}
 	return nil

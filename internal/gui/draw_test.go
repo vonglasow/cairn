@@ -209,11 +209,11 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 			v = v.Edit()
 		}
 		shot := drawn(t, v)
-		lit, faint := lettered(shot, first, skin.Chosen), lettered(shot, first, skin.Faint)
-		if c.lit && (lit == 0 || faint != 0) {
+		lit, faint := lettered(shot, first, skin.Ink), lettered(shot, first, skin.Faint)
+		if c.lit && lit <= faint {
 			t.Errorf("over %s the bar has %d lit and %d faint", c.what, lit, faint)
 		}
-		if !c.lit && (lit != 0 || faint == 0) {
+		if !c.lit && faint <= lit {
 			t.Errorf("under %s the bar has %d lit and %d faint", c.what, lit, faint)
 		}
 	}
@@ -781,9 +781,6 @@ func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	shot := drawn(t, help)
 	if got := painted(shot, Heading(box), Dark().Ink); got == 0 {
 		t.Error("the help does not say what it is")
-	}
-	if got := painted(shot, Ruled(box), Dark().Edge); got < Ruled(box).W {
-		t.Errorf("the heading is underlined across %d of %d", got, Ruled(box).W)
 	}
 	name, _ := FieldRow(box, FirstRow(box))
 	if got := painted(shot, Chip(name), Dark().Back); got == 0 {
@@ -1446,5 +1443,54 @@ func TestTheSkinTellsItsStatesApart(t *testing.T) {
 		if pair[0] == pair[1] {
 			t.Errorf("two states share %v", pair[0])
 		}
+	}
+}
+
+func TestAPanelIsRaisedRoundedAndHasNoEdge(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).Key("?")
+	box := w.HelpBox()
+	shot := drawn(t, w)
+	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+		t.Error("the panel's corner is not rounded")
+	}
+	if painted(shot, Box{X: box.X, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Panel) != 1 {
+		t.Error("the panel is edged rather than standing on its own ground")
+	}
+}
+
+func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	panel := w.panel()
+	along := w.offersAlong(panel)
+	last := along[0]
+	for _, b := range along {
+		if b.X > last.X {
+			t.Errorf("the first offer %q is not the rightmost", w.Offers()[0])
+		}
+	}
+	if right := panel.X + panel.W - padding; last.X+last.W != right {
+		t.Errorf("the offers end at %d, the panel's room at %d", last.X+last.W, right)
+	}
+	shot := drawn(t, w)
+	verb := Button(along[0])
+	if painted(shot, Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Chosen) != 3 {
+		t.Errorf("the panel's verb %q is not filled with the accent", w.Offers()[0])
+	}
+	other := Button(along[len(along)-1])
+	if painted(shot, Box{X: other.X + 3, Y: other.Y + 2, W: 3, H: 1}, Dark().Pill) != 3 {
+		t.Errorf("%q is not a plain button", w.Offers()[len(along)-1])
+	}
+}
+
+func TestAnAnswerThatDestroysIsRed(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Delete")
+	if w.Screen() != OnAsking {
+		t.Fatalf("deleting asked nothing: %v", w.Screen())
+	}
+	verb := Button(w.offersAlong(w.panel())[0])
+	if painted(drawn(t, w), Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Danger) != 3 {
+		t.Errorf("%q is not drawn red", w.Offers()[0])
 	}
 }

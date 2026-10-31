@@ -309,7 +309,7 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 		if offer != "Cancel" {
 			continue
 		}
-		box := PanelOfferAt(w.panel(), i)
+		box := w.PanelOffers()[i]
 		w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	}
 	if w.Screen() != OnTheBoard {
@@ -681,7 +681,7 @@ func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 
 	box := w.ChoosingBox()
 	for i, offer := range w.Offers() {
-		at := PanelOfferAt(box, i)
+		at := w.offersAlong(box)[i]
 		got, on := w.offerAt(Point{X: at.X + 10, Y: at.Y + at.H/2})
 		if !on || got != offer {
 			t.Errorf("the word %q drawn at %+v answers %q, %v", offer, at, got, on)

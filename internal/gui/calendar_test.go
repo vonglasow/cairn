@@ -155,8 +155,8 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	if len(boxes) != len(offers) {
 		t.Fatalf("%d boxes for %d offers", len(boxes), len(offers))
 	}
-	if first := PanelOfferAt(w.CalendarBox(), 0); boxes[0].X != first.X {
-		t.Errorf("the first offer starts at %d, not at the panel's %d", boxes[0].X, first.X)
+	if right := w.CalendarBox().X + w.CalendarBox().W - padding; boxes[0].X+boxes[0].W != right {
+		t.Errorf("the first offer ends at %d, not at the panel's %d", boxes[0].X+boxes[0].W, right)
 	}
 	for i, offer := range offers {
 		said := Reckoned(w.Said(offer), reads)
@@ -166,8 +166,8 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 		if boxes[i].W < offerWide {
 			t.Errorf("%q is narrower than an offer is ever drawn: %d", offer, boxes[i].W)
 		}
-		if i > 0 && boxes[i].X < boxes[i-1].X+boxes[i-1].W {
-			t.Errorf("%q starts at %d, inside the one before it", offer, boxes[i].X)
+		if i > 0 && boxes[i].X+boxes[i].W > boxes[i-1].X {
+			t.Errorf("%q ends at %d, inside the one before it", offer, boxes[i].X+boxes[i].W)
 		}
 		if boxes[i] != (Box{X: boxes[i].X, Y: PanelOfferAt(w.CalendarBox(), i).Y, W: boxes[i].W, H: barHigh}) {
 			t.Errorf("%q is not on the panel's row of offers: %+v", offer, boxes[i])
@@ -182,7 +182,7 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	foot := PanelOfferAt(w.formPanel(), 0)
+	foot := Button(w.PanelOffers()[0])
 	skin := Dark()
 	if painted(drawn(t, w), foot, skin.Chosen) == 0 {
 		t.Fatal("the open form draws no offer at its foot")
@@ -195,7 +195,7 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	}
 }
 
-func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
+func TestTheContextLineEndsBeforeTheOffersDrawn(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
 	w.keyboard = KeyboardOf("windows")
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -206,11 +206,11 @@ func TestTheContextLineStartsAfterTheOffersDrawn(t *testing.T) {
 		t.Fatalf("the context says %d things", len(said))
 	}
 	name, path := said[0].inSight(), said[1].inSight()
-	if name.X < last.X+last.W+padding {
-		t.Errorf("the context's name starts at %d, the last offer ends at %d", name.X, last.X+last.W)
+	if name.X != w.formPanel().X+padding {
+		t.Errorf("the context's name starts at %d, not at the panel's left", name.X)
 	}
-	if path.X != name.X+name.W || path.X+path.W != w.formPanel().X+w.formPanel().W-padding {
-		t.Errorf("the path runs %+v after a name %+v", path, name)
+	if path.X != name.X+name.W || path.X+path.W != last.X-padding {
+		t.Errorf("the path runs %+v after a name %+v, and the leftmost offer starts at %d", path, name, last.X)
 	}
 }
 
@@ -228,8 +228,9 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	shot, skin := drawn(t, w), Dark()
 	box := w.CalendarBox()
 	for _, chip := range []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
-		if got := painted(shot, Edges(chip)[0], skin.Edge); got != chip.W {
-			t.Errorf("the chip at %+v is edged on %d of %d pixels", chip, got, chip.W)
+		row := Box{X: chip.X + buttonRadius, Y: chip.Y + 2, W: chip.W - 2*buttonRadius, H: 1}
+		if got := painted(shot, row, skin.Pill) + painted(shot, row, skin.Chosen); got != row.W {
+			t.Errorf("the chip at %+v is filled on %d of %d pixels", chip, got, row.W)
 		}
 	}
 }

@@ -25,17 +25,17 @@ func FirstRow(box Box) int {
 	return ruled.Y + ruled.H + padding
 }
 
-// ContextName is where an open task names what the line beside it says: at its foot, past the last place an offer can take.
+// ContextName is where an open task names what the line beside it says: at the left of its foot, where the offers, drawn at the right, leave room.
 func ContextName(box Box) Box {
-	after := PanelOfferAt(box, detailOffers)
-	return Box{X: after.X + padding, Y: after.Y + (after.H-lineHigh)/2, W: contextNamed, H: lineHigh}
+	row := PanelOfferAt(box, 0)
+	return Box{X: box.X + padding, Y: row.Y + (row.H-lineHigh)/2, W: contextNamed, H: lineHigh}
 }
 
-// ContextPath is where it says where what was written about it elsewhere lives: from the end of its name to the panel's edge.
-func ContextPath(box Box) Box {
+// ContextPath is where it says where what was written about it elsewhere lives: from the end of its name to a pad short of end, where the offers begin.
+func ContextPath(box Box, end int) Box {
 	name := ContextName(box)
 	from := name.X + name.W
-	return Box{X: from, Y: name.Y, W: box.X + box.W - padding - from, H: lineHigh}
+	return Box{X: from, Y: name.Y, W: max(0, end-padding-from), H: lineHigh}
 }
 
 // Chip is the patch drawn behind a key so it reads as a key and not as a word.

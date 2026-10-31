@@ -339,7 +339,7 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 
 	box := opened.formPanel()
 	press := func(at int) Window {
-		button := PanelOfferAt(box, at)
+		button := opened.offersAlong(box)[at]
 		return opened.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
@@ -360,7 +360,7 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 
 	press := func(from Window, at int) Window {
-		button := PanelOfferAt(from.panel(), at)
+		button := from.PanelOffers()[at]
 		return from.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 

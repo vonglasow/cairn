@@ -1418,6 +1418,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return w.dragForm(from, right, down)
 	})
+	sc.Step(`^I click the panel's cross$`, func() error {
+		cross, ok := w.w.PanelClose()
+		if !ok {
+			return fmt.Errorf("the panel on %v has no cross", w.w.Screen())
+		}
+		w.w = w.w.clicked(Point{X: cross.X + cross.W/2, Y: cross.Y + cross.H/2})
+		return w.w.Wrong()
+	})
 	sc.Step(`^I click the form's cross$`, func() error {
 		cross := FormClose(w.w.formPanel())
 		w.w = w.w.clicked(Point{X: cross.X + cross.W/2, Y: cross.Y + cross.H/2})

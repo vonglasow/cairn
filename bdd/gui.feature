@@ -4119,6 +4119,20 @@ Feature: The desktop board
       And I click the form's cross
       Then the window is on the board
 
+    @gui-every-panel-is-closed-by-its-cross
+    Scenario Outline: the cross at the top of a panel closes it, as its esc does
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "<key>"
+      And I click the panel's cross
+      Then the window is on the board
+
+      Examples:
+        | key     |
+        | ?       |
+        | shift+f |
+        | cmd+,   |
+
     @gui-a-filled-form-closed-by-its-cross-asks-first
     Scenario: the cross asks first when something was typed
       Given I added a task titled "Write the spec"

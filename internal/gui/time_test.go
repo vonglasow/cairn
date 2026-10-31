@@ -286,7 +286,7 @@ func TestTheRangesOfTheTimePageAreButtons(t *testing.T) {
 	shot := drawn(t, w)
 	for _, chip := range []string{"Today", "Day", "Month"} {
 		box := TimeChip(l, chip)
-		if painted(shot, box, skin.Panel) < box.W*box.H/2 {
+		if painted(shot, box, skin.Pill) < box.W*box.H/2 && painted(shot, box, skin.Chosen) < box.W*box.H/2 {
 			t.Errorf("%s is not drawn as a button: too little of it is filled", chip)
 		}
 	}

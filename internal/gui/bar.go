@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -244,6 +245,45 @@ func helping() []Said {
 	}
 }
 
+// PanelClose is the cross at the top right of the panel open, which does what its esc does, and whether the panel open has one: a question is answered, not closed, and a list or a calendar has no heading to carry it.
+func (w Window) PanelClose() (Box, bool) {
+	switch w.screen {
+	case OnForm, OnHelp, OnBackups, OnLabels, OnFiltering, OnConfiguration:
+		return FormClose(w.panel()), true
+	}
+	return Box{}, false
+}
+
+func (w Window) leavingOffer() string {
+	for _, offer := range w.Offers() {
+		if Shortcut(offer) == "esc" {
+			return offer
+		}
+	}
+	return "Close"
+}
+
+// OfferLook is how the panel draws its i-th offer: red when it destroys, filled with the accent when it is the verb the panel is for, plain when it leaves or does something beside.
+func (w Window) OfferLook(i int, offer string) buttonLook {
+	switch {
+	case offer == "Delete" || offer == "Throw away" || (i == 0 && w.screen == OnAsking && w.destroys()):
+		return buttonDanger
+	case i == 0 && !leaving[offer]:
+		return buttonOn
+	}
+	return buttonPlain
+}
+
+var leaving = map[string]bool{"Cancel": true, "Close": true, "Back": true, "No filter": true, "No day": true, "Keep": true, "Start afresh": true}
+
+func (w Window) destroys() bool {
+	switch w.question {
+	case aboutDeleting, aboutDeletingSeveral, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutLeaving:
+		return true
+	}
+	return false
+}
+
 // Offers is what the bar says can be done here.
 func (w Window) Offers() []string {
 	switch w.screen {
@@ -363,7 +403,15 @@ func (w Window) offerAt(p Point) (string, bool) {
 }
 
 func (w Window) offersAlong(panel Box) []Box {
-	return laidAlong(w.widthsOf(w.Offers()), func(i int) Box { return PanelOfferAt(panel, i) }, panel.X+padding)
+	widths := w.widthsOf(w.Offers())
+	slices.Reverse(widths)
+	right := 0
+	for _, wide := range widths {
+		right += wide
+	}
+	laid := laidAlong(widths, func(i int) Box { return PanelOfferAt(panel, i) }, panel.X+panel.W-padding-right)
+	slices.Reverse(laid)
+	return laid
 }
 
 // BarOffers is where the bar under the board draws what it offers, and so where those are clicked: each as wide as what it says, as a panel's are.

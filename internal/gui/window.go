@@ -228,8 +228,12 @@ func (w Window) ContextSays() []Readable {
 		return nil
 	}
 	box := w.formPanel()
+	end := box.X + box.W
+	if offers := w.offersAlong(box); len(offers) > 0 {
+		end = offers[len(offers)-1].X
+	}
 	return []Readable{one("name:context", ContextName(box), "context", small),
-		one("field:context", ContextPath(box), at, small)}
+		one("field:context", ContextPath(box, end), at, small)}
 }
 
 // ChosenGoal says whether what is chosen is an objective rather than a task.

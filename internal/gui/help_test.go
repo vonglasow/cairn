@@ -12,7 +12,7 @@ func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
 		t.Fatalf("the help did not open: %v", open.Screen())
 	}
 	box := open.HelpBox()
-	if got := open.clicked(middle(PanelOfferAt(box, 0))); got.Screen() != OnTheBoard {
+	if got := open.clicked(middle(open.offersAlong(box)[0])); got.Screen() != OnTheBoard {
 		t.Errorf("clicking Close where it is drawn left the window on %v", got.Screen())
 	}
 	under := Point{X: box.X + box.W/2, Y: box.Y + box.H + apart}

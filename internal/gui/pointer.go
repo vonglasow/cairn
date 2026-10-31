@@ -20,6 +20,9 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnMenu {
 		return w.clickingMenu(p)
 	}
+	if cross, ok := w.PanelClose(); ok && cross.In(p) {
+		return w.Choose(w.leavingOffer())
+	}
 	if w.screen == OnBackups {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
@@ -53,9 +56,6 @@ func (w Window) Click(p Point) Window {
 		}
 		w, _ = w.dayClicked(p)
 		return w
-	}
-	if w.screen == OnForm && FormClose(w.formPanel()).In(p) {
-		return w.Choose("Cancel")
 	}
 	if at, on := w.fieldAt(p); on {
 		reached := w.reaching(at, p)

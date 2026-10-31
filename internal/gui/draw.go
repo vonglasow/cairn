@@ -419,7 +419,9 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		case day.Equal(w.day):
 			drawButton(gtx, th, skin, at, said, buttonOn)
 		case day.Equal(today):
-			drawButton(gtx, th, skin, at, said, buttonPlain)
+			rounded(gtx, at, buttonRadius, skin.Selected)
+			rounded(gtx, Box{X: at.X + 1, Y: at.Y + 1, W: at.W - 2, H: at.H - 2}, buttonRadius-1, skin.Panel)
+			sayCentred(gtx, th, skin.Ink, ButtonSaid(at), said, reads)
 		default:
 			ink := skin.Ink
 			if w.Faded(day) {
@@ -523,18 +525,18 @@ func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 }
 
 func drawPanelBare(gtx layout.Context, skin Skin, box Box) {
-	fill(gtx, box, skin.Panel)
-	outline(gtx, box, skin.Edge)
+	raised(gtx, box, panelRadius, skin.Panel)
 }
 
+const panelRadius = 12
+
 func drawPanel(gtx layout.Context, th *material.Theme, skin Skin, box Box, head string) {
-	drawPanelHeaded(gtx, th, skin, box, Heading(box), head)
+	drawPanelHeaded(gtx, th, skin, box, FormHeading(box), head)
 }
 
 func drawPanelHeaded(gtx layout.Context, th *material.Theme, skin Skin, box, heading Box, head string) {
 	drawPanelBare(gtx, skin, box)
 	sayStyled(gtx, th, skin.Ink, heading, head, HeadingSize, HeadingWeight, 1, text.Start)
-	fill(gtx, Ruled(box), skin.Edge)
 }
 
 func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
@@ -821,6 +823,16 @@ func drawOffer(gtx layout.Context, th *material.Theme, skin Skin, box Box, offer
 
 type buttonLook int
 
+func litLook(look buttonLook) buttonLook {
+	switch look {
+	case buttonOn:
+		return buttonOnLit
+	case buttonDanger:
+		return buttonDangerLit
+	}
+	return buttonLit
+}
+
 func lookOf(on bool) buttonLook {
 	if on {
 		return buttonOn
@@ -833,21 +845,31 @@ const (
 	buttonOn
 	buttonLit
 	buttonFaint
+	buttonDanger
+	buttonOnLit
+	buttonDangerLit
 )
 
+const buttonRadius = 7
+
 func drawButton(gtx layout.Context, th *material.Theme, skin Skin, button Box, said string, look buttonLook) {
-	back, ink, edge := skin.Panel, skin.Chosen, skin.Edge
+	back, ink := skin.Pill, skin.Ink
 	switch look {
 	case buttonOn:
 		back, ink = skin.Chosen, skin.Back
+	case buttonOnLit:
+		back, ink = lighter(skin.Chosen), skin.Back
 	case buttonLit:
-		ink, edge = skin.Ink, skin.Chosen
+		back = lighter(skin.Pill)
 	case buttonFaint:
 		ink = skin.Faint
+	case buttonDanger:
+		back, ink = skin.Danger, skin.Wrong
+	case buttonDangerLit:
+		back, ink = lighter(skin.Danger), skin.Wrong
 	}
-	fill(gtx, button, back)
-	outline(gtx, button, edge)
-	sayCentred(gtx, th, ink, ButtonSaid(button), said, reads)
+	rounded(gtx, button, buttonRadius, back)
+	sayStyled(gtx, th, ink, ButtonSaid(button), said, reads, font.Medium, 1, text.Middle)
 }
 
 func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on, picked bool, held Written) {
@@ -1082,9 +1104,24 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 
 func drawPanelOffers(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
 	along := w.offersAlong(box)
-	for i, offer := range w.Offers() {
-		drawOffer(gtx, th, skin, along[i], offer, w)
+	if len(along) > 0 {
+		fill(gtx, Box{X: box.X, Y: along[0].Y - between, W: box.W, H: 1}, skin.GroundEdge)
 	}
+	for i, offer := range w.Offers() {
+		look := w.OfferLook(i, offer)
+		if w.Lighting(offer) {
+			look = litLook(look)
+		}
+		drawButton(gtx, th, skin, Button(along[i]), w.Said(offer), look)
+	}
+	if cross, ok := w.PanelClose(); ok && w.screen != OnForm {
+		drawCross(gtx, cross, skin.Faint)
+	}
+}
+
+func lighter(c color.NRGBA) color.NRGBA {
+	up := func(v uint8) uint8 { return uint8(min(255, int(v)+18)) }
+	return color.NRGBA{R: up(c.R), G: up(c.G), B: up(c.B), A: c.A}
 }
 
 func inDp(gtx layout.Context) op.TransformStack {

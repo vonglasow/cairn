@@ -138,6 +138,20 @@ thresholds lowered. Shapes are rounded (`rounded`): a card 8, a column 10,
 a panel 12. A raised panel casts a shadow (`raised`): Gio has no blur, so
 the shadow is three rounded boxes under it, wider and fainter as they go.
 
+**A panel is raised, and its offers are buttons at its foot.** Every panel
+— a form, the help, a question, the backups, the labels, the filters, the
+configuration — is a rounded (12), shadowed ground over the veil, with no
+edge and no rule under its heading. A panel that can be closed carries a
+cross at its top right that does what its `esc` does (`PanelClose`,
+`@gui-every-panel-is-closed-by-its-cross`); a question has none, it is
+answered. Its offers stand at its foot, right-aligned under a faint line,
+the panel's verb last, at the right: filled with the accent when it is what
+the panel is for, red when it destroys — Delete, Throw away, the yes of a
+question that deletes — and plain otherwise (`OfferLook`). An open task's
+context is written at the left of that foot, up to its first button. Every
+button is one shape (`drawButton`): a rounded (7) ground and its words in
+the middle, lighter under the pointer.
+
 Words are written in Figtree, at 400, 500 and 600 (`TextFace`, `Faces`);
 Go's faces follow it for what it lacks, then the symbols. Figtree's strokes
 are thinner than Go's: no pixel of a word is the ink's exact colour, so a

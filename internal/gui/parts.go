@@ -102,8 +102,6 @@ func Edges(b Box) [4]Box {
 
 const offerWide = 110
 
-const detailOffers = 3
-
 const contextNamed = 64
 
 const searchWide = 76
