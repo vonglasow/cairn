@@ -383,11 +383,11 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	if cells := w.CalendarCells(); len(cells) > 0 {
 		for i, cell := range cells {
-			at := CalendarCell(box, i)
+			look := buttonPlain
 			if cell == w.CalendarMarked() {
-				outline(gtx, at, skin.Chosen)
+				look = buttonOn
 			}
-			say(gtx, th, skin.Ink, Inside(at), cell, reads)
+			drawButton(gtx, th, skin, CalendarCell(box, i), cell, look)
 		}
 		drawPanelOffers(gtx, th, skin, box, w)
 		return
@@ -397,18 +397,19 @@ func drawCalendar(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	today := w.today()
 	for i, day := range engine.MonthGrid(w.day) {
-		at := DayAt(box, i)
-		if day.Equal(today) {
-			fill(gtx, at, skin.Back)
+		at, said := DayAt(box, i), strconv.Itoa(day.Day())
+		switch {
+		case day.Equal(w.day):
+			drawButton(gtx, th, skin, at, said, buttonOn)
+		case day.Equal(today):
+			drawButton(gtx, th, skin, at, said, buttonPlain)
+		default:
+			ink := skin.Ink
+			if w.Faded(day) {
+				ink = skin.Faint
+			}
+			sayCentred(gtx, th, ink, ButtonSaid(at), said, reads)
 		}
-		if day.Equal(w.day) {
-			outline(gtx, at, skin.Chosen)
-		}
-		ink := skin.Ink
-		if w.Faded(day) {
-			ink = skin.Faint
-		}
-		say(gtx, th, ink, Inside(at), strconv.Itoa(day.Day()), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

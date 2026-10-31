@@ -1106,6 +1106,12 @@ days and does not close the calendar. The days have more room
 to be hit and read: 32 high and 6 apart, where they were 28 and 4, and the
 panel still sits whole in the smallest window the layouts are drawn at.
 
+**The calendar is drawn with the window's one button.** Its months and years
+are buttons, the one marked filled; a day is its number in the middle of its
+place, the day held a filled button and today an edged one — the marks a date
+picker usually gives them. Today was a black square, and the twelve cells were
+words in the corner of a frame (`@gui-the-calendar-draws-its-days-and-cells-as-buttons`).
+
 **A form saves itself.** `⌘S` was the only way a change reached the store,
 and every other place a person writes in saves on its own. On each beat of the
 window (`Beat`, two seconds) a form that was changed, and holds what it held at

@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/io/key"
@@ -1420,6 +1421,51 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			buttons = append(buttons, Button(slot))
 		}
 		return buttonsDrawn(w.w, buttons, Dark().Edge)
+	})
+	sc.Then(`^the day held is drawn as a filled button$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.day))
+		middle := Box{X: at.X + 1, Y: at.Y + 1, W: at.W - 2, H: 2}
+		if got := painted(shot, middle, Dark().Chosen); got != middle.W*middle.H {
+			return fmt.Errorf("the day held, at %+v, is filled on %d of %d pixels", at, got, middle.W*middle.H)
+		}
+		return nil
+	})
+	sc.Then(`^today is drawn as an edged button$`, func() error {
+		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.today()))
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		if inside := (Box{X: at.X + 1, Y: at.Y + 1, W: at.W - 2, H: 2}); painted(shot, inside, Dark().Panel) != inside.W*inside.H {
+			return fmt.Errorf("today, at %+v, is filled", at)
+		}
+		return buttonsDrawn(w.w, []Box{at}, Dark().Edge)
+	})
+	sc.Then(`^the other days are drawn without a box$`, func() error {
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		for i, day := range engine.MonthGrid(w.w.day) {
+			if day.Equal(w.w.day) || day.Equal(w.w.today()) {
+				continue
+			}
+			if edge := Edges(DayAt(w.w.CalendarBox(), i))[0]; painted(shot, edge, Dark().Panel) != edge.W {
+				return fmt.Errorf("%s is drawn in a box", day.Format(time.DateOnly))
+			}
+		}
+		return nil
+	})
+	sc.Then(`^every month is drawn as a button$`, func() error {
+		var cells []Box
+		for i := range w.w.CalendarCells() {
+			cells = append(cells, CalendarCell(w.w.CalendarBox(), i))
+		}
+		return buttonsDrawn(w.w, cells, Dark().Edge)
 	})
 	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
 		box := w.w.CalendarBox()
@@ -3134,4 +3180,13 @@ func buttonsDrawn(w Window, buttons []Box, edge color.NRGBA) error {
 		}
 	}
 	return nil
+}
+
+func dayIndex(w Window, day time.Time) int {
+	for i, one := range engine.MonthGrid(w.day) {
+		if one.Equal(day) {
+			return i
+		}
+	}
+	return -1
 }

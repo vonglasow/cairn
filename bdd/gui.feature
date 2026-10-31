@@ -2125,6 +2125,21 @@ Feature: The desktop board
       Then the calendar has no heading
       And the calendar's month, year and arrows stand whole in a row at its top
 
+    @gui-the-calendar-draws-its-days-and-cells-as-buttons
+    Scenario: the day held is a filled button, today an edged one, and the months and years are buttons
+      Given I added a task titled "Write the spec"
+      And today is "2026-10-12"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I click the field "deadline"
+      And I press "right"
+      Then the day held is drawn as a filled button
+      And today is drawn as an edged button
+      And the other days are drawn without a box
+      When I click the calendar's month
+      Then every month is drawn as a button
+
     @gui-the-pointer-walks-the-months
     Scenario: the arrows of its heading and the wheel walk the calendar's months
       Given I added a task titled "Write the spec"
