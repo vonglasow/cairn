@@ -179,6 +179,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnFiltering {
 		drawFilters(gtx, th, skin, w)
 	}
+	if w.Screen() == OnConfiguration {
+		drawConfiguration(gtx, th, skin, w)
+	}
 	if bubble, said, ok := w.BubbleBox(); ok {
 		fill(gtx, bubble, skin.Panel)
 		outline(gtx, bubble, skin.Edge)
@@ -216,6 +219,19 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			ink = skin.Chosen
 		}
 		say(gtx, th, ink, Inside(row), LabelSays(one), reads)
+	}
+	drawPanelOffers(gtx, th, skin, box, w)
+}
+
+func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	box := w.ConfigurationBox()
+	drawPanel(gtx, th, skin, box, Heads(w))
+	for i, line := range w.Configured() {
+		ink := skin.Ink
+		if line.Key == "" {
+			ink = skin.Faint
+		}
+		say(gtx, th, ink, Inside(ListRowAt(box, i)), ConfigurationSays(line), reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

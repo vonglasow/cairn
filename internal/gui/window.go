@@ -34,6 +34,8 @@ const (
 	OnLabels
 	// OnFiltering is the board's filters, each walked through its values, the board narrowing as they move.
 	OnFiltering
+	// OnConfiguration is the configuration in use, key by key, read from the window, with the file to be opened or written.
+	OnConfiguration
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -92,6 +94,7 @@ type Window struct {
 	backupsState
 	labelsState
 	filesState
+	configurationState
 	timeState
 	born                            time.Time
 	introOver                       bool

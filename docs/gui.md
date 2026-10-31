@@ -921,6 +921,36 @@ the command line's, so a person at the window went to a terminal for either.
 store holds first, as it always does (`backups.go`). What it tells is said above the bar in
 the ink of what is read, and goes as a refusal does.
 
+**The configuration is read from the window, and its file opened from there.**
+The window kept the configuration out of sight: to know what cairn read, or to
+change it, a person went to a terminal for `cairn config show`. `⌘,` — Settings
+on a Mac — or Configuration… in the File menu opens a panel over the board
+(`configuration.go`) that says what `config show` says, asked of the engine
+(`engine.ConfigShow`): the file read, or that it is not written yet, then a line
+a key with its value, and for the three places what named each — the file, the
+environment, or by default; the engine does not say it of the other keys, so the
+panel does not either. A file that cannot be made sense of is said, with why,
+instead of the keys. The panel is read-only, and the file stays the truth:
+editing a TOML that carries its comments from a form would lose them, as VS Code
+and Zed, which show their settings and offer to open the file, do not. So the
+panel offers Open the file, which hands the path to the system to open in the
+editor it keeps (`open`, `xdg-open`, `cmd /c start`; the model only says it
+wants it, as it does of a file dialog, and the loop starts the command), and,
+while there is no file, Write the file instead, which is `config init`
+(`engine.ConfigInit`) and reads the panel again. Closing and opening the panel
+again reads the file again: nothing watches it. What the window reads of the
+file — the pages, whether the weekends are shown, the sizes kept, and the
+places the store was opened from — it reads when it opens, so the panel ends on
+a line saying changes take effect when cairn is opened again; the keys the
+engine reads at each use (archiving, focus, a deleted task's time) take effect
+sooner, and the line is still true of them
+(`@gui-the-configuration-is-shown`,
+`@gui-the-configuration-file-is-opened-from-the-window`,
+`@gui-a-missing-configuration-is-written-from-the-window`,
+`@gui-the-menu-bar-opens-the-configuration`). The terminal board does not show
+it: it is not asked for there, and `cairn config show` is a keystroke away from
+it.
+
 **A store behind the window is offered the changes it waits for.** A newer
 cairn — the MCP server Claude Code restarted, a terminal — may apply a change
 to the store while an older window stays open, and the next window opened on

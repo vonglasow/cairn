@@ -251,8 +251,9 @@ still read whole, so time spent on a Saturday stays in any total that counts the
 week, and the hidden days' cards are simply not drawn. Any other value is
 refused naming `time.weekends`
 (`@config-weekends-is-one-of-two`), and `config show` says which it is
-(`@config-weekends-hidden-or-shown`). The window has no toggle for it: it has
-no writer for the configuration yet, so the key is set in the file.
+(`@config-weekends-hidden-or-shown`). The window has no toggle for it: the file
+stays the one place a key is set, and `⌘,` shows the configuration in use and
+opens the file from there ([gui.md](gui.md#the-window)).
 
 ## The environment names the same two places
 

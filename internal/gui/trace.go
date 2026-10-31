@@ -42,7 +42,7 @@ func KeyTrace(e event.Event, mask func(string) string) (string, bool) {
 var screenNames = map[Screen]string{
 	OnTheBoard: "board", OnForm: "form", OnSearch: "search", OnAsking: "asking", OnHelp: "help",
 	OnChoosing: "choosing", OnCalendar: "calendar", OnMenu: "menu", OnBackups: "backups",
-	OnLabels: "labels", OnFiltering: "filtering",
+	OnLabels: "labels", OnFiltering: "filtering", OnConfiguration: "configuration",
 }
 
 // Seen is what the window shows, the way debug mode writes it down each time it changes: the screen, the page, and the card or objective chosen.

@@ -7,7 +7,7 @@ import (
 
 func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
-	open := New(newFake(), 1600, 2000).Key("?")
+	open := New(newFake(), 1600, 2100).Key("?")
 	if open.Screen() != OnHelp {
 		t.Fatalf("the help did not open: %v", open.Screen())
 	}
@@ -46,15 +46,15 @@ func TestTheHelpDrawsItsBarWhenItScrolls(t *testing.T) {
 }
 
 func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
-	tall := New(newFake(), 1600, 2000).Key("?")
-	if got, want := tall.HelpBox(), (Box{X: 200, Y: 166, W: 1200, H: 106 + len(tall.HelpRows())*apart}); got != want {
+	tall := New(newFake(), 1600, 2100).Key("?")
+	if got, want := tall.HelpBox(), (Box{X: 200, Y: 175, W: 1200, H: 106 + len(tall.HelpRows())*apart}); got != want {
 		t.Errorf("a tall window's help is %+v, want %+v — as tall as its %d lines", got, want, len(tall.HelpRows()))
 	}
 	name, value := HelpRowAt(tall.HelpBox(), 2)
-	if want := (Box{X: 212, Y: 280, W: 158, H: 18}); name != want {
+	if want := (Box{X: 212, Y: 289, W: 158, H: 18}); name != want {
 		t.Errorf("the third key is at %+v, want %+v", name, want)
 	}
-	if want := (Box{X: 370, Y: 280, W: 1002, H: 18}); value != want {
+	if want := (Box{X: 370, Y: 289, W: 1002, H: 18}); value != want {
 		t.Errorf("what the third key does is at %+v, want %+v", value, want)
 	}
 

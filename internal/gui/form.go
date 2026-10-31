@@ -603,6 +603,13 @@ func (w Window) Choose(name string) Window {
 		return w.listingBackups()
 	case "labels":
 		return w.listingLabels()
+	case "configuration…":
+		return w.openingConfiguration()
+	case "write the file":
+		return w.writingConfiguration()
+	case "open the file":
+		w.opens = w.configured.File
+		return w
 	case "rename":
 		return w.startingRename()
 	case "all possible":

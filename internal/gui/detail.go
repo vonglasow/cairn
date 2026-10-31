@@ -166,6 +166,8 @@ func (w Window) panel() Box {
 		return w.LabelsBox()
 	case OnFiltering:
 		return w.FiltersBox()
+	case OnConfiguration:
+		return w.ConfigurationBox()
 	}
 	return Over(w.width, w.height)
 }

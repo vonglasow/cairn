@@ -44,6 +44,8 @@ func HeadsOn(w Window, screen Screen) string {
 			return "Rename " + w.labelChosen() + " to " + w.renamed.Reads()
 		}
 		return "Labels — r renames one, d takes it off everything"
+	case OnConfiguration:
+		return "Configuration"
 	case OnHelp:
 		return "What everything does"
 	case OnAsking:
@@ -135,6 +137,8 @@ func Shortcut(offer string) string {
 		return "shift+b"
 	case "labels":
 		return "shift+l"
+	case "configuration…":
+		return "cmd+,"
 	case "filter":
 		return "shift+f"
 	case "no filter":
@@ -244,6 +248,7 @@ func helping() []Said {
 		{Key: "⌘B", Means: "a new backup of the store — it says where it lies"},
 		{Key: "⇧B", Means: "the backups — enter restores one, after asking, a new backup made first"},
 		{Key: "⇧L", Means: "every label, with what carries it — r renames one everywhere, d takes it off everything, after asking"},
+		{Key: "⌘,", Means: "the configuration in use, key by key — its file is opened or written from there"},
 		{Key: "⌘E", Means: "export every task to a file chosen in the system's dialog"},
 		{Key: "⌘O", Means: "import the tasks of a file chosen there, as new tasks"},
 		{Key: "/ or ⌘F", Means: "search — it reaches the description and the reason"},
@@ -268,6 +273,11 @@ func (w Window) Offers() []string {
 		return []string{"Cancel"}
 	case OnFiltering:
 		return []string{"No filter", "Close"}
+	case OnConfiguration:
+		if w.configHere {
+			return []string{"Open the file", "Close"}
+		}
+		return []string{"Write the file", "Close"}
 	case OnLabels:
 		if w.renaming {
 			return []string{"Take", "Cancel"}

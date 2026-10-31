@@ -307,6 +307,9 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 					window.Invalidate()
 				}()
 			}
+			if path, asked := board.OpenAsked(); asked {
+				board = board.OpenTaken().Opened(HandOver(path))
+			}
 			board = board.Born(gtx.Now)
 			board.tellingTheBars()
 			Draw(gtx, theme, skin, board)

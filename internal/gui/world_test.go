@@ -30,6 +30,7 @@ import (
 type world struct {
 	t      *testing.T
 	path   string
+	home   string
 	held   *engine.Engine
 	other  *engine.Engine
 	work   *refusing
@@ -60,7 +61,8 @@ func (w *world) reset() {
 		_ = w.other.Close()
 	}
 	w.path = filepath.Join(w.t.TempDir(), "cairn.db")
-	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot})
+	w.home = w.t.TempDir()
+	held, err := engine.OpenAt(engine.Places{Store: w.path, Notes: notesRoot, Home: engine.Home{Dir: w.home}})
 	if err != nil {
 		w.t.Fatalf("opening the store: %v", err)
 	}
@@ -1632,6 +1634,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.expects(sc)
 	w.gutters(sc)
 	w.filtersSteps(sc)
+	w.configurationSteps(sc)
 }
 
 func (w *world) workedOn(times int) error {

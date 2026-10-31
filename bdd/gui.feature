@@ -1755,7 +1755,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Configuration…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -2692,7 +2692,7 @@ Feature: The desktop board
 
     @gui-the-help-fits-what-it-says
     Scenario: a help on a tall window is as tall as what it says
-      Given a window of 1600 by 2000
+      Given a window of 1600 by 2100
       When I open the window
       And I click "Help"
       Then the help shows every line
@@ -4257,3 +4257,36 @@ Feature: The desktop board
       And the window looks again
       Then the field "title" reads "Ship it now"
       And the form's steps read "Draft"
+
+  Rule: The configuration is read from the window
+
+    @gui-the-configuration-is-shown
+    Scenario: ⌘, shows the configuration in use, key by key, and where each comes from
+      Given a configuration file naming the store
+      When I open the window
+      And I press "cmd+,"
+      Then the panel is headed "Configuration"
+      And the configuration reads "store" from the file
+
+    @gui-the-configuration-file-is-opened-from-the-window
+    Scenario: the file is handed to the system to open
+      Given a configuration file naming the store
+      When I open the window
+      And I press "cmd+,"
+      And I choose "Open the file"
+      Then the window asks the system to open the configuration file
+
+    @gui-a-missing-configuration-is-written-from-the-window
+    Scenario: with no file, the window writes one
+      When I open the window
+      And I press "cmd+,"
+      And I choose "Write the file"
+      Then a configuration file exists
+      And the configuration reads "store" from the file
+
+    @gui-the-menu-bar-opens-the-configuration
+    Scenario: Configuration… in the menu bar shows the configuration
+      When I open the window
+      And I pick "Configuration…" in the menu bar
+      Then the panel is headed "Configuration"
+      And the bar offers "Close" under "esc"
