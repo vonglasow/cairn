@@ -1049,7 +1049,10 @@ day under it and a bar as long as its share of the longest stretch of the week:
 a glance says which day went where. A task's lines used to be its own, a second
 way of showing the same thing (`@gui-the-time-page-shows-cards`). A day of more tasks than its column holds scrolls under the wheel,
 a task a notch, with a bar beside it: it used to cut them off at its foot
-(`@gui-a-day-scrolls-to-its-last-task`). A day of the week says its date at
+(`@gui-a-day-scrolls-to-its-last-task`). The time spent over the period
+shown follows the period at the left of the strip, `26 Oct – 1 Nov 2026 ·
+34h10m`, and a month's after its year (`TimeSays`, `PeriodAt`); it stood
+left of the ranges, `week 34h10m` in Go Mono, where Today hid it. A day of the week says its date at
 its head, today's on the accent, and its total at the right end of the same
 line, in Go Mono (`WeekTotalAt`): the total followed the date, set off by
 spaces, and the spaces of a proportional face never matched today's pill, so

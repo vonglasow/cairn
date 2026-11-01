@@ -322,9 +322,6 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	measuring.Constraints.Min = image.Point{}
 	control := RangesControl(l)
 	rounded(gtx, control, buttonRadius+segmentInset, skin.Pill)
-	period := w.PeriodSays()
-	periodWide := monoWide(period, small)
-	sayIn(gtx, th, skin.Low, Box{X: control.X - periodWide - padding, Y: control.Y + (control.H-lineHigh)/2, W: periodWide, H: lineHigh}, period, small, font.Font{Typeface: MonoFace}, text.End)
 	for _, chip := range TimeChips {
 		at := TimeChip(l, chip)
 		switch chip {
@@ -342,6 +339,10 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	if w.Monthly() {
 		drawButton(gtx, th, skin, TimeChip(l, "the month"), w.week.Month().String(), lookOf(w.grid == viewMonths))
 		drawButton(gtx, th, skin, TimeChip(l, "the year"), strconv.Itoa(w.week.Year()), lookOf(w.grid == viewYears))
+		if total := w.PeriodSays(); total != "" {
+			at := PeriodAt(w, l)
+			say(gtx, th, skin.Ink, Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, "· "+total, reads)
+		}
 	} else {
 		say(gtx, th, skin.Ink, Inside(TimeSaid(l)), TimeSays(w), reads)
 	}

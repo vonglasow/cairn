@@ -2,7 +2,6 @@ package gui
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
 	"cairn/internal/domain"
@@ -277,8 +276,15 @@ func TimeSaid(l Layout) Box {
 	return Box{X: x, Y: after.Y, W: today.X - padding - x, H: after.H}
 }
 
-// TimeSays is what is shown, as the strip says it: a week's first and last days, or a month.
+// TimeSays is what is shown, as the strip says it: a week's first and last days, or a month, then the time spent over it when there is any.
 func TimeSays(w Window) string {
+	if total := w.PeriodSays(); total != "" {
+		return periodNamed(w) + " · " + total
+	}
+	return periodNamed(w)
+}
+
+func periodNamed(w Window) string {
 	if w.daily {
 		return w.week.Format("Monday 2 January 2006")
 	}
@@ -606,13 +612,23 @@ func (w Window) timeGridClicked(l Layout, p Point) (Window, bool) {
 	return w, w.grid != viewDays
 }
 
-// PeriodSays is the time spent over the whole period shown, as the strip says it beside its ranges.
+// PeriodSays is the time spent over the whole period shown, and nothing when none was.
 func (w Window) PeriodSays() string {
 	minutes := 0
 	for _, day := range w.TimeShown().Days {
 		minutes += day.Minutes
 	}
-	return strings.ToLower(w.ranging()) + " " + domain.FormatDuration(time.Duration(minutes)*time.Minute)
+	if minutes == 0 {
+		return ""
+	}
+	return domain.FormatDuration(time.Duration(minutes) * time.Minute)
+}
+
+// PeriodAt is where a month shown says its total: after its year, short of Today.
+func PeriodAt(w Window, l Layout) Box {
+	year, today := TimeChip(l, "the year"), TimeChip(l, "Today")
+	x := year.X + year.W + padding
+	return Box{X: x, Y: year.Y, W: max(0, today.X-padding-x), H: year.H}
 }
 
 // TodayPill is where today's date stands on the accent in its day's head: around the date, as wide as it reads.

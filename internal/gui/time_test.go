@@ -352,15 +352,21 @@ func TestTheRangesOfTheTimePageAreOneSegmentedControl(t *testing.T) {
 	}
 }
 
-func TestTheTimePageSaysThePeriodsTotal(t *testing.T) {
+func TestTheTimePageSaysThePeriodsTotalAfterThePeriod(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	w.sheet = engine.Timesheet{Days: []engine.TimesheetDay{{Day: "2026-09-28", Minutes: 70}, {Day: "2026-09-29", Minutes: 310}}}
-	if got := w.PeriodSays(); got != "week 6h20m" {
+	if got := TimeSays(w); got != "28 Sep – 4 Oct 2026 · 6h20m" {
 		t.Errorf("the week says %q", got)
 	}
 	w.monthly = true
-	if got := w.PeriodSays(); !strings.HasPrefix(got, "month ") {
-		t.Errorf("the month says %q", got)
+	l := w.Layout()
+	at, year, today := PeriodAt(w, l), TimeChip(l, "the year"), TimeChip(l, "Today")
+	if at.X < year.X+year.W || at.X+at.W > today.X {
+		t.Errorf("the month's total at %+v is not between its year %+v and Today %+v", at, year, today)
+	}
+	w.sheet = engine.Timesheet{}
+	if got := TimeSays(w); strings.Contains(got, "·") {
+		t.Errorf("a period with no time says %q", got)
 	}
 }
 
