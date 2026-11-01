@@ -578,7 +578,7 @@ func (w Window) Choose(name string) Window {
 		w.filters = w.filters.Cleared()
 		return w
 	case "help":
-		w.screen, w.helpFrom, w.spareHelp = OnHelp, 0, 0
+		w.screen = OnHelp
 		return w
 	case "about cairn":
 		w.screen, w.question = OnAsking, aboutCairn

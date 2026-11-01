@@ -1391,14 +1391,18 @@ and `Shift+` for ⌘ and ⇧ away from one
 (`@gui-the-help-names-the-keys-of-the-system`). Scenarios run as on a Mac
 unless they say otherwise, so what they read does not depend on the machine.
 
-**The help fits the window it is opened in.** It was drawn line after line
-from the top of a panel of fixed height: on a short window its foot ran under
-the panel's edge, and a line longer than its column was cut where it ran out.
-Each line now wraps into its column, the panel is as tall as what it says up to
-the room there is (`@gui-the-help-fits-what-it-says`), and on a window too short
-for it the wheel, `↑↓` and `j k` walk it, with a bar beside it saying where the
-reading stands (`@gui-the-help-scrolls`). See `help.go`. The terminal's help
-already read on with `↓↑`.
+**The help is a grid of keys, and fits the window it is opened in.** It
+groups the keys under Board, Find, Forms, Store and Pointer, each key on a
+chip and what it does in two or three words beside it, in two columns split
+between two groups, what each key does starting where it does for every key
+of its column (`HelpLines`, `@gui-the-help-is-a-grid-of-keys`). Thirty-five
+lines fit in the least window, so nothing scrolls and no bar is drawn
+(`@gui-the-help-fits-the-least-window`); the panel is as tall as its longer
+column (`@gui-the-help-fits-what-it-says`). It was fifty lines of sentences
+in one column, wrapped, with a bar to scroll them — the old look the
+redesign had left behind. What a sentence said and a key cannot, the
+buttons and the docs say: the help names the key, the window shows the
+rest. See `help.go`. The terminal's help already read on with `↓↑`.
 
 **A refusal gets two lines and the reading size.** The most instructive thing
 cairn says — "it is still blocked, by #3 and by #4. take them away first: task

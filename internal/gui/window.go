@@ -78,19 +78,18 @@ type Window struct {
 	chosen     int
 	chosenGoal bool
 
-	scroll                                              [engine.Columns]int
-	lanes                                               [3]int
-	goals                                               int
-	history                                             int
-	saying                                              int
-	spareHistory, spareSaying, spareChoosing, spareHelp int
-	helpFrom                                            int
-	measure, measureHeads                               Measure
-	keyboard                                            Keyboard
-	now                                                 time.Time
-	told                                                string
-	toldFor                                             int
-	native                                              bool
+	scroll                                   [engine.Columns]int
+	lanes                                    [3]int
+	goals                                    int
+	history                                  int
+	saying                                   int
+	spareHistory, spareSaying, spareChoosing int
+	measure, measureHeads                    Measure
+	keyboard                                 Keyboard
+	now                                      time.Time
+	told                                     string
+	toldFor                                  int
+	native                                   bool
 	calendarState
 	menuState
 	backupsState

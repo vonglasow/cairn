@@ -542,20 +542,16 @@ func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said 
 }
 
 func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
-	box, rows, from := w.HelpBox(), w.HelpRows(), w.HelpFrom()
+	box := w.HelpBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
-	for i := range Lasting(len(rows), from, w.HelpRoom()) - from {
-		line := rows[from+i]
-		name, value := HelpRowAt(box, i)
-		if line.Key != "" {
-			fill(gtx, Chip(name), skin.Back)
-			say(gtx, th, skin.Chosen, name, line.Key, reads)
+	for _, line := range w.HelpLines() {
+		if line.Head != "" {
+			sayStyled(gtx, th, skin.Faint, line.At, line.Head, small, font.SemiBold, 1, text.Start)
+			continue
 		}
-		say(gtx, th, skin.Ink, value, line.Means, reads)
-	}
-	if bar, ok := w.HelpBar(); ok {
-		fill(gtx, bar, skin.Back)
-		fill(gtx, Thumb(bar, len(rows), w.HelpRoom(), from), skin.Edge)
+		rounded(gtx, line.KeyAt, chipRadius, skin.Pill)
+		sayIn(gtx, th, skin.Ink, Box{X: line.KeyAt.X, Y: line.KeyAt.Y + (line.KeyAt.H-lineHigh)/2, W: line.KeyAt.W, H: lineHigh}, line.Key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+		say(gtx, th, skin.Low, line.MeansAt, line.Means, reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

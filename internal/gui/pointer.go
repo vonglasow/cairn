@@ -645,14 +645,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		}
 		return w.scrollingSaying(p, by)
 	}
-	if w.screen == OnHelp {
-		if w.HelpBox().In(p) {
-			lines, left := turning(w.spareHelp, by)
-			w.helpFrom, w.spareHelp = w.settledHelp(w.HelpFrom()+lines), left
-		}
-		return w
-	}
-	if w.screen == OnAsking || w.screen == OnMenu {
+	if w.screen == OnHelp || w.screen == OnAsking || w.screen == OnMenu {
 		return w
 	}
 	if w.screen == OnCalendar {

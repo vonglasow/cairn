@@ -1903,33 +1903,35 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the help shows some of its lines and not all$`, func() error {
-		if shown, all := w.w.HelpRoom(), len(w.w.HelpRows()); shown < 1 || shown >= all {
-			return fmt.Errorf("the help shows %d of its %d lines", shown, all)
-		}
-		return nil
-	})
 	sc.Then(`^the help shows every line$`, func() error {
-		if shown, all := w.w.HelpRoom(), len(w.w.HelpRows()); shown < all {
-			return fmt.Errorf("the help shows %d of its %d lines", shown, all)
+		box := w.w.HelpBox()
+		foot := PanelOfferAt(box, 0).Y
+		for _, line := range w.w.HelpLines() {
+			if line.At.Y < box.Y || line.At.Y+line.At.H > foot {
+				return fmt.Errorf("the line %q at %+v is out of the help %+v, whose foot is at %d", line.Key+line.Head, line.At, box, foot)
+			}
 		}
 		return nil
 	})
-	sc.Then(`^the help draws a bar to scroll it by$`, func() error {
-		if _, ok := w.w.HelpBar(); !ok {
-			return fmt.Errorf("the help draws no bar")
+	sc.Then(`^the help lays its keys out in (\d+) columns$`, func(n int) error {
+		columns := map[int]bool{}
+		for _, line := range w.w.HelpLines() {
+			columns[line.At.X] = true
+		}
+		if len(columns) != n {
+			return fmt.Errorf("the help lays its keys out in %d columns", len(columns))
 		}
 		return nil
 	})
-	sc.Then(`^the help starts (\d+) lines down$`, func(n int) error {
-		if got := w.w.HelpFrom(); got != n {
-			return fmt.Errorf("the help starts %d lines down, want %d", got, n)
+	sc.Then(`^the help groups its keys under (.+)$`, func(list string) error {
+		var heads []string
+		for _, line := range w.w.HelpLines() {
+			if line.Head != "" {
+				heads = append(heads, line.Head)
+			}
 		}
-		return nil
-	})
-	sc.Then(`^the help shows its last line$`, func() error {
-		if last := w.w.HelpFrom() + w.w.HelpRoom(); last != len(w.w.HelpRows()) {
-			return fmt.Errorf("the help ends at line %d of %d", last, len(w.w.HelpRows()))
+		if want := quoted(strings.ReplaceAll(list, " and ", ", ")); strings.Join(heads, "|") != strings.Join(want, "|") {
+			return fmt.Errorf("the help groups its keys under %v, want %v", heads, want)
 		}
 		return nil
 	})
@@ -1938,17 +1940,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if box.H >= over.H {
 			return fmt.Errorf("the help is %d high, as tall as the room it was given", box.H)
 		}
-		if _, ok := w.w.HelpBar(); ok {
-			return fmt.Errorf("the help draws a bar with nothing to scroll")
-		}
 		return nil
 	})
 	sc.Then(`^every line of the help fits inside its panel$`, func() error {
 		box := w.w.HelpBox()
-		for i, row := range w.w.HelpRows() {
-			_, value := HelpRowAt(box, i)
-			if wide := Reckoned(row.Means, reads); wide[len(wide)-1] > value.W {
-				return fmt.Errorf("line %d, %q, is %d wide in a column of %d", i, row.Means, wide[len(wide)-1], value.W)
+		for _, line := range w.w.HelpLines() {
+			said := ends(w.w.measured(), line.Means+line.Head, reads)
+			if end := line.MeansAt.X + said; line.Head == "" && end > line.At.X+line.At.W {
+				return fmt.Errorf("%q ends at %d, past its column %+v", line.Means, end, line.At)
+			}
+			if line.At.X+line.At.W > box.X+box.W-padding {
+				return fmt.Errorf("the column %+v runs past the help %+v", line.At, box)
 			}
 		}
 		return nil

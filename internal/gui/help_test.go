@@ -2,7 +2,6 @@ package gui
 
 import (
 	"testing"
-	"time"
 )
 
 func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
@@ -21,62 +20,38 @@ func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
 	}
 }
 
-func TestTheWheelWalksTheHelp(t *testing.T) {
-	open := New(newFake(), 1024, 640).Key("?")
-	inside := Point{X: open.HelpBox().X + 40, Y: open.HelpBox().Y + 80}
-	turned := open.wheeling(3*lineHigh, inside, time.Time{})
-	if got := turned.HelpFrom(); got != 3 {
-		t.Errorf("three lines of wheel left the help %d lines down, want 3", got)
+func TestTheHelpPutsEachKeyOnAChipBeforeWhatItDoes(t *testing.T) {
+	open := New(newFake(), 1200, 800).Key("?")
+	shot := drawn(t, open)
+	keys := 0
+	for _, line := range open.HelpLines() {
+		if line.Head != "" {
+			continue
+		}
+		keys++
+		if line.KeyAt.W != KeyChipWide(line.Key) || line.MeansAt.X <= line.KeyAt.X+line.KeyAt.W {
+			t.Errorf("%q: its chip %+v and what it does %+v", line.Key, line.KeyAt, line.MeansAt)
+		}
+		if painted(shot, Box{X: line.KeyAt.X + line.KeyAt.W/2, Y: line.KeyAt.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+			t.Errorf("%q is not on a chip", line.Key)
+		}
 	}
-	far := open.wheeling(1000*lineHigh, inside, time.Time{})
-	if got, want := far.HelpFrom()+far.HelpRoom(), len(far.HelpRows()); got != want {
-		t.Errorf("a long turn left the help ending at %d of %d", got, want)
-	}
-}
-
-func TestTheHelpDrawsItsBarWhenItScrolls(t *testing.T) {
-	open := New(newFake(), 1024, 640).Key("?")
-	bar, ok := open.HelpBar()
-	if !ok {
-		t.Fatal("a help longer than its panel has no bar")
-	}
-	if got := ink(drawn(t, open), bar, Dark().Panel); got == 0 {
-		t.Error("the bar beside the help is not drawn")
+	if keys != len(open.Helping()) {
+		t.Errorf("the help lays out %d keys of its %d", keys, len(open.Helping()))
 	}
 }
 
-func TestTheHelpIsLaidOutToThePixel(t *testing.T) {
-	tall := New(newFake(), 1600, 2100).Key("?")
-	if got, want := tall.HelpBox(), (Box{X: 200, Y: 175, W: 1200, H: 106 + len(tall.HelpRows())*apart}); got != want {
-		t.Errorf("a tall window's help is %+v, want %+v — as tall as its %d lines", got, want, len(tall.HelpRows()))
+func TestTheHelpBalancesItsColumns(t *testing.T) {
+	open := New(newFake(), 1200, 800).Key("?")
+	per := map[int]int{}
+	for _, line := range open.HelpLines() {
+		per[line.At.X]++
 	}
-	name, value := HelpRowAt(tall.HelpBox(), 2)
-	if want := (Box{X: 212, Y: 289, W: 158, H: 18}); name != want {
-		t.Errorf("the third key is at %+v, want %+v", name, want)
+	var counts []int
+	for _, n := range per {
+		counts = append(counts, n)
 	}
-	if want := (Box{X: 370, Y: 289, W: 1002, H: 18}); value != want {
-		t.Errorf("what the third key does is at %+v, want %+v", value, want)
-	}
-
-	short := New(newFake(), 1024, 660).Key("?")
-	if got := short.HelpRoom(); got != 13 {
-		t.Errorf("a short window's help shows %d lines, want 13", got)
-	}
-	bar, ok := short.HelpBar()
-	if want := (Box{X: 874, Y: 105, W: 10, H: 402}); !ok || bar != want {
-		t.Errorf("the bar beside a short help is %+v, want %+v", bar, want)
-	}
-}
-
-func TestTheHelpWalksBackUp(t *testing.T) {
-	down := New(newFake(), 1024, 640).Key("?").Key("down").Key("j")
-	if got := down.HelpFrom(); got != 2 {
-		t.Fatalf("two steps down left the help %d lines down", got)
-	}
-	if got := down.Key("k").HelpFrom(); got != 1 {
-		t.Errorf("k left the help %d lines down, want 1", got)
-	}
-	if got := down.Key("up").HelpFrom(); got != 1 {
-		t.Errorf("up left the help %d lines down, want 1", got)
+	if len(counts) != 2 || counts[0]-counts[1] > 3 || counts[1]-counts[0] > 3 {
+		t.Errorf("the help's columns hold %v lines", counts)
 	}
 }

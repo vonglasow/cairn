@@ -2738,12 +2738,12 @@ Feature: The desktop board
       And "BACKLOG" carries "Ship the board"
 
     @gui-the-help
-    Scenario: the help says what everything does
+    Scenario: the help says what every key does
       When I open the window
       And I click "Help"
       Then the help is open
-      And the help says what "drag" does
-      And the help says what "double-click" does
+      And the help says what "e" does
+      And the help says what "⇧F" does
       And I press "esc"
       Then the help is closed
 
@@ -2762,17 +2762,22 @@ Feature: The desktop board
       And I click "Help"
       Then the help says what "⌘N" does
 
-    @gui-the-help-scrolls
-    Scenario: a help longer than the window scrolls, and says so
-      Given a window of 1024 by 640
+    @gui-the-help-is-a-grid-of-keys
+    Scenario: the help lays its keys out in two columns, grouped, with nothing to scroll
+      Given a window of 1200 by 800
       When I open the window
       And I click "Help"
-      Then the help shows some of its lines and not all
-      And the help draws a bar to scroll it by
-      When I press "down" 3 times
-      Then the help starts 3 lines down
-      When I press "down" 200 times
-      Then the help shows its last line
+      Then the help lays its keys out in 2 columns
+      And the help groups its keys under "Board", "Find", "Forms", "Store" and "Pointer"
+      And the help shows every line
+
+    @gui-the-help-fits-the-least-window
+    Scenario: the help shows every line in the smallest window
+      Given a window of 720 by 560
+      When I open the window
+      And I click "Help"
+      Then the help shows every line
+      And every line of the help fits inside its panel
 
     @gui-the-help-fits-what-it-says
     Scenario: a help on a tall window is as tall as what it says
@@ -2781,13 +2786,6 @@ Feature: The desktop board
       And I click "Help"
       Then the help shows every line
       And the help is no taller than what it says
-
-    @gui-the-help-keeps-its-words-inside
-    Scenario: no line of the help runs past its panel
-      Given a window of 1024 by 640
-      When I open the window
-      And I click "Help"
-      Then every line of the help fits inside its panel
 
   Rule: The window follows the store
 
