@@ -141,7 +141,10 @@ the shadow is three rounded boxes under it, wider and fainter as they go.
 **A panel is raised, and its offers are buttons at its foot.** Every panel
 — a form, the help, a question, the backups, the labels, the filters, the
 configuration — is a rounded (12), shadowed ground over the veil, with no
-edge and no rule under its heading. A panel that can be closed carries a
+edge and no rule under its heading. Its heading is its name — Filters,
+Labels, Configuration — and what its keys do is said by its buttons and the
+help: headings like "Labels — r renames one, d takes it off everything"
+said it a third time, longer than the panel was wide (`HeadsOn`). A panel that can be closed carries a
 cross at its top right that does what its `esc` does (`PanelClose`,
 `@gui-every-panel-is-closed-by-its-cross`); a question has none, it is
 answered. Its offers stand at its foot, right-aligned under a faint line,

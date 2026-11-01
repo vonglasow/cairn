@@ -491,6 +491,11 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	if got := Heads(w.Key("?")); got != "What everything does" {
 		t.Errorf("the help is headed %q", got)
 	}
+	for screen, want := range map[Screen]string{OnFiltering: "Filters", OnLabels: "Labels"} {
+		if got := HeadsOn(w, screen); got != want {
+			t.Errorf("a panel is headed %q, not its name, %q", got, want)
+		}
+	}
 	if got := Heads(w.Key("cmd+n")); got != "New task" {
 		t.Errorf("adding a task is headed %q", got)
 	}

@@ -22,12 +22,12 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnBackups:
 		return "Backups — enter restores one"
 	case OnFiltering:
-		return "Filters — ← → change one, ⌫ clears them all"
+		return "Filters"
 	case OnLabels:
 		if w.renaming {
 			return "Rename " + w.labelChosen() + " to " + w.renamed.Reads()
 		}
-		return "Labels — r renames one, d takes it off everything"
+		return "Labels"
 	case OnConfiguration:
 		return "Configuration"
 	case OnHelp:
