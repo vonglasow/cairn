@@ -751,12 +751,15 @@ walks the fields, as it does in the terminal.
 The columns stand a gap clear of that band. Against it, the tabs read as the
 board's first row.
 
-**A card in focus ends its title with a cairn.** The terminal board's eleven
+**A card in focus carries a cairn at the right of its first line.** The terminal board's eleven
 marks were left out of this window on purpose; this one earns its place
 because it cannot be worked out by looking: a card gives no sign that somebody
 — or some agent session — is on it. A small cairn of three stones, in the
-accent, follows the last word of its title (`FocusMark`), and the card stands
-on the tint: the eye after its number was a pictogram nobody read as being
+accent, stands at the right end of the title's first line, where the eye
+finds it in the same place on every card; the first line makes room for it
+and the second keeps the card's whole width (`FocusMark`, `TitleRoom`). It
+followed the last word of the title, and so moved from card to card. The card
+stands on the tint: the eye after its number was a pictogram nobody read as being
 worked on, and was too small to find from across the board. `f` focuses or
 unfocuses the chosen task, under the same key the terminal board uses.
 

@@ -169,7 +169,8 @@ func (w *world) titleEndsIn(column, ending string) error {
 	title := PartsOf(w.w.Layout().CardAt(at, 0, 0)).Title
 	m := w.w.measured()
 	for _, c := range here {
-		lines := TitleLines(c.Title, TitleRoom(c, title), func(said string) int { return ends(m, said, reads) })
+		first, rest := TitleRoom(c, title)
+		lines := TitleLines(c.Title, first, rest, func(said string) int { return ends(m, said, reads) })
 		if strings.HasSuffix(lines[len(lines)-1], ending) {
 			return nil
 		}
@@ -3225,7 +3226,7 @@ func (w *world) cardSaysInFocus(title string) error {
 	if !c.InFocus {
 		return fmt.Errorf("%q does not say it is being worked on", title)
 	}
-	if _, mark := FocusMark(c, Box{W: 200, H: 2 * lineHigh}, 1, 20); !mark {
+	if _, mark := FocusMark(c, Box{W: 200, H: 2 * lineHigh}); !mark {
 		return fmt.Errorf("the card for %q draws no cairn, and says nothing about being worked on", title)
 	}
 	return nil

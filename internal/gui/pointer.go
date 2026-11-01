@@ -159,7 +159,8 @@ func (w Window) cutTitleAt(p Point) (string, Box) {
 
 func (w Window) titleCut(c engine.Card, slot Box) bool {
 	m := w.measured()
-	lines := TitleLines(c.Title, TitleRoom(c, PartsOf(slot).Title), func(said string) int { return ends(m, said, reads) })
+	first, rest := TitleRoom(c, PartsOf(slot).Title)
+	lines := TitleLines(c.Title, first, rest, func(said string) int { return ends(m, said, reads) })
 	return strings.HasSuffix(lines[len(lines)-1], "…") && !strings.HasSuffix(c.Title, "…")
 }
 

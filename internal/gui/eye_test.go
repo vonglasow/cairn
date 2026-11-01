@@ -5,17 +5,32 @@ import (
 	"testing"
 )
 
-func TestACardInFocusEndsItsTitleWithACairn(t *testing.T) {
+func TestACardInFocusStandsItsCairnAtTheRightOfItsFirstLine(t *testing.T) {
 	title := Box{X: 100, Y: 200, W: 240, H: 2 * lineHigh}
-	mark, ok := FocusMark(engine.Card{InFocus: true}, title, 2, 60)
+	mark, ok := FocusMark(engine.Card{InFocus: true}, title)
 	if !ok {
 		t.Fatal("a card in focus has no cairn")
 	}
-	if mark.X != title.X+60+markSpace || mark.Y < title.Y+lineHigh || mark.Y+mark.H > title.Y+2*lineHigh || mark.W != markSide {
-		t.Errorf("the cairn is at %+v, after a second line 60 wide in %+v", mark, title)
+	if mark.X+mark.W != title.X+title.W || mark.Y < title.Y || mark.Y+mark.H > title.Y+lineHigh || mark.W != markSide {
+		t.Errorf("the cairn is at %+v, not at the right of the first line of %+v", mark, title)
 	}
-	if _, ok := FocusMark(engine.Card{}, title, 2, 60); ok {
+	if _, ok := FocusMark(engine.Card{}, title); ok {
 		t.Error("a card nobody is on has a cairn")
+	}
+}
+
+func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheCairn(t *testing.T) {
+	title := Box{W: 120, H: 2 * lineHigh}
+	first, rest := TitleRoom(engine.Card{InFocus: true}, title)
+	if first != 120-markSide-markSpace || rest != 120 {
+		t.Errorf("a title in focus runs %d then %d wide", first, rest)
+	}
+	got := TitleLines("Write the abcdefghijklmno", first, rest, eightEach)
+	if len(got) != 2 || got[0] != "Write the" || got[1] != "abcdefghijklmno" {
+		t.Errorf("the title in focus was laid out %q", got)
+	}
+	if first, rest := TitleRoom(engine.Card{}, title); first != 120 || rest != 120 {
+		t.Errorf("a title nobody is on runs %d then %d wide", first, rest)
 	}
 }
 

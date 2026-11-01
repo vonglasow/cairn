@@ -10,20 +10,20 @@ import (
 func eightEach(said string) int { return 8 * len([]rune(said)) }
 
 func TestATitleThatFitsTakesOneLine(t *testing.T) {
-	if got := TitleLines("Write the spec", 200, eightEach); len(got) != 1 || got[0] != "Write the spec" {
+	if got := TitleLines("Write the spec", 200, 200, eightEach); len(got) != 1 || got[0] != "Write the spec" {
 		t.Fatalf("a title that fits was laid out %q", got)
 	}
 }
 
 func TestATitleTooLongForOneLineTakesTwo(t *testing.T) {
-	got := TitleLines("Write the spec of the board", 120, eightEach)
+	got := TitleLines("Write the spec of the board", 120, 120, eightEach)
 	if len(got) != 2 || got[0] != "Write the spec" || got[1] != "of the board" {
 		t.Fatalf("a title of two lines was laid out %q", got)
 	}
 }
 
 func TestATitleTooLongForTwoLinesIsCutAndSaysSo(t *testing.T) {
-	got := TitleLines("Fix the band lane scroll when the window is resized", 120, eightEach)
+	got := TitleLines("Fix the band lane scroll when the window is resized", 120, 120, eightEach)
 	if len(got) != 2 || !strings.HasSuffix(got[1], "…") || eightEach(got[1]) > 120 {
 		t.Fatalf("a title of three lines was laid out %q", got)
 	}
@@ -33,14 +33,14 @@ func TestATitleTooLongForTwoLinesIsCutAndSaysSo(t *testing.T) {
 }
 
 func TestAWordLongerThanTheLineIsBroken(t *testing.T) {
-	got := TitleLines(strings.Repeat("a", 40), 80, eightEach)
+	got := TitleLines(strings.Repeat("a", 40), 80, 80, eightEach)
 	if len(got) != 2 || eightEach(got[0]) > 80 || !strings.HasSuffix(got[1], "…") {
 		t.Fatalf("a word longer than two lines was laid out %q", got)
 	}
 }
 
 func TestACardWithNoRoomAnswersTheTitleWhole(t *testing.T) {
-	if got := TitleLines("Write the spec", 0, eightEach); len(got) != 1 || got[0] != "Write the spec" {
+	if got := TitleLines("Write the spec", 0, 0, eightEach); len(got) != 1 || got[0] != "Write the spec" {
 		t.Fatalf("a card with no room answered %q", got)
 	}
 }

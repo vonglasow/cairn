@@ -744,11 +744,12 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 
 	m := Measured(th)
 	wideAt := func(size int) func(string) int { return func(said string) int { return ends(m, said, size) } }
-	lines := TitleLines(c.Title, TitleRoom(c, parts.Title), wideAt(reads))
+	first, rest := TitleRoom(c, parts.Title)
+	lines := TitleLines(c.Title, first, rest, wideAt(reads))
 	for i, line := range lines {
 		sayStyled(gtx, th, skin.Writing(c), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
 	}
-	if mark, ok := FocusMark(c, parts.Title, len(lines), ends(m, lines[len(lines)-1], reads)); ok {
+	if mark, ok := FocusMark(c, parts.Title); ok {
 		drawCairn(gtx, mark, skin.Chosen)
 	}
 

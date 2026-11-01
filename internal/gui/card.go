@@ -14,16 +14,16 @@ const perGlyph = 8
 
 const perSmallGlyph = 7
 
-// TitleLines is a title laid out on the two lines a card gives it, at room wide each as wide measures it: whole when it fits, broken between words, and cut with an ellipsis at the end of the second line when it is longer still.
-func TitleLines(title string, room int, wide func(string) int) []string {
-	if room <= 0 || wide(title) <= room {
+// TitleLines is a title laid out on the two lines a card gives it, first wide for the first and room for the second as wide measures them: whole when it fits, broken between words, and cut with an ellipsis at the end of the second line when it is longer still.
+func TitleLines(title string, first, room int, wide func(string) int) []string {
+	if first <= 0 || wide(title) <= first {
 		return []string{title}
 	}
-	first, rest := firstLine(title, room, wide)
+	line, rest := firstLine(title, first, wide)
 	if wide(rest) <= room {
-		return []string{first, rest}
+		return []string{line, rest}
 	}
-	return []string{first, cutToFit(rest, room, wide)}
+	return []string{line, cutToFit(rest, room, wide)}
 }
 
 func firstLine(title string, room int, wide func(string) int) (string, string) {
@@ -151,20 +151,20 @@ const (
 	markSpace = 5
 )
 
-// FocusMark is where the cairn of a card in focus stands: after the last line of its title, as wide as that line is.
-func FocusMark(c engine.Card, title Box, lines, lastWide int) (Box, bool) {
+// FocusMark is where the cairn of a card in focus stands: at the right end of its title's first line.
+func FocusMark(c engine.Card, title Box) (Box, bool) {
 	if !c.InFocus {
 		return Box{}, false
 	}
-	return Box{X: title.X + lastWide + markSpace, Y: title.Y + (lines-1)*lineHigh + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
+	return Box{X: title.X + title.W - markSide, Y: title.Y + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
 }
 
-// TitleRoom is how wide a card's title may run: the card's room for it, less the cairn's when the card is in focus.
-func TitleRoom(c engine.Card, title Box) int {
+// TitleRoom is how wide a card's title may run on its first line and on its second: the first less the cairn's room when the card is in focus.
+func TitleRoom(c engine.Card, title Box) (int, int) {
 	if c.InFocus {
-		return title.W - markSide - markSpace
+		return title.W - markSide - markSpace, title.W
 	}
-	return title.W
+	return title.W, title.W
 }
 
 // Numbered is a card's number line: its number.
