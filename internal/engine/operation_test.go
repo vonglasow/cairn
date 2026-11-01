@@ -268,6 +268,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
 		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
 		"label_list":         {{Labels: &[]LabelCarried{}}},
+		"label_new":          {{Labels: &[]LabelCarried{}}},
 		"label_delete":       {{Labels: &[]LabelCarried{}}},
 		"label_rename":       {{Labels: &[]LabelCarried{}}},
 		"step_new":           {{Task: of(task.Task{})}},

@@ -81,3 +81,35 @@ Feature: Every label at once
       Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
       When I run `cairn label rename doc sp26-20`
       Then task 1 carries exactly the labels "sp26-20"
+
+  Rule: A label can be made before anything carries it
+
+    @label-new-stands-on-its-own
+    Scenario: a label made on its own is listed, carried by nothing
+      When I run `cairn label new "Release Train"`
+      Then it succeeds
+      When I run `cairn label list`
+      Then the label "release-train" is carried by 0 tasks and 0 objectives
+
+    @label-new-stays-once-carried-and-dropped
+    Scenario: a label made on its own stays when the last task carrying it lets it go
+      Given I ran `cairn label new release`
+      And I added a task titled "Ship it" with the labels "release" and "doc"
+      When I run `cairn task edit 1 --label -release`
+      And I run `cairn label list`
+      Then the label "release" is carried by 0 tasks and 0 objectives
+
+    @label-new-goes-with-delete-and-follows-rename
+    Scenario: a label made on its own is renamed and deleted like any other
+      Given I ran `cairn label new release`
+      When I run `cairn label rename release train`
+      And I run `cairn label list`
+      Then the label "train" is carried by 0 tasks and 0 objectives
+      When I run `cairn label delete train --yes`
+      Then it succeeds
+      And it says there is no label
+
+    @label-new-refuses-what-the-rule-refuses
+    Scenario: a label the rule refuses is not made
+      When I run `cairn label new "a:b"`
+      Then it fails

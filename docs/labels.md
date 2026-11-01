@@ -76,9 +76,13 @@ The form's `labels` field opens a list, the one objectives are chosen from:
   field, `esc` keeps nothing;
 - nothing is written until the form is saved, like every other field.
 
-A label exists while a task carries it. Taken off the last task that carried
-it, it is no longer offered: there is no list of labels kept apart from the
-tasks and objectives carrying them.
+A label exists while a task carries it, or once it was made on its own. Taken
+off the last task that carried it, a label nobody made on its own is no longer
+offered; one made with `label new` stays, listed as carried by nothing, until
+it is deleted (`@label-new-stands-on-its-own`,
+`@label-new-stays-once-carried-and-dropped`). Those are kept apart, in a table
+of their own (`labels_kept`, migration 16); rename and delete reach them as
+they reach what is carried (`@label-new-goes-with-delete-and-follows-rename`).
 
 ## Every label at once
 
@@ -92,8 +96,10 @@ window reaches the same three from `⇧L` and the File menu: the list, `r` to
 rename the one the keyboard is on, `d` to take it off everything after asking.
 
 Leaving these out was decided once, the labels being nothing but what the
-tasks carry; managing them was asked for, and the answer stays that: there is
-still no list of labels kept apart, only the engine reading what is carried.
+tasks carry, and kept when managing them was first asked for. Amended
+2026-11-01: a label could not be prepared before the work that would carry it
+— a sprint's, a release's — so `label new` makes one on its own, and only
+those are kept apart; every other label is still read off what carries it.
 
 ## The Claude Code plugin
 

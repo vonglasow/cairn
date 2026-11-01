@@ -612,6 +612,64 @@
       "additionalProperties": false
     }
   },
+  "label_new": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Make a label nothing carries yet"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "the label to make",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
   "label_rename": {
     "annotations": {
       "destructiveHint": false,

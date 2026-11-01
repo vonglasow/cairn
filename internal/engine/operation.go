@@ -232,7 +232,7 @@ func All() []Operation {
 		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
-		LabelList, LabelDelete, LabelRename,
+		LabelList, LabelNew, LabelDelete, LabelRename,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,

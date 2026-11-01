@@ -197,10 +197,12 @@ task can be read back as it stood at any past moment.
 Looking at a task is not an act. `list`, `show` and `search` add nothing — a
 trace records what changed, never what was read.
 
-Every label is seen at once, and one is renamed or taken off everything at once:
+Every label is seen at once, one is made before anything carries it, and one is
+renamed or taken off everything at once:
 
 ```sh
 cairn label list                                  # each with how many tasks and objectives carry it
+cairn label new release-train                     # kept and offered, carried or not, until deleted
 cairn label rename sp26-20 sprint-20              # on every task and objective; onto one there, the two become one
 cairn label delete sp26-20 --yes                  # off every task and objective
 ```

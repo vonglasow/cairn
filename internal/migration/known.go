@@ -282,4 +282,14 @@ DROP INDEX IF EXISTS links_by_high;
 DROP TABLE IF EXISTS links;`,
 		loses: "which tasks are linked",
 	},
+	{
+		name: "a label can stand on its own",
+		does: `
+CREATE TABLE IF NOT EXISTS labels_kept (
+	label TEXT PRIMARY KEY
+);`,
+		undoes: `
+DROP TABLE IF EXISTS labels_kept;`,
+		loses: "the labels made with nothing carrying them",
+	},
 }

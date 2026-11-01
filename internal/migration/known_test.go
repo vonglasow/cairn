@@ -8,8 +8,8 @@ func factsOf(m Migration) Carried {
 }
 
 func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
-	if len(Known) != 15 {
-		t.Fatalf("len(Known) = %d, want 15", len(Known))
+	if len(Known) != 16 {
+		t.Fatalf("len(Known) = %d, want 16", len(Known))
 	}
 	for i, m := range Known {
 		f := factsOf(m)
@@ -23,5 +23,12 @@ func TestKnown_theFirstChangeCannotBeUndone(t *testing.T) {
 	f := factsOf(Known[0])
 	if f.Undoes != "" {
 		t.Errorf("Known[0] undoes %q, want the floor to carry no undoing", f.Undoes)
+	}
+}
+
+func TestKnown_keepsALabelNothingCarries(t *testing.T) {
+	f := factsOf(Known[len(Known)-1])
+	if f.Name != "a label can stand on its own" || f.Loses == "" {
+		t.Errorf("the last change is %+v", f)
 	}
 }

@@ -42,6 +42,13 @@ func (e *Engine) everyLabel() (map[string]carriers, error) {
 		return nil, err
 	}
 	held := map[string]carriers{}
+	kept, err := e.store.KeptLabels()
+	if err != nil {
+		return nil, err
+	}
+	for _, label := range kept {
+		held[label] = carriers{}
+	}
 	for _, t := range tasks {
 		f := factsOf(t)
 		for _, label := range f.Labels {
@@ -117,7 +124,7 @@ var LabelList = Operation{
 	Thing:   "label",
 	Verb:    "list",
 	Short:   "List every label, with what carries it",
-	Does:    "List every label some task or objective carries, in alphabetical order, with how many tasks and how many objectives carry it, archived tasks included.",
+	Does:    "List every label some task or objective carries, and every one made on its own, in alphabetical order, with how many tasks and how many objectives carry it, archived tasks included.",
 	Example: "cairn label list",
 	Level:   Read,
 	Needs:   AStore,
@@ -145,6 +152,9 @@ var LabelDelete = Operation{
 			return Answer{}, err
 		}
 		if err := on.Engine.relabel(found, []string{"-" + label}); err != nil {
+			return Answer{}, err
+		}
+		if err := on.Engine.store.ForgetLabel(label); err != nil {
 			return Answer{}, err
 		}
 		return listedLabels(on)
@@ -179,6 +189,35 @@ var LabelRename = Operation{
 			if err := on.Engine.relabel(found, []string{"-" + label, "+" + to[0]}); err != nil {
 				return Answer{}, err
 			}
+			if err := on.Engine.store.RenameKeptLabel(label, to[0]); err != nil {
+				return Answer{}, err
+			}
+		}
+		return listedLabels(on)
+	},
+}
+
+// LabelNew makes a label nothing carries yet, kept until it is deleted.
+var LabelNew = Operation{
+	Thing:   "label",
+	Verb:    "new",
+	Short:   "Make a label nothing carries yet",
+	Does:    "Make a label before any task or objective carries it, written the one way a label is; it is listed and offered until it is deleted, carried or not. Answers the labels there are.",
+	Example: "cairn label new release-train",
+	Level:   Write,
+	Needs:   AStore,
+	Again:   ChangesNothingMore,
+	Answers: Labels{},
+	Takes: []Argument{
+		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to make"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		written, err := domain.ParseLabels([]string{in.Given["label"]})
+		if err != nil {
+			return Answer{}, err
+		}
+		if err := on.Engine.store.KeepLabel(written[0]); err != nil {
+			return Answer{}, err
 		}
 		return listedLabels(on)
 	},

@@ -92,3 +92,28 @@ func TestLabels_areRenamedOnEverythingCarryingThem(t *testing.T) {
 		t.Errorf("renaming what nothing carries answered %v", err)
 	}
 }
+
+func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
+	path := storeAt(t)
+	made, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "Release Train"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	said, ok := Of(LabelNew, made).(Labels)
+	if !ok || len(said.Labels) != 1 || said.Labels[0] != (LabelCarried{Label: "release-train"}) {
+		t.Fatalf("making a label answers %+v", Of(LabelNew, made))
+	}
+	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "release-train", "to": "train"}}); err != nil {
+		t.Fatalf("renaming a label nothing carries: %v", err)
+	}
+	gone, err := Do(LabelDelete, path, Input{Given: map[string]string{"label": "train"}, Confirmed: true})
+	if err != nil {
+		t.Fatalf("deleting a label nothing carries: %v", err)
+	}
+	if left := Of(LabelDelete, gone).(Labels); len(left.Labels) != 0 {
+		t.Errorf("deleted, the labels left are %+v", left)
+	}
+	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "a:b"}}); err == nil {
+		t.Error("a label the rule refuses was made")
+	}
+}
