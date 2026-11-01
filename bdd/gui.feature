@@ -3774,6 +3774,24 @@ Feature: The desktop board
       And I press "enter"
       Then the steps of task 1 read "Draft"
 
+    @gui-space-ticks-every-step-taken
+    Scenario: space ticks every step taken, and unticks them once all are done
+      Given I added a task titled "Ship it"
+      And I added the step "Draft" to task 1
+      And I added the step "Keep" to task 1
+      And I added the step "Review" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      And I click the step "Draft"
+      And I ⇧-click the step "Review"
+      And I press "space"
+      Then task 1 carries the step "Draft", done
+      And task 1 carries the step "Keep", done
+      And task 1 carries the step "Review", done
+      When I press "space"
+      Then the steps of task 1 read "Draft", "Keep", "Review"
+      And task 1 carries the step "Keep", not done
+
     @gui-a-step-taken-is-let-go-alone
     Scenario: a ⌘-click on a step taken lets that one go, and keeps the others
       Given I added a task titled "Ship it"

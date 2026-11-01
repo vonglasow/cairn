@@ -1675,7 +1675,11 @@ the step they reach, so a keyboard alone deletes where it is. A delete key
 acts on what is taken and on nothing else: one step asks "Delete the step
 “Draft”?", several "Delete 3 steps?", and agreed they go in one act that
 writes the task's steps without them
-(`@gui-steps-taken-together-are-deleted-at-once`); dragged, steps taken go
+(`@gui-steps-taken-together-are-deleted-at-once`); space ticks every step
+taken, or unticks them all when every one is done already, so a keystroke has
+one outcome whatever mix it meets (`@gui-space-ticks-every-step-taken`); it
+used to tick the one the keyboard was on and leave the others as they were;
+dragged, steps taken go
 together, in their order, where the one in hand lands
 (`@gui-steps-taken-together-move-together`). One outline used to say both
 things, so the last step let go stayed outlined and a delete key still took

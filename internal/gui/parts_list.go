@@ -43,35 +43,52 @@ func (f Form) walkingParts(by int) Form {
 	return f.takingTheOneOn()
 }
 
-func (f Form) ticking() Form {
+func (f Form) tickedTogether() []int {
+	if taken := f.takenParts(); slices.Contains(taken, f.partAt) {
+		return taken
+	}
+	return []int{f.partAt}
+}
+
+func (f Form) ticking(at int, done bool) Form {
 	parts := f.parts()
-	parts[f.partAt].Done = !parts[f.partAt].Done
+	parts[at].Done = done
 	return f.withParts(parts)
 }
 
 func (w Window) tickingPart() Window {
 	parts := w.form.parts()
-	at := w.form.partAt
-	if at >= len(parts) {
+	if w.form.partAt >= len(parts) {
 		return w
 	}
-	w.form = w.form.ticking()
+	together := w.form.tickedTogether()
+	done := slices.ContainsFunc(together, func(at int) bool { return !parts[at].Done })
+	for _, at := range together {
+		if w = w.tickingOne(at, done); w.err != nil {
+			return w
+		}
+	}
+	return w
+}
+
+func (w Window) tickingOne(at int, done bool) Window {
+	before := w.form
+	w.form = w.form.ticking(at, done)
 	part := w.form.parts()[at]
 	if part.Number == 0 {
 		return w
 	}
-	before := w.form
 	ticked := "not-done"
-	if part.Done {
+	if done {
 		ticked = "done"
 	}
 	w = w.asking(engine.StepEdit, engine.Input{Given: map[string]string{
 		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(part.Number), ticked: "true"}})
 	if w.err != nil {
-		w.form = before.ticking()
+		w.form = before
 		return w
 	}
-	w.form = before.openedWith(part)
+	w.form = before.ticking(at, done).openedWith(part)
 	return w
 }
 
