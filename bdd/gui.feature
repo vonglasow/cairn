@@ -4608,13 +4608,16 @@ Feature: The desktop board
       And I press "cmd+,"
       Then the panel is headed "Configuration"
       And the configuration reads "store" from the file
+      And the configuration reads "time.weekends" from its default
+      And the configuration's values start on one line down the panel
 
     @gui-the-configuration-file-is-opened-from-the-window
     Scenario: the file is handed to the system to open
       Given a configuration file naming the store
       When I open the window
       And I press "cmd+,"
-      And I choose "Open the file"
+      Then the bar offers "Open the file" under "⏎"
+      When I press "enter"
       Then the window asks the system to open the configuration file
 
     @gui-a-missing-configuration-is-written-from-the-window
