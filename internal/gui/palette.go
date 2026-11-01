@@ -354,3 +354,30 @@ func (w Window) clickingSearchPill(p Point) (Window, bool) {
 	}
 	return w, true
 }
+
+// SearchCount is how many tasks a search keeps of how many the board holds, and whether anything is searched at all.
+func (w Window) SearchCount() (string, bool) {
+	if w.looking.Empty() {
+		return "", false
+	}
+	return strconv.Itoa(len(w.Showing().Cards)) + " of " + strconv.Itoa(len(w.Reading().Cards)), true
+}
+
+// SearchCountPill is where that count stands: left of the search's pill when the search is kept, at the right of the tabs while it is typed.
+func (w Window) SearchCountPill() (Box, bool) {
+	said, ok := w.SearchCount()
+	if !ok {
+		return Box{}, false
+	}
+	l := w.Layout()
+	tab := TabAt(l, 0)
+	end := l.Tabs.X + l.Tabs.W
+	if !w.native {
+		end = MenuButton(l).X - between
+	}
+	if pill, kept := w.SearchPill(); kept {
+		end = pill.X - pillGap
+	}
+	wide := monoWide(said, small) + 2*pillPad
+	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
+}

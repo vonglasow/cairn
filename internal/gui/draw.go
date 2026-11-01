@@ -172,6 +172,11 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if pill, ok := w.SearchPill(); ok {
 		drawClearingPill(gtx, th, skin, pill, w.looking.Reads())
 	}
+	if pill, ok := w.SearchCountPill(); ok {
+		said, _ := w.SearchCount()
+		rounded(gtx, pill, pill.H/2, skin.Pill)
+		sayIn(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, said, small, font.Font{Typeface: MonoFace}, text.Middle)
+	}
 	if w.formUnder() {
 		drawForm(gtx, th, skin, w)
 	}

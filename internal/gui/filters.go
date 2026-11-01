@@ -89,6 +89,9 @@ func (w Window) FilterPills() []FilterPill {
 	if search, ok := w.SearchPill(); ok {
 		end = search.X - pillGap
 	}
+	if count, ok := w.SearchCountPill(); ok {
+		end = count.X - pillGap
+	}
 	var pills []FilterPill
 	for i := len(w.filters) - 1; i >= 0; i-- {
 		f := w.filters[i]

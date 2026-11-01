@@ -138,3 +138,19 @@ func TestThePaletteIsDrawnRisingFromTheBar(t *testing.T) {
 		t.Error("the palette is not drawn")
 	}
 }
+
+func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
+	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"}, engine.Card{Number: 2, Title: "Ship it", State: "todo"}, engine.Card{Number: 3, Title: "Spec the bar", State: "todo"})
+	if _, ok := w.SearchCount(); ok {
+		t.Error("a board nobody searches counts what it keeps")
+	}
+	w = w.Key("/").Types("spec")
+	said, ok := w.SearchCount()
+	if !ok || said != "2 of 3" {
+		t.Errorf("searching spec counts %q, %v", said, ok)
+	}
+	pill, _ := w.SearchCountPill()
+	if painted(drawn(t, w), Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+		t.Errorf("the count is not drawn as a pill at %+v", pill)
+	}
+}
