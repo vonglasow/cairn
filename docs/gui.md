@@ -785,7 +785,12 @@ the columns, the four priorities, the board's labels and one to create, each
 written through `task edit` as the right-click menu writes it; an action is
 otherwise the key it stands for, so the palette does nothing the keys do not
 (`palette.go`, `@gui-the-palette-moves-the-chosen-task`,
-`@gui-the-palette-opens-a-task-found-by-title`, `@gui-esc-shuts-the-palette`).
+`@gui-the-palette-opens-a-task-found-by-title`, `@gui-esc-shuts-the-palette`). The
+same action can be typed whole, value and all: `move to done`, `move 152 to done` or
+`priority of #3 high` offers the line `Move #152 to done` that the two steps
+would have reached, on the task the number names or else on the one chosen
+(`commandRows`, `@gui-the-palette-takes-a-command-typed-whole`); typed whole,
+it used to reach nothing, though it said exactly what choosing would do.
 
 **The search is the command bar after a slash.** `/` on the board, or a slash
 typed first in the palette, turns the bar into the board's search: a `/` chip

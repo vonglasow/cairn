@@ -65,6 +65,7 @@ func (w Window) PaletteRows() []PaletteRow {
 			rows = append(rows, action)
 		}
 	}
+	rows = append(rows, w.commandRows(typed)...)
 	if typed != "" {
 		matched := 0
 		for _, c := range w.Showing().Cards {
@@ -75,6 +76,40 @@ func (w Window) PaletteRows() []PaletteRow {
 		return rows
 	}
 	return append(rows, w.palette.recent...)
+}
+
+func (w Window) commandRows(typed string) []PaletteRow {
+	number, ok := w.commandedTask(typed)
+	if !ok {
+		return nil
+	}
+	n := "#" + strconv.Itoa(number)
+	var rows []PaletteRow
+	for _, command := range []struct{ field, bare, says string }{
+		{"state", "Move " + n + " to…", "Move " + n + " to "},
+		{"priority", "Priority of " + n + "…", "Priority of " + n + ": "},
+		{"label", "Label " + n + " with…", "Label " + n + " with "},
+	} {
+		if reaching(command.bare, typed) {
+			continue
+		}
+		for _, value := range w.valuesOf(command.field) {
+			if says := command.says + value; engine.Reaches([]string{says}, typed) {
+				rows = append(rows, w.settingRow(command.field, strconv.Itoa(number), value, says))
+			}
+		}
+	}
+	return rows
+}
+
+func (w Window) commandedTask(typed string) (int, bool) {
+	for _, word := range strings.Fields(typed) {
+		if n, err := strconv.Atoi(strings.TrimPrefix(word, "#")); err == nil {
+			_, ok := w.snap.Card(n)
+			return n, ok
+		}
+	}
+	return w.chosen, typed != "" && w.chosen != 0 && !w.chosenGoal
 }
 
 func (w Window) taskRow(c engine.Card) PaletteRow {
@@ -162,16 +197,8 @@ func waitingFor(field string) func(Window) Window {
 }
 
 func (w Window) valueRows(typed string) []PaletteRow {
-	var values []string
-	switch w.palette.waiting {
-	case "state":
-		values = engine.States()
-	case "priority":
-		values = engine.Priorities()
-	case "label":
-		values = w.boardLabels()
-	}
 	field, number := w.palette.waiting, strconv.Itoa(w.chosen)
+	values := w.valuesOf(field)
 	var rows []PaletteRow
 	for _, value := range values {
 		if !reaching(value, typed) {
@@ -183,6 +210,18 @@ func (w Window) valueRows(typed string) []PaletteRow {
 		rows = append(rows, w.settingRow(field, number, typed, "Create "+typed))
 	}
 	return rows
+}
+
+func (w Window) valuesOf(field string) []string {
+	switch field {
+	case "state":
+		return engine.States()
+	case "priority":
+		return engine.Priorities()
+	case "label":
+		return w.boardLabels()
+	}
+	return nil
 }
 
 func (w Window) settingRow(field, number, value, says string) PaletteRow {

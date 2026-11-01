@@ -3474,6 +3474,22 @@ Feature: The desktop board
       Then the engine was asked "task edit" for task 1
       And the command bar is shut
 
+    @gui-the-palette-takes-a-command-typed-whole
+    Scenario: a command typed whole in the command bar runs as if its row had been chosen
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it" with the state "todo"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "cmd+k"
+      And I type "move to done"
+      And I press "enter"
+      Then task 1 is in the column "done"
+      And the command bar is shut
+      When I press "cmd+k"
+      And I type "priority of #2 high"
+      And I press "enter"
+      Then task 2 carries the priority "high"
+
     @gui-the-palette-opens-a-task-found-by-title
     Scenario: the command bar finds a task by its title and opens it
       Given I added a task titled "Write the spec"
