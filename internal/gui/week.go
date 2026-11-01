@@ -2,6 +2,7 @@ package gui
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"cairn/internal/domain"
@@ -575,3 +576,19 @@ func (w Window) timeGridClicked(l Layout, p Point) (Window, bool) {
 	}
 	return w, w.grid != viewDays
 }
+
+// PeriodSays is the time spent over the whole period shown, as the strip says it beside its ranges.
+func (w Window) PeriodSays() string {
+	minutes := 0
+	for _, day := range w.TimeShown().Days {
+		minutes += day.Minutes
+	}
+	return strings.ToLower(w.ranging()) + " " + domain.FormatDuration(time.Duration(minutes)*time.Minute)
+}
+
+// TodayPill is where today's date stands on the accent in its day's head: around the date, as wide as it reads.
+func TodayPill(head Box, m Measure) Box {
+	return Box{X: head.X - pillPad/2, Y: head.Y, W: ends(m, todayFormat, reads) + pillPad, H: head.H}
+}
+
+const todayFormat = "Mon 02/01"

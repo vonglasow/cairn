@@ -3,6 +3,7 @@ package gui
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -201,7 +202,10 @@ func TestTheTimePageAsksNothingOfTheFuture(t *testing.T) {
 func TestTheRangeShownIsFilledAndTodayOutlined(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	l := w.Layout()
-	outlined := func(v Window, b Box) bool { return painted(drawn(t, v), Edges(b)[0], Dark().Chosen) == b.W }
+	outlined := func(v Window, b Box) bool {
+		top := Box{X: b.X + buttonRadius, Y: b.Y, W: b.W - 2*buttonRadius, H: 1}
+		return painted(drawn(t, v), top, Dark().Chosen) == top.W
+	}
 	filled := func(v Window, b Box) bool { return painted(drawn(t, v), b, lighter(Dark().Pill)) > b.W*b.H/2 }
 	if !filled(w, TimeChip(l, "Week")) || filled(w, TimeChip(l, "Month")) {
 		t.Error("a week shown does not fill Week alone")
@@ -345,5 +349,31 @@ func TestTheRangesOfTheTimePageAreOneSegmentedControl(t *testing.T) {
 	week := TimeChip(l, "Week")
 	if painted(shot, Box{X: week.X + week.W/2, Y: week.Y + 2, W: 1, H: 1}, lighter(skin.Pill)) != 1 {
 		t.Error("the range shown is not the segment lit")
+	}
+}
+
+func TestTheTimePageSaysThePeriodsTotal(t *testing.T) {
+	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
+	w.sheet = engine.Timesheet{Days: []engine.TimesheetDay{{Day: "2026-09-28", Minutes: 70}, {Day: "2026-09-29", Minutes: 310}}}
+	if got := w.PeriodSays(); got != "week 6h20m" {
+		t.Errorf("the week says %q", got)
+	}
+	w.monthly = true
+	if got := w.PeriodSays(); !strings.HasPrefix(got, "month ") {
+		t.Errorf("the month says %q", got)
+	}
+}
+
+func TestTodayIsAnAccentPillAndTheWeeksDaysAreRounded(t *testing.T) {
+	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
+	l := w.Layout()
+	shot := drawn(t, w)
+	today := TodayPill(WeekHeadAt(WeekDayAt(l, 2)), w.measured())
+	if painted(shot, Box{X: today.X + today.W/2, Y: today.Y + 1, W: 1, H: 1}, Dark().Chosen) != 1 {
+		t.Errorf("today's date at %+v is not on the accent", today)
+	}
+	day := WeekDayAt(l, 0)
+	if painted(shot, Box{X: day.X, Y: day.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+		t.Error("a day's ground is not rounded")
 	}
 }

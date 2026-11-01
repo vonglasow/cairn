@@ -268,6 +268,9 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	measuring.Constraints.Min = image.Point{}
 	control := RangesControl(l)
 	rounded(gtx, control, buttonRadius+segmentInset, skin.Pill)
+	period := w.PeriodSays()
+	periodWide := monoWide(period, small)
+	sayIn(gtx, th, skin.Low, Box{X: control.X - periodWide - padding, Y: control.Y + (control.H-lineHigh)/2, W: periodWide, H: lineHigh}, period, small, font.Font{Typeface: MonoFace}, text.End)
 	for _, chip := range TimeChips {
 		at := TimeChip(l, chip)
 		switch chip {
@@ -300,8 +303,15 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 	}
 	for i, day := range w.WeekDays() {
 		box := WeekDayAt(l, i)
-		fill(gtx, box, skin.Panel)
-		say(gtx, th, skin.Faint, WeekHeadAt(box), day.Format("Mon 02/01")+"   "+w.DayHeld(i).Says(), reads)
+		rounded(gtx, box, groundRadius, skin.Panel)
+		head := WeekHeadAt(box)
+		if day.Equal(w.today()) {
+			rounded(gtx, TodayPill(head, w.measured()), chipRadius+1, skin.Chosen)
+			say(gtx, th, skin.Back, head, day.Format(todayFormat), reads)
+			say(gtx, th, skin.Faint, head, strings.Repeat(" ", len(todayFormat))+"   "+w.DayHeld(i).Says(), reads)
+		} else {
+			say(gtx, th, skin.Faint, head, day.Format(todayFormat)+"   "+w.DayHeld(i).Says(), reads)
+		}
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
@@ -320,7 +330,7 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 func drawDayAlone(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window, longest int) {
 	box := DayAloneAt(l)
 	held := w.DayHeld(0)
-	fill(gtx, box, skin.Panel)
+	rounded(gtx, box, groundRadius, skin.Panel)
 	say(gtx, th, skin.Faint, WeekHeadAt(box), held.Says(), reads)
 	clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 	for j, one := range w.AloneShown() {
@@ -350,9 +360,11 @@ func drawMonth(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 		if cell == (Box{}) {
 			continue
 		}
-		fill(gtx, cell, skin.Panel)
 		if day.Equal(w.today()) {
-			outline(gtx, cell, skin.Chosen)
+			rounded(gtx, cell, buttonRadius, skin.Chosen)
+			rounded(gtx, Box{X: cell.X + 1, Y: cell.Y + 1, W: cell.W - 2, H: cell.H - 2}, buttonRadius-1, skin.Panel)
+		} else {
+			rounded(gtx, cell, buttonRadius, skin.Panel)
 		}
 		ink := skin.Ink
 		if !sameMonth(day, w.week) {
