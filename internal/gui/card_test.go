@@ -287,3 +287,13 @@ func TestALabelPillWearsItsColour(t *testing.T) {
 		t.Errorf("a label the board has no colour for wears %q", got)
 	}
 }
+
+func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
+	c := engine.Card{Number: 1, Title: "A", State: "todo", Labels: []string{"release"}}
+	w := holding(newFake(), c)
+	shot := drawn(t, w)
+	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now).Pills[0]
+	if above, under := inkGaps(shot, pill); above-under > 1 || under-above > 1 {
+		t.Errorf("release stands %d under its pill's top and %d over its foot", above, under)
+	}
+}

@@ -867,7 +867,12 @@ const (
 
 func drawPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string, ground color.NRGBA) {
 	rounded(gtx, pill, pill.H/2, ground)
-	sayCentred(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, said, small)
+	sayCentred(gtx, th, skin.Faint, pillLine(th, pill), said, small)
+}
+
+func pillLine(th *material.Theme, pill Box) Box {
+	top, bottom := inkOf(th, font.Font{Typeface: th.Face}, pillReference)
+	return Box{X: pill.X, Y: pill.Y + (pill.H-top-bottom)/2, W: pill.W, H: lineHigh}
 }
 
 var labelColours = map[string]color.NRGBA{
@@ -893,7 +898,7 @@ func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) {
 func drawLabelPill(gtx layout.Context, th *material.Theme, skin Skin, w Window, pill Box, label string) {
 	ground, ink := skin.LabelPill(w.LabelColour(label))
 	rounded(gtx, pill, pill.H/2, ground)
-	sayCentred(gtx, th, ink, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, label, small)
+	sayCentred(gtx, th, ink, pillLine(th, pill), label, small)
 }
 
 // Writing is the ink a card's title is written in.
@@ -1006,13 +1011,16 @@ const (
 var chipFace = font.Font{Typeface: MonoFace, Weight: font.SemiBold}
 
 func sayOnChip(gtx layout.Context, th *material.Theme, ink color.NRGBA, chip Box, key string) {
-	top, bottom := inkOf(th, key)
+	top, bottom := inkOf(th, chipFace, key)
 	at := chip.Y + chip.H/2 - (top+bottom)/2
 	sayIn(gtx, th, ink, Box{X: chip.X, Y: at, W: chip.W, H: lineHigh}, key, small, chipFace, text.Middle)
 }
 
-func inkOf(th *material.Theme, key string) (top, bottom int) {
-	th.Shaper.LayoutString(text.Parameters{Font: chipFace, PxPerEm: fixed.I(small), MaxLines: 1, MaxWidth: math.MaxInt32}, key)
+// pillReference is what a pill's name is centred by: letters that rise and stand on the line, so every pill's name sits on the same line whatever it hangs below it.
+const pillReference = "Hl"
+
+func inkOf(th *material.Theme, face font.Font, key string) (top, bottom int) {
+	th.Shaper.LayoutString(text.Parameters{Font: face, PxPerEm: fixed.I(small), MaxLines: 1, MaxWidth: math.MaxInt32}, key)
 	top, bottom = lineHigh, 0
 	for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
 		top = min(top, int(g.Y)+g.Bounds.Min.Y.Floor())
