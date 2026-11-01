@@ -504,6 +504,9 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnChoosing {
 			return w.taking()
 		}
+		if w.screen == OnFiltering {
+			return w.pickingFilter(w.filterPick)
+		}
 		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
 			return w.openingCalendar()
 		}
@@ -511,6 +514,10 @@ func (w Window) Choose(name string) Window {
 	case "no day":
 		return w.dated(time.Time{})
 	case "cancel":
+		if w.screen == OnFiltering && w.filterOpen {
+			w.filterOpen = false
+			return w
+		}
 		if w.screen == OnCalendar && w.view != viewDays {
 			w.view = viewDays
 			return w

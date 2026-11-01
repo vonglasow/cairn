@@ -1894,6 +1894,29 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^it shows where the card would land in "([^"]*)"$`, w.landsIn)
 	sc.Then(`^it shows nowhere for the card to land$`, w.landsNowhere)
 	sc.Then(`^"([^"]*)" does not carry "([^"]*)"$`, w.columnDoesNotCarry)
+	sc.When(`^I click the filter "([^"]*)"$`, func(name string) error {
+		for i, f := range w.w.Filters() {
+			if f.Name == name {
+				row := ListRowAt(w.w.FiltersBox(), i)
+				w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("no filter %q", name)
+	})
+	sc.Then(`^the filter "([^"]*)" lists (its values|nothing)$`, func(name, what string) error {
+		values, open := w.w.FilterList()
+		if what == "nothing" {
+			if open {
+				return fmt.Errorf("a filter's list is still open: %v", values)
+			}
+			return nil
+		}
+		if !open || w.w.Filters()[w.w.FilterOn()].Name != name || len(values) != len(w.w.Filters()[w.w.FilterOn()].Shown) {
+			return fmt.Errorf("the filter %q lists %v, open %v", name, values, open)
+		}
+		return nil
+	})
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)

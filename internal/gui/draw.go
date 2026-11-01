@@ -288,9 +288,33 @@ func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.FiltersBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
 	for i, f := range w.Filters() {
-		drawListRow(gtx, th, skin, ListRowAt(box, i), FilterSays(f), i == w.FilterOn())
+		row := ListRowAt(box, i)
+		if i == w.FilterOn() {
+			rounded(gtx, row, rowRadius, skin.Pill)
+		}
+		line := Inside(row)
+		say(gtx, th, skin.Low, line, f.Name, reads)
+		ink := skin.Faint
+		if f.At != 0 {
+			ink = skin.Chosen
+		}
+		sayIn(gtx, th, ink, line, "‹ "+f.Says()+" ›", reads, font.Font{}, text.End)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
+	if values, open := w.FilterList(); open {
+		f := w.Filters()[w.FilterOn()]
+		first, last := values[0], values[len(values)-1]
+		raised(gtx, Box{X: first.X - inset, Y: first.Y - inset, W: first.W + 2*inset, H: last.Y + last.H - first.Y + 2*inset}, bubbleRadius, skin.Panel)
+		for i, value := range values {
+			if i == w.filterPick {
+				rounded(gtx, value, rowRadius, skin.Pill)
+			}
+			if i == f.At {
+				say(gtx, th, skin.Chosen, Inside(value), TickedMark, reads)
+			}
+			say(gtx, th, skin.Ink, Box{X: value.X + tickRoom, Y: value.Y + inset, W: value.W - tickRoom - inset, H: value.H - 2*inset}, f.Shown[i], reads)
+		}
+	}
 }
 
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {

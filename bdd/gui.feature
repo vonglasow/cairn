@@ -442,6 +442,28 @@ Feature: The desktop board
       And I press "left"
       Then the board says it is filtered by "priority critical"
 
+    @gui-a-filter-opens-the-list-of-its-values
+    Scenario: a filter clicked opens the list of its values, and one is chosen from it
+      When I open the window
+      And I press "shift+f"
+      And I click the filter "priority"
+      Then the filter "priority" lists its values
+      And the board says it is filtered by ""
+      When I press "down" 3 times
+      And I press "enter"
+      Then the board says it is filtered by "priority high"
+      And the filter "priority" lists nothing
+
+    @gui-a-filters-list-is-left-untouched
+    Scenario: esc closes a filter's list and leaves the filter as it was
+      When I open the window
+      And I press "shift+f"
+      And I click the filter "priority"
+      And I press "down"
+      And I press "esc"
+      Then the board says it is filtered by ""
+      And the window shows the filters
+
     @gui-the-filters-open-from-the-menu-bar
     Scenario: the menu bar opens the filters
       When I open the window

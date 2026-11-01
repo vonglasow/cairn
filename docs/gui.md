@@ -456,8 +456,13 @@ grab, and two of them used to ignore a drag entirely.
 **The board is filtered by what a task carries**. `⇧F`, the bar's
 Filter or the menu bar's opens the filters: column, priority, label, objective,
 and a day the work is due by — today, in a week, in a month. A line is chosen
-by the arrows or a click, its value walked by `←` `→` or a click, each opening
-on `any`; the board narrows as they move (`@gui-a-filter-narrows-the-board`),
+by the arrows, its value walked by `←` `→`, each opening on `any` and
+written `‹ any ›` at the right of its line. A click on a line, or `⏎`, opens
+the list of its values under it, the one in force ticked: `↑↓` and *Choose*
+(`⏎`) or a click take one, *Cancel* (`esc`) leaves it as it was
+(`FilterList`, `@gui-a-filter-opens-the-list-of-its-values`,
+`@gui-a-filters-list-is-left-untouched`); a click used to change the value at
+once, where a list was expected; the board narrows as they move (`@gui-a-filter-narrows-the-board`),
 two together keep what both reach (`@gui-filters-narrow-together`), and `⌫`, or
 No filter, puts every one back on `any` (`@gui-every-filter-is-cleared-at-once`).
 Closed, they stay in force, written beside the tabs — `filtered by priority

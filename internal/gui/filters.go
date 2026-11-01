@@ -29,6 +29,15 @@ func (w Window) filteringBoard() Window {
 }
 
 func (w Window) onFilters(name string) Window {
+	if w.filterOpen {
+		switch name {
+		case "down", "j":
+			w.filterPick = min(len(w.filters[w.filterOn].Shown)-1, w.filterPick+1)
+		case "up", "k":
+			w.filterPick = max(0, w.filterPick-1)
+		}
+		return w
+	}
 	switch name {
 	case "down", "j":
 		w.filterOn = min(len(w.filters)-1, w.filterOn+1)
@@ -38,19 +47,60 @@ func (w Window) onFilters(name string) Window {
 		w.filters = w.filters.Walked(w.filterOn, 1)
 	case "left", "h":
 		w.filters = w.filters.Walked(w.filterOn, -1)
-	case "enter":
-		w.screen = OnTheBoard
+	case "enter", "space":
+		return w.openingFilter(w.filterOn)
 	}
 	return w
 }
 
+func (w Window) openingFilter(at int) Window {
+	w.filterOn, w.filterOpen, w.filterPick = at, true, w.filters[at].At
+	return w
+}
+
+func (w Window) pickingFilter(value int) Window {
+	w.filters = w.filters.Walked(w.filterOn, value-w.filters[w.filterOn].At)
+	w.filterOpen = false
+	return w
+}
+
+// FilterList is the values of the filter whose list is open, where each is drawn, and whether one is open.
+func (w Window) FilterList() ([]Box, bool) {
+	if !w.filterOpen || w.screen != OnFiltering {
+		return nil, false
+	}
+	row := ListRowAt(w.FiltersBox(), w.filterOn)
+	f := w.filters[w.filterOn]
+	wide := listLeast / 2
+	for _, said := range f.Shown {
+		wide = max(wide, ends(w.measured(), said, reads)+4*padding)
+	}
+	x := row.X + row.W - wide
+	y := row.Y + row.H
+	if y+len(f.Shown)*menuRow+2*inset > w.height-margin {
+		y = max(margin, row.Y-len(f.Shown)*menuRow-2*inset)
+	}
+	boxes := make([]Box, len(f.Shown))
+	for i := range f.Shown {
+		boxes[i] = Box{X: x + inset, Y: y + inset + i*menuRow, W: wide - 2*inset, H: menuRow}
+	}
+	return boxes, true
+}
+
 func (w Window) clickingFilters(p Point) Window {
+	if values, open := w.FilterList(); open {
+		for i, value := range values {
+			if value.In(p) {
+				return w.pickingFilter(i)
+			}
+		}
+		w.filterOpen = false
+		return w
+	}
 	box := w.FiltersBox()
 	for i := range w.filters {
 		if ListRowAt(box, i).In(p) {
-			w.filterOn = i
-			w.filters = w.filters.Walked(i, 1)
-			return w
+			return w.openingFilter(i)
 		}
 	}
 	if !box.In(p) {

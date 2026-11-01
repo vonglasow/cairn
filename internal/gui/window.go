@@ -132,6 +132,8 @@ type Window struct {
 	widening              Widening
 	filters               engine.Filters
 	filterOn              int
+	filterOpen            bool
+	filterPick            int
 	looking               Written
 	archived              bool
 	aimed                 string

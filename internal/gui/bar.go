@@ -240,6 +240,9 @@ func (w Window) Offers() []string {
 	case OnBackups:
 		return []string{"Restore", "Close"}
 	case OnFiltering:
+		if w.filterOpen {
+			return []string{"Choose", "Cancel"}
+		}
 		return []string{"No filter", "Close"}
 	case OnConfiguration:
 		if w.configHere {
