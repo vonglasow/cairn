@@ -223,6 +223,9 @@ func (w Window) inForm(name string) Window {
 	case "right":
 		return w.walks(1)
 	case "enter", "shift+enter":
+		if on := w.form.Fields()[w.form.On()]; chosenFromAList(on) || chosenOnACalendar(on) {
+			return w.Choose("Choose")
+		}
 		if long {
 			w.form = w.form.Writes(w.form.Writing().Types("\n"))
 			return w.inSightOfTheCaret()

@@ -1554,8 +1554,16 @@ that read alike are scanned by something other than the words.
 
 **A click says which row, `⏎` takes it, `⌘⏎` keeps the list.** One click that took made reading a row impossible without choosing it, and one
 key doing both taking and keeping left no word for being done with the whole
-list. The bar says all three — *Take*, *Keep*, *Cancel* — and a double-click is
-take-and-keep in one gesture, which is what a hand already does to a list.
+list. The list's buttons say *Choose* (`⏎`, which ticks the row or lets it go
+again), *Done* (`⌘⏎`) and *Cancel*; a list that takes one answer — the
+column, the priority — has no *Done*, its *Choose* closes it. They said
+*Take* and *Keep*, two words nobody could tell apart, and the form under the
+list offered a *Choose* of its own that opened the list a person was already
+in: the form offers no such button now, `⏎` on a field chosen from a list
+still opens it (`@gui-enter-on-a-list-field-opens-its-list`). The labels of
+a list of labels are pills after their tick, as on a card (`LabelPillAt`).
+A double-click is choose-and-done in one gesture, which is what a hand
+already does to a list.
 `esc` backs out of the list and not out of the form under it: the form holds
 what somebody typed.
 

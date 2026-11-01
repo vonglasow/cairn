@@ -505,6 +505,18 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			at += apart
 			continue
 		}
+		if w.choosingFor == "label" {
+			if w.Ticked(one.Number) {
+				say(gtx, th, skin.Chosen, line, TickedMark, reads)
+			}
+			ground := skin.Pill
+			if i == w.ChoosingAt() {
+				ground = skin.Panel
+			}
+			drawPill(gtx, th, skin, LabelPillAt(line, ends(w.measured(), one.Title, small)), one.Title, ground)
+			at += apart
+			continue
+		}
 		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
 		if stripe, ok := w.RowStripe(one, line); ok {
 			rounded(gtx, stripe, stripeRadius-1, skin.Priority[one.Title])

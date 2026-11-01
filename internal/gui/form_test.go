@@ -1212,3 +1212,25 @@ func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 	}
 	t.Fatalf("typing a new label offers %v", w.Choosing())
 }
+
+func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"bug"}}, engine.Card{Number: 2, Title: "Other", State: "todo", Labels: []string{"gui"}})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Name != "labels" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter").Key("down")
+	box := w.ChoosingBox()
+	shot := drawn(t, w)
+	for i, one := range w.Choosing() {
+		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
+		pill := LabelPillAt(line, ends(w.measured(), one.Title, small))
+		ground := Dark().Pill
+		if i == w.ChoosingAt() {
+			ground = Dark().Panel
+		}
+		if painted(shot, Box{X: pill.X + 1, Y: pill.Y + pill.H/2, W: 1, H: 1}, ground) != 1 {
+			t.Errorf("the label %q is not a pill at %+v", one.Title, pill)
+		}
+	}
+}

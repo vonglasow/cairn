@@ -3150,7 +3150,7 @@ Feature: The desktop board
       Then the list offers "backend"
 
     @gui-enter-takes-and-cmd-enter-keeps
-    Scenario: enter takes a row and the list is kept when they are all in
+    Scenario: enter chooses a row or lets it go, and done keeps what is chosen
       Given I added an objective titled "Ship cairn"
       And I added an objective titled "Keep it honest"
       And I added a task titled "Write the spec"
@@ -3158,8 +3158,8 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I choose "Edit"
       And I click the field "objectives"
-      Then the bar offers "Take" under "⏎"
-      And the bar offers "Keep" under "⌘⏎"
+      Then the bar offers "Choose" under "⏎"
+      And the bar offers "Done" under "⌘⏎"
       When I press "enter"
       And I press "down"
       And I press "enter"
@@ -3168,6 +3168,18 @@ Feature: The desktop board
       Then the window is on the form
       And the field "objectives" names "Ship cairn"
       And the field "objectives" names "Keep it honest"
+
+    @gui-enter-on-a-list-field-opens-its-list
+    Scenario: enter on a field chosen from a list opens the list, though the form offers no button for it
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "column"
+      And I press "enter"
+      Then the window is choosing
+      And the bar offers "Choose" under "⏎"
+      And the bar does not offer "Done"
 
     @gui-text-is-held-and-carried
     Scenario: a run of text is held, copied, and put down somewhere else
@@ -3246,7 +3258,7 @@ Feature: The desktop board
       And I press "cmd+enter"
       Then the window is on the form
       And the bar offers "Save" under "⌘⏎"
-      And the bar offers "Choose" under "⏎"
+      And the bar does not offer "Choose"
       When I press "cmd+enter"
       Then the window is on the board
       And the engine was asked "task edit" for task 1

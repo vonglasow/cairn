@@ -63,3 +63,10 @@ func ChoosingFrom(box Box) int {
 	looking := ChoosingLooking(box)
 	return looking.Y + looking.H + between
 }
+
+// LabelPillAt is where a list of labels draws one as a pill: past the room its tick takes, as wide as its name written small.
+func LabelPillAt(line Box, wide int) Box {
+	return Box{X: line.X + tickRoom, Y: line.Y + (line.H-pillHigh)/2, W: wide + 2*pillPad, H: pillHigh}
+}
+
+const tickRoom = 20

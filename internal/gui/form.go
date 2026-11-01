@@ -498,6 +498,9 @@ func (w Window) Choose(name string) Window {
 	case "cmd+enter":
 		return w.Save()
 	case "choose":
+		if w.screen == OnChoosing {
+			return w.taking()
+		}
 		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
 			return w.openingCalendar()
 		}
@@ -557,7 +560,7 @@ func (w Window) Choose(name string) Window {
 			return w.renamingLabel()
 		}
 		return w.taking()
-	case "keep":
+	case "keep", "done":
 		return w.keeping()
 	case "close":
 		if w.screen == OnChoosing {

@@ -147,7 +147,7 @@ func Shortcut(offer string) string {
 		return "enter"
 	case "choose":
 		return "enter"
-	case "save":
+	case "save", "done":
 		return "cmd+enter"
 	case "close", "cancel", "clear", "throw away":
 		return "esc"
@@ -297,7 +297,10 @@ func (w Window) Offers() []string {
 	case OnPalette:
 		return nil
 	case OnChoosing:
-		return []string{"Take", "Keep", "Cancel"}
+		if w.OneOnly() {
+			return []string{"Choose", "Cancel"}
+		}
+		return []string{"Done", "Choose", "Cancel"}
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
 	case OnBackups:
@@ -318,9 +321,6 @@ func (w Window) Offers() []string {
 		return nil
 	case OnForm:
 		offers := []string{"Save", "Cancel"}
-		if on := w.form.Fields()[w.form.On()]; chosenFromAList(on) || chosenOnACalendar(on) {
-			offers = []string{"Choose", "Save", "Cancel"}
-		}
 		if w.recoverable() {
 			offers = append(offers, "Recover")
 		}
