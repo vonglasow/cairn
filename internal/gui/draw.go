@@ -365,7 +365,7 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 			ink = skin.Back
 		}
 		say(gtx, th, ink, head, day.Format(todayFormat), reads)
-		sayIn(gtx, th, skin.Low, WeekTotalAt(box), w.DayHeld(i).Says(), small, font.Font{Typeface: MonoFace}, text.Start)
+		sayIn(gtx, th, skin.Low, WeekTotalAt(box, w.measured()), w.DayHeld(i).Says(), small, font.Font{Typeface: MonoFace}, text.End)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
