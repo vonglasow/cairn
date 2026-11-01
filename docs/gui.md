@@ -1237,7 +1237,12 @@ the keys written beside each line (`menu_windows.go`). It is set from the
 window's own thread (`onTheWindowsThread`, through Gio's `Window.Run`): set
 from the loop while Gio's thread waited for the loop to take the event that
 named the window, `SetMenu` waited on that thread in turn, and the window
-froze once drawn, on Windows 10, with nothing written anywhere. Neither call to the
+froze once drawn, on Windows 10, with nothing written anywhere. Windows names
+a key by its place on an American keyboard, so `?` typed on an AZERTY one
+arrives as `shift+,` and `/` as `shift+:`; the mark itself comes only as text.
+On a screen that takes no text, a lone mark the system says was typed is taken
+as its key, unless the press before it named it already, as macOS does
+(`symbolTyped`). Neither call to the
 system is driven by a test; what each line does is. Where the system gives a
 window no menu bar — Linux — a `☰` button at the end of the tabs opens those
 lines as one menu (`MenuButton`). Help ends on About cairn, which says which

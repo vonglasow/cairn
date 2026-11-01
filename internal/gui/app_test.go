@@ -484,3 +484,24 @@ func TestTheNativeMenuIsMadeOnTheWindowsOwnThread(t *testing.T) {
 		t.Error("the menu was installed outside what runs on the window's thread")
 	}
 }
+
+func TestASymbolTypedIsTheKeyWhenThePressNamedAnother(t *testing.T) {
+	for _, c := range []struct {
+		text, named string
+		key         string
+		taken       bool
+	}{
+		{"?", ",", "?", true},
+		{"/", "/", "", false},
+		{"?", "?", "", false},
+		{"/", ":", "/", true},
+		{"a", "A", "", false},
+		{"7", "7", "", false},
+		{"ab", "", "", false},
+		{" ", "Space", "", false},
+	} {
+		if key, taken := symbolTyped(c.text, c.named); key != c.key || taken != c.taken {
+			t.Errorf("%q typed after a press named %q is taken as %q %v", c.text, c.named, key, taken)
+		}
+	}
+}

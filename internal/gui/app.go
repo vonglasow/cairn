@@ -365,6 +365,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, not
 	cursors(gtx, w)
 
 	was := w.screen
+	named := ""
 
 	gtx.Execute(key.FocusCmd{Tag: tag})
 
@@ -407,13 +408,16 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, not
 			}
 		case key.Event:
 			if e.State == key.Press {
-				w = Typed(w, string(e.Name), e.Modifiers)
+				named = string(e.Name)
+				w = Typed(w, named, e.Modifiers)
 			}
 		case transfer.DataEvent:
 			w = pasting(w, e.Open())
 		case key.EditEvent:
 			if takesTyping(was) {
 				w = w.Edits(e.Range.Start, e.Range.End, e.Text)
+			} else if symbol, ok := symbolTyped(e.Text, named); ok {
+				w = w.Key(symbol)
 			}
 		}
 	}
@@ -447,6 +451,15 @@ func telling(gtx layout.Context, w Window) {
 	gtx.Execute(key.SnippetCmd{Tag: tag, Snippet: key.Snippet{
 		Range: key.Range{End: len([]rune(said.Value))}, Text: said.Value}})
 	gtx.Execute(key.SelectionCmd{Tag: tag, Range: key.Range{Start: said.At, End: said.At + said.Held}})
+}
+
+// symbolTyped is the key a symbol the system says was typed stands for, on a screen that takes no text: a lone mark that is neither a letter, a figure nor a space, and that the press before it did not name already — Windows names a key by its place on an American keyboard, so ? typed on another arrives as the press of its key and, apart, as the mark.
+func symbolTyped(text, named string) (string, bool) {
+	runes := []rune(text)
+	if len(runes) != 1 || text == named || unicode.IsLetter(runes[0]) || unicode.IsDigit(runes[0]) || unicode.IsSpace(runes[0]) || !unicode.IsGraphic(runes[0]) {
+		return "", false
+	}
+	return text, true
 }
 
 func takesTyping(s Screen) bool {
