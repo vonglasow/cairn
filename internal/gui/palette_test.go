@@ -171,3 +171,38 @@ func TestThePaletteRisesAsItOpens(t *testing.T) {
 		t.Error("a palette shut still rises")
 	}
 }
+
+func TestTheCommandBarsChosenRowSaysEnterOnAChip(t *testing.T) {
+	w := holding(newFake(), card(1, "Write the spec", "todo")).Key("cmd+k")
+	w = w.At(w.now.Add(time.Second))
+	lines := w.PaletteLines()
+	var chosen PaletteLine
+	for _, line := range lines {
+		if line.Row == 0 {
+			chosen = line
+		}
+	}
+	chip := PaletteKeyAt(chosen.Box, w.keyboard.Spelled(Pretty("enter")))
+	if chip.X+chip.W > chosen.Box.X+chosen.Box.W || chip.W == 0 {
+		t.Fatalf("the chip %+v is not inside the row %+v", chip, chosen.Box)
+	}
+	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, darker(Dark().Pill)) != 1 {
+		t.Error("the chosen row draws no chip for enter")
+	}
+}
+
+func TestARecentLineSaysHowLongAgoItWasDone(t *testing.T) {
+	start := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	w := holding(newFake(), card(1, "Write the spec", "todo")).At(start).Key("cmd+k").Types("help").Key("enter").Key("esc")
+	w = w.At(start.Add(2 * time.Minute)).Key("cmd+k")
+	rows := w.PaletteRows()
+	if len(rows) == 0 || rows[len(rows)-1].Group != paletteRecentGroup {
+		t.Fatalf("the command bar lists %+v", rows)
+	}
+	if got := rows[len(rows)-1].Ago(w.now); got != "2 min ago" {
+		t.Errorf("a line done two minutes ago says %q", got)
+	}
+	if got := rows[len(rows)-1].Ago(start.Add(10 * time.Second)); got != "just now" {
+		t.Errorf("a line done ten seconds ago says %q", got)
+	}
+}

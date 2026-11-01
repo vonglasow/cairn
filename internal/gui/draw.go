@@ -1474,7 +1474,10 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.PaletteBox()
 	raised(gtx, box, panelRadius, skin.Panel)
 	writing(gtx, th, skin, w.measured(), PaletteTyped(box), w.palette.typed, true, reads, 1, Follow)
-	sayIn(gtx, th, skin.Low, Box{X: box.X + box.W - padding - paletteShut, Y: PaletteTyped(box).Y, W: paletteShut, H: lineHigh}, "esc to close", small, font.Font{}, text.End)
+	shut := w.keyboard.Spelled(Pretty("esc"))
+	closeAt := Box{X: box.X + box.W - padding - ends(w.measured(), "close", small), Y: PaletteTyped(box).Y, W: ends(w.measured(), "close", small), H: lineHigh}
+	sayIn(gtx, th, skin.Low, closeAt, "close", small, font.Font{}, text.End)
+	drawKeyChip(gtx, th, skin, Box{X: closeAt.X - hintSpace - KeyChipWide(shut), Y: closeAt.Y, H: lineHigh}, shut)
 	fill(gtx, Box{X: box.X, Y: box.Y + paletteHead - 1, W: box.W, H: 1}, skin.GroundEdge)
 	clipped := clip.Rect(rect(Box{X: box.X, Y: box.Y + paletteHead, W: box.W, H: box.H - paletteHead})).Push(gtx.Ops)
 	defer clipped.Pop()
@@ -1490,6 +1493,17 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			ink = skin.Ink
 		}
 		sayIn(gtx, th, ink, Box{X: line.Box.X + padding/2, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: line.Box.W - padding, H: lineHigh}, rows[line.Row].Says, reads, font.Font{}, text.Start)
+		end := line.Box.X + line.Box.W - padding/2
+		if line.Row == w.palette.row {
+			enter := w.keyboard.Spelled(Pretty("enter"))
+			chip := PaletteKeyAt(line.Box, enter)
+			rounded(gtx, chip, chipRadius, darker(skin.Pill))
+			sayIn(gtx, th, skin.Ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, enter, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+			end = chip.X - hintSpace
+		}
+		if ago := rows[line.Row].Ago(w.now); ago != "" {
+			sayIn(gtx, th, skin.Faint, Box{X: line.Box.X, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: end - line.Box.X, H: lineHigh}, ago, small, font.Font{}, text.End)
+		}
 	}
 }
 

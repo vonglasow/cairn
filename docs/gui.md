@@ -820,8 +820,10 @@ actions on the task chosen (`Move #152 to…`, `Priority of #152…`,
 (`New task`, `Search`, `Filters`, `Labels`, `Help`…); then, once something is
 typed, the tasks it reaches by the engine's own rule (`engine.Reaches`), five
 at most, `#152` putting that task first; then what was done from it lately
-(`PaletteRows`). `↑↓` walk the lines, `⏎` does one, `esc` — or `⌫` on nothing
-typed — shuts it. An action that needs a value asks for it in the same place:
+(`PaletteRows`), each saying how long ago it was done, `2 min ago`
+(`PaletteRow.Ago`). `↑↓` walk the lines, the one walked to carrying `⏎` on a
+chip at its right (`PaletteKeyAt`), `⏎` does it, `esc` — said on a chip at
+the head, `esc close` — or `⌫` on nothing typed — shuts it. An action that needs a value asks for it in the same place:
 the columns, the four priorities, the board's labels and one to create, each
 written through `task edit` as the right-click menu writes it; an action is
 otherwise the key it stands for, so the palette does nothing the keys do not

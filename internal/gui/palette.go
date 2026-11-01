@@ -21,6 +21,27 @@ type paletteState struct {
 type PaletteRow struct {
 	Group, Says string
 	does        func(Window) Window
+	done        time.Time
+}
+
+// Ago is how long ago a recent line was done, as the command bar says it beside it: just now under a minute, then in minutes and hours.
+func (r PaletteRow) Ago(now time.Time) string {
+	since := now.Sub(r.done)
+	switch {
+	case r.done.IsZero():
+		return ""
+	case since < time.Minute:
+		return "just now"
+	case since < time.Hour:
+		return strconv.Itoa(int(since/time.Minute)) + " min ago"
+	}
+	return strconv.Itoa(int(since/time.Hour)) + " h ago"
+}
+
+// PaletteKeyAt is where the chosen line of the command bar draws the key that does it: at the right of the line.
+func PaletteKeyAt(line Box, key string) Box {
+	wide := KeyChipWide(key)
+	return Box{X: line.X + line.W - padding/2 - wide, Y: line.Y + (line.H-chipHigh)/2, W: wide, H: chipHigh}
 }
 
 // The groups the open command bar lists its lines under, in the order they come.
@@ -282,7 +303,7 @@ func (w Window) runningPalette(row PaletteRow) Window {
 	w = w.shuttingPalette()
 	done := row.does(w)
 	if waits && row.Group != paletteTasksGroup {
-		kept := []PaletteRow{{Group: paletteRecentGroup, Says: row.Says, does: row.does}}
+		kept := []PaletteRow{{Group: paletteRecentGroup, Says: row.Says, does: row.does, done: w.now}}
 		for _, was := range recent {
 			if was.Says != row.Says && len(kept) < paletteRecentAtMost {
 				kept = append(kept, was)
