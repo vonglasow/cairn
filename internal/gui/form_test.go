@@ -1184,7 +1184,7 @@ func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
 				t.Error("the priority's field shows no stripe of its colour")
 			}
 		case "label":
-			if painted(shot, frame, Dark().Pill) == 0 {
+			if ground, _ := Dark().LabelPill(w.LabelColour("backend")); painted(shot, frame, ground) == 0 {
 				t.Error("the labels' field shows no pills")
 			}
 		}
@@ -1225,11 +1225,8 @@ func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
 	for i, one := range w.Choosing() {
 		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
 		pill := LabelPillAt(line, ends(w.measured(), one.Title, small))
-		ground := Dark().Pill
-		if i == w.ChoosingAt() {
-			ground = Dark().Panel
-		}
-		if painted(shot, Box{X: pill.X + 1, Y: pill.Y + pill.H/2, W: 1, H: 1}, ground) != 1 {
+		ground, _ := Dark().LabelPill(w.LabelColour(one.Title))
+		if painted(shot, Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
 			t.Errorf("the label %q is not a pill at %+v", one.Title, pill)
 		}
 	}

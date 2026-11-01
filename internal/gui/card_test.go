@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"strings"
 	"testing"
@@ -263,5 +264,26 @@ func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
 func TestGoMonoIsGivenItsWholeAdvance(t *testing.T) {
 	if got := monoWide("1/3", small); got*5 < 3*small*3 {
 		t.Errorf("three figures at %d are given %d, under the %v they take", small, got, float64(3*small*3)/5)
+	}
+}
+
+func TestALabelPillWearsItsColour(t *testing.T) {
+	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"release"}}
+	w := holding(newFake(), c)
+	w.snap.Colours = map[string]string{"release": "peach"}
+	skin := Dark()
+	if len(skin.Labels) != 14 {
+		t.Fatalf("the skin knows %d label colours", len(skin.Labels))
+	}
+	ground, ink := skin.LabelPill("peach")
+	if ink != skin.Labels["peach"] || ground == skin.Pill {
+		t.Fatalf("a peach pill is %v on %v", ink, ground)
+	}
+	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now).Pills[0]
+	if painted(drawn(t, w), Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
+		t.Error("the card's label is not drawn on its colour")
+	}
+	if got := w.LabelColour("doc"); got != domain.ColourOf("doc") {
+		t.Errorf("a label the board has no colour for wears %q", got)
 	}
 }

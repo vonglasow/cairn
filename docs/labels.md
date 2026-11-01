@@ -126,7 +126,10 @@ with nothing written down (`@label-colour-is-read-off-the-name`).
 delete lets it go, and a colour that is not one of the fourteen is refused
 (`@label-colour-is-chosen`, `@label-colour-is-one-of-fourteen`). `label list`
 says each label's colour, and the board reads them with the rest
-(`Snapshot.Colours`).
+(`Snapshot.Colours`). The window draws every label pill — on a card, in its
+bubble, in a form, in a list and in the list of labels — in its colour, the
+name in the colour itself on a fifth of it over a card's ground
+(`Skin.LabelPill`, `drawLabelPill`).
 
 ## The Claude Code plugin
 

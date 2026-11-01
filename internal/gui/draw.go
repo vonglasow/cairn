@@ -50,6 +50,7 @@ type Skin struct {
 	Ghost              color.NRGBA
 	Veil               color.NRGBA
 	Priority           map[string]color.NRGBA
+	Labels             map[string]color.NRGBA
 	Standing           map[string]Inked
 	Stones             []color.NRGBA
 }
@@ -60,6 +61,7 @@ type Inked struct{ Back, Ink color.NRGBA }
 // Dark is the one skin there is.
 func Dark() Skin {
 	return Skin{
+		Labels:     labelColours,
 		Back:       color.NRGBA{R: 12, G: 13, B: 15, A: 255},
 		Panel:      color.NRGBA{R: 38, G: 40, B: 45, A: 255},
 		Edge:       color.NRGBA{R: 96, G: 98, B: 106, A: 255},
@@ -224,7 +226,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if bubble, pills, ok := w.LabelsBubbleBox(); ok {
 		raised(gtx, bubble, bubbleRadius, skin.Panel)
 		for i, pill := range pills {
-			drawPill(gtx, th, skin, pill, w.bubbled[i], skin.Pill)
+			drawLabelPill(gtx, th, skin, w, pill, w.bubbled[i])
 		}
 	}
 }
@@ -258,11 +260,7 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			rounded(gtx, Box{X: field.X + 1, Y: field.Y + 1, W: field.W - 2, H: field.H - 2}, buttonRadius-1, skin.Field)
 			writing(gtx, th, skin, m, Inside(field), w.Renamed(), true, reads, 1, Follow)
 		} else {
-			ground := skin.Pill
-			if row.On {
-				ground = skin.Panel
-			}
-			drawPill(gtx, th, skin, Box{X: line.X, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, row.Carried.Label, small) + 2*pillPad, H: pillHigh}, row.Carried.Label, ground)
+			drawLabelPill(gtx, th, skin, w, Box{X: line.X, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, row.Carried.Label, small) + 2*pillPad, H: pillHigh}, row.Carried.Label)
 		}
 		if !row.Typing || !w.Making() {
 			sayIn(gtx, th, skin.Faint, line, countOf(row.Carried.Tasks, "task")+" · "+countOf(row.Carried.Objectives, "objective"), small, font.Font{}, text.End)
@@ -377,7 +375,7 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
-			drawCard(gtx, th, skin, DayCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, DayCardAt(box, j) == w.pointed)
+			drawCard(gtx, th, skin, w, DayCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, DayCardAt(box, j) == w.pointed)
 			say(gtx, th, skin.Chosen, DaySpentAt(row), one.Spent(), small)
 			fill(gtx, WeekBar(row, one.Minutes, longest), skin.Chosen)
 		}
@@ -396,7 +394,7 @@ func drawDayAlone(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w
 	say(gtx, th, skin.Faint, WeekHeadAt(box), held.Says(), reads)
 	clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 	for j, one := range w.AloneShown() {
-		drawCard(gtx, th, skin, AloneCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, AloneCardAt(box, j) == w.pointed)
+		drawCard(gtx, th, skin, w, AloneCardAt(box, j), w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, AloneCardAt(box, j) == w.pointed)
 		say(gtx, th, skin.Chosen, AloneSpentAt(box, j), one.Spent(), small)
 		fill(gtx, AloneBar(box, j, one.Minutes, longest), skin.Chosen)
 	}
@@ -566,11 +564,7 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			if w.Ticked(one.Number) {
 				say(gtx, th, skin.Chosen, line, TickedMark, reads)
 			}
-			ground := skin.Pill
-			if i == w.ChoosingAt() {
-				ground = skin.Panel
-			}
-			drawPill(gtx, th, skin, LabelPillAt(line, ends(w.measured(), one.Title, small)), one.Title, ground)
+			drawLabelPill(gtx, th, skin, w, LabelPillAt(line, ends(w.measured(), one.Title, small)), one.Title)
 			at += apart
 			continue
 		}
@@ -701,17 +695,17 @@ func drawPlaced(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		if !building {
 			if Dimmed(p.Card) {
 				half := paint.PushOpacity(gtx.Ops, 0.5)
-				drawCard(gtx, th, skin, p.Slot, p.Card, chosen, p.Slot == w.pointed)
+				drawCard(gtx, th, skin, w, p.Slot, p.Card, chosen, p.Slot == w.pointed)
 				half.Pop()
 			} else {
-				drawCard(gtx, th, skin, p.Slot, p.Card, chosen, p.Slot == w.pointed)
+				drawCard(gtx, th, skin, w, p.Slot, p.Card, chosen, p.Slot == w.pointed)
 			}
 			clipped.Pop()
 			continue
 		}
 		_, fade := Arriving(progress, k, len(seen))
 		faded := paint.PushOpacity(gtx.Ops, float32(fade))
-		drawCard(gtx, th, skin, p.Slot, p.Card, chosen, p.Slot == w.pointed)
+		drawCard(gtx, th, skin, w, p.Slot, p.Card, chosen, p.Slot == w.pointed)
 		faded.Pop()
 		clipped.Pop()
 	}
@@ -785,7 +779,7 @@ func drawCairn(gtx layout.Context, mark Box, ink color.NRGBA) {
 	}
 }
 
-func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, chosen, hovered bool) {
+func drawCard(gtx layout.Context, th *material.Theme, skin Skin, w Window, box Box, c engine.Card, chosen, hovered bool) {
 	parts := PartsOf(box)
 	ground := skin.Card
 	switch {
@@ -825,7 +819,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engi
 		sayIn(gtx, th, ink, laid.FactsAt, laid.Facts, small, mono, text.End)
 	}
 	for i, pill := range laid.Pills {
-		drawPill(gtx, th, skin, pill, laid.Shown[i], skin.Pill)
+		drawLabelPill(gtx, th, skin, w, pill, laid.Shown[i])
 	}
 	if laid.Count != "" {
 		rounded(gtx, laid.More, pillHigh/2, skin.Edge)
@@ -860,6 +854,32 @@ func drawPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said 
 	sayCentred(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, said, small)
 }
 
+var labelColours = map[string]color.NRGBA{
+	"rosewater": {R: 0xf5, G: 0xe0, B: 0xdc, A: 255}, "flamingo": {R: 0xf2, G: 0xcd, B: 0xcd, A: 255},
+	"pink": {R: 0xf5, G: 0xc2, B: 0xe7, A: 255}, "mauve": {R: 0xcb, G: 0xa6, B: 0xf7, A: 255},
+	"red": {R: 0xf3, G: 0x8b, B: 0xa8, A: 255}, "maroon": {R: 0xeb, G: 0xa0, B: 0xac, A: 255},
+	"peach": {R: 0xfa, G: 0xb3, B: 0x87, A: 255}, "yellow": {R: 0xf9, G: 0xe2, B: 0xaf, A: 255},
+	"green": {R: 0xa6, G: 0xe3, B: 0xa1, A: 255}, "teal": {R: 0x94, G: 0xe2, B: 0xd5, A: 255},
+	"sky": {R: 0x89, G: 0xdc, B: 0xeb, A: 255}, "sapphire": {R: 0x74, G: 0xc7, B: 0xec, A: 255},
+	"blue": {R: 0x89, G: 0xb4, B: 0xfa, A: 255}, "lavender": {R: 0xb4, G: 0xbe, B: 0xfe, A: 255},
+}
+
+// LabelPill is the ground a label of that colour is drawn on, a fifth of its colour over a card's ground, and the ink its name is written in, the colour itself.
+func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) {
+	ink, ok := s.Labels[colour]
+	if !ok {
+		return s.Pill, s.Faint
+	}
+	mix := func(a, b uint8) uint8 { return uint8((int(a)*1 + int(b)*4) / 5) }
+	return color.NRGBA{R: mix(ink.R, s.Card.R), G: mix(ink.G, s.Card.G), B: mix(ink.B, s.Card.B), A: 255}, ink
+}
+
+func drawLabelPill(gtx layout.Context, th *material.Theme, skin Skin, w Window, pill Box, label string) {
+	ground, ink := skin.LabelPill(w.LabelColour(label))
+	rounded(gtx, pill, pill.H/2, ground)
+	sayCentred(gtx, th, ink, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, label, small)
+}
+
 // Writing is the ink a card's title is written in.
 func (s Skin) Writing(c engine.Card) color.NRGBA {
 	if c.Archived {
@@ -883,7 +903,7 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	for at, g := range engine.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
 		face := goalFace(g)
-		drawCard(gtx, th, skin, box, face, g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
+		drawCard(gtx, th, skin, w, box, face, g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
 		if inked, ok := skin.Standing[g.State]; ok {
 			if pill := StandingPill(face, box, Measured(th)); pill != (Box{}) {
 				rounded(gtx, pill, pill.H/2, inked.Back)
@@ -1279,7 +1299,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			}
 		case "label":
 			if !on {
-				drawFieldPills(gtx, th, skin, w.measured(), frame, strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' }))
+				drawFieldPills(gtx, th, skin, w, w.measured(), frame, strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' }))
 			}
 		}
 	}
@@ -1563,7 +1583,7 @@ func drawListRow(gtx layout.Context, th *material.Theme, skin Skin, row Box, sai
 	say(gtx, th, skin.Ink, Inside(row), said, reads)
 }
 
-func drawFieldPills(gtx layout.Context, th *material.Theme, skin Skin, m Measure, frame Box, labels []string) {
+func drawFieldPills(gtx layout.Context, th *material.Theme, skin Skin, w Window, m Measure, frame Box, labels []string) {
 	if len(labels) == 0 {
 		return
 	}
@@ -1575,7 +1595,7 @@ func drawFieldPills(gtx layout.Context, th *material.Theme, skin Skin, m Measure
 		if pill.X+pill.W > room.X+room.W {
 			return
 		}
-		drawPill(gtx, th, skin, pill, label, skin.Pill)
+		drawLabelPill(gtx, th, skin, w, pill, label)
 		x += pill.W + pillGap
 	}
 }

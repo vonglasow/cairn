@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/domain"
 	"slices"
 	"strconv"
 
@@ -188,4 +189,12 @@ func (w Window) LabelRows() []LabelRow {
 		rows = append(rows, LabelRow{At: ListRowAt(box, len(rows)), Carried: w.carried[i], On: on, Typing: on && w.renaming})
 	}
 	return rows
+}
+
+// LabelColour is the colour a label wears on this board: the one the engine read for it, or else the one read off its name.
+func (w Window) LabelColour(label string) string {
+	if colour, ok := w.snap.Colours[label]; ok {
+		return colour
+	}
+	return domain.ColourOf(label)
 }

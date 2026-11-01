@@ -1281,7 +1281,8 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 		}
 		value, rows := formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i)
 		inside := Inside(Framed(value, rows))
-		if painted(shot, inside, Dark().Ink) == 0 && lettered(shot, inside, Dark().Faint) == 0 {
+		_, labelInk := Dark().LabelPill(w.LabelColour("backend"))
+		if painted(shot, inside, Dark().Ink) == 0 && lettered(shot, inside, Dark().Faint) == 0 && lettered(shot, inside, labelInk) == 0 {
 			t.Errorf("%q writes nothing", field.Name)
 		}
 	}
