@@ -1213,8 +1213,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 	}
 	if tip, said, ok := w.Explanation(); ok {
-		fill(gtx, tip, skin.Back)
-		outline(gtx, tip, skin.Edge)
+		raised(gtx, tip, bubbleRadius, skin.Panel)
 		for i, line := range said {
 			ink := skin.Ink
 			if strings.HasPrefix(line, ExampleSays) && i == len(said)-1 && w.ExplainsBy() != "" {

@@ -1234,3 +1234,42 @@ func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
 		}
 	}
 }
+
+func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it"})}
+	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "time spent" })
+	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), at)
+	w = w.Hovering(Point{X: name.X + 1, Y: name.Y + 1})
+	tip, lines, ok := w.Explanation()
+	if !ok || len(lines) < 2 {
+		t.Fatalf("time spent explains %q", lines)
+	}
+	m := w.measured()
+	for i, line := range lines {
+		if ends(m, line, small) > tipWide-2*padding {
+			t.Errorf("line %d, %q, runs wider than a bubble", i, line)
+		}
+	}
+	means := lines[:len(lines)-1]
+	if last, first := ends(m, means[len(means)-1], small), ends(m, means[0], small); len(means) > 1 && last*3 < first {
+		t.Errorf("the explanation ends on a stub: %q", means)
+	}
+	if painted(drawn(t, w), Box{X: tip.X + tip.W/2, Y: tip.Y + 1, W: 1, H: 1}, Dark().Panel) != 1 {
+		t.Error("the explanation is not drawn as the window's bubble")
+	}
+}
+
+func TestAFieldsValueCutShort(t *testing.T) {
+	long := "the time we spent getting the whole board ready before anybody used it"
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it", Because: long})}
+	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "because" })
+	_, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
+	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != long {
+		t.Errorf("a value cut short opens a bubble of %q", got)
+	}
+	at = slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "title" })
+	_, value, _ = FormPlace(w.formBox(), w.form.Fields(), at)
+	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != "" {
+		t.Errorf("a value that fits opens a bubble of %q", got)
+	}
+}

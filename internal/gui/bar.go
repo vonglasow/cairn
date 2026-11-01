@@ -472,7 +472,7 @@ func (w Window) agreeingVerb() string {
 	return "Agree"
 }
 
-// KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono, a key mark Go Mono has no glyph for as wide as an em of the face standing in, and a little room either side.
+// KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono, a key mark Go Mono has no glyph for a fifth wider than an em, the face standing in for it being wider than Go Mono, and a little room either side.
 func KeyChipWide(key string) int {
 	if key == "" {
 		return 0
@@ -483,7 +483,7 @@ func KeyChipWide(key string) int {
 			wide += monoWide(string(r), small)
 			continue
 		}
-		wide += small
+		wide += small * 6 / 5
 	}
 	return wide + 2*chipInset
 }

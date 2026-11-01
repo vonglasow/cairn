@@ -289,7 +289,14 @@ fits gets none. The cards keep their height, and the title is not lost to it.
 It stands just above the title, its text beginning where the title's does, so
 the eye goes from the cut words to the whole ones without a jump; placed above
 the card, it stood a line of number away from what it completes.
-Where there is no room above, it goes just under the title. Scenarios:
+Where there is no room above, it goes just under the title. A form's field
+whose value is cut opens the same bubble over its value, and a field's name
+opens the bubble that explains it, drawn the same way: they were a box with
+an edge, and the explanation wrapped at a fixed width, so a sentence could
+end on a word alone on its last line; every bubble now wraps at the
+narrowest width that keeps its number of lines (`evenly`, `cutValueAt`,
+`TestAFieldsValueCutShort`, `TestAFieldsExplanationIsABubbleWrappedEvenly`).
+Scenarios:
 `@gui-a-cut-title-is-read-whole-under-the-pointer`,
 `@gui-a-title-that-fits-has-no-bubble`,
 `@gui-the-bubble-stands-just-above-the-title`. The labels a card leaves out

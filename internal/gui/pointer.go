@@ -117,6 +117,9 @@ func (w Window) Hovering(p Point) Window {
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.servedAt(p)
 	}
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.cutValueAt(p)
+	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
 	return w
@@ -134,7 +137,7 @@ func (w Window) BubbleBox() (Box, []string, bool) {
 	room := min(2*w.restingWide, w.width-2*margin) - 2*padding
 	var lines []string
 	for _, said := range w.resting {
-		lines = append(lines, m.Wrapped(said, room, plain).Said...)
+		lines = append(lines, m.Wrapped(said, evenly(m, said, room, plain), plain).Said...)
 	}
 	widest := 0
 	for _, line := range lines {
@@ -306,9 +309,9 @@ func (w Window) Explanation() (Box, []string, bool) {
 		return Box{}, nil, false
 	}
 	m := w.measured()
-	lines := m.Wrapped(said, tipWide-2*padding, small).Said
+	lines := m.Wrapped(said, evenly(m, said, tipWide-2*padding, small), small).Said
 	if by := w.ExplainsBy(); by != "" {
-		lines = append(lines, ExampleSays+by)
+		lines = append(lines, m.Wrapped(ExampleSays+by, tipWide-2*padding, small).Said...)
 	}
 	widest := 0
 	for _, line := range lines {
@@ -316,6 +319,38 @@ func (w Window) Explanation() (Box, []string, bool) {
 	}
 	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), w.explaining-1)
 	return ExplainedAt(name, w.width, widest+2*padding, len(lines)), lines, true
+}
+
+func evenly(m Measure, said string, room, size int) int {
+	lines := len(m.Wrapped(said, room, size).Said)
+	least, most := room/2, room
+	for least < most {
+		mid := (least + most) / 2
+		if len(m.Wrapped(said, mid, size).Said) > lines {
+			least = mid + 1
+		} else {
+			most = mid
+		}
+	}
+	return most
+}
+
+func (w Window) cutValueAt(p Point) ([]string, Box, int) {
+	if w.screen != OnForm {
+		return nil, Box{}, 0
+	}
+	fields := w.form.Fields()
+	for i, field := range fields {
+		_, value, rows := FormPlace(w.formBox(), fields, i)
+		if !value.In(p) || field.Long || field.Arg == "label" || field.Name == "steps" || i == w.form.On() {
+			continue
+		}
+		said := w.FieldSays(field)
+		if ends(w.measured(), said, FormSize(field)) > Inside(Framed(value, rows)).W {
+			return []string{said}, value, value.W
+		}
+	}
+	return nil, Box{}, 0
 }
 
 // ExplainedAt is where a field's explanation is drawn: just under its name, as wide and as high as asked, kept inside the window.

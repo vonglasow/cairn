@@ -2,8 +2,13 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"math"
 	"strings"
 	"testing"
+
+	"gioui.org/font"
+	"gioui.org/text"
+	"golang.org/x/image/math/fixed"
 
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -77,5 +82,25 @@ func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
 	}
 	if got := w.OfferKey("Delete"); got != "⏎" {
 		t.Errorf("the question says its Delete is %q", got)
+	}
+}
+
+func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
+	th := Theme()
+	monoWritten := func(said string) int {
+		th.Shaper.LayoutString(text.Parameters{
+			Font: font.Font{Typeface: MonoFace, Weight: font.SemiBold}, PxPerEm: fixed.I(small),
+			MaxLines: 1, MaxWidth: math.MaxInt32,
+		}, said)
+		end := 0
+		for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
+			end = max(end, (g.X + g.Advance).Ceil())
+		}
+		return end
+	}
+	for _, key := range []string{"Ctrl+⏎", "⌘⌫", "⇧F", "Ctrl+K"} {
+		if got, want := KeyChipWide(key), monoWritten(key)+2*chipInset; got < want {
+			t.Errorf("the chip of %s is %d wide, its key is written %d wide", key, got, want-2*chipInset)
+		}
 	}
 }
