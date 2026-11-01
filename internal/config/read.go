@@ -89,6 +89,7 @@ type Places struct {
 	timeDeleted  string
 	timeWeekends string
 	keepSizes    bool
+	written      []string
 }
 
 type file struct {
@@ -209,6 +210,29 @@ func (p Places) FocusSession() string { return p.focusSession }
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
 
+// Written is every key the file writes, dotted under its table and sorted: what is not among them holds its default, or what the environment says.
+func (p Places) Written() []string { return p.written }
+
+func writtenIn(data []byte) []string {
+	var said map[string]any
+	if toml.Unmarshal(data, &said) != nil {
+		return nil
+	}
+	var keys []string
+	for key, value := range said {
+		table, ok := value.(map[string]any)
+		if !ok {
+			keys = append(keys, key)
+			continue
+		}
+		for inner := range table {
+			keys = append(keys, key+"."+inner)
+		}
+	}
+	slices.Sort(keys)
+	return keys
+}
+
 // PagesOff is the pages the file turns off, in the order the boards draw them: tasks, objectives, time.
 func (p Places) PagesOff() []string { return p.pagesOff }
 
@@ -321,6 +345,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		storeNamedBy: byNothing,
 		notesNamedBy: byNothing,
 		pagesOff:     f.Pages.off(),
+		written:      writtenIn(data),
 	}
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},

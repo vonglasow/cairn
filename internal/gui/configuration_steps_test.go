@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/cucumber/godog"
 
@@ -19,16 +18,27 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return os.WriteFile(path, []byte(fmt.Sprintf("store = %q\n", w.path)), 0o600)
 	})
-	sc.Then(`^the configuration reads "([^"]*)" from the file$`, func(name string) error {
-		for _, line := range w.w.Configured() {
+	sc.Then(`^the configuration reads "([^"]*)" from (the file|its default)$`, func(name, from string) error {
+		want := map[string]string{"the file": "file", "its default": "default"}[from]
+		for _, line := range w.w.ConfigLines() {
 			if line.Key == name {
-				if !strings.HasSuffix(line.Means, "(the file)") {
-					return fmt.Errorf("%q reads %q, not from the file", name, line.Means)
+				if line.From != want {
+					return fmt.Errorf("%q reads %q from %q, not %q", name, line.Value, line.From, want)
 				}
 				return nil
 			}
 		}
-		return fmt.Errorf("the configuration holds no %q: %v", name, w.w.Configured())
+		return fmt.Errorf("the configuration holds no %q: %v", name, w.w.ConfigLines())
+	})
+	sc.Then(`^the configuration's values start on one line down the panel$`, func() error {
+		starts := map[int]bool{}
+		for _, line := range w.w.ConfigLines() {
+			starts[line.ValueAt.X] = true
+		}
+		if len(starts) != 1 {
+			return fmt.Errorf("the configuration's values start at %v", starts)
+		}
+		return nil
 	})
 	sc.Then(`^the window asks the system to open the configuration file$`, func() error {
 		got, asked := w.w.OpenAsked()

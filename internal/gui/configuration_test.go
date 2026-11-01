@@ -11,7 +11,7 @@ func TestTheSystemOpensAFileWithItsOwnCommand(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"darwin", "open", []string{"/h/config.toml"}},
+		{"darwin", "open", []string{"-t", "/h/config.toml"}},
 		{"linux", "xdg-open", []string{"/h/config.toml"}},
 		{"windows", "cmd", []string{"/c", "start", "", "/h/config.toml"}},
 	} {

@@ -249,12 +249,15 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.ConfigurationBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
-	for i, line := range w.Configured() {
-		ink := skin.Ink
-		if line.Key == "" {
-			ink = skin.Faint
-		}
-		say(gtx, th, ink, Inside(ListRowAt(box, i)), ConfigurationSays(line), reads)
+	mono := font.Font{Typeface: MonoFace}
+	lines := w.ConfigLines()
+	for _, line := range lines {
+		sayIn(gtx, th, skin.Low, line.KeyAt, line.Key, small, mono, text.Start)
+		say(gtx, th, skin.Ink, line.ValueAt, line.Value, reads)
+		sayIn(gtx, th, skin.Faint, line.FromAt, line.From, small, mono, text.End)
+	}
+	for i, said := range w.ConfigFoot() {
+		say(gtx, th, skin.Faint, Inside(ListRowAt(box, len(lines)+i)), said, reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

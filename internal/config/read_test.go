@@ -784,3 +784,26 @@ func TestRead_saysWhetherTheWeekendsAreShown(t *testing.T) {
 		t.Errorf("err = %v, want ErrWeekends", err)
 	}
 }
+
+func TestRead_saysWhichKeysTheFileWrote(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("could not set up the fixture: %v", err)
+	}
+	content := "store = \"/tmp/quelquepart/cairn.db\"\n[time]\nweekends = \"hidden\"\n[pages]\ntime = false\n"
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(content), 0o600); err != nil {
+		t.Fatalf("could not set up the fixture: %v", err)
+	}
+	places, err := config.Read(home, silentEnv)
+	if err != nil {
+		t.Fatalf("Read returned an error: %v", err)
+	}
+	if got := strings.Join(places.Written(), ","); got != "pages.time,store,time.weekends" {
+		t.Errorf("the file wrote %q", got)
+	}
+	nothing, err := config.Read(t.TempDir(), silentEnv)
+	if err != nil || len(nothing.Written()) != 0 {
+		t.Errorf("with no file, the keys written are %v, %v", nothing.Written(), err)
+	}
+}

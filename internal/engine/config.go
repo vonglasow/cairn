@@ -29,6 +29,7 @@ type Config struct {
 	Time    *TimeConfig   `json:"time,omitempty"`
 	Window  *WindowConfig `json:"window,omitempty"`
 	Problem string        `json:"problem,omitempty"`
+	Written []string      `json:"written,omitempty"`
 }
 
 // PagesConfig is whether each page is on.
@@ -100,6 +101,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
+	g.config.Written = p.Written()
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {

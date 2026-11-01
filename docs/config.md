@@ -338,7 +338,11 @@ named it: the file, the environment, or nothing
 says what that means. It used to say the places and, in words of its own, only
 what the file changed: what cairn really used could not be read off it. What it
 says is a configuration cairn reads as the same
-(`@config-show-reads-as-a-configuration`), so it can be copied into the file. It is the only command that does not
+(`@config-show-reads-as-a-configuration`), so it can be copied into the file.
+Answered as JSON, it also lists `written`: every key the file writes, dotted
+under its table, so a surface can say of any key whether the file or the
+default set it (`config.Places.Written`); the window shows it beside each
+value. It is the only command that does not
 refuse a configuration it cannot make sense of — and that exception is the
 point, not an oversight. A person reaches for it *because* something is not
 where they expected it, so a diagnostic that answers with the same refusal the

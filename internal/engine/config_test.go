@@ -192,3 +192,13 @@ func TestConfigShow_saysWhetherTheWeekendsAreShown(t *testing.T) {
 		t.Errorf("read back, the weekends are %+v (%s)", again.Time, again.Problem)
 	}
 }
+
+func TestConfigShow_answersWhichKeysTheFileWrote(t *testing.T) {
+	c := shownWith(t, "[pages]\ntime = false\n[window]\nkeep_sizes = true\n")
+	if got := strings.Join(c.Written, ","); got != "pages.time,window.keep_sizes" {
+		t.Errorf("config show says the file wrote %q", got)
+	}
+	if c := shownWith(t, ""); c.Written != nil {
+		t.Errorf("with an empty file, config show says it wrote %v", c.Written)
+	}
+}

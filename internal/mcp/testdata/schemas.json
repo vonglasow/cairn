@@ -446,6 +446,15 @@
         },
         "problem": {
           "type": "string"
+        },
+        "written": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [

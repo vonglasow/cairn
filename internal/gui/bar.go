@@ -143,7 +143,7 @@ func Shortcut(offer string) string {
 		return "cmd+backspace"
 	case "quit":
 		return "cmd+q"
-	case "agree", "apply", "restore":
+	case "agree", "apply", "restore", "open the file", "write the file":
 		return "enter"
 	case "choose":
 		return "enter"
