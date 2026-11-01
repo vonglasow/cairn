@@ -1596,3 +1596,18 @@ func TestAnObjectivesStandingIsAPillInItsOwnColour(t *testing.T) {
 		t.Error("an active objective and one on hold stand on the same colour")
 	}
 }
+
+func TestAWindowTooSmallSaysSoInItsMiddle(t *testing.T) {
+	w := New(newFake(), 600, 400)
+	if w.Screen() != TooSmallToDraw {
+		t.Fatalf("a window 600 by 400 is on %v", w.Screen())
+	}
+	shot := drawn(t, w)
+	line := Message(w.width, w.height)
+	if lettered(shot, Box{X: line.X, Y: line.Y, W: 40, H: line.H}, Dark().Faint) != 0 {
+		t.Error("the message starts at the window's edge rather than in its middle")
+	}
+	if lettered(shot, Box{X: w.width/2 - 20, Y: line.Y, W: 40, H: line.H}, Dark().Faint) == 0 {
+		t.Error("the message is not written in the window's middle, in the faint ink")
+	}
+}

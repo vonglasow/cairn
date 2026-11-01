@@ -143,7 +143,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 
 	fill(gtx, Box{W: w.width, H: w.height}, skin.Back)
 	if w.Screen() == TooSmallToDraw {
-		say(gtx, th, skin.Ink, Message(w.width, w.height), w.Says(), heading)
+		sayCentred(gtx, th, skin.Faint, Message(w.width, w.height), w.Says(), reads)
 		return
 	}
 	if w.Blank() {
