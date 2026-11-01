@@ -577,10 +577,15 @@ func (w Window) Asks() []Said {
 	if w.ChosenGoal() {
 		what = "objective"
 	}
-	return []Said{
-		{Means: "This " + what + " cannot be brought back."},
-		{Means: "Delete again to agree, or Cancel."},
+	said := []Said{{Means: "This " + what + " cannot be brought back."}}
+	if c, ok := w.snap.Card(w.chosen); ok && !w.ChosenGoal() {
+		steps := "Its labels go with it."
+		if c.SubTotal > 0 {
+			steps = "Its " + strconv.Itoa(c.SubTotal) + " steps and its labels go with it."
+		}
+		said = append(said, Said{Means: steps})
 	}
+	return append(said, Said{Means: "Delete again to agree, or Cancel."})
 }
 
 // AboutSays is what About cairn says of a build: its version, the commit it was made from and when, and what built it for which system.

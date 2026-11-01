@@ -639,3 +639,15 @@ func TestTheWindowAppliesWhatIsWaitingOnceAgreed(t *testing.T) {
 		t.Errorf("an act refused for a store behind lands on %v asking %v", w.Screen(), w.question)
 	}
 }
+
+func TestDeletingATaskSaysItsStepsGoWithIt(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", SubTotal: 3})
+	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
+	said := ""
+	for _, line := range w.Asks() {
+		said += line.Means + " "
+	}
+	if !strings.Contains(said, "Its 3 steps and its labels go with it") {
+		t.Errorf("deleting a task with three steps says %q", said)
+	}
+}
