@@ -20,7 +20,7 @@ func Heads(w Window) string { return HeadsOn(w, w.screen) }
 func HeadsOn(w Window, screen Screen) string {
 	switch screen {
 	case OnBackups:
-		return "Backups — enter restores one"
+		return "Backups"
 	case OnFiltering:
 		return "Filters"
 	case OnLabels:
@@ -143,7 +143,7 @@ func Shortcut(offer string) string {
 		return "cmd+backspace"
 	case "quit":
 		return "cmd+q"
-	case "agree", "apply":
+	case "agree", "apply", "restore":
 		return "enter"
 	case "choose":
 		return "enter"
@@ -301,7 +301,7 @@ func (w Window) Offers() []string {
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
 	case OnBackups:
-		return []string{"Cancel"}
+		return []string{"Restore", "Close"}
 	case OnFiltering:
 		return []string{"No filter", "Close"}
 	case OnConfiguration:

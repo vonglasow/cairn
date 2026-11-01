@@ -216,3 +216,10 @@ func TestTheWheelStaysInsideAPanel(t *testing.T) {
 		t.Errorf("the wheel off the list moved it to %d", got)
 	}
 }
+
+func TestABackupLineSaysWhenAndHowBig(t *testing.T) {
+	made := time.Date(2026, 11, 1, 9, 12, 0, 0, time.Local)
+	if got := backupSays(domain.Backup{Number: 3, Made: made, Size: 48 * 1024}); got != "backup 3   2026-11-01 09:12   48 KB" {
+		t.Errorf("a backup line says %q", got)
+	}
+}

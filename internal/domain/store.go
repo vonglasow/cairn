@@ -16,11 +16,23 @@ func HeldText(h Held) string {
 	return fmt.Sprintf("holds %d task(s) and %d objective(s)", h.Tasks, h.Objectives)
 }
 
-// Backup is a backup of the store, kept beside it and referred to by its number.
+// Backup is a backup of the store, kept beside it and referred to by its number, and how many bytes its file takes.
 type Backup struct {
 	Number int
 	Made   time.Time
 	Path   string
+	Size   int64
+}
+
+// FormatSize writes a number of bytes the way a person reads one: whole bytes and kilobytes, megabytes to a tenth.
+func FormatSize(bytes int64) string {
+	switch {
+	case bytes < 1024:
+		return fmt.Sprintf("%d B", bytes)
+	case bytes < 1024*1024:
+		return fmt.Sprintf("%d KB", (bytes+512)/1024)
+	}
+	return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
 }
 
 // FormatMoment writes a moment the way a person reads one: local time, to the minute.

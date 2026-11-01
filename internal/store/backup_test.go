@@ -110,6 +110,25 @@ func TestVault_saysWhenABackupWasMade(t *testing.T) {
 	}
 }
 
+func TestVault_saysHowBigABackupIs(t *testing.T) {
+	v, _ := vaultOn(t, "Write the spec")
+	made, err := v.Make()
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	info, err := os.Stat(made.Path)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	if made.Size != info.Size() || made.Size == 0 {
+		t.Errorf("the backup made says it is %d bytes, its file %d", made.Size, info.Size())
+	}
+	all, err := v.All()
+	if err != nil || len(all) != 1 || all[0].Size != info.Size() {
+		t.Errorf("the backups listed say %+v, %v", all, err)
+	}
+}
+
 func TestVault_saysWhatABackupHolds(t *testing.T) {
 	v, _ := vaultOn(t, "Write the spec", "Ship it")
 	made, err := v.Make()

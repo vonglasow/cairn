@@ -1975,6 +1975,9 @@ Feature: The desktop board
       And the window has looked at the store 1 time
       And I press "shift+b"
       Then the backups listed are 1
+      And the panel is headed "Backups"
+      And the bar offers "Restore" under "⏎"
+      And the bar offers "Close" under "esc"
       When I press "enter"
       Then the window is asking
       When I press "enter"

@@ -1096,7 +1096,12 @@ the command line's, so a person at the window went to a terminal for either.
 `⌘B` makes a new backup and says where it lies; `⇧B` lists the backups, and
 `⏎` restores one once agreed to, the engine making a new backup of what the
 store holds first, as it always does (`backups.go`). What it tells is said above the bar in
-the ink of what is read, and goes as a refusal does.
+the ink of what is read, and goes as a refusal does. A line of the list says the backup's
+number, when it was made and how big it is, `backup 3   2026-11-01 09:12
+48 KB` (`domain.FormatSize`), and the panel offers *Restore* (`⏎`) and
+*Close* (`esc`) rather than a head spelling out the key. Why a backup was
+made is not said: nothing records it, and a name guessed from its moment
+would be wrong as often as right.
 
 **The configuration is read from the window, and its file opened from there.**
 The window kept the configuration out of sight: to know what cairn read, or to

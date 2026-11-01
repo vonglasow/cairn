@@ -34,7 +34,7 @@ type backupsState struct {
 }
 
 func backupSays(one domain.Backup) string {
-	return "backup " + strconv.Itoa(one.Number) + "   " + domain.FormatMoment(one.Made)
+	return "backup " + strconv.Itoa(one.Number) + "   " + domain.FormatMoment(one.Made) + "   " + domain.FormatSize(one.Size)
 }
 
 // BackupOn is the line of the list the keyboard is on.

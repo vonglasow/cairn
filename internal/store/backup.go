@@ -71,7 +71,7 @@ func (v *Vault) take(from string) (domain.Backup, error) {
 	if err != nil {
 		return domain.Backup{}, fmt.Errorf("reading the backup just made: %w", err)
 	}
-	return domain.Backup{Number: number, Made: made.ModTime(), Path: path}, nil
+	return domain.Backup{Number: number, Made: made.ModTime(), Path: path, Size: made.Size()}, nil
 }
 
 // All hands back every backup, oldest number first.
@@ -95,7 +95,7 @@ func (v *Vault) All() ([]domain.Backup, error) {
 			return nil, fmt.Errorf("reading a backup: %w", err)
 		}
 		backups = append(backups, domain.Backup{
-			Number: number, Made: info.ModTime(), Path: filepath.Join(v.folder, entry.Name()),
+			Number: number, Made: info.ModTime(), Path: filepath.Join(v.folder, entry.Name()), Size: info.Size(),
 		})
 	}
 	return backups, nil

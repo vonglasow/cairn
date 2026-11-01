@@ -621,6 +621,10 @@ func (w Window) Choose(name string) Window {
 	case "skip flagged":
 		return w.actingOnSeveral(false)
 	case "delete", "agree", "apply", "restore", "finish", "replace":
+		if w.screen == OnBackups {
+			w.screen, w.question = OnAsking, aboutPuttingBack
+			return w
+		}
 		if w.screen == OnAsking && w.asksAboutSeveral() {
 			return w.actingOnSeveral(true)
 		}
