@@ -622,7 +622,7 @@ func (w Window) Choose(name string) Window {
 		return w.actingOnSeveral(true)
 	case "skip flagged":
 		return w.actingOnSeveral(false)
-	case "delete", "agree", "apply":
+	case "delete", "agree", "apply", "restore", "finish", "replace":
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutDeletingSeveral)
 		}
@@ -657,13 +657,16 @@ func (w Window) Choose(name string) Window {
 		return w.Delete()
 	case "throw away":
 		return w.throwingAway()
-	case "back":
+	case "back", "keep editing":
 		w.screen, w.question = OnForm, aboutDeleting
 		return w
 	case "recover":
 		w.form, w.draft = w.draft, Form{}
 		return w
 	case "archive", "unarchive":
+		if w.screen == OnAsking && w.question == aboutSweeping {
+			return w.sweeping()
+		}
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutArchivingSeveral)
 		}

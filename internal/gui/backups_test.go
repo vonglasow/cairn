@@ -98,7 +98,7 @@ func TestTheBackupsAreLaidOut(t *testing.T) {
 func TestRestoringAsksWhatItCosts(t *testing.T) {
 	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []domain.Backup{{Number: 7}}}}
 	asks := w.Asks()
-	if len(asks) != 2 || asks[0].Means != "A new backup of what the store holds now is made first." {
+	if len(asks) != 1 || asks[0].Means != "A new backup of what the store holds now is made first." {
 		t.Errorf("the question says %+v", asks)
 	}
 	if got := Heads(w); got != "Restore backup 7?" {

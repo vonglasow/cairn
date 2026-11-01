@@ -30,8 +30,12 @@ func (w Window) Said(offer string) string {
 }
 
 // OfferKey is the key an offer answers to, spelled for this keyboard, and nothing when it has none.
-func (w Window) OfferKey(offer string) string {
-	key := Shortcut(offer)
+func (w Window) OfferKey(offer string) string { return w.spelled(w.shortcut(offer)) }
+
+// BarKey is the key the board's bar says an offer answers to, whatever panel stands over the board.
+func (w Window) BarKey(offer string) string { return w.spelled(Shortcut(offer)) }
+
+func (w Window) spelled(key string) string {
 	if key == "" {
 		return ""
 	}

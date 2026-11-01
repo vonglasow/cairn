@@ -151,7 +151,7 @@ func Shortcut(offer string) string {
 		return "cmd+enter"
 	case "close", "cancel", "clear", "throw away":
 		return "esc"
-	case "back", "all possible":
+	case "back", "keep editing", "all possible":
 		return "enter"
 	case "skip flagged":
 		return "s"
@@ -263,7 +263,7 @@ func (w Window) PanelClose() (Box, bool) {
 
 func (w Window) leavingOffer() string {
 	for _, offer := range w.Offers() {
-		if Shortcut(offer) == "esc" {
+		if w.shortcut(offer) == "esc" {
 			return offer
 		}
 	}
@@ -281,7 +281,7 @@ func (w Window) OfferLook(i int, offer string) buttonLook {
 	return buttonPlain
 }
 
-var leaving = map[string]bool{"Cancel": true, "Close": true, "Back": true, "No filter": true, "No day": true, "Keep": true, "Start afresh": true}
+var leaving = map[string]bool{"Cancel": true, "Close": true, "Back": true, "Keep editing": true, "No filter": true, "No day": true, "Keep": true, "Start afresh": true}
 
 func (w Window) destroys() bool {
 	switch w.question {
@@ -327,7 +327,7 @@ func (w Window) Offers() []string {
 		return offers
 	case OnAsking:
 		if w.question == aboutLeaving {
-			return []string{"Throw away", "Back"}
+			return []string{"Throw away", "Keep editing"}
 		}
 		if w.question == aboutCairn {
 			return []string{"Close"}
@@ -344,7 +344,7 @@ func (w Window) Offers() []string {
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
 		}
-		return []string{"Agree", "Cancel"}
+		return []string{w.agreeingVerb(), "Cancel"}
 	case OnHelp:
 		return []string{"Close"}
 	case OnSearch:
@@ -446,14 +446,30 @@ const (
 )
 
 func (w Window) hintWide(offer string) int {
-	return KeyChipWide(w.keyOf(offer)) + hintSpace + ends(w.measured(), offer, reads) + hintMargin
+	return KeyChipWide(w.BarKey(offer)) + hintSpace + ends(w.measured(), offer, reads) + hintMargin
 }
 
-func (w Window) keyOf(offer string) string {
-	if key := Shortcut(offer); key != "" {
-		return w.keyboard.Spelled(Pretty(key))
+func (w Window) shortcut(offer string) string {
+	if w.screen == OnAsking && offer == w.agreeingVerb() {
+		return "enter"
 	}
-	return ""
+	return Shortcut(offer)
+}
+
+func (w Window) agreeingVerb() string {
+	switch w.question {
+	case aboutDeleting, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts:
+		return "Delete"
+	case aboutSweeping:
+		return "Archive"
+	case aboutPuttingBack:
+		return "Restore"
+	case aboutFinishingParts:
+		return "Finish"
+	case aboutHiding:
+		return "Replace"
+	}
+	return "Agree"
 }
 
 // KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono, a key mark Go Mono has no glyph for as wide as an em of the face standing in, and a little room either side.
@@ -535,13 +551,11 @@ func (w Window) Asks() []Said {
 	if w.question == aboutPuttingBack {
 		return []Said{
 			{Means: "A new backup of what the store holds now is made first."},
-			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutDeletingLabel {
 		return []Said{
 			{Means: "It is taken off every task and every objective carrying it."},
-			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutCairn {
@@ -554,25 +568,22 @@ func (w Window) Asks() []Said {
 		}
 		return []Said{
 			{Means: "Its desktop entry, " + Known + ".desktop, was not written by cairn and " + shows + "."},
-			{Means: "Enter replaces it with cairn's own, or Cancel keeps it until it changes."},
+			{Means: "Replacing it puts cairn's own in its place; cancelled, it is kept until it changes."},
 		}
 	}
 	if w.question == aboutDeletingParts {
 		return []Said{
 			{Means: "They go at once, whether the form is saved or not."},
-			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutDeletingPart {
 		return []Said{
 			{Means: "It goes at once, whether the form is saved or not."},
-			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutFinishingParts {
 		return []Said{
 			{Means: "Its steps not yet done are ticked with it."},
-			{Means: "Enter to agree, or Cancel."},
 		}
 	}
 	if w.question == aboutApplying {
@@ -592,13 +603,29 @@ func (w Window) Asks() []Said {
 	}
 	said := []Said{{Means: "This " + what + " cannot be brought back."}}
 	if c, ok := w.snap.Card(w.chosen); ok && !w.ChosenGoal() {
-		steps := "Its labels go with it."
-		if c.SubTotal > 0 {
-			steps = "Its " + strconv.Itoa(c.SubTotal) + " steps and its labels go with it."
-		}
-		said = append(said, Said{Means: steps})
+		said = append(said, Said{Means: goingWith(c)})
 	}
-	return append(said, Said{Means: "Delete again to agree, or Cancel."})
+	return said
+}
+
+func goingWith(c engine.Card) string {
+	var what []string
+	switch c.SubTotal {
+	case 0:
+	case 1:
+		what = append(what, "its 1 step")
+	default:
+		what = append(what, "its "+strconv.Itoa(c.SubTotal)+" steps")
+	}
+	what = append(what, "its labels")
+	if c.Spent != "" {
+		what = append(what, "its "+c.Spent+" spent")
+	}
+	listed := what[len(what)-1]
+	if len(what) > 1 {
+		listed = strings.Join(what[:len(what)-1], ", ") + " and " + listed
+	}
+	return strings.ToUpper(listed[:1]) + listed[1:] + " go with it."
 }
 
 // AboutSays is what About cairn says of a build: its version, the commit it was made from and when, and what built it for which system.

@@ -851,7 +851,7 @@ Feature: The desktop board
       When I open the window
       And I drag the card "Ship it" onto "DONE"
       Then the window asks to put task 1 in done, ticking its steps
-      When I click "Agree"
+      When I click "Finish"
       Then task 1 is in the column "done"
       And every step of task 1 is done
 
@@ -2582,7 +2582,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I click "Delete"
-      And I click "Agree"
+      And I click "Delete"
       Then "BACKLOG" does not carry "Write the spec"
 
     @gui-deleting-asks-first
@@ -3749,6 +3749,34 @@ Feature: The desktop board
       Then the question stands raised, its corners rounded
       And what is behind the question is dimmed
 
+    @gui-a-question-answers-to-its-verb
+    Scenario Outline: a question's answer is named by what it does, and enter does it
+      Given I added a task titled "Write the spec" with the state "done"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "<key>"
+      Then the panel is headed "<question>"
+      And the bar offers "<verb>" under "⏎"
+      And the bar offers "Cancel" under "esc"
+      And the question says nothing of how to answer it
+      When I press "enter"
+      Then the board says nothing of "Write the spec"
+
+      Examples:
+        | key           | question                      | verb    |
+        | cmd+backspace | Delete task 1?                | Delete  |
+        | shift+x       | Archive every task in DONE?   | Archive |
+
+    @gui-a-question-on-a-task-says-what-goes-with-it
+    Scenario: deleting a task says the steps and the time that go with it
+      Given I added a task titled "Write the spec"
+      And I added the step "Draft" to task 1
+      And I spent "1h30m" on task 1 on "2026-10-30"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "cmd+backspace"
+      Then the question says "Its 1 step, its labels and its 1h30m spent go with it."
+
     @gui-a-step-is-kept-when-its-delete-is-cancelled
     Scenario: the forward delete asks too, and cancelled leaves the step where it was
       Given I added a task titled "Ship it"
@@ -4271,7 +4299,7 @@ Feature: The desktop board
       And I set the field "title" to "Something else"
       And I click outside the panel
       Then the panel is headed "Throw away what you typed?"
-      When I choose "Back"
+      When I choose "Keep editing"
       Then the field "title" reads "Something else"
 
     @gui-a-filled-form-asks-before-it-is-thrown-away
@@ -4284,7 +4312,7 @@ Feature: The desktop board
       And I choose "Cancel"
       Then the panel is headed "Throw away what you typed?"
       And the question is no bigger than what it asks
-      When I choose "Back"
+      When I choose "Keep editing"
       Then the window is on the form
 
     @gui-a-form-is-closed-by-its-cross
@@ -4355,7 +4383,7 @@ Feature: The desktop board
       And I click the card "Write the spec"
       And I press "shift+x"
       Then the panel is headed "Archive every task in DONE?"
-      When I choose "Agree"
+      When I choose "Archive"
       Then "DONE" does not carry "Write the spec"
       And "DONE" does not carry "Ship it"
 

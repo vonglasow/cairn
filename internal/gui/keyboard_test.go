@@ -65,3 +65,17 @@ func TestARightPressEndsTheCairn(t *testing.T) {
 		t.Error("a right press left the cairn building")
 	}
 }
+
+func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
+	w := holding(newFake(), card(1, "Write the spec", "todo")).OnSystem("darwin")
+	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
+	if w.Screen() != OnAsking {
+		t.Fatalf("delete left the window on %v", w.Screen())
+	}
+	if got := w.BarKey("Delete"); got != "⌘⌫" {
+		t.Errorf("under the question the bar says Delete is %q", got)
+	}
+	if got := w.OfferKey("Delete"); got != "⏎" {
+		t.Errorf("the question says its Delete is %q", got)
+	}
+}

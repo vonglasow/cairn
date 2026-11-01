@@ -876,8 +876,17 @@ it to.
 
 **One screen asks the questions, and there are three.** Deleting a task and
 throwing away a form somebody has typed into both lose work; archiving a column
-does not, and is asked about for its size. *Agree* and *Cancel*
-are the two offers, `⏎` agrees, and the targets are as tall as the bar's — they
+does not, and is asked about for its size. The question is the panel's head,
+the lines under it say what follows, softer, and the two offers are the
+question's own verb and *Cancel*: `Delete ⏎`, `Archive ⏎`, `Restore ⏎`,
+`Finish ⏎`, `Replace ⏎` (`agreeingVerb`, `@gui-a-question-answers-to-its-verb`).
+They were *Agree* and *Cancel*, with a line saying "Enter to agree, or
+Cancel." under every question: the buttons said it again, and *Agree* never
+said what was agreed to. `⏎` does the verb; under the question, the board's
+bar keeps the board's keys (`BarKey`). Deleting a task names what goes with
+it: its steps, its labels, and its time spent when there is any
+(`@gui-a-question-on-a-task-says-what-goes-with-it`). A form's question
+offers *Throw away* and *Keep editing*. The targets are as tall as the bar's — they
 used to be the smallest in the window, for the most destructive act in it.
 A card dropped in done while one of its steps is open is asked about too —
 "Put task 7 in done, ticking its steps?", with "Its steps not yet done are

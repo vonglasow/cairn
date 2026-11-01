@@ -524,7 +524,7 @@ func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said 
 	at := FirstRow(box)
 	for _, line := range said {
 		if line.Key == "" {
-			say(gtx, th, skin.Ink, Row(box, at, lineHigh), line.Means, reads)
+			say(gtx, th, skin.Low, Row(box, at, lineHigh), line.Means, reads)
 			at += apart
 			continue
 		}
@@ -887,7 +887,7 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		sayIn(gtx, th, skin.Low, Box{X: from, Y: bar.Y + (bar.H-lineHigh)/2, W: max(0, end-hintMargin-from), H: lineHigh}, w.CommandSays(), reads, font.Font{}, text.Start)
 	}
 	for i, offer := range offers {
-		drawHint(gtx, th, skin, along[i], w.keyOf(offer), offer, faint, !faint && w.Lighting(offer))
+		drawHint(gtx, th, skin, along[i], w.BarKey(offer), offer, faint, !faint && w.Lighting(offer))
 	}
 }
 

@@ -36,7 +36,7 @@ func (w Window) Key(name string) Window {
 		}
 	}
 	for _, offer := range w.Offers() {
-		if Shortcut(offer) == name {
+		if w.shortcut(offer) == name {
 			return w.Choose(offer)
 		}
 	}

@@ -894,6 +894,22 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the question says "([^"]*)"$`, func(want string) error {
+		for _, line := range w.w.Asks() {
+			if line.Means == want {
+				return nil
+			}
+		}
+		return fmt.Errorf("the question says %+v, not %q", w.w.Asks(), want)
+	})
+	sc.Then(`^the question says nothing of how to answer it$`, func() error {
+		for _, line := range w.w.Asks() {
+			if strings.Contains(line.Means, "agree") || strings.Contains(line.Means, "Cancel") {
+				return fmt.Errorf("the question says %q, which its buttons already say", line.Means)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the question says of (task|objective) (\d+) "([^"]*)"$`, func(kind string, n int, want string) error {
 		named := kind + " " + strconv.Itoa(n)
 		for _, line := range w.w.Asks() {
@@ -2774,7 +2790,7 @@ func (w *world) barOffersUnder(offer, key string) error {
 		if said != offer {
 			continue
 		}
-		if got := Pretty(Shortcut(offer)); got != key {
+		if got := Pretty(w.w.shortcut(offer)); got != key {
 			return fmt.Errorf("%q is offered under %q, not %q", offer, got, key)
 		}
 		return nil
@@ -3055,7 +3071,7 @@ func (w *world) everyKeyTheBarOffers() error {
 			return err
 		}
 		for _, offer := range at.Offers() {
-			key := Shortcut(offer)
+			key := at.shortcut(offer)
 			if key == "" {
 				return fmt.Errorf("on %v the bar offers %q under no key at all", screen, offer)
 			}
