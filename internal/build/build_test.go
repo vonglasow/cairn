@@ -107,3 +107,9 @@ func TestString_printsEveryFieldABuildCarries(t *testing.T) {
 		}
 	}
 }
+
+func TestHomeIsWhereCairnIsKept(t *testing.T) {
+	if Home != "https://github.com/vonglasow/cairn" {
+		t.Errorf("cairn says it is kept at %q", Home)
+	}
+}

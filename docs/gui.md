@@ -1248,7 +1248,7 @@ window no menu bar — Linux — a `☰` button at the end of the tabs opens tho
 lines as one menu (`MenuButton`). Help ends on About cairn, which says which
 build this is — its version, the commit and its date, what built it for which
 system — the lines `cairn --version` prints, read from the same stamps
-(`internal/build`), in a box with only Close
+(`internal/build`), and where cairn is kept, its GitHub page (`build.Home`), in a box with only Close
 (`@gui-the-version-is-shown-from-the-menu`).
 
 **A line of the menu bar is offered when it can be done now.** The bar was

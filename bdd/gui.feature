@@ -1839,6 +1839,7 @@ Feature: The desktop board
       When I open the window
       And I pick "About cairn" in the menu bar
       Then the window says the version this build reports
+      And the question says "https://github.com/vonglasow/cairn"
       When I click "Close"
       Then the window is on the board
 

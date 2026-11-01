@@ -571,12 +571,13 @@ func goingWith(c engine.Card) string {
 	return strings.ToUpper(listed[:1]) + listed[1:] + " go with it."
 }
 
-// AboutSays is what About cairn says of a build: its version, the commit it was made from and when, and what built it for which system.
+// AboutSays is what About cairn says of a build: its version, the commit it was made from and when, what built it for which system, and where cairn is kept.
 func AboutSays(b build.Info) []Said {
 	return []Said{
 		{Means: "cairn " + b.Version},
 		{Means: "commit " + b.Commit + ", " + b.CommitDate},
 		{Means: "built " + b.Built + " with " + b.Go + " for " + b.Platform},
+		{Means: build.Home},
 	}
 }
 

@@ -18,6 +18,9 @@ var (
 
 const shortCommitLen = 12
 
+// Home is where cairn is kept, its code, its issues and its releases.
+const Home = "https://github.com/vonglasow/cairn"
+
 // Info is everything a build reports about itself.
 type Info struct {
 	Version    string
