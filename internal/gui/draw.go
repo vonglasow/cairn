@@ -267,6 +267,22 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
+	drawSwatches(gtx, skin, w)
+}
+
+func drawSwatches(gtx layout.Context, skin Skin, w Window) {
+	swatches := w.ColourSwatches()
+	if len(swatches) == 0 {
+		return
+	}
+	first, last := swatches[0].At, swatches[len(swatches)-1].At
+	raised(gtx, Box{X: first.X - inset*2, Y: first.Y - inset*2, W: last.X + last.W - first.X + inset*4, H: first.H + inset*4}, bubbleRadius, skin.Panel)
+	for i, swatch := range swatches {
+		if i == w.ColourPick() {
+			rounded(gtx, Box{X: swatch.At.X - 2, Y: swatch.At.Y - 2, W: swatch.At.W + 4, H: swatch.At.H + 4}, swatchSide/2+2, skin.Ink)
+		}
+		rounded(gtx, swatch.At, swatchSide/2, skin.Labels[swatch.Colour])
+	}
 }
 
 func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Window) {

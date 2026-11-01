@@ -130,6 +130,8 @@ func Shortcut(offer string) string {
 		return "r"
 	case "new label":
 		return "n"
+	case "colour":
+		return "c"
 	case "archive", "unarchive":
 		return "x"
 	case "take":
@@ -253,10 +255,13 @@ func (w Window) Offers() []string {
 		if w.renaming {
 			return []string{"Save", "Cancel"}
 		}
+		if w.colouring {
+			return []string{"Choose", "Cancel"}
+		}
 		if len(w.carried) == 0 {
 			return []string{"New label", "Close"}
 		}
-		return []string{"New label", "Rename", "Delete", "Close"}
+		return []string{"New label", "Colour", "Rename", "Delete", "Close"}
 	case OnMenu:
 		return nil
 	case OnForm:

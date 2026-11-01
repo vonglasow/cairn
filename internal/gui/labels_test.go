@@ -15,7 +15,7 @@ func TestALabelSaysWhatCarriesIt(t *testing.T) {
 
 func TestTheLabelsOfferWhatCanBeDoneToOne(t *testing.T) {
 	w := Window{screen: OnLabels, labelsState: labelsState{carried: []engine.LabelCarried{{Label: "doc", Tasks: 1}}}}
-	if offers := w.Offers(); !slices.Equal(offers, []string{"New label", "Rename", "Delete", "Close"}) {
+	if offers := w.Offers(); !slices.Equal(offers, []string{"New label", "Colour", "Rename", "Delete", "Close"}) {
 		t.Errorf("the labels offer %v", offers)
 	}
 	w.renaming = true

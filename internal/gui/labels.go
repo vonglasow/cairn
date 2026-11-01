@@ -14,6 +14,8 @@ type labelsState struct {
 	labelsFrom int
 	renaming   bool
 	making     bool
+	colouring  bool
+	colourPick int
 	renamed    Written
 }
 
@@ -49,7 +51,7 @@ func (w Window) listingLabels() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	w.carried, w.screen, w.renaming, w.making = []engine.LabelCarried{}, OnLabels, false, false
+	w.carried, w.screen, w.renaming, w.making, w.colouring = []engine.LabelCarried{}, OnLabels, false, false, false
 	if listed.Labels != nil {
 		w.carried = *listed.Labels
 	}
@@ -61,6 +63,15 @@ func (w Window) listingLabels() Window {
 func (w Window) labelChosen() string { return w.carried[w.labelOn].Label }
 
 func (w Window) onLabels(name string) Window {
+	if w.colouring {
+		switch name {
+		case "right", "l":
+			w.colourPick = min(len(domain.LabelColours)-1, w.colourPick+1)
+		case "left", "h":
+			w.colourPick = max(0, w.colourPick-1)
+		}
+		return w
+	}
 	if w.renaming {
 		if name == "backspace" {
 			w.renamed = w.renamed.Back()
@@ -135,6 +146,15 @@ func (w Window) scrollingLabels(p Point, by int) Window {
 func (w Window) LabelsRoom() int { return listRoom(w.LabelsBox()) }
 
 func (w Window) clickingLabels(p Point) Window {
+	if w.colouring {
+		for i, swatch := range w.ColourSwatches() {
+			if swatch.At.In(p) {
+				return w.colouringLabel(i)
+			}
+		}
+		w.colouring = false
+		return w
+	}
 	box := w.LabelsBox()
 	for _, row := range w.LabelRows() {
 		if row.At.In(p) && (!row.Typing || !w.making) {
@@ -198,3 +218,50 @@ func (w Window) LabelColour(label string) string {
 	}
 	return domain.ColourOf(label)
 }
+
+func (w Window) startingColour() Window {
+	if len(w.carried) == 0 {
+		return w
+	}
+	w.colouring = true
+	w.colourPick = max(0, slices.Index(domain.LabelColours, w.carried[w.labelOn].Colour))
+	return w
+}
+
+func (w Window) colouringLabel(at int) Window {
+	in := engine.Input{Given: map[string]string{"label": w.labelChosen(), "colour": domain.LabelColours[at]}}
+	if _, err := w.work.Ask(engine.LabelColour, in); err != nil {
+		return w.failing(err)
+	}
+	return w.Look().listingLabels()
+}
+
+// ColourSwatch is one colour a label can wear, where the list of labels draws it to be picked.
+type ColourSwatch struct {
+	Colour string
+	At     Box
+}
+
+// ColourSwatches is the fourteen colours laid out under the label being coloured, a swatch each, and nothing while no label is.
+func (w Window) ColourSwatches() []ColourSwatch {
+	if !w.colouring || w.screen != OnLabels {
+		return nil
+	}
+	row := ListRowAt(w.LabelsBox(), w.labelOn-w.labelsFrom)
+	wide := len(domain.LabelColours)*(swatchSide+swatchGap) - swatchGap
+	x := max(margin+inset, min(row.X+inset, w.width-margin-inset-wide))
+	y := row.Y + row.H + inset
+	swatches := make([]ColourSwatch, 0, len(domain.LabelColours))
+	for i, colour := range domain.LabelColours {
+		swatches = append(swatches, ColourSwatch{Colour: colour, At: Box{X: x + i*(swatchSide+swatchGap), Y: y + inset, W: swatchSide, H: swatchSide}})
+	}
+	return swatches
+}
+
+// ColourPick is the swatch the keyboard is on.
+func (w Window) ColourPick() int { return w.colourPick }
+
+const (
+	swatchSide = 18
+	swatchGap  = 6
+)

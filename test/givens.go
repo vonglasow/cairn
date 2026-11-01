@@ -147,6 +147,12 @@ func (g Givens) IMadeTheLabel(label string) error {
 	return err
 }
 
+// IColouredTheLabel chooses the colour a label wears.
+func (g Givens) IColouredTheLabel(label, colour string) error {
+	_, err := g.ask(engine.LabelColour, map[string]string{"label": label, "colour": colour}, nil)
+	return err
+}
+
 // IEditedTaskWithTheDeadline gives a task a day it is due.
 func (g Givens) IEditedTaskWithTheDeadline(number int, day string) error {
 	return g.editTask(number, map[string]string{"deadline": day}, nil)
@@ -283,6 +289,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`, g.IEditedTaskWithTheLabels)
 	sc.Step(`^I made the label "([^"]*)"$`, g.IMadeTheLabel)
+	sc.Step(`^I coloured the label "([^"]*)" "([^"]*)"$`, g.IColouredTheLabel)
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, g.IEditedTaskWithTheDeadline)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)
 	sc.Step(`^I put task (\d+) in focus$`, g.IPutTaskInFocus)

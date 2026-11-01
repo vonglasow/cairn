@@ -2013,6 +2013,36 @@ Feature: The desktop board
       Then the panel is headed "Labels"
       And the bar offers "Save" under "⏎"
 
+    @gui-a-label-is-coloured-from-the-labels
+    Scenario: a label's colour is picked from fourteen swatches in the list of labels
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "doc"
+      Then the bar offers "Colour" under "c"
+      When I press "c"
+      Then the labels offer 14 colours
+      When I click the colour "peach"
+      Then the label "doc" wears "peach"
+
+    @gui-a-colour-is-walked-to-with-the-keys
+    Scenario: the arrows walk the swatches and enter takes one, esc none
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      And I coloured the label "doc" "red"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "doc"
+      And I press "c"
+      And I press "right"
+      And I press "esc"
+      Then the label "doc" wears "red"
+      When I press "c"
+      And I press "right"
+      And I press "enter"
+      Then the label "doc" wears "maroon"
+
   Rule: A new backup is made, and a backup restored, from the window
 
     @gui-backing-up-from-the-window

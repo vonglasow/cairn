@@ -1917,6 +1917,32 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the labels offer (\d+) colours$`, func(n int) error {
+		if got := len(w.w.ColourSwatches()); got != n {
+			return fmt.Errorf("the labels offer %d colours", got)
+		}
+		return nil
+	})
+	sc.When(`^I click the colour "([^"]*)"$`, func(colour string) error {
+		for _, swatch := range w.w.ColourSwatches() {
+			if swatch.Colour == colour {
+				w.w = w.w.clicked(Point{X: swatch.At.X + swatch.At.W/2, Y: swatch.At.Y + swatch.At.H/2})
+				return w.w.Wrong()
+			}
+		}
+		return fmt.Errorf("no swatch is %q", colour)
+	})
+	sc.Then(`^the label "([^"]*)" wears "([^"]*)"$`, func(label, colour string) error {
+		for _, one := range w.w.LabelsCarried() {
+			if one.Label == label {
+				if one.Colour != colour {
+					return fmt.Errorf("%q wears %q, not %q", label, one.Colour, colour)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("no label %q is listed", label)
+	})
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)

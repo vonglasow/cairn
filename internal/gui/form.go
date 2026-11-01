@@ -507,6 +507,9 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnFiltering {
 			return w.pickingFilter(w.filterPick)
 		}
+		if w.screen == OnLabels && w.colouring {
+			return w.colouringLabel(w.colourPick)
+		}
 		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
 			return w.openingCalendar()
 		}
@@ -516,6 +519,10 @@ func (w Window) Choose(name string) Window {
 	case "cancel":
 		if w.screen == OnFiltering && w.filterOpen {
 			w.filterOpen = false
+			return w
+		}
+		if w.screen == OnLabels && w.colouring {
+			w.colouring = false
 			return w
 		}
 		if w.screen == OnCalendar && w.view != viewDays {
@@ -630,6 +637,8 @@ func (w Window) Choose(name string) Window {
 		return w.startingRename()
 	case "new label":
 		return w.makingLabel()
+	case "colour":
+		return w.startingColour()
 	case "skip flagged":
 		return w.actingOnSeveral(false)
 	case "delete", "agree", "apply", "restore", "finish", "replace":

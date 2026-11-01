@@ -129,7 +129,12 @@ says each label's colour, and the board reads them with the rest
 (`Snapshot.Colours`). The window draws every label pill — on a card, in its
 bubble, in a form, in a list and in the list of labels — in its colour, the
 name in the colour itself on a fifth of it over a card's ground
-(`Skin.LabelPill`, `drawLabelPill`).
+(`Skin.LabelPill`, `drawLabelPill`). In the list of labels, `c` — or *Colour* — opens the
+fourteen swatches under the label the keyboard is on, the one it wears
+ringed: `←→` walk them and `⏎` takes one, a click takes the one clicked,
+`esc` keeps the colour it had (`ColourSwatches`,
+`@gui-a-label-is-coloured-from-the-labels`,
+`@gui-a-colour-is-walked-to-with-the-keys`).
 
 ## The Claude Code plugin
 
