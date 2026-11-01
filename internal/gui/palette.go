@@ -4,11 +4,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"cairn/internal/engine"
 )
 
 type paletteState struct {
+	opened  time.Time
 	typed   Written
 	row     int
 	waiting string
@@ -35,7 +37,7 @@ const (
 
 func (w Window) openingPalette() Window {
 	w.screen = OnPalette
-	w.palette = paletteState{recent: w.palette.recent}
+	w.palette = paletteState{recent: w.palette.recent, opened: w.now}
 	return w
 }
 
@@ -380,4 +382,22 @@ func (w Window) SearchCountPill() (Box, bool) {
 	}
 	wide := monoWide(said, small) + 2*pillPad
 	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
+}
+
+// paletteRises is how long the open command bar takes to rise into place.
+const paletteRises = 120 * time.Millisecond
+
+// paletteRiseBy is how far below its place the command bar starts rising from.
+const paletteRiseBy = 8
+
+// PaletteRise is how far the open command bar has risen into place, from nought to one, eased to land softly, and whether it is still rising.
+func (w Window) PaletteRise() (float64, bool) {
+	if w.screen != OnPalette {
+		return 1, false
+	}
+	share := float64(w.now.Sub(w.palette.opened)) / float64(paletteRises)
+	if share >= 1 || share < 0 {
+		return 1, false
+	}
+	return 1 - (1-share)*(1-share), true
 }

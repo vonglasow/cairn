@@ -1402,6 +1402,11 @@ func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 
 func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fill(gtx, Box{W: w.width, H: w.height}, color.NRGBA{R: skin.Veil.R, G: skin.Veil.G, B: skin.Veil.B, A: skin.Veil.A / 2})
+	rise, _ := w.PaletteRise()
+	risen := op.Offset(image.Pt(0, int((1-rise)*paletteRiseBy))).Push(gtx.Ops)
+	defer risen.Pop()
+	faded := paint.PushOpacity(gtx.Ops, float32(rise))
+	defer faded.Pop()
 	box := w.PaletteBox()
 	raised(gtx, box, panelRadius, skin.Panel)
 	writing(gtx, th, skin, w.measured(), PaletteTyped(box), w.palette.typed, true, reads, 1, Follow)

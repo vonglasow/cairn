@@ -313,7 +313,8 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 			board = board.Born(gtx.Now)
 			board.tellingTheBars()
 			Draw(gtx, theme, skin, board)
-			if _, building := board.Intro(); building {
+			_, building := board.Intro()
+			if _, rising := board.PaletteRise(); building || rising {
 				gtx.Execute(op.InvalidateCmd{})
 			}
 			e.Frame(gtx.Ops)

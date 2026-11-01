@@ -3,6 +3,7 @@ package gui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/engine"
 )
@@ -129,6 +130,7 @@ func TestAClickOnTheBarsLineOpensThePalette(t *testing.T) {
 func TestThePaletteIsDrawnRisingFromTheBar(t *testing.T) {
 	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("cmd+k")
+	w = w.At(w.now.Add(time.Second))
 	box := w.PaletteBox()
 	bar := w.Layout().Bar
 	if box.Y+box.H != bar.Y+bar.H || box.X+box.W/2 != w.width/2 {
@@ -152,5 +154,20 @@ func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
 	pill, _ := w.SearchCountPill()
 	if painted(drawn(t, w), Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
 		t.Errorf("the count is not drawn as a pill at %+v", pill)
+	}
+}
+
+func TestThePaletteRisesAsItOpens(t *testing.T) {
+	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	opened := time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
+	w = w.At(opened).Key("cmd+k")
+	if rise, rising := w.At(opened.Add(paletteRises / 2)).PaletteRise(); !rising || rise <= 0.4 || rise >= 0.95 {
+		t.Errorf("halfway through, the palette has risen %v, rising %v", rise, rising)
+	}
+	if rise, rising := w.At(opened.Add(2 * paletteRises)).PaletteRise(); rising || rise != 1 {
+		t.Errorf("long after, the palette has risen %v, rising %v", rise, rising)
+	}
+	if _, rising := w.Key("esc").At(opened.Add(paletteRises / 2)).PaletteRise(); rising {
+		t.Error("a palette shut still rises")
 	}
 }
