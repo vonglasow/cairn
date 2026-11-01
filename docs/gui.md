@@ -159,7 +159,11 @@ as the command bar's hints show a key (`drawKeyedButton`, `ButtonParts`,
 `TestAPanelButtonWritesItsWordThenItsKeyOnAChip`); it wrote the
 key first, as plain text, where nothing told the key from the word. A key
 mark Go Mono has no glyph for (`⌘`, `⏎`, `⌫`) is given an em of room on its
-chip (`KeyChipWide`): reckoned as Go Mono, `⌘⌫` was cut to `⌘…`.
+chip (`KeyChipWide`): reckoned as Go Mono, `⌘⌫` was cut to `⌘…`. A key is
+centred on its chip by its ink, which the shaper measures, not by its line
+(`sayOnChip`, `TestAKeyIsCentredOnItsChipWhateverItsGlyphs`): the face that
+draws `⏎` sets it high, and `⌘⏎` stood two points above the middle of its
+chip.
 
 Words are written in Figtree, at 400, 500 and 600 (`TextFace`, `Faces`);
 Go's faces follow it for what it lacks, then the symbols. Figtree's strokes

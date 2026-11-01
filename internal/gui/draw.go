@@ -599,7 +599,7 @@ func drawHelp(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			continue
 		}
 		rounded(gtx, line.KeyAt, chipRadius, skin.Pill)
-		sayIn(gtx, th, skin.Ink, Box{X: line.KeyAt.X, Y: line.KeyAt.Y + (line.KeyAt.H-lineHigh)/2, W: line.KeyAt.W, H: lineHigh}, line.Key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+		sayOnChip(gtx, th, skin.Ink, line.KeyAt, line.Key)
 		say(gtx, th, skin.Low, line.MeansAt, line.Means, reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
@@ -944,7 +944,7 @@ func drawKeyChip(gtx layout.Context, th *material.Theme, skin Skin, row Box, key
 		return Box{X: row.X, Y: chip.Y, H: chipHigh}
 	}
 	rounded(gtx, chip, chipRadius, skin.Pill)
-	sayIn(gtx, th, skin.Ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+	sayOnChip(gtx, th, skin.Ink, chip, key)
 	return chip
 }
 
@@ -952,6 +952,27 @@ const (
 	chipHigh   = 18
 	chipRadius = 4
 )
+
+var chipFace = font.Font{Typeface: MonoFace, Weight: font.SemiBold}
+
+func sayOnChip(gtx layout.Context, th *material.Theme, ink color.NRGBA, chip Box, key string) {
+	top, bottom := inkOf(th, key)
+	at := chip.Y + chip.H/2 - (top+bottom)/2
+	sayIn(gtx, th, ink, Box{X: chip.X, Y: at, W: chip.W, H: lineHigh}, key, small, chipFace, text.Middle)
+}
+
+func inkOf(th *material.Theme, key string) (top, bottom int) {
+	th.Shaper.LayoutString(text.Parameters{Font: chipFace, PxPerEm: fixed.I(small), MaxLines: 1, MaxWidth: math.MaxInt32}, key)
+	top, bottom = lineHigh, 0
+	for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
+		top = min(top, int(g.Y)+g.Bounds.Min.Y.Floor())
+		bottom = max(bottom, int(g.Y)+g.Bounds.Max.Y.Ceil())
+	}
+	if top > bottom {
+		return 0, lineHigh
+	}
+	return top, bottom
+}
 
 func drawHint(gtx layout.Context, th *material.Theme, skin Skin, at Box, key, word string, faint, lit bool) {
 	if lit {
@@ -1031,7 +1052,7 @@ func drawKeyedButton(gtx layout.Context, th *material.Theme, skin Skin, button B
 		return
 	}
 	rounded(gtx, chip, chipRadius, darker(back))
-	sayIn(gtx, th, ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+	sayOnChip(gtx, th, ink, chip, key)
 }
 
 func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on, picked bool, held Written) {
@@ -1498,7 +1519,7 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			enter := w.keyboard.Spelled(Pretty("enter"))
 			chip := PaletteKeyAt(line.Box, enter)
 			rounded(gtx, chip, chipRadius, darker(skin.Pill))
-			sayIn(gtx, th, skin.Ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, enter, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
+			sayOnChip(gtx, th, skin.Ink, chip, enter)
 			end = chip.X - hintSpace
 		}
 		if ago := rows[line.Row].Ago(w.now); ago != "" {

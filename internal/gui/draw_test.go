@@ -1625,3 +1625,33 @@ func TestAWindowTooSmallSaysSoInItsMiddle(t *testing.T) {
 		t.Error("the message is not written in the window's middle, in the faint ink")
 	}
 }
+
+func inkGaps(shot *image.RGBA, chip Box) (int, int) {
+	ground := shot.RGBAAt(chip.X+chip.W/2, chip.Y)
+	top, bottom := -1, -1
+	for y := chip.Y; y < chip.Y+chip.H; y++ {
+		for x := chip.X + 2; x < chip.X+chip.W-2; x++ {
+			c := shot.RGBAAt(x, y)
+			if d := int(c.R) - int(ground.R); d > 40 || d < -40 {
+				if top < 0 {
+					top = y
+				}
+				bottom = y
+				break
+			}
+		}
+	}
+	return top - chip.Y, chip.Y + chip.H - 1 - bottom
+}
+
+func TestAKeyIsCentredOnItsChipWhateverItsGlyphs(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"}).OnSystem("darwin")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")
+	shot := drawn(t, w)
+	for i, offer := range w.Offers() {
+		_, chip := ButtonParts(Button(w.PanelOffers()[i]), w.measured(), offer, w.OfferKey(offer))
+		if top, bottom := inkGaps(shot, chip); top-bottom > 1 || bottom-top > 1 {
+			t.Errorf("%q on its chip leaves %d above and %d under", w.OfferKey(offer), top, bottom)
+		}
+	}
+}
