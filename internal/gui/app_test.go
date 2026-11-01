@@ -473,3 +473,14 @@ func TestEveryScreenThatWritesTakesWhatTheSystemTypes(t *testing.T) {
 		}
 	}
 }
+
+func TestTheNativeMenuIsMadeOnTheWindowsOwnThread(t *testing.T) {
+	ran := false
+	run := func(f func()) {
+		ran = true
+		f()
+	}
+	if !onTheWindowsThread(run, func() bool { return ran }) {
+		t.Error("the menu was installed outside what runs on the window's thread")
+	}
+}

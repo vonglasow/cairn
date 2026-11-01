@@ -1233,7 +1233,11 @@ nothing. Gio builds the macOS menu itself and offers no way to add to it, so
 cairn adds its menus to Gio's from a few lines of Objective-C, the ⌘ chords as
 the menu's own keys (`appkit_darwin.go`); on Windows the menu is a Win32 one set on
 the window Gio made, its commands caught in front of Gio's window procedure and
-the keys written beside each line (`menu_windows.go`). Neither call to the
+the keys written beside each line (`menu_windows.go`). It is set from the
+window's own thread (`onTheWindowsThread`, through Gio's `Window.Run`): set
+from the loop while Gio's thread waited for the loop to take the event that
+named the window, `SetMenu` waited on that thread in turn, and the window
+froze once drawn, on Windows 10, with nothing written anywhere. Neither call to the
 system is driven by a test; what each line does is. Where the system gives a
 window no menu bar — Linux — a `☰` button at the end of the tabs opens those
 lines as one menu (`MenuButton`). Help ends on About cairn, which says which

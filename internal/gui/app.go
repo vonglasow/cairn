@@ -275,7 +275,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 		event := window.Event()
 		listen(event)
 		dress(event)
-		if installMenu(event, pages, picks, window.Invalidate) {
+		if onTheWindowsThread(window.Run, func() bool { return installMenu(event, pages, picks, window.Invalidate) }) {
 			board = board.Native(true)
 		}
 		switch e := event.(type) {
@@ -323,6 +323,13 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 			}
 		}
 	}
+}
+
+// onTheWindowsThread runs f on the thread that runs the system's window, and says what f answered: called from this loop while the window waits for the loop to take an event, a call that waits on the window would wait for ever.
+func onTheWindowsThread(run func(func()), f func() bool) bool {
+	took := false
+	run(func() { took = f() })
+	return took
 }
 
 func due(looked, now time.Time) bool { return now.Sub(looked) >= Beat() }
