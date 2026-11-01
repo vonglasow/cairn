@@ -311,7 +311,7 @@ is resting on lights up. `tab` and `shift+tab`
 walk the two pages, which are drawn as folders — the one you are on opens onto
 the page rather than being merely a different colour.
 
-It needs 1024 by 640. Below that it says so and says what it needs, rather than
+It needs 720 by 560. Below that it says so and says what it needs, rather than
 drawing something nobody can read. It follows the store the way the terminal
 board does: what another terminal or an agent changes turns up on its own.
 

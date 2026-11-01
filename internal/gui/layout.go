@@ -7,8 +7,8 @@ import (
 
 // Narrowest and Shortest are the window this board needs.
 const (
-	Narrowest = 1024
-	Shortest  = 640
+	Narrowest = 720
+	Shortest  = 560
 )
 
 // CardHeight is what every card takes, whatever it carries.

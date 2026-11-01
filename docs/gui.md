@@ -367,10 +367,16 @@ somebody had been filling in. Imposing a minimum window size was the alternative
 question rather than answering it; showing fewer columns was turned down as a
 different board.
 
-**1024 by 640**, which is four columns of 285dp and the height two rows of the
-band and three cards above them come to. Written in rather than worked out,
-because what makes a card readable is not something a sum knows — and measured
-after the card was drawn rather than guessed before it.
+**720 by 560**, which is four columns of 168dp, a card's room above the band
+and the band's under it, and a task's whole form: under 640 high the panel a
+form is drawn in takes the room the window has rather than five sixths of it
+(`Over`, `overLeast`), so the form's last field, its steps, still ends inside
+it (`TestEveryFieldOfAFormFitsAtTheLeastSize`). Written in rather than worked
+out, because what makes a card readable is not something a sum knows — and
+checked by drawing every screen at that size. The window cannot be dragged
+under it (`app.MinSize`); the message saying it is too small stays for a
+system that ignores the hint. It was 1024 by 640, four columns of 285dp,
+before the redesign made a card's row of pills and facts fit in less.
 
 **The beat stays at two seconds**: `Version()` is one integer, and the board
 re-reads only when it moves. Waiting for the window to take focus was turned

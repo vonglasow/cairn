@@ -69,10 +69,13 @@ func SubCheck(b Box) Box {
 	return Box{X: panel.X + padding, Y: panel.Y + (panel.H-checkSide)/2, W: checkSide, H: checkSide}
 }
 
-// Over is the panel a detail or a form is drawn in: the middle of the window, with the board still showing around it.
+// Over is the panel a detail or a form is drawn in: the middle of the window, with the board still showing around it, and never shorter than a task's form needs while the window has the room.
 func Over(width, height int) Box {
-	return Box{X: width / 8, Y: height / 12, W: width * 3 / 4, H: height * 5 / 6}
+	high := max(height*5/6, min(overLeast, height-2*margin))
+	return Box{X: width / 8, Y: (height - high) / 2, W: width * 3 / 4, H: high}
 }
+
+const overLeast = 530
 
 // Row is one line inside a panel.
 func Row(box Box, at, high int) Box {

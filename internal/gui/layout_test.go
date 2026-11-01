@@ -20,6 +20,7 @@ func TestTooSmallIsTheTwoSidesTogether(t *testing.T) {
 		{"one short of the height", Narrowest, Shortest - 1, true},
 		{"short of both", 320, 240, true},
 		{"far more than enough", 1600, 1000, false},
+		{"a small laptop's half screen", 720, 560, false},
 	} {
 		if got := TooSmall(c.width, c.height); got != c.small {
 			t.Errorf("%s: TooSmall(%d, %d) = %v", c.what, c.width, c.height, got)
@@ -145,5 +146,19 @@ func TestTheShapeAtTwoSizes(t *testing.T) {
 				t.Errorf("the shape moved:\n%s\nwant:\n%s", got, want)
 			}
 		})
+	}
+}
+
+func TestEveryFieldOfAFormFitsAtTheLeastSize(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Draft"}}})
+	w = w.Resized(Narrowest, Shortest).clicked(middleOf(w.Resized(Narrowest, Shortest), 1, 0)).Key("enter").Key("e")
+	if w.Screen() != OnForm {
+		t.Fatalf("the form did not open at the least size: %v", w.Screen())
+	}
+	panel := w.formPanel()
+	for at := range w.form.Fields() {
+		if _, value, _ := FormPlace(w.formBox(), w.form.Fields(), at); value.Y+value.H > panel.Y+panel.H {
+			t.Errorf("the field %q ends at %d, under the panel's foot at %d", w.form.Fields()[at].Name, value.Y+value.H, panel.Y+panel.H)
+		}
 	}
 }

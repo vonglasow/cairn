@@ -234,7 +234,7 @@ func ended(err error, said io.Writer, exit func(int)) {
 
 func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int) error {
 	window := new(app.Window)
-	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)))
+	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
 	seen := ""
 
 	theme, skin := Theme(), Dark()
