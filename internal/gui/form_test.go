@@ -1128,3 +1128,30 @@ func TestAFieldIsARoundedInputAndTheOneTheKeyboardIsOnIsRinged(t *testing.T) {
 		t.Error("the field the keyboard is on is not ringed in the accent")
 	}
 }
+
+func TestThePrioritiesListShowsEachInItsStripesColour(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Name != "priority" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter")
+	if w.Screen() != OnChoosing {
+		t.Fatalf("enter on the priority left the window on %v", w.Screen())
+	}
+	box := w.ChoosingBox()
+	shot := drawn(t, w)
+	for i, one := range w.Choosing() {
+		line := ChoosingLine(box, ChoosingFrom(box)+i*apart)
+		if painted(shot, line, Dark().Priority[one.Title]) == 0 {
+			t.Errorf("%q is listed without its stripe's colour", one.Title)
+		}
+	}
+}
+
+func TestAnObjectivesNumberIsWrittenWithItsHash(t *testing.T) {
+	w := Window{choosingFor: "objective"}
+	if got := w.RowSays(Choice{Number: 7, Title: "Ship it"}); !strings.Contains(got, "#7  Ship it") {
+		t.Errorf("an objective's row says %q", got)
+	}
+}

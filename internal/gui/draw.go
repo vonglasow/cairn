@@ -489,6 +489,9 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		line := ChoosingLine(box, at)
 		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
+		if stripe, ok := w.RowStripe(one, line); ok {
+			rounded(gtx, stripe, stripeRadius-1, skin.Priority[one.Title])
+		}
 		at += apart
 	}
 	clipped.Pop()

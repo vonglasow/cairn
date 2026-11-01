@@ -786,7 +786,10 @@ func (w Window) RowSays(one Choice) string {
 		said = TickedMark + "  "
 	}
 	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
-		said += Numbered(engine.Card{Number: one.Number}) + "  "
+		said += "#" + Numbered(engine.Card{Number: one.Number}) + "  "
+	}
+	if w.choosingFor == "priority" {
+		said += priorityRoom
 	}
 	return said + one.Title
 }
@@ -813,6 +816,21 @@ func (w Window) choices() []Choice {
 
 // Filtering is what has been typed into the open list.
 func (w Window) Filtering() Written { return w.filtering }
+
+// priorityRoom is the room a priority's row leaves before its name for the stripe of its colour.
+const priorityRoom = "    "
+
+// RowStripe is where a priority's row draws the stripe of its colour, in the room left before its name.
+func (w Window) RowStripe(one Choice, line Box) (Box, bool) {
+	if w.choosingFor != "priority" {
+		return Box{}, false
+	}
+	said := w.RowSays(one)
+	before := strings.TrimSuffix(said, priorityRoom+one.Title)
+	return Box{X: line.X + ends(w.measured(), before, reads) + inset, Y: line.Y + (line.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, true
+}
+
+const stripeHigh = 12
 
 // OneOnly says whether the open list takes one answer rather than several.
 func (w Window) OneOnly() bool { return len(w.closedSet()) > 0 }
