@@ -459,3 +459,17 @@ func TestShiftHeldDoesNotStopADeletion(t *testing.T) {
 		t.Errorf("⇧⌦ left %q", got)
 	}
 }
+
+func TestEveryScreenThatWritesTakesWhatTheSystemTypes(t *testing.T) {
+	w := holding(newFake())
+	w.screen = OnLabels
+	w = w.makingLabel()
+	if _, writes := w.Typed(); !writes || !takesTyping(w.Screen()) {
+		t.Fatalf("a label being named writes %v, and the system's typing reaches it %v", writes, takesTyping(w.Screen()))
+	}
+	for _, s := range []Screen{OnForm, OnSearch, OnChoosing, OnPalette, OnLabels} {
+		if !takesTyping(s) {
+			t.Errorf("screen %v does not take the system's typing", s)
+		}
+	}
+}

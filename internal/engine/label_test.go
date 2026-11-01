@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/domain"
 	"errors"
 	"strings"
 	"testing"
@@ -115,5 +116,21 @@ func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
 	}
 	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "a:b"}}); err == nil {
 		t.Error("a label the rule refuses was made")
+	}
+}
+
+func TestALabelWithNoNameIsRefusedNotMade(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": ""}}); !errors.Is(err, domain.ErrLabelRequired) {
+		t.Errorf("a label with no name answers %v", err)
+	}
+	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "doc"}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "doc", "to": "  "}}); !errors.Is(err, domain.ErrLabelRequired) {
+		t.Errorf("a rename to no name answers %v", err)
+	}
+	if _, err := Do(LabelDelete, path, Input{Given: map[string]string{"label": ""}, Confirmed: true}); !errors.Is(err, domain.ErrLabelRequired) {
+		t.Errorf("deleting no name answers %v", err)
 	}
 }

@@ -80,8 +80,19 @@ func (e *Engine) labelsCarried() ([]LabelCarried, error) {
 	return out, nil
 }
 
-func (e *Engine) carriersOf(given string) (string, carriers, error) {
+func oneLabel(given string) (string, error) {
 	written, err := domain.ParseLabels([]string{given})
+	if err != nil {
+		return "", err
+	}
+	if len(written) == 0 {
+		return "", domain.ErrLabelRequired
+	}
+	return written[0], nil
+}
+
+func (e *Engine) carriersOf(given string) (string, carriers, error) {
+	label, err := oneLabel(given)
 	if err != nil {
 		return "", carriers{}, err
 	}
@@ -89,7 +100,6 @@ func (e *Engine) carriersOf(given string) (string, carriers, error) {
 	if err != nil {
 		return "", carriers{}, err
 	}
-	label := written[0]
 	found, there := held[label]
 	if !there {
 		return "", carriers{}, fmt.Errorf("%q: %w", label, ErrNoSuchLabel)
@@ -181,15 +191,15 @@ var LabelRename = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		to, err := domain.ParseLabels([]string{in.Given["to"]})
+		to, err := oneLabel(in.Given["to"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if to[0] != label {
-			if err := on.Engine.relabel(found, []string{"-" + label, "+" + to[0]}); err != nil {
+		if to != label {
+			if err := on.Engine.relabel(found, []string{"-" + label, "+" + to}); err != nil {
 				return Answer{}, err
 			}
-			if err := on.Engine.store.RenameKeptLabel(label, to[0]); err != nil {
+			if err := on.Engine.store.RenameKeptLabel(label, to); err != nil {
 				return Answer{}, err
 			}
 		}
@@ -212,11 +222,11 @@ var LabelNew = Operation{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to make"},
 	},
 	Run: func(on On, in Input) (Answer, error) {
-		written, err := domain.ParseLabels([]string{in.Given["label"]})
+		label, err := oneLabel(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.store.KeepLabel(written[0]); err != nil {
+		if err := on.Engine.store.KeepLabel(label); err != nil {
 			return Answer{}, err
 		}
 		return listedLabels(on)

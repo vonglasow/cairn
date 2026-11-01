@@ -443,5 +443,5 @@ func telling(gtx layout.Context, w Window) {
 }
 
 func takesTyping(s Screen) bool {
-	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette
+	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels
 }
