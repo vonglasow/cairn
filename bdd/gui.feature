@@ -2855,7 +2855,7 @@ Feature: The desktop board
       When I open the window
       And I click "Help"
       Then the help lays its keys out in 2 columns
-      And the help groups its keys under "Board", "Find", "Forms", "Store" and "Pointer"
+      And the help groups its keys under "Board", "Forms", "Find", "Store" and "Pointer"
       And the help shows every line
 
     @gui-the-help-fits-the-least-window
@@ -3583,6 +3583,16 @@ Feature: The desktop board
       And I press "enter"
       Then the engine was asked "task edit" for task 1
       And the command bar is shut
+
+    @gui-esc-lets-the-chosen-card-go
+    Scenario: esc on the board lets go of the card chosen
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      Then the card "Write the spec" is chosen
+      When I press "esc"
+      Then no card is chosen
+      And the command bar reads "Command, number or title…"
 
     @gui-the-palette-takes-a-command-typed-whole
     Scenario: a command typed whole in the command bar runs as if its row had been chosen

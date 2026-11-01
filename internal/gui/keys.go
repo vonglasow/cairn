@@ -69,6 +69,10 @@ func (w Window) onBoard(name string) Window {
 			return w
 		}
 	}
+	if name == "esc" && w.chosen != 0 {
+		w.chosen, w.chosenGoal = 0, false
+		return w
+	}
 	if card, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal && w.tab == Tasks {
 		switch name {
 		case "m":

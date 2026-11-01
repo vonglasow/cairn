@@ -809,7 +809,9 @@ unfocuses the chosen task, under the same key the terminal board uses.
 across the foot: at its left the key that opens it, `⌘K`, on a chip, and a
 line saying the task chosen — `#152 · Choose the month…` — or that a command,
 a number or a title can be typed (`CommandSays`,
-`@gui-the-command-bar-names-what-is-chosen`); at its right, the offers of the
+`@gui-the-command-bar-names-what-is-chosen`); `esc` on the board lets the
+chosen card go, after what was taken together and a kept search, which it
+clears first (`@gui-esc-lets-the-chosen-card-go`); at its right, the offers of the
 moment as hints, each its key on a chip and its word, lit under the pointer,
 and done by a click as by the key (`barAlong`, `drawHint`,
 `@gui-a-lit-offer-holds-its-words-in-its-middle`). Under an open panel the

@@ -18,9 +18,16 @@ func helpGroups() []helpGroup {
 			{Key: "l", Means: "labels"},
 			{Key: "t", Means: "deadline"},
 			{Key: "o", Means: "new linked task"},
-			{Key: "x", Means: "archive"},
-			{Key: "⇧X", Means: "archive its column"},
+			{Key: "x ⇧X", Means: "archive, the column"},
 			{Key: "⌘⌫", Means: "delete"},
+			{Key: "esc", Means: "let the card go"},
+		}},
+		{"Forms", []Said{
+			{Key: "⌘⏎", Means: "save · done"},
+			{Key: "esc esc", Means: "throw away"},
+			{Key: "⌘Z", Means: "bring it back"},
+			{Key: "tab", Means: "next field"},
+			{Key: "space", Means: "tick a step"},
 		}},
 		{"Find", []Said{
 			{Key: "⌘K", Means: "command bar"},
@@ -29,13 +36,6 @@ func helpGroups() []helpGroup {
 			{Key: "⇧A", Means: "archived"},
 			{Key: "g t/o/i", Means: "go to a page"},
 			{Key: "⌘N", Means: "new task"},
-		}},
-		{"Forms", []Said{
-			{Key: "⌘⏎", Means: "save · done"},
-			{Key: "esc esc", Means: "throw away"},
-			{Key: "⌘Z", Means: "bring it back"},
-			{Key: "tab", Means: "next field"},
-			{Key: "space", Means: "tick a step"},
 		}},
 		{"Store", []Said{
 			{Key: "⇧L", Means: "labels"},
