@@ -76,6 +76,8 @@ type Board struct {
 	skin   Skin
 	clock  func() time.Time
 
+	lookedAt time.Time
+
 	width, height int
 	snap          engine.Snapshot
 
@@ -216,7 +218,11 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return b, nil
 	case Beat:
-		return b, tea.Batch(b.wonder(), tick())
+		aged := b.focusAged(time.Time(m))
+		if aged {
+			b.lookedAt = time.Time(m)
+		}
+		return b, tea.Batch(b.wonder(aged), tick())
 	case tea.KeyPressMsg:
 		key := keyName(m)
 		b.err = nil
@@ -249,13 +255,20 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-func (b Board) wonder() tea.Cmd {
+// FocusShown is how long the time a task in focus says is left standing: a minute, the least it counts in.
+const FocusShown = time.Minute
+
+func (b Board) focusAged(now time.Time) bool {
+	return len(b.snap.Focus) > 0 && now.Sub(b.lookedAt) >= FocusShown
+}
+
+func (b Board) wonder(aged bool) tea.Cmd {
 	return func() tea.Msg {
 		version, err := b.work.Version()
 		if err != nil {
 			return Looked{Err: err}
 		}
-		if version == b.snap.Version {
+		if version == b.snap.Version && !aged {
 			return nil
 		}
 		found, err := engine.Look(b.work)

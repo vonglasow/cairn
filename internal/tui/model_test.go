@@ -184,16 +184,41 @@ func TestNothingIsReadWhileTheStoreHasNotMoved(t *testing.T) {
 	f := twoTasks()
 	f.version = 9
 	b := standing(f)
-	if msg := b.wonder()(); msg != nil {
+	if msg := b.wonder(false)(); msg != nil {
 		t.Fatalf("the board read the store again for nothing: %v", msg)
 	}
 	f.version = 10
-	if msg := b.wonder()(); msg == nil {
+	if msg := b.wonder(false)(); msg == nil {
 		t.Fatal("the board did not read the store after it moved")
 	}
 	f.fail = errNope
-	if msg := b.wonder()(); msg == nil {
+	if msg := b.wonder(false)(); msg == nil {
 		t.Fatal("a store that refused was passed over in silence")
+	}
+}
+
+func TestATaskInFocusIsReadAgainEachMinute(t *testing.T) {
+	f := twoTasks()
+	f.version = 9
+	b := standing(f)
+	start := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	b.lookedAt = start
+	if b.focusAged(start.Add(time.Hour)) {
+		t.Fatal("a board with no task in focus reads the store again for its time")
+	}
+	b.snap.Focus = []int{1}
+	if b.focusAged(start.Add(30 * time.Second)) {
+		t.Error("the time in focus was read again before the minute shown had passed")
+	}
+	if !b.focusAged(start.Add(time.Minute)) {
+		t.Error("the time in focus stood still past a minute")
+	}
+	if msg := b.wonder(true)(); msg == nil {
+		t.Error("a board whose time in focus aged did not read the store")
+	}
+	next, _ := b.Update(Beat(start.Add(time.Minute)))
+	if next.(Board).lookedAt != start.Add(time.Minute) {
+		t.Error("the beat that read the time in focus again did not note when")
 	}
 }
 

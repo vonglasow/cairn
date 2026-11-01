@@ -375,7 +375,11 @@ after the card was drawn rather than guessed before it.
 **The beat stays at two seconds**: `Version()` is one integer, and the board
 re-reads only when it moves. Waiting for the window to take focus was turned
 down for a reason worth keeping: a board on a second screen, never focused, has
-to be true.
+to be true. The one exception is a task in focus: its time spent grows
+with no write to the store, so while one is, the window reads the store again
+once a minute (`FocusShown`), the least the time is written in. It used to
+show the time read when the board was last loaded and never move. The
+terminal board does the same on its own beat.
 
 ## The mouse
 

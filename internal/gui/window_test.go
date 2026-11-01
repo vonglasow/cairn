@@ -10,6 +10,7 @@ import (
 	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
+	"time"
 )
 
 func TestAClickChoosesTheCardUnderIt(t *testing.T) {
@@ -129,6 +130,31 @@ func TestTheWindowFollowsTheStoreOnlyWhenItMoved(t *testing.T) {
 	w = w.Wonder()
 	if f.what("task", "list") != 1 {
 		t.Error("a store somebody else wrote to was not read again")
+	}
+}
+
+func TestTheWindowReadsTheStoreAgainEachMinuteATaskIsInFocus(t *testing.T) {
+	f := newFake()
+	f.version, f.focus = 7, []int{1}
+	start := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "current", InFocus: true}).At(start).Look()
+	w.version = 7
+	listed := f.what("task", "list")
+	w = w.At(start.Add(30 * time.Second)).Wonder()
+	if f.what("task", "list") != listed {
+		t.Error("the store was read again before the minute shown had passed")
+	}
+	w.At(start.Add(time.Minute)).Wonder()
+	if f.what("task", "list") != listed+1 {
+		t.Error("a task in focus was not read again once a minute had passed, so its time stood still")
+	}
+	f.focus = nil
+	idle := holding(f, card(1, "Write the spec", "current")).At(start).Look()
+	idle.version = 7
+	listed = f.what("task", "list")
+	idle.At(start.Add(time.Hour)).Wonder()
+	if f.what("task", "list") != listed {
+		t.Error("the store was read again with no task in focus")
 	}
 }
 

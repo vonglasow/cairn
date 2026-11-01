@@ -145,6 +145,7 @@ type Window struct {
 	over                  string
 	hovered               bool
 	explaining            int
+	lookedAt              time.Time
 	resting               []string
 	restingAt             Box
 	restingWide           int
@@ -262,10 +263,17 @@ func (w Window) Wonder() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	if version == w.version {
+	if version == w.version && !w.focusAged() {
 		return w
 	}
 	return w.Look()
+}
+
+// FocusShown is how long the time a task in focus says is left standing: a minute, the least it counts in.
+const FocusShown = time.Minute
+
+func (w Window) focusAged() bool {
+	return len(w.snap.Focus) > 0 && w.now.Sub(w.lookedAt) >= FocusShown
 }
 
 func (w Window) failing(err error) Window {
@@ -306,7 +314,7 @@ func (w Window) Look() Window {
 		}
 		return w.failing(err)
 	}
-	w.snap, w.version, w.err = found, found.Version, nil
+	w.snap, w.version, w.err, w.lookedAt = found, found.Version, nil, w.now
 	for i := range engine.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}
