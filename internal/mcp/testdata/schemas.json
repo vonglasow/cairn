@@ -503,6 +503,73 @@
       "additionalProperties": false
     }
   },
+  "label_colour": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Choose the colour a label wears"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "colour": {
+          "description": "the colour it wears",
+          "type": "string"
+        },
+        "label": {
+          "description": "the label to colour",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "colour"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              },
+              "colour": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives",
+              "colour"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
   "label_delete": {
     "annotations": {
       "destructiveHint": true,
@@ -544,12 +611,16 @@
               },
               "objectives": {
                 "type": "integer"
+              },
+              "colour": {
+                "type": "string"
               }
             },
             "required": [
               "label",
               "tasks",
-              "objectives"
+              "objectives",
+              "colour"
             ],
             "additionalProperties": false
           }
@@ -595,12 +666,16 @@
               },
               "objectives": {
                 "type": "integer"
+              },
+              "colour": {
+                "type": "string"
               }
             },
             "required": [
               "label",
               "tasks",
-              "objectives"
+              "objectives",
+              "colour"
             ],
             "additionalProperties": false
           }
@@ -653,12 +728,16 @@
               },
               "objectives": {
                 "type": "integer"
+              },
+              "colour": {
+                "type": "string"
               }
             },
             "required": [
               "label",
               "tasks",
-              "objectives"
+              "objectives",
+              "colour"
             ],
             "additionalProperties": false
           }
@@ -716,12 +795,16 @@
               },
               "objectives": {
                 "type": "integer"
+              },
+              "colour": {
+                "type": "string"
               }
             },
             "required": [
               "label",
               "tasks",
-              "objectives"
+              "objectives",
+              "colour"
             ],
             "additionalProperties": false
           }

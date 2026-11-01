@@ -292,4 +292,15 @@ CREATE TABLE IF NOT EXISTS labels_kept (
 DROP TABLE IF EXISTS labels_kept;`,
 		loses: "the labels made with nothing carrying them",
 	},
+	{
+		name: "a label wears a colour",
+		does: `
+CREATE TABLE IF NOT EXISTS label_colours (
+	label  TEXT PRIMARY KEY,
+	colour TEXT NOT NULL
+);`,
+		undoes: `
+DROP TABLE IF EXISTS label_colours;`,
+		loses: "the colours chosen for labels, which take back the one read off their names",
+	},
 }

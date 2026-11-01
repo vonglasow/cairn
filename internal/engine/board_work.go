@@ -71,6 +71,7 @@ type Snapshot struct {
 	Cards   []Card
 	Goals   []Goal
 	Focus   []int
+	Colours map[string]string
 	Version int64
 }
 
@@ -86,6 +87,10 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
+	labels, err := w.Ask(LabelList, Input{})
+	if err != nil {
+		return Snapshot{}, err
+	}
 	version, err := w.Version()
 	if err != nil {
 		return Snapshot{}, err
@@ -94,7 +99,12 @@ func Look(w Work) (Snapshot, error) {
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
-	found := Snapshot{Focus: held, Version: version}
+	found := Snapshot{Focus: held, Version: version, Colours: map[string]string{}}
+	if labels.Labels != nil {
+		for _, one := range *labels.Labels {
+			found.Colours[one.Label] = one.Colour
+		}
+	}
 	for _, t := range listed.Tasks {
 		card, err := cardOf(t, held, listed.NothingBlocks, listed.Along, listed.Contexts)
 		if err != nil {

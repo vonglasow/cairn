@@ -107,6 +107,27 @@ tasks carry, and kept when managing them was first asked for. Amended
 — a sprint's, a release's — so `label new` makes one on its own, and only
 those are kept apart; every other label is still read off what carries it.
 
+## A label wears a colour
+
+A label is drawn in a colour of its own, one of fourteen: Catppuccin Mocha's
+accents — rosewater, flamingo, pink, mauve, red, maroon, peach, yellow,
+green, teal, sky, sapphire, blue, lavender (`domain.LabelColours`). They were
+made to be read on a dark ground and are all of one weight, so no label
+shouts over another; PICO-8's sixteen were the other candidate, and four of
+them — black, night blue, dark purple, dark grey — vanish on the board's
+ground. A colour is kept by its name, not its value, so a theme can draw the
+same names otherwise.
+
+A label nobody chose a colour for wears one read off its name
+(`domain.ColourOf`): the same label wears the same colour on every board,
+with nothing written down (`@label-colour-is-read-off-the-name`).
+`label colour release peach` chooses one, kept in a table of its own
+(`label_colours`, migration 17); a rename carries it to the new name, a
+delete lets it go, and a colour that is not one of the fourteen is refused
+(`@label-colour-is-chosen`, `@label-colour-is-one-of-fourteen`). `label list`
+says each label's colour, and the board reads them with the rest
+(`Snapshot.Colours`).
+
 ## The Claude Code plugin
 
 A task's Azure DevOps work items are its labels made only of digits, on a task

@@ -203,6 +203,7 @@ renamed or taken off everything at once:
 ```sh
 cairn label list                                  # each with how many tasks and objectives carry it
 cairn label new release-train                     # kept and offered, carried or not, until deleted
+cairn label colour release-train peach            # one of fourteen; otherwise one read off its name
 cairn label rename sp26-20 sprint-20              # on every task and objective; onto one there, the two become one
 cairn label delete sp26-20 --yes                  # off every task and objective
 ```

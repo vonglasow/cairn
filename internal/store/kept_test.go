@@ -25,3 +25,28 @@ func TestKeptLabels_standOnTheirOwnAndAreRenamedAndLetGo(t *testing.T) {
 		t.Errorf("after a rename and a delete, kept %v, %v", kept, err)
 	}
 }
+
+func TestLabelColours_areKeptRenamedAndLetGo(t *testing.T) {
+	s := openStore(t)
+	if err := s.ColourLabel("release", "peach"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ColourLabel("release", "teal"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ColourLabel("doc", "blue"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LabelColours(); err != nil || got["release"] != "teal" || got["doc"] != "blue" {
+		t.Fatalf("the colours are %v, %v", got, err)
+	}
+	if err := s.RenameKeptLabel("release", "train"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ForgetLabel("doc"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LabelColours(); err != nil || len(got) != 1 || got["train"] != "teal" {
+		t.Errorf("after a rename and a delete the colours are %v, %v", got, err)
+	}
+}

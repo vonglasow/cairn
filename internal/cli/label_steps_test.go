@@ -47,6 +47,26 @@ func (w *world) registerLabel(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the JSON lists no label %q:\n%s", label, w.Out.Stdout)
 	})
+	sc.Step(`^the JSON gives the label "([^"]*)" the colour "([^"]*)"$`, func(label, colour string) error {
+		var listed struct {
+			Labels []struct {
+				Label  string `json:"label"`
+				Colour string `json:"colour"`
+			} `json:"labels"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &listed); err != nil {
+			return err
+		}
+		for _, one := range listed.Labels {
+			if one.Label == label {
+				if one.Colour != colour {
+					return fmt.Errorf("the label %q wears %q, not %q", label, one.Colour, colour)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the JSON lists no label %q:\n%s", label, w.Out.Stdout)
+	})
 	sc.Step(`^it says there is no label$`, func() error {
 		return test.WantContains(w.Out.Stdout, "no label", "the listing")
 	})

@@ -25,7 +25,7 @@ func TestLabels_areListedWithWhatCarriesThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	said, ok := Of(LabelList, listed).(Labels)
-	if !ok || len(said.Labels) != 2 || said.Labels[0] != (LabelCarried{Label: "doc", Tasks: 1, Objectives: 1}) || said.Labels[1] != (LabelCarried{Label: "sp26-20", Tasks: 2}) {
+	if !ok || len(said.Labels) != 2 || said.Labels[0] != (LabelCarried{Label: "doc", Tasks: 1, Objectives: 1, Colour: domain.ColourOf("doc")}) || said.Labels[1] != (LabelCarried{Label: "sp26-20", Tasks: 2, Colour: domain.ColourOf("sp26-20")}) {
 		t.Errorf("the labels read %+v", Of(LabelList, listed))
 	}
 	if text := RenderText(LabelList, listed); !strings.Contains(text, "sp26-20") || !strings.Contains(text, "2 tasks") {
@@ -101,7 +101,7 @@ func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
 		t.Fatal(err)
 	}
 	said, ok := Of(LabelNew, made).(Labels)
-	if !ok || len(said.Labels) != 1 || said.Labels[0] != (LabelCarried{Label: "release-train"}) {
+	if !ok || len(said.Labels) != 1 || said.Labels[0] != (LabelCarried{Label: "release-train", Colour: domain.ColourOf("release-train")}) {
 		t.Fatalf("making a label answers %+v", Of(LabelNew, made))
 	}
 	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "release-train", "to": "train"}}); err != nil {
@@ -132,5 +132,37 @@ func TestALabelWithNoNameIsRefusedNotMade(t *testing.T) {
 	}
 	if _, err := Do(LabelDelete, path, Input{Given: map[string]string{"label": ""}, Confirmed: true}); !errors.Is(err, domain.ErrLabelRequired) {
 		t.Errorf("deleting no name answers %v", err)
+	}
+}
+
+func TestALabelWearsTheColourChosenOrOneOfItsName(t *testing.T) {
+	path := storeAt(t)
+	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}, Listed: map[string][]string{"label": {"doc", "release"}}}); err != nil {
+		t.Fatal(err)
+	}
+	coloured, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "Peach"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, one := range Of(LabelColour, coloured).(Labels).Labels {
+		want := map[string]string{"release": "peach", "doc": domain.ColourOf("doc")}[one.Label]
+		if one.Colour != want {
+			t.Errorf("%s wears %q, want %q", one.Label, one.Colour, want)
+		}
+	}
+	if _, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "brown"}}); !errors.Is(err, domain.ErrNoSuchColour) {
+		t.Errorf("brown answers %v", err)
+	}
+	opened, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = opened.Close() }()
+	looked, err := Look(opened)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if looked.Colours["release"] != "peach" || looked.Colours["doc"] != domain.ColourOf("doc") {
+		t.Errorf("the board reads the colours %v", looked.Colours)
 	}
 }

@@ -46,6 +46,7 @@ var reasons = []reason{
 	{domain.ErrTitleNotOneLine, KindRefused, "title-not-one-line"},
 	{domain.ErrNotText, KindRefused, "not-text"},
 	{domain.ErrLabelRequired, KindRefused, "label-required"},
+	{domain.ErrNoSuchColour, KindRefused, "no-such-colour"},
 	{domain.ErrLabelNotOneLine, KindRefused, "label-not-one-line"},
 	{domain.ErrLabelHasNoFamily, KindRefused, "label-has-no-family"},
 	{domain.ErrLabelHolds, KindRefused, "label-holds"},

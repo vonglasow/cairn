@@ -19,6 +19,7 @@ type LabelCarried struct {
 	Label      string `json:"label"`
 	Tasks      int    `json:"tasks"`
 	Objectives int    `json:"objectives"`
+	Colour     string `json:"colour"`
 }
 
 // Labels is how the labels answer: every one, in alphabetical order, with what carries it.
@@ -73,9 +74,17 @@ func (e *Engine) labelsCarried() ([]LabelCarried, error) {
 	if err != nil {
 		return nil, err
 	}
+	chosen, err := e.store.LabelColours()
+	if err != nil {
+		return nil, err
+	}
 	out := []LabelCarried{}
 	for _, label := range slices.Sorted(maps.Keys(held)) {
-		out = append(out, LabelCarried{Label: label, Tasks: len(held[label].tasks), Objectives: len(held[label].objectives)})
+		colour, ok := chosen[label]
+		if !ok {
+			colour = domain.ColourOf(label)
+		}
+		out = append(out, LabelCarried{Label: label, Tasks: len(held[label].tasks), Objectives: len(held[label].objectives), Colour: colour})
 	}
 	return out, nil
 }
@@ -227,6 +236,37 @@ var LabelNew = Operation{
 			return Answer{}, err
 		}
 		if err := on.Engine.store.KeepLabel(label); err != nil {
+			return Answer{}, err
+		}
+		return listedLabels(on)
+	},
+}
+
+// LabelColour chooses the colour a label wears, in place of the one read off its name.
+var LabelColour = Operation{
+	Thing:   "label",
+	Verb:    "colour",
+	Short:   "Choose the colour a label wears",
+	Does:    "Choose the colour a label wears wherever it is drawn, one of rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue and lavender; a label nobody chose one for wears one read off its name. Answers the labels there are.",
+	Example: "cairn label colour sp26-20 peach",
+	Level:   Write,
+	Needs:   AStore,
+	Again:   ChangesNothingMore,
+	Answers: Labels{},
+	Takes: []Argument{
+		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to colour"},
+		{Name: "colour", Kind: Text, Positional: true, Required: true, Means: "the colour it wears"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		label, _, err := on.Engine.carriersOf(in.Given["label"])
+		if err != nil {
+			return Answer{}, err
+		}
+		colour, err := domain.ParseColour(in.Given["colour"])
+		if err != nil {
+			return Answer{}, err
+		}
+		if err := on.Engine.store.ColourLabel(label, colour); err != nil {
 			return Answer{}, err
 		}
 		return listedLabels(on)

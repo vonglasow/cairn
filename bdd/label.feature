@@ -113,3 +113,28 @@ Feature: Every label at once
     Scenario: a label the rule refuses is not made
       When I run `cairn label new "a:b"`
       Then it fails
+
+  Rule: A label wears a colour
+
+    @label-colour-is-chosen
+    Scenario: a label is given a colour, which the list says and a rename keeps
+      Given I added a task titled "Ship it" with the labels "release" and "doc"
+      When I run `cairn label colour release peach`
+      Then it succeeds
+      When I run `cairn label list --json`
+      Then the JSON gives the label "release" the colour "peach"
+      When I run `cairn label rename release train`
+      And I run `cairn label list --json`
+      Then the JSON gives the label "train" the colour "peach"
+
+    @label-colour-is-read-off-the-name
+    Scenario: a label nobody gave a colour wears one read off its name
+      Given I added a task titled "Ship it" with the labels "release" and "doc"
+      When I run `cairn label list --json`
+      Then the JSON gives the label "release" the colour "green"
+
+    @label-colour-is-one-of-fourteen
+    Scenario: a colour that is not one of the fourteen is refused
+      Given I added a task titled "Ship it" with the labels "release" and "doc"
+      When I run `cairn label colour release brown`
+      Then it fails
