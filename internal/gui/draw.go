@@ -239,9 +239,31 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.LabelsBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
-	from := w.LabelsFrom()
-	for i, one := range w.LabelsCarried()[from:min(len(w.LabelsCarried()), from+w.LabelsRoom())] {
-		drawListRow(gtx, th, skin, ListRowAt(box, i), LabelSays(one), from+i == w.LabelOn())
+	rows := w.LabelRows()
+	if len(rows) == 0 {
+		say(gtx, th, skin.Faint, Inside(ListRowAt(box, 0)), NoLabelSays, reads)
+	}
+	m := w.measured()
+	for _, row := range rows {
+		if row.On {
+			rounded(gtx, row.At, rowRadius, skin.Pill)
+		}
+		line := Inside(row.At)
+		if row.Typing {
+			field := Box{X: line.X, Y: row.At.Y + 2, W: line.W / 2, H: row.At.H - 4}
+			rounded(gtx, field, buttonRadius, skin.Chosen)
+			rounded(gtx, Box{X: field.X + 1, Y: field.Y + 1, W: field.W - 2, H: field.H - 2}, buttonRadius-1, skin.Field)
+			writing(gtx, th, skin, m, Inside(field), w.Renamed(), true, reads, 1, Follow)
+		} else {
+			ground := skin.Pill
+			if row.On {
+				ground = skin.Panel
+			}
+			drawPill(gtx, th, skin, Box{X: line.X, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, row.Carried.Label, small) + 2*pillPad, H: pillHigh}, row.Carried.Label, ground)
+		}
+		if !row.Typing || !w.Making() {
+			sayIn(gtx, th, skin.Faint, line, countOf(row.Carried.Tasks, "task")+" · "+countOf(row.Carried.Objectives, "objective"), small, font.Font{}, text.End)
+		}
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }

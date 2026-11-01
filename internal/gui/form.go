@@ -494,6 +494,9 @@ func (w Window) Choose(name string) Window {
 	case "new linked task":
 		return w.startingLinked()
 	case "save":
+		if w.screen == OnLabels {
+			return w.renamingLabel()
+		}
 		return w.Save()
 	case "cmd+enter":
 		return w.Save()
@@ -535,7 +538,7 @@ func (w Window) Choose(name string) Window {
 			return w.answeringHiding(false)
 		}
 		if w.screen == OnLabels && w.renaming {
-			w.renaming = false
+			w.renaming, w.making = false, false
 			return w
 		}
 		if w.screen == OnLabels {
@@ -555,9 +558,6 @@ func (w Window) Choose(name string) Window {
 		}
 		if w.screen == OnCalendar {
 			return w.dated(w.day)
-		}
-		if w.screen == OnLabels {
-			return w.renamingLabel()
 		}
 		return w.taking()
 	case "keep", "done":
@@ -621,6 +621,8 @@ func (w Window) Choose(name string) Window {
 		return w
 	case "rename":
 		return w.startingRename()
+	case "new label":
+		return w.makingLabel()
 	case "skip flagged":
 		return w.actingOnSeveral(false)
 	case "delete", "agree", "apply", "restore", "finish", "replace":

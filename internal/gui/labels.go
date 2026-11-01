@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 
 	"cairn/internal/engine"
@@ -11,6 +12,7 @@ type labelsState struct {
 	labelOn    int
 	labelsFrom int
 	renaming   bool
+	making     bool
 	renamed    Written
 }
 
@@ -46,11 +48,11 @@ func (w Window) listingLabels() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	if listed.Labels == nil || len(*listed.Labels) == 0 {
-		return w.telling("no label yet: a task's form puts one on")
+	w.carried, w.screen, w.renaming, w.making = []engine.LabelCarried{}, OnLabels, false, false
+	if listed.Labels != nil {
+		w.carried = *listed.Labels
 	}
-	w.carried, w.screen, w.renaming = *listed.Labels, OnLabels, false
-	w.labelOn = min(w.labelOn, len(w.carried)-1)
+	w.labelOn = max(0, min(w.labelOn, len(w.carried)-1))
 	w.labelsFrom = min(w.labelsFrom, w.labelOn)
 	return w
 }
@@ -76,17 +78,34 @@ func (w Window) onLabels(name string) Window {
 }
 
 func (w Window) startingRename() Window {
-	w.renaming, w.renamed = true, Written{}.Types(w.labelChosen())
+	if len(w.carried) == 0 {
+		return w
+	}
+	w.renaming, w.making, w.renamed = true, false, Written{}.Types(w.labelChosen())
+	return w
+}
+
+func (w Window) makingLabel() Window {
+	w.renaming, w.making, w.renamed = true, true, Written{}
 	return w
 }
 
 func (w Window) renamingLabel() Window {
+	if w.making {
+		if _, err := w.work.Ask(engine.LabelNew, engine.Input{Given: map[string]string{"label": w.renamed.Reads()}}); err != nil {
+			return w.failing(err)
+		}
+		return w.Look().listingLabels()
+	}
 	in := engine.Input{Given: map[string]string{"label": w.labelChosen(), "to": w.renamed.Reads()}}
 	if _, err := w.work.Ask(engine.LabelRename, in); err != nil {
 		return w.failing(err)
 	}
 	return w.Look().listingLabels()
 }
+
+// Making says the name being typed is a new label's rather than another name for one there is.
+func (w Window) Making() bool { return w.making }
 
 func (w Window) deletingLabel() Window {
 	label := w.labelChosen()
@@ -116,23 +135,57 @@ func (w Window) LabelsRoom() int { return listRoom(w.LabelsBox()) }
 
 func (w Window) clickingLabels(p Point) Window {
 	box := w.LabelsBox()
-	for i := w.labelsFrom; i < min(len(w.carried), w.labelsFrom+w.LabelsRoom()); i++ {
-		if ListRowAt(box, i-w.labelsFrom).In(p) {
-			w.labelOn, w.renaming = i, false
+	for _, row := range w.LabelRows() {
+		if row.At.In(p) && (!row.Typing || !w.making) {
+			w.labelOn = slices.IndexFunc(w.carried, func(one engine.LabelCarried) bool { return one.Label == row.Carried.Label })
+			w.renaming, w.making = false, false
 			return w
 		}
 	}
 	if !box.In(p) {
-		w.screen, w.renaming = OnTheBoard, false
+		w.screen, w.renaming, w.making = OnTheBoard, false, false
 	}
 	return w
 }
 
-// LabelsBox is the panel of the list of labels: across the middle of the window, as long as the labels up to what the window has room for.
+// LabelsBox is the panel of the list of labels: across the middle of the window, as long as the labels up to what the window has room for, a line more while a new one is named.
 func (w Window) LabelsBox() Box {
-	said := make([]string, 0, len(w.carried))
+	said := make([]string, 0, len(w.carried)+1)
+	if w.making {
+		said = append(said, w.renamed.Reads())
+	}
 	for _, one := range w.carried {
 		said = append(said, LabelSays(one))
 	}
+	if len(said) == 0 {
+		said = append(said, NoLabelSays)
+	}
 	return w.listBox(said)
+}
+
+// NoLabelSays is what the list of labels says when there is none.
+const NoLabelSays = "No label yet: n makes one"
+
+// LabelRow is one line of the list of labels where it is drawn: a label and what carries it, or the name being typed for one, and whether the keyboard is on it.
+type LabelRow struct {
+	At      Box
+	Carried engine.LabelCarried
+	Typing  bool
+	On      bool
+}
+
+// LabelRows is the lines of the list of labels in sight, the one being named first while a new label is.
+func (w Window) LabelRows() []LabelRow {
+	box := w.LabelsBox()
+	var rows []LabelRow
+	if w.making {
+		rows = append(rows, LabelRow{At: ListRowAt(box, 0), Typing: true, On: true})
+	}
+	from := w.labelsFrom
+	last := min(len(w.carried), from+w.LabelsRoom()-len(rows))
+	for i := from; i < last; i++ {
+		on := i == w.labelOn && !w.making
+		rows = append(rows, LabelRow{At: ListRowAt(box, len(rows)), Carried: w.carried[i], On: on, Typing: on && w.renaming})
+	}
+	return rows
 }

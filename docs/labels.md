@@ -92,8 +92,14 @@ everything carrying one, the new name written by the rule above, and a label
 renamed onto one already there becomes that one; `label delete` takes one off
 everything, and asks first, since what it takes off is put back by nobody. Each
 change is an edit of its task or objective, so a task's trace says it. The
-window reaches the same three from `⇧L` and the File menu: the list, `r` to
-rename the one the keyboard is on, `d` to take it off everything after asking.
+window reaches the same four from `⇧L` and the File menu: the list, each label
+a pill with what carries it at the right; `n` names a new one in a row of its
+own at the top (`@gui-a-label-is-made-from-the-labels`); `r` renames the one
+the keyboard is on in its own row, the panel keeping its name, `⏎` saving
+(`@gui-a-label-is-renamed-in-its-row`); `⌘⌫` takes it off everything after
+asking. The list opens with no label at all, to make the first. A label made
+on its own is offered by a task's list of labels as any other
+(`@gui-a-label-made-is-offered-in-a-form`).
 
 Leaving these out was decided once, the labels being nothing but what the
 tasks carry, and kept when managing them was first asked for. Amended

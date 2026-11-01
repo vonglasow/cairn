@@ -141,6 +141,12 @@ func (g Givens) IEditedTaskWithTheLabels(number int, first, second string) error
 	return g.editTask(number, nil, map[string][]string{"label": {first, second}})
 }
 
+// IMadeTheLabel makes a label nothing carries yet.
+func (g Givens) IMadeTheLabel(label string) error {
+	_, err := g.ask(engine.LabelNew, map[string]string{"label": label}, nil)
+	return err
+}
+
 // IEditedTaskWithTheDeadline gives a task a day it is due.
 func (g Givens) IEditedTaskWithTheDeadline(number int, day string) error {
 	return g.editTask(number, map[string]string{"deadline": day}, nil)
@@ -276,6 +282,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, g.IEditedTaskWithTheBlocker)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`, g.IEditedTaskWithTheLabels)
+	sc.Step(`^I made the label "([^"]*)"$`, g.IMadeTheLabel)
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, g.IEditedTaskWithTheDeadline)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)
 	sc.Step(`^I put task (\d+) in focus$`, g.IPutTaskInFocus)

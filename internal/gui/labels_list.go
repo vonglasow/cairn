@@ -24,6 +24,11 @@ func (w Window) openingLabels(held string) Window {
 			known[label] = true
 		}
 	}
+	if listed, err := w.work.Ask(engine.LabelList, engine.Input{}); err == nil && listed.Labels != nil {
+		for _, one := range *listed.Labels {
+			known[one.Label] = true
+		}
+	}
 	holding := engine.Words(held)
 	for _, label := range holding {
 		known[label] = true

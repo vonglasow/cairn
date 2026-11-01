@@ -1956,6 +1956,40 @@ Feature: The desktop board
       Then task 1 carries exactly the labels "doc, sp26-20"
       And the labels are listed
 
+    @gui-a-label-is-made-from-the-labels
+    Scenario: a label is made from the list of labels, with nothing carrying it
+      When I open the window
+      And I press "shift+l"
+      Then the labels are listed
+      And the bar offers "New label" under "n"
+      When I press "n"
+      And I type "Release Train"
+      And I press "enter"
+      Then the labels list "release-train" carried by 0 tasks and 0 objectives
+      And the panel is headed "Labels"
+
+    @gui-a-label-made-is-offered-in-a-form
+    Scenario: a label made on its own is offered when a task's labels are chosen
+      Given I added a task titled "Write the spec"
+      And I made the label "release"
+      When I open the window
+      And I click the card "Write the spec"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      Then the list offers "release"
+
+    @gui-a-label-is-renamed-in-its-row
+    Scenario: a label is renamed in its own row, the panel keeping its name
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "doc"
+      And I press "r"
+      Then the panel is headed "Labels"
+      And the bar offers "Save" under "⏎"
+
   Rule: A new backup is made, and a backup restored, from the window
 
     @gui-backing-up-from-the-window

@@ -24,9 +24,6 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnFiltering:
 		return "Filters"
 	case OnLabels:
-		if w.renaming {
-			return "Rename " + w.labelChosen() + " to " + w.renamed.Reads()
-		}
 		return "Labels"
 	case OnConfiguration:
 		return "Configuration"
@@ -131,6 +128,8 @@ func Shortcut(offer string) string {
 		return "backspace"
 	case "rename":
 		return "r"
+	case "new label":
+		return "n"
 	case "archive", "unarchive":
 		return "x"
 	case "take":
@@ -249,9 +248,12 @@ func (w Window) Offers() []string {
 		return []string{"Write the file", "Close"}
 	case OnLabels:
 		if w.renaming {
-			return []string{"Take", "Cancel"}
+			return []string{"Save", "Cancel"}
 		}
-		return []string{"Rename", "Delete", "Cancel"}
+		if len(w.carried) == 0 {
+			return []string{"New label", "Close"}
+		}
+		return []string{"New label", "Rename", "Delete", "Close"}
 	case OnMenu:
 		return nil
 	case OnForm:
@@ -386,6 +388,9 @@ func (w Window) hintWide(offer string) int {
 
 func (w Window) shortcut(offer string) string {
 	if w.screen == OnAsking && offer == w.agreeingVerb() {
+		return "enter"
+	}
+	if w.screen == OnLabels && w.renaming && offer == "Save" {
 		return "enter"
 	}
 	return Shortcut(offer)
