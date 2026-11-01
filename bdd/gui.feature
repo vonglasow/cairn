@@ -2116,7 +2116,7 @@ Feature: The desktop board
       When I open the window
       And I right-click the card "Write the spec"
       Then the card "Write the spec" is chosen
-      And the menu offers "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      And the menu offers "Open", "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
@@ -2127,7 +2127,7 @@ Feature: The desktop board
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Edit", "New linked task", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      Then the menu offers "Open", "Edit", "New linked task", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
 
     @gui-a-card-is-moved-from-its-menu
     Scenario: a card's menu moves it to another column, and sets its priority

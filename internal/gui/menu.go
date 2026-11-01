@@ -41,7 +41,7 @@ func (w Window) menuFor() []string {
 		return []string{"Edit", "Delete"}
 	}
 	card, _ := w.snap.Card(w.chosen)
-	return []string{"Edit", "New linked task", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
+	return []string{"Open", "Edit", "New linked task", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
 }
 
 func (w Window) labellingChosen() Window {
@@ -87,6 +87,8 @@ func (w Window) settingFrom(field string, values []string, held string) Window {
 // MenuKey is the key that does what a line of the menu does, which the line says at its right: the menu is where a key is learned.
 func MenuKey(line string) string {
 	switch line {
+	case "Open":
+		return "enter"
 	case "Edit":
 		return "e"
 	case "New linked task":
@@ -173,6 +175,9 @@ func (w Window) fromMenu(i int) Window {
 		return w.settingFrom("priority", engine.Priorities(), card.Priority)
 	case "Labels…":
 		return w.labellingChosen()
+	case "Open":
+		w.screen = OnTheBoard
+		return w.opening()
 	}
 	w.screen = OnTheBoard
 	if said == "Focus" || said == "Unfocus" {

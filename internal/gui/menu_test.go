@@ -78,7 +78,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
-	if got := opened.Menu(); !slices.Equal(got, []string{"Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
+	if got := opened.Menu(); !slices.Equal(got, []string{"Open", "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)
 	}
 	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))
@@ -101,7 +101,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	if labelling.Screen() != OnChoosing || labelling.choosingFor != "label" {
 		t.Errorf("Labels… left the window on %v choosing %q", labelling.Screen(), labelling.choosingFor)
 	}
-	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[3] != "Move to…" {
+	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[4] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
 	}
 }
@@ -142,5 +142,16 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 	w = w.clicked(Point{X: cross.X + cross.W - pillCross/2, Y: cross.Y + cross.H/2})
 	if len(w.FilterPills()) != 0 || w.FilteredBy() != "" {
 		t.Errorf("the cross left the board filtered by %q", w.FilteredBy())
+	}
+}
+
+func TestOpenFirstInACardsMenuOpensIt(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	opened := w.ContextAt(middleOf(w, 1, 0))
+	if MenuKey("Open") != "enter" {
+		t.Errorf("Open says the key %q", MenuKey("Open"))
+	}
+	if got := opened.fromMenu(0); got.Screen() != OnForm {
+		t.Errorf("Open left the window on %v", got.Screen())
 	}
 }
