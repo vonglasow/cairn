@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"cairn/internal/build"
 	"cairn/internal/engine"
@@ -455,12 +456,20 @@ func (w Window) keyOf(offer string) string {
 	return ""
 }
 
-// KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono and a little room either side.
+// KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono, a key mark Go Mono has no glyph for as wide as an em of the face standing in, and a little room either side.
 func KeyChipWide(key string) int {
 	if key == "" {
 		return 0
 	}
-	return monoWide(key, small) + 2*chipInset
+	wide := 0
+	for _, r := range key {
+		if r < unicode.MaxLatin1 {
+			wide += monoWide(string(r), small)
+			continue
+		}
+		wide += small
+	}
+	return wide + 2*chipInset
 }
 
 // CommandSays is what the command bar's line says at rest: the task chosen, by its number and title, or what can be typed into it.
@@ -489,7 +498,11 @@ func (w Window) offerWidths() []int { return w.widthsOf(w.Offers()) }
 func (w Window) widthsOf(offers []string) []int {
 	var widths []int
 	for _, offer := range offers {
-		widths = append(widths, max(offerWide, ends(w.measured(), w.Said(offer), reads)+padding))
+		key := KeyChipWide(w.OfferKey(offer))
+		if key > 0 {
+			key += hintSpace
+		}
+		widths = append(widths, max(offerWide, buttonWordWide(w.measured(), offer)+key+padding+inset))
 	}
 	return widths
 }

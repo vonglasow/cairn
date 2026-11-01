@@ -21,13 +21,21 @@ func (k Keyboard) Spelled(said string) string {
 	return strings.NewReplacer("⌘", "Ctrl+", "⇧", "Shift+", "⌥", "Alt+", "⌫", "Backspace", "⌦", "Delete").Replace(said)
 }
 
-// Said is an offer as the bar writes it: the key beside the word, spelled for this keyboard.
+// Said is an offer as a button writes it: the word, then the key beside it, spelled for this keyboard.
 func (w Window) Said(offer string) string {
+	if key := w.OfferKey(offer); key != "" {
+		return offer + "  " + key
+	}
+	return offer
+}
+
+// OfferKey is the key an offer answers to, spelled for this keyboard, and nothing when it has none.
+func (w Window) OfferKey(offer string) string {
 	key := Shortcut(offer)
 	if key == "" {
-		return offer
+		return ""
 	}
-	return w.keyboard.Spelled(Pretty(key)) + "  " + offer
+	return w.keyboard.Spelled(Pretty(key))
 }
 
 func thisKeyboard() Keyboard { return KeyboardOf(runtime.GOOS) }

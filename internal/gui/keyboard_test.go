@@ -34,10 +34,10 @@ func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 			t.Errorf("the help says %q — %q on Windows", line.Key, line.Means)
 		}
 	}
-	if got := w.Said("New"); got != "Ctrl+N  New" {
+	if got := w.Said("New"); got != "New  Ctrl+N" {
 		t.Errorf("the bar writes %q, want the key a Windows keyboard has", got)
 	}
-	if got := New(newFake(), 1200, 800).OnSystem("darwin").Said("New"); got != "⌘N  New" {
+	if got := New(newFake(), 1200, 800).OnSystem("darwin").Said("New"); got != "New  ⌘N" {
 		t.Errorf("on a Mac the bar writes %q", got)
 	}
 }

@@ -237,6 +237,24 @@ var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
 // Button is what an offer is drawn as in the room it is given: as tall, and a gap short of the next one.
 func Button(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H} }
 
+// ButtonParts is where a button writes its word and draws its key's chip: the two side by side in its middle, the word first.
+func ButtonParts(button Box, m Measure, word, key string) (Box, Box) {
+	wide := buttonWordWide(m, word)
+	chip := KeyChipWide(key)
+	if chip > 0 {
+		chip += hintSpace
+	}
+	x := button.X + max(0, (button.W-wide-chip)/2)
+	said := Box{X: x, Y: button.Y + (button.H-lineHigh)/2, W: wide, H: lineHigh}
+	if key == "" {
+		return said, Box{}
+	}
+	return said, Box{X: x + wide + hintSpace, Y: button.Y + (button.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
+}
+
+// buttonWordWide is how wide a button's word is written: measured in the face's plain weight, and a twentieth more for the medium weight a button writes in.
+func buttonWordWide(m Measure, word string) int { return ends(m, word, reads)*21/20 + textSlack }
+
 // ButtonSaid is where a button writes its words: a line high, across it, in its middle.
 func ButtonSaid(button Box) Box { return ChipSaid(button, button.W) }
 

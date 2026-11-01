@@ -150,7 +150,13 @@ the panel is for, red when it destroys — Delete, Throw away, the yes of a
 question that deletes — and plain otherwise (`OfferLook`). An open task's
 context is written at the left of that foot, up to its first button. Every
 button is one shape (`drawButton`): a rounded (7) ground and its words in
-the middle, lighter under the pointer.
+the middle, lighter under the pointer. A panel's button says its word, then
+its key on a chip a shade darker than the button, `Cancel esc`, `Save ⌘⏎`,
+as the command bar's hints show a key (`drawKeyedButton`, `ButtonParts`,
+`TestAPanelButtonWritesItsWordThenItsKeyOnAChip`); it wrote the
+key first, as plain text, where nothing told the key from the word. A key
+mark Go Mono has no glyph for (`⌘`, `⏎`, `⌫`) is given an em of room on its
+chip (`KeyChipWide`): reckoned as Go Mono, `⌘⌫` was cut to `⌘…`.
 
 Words are written in Figtree, at 400, 500 and 600 (`TextFace`, `Faces`);
 Go's faces follow it for what it lacks, then the symbols. Figtree's strokes

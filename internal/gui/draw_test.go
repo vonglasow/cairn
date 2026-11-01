@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -809,6 +810,26 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 	}
 	if got := New(newFake(), 1200, 800).Said("nothing at all"); got != "nothing at all" {
 		t.Errorf("an offer with no key is written %q, with a gap in front of it", got)
+	}
+}
+
+func TestAPanelButtonWritesItsWordThenItsKeyOnAChip(t *testing.T) {
+	w := New(newFake(), 1200, 800).OnSystem("darwin").Key("?")
+	offers, boxes := w.Offers(), w.PanelOffers()
+	at := slices.Index(offers, "Close")
+	if at < 0 {
+		t.Fatalf("the help offers %v", offers)
+	}
+	word, chip := ButtonParts(Button(boxes[at]), w.measured(), "Close", w.OfferKey("Close"))
+	if chip.W == 0 || chip.X < word.X+word.W {
+		t.Fatalf("the key's chip %+v does not come after the word %+v", chip, word)
+	}
+	if button := Button(boxes[at]); word.X < button.X || chip.X+chip.W > button.X+button.W {
+		t.Errorf("the word %+v and the chip %+v run out of the button %+v", word, chip, button)
+	}
+	back, _ := buttonInks(Dark(), w.OfferLook(at, "Close"))
+	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, darker(back)) != 1 || painted(drawn(t, w), Box{X: word.X - 2, Y: chip.Y + 1, W: 1, H: 1}, back) != 1 {
+		t.Error("the key does not stand on a chip of its own inside the button")
 	}
 }
 

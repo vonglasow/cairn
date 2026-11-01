@@ -951,6 +951,12 @@ const (
 const buttonRadius = 7
 
 func drawButton(gtx layout.Context, th *material.Theme, skin Skin, button Box, said string, look buttonLook) {
+	back, ink := buttonInks(skin, look)
+	rounded(gtx, button, buttonRadius, back)
+	sayStyled(gtx, th, ink, ButtonSaid(button), said, reads, font.Medium, 1, text.Middle)
+}
+
+func buttonInks(skin Skin, look buttonLook) (color.NRGBA, color.NRGBA) {
 	back, ink := skin.Pill, skin.Ink
 	switch look {
 	case buttonOn:
@@ -966,8 +972,19 @@ func drawButton(gtx layout.Context, th *material.Theme, skin Skin, button Box, s
 	case buttonDangerLit:
 		back, ink = lighter(skin.Danger), skin.Wrong
 	}
+	return back, ink
+}
+
+func drawKeyedButton(gtx layout.Context, th *material.Theme, skin Skin, button Box, m Measure, word, key string, look buttonLook) {
+	back, ink := buttonInks(skin, look)
 	rounded(gtx, button, buttonRadius, back)
-	sayStyled(gtx, th, ink, ButtonSaid(button), said, reads, font.Medium, 1, text.Middle)
+	said, chip := ButtonParts(button, m, word, key)
+	sayStyled(gtx, th, ink, said, word, reads, font.Medium, 1, text.Start)
+	if key == "" {
+		return
+	}
+	rounded(gtx, chip, chipRadius, darker(back))
+	sayIn(gtx, th, ink, Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}, key, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Middle)
 }
 
 func drawSub(gtx layout.Context, th *material.Theme, skin Skin, box Box, c engine.Card, line string, on, picked bool, held Written) {
@@ -1226,7 +1243,7 @@ func drawPanelOffers(gtx layout.Context, th *material.Theme, skin Skin, box Box,
 		if w.Lighting(offer) {
 			look = litLook(look)
 		}
-		drawButton(gtx, th, skin, Button(along[i]), w.Said(offer), look)
+		drawKeyedButton(gtx, th, skin, Button(along[i]), Measured(th), offer, w.OfferKey(offer), look)
 	}
 	if cross, ok := w.PanelClose(); ok && w.screen != OnForm {
 		drawCross(gtx, cross, skin.Faint)
