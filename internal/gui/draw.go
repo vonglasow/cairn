@@ -488,6 +488,18 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			rounded(gtx, row, rowRadius, skin.Pill)
 		}
 		line := ChoosingLine(box, at)
+		if one.Creates != "" {
+			said := "Create"
+			say(gtx, th, skin.Faint, line, said, reads)
+			from := line.X + ends(w.measured(), said, reads) + pillGap*2
+			ground := skin.Pill
+			if i == w.ChoosingAt() {
+				ground = skin.Panel
+			}
+			drawPill(gtx, th, skin, Box{X: from, Y: line.Y + (line.H-pillHigh)/2, W: ends(w.measured(), one.Creates, small) + 2*pillPad, H: pillHigh}, one.Creates, ground)
+			at += apart
+			continue
+		}
 		say(gtx, th, skin.Ink, line, w.RowSays(one), reads)
 		if stripe, ok := w.RowStripe(one, line); ok {
 			rounded(gtx, stripe, stripeRadius-1, skin.Priority[one.Title])

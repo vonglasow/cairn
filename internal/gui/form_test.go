@@ -1190,3 +1190,25 @@ func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
 		}
 	}
 }
+
+func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"bug"}})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for w.Form().Fields()[w.Form().On()].Name != "labels" {
+		w = w.Key("tab")
+	}
+	w = w.Key("enter").Types("b")
+	box := w.ChoosingBox()
+	for i, one := range w.Choosing() {
+		if one.Creates == "" {
+			continue
+		}
+		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
+		pill := Box{X: line.X + ends(w.measured(), "Create", reads) + pillGap*2 + 2, Y: line.Y + line.H/2, W: 2, H: 1}
+		if painted(drawn(t, w), pill, Dark().Panel) == 0 {
+			t.Errorf("the row creating %q shows no pill", one.Creates)
+		}
+		return
+	}
+	t.Fatalf("typing a new label offers %v", w.Choosing())
+}
