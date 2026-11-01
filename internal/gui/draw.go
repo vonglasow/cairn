@@ -1154,12 +1154,26 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			continue
 		}
 		drawFieldAt(gtx, th, skin, w.measured(), name, value, rows, FormSize(fields[i]), fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)
+		frame := Framed(value, rows)
+		switch fields[i].Arg {
+		case "priority":
+			if stripe, known := skin.Priority[said.Reads()]; known {
+				rounded(gtx, Box{X: frame.X + frame.W - padding - edgeWide, Y: frame.Y + (frame.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, stripeRadius-1, stripe)
+			}
+		case "label":
+			if !on {
+				drawFieldPills(gtx, th, skin, w.measured(), frame, strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' }))
+			}
+		}
 	}
 	for _, head := range FormHeads(box, fields) {
 		say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
 	}
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
+		if note := w.FormNote(); note != "" && len(w.ContextSays()) == 0 {
+			say(gtx, th, skin.Low, ContextName(panel), note, small)
+		}
 	}
 	if tip, said, ok := w.Explanation(); ok {
 		fill(gtx, tip, skin.Back)
@@ -1404,4 +1418,21 @@ func drawListRow(gtx layout.Context, th *material.Theme, skin Skin, row Box, sai
 		rounded(gtx, row, rowRadius, skin.Pill)
 	}
 	say(gtx, th, skin.Ink, Inside(row), said, reads)
+}
+
+func drawFieldPills(gtx layout.Context, th *material.Theme, skin Skin, m Measure, frame Box, labels []string) {
+	if len(labels) == 0 {
+		return
+	}
+	room := Inside(frame)
+	rounded(gtx, Box{X: frame.X + 1, Y: frame.Y + 1, W: frame.W - 2, H: frame.H - 2}, buttonRadius-1, skin.Field)
+	x, top := room.X, frame.Y+(frame.H-pillHigh)/2
+	for _, label := range labels {
+		pill := Box{X: x, Y: top, W: ends(m, label, small) + 2*pillPad, H: pillHigh}
+		if pill.X+pill.W > room.X+room.W {
+			return
+		}
+		drawPill(gtx, th, skin, pill, label, skin.Pill)
+		x += pill.W + pillGap
+	}
 }

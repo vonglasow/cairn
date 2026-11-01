@@ -98,9 +98,11 @@ type Window struct {
 	filesState
 	configurationState
 	timeState
-	palette                         paletteState
-	going                           bool
-	goneAt                          time.Time
+	palette paletteState
+	going   bool
+	goneAt  time.Time
+
+	savedAt                         time.Time
 	born                            time.Time
 	introOver                       bool
 	paused                          []string

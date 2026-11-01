@@ -2,7 +2,11 @@ package gui
 
 import (
 	"slices"
+	"strconv"
 	"strings"
+	"time"
+
+	"cairn/internal/domain"
 )
 
 func (w Window) autosaved() Window {
@@ -26,7 +30,9 @@ func (w Window) autosaved() Window {
 	saved := w.savedInPlace()
 	if saved.err != nil {
 		saved.refused = now
+		return saved
 	}
+	saved.savedAt = w.now
 	return saved
 }
 
@@ -75,4 +81,16 @@ func (w Window) savedInPlace() Window {
 	w.form.partAt, w.form.partsTop, w.form.partsTaken = kept.partAt, kept.partsTop, kept.partsTaken
 	w.paused = w.form.values()
 	return w.readingActs()
+}
+
+// FormNote is what the foot of an open form says of its saving itself: how long ago it last did, and nothing before it has.
+func (w Window) FormNote() string {
+	if w.screen != OnForm || w.savedAt.IsZero() {
+		return ""
+	}
+	ago := w.now.Sub(w.savedAt)
+	if ago < time.Minute {
+		return "saved " + strconv.Itoa(int(ago.Seconds())) + "s ago"
+	}
+	return "saved " + domain.FormatDuration(ago.Truncate(time.Minute)) + " ago"
 }

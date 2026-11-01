@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/engine"
 	"cairn/test"
@@ -1153,5 +1154,39 @@ func TestAnObjectivesNumberIsWrittenWithItsHash(t *testing.T) {
 	w := Window{choosingFor: "objective"}
 	if got := w.RowSays(Choice{Number: 7, Title: "Ship it"}); !strings.Contains(got, "#7  Ship it") {
 		t.Errorf("an objective's row says %q", got)
+	}
+}
+
+func TestAFormSaidWhenItLastSavedItself(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	if got := w.FormNote(); got != "" {
+		t.Errorf("a form not saved yet says %q", got)
+	}
+	w.now = time.Date(2026, 11, 1, 10, 0, 3, 0, time.UTC)
+	w.savedAt = time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
+	if got := w.FormNote(); got != "saved 3s ago" {
+		t.Errorf("a form saved three seconds ago says %q", got)
+	}
+}
+
+func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high", Labels: []string{"backend", "gui"}})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	shot := drawn(t, w)
+	fields := w.Form().Fields()
+	for i, field := range fields {
+		_, value, rows := FormPlace(w.formBox(), fields, i)
+		frame := Framed(value, rows)
+		switch field.Arg {
+		case "priority":
+			if painted(shot, frame, Dark().Priority["high"]) == 0 {
+				t.Error("the priority's field shows no stripe of its colour")
+			}
+		case "label":
+			if painted(shot, frame, Dark().Pill) == 0 {
+				t.Error("the labels' field shows no pills")
+			}
+		}
 	}
 }
