@@ -259,3 +259,9 @@ func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
 		t.Fatalf("the bubble's ground is %v where %v was drawn over the cards", got, ground)
 	}
 }
+
+func TestGoMonoIsGivenItsWholeAdvance(t *testing.T) {
+	if got := monoWide("1/3", small); got*5 < 3*small*3 {
+		t.Errorf("three figures at %d are given %d, under the %v they take", small, got, float64(3*small*3)/5)
+	}
+}

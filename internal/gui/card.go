@@ -160,8 +160,8 @@ func mixedWide(m Measure, said string, size int) int {
 	return wide
 }
 
-// monoWide is how wide Go Mono writes said at size: every glyph of it advances three fifths of an em.
-func monoWide(said string, size int) int { return utf8.RuneCountInString(said) * size * 3 / 5 }
+// monoWide is how wide Go Mono writes said at size: every glyph of it advances three fifths of an em, rounded up, so the last glyph is never pushed out of its box.
+func monoWide(said string, size int) int { return (utf8.RuneCountInString(said)*size*3 + 4) / 5 }
 
 const padding = 12
 
