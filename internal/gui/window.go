@@ -145,8 +145,9 @@ type Window struct {
 	over                  string
 	hovered               bool
 	explaining            int
-	resting               string
-	restingSlot           Box
+	resting               []string
+	restingAt             Box
+	restingWide           int
 	pointed               Box
 	bubbled               []string
 	bubbledFrom           Box

@@ -1334,12 +1334,19 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the form has no field %q", name)
 	})
-	sc.Step(`^I rest the pointer on the card "([^"]*)"$`, func(title string) error {
+	sc.Step(`^I rest the pointer on the (title|foot|objective mark) of the card "([^"]*)"$`, func(part, title string) error {
 		for _, placed := range w.w.Placed() {
-			if placed.Card.Title == title {
-				w.w = w.w.Hovering(Point{X: placed.Slot.X + placed.Slot.W/2, Y: placed.Slot.Y + placed.Slot.H/2})
-				return nil
+			if placed.Card.Title != title {
+				continue
 			}
+			parts := PartsOf(placed.Slot)
+			on := map[string]Box{
+				"title":          parts.Title,
+				"foot":           parts.Steps,
+				"objective mark": CardRowOf(placed.Card, parts.Number, w.w.measured(), w.w.now).ServesAt,
+			}[part]
+			w.w = w.w.Hovering(Point{X: on.X + on.W/2, Y: on.Y + on.H/2})
+			return nil
 		}
 		return fmt.Errorf("the board holds no card titled %q", title)
 	})

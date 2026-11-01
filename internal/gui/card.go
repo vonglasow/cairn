@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"unicode"
 	"unicode/utf8"
 
 	"cairn/internal/domain"
@@ -103,14 +104,15 @@ const (
 
 // CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
 type CardRow struct {
-	Number  string
-	Shown   []string
-	Pills   []Box
-	More    Box
-	Count   string
-	Facts   string
-	FactsAt Box
-	Late    bool
+	Number   string
+	Shown    []string
+	Pills    []Box
+	More     Box
+	Count    string
+	Facts    string
+	FactsAt  Box
+	ServesAt Box
+	Late     bool
 }
 
 // CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
@@ -123,7 +125,11 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time) CardRow {
 	end := row.X + row.W
 	out.Facts, out.Late = Facts(c, now)
 	if out.Facts != "" {
-		out.FactsAt = FactsAt(row, monoWide(out.Facts, small))
+		out.FactsAt = FactsAt(row, mixedWide(m, out.Facts, small))
+		if serves := Serves(c); serves != "" {
+			wide := mixedWide(m, serves, small)
+			out.ServesAt = Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
+		}
 		end = out.FactsAt.X - 2*pillGap
 	}
 	wide := func(said string) int { return ends(m, said, small) }
@@ -139,6 +145,19 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time) CardRow {
 		out.More = Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
 	}
 	return out
+}
+
+// mixedWide is how wide said is written in Go Mono at size, a mark Go Mono has no glyph for measured in the face that stands in for it.
+func mixedWide(m Measure, said string, size int) int {
+	wide := 0
+	for _, r := range said {
+		if r < unicode.MaxLatin1 || r == '−' {
+			wide += monoWide(string(r), size)
+			continue
+		}
+		wide += ends(m, string(r), size)
+	}
+	return wide
 }
 
 // monoWide is how wide Go Mono writes said at size: every glyph of it advances three fifths of an em.

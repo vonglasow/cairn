@@ -273,8 +273,8 @@ fit, where the n-th one is, and which card is under the pointer, without
 drawing anything. The price is the same as the terminal's — a long title is
 cut.
 
-A cut title is still readable: while the pointer rests on a card whose title
-was cut, a small bubble drawn above everything else says it whole, wrapped
+A cut title is still readable: while the pointer rests on the title of a card
+whose title was cut, a small bubble drawn above everything else says it whole, wrapped
 over as many lines as it needs and kept inside the window. A card whose title
 fits gets none. The cards keep their height, and the title is not lost to it.
 It stands just above the title, its text beginning where the title's does, so
@@ -287,7 +287,14 @@ Where there is no room above, it goes just under the title. Scenarios:
 are read the same way: resting on its `+n` opens a bubble under it holding
 every label it carries as pills, wrapped to 180 points
 (`LabelsBubbleBox`, `@gui-the-count-of-labels-opens-them-all`). Both bubbles
-are raised panels, rounded and shadowed, rather than boxes with an edge; the
+are raised panels, rounded and shadowed, rather than boxes with an edge. The
+title's bubble used to open anywhere on the card, and hid the row a person
+was reaching for; it opens over the title alone now. The objective mark `◇1`
+opens the same bubble, a line to each objective it serves, `#1  Ship the
+desktop board`: a number alone named nothing (`servedAt`,
+`@gui-the-objective-mark-names-what-it-serves`). Go Mono has no glyph for
+`◇`, so the facts are measured with the face that stands in for it
+(`mixedWide`); measured as Go Mono, they were cut to `1…`. The
 row of a card is laid out once (`CardRowOf`) for the drawing and for the
 pointer, so what is drawn and what answers it cannot drift.
 

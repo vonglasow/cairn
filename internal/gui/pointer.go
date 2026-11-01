@@ -113,48 +113,80 @@ func (w Window) aiming(p Point) Window {
 func (w Window) Hovering(p Point) Window {
 	w.over, w.hovered = w.offerAt(p)
 	w.explaining = w.nameAt(p)
-	w.resting, w.restingSlot = w.cutTitleAt(p)
+	w.resting, w.restingAt, w.restingWide = w.cutTitleAt(p)
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.servedAt(p)
+	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
 	return w
 }
 
-// Bubble is the whole title of the cut card the pointer rests on, and nothing when it rests on none.
-func (w Window) Bubble() string { return w.resting }
+// Bubble is what the bubble the pointer opened says, a line to each thing it names: the whole title of the cut card the pointer rests on, or the objectives its mark stands for; nothing when it rests on neither.
+func (w Window) Bubble() string { return strings.Join(w.resting, "\n") }
 
 // BubbleBox is where the bubble is drawn and the lines it says, and whether there is one.
 func (w Window) BubbleBox() (Box, []string, bool) {
-	if w.resting == "" {
+	if w.resting == nil {
 		return Box{}, nil, false
 	}
 	m := w.measured()
-	room := min(2*w.restingSlot.W, w.width-2*margin) - 2*padding
-	lines := m.Wrapped(w.resting, room, plain).Said
+	room := min(2*w.restingWide, w.width-2*margin) - 2*padding
+	var lines []string
+	for _, said := range w.resting {
+		lines = append(lines, m.Wrapped(said, room, plain).Said...)
+	}
 	widest := 0
 	for _, line := range lines {
 		widest = max(widest, ends(m, line, plain))
 	}
 	wide := widest + 2*padding
 	high := len(lines)*lineHigh + 2*inset
-	title := PartsOf(w.restingSlot).Title
-	x := max(margin, min(title.X-padding, w.width-margin-wide))
-	y := title.Y - high - inset
+	near := w.restingAt
+	x := max(margin, min(near.X-padding, w.width-margin-wide))
+	y := near.Y - high - inset
 	if y < margin {
-		y = title.Y + title.H + inset
+		y = near.Y + near.H + inset
 	}
 	return Box{X: x, Y: max(margin, min(y, w.height-margin-high)), W: wide, H: high}, lines, true
 }
 
-func (w Window) cutTitleAt(p Point) (string, Box) {
+func (w Window) cutTitleAt(p Point) ([]string, Box, int) {
 	if w.screen != OnTheBoard || w.tab != Tasks {
-		return "", Box{}
+		return nil, Box{}, 0
 	}
 	for _, placed := range w.Placed() {
-		if placed.Within.In(p) && placed.Slot.In(p) && w.titleCut(placed.Card, placed.Slot) {
-			return placed.Card.Title, placed.Slot
+		title := PartsOf(placed.Slot).Title
+		if placed.Within.In(p) && title.In(p) && w.titleCut(placed.Card, placed.Slot) {
+			return []string{placed.Card.Title}, title, placed.Slot.W
 		}
 	}
-	return "", Box{}
+	return nil, Box{}, 0
+}
+
+func (w Window) servedAt(p Point) ([]string, Box, int) {
+	if w.screen != OnTheBoard || w.tab != Tasks {
+		return nil, Box{}, 0
+	}
+	for _, placed := range w.Placed() {
+		if !placed.Within.In(p) || !placed.Slot.In(p) {
+			continue
+		}
+		mark := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now).ServesAt
+		if !mark.In(p) {
+			continue
+		}
+		var said []string
+		for _, n := range placed.Card.Objectives {
+			line := "#" + strconv.Itoa(n)
+			if g, ok := w.snap.Goal(n); ok {
+				line += "  " + g.Title
+			}
+			said = append(said, line)
+		}
+		return said, mark, placed.Slot.W
+	}
+	return nil, Box{}, 0
 }
 
 func (w Window) titleCut(c engine.Card, slot Box) bool {
@@ -228,7 +260,7 @@ func (w Window) slotAt(p Point) Box {
 
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
-	w.over, w.hovered, w.explaining, w.resting, w.restingSlot, w.pointed = "", false, 0, "", Box{}, Box{}
+	w.over, w.hovered, w.explaining, w.resting, w.restingAt, w.pointed = "", false, 0, nil, Box{}, Box{}
 	w.bubbled, w.bubbledFrom = nil, Box{}
 	return w
 }

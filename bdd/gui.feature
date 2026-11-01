@@ -134,17 +134,19 @@ Feature: The desktop board
       Then "BACKLOG" carries a card whose title ends in "…"
 
     @gui-a-cut-title-is-read-whole-under-the-pointer
-    Scenario: a card whose title is cut shows it whole while the pointer rests on it
+    Scenario: a card whose title is cut shows it whole while the pointer rests on the title, and not elsewhere on the card
       Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       When I open the window
-      And I rest the pointer on the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      And I rest the pointer on the foot of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      Then no bubble shows
+      When I rest the pointer on the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       Then a bubble shows "A title far longer than any column could ever hope to show in full, even over two lines of a card"
 
     @gui-the-bubble-stands-just-above-the-title
     Scenario: the bubble of a cut title stands just above the title, its text where the title's begins
       Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       When I open the window
-      And I rest the pointer on the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
+      And I rest the pointer on the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       Then the bubble stands just above the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       And the bubble's text begins where the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card" begins
 
@@ -152,8 +154,16 @@ Feature: The desktop board
     Scenario: a card whose title fits shows no bubble
       Given I added a task titled "Write the spec"
       When I open the window
-      And I rest the pointer on the card "Write the spec"
+      And I rest the pointer on the title of the card "Write the spec"
       Then no bubble shows
+
+    @gui-the-objective-mark-names-what-it-serves
+    Scenario: the pointer resting on a card's objective mark shows the objectives it serves
+      Given I added an objective titled "Ship the desktop board"
+      And I added a task titled "Write the spec" serving objective 1
+      When I open the window
+      And I rest the pointer on the objective mark of the card "Write the spec"
+      Then a bubble shows "#1  Ship the desktop board"
 
     @gui-a-card-carries-its-priority-in-a-broad-stripe
     Scenario: a card's priority is a stripe broad enough to be seen at a glance

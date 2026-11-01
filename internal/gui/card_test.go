@@ -189,14 +189,19 @@ func TestAnObjectivesCountSaysTheTimeSpentWhenThereIsAny(t *testing.T) {
 	}
 }
 
+func titleOf(w Window, column, at int) Point {
+	title := PartsOf(w.Layout().CardAt(column, at, w.scroll[column])).Title
+	return Point{X: title.X + title.W/2, Y: title.Y + lineHigh/2}
+}
+
 func TestTheBubbleHoldsACutTitleWhole(t *testing.T) {
 	long := strings.Repeat("far too long ", 12)
 	w := holding(newFake(), card(1, long, "backlog"), card(2, "Write the spec", "backlog"))
-	cut := w.Hovering(middleOf(w, 0, 0))
+	cut := w.Hovering(titleOf(w, 0, 0))
 	if cut.Bubble() != long {
 		t.Fatalf("the bubble over a cut title holds %q", cut.Bubble())
 	}
-	if got := w.Hovering(middleOf(w, 0, 1)).Bubble(); got != "" {
+	if got := w.Hovering(titleOf(w, 0, 1)).Bubble(); got != "" {
 		t.Fatalf("a title that fits has the bubble %q", got)
 	}
 	if got := cut.Away().Bubble(); got != "" {
@@ -204,10 +209,42 @@ func TestTheBubbleHoldsACutTitleWhole(t *testing.T) {
 	}
 }
 
+func TestOnlyTheTitleOpensItsBubble(t *testing.T) {
+	long := strings.Repeat("far too long ", 12)
+	w := holding(newFake(), card(1, long, "backlog"))
+	steps := PartsOf(w.Layout().CardAt(0, 0, 0)).Steps
+	if got := w.Hovering(Point{X: steps.X + steps.W/2, Y: steps.Y}).Bubble(); got != "" {
+		t.Fatalf("the card's foot opens the bubble %q", got)
+	}
+}
+
+func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
+	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}}
+	w := holding(newFake(), c)
+	w.snap.Goals = []engine.Goal{{Number: 1, Title: "Ship the desktop board"}, {Number: 2, Title: "Write the docs"}}
+	row := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now)
+	if row.ServesAt.W == 0 || row.ServesAt.X+row.ServesAt.W != row.FactsAt.X+row.FactsAt.W {
+		t.Fatalf("the objective mark is at %+v in the facts %+v", row.ServesAt, row.FactsAt)
+	}
+	got := w.Hovering(Point{X: row.ServesAt.X + row.ServesAt.W/2, Y: row.ServesAt.Y + row.ServesAt.H/2}).Bubble()
+	if got != "#1  Ship the desktop board\n#2  Write the docs" {
+		t.Fatalf("the bubble over the objective mark holds %q", got)
+	}
+}
+
+func TestTheFactsMakeRoomForTheMarksGoMonoLacks(t *testing.T) {
+	c := engine.Card{Number: 1, Objectives: []int{1}}
+	m := holding(newFake()).measured()
+	row := CardRowOf(c, Box{W: 300, H: lineHigh}, m, time.Time{})
+	if want := monoWide("1", small) + ends(m, ServesMark, small); row.FactsAt.W < want {
+		t.Errorf("the facts %q are given %d wide, want %d at least", row.Facts, row.FactsAt.W, want)
+	}
+}
+
 func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
 	long := strings.Repeat("far too long ", 12)
 	w := holding(newFake(), card(1, "first", "backlog"), card(2, "second", "backlog"), card(3, long, "backlog"))
-	w = w.Hovering(middleOf(w, 0, 2))
+	w = w.Hovering(titleOf(w, 0, 2))
 	bubble, lines, ok := w.BubbleBox()
 	if !ok || len(lines) < 2 {
 		t.Fatalf("the cut title has no bubble of several lines: %v %v", ok, lines)
