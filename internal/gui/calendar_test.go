@@ -209,7 +209,7 @@ func TestTheContextLineEndsBeforeTheOffersDrawn(t *testing.T) {
 	if name.X != w.formPanel().X+padding {
 		t.Errorf("the context's name starts at %d, not at the panel's left", name.X)
 	}
-	if path.X != name.X+name.W || path.X+path.W != last.X-padding {
+	if path.X != name.X+name.W+copyRoom || path.X+path.W != last.X-padding {
 		t.Errorf("the path runs %+v after a name %+v, and the leftmost offer starts at %d", path, name, last.X)
 	}
 }

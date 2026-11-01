@@ -14,6 +14,9 @@ func (w Window) Click(p Point) Window {
 	if w.Blank() {
 		return w
 	}
+	if copied, ok := w.copyingAt(p); ok {
+		return copied
+	}
 	if w.screen == OnTheBoard && !w.native && MenuButton(w.Layout()).In(p) {
 		return w.openingMenuBar()
 	}

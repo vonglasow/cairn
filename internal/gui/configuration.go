@@ -109,7 +109,7 @@ func (w Window) ConfigLines() []ConfigLine {
 		row := Inside(ListRowAt(box, i))
 		lines[i].KeyAt = Box{X: row.X, Y: row.Y, W: keys, H: row.H}
 		lines[i].FromAt = Box{X: row.X + row.W - froms, Y: row.Y, W: froms, H: row.H}
-		from := row.X + keys + configGap
+		from := row.X + keys + configGap + copyRoom
 		lines[i].ValueAt = Box{X: from, Y: row.Y, W: lines[i].FromAt.X - configGap - from, H: row.H}
 	}
 	return lines

@@ -212,6 +212,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	if w.Screen() == OnPalette {
 		drawPalette(gtx, th, skin, w)
 	}
+	for _, mark := range w.CopyMarks() {
+		drawCopyMark(gtx, skin, mark.At)
+	}
 	if bubble, said, ok := w.BubbleBox(); ok {
 		raised(gtx, bubble, bubbleRadius, skin.Panel)
 		for i, line := range said {
@@ -279,7 +282,11 @@ func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Wind
 		sayIn(gtx, th, skin.Faint, line.FromAt, line.From, small, mono, text.End)
 	}
 	for i, said := range w.ConfigFoot() {
-		say(gtx, th, skin.Faint, Inside(ListRowAt(box, len(lines)+i)), said, reads)
+		row := Inside(ListRowAt(box, len(lines)+i))
+		if i == 0 {
+			row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
+		}
+		say(gtx, th, skin.Faint, row, said, reads)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -585,7 +592,13 @@ func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said 
 	drawPanel(gtx, th, skin, box, Heads(w))
 	at := FirstRow(box)
 	for _, line := range said {
-		say(gtx, th, skin.Low, Row(box, at, lineHigh), line.Means, reads)
+		row := Row(box, at, lineHigh)
+		for _, mark := range w.CopyMarks() {
+			if mark.Said == line.Means {
+				row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
+			}
+		}
+		say(gtx, th, skin.Low, row, line.Means, reads)
 		at += apart
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
@@ -1371,6 +1384,14 @@ func raised(gtx layout.Context, b Box, radius int, with color.NRGBA) {
 		rounded(gtx, under, radius+s.spread, color.NRGBA{A: s.alpha})
 	}
 	rounded(gtx, b, radius, with)
+}
+
+func drawCopyMark(gtx layout.Context, skin Skin, at Box) {
+	back := Box{X: at.X + 3, Y: at.Y, W: at.W - 3, H: at.H - 3}
+	front := Box{X: at.X, Y: at.Y + 3, W: at.W - 3, H: at.H - 3}
+	outline(gtx, back, skin.Low)
+	fill(gtx, front, skin.Panel)
+	outline(gtx, front, skin.Low)
 }
 
 func outline(gtx layout.Context, b Box, with color.NRGBA) {

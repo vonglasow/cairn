@@ -1141,7 +1141,12 @@ on a Mac — or Configuration… in the File menu opens a panel over the board
 (`engine.ConfigShow`): the file read, or that it is not written yet, then a line
 a key in three columns: the key in Go Mono, its value, and where it came from
 at the right — `file`, the environment variable that named it, or `default`
-(`ConfigLines`). The engine says which keys the file wrote (`Config.Written`,
+(`ConfigLines`). A path — the store, the notes, the plugin, the file read —
+has a mark before it, two sheets one over the other, that copies it whole to
+the clipboard (`CopyMarks`, `copying.go`); so do where an open task's
+context lives and where cairn is kept, in About
+(`TestAPathIsCopiedByTheMarkBeforeIt`). Holding a path with the pointer
+copied it too, but only once its whole run was dragged over. The engine says which keys the file wrote (`Config.Written`,
 read by `config.Places.Written`), so every key says it, not only the three
 places; the values were written after keys padded with spaces in a
 proportional face, and did not line up
