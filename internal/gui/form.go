@@ -618,11 +618,12 @@ func (w Window) Choose(name string) Window {
 		return w
 	case "rename":
 		return w.startingRename()
-	case "all possible":
-		return w.actingOnSeveral(true)
 	case "skip flagged":
 		return w.actingOnSeveral(false)
 	case "delete", "agree", "apply", "restore", "finish", "replace":
+		if w.screen == OnAsking && w.asksAboutSeveral() {
+			return w.actingOnSeveral(true)
+		}
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutDeletingSeveral)
 		}
@@ -666,6 +667,9 @@ func (w Window) Choose(name string) Window {
 	case "archive", "unarchive":
 		if w.screen == OnAsking && w.question == aboutSweeping {
 			return w.sweeping()
+		}
+		if w.screen == OnAsking && w.asksAboutSeveral() {
+			return w.actingOnSeveral(true)
 		}
 		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
 			return w.askingSeveral(aboutArchivingSeveral)

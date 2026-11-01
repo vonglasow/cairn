@@ -109,21 +109,40 @@ func (w Window) flags() []engine.Flag {
 
 func (w Window) severalSays() []Said {
 	flags := w.flags()
-	if len(flags) == 0 {
-		return []Said{{Means: "Nothing here takes anything else with it."}}
-	}
+	taken := w.Taken()
 	var said []Said
-	for _, f := range flags {
-		said = append(said, Said{Key: w.kind() + " " + strconv.Itoa(f.Number), Means: f.Says})
+	for i, n := range taken {
+		if i == severalNamed && len(taken) > severalNamed+1 {
+			said = append(said, Said{Means: "and " + strconv.Itoa(len(taken)-i) + " more"})
+			break
+		}
+		line := "#" + strconv.Itoa(n) + "  " + w.titleOf(n)
+		for _, f := range flags {
+			if f.Number == n {
+				line += " — " + f.Says
+			}
+		}
+		said = append(said, Said{Means: line})
 	}
 	return said
 }
 
+const severalNamed = 6
+
+func (w Window) titleOf(n int) string {
+	if w.chosenGoal {
+		g, _ := w.snap.Goal(n)
+		return g.Title
+	}
+	c, _ := w.snap.Card(n)
+	return c.Title
+}
+
 func (w Window) severalOffers() []string {
 	if slices.ContainsFunc(w.flags(), func(f engine.Flag) bool { return !f.Refused }) {
-		return []string{"All possible", "Skip flagged", "Cancel"}
+		return []string{w.agreeingVerb(), "Skip flagged", "Cancel"}
 	}
-	return []string{"All possible", "Cancel"}
+	return []string{w.agreeingVerb(), "Cancel"}
 }
 
 func (w Window) actingOnSeveral(onlyRefused bool) Window {

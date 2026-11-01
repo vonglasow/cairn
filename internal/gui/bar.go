@@ -151,7 +151,7 @@ func Shortcut(offer string) string {
 		return "cmd+enter"
 	case "close", "cancel", "clear", "throw away":
 		return "esc"
-	case "back", "keep editing", "all possible":
+	case "back", "keep editing":
 		return "enter"
 	case "skip flagged":
 		return "s"
@@ -458,9 +458,9 @@ func (w Window) shortcut(offer string) string {
 
 func (w Window) agreeingVerb() string {
 	switch w.question {
-	case aboutDeleting, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts:
+	case aboutDeleting, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutDeletingSeveral:
 		return "Delete"
-	case aboutSweeping:
+	case aboutSweeping, aboutArchivingSeveral:
 		return "Archive"
 	case aboutPuttingBack:
 		return "Restore"

@@ -523,17 +523,7 @@ func drawSaid(gtx layout.Context, th *material.Theme, skin Skin, w Window, said 
 	drawPanel(gtx, th, skin, box, Heads(w))
 	at := FirstRow(box)
 	for _, line := range said {
-		if line.Key == "" {
-			say(gtx, th, skin.Low, Row(box, at, lineHigh), line.Means, reads)
-			at += apart
-			continue
-		}
-		name, value := FieldRow(box, at)
-		if line.Key != "" {
-			fill(gtx, Chip(name), skin.Back)
-		}
-		say(gtx, th, skin.Chosen, name, line.Key, reads)
-		say(gtx, th, skin.Ink, value, line.Means, reads)
+		say(gtx, th, skin.Low, Row(box, at, lineHigh), line.Means, reads)
 		at += apart
 	}
 	drawPanelOffers(gtx, th, skin, box, w)

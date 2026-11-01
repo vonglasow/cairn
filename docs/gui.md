@@ -1818,9 +1818,13 @@ the third was refused, two gone and somebody to work out which.
 the steps of a task, a task waiting on it, the task in focus — and **what
 cannot go at all** — an objective work still serves, a task already off the
 board. Read off what the board holds, the facts the engine goes by, so the
-question says before what the engine would only refuse after. The answer is
-one of three: *All possible* (`⏎`) leaves out only what cannot go; *Skip
-flagged* (`s`) leaves out everything named; *Cancel* (`esc`) takes nothing.
+question says before what the engine would only refuse after. It lists what
+is taken, a line each, `#1  Ship it — its 1 step goes with it`, six at most
+and then how many more (`severalSays`); it wrote only what was flagged, its
+number on a chip read as a key. The answer is one of three: the verb,
+*Delete* or *Archive* (`⏎`), leaves out only what cannot go — it was *All
+possible*, which named no act; *Skip flagged* (`s`) leaves out everything
+named; *Cancel* (`esc`) takes nothing.
 *Skip flagged* is offered only when something named could go all the same —
 otherwise it is the first answer again.
 

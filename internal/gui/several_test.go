@@ -78,7 +78,7 @@ func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 	if offers := asked.Offers(); slices.Contains(offers, "Skip flagged") {
 		t.Errorf("only what cannot go was named, and the question offers %v", offers)
 	}
-	asked.Choose("All possible")
+	asked.Choose("Archive")
 	in, ok := f.gave("task", "archive")
 	if !ok || in.Given["number"] != "1" || !slices.Equal(in.Listed["also"], []string{"2"}) {
 		t.Errorf("archived %+v", in)

@@ -1287,28 +1287,21 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	}
 }
 
-func TestAQuestionPutsWhatItNamesOnAChip(t *testing.T) {
-	skin := Dark()
+func TestAQuestionNamesWhatItAsksAboutByNumberAndTitle(t *testing.T) {
 	cards := []engine.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(newFake(), cards...)
 	w.archived = true
-	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0)
-	for _, c := range []struct {
-		what  string
-		asked Window
-		chip  bool
-	}{
-		{"archiving what is already off", w.Key("x"), true},
-		{"deleting one task", w.clicked(middleOf(w, 1, 0)).Choose("Delete"), false},
-	} {
-		if c.asked.Screen() != OnAsking {
-			t.Fatalf("%s left the window on %v", c.what, c.asked.Screen())
-		}
-		box := c.asked.QuestionBox()
-		name, _ := FieldRow(box, FirstRow(box))
-		if got := painted(drawn(t, c.asked), Chip(name), skin.Back) > 0; got != c.chip {
-			t.Errorf("%s: its first line on a chip is %v", c.what, got)
-		}
+	asked := w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0).Key("x")
+	if asked.Screen() != OnAsking {
+		t.Fatalf("archiving two left the window on %v", asked.Screen())
+	}
+	said := asked.Asks()
+	if len(said) != 2 || said[0].Means != "#1  First" || said[1].Means != "#2  Gone — it is already archived" {
+		t.Errorf("the question says %+v", said)
+	}
+	box := asked.QuestionBox()
+	if lettered(drawn(t, asked), Row(box, FirstRow(box), lineHigh), Dark().Low) == 0 {
+		t.Error("the question's first line is not written")
 	}
 }
 
