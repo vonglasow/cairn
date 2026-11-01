@@ -70,6 +70,9 @@ func (w Window) DayHeld(i int) engine.TimesheetDay {
 }
 
 func (w Window) readingWeek() Window {
+	if w.now.IsZero() {
+		return w
+	}
 	if w.week.IsZero() {
 		w.week = engine.Monday(w.today())
 	}

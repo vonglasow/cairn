@@ -78,7 +78,7 @@ func TestTheWeekAnswersItsOwnKeys(t *testing.T) {
 	}
 	f := newFake()
 	f.fail = errors.New("the timesheet cannot be read")
-	if got := (Window{work: f, tab: Time}).readingWeek(); got.Wrong() == nil {
+	if got := (Window{work: f, tab: Time, now: dayNamed("2026-09-30")}).readingWeek(); got.Wrong() == nil {
 		t.Error("a timesheet that cannot be read says nothing")
 	}
 	if got := (Window{work: newFake(), tab: Time}).Key("e"); got.Screen() != OnTheBoard {
@@ -113,4 +113,15 @@ func TestAWeekWithoutItsWeekendIsCutInFive(t *testing.T) {
 	drawn(t, w)
 	w.monthly = true
 	drawn(t, w)
+}
+
+func TestAWindowWithNoClockYetReadsNoWeek(t *testing.T) {
+	f := newFake()
+	w := New(f, 1200, 800).Look()
+	if !w.week.IsZero() {
+		t.Errorf("a window that does not know the day settled on the week of %v", w.week)
+	}
+	if got := f.what("timesheet", "show"); got != 0 {
+		t.Errorf("a window that does not know the day read %d timesheets", got)
+	}
 }

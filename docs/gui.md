@@ -1087,7 +1087,11 @@ the facts written hard right, and the title leaves room for the cairn of a
 task in focus. The tab says how many tasks the
 time shown was spent on, from the moment the window opens: the week is read
 with every look at the store and not only once the page is opened, or the tab
-said 0 until it was clicked (`@gui-the-time-tab-counts-before-it-is-opened`).
+said 0 until it was clicked (`@gui-the-time-tab-counts-before-it-is-opened`). The window is told the
+day before it first reads the store, and reads no week before it knows the
+day (`readingWeek`, `TestAWindowWithNoClockYetReadsNoWeek`): reading first,
+it asked for the week of year one, the engine answered with today alone, and
+the tab said 24 until it was opened and 64 after.
 A company's week is five days, and Google Calendar lets
 a week and a month leave out Saturday and Sunday for it (Settings, View
 options, Show weekends, on by default; the day view is untouched), so the

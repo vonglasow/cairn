@@ -242,7 +242,7 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 	if sizes != nil {
 		board = board.KeepingSizes(sizes)
 	}
-	board = board.Look()
+	board = board.At(time.Now()).Look()
 	if data, starts, ok := desktopHome(); ok {
 		board = board.Settling(data, starts)
 	}
