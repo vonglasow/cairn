@@ -216,13 +216,7 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawPanel(gtx, th, skin, box, Heads(w))
 	from := w.BackupsFrom()
 	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
-		row := ListRowAt(box, i)
-		ink := skin.Ink
-		if from+i == w.BackupOn() {
-			fill(gtx, row, skin.Back)
-			ink = skin.Chosen
-		}
-		say(gtx, th, ink, Inside(row), backupSays(one), reads)
+		drawListRow(gtx, th, skin, ListRowAt(box, i), backupSays(one), from+i == w.BackupOn())
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -232,13 +226,7 @@ func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawPanel(gtx, th, skin, box, Heads(w))
 	from := w.LabelsFrom()
 	for i, one := range w.LabelsCarried()[from:min(len(w.LabelsCarried()), from+w.LabelsRoom())] {
-		row := ListRowAt(box, i)
-		ink := skin.Ink
-		if from+i == w.LabelOn() {
-			fill(gtx, row, skin.Back)
-			ink = skin.Chosen
-		}
-		say(gtx, th, ink, Inside(row), LabelSays(one), reads)
+		drawListRow(gtx, th, skin, ListRowAt(box, i), LabelSays(one), from+i == w.LabelOn())
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -260,13 +248,7 @@ func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.FiltersBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
 	for i, f := range w.Filters() {
-		row := ListRowAt(box, i)
-		ink := skin.Ink
-		if i == w.FilterOn() {
-			fill(gtx, row, skin.Back)
-			ink = skin.Chosen
-		}
-		say(gtx, th, ink, Inside(row), FilterSays(f), reads)
+		drawListRow(gtx, th, skin, ListRowAt(box, i), FilterSays(f), i == w.FilterOn())
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 }
@@ -1383,4 +1365,11 @@ func drawClearingPill(gtx layout.Context, th *material.Theme, skin Skin, pill Bo
 	rounded(gtx, pill, pill.H/2, skin.Pill)
 	sayIn(gtx, th, skin.Faint, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, said, small, font.Font{}, text.Start)
 	drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
+}
+
+func drawListRow(gtx layout.Context, th *material.Theme, skin Skin, row Box, said string, on bool) {
+	if on {
+		rounded(gtx, row, rowRadius, skin.Pill)
+	}
+	say(gtx, th, skin.Ink, Inside(row), said, reads)
 }
