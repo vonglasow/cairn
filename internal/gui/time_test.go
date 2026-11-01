@@ -377,3 +377,18 @@ func TestTodayIsAnAccentPillAndTheWeeksDaysAreRounded(t *testing.T) {
 		t.Error("a day's ground is not rounded")
 	}
 }
+
+func TestADaysTotalStandsUnderItsDateAndNeverOverIt(t *testing.T) {
+	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
+	l := w.Layout()
+	for i := range w.WeekDays() {
+		day := WeekDayAt(l, i)
+		head, total := WeekHeadAt(day), WeekTotalAt(day)
+		if total.Y < head.Y+head.H || total.Y+total.H > WeekRowAt(day, 0).Y {
+			t.Errorf("day %d: the total %+v is not between its date %+v and its first task", i, total, head)
+		}
+	}
+	if pill := TodayPill(WeekHeadAt(WeekDayAt(l, 2)), w.measured()); WeekTotalAt(WeekDayAt(l, 2)).Y < pill.Y+pill.H {
+		t.Error("today's total runs over today's pill")
+	}
+}

@@ -464,6 +464,9 @@ func (w Window) clickingTime(p Point) Window {
 // WeekHeadAt is where a day says which it is and its total, at its top.
 func WeekHeadAt(day Box) Box { return Row(day, day.Y+padding, lineHigh) }
 
+// WeekTotalAt is where a day of the week says how long its work took: the line under its date.
+func WeekTotalAt(day Box) Box { return Row(day, day.Y+padding+lineHigh, lineHigh) }
+
 // WeekRowAt is where the j-th task of a day is laid out, under its heading and its total: its card, then the line saying how long it took that day.
 func WeekRowAt(day Box, j int) Box {
 	return Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}

@@ -359,13 +359,13 @@ func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		box := WeekDayAt(l, i)
 		rounded(gtx, box, groundRadius, skin.Panel)
 		head := WeekHeadAt(box)
+		ink := skin.Faint
 		if day.Equal(w.today()) {
 			rounded(gtx, TodayPill(head, w.measured()), chipRadius+1, skin.Chosen)
-			say(gtx, th, skin.Back, head, day.Format(todayFormat), reads)
-			say(gtx, th, skin.Faint, head, strings.Repeat(" ", len(todayFormat))+"   "+w.DayHeld(i).Says(), reads)
-		} else {
-			say(gtx, th, skin.Faint, head, day.Format(todayFormat)+"   "+w.DayHeld(i).Says(), reads)
+			ink = skin.Back
 		}
+		say(gtx, th, ink, head, day.Format(todayFormat), reads)
+		sayIn(gtx, th, skin.Low, WeekTotalAt(box), w.DayHeld(i).Says(), small, font.Font{Typeface: MonoFace}, text.Start)
 		clipped := clip.Rect(rect(box)).Push(gtx.Ops)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)

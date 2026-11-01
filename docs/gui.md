@@ -1049,7 +1049,11 @@ day under it and a bar as long as its share of the longest stretch of the week:
 a glance says which day went where. A task's lines used to be its own, a second
 way of showing the same thing (`@gui-the-time-page-shows-cards`). A day of more tasks than its column holds scrolls under the wheel,
 a task a notch, with a bar beside it: it used to cut them off at its foot
-(`@gui-a-day-scrolls-to-its-last-task`). A week alone said nothing of a month,
+(`@gui-a-day-scrolls-to-its-last-task`). A day of the week says its date at
+its head, today's on the accent, and its total on the line under it, in Go
+Mono (`WeekTotalAt`): the total followed the date on one line, set off by
+spaces, and the spaces of a proportional face never matched today's pill, so
+the two were written over each other. A week alone said nothing of a month,
 so `m`, or Month in the strip along the top, lays out the month's six weeks,
 each day its total and as many of its tasks as fit, then how many more; a day
 clicked shows its week (`@gui-the-time-page-shows-a-month`). A month shown
