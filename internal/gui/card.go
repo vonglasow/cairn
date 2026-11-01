@@ -271,6 +271,14 @@ func Facts(c engine.Card, now time.Time) (said string, warn bool) {
 	return strings.Join(pieces, "  "), late || over
 }
 
+// StandingPill is where an objective's card draws its standing: the first pill of its row, where a task's first label stands.
+func StandingPill(face engine.Card, box Box, m Measure) Box {
+	if pills := CardRowOf(face, PartsOf(box).Number, m, time.Time{}).Pills; len(pills) > 0 {
+		return pills[0]
+	}
+	return Box{}
+}
+
 // Standings is where an objective stands, put where a card writes its labels.
 func Standings(g engine.Goal) []string {
 	if mark := Standing(g); mark != "" {

@@ -50,8 +50,12 @@ type Skin struct {
 	Ghost              color.NRGBA
 	Veil               color.NRGBA
 	Priority           map[string]color.NRGBA
+	Standing           map[string]Inked
 	Stones             []color.NRGBA
 }
+
+// Inked is a ground and the ink written on it.
+type Inked struct{ Back, Ink color.NRGBA }
 
 // Dark is the one skin there is.
 func Dark() Skin {
@@ -81,6 +85,12 @@ func Dark() Skin {
 			{R: 86, G: 84, B: 92, A: 255},
 			{R: 104, G: 101, B: 108, A: 255},
 			{R: 122, G: 119, B: 124, A: 255},
+		},
+		Standing: map[string]Inked{
+			"active":  {Back: color.NRGBA{R: 29, G: 51, B: 40, A: 255}, Ink: color.NRGBA{R: 143, G: 211, B: 180, A: 255}},
+			"on-hold": {Back: color.NRGBA{R: 51, G: 42, B: 26, A: 255}, Ink: color.NRGBA{R: 232, G: 191, B: 122, A: 255}},
+			"reached": {Back: color.NRGBA{R: 30, G: 40, B: 62, A: 255}, Ink: color.NRGBA{R: 160, G: 180, B: 255, A: 255}},
+			"dropped": {Back: color.NRGBA{R: 48, G: 50, B: 56, A: 255}, Ink: color.NRGBA{R: 154, G: 155, B: 162, A: 255}},
 		},
 		Priority: map[string]color.NRGBA{
 			string(domain.Critical): {R: 229, G: 96, B: 94, A: 255},
@@ -778,7 +788,14 @@ func drawGoals(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wi
 	defer clipped.Pop()
 	for at, g := range engine.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
-		drawCard(gtx, th, skin, box, goalFace(g), g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
+		face := goalFace(g)
+		drawCard(gtx, th, skin, box, face, g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
+		if inked, ok := skin.Standing[g.State]; ok {
+			if pill := StandingPill(face, box, Measured(th)); pill != (Box{}) {
+				rounded(gtx, pill, pill.H/2, inked.Back)
+				sayCentred(gtx, th, inked.Ink, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, face.Labels[0], small)
+			}
+		}
 		if g.Total > 0 {
 			drawProgress(gtx, th, skin, PartsOf(box).Steps, g.Done, g.Total, Counted(g))
 		}

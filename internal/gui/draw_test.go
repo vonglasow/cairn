@@ -1578,3 +1578,20 @@ func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
 		t.Errorf("a stone is drawn in %d colours: flat", len(colours))
 	}
 }
+
+func TestAnObjectivesStandingIsAPillInItsOwnColour(t *testing.T) {
+	w := New(newFake(), 1200, 800)
+	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
+	w = w.Key("tab")
+	shot := drawn(t, w)
+	for at, g := range engine.Sorted(w.Reading().Goals) {
+		pill := StandingPill(goalFace(g), GoalAt(w.Layout(), at, 0), w.measured())
+		want := Dark().Standing[g.State].Back
+		if painted(shot, Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, want) != 1 {
+			t.Errorf("objective %d, %s, does not stand on its colour at %+v", g.Number, g.State, pill)
+		}
+	}
+	if Dark().Standing["active"].Back == Dark().Standing["on-hold"].Back {
+		t.Error("an active objective and one on hold stand on the same colour")
+	}
+}
