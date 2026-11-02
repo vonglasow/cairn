@@ -719,12 +719,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the work beside the form reads "([^"]*)"$`, func(want string) error {
+	sc.Then(`^the work beside the form reads (.+)$`, func(list string) error {
 		var got []string
 		for _, c := range w.w.Under() {
 			got = append(got, c.Title)
 		}
-		if strings.Join(got, "|") != want {
+		if want := strings.Join(quoted(list), "|"); strings.Join(got, "|") != want {
 			return fmt.Errorf("the work beside the form reads %q, want %q", got, want)
 		}
 		return nil
@@ -1976,6 +1976,35 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the work stands under the description$`, func() error {
+		fields := w.w.Form().Fields()
+		for i, f := range fields {
+			if f.Name == "description" {
+				_, value, rows := FormPlace(w.w.formBox(), fields, i)
+				said, work := Framed(value, rows), w.w.workFrame()
+				if work.Y < said.Y+said.H || work.X != said.X {
+					return fmt.Errorf("the work at %+v is not under the description at %+v", work, said)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the form has no description")
+	})
+	sc.Then(`^the column beside the form offers no tabs$`, func() error {
+		if w.w.TabsBeside() {
+			return fmt.Errorf("the column beside the form offers tabs")
+		}
+		return nil
+	})
+	sc.When(`^I click the work "([^"]*)"$`, func(title string) error {
+		for _, tile := range w.w.WorkTiles() {
+			if tile.Said == title {
+				w.w = w.w.clicked(Point{X: tile.At.X + tile.At.W/2, Y: tile.At.Y + tile.At.H/2})
+				return w.w.Wrong()
+			}
+		}
+		return fmt.Errorf("no work reads %q: %+v", title, w.w.WorkTiles())
+	})
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)
@@ -2991,8 +3020,8 @@ func (w *world) servingAtTheBeginning() error {
 }
 
 func (w *world) servingAtTheEnd() error {
-	box := BesideBox(w.w.formPanel())
-	last := len(w.w.Under())*SubHeight - box.H
+	box := w.w.workFrame()
+	last := (len(w.w.Under())+1)*SubHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
 	}

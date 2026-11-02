@@ -15,7 +15,7 @@ func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
 
 // ServingRows is how many tiles that box shows at once.
 func (w Window) ServingRows() int {
-	return max(1, BesideBox(w.formPanel()).H/SubHeight)
+	return max(1, w.workFrame().H/SubHeight)
 }
 
 // Contrast is how far two colours stand apart, by the measure a person reading a screen is held to: 21 at most, 1 when they are the same.

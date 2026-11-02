@@ -1,8 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"fmt"
+	"math"
+	"strconv"
+	"time"
 )
 
 // Ghost is the card in mid-air under the pointer, and whether there is one.
@@ -128,14 +132,89 @@ func (w Window) settledHistory(want int) int {
 }
 
 func (w Window) settledServing(want int) int {
-	box := BesideBox(w.formPanel())
-	return min(max(0, len(w.Under())*SubHeight-box.H), max(0, want))
+	return min(max(0, (len(w.Under())+1)*SubHeight-w.workFrame().H), max(0, want))
 }
 
 // ServingCardAt is where one of those tiles is drawn, counting the scroll — the same reckoning a column makes of its cards.
 func (w Window) ServingCardAt(at int) Box {
-	box := BesideBox(w.formPanel())
+	box := w.workFrame()
 	return Box{X: box.X, Y: box.Y + at*SubHeight - w.serving, W: box.W, H: SubHeight}
+}
+
+// TabsBeside says whether the column beside the form is split in two tabs: a task's, whose history is behind one; an objective's holds its details alone.
+func (w Window) TabsBeside() bool { return w.besideShown() && !w.form.ForObjective }
+
+func (w Window) descriptionFrame() Box {
+	fields := w.form.Fields()
+	for i, f := range fields {
+		if f.Name == "description" {
+			_, value, rows := FormPlace(w.formBox(), fields, i)
+			return Framed(value, rows)
+		}
+	}
+	return Box{}
+}
+
+// WorkName is where an objective's form names the work serving it: under its description.
+func (w Window) WorkName() Box {
+	said := w.descriptionFrame()
+	return Box{X: said.X, Y: said.Y + said.H + between, W: said.W, H: lineHigh}
+}
+
+func (w Window) workFrame() Box {
+	name := w.WorkName()
+	top := name.Y + name.H + between
+	return Box{X: name.X, Y: top, W: name.W, H: max(lineHigh, FormRule(w.formBox()).Y-between-top)}
+}
+
+func (w Window) workBar() Box {
+	frame := w.workFrame()
+	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+}
+
+// WorkTile is one line of the work an objective's form lists: a task serving it, or the line that adds one.
+type WorkTile struct {
+	Said   string
+	Number int
+	At     Box
+}
+
+// WorkTiles is the lines of the work an objective's form lists, where each is drawn: the tasks serving it, then the line that adds one.
+func (w Window) WorkTiles() []WorkTile {
+	if !w.besideShown() || !w.form.ForObjective {
+		return nil
+	}
+	var tiles []WorkTile
+	for at, c := range w.Under() {
+		tiles = append(tiles, WorkTile{Said: c.Title, Number: c.Number, At: w.ServingCardAt(at)})
+	}
+	return append(tiles, WorkTile{Said: AddingServingSays, At: w.ServingCardAt(len(tiles))})
+}
+
+// AddingServingSays is the last line of an objective's work, which adds a task serving it.
+const AddingServingSays = "+ new task serving it"
+
+func (w Window) clickingWork(p Point) (Window, bool) {
+	if !w.workFrame().In(p) {
+		return w, false
+	}
+	for _, tile := range w.WorkTiles() {
+		if !tile.At.In(p) {
+			continue
+		}
+		if w.form.Changed() {
+			return w.telling("save or cancel the objective first"), true
+		}
+		goal := w.form.Number
+		if tile.Number == 0 {
+			w = w.startingNew()
+			w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.ServingTaskFields(goal)}), Point{}
+			return w, true
+		}
+		w.chosen, w.chosenGoal, w.screen = tile.Number, false, OnTheBoard
+		return w.Edit(), true
+	}
+	return w, false
 }
 
 func (w Window) panel() Box {
@@ -267,7 +346,7 @@ func (w Window) walksLines(by int) Window {
 }
 
 // Tracing says whether the column beside an open form shows what was done to it — its history, or the work serving an objective — rather than what it carries: chosen with its tab, and given up for the details when the keyboard goes to one of them.
-func (w Window) Tracing() bool { return w.form.tracing && w.besideShown() }
+func (w Window) Tracing() bool { return w.form.tracing && w.TabsBeside() }
 
 func (w Window) onASectionField() bool {
 	fields := w.form.Fields()
@@ -306,7 +385,7 @@ func (w Window) BesideTabsSay() [2]string {
 }
 
 func (w Window) clickingBesideTab(p Point) (Window, bool) {
-	if w.screen != OnForm || !w.besideShown() {
+	if w.screen != OnForm || !w.TabsBeside() {
 		return w, false
 	}
 	for i, tab := range BesideTabs(w.formPanel()) {
@@ -323,4 +402,46 @@ func (w Window) clickingBesideTab(p Point) (Window, bool) {
 func (w Window) hidden(field engine.Field) bool {
 	_, sectional := sectionOf(field)
 	return sectional && w.Tracing()
+}
+
+// The heads an objective's form writes over its details, its work and its progress.
+const (
+	DetailsHead  = "DETAILS"
+	ServingHead  = "SERVING IT"
+	ProgressHead = "PROGRESS"
+)
+
+// ProgressBox is where an objective's form says how far it has got: in the column beside, under its details.
+func (w Window) ProgressBox() Box {
+	fields := w.form.Fields()
+	bottom := FirstRow(w.formPanel())
+	for i, f := range fields {
+		if _, sectional := sectionOf(f); !sectional {
+			continue
+		}
+		_, value, rows := FormPlace(w.formBox(), fields, i)
+		frame := Framed(value, rows)
+		bottom = max(bottom, frame.Y+frame.H)
+	}
+	right := FormBeside(w.formPanel())
+	return Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: progressHigh}
+}
+
+const progressHigh = 130
+
+// ProgressFacts is what an objective's progress says under its bar: the time spent on it, the time it was estimated at, and the days left to its deadline, each a figure and what it is.
+func ProgressFacts(g engine.Goal, now time.Time) [][2]string {
+	spent := "—"
+	if g.Spent > 0 {
+		spent = domain.FormatDuration(g.Spent)
+	}
+	estimate := g.Estimate
+	if estimate == "" {
+		estimate = "—"
+	}
+	left := "—"
+	if !g.Deadline.IsZero() {
+		left = strconv.Itoa(int(math.Ceil(g.Deadline.Sub(engine.DayOf(now)).Hours()/24))) + "d"
+	}
+	return [][2]string{{spent, "spent"}, {estimate, "estimated"}, {left, "to the deadline"}}
 }

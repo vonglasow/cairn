@@ -1722,6 +1722,19 @@ too many for their field show two and how many more, as a card does. The
 short fields used to sit between the description and the steps, and the
 history beside them took room nobody was reading most of the time.
 
+**An objective's form lists its work under its description.** In place of a
+task's steps, under the description's three parts, *Serving it* lists the
+tasks serving the objective, a line each: number, title, column as a pill,
+time spent; what is current first, what is done last and struck
+(`WorkTiles`, `@gui-an-objectives-work-is-current-first`). A click on one
+opens it; its last line, *+ new task serving it*, opens a new task's form
+serving the objective already (`engine.ServingTaskFields`,
+`@gui-an-objective-makes-a-task-that-serves-it`). The column beside has no
+tabs, an objective having no history: its details, then *Progress* — the
+share done, its bar, the time spent, the estimate and the days to the
+deadline (`ProgressFacts`). The work stood in the column beside, behind a
+tab, and the room under the description was empty.
+
 **Two columns and not one above the other.** The fields take the left five
 eighths — in the narrowest window this board draws in, room for two short
 fields to a line — and the column beside them has the panel's full height at

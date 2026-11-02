@@ -24,6 +24,17 @@ func LinkedTaskFields(number int) []Field {
 	return fields
 }
 
+// ServingTaskFields is the form of a task about to be added from an objective: in todo, serving it already.
+func ServingTaskFields(objective int) []Field {
+	fields := AddingFields(string(domain.Todo))
+	for i := range fields {
+		if fields[i].Name == "objectives" {
+			fields[i].Value = strconv.Itoa(objective)
+		}
+	}
+	return fields
+}
+
 // NewGoalFields is the form of an objective about to be added: active, which is where an objective starts, at normal priority.
 func NewGoalFields() []Field {
 	return GoalFields(Goal{State: string(objective.Active), Priority: string(domain.Normal)})

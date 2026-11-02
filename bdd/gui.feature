@@ -2992,6 +2992,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
+      And I press "cmd+t"
       Then the trace has more to show than it has room for
       And the trace is at its beginning
       When I scroll down over the trace
@@ -3010,6 +3011,7 @@ Feature: The desktop board
       When I open the window
       And I click the card "Write the spec"
       And I press "enter"
+      And I press "cmd+t"
       And I drag the trace's bar to the bottom
       Then the trace is at its end
       And the trace stays inside the panel
@@ -3138,7 +3140,32 @@ Feature: The desktop board
       And the work beside the form carries "Write the spec"
       And the work beside the form does not carry "Buy a lamp"
       And what serves it is drawn one line to a tile
-      And the column beside the form offers the tabs "Details" and "Work"
+      And the work stands under the description
+      And the column beside the form offers no tabs
+
+    @gui-an-objectives-work-is-current-first
+    Scenario: the work of an objective lists what is under way first and what is done last
+      Given I added an objective titled "Ship the board"
+      And I added a task titled "Old" with the state "done" serving objective 1
+      And I added a task titled "Write the spec" with the state "current" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the board"
+      And I press "enter"
+      Then the work beside the form reads "Write the spec", "Old"
+      When I click the work "Write the spec"
+      Then the form is open on task 2
+
+    @gui-an-objective-makes-a-task-that-serves-it
+    Scenario: the last line under an objective's work opens a new task serving it
+      Given I added an objective titled "Ship the board"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the board"
+      And I press "enter"
+      And I click the work "+ new task serving it"
+      Then the window is on the form
+      And the field "objectives" names "Ship the board"
 
     @gui-the-work-under-an-objective-scrolls
     Scenario: more work than the box holds scrolls, and stops at both ends

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -1190,29 +1191,89 @@ func drawBesideTabs(gtx layout.Context, th *material.Theme, skin Skin, panel Box
 	}
 }
 
-func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
-	frame := BesideBox(box)
-	fill(gtx, frame, skin.Back)
-	outline(gtx, frame, skin.Edge)
-
+func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	under := w.Under()
-	if len(under) == 0 {
-		if w.ChosenGoal() {
-			say(gtx, th, skin.Faint, LineAt(Inside(frame), 0, 0), ServingSays, small)
+	done := 0
+	for _, c := range under {
+		if engine.Finished(c) {
+			done++
 		}
-		return
 	}
-
+	name := w.WorkName()
+	say(gtx, th, skin.Faint, name, ServingHead, small)
+	sayIn(gtx, th, skin.Faint, name, fmt.Sprintf("%s · %d done", countOf(len(under), "task"), done), small, font.Font{Typeface: MonoFace}, text.End)
+	frame := w.workFrame()
+	fill(gtx, frame, skin.Field)
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
-	for at, c := range under {
-		drawSub(gtx, th, skin, w.ServingCardAt(at), c, SubLine(c), false, false,
-			w.Holding("part:"+strconv.Itoa(c.Number), SubLine(c)))
+	for _, tile := range w.WorkTiles() {
+		drawWorkTile(gtx, th, skin, w, tile)
 	}
 	clipped.Pop()
-
-	track := BesideBar(box)
+	track := w.workBar()
 	fill(gtx, track, skin.Back)
-	fill(gtx, Thumb(track, len(under)*SubHeight, frame.H, w.ServingAt()), skin.Edge)
+	fill(gtx, Thumb(track, (len(under)+1)*SubHeight, frame.H, w.ServingAt()), skin.Edge)
+}
+
+func drawWorkTile(gtx layout.Context, th *material.Theme, skin Skin, w Window, tile WorkTile) {
+	line := SubWriting(tile.At)
+	if tile.Number == 0 {
+		say(gtx, th, skin.Faint, Box{X: tile.At.X + padding, Y: line.Y, W: tile.At.W - 2*padding, H: line.H}, tile.Said, small)
+		return
+	}
+	panel := SubPanel(tile.At)
+	rounded(gtx, Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}, rowRadius, skin.Panel)
+	c, _ := w.snap.Card(tile.Number)
+	x := tile.At.X + padding
+	number := "#" + strconv.Itoa(c.Number)
+	sayIn(gtx, th, skin.Faint, Box{X: x, Y: line.Y, W: monoWide(number, small), H: line.H}, number, small, font.Font{Typeface: MonoFace}, text.Start)
+	x += monoWide(number, small) + padding
+	spent := c.Spent
+	if spent == "" {
+		spent = "—"
+	}
+	spentAt := Box{X: tile.At.X + tile.At.W - padding - monoWide("00h00m", small), Y: line.Y, W: monoWide("00h00m", small), H: line.H}
+	sayIn(gtx, th, skin.Faint, spentAt, spent, small, font.Font{Typeface: MonoFace}, text.End)
+	state := c.State
+	pill := Box{X: spentAt.X - padding - ends(w.measured(), state, small) - 2*pillPad, Y: line.Y + (line.H-pillHigh)/2, W: ends(w.measured(), state, small) + 2*pillPad, H: pillHigh}
+	drawPill(gtx, th, skin, pill, state, skin.Pill)
+	ink := skin.Ink
+	if engine.Finished(c) {
+		ink = skin.Faint
+	}
+	title := Box{X: x, Y: line.Y, W: max(0, pill.X-padding-x), H: line.H}
+	said := fits(gtx, th, c.Title, title.W, small)
+	say(gtx, th, ink, title, said, small)
+	if engine.Finished(c) {
+		loose := gtx
+		loose.Constraints = layout.Constraints{Max: image.Pt(title.W, lineHigh)}
+		fill(gtx, StruckAt(title, wide(loose, th, said, small).Size.X), skin.Faint)
+	}
+}
+
+func drawProgressBeside(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	g, ok := w.snap.Goal(w.form.Number)
+	if !ok {
+		return
+	}
+	at := w.ProgressBox()
+	say(gtx, th, skin.Faint, Box{X: at.X, Y: at.Y, W: at.W, H: lineHigh}, ProgressHead, small)
+	card := Box{X: at.X, Y: at.Y + lineHigh + between, W: at.W, H: at.H - lineHigh - between}
+	rounded(gtx, card, groundRadius, skin.Card)
+	inside := Box{X: card.X + padding, Y: card.Y + padding/2, W: card.W - 2*padding, H: card.H - padding}
+	sayStyled(gtx, th, skin.Ink, Box{X: inside.X, Y: inside.Y, W: inside.W, H: titleHi + 4}, strconv.Itoa(g.Percent())+"%", HeadingSize+4, font.SemiBold, 1, text.Start)
+	sayIn(gtx, th, skin.Low, Box{X: inside.X, Y: inside.Y + 4, W: inside.W, H: lineHigh}, fmt.Sprintf("%d of %d tasks done", g.Done, g.Total), reads, font.Font{}, text.End)
+	track := Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: trackHigh + 1}
+	rounded(gtx, track, trackHigh, skin.Pill)
+	if g.Total > 0 && g.Done > 0 {
+		rounded(gtx, Box{X: track.X, Y: track.Y, W: max(trackHigh, track.W*g.Done/g.Total), H: track.H}, trackHigh, skin.Done)
+	}
+	facts := ProgressFacts(g, w.now)
+	third := inside.W / len(facts)
+	for i, fact := range facts {
+		cell := Box{X: inside.X + i*third, Y: track.Y + track.H + between, W: third, H: lineHigh}
+		sayIn(gtx, th, skin.Ink, cell, fact[0], small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Start)
+		say(gtx, th, skin.Faint, Box{X: cell.X, Y: cell.Y + lineHigh, W: cell.W, H: lineHigh}, fact[1], small)
+	}
 }
 
 func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
@@ -1397,14 +1458,15 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			say(gtx, th, ink, ExplainedLine(tip, i), line, small)
 		}
 	}
-	if w.besideShown() {
-		drawBesideTabs(gtx, th, skin, panel, w)
-	}
 	switch {
-	case !w.Tracing():
-	case w.Form().ForObjective:
-		drawUnder(gtx, th, skin, panel, w)
-	default:
+	case w.TabsBeside():
+		drawBesideTabs(gtx, th, skin, panel, w)
+	case w.besideShown():
+		say(gtx, th, skin.Faint, BesideHead(panel), DetailsHead, small)
+		drawUnder(gtx, th, skin, w)
+		drawProgressBeside(gtx, th, skin, w)
+	}
+	if w.Tracing() {
 		drawHistory(gtx, th, skin, panel, w)
 	}
 	for _, r := range w.ContextSays() {

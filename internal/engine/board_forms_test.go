@@ -121,3 +121,14 @@ func TestANewTaskFormCanComeLinked(t *testing.T) {
 		t.Errorf("saving it asked %s %v", op.Name(), in.Given)
 	}
 }
+
+func TestANewTaskFormCanComeServingAnObjective(t *testing.T) {
+	fields := ServingTaskFields(3)
+	if goals, _ := valueOf(fields, "objectives"); goals != "3" {
+		t.Errorf("a task made from an objective serves %q, want 3", goals)
+	}
+	op, in := Saved(fields, true, 0, TaskNew, TaskEdit)
+	if op.Name() != "task_new" || !slices.Equal(in.Listed["objective"], []string{"3"}) {
+		t.Errorf("saving it asked %s %v %v", op.Name(), in.Given, in.Listed)
+	}
+}

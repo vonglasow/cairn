@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"strconv"
 	"strings"
 )
 
@@ -66,21 +65,12 @@ func (w Window) Readables() []Readable {
 	if w.screen != OnForm || !w.besideShown() {
 		return nil
 	}
-	if !w.Tracing() {
-		return w.ContextSays()
-	}
 	box := w.formPanel()
 	if w.form.ForObjective {
-		var out []Readable
-		frame := BesideBox(box)
-		for at, c := range w.Under() {
-			line := SubWriting(w.ServingCardAt(at))
-			if !Within(line, frame) {
-				continue
-			}
-			out = append(out, one("part:"+strconv.Itoa(c.Number), line, SubLine(c), small))
-		}
-		return out
+		return nil
+	}
+	if !w.Tracing() {
+		return w.ContextSays()
 	}
 	var out []Readable
 	inside := Inside(BesideBox(box))

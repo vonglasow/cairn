@@ -132,6 +132,9 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 	if sectionTop >= 0 && len(long) == 2 {
 		given = map[int]int{long[0]: room * 3 / 5, long[1]: room - room*3/5}
 	}
+	if sectionTop >= 0 && len(long) == 1 {
+		given = map[int]int{long[0]: room * 3 / 5}
+	}
 
 	y := top
 	for _, i := range alone {

@@ -976,13 +976,13 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
 	}
 	w = w.Key("tab")
-	w = w.clicked(goalMiddle(w, 1)).Key("enter").Key("cmd+t")
+	w = w.clicked(goalMiddle(w, 1)).Key("enter")
 	if w.Screen() != OnForm || !w.ChosenGoal() {
 		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
 	}
 
-	frame := BesideBox(w.formPanel())
-	track := BesideBar(w.formPanel())
+	frame := w.workFrame()
+	track := w.workBar()
 	shot := drawn(t, w)
 
 	check := SubCheck(w.ServingCardAt(0))

@@ -974,24 +974,15 @@ func TestATripleClickBesideTheFormHoldsTheWholeLine(t *testing.T) {
 	}
 }
 
-func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
+func TestTheWorkUnderAnObjectiveHasItsBarPulled(t *testing.T) {
 	var cards []engine.Card
 	for i := range 30 {
 		cards = append(cards, engine.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
 	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
-	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter").Key("cmd+t")
-	var parts []string
-	for _, r := range w.Readables() {
-		if strings.HasPrefix(r.Key, "part:") {
-			parts = append(parts, r.Key)
-		}
-	}
-	if len(parts) == 0 || len(parts) >= len(cards) {
-		t.Errorf("beside the objective %d of %d tiles can be held", len(parts), len(cards))
-	}
-	track := BesideBar(w.formPanel())
+	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
+	track := w.workBar()
 	middle := Point{X: track.X + track.W/2, Y: track.Y + 4}
 	far := Point{X: middle.X, Y: track.Y + track.H + 999}
 	if pulled := w.PressAt(middle).MoveTo(far).LetGo(far); pulled.ServingAt() == 0 {
@@ -1007,14 +998,14 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
-	track, frame := BesideBar(w.formPanel()), BesideBox(w.formPanel())
+	track, frame := w.workBar(), w.workFrame()
 	grip := Point{X: track.X + track.W/2, Y: track.Y + 4}
 	pull := func(to Point) Window { return w.PressAt(grip).MoveTo(to).LetGo(to) }
-	if got, want := pull(Point{X: grip.X, Y: track.Y + track.H + 999}).ServingAt(), 30*SubHeight-frame.H; got != want {
+	if got, want := pull(Point{X: grip.X, Y: track.Y + track.H + 999}).ServingAt(), 31*SubHeight-frame.H; got != want {
 		t.Errorf("pulled past its end, the work is at %d, want its end %d", got, want)
 	}
 	middle := Point{X: grip.X, Y: track.Y + track.H/2}
-	if got, want := pull(middle).ServingAt(), Reached(track, 30, w.ServingRows(), middle)*SubHeight; got != want || want == 0 {
+	if got, want := pull(middle).ServingAt(), Reached(track, 31, w.ServingRows(), middle)*SubHeight; got != want || want == 0 {
 		t.Errorf("pulled to the middle, the work is at %d, want %d", got, want)
 	}
 }

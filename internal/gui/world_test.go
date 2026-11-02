@@ -1742,7 +1742,7 @@ func (w *world) scrollServing(by int) error {
 }
 
 func (w *world) middleOfServing() Point {
-	box := BesideBox(w.w.formPanel())
+	box := w.w.workFrame()
 	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 

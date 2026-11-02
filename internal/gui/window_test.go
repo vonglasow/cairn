@@ -566,8 +566,8 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	over := BesideBox(Over(w.width, w.height))
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
+	over := BesideBox(w.formPanel())
 	at := Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
 
 	if got := w.Scroll(at, 3*lineHigh).History(); got != 3 {
@@ -753,9 +753,9 @@ func TestEveryBarCanBePulled(t *testing.T) {
 	}
 	w := New(f, 1200, 800)
 	w.snap = engine.Snapshot{Cards: cards}
-	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
 
-	box := Over(w.width, w.height)
+	box := w.formPanel()
 	_, saying, _, _, _ := w.sayingOn()
 	for _, c := range []struct {
 		what  string

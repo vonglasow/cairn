@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"time"
 
 	"cairn/internal/engine"
@@ -258,7 +259,18 @@ func (w Window) ChosenGoal() bool { return w.chosenGoal }
 
 // Under is what the box beside the fields of an open objective holds: the work that serves it.
 func (w Window) Under() []engine.Card {
-	return engine.Serving(w.snap.Cards, w.chosen)
+	serving := slices.Clone(engine.Serving(w.snap.Cards, w.chosen))
+	rank := func(c engine.Card) int {
+		switch {
+		case c.State == "current":
+			return 0
+		case engine.Finished(c):
+			return 2
+		}
+		return 1
+	}
+	slices.SortStableFunc(serving, func(a, b engine.Card) int { return rank(a) - rank(b) })
+	return serving
 }
 
 // Wonder asks the store whether anybody else has written to it, and reads the whole thing again only when the answer has moved.
