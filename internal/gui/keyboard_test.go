@@ -85,6 +85,9 @@ func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
 	}
 }
 
+// rasterSlack is the room a key chip keeps over what this system writes its key in: the face standing in for a mark draws it a point or two wider on another system, Linux in particular.
+const rasterSlack = 3
+
 func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
 	th := Theme()
 	monoWritten := func(said string) int {
@@ -99,7 +102,7 @@ func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
 		return end
 	}
 	for _, key := range []string{"Ctrl+⏎", "⌘⌫", "⇧F", "Ctrl+K"} {
-		if got, want := KeyChipWide(key), monoWritten(key)+2*chipInset; got < want {
+		if got, want := KeyChipWide(key), monoWritten(key)+2*chipInset+rasterSlack; got < want {
 			t.Errorf("the chip of %s is %d wide, its key is written %d wide", key, got, want-2*chipInset)
 		}
 	}

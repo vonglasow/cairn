@@ -18,7 +18,7 @@ func helpGroups() []helpGroup {
 			{Key: "l", Means: "labels"},
 			{Key: "t", Means: "deadline"},
 			{Key: "o", Means: "new linked task"},
-			{Key: "x ⇧X", Means: "archive, the column"},
+			{Key: "x ⇧X", Means: "archive · column"},
 			{Key: "⌘⌫", Means: "delete"},
 			{Key: "esc", Means: "let the card go"},
 		}},
