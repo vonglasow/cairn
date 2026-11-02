@@ -31,6 +31,8 @@ type Form struct {
 	opened      []string
 	behind      int
 	tracing     bool
+	onWork      bool
+	workAt      int
 }
 
 // Changed says whether anything in the form differs from what it opened with.
@@ -82,6 +84,7 @@ func (f Form) onto(at int) Form {
 		f.partAt = 0
 	}
 	f.at = min(len(f.fields)-1, max(0, at))
+	f.onWork = false
 	if _, sectional := sectionOf(f.fields[f.at]); sectional {
 		f.tracing = false
 	}

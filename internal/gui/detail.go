@@ -199,22 +199,65 @@ func (w Window) clickingWork(p Point) (Window, bool) {
 		return w, false
 	}
 	for _, tile := range w.WorkTiles() {
-		if !tile.At.In(p) {
-			continue
+		if tile.At.In(p) {
+			return w.openingWork(tile), true
 		}
-		if w.form.Changed() {
-			return w.telling("save or cancel the objective first"), true
-		}
-		goal := w.form.Number
-		if tile.Number == 0 {
-			w = w.startingNew()
-			w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.ServingTaskFields(goal)}), Point{}
-			return w, true
-		}
-		w.chosen, w.chosenGoal, w.screen = tile.Number, false, OnTheBoard
-		return w.Edit(), true
 	}
 	return w, false
+}
+
+func (w Window) openingWork(tile WorkTile) Window {
+	if w.form.Changed() {
+		return w.telling("save or cancel the objective first")
+	}
+	goal := w.form.Number
+	if tile.Number == 0 {
+		w = w.startingNew()
+		w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.ServingTaskFields(goal)}), Point{}
+		return w
+	}
+	w.chosen, w.chosenGoal, w.screen = tile.Number, false, OnTheBoard
+	return w.Edit()
+}
+
+// WorkOn is the line of an objective's work the keyboard is on, and whether it is on one.
+func (w Window) WorkOn() (WorkTile, bool) {
+	tiles := w.WorkTiles()
+	if !w.form.onWork || w.form.workAt >= len(tiles) {
+		return WorkTile{}, false
+	}
+	return tiles[w.form.workAt], true
+}
+
+func (w Window) onWork(name string) (Window, bool) {
+	tiles := w.WorkTiles()
+	switch name {
+	case "down", "j":
+		w.form.workAt = min(len(tiles)-1, w.form.workAt+1)
+	case "up", "k":
+		w.form.workAt = max(0, w.form.workAt-1)
+	case "enter":
+		if tile, on := w.WorkOn(); on {
+			return w.openingWork(tile), true
+		}
+	case "tab":
+		w.form = w.form.onto(w.form.On() + 1)
+		return w, true
+	case "shift+tab":
+		w.form.onWork = false
+		return w, true
+	default:
+		return w, true
+	}
+	frame := w.workFrame()
+	top := w.form.workAt * SubHeight
+	w.serving = w.settledServing(min(top, max(w.serving, top+SubHeight-frame.H)))
+	return w, true
+}
+
+func (w Window) reachingWork() bool {
+	fields := w.form.Fields()
+	return w.form.ForObjective && w.besideShown() && w.form.On() < len(fields) && fields[w.form.On()].Name == "description"
 }
 
 func (w Window) panel() Box {

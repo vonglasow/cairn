@@ -165,6 +165,14 @@ func (w Window) onSearch(name string) Window {
 }
 
 func (w Window) inForm(name string) Window {
+	if w.form.onWork {
+		walked, _ := w.onWork(name)
+		return walked
+	}
+	if name == "tab" && w.reachingWork() {
+		w.form.onWork, w.form.workAt = true, 0
+		return w
+	}
 	if w.form.onParts() {
 		if done, took := w.onParts(name); took {
 			return done.keepingPartInSight()

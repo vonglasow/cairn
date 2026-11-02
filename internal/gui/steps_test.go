@@ -2005,6 +2005,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no work reads %q: %+v", title, w.w.WorkTiles())
 	})
+	sc.Then(`^the keyboard is on the work "([^"]*)"$`, func(title string) error {
+		tile, on := w.w.WorkOn()
+		if !on || tile.Said != title {
+			return fmt.Errorf("the keyboard is on the work %+v (%v), not %q", tile, on, title)
+		}
+		return nil
+	})
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)

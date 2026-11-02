@@ -1205,8 +1205,13 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	frame := w.workFrame()
 	fill(gtx, frame, skin.Field)
 	clipped := clip.Rect(rect(frame)).Push(gtx.Ops)
+	on, walking := w.WorkOn()
 	for _, tile := range w.WorkTiles() {
 		drawWorkTile(gtx, th, skin, w, tile)
+		if walking && tile == on {
+			panel := SubPanel(tile.At)
+			outline(gtx, Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}, skin.Chosen)
+		}
 	}
 	clipped.Pop()
 	track := w.workBar()
@@ -1404,7 +1409,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		if w.hidden(fields[i]) {
 			continue
 		}
-		on := i == w.Form().On()
+		on := i == w.Form().On() && !w.form.onWork
 		typed := on && !chosenFromAList(fields[i])
 		said := Written{Value: w.FieldSays(fields[i])}
 		if typed {

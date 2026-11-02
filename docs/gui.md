@@ -1727,7 +1727,10 @@ task's steps, under the description's three parts, *Serving it* lists the
 tasks serving the objective, a line each: number, title, column as a pill,
 time spent; what is current first, what is done last and struck
 (`WorkTiles`, `@gui-an-objectives-work-is-current-first`). A click on one
-opens it; its last line, *+ new task serving it*, opens a new task's form
+opens it, and so does the keyboard: `tab` from the description reaches the
+list, the arrows walk it, outlined and kept in sight, `⏎` opens the line it
+is on, and `tab` goes on to the details (`WorkOn`,
+`@gui-an-objectives-work-is-walked-with-the-keyboard`); its last line, *+ new task serving it*, opens a new task's form
 serving the objective already (`engine.ServingTaskFields`,
 `@gui-an-objective-makes-a-task-that-serves-it`). The column beside has no
 tabs, an objective having no history: its details, then *Progress* — the

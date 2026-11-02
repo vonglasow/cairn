@@ -3156,6 +3156,26 @@ Feature: The desktop board
       When I click the work "Write the spec"
       Then the form is open on task 2
 
+    @gui-an-objectives-work-is-walked-with-the-keyboard
+    Scenario: tab from the description reaches the work, the arrows walk it, enter opens a task
+      Given I added an objective titled "Ship the board"
+      And I added a task titled "Write the spec" with the state "current" serving objective 1
+      And I added a task titled "Ship it" with the state "todo" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Ship the board"
+      And I press "enter"
+      And I put the keyboard on "description"
+      And I press "tab"
+      Then the keyboard is on the work "Write the spec"
+      When I press "down"
+      Then the keyboard is on the work "Ship it"
+      When I press "down"
+      Then the keyboard is on the work "+ new task serving it"
+      When I press "up"
+      And I press "enter"
+      Then the form is open on task 2
+
     @gui-an-objective-makes-a-task-that-serves-it
     Scenario: the last line under an objective's work opens a new task serving it
       Given I added an objective titled "Ship the board"
