@@ -1308,3 +1308,21 @@ func TestLabelsTooManyForTheirFieldSayHowManyAreLeft(t *testing.T) {
 		}
 	}
 }
+
+func TestAPressOnTheDetailsTabComesBackFromTheHistory(t *testing.T) {
+	for _, goal := range []bool{false, true} {
+		w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Objectives: []int{1}})
+		w.snap.Goals = []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}
+		if goal {
+			w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 0)).Key("enter")
+		} else {
+			w = w.clicked(middleOf(w, 1, 0)).Key("enter")
+		}
+		w = w.Key("cmd+t")
+		tab := BesideTabs(w.formPanel())[0]
+		p := Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
+		if got := w.PressAt(p).LetGo(p); got.Tracing() {
+			t.Errorf("an objective %v: a press on Details left the history shown", goal)
+		}
+	}
+}

@@ -71,7 +71,7 @@ func (w Window) Readables() []Readable {
 	}
 	box := w.formPanel()
 	if w.form.ForObjective {
-		out := []Readable{one("under", BesideHead(box), w.UnderHead(), small)}
+		var out []Readable
 		frame := BesideBox(box)
 		for at, c := range w.Under() {
 			line := SubWriting(w.ServingCardAt(at))
@@ -82,7 +82,7 @@ func (w Window) Readables() []Readable {
 		}
 		return out
 	}
-	out := []Readable{one("history", BesideHead(box), w.PanelHead(), small)}
+	var out []Readable
 	inside := Inside(BesideBox(box))
 	if told := w.traced(); len(told.Said) > 0 {
 		from := w.History()

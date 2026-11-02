@@ -287,13 +287,9 @@ func titles(cards []engine.Card) []string {
 	return said
 }
 
-func (w *world) rightColumnHead(head string) error {
-	got := w.w.PanelHead()
-	if w.w.ChosenGoal() {
-		got = w.w.UnderHead()
-	}
-	if got != head {
-		return fmt.Errorf("the right column is headed %q, not %q", got, head)
+func (w *world) rightColumnTabs(first, second string) error {
+	if got := w.w.BesideTabsSay(); got != [2]string{first, second} {
+		return fmt.Errorf("the column beside the form offers the tabs %q", got)
 	}
 	return nil
 }
@@ -658,7 +654,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the work beside the form carries "([^"]*)"$`, w.detailLists)
 	sc.Then(`^the work beside the form does not carry "([^"]*)"$`, w.detailDoesNotList)
 	sc.Then(`^what serves it is drawn one line to a tile$`, w.servingCardsAreCards)
-	sc.Then(`^the column beside the form is headed "([^"]*)"$`, w.rightColumnHead)
+	sc.Then(`^the column beside the form offers the tabs "([^"]*)" and "([^"]*)"$`, w.rightColumnTabs)
 	sc.Then(`^the work beside the form says nothing serves it yet$`, w.detailSaysNothingServes)
 	sc.Then(`^"([^"]*)" is scrolled$`, w.isScrolled)
 	sc.Then(`^"([^"]*)" is not scrolled$`, w.isNotScrolled)
@@ -955,12 +951,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			w.w = w.w.DoubleClick(at)
 		}
 		return err
-	})
-	sc.Then(`^the box under the task is headed "([^"]*)"$`, func(want string) error {
-		if got := w.w.UnderHead(); got != want {
-			return fmt.Errorf("the box under the task is headed %q, want %q", got, want)
-		}
-		return nil
 	})
 	sc.Then(`^what hangs under it reads (.+)$`, func(said string) error {
 		var want []string
@@ -2485,15 +2475,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^every key the bar offers does what it offers$`, w.everyKeyTheBarOffers)
 	sc.Then(`^the trace is beside the fields$`, w.historyBesideTheFields)
 	sc.Then(`^the form writes the trace, empty$`, func() error {
-		for _, r := range w.w.Readables() {
-			if r.Key == "history" {
-				if told := w.w.Told(); told != 0 {
-					return fmt.Errorf("the trace of a task not yet saved holds %d lines", told)
-				}
-				return nil
-			}
+		if !w.w.Tracing() {
+			return fmt.Errorf("the form writes no trace beside it")
 		}
-		return fmt.Errorf("the form writes no trace beside it")
+		if told := w.w.Told(); told != 0 {
+			return fmt.Errorf("the trace of a task not yet saved holds %d lines", told)
+		}
+		return nil
 	})
 	sc.Then(`^the trace stays inside the panel$`, w.historyInsideThePanel)
 	sc.Then(`^the trace has more to show than it has room for$`, w.historyHasMore)

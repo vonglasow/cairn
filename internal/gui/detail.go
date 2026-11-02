@@ -46,14 +46,6 @@ func (w Window) Lines() []string {
 	return Told(w.acts, wrap)
 }
 
-const (
-	historyHead = "TRACE"
-	servingHead = "WHAT SERVES IT"
-)
-
-// PanelHead is what the right column is called.
-func (w Window) PanelHead() string { return historyHead }
-
 // ServingSays is what that box reads when there is no card to draw in it.
 const ServingSays = "nothing serves it yet"
 

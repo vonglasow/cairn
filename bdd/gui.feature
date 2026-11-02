@@ -3138,7 +3138,7 @@ Feature: The desktop board
       And the work beside the form carries "Write the spec"
       And the work beside the form does not carry "Buy a lamp"
       And what serves it is drawn one line to a tile
-      And the column beside the form is headed "WHAT SERVES IT"
+      And the column beside the form offers the tabs "Details" and "Work"
 
     @gui-the-work-under-an-objective-scrolls
     Scenario: more work than the box holds scrolls, and stops at both ends

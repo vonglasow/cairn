@@ -259,9 +259,6 @@ func (w Window) Under() []engine.Card {
 	return engine.Serving(w.snap.Cards, w.chosen)
 }
 
-// UnderHead is what that box is called.
-func (w Window) UnderHead() string { return servingHead }
-
 // Wonder asks the store whether anybody else has written to it, and reads the whole thing again only when the answer has moved.
 func (w Window) Wonder() Window {
 	w = w.aged().autosaved()
