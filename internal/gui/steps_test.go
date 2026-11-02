@@ -372,6 +372,9 @@ func (w *world) acrossTheForm(name string, above []string) error {
 	}
 	left, right, at := frames[0].X, 0, -1
 	for i, frame := range frames {
+		if frame.X >= over.X+over.W {
+			continue
+		}
 		left, right = min(left, frame.X), max(right, frame.X+frame.W)
 		if fields[i].Name == name {
 			at = i
@@ -384,7 +387,7 @@ func (w *world) acrossTheForm(name string, above []string) error {
 		return fmt.Errorf("%q runs from %d to %d, and the form from %d to %d", name, frame.X, frame.X+frame.W, left, right)
 	}
 	for i, frame := range frames {
-		if i == at || slices.Contains(above, fields[i].Name) {
+		if i == at || slices.Contains(above, fields[i].Name) || frame.X >= over.X+over.W {
 			continue
 		}
 		if frame.Y <= frames[at].Y {
@@ -1943,6 +1946,46 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no label %q is listed", label)
 	})
+	sc.Then(`^the field "([^"]*)" stands beside the description$`, func(name string) error {
+		fields := w.w.Form().Fields()
+		at, description := -1, -1
+		for i, f := range fields {
+			switch f.Name {
+			case name:
+				at = i
+			case "description":
+				description = i
+			}
+		}
+		if at < 0 || description < 0 {
+			return fmt.Errorf("the form holds no %q or no description", name)
+		}
+		_, value, _ := FormPlace(w.w.formBox(), fields, at)
+		_, said, _ := FormPlace(w.w.formBox(), fields, description)
+		if value.X < said.X+said.W {
+			return fmt.Errorf("%q at %+v is not beside the description at %+v", name, value, said)
+		}
+		return nil
+	})
+	sc.Then(`^the description takes (\d+) parts of the height and the steps (\d+)$`, func(description, steps int) error {
+		fields := w.w.Form().Fields()
+		rows := map[string]int{}
+		for i, f := range fields {
+			_, _, given := FormPlace(w.w.formBox(), fields, i)
+			rows[f.Name] = given
+		}
+		total := rows["description"] + rows["steps"]
+		if want := total * description / (description + steps); rows["description"] != want {
+			return fmt.Errorf("the description is given %d rows of %d, want %d", rows["description"], total, want)
+		}
+		return nil
+	})
+	sc.Then(`^the column beside the form shows the (details|trace)$`, func(what string) error {
+		if got := w.w.Tracing(); got != (what == "trace") {
+			return fmt.Errorf("the column beside the form shows the trace: %v", got)
+		}
+		return nil
+	})
 	sc.Then(`^the help is open$`, w.helpOpen)
 	sc.Then(`^the help is closed$`, w.helpClosed)
 	sc.Then(`^the help says what "([^"]*)" does$`, w.helpSaysAbout)
@@ -2373,7 +2416,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			}
 			_, value, rows := FormPlace(w.w.formBox(), fields, i)
 			frame := Framed(value, rows)
-			if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+			if box.X > frame.X || box.X+box.W < frame.X+frame.W || box.Y != frame.Y+frame.H+between {
 				return fmt.Errorf("the list is at %d,%d and the field %q ends at %d,%d", box.X, box.Y, name, frame.X, frame.Y+frame.H)
 			}
 			return nil

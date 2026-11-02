@@ -128,17 +128,28 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 			alone = append(alone, i)
 		}
 	}
-	across := fieldsAcross(full)
+	sectionLeft, sectionFull, sectionTop := left, full, -1
+	if over.Beside > 0 {
+		sectionLeft, sectionFull, sectionTop = over.X+over.W+padding, over.Beside-padding-padding, top+apart
+	}
+	across := fieldsAcross(sectionFull)
 	lines := 0
 	for _, row := range rows {
 		lines += (len(row) + across - 1) / across
+	}
+	if sectionTop >= 0 {
+		lines = 0
 	}
 	wanted := make(map[int]int, len(long))
 	for _, i := range long {
 		wanted[i] = rowsWanted(fields[i], full)
 	}
 	fixed := len(alone)*apart + lines*apart + between + len(long)*longHigh
-	given := shared(long, wanted, (FormRule(over).Y-top-fixed)/lineHigh)
+	room := (FormRule(over).Y - top - fixed) / lineHigh
+	given := shared(long, wanted, room)
+	if sectionTop >= 0 && len(long) == 2 {
+		given = map[int]int{long[0]: room * 3 / 5, long[1]: room - room*3/5}
+	}
 
 	y := top
 	for _, i := range alone {
@@ -157,24 +168,37 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 		placeLong(long[0])
 	}
 	var heads []Readable
+	sy := y
+	if sectionTop >= 0 {
+		sy = sectionTop
+	}
+	headWide := sectionWide
+	if sectionFull-sectionWide-formNamed < formValueFewest {
+		headWide = 0
+	}
 	for s, row := range rows {
 		if len(row) == 0 {
 			continue
 		}
-		heads = append(heads, one("head:"+formSections[s].head, Box{X: left, Y: y, W: sectionWide, H: lineHigh}, formSections[s].head, small))
+		if headWide > 0 {
+			heads = append(heads, one("head:"+formSections[s].head, Box{X: sectionLeft, Y: sy, W: headWide, H: lineHigh}, formSections[s].head, small))
+		}
 		wide := min(across, len(row))
-		cell := (full - sectionWide - (wide-1)*padding) / wide
+		cell := (sectionFull - headWide - (wide-1)*padding) / wide
 		for at, i := range row {
-			x := left + sectionWide + at%wide*(cell+padding)
+			x := sectionLeft + headWide + at%wide*(cell+padding)
 			places[i] = placed{
-				name:  Box{X: x, Y: y, W: formNamed, H: lineHigh},
-				value: Box{X: x + formNamed, Y: y, W: cell - formNamed, H: lineHigh},
+				name:  Box{X: x, Y: sy, W: formNamed, H: lineHigh},
+				value: Box{X: x + formNamed, Y: sy, W: cell - formNamed, H: lineHigh},
 				rows:  1,
 			}
 			if at%wide == wide-1 || at == len(row)-1 {
-				y += apart
+				sy += apart
 			}
 		}
+	}
+	if sectionTop < 0 {
+		y = sy
 	}
 	y += between
 	for _, i := range long[min(1, len(long)):] {
@@ -210,3 +234,10 @@ func shared(long []int, wanted map[int]int, room int) map[int]int {
 	given[long[0]] = max(1, min(wanted[long[0]], left+kept))
 	return given
 }
+
+// FieldMark is where a field chosen from a list, or on a calendar, says so: a mark at the right end of its frame.
+func FieldMark(frame Box) Box {
+	return Box{X: frame.X + frame.W - padding - markWide, Y: frame.Y + (frame.H-markWide)/2, W: markWide, H: markWide}
+}
+
+const markWide = 10

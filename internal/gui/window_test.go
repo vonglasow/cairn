@@ -724,7 +724,7 @@ func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	fields := w.Form().Fields()
 	for i, field := range fields {
 		if field.Name != "column" {

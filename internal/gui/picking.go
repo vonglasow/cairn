@@ -66,6 +66,9 @@ func (w Window) Readables() []Readable {
 	if w.screen != OnForm || !w.besideShown() {
 		return nil
 	}
+	if !w.Tracing() {
+		return w.ContextSays()
+	}
 	box := w.formPanel()
 	if w.form.ForObjective {
 		out := []Readable{one("under", BesideHead(box), w.UnderHead(), small)}

@@ -197,7 +197,9 @@ func (w Window) formBox() Box {
 	if !w.besideShown() {
 		return w.formPanel()
 	}
-	return FormFields(w.formPanel())
+	left := FormFields(w.formPanel())
+	left.Beside = FormBeside(w.formPanel()).W
+	return left
 }
 
 func (w Window) besideShown() bool { return !w.form.Adding || !w.form.ForObjective }
@@ -249,4 +251,63 @@ func (w Window) walksLines(by int) Window {
 	at := lines.From[to] + min(column, len([]rune(lines.Said[to])))
 	w.form = w.form.Writes(writing.CaretAt(at))
 	return w.inSightOfTheCaret()
+}
+
+// Tracing says whether the column beside an open form shows what was done to it — its history, or the work serving an objective — rather than what it carries: chosen with its tab, and given up for the details when the keyboard goes to one of them.
+func (w Window) Tracing() bool { return w.form.tracing && w.besideShown() }
+
+func (w Window) onASectionField() bool {
+	fields := w.form.Fields()
+	if w.form.On() >= len(fields) {
+		return false
+	}
+	_, sectional := sectionOf(fields[w.form.On()])
+	return sectional
+}
+
+func (w Window) togglingTrace() Window {
+	w.form.tracing = !w.form.tracing
+	if w.form.tracing && w.onASectionField() {
+		for i, field := range w.form.Fields() {
+			if field.Name == "description" {
+				w.form = w.form.onto(i)
+			}
+		}
+	}
+	return w
+}
+
+// BesideTabs is the two tabs at the head of the column beside a form: what it carries, and what was done to it.
+func BesideTabs(panel Box) [2]Box {
+	head := BesideHead(panel)
+	half := head.W / 2
+	return [2]Box{{X: head.X, Y: head.Y - inset, W: half, H: head.H + 2*inset}, {X: head.X + half, Y: head.Y - inset, W: head.W - half, H: head.H + 2*inset}}
+}
+
+// BesideTabsSay is what the two tabs are called.
+func (w Window) BesideTabsSay() [2]string {
+	if w.form.ForObjective {
+		return [2]string{"Details", "Work"}
+	}
+	return [2]string{"Details", "History"}
+}
+
+func (w Window) clickingBesideTab(p Point) (Window, bool) {
+	if w.screen != OnForm || !w.besideShown() {
+		return w, false
+	}
+	for i, tab := range BesideTabs(w.formPanel()) {
+		if tab.In(p) {
+			if (i == 1) != w.Tracing() {
+				w = w.togglingTrace()
+			}
+			return w, true
+		}
+	}
+	return w, false
+}
+
+func (w Window) hidden(field engine.Field) bool {
+	_, sectional := sectionOf(field)
+	return sectional && w.Tracing()
 }

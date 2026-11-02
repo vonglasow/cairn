@@ -1699,6 +1699,23 @@ keeps it. A click
 off the calendar or a list closes it and gives the form back; off the form as
 well, both go (`@gui-a-click-off-the-form-closes-the-calendar-too`).
 
+**What a task carries stands beside it, and its history behind a tab.** The
+left column holds the title, the description and the steps, the description
+given three parts of the height left and the steps two; the short fields —
+column, priority, labels, the times, what blocks it, its links — stand in
+the column beside, under a tab, *Details*, and the history under the other,
+*History* (*Work* for an objective), `⌘T` or a click on a tab going from one
+to the other (`BesideTabs`, `Tracing`,
+`@gui-the-details-stand-beside-and-the-trace-behind-a-tab`). Details shows
+first: what is changed most is seen without a click. The keyboard going to a
+short field shows Details, and Details stays shown after it leaves: nothing
+beside the form changes but by a tab. A narrow column drops the sections'
+heads and keeps the fields' names. A field chosen from a list carries a
+chevron at its right, a deadline a small calendar (`FieldMark`), and labels
+too many for their field show two and how many more, as a card does. The
+short fields used to sit between the description and the steps, and the
+history beside them took room nobody was reading most of the time.
+
 **Two columns and not one above the other.** The fields take the left five
 eighths — in the narrowest window this board draws in, room for two short
 fields to a line — and the column beside them has the panel's full height at

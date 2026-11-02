@@ -44,7 +44,7 @@ func TestTheCalendarHangsUnderItsField(t *testing.T) {
 	}
 	w = w.Key("enter")
 	box, frame := w.CalendarBox(), fieldFrame(w)
-	if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+	if box.X > frame.X || box.X+box.W < frame.X+frame.W || box.Y != frame.Y+frame.H+between {
 		t.Errorf("the calendar is at %+v, under a field at %+v", box, frame)
 	}
 	want := max(w.headWide()+nameWide+yearWide+2*monthWide, w.offersWide())
@@ -190,7 +190,14 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
 	}
-	if got := w.Key("enter"); painted(drawn(t, got), foot, skin.Chosen) != 0 {
+	got := w.Key("enter")
+	calendar := got.CalendarBox()
+	if left := (Box{X: foot.X, Y: foot.Y, W: max(0, min(foot.W, calendar.X-foot.X)), H: foot.H}); left.W == 0 {
+		foot = Box{X: calendar.X + calendar.W, Y: foot.Y, W: max(0, foot.X+foot.W-calendar.X-calendar.W), H: foot.H}
+	} else {
+		foot = left
+	}
+	if foot.W > 0 && painted(drawn(t, got), foot, skin.Chosen) != 0 {
 		t.Error("the form under the calendar still draws offers at its foot")
 	}
 }

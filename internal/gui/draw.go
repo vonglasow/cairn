@@ -785,6 +785,22 @@ func drawCross(gtx layout.Context, cross Box, ink color.NRGBA) {
 	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: 1.5}.Op())
 }
 
+func drawChevron(gtx layout.Context, mark Box, ink color.NRGBA) {
+	x, y := float32(mark.X), float32(mark.Y)+float32(mark.H)*0.3
+	w, h := float32(mark.W), float32(mark.H)*0.4
+	var strokes clip.Path
+	strokes.Begin(gtx.Ops)
+	strokes.MoveTo(f32.Pt(x+1, y))
+	strokes.LineTo(f32.Pt(x+w/2, y+h))
+	strokes.LineTo(f32.Pt(x+w-1, y))
+	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: 1.5}.Op())
+}
+
+func drawCalendarMark(gtx layout.Context, mark Box, ink color.NRGBA) {
+	outline(gtx, Box{X: mark.X, Y: mark.Y + 1, W: mark.W, H: mark.H - 1}, ink)
+	fill(gtx, Box{X: mark.X, Y: mark.Y + 1, W: mark.W, H: 3}, ink)
+}
+
 func drawCairn(gtx layout.Context, mark Box, ink color.NRGBA) {
 	scale := float32(mark.W) / 14
 	for _, stone := range [][4]float32{{7, 11.4, 5.6, 2.1}, {7.3, 7.3, 4, 1.8}, {6.8, 3.6, 2.5, 1.5}} {
@@ -1150,8 +1166,20 @@ func SubInk(skin Skin, c engine.Card) color.NRGBA {
 	return skin.Ink
 }
 
+func drawBesideTabs(gtx layout.Context, th *material.Theme, skin Skin, panel Box, w Window) {
+	tabs, says := BesideTabs(panel), w.BesideTabsSay()
+	rounded(gtx, Box{X: tabs[0].X, Y: tabs[0].Y, W: tabs[1].X + tabs[1].W - tabs[0].X, H: tabs[0].H}, buttonRadius, skin.Pill)
+	for i, tab := range tabs {
+		ink := skin.Faint
+		if (i == 1) == w.Tracing() {
+			rounded(gtx, Box{X: tab.X + segmentInset, Y: tab.Y + segmentInset, W: tab.W - 2*segmentInset, H: tab.H - 2*segmentInset}, buttonRadius, lighter(skin.Pill))
+			ink = skin.Ink
+		}
+		sayStyled(gtx, th, ink, ButtonSaid(tab), says[i], reads, font.Medium, 1, text.Middle)
+	}
+}
+
 func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
-	sayHolding(gtx, th, skin, skin.Faint, BesideHead(box), w.Holding("under", w.UnderHead()), small)
 	frame := BesideBox(box)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
@@ -1177,7 +1205,6 @@ func drawUnder(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Win
 }
 
 func drawHistory(gtx layout.Context, th *material.Theme, skin Skin, box Box, w Window) {
-	sayHolding(gtx, th, skin, skin.Faint, BesideHead(box), w.Holding("history", w.PanelHead()), small)
 	frame := BesideBox(box)
 	fill(gtx, frame, skin.Back)
 	outline(gtx, frame, skin.Edge)
@@ -1302,6 +1329,9 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	drawCross(gtx, FormClose(panel), skin.Faint)
 	fields := w.Form().Fields()
 	for i := range fields {
+		if w.hidden(fields[i]) {
+			continue
+		}
 		on := i == w.Form().On()
 		typed := on && !chosenFromAList(fields[i])
 		said := Written{Value: w.FieldSays(fields[i])}
@@ -1319,16 +1349,25 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		switch fields[i].Arg {
 		case "priority":
 			if stripe, known := skin.Priority[said.Reads()]; known {
-				rounded(gtx, Box{X: frame.X + frame.W - padding - edgeWide, Y: frame.Y + (frame.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, stripeRadius-1, stripe)
+				rounded(gtx, Box{X: FieldMark(frame).X - padding/2 - edgeWide, Y: frame.Y + (frame.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, stripeRadius-1, stripe)
 			}
 		case "label":
 			if !on {
 				drawFieldPills(gtx, th, skin, w, w.measured(), frame, strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' }))
 			}
 		}
+		switch {
+		case on:
+		case chosenOnACalendar(fields[i]):
+			drawCalendarMark(gtx, FieldMark(frame), skin.Low)
+		case chosenFromAList(fields[i]):
+			drawChevron(gtx, FieldMark(frame), skin.Low)
+		}
 	}
-	for _, head := range FormHeads(box, fields) {
-		say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
+	if !w.Tracing() {
+		for _, head := range FormHeads(box, fields) {
+			say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
+		}
 	}
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
@@ -1346,8 +1385,11 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			say(gtx, th, ink, ExplainedLine(tip, i), line, small)
 		}
 	}
+	if w.besideShown() {
+		drawBesideTabs(gtx, th, skin, panel, w)
+	}
 	switch {
-	case !w.besideShown():
+	case !w.Tracing():
 	case w.Form().ForObjective:
 		drawUnder(gtx, th, skin, panel, w)
 	default:
@@ -1612,14 +1654,18 @@ func drawFieldPills(gtx layout.Context, th *material.Theme, skin Skin, w Window,
 		return
 	}
 	room := Inside(frame)
+	room.W -= markWide + padding
 	rounded(gtx, Box{X: frame.X + 1, Y: frame.Y + 1, W: frame.W - 2, H: frame.H - 2}, buttonRadius-1, skin.Field)
 	x, top := room.X, frame.Y+(frame.H-pillHigh)/2
-	for _, label := range labels {
-		pill := Box{X: x, Y: top, W: ends(m, label, small) + 2*pillPad, H: pillHigh}
-		if pill.X+pill.W > room.X+room.W {
-			return
-		}
+	wide := func(said string) int { return ends(m, said, small) }
+	shown, more := Pills(labels, room.W, wide)
+	for _, label := range shown {
+		pill := Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
 		drawLabelPill(gtx, th, skin, w, pill, label)
 		x += pill.W + pillGap
+	}
+	if more > 0 {
+		count := "+" + strconv.Itoa(more)
+		drawPill(gtx, th, skin, Box{X: x, Y: top, W: wide(count) + 2*pillPad, H: pillHigh}, count, skin.Pill)
 	}
 }

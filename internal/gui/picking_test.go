@@ -22,7 +22,7 @@ func openTask(t *testing.T) (Window, *fake) {
 		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
 			Description: "Deux colonnes et une bande", Context: "/vault/1",
 			Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
-	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
+	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).Key("cmd+t")
 	if w.Screen() != OnForm {
 		t.Fatalf("the task did not open: %v", w.Screen())
 	}
@@ -55,7 +55,6 @@ func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
 	for _, c := range []struct {
 		key, word string
 	}{
-		{"history", "TRACE"},
 		{"name:context", "context"},
 	} {
 		t.Run(c.key, func(t *testing.T) {

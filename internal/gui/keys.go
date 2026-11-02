@@ -217,6 +217,8 @@ func (w Window) inForm(name string) Window {
 		w.pasting = true
 	case "cmd+s":
 		return w.Save()
+	case "cmd+t":
+		return w.togglingTrace()
 	case "shift+left":
 		return w.holding(-1)
 	case "shift+right":

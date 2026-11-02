@@ -2488,6 +2488,7 @@ Feature: The desktop board
       And I press "cmd+n"
       And I type "Plan the week"
       And the window has looked at the store 3 times
+      And I press "cmd+t"
       Then the form writes the trace, empty
 
     @gui-a-new-task-shows-no-other-tasks-trace
@@ -2498,6 +2499,7 @@ Feature: The desktop board
       And I double-click the card "Write the spec"
       And I press "esc"
       And I press "cmd+n"
+      And I press "cmd+t"
       Then the form writes the trace, empty
 
     @gui-cancelling-a-new-task-makes-nothing
@@ -2893,14 +2895,14 @@ Feature: The desktop board
   Rule: A task's trace stays inside the panel that shows it
 
     @gui-opening-a-task-opens-it-to-be-edited
-    Scenario: opening a task opens it to be edited, its trace beside what it carries
+    Scenario: opening a task opens it to be edited, its trace a tab away
       Given I added a task titled "Write the spec"
       And it was worked on 3 times
       When I open the window
       And I double-click the card "Write the spec"
       Then the window is on the form
-      And every field of the form stands left of the trace
-      And the trace begins with the last thing done to task 1
+      When I press "cmd+t"
+      Then the trace begins with the last thing done to task 1
 
     @gui-opening-an-objective-opens-it-to-be-edited
     Scenario: opening an objective opens it to be edited, the work serving it beside it
@@ -2922,10 +2924,26 @@ Feature: The desktop board
       Then the trace is beside the fields
       And the trace stays inside the panel
 
+    @gui-the-details-stand-beside-and-the-trace-behind-a-tab
+    Scenario: what a task carries stands beside its description, and its trace behind a tab
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the field "estimate" stands beside the description
+      And the column beside the form shows the details
+      And the description takes 3 parts of the height and the steps 2
+      When I press "cmd+t"
+      Then the column beside the form shows the trace
+      When I put the keyboard on "estimate"
+      Then the column beside the form shows the details
+      When I put the keyboard on "steps"
+      Then the column beside the form shows the details
+
     @gui-a-new-task-shows-its-trace-from-the-start
     Scenario: a task being added shows its trace from the start, empty, so nothing appears beside the form once it saves itself
       When I open the window
       And I press "cmd+n"
+      And I press "cmd+t"
       Then the form writes the trace, empty
       And the trace is beside the fields
 
@@ -4165,6 +4183,7 @@ Feature: The desktop board
       Given I added a task titled "Write the spec"
       When I open the window
       And I double-click the card "Write the spec"
+      And I press "cmd+t"
       And I drag across the trace from the start of its first line to the end of its second
       And I press "cmd+c"
       Then the clipboard reads the first 2 lines of the trace

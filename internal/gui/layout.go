@@ -31,10 +31,11 @@ const (
 // Point is somewhere in the window.
 type Point struct{ X, Y int }
 
-// Box is a rectangle of the window, in dp, and says of a list's panel whether it was drawn without a line to search by.
+// Box is a rectangle of the window, in dp, and says of a list's panel whether it was drawn without a line to search by, and of a form's fields how wide the column beside them is.
 type Box struct {
 	X, Y, W, H int
 	Unsearched bool
+	Beside     int
 }
 
 // In says whether a point falls inside.

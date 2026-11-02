@@ -908,7 +908,7 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
 	if w.Screen() != OnForm {
 		t.Fatalf("the window is on %v, not the detail", w.Screen())
 	}
@@ -976,7 +976,7 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
 	}
 	w = w.Key("tab")
-	w = w.clicked(goalMiddle(w, 1)).Key("enter")
+	w = w.clicked(goalMiddle(w, 1)).Key("enter").Key("cmd+t")
 	if w.Screen() != OnForm || !w.ChosenGoal() {
 		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
 	}

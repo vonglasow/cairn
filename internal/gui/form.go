@@ -30,6 +30,7 @@ type Form struct {
 	carried     int
 	opened      []string
 	behind      int
+	tracing     bool
 }
 
 // Changed says whether anything in the form differs from what it opened with.
@@ -81,6 +82,9 @@ func (f Form) onto(at int) Form {
 		f.partAt = 0
 	}
 	f.at = min(len(f.fields)-1, max(0, at))
+	if _, sectional := sectionOf(f.fields[f.at]); sectional {
+		f.tracing = false
+	}
 	if arriving && f.onParts() {
 		f = f.takingTheOneOn()
 	}
@@ -278,6 +282,9 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	box := w.formBox()
 	fields := w.form.Fields()
 	for i := range fields {
+		if w.hidden(fields[i]) {
+			continue
+		}
 		name, value, rows := FormPlace(box, fields, i)
 		value.H = lineHigh * rows
 		if WordsOf(w.measured(), name, fields[i].Name, small).In(p) || value.In(p) {

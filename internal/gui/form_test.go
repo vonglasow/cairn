@@ -310,7 +310,7 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	box := Over(w.width, w.height)
+	box := w.formBox()
 	at := 3
 	name := formName(box, w.Form().Fields(), at)
 	w = w.clicked(Point{X: name.X + 10, Y: name.Y + name.H/2})
@@ -981,7 +981,7 @@ func TestTheWorkBesideAnObjectiveIsHeldAndItsBarPulled(t *testing.T) {
 	}
 	w := New(newFake(), 1200, 800)
 	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
-	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
+	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter").Key("cmd+t")
 	var parts []string
 	for _, r := range w.Readables() {
 		if strings.HasPrefix(r.Key, "part:") {
@@ -1268,5 +1268,43 @@ func TestAFieldsValueCutShort(t *testing.T) {
 	_, value, _ = FormPlace(w.formBox(), w.form.Fields(), at)
 	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != "" {
 		t.Errorf("a value that fits opens a bubble of %q", got)
+	}
+}
+
+func TestAFieldChosenFromAListSaysSoWithAMark(t *testing.T) {
+	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	shot := drawn(t, w)
+	fields := w.Form().Fields()
+	for i, field := range fields {
+		_, value, rows := FormPlace(w.formBox(), fields, i)
+		mark := FieldMark(Framed(value, rows))
+		drawnThere := painted(shot, mark, Dark().Low) > 0
+		chosen := chosenFromAList(field) || chosenOnACalendar(field)
+		if field.Long || i == w.Form().On() {
+			continue
+		}
+		if chosen && !drawnThere {
+			t.Errorf("%q is chosen from a list and draws no mark", field.Name)
+		}
+		if !chosen && drawnThere {
+			t.Errorf("%q is typed into and draws a mark", field.Name)
+		}
+	}
+}
+
+func TestLabelsTooManyForTheirFieldSayHowManyAreLeft(t *testing.T) {
+	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "release"}}
+	w := holding(newFake(), c).Resized(720, 560)
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	fields := w.Form().Fields()
+	for i, field := range fields {
+		if field.Arg != "label" {
+			continue
+		}
+		_, value, rows := FormPlace(w.formBox(), fields, i)
+		if painted(drawn(t, w), Inside(Framed(value, rows)), Dark().Pill) == 0 {
+			t.Error("labels too many for their field show nothing of how many they are")
+		}
 	}
 }

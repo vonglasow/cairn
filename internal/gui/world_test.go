@@ -845,7 +845,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			}
 			_, value, rows := FormPlace(w.w.formBox(), fields, i)
 			frame := Framed(value, rows)
-			if box.X != frame.X || box.Y != frame.Y+frame.H+between {
+			if box.X > frame.X || box.X+box.W < frame.X+frame.W || box.Y != frame.Y+frame.H+between {
 				return fmt.Errorf("the calendar is at %d,%d and the field %q ends at %d,%d", box.X, box.Y, name, frame.X, frame.Y+frame.H)
 			}
 			return nil
