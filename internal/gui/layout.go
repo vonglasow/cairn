@@ -64,6 +64,7 @@ type Sizes struct {
 	Column [engine.Columns]int `json:"columns"`
 	Lane   [3]int              `json:"lanes"`
 	Band   [2]int              `json:"band"`
+	Form   [2]int              `json:"form,omitempty"`
 }
 
 // NarrowestColumn is the narrowest a gutter dragged leaves a column or a lane: room for a card's title, even when the window is wide enough for more.

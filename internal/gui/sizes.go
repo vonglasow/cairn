@@ -68,3 +68,6 @@ func (w Window) resized(s Sizes) Window {
 	}
 	return w
 }
+
+// Sizes is every size a person gave the window by hand.
+func (w Window) Sizes() Sizes { return w.sizes }

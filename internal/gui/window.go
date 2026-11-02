@@ -127,6 +127,8 @@ type Window struct {
 	form                  Form
 	formMoved, formGrip   Point
 	draggingForm, dragged bool
+	resizingForm          bool
+	resizedFrom           Box
 	sizes                 Sizes
 	kept                  SizesKept
 	widening              Widening

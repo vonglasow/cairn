@@ -1326,3 +1326,50 @@ func TestAPressOnTheDetailsTabComesBackFromTheHistory(t *testing.T) {
 		}
 	}
 }
+
+func TestTheFormKeepsItsSizeWhateverItHolds(t *testing.T) {
+	var steps []engine.Part
+	for i := range 12 {
+		steps = append(steps, engine.Part{Number: i + 1, Title: "A step"})
+	}
+	bare := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	full := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Description: "Line\nLine\nLine\nLine\nLine\nLine\nLine\nLine\nLine\nLine\nLine\nLine", Steps: steps})
+	bare = bare.clicked(middleOf(bare, 1, 0)).Key("enter")
+	full = full.clicked(middleOf(full, 1, 0)).Key("enter")
+	if bare.formPanel() != full.formPanel() {
+		t.Errorf("a bare task's form is %+v and a full one's %+v", bare.formPanel(), full.formPanel())
+	}
+}
+
+func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
+	w := holding(newFake(), card(1, "A", "todo"), card(2, "B", "todo"))
+	opened := w.clicked(middleOf(w, 1, 0)).Key("enter")
+	before := opened.formPanel()
+	grip := FormGrip(before)
+	from := Point{X: grip.X + grip.W/2, Y: grip.Y + grip.H/2}
+	to := Point{X: from.X - 100, Y: from.Y - 60}
+	resized := opened.PressAt(from).MoveTo(to).LetGo(to)
+	after := resized.formPanel()
+	if after.X != before.X || after.Y != before.Y || after.W != before.W-100 || after.H != before.H-60 {
+		t.Fatalf("dragged by -100,-60 the form went from %+v to %+v", before, after)
+	}
+	again := resized.Key("esc").clicked(middleOf(w, 1, 1)).Key("enter")
+	if got := again.formPanel(); got.W != after.W || got.H != after.H {
+		t.Errorf("the next form opens at %+v, not at the size left %+v", got, after)
+	}
+	if resized.Sizes().Form == ([2]int{}) {
+		t.Error("the size chosen is not kept with the window's other sizes")
+	}
+	tiny := opened.PressAt(from).MoveTo(Point{X: 0, Y: 0}).LetGo(Point{X: 0, Y: 0}).formPanel()
+	if tiny.W < FormLeast.X || tiny.H < FormLeast.Y {
+		t.Errorf("dragged far the form shrank to %+v", tiny)
+	}
+}
+
+func TestTheFormDrawsItsGrip(t *testing.T) {
+	w := holding(newFake(), card(1, "A", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
+	if painted(drawn(t, w), FormGrip(w.formPanel()), Dark().Faint) == 0 {
+		t.Error("the corner that resizes the form is not drawn")
+	}
+}

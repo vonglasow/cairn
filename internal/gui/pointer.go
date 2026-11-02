@@ -496,6 +496,10 @@ func (w Window) PressAt(p Point) Window {
 			w.held = Held{From: p, At: p}
 			return w
 		}
+		if FormGrip(w.formPanel()).In(p) {
+			w.resizingForm, w.resizedFrom, w.held = true, w.formPanel(), Held{From: p, At: p}
+			return w
+		}
 		if at, on := w.fieldAt(p); on {
 			w.picked = Picked{}
 			return w.holdingBy(at, p, Characters).inSightOfTheCaret()
@@ -529,6 +533,9 @@ func (w Window) MoveTo(p Point) Window {
 	if w.widening.On {
 		w.sizes = w.widening.To(p)
 		return w
+	}
+	if w.resizingForm {
+		return w.resizingTheForm(p)
 	}
 	if w.draggingForm {
 		return w.movingForm(p)
@@ -579,6 +586,10 @@ func (w Window) MoveTo(p Point) Window {
 func (w Window) LetGo(p Point) Window {
 	if w.widening.On {
 		w.widening, w.pressed = Widening{}, false
+		return w.resized(w.sizes)
+	}
+	if w.resizingForm {
+		w.resizingForm, w.held, w.pressed = false, Held{}, false
 		return w.resized(w.sizes)
 	}
 	if w.draggingForm {

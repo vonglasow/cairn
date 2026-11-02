@@ -681,8 +681,14 @@ least, ten at the most; the short fields grouped a section to a row, the head
 of the section first and each field's name before its box — `STATE`, `TIME`,
 `BLOCKED`, `LINKS`, by what each field asks the engine for; then the steps.
 Under a rule at the foot, and nowhere else, is what the form offers. The panel
-is as tall as what it holds, up to the panel every other screen uses: it
-stops under the steps rather than under a floor of empty ground. `FormPlace`
+keeps one size whatever the task holds, the panel every other screen uses, and
+its description keeps its share: cut to what it held, it grew and shrank from
+one task to the next and moved the description with it
+(`TestTheFormKeepsItsSizeWhateverItHolds`). Its corner, at the bottom right,
+resizes it when dragged, its top left staying where it is, down to
+`FormLeast` and up to the window; the size given is kept with the board's
+other sizes and the next form opens at it
+(`FormGrip`, `Sizes.Form`, `TestTheFormIsResizedByItsCornerAndKeepsTheSize`). `FormPlace`
 says where every field of a form goes, and everything that draws, clicks or
 measures a form asks it.
 

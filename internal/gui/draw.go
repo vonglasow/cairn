@@ -785,6 +785,17 @@ func drawCross(gtx layout.Context, cross Box, ink color.NRGBA) {
 	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: 1.5}.Op())
 }
 
+func drawGrip(gtx layout.Context, grip Box, ink color.NRGBA) {
+	x, y := float32(grip.X+grip.W), float32(grip.Y+grip.H)
+	var strokes clip.Path
+	strokes.Begin(gtx.Ops)
+	for _, reach := range []float32{float32(grip.W), float32(grip.W) / 2} {
+		strokes.MoveTo(f32.Pt(x-reach, y))
+		strokes.LineTo(f32.Pt(x, y-reach))
+	}
+	paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: 1.5}.Op())
+}
+
 func drawChevron(gtx layout.Context, mark Box, ink color.NRGBA) {
 	x, y := float32(mark.X), float32(mark.Y)+float32(mark.H)*0.3
 	w, h := float32(mark.W), float32(mark.H)*0.4
@@ -1369,6 +1380,7 @@ func drawForm(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			say(gtx, th, skin.Faint, head.Box, head.Said, head.Size)
 		}
 	}
+	drawGrip(gtx, FormGrip(panel), skin.Faint)
 	if w.screen == OnForm {
 		drawPanelOffers(gtx, th, skin, panel, w)
 		if note := w.FormNote(); note != "" && len(w.ContextSays()) == 0 {

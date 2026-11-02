@@ -169,10 +169,31 @@ func (w Window) formPanel() Box {
 }
 
 func (w Window) formOpensIn() Box {
-	if !w.besideShown() {
-		return FormOver(w.width, w.height, w.form.Fields())
+	over := Over(w.width, w.height)
+	if given := w.sizes.Form; given != ([2]int{}) {
+		over.W = max(FormLeast.X, min(given[0], w.width-over.X-margin))
+		over.H = max(FormLeast.Y, min(given[1], w.height-over.Y-margin))
 	}
-	return OpenOver(w.width, w.height, w.form.Fields())
+	return over
+}
+
+// FormLeast is the smallest a form is resized to: room for its title, a few lines of description and of steps, and its short fields beside them.
+var FormLeast = Point{X: 480, Y: 400}
+
+// FormGrip is the corner of a form that resizes it when dragged.
+func FormGrip(panel Box) Box {
+	return Box{X: panel.X + panel.W - gripSide - inset, Y: panel.Y + panel.H - gripSide - inset, W: gripSide, H: gripSide}
+}
+
+const gripSide = 14
+
+func (w Window) resizingTheForm(p Point) Window {
+	from := w.resizedFrom
+	w.sizes.Form = [2]int{
+		max(FormLeast.X, from.W+p.X-w.held.From.X),
+		max(FormLeast.Y, from.H+p.Y-w.held.From.Y),
+	}
+	return w
 }
 
 func (w Window) movingForm(p Point) Window {

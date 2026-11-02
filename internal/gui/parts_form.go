@@ -85,29 +85,11 @@ func sectionOf(field engine.Field) (int, bool) {
 
 const longHigh = 44
 
-// FormOver is the panel a form is drawn in: the one every other screen uses, cut to what the form holds.
-func FormOver(width, height int, fields []engine.Field) Box {
-	over := Over(width, height)
-	return cutTo(over, over, fields)
-}
-
-// OpenOver is the panel a form open on something already there is drawn in: cut the same way, to the fields laid out in its left column, with what stands beside them as tall as they are.
-func OpenOver(width, height int, fields []engine.Field) Box {
-	over := Over(width, height)
-	return cutTo(over, FormFields(over), fields)
-}
-
 // Shifted is a panel moved by so much, and held wholly inside a window of that size.
 func Shifted(b Box, by Point, width, height int) Box {
 	b.X = max(0, min(b.X+by.X, width-b.W))
 	b.Y = max(0, min(b.Y+by.Y, height-b.H))
 	return b
-}
-
-func cutTo(over, laid Box, fields []engine.Field) Box {
-	_, _, end := formLayout(laid, fields)
-	over.H = min(over.H, end-over.Y+between+barHigh+padding)
-	return over
 }
 
 func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
