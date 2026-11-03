@@ -14,6 +14,19 @@ import (
 
 var openTui = runTui
 
+func openTerminal(cmd *cobra.Command, h engine.Home, icons string) error {
+	set, err := tui.ParseSet(icons)
+	if err != nil {
+		return err
+	}
+	held, err := engine.Hold(h, engine.Through("tui", h))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = held.Close() }()
+	return openTui(cmd, tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(h)).Noting(notedIn(cmd.Context())))
+}
+
 func runTui(cmd *cobra.Command, model tea.Model) error {
 	if err := needsATerminal(cmd.InOrStdin(), cmd.OutOrStdout()); err != nil {
 		return err
@@ -49,16 +62,7 @@ func newTuiCmd() *cobra.Command {
 		Short: "Open the board in the terminal",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			set, err := tui.ParseSet(icons)
-			if err != nil {
-				return err
-			}
-			held, err := engine.Hold(home(), engine.Through("tui", home()))
-			if err != nil {
-				return err
-			}
-			defer func() { _ = held.Close() }()
-			return openTui(cmd, tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(home())).Noting(notedIn(cmd.Context())))
+			return openTerminal(cmd, home(), icons)
 		},
 	}
 	cmd.Flags().StringVar(&icons, "icons", string(tui.NerdFont), "which glyphs to draw with: nerdfont or unicode")

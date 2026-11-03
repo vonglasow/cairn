@@ -9,10 +9,14 @@ lists every target.
 The store lives in a temporary folder, so nothing here touches your own.
 
 To look at a board full of believable work rather than build one by hand,
-`make fixtures` (or `scripts/fixtures.sh [folder]`) makes a store under
-`/tmp/cairn-fixtures` (or the folder named) and opens the window on it in debug
-mode: what the window did is written down in `/tmp/cairn-fixtures/debug`. It
-only ever deletes a folder it made itself.
+`make fixtures` runs `cairn fixtures --new --gui --debug`: a store made afresh
+from the file the binary carries (`internal/engine/fixtures/fixtures.json`, days
+counted from today), in `cairn-fixtures` under the temporary folder, with the
+window opened on it in debug mode. `cairn fixtures` alone, with no repository
+and no Go, keeps a folder it made as it was left — a store worked on stays for
+the next look — and `--new` makes it again; `--tui` opens the terminal board,
+`--from` reads another export, and a folder it did not make is left alone. It
+replaces `scripts/fixtures.sh`, thirty commands that needed the repository.
 
 When cairn misbehaves on one system only, debug mode records it there: run
 it with `CAIRN_DEBUG=1`, do the one thing that goes wrong, and send what

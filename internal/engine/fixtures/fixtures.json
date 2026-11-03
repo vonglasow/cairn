@@ -1,0 +1,32 @@
+{
+  "cairn": "tasks",
+  "version": 4,
+  "objectives": [
+    {"number": 1, "title": "Ship cairn 1.0", "state": "active", "priority": "high", "deadline": "+71d", "labels": ["product"]},
+    {"number": 2, "title": "Make the store dependable", "state": "active", "priority": "normal", "labels": ["technical"]},
+    {"number": 3, "title": "Redesign the board", "state": "on-hold", "priority": "low"},
+    {"number": 4, "title": "Move to Postgres", "state": "reached", "priority": "normal"},
+    {"number": 5, "title": "Port to mobile", "state": "dropped", "priority": "low"}
+  ],
+  "tasks": [
+    {"number": 1, "title": "Write the packaging spec", "state": "current", "priority": "high", "deadline": "-1d", "estimate": "8h",
+     "spent": {"+0d": "3h"}, "labels": ["backend", "sprint-172"], "objectives": [1], "description": "Three ADRs to read before starting.",
+     "steps": [{"title": "Read ADR 0014", "done": false}, {"title": "Settle the multi-chart question", "done": true}, {"title": "Write the Flows section", "done": false}],
+     "focused": true},
+    {"number": 2, "title": "Rework the migrations", "state": "current", "priority": "critical", "deadline": "-7d", "estimate": "2h",
+     "spent": {"+0d": "9h"}, "labels": ["store"], "objectives": [2],
+     "steps": [{"title": "Back up before rolling back", "done": true}, {"title": "Test a rollback on an empty store", "done": false}],
+     "focused": true},
+    {"number": 3, "title": "The client's answer on quotas", "state": "blocked", "because": "waiting on the client", "priority": "high", "labels": ["product"], "objectives": [1]},
+    {"number": 4, "title": "Review PR 31745", "state": "watching", "blocked_by": [1], "priority": "normal", "labels": ["backend"]},
+    {"number": 5, "title": "Decide on naming", "state": "paused", "because": "team call", "priority": "low"},
+    {"number": 6, "title": "Clean the lockfiles", "state": "todo", "priority": "low", "labels": ["technical"], "objectives": [2]},
+    {"number": 7, "title": "Update the README", "state": "todo", "priority": "normal", "deadline": "+1d", "labels": ["doc"]},
+    {"number": 8, "title": "Encrypt the backups", "state": "backlog", "priority": "normal", "objectives": [2]},
+    {"number": 9, "title": "Draw the columns", "state": "backlog", "priority": "low", "objectives": [3]},
+    {"number": 10, "title": "Benchmark the store", "state": "backlog", "priority": "normal", "labels": ["technical"]},
+    {"number": 11, "title": "Switch to Postgres 16", "state": "done", "priority": "high", "labels": ["store"], "objectives": [4]},
+    {"number": 12, "title": "Drop the old schema", "state": "done", "priority": "normal", "labels": ["store"], "objectives": [4], "archived": true},
+    {"number": 13, "title": "iOS prototype", "state": "done", "priority": "low", "objectives": [5], "archived": true}
+  ]
+}

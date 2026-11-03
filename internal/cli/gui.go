@@ -31,20 +31,24 @@ func newGuiCmd() *cobra.Command {
 		Short: "Open the board in a window",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			held, err := engine.Hold(home(), engine.Through("gui", home()))
-			if err != nil {
-				return err
-			}
-			defer func() { _ = held.Close() }()
-			at, err := engine.Locate(home())
-			if err != nil {
-				return err
-			}
-			sizes := ""
-			if engine.KeepsSizes(home()) {
-				sizes = at.Sizes()
-			}
-			return openGui(held, engine.PagesFrom(home()), at.Draft(), sizes, notedIn(cmd.Context()), wide, high)
+			return openWindow(cmd, home())
 		},
 	}
+}
+
+func openWindow(cmd *cobra.Command, h engine.Home) error {
+	held, err := engine.Hold(h, engine.Through("gui", h))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = held.Close() }()
+	at, err := engine.Locate(h)
+	if err != nil {
+		return err
+	}
+	sizes := ""
+	if engine.KeepsSizes(h) {
+		sizes = at.Sizes()
+	}
+	return openGui(held, engine.PagesFrom(h), at.Draft(), sizes, notedIn(cmd.Context()), wide, high)
 }

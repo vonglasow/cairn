@@ -214,12 +214,11 @@ release-check:
 	@prek run -a --stage pre-push --skip mutation-all
 
 ## fixtures: open the window on a store full of believable work
-## A board of every column, parts, blockers, deadlines past and to come, tasks
-## in focus and archived — made afresh under /tmp/cairn-fixtures each time, so
-## nothing of your own is touched, and in debug mode, written down in its
-## debug folder. See scripts/fixtures.sh.
+## The store the binary carries, made afresh in the temporary folder each time,
+## so nothing of your own is touched, and in debug mode, written down in its
+## debug folder. `cairn fixtures --help` says the rest.
 fixtures:
-	@scripts/fixtures.sh
+	@go run ./cmd/cairn fixtures --new --gui --debug
 
 ## linux: build cairn and run its suite on Linux, in a container
 ## macOS is where cairn is written and Linux is the other half of what it says
