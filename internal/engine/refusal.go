@@ -52,6 +52,7 @@ var reasons = []reason{
 	{domain.ErrLabelHolds, KindRefused, "label-holds"},
 	{domain.ErrLabelsBothWays, KindRefused, "labels-both-ways"},
 	{domain.ErrReplacedNowhere, KindRefused, "replaced-nowhere"},
+	{domain.ErrNotADayFromToday, KindRefused, "not-a-day-from-today"},
 	{domain.ErrReplacedMoreThanOnce, KindRefused, "replaced-more-than-once"},
 	{ErrReplaceAlone, KindRefused, "replace-alone"},
 	{ErrDescriptionBothWays, KindRefused, "description-both-ways"},

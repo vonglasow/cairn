@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
+	"cairn/internal/domain"
 	"cairn/test"
 )
 
@@ -19,6 +21,7 @@ func initExchange(t *testing.T) func(*godog.ScenarioContext) {
 		w.register(sc)
 		w.registerStore(sc)
 		w.registerExchange(sc)
+		w.registerLabel(sc)
 	}
 }
 
@@ -69,6 +72,18 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 			{"number": 1, "title": %q, "state": "todo", "priority": "normal"},
 			{"number": 2, "parent": 1, "title": %q, "state": "done", "priority": "normal"},
 			{"number": 3, "parent": 1, "title": %q, "state": "todo", "priority": "normal"}]}`, work, done, open)), 0o600)
+	})
+	sc.Step(`^a file of my own holding:$`, func(held *godog.DocString) error {
+		w.file = filepath.Join(w.T.TempDir(), "held.json")
+		return os.WriteFile(w.file, []byte(held.Content), 0o600)
+	})
+	sc.Step(`^task (\d+) is due (\d+) days from today$`, func(n, days int) error {
+		return w.CommandSays(fmt.Sprintf("cairn task show %d", n), domain.FormatDay(time.Now().AddDate(0, 0, days)))
+	})
+	sc.Step(`^the time sheet of yesterday gives task (\d+) "([^"]*)"$`, func(n int, took string) error {
+		day := domain.FormatDay(time.Now().AddDate(0, 0, -1))
+		w.Run(fmt.Sprintf("cairn timesheet show --since %s --until %s", day, day))
+		return test.WantContains(w.Out.Stdout, took, fmt.Sprintf("the sheet of %s for task %d", day, n))
 	})
 	sc.Step(`^I import the tasks of that file$`, func() error {
 		w.Run("cairn task import " + w.file)

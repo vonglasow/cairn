@@ -128,3 +128,77 @@ Feature: Tasks carried from one store to another
       Then it fails
       And it says task 9 is not in the file
       And `cairn task list` lists 1 task
+
+  Rule: A file says what a board needs to be shown, every part of it optional
+
+    @exchange-time-comes-day-by-day
+    Scenario: the time spent comes with the days it was spent on
+      Given a file of my own exported from a store where these were run:
+        """
+        cairn task new "Ship it"
+        cairn timesheet add 1 2h --on 2026-10-01
+        cairn timesheet add 1 45m --on 2026-10-02
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn task show 1` says "2h45m"
+      And `cairn timesheet show --since 2026-10-01 --until 2026-10-01` says "2h"
+
+    @exchange-the-focus-comes-with-it
+    Scenario: a task in focus comes back in focus
+      Given I added a task titled "Already here"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn task new "Ship it"
+        cairn task focus 1
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn task focus` says "Ship it"
+
+    @exchange-labels-come-with-their-colours
+    Scenario: a label comes with its colour, even one nothing carries
+      Given a file of my own exported from a store where these were run:
+        """
+        cairn label new release
+        cairn label colour release teal
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And I run `cairn label list --json`
+      And the JSON gives the label "release" the colour "teal"
+
+    @exchange-a-day-counted-from-today
+    Scenario: a day written from today is read as that day
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 4, "objectives": [], "tasks": [
+          {"number": 1, "title": "Ship it", "state": "todo", "priority": "normal", "deadline": "+3d",
+           "spent": {"-1d": "2h"}}]}
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And task 1 is due 3 days from today
+      And the time sheet of yesterday gives task 1 "2h"
+
+    @exchange-a-day-counted-wrongly
+    Scenario: a day that cannot be read is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 4, "objectives": [], "tasks": [
+          {"number": 1, "title": "Ship it", "state": "todo", "priority": "normal", "deadline": "+3x"}]}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And `cairn task list` lists 0 tasks
+
+    @exchange-a-total-of-time-from-version-3
+    Scenario: a file of version 3 brings the total time spent, on the day it is read
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 3, "objectives": [], "tasks": [
+          {"number": 1, "title": "Ship it", "state": "todo", "priority": "normal", "time_spent": "1h30m"}]}
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn task show 1` says "1h30m"

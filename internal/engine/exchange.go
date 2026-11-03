@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/objective"
@@ -16,7 +17,7 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 3
+	exchangeVersion = 4
 	beforeSteps     = 1
 )
 
@@ -30,12 +31,20 @@ type exchanged struct {
 	Cairn      string            `json:"cairn"`
 	Version    int               `json:"version"`
 	Objectives []objective.Shape `json:"objectives"`
+	Labels     []labelFiled      `json:"labels,omitempty"`
 	Tasks      []filed           `json:"tasks"`
+}
+
+type labelFiled struct {
+	Label  string `json:"label"`
+	Colour string `json:"colour,omitempty"`
 }
 
 type filed struct {
 	task.Shape
-	Parent int `json:"parent,omitempty"`
+	Parent  int               `json:"parent,omitempty"`
+	Spent   map[string]string `json:"spent,omitempty"`
+	Focused bool              `json:"focused,omitempty"`
 }
 
 // Exported says which file the tasks were written to, and what it holds.
@@ -114,10 +123,25 @@ func (e *Engine) exporting() (exchanged, error) {
 		return exchanged{}, err
 	}
 	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []filed{}, Objectives: []objective.Shape{}}
+	spent, err := e.spentByDay()
+	if err != nil {
+		return exchanged{}, err
+	}
+	held, err := e.focus()
+	if err != nil {
+		return exchanged{}, err
+	}
+	labels, err := e.labelsCarried()
+	if err != nil {
+		return exchanged{}, err
+	}
+	for _, l := range labels {
+		out.Labels = append(out.Labels, labelFiled{Label: l.Label, Colour: l.Colour})
+	}
 	served := map[int]bool{}
 	for _, t := range tasks {
 		shape := task.OfTask(t)
-		out.Tasks = append(out.Tasks, filed{Shape: shape})
+		out.Tasks = append(out.Tasks, filed{Shape: shape, Spent: spent[shape.Number], Focused: slices.Contains(held, shape.Number)})
 		for _, o := range shape.Objectives {
 			served[o] = true
 		}
@@ -203,8 +227,14 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	if err != nil {
 		return domain.Held{}, err
 	}
+	if read, err = countedFromToday(read, time.Now()); err != nil {
+		return domain.Held{}, err
+	}
 	order, err := checked(read)
 	if err != nil {
+		return domain.Held{}, err
+	}
+	if err := e.labelsFiled(read.Labels); err != nil {
 		return domain.Held{}, err
 	}
 	objectives := map[int]int{}
@@ -217,7 +247,7 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	}
 	tasks := map[int]int{}
 	for _, t := range order {
-		c := fromFile(t.Shape)
+		c := fromFile(t)
 		if len(t.Objectives) > 0 {
 			serves := numbered(t.Objectives, objectives)
 			c.Objective = &serves
@@ -227,6 +257,9 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 			return domain.Held{}, err
 		}
 		tasks[t.Number] = task.OfTask(made).Number
+		if err := e.spentOnDays(tasks[t.Number], t.Spent); err != nil {
+			return domain.Held{}, err
+		}
 	}
 	for _, t := range slices.Backward(order) {
 		if err := e.standing(t, tasks); err != nil {
@@ -236,6 +269,13 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	for _, t := range order {
 		if t.Archived {
 			if err := e.archive(tasks[t.Number]); err != nil {
+				return domain.Held{}, err
+			}
+		}
+	}
+	for _, t := range order {
+		if t.Focused {
+			if _, err := e.putInFocus(tasks[t.Number]); err != nil {
 				return domain.Held{}, err
 			}
 		}
@@ -270,6 +310,14 @@ func (e *Engine) standing(t filed, tasks map[int]int) error {
 }
 
 func checked(read exchanged) ([]filed, error) {
+	for _, l := range read.Labels {
+		if _, err := oneLabel(l.Label); err != nil {
+			return nil, fmt.Errorf("label %q: %w", l.Label, err)
+		}
+		if l.Colour != "" && !slices.Contains(domain.LabelColours, l.Colour) {
+			return nil, fmt.Errorf("label %q: %w", l.Label, domain.ErrNoSuchColour)
+		}
+	}
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
 		if objectives[o.Number] {
@@ -318,7 +366,15 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 	}
 	made, err := task.NewTask(t.Title)
 	if err == nil {
-		_, err = apply(made, fromFile(t.Shape), creating)
+		_, err = apply(made, fromFile(t), creating)
+	}
+	for day, length := range t.Spent {
+		if err == nil {
+			_, err = domain.ParseDeadline(day)
+		}
+		if err == nil {
+			_, err = domain.ParseEstimate(length)
+		}
 	}
 	for _, s := range t.Steps {
 		if err == nil {
@@ -331,8 +387,12 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 	return nil
 }
 
-func fromFile(t task.Shape) Changes {
+func fromFile(f filed) Changes {
+	t := f.Shape
 	c := Changes{Description: &t.Description, Priority: &t.Priority, Because: &t.Because}
+	if len(f.Spent) == 0 && t.TimeSpent != "" {
+		c.Spent = &t.TimeSpent
+	}
 	if len(t.Labels) > 0 {
 		labels := slices.Clone(t.Labels)
 		c.Labels = &labels

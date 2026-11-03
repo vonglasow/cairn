@@ -262,6 +262,23 @@ picking the wrong one costs a command rather than the work it overwrote.
 A backup is read in the shape it was written, never today's: one taken before
 objectives existed says it holds none, rather than refusing to be read at all.
 
+An export is a file of version 4. Beside each task and the objectives it
+serves, it carries the time spent day by day (`"spent": {"2026-10-01": "2h"}`),
+whether the task is in focus (`"focused": true`), and every label with its
+colour, labels nothing carries included. All of it is optional, so a file
+written by hand — fixtures, a board to show — says only what it needs, and may
+count its days from the day it is read: `"deadline": "+3d"`, `"-1d"`, `"+2w"`,
+the same in the keys of `spent` (`@exchange-a-day-counted-from-today`). An
+export always writes the days as they are. A day that cannot be read refuses
+the whole file before anything is added.
+
+The time comes in as time added by hand on its day, so the Time page shows it
+where it was spent (`@exchange-time-comes-day-by-day`). A file of version 3
+carries the total alone, and it is added on the day the file is read
+(`@exchange-a-total-of-time-from-version-3`) — it used to be dropped. A task in
+focus comes back in focus, which puts it under way as focusing does. A label
+already in the store keeps its colour: nothing here is replaced.
+
 ## The board
 
 ```sh
