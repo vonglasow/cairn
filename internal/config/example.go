@@ -32,6 +32,12 @@ days = 14
 [focus]
 # session = "1h"
 
+# The label that asks an agent to agree on the approach with you before any
+# code: it writes the solution and what it set aside in the task's notes, and
+# waits for your word. Nothing of the kind happens unless a label is said.
+[approach]
+# label = "discuss"
+
 # What a deleted task does with its time: "kept" on the sheet, said to be
 # deleted, or "taken" with it, as though it had never been spent. And whether a
 # week of the time page shows its Saturday and Sunday: "shown", or "hidden" for

@@ -251,10 +251,16 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	sc.Step(`^a configuration that says "([^"]*)" is "([^"]*)" under "(\[[^"]*\])"$`, func(key, value, table string) error {
 		return w.WriteConfig(fmt.Sprintf("%s\n%s = %s\n", table, key, value))
 	})
+	sc.Step(`^a configuration whose approach label is "([^"]*)"$`, func(label string) error {
+		return w.WriteConfig(fmt.Sprintf("[approach]\nlabel = %q\n", label))
+	})
 	sc.Step(`^that same configuration keeps the window's sizes$`, func() error {
 		return w.appendConfig("[window]\nkeep_sizes = true\n")
 	})
 	sc.Step(`^it says every key of the configuration, under its table:$`, w.saysEveryKey)
+	sc.Step(`^it says no label asks for the approach to be agreed first$`, func() error {
+		return test.WantContains(w.Out.Stdout, "no label asks for the approach to be agreed first", "the approach")
+	})
 	sc.Step(`^it says a focus session is never asked to be renewed$`, func() error {
 		return test.WantContains(w.Out.Stdout, "never asked to be renewed", "the focus")
 	})

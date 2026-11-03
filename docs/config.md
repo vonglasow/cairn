@@ -218,6 +218,30 @@ Now is the clock, unless `CAIRN_NOW` names another moment, written in RFC 3339:
 a scenario stands later to see a session grow, and the acts written meanwhile
 are written at that moment.
 
+## A label that asks for the approach to be agreed first
+
+```toml
+[approach]
+label = "discuss"   # a task carrying it is not coded before you agree on how
+```
+
+Some tasks leave real choices open, and code written before they are made is
+code that decides them. The label marks those tasks: an agent working on one
+writes `approach.md` in its notes — the solution, what was set aside, the
+scenarios, what is out of scope, the open questions, a mockup when the screen
+changes — presents it, and writes no code before the person agrees; on
+agreement a dated entry records it and the label comes off. You put the label
+on; an agent may propose it, never put it on itself.
+
+There is no default. Without the key, or with it empty, nothing of this exists:
+the skill says nothing of it and an agent works as before
+(`@config-an-empty-approach-label-is-no-label`). Any word will do — `discuss`
+is only the one the file suggests, commented. cairn enforces nothing: it keeps
+the key and shows it in `config show` and over MCP
+(`@config-show-says-the-approach-label`); the skill gives the label its meaning
+(see [claude-code.md](claude-code.md)). An older cairn refuses the key as one
+it does not know.
+
 ## What a deleted task does with its time
 
 ```toml

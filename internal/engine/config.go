@@ -19,17 +19,18 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, each of its places alongside what named it, and every other key with the value cairn uses — what the file says, or what is used when it says nothing.
 type Config struct {
-	File    string        `json:"file"`
-	Store   Emplacement   `json:"store"`
-	Notes   Emplacement   `json:"notes"`
-	Plugin  Emplacement   `json:"plugin"`
-	Pages   *PagesConfig  `json:"pages,omitempty"`
-	Archive *Archive      `json:"archive,omitempty"`
-	Focus   *FocusConfig  `json:"focus,omitempty"`
-	Time    *TimeConfig   `json:"time,omitempty"`
-	Window  *WindowConfig `json:"window,omitempty"`
-	Problem string        `json:"problem,omitempty"`
-	Written []string      `json:"written,omitempty"`
+	File     string          `json:"file"`
+	Store    Emplacement     `json:"store"`
+	Notes    Emplacement     `json:"notes"`
+	Plugin   Emplacement     `json:"plugin"`
+	Pages    *PagesConfig    `json:"pages,omitempty"`
+	Archive  *Archive        `json:"archive,omitempty"`
+	Focus    *FocusConfig    `json:"focus,omitempty"`
+	Approach *ApproachConfig `json:"approach,omitempty"`
+	Time     *TimeConfig     `json:"time,omitempty"`
+	Window   *WindowConfig   `json:"window,omitempty"`
+	Problem  string          `json:"problem,omitempty"`
+	Written  []string        `json:"written,omitempty"`
 }
 
 // PagesConfig is whether each page is on.
@@ -53,6 +54,11 @@ type WindowConfig struct {
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it; nothing when it is not said.
 type FocusConfig struct {
 	Session string `json:"session,omitempty"`
+}
+
+// ApproachConfig is the label asking for the approach to be agreed before any code, as the file wrote it; nothing when it is not said.
+type ApproachConfig struct {
+	Label string `json:"label,omitempty" jsonschema:"the label asking for the approach to be agreed before any code; empty when none is"`
 }
 
 // Archive is the day archiving counts from, nothing when it is not said and nothing is archived on its own, and how many days each period lasts.
@@ -100,6 +106,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Archive = &Archive{Start: start, Days: days}
 	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
+	g.config.Approach = &ApproachConfig{Label: p.ApproachLabel()}
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
 	g.config.Written = p.Written()
 }
@@ -168,6 +175,14 @@ func configText(c Config) string {
 			said.WriteString("# session is not said: a focus session is never asked to be renewed\n")
 		} else {
 			fmt.Fprintf(&said, "session = %q\n", c.Focus.Session)
+		}
+	}
+	if c.Approach != nil {
+		said.WriteString("\n[approach]\n")
+		if c.Approach.Label == "" {
+			said.WriteString("# label is not said: no label asks for the approach to be agreed first\n")
+		} else {
+			fmt.Fprintf(&said, "label = %q\n", c.Approach.Label)
 		}
 	}
 	if c.Time != nil {

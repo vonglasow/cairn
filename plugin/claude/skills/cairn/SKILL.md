@@ -8,8 +8,9 @@ description: Work on a cairn task — a "task cairn", written cairn#123. Use whe
 ## Words
 
 - **"task" alone** is your own to-do list, never a cairn task.
-- **A cairn task** is said "task cairn" and written `cairn#123`. Write it that
-  way in every answer.
+- **A cairn task** is said "task cairn" and written `cairn#123`. `#123` alone
+  will do while no other tracker is in the conversation; as soon as one is,
+  write `cairn#123` every time.
 - External tickets keep their own notation: `AB#123` (Azure Boards),
   `PROJ-123` (Jira), `owner/repo#123` (GitHub).
 
@@ -77,6 +78,78 @@ are on: add a step.
 Put a task in `done` only once its steps are ticked, or say which ones were
 ticked with it: over MCP, finishing a task ticks its open steps.
 
+## Several tasks in one session
+
+cairn holds several tasks in focus at once, and a session may work through a
+batch of them.
+
+- Focus each task when its work starts, and keep it while its work runs —
+  several at once when they run together.
+- A subagent does not hold the focus: the session that sends it does, and
+  focuses the task before sending it.
+- Close each task (see below) before moving to the next.
+- At the end, close or detach from every task still in focus.
+
+## Closing — a task put in done
+
+When the work is delivered, write before moving the task:
+
+1. a dated entry naming what was delivered — the commit, the branch, pushed
+   or not, what was checked — and what was left out;
+2. summary.md rewritten to say it is finished, and where the work is;
+3. `task_edit` with `state: done`, then `task_unfocus`.
+
+A task closed because it is obsolete, or merged into another, gets the same
+entry, saying which: the task that carries the work now, or why none does.
+
+## A decision that changes the task
+
+A task that asked a question ("decide between A, B and C") and got its
+answer is now the work decided:
+
+- the title becomes the work decided ("Implement B");
+- the description is rewritten to say what the task is now;
+- the question asked and the decision go in a dated entry, never in the
+  description;
+- labels and blockers follow the decision: a label meaning "waiting for a
+  decision" comes off, a task the decision put in the way becomes a blocker.
+
+A description citing something that moved — a commit hash after a history
+rewrite, a branch renamed — is fixed with `task_edit` `replace` and `by`, not
+written again whole.
+
+## Agreeing on the approach — only when a label asks for it
+
+`config_show` (`cairn config show`) may name an `[approach] label`. Without
+one, say nothing of it and work as usual.
+
+With one — say `discuss` — a task carrying that label is not coded before
+the person agrees on how:
+
+1. write `approach.md` in its notes: the solution, the alternatives set aside
+   and why, the scenarios, what is out of scope, the open questions, and a
+   mockup when anything on screen changes;
+2. present it, and write no code before the person agrees;
+3. on agreement, a dated entry records it and the label comes off.
+
+The person puts the label on. You may propose it when a task leaves real
+choices open; never put it on yourself.
+
+## The command line
+
+When the MCP server answers an error, or for a long batch, drive `cairn`
+from the shell instead, and say so. What it does that an agent would not
+expect:
+
+- On `task edit`, `--label x` adds one; `--label -x` takes one off;
+  `--label =x` replaces them all — the same for `--blocker`, `--link` and
+  `--objective`. The answer says what was added and taken off: read it.
+- In zsh, quote an `=`: `--label '=x'`.
+- `--replace "old" --by "new"` changes one piece of a description, which must
+  be there exactly once; `--desc` replaces it whole.
+- `task move N --after M` takes N into M's column when it is elsewhere.
+- `--json` gives what the MCP server would have answered.
+
 ## Done does not reopen
 
 A task done whose work does not hold is not reopened: open a new task linked
@@ -98,5 +171,3 @@ down into one archive; say where it is. Nothing a person wrote is in it.
 1. Update `summary.md` in the task's notes: the decisions taken, where the
    task stands, the next step. Rewrite it whole; keep it short.
 2. `task_unfocus` with the number. The hook closes the session's link.
-
-To work on another task cairn, detach from this one first.

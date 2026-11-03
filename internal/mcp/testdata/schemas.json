@@ -410,6 +410,19 @@
           },
           "additionalProperties": false
         },
+        "approach": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "the label asking for the approach to be agreed before any code; empty when none is"
+            }
+          },
+          "additionalProperties": false
+        },
         "time": {
           "type": [
             "null",

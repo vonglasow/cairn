@@ -190,6 +190,24 @@ choosing, detaching — the rule of words, and one rule about a task done: it is
 not reopened, a task linked to it is opened instead (see
 [links.md](links.md)). Nothing mechanical is in it.
 
+What it says beyond those came from real sessions, each a gap an agent filled
+on its own and filled differently every time:
+
+- **several tasks in one session** — each focused while its work runs, a
+  subagent's task held by the session that sends it, each closed before the
+  next; it used to assume one task per session;
+- **closing** — a dated entry naming what was delivered and what was left out,
+  summary.md rewritten as finished, then the focus let go;
+- **a decision that changes the task** — the title becomes the work decided,
+  the description says what the task is now, the question and the decision go
+  in a dated entry, labels and blockers follow;
+- **the approach**, only when `[approach] label` is set (see
+  [config.md](config.md)): `approach.md` written and agreed before any code;
+- **the command line** — what an agent driving `cairn` from the shell would
+  not expect, for when the MCP server fails or a batch is long;
+- **the notation** — `#123` will do while no other tracker is in the
+  conversation, because both the person and the agent wrote it anyway.
+
 ## Where it lives, and how it is installed
 
 ```

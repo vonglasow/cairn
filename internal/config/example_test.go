@@ -38,7 +38,7 @@ func TestTheExample_everyKeyItCommentsIsReadOnceItsCommentIsTakenOff(t *testing.
 }
 
 func TestTheExample_writesEveryTableItsHeading(t *testing.T) {
-	for _, table := range []string{"[pages]", "[archive]", "[focus]", "[time]", "[window]"} {
+	for _, table := range []string{"[pages]", "[archive]", "[focus]", "[approach]", "[time]", "[window]"} {
 		if !regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(table) + `$`).MatchString(Example) {
 			t.Errorf("the example does not write %s out of a comment", table)
 		}

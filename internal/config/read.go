@@ -86,6 +86,7 @@ type Places struct {
 	archiveStart string
 	archiveDays  int
 	focusSession string
+	approach     string
 	timeDeleted  string
 	timeWeekends string
 	keepSizes    bool
@@ -93,14 +94,15 @@ type Places struct {
 }
 
 type file struct {
-	Store   *string  `toml:"store"`
-	Notes   *string  `toml:"notes"`
-	Plugin  *string  `toml:"plugin"`
-	Pages   *pages   `toml:"pages"`
-	Archive *archive `toml:"archive"`
-	Focus   *focus   `toml:"focus"`
-	Time    *timed   `toml:"time"`
-	Window  *window  `toml:"window"`
+	Store    *string   `toml:"store"`
+	Notes    *string   `toml:"notes"`
+	Plugin   *string   `toml:"plugin"`
+	Pages    *pages    `toml:"pages"`
+	Archive  *archive  `toml:"archive"`
+	Focus    *focus    `toml:"focus"`
+	Approach *approach `toml:"approach"`
+	Time     *timed    `toml:"time"`
+	Window   *window   `toml:"window"`
 }
 
 type window struct {
@@ -125,6 +127,17 @@ type timed struct {
 
 type focus struct {
 	Session string `toml:"session"`
+}
+
+type approach struct {
+	Label string `toml:"label"`
+}
+
+func (a *approach) label() string {
+	if a == nil {
+		return ""
+	}
+	return a.Label
 }
 
 type archive struct {
@@ -206,6 +219,9 @@ func (p Places) TimeWeekends() string { return p.timeWeekends }
 
 // FocusSession is how long a focus session lasts before it asks to be renewed, written 1h, exactly as the file wrote it; nothing when the file does not say.
 func (p Places) FocusSession() string { return p.focusSession }
+
+// ApproachLabel is the label asking for the approach to be agreed before any code, exactly as the file wrote it; nothing when the file does not say.
+func (p Places) ApproachLabel() string { return p.approach }
 
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
@@ -338,6 +354,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		timeDeleted:  deleted,
 		timeWeekends: weekends,
 		focusSession: f.Focus.session(),
+		approach:     f.Approach.label(),
 		archiveStart: start,
 		archiveDays:  days,
 		store:        filepath.Join(home, DefaultFolder, defaultFile),

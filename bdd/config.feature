@@ -91,6 +91,7 @@ Feature: Where cairn looks for its own places
         | key        | value      |
         | start      | 2026-10-21 |
         | session    | 1h         |
+        | label      | discuss    |
 
     @config-init-a-value-changed-is-read
     Scenario: a value changed in the file config init wrote is read
@@ -295,6 +296,20 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "focus.session"
 
+  Rule: A label asks for the approach to be agreed first only when the configuration names it
+
+    @config-show-says-the-approach-label
+    Scenario: config show says which label asks for the approach to be agreed first
+      Given a configuration whose approach label is "discuss"
+      When I run `cairn config show`
+      Then it says "label" is "discuss"
+
+    @config-an-empty-approach-label-is-no-label
+    Scenario: a label given empty is no label at all
+      Given a configuration whose approach label is ""
+      When I run `cairn config show`
+      Then it says no label asks for the approach to be agreed first
+
   Rule: A deleted task takes its time with it only when the configuration says so
 
     @config-show-says-a-deleted-task-takes-its-time
@@ -361,6 +376,7 @@ Feature: Where cairn looks for its own places
         | window  | keep_sizes = false  |
       And it says nothing is archived on its own
       And it says a focus session is never asked to be renewed
+      And it says no label asks for the approach to be agreed first
 
     @config-show-reads-as-a-configuration
     Scenario: what config show says is a configuration cairn reads as the same

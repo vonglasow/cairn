@@ -733,6 +733,20 @@ func TestRead_saysHowLongAFocusSessionLasts(t *testing.T) {
 	}
 }
 
+func TestRead_saysWhichLabelAsksForTheApproachFirst(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[approach]\nlabel = \"discuss\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.ApproachLabel(); got != "discuss" {
+		t.Errorf("the approach label is %q, want discuss", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.ApproachLabel(); got != "" {
+		t.Errorf("with no file, the approach label is %q", got)
+	}
+}
+
 func TestRead_saysWhatADeletedTaskDoesWithItsTime(t *testing.T) {
 	read, err := config.Read(writtenConfig(t, "[time]\ndeleted = \"taken\"\n"), silentEnv)
 	if err != nil {

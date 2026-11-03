@@ -47,3 +47,34 @@ Feature: The Claude Code plugin comes with the binary
   Scenario: the skill tells an agent to open a linked task rather than reopen one done
     When I read the cairn skill
     Then the skill says "A task done whose work does not hold is not reopened: open a new task linked to it"
+
+  @plugin-the-skill-holds-several-tasks
+  Scenario: the skill tells an agent how to work through several tasks in one session
+    When I read the cairn skill
+    Then the skill says "Focus each task when its work starts, and keep it while its work runs"
+    And the skill says "A subagent does not hold the focus: the session that sends it does"
+
+  @plugin-the-skill-says-what-closing-writes
+  Scenario: the skill tells an agent what closing a task writes
+    When I read the cairn skill
+    Then the skill says "a dated entry naming what was delivered"
+    And the skill says "summary.md rewritten to say it is finished"
+
+  @plugin-the-skill-says-what-a-decision-changes
+  Scenario: the skill tells an agent what a decision that changes a task does to it
+    When I read the cairn skill
+    Then the skill says "the title becomes the work decided"
+    And the skill says "the question asked and the decision go in a dated entry"
+
+  @plugin-the-skill-says-the-traps-of-the-command-line
+  Scenario: the skill tells an agent what the command line does that it would not expect
+    When I read the cairn skill
+    Then the skill says "--label =x"
+    And the skill says "--replace"
+    And the skill says "When the MCP server answers an error"
+
+  @plugin-the-skill-reads-the-approach-label
+  Scenario: the skill gives the approach label its meaning, only when the configuration names one
+    When I read the cairn skill
+    Then the skill says "[approach] label"
+    And the skill says "Without one, say nothing of it"
