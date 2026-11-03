@@ -727,6 +727,56 @@ Feature: Tasks
       When I run `cairn task edit 1 --priority ""`
       Then the task carries the priority "normal"
 
+    @task-edit-description-part
+    Scenario: one piece of a description is changed without writing the rest again
+      Given I added a task titled "Ship it" with the description "built on main at abc123, tested"
+      When I run `cairn task edit 1 --replace abc123 --by def456`
+      Then it succeeds
+      And the task carries the description "built on main at def456, tested"
+
+    @task-edit-description-part-taken-out
+    Scenario: a piece replaced by nothing is taken out
+      Given I added a task titled "Ship it" with the description "built on main, tested"
+      When I run `cairn task edit 1 --replace ", tested" --by ""`
+      Then the task carries the description "built on main"
+
+    @task-edit-description-part-missing
+    Scenario: a piece the description does not hold is refused
+      Given I added a task titled "Ship it" with the description "built on main"
+      When I run `cairn task edit 1 --replace develop --by main`
+      Then it fails
+      And it says the text to replace is not in the description
+      And `cairn task show 1` says "built on main"
+
+    @task-edit-description-part-twice
+    Scenario: a piece the description holds more than once is refused, saying how many times
+      Given I added a task titled "Ship it" with the description "main into main"
+      When I run `cairn task edit 1 --replace main --by develop`
+      Then it fails
+      And it says the text to replace is there 2 times
+      And `cairn task show 1` says "main into main"
+
+    @task-edit-description-part-and-whole
+    Scenario: a description is changed whole or in part, not both
+      Given I added a task titled "Ship it" with the description "built on main"
+      When I run `cairn task edit 1 --desc "other" --replace main --by develop`
+      Then it fails
+      And it says the description is changed whole or in part, not both
+
+    @task-edit-description-part-alone
+    Scenario: a piece to replace says what replaces it
+      Given I added a task titled "Ship it" with the description "built on main"
+      When I run `cairn task edit 1 --replace main`
+      Then it fails
+      And it says what to replace and what to put instead go together
+
+    @task-edit-description-part-empty
+    Scenario: nothing at all is no piece to replace
+      Given I added a task titled "Ship it" with the description "built on main"
+      When I run `cairn task edit 1 --replace "" --by develop`
+      Then it fails
+      And it says the text to replace is not in the description
+
     @task-edit-untouched
     Scenario: what was not named is left alone
       Given I added a task titled "Write the spec" with the description "the one"

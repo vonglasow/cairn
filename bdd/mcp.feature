@@ -230,6 +230,14 @@ Feature: Answering a machine over MCP
       Then it answers with a task carrying 3 labels
       And its answer says the labels added are "urgent"
 
+    @mcp-a-piece-of-a-description-is-replaced
+    Scenario: an agent changes one piece of a description in one call
+      Given I added a task titled "Write the spec" with the description "built on main at abc123"
+      And a cairn server started with `--access write`
+      When I call `task_edit` with the number 1, replacing "abc123" by "def456"
+      Then it answers without an error
+      And `cairn task show 1` says "built on main at def456"
+
     @mcp-looks-for-what-it-was-told
     Scenario: what a tool is told to look for arrives whole
       Given I added a task titled "Write the spec"

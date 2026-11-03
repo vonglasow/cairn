@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"time"
 
 	"cairn/internal/domain"
@@ -11,6 +12,8 @@ import (
 type Changes struct {
 	Title       *string
 	Description *string
+	Replace     *string
+	By          *string
 	State       *string
 	Priority    *string
 	Labels      *[]string
@@ -26,7 +29,7 @@ type Changes struct {
 }
 
 func (c Changes) named() bool {
-	return c.Title != nil || c.Description != nil || c.State != nil ||
+	return c.Title != nil || c.Description != nil || c.Replace != nil || c.By != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil ||
 		c.Estimate != nil || c.Spent != nil || c.Steps != nil || c.Objective != nil ||
 		c.Blocker != nil || c.Link != nil || c.Because != nil
@@ -51,7 +54,7 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 	a := t.Carried()
 	if err := applyCarried(carriedTo{&a.Title, &a.Description, &a.Priority, &a.Labels, &a.Deadline, &a.Estimate}, "a task", carriedChanges{
-		title: c.Title, description: c.Description, priority: c.Priority,
+		title: c.Title, description: c.Description, replace: c.Replace, by: c.By, priority: c.Priority,
 		labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
 	}, atCreation); err != nil {
 		return task.Task{}, err
@@ -114,8 +117,28 @@ type carriedTo struct {
 }
 
 type carriedChanges struct {
-	title, description, priority, deadline, estimate *string
-	labels                                           *[]string
+	title, description, replace, by, priority, deadline, estimate *string
+	labels                                                        *[]string
+}
+
+// What a change to a piece of a description can be turned down for.
+var (
+	ErrReplaceAlone        = errors.New("--replace and --by go together: what to replace, and what to put instead")
+	ErrDescriptionBothWays = errors.New("the description is changed whole or in part, not both")
+)
+
+func replaced(description string, c carriedChanges) (string, error) {
+	if (c.replace == nil) != (c.by == nil) {
+		return "", ErrReplaceAlone
+	}
+	if c.description != nil {
+		return "", ErrDescriptionBothWays
+	}
+	said, err := domain.ReplaceOnce(description, *c.replace, *c.by)
+	if err != nil {
+		return "", err
+	}
+	return domain.Prose(said)
 }
 
 func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) error {
@@ -128,6 +151,13 @@ func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) er
 	}
 	if c.description != nil {
 		said, err := domain.Prose(*c.description)
+		if err != nil {
+			return err
+		}
+		*to.description = said
+	}
+	if c.replace != nil || c.by != nil {
+		said, err := replaced(*to.description, c)
 		if err != nil {
 			return err
 		}

@@ -1078,6 +1078,10 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "by": {
+          "description": "what goes in place of the piece --replace names; empty takes it out",
+          "type": "string"
+        },
         "deadline": {
           "description": "the day it is due",
           "type": "string"
@@ -1109,6 +1113,10 @@
             "high",
             "critical"
           ],
+          "type": "string"
+        },
+        "replace": {
+          "description": "a piece of the description to change, there exactly once; --by says what goes in its place",
           "type": "string"
         },
         "state": {
@@ -3599,6 +3607,10 @@
           },
           "type": "array"
         },
+        "by": {
+          "description": "what goes in place of the piece --replace names; empty takes it out",
+          "type": "string"
+        },
         "deadline": {
           "description": "the day it is due",
           "type": "string"
@@ -3644,6 +3656,10 @@
             "high",
             "critical"
           ],
+          "type": "string"
+        },
+        "replace": {
+          "description": "a piece of the description to change, there exactly once; --by says what goes in its place",
           "type": "string"
         },
         "spent": {

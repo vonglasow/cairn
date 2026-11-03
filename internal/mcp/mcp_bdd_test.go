@@ -811,6 +811,11 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`, func(title, first, second string) error {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
 		})
+		sc.Step("^I call `task_edit` with the number (\\d+), replacing \"([^\"]*)\" by \"([^\"]*)\"$", func(n int, old, by string) error {
+			w.number = n
+			_ = w.callTool("task_edit", map[string]any{"number": n, "replace": old, "by": by})
+			return nil
+		})
 		sc.Step(`^it answers with a task carrying (\d+) labels$`, w.itAnswersWithATaskCarryingLabels)
 		sc.Step(`^its answer says the labels added are "([^"]*)"$`, w.itsAnswerSaysTheLabelsAdded)
 		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)

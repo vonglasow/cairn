@@ -314,6 +314,13 @@ Feature: Objectives
       When I run `cairn objective edit 1 --title "Ship cairn 1.0, for real"`
       Then it reports an objective titled "Ship cairn 1.0, for real"
 
+    @objective-edit-description-part
+    Scenario: one piece of an objective's description is changed without writing the rest again
+      Given I added an objective titled "Ship cairn 1.0" with the description "for v0.10, on main"
+      When I run `cairn objective edit 1 --replace v0.10 --by v0.11`
+      Then it succeeds
+      And the objective carries the description "for v0.11, on main"
+
     @objective-edit-blank-title
     Scenario: a title cannot be emptied by editing
       Given I added an objective titled "Ship cairn 1.0"

@@ -27,6 +27,8 @@ type objectives interface {
 type ObjectiveChanges struct {
 	Title       *string
 	Description *string
+	Replace     *string
+	By          *string
 	State       *string
 	Priority    *string
 	Labels      *[]string
@@ -35,7 +37,7 @@ type ObjectiveChanges struct {
 }
 
 func (c ObjectiveChanges) named() bool {
-	return c.Title != nil || c.Description != nil || c.State != nil ||
+	return c.Title != nil || c.Description != nil || c.Replace != nil || c.By != nil || c.State != nil ||
 		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil
 }
 
@@ -95,7 +97,7 @@ func factsOfObjective(o objective.Objective) objective.Carried { return o.Carrie
 func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) (objective.Objective, error) {
 	a := o.Carried()
 	if err := applyCarried(carriedTo{&a.Title, &a.Description, &a.Priority, &a.Labels, &a.Deadline, &a.Estimate}, "an objective", carriedChanges{
-		title: c.Title, description: c.Description, priority: c.Priority,
+		title: c.Title, description: c.Description, replace: c.Replace, by: c.By, priority: c.Priority,
 		labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
 	}, atCreation); err != nil {
 		return objective.Objective{}, err
@@ -334,10 +336,11 @@ var ObjectiveEdit = Operation{
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
-	}, objectiveAttributes...),
+	}, append(objectiveAttributes, replaceArguments...)...),
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
 		changes := objectiveChanges(in)
+		changes.Replace, changes.By = in.Change("replace"), in.Change("by")
 		changes.Title = in.Change("title")
 		was, _ := on.Engine.showObjective(n)
 		edited, err := on.Engine.editObjective(n, changes)

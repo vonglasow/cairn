@@ -62,6 +62,21 @@ session's log for want of being told where else to put it — see
 [context.md](context.md). Nothing refuses a description that reads like a log:
 a description may well hold dates, and a refusal would forbid that too.
 
+## A piece of a description changes in one call
+
+`task_edit` and `objective_edit` take `replace` and `by`, as the command line
+takes `--replace` and `--by`: the piece named is put in place of, and the rest
+is left as it was. Fixing one commit hash on twenty tasks used to be, for each,
+`task_show`, an edit outside cairn and the whole description sent back — three
+calls and a full rewrite where a slip anywhere lost text. It is one call now.
+
+The piece has to be there exactly once, as the artifact store's `str_replace`
+asks: not there, or there twice (the refusal says how many times), and nothing
+is written — more of it is given, and the place is beyond doubt. `by` empty
+takes the piece out. `desc` beside `replace` is refused: the description is
+changed whole or in part, not both. No regular expression, no several pieces in
+one call, nothing but the description: what was asked for, and nothing beside.
+
 ## What an agent may do is settled when the server starts
 
 One flag, three levels, `read` by default:

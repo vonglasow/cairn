@@ -465,6 +465,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says the text to replace is not in the description$`, func() error {
+		return test.WantContains(w.Out.Stderr, "the text to replace is not in the description", "the refusal")
+	})
+	sc.Step(`^it says the text to replace is there (\d+) times$`, func(n int) error {
+		return test.WantContains(w.Out.Stderr, fmt.Sprintf("the text to replace is there %d times", n), "the refusal")
+	})
+	sc.Step(`^it says the description is changed whole or in part, not both$`, func() error {
+		return test.WantContains(w.Out.Stderr, "the description is changed whole or in part, not both", "the refusal")
+	})
+	sc.Step(`^it says what to replace and what to put instead go together$`, func() error {
+		return test.WantContains(w.Out.Stderr, "--replace and --by go together", "the refusal")
+	})
 	sc.Step(`^it says nothing was added or taken off$`, func() error {
 		for _, l := range strings.Split(w.Out.Stdout, "\n") {
 			if strings.Contains(l, " added ") || strings.Contains(l, " taken off ") {

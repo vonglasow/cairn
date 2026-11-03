@@ -270,13 +270,14 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Takes: append(append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
-	}, taskAttributes...), stepsArgument),
+	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...),
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
 		changes, err := taskChanges(in)
 		if err != nil {
 			return Answer{}, err
 		}
+		changes.Replace, changes.By = in.Change("replace"), in.Change("by")
 		changes.Title = in.Change("title")
 		changes.Finishing = in.Confirmed
 		was, _ := on.Engine.show(n)
@@ -414,6 +415,11 @@ func editReason(err error) error {
 		return fmt.Errorf("%w: name one of --title, --desc, --state, --priority, --label, --deadline, --estimate", err)
 	}
 	return err
+}
+
+var replaceArguments = []Argument{
+	{Name: "replace", Kind: Text, Means: "a piece of the description to change, there exactly once; --by says what goes in its place"},
+	{Name: "by", Kind: Text, Means: "what goes in place of the piece --replace names; empty takes it out"},
 }
 
 func taskChanges(in Input) (Changes, error) {
