@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/lipgloss/v2"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/cucumber/godog"
 
@@ -161,6 +163,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.When(`^I open the board$`, func() error { w.open(); return nil })
+	sc.Then(`^no screen runs past the terminal$`, w.noScreenRunsPastTheTerminal)
 	sc.Step(`^I press (".*")$`, w.pressMany)
 	sc.Step(`^I press "([^"]*)" (\d+) times$`, func(name string, times int) error {
 		for range times {
@@ -869,5 +872,37 @@ func drawsWithoutFault(b Board) (err error) {
 		}
 	}()
 	_ = b.View()
+	return nil
+}
+
+func (w *world) noScreenRunsPastTheTerminal() error {
+	var problems []string
+	look := func(name string) {
+		lines := strings.Split(strings.TrimRight(w.screen(), "\n"), "\n")
+		if len(lines) > w.high {
+			problems = append(problems, fmt.Sprintf("%s: %d lines, the terminal holds %d", name, len(lines), w.high))
+		}
+		for i, line := range lines {
+			if wide := lipgloss.Width(line); wide > w.width {
+				problems = append(problems, fmt.Sprintf("%s: line %d is %d wide, the terminal %d: %q", name, i+1, wide, w.width, line))
+			}
+		}
+	}
+	look("the board")
+	if strings.Contains(w.screen(), "needs a bigger window") {
+		return fmt.Errorf("the board is not drawn at %d by %d, so nothing was checked", w.width, w.high)
+	}
+	for _, step := range []struct{ key, name string }{
+		{"enter", "a task's detail"}, {"esc", "the board again"}, {"e", "a task's form"}, {"esc", "the board again"},
+		{"?", "the help"}, {"?", "the board again"},
+		{"tab", "the objectives"}, {"enter", "an objective's detail"}, {"esc", "the objectives again"},
+		{"tab", "the time"},
+	} {
+		w.press(step.key)
+		look(step.name)
+	}
+	if len(problems) > 0 {
+		return fmt.Errorf("%d problem(s):\n%s", len(problems), strings.Join(problems, "\n"))
+	}
 	return nil
 }

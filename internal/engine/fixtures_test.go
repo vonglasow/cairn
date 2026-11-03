@@ -74,3 +74,13 @@ func TestFixturesFolder_isInTheTemporaryFolder(t *testing.T) {
 		t.Errorf("FixturesFolder = %q", got)
 	}
 }
+
+func TestFixturesFile_isAnExportImportCanRead(t *testing.T) {
+	from := filepath.Join(t.TempDir(), "fixtures.json")
+	if err := os.WriteFile(from, FixturesFile(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readExport(from); err != nil {
+		t.Errorf("the fixtures file cannot be read as an export: %v", err)
+	}
+}

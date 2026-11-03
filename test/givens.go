@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -139,6 +140,24 @@ func (g Givens) IEditedTaskWithTheState(number int, state string) error {
 // IEditedTaskWithTheLabels puts two labels on a task.
 func (g Givens) IEditedTaskWithTheLabels(number int, first, second string) error {
 	return g.editTask(number, nil, map[string][]string{"label": {"=" + first, second}})
+}
+
+// TheFixtures fills the store with the fixtures the binary carries, every case a board draws.
+func (g Givens) TheFixtures() error {
+	file, err := os.CreateTemp("", "cairn-fixtures-*.json")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(file.Name()) }()
+	if _, err := file.Write(engine.FixturesFile()); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	_, err = g.ask(engine.TaskImport, map[string]string{"from": file.Name()}, nil)
+	return err
 }
 
 // IMadeTheLabel makes a label nothing carries yet.
@@ -289,6 +308,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`, g.IEditedTaskWithTheLabels)
 	sc.Step(`^I made the label "([^"]*)"$`, g.IMadeTheLabel)
+	sc.Step(`^the fixtures$`, g.TheFixtures)
 	sc.Step(`^I coloured the label "([^"]*)" "([^"]*)"$`, g.IColouredTheLabel)
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, g.IEditedTaskWithTheDeadline)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)

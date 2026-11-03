@@ -176,6 +176,13 @@ the top and the bar off the bottom, and neither comes back — so the help, the
 form and the objectives are each held to what the window has, and each scrolls
 inside it.
 
+It is checked on the fixtures the binary carries, every case a board draws, at
+80 by 26 and 120 by 40 (`@tui-the-fixtures-fit`): the board, a task's detail and
+form, the help, the objectives and an objective's detail, and the time — no line
+wider than the terminal, no screen taller. 80 by 24, the classic terminal, is
+under the 26 rows the board needs, so it is the "bigger window" message there,
+not a board.
+
 At sixty it is tight but true: a title has twenty characters across its two
 lines, labels drop off the facts line, and the three stalled states are glyphs
 rather than words — which is why they are glyphs everywhere and not only here.

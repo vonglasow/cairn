@@ -23,6 +23,9 @@ type Fixtures struct {
 	Made  bool
 }
 
+// FixturesFile is the fixtures the binary carries, as a file task import reads.
+func FixturesFile() []byte { return fixtures }
+
 // FixturesFolder is where the fixtures are made when no folder is named: one of their own in the temporary folder, never the store in use.
 func FixturesFolder() string { return filepath.Join(os.TempDir(), "cairn-fixtures") }
 

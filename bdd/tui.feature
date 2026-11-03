@@ -1018,3 +1018,18 @@ Feature: The board
       Then the board says "this store comes from a newer cairn"
       When I press "enter"
       Then the board says "this store comes from a newer cairn"
+
+  Rule: Every screen fits the terminal it is drawn in, whatever the store holds
+
+    @tui-the-fixtures-fit
+    Scenario Outline: on the fixtures, no screen runs past the terminal
+      Given the fixtures
+      And a window of <width> by <height>
+      When I open the board
+      Then the board says "Done this week"
+      And no screen runs past the terminal
+
+      Examples:
+        | width | height |
+        | 80    | 26     |
+        | 120   | 40     |
