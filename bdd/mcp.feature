@@ -222,6 +222,14 @@ Feature: Answering a machine over MCP
       When I call `task_new` with the title "From the agent" and the labels "spec" and "team"
       Then it answers with a task carrying both labels
 
+    @mcp-a-label-joins-the-others
+    Scenario: a label an agent gives a task joins the ones it carries, and the answer says so
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      And a cairn server started with `--access write`
+      When I call `task_edit` with the number 1 and the label "urgent"
+      Then it answers with a task carrying 3 labels
+      And its answer says the labels added are "urgent"
+
     @mcp-looks-for-what-it-was-told
     Scenario: what a tool is told to look for arrives whole
       Given I added a task titled "Write the spec"

@@ -138,7 +138,7 @@ func (g Givens) IEditedTaskWithTheState(number int, state string) error {
 
 // IEditedTaskWithTheLabels puts two labels on a task.
 func (g Givens) IEditedTaskWithTheLabels(number int, first, second string) error {
-	return g.editTask(number, nil, map[string][]string{"label": {first, second}})
+	return g.editTask(number, nil, map[string][]string{"label": {"=" + first, second}})
 }
 
 // IMadeTheLabel makes a label nothing carries yet.

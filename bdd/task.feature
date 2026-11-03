@@ -663,19 +663,45 @@ Feature: Tasks
       Then it fails
       And it says a label needs a name
 
+    @task-edit-label-joins
+    Scenario: a label given with no sign joins the ones that were there
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label urgent`
+      Then the task carries exactly 3 labels
+      And the task carries the label "urgent"
+
     @task-edit-labels-replace
-    Scenario: the labels given replace the ones that were there
+    Scenario: the labels given with an equals sign replace the ones that were there
       Given I added a task titled "Write the spec" with the labels "spec" and "draft"
-      When I run `cairn task edit 1 --label spec --label team`
+      When I run `cairn task edit 1 --label =spec --label team`
       Then the task carries the labels "spec" and "team"
       And the task carries exactly 2 labels
 
     @task-edit-label-dropped
-    Scenario: a label left out is a label removed
+    Scenario: a label left out of a replacement is a label removed
       Given I added a task titled "Write the spec" with the labels "spec" and "team"
-      When I run `cairn task edit 1 --label spec`
+      When I run `cairn task edit 1 --label =spec`
       Then the task carries exactly 1 label
       And the task carries the label "spec"
+
+    @task-edit-labels-replaced-by-nothing
+    Scenario: an equals sign alone takes every label away
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label =`
+      Then the task has no labels
+
+    @task-edit-labels-said
+    Scenario: changing the labels says which were added and which were taken off
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label =spec,urgent`
+      Then it says the labels added are "urgent"
+      And it says the labels taken off are "team"
+
+    @task-edit-labels-said-only-when-changed
+    Scenario: nothing is said about labels a change left as they were
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label spec`
+      Then it says nothing was added or taken off
 
     @task-edit-clear
     Scenario: an attribute given empty is cleared
@@ -760,7 +786,7 @@ Feature: Tasks
     @task-label-list-mixed
     Scenario: a list cannot mix the two forms either
       Given I added a task titled "Write the spec" with the labels "spec" and "team"
-      When I run `cairn task edit 1 --label "+urgent,spec"`
+      When I run `cairn task edit 1 --label "+urgent,=spec"`
       Then it fails
       And it says the labels are either replaced or changed, not both
 
@@ -811,7 +837,7 @@ Feature: Tasks
     @task-label-mixed
     Scenario: saying what the set becomes and how it changes at once is refused
       Given I added a task titled "Write the spec" with the labels "spec" and "team"
-      When I run `cairn task edit 1 --label +urgent --label draft`
+      When I run `cairn task edit 1 --label +urgent --label =draft`
       Then it fails
       And it says the labels are either replaced or changed, not both
 
@@ -821,6 +847,17 @@ Feature: Tasks
       When I run `cairn task edit 1 --label +`
       Then it fails
       And it says a label needs a name
+
+    @task-label-bare-and-signed
+    Scenario: a label with no sign and one with a plus both join the others
+      Given I added a task titled "Write the spec" with the labels "spec" and "team"
+      When I run `cairn task edit 1 --label "+urgent,draft"`
+      Then the task carries exactly 4 labels
+
+    @task-label-equals-at-creation
+    Scenario: a new task given its labels with an equals sign carries them
+      When I run `cairn task new "Write the spec" --label =spec,team`
+      Then the task carries the labels "spec" and "team"
 
     @task-label-sign-at-creation
     Scenario: a new task has nothing to add to
@@ -898,6 +935,36 @@ Feature: Tasks
       And the task is in the "todo" column
       And `cairn task show 2` says task 1 blocks it
 
+    @task-blocker-joins
+    Scenario: a blocker given with no sign joins the ones already in the way
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task edit 3 --blocker 2`
+      Then `cairn task show 3` says task 1 blocks it
+      And `cairn task show 3` says task 2 blocks it
+
+    @task-blocker-replaced
+    Scenario: a blocker given with an equals sign replaces the ones in the way
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task edit 3 --blocker =2`
+      Then `cairn task show 3` says task 2 blocks it
+      And `cairn task show 3` does not say task 1 blocks it
+
+    @task-blockers-said
+    Scenario: changing what is in the way says what was added and taken off
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task edit 3 --blocker =2`
+      Then it says the blockers added are "#2"
+      And it says the blockers taken off are "#1"
+
   Rule: Two tasks can be linked
 
     @task-link-at-creation
@@ -935,7 +1002,7 @@ Feature: Tasks
       And I added a task titled "Write the tests"
       And I added a task titled "Ship it"
       And I edited task 3 with the link "1"
-      When I run `cairn task edit 3 --link 2`
+      When I run `cairn task edit 3 --link =2`
       Then it succeeds
       And `cairn task show 3` says "linked       #2"
       And `cairn task show 2` says "linked       #3"
@@ -950,6 +1017,15 @@ Feature: Tasks
       Then it succeeds
       When I run `cairn trace show 1`
       Then it carries 2 acts
+
+    @task-link-joins
+    Scenario: a link given with no sign joins the ones already there
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Write the tests"
+      And I added a task titled "Ship it"
+      And I edited task 3 with the link "1"
+      When I run `cairn task edit 3 --link 2`
+      Then `cairn task show 3` says "linked       #1, #2"
 
     @task-link-itself
     Scenario: a task cannot be linked to itself

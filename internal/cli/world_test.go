@@ -178,7 +178,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
 		func(n int, first, second string) error {
-			return w.Seed(fmt.Sprintf(`cairn task edit %d --label "%s" --label "%s"`, n, first, second))
+			return w.Seed(fmt.Sprintf(`cairn task edit %d --label "=%s" --label "%s"`, n, first, second))
 		})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the objectives "([^"]*)" and "([^"]*)"$`,
@@ -194,6 +194,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step(`^I edited task (\d+) with the (title|description|deadline|estimate|priority|state|time spent|blocker|because|objective|label|link) "([^"]*)"$`,
 		func(n int, attribute, value string) error {
+			if slices.Contains([]string{"objective", "blocker", "label", "link"}, attribute) && !strings.ContainsAny(value[:min(1, len(value))], "+-") {
+				value = "=" + value
+			}
 			return w.Seed(fmt.Sprintf(`cairn task edit %d %s "%s"`, n, flagFor(attribute), value))
 		})
 
@@ -446,6 +449,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	sc.Step("^`([^`]*)` says \"([^\"]*)\" blocks it$", func(line, words string) error {
 		return w.blocksIt(line, words)
+	})
+
+	sc.Step("^`([^`]*)` does not say task (\\d+) blocks it$", func(line string, n int) error {
+		if err := w.blocksIt(line, fmt.Sprintf("#%d", n)); err == nil {
+			return fmt.Errorf("task %d still blocks it: %q", n, w.field("blocked by"))
+		}
+		return nil
+	})
+
+	sc.Step(`^it says the (labels|blockers|links|objectives) (added|taken off) are "([^"]*)"$`, func(of, how, want string) error {
+		if got := w.field(of + " " + how); got != want {
+			return fmt.Errorf("%s %s = %q, want %q:\n%s", of, how, got, want, w.Out.Stdout)
+		}
+		return nil
+	})
+
+	sc.Step(`^it says nothing was added or taken off$`, func() error {
+		for _, l := range strings.Split(w.Out.Stdout, "\n") {
+			if strings.Contains(l, " added ") || strings.Contains(l, " taken off ") {
+				return fmt.Errorf("it says %q:\n%s", l, w.Out.Stdout)
+			}
+		}
+		return nil
 	})
 
 	sc.Step("^`([^`]*)` says it serves objectives (\\d+) and (\\d+)$",

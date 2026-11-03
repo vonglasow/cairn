@@ -49,10 +49,10 @@ not the rest.
 
 ## What it is held as
 
-`--link` follows the grammar of `--blocker`: a plain number says what the set
-becomes, `+3` adds one, `-3` takes one away, and the two are not mixed. The set
-named plainly replaces the task's links on the other tasks too
-(`@task-link-replaced`).
+`--link` follows the grammar of `--blocker`: on a change, a plain number or `+3`
+adds one, `-3` takes one away, `=3` says what the set becomes, and an `=` is not
+mixed with a sign. The set named after an `=` replaces the task's links on the
+other tasks too (`@task-link-replaced`).
 
 - One row per pair, the lower number first, so a pair is held once whichever
   side put it (`links` in `internal/migration/known.go`). Linking two tasks

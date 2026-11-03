@@ -38,7 +38,7 @@ func rendered(op Operation, a Answer) string {
 		}
 		return heldText(a.Held, a)
 	case Task:
-		return cardText(a)
+		return cardText(a) + movedText(a.Moved)
 	case Swept:
 		if a.Task != nil {
 			return cardText(a)
@@ -50,7 +50,7 @@ func rendered(op Operation, a Answer) string {
 		}
 		return tasksText(a.Tasks, a)
 	case Objective:
-		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under))
+		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under)) + movedText(a.Moved)
 	case Objectives:
 		if a.MatchedObjectives != nil {
 			return objectivesText(a.MatchedObjectives, a.Along)

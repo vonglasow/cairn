@@ -1091,7 +1091,7 @@
           "type": "string"
         },
         "label": {
-          "description": "a label it carries",
+          "description": "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all",
           "items": {
             "type": "string"
           },
@@ -1248,6 +1248,106 @@
             "type": "integer"
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -1434,6 +1534,106 @@
                   "type": "integer"
                 },
                 "description": "the numbers of the tasks serving it that are neither done nor archived"
+              },
+              "added": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change put on it; left out when it put nothing",
+                "additionalProperties": false
+              },
+              "taken_off": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change took off it; left out when it took nothing",
+                "additionalProperties": false
               }
             },
             "required": [
@@ -1484,7 +1684,7 @@
           "type": "string"
         },
         "label": {
-          "description": "a label it carries",
+          "description": "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all",
           "items": {
             "type": "string"
           },
@@ -1637,6 +1837,106 @@
             "type": "integer"
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -1806,6 +2106,106 @@
                 "type": "integer"
               },
               "description": "the numbers of the tasks serving it that are neither done nor archived"
+            },
+            "added": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "labels": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the labels, lower case"
+                },
+                "blockers": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks in its way"
+                },
+                "links": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks it is linked to"
+                },
+                "objectives": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the objectives it serves"
+                }
+              },
+              "description": "what the change put on it; left out when it put nothing",
+              "additionalProperties": false
+            },
+            "taken_off": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "labels": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the labels, lower case"
+                },
+                "blockers": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks in its way"
+                },
+                "links": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks it is linked to"
+                },
+                "objectives": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the objectives it serves"
+                }
+              },
+              "description": "what the change took off it; left out when it took nothing",
+              "additionalProperties": false
             }
           },
           "required": [
@@ -2044,6 +2444,106 @@
                   "type": "integer"
                 },
                 "description": "the numbers of the tasks serving it that are neither done nor archived"
+              },
+              "added": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change put on it; left out when it put nothing",
+                "additionalProperties": false
+              },
+              "taken_off": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change took off it; left out when it took nothing",
+                "additionalProperties": false
               }
             },
             "required": [
@@ -2208,6 +2708,106 @@
             "type": "integer"
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -2788,6 +3388,106 @@
                 "null",
                 "string"
               ]
+            },
+            "added": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "labels": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the labels, lower case"
+                },
+                "blockers": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks in its way"
+                },
+                "links": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks it is linked to"
+                },
+                "objectives": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the objectives it serves"
+                }
+              },
+              "description": "what the change put on it; left out when it put nothing",
+              "additionalProperties": false
+            },
+            "taken_off": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "labels": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the labels, lower case"
+                },
+                "blockers": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks in its way"
+                },
+                "links": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the tasks it is linked to"
+                },
+                "objectives": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "the numbers of the objectives it serves"
+                }
+              },
+              "description": "what the change took off it; left out when it took nothing",
+              "additionalProperties": false
             }
           },
           "required": [
@@ -2893,7 +3593,7 @@
           "type": "string"
         },
         "blocker": {
-          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
+          "description": "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
             "type": "string"
           },
@@ -2912,14 +3612,14 @@
           "type": "string"
         },
         "label": {
-          "description": "a label it carries",
+          "description": "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "link": {
-          "description": "the number of a task it is linked to; +3 adds one, -3 takes one away",
+          "description": "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
             "type": "string"
           },
@@ -2930,7 +3630,7 @@
           "type": "integer"
         },
         "objective": {
-          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
+          "description": "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all",
           "items": {
             "type": "string"
           },
@@ -3147,6 +3847,106 @@
             "null",
             "string"
           ]
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -3422,6 +4222,106 @@
                   "null",
                   "string"
                 ]
+              },
+              "added": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change put on it; left out when it put nothing",
+                "additionalProperties": false
+              },
+              "taken_off": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change took off it; left out when it took nothing",
+                "additionalProperties": false
               }
             },
             "required": [
@@ -4020,7 +4920,7 @@
           "type": "string"
         },
         "blocker": {
-          "description": "the number of a task in its way; +3 adds one, -3 takes one away",
+          "description": "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
             "type": "string"
           },
@@ -4039,21 +4939,21 @@
           "type": "string"
         },
         "label": {
-          "description": "a label it carries",
+          "description": "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "link": {
-          "description": "the number of a task it is linked to; +3 adds one, -3 takes one away",
+          "description": "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "objective": {
-          "description": "the number of an objective it serves; +4 adds one, -1 takes one away",
+          "description": "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all",
           "items": {
             "type": "string"
           },
@@ -4270,6 +5170,106 @@
             "null",
             "string"
           ]
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -4685,6 +5685,106 @@
             "null",
             "string"
           ]
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -4899,6 +5999,106 @@
             "null",
             "string"
           ]
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
         }
       },
       "required": [
@@ -5119,6 +6319,106 @@
                   "null",
                   "string"
                 ]
+              },
+              "added": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change put on it; left out when it put nothing",
+                "additionalProperties": false
+              },
+              "taken_off": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change took off it; left out when it took nothing",
+                "additionalProperties": false
               }
             },
             "required": [

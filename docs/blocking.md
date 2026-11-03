@@ -52,8 +52,9 @@ decide whether `3` is task 3 or the word "3". Guessing is the one thing cairn
 does not do, and there is no separator that saves it: a `because` accepts any
 words, digits included.
 
-`--blocker` follows the grammar of `--label`: a plain number says what the set
-becomes, `+3` adds, `-3` takes away. `domain.SplitSign` is the one place either
+`--blocker` follows the grammar of `--label` (see [labels.md](labels.md)): on a
+change, a plain number or `+3` adds, `-3` takes away, and `=3` says what the set
+becomes. `domain.SplitSign` is the one place either
 sign means anything, so the two cannot come to disagree.
 
 ## A blocker is a note; the column is the claim

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Asked turns a form's fields into what the operation takes.
+// Asked turns a form's fields into what the operation takes, a list saying the whole of what it becomes.
 func Asked(fields []Field, op Operation) Input {
 	kinds := map[string]Kind{}
 	for _, argument := range op.Takes {
@@ -18,7 +18,7 @@ func Asked(fields []Field, op Operation) Input {
 		}
 		switch kinds[field.Arg] {
 		case List:
-			in.Listed[field.Arg] = Words(field.Value)
+			in.Listed[field.Arg] = append([]string{"="}, Words(field.Value)...)
 		case Number:
 			if _, ok := NumberOf(field.Value); ok {
 				in.Given[field.Arg] = strings.TrimSpace(field.Value)

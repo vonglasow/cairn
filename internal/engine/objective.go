@@ -199,7 +199,7 @@ var objectiveAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the objective is about"},
 	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
-	{Name: "label", Kind: List, Means: "a label it carries"},
+	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 }
@@ -339,7 +339,9 @@ var ObjectiveEdit = Operation{
 		n, _ := in.Whole("number")
 		changes := objectiveChanges(in)
 		changes.Title = in.Change("title")
-		if _, err := on.Engine.editObjective(n, changes); err != nil {
+		was, _ := on.Engine.showObjective(n)
+		edited, err := on.Engine.editObjective(n, changes)
+		if err != nil {
 			title := ""
 			if changes.Title != nil {
 				title = *changes.Title
@@ -350,7 +352,7 @@ var ObjectiveEdit = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Objective: &o, Under: under, Progress: p}, nil
+		return Answer{Objective: &o, Under: under, Progress: p, Moved: movedOfObjective(was, edited)}, nil
 	},
 }
 

@@ -42,7 +42,7 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if atCreation && change.Adjusts() {
+	if atCreation && change.Signed() {
 		return nil, ErrLabelSignAtCreation
 	}
 	return change.Apply(current)

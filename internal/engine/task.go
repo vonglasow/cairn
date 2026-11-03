@@ -279,6 +279,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		}
 		changes.Title = in.Change("title")
 		changes.Finishing = in.Confirmed
+		was, _ := on.Engine.show(n)
 		edited, err := on.Engine.edit(n, changes)
 		if err != nil {
 			return Answer{}, editReason(err)
@@ -287,7 +288,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &edited, Progress: p}, nil
+		return Answer{Task: &edited, Progress: p, Moved: movedOf(was, edited)}, nil
 	},
 }
 
@@ -383,14 +384,14 @@ var taskAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the task is; what was done or decided goes in its notes"},
 	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column it sits in"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
-	{Name: "label", Kind: List, Means: "a label it carries"},
-	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; +3 adds one, -3 takes one away"},
-	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; +3 adds one, -3 takes one away"},
+	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
+	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
+	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 	{Name: "spent", Kind: Duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
-	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; +4 adds one, -1 takes one away"},
+	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all"},
 }
 
 func oneOf[T ~string](values []T) []string {

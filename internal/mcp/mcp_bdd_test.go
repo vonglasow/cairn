@@ -480,6 +480,45 @@ func (w *world) itAnswersWithATaskCarryingBothLabels() error {
 	return nil
 }
 
+func (w *world) answeredTask() (map[string]any, error) {
+	if w.callErr != nil {
+		return nil, fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	doc, ok := w.result.StructuredContent.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("structured content is not a task: %#v", w.result.StructuredContent)
+	}
+	return doc, nil
+}
+
+func (w *world) itAnswersWithATaskCarryingLabels(n int) error {
+	doc, err := w.answeredTask()
+	if err != nil {
+		return err
+	}
+	if labels, _ := doc["labels"].([]any); len(labels) != n {
+		return fmt.Errorf("labels = %v, want %d of them", doc["labels"], n)
+	}
+	return nil
+}
+
+func (w *world) itsAnswerSaysTheLabelsAdded(want string) error {
+	doc, err := w.answeredTask()
+	if err != nil {
+		return err
+	}
+	added, _ := doc["added"].(map[string]any)
+	labels, _ := added["labels"].([]any)
+	said := make([]string, 0, len(labels))
+	for _, l := range labels {
+		said = append(said, fmt.Sprint(l))
+	}
+	if got := strings.Join(said, ", "); got != want {
+		return fmt.Errorf("the labels added are %q, want %q: %#v", got, want, doc["added"])
+	}
+	return nil
+}
+
 func (w *world) itAnswersWithTheCardAPersonWouldHaveRead() error {
 	if w.callErr != nil {
 		return fmt.Errorf("the call failed: %w", w.callErr)
@@ -764,6 +803,16 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\"$", w.iCallTaskSearchLookingFor)
 		sc.Step("^I call `task_search` looking for nothing$", w.iCallTaskSearchLookingForNothing)
 		sc.Step("^it answers with a task carrying both labels$", w.itAnswersWithATaskCarryingBothLabels)
+		sc.Step("^I call `task_edit` with the number (\\d+) and the label \"([^\"]*)\"$", func(n int, label string) error {
+			w.number = n
+			_ = w.callTool("task_edit", map[string]any{"number": n, "label": []string{label}})
+			return nil
+		})
+		sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`, func(title, first, second string) error {
+			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
+		})
+		sc.Step(`^it answers with a task carrying (\d+) labels$`, w.itAnswersWithATaskCarryingLabels)
+		sc.Step(`^its answer says the labels added are "([^"]*)"$`, w.itsAnswerSaysTheLabelsAdded)
 		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)
 		sc.Step(`^it answers with (\d+) tasks?$`, w.itAnswersWithNTasks)
 		sc.Step(`^no row of it carries a description$`, w.noRowCarriesADescription)

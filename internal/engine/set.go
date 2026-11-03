@@ -13,7 +13,7 @@ import (
 func changedNumbers(given []string, current []int, atCreation bool,
 	notANumber, bothWays, signAtBirth error,
 ) ([]int, error) {
-	change, err := domain.ParseSetChange(given, func(raw, value string, _ bool) (int, error) {
+	change, err := domain.ParseSetChange(given, func(raw, value string) (int, error) {
 		number, err := strconv.Atoi(strings.TrimSpace(value))
 		if err != nil || number <= 0 {
 			return 0, fmt.Errorf("%q: %w", raw, notANumber)
@@ -23,7 +23,7 @@ func changedNumbers(given []string, current []int, atCreation bool,
 	if err != nil {
 		return nil, err
 	}
-	if change.Adjusts() && atCreation {
+	if change.Signed() && atCreation {
 		return nil, signAtBirth
 	}
 	return settled(change.Apply(current)), nil

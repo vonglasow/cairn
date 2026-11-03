@@ -310,7 +310,7 @@ func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
 func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.edit(factsOf(kept).Number, Changes{Labels: of([]string{"+urgent", "draft"})}); err == nil {
+	if _, err := e.edit(factsOf(kept).Number, Changes{Labels: of([]string{"+urgent", "=draft"})}); err == nil {
 		t.Error("Edit should refuse to both replace and change the labels")
 	}
 }

@@ -19,9 +19,10 @@ The grammar of the labels and the blockers, so there is nothing new to learn:
 
 ```sh
 cairn task new "Write the spec" --objective 1 --objective 2
-cairn task edit 1 --objective +3     # one more, without naming the others
+cairn task edit 1 --objective 3      # one more, without naming the others
+cairn task edit 1 --objective +3     # the same, signed
 cairn task edit 1 --objective -1     # one fewer, without naming the others
-cairn task edit 1 --objective 2      # the set becomes exactly this
+cairn task edit 1 --objective =2     # the set becomes exactly this
 cairn task edit 1 --objective ""     # the task is set loose
 ```
 

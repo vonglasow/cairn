@@ -46,7 +46,7 @@ func TestLinkIsAppliedToTheTask(t *testing.T) {
 	if got := linkedOf(t, e, 4); !reflect.DeepEqual(got, []int{1, 2}) {
 		t.Errorf("task 4 linked = %v, want [1 2]", got)
 	}
-	if _, err := e.edit(4, linking(t, "3")); err != nil {
+	if _, err := e.edit(4, linking(t, "=3")); err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
 	if got := linkedOf(t, e, 4); !reflect.DeepEqual(got, []int{3}) {

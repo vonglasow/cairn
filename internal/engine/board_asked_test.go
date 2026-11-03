@@ -20,7 +20,7 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 	if in.Given["state"] != "todo" {
 		t.Errorf("state = %q, want todo", in.Given["state"])
 	}
-	if got := in.Listed["label"]; len(got) != 2 || got[0] != "api" || got[1] != "urgent" {
+	if got := in.Listed["label"]; len(got) != 3 || got[0] != "=" || got[1] != "api" || got[2] != "urgent" {
 		t.Errorf("label = %v, want the two labels, listed", got)
 	}
 	for _, screen := range []string{"description", "labels", "column", "time spent"} {

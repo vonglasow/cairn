@@ -10,8 +10,9 @@ import (
 var ErrLabelsBothWays = errors.New("the labels are either replaced or changed, not both")
 
 const (
-	joins = '+'
-	parts = '-'
+	joins    = '+'
+	parts    = '-'
+	replaces = "="
 )
 
 func listed(given []string) []string {
@@ -32,29 +33,19 @@ type LabelChange struct {
 	set SetChange[string]
 }
 
-// Adjusts says whether the change works from the labels already there.
-func (c LabelChange) Adjusts() bool { return c.set.Adjusts() }
-
 // ParseLabelChange reads what a caller gave.
 func ParseLabelChange(given []string) (LabelChange, error) {
 	set, err := ParseSetChange(given, readLabel, ErrLabelsBothWays)
 	if err != nil {
 		return LabelChange{}, err
 	}
-	if !set.Adjusts() {
-		if set.becomes, err = ParseLabels(set.becomes); err != nil {
-			return LabelChange{}, err
-		}
-	}
 	return LabelChange{set: set}, nil
 }
 
-func readLabel(_, value string, signed bool) (string, error) {
-	if !signed {
-		return value, nil
-	}
-	return labelNamed(value)
-}
+// Signed says whether a label was given with a + or a -.
+func (c LabelChange) Signed() bool { return c.set.Signed() }
+
+func readLabel(_, value string) (string, error) { return labelNamed(value) }
 
 // SplitSign takes the leading + or - off a value, if it carries one, and hands back the sign and the rest.
 func SplitSign(value string) (rune, string) {
@@ -70,10 +61,7 @@ func SplitSign(value string) (rune, string) {
 
 // Apply lays the change over the labels a task carries and hands back the set it ends up with: no duplicate, alphabetical order.
 func (c LabelChange) Apply(current []string) ([]string, error) {
-	if !c.set.Adjusts() {
-		return c.set.becomes, nil
-	}
-	kept := c.set.Apply(current)
+	kept := slices.Clone(c.set.Apply(current))
 	slices.Sort(kept)
 	return slices.Compact(kept), nil
 }

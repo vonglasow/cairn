@@ -19,9 +19,24 @@ func applied(t *testing.T, current []string, given ...string) []string {
 	return got
 }
 
-func TestLabelChange_replacesTheSetWhenLabelsAreGivenPlainly(t *testing.T) {
-	if got := applied(t, []string{"spec", "team"}, "draft"); strings.Join(got, ",") != "draft" {
-		t.Errorf("got %v, want [draft]: a plain label says what the set becomes", got)
+func TestLabelChange_replacesTheSetWhenLabelsFollowAnEqualsSign(t *testing.T) {
+	if got := applied(t, []string{"spec", "team"}, "=draft"); strings.Join(got, ",") != "draft" {
+		t.Errorf("got %v, want [draft]: a label after an equals sign says what the set becomes", got)
+	}
+	if got := applied(t, []string{"spec", "team"}, "=Urgent", "draft"); strings.Join(got, ",") != "draft,urgent" {
+		t.Errorf("got %v, want [draft urgent]", got)
+	}
+}
+
+func TestLabelChange_addsALabelGivenPlainly(t *testing.T) {
+	if got := applied(t, []string{"spec", "team"}, "Draft"); strings.Join(got, ",") != "draft,spec,team" {
+		t.Errorf("got %v, want [draft spec team]: a plain label joins the others", got)
+	}
+}
+
+func TestLabelChange_refusesAPlainLabelNoLabelMayBe(t *testing.T) {
+	if _, err := ParseLabelChange([]string{"#urgent"}); !errors.Is(err, ErrLabelHolds) {
+		t.Errorf("err = %v, want ErrLabelHolds", err)
 	}
 }
 
@@ -68,7 +83,7 @@ func TestLabelChange_lowercasesWhatItTakesAway(t *testing.T) {
 }
 
 func TestLabelChange_refusesToReplaceAndChangeAtOnce(t *testing.T) {
-	if _, err := ParseLabelChange([]string{"+urgent", "draft"}); !errors.Is(err, ErrLabelsBothWays) {
+	if _, err := ParseLabelChange([]string{"+urgent", "=draft"}); !errors.Is(err, ErrLabelsBothWays) {
 		t.Errorf("err = %v, want ErrLabelsBothWays", err)
 	}
 }
@@ -81,21 +96,12 @@ func TestLabelChange_refusesASignWithNoName(t *testing.T) {
 	}
 }
 
-func TestLabelChange_knowsWhetherItChangesOrReplaces(t *testing.T) {
-	change, err := ParseLabelChange([]string{"+urgent"})
-	if err != nil {
-		t.Fatalf("ParseLabelChange: %v", err)
-	}
-	if !change.Adjusts() {
-		t.Error("a signed label adjusts an existing set")
-	}
-
-	change, err = ParseLabelChange([]string{"urgent"})
-	if err != nil {
-		t.Fatalf("ParseLabelChange: %v", err)
-	}
-	if change.Adjusts() {
-		t.Error("a plain label replaces the set, it does not adjust it")
+func TestLabelChange_saysWhetherALabelWasSigned(t *testing.T) {
+	for given, want := range map[string]bool{"+urgent": true, "-urgent": true, "urgent": false, "=urgent": false} {
+		change, err := ParseLabelChange([]string{given})
+		if err != nil || change.Signed() != want {
+			t.Errorf("%q: Signed = %v, %v; want %v", given, change.Signed(), err, want)
+		}
 	}
 }
 
@@ -140,7 +146,7 @@ func TestParseLabelChange_splitsOnCommas(t *testing.T) {
 }
 
 func TestParseLabelChange_refusesAListThatMixesTheTwoForms(t *testing.T) {
-	if _, err := ParseLabelChange([]string{"+urgent,spec"}); !errors.Is(err, ErrLabelsBothWays) {
+	if _, err := ParseLabelChange([]string{"+urgent,=spec"}); !errors.Is(err, ErrLabelsBothWays) {
 		t.Errorf("err = %v, want ErrLabelsBothWays", err)
 	}
 }

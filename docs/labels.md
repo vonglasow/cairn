@@ -57,6 +57,43 @@ labels, not their history, and writes nothing to it.
 is given by the same rule, so `cairn task list --label SP26_20` finds what
 carries `sp26-20` rather than nothing.
 
+## Putting labels on a task, and taking them off
+
+On a change, a label given with no sign **joins** the ones the task carries:
+
+```sh
+cairn task edit 1 --label urgent            # one more, the others kept
+cairn task edit 1 --label +urgent           # the same, signed
+cairn task edit 1 --label -draft            # one fewer
+cairn task edit 1 --label =spec,team        # the set becomes exactly this
+cairn task edit 1 --label =                 # every label taken off
+cairn task edit 1 --label ""                # the same: an attribute given empty is cleared
+```
+
+An `=` before the first value says what the set becomes, and the values after
+it join that set rather than the old one. `+` or `-` beside an `=` is refused:
+the change either replaces the set or moves it, never both. A bare value and a
+signed one mix freely, since both work from what is there.
+
+It was a bare value that replaced the set, once. In a real session one call
+meant to add a label took five off a task: an agent and a person both read a
+bare label as one more, whatever the help said. The reading that loses nothing
+is the one kept; replacing is the one that has to be asked for.
+
+The answer says what moved — `labels added`, `labels taken off` under the card,
+and `added` and `taken_off` in the JSON — so a change that took off more than
+was meant is seen at once, not found later.
+
+zsh reads a word starting with `=` as the path of a command, and `--label =spec`
+fails there before cairn sees it (`spec not found`). Quote it —
+`--label '=spec'` — or join it to the flag, `--label==spec`; bash and the MCP
+server take it as it is.
+
+At creation there is nothing to add to: bare or after an `=`, the labels given
+are the set, and a signed one is refused. The same grammar holds for
+`--blocker`, `--link` and `--objective`, and for `objective edit --label`; the
+forms of both boards send an `=`, since a form says what the set becomes.
+
 ## Putting labels on a task in the window
 
 The form's `labels` field opens a list, the one objectives are chosen from:

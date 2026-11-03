@@ -89,7 +89,7 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 ./bin/cairn task show spec
 ./bin/cairn task new "x" --colour red
 ./bin/cairn task new "y" --estimate 500ms
-./bin/cairn task edit 1 --label "+urgent,spec"
+./bin/cairn task edit 1 --label "+urgent,=spec"
 ./bin/cairn task new
 ./bin/cairn task addd "z"
 ```

@@ -100,11 +100,11 @@ Feature: Objectives
       Then `cairn task show 1` says it serves objective 2 alone
 
     @objective-task-serves-these-instead
-    Scenario: a plain number says what the set becomes, not what joins it
+    Scenario: a number after an equals sign says what the set becomes, not what joins it
       Given I added an objective titled "Ship cairn 1.0"
       And I added an objective titled "Ship the docs"
       And I added a task titled "Write the spec" with the objectives "1" and "2"
-      When I run `cairn task edit 1 --objective 2`
+      When I run `cairn task edit 1 --objective =2`
       Then `cairn task show 1` says it serves objective 2 alone
 
     @objective-task-serves-it-once
@@ -287,7 +287,7 @@ Feature: Objectives
       Given I added an objective titled "Ship cairn 1.0"
       And I added an objective titled "Ship the docs"
       And I added a task titled "Write the spec"
-      When I run `cairn task edit 1 --objective 1 --objective +2`
+      When I run `cairn task edit 1 --objective =1 --objective +2`
       Then it fails
       And it says the objectives are either replaced or changed, not both
 
@@ -340,6 +340,29 @@ Feature: Objectives
       When I run `cairn objective edit 1 --label -spec`
       Then the objective carries exactly 1 label
       And the objective carries the label "perso"
+
+    @objective-label-joins
+    Scenario: a label given with no sign joins the others
+      Given I added an objective titled "Ship cairn 1.0" with the labels "perso" and "spec"
+      When I run `cairn objective edit 1 --label urgent`
+      Then the objective carries exactly 3 labels
+      And the objective carries the label "urgent"
+
+    @objective-labels-replaced
+    Scenario: the labels given with an equals sign replace the others
+      Given I added an objective titled "Ship cairn 1.0" with the labels "perso" and "spec"
+      When I run `cairn objective edit 1 --label =urgent`
+      Then the objective carries exactly 1 label
+      And the objective carries the label "urgent"
+      And it says the labels taken off are "perso, spec"
+
+    @objective-served-joins
+    Scenario: an objective given to a task with no sign joins the ones it serves
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added an objective titled "Keep it honest"
+      And I added a task titled "Write the spec" with the objective "1"
+      When I run `cairn task edit 1 --objective 2`
+      Then `cairn task show 1` says it serves objectives 1 and 2
 
   Rule: A listing of objectives can be narrowed the same way
 

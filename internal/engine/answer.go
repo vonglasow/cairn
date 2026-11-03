@@ -16,6 +16,8 @@ type Task struct {
 	Progress   *domain.ProgressShape `json:"progress"`
 	Context    string                `json:"context,omitempty"`
 	StoodSince *time.Time            `json:"in_column_since,omitempty"`
+	Added      *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
+	TakenOff   *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 }
 
 // OfTask turns a task and how far along it is into what crosses to a machine.
@@ -109,6 +111,8 @@ type Objective struct {
 	Progress  *domain.ProgressShape `json:"progress"`
 	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
 	Left      []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
+	Added     *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
+	TakenOff  *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 }
 
 // OfObjective turns an objective into what crosses.
@@ -175,6 +179,7 @@ func Of(op Operation, a Answer) any {
 		if !a.StoodSince.IsZero() {
 			said.StoodSince = &a.StoodSince
 		}
+		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		return said
 	case Swept:
 		swept := Swept{Archived: *a.Archived}
@@ -189,7 +194,9 @@ func Of(op Operation, a Answer) any {
 		}
 		return ofTasks(a.Tasks, a.InFocus)
 	case Objective:
-		return OfObjective(*a.Objective, a.Under, a.Progress)
+		said := OfObjective(*a.Objective, a.Under, a.Progress)
+		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
+		return said
 	case Objectives:
 		if a.MatchedObjectives != nil {
 			return Objectives{Objectives: ofObjectives(a.MatchedObjectives, a.Along)}
