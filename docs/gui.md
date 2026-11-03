@@ -824,6 +824,22 @@ and done by a click as by the key (`barAlong`, `drawHint`,
 board's hints stay, faint. Until the palette lands, every offer the bar had
 is still a hint, so nothing became reachable by key alone.
 
+**The bar's line keeps its room.** When the hints would leave it less than
+`barLineLeast`, they give their words up and show their keys alone, and if even
+the keys do not fit, the first of them go — the generic ones, so the actions on
+the task chosen stay (`barLaid`, `barWidths`, `@gui-a-narrow-bar-keeps-its-line`).
+At the narrowest window, with a card chosen, eight worded hints used to start
+past the window's left edge, over the `⌘K` chip, and the line was gone. What a
+hint no longer says is still its key, and still in the palette.
+
+**Every text is drawn where it fits.** `TestTheFixturesDrawEveryTextWhereItFits`
+draws eleven screens on the fixtures at 720 by 560 and 1200 by 800, through the
+one function every text goes through (`sayWith`, its `noteSaid` hook), and fails
+on a text drawn in an empty box or one taller than its box. A one-line text
+wider than its box is not a fault: it is cut with "…". Overlaps between
+neighbours are not checked yet: the hook knows neither the clip nor the layer a
+text is drawn in; they come with the drawing split into components (#230).
+
 **`⌘K` opens the command bar into a palette.** A click on the bar's line does
 the same. It rises from the bar as a panel two thirds of the window wide over
 a lighter veil, what is typed at its head, and offers, in this order: the

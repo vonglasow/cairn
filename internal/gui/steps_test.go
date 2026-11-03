@@ -2131,6 +2131,29 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the bar's line has room to be read$`, func() error {
+		if line := CommandLine(w.w.Layout(), w.w.BarOffers()); line.W < barLineLeast {
+			return fmt.Errorf("the bar's line is %d wide, under the %d it keeps", line.W, barLineLeast)
+		}
+		return nil
+	})
+	sc.Then(`^every hint of the bar is its key alone, inside the window$`, func() error {
+		if w.w.barWorded() {
+			return fmt.Errorf("the bar's hints keep their words at %d wide", w.w.width)
+		}
+		for i, box := range w.w.BarOffers() {
+			if box.X < 0 || box.X+box.W > w.w.width {
+				return fmt.Errorf("hint %d runs from %d to %d, outside a window %d wide", i, box.X, box.X+box.W, w.w.width)
+			}
+		}
+		return nil
+	})
+	sc.Then(`^every hint of the bar has its words$`, func() error {
+		if !w.w.barWorded() {
+			return fmt.Errorf("the bar's hints are their keys alone at %d wide", w.w.width)
+		}
+		return nil
+	})
 	sc.Then(`^the bar does not offer "([^"]*)"$`, func(offer string) error {
 		for _, on := range w.w.Offers() {
 			if on == offer {

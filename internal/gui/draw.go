@@ -1003,7 +1003,7 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		offers, faint = w.BoardOffers(), true
 	}
-	along := w.barAlong(offers)
+	along, worded := w.barLaid(offers)
 	if w.Screen() == OnSearch {
 		drawKeyChip(gtx, th, skin, Box{X: bar.X + barInset, Y: bar.Y, H: bar.H}, "/")
 		writing(gtx, th, skin, w.measured(), SearchInto(bar), w.Searched(), true, reads, 1, Follow)
@@ -1017,7 +1017,14 @@ func drawBar(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Wind
 		sayIn(gtx, th, skin.Low, Box{X: from, Y: bar.Y + (bar.H-lineHigh)/2, W: max(0, end-hintMargin-from), H: lineHigh}, w.CommandSays(), reads, font.Font{}, text.Start)
 	}
 	for i, offer := range offers {
-		drawHint(gtx, th, skin, along[i], w.BarKey(offer), offer, faint, !faint && w.Lighting(offer))
+		if along[i].W == 0 {
+			continue
+		}
+		word := offer
+		if !worded {
+			word = ""
+		}
+		drawHint(gtx, th, skin, along[i], w.BarKey(offer), word, faint, !faint && w.Lighting(offer))
 	}
 }
 
@@ -1388,7 +1395,9 @@ func drawFieldAt(gtx layout.Context, th *material.Theme, skin Skin, m Measure, n
 		halo.A = 38
 		rounded(gtx, Box{X: frame.X - fieldHalo, Y: frame.Y - fieldHalo, W: frame.W + 2*fieldHalo, H: frame.H + 2*fieldHalo}, buttonRadius+fieldHalo, halo)
 	}
-	sayHolding(gtx, th, skin, ink, name, named, small)
+	if name.W > 0 {
+		sayHolding(gtx, th, skin, ink, name, named, small)
+	}
 	rounded(gtx, frame, buttonRadius, edge)
 	rounded(gtx, Box{X: frame.X + 1, Y: frame.Y + 1, W: frame.W - 2, H: frame.H - 2}, buttonRadius-1, skin.Field)
 	writing(gtx, th, skin, m, Inside(frame), said, carets, size, rows, scrolled)
@@ -1650,9 +1659,14 @@ func sayIn(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said 
 	sayWith(gtx, th, ink, b, said, size, face, 1, along)
 }
 
+var noteSaid func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment)
+
 func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
 	if said == "" {
 		return
+	}
+	if noteSaid != nil {
+		noteSaid(gtx, th, b, said, size, face, lines, along)
 	}
 	clipped := clip.Rect(rect(b)).Push(gtx.Ops)
 	defer clipped.Pop()

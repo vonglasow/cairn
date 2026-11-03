@@ -3648,6 +3648,23 @@ Feature: The desktop board
       When I click the card "Write the spec"
       Then the command bar reads "#1 · Write the spec"
 
+    @gui-a-narrow-bar-keeps-its-line
+    Scenario: at the narrowest window the bar's hints give their words up, so its line stays
+      Given a window of 720 by 560
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      Then the command bar reads "#1 · Write the spec"
+      And the bar's line has room to be read
+      And every hint of the bar is its key alone, inside the window
+
+    @gui-a-wide-bar-keeps-its-words
+    Scenario: a window wide enough keeps the bar's hints in words
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I click the card "Write the spec"
+      Then every hint of the bar has its words
+
     @gui-the-palette-moves-the-chosen-task
     Scenario: the command bar opened by cmd+k moves the chosen task to a column named in it
       Given I added a task titled "Write the spec" with the state "todo"

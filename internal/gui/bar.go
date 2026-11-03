@@ -372,14 +372,50 @@ func (w Window) offersAlong(panel Box) []Box {
 func (w Window) BarOffers() []Box { return w.barAlong(w.Offers()) }
 
 func (w Window) barAlong(offers []string) []Box {
+	boxes, _ := w.barLaid(offers)
+	return boxes
+}
+
+// barLineLeast is the room the bar's line keeps for what it says: the hints give their words up before it gives way, then the first of them.
+const barLineLeast = 160
+
+func (w Window) barWorded() bool {
+	_, worded := w.barLaid(w.Offers())
+	return worded
+}
+
+func (w Window) barLaid(offers []string) ([]Box, bool) {
 	l := w.Layout()
-	widths := make([]int, len(offers))
-	total := 0
+	full, keys := make([]int, len(offers)), make([]int, len(offers))
 	for i, offer := range offers {
-		widths[i] = w.hintWide(offer)
-		total += widths[i]
+		full[i] = w.hintWide(offer)
+		keys[i] = KeyChipWide(w.BarKey(offer)) + hintSpace + hintMargin
 	}
-	return laidAlong(widths, func(i int) Box { return OfferAt(l, i) }, l.Bar.X+l.Bar.W-barInset-total)
+	start := l.Bar.X + barInset + KeyChipWide(w.keyboard.Spelled(Pretty("cmd+k"))) + hintSpace
+	widths, worded := barWidths(full, keys, l.Bar.X+l.Bar.W-barInset-start-barLineLeast)
+	return laidAlong(widths, func(i int) Box { return OfferAt(l, i) }, l.Bar.X+l.Bar.W-barInset-sumOf(widths)), worded
+}
+
+func barWidths(full, keys []int, room int) ([]int, bool) {
+	if sumOf(full) <= room {
+		return full, true
+	}
+	widths := slices.Clone(keys)
+	for i := range widths {
+		if sumOf(widths) <= room {
+			break
+		}
+		widths[i] = 0
+	}
+	return widths, false
+}
+
+func sumOf(widths []int) int {
+	total := 0
+	for _, wide := range widths {
+		total += wide
+	}
+	return total
 }
 
 const (
