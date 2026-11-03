@@ -25,6 +25,7 @@ func TestSplitArgs_readsACommandLineTheWayAShellWould(t *testing.T) {
 		{`cairn task new "Spec" --priority high --state todo`, []string{"cairn", "task", "new", "Spec", "--priority", "high", "--state", "todo"}},
 		{`cairn task list --json`, []string{"cairn", "task", "list", "--json"}},
 		{`cairn task delete 1 --yes`, []string{"cairn", "task", "delete", "1", "--yes"}},
+		{`cairn --debug=true task list`, []string{"cairn", "--debug=true", "task", "list"}},
 	} {
 		if got := SplitArgs(tc.line); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("SplitArgs(%q) = %#v, want %#v", tc.line, got, tc.want)

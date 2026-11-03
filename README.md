@@ -144,7 +144,7 @@ When cairn does something wrong, run it again in debug mode, do the one thing
 that goes wrong, then pack what was written down:
 
 ```sh
-CAIRN_DEBUG=1 cairn gui      # or tui, or any command
+cairn gui --debug            # or tui, or any command; CAIRN_DEBUG=1 does the same
 cairn debug report           # writes cairn-debug-….zip in the current folder
 ```
 

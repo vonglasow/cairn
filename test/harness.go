@@ -75,7 +75,7 @@ func joinFlagValues(args []string) []string {
 	joined := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		joined = append(joined, args[i])
-		if !strings.HasPrefix(args[i], "--") || args[i] == "--" {
+		if !strings.HasPrefix(args[i], "--") || args[i] == "--" || strings.Contains(args[i], "=") {
 			continue
 		}
 		value := []string{}

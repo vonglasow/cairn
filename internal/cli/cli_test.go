@@ -216,3 +216,21 @@ func TestMain_neverHandsAnEscapeToTheTerminal(t *testing.T) {
 		t.Errorf("stderr %q hands an escape to the terminal", r.Stderr)
 	}
 }
+
+func TestAskedFor_readsAFlagAnywhereBeforeTheDoubleDash(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want bool
+	}{
+		{[]string{"task", "list", "--debug"}, true},
+		{[]string{"--debug", "task", "list"}, true},
+		{[]string{"task", "list", "--debug=true"}, true},
+		{[]string{"task", "list", "--debug=false"}, false},
+		{[]string{"task", "new", "--", "--debug"}, false},
+		{[]string{"task", "list"}, false},
+	} {
+		if got := askedFor(debugFlag, tc.args); got != tc.want {
+			t.Errorf("askedFor(debug, %v) = %v, want %v", tc.args, got, tc.want)
+		}
+	}
+}

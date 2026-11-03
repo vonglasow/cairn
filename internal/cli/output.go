@@ -11,6 +11,8 @@ import (
 
 const jsonFlag = "json"
 
+const debugFlag = "debug"
+
 func wantsJSON(cmd *cobra.Command) bool {
 	asked, err := cmd.Root().PersistentFlags().GetBool(jsonFlag)
 	return err == nil && asked

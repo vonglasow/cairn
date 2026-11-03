@@ -1,6 +1,6 @@
 Feature: Debug mode
 
-  A person asked to show what went wrong runs cairn with CAIRN_DEBUG=1, does
+  A person asked to show what went wrong runs cairn with CAIRN_DEBUG=1 or --debug, does
   the one thing that goes wrong, and sends what was written down.
 
   Background:
@@ -36,6 +36,31 @@ Feature: Debug mode
       When I run `cairn task list`
       Then it succeeds
       And it says on standard error that it cannot write down
+
+  Rule: Debug mode is turned on by --debug too, on any command
+
+    @debug-on-by-a-flag
+    Scenario: --debug on a command writes one file, as the variable does
+      When I run `cairn task list --debug`
+      Then the debug folder beside the store holds 1 file
+      And it says on standard error where that file is
+
+    @debug-on-by-a-flag-before-the-command
+    Scenario: --debug may come before the command
+      When I run `cairn --debug=true task list`
+      Then it succeeds
+      And the debug folder beside the store holds 1 file
+
+    @debug-off-by-a-flag-said-false
+    Scenario: --debug=false writes nothing
+      When I run `cairn task list --debug=false`
+      Then there is no debug folder beside the store
+
+    @debug-a-flag-after-the-double-dash-is-a-word
+    Scenario: --debug after -- is a word, not the flag
+      When I run `cairn task new -- --debug`
+      Then it succeeds
+      And there is no debug folder beside the store
 
   Rule: The debug folder keeps the last twenty files
 

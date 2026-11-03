@@ -161,8 +161,8 @@ is only for one put there by mistake.
 
 When the person says cairn did something wrong — a board drawn oddly, a key
 that does nothing, an answer that cannot be right — do not guess at the
-cause from here. Ask them to run what went wrong again with `CAIRN_DEBUG=1`
-in front (`CAIRN_DEBUG=1 cairn gui`), to do the one thing that goes wrong,
+cause from here. Ask them to run what went wrong again with `--debug`
+(`cairn gui --debug`, or `CAIRN_DEBUG=1` in front), to do the one thing that goes wrong,
 and then `debug_report` (or `cairn debug report`) packs what was written
 down into one archive; say where it is. Nothing a person wrote is in it.
 

@@ -12,20 +12,30 @@ cairn with it on, do the one thing that goes wrong, and send what was written
 down. Nothing about it is for the person reading the code here; `make trace`
 was, and asked for a clone, a Go toolchain and a script.
 
-## It is turned on by the environment, at launch
+## It is turned on at launch, by the environment or by a flag
 
 ```sh
 CAIRN_DEBUG=1 cairn gui
+cairn gui --debug
 ```
 
-The variable and nothing else (`@debug-on-writes-a-file-beside-the-store`,
-`@debug-off-writes-nothing`). A flag would have to be passed to every command,
-and the MCP server is started by Claude Code from the plugin's `.mcp.json`,
-where an environment is what can be set. A key in the configuration would be
-forgotten on, and the configuration is for lasting choices. And it is decided
-at launch, never from a board while it runs: what went wrong before it was
-turned on would be missing from the file, and so would the way the machine was
-when it started.
+The variable came first, and was enough (`@debug-on-writes-a-file-beside-the-store`,
+`@debug-off-writes-nothing`): the MCP server is started by Claude Code from the
+plugin's `.mcp.json`, where an environment is what can be set, and one variable
+reaches every command. Then a person on Windows had to be told
+`$env:CAIRN_DEBUG=1`, in PowerShell's own words, before anything else could be
+asked of them. `--debug` does exactly what the variable does, for that run, on
+any command and before it as well as after (`@debug-on-by-a-flag`,
+`@debug-on-by-a-flag-before-the-command`) — `"args": ["mcp", "serve",
+"--debug"]` works in `.mcp.json` too. It is read before anything else, as
+`--json` is, so a run whose flags are wrong is written down as well; after
+`--` it is a word like any other (`@debug-a-flag-after-the-double-dash-is-a-word`).
+The variable stays: nothing that used it breaks.
+
+A key in the configuration would be forgotten on, and the configuration is for
+lasting choices. And it is decided at launch, never from a board while it runs:
+what went wrong before it was turned on would be missing from the file, and so
+would the way the machine was when it started.
 
 ## One file per launch, beside the store
 

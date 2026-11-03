@@ -49,6 +49,7 @@ func NewRootCmd() *cobra.Command {
 		return engine.Misread(fmt.Errorf("%q: a value that starts with - is written after --, as in -- %s", typed, typed))
 	})
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
+	root.PersistentFlags().Bool(debugFlag, false, "write down what this run does, beside the store, as CAIRN_DEBUG=1 does")
 	root.AddCommand(newActionGroups(engine.PagesFrom(home()))...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
@@ -103,15 +104,15 @@ type shownError struct{ err error }
 func (s shownError) Error() string { return domain.Shown(s.err.Error()) }
 func (s shownError) Unwrap() error { return s.err }
 
-func askedForJSON(args []string) bool {
+func askedFor(flag string, args []string) bool {
 	for _, arg := range args {
 		if arg == "--" {
 			return false
 		}
-		if arg == "--"+jsonFlag {
+		if arg == "--"+flag {
 			return true
 		}
-		if said, ok := strings.CutPrefix(arg, "--"+jsonFlag+"="); ok {
+		if said, ok := strings.CutPrefix(arg, "--"+flag+"="); ok {
 			if yes, err := strconv.ParseBool(said); err != nil || yes {
 				return true
 			}
@@ -128,7 +129,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	root.SetErr(stderr)
 	root.SetArgs(args)
 
-	asMachine := askedForJSON(args)
+	asMachine := askedFor(jsonFlag, args)
 	flagsRead := true
 	refusing := root.FlagErrorFunc()
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
@@ -173,7 +174,7 @@ func notedIn(ctx context.Context) *debug.Log {
 }
 
 func debugging(root *cobra.Command, args []string, stderr io.Writer) *debug.Log {
-	if !engine.Debugging(home()) {
+	if !askedFor(debugFlag, args) && !engine.Debugging(home()) {
 		return nil
 	}
 	at, err := engine.Locate(home())
