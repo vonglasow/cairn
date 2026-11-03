@@ -29,8 +29,8 @@ const StoreVariable = "CAIRN_STORE"
 // NotesVariable is the environment variable that replaces whatever the file or the default answered for notes — the twin of StoreVariable, for the other place this package resolves.
 const NotesVariable = "CAIRN_NOTES"
 
-// ErrUnknownKey is returned when the file names a key cairn does not know — the decoding is strict, so a typo or a leftover from another tool is refused rather than quietly ignored.
-var ErrUnknownKey = errors.New("not a key cairn knows")
+// ErrUnknownKey is what a key the file holds and this cairn does not know is said to be: passed over, never quietly.
+var ErrUnknownKey = errors.New("not a key this cairn knows")
 
 // ErrNotTOML is returned when the file's content cannot be made sense of as TOML at all — not a specific rule the file broke, just the syntax itself.
 var ErrNotTOML = errors.New("not a file cairn can make sense of")
@@ -91,6 +91,7 @@ type Places struct {
 	timeWeekends string
 	keepSizes    bool
 	written      []string
+	ignored      []string
 }
 
 type file struct {
@@ -229,6 +230,19 @@ func (p Places) KeepSizes() bool { return p.keepSizes }
 // Written is every key the file writes, dotted under its table and sorted: what is not among them holds its default, or what the environment says.
 func (p Places) Written() []string { return p.written }
 
+// Ignored says, one sentence each and sorted, every key the file holds that this cairn does not know and passed over: a typo, or a key a newer cairn wrote.
+func (p Places) Ignored() []string { return p.ignored }
+
+func passedOver(strict *toml.StrictMissingError) []string {
+	said := make([]string, 0, len(strict.Errors))
+	for _, missing := range strict.Errors {
+		key := missing.Key()
+		said = append(said, fmt.Sprintf("%q is %s — %s; it is ignored", strings.Join(key, "."), ErrUnknownKey, belongs(key[len(key)-1])))
+	}
+	slices.Sort(said)
+	return said
+}
+
 func writtenIn(data []byte) []string {
 	var said map[string]any
 	if toml.Unmarshal(data, &said) != nil {
@@ -317,19 +331,22 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	}
 
 	var f file
+	var ignored []string
 	if err == nil {
 		if err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&f); err != nil {
 			var strict *toml.StrictMissingError
 			if errors.As(err, &strict) {
-				key := strict.Errors[0].Key()
-				return Reading{path: path, err: fmt.Errorf("%q: %w — %s",
-					strings.Join(key, "."), ErrUnknownKey, belongs(key[len(key)-1]))}, nil
+				ignored = passedOver(strict)
+				f = file{}
+				err = toml.NewDecoder(bytes.NewReader(data)).Decode(&f)
 			}
 			var decode *toml.DecodeError
 			if errors.As(err, &decode) {
 				return Reading{path: path, err: fmt.Errorf("%q: %w", path, ErrNotTOML)}, nil
 			}
-			return Reading{}, err
+			if err != nil {
+				return Reading{}, err
+			}
 		}
 	}
 
@@ -363,6 +380,7 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		notesNamedBy: byNothing,
 		pagesOff:     f.Pages.off(),
 		written:      writtenIn(data),
+		ignored:      ignored,
 	}
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},

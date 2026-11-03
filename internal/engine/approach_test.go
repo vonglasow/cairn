@@ -15,3 +15,10 @@ func TestConfigText_saysTheApproachLabel(t *testing.T) {
 		t.Errorf("config show does not say no label is said:\n%s", none)
 	}
 }
+
+func TestConfigText_saysWhatItIgnored(t *testing.T) {
+	said := configText(Config{Ignored: []string{`"vault" is not a key this cairn knows — cairn accepts store; it is ignored`}})
+	if !strings.Contains(said, "\n# ignored: \"vault\" is not a key this cairn knows") {
+		t.Errorf("config show does not say what it ignored:\n%s", said)
+	}
+}

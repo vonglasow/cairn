@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/build"
+	"cairn/internal/config"
 	"cairn/internal/debug"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -131,6 +132,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	root.SetArgs(args)
 
 	asMachine := askedFor(jsonFlag, args)
+	sayIgnored(home(), stderr)
 	flagsRead := true
 	refusing := root.FlagErrorFunc()
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
@@ -165,6 +167,19 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			saidToAPerson(w, styles, err)
 		}))
 	return codeFor(err)
+}
+
+func sayIgnored(h engine.Home, stderr io.Writer) {
+	if h.Dir == "" {
+		return
+	}
+	read, err := config.Read(h.Dir, h.Lookup)
+	if err != nil {
+		return
+	}
+	for _, ignored := range read.Ignored() {
+		_, _ = fmt.Fprintf(stderr, "config: %s\n", ignored)
+	}
 }
 
 type notedKey struct{}

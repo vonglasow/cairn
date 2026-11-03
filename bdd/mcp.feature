@@ -238,6 +238,13 @@ Feature: Answering a machine over MCP
       Then it answers without an error
       And `cairn task show 1` says "built on main at def456"
 
+    @mcp-a-key-it-does-not-know-does-not-stop-it
+    Scenario: a configuration holding a key this cairn does not know does not stop the server
+      Given a configuration that turns the page "calendar" off
+      And a cairn server started with `--access read`
+      When I call `task_list`
+      Then it answers without an error
+
     @mcp-looks-for-what-it-was-told
     Scenario: what a tool is told to look for arrives whole
       Given I added a task titled "Write the spec"

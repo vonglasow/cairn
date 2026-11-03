@@ -181,20 +181,32 @@ Feature: Where cairn looks for its own places
       Then it refuses, and names the file it could not make sense of
 
     @config-a-key-under-the-wrong-table-names-its-own
-    Scenario: a key cairn knows, written under another table, is refused with the table it belongs under
+    Scenario: a key cairn knows, written under another table, is passed over with the table it belongs under
       Given a configuration that says "keep_sizes" is "true" under "[pages]"
       When I run `cairn task list`
-      Then it refuses, and names "pages.keep_sizes"
-      And it names "[window]"
+      Then it succeeds
+      And it says on standard error that "pages.keep_sizes" is ignored
+      And it says on standard error "[window]"
 
-    @config-an-unknown-name-is-refused
-    Scenario: a name cairn does not know is refused rather than passed over
+    @config-an-unknown-name-is-passed-over
+    Scenario: a name cairn does not know is passed over, said, and the rest of the file used
       Given a configuration that says the notes live at "~/elsewhere"
       And that same configuration says something under "vault"
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
-      Then it refuses, and names "vault"
-      And it names what it accepts instead
+      Then it succeeds
+      And it says on standard error that "vault" is ignored
+      And it says on standard error what it accepts instead
+      When I run `cairn config show`
+      Then it says the notes are at "~/elsewhere", named by the file
+      And it says "vault" is ignored
+
+    @config-a-key-from-a-newer-cairn
+    Scenario: a key a newer cairn wrote does not stop this one
+      Given a configuration that says "weekends_soon" is "1" under "[time]"
+      When I run `cairn task list`
+      Then it succeeds
+      And it says on standard error that "time.weekends_soon" is ignored
 
   Rule: A configuration that cannot be read stops the command
 

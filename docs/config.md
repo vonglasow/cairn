@@ -239,8 +239,8 @@ the skill says nothing of it and an agent works as before
 is only the one the file suggests, commented. cairn enforces nothing: it keeps
 the key and shows it in `config show` and over MCP
 (`@config-show-says-the-approach-label`); the skill gives the label its meaning
-(see [claude-code.md](claude-code.md)). An older cairn refuses the key as one
-it does not know.
+(see [claude-code.md](claude-code.md)). An older cairn passes the key over, and
+says so.
 
 ## What a deleted task does with its time
 
@@ -321,15 +321,30 @@ that a specification already answers.
 
 The dependency is real and this is its written reason.
 
-## A name cairn does not know is refused
+## A name cairn does not know is passed over, and said
 
-Not passed over. A setting somebody believes is in force and that does nothing
-is worse than no setting at all — this is the same silence that was already
-found and fixed once, on arguments an agent sent that nobody read.
+It was refused, once: a setting somebody believes is in force and that does
+nothing is worse than no setting at all. The price came due when a newer cairn
+wrote `time.weekends` and the plugin's server, an older cairn Claude Code had
+kept, refused every call for it — the command line worked, the agent did not,
+for a key it had no use for. Two cairn of different versions read one file
+more often than it seems: the application left behind, a build from the
+repository then the released one, another machine sharing the file.
 
-It is paid for: an older cairn refuses a file written by a newer one, and unlike
-the store, a configuration has no ledger to carry it across versions. Taken
-knowingly.
+So a key this cairn does not know is passed over, the rest of the file is read
+and used, and it is said every time, never quietly: a line on standard error
+for every command, `config: "time.weekends" is not a key this cairn knows —
+…; it is ignored` (`@config-a-key-from-a-newer-cairn`), and a `# ignored:` line
+in `config show` (`ignored` in its JSON), so a typo stays in sight
+(`@config-an-unknown-name-is-passed-over`). A key written under the wrong table
+still says the table it belongs under
+(`@config-a-key-under-the-wrong-table-names-its-own`). The MCP server, whose
+standard error nobody reads, answers all the same
+(`@mcp-a-key-it-does-not-know-does-not-stop-it`).
+
+What is still refused is a value cairn knows the key of and cannot read — a
+duration that is not one, a place that is not absolute — and a file that is
+not TOML: those are settings that would do something else than what was meant.
 
 ## Not posed yet
 

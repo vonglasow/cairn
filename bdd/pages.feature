@@ -52,12 +52,12 @@ Feature: A page turned off in the configuration is gone from every surface
 
   Rule: Only the pages cairn has are turned off
 
-    @pages-an-unknown-page-is-refused
-    Scenario: a page cairn does not have is refused, not passed over
+    @pages-an-unknown-page-is-passed-over
+    Scenario: a page cairn does not have is passed over, and said
       Given a configuration that turns the page "calendar" off
       When I run `cairn config show`
       Then it succeeds
-      And it says the file cannot be made sense of
+      And it says "pages.calendar" is ignored
 
   Rule: Showing the configuration says which pages are off
 

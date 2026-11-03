@@ -196,32 +196,6 @@ func TestRead_takesWhatTheEnvironmentSaysOverAnythingElse(t *testing.T) {
 	}
 }
 
-func TestRead_refusesANameItDoesNotKnow(t *testing.T) {
-	home := t.TempDir()
-	dir := filepath.Join(home, ".config", "cairn")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		t.Fatalf("could not set up the fixture: %v", err)
-	}
-	content := "vault = \"/tmp/quelquepart\"\n"
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(content), 0o600); err != nil {
-		t.Fatalf("could not set up the fixture: %v", err)
-	}
-
-	_, err := config.Read(home, silentEnv)
-	if err == nil {
-		t.Fatalf("Read returned no error, want one naming %q", "vault")
-	}
-	if !errors.Is(err, config.ErrUnknownKey) {
-		t.Errorf("err = %v, want it to be config.ErrUnknownKey", err)
-	}
-	if !strings.Contains(err.Error(), "vault") {
-		t.Errorf("err = %q, want it to name the unknown key %q", err.Error(), "vault")
-	}
-	if !strings.Contains(err.Error(), "store") {
-		t.Errorf("err = %q, want it to name what cairn accepts instead", err.Error())
-	}
-}
-
 func TestRead_refusesAFileItCannotMakeSenseOf(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -361,37 +335,6 @@ func TestRead_resolvesTheNotesTheSameWayAsTheStore(t *testing.T) {
 	}
 }
 
-func TestRead_stillReportsAnUnknownKeyAsSuchRatherThanNotTOML(t *testing.T) {
-	home := t.TempDir()
-	dir := filepath.Join(home, ".config", "cairn")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		t.Fatalf("could not set up the fixture: %v", err)
-	}
-	content := "vault = \"/tmp/quelquepart\"\n"
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(content), 0o600); err != nil {
-		t.Fatalf("could not set up the fixture: %v", err)
-	}
-
-	_, err := config.Read(home, silentEnv)
-	if err == nil {
-		t.Fatalf("Read returned no error, want one naming %q", "vault")
-	}
-	if !errors.Is(err, config.ErrUnknownKey) {
-		t.Errorf("err = %v, want it to be config.ErrUnknownKey, not config.ErrNotTOML", err)
-	}
-	if errors.Is(err, config.ErrNotTOML) {
-		t.Errorf("err = %v, want it not to be config.ErrNotTOML", err)
-	}
-}
-
-type readingRecorder struct {
-	resolvedCalled bool
-	places         config.Places
-	path           string
-	readFrom       string
-	err            error
-}
-
 func (r *readingRecorder) ReadFrom(path string) {
 	r.readFrom = path
 }
@@ -404,6 +347,14 @@ func (r *readingRecorder) Resolved(p config.Places) {
 func (r *readingRecorder) NotUnderstood(path string, err error) {
 	r.path = path
 	r.err = err
+}
+
+type readingRecorder struct {
+	resolvedCalled bool
+	places         config.Places
+	path           string
+	readFrom       string
+	err            error
 }
 
 func TestReading_reportsWhatItCannotMakeSenseOf(t *testing.T) {
@@ -430,12 +381,6 @@ func TestReading_reportsWhatItCannotMakeSenseOf(t *testing.T) {
 			name:    "not TOML at all",
 			content: "not { toml : at all\n",
 			wantErr: config.ErrNotTOML,
-		},
-		{
-			name:    "a name it does not know",
-			content: "vault = \"/tmp/quelquepart\"\n",
-			wantErr: config.ErrUnknownKey,
-			wantSub: "vault",
 		},
 		{
 			name:    "a place that is not absolute",
@@ -655,8 +600,8 @@ func TestRead_saysWhichPagesAreTurnedOff(t *testing.T) {
 	if got := strings.Join(all.PagesOff(), ","); got != "tasks,objectives,time" {
 		t.Errorf("every page off reads %q, want them in the order they are drawn", got)
 	}
-	if _, err := config.Read(writtenConfig(t, "[pages]\ncalendar = false\n"), silentEnv); !errors.Is(err, config.ErrUnknownKey) {
-		t.Errorf("a page cairn does not have: %v, want ErrUnknownKey", err)
+	if read, err := config.Read(writtenConfig(t, "[pages]\ncalendar = false\n"), silentEnv); err != nil || len(read.Ignored()) != 1 {
+		t.Errorf("a page cairn does not have: %v, ignoring %q; want it passed over", err, read.Ignored())
 	}
 }
 
@@ -819,5 +764,20 @@ func TestRead_saysWhichKeysTheFileWrote(t *testing.T) {
 	nothing, err := config.Read(t.TempDir(), silentEnv)
 	if err != nil || len(nothing.Written()) != 0 {
 		t.Errorf("with no file, the keys written are %v, %v", nothing.Written(), err)
+	}
+}
+
+func TestRead_passesOverANameItDoesNotKnowAndReadsTheRest(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "vault = \"/tmp/quelquepart\"\nnotes = \"/tmp/notes\"\n[time]\nweekends_soon = 1\n"), silentEnv)
+	if err != nil {
+		t.Fatalf("Read = %v, want the file read all the same", err)
+	}
+	ignored := read.Ignored()
+	if len(ignored) != 2 || !strings.Contains(ignored[0], `"time.weekends_soon" is not a key this cairn knows`) ||
+		!strings.Contains(ignored[1], `"vault" is not a key this cairn knows`) || !strings.Contains(ignored[1], "cairn accepts store") {
+		t.Errorf("Ignored = %q", ignored)
+	}
+	if none, _ := config.Read(t.TempDir(), silentEnv); none.Ignored() != nil {
+		t.Errorf("with no file, Ignored = %q", none.Ignored())
 	}
 }

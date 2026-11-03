@@ -468,6 +468,16 @@
           "items": {
             "type": "string"
           }
+        },
+        "ignored": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "every key the file holds that this cairn does not know and passed over, one sentence each"
         }
       },
       "required": [

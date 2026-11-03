@@ -185,6 +185,18 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stderr, name, "the reason")
 	})
 
+	sc.Step(`^it says on standard error that "([^"]*)" is ignored$`, func(key string) error {
+		return test.WantContains(w.Out.Stderr, fmt.Sprintf("%q is not a key this cairn knows", key), "standard error")
+	})
+	sc.Step(`^it says on standard error "([^"]*)"$`, func(said string) error {
+		return test.WantContains(w.Out.Stderr, said, "standard error")
+	})
+	sc.Step(`^it says on standard error what it accepts instead$`, func() error {
+		return test.WantContains(w.Out.Stderr, "cairn accepts store, notes", "standard error")
+	})
+	sc.Step(`^it says "([^"]*)" is ignored$`, func(key string) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("# ignored: %q", key), "config show")
+	})
 	sc.Step(`^it names what it accepts instead$`, func() error {
 		if err := test.WantContains(w.Out.Stderr, "store", "the reason"); err != nil {
 			return err

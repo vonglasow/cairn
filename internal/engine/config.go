@@ -31,6 +31,7 @@ type Config struct {
 	Window   *WindowConfig   `json:"window,omitempty"`
 	Problem  string          `json:"problem,omitempty"`
 	Written  []string        `json:"written,omitempty"`
+	Ignored  []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
 }
 
 // PagesConfig is whether each page is on.
@@ -109,6 +110,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Approach = &ApproachConfig{Label: p.ApproachLabel()}
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
 	g.config.Written = p.Written()
+	g.config.Ignored = p.Ignored()
 }
 
 func (g *readingGate) NotUnderstood(_ string, err error) {
@@ -156,6 +158,9 @@ func configText(c Config) string {
 	fmt.Fprintf(&said, "# the configuration cairn uses, every key with the value in force\n# the file it reads: %s\n\n", c.File)
 	for _, p := range places {
 		fmt.Fprintf(&said, "%-*s   # named by %s\n", wide, p[0], p[1])
+	}
+	for _, ignored := range c.Ignored {
+		fmt.Fprintf(&said, "# ignored: %s\n", ignored)
 	}
 	if c.Pages != nil {
 		fmt.Fprintf(&said, "\n[pages]\ntasks = %t\nobjectives = %t\ntime = %t\n", c.Pages.Tasks, c.Pages.Objectives, c.Pages.Time)
