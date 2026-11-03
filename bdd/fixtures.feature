@@ -48,3 +48,11 @@ Feature: A store full of believable work, from the binary alone
       When I make the fixtures in a folder of my own with --gui
       Then it succeeds
       And the window was opened on the store it made
+
+  Rule: The fixtures hold every case a board draws
+
+    @fixtures-every-column
+    Scenario: every column and every lane holds work
+      When I make the fixtures in a folder of my own
+      Then the store it made has a task in every column
+      And the store it made has tasks in focus and tasks archived

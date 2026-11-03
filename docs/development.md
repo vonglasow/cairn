@@ -18,6 +18,18 @@ the next look — and `--new` makes it again; `--tui` opens the terminal board,
 `--from` reads another export, and a folder it did not make is left alone. It
 replaces `scripts/fixtures.sh`, thirty commands that needed the repository.
 
+The file holds every case a board draws, each task titled for what it shows
+("Steps: twenty, half done", "Deadline tomorrow: …"): every column and lane, a
+backlog long enough to scroll, the four priorities, long titles, accents and
+emoji, long and empty descriptions, steps none, all, half and twenty, labels
+none, one, too many, chosen colours, colours read off the name and a label
+nothing carries, deadlines past, today, tomorrow, in a week and far off,
+estimates overrun and kept, time over several weeks, blockers by a task and by
+a reason and one freed, links, two tasks in focus, archived ones, and
+objectives in every standing, late, and served by nothing.
+`TestFixtures_holdEveryCaseABoardDraws` fails when a case goes missing; a case
+added to a board is added there.
+
 When cairn misbehaves on one system only, debug mode records it there: run
 it with `CAIRN_DEBUG=1`, do the one thing that goes wrong, and send what
 `cairn debug report` packs. See [debug.md](debug.md).

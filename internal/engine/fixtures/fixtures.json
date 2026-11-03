@@ -2,31 +2,707 @@
   "cairn": "tasks",
   "version": 4,
   "objectives": [
-    {"number": 1, "title": "Ship cairn 1.0", "state": "active", "priority": "high", "deadline": "+71d", "labels": ["product"]},
-    {"number": 2, "title": "Make the store dependable", "state": "active", "priority": "normal", "labels": ["technical"]},
-    {"number": 3, "title": "Redesign the board", "state": "on-hold", "priority": "low"},
-    {"number": 4, "title": "Move to Postgres", "state": "reached", "priority": "normal"},
-    {"number": 5, "title": "Port to mobile", "state": "dropped", "priority": "low"}
+    {
+      "number": 1,
+      "title": "Ship cairn 1.0",
+      "state": "active",
+      "priority": "high",
+      "deadline": "+71d",
+      "labels": [
+        "product"
+      ],
+      "description": "Everything a first release needs, and nothing it does not."
+    },
+    {
+      "number": 2,
+      "title": "Make the store dependable",
+      "state": "active",
+      "priority": "normal",
+      "labels": [
+        "technical"
+      ],
+      "estimate": "40h"
+    },
+    {
+      "number": 3,
+      "title": "Redesign the board",
+      "state": "on-hold",
+      "priority": "low"
+    },
+    {
+      "number": 4,
+      "title": "Move to Postgres",
+      "state": "reached",
+      "priority": "normal"
+    },
+    {
+      "number": 5,
+      "title": "Port to mobile",
+      "state": "dropped",
+      "priority": "low"
+    },
+    {
+      "number": 6,
+      "title": "Objective: late, its deadline past",
+      "state": "active",
+      "priority": "critical",
+      "deadline": "-10d"
+    },
+    {
+      "number": 7,
+      "title": "Objective: nothing serves it yet",
+      "state": "active",
+      "priority": "normal"
+    }
+  ],
+  "labels": [
+    {
+      "label": "release",
+      "colour": "teal"
+    },
+    {
+      "label": "urgent",
+      "colour": "red"
+    },
+    {
+      "label": "carried-by-nothing",
+      "colour": "lavender"
+    }
   ],
   "tasks": [
-    {"number": 1, "title": "Write the packaging spec", "state": "current", "priority": "high", "deadline": "-1d", "estimate": "8h",
-     "spent": {"+0d": "3h"}, "labels": ["backend", "sprint-172"], "objectives": [1], "description": "Three ADRs to read before starting.",
-     "steps": [{"title": "Read ADR 0014", "done": false}, {"title": "Settle the multi-chart question", "done": true}, {"title": "Write the Flows section", "done": false}],
-     "focused": true},
-    {"number": 2, "title": "Rework the migrations", "state": "current", "priority": "critical", "deadline": "-7d", "estimate": "2h",
-     "spent": {"+0d": "9h"}, "labels": ["store"], "objectives": [2],
-     "steps": [{"title": "Back up before rolling back", "done": true}, {"title": "Test a rollback on an empty store", "done": false}],
-     "focused": true},
-    {"number": 3, "title": "The client's answer on quotas", "state": "blocked", "because": "waiting on the client", "priority": "high", "labels": ["product"], "objectives": [1]},
-    {"number": 4, "title": "Review PR 31745", "state": "watching", "blocked_by": [1], "priority": "normal", "labels": ["backend"]},
-    {"number": 5, "title": "Decide on naming", "state": "paused", "because": "team call", "priority": "low"},
-    {"number": 6, "title": "Clean the lockfiles", "state": "todo", "priority": "low", "labels": ["technical"], "objectives": [2]},
-    {"number": 7, "title": "Update the README", "state": "todo", "priority": "normal", "deadline": "+1d", "labels": ["doc"]},
-    {"number": 8, "title": "Encrypt the backups", "state": "backlog", "priority": "normal", "objectives": [2]},
-    {"number": 9, "title": "Draw the columns", "state": "backlog", "priority": "low", "objectives": [3]},
-    {"number": 10, "title": "Benchmark the store", "state": "backlog", "priority": "normal", "labels": ["technical"]},
-    {"number": 11, "title": "Switch to Postgres 16", "state": "done", "priority": "high", "labels": ["store"], "objectives": [4]},
-    {"number": 12, "title": "Drop the old schema", "state": "done", "priority": "normal", "labels": ["store"], "objectives": [4], "archived": true},
-    {"number": 13, "title": "iOS prototype", "state": "done", "priority": "low", "objectives": [5], "archived": true}
+    {
+      "number": 1,
+      "title": "Write the packaging spec",
+      "state": "current",
+      "priority": "high",
+      "deadline": "-1d",
+      "estimate": "8h",
+      "spent": {
+        "+0d": "3h",
+        "-1d": "2h"
+      },
+      "labels": [
+        "backend",
+        "sprint-172"
+      ],
+      "objectives": [
+        1
+      ],
+      "description": "Three ADRs to read before starting.",
+      "steps": [
+        {
+          "title": "Read ADR 0014",
+          "done": false
+        },
+        {
+          "title": "Settle the multi-chart question",
+          "done": true
+        },
+        {
+          "title": "Write the Flows section",
+          "done": false
+        }
+      ],
+      "focused": true
+    },
+    {
+      "number": 2,
+      "title": "Estimate overrun: 2h planned, 9h spent",
+      "state": "current",
+      "priority": "critical",
+      "deadline": "-7d",
+      "estimate": "2h",
+      "spent": {
+        "-3d": "4h",
+        "-2d": "3h",
+        "-1d": "2h"
+      },
+      "labels": [
+        "store"
+      ],
+      "objectives": [
+        2
+      ],
+      "steps": [
+        {
+          "title": "Back up before rolling back",
+          "done": true
+        },
+        {
+          "title": "Test a rollback on an empty store",
+          "done": false
+        }
+      ],
+      "focused": true
+    },
+    {
+      "number": 3,
+      "title": "Blocked by a reason: the client's answer on quotas",
+      "state": "blocked",
+      "priority": "high",
+      "because": "waiting on the client",
+      "labels": [
+        "product"
+      ],
+      "objectives": [
+        1
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Blocked by a task: review after the packaging spec",
+      "state": "watching",
+      "priority": "normal",
+      "blocked_by": [
+        1
+      ],
+      "labels": [
+        "backend"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Paused: decide on naming",
+      "state": "paused",
+      "priority": "low",
+      "because": "team call"
+    },
+    {
+      "number": 6,
+      "title": "Blocked, and nothing blocks it any more",
+      "state": "blocked",
+      "priority": "normal",
+      "blocked_by": [
+        54
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Clean the lockfiles",
+      "state": "todo",
+      "priority": "low",
+      "labels": [
+        "technical"
+      ],
+      "objectives": [
+        2
+      ]
+    },
+    {
+      "number": 8,
+      "title": "Deadline tomorrow: update the README",
+      "state": "todo",
+      "priority": "normal",
+      "deadline": "+1d",
+      "labels": [
+        "doc"
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Deadline today: send the invoice",
+      "state": "todo",
+      "priority": "high",
+      "deadline": "+0d"
+    },
+    {
+      "number": 10,
+      "title": "Deadline in a week: prepare the demo",
+      "state": "todo",
+      "priority": "normal",
+      "deadline": "+7d",
+      "objectives": [
+        1
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Deadline far off: renew the certificate",
+      "state": "todo",
+      "priority": "low",
+      "deadline": "+200d"
+    },
+    {
+      "number": 12,
+      "title": "Estimate kept: 1h planned, 1h spent",
+      "state": "todo",
+      "priority": "normal",
+      "estimate": "1h",
+      "spent": {
+        "-2d": "1h"
+      }
+    },
+    {
+      "number": 13,
+      "title": "Linked: it does not hold, see the spec",
+      "state": "todo",
+      "priority": "normal",
+      "linked": [
+        1
+      ],
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 14,
+      "title": "Priority low",
+      "state": "todo",
+      "priority": "low"
+    },
+    {
+      "number": 15,
+      "title": "Priority normal",
+      "state": "todo",
+      "priority": "normal"
+    },
+    {
+      "number": 16,
+      "title": "Priority high",
+      "state": "todo",
+      "priority": "high"
+    },
+    {
+      "number": 17,
+      "title": "Priority critical",
+      "state": "todo",
+      "priority": "critical"
+    },
+    {
+      "number": 18,
+      "title": "Long title that runs past the edge of a card and keeps going, to show where a board cuts it and what it says instead",
+      "state": "todo",
+      "priority": "normal"
+    },
+    {
+      "number": 19,
+      "title": "Accents: réécrire la façade, déjà côté hôte",
+      "state": "todo",
+      "priority": "normal",
+      "labels": [
+        "modularité"
+      ]
+    },
+    {
+      "number": 20,
+      "title": "Emoji in a title 🚀 ship it 🎉",
+      "state": "todo",
+      "priority": "normal"
+    },
+    {
+      "number": 21,
+      "title": "A long description, to scroll",
+      "state": "todo",
+      "priority": "normal",
+      "description": "A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nIt ends here."
+    },
+    {
+      "number": 22,
+      "title": "Steps: none",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 23,
+      "title": "Steps: all done",
+      "state": "current",
+      "priority": "normal",
+      "steps": [
+        {
+          "title": "Step 1",
+          "done": true
+        },
+        {
+          "title": "Step 2",
+          "done": true
+        },
+        {
+          "title": "Step 3",
+          "done": true
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "title": "Steps: half done",
+      "state": "current",
+      "priority": "normal",
+      "steps": [
+        {
+          "title": "Step 1",
+          "done": true
+        },
+        {
+          "title": "Step 2",
+          "done": true
+        },
+        {
+          "title": "Step 3",
+          "done": false
+        },
+        {
+          "title": "Step 4",
+          "done": false
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "title": "Steps: twenty, half done",
+      "state": "current",
+      "priority": "normal",
+      "steps": [
+        {
+          "title": "Step 1 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 2 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 3 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 4 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 5 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 6 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 7 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 8 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 9 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 10 of twenty",
+          "done": true
+        },
+        {
+          "title": "Step 11 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 12 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 13 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 14 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 15 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 16 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 17 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 18 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 19 of twenty",
+          "done": false
+        },
+        {
+          "title": "Step 20 of twenty",
+          "done": false
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "title": "Labels: one",
+      "state": "todo",
+      "priority": "normal",
+      "labels": [
+        "doc"
+      ]
+    },
+    {
+      "number": 27,
+      "title": "Labels: too many for a card (+n)",
+      "state": "todo",
+      "priority": "normal",
+      "labels": [
+        "backend",
+        "frontend",
+        "store",
+        "doc",
+        "product",
+        "technical",
+        "sprint-172",
+        "urgent"
+      ]
+    },
+    {
+      "number": 28,
+      "title": "Labels: a colour chosen",
+      "state": "todo",
+      "priority": "normal",
+      "labels": [
+        "release"
+      ]
+    },
+    {
+      "number": 29,
+      "title": "Labels: a colour read off the name",
+      "state": "todo",
+      "priority": "normal",
+      "labels": [
+        "read-off-the-name"
+      ]
+    },
+    {
+      "number": 30,
+      "title": "Time over several weeks",
+      "state": "current",
+      "priority": "normal",
+      "estimate": "20h",
+      "spent": {
+        "-1d": "1h30m",
+        "-3d": "1h30m",
+        "-6d": "1h30m",
+        "-9d": "1h30m",
+        "-13d": "1h30m",
+        "-16d": "1h30m",
+        "-20d": "1h30m",
+        "-24d": "1h30m",
+        "-30d": "1h30m"
+      },
+      "objectives": [
+        2
+      ]
+    },
+    {
+      "number": 31,
+      "title": "Backlog, to scroll: idea 1",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 32,
+      "title": "Backlog, to scroll: idea 2",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 33,
+      "title": "Backlog, to scroll: idea 3",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 34,
+      "title": "Backlog, to scroll: idea 4",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 35,
+      "title": "Backlog, to scroll: idea 5",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 36,
+      "title": "Backlog, to scroll: idea 6",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 37,
+      "title": "Backlog, to scroll: idea 7",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 38,
+      "title": "Backlog, to scroll: idea 8",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 39,
+      "title": "Backlog, to scroll: idea 9",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 40,
+      "title": "Backlog, to scroll: idea 10",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 41,
+      "title": "Backlog, to scroll: idea 11",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 42,
+      "title": "Backlog, to scroll: idea 12",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 43,
+      "title": "Backlog, to scroll: idea 13",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 44,
+      "title": "Backlog, to scroll: idea 14",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 45,
+      "title": "Backlog, to scroll: idea 15",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 46,
+      "title": "Backlog, to scroll: idea 16",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 47,
+      "title": "Backlog, to scroll: idea 17",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 48,
+      "title": "Backlog, to scroll: idea 18",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 49,
+      "title": "Backlog, to scroll: idea 19",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 50,
+      "title": "Backlog, to scroll: idea 20",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 51,
+      "title": "Backlog, to scroll: idea 21",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 52,
+      "title": "Backlog, to scroll: idea 22",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 53,
+      "title": "Backlog, to scroll: idea 23",
+      "state": "backlog",
+      "priority": "normal"
+    },
+    {
+      "number": 54,
+      "title": "Switch to Postgres 16",
+      "state": "done",
+      "priority": "high",
+      "labels": [
+        "store"
+      ],
+      "objectives": [
+        4
+      ]
+    },
+    {
+      "number": 55,
+      "title": "Drop the old schema",
+      "state": "done",
+      "priority": "normal",
+      "labels": [
+        "store"
+      ],
+      "objectives": [
+        4
+      ],
+      "archived": true
+    },
+    {
+      "number": 56,
+      "title": "iOS prototype",
+      "state": "done",
+      "priority": "low",
+      "objectives": [
+        5
+      ],
+      "archived": true
+    },
+    {
+      "number": 57,
+      "title": "Done this week",
+      "state": "done",
+      "priority": "normal",
+      "spent": {
+        "-2d": "45m"
+      },
+      "objectives": [
+        1
+      ]
+    },
+    {
+      "number": 58,
+      "title": "Serving a late objective",
+      "state": "todo",
+      "priority": "normal",
+      "objectives": [
+        6
+      ]
+    }
   ]
 }

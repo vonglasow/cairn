@@ -126,6 +126,32 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 		return os.WriteFile(from, []byte(fmt.Sprintf(`{"cairn": "tasks", "version": 4, "objectives": [],
 			"tasks": [{"number": 1, "title": %q, "state": "todo", "priority": "normal"}]}`, title)), 0o600)
 	})
+	sc.Step(`^the store it made has a task in every column$`, func() error {
+		for _, column := range []string{"backlog", "todo", "current", "blocked", "watching", "paused", "done"} {
+			if err := inTheStore("cairn task list --state " + column); err != nil {
+				return err
+			}
+			if !bytes.Contains([]byte(w.Out.Stdout), []byte("#")) {
+				return fmt.Errorf("no task in %s", column)
+			}
+		}
+		return nil
+	})
+	sc.Step(`^the store it made has tasks in focus and tasks archived$`, func() error {
+		if err := inTheStore("cairn task focus"); err != nil {
+			return err
+		}
+		if bytes.Count([]byte(w.Out.Stdout), []byte("(in focus)")) < 2 {
+			return fmt.Errorf("fewer than two tasks in focus:\n%s", w.Out.Stdout)
+		}
+		if err := inTheStore("cairn task list --archived"); err != nil {
+			return err
+		}
+		if !bytes.Contains([]byte(w.Out.Stdout), []byte("#")) {
+			return fmt.Errorf("no task archived")
+		}
+		return nil
+	})
 	sc.Step(`^the window was opened on the store it made$`, func() error {
 		if openedOn == "" {
 			return fmt.Errorf("the window was never opened")
