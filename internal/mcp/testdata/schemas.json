@@ -1,4 +1,38 @@
 {
+  "app_install": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Install cairn as a Mac application"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "installed": {
+          "type": "string",
+          "description": "where the application was written"
+        },
+        "runs": {
+          "type": "string",
+          "description": "the cairn whose window it opens"
+        }
+      },
+      "required": [
+        "installed",
+        "runs"
+      ],
+      "additionalProperties": false
+    }
+  },
   "backup_delete": {
     "annotations": {
       "destructiveHint": true,

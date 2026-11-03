@@ -5,6 +5,7 @@ import (
 
 	"cairn/internal/config"
 	"cairn/internal/domain"
+	"cairn/internal/macapp"
 	"cairn/internal/objective"
 	"cairn/internal/task"
 )
@@ -54,6 +55,9 @@ var reasons = []reason{
 	{domain.ErrReplacedNowhere, KindRefused, "replaced-nowhere"},
 	{domain.ErrNotADayFromToday, KindRefused, "not-a-day-from-today"},
 	{ErrNotMadeByFixtures, KindRefused, "not-made-by-fixtures"},
+	{macapp.ErrOnlyOnAMac, KindRefused, "only-on-a-mac"},
+	{macapp.ErrNotOurs, KindRefused, "app-not-ours"},
+	{macapp.ErrPassing, KindRefused, "passing-build"},
 	{domain.ErrReplacedMoreThanOnce, KindRefused, "replaced-more-than-once"},
 	{ErrReplaceAlone, KindRefused, "replace-alone"},
 	{ErrDescriptionBothWays, KindRefused, "description-both-ways"},

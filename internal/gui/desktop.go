@@ -3,7 +3,6 @@ package gui
 import (
 	"bytes"
 	"crypto/sha256"
-	"embed"
 	"encoding/hex"
 	"fmt"
 	"image/color"
@@ -12,10 +11,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-)
 
-//go:embed logo/cairn-16.png logo/cairn-32.png logo/cairn-48.png logo/cairn-64.png logo/cairn-128.png logo/cairn-256.png logo/cairn-512.png
-var logos embed.FS
+	cairnlogo "cairn/internal/logo"
+)
 
 var (
 	desktopSizes = []int{16, 32, 48, 64, 128, 256, 512}
@@ -24,9 +22,7 @@ var (
 
 const writtenByCairn = "X-Cairn-Written=true"
 
-func logoAt(size int) ([]byte, error) {
-	return logos.ReadFile("logo/cairn-" + strconv.Itoa(size) + ".png")
-}
+func logoAt(size int) ([]byte, error) { return cairnlogo.At(size) }
 
 // DataHome is where a Linux desktop looks for a person's own entries and icons: XDG_DATA_HOME, or ~/.local/share.
 func DataHome() string {

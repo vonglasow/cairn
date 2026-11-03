@@ -36,6 +36,8 @@ all of them.
 | `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing | nobody |
 | `internal/build` | which build this is | nobody |
 | `plugin/claude` | the Claude Code plugin's files, carried in the binary, and how they are written out as a marketplace — outside `internal/` because Go embeds only what lies under the package, and the files are read from there by a clone too | nobody |
+| `internal/logo` | cairn's logo, drawn at every size a system asks for | nobody |
+| `internal/macapp` | cairn written as a Mac application: its bundle, its icon, its signature | `logo` |
 | `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
 | `internal/debug` | what debug mode writes down, and the folder it keeps its files in | nobody of ours |
 | `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |

@@ -38,6 +38,12 @@ not need this.
 
 **Windows** — unzip it and put `cairn.exe` in a folder on your `PATH`.
 
+**As a Mac application** — once cairn is installed, `cairn app install` writes
+`cairn.app` in `~/Applications`: Spotlight (`⌘ space`, cairn) and the Dock open
+the window. It runs the cairn that installed it, so installing a newer one in
+the same place updates it. Opened from the Finder it has no shell environment:
+it uses the store the configuration file names, or the default one.
+
 ### From source
 
 ```sh

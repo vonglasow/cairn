@@ -231,6 +231,8 @@ func Of(op Operation, a Answer) any {
 		return Restored{Restored: *a.Restored}
 	case PluginWritten:
 		return PluginWritten{Plugin: *a.Plugin}
+	case AppInstalled:
+		return AppInstalled{Installed: *a.Installed, Runs: *a.Runs}
 	case Exported:
 		return Exported{Exported: *a.Exported, Holds: a.Holds}
 	case Imported:

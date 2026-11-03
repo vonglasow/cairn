@@ -236,7 +236,7 @@ func All() []Operation {
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,
-		PluginWrite,
+		PluginWrite, AppInstall,
 	}
 }
 
@@ -341,6 +341,8 @@ type Answer struct {
 	Packed            *int
 	Moved             *Moved
 	Crossed           *Crossed
+	Installed         *string
+	Runs              *string
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.

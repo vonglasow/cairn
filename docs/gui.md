@@ -115,6 +115,26 @@ answers through the same four switches — `Choose`, `Offers`, `Click`,
 `cairn gui` is a command in `internal/cli`, built like `cairn tui`, with the
 same seam (`var openGui = func(…)`) so a test never needs a window.
 
+## Opened as a Mac application
+
+`cairn app install` writes `cairn.app` in `~/Applications` (`internal/macapp`,
+`@app-installed`): an `Info.plist`, the icon made of the logo's PNGs at every
+size macOS reads, and a launcher of two lines that runs the installed cairn's
+window. A launcher rather than a copy of the binary, so the application follows
+the cairn on the machine: `make install`, a release, and the next opening is
+the new one — the lag the MCP server has after an update (#227) is not repeated
+here. It is signed for this machine alone (`codesign --sign -`), so macOS opens
+it without a developer's certificate; handing it to somebody else would need
+Apple's, and is not done.
+
+From the Finder it has no shell environment: no `CAIRN_STORE`, so it takes the
+store the configuration file names, or the default place. Installing again
+replaces the application cairn wrote, and an application of the same name cairn
+did not write is left alone (`app-not-ours`). A cairn run by `go run` is
+refused (`passing-build`): its binary is thrown away when it ends, and the
+application would open nothing. Elsewhere than on a Mac it is refused
+(`only-on-a-mac`).
+
 ## The look
 
 The window follows one design, settled on 2026-10-31 for v0.10.0: calm,
@@ -1003,7 +1023,7 @@ says what cairn is for rather than what it is called: the card the work is on,
 its eye the one the board draws on a card in focus, and the dial the time that
 focus measures. The card is laid in facade stones cut the way the opening cuts
 them, its priority edge on the left, on the window's own dark ground with the
-corners left clear. `internal/gui/logo/cairn.svg` is the one source; the PNGs
+corners left clear. `internal/logo/cairn.svg` is the one source; the PNGs
 beside it, 16 to 1024 pixels, and the Windows resource are drawn from it by
 `scripts/logo.sh`, so a build needs no drawing tool.
 
