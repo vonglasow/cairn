@@ -434,12 +434,21 @@ func (w Window) stored() (Window, int, error) {
 	return w, number, nil
 }
 
+func (f Form) argued(arg string) string {
+	for _, field := range f.fields {
+		if field.Arg == arg {
+			return field.Value
+		}
+	}
+	return ""
+}
+
 func (w Window) puttingBehind(number int) error {
 	if w.form.behind == 0 {
 		return nil
 	}
 	_, err := w.work.Ask(engine.TaskMove, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind)}})
+		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind), "state": w.form.argued("state")}})
 	if errors.Is(err, engine.ErrOtherColumn) {
 		return nil
 	}

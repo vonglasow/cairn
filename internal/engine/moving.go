@@ -195,7 +195,7 @@ var TaskMove = Operation{
 	Thing: "task",
 	Verb:  "move",
 	Short: "Move a task in the order",
-	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act; the tasks named under also follow it there, one behind the other, in the same act. Moved into done while one of its steps is still open, it is refused unless confirmed; confirmed, its steps are ticked with it.",
+	Does:  "Move a task to another place among the ones it sits with, or into another column and a place in it, in one act — behind a task in another column, it goes into that column; the tasks named under also follow it there, one behind the other, in the same act. Moved into done while one of its steps is still open, it is refused unless confirmed; confirmed, its steps are ticked with it.",
 	Example: `cairn task move 3 --first
 cairn task move 3 --after 1
 cairn task move 3 --state todo --after 1`,
@@ -207,7 +207,7 @@ cairn task move 3 --state todo --after 1`,
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
-		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task"},
+		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task, in this task's column"},
 		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
 		{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column to move it into first, in the same act"},
 		alsoOf("a task"),
@@ -218,27 +218,64 @@ cairn task move 3 --state todo --after 1`,
 			return Answer{}, err
 		}
 		n := numbers[0]
+		at, target, placed := placeFrom(in)
 		into := in.Change("state")
+		if placed != nil && (into == nil || !errors.Is(placed, ErrNowhereToMove)) {
+			return Answer{}, placed
+		}
+		was, err := on.Engine.tasks.Find(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		if into == nil && at == Behind {
+			if into, err = on.Engine.columnOf(target); err != nil {
+				return Answer{}, err
+			}
+		}
 		if into != nil {
 			if err := on.Engine.moveInto(n, *into, in.Confirmed); err != nil {
 				return Answer{}, err
 			}
 		}
-		at, target, err := placeFrom(in)
-		if errors.Is(err, ErrNowhereToMove) && into != nil {
-			return listing(on, Input{})
-		}
-		if err != nil {
-			return Answer{}, err
-		}
-		if err := on.Engine.move(n, at, target); err != nil {
-			return Answer{}, err
+		if placed == nil {
+			if err := on.Engine.move(n, at, target); err != nil {
+				return Answer{}, err
+			}
 		}
 		if err := on.Engine.alongBehind(n, numbers[1:], in.Confirmed); err != nil {
 			return Answer{}, err
 		}
-		return listing(on, Input{})
+		answer, err := listing(on, Input{})
+		if err != nil {
+			return Answer{}, err
+		}
+		answer.Crossed, err = on.Engine.crossed(was)
+		return answer, err
 	},
+}
+
+// Crossed is the column a move took a task out of, and the one it took it into.
+type Crossed struct {
+	Task int    `json:"task" jsonschema:"the number of the task that changed column"`
+	From string `json:"from" jsonschema:"the column it was in"`
+	To   string `json:"to" jsonschema:"the column it is in now"`
+}
+
+func (e *Engine) crossed(was task.Task) (*Crossed, error) {
+	now, err := e.tasks.Find(factsOf(was).Number)
+	if err != nil || factsOf(now).State == factsOf(was).State {
+		return nil, err
+	}
+	return &Crossed{Task: factsOf(was).Number, From: string(factsOf(was).State), To: string(factsOf(now).State)}, nil
+}
+
+func (e *Engine) columnOf(number int) (*string, error) {
+	t, err := e.tasks.Find(number)
+	if err != nil {
+		return nil, err
+	}
+	column := string(factsOf(t).State)
+	return &column, nil
 }
 
 func (e *Engine) alongBehind(first int, others []int, finishing bool) error {

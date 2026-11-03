@@ -103,13 +103,54 @@ Feature: Ordering
       Then it lists the tasks in the order "Second", "Third", "First"
 
     @ordering-moved-after-another-column
-    Scenario: a task cannot be moved behind one in another column
+    Scenario: a task moved behind one in another column goes into that column
       Given I added a task titled "In the backlog"
       And I added a task titled "Already to do" with the state "todo"
+      And I added a task titled "Also to do" with the state "todo"
       When I run `cairn task move 1 --after 2`
+      Then it succeeds
+      And it says task 1 moved from "backlog" to "todo"
+      And task 1 is in the column "todo"
+      When I run `cairn task list --state todo`
+      Then it lists the tasks in the order "Already to do", "In the backlog", "Also to do"
+
+    @ordering-moved-after-another-column-says-nothing-when-it-stays
+    Scenario: a task moved behind one in its own column says nothing about columns
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "todo"
+      When I run `cairn task move 1 --after 2`
+      Then it succeeds
+      And it does not say a task moved from one column to another
+
+    @ordering-moved-after-another-column-against-the-column-named
+    Scenario: a task cannot be moved into one column behind a task in another
+      Given I added a task titled "In the backlog"
+      And I added a task titled "Already to do" with the state "todo"
+      When I run `cairn task move 1 --state current --after 2`
       Then it fails
       And it says a task is moved inside its own column
       And it says which column each of them is in
+      And task 1 is in the column "backlog"
+
+    @ordering-moved-after-a-task-done-while-a-step-is-open
+    Scenario: a task moved behind one done is refused while a step of it is open
+      Given I added a task titled "Ship it"
+      And I added the step "Write the spec" to task 1
+      And I added a task titled "Shipped" with the state "done"
+      When I run `cairn task move 1 --after 2`
+      Then it fails
+      And it says step 1 is in the way
+      And task 1 is in the column "backlog"
+
+    @ordering-moved-after-a-task-done-confirmed
+    Scenario: a task moved behind one done, confirmed, ticks its steps
+      Given I added a task titled "Ship it"
+      And I added the step "Write the spec" to task 1
+      And I added a task titled "Shipped" with the state "done"
+      When I run `cairn task move 1 --after 2 --yes`
+      Then it succeeds
+      And task 1 is in the column "done"
+      And every step of task 1 is done
 
   Rule: A task is moved to another column and a place in one act
 

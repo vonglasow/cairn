@@ -4714,6 +4714,33 @@
           "items": {
             "type": "integer"
           }
+        },
+        "crossed": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "task": {
+              "type": "integer",
+              "description": "the number of the task that changed column"
+            },
+            "from": {
+              "type": "string",
+              "description": "the column it was in"
+            },
+            "to": {
+              "type": "string",
+              "description": "the column it is in now"
+            }
+          },
+          "description": "the column a move took a task out of and into; left out when it stayed where it was",
+          "required": [
+            "task",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -4735,7 +4762,7 @@
       "additionalProperties": false,
       "properties": {
         "after": {
-          "description": "put it directly behind this task",
+          "description": "put it directly behind this task, in this task's column",
           "type": "integer"
         },
         "also": {
@@ -4895,6 +4922,33 @@
           "items": {
             "type": "integer"
           }
+        },
+        "crossed": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "task": {
+              "type": "integer",
+              "description": "the number of the task that changed column"
+            },
+            "from": {
+              "type": "string",
+              "description": "the column it was in"
+            },
+            "to": {
+              "type": "string",
+              "description": "the column it is in now"
+            }
+          },
+          "description": "the column a move took a task out of and into; left out when it stayed where it was",
+          "required": [
+            "task",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -5485,6 +5539,33 @@
           "items": {
             "type": "integer"
           }
+        },
+        "crossed": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "task": {
+              "type": "integer",
+              "description": "the number of the task that changed column"
+            },
+            "from": {
+              "type": "string",
+              "description": "the column it was in"
+            },
+            "to": {
+              "type": "string",
+              "description": "the column it is in now"
+            }
+          },
+          "description": "the column a move took a task out of and into; left out when it stayed where it was",
+          "required": [
+            "task",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

@@ -9,6 +9,7 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/task"
+	"cairn/test"
 )
 
 var quoted = regexp.MustCompile(`"([^"]*)"`)
@@ -85,6 +86,15 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 		return marksExactly(w.Out.Stdout, n)
 	})
 
+	sc.Step(`^it says task (\d+) moved from "([^"]*)" to "([^"]*)"$`, func(n int, from, to string) error {
+		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d moved from %s to %s\n", n, from, to), "the answer")
+	})
+	sc.Step(`^it does not say a task moved from one column to another$`, func() error {
+		if strings.Contains(w.Out.Stdout, " moved from ") {
+			return fmt.Errorf("it says a task changed column:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
 	sc.Step(`^it says which column each of them is in$`, func() error {
 		if named := columnsNamed(w.Out.Stderr); len(named) < 2 {
 			return fmt.Errorf("the reason names %v, want the column each of the two is in:\n%s",

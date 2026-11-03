@@ -48,7 +48,7 @@ func rendered(op Operation, a Answer) string {
 		if a.Matched != nil {
 			return foundText(a.Matched, a)
 		}
-		return tasksText(a.Tasks, a)
+		return crossedText(a.Crossed) + tasksText(a.Tasks, a)
 	case Objective:
 		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under)) + movedText(a.Moved)
 	case Objectives:
@@ -127,6 +127,13 @@ func daysSince(since, now time.Time) string {
 		return "1 day"
 	}
 	return fmt.Sprintf("%d days", days)
+}
+
+func crossedText(c *Crossed) string {
+	if c == nil {
+		return ""
+	}
+	return fmt.Sprintf("task %d moved from %s to %s\n", c.Task, c.From, c.To)
 }
 
 func heldText(held []task.Task, a Answer) string {

@@ -2610,6 +2610,19 @@ Feature: The desktop board
       And I choose "Save"
       Then "TODO" reads "Write the spec", "Plan the week", "Ship the board"
 
+    @gui-a-task-added-between-two-cards-keeps-the-column-chosen
+    Scenario: a task added between two cards and given another column stays in that column
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship the board" with the state "todo"
+      When I open the window
+      And I double-click between the cards "Write the spec" and "Ship the board"
+      And I type "Plan the week"
+      And I click the field "column"
+      And I press "down"
+      And I press "enter"
+      And I choose "Save"
+      Then "CURRENT" carries "Plan the week"
+
     @gui-a-right-click-on-a-column-adds-there
     Scenario: New, from a right click on a column, adds a task to that column
       When I open the window

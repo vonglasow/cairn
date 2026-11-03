@@ -302,13 +302,22 @@ in focus" costs a reader.
 ## Moving reorders; changing column is an edit
 
 Moving a task places it inside the column it is already in — to the front,
-after a named task, or at the end. It never changes the column.
+after a named task, or at the end — unless the task it goes behind is in
+another column: then it goes into that column first, and the answer says so
+(`task 3 moved from todo to current`, `crossed` in the JSON).
 
 The cost is deliberate and was chosen with it in view: an urgent task that has
 just been created takes two acts, one to bring it out of the backlog and one to
-put it at the front. What is bought is that a move has one meaning. It also
-makes one refusal fall out rather than be invented: naming a target in another
-column is refused, because a move cannot reach there.
+put it at the front. What is bought is that a move has one meaning. A target in
+another column was refused, once, and a board reordered in one batch while a
+task changed column meanwhile came out half in order: the task that had moved
+was refused and the rest went on without it. Behind a task means in its column
+now, as a card dropped there would. What is still refused is naming a column
+and a target in another one (`--state current --after 2`, 2 in todo): the two
+contradict each other, and cairn does not choose.
+
+Going behind a task in `done` is going into done, with the same guard as an
+edit: a step still open refuses it unless `--yes` ticks it.
 
 Changing the column is an edit, and it lands the task at the end of the new
 section.
