@@ -42,7 +42,9 @@ that fails, the copy already there is read and the failure is said. No ticket
 tool is required for anything else to work. Azure DevOps only, for now.
 
 **Choosing.** Asked what to work on, Claude lists the first five tasks of the
-to-do and in-progress columns that are not blocked, in the board's order. Claude ranks nothing: the board's order is the priority, and
+to-do and in-progress columns that are not blocked, in the board's order —
+one listing per column, since a listing takes one, each asking only for the
+number, the title, what blocks it and the deadline. Claude ranks nothing: the board's order is the priority, and
 changing it is the person's act. A passed deadline may be pointed out; it
 moves nothing.
 
@@ -295,6 +297,13 @@ remove it.
   events call a script that is there and runs, the matcher hears the focus
   from either server and nothing else, cairn answers to the server the plugin
   declares, and the marketplace points at the plugin.
+- `bdd/claude-plugin.feature` (`@plugin-the-skill-asks-what-cairn-answers`)
+  hands every call the skill writes out whole — a code span
+  `` `tool_name {"argument": …}` `` — to the MCP server of the built binary,
+  and fails on the first one refused. The skill once told an agent to list
+  `state: todo,current`, which a listing refuses, and nothing noticed
+  (cairn#240). A call is written whole when its arguments do not depend on the
+  task at hand; `task_focus` with the number stays prose, and unchecked.
 - `shellcheck` runs at every commit on every shell script (docs/checks.md).
 - Tried for real with `claude -p --plugin-dir plugin/claude`: the skill was
   called by "on travaille sur cairn#1", the focus taken, the entry written with

@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
+	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/test"
 )
@@ -108,6 +112,36 @@ func (w *pluginWorld) saysItsCairn(folder string) error {
 	return nil
 }
 
+var wholeCall = regexp.MustCompile("`([a-z]+_[a-z]+) ({[^`]*})`")
+
+func (w *pluginWorld) answersEveryCall() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	serve := exec.Command(filepath.Join(cairnOnPath(w.t), "cairn"), "mcp", "serve", "--access", "full")
+	serve.Env = w.env
+	client := sdk.NewClient(&sdk.Implementation{Name: "skill", Version: "0"}, nil)
+	session, err := client.Connect(ctx, &sdk.CommandTransport{Command: serve}, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = session.Close() }()
+	for _, call := range wholeCall.FindAllStringSubmatch(w.out, -1) {
+		var args map[string]any
+		if err := json.Unmarshal([]byte(call[2]), &args); err != nil {
+			return fmt.Errorf("the skill writes %s with arguments that are not JSON: %w", call[1], err)
+		}
+		res, err := session.CallTool(ctx, &sdk.CallToolParams{Name: call[1], Arguments: args})
+		if err != nil {
+			return fmt.Errorf("%s %s: %w", call[1], call[2], err)
+		}
+		if res.IsError {
+			said, _ := json.Marshal(res.Content)
+			return fmt.Errorf("%s %s is refused: %s", call[1], call[2], said)
+		}
+	}
+	return nil
+}
+
 func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := &pluginWorld{sessionWorld: &sessionWorld{t: t}}
@@ -182,6 +216,13 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^the skill says "([^"]*)"$`, func(want string) error {
 			return test.WantContains(w.out, want, "the skill")
 		})
+		sc.Step(`^the skill writes out at least one call whole$`, func() error {
+			if !wholeCall.MatchString(w.out) {
+				return fmt.Errorf("the skill writes out no call whole, as `tool_name {\"argument\": …}`")
+			}
+			return nil
+		})
+		sc.Step(`^the MCP server answers every call the skill writes out whole$`, w.answersEveryCall)
 		sc.Step(`^it succeeds$`, func() error { return w.ran })
 		sc.Step(`^beside the store is a marketplace offering the plugin "([^"]*)"$`, func(name string) error {
 			_, err := offers(w.beside(), name)

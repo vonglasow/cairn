@@ -56,10 +56,14 @@ label, no access: say so, and carry on without it.
 
 ## Choosing — "sur quoi je travaille ?"
 
-1. `task_list` with `state: todo,current`.
-2. Keep the first five that are not blocked (`blocked_by` empty), in the order
-   the list gives — the board's order is the priority, and you rank nothing.
-   A deadline already passed may be pointed out; it moves nothing.
+1. List each column on its own, `todo` then `current` — a listing takes one
+   column, and `todo,current` is refused — asking only for what you read:
+   - `task_list {"state": "todo", "fields": ["number", "title", "blocked_by", "deadline"]}`
+   - `task_list {"state": "current", "fields": ["number", "title", "blocked_by", "deadline"]}`
+2. Keep the first five that are not blocked (`blocked_by` empty), `todo`'s
+   before `current`'s and each in the order its list gives — the board's order
+   is the priority, and you rank nothing. A deadline already passed may be
+   pointed out; it moves nothing.
 3. Show each as `cairn#<n> — <title>`.
 4. The person picks one: attach to it as above.
 

@@ -78,3 +78,9 @@ Feature: The Claude Code plugin comes with the binary
     When I read the cairn skill
     Then the skill says "[approach] label"
     And the skill says "Without one, say nothing of it"
+
+  @plugin-the-skill-asks-what-cairn-answers
+  Scenario: every call the skill writes out whole is one the MCP server answers
+    When I read the cairn skill
+    Then the skill writes out at least one call whole
+    And the MCP server answers every call the skill writes out whole
