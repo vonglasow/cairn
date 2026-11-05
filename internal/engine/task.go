@@ -335,14 +335,16 @@ var TaskSearch = Operation{
 	Thing: "task",
 	Verb:  "search",
 	Short: "Look for a task by anything it carries",
-	Does:  "List every task carrying everything named, wherever among its facts each one sits. Each row carries every field, or only the fields named.",
+	Does:  "List every task carrying everything named, wherever among its facts each one sits — or, with any, every task carrying at least one of it, the answer then saying under matched which tasks each thing named matched. Each row carries every field, or only the fields named.",
 	Example: `cairn task search spec
-cairn task search spec team --state todo`,
+cairn task search spec team --state todo
+cairn task search T010 T013 --any`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
 	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
+		{Name: "any", Kind: Bool, Means: "keep a task carrying any one of what is named rather than all of it, and say under matched which tasks each one matched"},
 	}, append(slices.Clone(taskNarrowing), fieldsArgument)...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
@@ -358,6 +360,10 @@ cairn task search spec team --state todo`,
 		if err != nil {
 			return Answer{}, err
 		}
+		if in.Yes("any") {
+			found, terms := matchingAny(tasks, *named)
+			return Answer{Matched: found, Terms: terms, Fields: fields}, nil
+		}
 		found := []task.Task{}
 		for _, t := range tasks {
 			if named != nil && task.Matching(t, *named) {
@@ -366,6 +372,24 @@ cairn task search spec team --state todo`,
 		}
 		return Answer{Matched: found, Fields: fields}, nil
 	},
+}
+
+func matchingAny(tasks []task.Task, named []string) ([]task.Task, map[string][]int) {
+	found := []task.Task{}
+	terms := make(map[string][]int, len(named))
+	for _, term := range named {
+		terms[term] = []int{}
+	}
+	for _, t := range tasks {
+		carried := domain.Among(task.Said(t), named)
+		if len(carried) > 0 {
+			found = append(found, t)
+		}
+		for _, term := range carried {
+			terms[term] = append(terms[term], t.Carried().Number)
+		}
+	}
+	return found, terms
 }
 
 // Reaches is the engine's search over what a board already holds: what a task or an objective said a search looks in (task.Said, objective.Said), and what somebody typed, word by word.

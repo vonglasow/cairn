@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -89,5 +90,16 @@ func TestReaches_isEveryThingNamedSomewhereInWhatIsSaid(t *testing.T) {
 	}
 	if Reaches(said, nil) {
 		t.Error("nothing named reached")
+	}
+}
+
+func TestAmong_isEachThingNamedSaidSomewhereOnceInTheOrderNamed(t *testing.T) {
+	said := []string{"Port T010", "and T022"}
+	got := Among(said, []string{"T022", "t010", "T999", "T022", ""})
+	if !slices.Equal(got, []string{"T022", "t010"}) {
+		t.Errorf("Among = %v, want T022 then t010", got)
+	}
+	if got := Among(said, nil); len(got) != 0 {
+		t.Errorf("nothing named answered %v", got)
 	}
 }

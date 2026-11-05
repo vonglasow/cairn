@@ -590,6 +590,16 @@ Feature: Tasks
       Then it lists task 1 titled "Write the spec"
       And it lists 1 task
 
+    @task-search-any-of-what-is-named
+    Scenario: asked for any of it, a task carrying one of what is named is found
+      Given I added a task titled "Port T010"
+      And I added a task titled "Merge T013"
+      And I added a task titled "Write the spec"
+      When I run `cairn task search T010 T013 --any`
+      Then it lists 2 tasks
+      And it lists task 1 titled "Port T010"
+      And it lists task 2 titled "Merge T013"
+
     @task-search-a-thing-with-a-space
     Scenario: a thing with a space in it is one thing
       Given I added a task titled "Write the spec"
@@ -2034,6 +2044,14 @@ Feature: Tasks
       Then it carries 1 task
       And no task in it carries its description
       And it says task 1 has a description
+
+    @task-json-search-any-says-what-each-term-matched
+    Scenario: a search for any of what is named, read by a machine, says which tasks each one matched
+      Given I added a task titled "Port T010"
+      When I run `cairn task search T010 T999 --any --json`
+      Then it carries 1 task
+      And it says in JSON "T010" matched task 1
+      And it says in JSON "T999" matched no task
 
     @task-json-list-carries-the-fields-asked-for
     Scenario: a listing read by a machine carries only the fields asked for

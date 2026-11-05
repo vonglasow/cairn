@@ -185,6 +185,39 @@ Feature: Answering a machine over MCP
       And every row of it carries "number", "state" and "title", and nothing else
       And its answer holds to the shape the tool described
 
+    @mcp-a-search-finds-any-of-several-terms
+    Scenario: a search asked for any of several terms finds each task carrying one, and says which term matched which
+      Given I added a task titled "Port T010 to the new board"
+      And I added a task titled "Merge T013 and T022"
+      And I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for any of "T010", "T013", "T022" and "T999"
+      Then it answers with 2 tasks
+      And it says "T010" matched task 1
+      And it says "T013" matched task 2
+      And it says "T022" matched task 2
+      And it says "T999" matched no task
+      And its answer holds to the shape the tool described
+
+    @mcp-which-term-matched-whatever-the-fields
+    Scenario: which term matched is said whatever fields a row was asked to carry
+      Given I added a task titled "Port T010 to the new board"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for any of "T010" and "T013", asking for the fields "number", "state" and "title"
+      Then it answers with 1 task
+      And every row of it carries "number", "state" and "title", and nothing else
+      And it says "T010" matched task 1
+      And it says "T013" matched no task
+      And its answer holds to the shape the tool described
+
+    @mcp-a-search-for-everything-named-says-no-term
+    Scenario: a search for everything named does not say which term matched
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec"
+      Then it answers with 1 task
+      And it says nothing of which term matched
+
     @mcp-a-listing-asked-for-no-field-carries-every-one
     Scenario: a listing that names no field carries every one, as it always did
       Given I added a task titled "Write the spec"

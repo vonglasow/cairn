@@ -39,9 +39,10 @@ func rowOf(t task.Task, kept []string) Row {
 
 // Tasks is how a listing of tasks crosses: an object naming what it carries, never a bare list.
 type Tasks struct {
-	Tasks   []Row    `json:"tasks"`
-	InFocus []int    `json:"in_focus"`
-	Crossed *Crossed `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
+	Tasks   []Row            `json:"tasks"`
+	InFocus []int            `json:"in_focus"`
+	Crossed *Crossed         `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
+	Matched map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; left out unless any was asked"`
 }
 
 // Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — a minute begun counted whole — and the day's, the sum of those.
@@ -192,7 +193,9 @@ func Of(op Operation, a Answer) any {
 		return swept
 	case Tasks:
 		if a.Matched != nil {
-			return ofTasks(a.Matched, a.InFocus, a.Fields)
+			said := ofTasks(a.Matched, a.InFocus, a.Fields)
+			said.Matched = a.Terms
+			return said
 		}
 		said := ofTasks(a.Tasks, a.InFocus, a.Fields)
 		said.Crossed = a.Crossed

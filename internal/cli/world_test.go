@@ -803,6 +803,27 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says in JSON "([^"]*)" matched (task \d+|no task)$`, func(term, which string) error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		matched, _ := envelope["matched"].(map[string]any)
+		numbers, said := matched[term].([]any)
+		if !said {
+			return fmt.Errorf("the answer does not say what %q matched: %v", term, envelope)
+		}
+		want := []any{}
+		if which != "no task" {
+			n, _ := strconv.Atoi(strings.TrimPrefix(which, "task "))
+			want = []any{float64(n)}
+		}
+		if !slices.Equal(numbers, want) {
+			return fmt.Errorf("%q matched %v, want %v", term, numbers, want)
+		}
+		return nil
+	})
+
 	sc.Step(`^every task in it carries "([^"]*)" and "([^"]*)", and nothing else$`, func(first, second string) error {
 		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {

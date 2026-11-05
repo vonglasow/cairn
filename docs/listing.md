@@ -208,6 +208,51 @@ What was chosen, and why:
 
 `fields` shapes what is handed back, never what is kept: it narrows nothing.
 
+## A search can keep what carries any of what is named
+
+`task_search` takes `any` — `task search T010 T013 --any` on the command line —
+and then keeps every task carrying at least one of what is named rather than
+all of it (`@task-search-any-of-what-is-named`,
+`@mcp-a-search-finds-any-of-several-terms`). The answer then says, under
+`matched`, which tasks each thing named matched:
+`"matched":{"T010":[1],"T013":[2],"T999":[]}`
+(`@task-json-search-any-says-what-each-term-matched`).
+
+On 2026-11-05 an agent had to check whether ten ids from an old board each had
+a task. Everything named having to hold, that was ten searches, or a whole
+listing read by hand.
+
+What was chosen, and why:
+
+- **A switch on `named`, not a second list beside it.** `any` changes how what
+  is named is read; it names nothing itself. A second list would have had to
+  say what naming both means, and `named` being required would have had to
+  give way to "one of the two", on both surfaces. Mixing all-of and any-of in
+  one search is a question nobody asked: the case was a handful of ids, any of
+  them. The narrowings still all hold, as they do on every search — `--state
+  todo --any` keeps what is in todo and carries one of what is named.
+- **Which term matched is said per term, beside the rows.** Each thing named
+  maps to the numbers of the tasks it matched, in the listing's order, and a
+  term that matched nothing maps to an empty list. The question asked was
+  "which of these has a task", and a term with none is the half of the answer
+  a row can never carry — it has no row to be said on. Inverting the map gives
+  each task the terms it matched, so nothing is lost.
+- **It is not a field, and `fields` does not touch it**
+  (`@mcp-which-term-matched-whatever-the-fields`). It is about the search, not
+  about a task, the way `in_focus` is; a row of three fields still comes with
+  what matched. Put on the row it would have been a fact `task_list` could be
+  asked for and never carry.
+- **Only a search for any of it says it**
+  (`@mcp-a-search-for-everything-named-says-no-term`). Asked for everything,
+  every task kept matched every term, and saying so would be a copy of
+  `named` per task.
+- **A term is reported as it was typed.** The match ignores case, so `t010`
+  and `T010` both match and are both said, each under its own spelling; the
+  same term named twice is said once, and a task under it once.
+- **The line a person reads is untouched.** The term is usually in what the
+  line shows, and a second rendering of a search to keep true is not worth it
+  for a person who can see the line; `--json` carries `matched`.
+
 ## A word in a step answers the task it belongs to
 
 A step's title is part of what its task says, so `task.Said` carries it, and a
@@ -250,6 +295,8 @@ Two facts named are two conditions, not a choice between them. `--state todo
 --priority high` keeps what is both, and `--label team --label urgent` keeps
 what carries both. This is the rule looking already followed, kept rather than
 invented, so the two commands do not disagree about what naming twice means.
+A search asked for `any` is the one exception, and only for what it looks for:
+see above.
 
 ## A listing is flat
 
@@ -399,8 +446,9 @@ than a second loop over the same rows.
 
 ## Deliberately not there yet
 
-- **Any of, rather than all of** — `--state todo,current`. The one shape asked
-  for was all of it; a set would need a second spelling and both commands would
-  have to agree on it.
+- **Any of, rather than all of, for a narrowing** — `--state todo,current`.
+  The one shape asked for was all of it; a set would need a second spelling
+  and both commands would have to agree on it. What a search looks for can be
+  any of it (`any`, above); what narrows it still all holds.
 - **Narrowing what a trace answers** — `trace list` reads a period, which is
   already a narrowing of a different kind.

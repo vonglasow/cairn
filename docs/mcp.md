@@ -28,7 +28,9 @@ It carries whether a task has a description, and not the description: a board
 of 105 tasks listed with theirs came to 106 000 characters, past what a client
 hands an agent in one answer. And `task_list` and `task_search` take `fields`,
 the fields each row carries — `["number","state","title"]` — for a board too
-long even then. See [listing.md](listing.md).
+long even then. `task_search` takes `any`, to keep what carries any one of
+what is named rather than all of it, and then says which tasks each one
+matched. See [listing.md](listing.md).
 
 ## It is started like every other command
 

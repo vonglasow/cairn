@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -91,6 +92,21 @@ func Reaches(said, named []string) bool {
 		l.Consider(s)
 	}
 	return l.All()
+}
+
+// Among answers each thing named that sits somewhere in what was said, once, in the order it was named.
+func Among(said, named []string) []string {
+	l := LookingFor(named)
+	for _, s := range said {
+		l.Consider(s)
+	}
+	var out []string
+	for _, n := range named {
+		if l.found[strings.ToLower(n)] && !slices.Contains(out, n) {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // All says whether every named thing was found.

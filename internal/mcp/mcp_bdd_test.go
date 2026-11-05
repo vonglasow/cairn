@@ -436,6 +436,59 @@ func (w *world) iCallTaskSearchLookingForAskingForTheFields(term, first, second,
 	return nil
 }
 
+func (w *world) iCallTaskSearchLookingForAnyOf(first, second, third, fourth string) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{first, second, third, fourth}, "any": true})
+	return nil
+}
+
+func (w *world) iCallTaskSearchLookingForAnyOfAskingForTheFields(term, other, first, second, third string) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{term, other}, "any": true, "fields": []any{first, second, third}})
+	return nil
+}
+
+func (w *world) whatEachTermMatched() (map[string]any, error) {
+	if w.callErr != nil {
+		return nil, fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	listing, ok := w.result.StructuredContent.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("structured content is not a listing: %#v", w.result.StructuredContent)
+	}
+	matched, _ := listing["matched"].(map[string]any)
+	return matched, nil
+}
+
+func (w *world) itSaysTheTermMatched(term, which string) error {
+	matched, err := w.whatEachTermMatched()
+	if err != nil {
+		return err
+	}
+	numbers, said := matched[term].([]any)
+	if !said {
+		return fmt.Errorf("the answer does not say what %q matched: %v", term, matched)
+	}
+	want := []any{}
+	if which != "no task" {
+		n, _ := strconv.Atoi(strings.TrimPrefix(which, "task "))
+		want = []any{float64(n)}
+	}
+	if !slices.Equal(numbers, want) {
+		return fmt.Errorf("%q matched %v, want %v", term, numbers, want)
+	}
+	return nil
+}
+
+func (w *world) itSaysNothingOfWhichTermMatched() error {
+	matched, err := w.whatEachTermMatched()
+	if err != nil {
+		return err
+	}
+	if matched != nil {
+		return fmt.Errorf("the answer says what each term matched: %v", matched)
+	}
+	return nil
+}
+
 func (w *world) iCallAskingForNoField(tool string) error {
 	_ = w.callTool(tool, map[string]any{"fields": []any{}})
 	return nil
@@ -962,6 +1015,10 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^no row of it carries a description$`, w.noRowCarriesADescription)
 		sc.Step("^I call `([a-z_]+)` asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallAskingForTheFields)
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAskingForTheFields)
+		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAnyOf)
+		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\" and \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAnyOfAskingForTheFields)
+		sc.Step(`^it says "([^"]*)" matched (task \d+|no task)$`, w.itSaysTheTermMatched)
+		sc.Step(`^it says nothing of which term matched$`, w.itSaysNothingOfWhichTermMatched)
 		sc.Step("^I call `([a-z_]+)` asking for no field$", w.iCallAskingForNoField)
 		sc.Step(`^every row of it carries "([^"]*)", "([^"]*)" and "([^"]*)", and nothing else$`, w.everyRowCarriesOnly)
 		sc.Step(`^every row of it carries every field a row can carry$`, w.everyRowCarriesEveryField)
