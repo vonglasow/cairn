@@ -129,7 +129,8 @@ Restart Claude Code afterwards. From then on cairn keeps that plugin at its
 own version: Claude Code starts `cairn mcp serve` with each session, and a
 server finding the plugin written by another version writes it again, so the
 session after an upgrade has the plugin of the new cairn. Nothing to run
-again. From a copy of this repository, the repository
+again. The cairn tools of a session already open follow the upgrade at its
+next call, with no `/mcp` to reconnect. From a copy of this repository, the repository
 itself is a marketplace too: `/plugin marketplace add /path/to/cairn`.
 
 The plugin declares cairn's MCP server itself. If you already declared one,

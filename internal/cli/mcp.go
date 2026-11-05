@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -35,7 +36,7 @@ func newMCPServeCmd() *cobra.Command {
 				return err
 			}
 			keepingThePluginCurrent(cmd.ErrOrStderr())
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home(), Noted: notedIn(cmd.Context())}
+			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home(), Noted: notedIn(cmd.Context()), Binary: os.Args[0]}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}

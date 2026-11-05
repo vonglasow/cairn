@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -25,27 +24,8 @@ const (
 	letGoAtMost = 30 * time.Second
 )
 
-var (
-	built     sync.Once
-	binaries  string
-	buildFail error
-)
-
 func cairnOnPath(t *testing.T) string {
-	built.Do(func() {
-		binaries, buildFail = os.MkdirTemp("", "cairn-claude-")
-		if buildFail != nil {
-			return
-		}
-		out, err := exec.Command("go", "build", "-o", filepath.Join(binaries, "cairn"), "../../cmd/cairn").CombinedOutput()
-		if err != nil {
-			buildFail = fmt.Errorf("building cairn: %w\n%s", err, out)
-		}
-	})
-	if buildFail != nil {
-		t.Fatal(buildFail)
-	}
-	return binaries
+	return filepath.Dir(test.Built(t))
 }
 
 type sessionWorld struct {

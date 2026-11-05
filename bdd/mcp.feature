@@ -368,3 +368,32 @@ Feature: Answering a machine over MCP
       And it does not offer `objective_list`
       And it does not offer `timesheet_show`
       And it offers `config_show`
+
+  Rule: A cairn installed while the server runs takes over from it, with no reconnect
+
+    @mcp-a-newer-cairn-takes-over
+    Scenario: the cairn now on disk answers the next call, and the client greets nobody again
+      Given a configuration that turns the page "time" off
+      And a cairn server started from a cairn on disk
+      And the page "time" turned back on
+      And a newer cairn installed in its place
+      When I call `timesheet_show`
+      Then it answers without an error
+      And the client is told the tools changed
+
+    @mcp-the-same-tools-are-not-announced
+    Scenario: a newer cairn offering the same tools says nothing about them
+      Given a cairn server started from a cairn on disk
+      And a newer cairn installed in its place
+      When I call `task_list`
+      Then it answers without an error
+      And the client is not told the tools changed
+
+    @mcp-what-cannot-run-leaves-the-running-cairn
+    Scenario: something installed that cannot be run leaves the running cairn answering
+      Given a cairn server started from a cairn on disk
+      And something that cannot be run installed in its place
+      When I call `task_list`
+      Then it answers without an error
+      And I call `task_list`
+      And it answers without an error

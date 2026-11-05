@@ -48,6 +48,67 @@ on one machine.
 }
 ```
 
+## A cairn installed while it runs takes over, with no reconnect
+
+A client starts the server once a session and keeps it. Before, an upgrade —
+`make install`, `brew upgrade`, a release — left the session talking to the old
+binary until somebody reconnected it by hand (`/mcp` in Claude Code): the tools
+added since were missing, and a configuration the new cairn wrote could be
+refused by the old one. Now nothing is left to do
+(`@mcp-a-newer-cairn-takes-over`).
+
+Between two requests, the server compares the `cairn` the client started — its
+path, found on the `PATH` when it was a bare name, links followed — with the
+one it is: the file it resolves to, its size, its time. One `stat` a request.
+When they differ, the request just read is not answered there. The server
+waits for the calls it is still answering, then replaces itself with the cairn
+on disk, on the same standard input and output, and hands it what it holds:
+
+- the greeting — what the client said at `initialize` and that it was
+  initialized, and the protocol they agreed on — so the client greets nobody
+  again;
+- the `subscriptions/listen` it holds open, the one call never answered, so
+  the newer protocol's notifications still reach the client;
+- what it had read and not answered, the request first;
+- the names of the tools it offered.
+
+The newer cairn answers the request first. If its tools are not the ones
+handed over, it then tells the client the list changed
+(`notifications/tools/list_changed`) and the client reads it again; with the
+same tools it says nothing (`@mcp-the-same-tools-are-not-announced`).
+
+On macOS and Linux the server `exec`s the newer cairn: the same process, so the
+client sees no process end. Windows has no `exec`; the server starts the newer
+cairn on the same handles, waits for it, and leaves with its code. What is
+handed over travels in one environment variable, `CAIRN_MCP_CARRIED`, which
+the newer cairn reads and removes as it starts.
+
+Three choices, and why:
+
+- **Reading one message a line, ourselves.** The SDK's `IOTransport` reads
+  ahead of what it answers, so bytes would be lost at the hand-over. cairn's
+  transport reads a line at a time and hands over whatever it buffered. It
+  takes no JSON-RPC batch, which protocol 2025-06-18 removed.
+- **Something that cannot be run leaves the running cairn answering**
+  (`@mcp-what-cannot-run-leaves-the-running-cairn`). A file half copied, or
+  not a program: the `exec` fails, the request is answered by the cairn still
+  running, and the file is taken as seen — the next request does not try it
+  again; the next install does. A cairn missing from its path, between the
+  removal and the copy of an install, is no change at all.
+- **The identity is the file, not the version it says.** Asking a binary its
+  version means running it at every request; a `stat` costs nothing. A cairn
+  installed again, unchanged, is handed over to all the same, which costs one
+  `exec`.
+
+What it cannot do: hand over to a cairn older than this one, which knows
+nothing of `CAIRN_MCP_CARRIED`. Going back below it needs a reconnect, once.
+
+Set aside, on 2026-11-03: running the binary for every call (that is the
+command line over MCP, which the server is there to avoid); exiting when stale
+(Claude Code does not start again a server that exits); a server on a local
+port, which still needs restarting after an update and opens a port — a task
+of its own, decided with [sharing.md](sharing.md).
+
 ## It tells an agent where its work goes, as it greets it
 
 The server's greeting carries instructions, and they say one thing: a task's

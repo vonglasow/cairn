@@ -6,13 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"cairn/test"
 )
 
 func TestBinary_handsItsExitCodeToTheShell(t *testing.T) {
-	binary := filepath.Join(t.TempDir(), "cairn")
-	if out, err := exec.Command("go", "build", "-o", binary, ".").CombinedOutput(); err != nil {
-		t.Fatalf("building the binary: %v\n%s", err, out)
-	}
+	binary := test.Built(t)
 
 	home := t.TempDir()
 	env := []string{"HOME=" + home}

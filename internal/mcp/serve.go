@@ -1,11 +1,14 @@
 package mcp
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	rdebug "runtime/debug"
+	"slices"
 	"sync"
 
 	"cairn/internal/debug"
@@ -22,29 +25,54 @@ type Server struct {
 	Access  engine.Level
 	Home    engine.Home
 	Noted   *debug.Log
+	Binary  string
 }
 
 const whereTheWorkGoes = "A task's description says what the task is; what was done or decided on it goes in its notes, never in its description. " +
 	"Its notes are the directory task_show names as its context: a dated entry, YYYY-MM-DD-<subject>.md, for each piece of work, " +
 	"and summary.md, rewritten whole, for where the task stands."
 
-type noCloseWriter struct {
-	io.Writer
-}
-
-func (noCloseWriter) Close() error { return nil }
-
-// Serve builds an SDK server announcing s.Name and s.Version, and runs it over an IOTransport built on in and out.
+// Serve builds an SDK server announcing s.Name and s.Version, and runs it over in and out, one message a line; between two requests, a cairn installed at s.Binary takes the session over.
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, &sdk.ServerOptions{Instructions: whereTheWorkGoes})
-	for _, op := range offered(s.Access, engine.PagesFrom(s.Home)) {
-		server.AddTool(toolFor(op), handlerFor(op, s.Home))
+	ops := offered(s.Access, engine.PagesFrom(s.Home))
+	var tools []string
+	offer := func() {
+		for _, op := range ops {
+			server.AddTool(toolFor(op), handlerFor(op, s.Home))
+		}
 	}
+	for _, op := range ops {
+		tools = append(tools, toolFor(op).Name)
+	}
+	offer()
+	greeted := &remembered{}
+	server.AddReceivingMiddleware(greeted.remember)
 	if s.Noted != nil {
 		server.AddReceivingMiddleware(noting(s.Noted))
 	}
-	transport := &sdk.IOTransport{Reader: io.NopCloser(in), Writer: noCloseWriter{out}}
-	err := server.Run(ctx, transport)
+	before, resumed, err := takenOver()
+	if err != nil {
+		return fmt.Errorf("the session handed over by the cairn this one replaced cannot be read: %w", err)
+	}
+	greeted.state = before.State
+	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, answered: func() {}}
+	if resumed && !slices.Equal(before.Tools, tools) {
+		transport.answered = offer
+	}
+	transport.carry = func(unread []byte) carried {
+		return carried{State: greeted.held(), Tools: tools, Unread: unread}
+	}
+	if running, err := identify(s.Binary); s.Binary != "" && err == nil {
+		transport.running = &running
+	}
+	session, err := server.Connect(ctx, transport, &sdk.ServerSessionOptions{State: &before.State})
+	if err != nil {
+		return err
+	}
+	stop := context.AfterFunc(ctx, func() { _ = session.Close() })
+	defer stop()
+	err = session.Wait()
 	if clientWentAway(err) {
 		return nil
 	}

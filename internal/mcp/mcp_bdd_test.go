@@ -47,6 +47,8 @@ type world struct {
 	callErr    error
 	calledTool string
 	number     int
+	onDisk     string
+	told       chan struct{}
 }
 
 func newWorld(t *testing.T) *world {
@@ -764,6 +766,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := newWorld(t)
 		w.Register(sc)
+		w.registerHandOver(sc)
 		sc.Step("^I start `cairn mcp serve` and greet it$", w.startedServeAndGreetedIt)
 		sc.Step("^it answers with its name and its version$", w.itAnswersWithItsNameAndVersion)
 		sc.Step("^I start `cairn mcp serve` and greet it without waiting$", w.startedServeAndGreetedItWithoutWaiting)

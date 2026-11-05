@@ -270,6 +270,14 @@ plugin (`@plugin-not-written-unasked`); the folder the configuration names
 is followed as the one beside the store is
 (`@plugin-kept-current-where-the-configuration-says`). The same for every way cairn is installed.
 
+**The session's server follows an upgrade too.** The server Claude Code
+started notices, at the next tool call, that the `cairn` on the `PATH` is
+another one, and hands its session over to it in place: the call is answered
+by the new cairn, its tools are the ones Claude Code lists from then on, and
+nobody runs `/mcp` ([mcp.md](mcp.md), "A cairn installed while it runs takes
+over"). The plugin itself — the skill and the hook — is still read from the
+next session.
+
 The plugin declares the cairn MCP server, so that installing it is enough. A
 person who already declared one keeps theirs: Claude Code drops a plugin's
 server when one with the very same command is already there, and loads both
