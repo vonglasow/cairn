@@ -64,6 +64,8 @@ func schemaFor(op engine.Operation) map[string]any {
 		switch {
 		case arg.Kind == engine.List && len(arg.OneOf) > 0:
 			prop["items"] = map[string]any{"type": "string", "enum": arg.OneOf}
+		case arg.TakesNumbers():
+			prop["items"] = map[string]any{"type": []string{"integer", "string"}}
 		case arg.Kind == engine.List:
 			prop["items"] = map[string]any{"type": "string"}
 		case len(arg.OneOf) > 0:

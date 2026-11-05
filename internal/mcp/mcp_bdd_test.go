@@ -504,6 +504,81 @@ func (w *world) iCallTaskListAskingForTheNumbersAndTheFields(first, second, one,
 	return nil
 }
 
+func (w *world) iCallTaskListAskingForTheNumbersWrittenAsNumbers(first, second, third int) error {
+	_ = w.callTool("task_list", map[string]any{"number": []int{first, second, third}})
+	return nil
+}
+
+func (w *world) iCallTaskListAskingForTheNumberAndWhatWasSent(first int, sent string) error {
+	_ = w.callTool("task_list", map[string]any{"number": json.RawMessage(fmt.Sprintf("[%d,%s]", first, sent))})
+	return nil
+}
+
+func (w *world) iCallTaskNewBlockedAndLinkedWrittenAsNumbers(title string, blocker, link int) error {
+	_ = w.callTool("task_new", map[string]any{"title": title, "blocker": []int{blocker}, "link": []int{link}})
+	return nil
+}
+
+func (w *world) itAnswersWithATaskBlockedAndLinked(blocker, link int) error {
+	doc, err := w.answeredTask()
+	if err != nil {
+		return err
+	}
+	if w.result.IsError {
+		return fmt.Errorf("it was refused: %s", textOf(w.result))
+	}
+	blockedBy, _ := doc["blocked_by"].([]any)
+	linked, _ := doc["linked"].([]any)
+	if !slices.Equal(blockedBy, []any{float64(blocker)}) || !slices.Equal(linked, []any{float64(link)}) {
+		return fmt.Errorf("blocked by %v and linked to %v, want %d and %d", doc["blocked_by"], doc["linked"], blocker, link)
+	}
+	return nil
+}
+
+func (w *world) iCallTaskArchiveWithTheNumberAndAlsoWrittenAsANumber(first, also int) error {
+	_ = w.callTool("task_archive", map[string]any{"number": first, "also": []int{also}})
+	return nil
+}
+
+func (w *world) iCallTaskEditWithTheLabelWrittenAsANumber(number, label int) error {
+	_ = w.callTool("task_edit", map[string]any{"number": number, "label": []int{label}})
+	return nil
+}
+
+func (w *world) everyListOfNumbersSaysItTakesWholeNumbers() error {
+	seen := 0
+	for _, op := range engine.All() {
+		tool := w.tool(op.Name())
+		if tool == nil {
+			continue
+		}
+		var input struct {
+			Properties map[string]struct {
+				Items struct {
+					Type any `json:"type"`
+				} `json:"items"`
+			} `json:"properties"`
+		}
+		if err := remarshalTo(tool.InputSchema, &input); err != nil {
+			return fmt.Errorf("%s: %w", tool.Name, err)
+		}
+		for _, arg := range op.Takes {
+			if arg.Kind != engine.List || arg.Of == "" {
+				continue
+			}
+			seen++
+			said := input.Properties[arg.Name].Items.Type
+			if types, _ := said.([]any); !slices.Contains(types, any("integer")) {
+				return fmt.Errorf("%s's %q takes %v, want whole numbers among them", tool.Name, arg.Name, said)
+			}
+		}
+	}
+	if seen == 0 {
+		return fmt.Errorf("no tool takes a list of numbers")
+	}
+	return nil
+}
+
 func (w *world) itAnswersWithTheTasks(first, second string) error {
 	if w.callErr != nil {
 		return fmt.Errorf("the call failed: %w", w.callErr)
@@ -1176,6 +1251,13 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		})
 		sc.Step("^I call `task_list` asking for the numbers (\\d+), (\\d+) and (\\d+), archived only$", w.iCallTaskListAskingForTheNumbersArchivedOnly)
 		sc.Step("^I call `task_list` asking for the numbers (\\d+) and (\\d+), and for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskListAskingForTheNumbersAndTheFields)
+		sc.Step("^I call `task_list` asking for the numbers (\\d+), (\\d+) and (\\d+), written as numbers$", w.iCallTaskListAskingForTheNumbersWrittenAsNumbers)
+		sc.Step("^I call `task_list` asking for the numbers (\\d+) and (-?[\\d.]+|true|\"[^\"]*\")$", w.iCallTaskListAskingForTheNumberAndWhatWasSent)
+		sc.Step("^I call `task_new` with the title \"([^\"]*)\", blocked by (\\d+) and linked to (\\d+), written as numbers$", w.iCallTaskNewBlockedAndLinkedWrittenAsNumbers)
+		sc.Step(`^it answers with a task blocked by task (\d+) and linked to task (\d+)$`, w.itAnswersWithATaskBlockedAndLinked)
+		sc.Step("^I call `task_archive` with the number (\\d+) and also (\\d+), written as a number$", w.iCallTaskArchiveWithTheNumberAndAlsoWrittenAsANumber)
+		sc.Step("^I call `task_edit` with the number (\\d+) and the label (\\d+), written as a number$", w.iCallTaskEditWithTheLabelWrittenAsANumber)
+		sc.Step(`^every list of task or objective numbers it takes says it takes whole numbers$`, w.everyListOfNumbersSaysItTakesWholeNumbers)
 		sc.Step("^I call `task_list` asking for no number$", func() error { return w.iCallTaskListAskingForTheNumbers([]string{}...) })
 		sc.Step(`^it answers with the tasks? (\d+)(?: and (\d+))?$`, w.itAnswersWithTheTasks)
 		sc.Step(`^it says there is no task (\d+)$`, w.itSaysThereIsNoTask)

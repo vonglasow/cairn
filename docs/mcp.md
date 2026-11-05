@@ -31,7 +31,7 @@ the fields each row carries — `["number","state","title"]` — for a board too
 long even then. `task_search` takes `any`, to keep what carries any one of
 what is named rather than all of it, and then says which tasks each one
 matched. `task_list` takes `number`, the tasks to answer and no other —
-`["25","18","330"]` — and says under `unknown` which number is no task, so a
+`[25,18,330]` — and says under `unknown` which number is no task, so a
 handful of known tasks is one call rather than one `task_show` each.
 `task_list` also takes `limit` and `offset`, a page of what it keeps in the
 board's order, and then says under `total` how many there are in all; and
@@ -523,6 +523,34 @@ A list argument that takes a closed set says it on its items: `fields` is an
 array whose items are an `enum` of the fields a row carries
 (`@mcp-names-the-fields-it-can-answer`), where a single value says it on
 itself.
+
+**A list of numbers takes numbers.** A list that names tasks or objectives by their numbers — `number` on
+`task_list`, `blocker`, `link`, `objective`, `also` — takes each one written
+as a number or as a string: its items are `{"type": ["integer", "string"]}`
+(`@mcp-a-list-of-numbers-says-it-takes-numbers`). An agent writes
+`"number": [25, 18]` because that is what a number is, and it used to be
+refused, the refusal printing the integer in quotes as if a string had been
+sent (cairn#241).
+
+- **Strings stay.** `blocker` takes `"+3"`, `"-3"` and `"=3"`, which are no
+  numbers, and every list was strings until now: taking them away would be a
+  break.
+- **A number is read as the digits it is written with**, then handed on
+  exactly as the same string would be, so the rules stay where they were and
+  are written once: `-3` among blockers takes 3 away as `"-3"` does, and
+  `-3` among the numbers `task_list` answers is refused as `"-3"` is.
+- **Only a whole number written whole is one.** `25.0`, `25.5` and `1e3` are
+  refused as their strings are — the same rule a single number argument such
+  as `task_show`'s already followed — rather than rounded into a task nobody
+  named (`@mcp-what-is-no-number-is-refused-as-it-was-sent`).
+- **The rule is the engine's.** `Argument.TakesNumbers` — a list whose `Of`
+  names what it numbers — is read by `FromJSON` to take the numbers and by the
+  server to write the schema, so the two cannot disagree. The command line is
+  untouched: a word typed is a string either way.
+- **A refusal says what was sent, as JSON.** A number among labels is refused
+  with `got 3`, a string with `got "3"`, a yes with `got true`
+  (`@mcp-a-number-among-labels-is-refused-as-a-number`): the value is written
+  back the way JSON writes it, so the quotes say which it was.
 
 **Arguments are named the way the command line names them, answers the way
 JSON does.** An argument is `due-before`, `with-archived`: it is the same

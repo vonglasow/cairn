@@ -74,6 +74,12 @@ func TestFromJSON_handsOverWhatWasSentTheWayTheOperationTakesIt(t *testing.T) {
 		{"a yes", TaskMove, `{"number": 2, "first": true}`,
 			Input{Given: map[string]string{"number": "2", "first": "true"}}},
 		{"nothing at all", TaskList, ``, Input{}},
+		{"task numbers written as numbers", TaskList, `{"number": [25, "18", 25.5, -3, 1e3]}`,
+			Input{Listed: map[string][]string{"number": {"25", "18", "25.5", "-3", "1e3"}}}},
+		{"blockers, links and objectives written as numbers", TaskNew, `{"title": "t", "blocker": [3, "-4"], "link": [5], "objective": [-1]}`,
+			Input{Given: map[string]string{"title": "t"}, Listed: map[string][]string{"blocker": {"3", "-4"}, "link": {"5"}, "objective": {"-1"}}}},
+		{"tasks taken together written as numbers", TaskArchive, `{"number": 1, "also": [2]}`,
+			Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}}},
 	} {
 		got, err := tc.op.FromJSON([]byte(tc.sent))
 		if err != nil {
@@ -97,6 +103,16 @@ func TestFromJSON_refusesWhatItCannotRead(t *testing.T) {
 		{"a list that is a string", TaskSearch, `{"named": "spec"}`, "named"},
 		{"a number among strings", TaskSearch, `{"named": ["spec", 3]}`, "named"},
 		{"a yes that is a string", TaskMove, `{"number": 2, "first": "yes"}`, "first"},
+		{"a number among labels, said as the number it is", TaskEdit, `{"number": 2, "label": ["spec", 3]}`,
+			`"label": a string is expected among the list, got 3`},
+		{"a yes among task numbers", TaskList, `{"number": [1, true]}`,
+			`"number": a task number is expected among the list, got true`},
+		{"a list among objective numbers", TaskNew, `{"title": "t", "objective": [[1]]}`,
+			`"objective": an objective number is expected among the list, got [1]`},
+		{"a number for a list, said as the number it is", TaskSearch, `{"named": 3}`,
+			`"named": a list is expected, got 3`},
+		{"a number for a yes, said as the number it is", TaskMove, `{"number": 2, "first": 1}`,
+			`"first": true or false is expected, got 1`},
 	} {
 		_, err := tc.op.FromJSON([]byte(tc.sent))
 		if err == nil || !strings.Contains(err.Error(), tc.says) {

@@ -274,8 +274,9 @@ What was chosen, and why:
   takes `fields`, and says the focus, so the numbers are one more narrowing of
   the shape it has.
 - **Named `number`, given once per task**, the way a label is: `--number 25
-  --number 18`, `["25","18"]`. A list of task numbers is written as strings,
-  the way `blocker` and `link` are.
+  --number 18`, `[25,18]`. A list of task numbers is written as numbers or
+  as strings, the way `blocker` and `link` are — see
+  [mcp.md](mcp.md#what-changes-in-a-tools-answer-and-what-does-not).
 - **Archived or not.** Somebody naming a number already knows which task they
   mean, which is why `task show` answers an archived task (above); a listing
   by number does the same, and a row says `archived`. `--archived` still keeps

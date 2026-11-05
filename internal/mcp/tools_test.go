@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -276,6 +277,16 @@ func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
 	label := schema["properties"].(map[string]any)["label"].(map[string]any)
 	if items, _ := label["items"].(map[string]any); items["type"] != "string" {
 		t.Errorf("label items = %v, want strings", label["items"])
+	}
+}
+
+func TestSchemaFor_takesAListOfNumbersWrittenAsNumbersOrAsText(t *testing.T) {
+	properties := schemaFor(engine.TaskNew)["properties"].(map[string]any)
+	for _, name := range []string{"blocker", "link", "objective"} {
+		items, _ := properties[name].(map[string]any)["items"].(map[string]any)
+		if !reflect.DeepEqual(items["type"], []string{"integer", "string"}) {
+			t.Errorf("%s items = %v, want whole numbers or text", name, items)
+		}
 	}
 }
 

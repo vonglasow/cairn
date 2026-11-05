@@ -100,7 +100,7 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 		value := values[name]
 		arg, _ := o.argument(name)
 		if arg.Kind == List {
-			list, err := stringsOf(value)
+			list, err := arg.listOf(value)
 			if err != nil {
 				return Input{}, Misread(fmt.Errorf("%q: %w", name, err))
 			}
@@ -114,7 +114,7 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 		if arg.Kind == Bool {
 			yes, ok := value.(bool)
 			if !ok {
-				return Input{}, Misread(fmt.Errorf("%q: true or false is expected, got %#v", name, value))
+				return Input{}, Misread(fmt.Errorf("%q: true or false is expected, got %s", name, asSent(value)))
 			}
 			in.Given[name] = strconv.FormatBool(yes)
 			continue
@@ -124,21 +124,36 @@ func (o Operation) FromJSON(sent []byte) (Input, error) {
 	return in, nil
 }
 
-func stringsOf(value any) ([]string, error) {
+// TakesNumbers reports whether a list names things by their numbers — a task, an objective — and so takes whole numbers as well as text.
+func (a Argument) TakesNumbers() bool { return a.Kind == List && a.Of != "" }
+
+func (a Argument) listOf(value any) ([]string, error) {
 	if value == nil {
 		return []string{}, nil
 	}
 	items, ok := value.([]any)
 	if !ok {
-		return nil, fmt.Errorf("a list is expected, got %#v", value)
+		return nil, fmt.Errorf("a list is expected, got %s", asSent(value))
 	}
 	out := make([]string, 0, len(items))
 	for _, item := range items {
+		if number, ok := item.(json.Number); ok && a.TakesNumbers() {
+			out = append(out, number.String())
+			continue
+		}
 		s, ok := item.(string)
+		if !ok && a.TakesNumbers() {
+			return nil, fmt.Errorf("%s number is expected among the list, got %s", a.Of, asSent(item))
+		}
 		if !ok {
-			return nil, fmt.Errorf("a string is expected among the list, got %#v", item)
+			return nil, fmt.Errorf("a string is expected among the list, got %s", asSent(item))
 		}
 		out = append(out, s)
 	}
 	return out, nil
+}
+
+func asSent(value any) string {
+	sent, _ := json.Marshal(value)
+	return string(sent)
 }

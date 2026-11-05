@@ -1083,7 +1083,10 @@
         "also": {
           "description": "another one taken in the same act as the number — every one of them, or none",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3218,7 +3221,10 @@
         "also": {
           "description": "another one taken in the same act as the number — every one of them, or none",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3244,7 +3250,10 @@
         "objective": {
           "description": "keep only the tasks serving this objective",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3601,7 +3610,10 @@
         "also": {
           "description": "another one taken in the same act as the number — every one of them, or none",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3665,7 +3677,10 @@
         "blocker": {
           "description": "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3695,7 +3710,10 @@
         "link": {
           "description": "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -3706,7 +3724,10 @@
         "objective": {
           "description": "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -4554,7 +4575,10 @@
         "objective": {
           "description": "keep only the tasks serving this objective",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -4673,14 +4697,20 @@
         "number": {
           "description": "the number of a task to answer, and no other; named twice, both — archived or not, and a number no task carries said under unknown",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
         "objective": {
           "description": "keep only the tasks serving this objective",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -4916,7 +4946,10 @@
         "also": {
           "description": "another one taken in the same act as the number — every one of them, or none",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -5148,7 +5181,10 @@
         "blocker": {
           "description": "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -5174,14 +5210,20 @@
         "link": {
           "description": "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
         "objective": {
           "description": "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },
@@ -5582,7 +5624,10 @@
         "objective": {
           "description": "keep only the tasks serving this objective",
           "items": {
-            "type": "string"
+            "type": [
+              "integer",
+              "string"
+            ]
           },
           "type": "array"
         },

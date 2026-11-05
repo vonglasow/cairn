@@ -267,6 +267,62 @@ Feature: Answering a machine over MCP
       Then it answers that it failed
       And the answer says a task number
 
+    @mcp-a-listing-takes-numbers-written-as-numbers
+    Scenario: a listing takes the numbers it is asked for written as numbers, not only as text
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Tell the team"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 3, 1 and 9, written as numbers
+      Then it answers with the tasks 1 and 3
+      And it says there is no task 9
+
+    @mcp-a-blocker-and-a-link-take-numbers-written-as-numbers
+    Scenario: a task's blocker and link are taken written as numbers
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access write`
+      When I call `task_new` with the title "Ship it", blocked by 1 and linked to 1, written as numbers
+      Then it answers with a task blocked by task 1 and linked to task 1
+
+    @mcp-tasks-taken-together-take-numbers-written-as-numbers
+    Scenario: tasks taken together are named written as numbers
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And a cairn server started with `--access write`
+      When I call `task_archive` with the number 1 and also 2, written as a number
+      Then it answers without an error
+      And `cairn task list --archived` lists 2 tasks
+
+    @mcp-a-list-of-numbers-says-it-takes-numbers
+    Scenario: every list of numbers a tool takes says it takes whole numbers
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then every list of task or objective numbers it takes says it takes whole numbers
+
+    @mcp-what-is-no-number-is-refused-as-it-was-sent
+    Scenario Outline: what is no task number among the numbers is refused, saying what was sent
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 1 and <sent>
+      Then it answers that it failed
+      And the answer says <said>
+
+      Examples:
+        | sent  | said                                               |
+        | 1.5   | "1.5": a task number is expected                   |
+        | 1.0   | "1.0": a task number is expected                   |
+        | -2    | "-2": a task number is expected                    |
+        | true  | a task number is expected among the list, got true |
+        | "one" | "one": a task number is expected                   |
+
+    @mcp-a-number-among-labels-is-refused-as-a-number
+    Scenario: a number sent among labels is refused as the number it is, not as text
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access write`
+      When I call `task_edit` with the number 1 and the label 3, written as a number
+      Then it answers that it failed
+      And the answer says a string is expected among the list, got 3
+
     @mcp-a-listing-answers-a-page
     Scenario: a listing asked for a page answers those tasks in the board's order, and says how many there are in all
       Given I added a task titled "Write the spec"
