@@ -158,6 +158,56 @@ being a task again: a task holding tasks is a shape no schema can describe, and
 eight MCP tools once lost the shape of their answer the moment a task held a
 task. The type says the rule.
 
+## A listing carries only the fields asked for, when some are named
+
+`task_list` and `task_search` take `fields` — `task list --json --fields number
+--fields title` on the command line — and each row then carries those and no
+other (`@mcp-a-listing-carries-the-fields-asked-for`,
+`@mcp-a-search-carries-the-fields-asked-for`,
+`@task-json-list-carries-the-fields-asked-for`). Nothing named, a row carries
+every field, as it always did.
+
+Leaving the descriptions out was not enough: on 2026-11-05 an agent listing a
+board of 313 tasks, archived ones included, was handed some 90 000 characters,
+past what its client hands over in one answer, when it needed the number, the
+column and the title of each. Measured on this repository's board of 228 tasks:
+62 899 characters whole, 20 462 with those three fields.
+
+What was chosen, and why:
+
+- **The vocabulary is the row's own.** A field is a key a row carries —
+  `number`, `title`, `state`, `archived`, `priority`, `labels`, `blocked_by`,
+  `linked`, `because`, `deadline`, `estimate`, `time_spent`, `objectives`,
+  `described` — read off `engine.Row`, never written out beside it. The
+  argument's description and the enum an agent reads are made from that one
+  list, so a fact added to a row can be asked for the day it is there.
+- **A name a row does not carry is refused**, `not-a-field`, naming every one it
+  does (`@mcp-a-field-a-row-does-not-carry-is-refused`) — `description`
+  included, since a listing never carries it: answering a row without the field
+  asked for would read as a task that has none. A list naming nothing is
+  refused too (`@mcp-asking-for-no-field-is-refused`): a row of no field is no
+  answer, and answering every field would hand over the very answer that was
+  too long.
+- **A row keeps its own order**, not the order asked in, and a field named
+  twice is carried once: the order of a row is then the same whoever asked.
+- **The rest of the answer is untouched.** `in_focus` is said whatever was
+  asked; it is not a field of a row.
+- **The text is untouched too.** The line a person reads is already the short
+  one — the number, the title, the column, the priority, the deadline, the
+  labels — so `--fields` narrows `--json` and the answer a tool hands a machine,
+  and `task list --fields title` without `--json` prints the line it always
+  did. Shaping the line by the fields asked would be a second rendering of a
+  row to keep true, for nobody who asked.
+- **Several fields are several values**, the way two labels are: `--fields
+  number --fields title`, `["number","title"]`. `--fields number,title` is one
+  name that is not a field, and is refused saying so.
+- **The command line has it because it is the same argument.** An argument is
+  described once, in the engine, and both surfaces are built from it; an
+  argument kept from one of them would be the first, and `--json` is there to
+  print what a tool answers.
+
+`fields` shapes what is handed back, never what is kept: it narrows nothing.
+
 ## A word in a step answers the task it belongs to
 
 A step's title is part of what its task says, so `task.Said` carries it, and a

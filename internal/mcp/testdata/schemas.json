@@ -4628,6 +4628,29 @@
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
+        "fields": {
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described; every one when it is not named",
+          "items": {
+            "enum": [
+              "number",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "linked",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "described"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -4765,22 +4788,6 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "number",
-              "title",
-              "state",
-              "archived",
-              "priority",
-              "labels",
-              "blocked_by",
-              "linked",
-              "because",
-              "deadline",
-              "estimate",
-              "time_spent",
-              "objectives",
-              "described"
-            ],
             "additionalProperties": false
           }
         },
@@ -4973,22 +4980,6 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "number",
-              "title",
-              "state",
-              "archived",
-              "priority",
-              "labels",
-              "blocked_by",
-              "linked",
-              "because",
-              "deadline",
-              "estimate",
-              "time_spent",
-              "objectives",
-              "described"
-            ],
             "additionalProperties": false
           }
         },
@@ -5444,6 +5435,29 @@
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
+        "fields": {
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described; every one when it is not named",
+          "items": {
+            "enum": [
+              "number",
+              "title",
+              "state",
+              "archived",
+              "priority",
+              "labels",
+              "blocked_by",
+              "linked",
+              "because",
+              "deadline",
+              "estimate",
+              "time_spent",
+              "objectives",
+              "described"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -5590,22 +5604,6 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "number",
-              "title",
-              "state",
-              "archived",
-              "priority",
-              "labels",
-              "blocked_by",
-              "linked",
-              "because",
-              "deadline",
-              "estimate",
-              "time_spent",
-              "objectives",
-              "described"
-            ],
             "additionalProperties": false
           }
         },

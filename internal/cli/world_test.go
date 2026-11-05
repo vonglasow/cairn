@@ -803,6 +803,21 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^every task in it carries "([^"]*)" and "([^"]*)", and nothing else$`, func(first, second string) error {
+		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			_, one := row[first]
+			_, other := row[second]
+			if !one || !other || len(row) != 2 {
+				return fmt.Errorf("a task carries %v, want %q and %q alone", row, first, second)
+			}
+		}
+		return nil
+	})
+
 	sc.Step(`^it says task (\d+) (has a description|has none)$`, func(n int, said string) error {
 		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {

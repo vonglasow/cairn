@@ -54,14 +54,14 @@ var TaskList = Operation{
 	Thing: "task",
 	Verb:  "list",
 	Short: "List tasks, all of them or only some",
-	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it.",
+	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it. Each row carries every field, or only the fields named.",
 	Example: `cairn task list
 cairn task list --state todo --priority high
 cairn task list --label team --archived`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   taskNarrowing,
+	Takes:   append(slices.Clone(taskNarrowing), fieldsArgument),
 	Run:     listing,
 }
 
@@ -335,7 +335,7 @@ var TaskSearch = Operation{
 	Thing: "task",
 	Verb:  "search",
 	Short: "Look for a task by anything it carries",
-	Does:  "List every task carrying everything named, wherever among its facts each one sits.",
+	Does:  "List every task carrying everything named, wherever among its facts each one sits. Each row carries every field, or only the fields named.",
 	Example: `cairn task search spec
 cairn task search spec team --state todo`,
 	Level:   Read,
@@ -343,10 +343,14 @@ cairn task search spec team --state todo`,
 	Answers: Tasks{},
 	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
-	}, taskNarrowing...),
+	}, append(slices.Clone(taskNarrowing), fieldsArgument)...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
 		kept, err := keeping(in, taskNarrowing)
+		if err != nil {
+			return Answer{}, err
+		}
+		fields, err := fieldsOf(in)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -360,7 +364,7 @@ cairn task search spec team --state todo`,
 				found = append(found, t)
 			}
 		}
-		return Answer{Matched: found}, nil
+		return Answer{Matched: found, Fields: fields}, nil
 	},
 }
 
@@ -450,6 +454,10 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
+	fields, err := fieldsOf(in)
+	if err != nil {
+		return Answer{}, err
+	}
 	tasks, err := on.Engine.narrowed(kept)
 	if err != nil {
 		return Answer{}, err
@@ -472,7 +480,7 @@ func listing(on On, in Input) (Answer, error) {
 		n := factsOf(t).Number
 		contexts[n] = on.contextOf(n)
 	}
-	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts}
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields}
 	if kept.Narrows() {
 		answer.Matched = tasks
 		return answer, nil

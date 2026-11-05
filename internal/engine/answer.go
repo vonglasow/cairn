@@ -25,15 +25,16 @@ func OfTask(t task.Task, p domain.Progress) Task {
 	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p)}
 }
 
-// Row is a task as a listing carries it: its facts, and whether it says anything — not what it says.
+// Row is a task as a listing carries it: its facts, and whether it says anything — not what it says; only the fields asked for, when some were.
 type Row struct {
 	task.Facts
 	Described bool `json:"described"`
+	kept      []string
 }
 
-func rowOf(t task.Task) Row {
+func rowOf(t task.Task, kept []string) Row {
 	shape := task.OfTask(t)
-	return Row{Facts: shape.Facts, Described: shape.Description != ""}
+	return Row{Facts: shape.Facts, Described: shape.Description != "", kept: kept}
 }
 
 // Tasks is how a listing of tasks crosses: an object naming what it carries, never a bare list.
@@ -191,9 +192,9 @@ func Of(op Operation, a Answer) any {
 		return swept
 	case Tasks:
 		if a.Matched != nil {
-			return ofTasks(a.Matched, a.InFocus)
+			return ofTasks(a.Matched, a.InFocus, a.Fields)
 		}
-		said := ofTasks(a.Tasks, a.InFocus)
+		said := ofTasks(a.Tasks, a.InFocus, a.Fields)
 		said.Crossed = a.Crossed
 		return said
 	case Objective:
@@ -268,10 +269,10 @@ func ofFocus(held []task.Task, p domain.Progress, numbers []int, sessions []Focu
 	return Focus{Tasks: out, InFocus: listed(numbers), Sessions: sessions}
 }
 
-func ofTasks(tasks []task.Task, inFocus *[]int) Tasks {
+func ofTasks(tasks []task.Task, inFocus *[]int, kept []string) Tasks {
 	out := make([]Row, 0, len(tasks))
 	for _, t := range tasks {
-		out = append(out, rowOf(t))
+		out = append(out, rowOf(t, kept))
 	}
 	if inFocus == nil {
 		return Tasks{Tasks: out}

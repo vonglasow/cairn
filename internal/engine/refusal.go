@@ -122,6 +122,7 @@ var reasons = []reason{
 	{ErrUndoneMeanwhile, KindRefused, "undone-meanwhile"},
 	{ErrEarlierWaiting, KindRefused, "earlier-change-waiting"},
 	{ErrNotOneOf, KindRefused, "not-one-of"},
+	{ErrNotAField, KindRefused, "not-a-field"},
 	{ErrNotALevel, KindRefused, "not-a-level"},
 	{config.ErrNotTOML, KindRefused, "config-not-toml"},
 	{config.ErrUnknownKey, KindRefused, "config-unknown-key"},

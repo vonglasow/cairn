@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -424,6 +426,140 @@ func (w *world) noRowCarriesADescription() error {
 	return nil
 }
 
+func (w *world) iCallAskingForTheFields(tool, first, second, third string) error {
+	_ = w.callTool(tool, map[string]any{"fields": []any{first, second, third}})
+	return nil
+}
+
+func (w *world) iCallTaskSearchLookingForAskingForTheFields(term, first, second, third string) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{term}, "fields": []any{first, second, third}})
+	return nil
+}
+
+func (w *world) iCallAskingForNoField(tool string) error {
+	_ = w.callTool(tool, map[string]any{"fields": []any{}})
+	return nil
+}
+
+func (w *world) everyRowCarriesOnly(first, second, third string) error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	rows, err := carriedUnder(w.result.StructuredContent, "tasks")
+	if err != nil {
+		return err
+	}
+	for _, one := range rows {
+		row, _ := one.(map[string]any)
+		named := slices.Sorted(maps.Keys(row))
+		if want := []string{first, second, third}; !slices.Equal(named, slices.Sorted(slices.Values(want))) {
+			return fmt.Errorf("a row carries %v, want %v alone", named, want)
+		}
+	}
+	return nil
+}
+
+func (w *world) everyFieldARowCarries() ([]string, error) {
+	if len(w.tools) == 0 {
+		if err := w.iAskItWhatItCanDo(); err != nil {
+			return nil, err
+		}
+	}
+	shape, err := w.schemaOf("task_list")
+	if err != nil {
+		return nil, err
+	}
+	var listing struct {
+		Properties struct {
+			Tasks struct {
+				Items struct {
+					Properties map[string]any `json:"properties"`
+				} `json:"items"`
+			} `json:"tasks"`
+		} `json:"properties"`
+	}
+	if err := remarshalTo(shape, &listing); err != nil {
+		return nil, err
+	}
+	fields := slices.Sorted(maps.Keys(listing.Properties.Tasks.Items.Properties))
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("task_list says a row carries nothing: %v", shape)
+	}
+	return fields, nil
+}
+
+func (w *world) everyRowCarriesEveryField() error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	rows, err := carriedUnder(w.result.StructuredContent, "tasks")
+	if err != nil {
+		return err
+	}
+	fields, err := w.everyFieldARowCarries()
+	if err != nil {
+		return err
+	}
+	for _, one := range rows {
+		row, _ := one.(map[string]any)
+		if named := slices.Sorted(maps.Keys(row)); !slices.Equal(named, fields) {
+			return fmt.Errorf("a row carries %v, want every one of %v", named, fields)
+		}
+	}
+	return nil
+}
+
+func (w *world) theAnswerNamesEveryField() error {
+	fields, err := w.everyFieldARowCarries()
+	if err != nil {
+		return err
+	}
+	said := textOf(w.result)
+	for _, field := range fields {
+		if !strings.Contains(said, field) {
+			return fmt.Errorf("the answer %q does not name %q", said, field)
+		}
+	}
+	return nil
+}
+
+func (w *world) namesEveryFieldARowCarries(tool string) error {
+	fields, err := w.everyFieldARowCarries()
+	if err != nil {
+		return err
+	}
+	for _, t := range w.tools {
+		if t.Name != tool {
+			continue
+		}
+		var input struct {
+			Properties map[string]struct {
+				Description string `json:"description"`
+				Items       struct {
+					Enum []string `json:"enum"`
+				} `json:"items"`
+			} `json:"properties"`
+		}
+		if err := remarshalTo(t.InputSchema, &input); err != nil {
+			return err
+		}
+		asked, ok := input.Properties["fields"]
+		if !ok {
+			return fmt.Errorf("%s takes no fields to ask for", tool)
+		}
+		if named := slices.Sorted(slices.Values(asked.Items.Enum)); !slices.Equal(named, fields) {
+			return fmt.Errorf("%s accepts the fields %v, want %v", tool, named, fields)
+		}
+		for _, field := range fields {
+			if !strings.Contains(asked.Description, field) {
+				return fmt.Errorf("%s says %q of its fields, and does not name %q", tool, asked.Description, field)
+			}
+		}
+		return nil
+	}
+	return fmt.Errorf("no tool named %s was offered", tool)
+}
+
 func carriedUnder(content any, named string) ([]any, error) {
 	listing, ok := content.(map[string]any)
 	if !ok {
@@ -824,6 +960,13 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `([a-z_]+)` with the number (\\d+)$", w.iCallWithTheNumber)
 		sc.Step(`^it answers with (\d+) tasks?$`, w.itAnswersWithNTasks)
 		sc.Step(`^no row of it carries a description$`, w.noRowCarriesADescription)
+		sc.Step("^I call `([a-z_]+)` asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallAskingForTheFields)
+		sc.Step("^I call `task_search` looking for \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAskingForTheFields)
+		sc.Step("^I call `([a-z_]+)` asking for no field$", w.iCallAskingForNoField)
+		sc.Step(`^every row of it carries "([^"]*)", "([^"]*)" and "([^"]*)", and nothing else$`, w.everyRowCarriesOnly)
+		sc.Step(`^every row of it carries every field a row can carry$`, w.everyRowCarriesEveryField)
+		sc.Step(`^the answer names every field a row can carry$`, w.theAnswerNamesEveryField)
+		sc.Step("^`([a-z_]+)` names every field a row can carry$", w.namesEveryFieldARowCarries)
 		sc.Step(`^it answers without an error$`, w.itAnswersWithoutAnError)
 		sc.Step(`^it answers with the task titled "([^"]*)"$`, w.itAnswersWithTheTaskTitled)
 		sc.Step(`^it answers with the card a person would have read$`, w.itAnswersWithTheCardAPersonWouldHaveRead)

@@ -136,8 +136,8 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			want any
 		}{
 			{"a task", TaskShow, Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
-			{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
-			{"what a search found, the same shape as a list of tasks", TaskSearch, Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built)}}},
+			{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built, nil)}}},
+			{"what a search found, the same shape as a list of tasks", TaskSearch, Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built, nil)}}},
 			{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, Objective{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",

@@ -303,6 +303,7 @@ type Answer struct {
 	StoodSince        time.Time
 	Tasks             []task.Task
 	Matched           []task.Task
+	Fields            []string
 	Under             []task.Task
 	Objective         *objective.Objective
 	Objectives        []objective.Objective

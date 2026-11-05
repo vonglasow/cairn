@@ -2035,6 +2035,19 @@ Feature: Tasks
       And no task in it carries its description
       And it says task 1 has a description
 
+    @task-json-list-carries-the-fields-asked-for
+    Scenario: a listing read by a machine carries only the fields asked for
+      Given I added a task titled "First" with the description "everything done so far"
+      When I run `cairn task list --json --fields number --fields title`
+      Then it carries 1 task
+      And every task in it carries "number" and "title", and nothing else
+
+    @task-json-list-refuses-a-field-it-does-not-carry
+    Scenario: a field a row does not carry is refused
+      When I run `cairn task list --json --fields description`
+      Then it fails
+      And it says in JSON the refusal is "refused", because "not-a-field"
+
     @task-json-show-carries-the-description
     Scenario: showing a task is where its description is read
       Given I added a task titled "First" with the description "everything done so far"

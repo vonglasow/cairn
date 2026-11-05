@@ -26,7 +26,9 @@ for both of them at once because there is only one place it is written.
 
 It carries whether a task has a description, and not the description: a board
 of 105 tasks listed with theirs came to 106 000 characters, past what a client
-hands an agent in one answer. See [listing.md](listing.md).
+hands an agent in one answer. And `task_list` and `task_search` take `fields`,
+the fields each row carries — `["number","state","title"]` — for a board too
+long even then. See [listing.md](listing.md).
 
 ## It is started like every other command
 
@@ -497,6 +499,22 @@ an empty string for a deadline or an estimate, an empty list or `null` for
 labels, blockers, objectives and steps — and each field's description in the
 schema says which. What a whole answer may leave out — the context, since when
 a task has stood in its column — is left out entirely.
+
+The one exception is a row of `task_list` or `task_search` called with
+`fields`: it carries the fields named and no other. So a row's schema requires
+none of its fields, on every tool whose answer holds rows. A client measures
+every answer against the schema the tool declared — the scenarios do too
+(`@mcp-a-listing-carries-the-fields-asked-for`) — and a row carrying three
+fields where fourteen were required would have refused the very answer that
+was asked for. Called without `fields`, a row still carries every one
+(`@mcp-a-listing-asked-for-no-field-carries-every-one`). The schema is read off
+`engine.Row` as before, and only its `required` is dropped, in `internal/mcp`,
+where the schema is made.
+
+A list argument that takes a closed set says it on its items: `fields` is an
+array whose items are an `enum` of the fields a row carries
+(`@mcp-names-the-fields-it-can-answer`), where a single value says it on
+itself.
 
 **Arguments are named the way the command line names them, answers the way
 JSON does.** An argument is `due-before`, `with-archived`: it is the same

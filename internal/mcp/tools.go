@@ -42,7 +42,14 @@ func answerSchemaFor(op engine.Operation) any {
 	if op.Answers == nil {
 		return nil
 	}
-	shape, err := jsonschema.ForType(reflect.TypeOf(op.Answers), nil)
+	row, err := jsonschema.For[engine.Row](nil)
+	if err != nil {
+		return nil
+	}
+	row.Required = nil
+	shape, err := jsonschema.ForType(reflect.TypeOf(op.Answers), &jsonschema.ForOptions{
+		TypeSchemas: map[reflect.Type]*jsonschema.Schema{reflect.TypeFor[engine.Row](): row},
+	})
 	if err != nil {
 		return nil
 	}
@@ -54,11 +61,13 @@ func schemaFor(op engine.Operation) map[string]any {
 	required := []string{}
 	for _, arg := range op.Takes {
 		prop := map[string]any{"type": jsonType(arg.Kind), "description": arg.Means}
-		if len(arg.OneOf) > 0 {
-			prop["enum"] = arg.OneOf
-		}
-		if arg.Kind == engine.List {
+		switch {
+		case arg.Kind == engine.List && len(arg.OneOf) > 0:
+			prop["items"] = map[string]any{"type": "string", "enum": arg.OneOf}
+		case arg.Kind == engine.List:
 			prop["items"] = map[string]any{"type": "string"}
+		case len(arg.OneOf) > 0:
+			prop["enum"] = arg.OneOf
 		}
 		properties[arg.Name] = prop
 		if arg.Required {

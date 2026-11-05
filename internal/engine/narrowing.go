@@ -71,14 +71,20 @@ func accepted(in Input, argument Argument) error {
 	if len(argument.OneOf) == 0 {
 		return nil
 	}
-	given, named := in.Given[argument.Name]
-	if !named || slices.Contains(argument.OneOf, given) {
-		return nil
+	values := slices.Clone(in.Listed[argument.Name])
+	if given, named := in.Given[argument.Name]; named {
+		values = append(values, given)
 	}
-	if argument.Outside != nil {
-		return fmt.Errorf("%q: %w — %s", given, argument.Outside, strings.Join(argument.OneOf, ", "))
+	for _, given := range values {
+		if slices.Contains(argument.OneOf, given) {
+			continue
+		}
+		if argument.Outside != nil {
+			return fmt.Errorf("%q: %w — %s", given, argument.Outside, strings.Join(argument.OneOf, ", "))
+		}
+		return fmt.Errorf("%q: %w %s", given, ErrNotOneOf, strings.Join(argument.OneOf, ", "))
 	}
-	return fmt.Errorf("%q: %w %s", given, ErrNotOneOf, strings.Join(argument.OneOf, ", "))
+	return nil
 }
 
 // ErrNotOneOf is returned when a value falls outside the closed set its argument accepts.

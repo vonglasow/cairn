@@ -167,6 +167,59 @@ Feature: Answering a machine over MCP
       And no row of it carries a description
       And its answer holds to the shape the tool described
 
+    @mcp-a-listing-carries-the-fields-asked-for
+    Scenario: a listing carries only the fields an agent asked for
+      Given I added a task titled "Write the spec" with the description "A long account of everything done so far"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the fields "number", "state" and "title"
+      Then it answers with 1 task
+      And every row of it carries "number", "state" and "title", and nothing else
+      And its answer holds to the shape the tool described
+
+    @mcp-a-search-carries-the-fields-asked-for
+    Scenario: a search carries only the fields an agent asked for
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec", asking for the fields "number", "state" and "title"
+      Then it answers with 1 task
+      And every row of it carries "number", "state" and "title", and nothing else
+      And its answer holds to the shape the tool described
+
+    @mcp-a-listing-asked-for-no-field-carries-every-one
+    Scenario: a listing that names no field carries every one, as it always did
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list`
+      Then every row of it carries every field a row can carry
+
+    @mcp-a-field-a-row-does-not-carry-is-refused
+    Scenario: a field a row does not carry is refused, naming the ones it does
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the fields "number", "state" and "description"
+      Then it answers that it failed
+      And it says the refusal is "refused", because "not-a-field"
+      And the answer names every field a row can carry
+
+    @mcp-asking-for-no-field-is-refused
+    Scenario: asking for an empty list of fields is refused
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for no field
+      Then it answers that it failed
+      And the answer names every field a row can carry
+
+    @mcp-names-the-fields-it-can-answer
+    Scenario Outline: a listing tool names the fields an agent can ask for
+      Given a cairn server started with `--access read`
+      When I ask it what it can do
+      Then `<tool>` names every field a row can carry
+
+      Examples: the two that answer rows
+        | tool        |
+        | task_list   |
+        | task_search |
+
     @mcp-what-an-agent-does-is-written-down-as-its-own
     Scenario: what an agent changes says it came through the server, and which agent it was
       Given I added a task titled "Write the spec"
