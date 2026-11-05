@@ -302,6 +302,65 @@ What was chosen, and why:
 - **The line a person reads is untouched.** A person sees which tasks came
   back; `--json` carries `unknown`.
 
+## A listing can answer a page of what it keeps, or only how many
+
+`task_list` takes `limit` and `offset` — `task list --limit 50 --offset 100` —
+and answers that page of what it keeps, the answer saying under `total` how
+many it kept in all (`@mcp-a-listing-answers-a-page`,
+`@task-json-list-a-page-says-how-many-in-all`). It takes `count`, `state` or
+`label` — `task list --count state` — and then answers no row, only how many of
+what it keeps sit in each column or carry each label, under `counts`, and how
+many in all under `total` (`@mcp-a-listing-counts-by-state`,
+`@mcp-a-listing-counts-by-label`, `@task-json-list-counts-by-label`).
+
+`fields` keeps a row short, and a board keeps growing: past 300 tasks, archived
+ones included, even short rows can exceed what an agent is handed in one tool
+result. And "how many tasks in each column?" took the whole list, read and
+added up by the agent.
+
+What was chosen, and why:
+
+- **On `task_list` only.** A search keeps what carries what is named, and the
+  case that grew too long was the listing of a whole board. A page of a search
+  would have had to say whether `matched` speaks of the page or of everything
+  kept; that is a question for the day a search is too long, written down in
+  cairn#242 rather than answered here.
+- **A page is cut from what everything else keeps, in the board's order** —
+  the order a listing already answers in, so page after page reads the board
+  through once (`@mcp-a-page-is-cut-from-what-is-kept`). The narrowings,
+  `number` included, hold first; the page is cut last.
+- **`total` sits beside the rows**, like `matched` and `unknown`: it is about
+  the asking, not about a task, so `fields` leaves it alone. It is said
+  whenever a limit, an offset or a count is asked, and left out otherwise
+  (`@mcp-a-listing-asked-for-no-page-says-no-total`): without a page, the rows
+  are the total.
+- **`limit` alone, `offset` alone, or both.** A limit is at least 1 and an
+  offset at least 0; anything else is refused `not-understood`
+  (`@mcp-a-page-that-is-none-is-refused`, `@task-list-a-page-of-no-task-is-refused`)
+  — a limit of 0 answering the whole board would hand over the very answer a
+  limit was there to cut, and answering no row at all is what `count` is for.
+  A limit past the last task answers what there is.
+- **An offset past the last task is no refusal**: it answers no row, and
+  `total` says how many there are (`@mcp-a-page-past-the-last-task-is-empty`).
+  The board may have shrunk between two pages; that is an answer, not a
+  mistake.
+- **`count` answers no row**, and so refuses what shapes a row or a page —
+  `fields`, `limit`, `offset` — `not-understood`, rather than ignoring them
+  (`@mcp-counting-takes-no-row-argument`): an argument silently dropped reads
+  as one that was obeyed. It counts what every narrowing keeps, `number`
+  included, and `unknown` is still said. `tasks` stays, empty, since a listing
+  always carries it.
+- **Grouped by `state` or `label`**, the two named; anything else is refused
+  `not-one-of`, naming both (`@mcp-counting-by-what-it-cannot-is-refused`). A
+  column or a label no task kept has is left out, so a column missing counts
+  none. A task carrying two labels counts under each, and one carrying none
+  under no label, which is why `total` is said beside the counts.
+- **A person reads it too.** Unlike `matched` or `unknown`, what was left out
+  of a page cannot be seen from the lines, so the text ends with `tasks 101 to
+  150 of 312`, or `no task past 400, of 312`; a count reads one column or label
+  per line, columns in the board's order and labels by name, then `312 task(s)
+  in all`. It is the text an agent is handed beside the JSON, too.
+
 ## A word in a step answers the task it belongs to
 
 A step's title is part of what its task says, so `task.Said` carries it, and a

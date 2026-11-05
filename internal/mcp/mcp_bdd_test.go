@@ -331,7 +331,7 @@ func (w *world) iCallWithTheNumber(tool string, n int) error {
 }
 
 func (w *world) iAddedATaskTitledWith(title, what, value string) error {
-	flag := map[string]string{"deadline": "--deadline", "description": "--desc"}[what]
+	flag := map[string]string{"deadline": "--deadline", "description": "--desc", "state": "--state"}[what]
 	return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flag, value))
 }
 
@@ -527,7 +527,7 @@ func (w *world) itAnswersWithTheTasks(first, second string) error {
 	return nil
 }
 
-func (w *world) noTaskSaid() ([]any, error) {
+func (w *world) listingSaid() (map[string]any, error) {
 	if w.callErr != nil {
 		return nil, fmt.Errorf("the call failed: %w", w.callErr)
 	}
@@ -535,8 +535,88 @@ func (w *world) noTaskSaid() ([]any, error) {
 	if !ok {
 		return nil, fmt.Errorf("structured content is not a listing: %#v", w.result.StructuredContent)
 	}
+	return listing, nil
+}
+
+func (w *world) noTaskSaid() ([]any, error) {
+	listing, err := w.listingSaid()
+	if err != nil {
+		return nil, err
+	}
 	unknown, _ := listing["unknown"].([]any)
 	return unknown, nil
+}
+
+func (w *world) iCallTaskListAskingForAPage(limit, offset int) error {
+	_ = w.callTool("task_list", map[string]any{"limit": limit, "offset": offset})
+	return nil
+}
+
+func (w *world) iCallTaskListInAskingForAPage(state string, limit, offset int) error {
+	_ = w.callTool("task_list", map[string]any{"state": state, "limit": limit, "offset": offset})
+	return nil
+}
+
+func (w *world) itSaysHowManyInAll(n int) error {
+	listing, err := w.listingSaid()
+	if err != nil {
+		return err
+	}
+	if listing["total"] != float64(n) {
+		return fmt.Errorf("it says %v in all, want %d", listing["total"], n)
+	}
+	return nil
+}
+
+func (w *world) itSaysNothingOfHowManyInAll() error {
+	listing, err := w.listingSaid()
+	if err != nil {
+		return err
+	}
+	if total, said := listing["total"]; said {
+		return fmt.Errorf("it says %v in all, want nothing said", total)
+	}
+	return nil
+}
+
+func (w *world) iCallTaskListCountingBy(by string) error {
+	_ = w.callTool("task_list", map[string]any{"count": by})
+	return nil
+}
+
+func (w *world) iCallTaskListCountingByWithAsWell(by, argument string) error {
+	asked := map[string]map[string]any{
+		"field":  {"fields": []string{"number"}},
+		"limit":  {"limit": 2},
+		"offset": {"offset": 1},
+	}[argument]
+	asked["count"] = by
+	_ = w.callTool("task_list", asked)
+	return nil
+}
+
+func (w *world) itCounts(n int, under string) error {
+	listing, err := w.listingSaid()
+	if err != nil {
+		return err
+	}
+	counts, _ := listing["counts"].(map[string]any)
+	if counts[under] != float64(n) {
+		return fmt.Errorf("it counts %v under %q, want %d: %v", counts[under], under, n, counts)
+	}
+	return nil
+}
+
+func (w *world) itCountsNothingUnder(under string) error {
+	listing, err := w.listingSaid()
+	if err != nil {
+		return err
+	}
+	counts, _ := listing["counts"].(map[string]any)
+	if counted, said := counts[under]; said {
+		return fmt.Errorf("it counts %v under %q, want it left out", counted, under)
+	}
+	return nil
 }
 
 func (w *world) itSaysThereIsNoTask(n int) error {
@@ -1100,6 +1180,14 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^it answers with the tasks? (\d+)(?: and (\d+))?$`, w.itAnswersWithTheTasks)
 		sc.Step(`^it says there is no task (\d+)$`, w.itSaysThereIsNoTask)
 		sc.Step(`^it says every number asked for is a task$`, w.itSaysEveryNumberIsATask)
+		sc.Step("^I call `task_list` asking for (-?\\d+) tasks? after the first (-?\\d+)$", w.iCallTaskListAskingForAPage)
+		sc.Step("^I call `task_list` in \"([^\"]*)\", asking for (\\d+) tasks? after the first (\\d+)$", w.iCallTaskListInAskingForAPage)
+		sc.Step(`^it says there (?:are|is) (\d+) tasks? in all$`, w.itSaysHowManyInAll)
+		sc.Step(`^it says nothing of how many there are in all$`, w.itSaysNothingOfHowManyInAll)
+		sc.Step("^I call `task_list` counting by \"([^\"]*)\"$", w.iCallTaskListCountingBy)
+		sc.Step("^I call `task_list` counting by \"([^\"]*)\", with a (field|limit|offset) as well$", w.iCallTaskListCountingByWithAsWell)
+		sc.Step(`^it counts (\d+) under "([^"]*)"$`, w.itCounts)
+		sc.Step(`^it counts nothing under "([^"]*)"$`, w.itCountsNothingUnder)
 		sc.Step("^I call `([a-z_]+)` asking for no field$", w.iCallAskingForNoField)
 		sc.Step(`^every row of it carries "([^"]*)", "([^"]*)" and "([^"]*)", and nothing else$`, w.everyRowCarriesOnly)
 		sc.Step(`^every row of it carries every field a row can carry$`, w.everyRowCarriesEveryField)
@@ -1111,7 +1199,7 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^it answers with the shape `--json` would have printed$", w.itAnswersWithTheShapeJSONWouldHavePrinted)
 		sc.Step("^`task_new` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
 		sc.Step("^it says what each thing it takes is for$", w.itSaysWhatEachThingItTakesIsFor)
-		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description) "([^"]*)"$`, w.iAddedATaskTitledWith)
+		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description|state) "([^"]*)"$`, w.iAddedATaskTitledWith)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
 			w.iCallTaskEditWithThePriority)
 		sc.Step("^the trace of task (\\d+) says the change was made by the agent that asked$", func(n int) error {

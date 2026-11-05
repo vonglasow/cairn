@@ -45,10 +45,13 @@ func rendered(op Operation, a Answer) string {
 		}
 		return fmt.Sprintf("%d %s(s) archived\n", *a.Archived, op.Thing)
 	case Tasks:
-		if a.Matched != nil {
-			return foundText(a.Matched, a)
+		if a.Counts != nil {
+			return countsText(a.Counts, *a.Total)
 		}
-		return crossedText(a.Crossed) + tasksText(a.Tasks, a)
+		if a.Matched != nil {
+			return foundText(a.Matched, a) + pageText(a, len(a.Matched))
+		}
+		return crossedText(a.Crossed) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks))
 	case Objective:
 		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under)) + movedText(a.Moved)
 	case Objectives:

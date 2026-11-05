@@ -248,6 +248,40 @@ Feature: Tasks
       Then it fails
       And it says what it expects instead of "first"
 
+    @task-list-a-page
+    Scenario: listing a page of the tasks says which ones of how many
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I run `cairn task list --limit 2 --offset 1`
+      Then it lists 2 tasks
+      And it lists task 2 titled "Second"
+      And it lists task 3 titled "Third"
+      And `cairn task list --limit 2 --offset 1` says "tasks 2 to 3 of 3"
+
+    @task-list-a-page-past-the-last
+    Scenario: a page past the last task lists none, and says how many there are
+      Given I added a task titled "First"
+      Then `cairn task list --offset 4` says "no task past 4, of 1"
+
+    @task-list-a-page-of-no-task-is-refused
+    Scenario: a page of no task is refused
+      Given I added a task titled "First"
+      When I run `cairn task list --limit 0`
+      Then it fails
+      And it says what it expects instead of "0"
+
+    @task-list-counts-by-state
+    Scenario: counting the tasks in each column
+      Given I added a task titled "First" with the state "todo"
+      And I added a task titled "Second" with the state "todo"
+      And I added a task titled "Third" with the state "done"
+      When I run `cairn task list --count state`
+      Then it lists 0 tasks
+      And `cairn task list --count state` says "todo  2"
+      And `cairn task list --count state` says "done  1"
+      And `cairn task list --count state` says "3 task(s) in all"
+
     @task-list-carries-what-a-decision-is-made-on
     Scenario: a listed task carries what a decision is made on
       Given I added a task titled "Write the spec"
@@ -2083,6 +2117,23 @@ Feature: Tasks
       When I run `cairn task list --number 1 --number 9 --json`
       Then it carries 1 task
       And it says in JSON there is no task 9
+
+    @task-json-list-a-page-says-how-many-in-all
+    Scenario: a page of the tasks, read by a machine, says how many there are in all
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      When I run `cairn task list --limit 1 --json`
+      Then it carries 1 task
+      And it says in JSON there are 2 tasks in all
+
+    @task-json-list-counts-by-label
+    Scenario: counting by label, read by a machine, says how many tasks carry each one
+      Given I added a task titled "First" with the labels "team" and "spec"
+      And I added a task titled "Second" with the labels "team" and "release"
+      When I run `cairn task list --count label --json`
+      Then it carries 0 tasks
+      And it says in JSON 2 tasks carry "team"
+      And it says in JSON 1 task carries "spec"
 
     @task-json-list-refuses-a-field-it-does-not-carry
     Scenario: a field a row does not carry is refused

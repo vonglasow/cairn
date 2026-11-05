@@ -32,8 +32,11 @@ long even then. `task_search` takes `any`, to keep what carries any one of
 what is named rather than all of it, and then says which tasks each one
 matched. `task_list` takes `number`, the tasks to answer and no other —
 `["25","18","330"]` — and says under `unknown` which number is no task, so a
-handful of known tasks is one call rather than one `task_show` each. See
-[listing.md](listing.md).
+handful of known tasks is one call rather than one `task_show` each.
+`task_list` also takes `limit` and `offset`, a page of what it keeps in the
+board's order, and then says under `total` how many there are in all; and
+`count` — `"state"` or `"label"` — to answer no row, only how many sit in each
+column or carry each label. See [listing.md](listing.md).
 
 ## It is started like every other command
 

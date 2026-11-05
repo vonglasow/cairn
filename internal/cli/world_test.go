@@ -832,6 +832,29 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^it says in JSON there are (\d+) tasks in all$`, func(n int) error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		if envelope["total"] != float64(n) {
+			return fmt.Errorf("it says %v in all, want %d", envelope["total"], n)
+		}
+		return nil
+	})
+
+	sc.Step(`^it says in JSON (\d+) tasks? carr(?:y|ies) "([^"]*)"$`, func(n int, label string) error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		counts, _ := envelope["counts"].(map[string]any)
+		if counts[label] != float64(n) {
+			return fmt.Errorf("it counts %v under %q, want %d: %v", counts[label], label, n, counts)
+		}
+		return nil
+	})
+
 	sc.Step(`^every task in it carries "([^"]*)" and "([^"]*)", and nothing else$`, func(first, second string) error {
 		rows, _, err := listedUnder(w.Out.Stdout, "tasks")
 		if err != nil {

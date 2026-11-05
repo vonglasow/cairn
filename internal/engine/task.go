@@ -54,15 +54,17 @@ var TaskList = Operation{
 	Thing: "task",
 	Verb:  "list",
 	Short: "List tasks, all of them or only some",
-	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it. Given numbers, only those tasks, archived or not, the answer saying under unknown which number is no task. Each row carries every field, or only the fields named.",
+	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it. Given numbers, only those tasks, archived or not, the answer saying under unknown which number is no task. Each row carries every field, or only the fields named. Given a limit or an offset, only that page of them, in the board's order, the answer saying under total how many there are in all. Given count, no row: only how many sit in each column or carry each label.",
 	Example: `cairn task list
 cairn task list --state todo --priority high
 cairn task list --label team --archived
-cairn task list --number 25 --number 18`,
+cairn task list --number 25 --number 18
+cairn task list --limit 50 --offset 100
+cairn task list --count state`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(slices.Clone(taskNarrowing), numbersArgument, fieldsArgument),
+	Takes:   append(append(slices.Clone(taskNarrowing), numbersArgument, fieldsArgument, countArgument), pageArguments...),
 	Run:     listing,
 }
 
@@ -487,6 +489,14 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
+	cut, err := askedPage(in)
+	if err != nil {
+		return Answer{}, err
+	}
+	counting, err := askedCount(in, fields, cut)
+	if err != nil {
+		return Answer{}, err
+	}
 	if numbers != nil && !in.Yes("archived") && !in.Yes("with-archived") {
 		kept.WithArchived()
 	}
@@ -500,6 +510,12 @@ func listing(on On, in Input) (Answer, error) {
 			return Answer{}, err
 		}
 	}
+	total := len(tasks)
+	var counts []Count
+	if counting != "" {
+		counts, tasks = countedBy(tasks, counting), []task.Task{}
+	}
+	tasks = cut.of(tasks)
 	inFocus, err := on.Engine.focus()
 	if err != nil {
 		return Answer{}, err
@@ -510,7 +526,7 @@ func listing(on On, in Input) (Answer, error) {
 		return Answer{}, err
 	}
 	narrows := kept.Narrows() || numbers != nil
-	along, _, err := on.Engine.alongEvery(tasks, !narrows)
+	along, _, err := on.Engine.alongEvery(tasks, !narrows && !cut.asked)
 	if err != nil {
 		return Answer{}, err
 	}
@@ -519,7 +535,10 @@ func listing(on On, in Input) (Answer, error) {
 		n := factsOf(t).Number
 		contexts[n] = on.contextOf(n)
 	}
-	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown}
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset}
+	if counting != "" || cut.asked {
+		answer.Total = &total
+	}
 	if narrows {
 		answer.Matched = tasks
 		return answer, nil

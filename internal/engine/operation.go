@@ -305,6 +305,9 @@ type Answer struct {
 	Matched           []task.Task
 	Terms             map[string][]int
 	Unknown           []int
+	Counts            []Count
+	Total             *int
+	Offset            int
 	Fields            []string
 	Under             []task.Task
 	Objective         *objective.Objective

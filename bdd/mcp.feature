@@ -267,6 +267,108 @@ Feature: Answering a machine over MCP
       Then it answers that it failed
       And the answer says a task number
 
+    @mcp-a-listing-answers-a-page
+    Scenario: a listing asked for a page answers those tasks in the board's order, and says how many there are in all
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Tell the team"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for 2 tasks after the first 1
+      Then it answers with the tasks 2 and 3
+      And it says there are 3 tasks in all
+      And its answer holds to the shape the tool described
+
+    @mcp-a-page-is-cut-from-what-is-kept
+    Scenario: a page is cut from what everything else named keeps
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it"
+      And I added a task titled "Tell the team" with the state "todo"
+      And a cairn server started with `--access read`
+      When I call `task_list` in "todo", asking for 1 task after the first 1
+      Then it answers with the task 3
+      And it says there are 2 tasks in all
+
+    @mcp-a-page-past-the-last-task-is-empty
+    Scenario: a page past the last task answers none, and still says how many there are
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for 2 tasks after the first 5
+      Then it answers with 0 tasks
+      And it says there is 1 task in all
+
+    @mcp-a-listing-asked-for-no-page-says-no-total
+    Scenario: a listing asked for no page says nothing of how many there are in all
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list`
+      Then it answers with 1 task
+      And it says nothing of how many there are in all
+
+    @mcp-a-page-that-is-none-is-refused
+    Scenario Outline: a page of no task, or one starting before the first, is refused
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for <limit> tasks after the first <offset>
+      Then it answers that it failed
+      And it says the refusal is "usage", because "not-understood"
+
+      Examples:
+        | limit | offset |
+        | 0     | 0      |
+        | -1    | 0      |
+        | 2     | -1     |
+
+    @mcp-a-listing-counts-by-state
+    Scenario: a listing asked to count by state answers how many tasks sit in each column, and no row
+      Given I added a task titled "Write the spec" with the state "todo"
+      And I added a task titled "Ship it" with the state "todo"
+      And I added a task titled "Tell the team" with the state "done"
+      And a cairn server started with `--access read`
+      When I call `task_list` counting by "state"
+      Then it answers with 0 tasks
+      And it counts 2 under "todo"
+      And it counts 1 under "done"
+      And it counts nothing under "current"
+      And it says there are 3 tasks in all
+      And its answer holds to the shape the tool described
+
+    @mcp-a-listing-counts-by-label
+    Scenario: a listing asked to count by label answers how many of what is kept carry each one
+      Given I added a task titled "Write the spec" with the labels "team" and "spec"
+      And I added a task titled "Ship it" with the labels "team" and "release"
+      And I added a task titled "Tell the team"
+      And I archived task 2
+      And a cairn server started with `--access read`
+      When I call `task_list` counting by "label"
+      Then it answers with 0 tasks
+      And it counts 1 under "team"
+      And it counts 1 under "spec"
+      And it counts nothing under "release"
+      And it says there are 2 tasks in all
+
+    @mcp-counting-takes-no-row-argument
+    Scenario Outline: counting, which answers no row, refuses what shapes a row or a page
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` counting by "state", with a <argument> as well
+      Then it answers that it failed
+      And it says the refusal is "usage", because "not-understood"
+
+      Examples:
+        | argument |
+        | field    |
+        | limit    |
+        | offset   |
+
+    @mcp-counting-by-what-it-cannot-is-refused
+    Scenario: counting by anything but state or label is refused, naming both
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` counting by "priority"
+      Then it answers that it failed
+      And it says the refusal is "refused", because "not-one-of"
+      And the answer says state, label
+
     @mcp-a-listing-asked-for-no-field-carries-every-one
     Scenario: a listing that names no field carries every one, as it always did
       Given I added a task titled "Write the spec"
