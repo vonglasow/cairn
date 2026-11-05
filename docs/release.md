@@ -119,6 +119,33 @@ whatever installed cairn: Homebrew, an archive on Linux or Windows, a build. Shi
 `opt/cairn/share` was tried first and left: it covered brew alone, and gave a
 second place for the same plugin.
 
+**`cairn upgrade` reads what the release hands over.** It asks GitHub for the
+latest release (`api.github.com/repos/vonglasow/cairn/releases/latest`), takes
+the archive named `cairn-<tag>-<os>-<arch>` for the system it runs on, checks
+it against its line in `SHA256SUMS`, and puts the `cairn` it holds in the place
+of the one that was run (`@upgrade-to-the-newest`). Those names are therefore
+read by every cairn already out there: an archive renamed, or a release
+without `SHA256SUMS`, is a release no cairn can upgrade to.
+
+What it leaves alone, and why:
+
+- **A cairn built from source** — its version is not a tag alone (`dev`, or
+  `v0.10.0-3-g4c5a15f` from `git describe`). It is usually ahead of the latest
+  release, and a release put in its place would take work back
+  (`@upgrade-built-from-source`).
+- **A cairn Homebrew installed**, under a `Cellar`. Replaced behind its back,
+  Homebrew would still name the old version, and `brew upgrade` would take it
+  back (`@upgrade-kept-by-homebrew`).
+- **An archive that does not match its sum** (`@upgrade-checks-the-sum`). The
+  sum is in the same release, so it proves the download whole rather than who
+  made it; it costs a few lines of the standard library, and a binary cut
+  short would otherwise take the place of a working one.
+
+The new binary is written beside the old one and moved over it in one step, so
+a cairn interrupted half way leaves the old one where it was. Windows does not
+let a running program be replaced, but lets it be moved: there the old one is
+moved aside to `cairn.exe.old` first, and the next upgrade clears it.
+
 It needs one secret, `GH_TOKEN`: a token that may push to
 `vonglasow/homebrew-tap`, as gaia's. The release itself is made with the
 workflow's own token.

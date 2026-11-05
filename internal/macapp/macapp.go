@@ -21,18 +21,6 @@ const Identifier = "com.github.vonglasow.cairn"
 // Here says whether this is a Mac, where an application can be installed.
 var Here = runtime.GOOS == "darwin"
 
-// Running is the cairn running now, its links followed: the one the application will open.
-var Running = func() (string, error) {
-	running, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	if resolved, err := filepath.EvalSymlinks(running); err == nil {
-		running = resolved
-	}
-	return running, nil
-}
-
 // Signing signs the application for this machine alone, so macOS opens it without a developer's certificate.
 var Signing = signing
 

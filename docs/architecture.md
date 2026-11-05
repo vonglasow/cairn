@@ -34,10 +34,11 @@ all of them.
 | package | holds | knows about |
 |---|---|---|
 | `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing | nobody |
-| `internal/build` | which build this is | nobody |
+| `internal/build` | which build this is, and which file it runs from | nobody |
 | `plugin/claude` | the Claude Code plugin's files, carried in the binary, and how they are written out as a marketplace — outside `internal/` because Go embeds only what lies under the package, and the files are read from there by a clone too | nobody |
 | `internal/logo` | cairn's logo, drawn at every size a system asks for | nobody |
 | `internal/macapp` | cairn written as a Mac application: its bundle, its icon, its signature | `logo` |
+| `internal/upgrade` | the newest release of cairn on GitHub, its archive checked against its sum, and its binary put in place of another | nobody of ours |
 | `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
 | `internal/debug` | what debug mode writes down, and the folder it keeps its files in | nobody of ours |
 | `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |
@@ -45,7 +46,7 @@ all of them.
 | `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
-| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, the notions, `store` |
+| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, the notions, `store` |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |

@@ -3,6 +3,8 @@ package build
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -20,6 +22,18 @@ const shortCommitLen = 12
 
 // Home is where cairn is kept, its code, its issues and its releases.
 const Home = "https://github.com/vonglasow/cairn"
+
+// Running is the cairn running now, its links followed: the file a Mac application opens and an upgrade replaces.
+var Running = func() (string, error) {
+	running, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	if resolved, err := filepath.EvalSymlinks(running); err == nil {
+		running = resolved
+	}
+	return running, nil
+}
 
 // Info is everything a build reports about itself.
 type Info struct {

@@ -1,6 +1,8 @@
 package build
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"runtime/debug"
@@ -111,5 +113,15 @@ func TestString_printsEveryFieldABuildCarries(t *testing.T) {
 func TestHomeIsWhereCairnIsKept(t *testing.T) {
 	if Home != "https://github.com/vonglasow/cairn" {
 		t.Errorf("cairn says it is kept at %q", Home)
+	}
+}
+
+func TestRunning_isAPathThatIsThere(t *testing.T) {
+	running, err := Running()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(running); err != nil || !filepath.IsAbs(running) {
+		t.Errorf("Running = %s, %v", running, err)
 	}
 }

@@ -51,7 +51,7 @@ on one machine.
 ## A cairn installed while it runs takes over, with no reconnect
 
 A client starts the server once a session and keeps it. Before, an upgrade —
-`make install`, `brew upgrade`, a release — left the session talking to the old
+`make install`, `brew upgrade`, `cairn upgrade`, a release — left the session talking to the old
 binary until somebody reconnected it by hand (`/mcp` in Claude Code): the tools
 added since were missing, and a configuration the new cairn wrote could be
 refused by the old one. Now nothing is left to do
@@ -277,6 +277,12 @@ tool for every command**, and a test walks the cobra tree to prove it.
 
 `cairn mcp serve` is a command and not a tool. It is how the server is started,
 not something the server can be asked to do, and a scenario keeps it out.
+
+`cairn upgrade` is not a tool either, and not an operation of the engine's
+list: it reaches GitHub, and every tool says it reaches nothing outside the
+store (`@mcp-marks-what-it-never-reaches`). Replacing the binary an agent's
+own server runs from is for the person at the terminal to decide; once they
+have, the server takes the new one over on its own, above.
 
 ## Each tool says what shape its answer takes, and that shape is an object
 

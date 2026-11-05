@@ -82,6 +82,11 @@ linters:
             - runtime/debug
             - strings
             - text/tabwriter
+            # Which file this build runs from, its links followed: the one a
+            # Mac application opens and an upgrade replaces. Widened for that
+            # alone, so both find it in one place.
+            - os
+            - path/filepath
             # Only reachable from _test.go: the harness guard refuses testing in
             # anything the binary is made of.
             - testing
@@ -145,6 +150,30 @@ linters:
             - errors
             - regexp
             - testing
+
+        # Taking a release from GitHub and putting its binary in place. It
+        # knows nobody of ours: the engine decides whether to upgrade and hands
+        # it where, and it fetches, checks the sum, unpacks and replaces. An
+        # allow-list, like debug: the network belongs here and nowhere else.
+        upgrade:
+          files: ["**/internal/upgrade/**", "!**/internal/upgrade/*_test.go"]
+          allow:
+            - archive/tar
+            - archive/zip
+            - bytes
+            - compress/gzip
+            - crypto/sha256
+            - encoding/hex
+            - encoding/json
+            - errors
+            - fmt
+            - io
+            - net/http
+            - os
+            - path
+            - path/filepath
+            - strings
+            - time
 
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the

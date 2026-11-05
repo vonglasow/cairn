@@ -67,7 +67,14 @@ brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
 ```
 
 The formula installs the binary made for your system and builds nothing.
-`brew upgrade cairn` takes a newer version. Then `cairn plugin write`, below,
+`brew upgrade cairn` takes a newer version.
+
+Installed from an archive, `cairn upgrade` takes the newest version: it
+downloads the archive made for your system from the latest release, checks it
+against `SHA256SUMS`, and puts the new binary in the place of the one you ran.
+That place has to be one you can write; a cairn in `/usr/local/bin` is
+upgraded with `sudo cairn upgrade`. It leaves a cairn installed by Homebrew to
+`brew upgrade cairn`, and a cairn built from source to being built again. Then `cairn plugin write`, below,
 gives Claude Code the plugin this cairn carries, once.
 
 ## Installing it

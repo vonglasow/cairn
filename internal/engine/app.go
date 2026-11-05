@@ -28,7 +28,7 @@ var AppInstall = Operation{
 		if on.Home.Dir == "" {
 			return Answer{}, fmt.Errorf("%w: %w", ErrStore, on.Home.Missing)
 		}
-		running, err := macapp.Running()
+		running, err := build.Running()
 		if err != nil {
 			return Answer{}, err
 		}

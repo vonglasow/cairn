@@ -7,16 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"cairn/internal/build"
 	"cairn/internal/macapp"
 )
 
 func TestAppInstall_writesTheApplicationRunningThisCairn(t *testing.T) {
 	home := t.TempDir()
-	wasHere, wasSigning, wasRunning := macapp.Here, macapp.Signing, macapp.Running
+	wasHere, wasSigning, wasRunning := macapp.Here, macapp.Signing, build.Running
 	running := "/usr/local/bin/cairn"
 	macapp.Here, macapp.Signing = true, func(string) error { return nil }
-	macapp.Running = func() (string, error) { return running, nil }
-	t.Cleanup(func() { macapp.Here, macapp.Signing, macapp.Running = wasHere, wasSigning, wasRunning })
+	build.Running = func() (string, error) { return running, nil }
+	t.Cleanup(func() { macapp.Here, macapp.Signing, build.Running = wasHere, wasSigning, wasRunning })
 	answer, err := AppInstall.Run(On{Home: Home{Dir: home}}, Input{})
 	if err != nil {
 		t.Fatal(err)

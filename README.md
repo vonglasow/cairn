@@ -44,6 +44,12 @@ the window. It runs the cairn that installed it, so installing a newer one in
 the same place updates it. Opened from the Finder it has no shell environment:
 it uses the store the configuration file names, or the default one.
 
+**Upgrading** — `cairn upgrade` takes the newest release from GitHub, checks
+its archive against `SHA256SUMS`, and puts the new binary in the place of the
+one you ran: the terminal, the Mac application and a `cairn mcp serve` already
+running all run the new one from then on. A cairn installed by Homebrew is
+upgraded with `brew upgrade cairn`, and one built from source is built again.
+
 ### From source
 
 ```sh

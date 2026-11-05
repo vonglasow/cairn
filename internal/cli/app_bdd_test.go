@@ -29,12 +29,12 @@ func TestAcceptance_App(t *testing.T) {
 
 func (w *world) registerApp(sc *godog.ScenarioContext) {
 	var signed []string
-	wasHere, wasSigning, wasRunning := macapp.Here, macapp.Signing, macapp.Running
+	wasHere, wasSigning, wasRunning := macapp.Here, macapp.Signing, build.Running
 	const running = "/usr/local/bin/cairn"
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		signed = nil
 		macapp.Here = true
-		macapp.Running = func() (string, error) { return running, nil }
+		build.Running = func() (string, error) { return running, nil }
 		macapp.Signing = func(app string) error {
 			signed = append(signed, app)
 			return nil
@@ -42,7 +42,7 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-		macapp.Here, macapp.Signing, macapp.Running = wasHere, wasSigning, wasRunning
+		macapp.Here, macapp.Signing, build.Running = wasHere, wasSigning, wasRunning
 		return ctx, err
 	})
 	installed := func() string { return filepath.Join(w.Defaults, "Applications", "cairn.app") }

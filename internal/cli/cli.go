@@ -56,6 +56,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())
 	root.AddCommand(newFixturesCmd())
+	root.AddCommand(newUpgradeCmd())
 	markMisreads(root)
 	return root
 }

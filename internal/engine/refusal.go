@@ -8,6 +8,7 @@ import (
 	"cairn/internal/macapp"
 	"cairn/internal/objective"
 	"cairn/internal/task"
+	"cairn/internal/upgrade"
 )
 
 // The kinds of failure.
@@ -58,6 +59,12 @@ var reasons = []reason{
 	{macapp.ErrOnlyOnAMac, KindRefused, "only-on-a-mac"},
 	{macapp.ErrNotOurs, KindRefused, "app-not-ours"},
 	{macapp.ErrPassing, KindRefused, "passing-build"},
+	{ErrBuiltFromSource, KindRefused, "built-from-source"},
+	{ErrKeptByHomebrew, KindRefused, "kept-by-homebrew"},
+	{upgrade.ErrOutOfReach, KindRefused, "releases-out-of-reach"},
+	{upgrade.ErrNoBinaryHere, KindRefused, "no-binary-here"},
+	{upgrade.ErrNotItsSum, KindRefused, "not-its-sum"},
+	{upgrade.ErrNotWritable, KindRefused, "not-writable"},
 	{domain.ErrReplacedMoreThanOnce, KindRefused, "replaced-more-than-once"},
 	{ErrReplaceAlone, KindRefused, "replace-alone"},
 	{ErrDescriptionBothWays, KindRefused, "description-both-ways"},

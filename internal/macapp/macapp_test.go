@@ -134,16 +134,6 @@ func TestInstall_refusesACairnThatWillNotStay(t *testing.T) {
 	}
 }
 
-func TestRunning_isAPathThatIsThere(t *testing.T) {
-	running, err := Running()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(running); err != nil || !filepath.IsAbs(running) {
-		t.Errorf("Running = %s, %v", running, err)
-	}
-}
-
 func TestSigning_signsAnApplicationForThisMachine(t *testing.T) {
 	home, _ := installedIn(t)
 	Signing = func(string) error { return nil }
