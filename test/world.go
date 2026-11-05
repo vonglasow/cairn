@@ -260,6 +260,9 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
 		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
 	})
+	sc.Step(`^I archived task (\d+)$`, func(n int) error {
+		return w.Seed(fmt.Sprintf("cairn task archive %d", n))
+	})
 	sc.Step(`^focus sessions last "([^"]*)"$`, w.FocusSessionsLast)
 	sc.Step(`^the window keeps its sizes$`, func() error { return w.WriteConfig("[window]\nkeep_sizes = true\n") })
 	sc.Step(`^the window's keep_sizes is "([^"]*)"$`, func(said string) error {

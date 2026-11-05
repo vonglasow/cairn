@@ -54,7 +54,7 @@ says the word; `--priority high` is still there for the exact question.
 | priority | ✓ | ✓ |
 | label | ✓ | ✓ |
 | objectives served | ✓ | |
-| number | | ✓ |
+| number | ✓ (`task list`) | ✓ |
 | archived | ✓ | |
 | deadline, as a range | ✓ | |
 
@@ -252,6 +252,55 @@ What was chosen, and why:
 - **The line a person reads is untouched.** The term is usually in what the
   line shows, and a second rendering of a search to keep true is not worth it
   for a person who can see the line; `--json` carries `matched`.
+
+## A listing can answer only the tasks whose numbers are named
+
+`task_list` takes `number` — `task list --number 25 --number 18` on the command
+line — and answers those tasks and no other
+(`@mcp-a-listing-answers-the-numbers-asked-for`, `@task-list-by-number`). A
+number no task carries is said under `unknown`, in the order asked, and is no
+refusal: `"unknown":[9]` (`@task-json-list-by-number-says-which-is-no-task`).
+
+On 2026-11-05 an agent checking whether four tasks it already knew were done
+had one `task_show` to make per task, or a whole board to list and read
+through for four rows.
+
+What was chosen, and why:
+
+- **On `task_list`, not `task_show`.** `task_show` answers one task whole —
+  its description, its steps, its context — and its answer is one task; made a
+  list, it would answer two shapes, and a handful of descriptions is the very
+  answer `fields` was made to keep short. `task_list` already answers rows,
+  takes `fields`, and says the focus, so the numbers are one more narrowing of
+  the shape it has.
+- **Named `number`, given once per task**, the way a label is: `--number 25
+  --number 18`, `["25","18"]`. A list of task numbers is written as strings,
+  the way `blocker` and `link` are.
+- **Archived or not.** Somebody naming a number already knows which task they
+  mean, which is why `task show` answers an archived task (above); a listing
+  by number does the same, and a row says `archived`. `--archived` still keeps
+  only what was taken off, so naming it narrows as it always did.
+- **Everything else named still holds.** `--state done --number 1 --number 2`
+  keeps what is both, like every narrowing. A number narrowed out is not
+  `unknown` — the task exists and is not done, which is the answer asked for;
+  `unknown` says only that no task carries it, deleted or never made
+  (`@mcp-a-listing-by-number-is-narrowed-like-every-listing`).
+- **`unknown` sits beside the rows, like `matched`.** A number with no task has
+  no row to be said on, and it is about the asking, not about a task, so
+  `fields` does not touch it
+  (`@mcp-a-listing-by-number-carries-the-fields-asked-for`). It is left out
+  when every number is a task (`@mcp-a-listing-by-number-reaches-an-archived-task`),
+  the way `crossed` is when nothing moved.
+- **Rows keep the board's order**, not the order asked in, and a number named
+  twice is answered once — the same rule `fields` follows, so the same tasks
+  read the same however they were asked for.
+- **What is not a task number is refused**, `not-understood`: a word, zero, a
+  negative, `1,2` as one value, or an empty list
+  (`@mcp-asking-for-no-number-is-refused`,
+  `@task-list-by-number-refuses-what-is-not-a-number`). An empty list answering
+  the whole board would hand over what asking by number was there to avoid.
+- **The line a person reads is untouched.** A person sees which tasks came
+  back; `--json` carries `unknown`.
 
 ## A word in a step answers the task it belongs to
 

@@ -218,6 +218,55 @@ Feature: Answering a machine over MCP
       Then it answers with 1 task
       And it says nothing of which term matched
 
+    @mcp-a-listing-answers-the-numbers-asked-for
+    Scenario: a listing asked for several numbers answers those tasks, and says which number is no task
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Tell the team"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 3, 1 and 9
+      Then it answers with the tasks 1 and 3
+      And it says there is no task 9
+      And its answer holds to the shape the tool described
+
+    @mcp-a-listing-by-number-reaches-an-archived-task
+    Scenario: a number asked for answers its task, archived or not
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I archived task 1
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 1, 2 and 2
+      Then it answers with the tasks 1 and 2
+      And it says every number asked for is a task
+
+    @mcp-a-listing-by-number-is-narrowed-like-every-listing
+    Scenario: a listing by number still keeps only what everything else named holds for
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I archived task 2
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 1, 2 and 7, archived only
+      Then it answers with the task 2
+      And it says there is no task 7
+
+    @mcp-a-listing-by-number-carries-the-fields-asked-for
+    Scenario: which number is no task is said whatever fields a row was asked to carry
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the numbers 1 and 4, and for the fields "number", "state" and "title"
+      Then it answers with the task 1
+      And every row of it carries "number", "state" and "title", and nothing else
+      And it says there is no task 4
+      And its answer holds to the shape the tool described
+
+    @mcp-asking-for-no-number-is-refused
+    Scenario: asking for an empty list of numbers is refused
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for no number
+      Then it answers that it failed
+      And the answer says a task number
+
     @mcp-a-listing-asked-for-no-field-carries-every-one
     Scenario: a listing that names no field carries every one, as it always did
       Given I added a task titled "Write the spec"

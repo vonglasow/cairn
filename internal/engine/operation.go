@@ -304,6 +304,7 @@ type Answer struct {
 	Tasks             []task.Task
 	Matched           []task.Task
 	Terms             map[string][]int
+	Unknown           []int
 	Fields            []string
 	Under             []task.Task
 	Objective         *objective.Objective

@@ -30,7 +30,10 @@ hands an agent in one answer. And `task_list` and `task_search` take `fields`,
 the fields each row carries — `["number","state","title"]` — for a board too
 long even then. `task_search` takes `any`, to keep what carries any one of
 what is named rather than all of it, and then says which tasks each one
-matched. See [listing.md](listing.md).
+matched. `task_list` takes `number`, the tasks to answer and no other —
+`["25","18","330"]` — and says under `unknown` which number is no task, so a
+handful of known tasks is one call rather than one `task_show` each. See
+[listing.md](listing.md).
 
 ## It is started like every other command
 

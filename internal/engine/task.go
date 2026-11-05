@@ -54,14 +54,15 @@ var TaskList = Operation{
 	Thing: "task",
 	Verb:  "list",
 	Short: "List tasks, all of them or only some",
-	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it. Each row carries every field, or only the fields named.",
+	Does:  "List every task, or only the ones carrying everything named. A task has to carry all of it, not one of it. Given numbers, only those tasks, archived or not, the answer saying under unknown which number is no task. Each row carries every field, or only the fields named.",
 	Example: `cairn task list
 cairn task list --state todo --priority high
-cairn task list --label team --archived`,
+cairn task list --label team --archived
+cairn task list --number 25 --number 18`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(slices.Clone(taskNarrowing), fieldsArgument),
+	Takes:   append(slices.Clone(taskNarrowing), numbersArgument, fieldsArgument),
 	Run:     listing,
 }
 
@@ -482,9 +483,22 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
+	numbers, err := askedNumbers(in)
+	if err != nil {
+		return Answer{}, err
+	}
+	if numbers != nil && !in.Yes("archived") && !in.Yes("with-archived") {
+		kept.WithArchived()
+	}
 	tasks, err := on.Engine.narrowed(kept)
 	if err != nil {
 		return Answer{}, err
+	}
+	var unknown []int
+	if numbers != nil {
+		if tasks, unknown, err = on.Engine.numbered(tasks, numbers); err != nil {
+			return Answer{}, err
+		}
 	}
 	inFocus, err := on.Engine.focus()
 	if err != nil {
@@ -495,7 +509,8 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	along, _, err := on.Engine.alongEvery(tasks, !kept.Narrows())
+	narrows := kept.Narrows() || numbers != nil
+	along, _, err := on.Engine.alongEvery(tasks, !narrows)
 	if err != nil {
 		return Answer{}, err
 	}
@@ -504,8 +519,8 @@ func listing(on On, in Input) (Answer, error) {
 		n := factsOf(t).Number
 		contexts[n] = on.contextOf(n)
 	}
-	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields}
-	if kept.Narrows() {
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown}
+	if narrows {
 		answer.Matched = tasks
 		return answer, nil
 	}

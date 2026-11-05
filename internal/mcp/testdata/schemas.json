@@ -4658,6 +4658,13 @@
           },
           "type": "array"
         },
+        "number": {
+          "description": "the number of a task to answer, and no other; named twice, both — archived or not, and a number no task carries said under unknown",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "objective": {
           "description": "keep only the tasks serving this objective",
           "items": {
@@ -4839,6 +4846,16 @@
               "type": "integer"
             }
           }
+        },
+        "unknown": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"
         }
       },
       "required": [
@@ -5044,6 +5061,16 @@
               "type": "integer"
             }
           }
+        },
+        "unknown": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"
         }
       },
       "required": [
@@ -5685,6 +5712,16 @@
               "type": "integer"
             }
           }
+        },
+        "unknown": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"
         }
       },
       "required": [

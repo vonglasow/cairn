@@ -231,6 +231,23 @@ Feature: Tasks
       And it lists task 1 titled "First"
       And it lists task 2 titled "Second"
 
+    @task-list-by-number
+    Scenario: listing only the tasks whose numbers are named
+      Given I added a task titled "First"
+      And I added a task titled "Second"
+      And I added a task titled "Third"
+      When I run `cairn task list --number 3 --number 1`
+      Then it lists 2 tasks
+      And it lists task 1 titled "First"
+      And it lists task 3 titled "Third"
+
+    @task-list-by-number-refuses-what-is-not-a-number
+    Scenario: a number that is not one is refused
+      Given I added a task titled "First"
+      When I run `cairn task list --number first`
+      Then it fails
+      And it says what it expects instead of "first"
+
     @task-list-carries-what-a-decision-is-made-on
     Scenario: a listed task carries what a decision is made on
       Given I added a task titled "Write the spec"
@@ -2059,6 +2076,13 @@ Feature: Tasks
       When I run `cairn task list --json --fields number --fields title`
       Then it carries 1 task
       And every task in it carries "number" and "title", and nothing else
+
+    @task-json-list-by-number-says-which-is-no-task
+    Scenario: a listing by number, read by a machine, says which number is no task
+      Given I added a task titled "First"
+      When I run `cairn task list --number 1 --number 9 --json`
+      Then it carries 1 task
+      And it says in JSON there is no task 9
 
     @task-json-list-refuses-a-field-it-does-not-carry
     Scenario: a field a row does not carry is refused

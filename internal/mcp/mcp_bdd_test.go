@@ -489,6 +489,78 @@ func (w *world) itSaysNothingOfWhichTermMatched() error {
 	return nil
 }
 
+func (w *world) iCallTaskListAskingForTheNumbers(numbers ...string) error {
+	_ = w.callTool("task_list", map[string]any{"number": numbers})
+	return nil
+}
+
+func (w *world) iCallTaskListAskingForTheNumbersArchivedOnly(first, second, third string) error {
+	_ = w.callTool("task_list", map[string]any{"number": []string{first, second, third}, "archived": true})
+	return nil
+}
+
+func (w *world) iCallTaskListAskingForTheNumbersAndTheFields(first, second, one, two, three string) error {
+	_ = w.callTool("task_list", map[string]any{"number": []string{first, second}, "fields": []string{one, two, three}})
+	return nil
+}
+
+func (w *world) itAnswersWithTheTasks(first, second string) error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	rows, err := carriedUnder(w.result.StructuredContent, "tasks")
+	if err != nil {
+		return err
+	}
+	want := []string{first}
+	if second != "" {
+		want = append(want, second)
+	}
+	got := make([]string, 0, len(rows))
+	for _, one := range rows {
+		row, _ := one.(map[string]any)
+		got = append(got, fmt.Sprint(row["number"]))
+	}
+	if !slices.Equal(got, want) {
+		return fmt.Errorf("it answered the tasks %v, want %v", got, want)
+	}
+	return nil
+}
+
+func (w *world) noTaskSaid() ([]any, error) {
+	if w.callErr != nil {
+		return nil, fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	listing, ok := w.result.StructuredContent.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("structured content is not a listing: %#v", w.result.StructuredContent)
+	}
+	unknown, _ := listing["unknown"].([]any)
+	return unknown, nil
+}
+
+func (w *world) itSaysThereIsNoTask(n int) error {
+	unknown, err := w.noTaskSaid()
+	if err != nil {
+		return err
+	}
+	if !slices.Equal(unknown, []any{float64(n)}) {
+		return fmt.Errorf("it says %v is no task, want %d alone", unknown, n)
+	}
+	return nil
+}
+
+func (w *world) itSaysEveryNumberIsATask() error {
+	unknown, err := w.noTaskSaid()
+	if err != nil {
+		return err
+	}
+	if unknown != nil {
+		return fmt.Errorf("it says %v is no task", unknown)
+	}
+	return nil
+}
+
 func (w *world) iCallAskingForNoField(tool string) error {
 	_ = w.callTool(tool, map[string]any{"fields": []any{}})
 	return nil
@@ -1019,6 +1091,15 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\" and \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAnyOfAskingForTheFields)
 		sc.Step(`^it says "([^"]*)" matched (task \d+|no task)$`, w.itSaysTheTermMatched)
 		sc.Step(`^it says nothing of which term matched$`, w.itSaysNothingOfWhichTermMatched)
+		sc.Step("^I call `task_list` asking for the numbers (\\d+), (\\d+) and (\\d+)$", func(first, second, third string) error {
+			return w.iCallTaskListAskingForTheNumbers(first, second, third)
+		})
+		sc.Step("^I call `task_list` asking for the numbers (\\d+), (\\d+) and (\\d+), archived only$", w.iCallTaskListAskingForTheNumbersArchivedOnly)
+		sc.Step("^I call `task_list` asking for the numbers (\\d+) and (\\d+), and for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskListAskingForTheNumbersAndTheFields)
+		sc.Step("^I call `task_list` asking for no number$", func() error { return w.iCallTaskListAskingForTheNumbers([]string{}...) })
+		sc.Step(`^it answers with the tasks? (\d+)(?: and (\d+))?$`, w.itAnswersWithTheTasks)
+		sc.Step(`^it says there is no task (\d+)$`, w.itSaysThereIsNoTask)
+		sc.Step(`^it says every number asked for is a task$`, w.itSaysEveryNumberIsATask)
 		sc.Step("^I call `([a-z_]+)` asking for no field$", w.iCallAskingForNoField)
 		sc.Step(`^every row of it carries "([^"]*)", "([^"]*)" and "([^"]*)", and nothing else$`, w.everyRowCarriesOnly)
 		sc.Step(`^every row of it carries every field a row can carry$`, w.everyRowCarriesEveryField)

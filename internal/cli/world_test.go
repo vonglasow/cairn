@@ -324,10 +324,6 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^I archived task (\d+)$`, func(n int) error {
-		return w.Seed(fmt.Sprintf("cairn task archive %d", n))
-	})
-
 	sc.Step(`^task (\d+) is archived$`, func(n int) error { return w.archived(n, true) })
 	sc.Step(`^task (\d+) is not archived$`, func(n int) error { return w.archived(n, false) })
 	sc.Step(`^an act says it was archived through "([^"]*)"$`, func(through string) error {
@@ -820,6 +816,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		if !slices.Equal(numbers, want) {
 			return fmt.Errorf("%q matched %v, want %v", term, numbers, want)
+		}
+		return nil
+	})
+
+	sc.Step(`^it says in JSON there is no task (\d+)$`, func(n int) error {
+		_, envelope, err := listedUnder(w.Out.Stdout, "tasks")
+		if err != nil {
+			return err
+		}
+		unknown, _ := envelope["unknown"].([]any)
+		if !slices.Equal(unknown, []any{float64(n)}) {
+			return fmt.Errorf("it says %v is no task, want %d alone", unknown, n)
 		}
 		return nil
 	})
