@@ -122,6 +122,13 @@ func TestEveryThingHasAGroupSentence(t *testing.T) {
 	}
 }
 
+func TestTheAppGroupSaysWhereAnApplicationIsInstalled(t *testing.T) {
+	r := run(t, "--help")
+	if !strings.Contains(r.Stdout, "on a Mac or a Linux desktop") {
+		t.Errorf("cairn --help says %q", r.Stdout)
+	}
+}
+
 func TestMain_saysToWriteALengthUnderZeroAfterTheDoubleDash(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	r := run(t, "timesheet", "add", "1", "-30m")

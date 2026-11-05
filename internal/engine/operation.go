@@ -343,6 +343,7 @@ type Answer struct {
 	Crossed           *Crossed
 	Installed         *string
 	Runs              *string
+	OpenedFrom        *string
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.

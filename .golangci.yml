@@ -175,6 +175,28 @@ linters:
             - strings
             - time
 
+        # cairn written as a Linux desktop application: its entry in the
+        # applications menu and its logo in the icon theme. It knows nobody of
+        # ours but the logo: the engine decides whether to install and hands it
+        # the person's data folder, and the window writes the same entry each
+        # time it opens. An allow-list, like upgrade: running the menu's tool
+        # belongs here and nowhere else.
+        linuxapp:
+          files: ["**/internal/linuxapp/**", "!**/internal/linuxapp/*_test.go"]
+          allow:
+            - bytes
+            - cairn/internal/logo
+            - crypto/sha256
+            - encoding/hex
+            - errors
+            - fmt
+            - os
+            - os/exec
+            - path/filepath
+            - runtime
+            - strconv
+            - strings
+
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the
         # title rule it shares with an objective, and nothing else — a task

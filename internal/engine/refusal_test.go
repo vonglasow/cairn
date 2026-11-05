@@ -95,7 +95,7 @@ func TestEveryFailureCairnForesawHasAReason(t *testing.T) {
 		t.Fatal(err)
 	}
 	named := regexp.MustCompile(`(?m)^(?:var )?\t?(Err[A-Za-z]+) += +(?:errors\.New|fmt\.Errorf)`)
-	for _, where := range []string{"domain", "engine", "objective", "task", "store", "config", "macapp", "upgrade"} {
+	for _, where := range []string{"domain", "engine", "objective", "task", "store", "config", "macapp", "linuxapp", "upgrade"} {
 		files, err := filepath.Glob(filepath.Join("..", where, "*.go"))
 		if err != nil {
 			t.Fatal(err)

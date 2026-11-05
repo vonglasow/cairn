@@ -91,6 +91,11 @@ entry and the icons a desktop looks for, under your own data folder
 (`~/.local/share`), the first time it opens. macOS shows the logo in the Dock
 on its own, and on Windows `cairn.exe` carries it.
 
+To open the window from the desktop rather than a terminal, run `cairn app
+install` once: on Linux it writes the same entry and icons without opening the
+window, and refreshes the applications menu with `xdg-desktop-menu` when
+xdg-utils is installed; on a Mac it writes `cairn.app` in `~/Applications`.
+
 cairn keeps its work in `~/.cairn` unless told otherwise; `cairn config
 show` says where. Installing a newer version leaves it where it is; a version
 that changes how it is kept says so, and `cairn migration apply` moves it on,

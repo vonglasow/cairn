@@ -11,6 +11,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/build"
+	"cairn/internal/linuxapp"
 	"cairn/internal/macapp"
 	"cairn/test"
 )
@@ -29,7 +30,8 @@ func TestAcceptance_App(t *testing.T) {
 
 func (w *world) registerApp(sc *godog.ScenarioContext) {
 	var signed []string
-	wasHere, wasSigning, wasRunning := macapp.Here, macapp.Signing, build.Running
+	var data, tools string
+	wasHere, wasLinux, wasSigning, wasRunning := macapp.Here, linuxapp.Here, macapp.Signing, build.Running
 	const running = "/usr/local/bin/cairn"
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		signed = nil
@@ -42,12 +44,82 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-		macapp.Here, macapp.Signing, build.Running = wasHere, wasSigning, wasRunning
+		macapp.Here, linuxapp.Here, macapp.Signing, build.Running = wasHere, wasLinux, wasSigning, wasRunning
 		return ctx, err
 	})
 	installed := func() string { return filepath.Join(w.Defaults, "Applications", "cairn.app") }
 	sc.Step("^I ran `([^`]*)`$", func(line string) error { return w.Seed(line) })
-	sc.Step(`^this is not a Mac$`, func() { macapp.Here = false })
+	sc.Step(`^this is neither a Mac nor Linux$`, func() { macapp.Here, linuxapp.Here = false, false })
+	sc.Given(`^this is a Linux desktop$`, func() error {
+		macapp.Here, linuxapp.Here = false, true
+		w.Setenv("XDG_DATA_HOME", "")
+		data = filepath.Join(w.Defaults, ".local", "share")
+		tools = filepath.Join(w.Defaults, "tools")
+		w.Setenv("PATH", tools)
+		if err := os.MkdirAll(tools, 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(tools, "xdg-desktop-menu"), []byte("#!/bin/sh\necho \"$*\" >> '"+filepath.Join(tools, "refreshed")+"'\n"), 0o755)
+	})
+	sc.Given(`^my desktop keeps its data in a folder of its own$`, func() {
+		data = filepath.Join(w.Defaults, "data of its own")
+		w.Setenv("XDG_DATA_HOME", data)
+	})
+	sc.Given(`^the desktop has no tool to refresh its menu$`, func() error {
+		return os.Remove(filepath.Join(tools, "xdg-desktop-menu"))
+	})
+	entry := func() string { return filepath.Join(data, "applications", "cairn.desktop") }
+	const theirs = "[Desktop Entry]\nName=mine\nExec=mine\n"
+	sc.Given(`^a desktop entry of cairn's name written by somebody else$`, func() error {
+		if err := os.MkdirAll(filepath.Dir(entry()), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(entry(), []byte(theirs), 0o644)
+	})
+	saysWhere := func() error { return test.WantContains(w.Out.Stdout, entry(), "the answer") }
+	sc.Step(`^it says the entry is in my applications folder$`, saysWhere)
+	sc.Step(`^it says the entry is in that folder$`, saysWhere)
+	sc.Step(`^the entry starts the window of the cairn that wrote it$`, func() error {
+		said, err := os.ReadFile(entry())
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(said), "\nExec="+running+" gui\n") || !strings.Contains(string(said), "\nIcon=cairn\n") {
+			return fmt.Errorf("the entry says:\n%s\nwant Exec=%s gui and Icon=cairn", said, running)
+		}
+		held, err := os.ReadDir(filepath.Dir(entry()))
+		if err != nil || len(held) != 1 {
+			return fmt.Errorf("the applications folder holds %v, %w: want the one entry", held, err)
+		}
+		return nil
+	})
+	sc.Step(`^cairn's logo is in my icon theme at every size$`, func() error {
+		for _, side := range []string{"16", "32", "48", "64", "128", "256", "512"} {
+			png, err := os.ReadFile(filepath.Join(data, "icons", "hicolor", side+"x"+side, "apps", "cairn.png"))
+			if err != nil || !strings.HasPrefix(string(png), "\x89PNG") {
+				return fmt.Errorf("no logo at %s pixels: %w", side, err)
+			}
+		}
+		return nil
+	})
+	refreshed := func(times int) error {
+		said, _ := os.ReadFile(filepath.Join(tools, "refreshed"))
+		if want := strings.Repeat("forceupdate\n", times); string(said) != want {
+			return fmt.Errorf("the menu tool was run with %q, want %q", said, want)
+		}
+		return nil
+	}
+	sc.Step(`^the desktop's menu was refreshed$`, func() error { return refreshed(1) })
+	sc.Step(`^the desktop's menu was refreshed twice$`, func() error { return refreshed(2) })
+	sc.Step(`^it says that entry is left alone$`, func() error {
+		return test.WantContains(w.Out.Stderr, "left alone", "the refusal")
+	})
+	sc.Step(`^the entry is still the one somebody else wrote$`, func() error {
+		if said, err := os.ReadFile(entry()); err != nil || string(said) != theirs {
+			return fmt.Errorf("the entry now says %q, %w", said, err)
+		}
+		return nil
+	})
 	sc.Step(`^it says the application is in my Applications folder$`, func() error {
 		return test.WantContains(w.Out.Stdout, installed(), "the answer")
 	})
@@ -90,7 +162,7 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^it says an application is installed on a Mac only$`, func() error {
-		return test.WantContains(w.Out.Stderr, "only on a Mac", "the refusal")
+	sc.Step(`^it says an application is installed on a Mac or a Linux desktop only$`, func() error {
+		return test.WantContains(w.Out.Stderr, "only on a Mac or a Linux desktop", "the refusal")
 	})
 }

@@ -24,7 +24,7 @@ var groupShort = map[string]string{
 	"label":     "List every label, and delete or rename one on everything carrying it",
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 	"plugin":    "Write the Claude Code plugin this cairn carries",
-	"app":       "Install cairn as a Mac application",
+	"app":       "Install cairn as an application, on a Mac or a Linux desktop",
 }
 
 func home() engine.Home {

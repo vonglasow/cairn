@@ -14,9 +14,9 @@ func installedIn(t *testing.T) (string, []string) {
 	t.Helper()
 	home := t.TempDir()
 	var signed []string
-	wasHere, wasSigning := Here, Signing
-	Here, Signing = true, func(app string) error { signed = append(signed, app); return nil }
-	t.Cleanup(func() { Here, Signing = wasHere, wasSigning })
+	wasSigning := Signing
+	Signing = func(app string) error { signed = append(signed, app); return nil }
+	t.Cleanup(func() { Signing = wasSigning })
 	return home, signed
 }
 
@@ -106,31 +106,11 @@ func TestInstall_replacesItsOwnApplicationAndNoOtherOne(t *testing.T) {
 	}
 }
 
-func TestInstall_refusesElsewhereThanOnAMac(t *testing.T) {
-	home, _ := installedIn(t)
-	Here = false
-	if _, err := Install(home, "/usr/local/bin/cairn", "v1"); !errors.Is(err, ErrOnlyOnAMac) {
-		t.Errorf("err = %v, want ErrOnlyOnAMac", err)
-	}
-	if _, err := os.Stat(filepath.Join(home, "Applications")); err == nil {
-		t.Error("something was written")
-	}
-}
-
 func TestInstall_saysWhenSigningFails(t *testing.T) {
 	home, _ := installedIn(t)
 	Signing = func(string) error { return errors.New("no codesign here") }
 	if _, err := Install(home, "/usr/local/bin/cairn", "v1"); err == nil || !strings.Contains(err.Error(), "no codesign here") {
 		t.Errorf("err = %v", err)
-	}
-}
-
-func TestInstall_refusesACairnThatWillNotStay(t *testing.T) {
-	home, _ := installedIn(t)
-	for _, passing := range []string{filepath.Join(os.TempDir(), "go-build123", "b001", "exe", "cairn"), "/private/var/folders/x/T/go-build9/exe/cairn"} {
-		if _, err := Install(home, passing, "v1"); !errors.Is(err, ErrPassing) {
-			t.Errorf("%s: err = %v, want ErrPassing", passing, err)
-		}
 	}
 }
 

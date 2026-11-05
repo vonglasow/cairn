@@ -32,6 +32,8 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/io/event"
+
+	"cairn/internal/linuxapp"
 )
 
 var x11Dressed bool
@@ -43,7 +45,8 @@ func desktopHome() (data, starts string, ok bool) {
 	if err != nil {
 		running = Known
 	}
-	return DataHome(), Starter(running, exec.LookPath), true
+	home, _ := os.UserHomeDir()
+	return linuxapp.DataHome(home, os.LookupEnv), linuxapp.Starter(running, exec.LookPath), true
 }
 
 func dress(e event.Event) {

@@ -38,6 +38,7 @@ all of them.
 | `plugin/claude` | the Claude Code plugin's files, carried in the binary, and how they are written out as a marketplace — outside `internal/` because Go embeds only what lies under the package, and the files are read from there by a clone too | nobody |
 | `internal/logo` | cairn's logo, drawn at every size a system asks for | nobody |
 | `internal/macapp` | cairn written as a Mac application: its bundle, its icon, its signature | `logo` |
+| `internal/linuxapp` | cairn written as a Linux desktop application: its entry in the applications menu, its logo in the icon theme, the menu refreshed | `logo` |
 | `internal/upgrade` | the newest release of cairn on GitHub, its archive checked against its sum, and its binary put in place of another | nobody of ours |
 | `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
 | `internal/debug` | what debug mode writes down, and the folder it keeps its files in | nobody of ours |

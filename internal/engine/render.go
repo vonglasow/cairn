@@ -90,7 +90,7 @@ func rendered(op Operation, a Answer) string {
 	case PluginWritten:
 		return pluginText(*a.Plugin)
 	case AppInstalled:
-		return appText(AppInstalled{Installed: *a.Installed, Runs: *a.Runs})
+		return appText(Of(op, a).(AppInstalled))
 	case Exported:
 		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
 	case Imported:

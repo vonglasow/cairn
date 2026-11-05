@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"cairn/internal/engine"
+	"cairn/internal/linuxapp"
 	"cairn/internal/migration"
 	"cairn/internal/trace"
 )
@@ -144,7 +145,7 @@ type Window struct {
 	agreeing              engine.Agreeing
 	quitting              bool
 	waiting               []string
-	hiding                Entry
+	hiding                linuxapp.Entry
 	starts                string
 	over                  string
 	hovered               bool

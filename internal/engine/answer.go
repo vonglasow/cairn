@@ -232,7 +232,7 @@ func Of(op Operation, a Answer) any {
 	case PluginWritten:
 		return PluginWritten{Plugin: *a.Plugin}
 	case AppInstalled:
-		return AppInstalled{Installed: *a.Installed, Runs: *a.Runs}
+		return AppInstalled{Installed: *a.Installed, Runs: *a.Runs, OpenedFrom: *a.OpenedFrom}
 	case Exported:
 		return Exported{Exported: *a.Exported, Holds: a.Holds}
 	case Imported:

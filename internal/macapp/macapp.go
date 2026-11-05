@@ -31,21 +31,11 @@ func signing(app string) error {
 	return nil
 }
 
-// What installing can be turned down for.
-var (
-	ErrOnlyOnAMac = errors.New("an application is installed only on a Mac")
-	ErrNotOurs    = errors.New("an application of that name is already there, and cairn did not write it; it is left alone")
-	ErrPassing    = errors.New("this cairn is a build go run makes and throws away; install cairn (make install), then run cairn app install from it")
-)
+// ErrNotOurs turns installing down over an application somebody else wrote.
+var ErrNotOurs = errors.New("an application of that name is already there, and cairn did not write it; it is left alone")
 
 // Install writes cairn.app under home/Applications, its launcher running binary's window, and signs it; one cairn wrote before is replaced.
 func Install(home, binary, version string) (string, error) {
-	if !Here {
-		return "", ErrOnlyOnAMac
-	}
-	if strings.Contains(binary, string(filepath.Separator)+"go-build") {
-		return "", fmt.Errorf("%s: %w", binary, ErrPassing)
-	}
 	app := filepath.Join(home, "Applications", "cairn.app")
 	if said, err := os.ReadFile(filepath.Join(app, "Contents", "Info.plist")); err == nil && !bytes.Contains(said, []byte(Identifier)) {
 		return "", fmt.Errorf("%s: %w", app, ErrNotOurs)

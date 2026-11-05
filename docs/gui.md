@@ -115,25 +115,45 @@ answers through the same four switches — `Choose`, `Offers`, `Click`,
 `cairn gui` is a command in `internal/cli`, built like `cairn tui`, with the
 same seam (`var openGui = func(…)`) so a test never needs a window.
 
-## Opened as a Mac application
+## Opened as an application
 
-`cairn app install` writes `cairn.app` in `~/Applications` (`internal/macapp`,
+`cairn app install` makes the window an application like any other, on a Mac
+and on a Linux desktop. `engine.AppInstall` chooses which; elsewhere it is
+refused (`no-application-here`). A cairn run by `go run` is refused on both
+(`passing-build`): its binary is thrown away when it ends, and the application
+would open nothing. Either way the application opens the installed cairn's
+window rather than holding a copy of it, so it follows the cairn on the
+machine: `make install`, a release, and the next opening is the new one — the
+lag the MCP server has after an update (#227) is not repeated here. Opened
+from the desktop it has no shell environment: no `CAIRN_STORE`, so it takes
+the store the configuration file names, or the default place. The answer says
+where it was written, which cairn it opens, and where to open it from.
+
+**On a Mac** it writes `cairn.app` in `~/Applications` (`internal/macapp`,
 `@app-installed`): an `Info.plist`, the icon made of the logo's PNGs at every
 size macOS reads, and a launcher of two lines that runs the installed cairn's
-window. A launcher rather than a copy of the binary, so the application follows
-the cairn on the machine: `make install`, a release, and the next opening is
-the new one — the lag the MCP server has after an update (#227) is not repeated
-here. It is signed for this machine alone (`codesign --sign -`), so macOS opens
-it without a developer's certificate; handing it to somebody else would need
-Apple's, and is not done.
+window. It is signed for this machine alone (`codesign --sign -`), so macOS
+opens it without a developer's certificate; handing it to somebody else would
+need Apple's, and is not done. Installing again replaces the application cairn
+wrote, and an application of the same name cairn did not write is left alone
+(`app-not-ours`).
 
-From the Finder it has no shell environment: no `CAIRN_STORE`, so it takes the
-store the configuration file names, or the default place. Installing again
-replaces the application cairn wrote, and an application of the same name cairn
-did not write is left alone (`app-not-ours`). A cairn run by `go run` is
-refused (`passing-build`): its binary is thrown away when it ends, and the
-application would open nothing. Elsewhere than on a Mac it is refused
-(`only-on-a-mac`).
+**On a Linux desktop** it writes the same entry and logo the window writes
+when it opens (`internal/linuxapp`, `@app-installed-on-linux`):
+`cairn.desktop` under `$XDG_DATA_HOME/applications`, or
+`~/.local/share/applications`, following the freedesktop Desktop Entry
+specification, and the logo at 16 to 512 pixels under `icons/hicolor` beside
+it. Until then the menu knew cairn only once `cairn gui` had been run from a
+terminal; now it can be the first way in. Then it runs `xdg-desktop-menu
+forceupdate` when xdg-utils is there, so a menu that does not watch the folder
+is rebuilt; a desktop without it is not refused
+(`@app-on-linux-without-a-menu-tool`): GNOME and KDE watch the folder on their
+own, and the entry is what matters. Installing again rewrites only what changed
+(`@app-installed-on-linux-again`). An entry of the same name somebody else
+wrote is left alone (`entry-not-ours`,
+`@app-on-linux-an-entry-of-somebody-elses-is-kept`) — the command cannot ask,
+as the window does, whether to write over it. The entry starts cairn by the
+full path, as the window's does (`Starter`, below).
 
 ## The look
 
@@ -1036,7 +1056,7 @@ launching: Gio makes it a Dock application then, which takes back an icon
 handed before. Which came first was a race, lost under `make dev`, whose
 `go run` starts a binary macOS has not seen, so the Dock showed the blank
 icon there and the logo under `bin/cairn`. On Linux the window does both things a
-desktop may read it from (`logo_linux.go`, `desktop.go`). On X11 it hands the
+desktop may read it from (`logo_linux.go`, `desktop.go`, the entry itself in `internal/linuxapp`). On X11 it hands the
 window manager the logo itself, at 16 to 128 pixels, as `_NET_WM_ICON`
 (`@gui-x11-is-handed-the-logo`) — Gio sets the window's class and nothing more.
 On Wayland there is no such thing outside a protocol few compositors speak

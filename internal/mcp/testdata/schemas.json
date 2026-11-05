@@ -5,7 +5,7 @@
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": false,
-      "title": "Install cairn as a Mac application"
+      "title": "Install cairn as an application, on a Mac or a Linux desktop"
     },
     "input": {
       "additionalProperties": false,
@@ -19,16 +19,21 @@
       "properties": {
         "installed": {
           "type": "string",
-          "description": "where the application was written"
+          "description": "where the application was written: the Mac application, or the Linux desktop entry"
         },
         "runs": {
           "type": "string",
           "description": "the cairn whose window it opens"
+        },
+        "opened_from": {
+          "type": "string",
+          "description": "where the person opens it from"
         }
       },
       "required": [
         "installed",
-        "runs"
+        "runs",
+        "opened_from"
       ],
       "additionalProperties": false
     }

@@ -19,6 +19,7 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/linuxapp"
 	"cairn/internal/migration"
 	"cairn/internal/objective"
 	"cairn/internal/task"
@@ -1691,7 +1692,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the window settles in on a Linux desktop$`, func() error {
-		return SettleIn(dataHome(), Starter(running(), onPath))
+		return linuxapp.SettleIn(dataHome(), linuxapp.Starter(running(), onPath))
 	})
 	sc.Then(`^the desktop entry "([^"]*)" starts the full path of "([^"]*)" with "([^"]*)"$`, func(name, as, with string) error {
 		return entrySays(entry(name), "Exec="+filepath.Join(place(), as)+" "+with)
@@ -1715,7 +1716,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err := w.open(); err != nil {
 			return err
 		}
-		w.w = w.w.Settling(dataHome(), Starter(running(), onPath))
+		w.w = w.w.Settling(dataHome(), linuxapp.Starter(running(), onPath))
 		return nil
 	})
 	sc.Step(`^somebody changes the desktop entry "([^"]*)"$`, func(name string) error {

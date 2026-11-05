@@ -5,6 +5,7 @@ import (
 
 	"cairn/internal/config"
 	"cairn/internal/domain"
+	"cairn/internal/linuxapp"
 	"cairn/internal/macapp"
 	"cairn/internal/objective"
 	"cairn/internal/task"
@@ -56,9 +57,10 @@ var reasons = []reason{
 	{domain.ErrReplacedNowhere, KindRefused, "replaced-nowhere"},
 	{domain.ErrNotADayFromToday, KindRefused, "not-a-day-from-today"},
 	{ErrNotMadeByFixtures, KindRefused, "not-made-by-fixtures"},
-	{macapp.ErrOnlyOnAMac, KindRefused, "only-on-a-mac"},
+	{ErrNoApplicationHere, KindRefused, "no-application-here"},
 	{macapp.ErrNotOurs, KindRefused, "app-not-ours"},
-	{macapp.ErrPassing, KindRefused, "passing-build"},
+	{linuxapp.ErrNotOurs, KindRefused, "entry-not-ours"},
+	{ErrPassing, KindRefused, "passing-build"},
 	{ErrBuiltFromSource, KindRefused, "built-from-source"},
 	{ErrKeptByHomebrew, KindRefused, "kept-by-homebrew"},
 	{upgrade.ErrOutOfReach, KindRefused, "releases-out-of-reach"},

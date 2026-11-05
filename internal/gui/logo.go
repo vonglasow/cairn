@@ -3,11 +3,12 @@ package gui
 import (
 	"gioui.org/app"
 
+	"cairn/internal/linuxapp"
 	cairnlogo "cairn/internal/logo"
 )
 
 // Known is the name the window is known to the system by: Wayland's app_id and X11's class, which a desktop entry of the same name gives the logo to.
-const Known = "cairn"
+const Known = linuxapp.Name
 
 var logo, _ = cairnlogo.At(1024)
 
