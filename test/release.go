@@ -11,15 +11,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
-// Release is a release of cairn as GitHub hands it over: its tag, the system its archive was made for, the binary that archive holds — none when nil — and whether SHA256SUMS gives another sum for it.
+// Release is a release of cairn as GitHub hands it over: its tag, the system its archive was made for, the binary that archive holds — none when nil — whether SHA256SUMS gives another sum for it, and a count of what it was asked, when there is one to keep.
 type Release struct {
 	Tag      string
 	Platform string
 	Binary   []byte
 	WrongSum bool
+	Asked    *atomic.Int32
 }
 
 // Serve starts a GitHub serving r as the newest release of cairn; the server's URL is where that release is described.
@@ -44,6 +46,9 @@ func (r Release) Serve(t *testing.T) *httptest.Server {
 	}
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if r.Asked != nil {
+			r.Asked.Add(1)
+		}
 		if said, found := files[strings.TrimPrefix(req.URL.Path, "/")]; found {
 			_, _ = w.Write(said)
 			return

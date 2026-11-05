@@ -1,7 +1,13 @@
 package engine
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"cairn/internal/upgrade"
@@ -71,4 +77,34 @@ func TestUpgraded_saysWhatWasDone(t *testing.T) {
 func versionOf(said string) [3]int {
 	v, _ := releaseOf(said)
 	return v
+}
+
+func TestUpgraded_answersFromToAndBinaryInJSON(t *testing.T) {
+	said, err := json.Marshal(Upgraded{From: "v0.10.0", To: "v0.10.0", Binary: "/bin/cairn"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"from":"v0.10.0","to":"v0.10.0","binary":"/bin/cairn"}`; string(said) != want {
+		t.Errorf("in JSON %s, want %s", said, want)
+	}
+}
+
+func TestUpgrade_triesItsPlaceBeforeAskingTheReleases(t *testing.T) {
+	var asked atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { asked.Add(1) }))
+	t.Cleanup(server.Close)
+	was := upgrade.Latest
+	upgrade.Latest = server.URL + "/latest"
+	t.Cleanup(func() { upgrade.Latest = was })
+	locked := t.TempDir()
+	if err := os.Chmod(locked, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+	if _, err := Upgrade("v0.10.0", filepath.Join(locked, "cairn"), "darwin/arm64"); !errors.Is(err, upgrade.ErrNotWritable) {
+		t.Errorf("a place that cannot be written: %v", err)
+	}
+	if n := asked.Load(); n != 0 {
+		t.Errorf("the releases were asked %d times", n)
+	}
 }

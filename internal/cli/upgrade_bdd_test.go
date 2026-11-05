@@ -2,11 +2,14 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -33,9 +36,11 @@ const runBefore = "the cairn that was there"
 func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 	var server *httptest.Server
 	var place, locked string
+	var asked atomic.Int32
 	wasLatest, wasRunning, wasStamps := upgrade.Latest, build.Running, stamps
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		server, place, locked = nil, "", ""
+		asked.Store(0)
 		return ctx, nil
 	})
 	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
@@ -49,6 +54,7 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 		return ctx, err
 	})
 	released := func(r test.Release) {
+		r.Asked = &asked
 		server = r.Serve(w.T)
 		upgrade.Latest = server.URL + "/latest"
 	}
@@ -100,6 +106,36 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^it says (\S+) is the newest already$`, func(version string) error {
 		return test.WantContains(w.Out.Stdout, "cairn "+version+" is the newest already, in "+place, "the answer")
+	})
+	sc.Step(`^it says in JSON it went from (\S+) to (\S+), in its place$`, func(from, to string) error {
+		var said map[string]string
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+			return fmt.Errorf("stdout is not JSON (%w):\n%s", err, w.Out.Stdout)
+		}
+		if want := map[string]string{"from": from, "to": to, "binary": place}; !maps.Equal(said, want) {
+			return fmt.Errorf("the answer is %v, want %v", said, want)
+		}
+		return nil
+	})
+	sc.Step(`^nothing was asked of the releases$`, func() error {
+		if n := asked.Load(); n != 0 {
+			return fmt.Errorf("the releases were asked %d times", n)
+		}
+		return nil
+	})
+	sc.Step(`^nothing but the cairn is in its folder$`, func() error {
+		entries, err := os.ReadDir(filepath.Dir(place))
+		if err != nil {
+			return err
+		}
+		if len(entries) != 1 || entries[0].Name() != filepath.Base(place) {
+			var names []string
+			for _, e := range entries {
+				names = append(names, e.Name())
+			}
+			return fmt.Errorf("its folder holds %v", names)
+		}
+		return nil
 	})
 	sc.Step(`^the cairn in its place is the one released as (\S+)$`, func(tag string) error {
 		return inPlace(place, "the cairn released as "+tag)

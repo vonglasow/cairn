@@ -141,6 +141,21 @@ What it leaves alone, and why:
   made it; it costs a few lines of the standard library, and a binary cut
   short would otherwise take the place of a working one.
 
+**Its place is tried first, before anything is fetched**
+(`@upgrade-place-not-writable-fetches-nothing`): a file is made beside the
+binary and taken away again, closed before it is removed so Windows lets it
+go, and nothing is left there (`@upgrade-tries-its-place-and-leaves-nothing`).
+A place that cannot be written was otherwise found only once the archive had
+been downloaded and checked, and the answer — run it where it can write — does
+not depend on what is released. So a cairn in a folder it cannot write is
+refused even when it is the newest already: nothing then says whether it is,
+and the refusal is the one thing to change before it can ever be upgraded.
+
+Asked for `--json`, it answers `{"from", "to", "binary"}`
+(`@upgrade-answers-json`); a cairn the newest already answers the same shape
+with `to` equal to `from` (`@upgrade-already-the-newest-json`), the way its
+sentence is chosen, so a script reads one shape and compares two fields.
+
 The new binary is written beside the old one and moved over it in one step, so
 a cairn interrupted half way leaves the old one where it was. Windows does not
 let a running program be replaced, but lets it be moved: there the old one is

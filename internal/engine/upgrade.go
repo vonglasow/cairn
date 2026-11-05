@@ -18,9 +18,9 @@ var (
 
 // Upgraded says which cairn was run, which one is in its place now, and where that place is.
 type Upgraded struct {
-	From   string
-	To     string
-	Binary string
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Binary string `json:"binary"`
 }
 
 // String says what upgrading did, in a line.
@@ -39,6 +39,9 @@ func Upgrade(version, binary, platform string) (Upgraded, error) {
 	}
 	if strings.Contains(binary, string(filepath.Separator)+"Cellar"+string(filepath.Separator)) {
 		return Upgraded{}, fmt.Errorf("%s: %w", binary, ErrKeptByHomebrew)
+	}
+	if err := upgrade.Writable(binary); err != nil {
+		return Upgraded{}, err
 	}
 	release, err := upgrade.Newest()
 	if err != nil {

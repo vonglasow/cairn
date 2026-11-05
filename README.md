@@ -51,8 +51,10 @@ the default one.
 **Upgrading** — `cairn upgrade` takes the newest release from GitHub, checks
 its archive against `SHA256SUMS`, and puts the new binary in the place of the
 one you ran: the terminal, the application and a `cairn mcp serve` already
-running all run the new one from then on. A cairn installed by Homebrew is
-upgraded with `brew upgrade cairn`, and one built from source is built again.
+running all run the new one from then on. A place it cannot write is refused
+before anything is downloaded, and `--json` answers `from`, `to` and `binary`.
+A cairn installed by Homebrew is upgraded with `brew upgrade cairn`, and one
+built from source is built again.
 
 ### From source
 

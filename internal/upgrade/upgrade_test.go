@@ -159,3 +159,29 @@ func TestInstall_refusesWhatCannotBeTrusted(t *testing.T) {
 		}
 	}
 }
+
+func TestWritable_triesThePlaceAndLeavesNothingThere(t *testing.T) {
+	place := placed(t)
+	if err := upgrade.Writable(place); err != nil {
+		t.Fatalf("a place that can be written: %v", err)
+	}
+	entries, err := os.ReadDir(filepath.Dir(place))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "cairn" {
+		t.Errorf("trying the place left %v beside the cairn", entries)
+	}
+}
+
+func TestWritable_refusesAPlaceThatCannotBeWritten(t *testing.T) {
+	place := placed(t)
+	locked := filepath.Dir(place)
+	if err := os.Chmod(locked, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+	if err := upgrade.Writable(place); !errors.Is(err, upgrade.ErrNotWritable) {
+		t.Errorf("a place that cannot be written: %v", err)
+	}
+}

@@ -155,10 +155,30 @@ func unzipped(archive []byte) ([]byte, error) {
 	return nil, fmt.Errorf("no cairn.exe in it: %w", ErrNoBinaryHere)
 }
 
-func replaced(binary string, held []byte) error {
-	written, err := os.CreateTemp(filepath.Dir(binary), ".cairn-upgrade-*")
+// Writable tries writing a file beside binary, and takes it away again, so a place that cannot be written is said before anything is fetched.
+func Writable(binary string) error {
+	tried, err := beside(binary)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", binary, ErrNotWritable, err)
+		return err
+	}
+	if err := tried.Close(); err != nil {
+		return err
+	}
+	return os.Remove(tried.Name())
+}
+
+func beside(binary string) (*os.File, error) {
+	made, err := os.CreateTemp(filepath.Dir(binary), ".cairn-upgrade-*")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w: %w", binary, ErrNotWritable, err)
+	}
+	return made, nil
+}
+
+func replaced(binary string, held []byte) error {
+	written, err := beside(binary)
+	if err != nil {
+		return err
 	}
 	defer func() { _ = os.Remove(written.Name()) }()
 	_, err = written.Write(held)

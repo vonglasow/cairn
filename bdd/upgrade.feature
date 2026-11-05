@@ -28,6 +28,24 @@ Feature: cairn upgrades itself
       And it says v0.10.0 is the newest already
       And the cairn in its place is the one that was there
 
+    @upgrade-answers-json
+    Scenario: asked for JSON, it says what it went from, to, and where
+      Given cairn v0.11.0 is released, with a binary for this system
+      And the cairn I run is v0.10.0, from a release
+      When I run `cairn upgrade --json`
+      Then it succeeds
+      And it says in JSON it went from v0.10.0 to v0.11.0, in its place
+      And the cairn in its place is the one released as v0.11.0
+
+    @upgrade-already-the-newest-json
+    Scenario: asked for JSON, the newest already went from itself to itself
+      Given cairn v0.10.0 is released, with a binary for this system
+      And the cairn I run is v0.10.0, from a release
+      When I run `cairn upgrade --json`
+      Then it succeeds
+      And it says in JSON it went from v0.10.0 to v0.10.0, in its place
+      And the cairn in its place is the one that was there
+
   Rule: Nothing is put in its place that cannot be trusted to be cairn
 
     @upgrade-checks-the-sum
@@ -85,3 +103,21 @@ Feature: cairn upgrades itself
       Then it fails
       And it says its place cannot be written
       And the cairn in its place is the one that was there
+
+  Rule: Its place is tried before anything is fetched, and left as it was
+
+    @upgrade-place-not-writable-fetches-nothing
+    Scenario: a place that cannot be written is refused before anything is fetched
+      Given cairn v0.11.0 is released, with a binary for this system
+      And the cairn I run is v0.10.0, from a release, in a folder I cannot write
+      When I run `cairn upgrade`
+      Then it fails
+      And nothing was asked of the releases
+
+    @upgrade-tries-its-place-and-leaves-nothing
+    Scenario: trying its place leaves nothing beside the cairn
+      Given cairn v0.10.0 is released, with a binary for this system
+      And the cairn I run is v0.10.0, from a release
+      When I run `cairn upgrade`
+      Then it succeeds
+      And nothing but the cairn is in its folder

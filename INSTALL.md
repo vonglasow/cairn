@@ -72,8 +72,8 @@ The formula installs the binary made for your system and builds nothing.
 Installed from an archive, `cairn upgrade` takes the newest version: it
 downloads the archive made for your system from the latest release, checks it
 against `SHA256SUMS`, and puts the new binary in the place of the one you ran.
-That place has to be one you can write; a cairn in `/usr/local/bin` is
-upgraded with `sudo cairn upgrade`. It leaves a cairn installed by Homebrew to
+That place has to be one you can write, and it is tried before anything is
+downloaded; a cairn in `/usr/local/bin` is upgraded with `sudo cairn upgrade`. It leaves a cairn installed by Homebrew to
 `brew upgrade cairn`, and a cairn built from source to being built again. Then `cairn plugin write`, below,
 gives Claude Code the plugin this cairn carries, once.
 
