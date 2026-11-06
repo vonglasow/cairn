@@ -23,7 +23,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog package stamps help build run dev red cover cover-check tested-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
+.PHONY: release release-check next-version changelog package stamps help build run dev red cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -139,6 +139,23 @@ tested-check:
 		exit 1; \
 	fi; \
 	echo "✓ every package has a test file"
+
+## rule-check: fail if a package under internal/ has no depguard rule
+## docs/architecture.md asks for a package's rule in the commit that adds it,
+## and two packages, logo and macapp, went in without one and nothing said so.
+## A rule is found by the glob it is written with, `"**/internal/<name>/**"`,
+## which is how every rule in .golangci.yml names its package. Cheap, like
+## tested-check: a rule is there or it is not.
+rule-check:
+	@missing=; \
+	for pkg in $$(go list ./internal/...); do \
+		grep -qF "\"**/$${pkg#cairn/}/**\"" .golangci.yml || missing="$$missing $${pkg#cairn/}"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+		for pkg in $$missing; do echo "✗ $$pkg has no depguard rule in .golangci.yml"; done; \
+		exit 1; \
+	fi; \
+	echo "✓ every package under internal/ has a depguard rule"
 
 ## windows-check: build cairn and every test of it for Windows, from here
 ## A Mac and a Linux container are where this code is written and run, and

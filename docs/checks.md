@@ -16,6 +16,7 @@ here has to be remembered.
 | `golangci-lint` | does it hold up to static analysis, comments included — and does anything but a test import `testing`? |
 | `semgrep` | is there a known bad pattern, or a secret written into a file? |
 | `tested-check` | does every package have a test file at all? |
+| `rule-check` | does every package under `internal/` have its depguard rule? |
 | `harness-check` | is the binary free of the test harness? |
 | `windows-check` | does cairn, tests included, still build for Windows? |
 | `quiet-check` | does building cairn, and the window's tests, print nothing at all? |
@@ -39,7 +40,7 @@ tests, so that one run covers them too.
 `cover-check` also runs when a scenario, a pinned frame under `testdata/`, a
 shell script, the Claude Code plugin, or `go.mod` changes — the suite runs the
 scripts and the plugin's hook; `govulncheck`, `harness-check` and `windows-check` when `go.mod` or `go.sum`
-does; `golangci-lint` when `.golangci.yml` does. Each says so with `files` in
+does; `golangci-lint` and `rule-check` when `.golangci.yml` does. Each says so with `files` in
 `.pre-commit-config.yaml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.
 

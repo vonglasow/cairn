@@ -197,6 +197,34 @@ linters:
             - strconv
             - strings
 
+        # cairn written as a Mac application: its bundle, its icon, its
+        # signature. It knows nobody of ours but the logo, like linuxapp: the
+        # engine decides whether to install and hands it where. An allow-list,
+        # like linuxapp: running codesign belongs here and nowhere else.
+        macapp:
+          files: ["**/internal/macapp/**", "!**/internal/macapp/*_test.go"]
+          allow:
+            - bytes
+            - cairn/internal/logo
+            - encoding/binary
+            - errors
+            - fmt
+            - os
+            - os/exec
+            - path/filepath
+            - runtime
+            - strings
+
+        # cairn's logo, drawn once by scripts/logo.sh and carried in the binary.
+        # It knows nobody, ours or not: it hands out the bytes it was built
+        # with. An allow-list, like domain, so the day it starts drawing for
+        # itself is a decision somebody makes on purpose.
+        logo:
+          files: ["**/internal/logo/**", "!**/internal/logo/*_test.go"]
+          allow:
+            - embed
+            - strconv
+
         # The task holds the task: what it carries, and the rules that keep it
         # valid. It reaches domain, for the attributes a task carries and the
         # title rule it shares with an objective, and nothing else — a task

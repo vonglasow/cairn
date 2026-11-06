@@ -300,8 +300,9 @@ them in `.golangci.yml`. A violation fails the commit:
 import 'database/sql' is not allowed from list 'domain' (depguard)
 ```
 
-`domain`, `build` and `config` are held differently, by an **allow-list**:
-each may import what its list names and nothing else. A deny-list only forbids
+`domain`, `build`, `config`, `debug`, `upgrade`, `logo`, `macapp`,
+`linuxapp` and the plugin are held differently, by an **allow-list**: each may
+import what its list names and nothing else. A deny-list only forbids
 what somebody thought to name, and the import that would hurt most in something
 that knows nobody is the one nobody thought of. Widening any of those lists is
 therefore a decision, made once, in the open.
@@ -316,7 +317,9 @@ One thing no linter can hold: a surface computing a rule inline instead of
 asking the engine — that one sits in `CLAUDE.md` rather than only here.
 
 **Adding a package means adding its rule in the same commit.** A layer nothing
-enforces is a layer that lasts until the first hurry.
+enforces is a layer that lasts until the first hurry. `make rule-check` refuses
+the commit of a package under `internal/` that no rule names — `logo` and
+`macapp` once went in without one, and nothing said so.
 
 ## The two things a second surface forced out of `internal/cli`
 

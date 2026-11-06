@@ -98,6 +98,15 @@ repos:
         language: system
         pass_filenames: false
         files: '\.go$'
+      # A package under internal/ with no depguard rule: its layering is a wish.
+      # Run when a Go file or the rules change. See the target's comment.
+      - id: rule-check
+        name: every package has a depguard rule
+        entry: make rule-check
+        language: system
+        pass_filenames: false
+        # A Go file, or the file holding the rules: x.go, .golangci.yml.
+        files: '(\.go|(^|/)\.golangci\.yml)$'
       # The binary must not be made of the test harness, the one place outside a
       # _test.go file that may import testing. Cheap — see the target's comment.
       - id: harness-check
