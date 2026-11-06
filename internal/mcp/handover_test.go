@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/engine"
@@ -22,6 +24,7 @@ const (
 	greeting    = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"unit","version":"7"}}}`
 	greeted     = `{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}`
 	listing     = `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"task_list","arguments":{}}}`
+	pinging     = `{"jsonrpc":"2.0","id":7,"method":"ping","params":{}}`
 	listingNext = `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"task_list","arguments":{}}}`
 	listChanged = "notifications/tools/list_changed"
 )
@@ -203,8 +206,8 @@ func TestServe_handsTheSessionAndWhatItHasNotAnsweredToTheCairnNowOnDisk(t *test
 	path := onDiskAt(t, "old")
 	got := handingOverTo(t, nil)
 	w := serving(t, server(t, path))
-	w.say(greeting, greeted)
-	w.answerTo(1)
+	w.say(greeting, greeted, pinging)
+	w.answerTo(7)
 	replace(t, path, "new")
 	w.say(listing)
 	select {
@@ -334,6 +337,7 @@ func TestLines_handsOverTheListeningItWasHoldingOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 	replace(t, path, "new")
+	settled(t, l)
 	read := make(chan error, 1)
 	go func() {
 		_, err := l.Read(context.Background())
@@ -349,6 +353,50 @@ func TestLines_handsOverTheListeningItWasHoldingOpen(t *testing.T) {
 	}
 	if c := <-got; string(c.Unread) != listen+"\n"+listing+"\n" {
 		t.Errorf("handed over %q, want the listening still open, then the call", c.Unread)
+	}
+}
+
+func settled(t *testing.T, l *lines) {
+	t.Helper()
+	msg, err := l.Read(context.Background())
+	if err != nil {
+		t.Fatalf("read %v, want a call the SDK answers once what was read before it is handled", err)
+	}
+	check, calling := msg.(*jsonrpc.Request)
+	if !calling || !check.IsCall() {
+		t.Fatalf("read %v, want a call the SDK answers in turn", msg)
+	}
+	if err := l.Write(context.Background(), &jsonrpc.Response{ID: check.ID, Result: json.RawMessage(`{}`)}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLines_handsOverOnlyOnceWhatItReadBeforeIsHandled(t *testing.T) {
+	path := onDiskAt(t, "old")
+	running, err := identify(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := handingOverTo(t, nil)
+	var out bytes.Buffer
+	l := &lines{in: bufio.NewReader(strings.NewReader(greeted + "\n" + listing + "\n")), out: &out, running: &running,
+		carry: func(unread []byte) carried { return carried{Unread: unread} }}
+	if _, err := l.Read(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	replace(t, path, "new")
+	settled(t, l)
+	if len(got) != 0 {
+		t.Fatal("handed over before the notification it had read was handled")
+	}
+	if out.Len() != 0 {
+		t.Errorf("told the client %q, an answer it never asked for", out.String())
+	}
+	if _, err := l.Read(context.Background()); !errors.Is(err, io.EOF) {
+		t.Fatalf("read %v, want the end of what this cairn reads once it handed over", err)
+	}
+	if c := <-got; string(c.Unread) != listing+"\n" {
+		t.Errorf("handed over %q, want the call it had read", c.Unread)
 	}
 }
 
@@ -397,7 +445,7 @@ func TestServe_offersAPageTurnedBackOnFromTheNextCall(t *testing.T) {
 	}
 }
 
-func TestServe_handsOverTheToolsItOffersNow(t *testing.T) {
+func TestServe_handsOverTheToolsItLastToldTheClientOf(t *testing.T) {
 	path := onDiskAt(t, "old")
 	got := handingOverTo(t, nil)
 	s := server(t, path)
@@ -407,13 +455,44 @@ func TestServe_handsOverTheToolsItOffersNow(t *testing.T) {
 	w.answerTo(1)
 	pagesSaid(t, s, "")
 	w.say(listing)
-	w.answerTo(2)
+	for answered, told := false, false; !answered || !told; {
+		said := w.next()
+		answered = answered || said["id"] == float64(2)
+		told = told || said["method"] == listChanged
+	}
 	replace(t, path, "new")
 	w.say(listingNext)
 	select {
 	case c := <-got:
 		if !slices.Contains(c.Tools, "timesheet_show") {
-			t.Errorf("handed over the tools %v, want the ones offered since the page came back", c.Tools)
+			t.Errorf("handed over the tools %v, want the ones the client was told of once the page came back", c.Tools)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("never handed over")
+	}
+}
+
+const newerProtocol = `"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}`
+
+func TestServe_handsOverAsUnknownToTheClientToolsNobodyListenedFor(t *testing.T) {
+	path := onDiskAt(t, "old")
+	got := handingOverTo(t, nil)
+	s := server(t, path)
+	pagesSaid(t, s, "[pages]\ntime = false\n")
+	w := serving(t, s)
+	w.say(`{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + newerProtocol + `}}`)
+	w.answerTo(1)
+	pagesSaid(t, s, "")
+	w.say(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"task_list","arguments":{},` + newerProtocol + `}}`)
+	if answer := w.answerTo(2); answer["error"] != nil {
+		t.Fatalf("answered %v, want the call answered", answer)
+	}
+	replace(t, path, "new")
+	w.say(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"task_list","arguments":{},` + newerProtocol + `}}`)
+	select {
+	case c := <-got:
+		if slices.Contains(c.Tools, "timesheet_show") {
+			t.Errorf("handed over the tools %v as told, though nobody listened when the page came back", c.Tools)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("never handed over")

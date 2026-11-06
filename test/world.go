@@ -86,13 +86,24 @@ func (w *World) ConfigPath() string {
 	return filepath.Join(w.Defaults, ".config", "cairn", "config.toml")
 }
 
-// WriteConfig poses a configuration file by hand, the way a person would have — never through cairn, so a scenario asserting what cairn does with it is not also asserting that cairn wrote it.
+// WriteConfig poses a configuration file by hand, the way a person would have — never through cairn, so a scenario asserting what cairn does with it is not also asserting that cairn wrote it; the file is replaced whole, so a server reading it meanwhile never reads it half-written.
 func (w *World) WriteConfig(content string) error {
 	path := w.ConfigPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0o600)
+	beside, err := os.CreateTemp(filepath.Dir(path), "config-*.toml")
+	if err != nil {
+		return err
+	}
+	if _, err := beside.WriteString(content); err != nil {
+		_ = beside.Close()
+		return err
+	}
+	if err := beside.Close(); err != nil {
+		return err
+	}
+	return os.Rename(beside.Name(), path)
 }
 
 // Archiving poses a configuration that archives on its own, counting periods of that length from that many days from today, a negative count being in the past; a length of 0 leaves it unsaid.

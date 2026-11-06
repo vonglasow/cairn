@@ -71,8 +71,13 @@ Between two requests, the server compares the `cairn` the client started — its
 path, found on the `PATH` when it was a bare name, links followed — with the
 one it is: the file it resolves to, its size, its time. One `stat` a request.
 When they differ, the request just read is not answered there. The server
-waits for the calls it is still answering, then replaces itself with the cairn
-on disk, on the same standard input and output, and hands it what it holds:
+waits for the calls it is still answering and for the notifications it has
+read to be handled — the SDK handles those on a goroutine of its own, so a
+`notifications/initialized` read just before could otherwise be left out of
+what is handed over; cairn puts a `ping` of its own behind them and waits for
+its answer, which the client never sees. It then replaces itself with the
+cairn on disk, on the same standard input and output, and hands it what it
+holds:
 
 - the greeting — what the client said at `initialize` and that it was
   initialized, and the protocol they agreed on — so the client greets nobody
@@ -80,7 +85,14 @@ on disk, on the same standard input and output, and hands it what it holds:
 - the `subscriptions/listen` it holds open, the one call never answered, so
   the newer protocol's notifications still reach the client;
 - what it had read and not answered, the request first;
-- the names of the tools it offered.
+- the names of the tools it last told the client of.
+
+Told means the `notifications/tools/list_changed` was written, not that the
+tools changed: under the newer protocol a client parks its
+`subscriptions/listen` without waiting for it, so a change made before the
+server holds it reaches nobody. Handing over the tools as they are now, rather
+than as last told, left the newer cairn with nothing new to say, and the
+client never heard of the change (#243).
 
 The newer cairn answers the request first. If its tools are not the ones
 handed over, it then tells the client the list changed

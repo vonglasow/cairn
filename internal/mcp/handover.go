@@ -23,9 +23,12 @@ import (
 const (
 	carriedVariable = "CAIRN_MCP_CARRIED"
 	listening       = "subscriptions/listen"
+	toolsChanged    = "notifications/tools/list_changed"
 )
 
 var handOver = replaceItself
+
+var settling, _ = jsonrpc.MakeID("cairn: what was read before is handled")
 
 type onDisk struct {
 	path     string
@@ -111,31 +114,48 @@ func (g *remembered) held() sdk.ServerSessionState {
 }
 
 type lines struct {
-	in      *bufio.Reader
-	out     io.Writer
-	writing sync.Mutex
-	owed    sync.WaitGroup
-	held    sync.Map
-	spoken  atomic.Bool
-	between func()
-	running *onDisk
-	carry   func(unread []byte) carried
-	noted   *debug.Log
+	in        *bufio.Reader
+	out       io.Writer
+	writing   sync.Mutex
+	owed      sync.WaitGroup
+	held      sync.Map
+	spoken    atomic.Bool
+	between   func()
+	heard     func()
+	running   *onDisk
+	installed onDisk
+	waiting   []byte
+	settled   chan struct{}
+	carry     func(unread []byte) carried
+	noted     *debug.Log
 }
 
 func (l *lines) Connect(context.Context) (sdk.Connection, error) { return l, nil }
 
-func (l *lines) Read(context.Context) (jsonrpc.Message, error) {
-	line, err := l.in.ReadBytes('\n')
-	if len(line) == 0 && err != nil {
-		return nil, err
-	}
-	if l.running != nil {
-		if now, changed := l.running.replaced(); changed {
-			if l.handOver(line) {
-				return nil, io.EOF
+func (l *lines) Read(ctx context.Context) (jsonrpc.Message, error) {
+	line := l.waiting
+	if line != nil {
+		l.waiting = nil
+		select {
+		case <-l.settled:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		if l.handOver(line) {
+			return nil, io.EOF
+		}
+		*l.running = l.installed
+	} else {
+		read, err := l.in.ReadBytes('\n')
+		if len(read) == 0 && err != nil {
+			return nil, err
+		}
+		line = read
+		if l.running != nil {
+			if now, changed := l.running.replaced(); changed {
+				l.waiting, l.installed, l.settled = line, now, make(chan struct{})
+				return &jsonrpc.Request{ID: settling, Method: "ping", Params: json.RawMessage(`{}`)}, nil
 			}
-			*l.running = now
 		}
 	}
 	if l.spoken.Load() {
@@ -177,9 +197,16 @@ func (l *lines) handOver(line []byte) bool {
 }
 
 func (l *lines) Write(_ context.Context, msg jsonrpc.Message) error {
+	if answer, answering := msg.(*jsonrpc.Response); answering && answer.ID == settling {
+		close(l.settled)
+		return nil
+	}
 	data, err := jsonrpc.EncodeMessage(msg)
 	if err != nil {
 		return err
+	}
+	if note, noting := msg.(*jsonrpc.Request); noting && note.Method == toolsChanged {
+		l.heard()
 	}
 	l.writing.Lock()
 	_, err = l.out.Write(append(data, '\n'))

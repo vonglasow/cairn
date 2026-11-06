@@ -241,6 +241,32 @@ func TestConfigPath_composesUnderTheHomeOrIsEmptyWithoutOne(t *testing.T) {
 	}
 }
 
+func TestWriteConfig_replacesTheFileWholeSoNoReaderSeesItHalfWritten(t *testing.T) {
+	w, _ := answering(t, Result{})
+	w.Defaults = t.TempDir()
+	if err := w.WriteConfig("[pages]\ntime = false\n"); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := os.Open(w.ConfigPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = reader.Close() }()
+	if err := w.WriteConfig("[pages]\ntime = true\n"); err != nil {
+		t.Fatal(err)
+	}
+	if read, err := io.ReadAll(reader); err != nil || string(read) != "[pages]\ntime = false\n" {
+		t.Errorf("a reader that opened the file before read %q (%v) once it was written again, want the file it opened, whole", read, err)
+	}
+	info, err := os.Stat(w.ConfigPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Errorf("mode = %o, want a configuration only its owner reads", info.Mode().Perm())
+	}
+}
+
 func TestSetAsideConfig_movesAFileAsideAndBackModeIncluded(t *testing.T) {
 	w, _ := answering(t, Result{})
 	w.Defaults = t.TempDir()

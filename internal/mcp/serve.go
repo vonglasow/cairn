@@ -37,6 +37,7 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, &sdk.ServerOptions{Instructions: whereTheWorkGoes})
 	offers := &offering{server: server, access: s.Access, home: s.Home}
 	offers.refresh()
+	offers.heard()
 	greeted := &remembered{}
 	server.AddReceivingMiddleware(greeted.remember)
 	if s.Noted != nil {
@@ -47,10 +48,10 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 		return fmt.Errorf("the session handed over by the cairn this one replaced cannot be read: %w", err)
 	}
 	if resumed {
-		offers.told = before.Tools
+		offers.registered, offers.told = before.Tools, before.Tools
 	}
 	greeted.state = before.State
-	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, between: offers.refresh}
+	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, between: offers.refresh, heard: offers.heard}
 	transport.carry = func(unread []byte) carried {
 		return carried{State: greeted.held(), Tools: offers.names(), Unread: unread}
 	}
@@ -71,11 +72,12 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 }
 
 type offering struct {
-	mu     sync.Mutex
-	server *sdk.Server
-	access engine.Level
-	home   engine.Home
-	told   []string
+	mu         sync.Mutex
+	server     *sdk.Server
+	access     engine.Level
+	home       engine.Home
+	registered []string
+	told       []string
 }
 
 func (o *offering) refresh() {
@@ -86,7 +88,7 @@ func (o *offering) refresh() {
 	for _, op := range ops {
 		names = append(names, op.Name())
 	}
-	if slices.Equal(names, o.told) {
+	if slices.Equal(names, o.registered) {
 		return
 	}
 	for _, op := range engine.All() {
@@ -98,7 +100,13 @@ func (o *offering) refresh() {
 	for _, op := range ops {
 		o.server.AddTool(toolFor(op), handlerFor(op, o.home))
 	}
-	o.told = names
+	o.registered = names
+}
+
+func (o *offering) heard() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	o.told = o.registered
 }
 
 func (o *offering) names() []string {
