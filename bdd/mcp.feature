@@ -662,6 +662,59 @@ Feature: Answering a machine over MCP
       And it does not offer `timesheet_show`
       And it offers `config_show`
 
+  Rule: A page turned on or off while the server runs is offered or taken away at the next call, with no reconnect
+
+    @mcp-a-page-turned-back-on-is-offered-at-the-next-call
+    Scenario: the time page turned back on offers its tools at the next call, and the client is told
+      Given a configuration that turns the page "time" off
+      And a cairn server started with `--access full`
+      And the page "time" turned back on
+      When I call `task_list`
+      Then the client is told the tools changed
+      And I ask it what it can do
+      And it offers `timesheet_show`
+      And it offers `timesheet_add`
+
+    @mcp-a-page-turned-off-is-taken-away-at-the-next-call
+    Scenario: the time page turned off takes its tools away at the next call, and leaves the rest
+      Given a cairn server started with `--access full`
+      And the page "time" turned off
+      When I call `task_list`
+      Then the client is told the tools changed
+      And I ask it what it can do
+      And it does not offer `timesheet_show`
+      And it offers `task_list`
+
+    @mcp-a-page-turned-back-on-stays-within-the-access
+    Scenario: a page turned back on offers only the tools the server was allowed
+      Given a configuration that turns the page "time" off
+      And a cairn server started with `--access read`
+      And the page "time" turned back on
+      When I call `task_list`
+      Then the client is told the tools changed
+      And I ask it what it can do
+      And it offers `timesheet_show`
+      And it does not offer `timesheet_add`
+
+    @mcp-pages-unchanged-are-not-announced
+    Scenario: a configuration whose pages did not change says nothing about the tools
+      Given a configuration that turns the page "time" off
+      And a cairn server started with `--access full`
+      And the configuration written again, the page "time" still off and the weekends hidden
+      When I call `task_list`
+      And I call `task_list`
+      Then the client is not told the tools changed
+
+    @mcp-a-configuration-that-cannot-be-read-mid-session-turns-no-page-off
+    Scenario: a configuration broken while the server runs turns no page off, as it does at the start
+      Given a configuration that turns the page "time" off
+      And a cairn server started with `--access full`
+      And a configuration that is not TOML
+      When I call `task_list`
+      Then the client is told the tools changed
+      And I ask it what it can do
+      And it offers `timesheet_show`
+
   Rule: A cairn installed while the server runs takes over from it, with no reconnect
 
     @mcp-a-newer-cairn-takes-over

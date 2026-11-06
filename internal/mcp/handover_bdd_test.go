@@ -22,6 +22,12 @@ func (w *world) registerHandOver(sc *godog.ScenarioContext) {
 	sc.Step(`^the page "([^"]*)" turned back on$`, func(page string) error {
 		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = true\n", page))
 	})
+	sc.Step(`^the page "([^"]*)" turned off$`, func(page string) error {
+		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n", page))
+	})
+	sc.Step(`^the configuration written again, the page "([^"]*)" still off and the weekends hidden$`, func(page string) error {
+		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n\n[time]\nweekends = \"hidden\"\n", page))
+	})
 	sc.Step(`^a newer cairn installed in its place$`, func() error {
 		built, err := os.ReadFile(test.Built(w.T))
 		if err != nil {
@@ -59,15 +65,7 @@ func (w *world) aCairnServerStartedFromACairnOnDisk() error {
 	if err := os.WriteFile(w.onDisk, built, 0o700); err != nil {
 		return err
 	}
-	w.told = make(chan struct{}, 1)
-	client := sdk.NewClient(&sdk.Implementation{Name: "acceptance", Version: "0"}, &sdk.ClientOptions{
-		ToolListChangedHandler: func(context.Context, *sdk.ToolListChangedRequest) {
-			select {
-			case w.told <- struct{}{}:
-			default:
-			}
-		},
-	})
+	client := w.client()
 	cmd := exec.Command(w.onDisk, "mcp", "serve", "--access", "full")
 	cmd.Env = os.Environ()
 	cmd.Stderr = io.Discard
@@ -80,6 +78,18 @@ func (w *world) aCairnServerStartedFromACairnOnDisk() error {
 	w.session = session
 	w.OnEnd(func() { _ = session.Close() })
 	return nil
+}
+
+func (w *world) client() *sdk.Client {
+	w.told = make(chan struct{}, 1)
+	return sdk.NewClient(&sdk.Implementation{Name: "acceptance", Version: "0"}, &sdk.ClientOptions{
+		ToolListChangedHandler: func(context.Context, *sdk.ToolListChangedRequest) {
+			select {
+			case w.told <- struct{}{}:
+			default:
+			}
+		},
+	})
 }
 
 func (w *world) installed(content []byte) error {

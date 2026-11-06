@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -110,16 +111,16 @@ func (g *remembered) held() sdk.ServerSessionState {
 }
 
 type lines struct {
-	in          *bufio.Reader
-	out         io.Writer
-	writing     sync.Mutex
-	owed        sync.WaitGroup
-	held        sync.Map
-	firstAnswer sync.Once
-	answered    func()
-	running     *onDisk
-	carry       func(unread []byte) carried
-	noted       *debug.Log
+	in      *bufio.Reader
+	out     io.Writer
+	writing sync.Mutex
+	owed    sync.WaitGroup
+	held    sync.Map
+	spoken  atomic.Bool
+	between func()
+	running *onDisk
+	carry   func(unread []byte) carried
+	noted   *debug.Log
 }
 
 func (l *lines) Connect(context.Context) (sdk.Connection, error) { return l, nil }
@@ -136,6 +137,9 @@ func (l *lines) Read(context.Context) (jsonrpc.Message, error) {
 			}
 			*l.running = now
 		}
+	}
+	if l.spoken.Load() {
+		l.between()
 	}
 	msg, err := jsonrpc.DecodeMessage(line)
 	if err != nil {
@@ -184,7 +188,9 @@ func (l *lines) Write(_ context.Context, msg jsonrpc.Message) error {
 		if _, was := l.held.LoadAndDelete(answer.ID); !was {
 			l.owed.Done()
 		}
-		l.firstAnswer.Do(l.answered)
+		if !l.spoken.Swap(true) {
+			l.between()
+		}
 	}
 	return err
 }

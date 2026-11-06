@@ -106,6 +106,9 @@ left to label — and the MCP server lists none of its tools (`bdd/pages.feature
 `@pages-off-takes-the-steps-with-the-tasks`,
 `@pages-labels-go-with-the-last-page-they-label`, `@gui-a-page-off-has-no-tab`,
 `@tui-a-page-off-has-no-tab`, `@mcp-a-page-off-offers-none-of-its-tools`).
+A page turned on or off while an MCP server runs changes its tools from the
+next call, and the client is told the list changed — no reconnect (see
+[mcp.md](mcp.md#a-page-turned-on-or-off-while-it-runs-changes-its-tools-at-the-next-call)).
 
 **One rule, asked by everything that offers an act.** It is `engine.Pages`:
 `Offers` for an operation, `Called` for a thing and a verb typed. The window's

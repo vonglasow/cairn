@@ -351,3 +351,71 @@ func TestLines_handsOverTheListeningItWasHoldingOpen(t *testing.T) {
 		t.Errorf("handed over %q, want the listening still open, then the call", c.Unread)
 	}
 }
+
+func pagesSaid(t *testing.T, s Server, said string) {
+	t.Helper()
+	path := filepath.Join(s.Home.Dir, ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(said), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestServe_offersAPageTurnedBackOnFromTheNextCall(t *testing.T) {
+	s := server(t, "")
+	pagesSaid(t, s, "[pages]\ntime = false\n")
+	w := serving(t, s)
+	w.say(greeting, greeted)
+	w.answerTo(1)
+	pagesSaid(t, s, "[pages]\ntime = true\n")
+	w.say(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`)
+	listed, told := make(chan string, 1), make(chan struct{})
+	go func() {
+		for w.out.Scan() {
+			switch said := w.out.Text(); {
+			case strings.Contains(said, listChanged):
+				close(told)
+			case strings.Contains(said, `"id":2`):
+				listed <- said
+			}
+		}
+	}()
+	select {
+	case said := <-listed:
+		if !strings.Contains(said, `"timesheet_show"`) {
+			t.Errorf("listed %s, want the tools of the page turned back on", said)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the tools were never listed")
+	}
+	select {
+	case <-told:
+	case <-time.After(2 * time.Second):
+		t.Error("the client was never told the tools changed")
+	}
+}
+
+func TestServe_handsOverTheToolsItOffersNow(t *testing.T) {
+	path := onDiskAt(t, "old")
+	got := handingOverTo(t, nil)
+	s := server(t, path)
+	pagesSaid(t, s, "[pages]\ntime = false\n")
+	w := serving(t, s)
+	w.say(greeting, greeted)
+	w.answerTo(1)
+	pagesSaid(t, s, "")
+	w.say(listing)
+	w.answerTo(2)
+	replace(t, path, "new")
+	w.say(listingNext)
+	select {
+	case c := <-got:
+		if !slices.Contains(c.Tools, "timesheet_show") {
+			t.Errorf("handed over the tools %v, want the ones offered since the page came back", c.Tools)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("never handed over")
+	}
+}

@@ -80,8 +80,7 @@ func (w *world) startedServe(extra ...string) error {
 		closeAll()
 	}()
 
-	client := sdk.NewClient(&sdk.Implementation{Name: "acceptance", Version: "0"}, nil)
-	session, err := client.Connect(ctx, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	session, err := w.client().Connect(ctx, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
 	if err != nil {
 		cancel()
 		<-done

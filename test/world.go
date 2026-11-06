@@ -272,6 +272,7 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^the time of a deleted task is "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[time]\ndeleted = %q\n", said))
 	})
+	sc.Step(`^a configuration that is not TOML$`, func() error { return w.WriteConfig("this is not toml: [[[\n") })
 	sc.Step(`^the weekends are hidden$`, func() error { return w.WriteConfig("[time]\nweekends = \"hidden\"\n") })
 	sc.Step(`^the weekends are "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[time]\nweekends = %q\n", said))

@@ -160,10 +160,6 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("notes = %q\n", place))
 	})
 
-	sc.Step(`^a configuration that is not TOML$`, func() error {
-		return w.WriteConfig("this is not toml: [[[\n")
-	})
-
 	sc.Step(`^that same configuration says something under "([^"]*)"$`, func(name string) error {
 		return w.appendConfig(fmt.Sprintf("%s = \"something\"\n", name))
 	})

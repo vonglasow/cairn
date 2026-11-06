@@ -32,20 +32,11 @@ const whereTheWorkGoes = "A task's description says what the task is; what was d
 	"Its notes are the directory task_show names as its context: a dated entry, YYYY-MM-DD-<subject>.md, for each piece of work, " +
 	"and summary.md, rewritten whole, for where the task stands."
 
-// Serve builds an SDK server announcing s.Name and s.Version, and runs it over in and out, one message a line; between two requests, a cairn installed at s.Binary takes the session over.
+// Serve builds an SDK server announcing s.Name and s.Version, and runs it over in and out, one message a line; between two requests, a cairn installed at s.Binary takes the session over, and the tools follow the pages the configuration turns on.
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, &sdk.ServerOptions{Instructions: whereTheWorkGoes})
-	ops := offered(s.Access, engine.PagesFrom(s.Home))
-	var tools []string
-	offer := func() {
-		for _, op := range ops {
-			server.AddTool(toolFor(op), handlerFor(op, s.Home))
-		}
-	}
-	for _, op := range ops {
-		tools = append(tools, toolFor(op).Name)
-	}
-	offer()
+	offers := &offering{server: server, access: s.Access, home: s.Home}
+	offers.refresh()
 	greeted := &remembered{}
 	server.AddReceivingMiddleware(greeted.remember)
 	if s.Noted != nil {
@@ -55,13 +46,13 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("the session handed over by the cairn this one replaced cannot be read: %w", err)
 	}
-	greeted.state = before.State
-	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, answered: func() {}}
-	if resumed && !slices.Equal(before.Tools, tools) {
-		transport.answered = offer
+	if resumed {
+		offers.told = before.Tools
 	}
+	greeted.state = before.State
+	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, between: offers.refresh}
 	transport.carry = func(unread []byte) carried {
-		return carried{State: greeted.held(), Tools: tools, Unread: unread}
+		return carried{State: greeted.held(), Tools: offers.names(), Unread: unread}
 	}
 	if running, err := identify(s.Binary); s.Binary != "" && err == nil {
 		transport.running = &running
@@ -77,6 +68,43 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 		return nil
 	}
 	return err
+}
+
+type offering struct {
+	mu     sync.Mutex
+	server *sdk.Server
+	access engine.Level
+	home   engine.Home
+	told   []string
+}
+
+func (o *offering) refresh() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	ops := offered(o.access, engine.PagesFrom(o.home))
+	var names, gone []string
+	for _, op := range ops {
+		names = append(names, op.Name())
+	}
+	if slices.Equal(names, o.told) {
+		return
+	}
+	for _, op := range engine.All() {
+		if !slices.Contains(names, op.Name()) {
+			gone = append(gone, op.Name())
+		}
+	}
+	o.server.RemoveTools(gone...)
+	for _, op := range ops {
+		o.server.AddTool(toolFor(op), handlerFor(op, o.home))
+	}
+	o.told = names
+}
+
+func (o *offering) names() []string {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.told
 }
 
 func clientWentAway(err error) bool {

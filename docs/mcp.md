@@ -119,6 +119,48 @@ command line over MCP, which the server is there to avoid); exiting when stale
 port, which still needs restarting after an update and opens a port — a task
 of its own, decided with [sharing.md](sharing.md).
 
+## A page turned on or off while it runs changes its tools at the next call
+
+The tools a server offers are those of the pages the configuration turns on
+(see [config.md](config.md#the-pages-turned-off-one-by-one)). They used to be
+read once, when the server started, so a page turned back on mid-session
+offered nothing until somebody reconnected — while every other part of the
+configuration was already read at each call. Now, between two requests, the
+server reads the pages again, and when the tools they give differ from those it
+last told the client of, it takes away the ones gone, offers the ones new, and
+the SDK tells the client the list changed
+(`@mcp-a-page-turned-back-on-is-offered-at-the-next-call`,
+`@mcp-a-page-turned-off-is-taken-away-at-the-next-call`). The request just
+read is answered with the tools as they are now: a tool of a page just turned
+off is unknown to it, as it would be to a server started now.
+
+- **It is the same rule as at the start, asked again.** `engine.PagesFrom`, then
+  the access level: a page turned back on under `--access read` brings back its
+  listing and showing, not its writing
+  (`@mcp-a-page-turned-back-on-stays-within-the-access`). A configuration that
+  cannot be read turns no page off, at the start or mid-session, so a file
+  broken while the server runs brings every page's tools back, and every call
+  that needs the file refuses and says why
+  (`@mcp-a-configuration-that-cannot-be-read-mid-session-turns-no-page-off`).
+  Keeping the last list instead would have needed a second reading of the
+  file, with its own rule for what an error means; a server started on that
+  same file offers those tools anyway.
+- **Nothing changed, nothing said.** A configuration written again with the
+  same pages, or a call with nothing written, sends no notification
+  (`@mcp-pages-unchanged-are-not-announced`): the names are compared, not the
+  file.
+- **It goes through the hook the hand-over built.** The same transport, the
+  same moment — once the server has answered once, then before each request it
+  reads — and the same way of telling: adding and removing tools through the
+  SDK, never a notification written by hand. Not before the first answer, for
+  the reason a newer cairn waits for it: a `subscriptions/listen` handed over is
+  only parked again once that answer is out. What a server hands over to a
+  newer cairn is the list it last told the client of, so the newer one tells
+  the client only what is new to it.
+
+The price is one read of the configuration a request, which every call that
+opens the store already pays.
+
 ## It tells an agent where its work goes, as it greets it
 
 The server's greeting carries instructions, and they say one thing: a task's
