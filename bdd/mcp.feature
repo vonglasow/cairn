@@ -218,6 +218,61 @@ Feature: Answering a machine over MCP
       Then it answers with 1 task
       And it says nothing of which term matched
 
+    @mcp-a-search-answers-a-page
+    Scenario: a search asked for a page answers those of what it kept in the board's order, and says how many it kept in all
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Review the spec"
+      And I added a task titled "Print the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec", asking for 1 task after the first 1
+      Then it answers with the task 3
+      And it says there are 3 tasks in all
+      And its answer holds to the shape the tool described
+
+    @mcp-a-search-page-says-what-matched-on-it
+    Scenario: a page of a search for any of several terms says which term matched only of the tasks on the page
+      Given I added a task titled "Port T010 to the new board"
+      And I added a task titled "Merge T013"
+      And I added a task titled "Close T010"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for any of "T010" and "T013", asking for 1 task after the first 1
+      Then it answers with the task 2
+      And it says "T013" matched task 2
+      And it says "T010" matched no task
+      And it says there are 3 tasks in all
+      And its answer holds to the shape the tool described
+
+    @mcp-a-search-page-past-the-last-task-is-empty
+    Scenario: a page of a search past the last task it kept answers none, and still says how many it kept
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec", asking for 2 tasks after the first 5
+      Then it answers with 0 tasks
+      And it says there is 1 task in all
+
+    @mcp-a-search-asked-for-no-page-says-no-total
+    Scenario: a search asked for no page says nothing of how many it kept in all
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec"
+      Then it answers with 1 task
+      And it says nothing of how many there are in all
+
+    @mcp-a-search-page-that-is-none-is-refused
+    Scenario Outline: a page of a search of no task, or one starting before the first, is refused
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access read`
+      When I call `task_search` looking for "spec", asking for <limit> tasks after the first <offset>
+      Then it answers that it failed
+      And it says the refusal is "usage", because "not-understood"
+
+      Examples:
+        | limit | offset |
+        | 0     | 0      |
+        | -1    | 0      |
+        | 2     | -1     |
+
     @mcp-a-listing-answers-the-numbers-asked-for
     Scenario: a listing asked for several numbers answers those tasks, and says which number is no task
       Given I added a task titled "Write the spec"

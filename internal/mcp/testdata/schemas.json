@@ -4882,7 +4882,7 @@
         },
         "matched": {
           "type": "object",
-          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; left out unless any was asked",
+          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked",
           "additionalProperties": {
             "type": [
               "null",
@@ -4908,7 +4908,7 @@
             "null",
             "integer"
           ],
-          "description": "how many tasks the listing kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
+          "description": "how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
         },
         "counts": {
           "type": [
@@ -5117,7 +5117,7 @@
         },
         "matched": {
           "type": "object",
-          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; left out unless any was asked",
+          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked",
           "additionalProperties": {
             "type": [
               "null",
@@ -5143,7 +5143,7 @@
             "null",
             "integer"
           ],
-          "description": "how many tasks the listing kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
+          "description": "how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
         },
         "counts": {
           "type": [
@@ -5614,6 +5614,10 @@
           },
           "type": "array"
         },
+        "limit": {
+          "description": "answer at most this many tasks, in the board's order, the answer then saying under total how many there are in all",
+          "type": "integer"
+        },
         "named": {
           "description": "what to look for, read the way it is shown",
           "items": {
@@ -5630,6 +5634,10 @@
             ]
           },
           "type": "array"
+        },
+        "offset": {
+          "description": "leave out this many tasks first, in the board's order, the answer then saying under total how many there are in all; past the last one, no task",
+          "type": "integer"
         },
         "priority": {
           "description": "keep only the tasks carrying this priority",
@@ -5797,7 +5805,7 @@
         },
         "matched": {
           "type": "object",
-          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; left out unless any was asked",
+          "description": "each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked",
           "additionalProperties": {
             "type": [
               "null",
@@ -5823,7 +5831,7 @@
             "null",
             "integer"
           ],
-          "description": "how many tasks the listing kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
+          "description": "how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"
         },
         "counts": {
           "type": [

@@ -445,6 +445,16 @@ func (w *world) iCallTaskSearchLookingForAnyOfAskingForTheFields(term, other, fi
 	return nil
 }
 
+func (w *world) iCallTaskSearchLookingForAskingForAPage(term string, limit, offset int) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{term}, "limit": limit, "offset": offset})
+	return nil
+}
+
+func (w *world) iCallTaskSearchLookingForAnyOfAskingForAPage(term, other string, limit, offset int) error {
+	_ = w.callTool("task_search", map[string]any{"named": []any{term, other}, "any": true, "limit": limit, "offset": offset})
+	return nil
+}
+
 func (w *world) whatEachTermMatched() (map[string]any, error) {
 	if w.callErr != nil {
 		return nil, fmt.Errorf("the call failed: %w", w.callErr)
@@ -1243,6 +1253,10 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^I call `task_search` looking for \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAskingForTheFields)
 		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAnyOf)
 		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\" and \"([^\"]*)\", asking for the fields \"([^\"]*)\", \"([^\"]*)\" and \"([^\"]*)\"$", w.iCallTaskSearchLookingForAnyOfAskingForTheFields)
+		// A search for one term with a page: `task_search` looking for "spec", asking for 1 task after the first 1 -> "spec", 1, 1.
+		sc.Step("^I call `task_search` looking for \"([^\"]*)\", asking for (-?\\d+) tasks? after the first (-?\\d+)$", w.iCallTaskSearchLookingForAskingForAPage)
+		// A search for any of two terms with a page: any of "T010" and "T013", asking for 1 task after the first 1 -> "T010", "T013", 1, 1.
+		sc.Step("^I call `task_search` looking for any of \"([^\"]*)\" and \"([^\"]*)\", asking for (\\d+) tasks? after the first (\\d+)$", w.iCallTaskSearchLookingForAnyOfAskingForAPage)
 		sc.Step(`^it says "([^"]*)" matched (task \d+|no task)$`, w.itSaysTheTermMatched)
 		sc.Step(`^it says nothing of which term matched$`, w.itSaysNothingOfWhichTermMatched)
 		sc.Step("^I call `task_list` asking for the numbers (\\d+), (\\d+) and (\\d+)$", func(first, second, third string) error {

@@ -338,17 +338,18 @@ var TaskSearch = Operation{
 	Thing: "task",
 	Verb:  "search",
 	Short: "Look for a task by anything it carries",
-	Does:  "List every task carrying everything named, wherever among its facts each one sits — or, with any, every task carrying at least one of it, the answer then saying under matched which tasks each thing named matched. Each row carries every field, or only the fields named.",
+	Does:  "List every task carrying everything named, wherever among its facts each one sits — or, with any, every task carrying at least one of it, the answer then saying under matched which tasks each thing named matched. Each row carries every field, or only the fields named. Given a limit or an offset, only that page of what it kept, in the board's order, the answer saying under total how many it kept in all, and matched speaking only of the tasks on the page.",
 	Example: `cairn task search spec
 cairn task search spec team --state todo
-cairn task search T010 T013 --any`,
+cairn task search T010 T013 --any
+cairn task search spec --limit 50 --offset 100`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
 	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 		{Name: "any", Kind: Bool, Means: "keep a task carrying any one of what is named rather than all of it, and say under matched which tasks each one matched"},
-	}, append(slices.Clone(taskNarrowing), fieldsArgument)...),
+	}, append(append(slices.Clone(taskNarrowing), fieldsArgument), pageArguments...)...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
 		kept, err := keeping(in, taskNarrowing)
@@ -359,22 +360,51 @@ cairn task search T010 T013 --any`,
 		if err != nil {
 			return Answer{}, err
 		}
+		cut, err := askedPage(in)
+		if err != nil {
+			return Answer{}, err
+		}
 		tasks, err := on.Engine.narrowed(kept)
 		if err != nil {
 			return Answer{}, err
 		}
+		var found []task.Task
+		var terms map[string][]int
 		if in.Yes("any") {
-			found, terms := matchingAny(tasks, *named)
-			return Answer{Matched: found, Terms: terms, Fields: fields}, nil
-		}
-		found := []task.Task{}
-		for _, t := range tasks {
-			if named != nil && task.Matching(t, *named) {
-				found = append(found, t)
+			found, terms = matchingAny(tasks, *named)
+		} else {
+			found = []task.Task{}
+			for _, t := range tasks {
+				if named != nil && task.Matching(t, *named) {
+					found = append(found, t)
+				}
 			}
 		}
-		return Answer{Matched: found, Fields: fields}, nil
+		answer := Answer{Fields: fields, Offset: cut.offset}
+		if cut.asked {
+			total := len(found)
+			answer.Total = &total
+			found = cut.of(found)
+			terms = onPage(terms, found)
+		}
+		answer.Matched, answer.Terms = found, terms
+		return answer, nil
 	},
+}
+
+func onPage(terms map[string][]int, page []task.Task) map[string][]int {
+	if terms == nil {
+		return nil
+	}
+	shown := make(map[int]bool, len(page))
+	for _, t := range page {
+		shown[t.Carried().Number] = true
+	}
+	kept := make(map[string][]int, len(terms))
+	for term, numbers := range terms {
+		kept[term] = slices.DeleteFunc(slices.Clone(numbers), func(n int) bool { return !shown[n] })
+	}
+	return kept
 }
 
 func matchingAny(tasks []task.Task, named []string) ([]task.Task, map[string][]int) {

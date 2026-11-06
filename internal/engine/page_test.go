@@ -171,3 +171,70 @@ func TestTaskList_countingRefusesWhatShapesARow(t *testing.T) {
 		t.Errorf("err = %v, want it not one of state, label", err)
 	}
 }
+
+func searchedPage(t *testing.T, e *Engine, in Input) (Answer, []int) {
+	t.Helper()
+	answer, err := TaskSearch.Run(On{Engine: e}, in)
+	if err != nil {
+		t.Fatalf("TaskSearch: %v", err)
+	}
+	var kept []int
+	for _, one := range answer.Matched {
+		kept = append(kept, one.Carried().Number)
+	}
+	return answer, kept
+}
+
+func TestTaskSearch_aPageIsCutFromWhatTheSearchKept(t *testing.T) {
+	e := openEngine(t)
+	for _, title := range []string{"Write the spec", "Ship it", "Review the spec", "Print the spec"} {
+		add(t, e, title)
+	}
+
+	answer, kept := searchedPage(t, e, Input{Given: map[string]string{"limit": "1", "offset": "1"}, Listed: map[string][]string{"named": {"spec"}}})
+	if !slices.Equal(kept, []int{3}) {
+		t.Errorf("it kept %v, want 3", kept)
+	}
+	if said, _ := json.Marshal(Of(TaskSearch, answer)); !strings.Contains(string(said), `"total":3`) {
+		t.Errorf("it wrote %s, want a total of 3", said)
+	}
+	if text := RenderText(TaskSearch, answer); !strings.Contains(text, "tasks 2 to 2 of 3\n") {
+		t.Errorf("it read %q, want which tasks of how many", text)
+	}
+
+	answer, kept = searchedPage(t, e, Input{Given: map[string]string{"offset": "5"}, Listed: map[string][]string{"named": {"spec"}}})
+	if len(kept) != 0 || !strings.Contains(RenderText(TaskSearch, answer), "no task past 5, of 3\n") {
+		t.Errorf("past the last it kept %v and read %q, want none of 3", kept, RenderText(TaskSearch, answer))
+	}
+
+	answer, _ = searchedPage(t, e, Input{Listed: map[string][]string{"named": {"spec"}}})
+	if said, _ := json.Marshal(Of(TaskSearch, answer)); strings.Contains(string(said), `"total"`) {
+		t.Errorf("it wrote %s, want no total without a page", said)
+	}
+}
+
+func TestTaskSearch_aPageSaysWhatMatchedOnlyOfItsRows(t *testing.T) {
+	e := openEngine(t)
+	for _, title := range []string{"Port T010", "Merge T013", "Close T010"} {
+		add(t, e, title)
+	}
+
+	answer, kept := searchedPage(t, e, Input{Given: map[string]string{"any": "true", "limit": "1", "offset": "1"}, Listed: map[string][]string{"named": {"T010", "T013"}}})
+	if !slices.Equal(kept, []int{2}) {
+		t.Errorf("it kept %v, want 2", kept)
+	}
+	said, _ := json.Marshal(Of(TaskSearch, answer))
+	if !strings.Contains(string(said), `"matched":{"T010":[],"T013":[2]}`) || !strings.Contains(string(said), `"total":3`) {
+		t.Errorf("it wrote %s, want T013 on task 2, T010 on none of the page, of 3", said)
+	}
+}
+
+func TestTaskSearch_aPageOfNoTaskIsRefused(t *testing.T) {
+	e := openEngine(t)
+	for _, given := range []map[string]string{{"limit": "0"}, {"limit": "-1"}, {"offset": "-1"}} {
+		_, err := TaskSearch.Run(On{Engine: e}, Input{Given: given, Listed: map[string][]string{"named": {"spec"}}})
+		if !errors.Is(err, errMisread) {
+			t.Errorf("%v: err = %v, want it misread", given, err)
+		}
+	}
+}

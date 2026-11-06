@@ -36,7 +36,9 @@ handful of known tasks is one call rather than one `task_show` each.
 `task_list` also takes `limit` and `offset`, a page of what it keeps in the
 board's order, and then says under `total` how many there are in all; and
 `count` — `"state"` or `"label"` — to answer no row, only how many sit in each
-column or carry each label. See [listing.md](listing.md).
+column or carry each label. `task_search` takes `limit` and `offset` as well,
+a page of what the search kept, `total` counting every task it kept and
+`matched` speaking only of the rows on the page. See [listing.md](listing.md).
 
 ## It is started like every other command
 

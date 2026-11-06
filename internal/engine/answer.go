@@ -42,9 +42,9 @@ type Tasks struct {
 	Tasks   []Row            `json:"tasks"`
 	InFocus []int            `json:"in_focus"`
 	Crossed *Crossed         `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
-	Matched map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; left out unless any was asked"`
+	Matched map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked"`
 	Unknown []int            `json:"unknown,omitempty" jsonschema:"each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"`
-	Total   *int             `json:"total,omitempty" jsonschema:"how many tasks the listing kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
+	Total   *int             `json:"total,omitempty" jsonschema:"how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
 	Counts  *map[string]int  `json:"counts,omitempty" jsonschema:"each column, or each label, as count asked, and how many of the tasks kept sit in it or carry it; one no task has is left out; left out unless count was asked"`
 }
 

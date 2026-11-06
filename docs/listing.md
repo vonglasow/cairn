@@ -321,11 +321,9 @@ added up by the agent.
 
 What was chosen, and why:
 
-- **On `task_list` only.** A search keeps what carries what is named, and the
-  case that grew too long was the listing of a whole board. A page of a search
-  would have had to say whether `matched` speaks of the page or of everything
-  kept; that is a question for the day a search is too long, written down in
-  cairn#242 rather than answered here.
+- **`count` on `task_list` only.** A search keeps what carries what is named,
+  and the case that grew too long was the listing of a whole board. A page
+  came to `task_search` later, see below.
 - **A page is cut from what everything else keeps, in the board's order** —
   the order a listing already answers in, so page after page reads the board
   through once (`@mcp-a-page-is-cut-from-what-is-kept`). The narrowings,
@@ -361,6 +359,34 @@ What was chosen, and why:
   150 of 312`, or `no task past 400, of 312`; a count reads one column or label
   per line, columns in the board's order and labels by name, then `312 task(s)
   in all`. It is the text an agent is handed beside the JSON, too.
+
+## A search pages its answer the same way
+
+`task_search` takes `limit` and `offset` too — `task search spec --limit 50
+--offset 100` — and answers that page of what the search kept, the answer
+saying under `total` how many it kept in all
+(`@mcp-a-search-answers-a-page`). A search keeping hundreds of tasks answered
+them all at once, as a listing once did.
+
+What was chosen, and why (cairn#242):
+
+- **The page is cut after the search keeps its tasks**, in the board's order,
+  the narrowings and what is named holding first — as a listing cuts its page
+  last.
+- **`total` counts every task the search kept**, not the rows on the page, so
+  page after page reads the search through once. It is left out when no page
+  was asked (`@mcp-a-search-asked-for-no-page-says-no-total`).
+- **`matched` stays per row**: with `any`, it says which tasks each thing named
+  matched among the rows on the page only, a term matching none of them
+  answering none (`@mcp-a-search-page-says-what-matched-on-it`). `matched`
+  explains the rows an agent was handed; saying of tasks it was not handed
+  would name numbers it has no row for, and `total` already says how many
+  there are beyond the page.
+- **The same rules as a listing's page**: a limit below 1 or an offset below 0
+  is refused `not-understood` (`@mcp-a-search-page-that-is-none-is-refused`),
+  an offset past the last task answers no row and the total
+  (`@mcp-a-search-page-past-the-last-task-is-empty`), and the text a person
+  reads ends with which tasks of how many. A search has no `count`.
 
 ## A word in a step answers the task it belongs to
 
