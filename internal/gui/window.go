@@ -141,6 +141,7 @@ type Window struct {
 	filterOpen            bool
 	filterPick            int
 	looking               Written
+	searchFrom            Screen
 	archived              bool
 	aimed                 string
 	pages                 engine.Pages

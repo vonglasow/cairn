@@ -3787,16 +3787,54 @@ Feature: The desktop board
       When I click the cross of the search's pill
       Then no search is kept
 
-    @gui-a-number-chooses-its-task
-    Scenario: a task's number typed in the command bar chooses it on the board
+    @gui-a-number-opens-its-task
+    Scenario: a task's number typed in the command bar opens that task, with or without its #
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
       When I open the window
       And I press "cmd+k"
       And I type "#2"
-      And I press "enter"
-      Then the card "Ship it" is chosen
+      Then the command bar offers "Open #2 · Ship it" first
+      When I press "enter"
+      Then the form is open on task 2
       And the command bar is shut
+      When I press "esc"
+      And I press "cmd+k"
+      And I type "1"
+      And I press "enter"
+      Then the form is open on task 1
+
+    @gui-the-palette-opens-at-the-top
+    Scenario: the command bar opens over the top of the window, in its middle, and the bar at the foot stays
+      When I open the window
+      And I press "cmd+k"
+      Then the command bar stands at the top of the window, in its middle
+
+    @gui-esc-on-a-search-goes-back-where-it-came-from
+    Scenario: esc on a search goes back to where the search was started, and never into the command bar from the board
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "/"
+      And I type "spec"
+      And I press "esc"
+      Then the window is on the board
+      And no search is kept
+      When I press "cmd+k"
+      And I type "/spec"
+      And I press "esc"
+      Then the command bar is open
+
+    @gui-backspace-on-an-empty-search-goes-back-where-it-came-from
+    Scenario: backspace on a search with nothing left goes back to where it was started
+      When I open the window
+      And I press "/"
+      And I press "backspace"
+      Then the window is on the board
+      And the command bar is shut
+      When I press "cmd+k"
+      And I type "/"
+      And I press "backspace"
+      Then the command bar is open
 
     @gui-d-deletes-nothing
     Scenario: one letter destroys nothing: d no longer deletes, cmd+backspace asks first

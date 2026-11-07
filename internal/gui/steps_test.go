@@ -2248,6 +2248,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the command bar offers "([^"]*)" first$`, func(said string) error {
+		rows := w.w.PaletteRows()
+		if len(rows) == 0 || rows[0].Says != said {
+			return fmt.Errorf("the command bar offers %v", rows)
+		}
+		return nil
+	})
+	sc.Then(`^the command bar stands at the top of the window, in its middle$`, func() error {
+		box, l := w.w.PaletteBox(), w.w.Layout()
+		if box.Y > l.Tabs.Y+l.Tabs.H+padding || box.Y+box.H > l.Bar.Y || box.X+box.W/2 != w.w.width/2 {
+			return fmt.Errorf("the command bar is at %+v, the tabs at %+v, the bar at %+v", box, l.Tabs, l.Bar)
+		}
+		return nil
+	})
 	sc.Then(`^the command bar offers the task "([^"]*)"$`, func(title string) error {
 		for _, row := range w.w.PaletteRows() {
 			if row.Group == paletteTasksGroup && strings.HasSuffix(row.Says, title) {

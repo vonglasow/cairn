@@ -881,8 +881,14 @@ neighbours are not checked yet: the hook knows neither the clip nor the layer a
 text is drawn in; they come with the drawing split into components (#230).
 
 **`⌘K` opens the command bar into a palette.** A click on the bar's line does
-the same. It rises from the bar as a panel two thirds of the window wide over
-a lighter veil, what is typed at its head, and offers, in this order: the
+the same. It drops into place over the top of the window, under the tabs and
+in its middle, half the window wide, what is typed at its head, while the bar
+at the foot keeps its hints (`PaletteBox`, `@gui-the-palette-opens-at-the-top`):
+it used to rise from the bar, where no palette elsewhere opens — VS Code,
+GitHub, Linear and Superhuman all open theirs at the top. Every action says
+the key that does the same on the board, at its right
+(`PaletteRow.Key`), so the palette teaches the keys it stands for. It offers,
+in this order: the
 actions on the task chosen (`Move #152 to…`, `Priority of #152…`,
 `Label #152 with…`, `Edit`, `Focus`, `Archive`, `Delete`) and the board's own
 (`New task`, `Search`, `Filters`, `Labels`, `Help`…); then, once something is
@@ -908,11 +914,17 @@ typed first in the palette, turns the bar into the board's search: a `/` chip
 at its left, what is typed after it, and `⏎ keep` and `esc` at its right; the
 board narrows at each letter as it always did. `⏎` keeps the search and gives
 the keys back to the board, the search standing as a pill at the right of
-the tabs whose cross clears it; `⌫` with nothing left to delete goes back to
-the palette (`SearchPill`, `@gui-a-slash-in-the-palette-searches-the-board`,
-`@gui-a-search-kept-is-a-pill`). A task's number, `#152`, typed in the palette
-chooses that task on the board and brings it into sight; `⏎` again opens it
-(`@gui-a-number-chooses-its-task`).
+the tabs whose cross clears it (`SearchPill`, `@gui-a-slash-in-the-palette-searches-the-board`,
+`@gui-a-search-kept-is-a-pill`). **`esc` and `⌫` on nothing left go back to
+where the search was started**: the board for `/` typed on it, the palette for
+a slash typed into it (`leavingSearch`,
+`@gui-esc-on-a-search-goes-back-where-it-came-from`,
+`@gui-backspace-on-an-empty-search-goes-back-where-it-came-from`). A search
+started on the board used to end in the palette, a place it had never been —
+the W3C's modal dialog gives focus back to what opened it. A task's number,
+`152` or `#152`, typed in the palette offers `Open #152 · its title` first,
+and `⏎` opens it (`@gui-a-number-opens-its-task`); it used to only choose the
+card, and a second `⏎` opened it.
 
 **One letter, one verb, and no letter destroys.** On a chosen task `m` opens
 its columns under its card, a column's first letter moving it there; `p`

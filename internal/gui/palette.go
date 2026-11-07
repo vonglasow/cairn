@@ -17,11 +17,11 @@ type paletteState struct {
 	recent  []PaletteRow
 }
 
-// PaletteRow is one line of the command bar opened: the group it is listed under, what it says, and what choosing it does.
+// PaletteRow is one line of the command bar opened: the group it is listed under, what it says, the key that does the same on the board, and what choosing it does.
 type PaletteRow struct {
-	Group, Says string
-	does        func(Window) Window
-	done        time.Time
+	Group, Says, Key string
+	does             func(Window) Window
+	done             time.Time
 }
 
 // Ago is how long ago a recent line was done, as the command bar says it beside it: just now under a minute, then in minutes and hours.
@@ -62,6 +62,16 @@ func (w Window) openingPalette() Window {
 	return w
 }
 
+// leavingSearch gives a search up and goes back to where it was started: the command bar when a slash was typed into it, the board otherwise.
+func (w Window) leavingSearch() Window {
+	w.looking = Written{}
+	if w.searchFrom == OnPalette {
+		return w.openingPalette()
+	}
+	w.screen = OnTheBoard
+	return w
+}
+
 func (w Window) shuttingPalette() Window {
 	w.screen = OnTheBoard
 	w.palette.typed, w.palette.row, w.palette.waiting = Written{}, 0, ""
@@ -76,9 +86,9 @@ func (w Window) PaletteRows() []PaletteRow {
 	}
 	var rows []PaletteRow
 	found := map[int]bool{}
-	if n, err := strconv.Atoi(strings.TrimPrefix(typed, "#")); err == nil && strings.HasPrefix(typed, "#") {
+	if n, err := strconv.Atoi(strings.TrimPrefix(strings.TrimSpace(typed), "#")); err == nil {
 		if c, ok := w.snap.Card(n); ok {
-			rows, found[n] = append(rows, choosingRow(c)), true
+			rows, found[n] = append(rows, openingRow(c)), true
 		}
 	}
 	for _, action := range w.actionRows() {
@@ -145,11 +155,11 @@ func reaching(said, typed string) bool {
 	return strings.TrimSpace(typed) == "" || engine.Reaches([]string{said}, typed)
 }
 
-func choosingRow(c engine.Card) PaletteRow {
+func openingRow(c engine.Card) PaletteRow {
 	number := c.Number
-	return PaletteRow{Group: paletteTasksGroup, Says: "#" + strconv.Itoa(number) + "  " + c.Title, does: func(w Window) Window {
+	return PaletteRow{Group: paletteTasksGroup, Says: "Open #" + strconv.Itoa(number) + " · " + c.Title, does: func(w Window) Window {
 		w.taken, w.chosen, w.chosenGoal = nil, number, false
-		return w.chosenInSight()
+		return w.chosenInSight().opening()
 	}}
 }
 
@@ -171,7 +181,7 @@ func (w Window) chosenInSight() Window {
 func (w Window) typedIntoPalette(typed Written) Window {
 	if said := typed.Reads(); w.palette.waiting == "" && strings.HasPrefix(said, "/") {
 		w = w.shuttingPalette()
-		w.screen, w.looking = OnSearch, Written{}.Types(strings.TrimPrefix(said, "/"))
+		w.screen, w.looking, w.searchFrom = OnSearch, Written{}.Types(strings.TrimPrefix(said, "/")), OnPalette
 		return w
 	}
 	w.palette.typed, w.palette.row = typed, 0
@@ -182,29 +192,29 @@ func pressing(key string) func(Window) Window { return func(w Window) Window { r
 
 func (w Window) actionRows() []PaletteRow {
 	var rows []PaletteRow
-	action := func(says string, does func(Window) Window) {
-		rows = append(rows, PaletteRow{Group: paletteActionsGroup, Says: says, does: does})
+	action := func(says, key string, does func(Window) Window) {
+		rows = append(rows, PaletteRow{Group: paletteActionsGroup, Says: says, Key: key, does: does})
 	}
 	if c, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal {
 		n := "#" + strconv.Itoa(c.Number)
-		action("Move "+n+" to…", waitingFor("state"))
-		action("Priority of "+n+"…", waitingFor("priority"))
-		action("Label "+n+" with…", waitingFor("label"))
-		action("Edit "+n, pressing("e"))
+		action("Move "+n+" to…", "m", waitingFor("state"))
+		action("Priority of "+n+"…", "p", waitingFor("priority"))
+		action("Label "+n+" with…", "l", waitingFor("label"))
+		action("Edit "+n, "e", pressing("e"))
 		focus := "Focus " + n
 		if c.InFocus {
 			focus = "Unfocus " + n
 		}
-		action(focus, pressing("f"))
-		action("Archive "+n, func(w Window) Window { return w.Choose("Archive") })
-		action("Delete "+n, func(w Window) Window { return w.Choose("Delete") })
+		action(focus, "f", pressing("f"))
+		action("Archive "+n, "x", func(w Window) Window { return w.Choose("Archive") })
+		action("Delete "+n, "cmd+backspace", func(w Window) Window { return w.Choose("Delete") })
 	}
 	for _, general := range []struct{ says, key string }{
 		{"New task", "cmd+n"}, {"Search", "/"}, {"Filters", "shift+f"}, {"Labels", "shift+l"},
 		{"Archived", "shift+a"}, {"Backups", "shift+b"}, {"New backup", "cmd+b"}, {"Export", "cmd+e"},
 		{"Import", "cmd+o"}, {"Configuration", "cmd+,"}, {"Help", "?"},
 	} {
-		action(general.says, pressing(general.key))
+		action(general.says, general.key, pressing(general.key))
 	}
 	return rows
 }
@@ -328,16 +338,17 @@ type PaletteLine struct {
 	Row   int
 }
 
-// PaletteBox is the open command bar's panel: two thirds of the window wide, centred, standing on the bar's foot and as tall as its lines, up to what the window has room for.
+// PaletteBox is the open command bar's panel: over the top of the window, under the tabs and in its middle, half the window wide, as tall as its lines, up to the bar at the foot, which stays in sight.
 func (w Window) PaletteBox() Box {
-	bar := w.Layout().Bar
-	wide := min(w.width-2*margin, max(paletteLeast, w.width*2/3))
+	l := w.Layout()
+	wide := min(w.width-2*margin, max(paletteLeast, w.width/2))
 	high := paletteHead + padding
 	for _, line := range w.paletteLines(Box{}) {
 		high = max(high, line.Box.Y+line.Box.H+padding)
 	}
-	high = min(high, bar.Y+bar.H-margin)
-	return Box{X: (w.width - wide) / 2, Y: bar.Y + bar.H - high, W: wide, H: high}
+	top := l.Tabs.Y + l.Tabs.H
+	high = min(high, l.Bar.Y-margin-top)
+	return Box{X: (w.width - wide) / 2, Y: top, W: wide, H: high}
 }
 
 // PaletteLines is every line of the open command bar where it is drawn.
@@ -444,13 +455,13 @@ func (w Window) SearchCountPill() (Box, bool) {
 	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
 }
 
-// paletteRises is how long the open command bar takes to rise into place.
+// paletteRises is how long the open command bar takes to drop into place.
 const paletteRises = 120 * time.Millisecond
 
-// paletteRiseBy is how far below its place the command bar starts rising from.
+// paletteRiseBy is how far above its place the command bar starts dropping from.
 const paletteRiseBy = 8
 
-// PaletteRise is how far the open command bar has risen into place, from nought to one, eased to land softly, and whether it is still rising.
+// PaletteRise is how far the open command bar has dropped into place, from nought to one, eased to land softly, and whether it is still moving.
 func (w Window) PaletteRise() (float64, bool) {
 	if w.screen != OnPalette {
 		return 1, false

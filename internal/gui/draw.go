@@ -1735,7 +1735,7 @@ func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	fill(gtx, Box{W: w.width, H: w.height}, color.NRGBA{R: skin.Veil.R, G: skin.Veil.G, B: skin.Veil.B, A: skin.Veil.A / 2})
 	rise, _ := w.PaletteRise()
-	risen := op.Offset(image.Pt(0, int((1-rise)*paletteRiseBy))).Push(gtx.Ops)
+	risen := op.Offset(image.Pt(0, -int((1-rise)*paletteRiseBy))).Push(gtx.Ops)
 	defer risen.Pop()
 	faded := paint.PushOpacity(gtx.Ops, float32(rise))
 	defer faded.Pop()
@@ -1767,6 +1767,12 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 			chip := PaletteKeyAt(line.Box, enter)
 			rounded(gtx, chip, chipRadius, darker(skin.Pill))
 			sayOnChip(gtx, th, skin.Ink, chip, enter)
+			end = chip.X - hintSpace
+		}
+		if key := rows[line.Row].Key; key != "" {
+			spelled := w.keyboard.Spelled(Pretty(key))
+			chip := PaletteKeyAt(Box{X: line.Box.X, Y: line.Box.Y, W: end - line.Box.X + padding/2, H: line.Box.H}, spelled)
+			sayOnChip(gtx, th, skin.Faint, chip, spelled)
 			end = chip.X - hintSpace
 		}
 		if ago := rows[line.Row].Ago(w.now); ago != "" {

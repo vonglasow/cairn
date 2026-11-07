@@ -127,17 +127,32 @@ func TestAClickOnTheBarsLineOpensThePalette(t *testing.T) {
 	}
 }
 
-func TestThePaletteIsDrawnRisingFromTheBar(t *testing.T) {
+func TestThePaletteIsDrawnUnderTheTabs(t *testing.T) {
 	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("cmd+k")
 	w = w.At(w.now.Add(time.Second))
-	box := w.PaletteBox()
-	bar := w.Layout().Bar
-	if box.Y+box.H != bar.Y+bar.H || box.X+box.W/2 != w.width/2 {
-		t.Errorf("the palette at %+v does not rise from the bar %+v", box, bar)
+	box, l := w.PaletteBox(), w.Layout()
+	if box.Y != l.Tabs.Y+l.Tabs.H || box.X+box.W/2 != w.width/2 || box.Y+box.H > l.Bar.Y {
+		t.Errorf("the palette at %+v is not under the tabs %+v, above the bar %+v", box, l.Tabs, l.Bar)
 	}
 	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + 4, W: 1, H: 1}, Dark().Panel) != 1 {
 		t.Error("the palette is not drawn")
+	}
+}
+
+func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
+	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+k")
+	keys := map[string]string{}
+	for _, row := range w.PaletteRows() {
+		if row.Group == paletteActionsGroup {
+			keys[row.Says] = row.Key
+		}
+	}
+	for says, key := range map[string]string{"Move #1 to…": "m", "Edit #1": "e", "Delete #1": "cmd+backspace", "New task": "cmd+n", "Search": "/", "Help": "?"} {
+		if keys[says] != key {
+			t.Errorf("%q says the key %q, not %q", says, keys[says], key)
+		}
 	}
 }
 

@@ -468,8 +468,7 @@ func (w Window) Cancel() Window {
 		return w
 	}
 	if w.screen == OnSearch {
-		w.screen, w.looking = OnTheBoard, Written{}
-		return w
+		return w.leavingSearch()
 	}
 	if w.screen == OnForm && w.form.writingPart {
 		w.form.writingPart, w.form.named = false, Written{}
@@ -610,7 +609,7 @@ func (w Window) Choose(name string) Window {
 		}
 		return w.Cancel()
 	case "search":
-		w.screen = OnSearch
+		w.screen, w.searchFrom = OnSearch, OnTheBoard
 		return w
 	case "filter":
 		return w.filteringBoard()
