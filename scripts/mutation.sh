@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # mutation.sh — run gremlins over the packages, and judge what it reports.
 #
-#   mutation.sh            every package with a test file: the full sweep, at push
+#   mutation.sh            the packages holding the rules: what check.yml runs on
+#                          every push and pull request
+#   mutation.sh PKG...     those packages instead, by hand
 #   mutation.sh --changed  only the lines changed since HEAD, in the packages they
-#                          are in: at commit
+#                          are in, by hand
 #
 # The judgement is made here and not by gremlins' own thresholds, for two
 # reasons read in its source (v0.6.0, internal/report/report.go):
@@ -30,17 +32,19 @@ GREMLINS=${GREMLINS:-gremlins}
 # measuring the gate on a commit already made.
 since=${MUTATION_SINCE:-HEAD}
 changed=false
-[ "${1:-}" = "--changed" ] && changed=true
+[ "${1:-}" = "--changed" ] && changed=true && shift
+asked=("$@")
 
 # Gremlins builds every mutant, and every build lands in the Go cache: one full
-# sweep left 50 to 150 GB in it. It gets a cache of its own, so the one the rest
-# of the work uses stays warm and small, and its own is wiped once it passes a
-# ceiling rather than after every run — wiped every run, every run starts cold.
+# sweep left 50 to 150 GB in it, and a run that filled the disk froze the
+# machine. It gets a cache of its own, so the one the rest of the work uses
+# stays warm and small; its own is wiped past 2 GB, and after every run: a
+# colder run is slower, a full disk stops everything.
 cache=${GREMLINS_CACHE:-$(go env GOCACHE)-gremlins}
-ceiling_kb=$((10 * 1024 * 1024))
+ceiling_kb=$((2 * 1024 * 1024))
 mkdir -p "$cache"
 if [ "$(du -sk "$cache" | cut -f1)" -gt "$ceiling_kb" ]; then
-  echo "gremlins' cache is past 10 GB: wiping it"
+  echo "gremlins' cache is past 2 GB: wiping it"
   rm -rf "$cache" && mkdir -p "$cache"
 fi
 export GOCACHE=$cache
@@ -53,12 +57,18 @@ export GOFLAGS="${GOFLAGS:+$GOFLAGS }-count=1"
 packages() {
   if $changed; then
     # The directories holding a production file that changed. A test file has
-    # no mutants of its own; a test weakened in it is what the full sweep, at
-    # push, is there to catch.
+    # no mutants of its own; a test weakened in it is what the full sweep is
+    # there to catch.
     git diff --name-only "$since" -- '*.go' ':!*_test.go' | xargs -n1 dirname 2>/dev/null | sort -u |
       while read -r dir; do [ -d "$dir" ] && echo "./$dir"; done
+  elif [ "${#asked[@]}" -gt 0 ]; then
+    printf '%s\n' "${asked[@]}"
   else
-    scripts/packages.sh
+    # The gate: the packages holding the rules. The window, the terminal and
+    # the command line are left out of it — their mutants each run a whole
+    # suite of scenarios, 2.5 to 3.5 GB apiece, and what they decide is what
+    # is on screen; they are judged by hand, with a package named.
+    for pkg in $logical; do echo "./$pkg"; done
   fi
 }
 
@@ -70,7 +80,7 @@ packages() {
 # gets then names what it mutates.
 shim=$(mktemp -d)
 report=$shim/report.json
-trap 'rm -rf "$shim"' EXIT
+trap 'rm -rf "$shim" "$cache"' EXIT
 git=$(command -v git)
 # A second run names its own lines: RETRYING points at a diff written below,
 # naming only the lines whose mutants timed out, and gremlins mutates those.
@@ -206,6 +216,7 @@ for pkg in $judged_packages; do
   hangs=
   echo "→ $pkg"
   args=(unleash -o "$report")
+  [ -z "${MUTATION_WORKERS:-}" ] || args+=(--workers "$MUTATION_WORKERS")
   $changed && args+=(--diff "$since")
   [[ $logical == *" ${pkg#./} "* ]] && args+=(--invert-logical --invert-loopctrl)
   unleash "$pkg" "${args[@]}"

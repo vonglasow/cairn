@@ -13,8 +13,8 @@
 # history for.
 #
 # The tag is made only once everything has passed, so a version that failed
-# its checks is not a version at all. Everything is every check but the
-# mutation sweep, which is run on its own — see make mutation. Run again on a
+# its checks is not a version at all. Everything is every hook; the mutation
+# sweep is check.yml's, on every push — see docs/checks.md. Run again on a
 # commit already tagged, it checks it again, under the tag that is there.
 set -euo pipefail
 
@@ -41,14 +41,9 @@ else
   fresh=true
 fi
 
-# Every check but the mutation sweep, which is judged on its own with make
-# mutation: a release that waited on it took the better part of an hour. What
-# the last sweep found is said, so a version is not made in ignorance of it.
-if [ -f mutation-report/summary.md ]; then
-  echo "the last mutation sweep: $(sed -n 3p mutation-report/summary.md) — $(tail -n 1 mutation-report/summary.md)"
-else
-  echo "no mutation sweep has been run here: make mutation judges every package"
-fi
+# The mutation sweep is check.yml's, on every push: said here so a version is
+# not made in ignorance of it.
+echo "mutation is judged by check.yml: make this version from a commit whose check run is green"
 make release-check
 make linux
 make build

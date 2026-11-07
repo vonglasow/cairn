@@ -51,18 +51,15 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 3. **Checks everything, on both systems.**
 
    ```sh
-   make release-check  # every hook, the commit's and the push's, on every file — but the mutation sweep
+   make release-check  # every hook, the commit's and the push's, on every file
    make linux          # the suite on Linux, in a container — needs Docker
    make build          # and it builds here
    ```
 
    `make linux` is the half of "macOS and Linux" no hook can check from a Mac.
-   **The mutation sweep is not run**: it is by far the longest check, and a
-   release that waited on it took the better part of an hour. It is run on its
-   own, now and then, with `make mutation`, and what it last found is kept in
-   `mutation-report/summary.md` — the release says the date of that sweep and
-   whether it left anything to fix, so a version is not made in ignorance of
-   it. Every commit's own mutation, on the lines it changed, still runs.
+   **The mutation sweep is not run here**: it is `check.yml`'s, on every push
+   and pull request. A version is made from a commit whose `check` run, its
+   mutation job included, is green on GitHub.
 
 4. **Tags it**, an annotated tag named by the number, and only now: a version
    whose checks failed was never a version, and a tag made before them would

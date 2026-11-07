@@ -1,9 +1,9 @@
 # The checks a commit runs, run again on every pull request — see
 # docs/checks.md. A change Dependabot proposes was made on no machine, so no
 # hook judged it; this is what does. Every hook prek has at commit, on every
-# file, but the mutation of what changed: a pull request has no HEAD to change
-# lines since, and the full sweep is the push's. On Linux, so the half of what
-# cairn says it runs on that is not where it is written is judged each time.
+# file. On Linux, so the half of what cairn says it runs on that is not where
+# it is written is judged each time. And mutation, which no hook runs: it froze
+# the machine it ran on, so it runs here, over the packages holding the rules.
 name: check
 
 on:
@@ -21,7 +21,6 @@ jobs:
       # Drawing off screen needs a GPU the runner does not have; the tests that
       # draw say so and are skipped, as in scripts/linux.sh.
       CAIRN_WINDOWLESS: "1"
-      SKIP: mutation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
@@ -38,3 +37,30 @@ jobs:
         with:
           prek-version: latest-known
           extra-args: --all-files
+
+  mutation:
+    runs-on: ubuntu-24.04
+    # The packages holding the rules, each mutant a build and a run of its
+    # package's tests: long, and bounded so a hang cannot hold a runner.
+    timeout-minutes: 180
+    env:
+      CAIRN_WINDOWLESS: "1"
+      MUTATION_WORKERS: "2"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: the graphics headers the window is built against, and jq
+        run: scripts/linux-headers.sh jq
+      - name: mutation, the packages holding the rules (gremlins)
+        run: make mutation
+      - name: what the sweep found
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mutation-report
+          path: mutation-report/

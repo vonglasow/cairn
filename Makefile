@@ -200,35 +200,33 @@ harness-check:
 
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
-## test that would not have noticed the bug; the run fails below 100%.
+## test that would not have noticed the bug; the run fails below 100%. Bare, it
+## judges the packages holding the rules, as check.yml does on every push and
+## pull request; `make mutation PKG=./internal/gui` judges that one instead.
 ##
 ## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
 ## they are passed as flags. That is measured, not assumed — see the comment
 ## there before moving them back.
 mutation:
-	@GREMLINS=$(GREMLINS) scripts/mutation.sh
+	@GREMLINS=$(GREMLINS) scripts/mutation.sh $(PKG)
 
 ## mutation-changed: the same judgement on the lines changed since HEAD only, in
-## the packages they are in. It is what a commit runs; the full sweep above is
-## what a push runs, so nothing leaves the machine without every package judged.
+## the packages they are in, by hand: the quick look before a push.
 mutation-changed:
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
 
 ## check: every hook prek has, on every file — the commit's, then the push's.
-## `prek run -a` alone runs only the commit's, and the commit's mutation judges
-## the lines changed since HEAD: on a clean tree, none. This is the one command
-## after which nothing is left unchecked.
+## `prek run -a` alone runs only the commit's. Mutation is not one of them: it
+## is check.yml's, or `make mutation`.
 check:
 	@prek run -a
 	@prek run -a --stage pre-push
 
-## release-check: every check a release runs — all of check's, but the mutation sweep
-## The sweep is judged on its own, with `make mutation`, now and then: it is
-## the longest check by far, and a release that waited on it took the better
-## part of an hour. What it last found is in mutation-report/summary.md.
+## release-check: every check a release runs — all of check's
+## Mutation is judged by check.yml on the commit released, not here.
 release-check:
-	@prek run -a --skip mutation
-	@prek run -a --stage pre-push --skip mutation-all
+	@prek run -a
+	@prek run -a --stage pre-push
 
 ## fixtures: open the window on a store full of believable work
 ## The store the binary carries, made afresh in the temporary folder each time,

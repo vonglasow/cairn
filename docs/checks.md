@@ -22,14 +22,15 @@ here has to be remembered.
 | `quiet-check` | does building cairn, and the window's tests, print nothing at all? |
 | `govulncheck` | does anything we call have a known vulnerability? |
 | `cover-check` | does it work — and did every line at least run, in total and in each package? |
-| `mutation` | would a test have noticed if a changed line were wrong? |
 | `commitlint` | is the message conventional? |
-| `mutation-all` | at push only: would a test have noticed if *any* line were wrong? |
 
 **They run in that order, and the first to fail stops the rest** (`fail_fast`
 in `.pre-commit-config.yaml`). Cheapest first: a missing import is reported in a second,
-rather than after semgrep, the suite and the mutation gate have run for
-nothing.
+rather than after semgrep and the suite have run for nothing.
+
+**Mutation is not a hook.** It is `check.yml`'s, on every push and pull
+request, and anybody's by hand with `make mutation` — see below why it left
+the machine's hooks.
 
 There is no `go-unit-tests` hook. `cover-check` builds its profile from `go
 test -race ./...`, which fails the moment a test does, so a second hook running
@@ -129,10 +130,10 @@ withdraw is seldom proposed; a security update does not wait. Minor and patch
 come as one pull request per place, a major one alone. Nothing merges on its
 own.
 
-**`check.yml` runs every hook on every file of a pull request**, on Linux, but
-the mutation of what changed: a pull request has no `HEAD` to change lines
-since, and the full sweep is the push's. A change Dependabot made was made on
-no machine, so no hook judged it before this.
+**`check.yml` runs every hook on every file of a pull request and of a push**,
+on Linux, and the mutation sweep over the packages holding the rules, two
+mutants at a time, its report kept as the run's artifact. A change Dependabot
+made was made on no machine, so no hook judged it before this.
 
 Left to a person: Go itself, the `toolchain` line of both `go.mod`, which
 Dependabot does not move; prek and jq; commitlint's own dependencies; the
@@ -326,10 +327,11 @@ make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make windows-check  # fail if cairn or its tests no longer build for Windows
 make quiet-check    # fail if building cairn or the window's tests prints anything
-make mutation-changed  # the lines changed since HEAD: what a commit runs
-make mutation          # every package: what a push runs, and the report it leaves
+make mutation          # the packages holding the rules: what check.yml runs, and the report it leaves
+make mutation PKG=./internal/gui  # one package, by hand: the window, the terminal and the CLI are judged so
+make mutation-changed  # the lines changed since HEAD, by hand, before a push
 make check             # every hook, commit's and push's, on every file
-make release-check     # the same, but the mutation sweep: what a release runs
+make release-check     # the same: what a release runs
 make linux             # build and run the suite on Linux, in a container
 make help              # every target, and what it is for
 ```
@@ -345,11 +347,28 @@ not have, so the machine says so with `CAIRN_WINDOWLESS=1` and the tests that
 draw are skipped; anywhere that is not set, a test that cannot draw fails
 rather than skipping itself.
 
-`prek run -a` is not everything: it runs the commit's hooks, and the commit's
-mutation judges only what changed since `HEAD` — on a clean tree, nothing.
-`make check` is the one command that leaves nothing unchecked.
+`prek run -a` runs the commit's hooks; `make check` adds the push's.
 
-Mutation is the slow one. Every package, every commit, took fourteen minutes
+**Mutation left the hooks, for CI** (cairn#229). Each mutant recompiles a copy
+of the module and runs a whole package's tests, scenarios included — the
+window's 2.5 to 3.5 GB apiece — with a cache that grew past 10 GB: the machine
+froze and its disk filled, and a check that freezes the machine gets skipped,
+which is worse than one run elsewhere. Linters cannot stand in for it: they
+judge the code, mutation judges whether the tests would notice a wrong line.
+So it runs where it hurts nobody: in `check.yml`, on every push and pull
+request, gating the packages holding the rules — domain, engine, task,
+objective, store, trace, migration, config, build; the window, the terminal
+and the command line are judged by hand, a package named. Locally it runs one
+mutant at a time, in a cache of its own wiped past 2 GB and after every run.
+That is where others run it too: Google mutates the lines a review changed,
+at review time, not before ([Practical Mutation Testing at
+Scale](https://research.google/pubs/practical-mutation-testing-at-scale-a-view-from-google/));
+Stryker's incremental mode is meant for CI
+([incremental](https://stryker-mutator.io/docs/stryker-js/incremental/)).
+The 100% stays: rare elsewhere, it is what this repository asks of the rules.
+
+What follows is how it was split while it was a hook, kept for the receipts
+it still uses. Mutation is the slow one. Every package, every commit, took fourteen minutes
 and grew with the suite — long enough to be worked around. So it is split, and
 the split is fixed in `.pre-commit-config.yaml`, not left to whoever runs it:
 
