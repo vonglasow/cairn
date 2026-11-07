@@ -563,7 +563,14 @@ offer the closed set a listing narrows by — column, priority, label, objective
 a day due by — as filters walked through their values. They narrow
 what the board already holds, in memory, but by the narrowing `task list`
 builds from the same flags (`engine.Filters.Kept`, through `keeping`), told to
-each card instead of to SQL: one rule, read twice.
+each card instead of to SQL: one rule, read twice. The label filter takes
+several labels at once, a task kept when it carries every one — what
+`--label` named twice already did (`Filter.Many`, `Toggled`). Each value says
+how many tasks it would keep under the other filters as they stand
+(`Filters.Counts`), counted by the same rule. The objectives are narrowed by
+what an objective carries itself — its labels, its priority — or by which one
+it is (`KeptGoals`), the rule `objective list` follows; a column or a day due
+by means nothing to an objective and keeps every one (`ReachesGoals`).
 
 ## Where the narrowing happens
 

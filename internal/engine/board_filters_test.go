@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -127,4 +128,97 @@ func TestFilters_keepWhatTheyHeldWhenTheBoardIsReadAgain(t *testing.T) {
 	if gone[2].Value() != Any {
 		t.Fatalf("a label no card holds any more is still kept: %q", gone[2].Value())
 	}
+}
+
+func labelFilterAt(fs Filters) int {
+	for i, f := range fs {
+		if f.Arg == "label" {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestFilters_takeSeveralLabelsTogether(t *testing.T) {
+	fs := BoardFilters(Snapshot{Cards: filterCards()}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC))
+	at := labelFilterAt(fs)
+	if !fs[at].Many {
+		t.Fatal("the label filter takes one label only")
+	}
+	fs = fs.Toggled(at, "backend").Toggled(at, "sprint")
+	if got := strings.Join(fs[at].Taken(), ","); got != "backend,sprint" {
+		t.Fatalf("the label filter took %s", got)
+	}
+	kept, err := fs.Kept(filterCards())
+	if err != nil || filteredNumbers(kept) != "1" {
+		t.Fatalf("both labels kept %s (%v)", filteredNumbers(kept), err)
+	}
+	if got := fs.Said(); got != "label backend + sprint" {
+		t.Fatalf("the filters say %q", got)
+	}
+	fs = fs.Toggled(at, "backend")
+	if got := strings.Join(fs[at].Taken(), ","); got != "sprint" {
+		t.Fatalf("toggled off, the label filter took %s", got)
+	}
+	if fs = fs.Toggled(at, "sprint"); fs.Narrows() {
+		t.Fatal("every label let go of still narrows")
+	}
+	if fs = fs.Toggled(at, "backend").Cleared(); fs.Narrows() || len(fs[at].Taken()) > 0 {
+		t.Fatal("cleared, the labels taken stay")
+	}
+	walked := fs.Toggled(at, "backend").Toggled(at, "sprint").Walked(at, 1)
+	if got := strings.Join(walked[at].Taken(), ","); got != "backend" {
+		t.Fatalf("walked, the label filter took %s", got)
+	}
+	held := BoardFilters(Snapshot{Cards: filterCards()[1:2]}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)).Keeping(fs.Toggled(at, "backend").Toggled(at, "sprint"))
+	if got := strings.Join(held[at].Taken(), ","); got != "backend" {
+		t.Fatalf("kept over a board where sprint is carried no more, the labels taken are %s", got)
+	}
+}
+
+func TestFilters_countWhatEachValueKeepsUnderTheOthers(t *testing.T) {
+	fs := on(BoardFilters(Snapshot{Cards: filterCards()}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)), "priority", "high")
+	at := labelFilterAt(fs)
+	counts, err := fs.Counts(filterCards(), at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Numbers(counts); got != "2 1 2" {
+		t.Fatalf("under priority high, any, backend and sprint keep %s", got)
+	}
+}
+
+func TestFilters_narrowTheObjectivesByWhatTheyCarry(t *testing.T) {
+	goals := []Goal{
+		{Number: 1, Title: "Ship", Priority: "high", Labels: []string{"backend"}},
+		{Number: 2, Title: "Plan", Priority: "normal", Labels: []string{"backend", "sprint"}},
+		{Number: 3, Title: "Rest", Priority: "high"},
+	}
+	fs := BoardFilters(Snapshot{Cards: filterCards(), Goals: goals}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC))
+	at := labelFilterAt(fs)
+	if got := goalNumbers(fs.Toggled(at, "backend").KeptGoals(goals)); got != "1 2" {
+		t.Fatalf("label backend keeps the objectives %s", got)
+	}
+	if got := goalNumbers(on(slices.Clone(fs), "priority", "high").KeptGoals(goals)); got != "1 3" {
+		t.Fatalf("priority high keeps the objectives %s", got)
+	}
+	if got := goalNumbers(on(slices.Clone(fs), "objective", "2").KeptGoals(goals)); got != "2" {
+		t.Fatalf("objective 2 keeps the objectives %s", got)
+	}
+	if got := goalNumbers(on(slices.Clone(fs), "column", "todo").KeptGoals(goals)); got != "1 2 3" {
+		t.Fatalf("a column, which an objective has not, keeps the objectives %s", got)
+	}
+	for _, f := range fs {
+		if reaches := f.ReachesGoals(); reaches != (f.Arg == "label" || f.Arg == "priority" || f.Arg == "objective") {
+			t.Errorf("%s reaches the objectives: %v", f.Name, reaches)
+		}
+	}
+}
+
+func goalNumbers(goals []Goal) string {
+	var out []int
+	for _, g := range goals {
+		out = append(out, g.Number)
+	}
+	return Numbers(out)
 }
