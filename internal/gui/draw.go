@@ -581,7 +581,16 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		looking := ChoosingLooking(box)
 		fill(gtx, looking, skin.Back)
 		outline(gtx, looking, skin.Edge)
-		writing(gtx, th, skin, w.measured(), Inside(looking), w.Filtering(), true, reads, 1, Follow)
+		typed := Inside(looking)
+		for _, taken := range w.LabelsTaken() {
+			drawLabelPill(gtx, th, skin, w, Box{X: taken.Pill.X, Y: taken.Pill.Y, W: taken.Pill.W - crossWide, H: taken.Pill.H}, taken.Label)
+			ground, ink := skin.LabelPill(w.LabelColour(taken.Label))
+			rounded(gtx, taken.Cross, taken.Cross.H/2, ground)
+			sayCentred(gtx, th, ink, pillLine(th, taken.Cross), "×", small)
+			typed.W -= taken.Pill.X + taken.Pill.W + pillGap - typed.X
+			typed.X = taken.Pill.X + taken.Pill.W + pillGap
+		}
+		writing(gtx, th, skin, w.measured(), typed, w.Filtering(), true, reads, 1, Follow)
 	}
 
 	at := ChoosingFrom(box)
@@ -618,6 +627,7 @@ func drawChoosing(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 				say(gtx, th, skin.Chosen, line, TickedMark, reads)
 			}
 			drawLabelPill(gtx, th, skin, w, LabelPillAt(line, ends(w.measured(), one.Title, small)), one.Title)
+			sayIn(gtx, th, skin.Faint, line, strconv.Itoa(one.Carried), small, font.Font{Typeface: MonoFace}, text.End)
 			at += apart
 			continue
 		}

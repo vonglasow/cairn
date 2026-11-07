@@ -847,6 +847,9 @@ func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
 }
 
 func (w Window) clickedOff(p Point) Window {
+	if w.pickingLabels && w.screen == OnChoosing {
+		return w.leavingThePicker()
+	}
 	overForm := w.screen == OnChoosing || w.screen == OnCalendar
 	if w.screen == OnCalendar {
 		w.screen = OnForm

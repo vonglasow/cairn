@@ -373,6 +373,9 @@ func (w Window) Form() Form { return w.form }
 func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
 
 func (w Window) formUnder() bool {
+	if w.pickingLabels && w.screen == OnChoosing {
+		return false
+	}
 	return formShown(w.screen) || w.screen == OnAsking && (w.question == aboutDeletingPart || w.question == aboutDeletingParts || w.question == aboutLeaving)
 }
 
@@ -804,7 +807,7 @@ func (w Window) choosingList() Window {
 		return w
 	}
 	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
-	w.choosingFor, w.filtering = on.Arg, Written{}
+	w.choosingFor, w.filtering, w.pickingLabels = on.Arg, Written{}, false
 	if on.Arg == "label" {
 		w = w.openingLabels(on.Value)
 	} else {
@@ -831,11 +834,12 @@ func (w Window) choosingList() Window {
 	return w
 }
 
-// Choice is one line of the list: what it is numbered and what it is called.
+// Choice is one line of the list: what it is numbered and what it is called, and for a label how many tasks carry it.
 type Choice struct {
 	Number  int
 	Title   string
 	Creates string
+	Carried int
 }
 
 // RowSays is what a row of the open list reads: whether it is taken, then what it is known by.
@@ -911,6 +915,9 @@ func (w Window) inChoosing(name string) Window {
 		w.choosing = max(0, w.choosing-1)
 		w.choosingFrom = w.bringingIntoSight()
 	case "backspace":
+		if w.choosingFor == "label" && w.filtering.Empty() {
+			return w.untakingLast()
+		}
 		w.filtering, w.choosing, w.choosingFrom = w.filtering.Back(), 0, 0
 	case "esc":
 		return w.leaving()
@@ -949,11 +956,17 @@ func (w Window) bringingIntoSight() int {
 }
 
 func (w Window) leaving() Window {
+	if w.pickingLabels {
+		return w.leavingThePicker()
+	}
 	w.screen = OnForm
 	return w
 }
 
 func (w Window) keeping() Window {
+	if w.pickingLabels {
+		return w.leavingThePicker()
+	}
 	if w.choosingFor == "label" {
 		return w.keepingLabels()
 	}

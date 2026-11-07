@@ -233,6 +233,9 @@ func (w Window) Offers() []string {
 	case OnPalette:
 		return nil
 	case OnChoosing:
+		if w.pickingLabels {
+			return []string{"Choose", "Close"}
+		}
 		if w.OneOnly() {
 			return []string{"Choose", "Cancel"}
 		}
@@ -331,6 +334,11 @@ func (w Window) clickingList(p Point) Window {
 	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
 		w.choosing = at
 		return w
+	}
+	for _, taken := range w.LabelsTaken() {
+		if taken.Cross.In(p) {
+			return w.untaking(taken.Label)
+		}
 	}
 	if looking := ChoosingLooking(box); !box.Unsearched && looking.In(p) {
 		w.filtering = w.filtering.CaretAt(into(Inside(looking), p, w.filtering.Reads(), w.measured()))

@@ -45,7 +45,9 @@ func (w Window) menuFor() []string {
 }
 
 func (w Window) labellingChosen() Window {
-	return w.formOnto("label").choosingList()
+	w = w.formOnto("label").choosingList()
+	w.pickingLabels = w.screen == OnChoosing
+	return w
 }
 
 func (w Window) datingChosen() Window {

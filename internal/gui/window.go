@@ -114,6 +114,8 @@ type Window struct {
 	filtering                       Written
 	choosingFrom                    int
 	labelsOffered                   []string
+	labelsCarried                   map[string]int
+	pickingLabels                   bool
 	copying                         string
 	pasting                         bool
 	holdingText                     bool

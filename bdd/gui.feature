@@ -3841,6 +3841,48 @@ Feature: The desktop board
       And I press "t"
       Then the calendar is open
 
+    @gui-l-picks-labels-under-the-card
+    Scenario: l opens the labels under the chosen card, with no form, and each one taken is written at once
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      And I made the label "release"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "l"
+      Then the labels are picked under the card "Write the spec"
+      When I type "rel"
+      And I press "enter"
+      Then task 1 carries exactly the labels "doc, release, sp26-20"
+      When I press "esc"
+      Then the window is on the board
+      And task 1 carries exactly the labels "doc, release, sp26-20"
+
+    @gui-a-label-offered-says-what-carries-it
+    Scenario: each label offered says how many tasks carry it
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      And I edited task 2 with the labels "doc" and "release"
+      When I open the window
+      And I click the card "Ship it"
+      And I press "l"
+      Then the list says "doc" is carried by 2 tasks
+      And the list says "sp26-20" is carried by 1 task
+
+    @gui-the-labels-taken-stand-as-pills
+    Scenario: the labels a task carries stand as pills at the head of the list, a cross or backspace taking one off
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I click the card "Write the spec"
+      And I press "l"
+      Then the labels taken read "doc, sp26-20"
+      When I click the cross of the label taken "doc"
+      Then task 1 carries exactly the labels "sp26-20"
+      When I press "backspace"
+      Then task 1 carries exactly the labels ""
+      And the labels taken read ""
+
     @gui-g-goes-to-a-page
     Scenario: g then a page's letter goes to that page
       Given I added a task titled "Write the spec"

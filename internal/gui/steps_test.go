@@ -1670,6 +1670,52 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the labels are picked under the card "([^"]*)"$`, func(title string) error {
+		if w.w.Screen() != OnChoosing || !w.w.Picking() {
+			return fmt.Errorf("the window is on %v, picking %v", w.w.Screen(), w.w.Picking())
+		}
+		for _, placed := range w.w.Placed() {
+			if placed.Card.Title != title {
+				continue
+			}
+			box, slot := w.w.ChoosingBox(), placed.Slot
+			if box.Y < slot.Y+slot.H || box.X != slot.X {
+				return fmt.Errorf("the labels are at %+v, not under the card at %+v", box, slot)
+			}
+			return nil
+		}
+		return fmt.Errorf("no card %q is placed", title)
+	})
+	sc.Then(`^the list says "([^"]*)" is carried by (\d+) tasks?$`, func(label string, n int) error {
+		for _, one := range w.w.Choosing() {
+			if one.Title == label {
+				if one.Carried != n {
+					return fmt.Errorf("the list says %q is carried by %d", label, one.Carried)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the list offers no %q", label)
+	})
+	sc.Then(`^the labels taken read "([^"]*)"$`, func(want string) error {
+		var got []string
+		for _, one := range w.w.LabelsTaken() {
+			got = append(got, one.Label)
+		}
+		if strings.Join(got, ", ") != want {
+			return fmt.Errorf("the labels taken read %q", strings.Join(got, ", "))
+		}
+		return nil
+	})
+	sc.When(`^I click the cross of the label taken "([^"]*)"$`, func(label string) error {
+		for _, one := range w.w.LabelsTaken() {
+			if one.Label == label {
+				clicking(one.Cross)
+				return w.w.Wrong()
+			}
+		}
+		return fmt.Errorf("no label taken is %q", label)
+	})
 	sc.Then(`^the labels offer to create "([^"]*)"$`, func(want string) error {
 		said, ok := w.w.LabelCreating()
 		if !ok || said != want {

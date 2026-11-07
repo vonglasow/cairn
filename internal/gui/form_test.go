@@ -1196,7 +1196,11 @@ func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 		}
 		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
 		pill := Box{X: line.X + ends(w.measured(), "Create", reads) + pillGap*2 + 2, Y: line.Y + line.H/2, W: 2, H: 1}
-		if painted(drawn(t, w), pill, Dark().Panel) == 0 {
+		ground := Dark().Pill
+		if i == w.ChoosingAt() {
+			ground = Dark().Panel
+		}
+		if painted(drawn(t, w), pill, ground) == 0 {
 			t.Errorf("the row creating %q shows no pill", one.Creates)
 		}
 		return

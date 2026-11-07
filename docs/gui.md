@@ -926,6 +926,21 @@ within a second, goes to a page; on TIME, `1`, `2` and `3` show a day, a week
 or a month, where `d` and `m` did (`@gui-g-goes-to-a-page`). Arrows walk the
 board; `h j k l` were left out, `l` being the labels.
 
+**Labels are picked under the card, and written as they are taken.** `l` on
+a chosen card, or Labels… in its right-click menu, opens the labels under the
+card — above it when the window has no room below — with no form behind
+(`Picking`, `@gui-l-picks-labels-under-the-card`): it used to open the whole
+form for one field and write nothing until the form was saved. Each label
+taken or let go is written at once, through `task edit` with `+label` or
+`-label`, and `esc` closes. The labels the task carries stand as pills at the
+head of the list, a cross on each, and `⌫` on nothing typed takes the last
+off (`LabelsTaken`, `@gui-the-labels-taken-stand-as-pills`). Each row says
+how many tasks carry its label (`@gui-a-label-offered-says-what-carries-it`).
+What is typed narrows the list, and a label no row holds is offered to be
+made after the ones found, so `⏎` takes the first label found rather than
+making a new one from a beginning; in a form the same list answers its labels
+field, written when the form is saved.
+
 **A key does what the bar offers, where the bar offers it.** The bar is what
 somebody reads to find out what a key does, so `Key` looks the key up among
 `Offers()` rather than carrying a list of its own — an offer added to a screen

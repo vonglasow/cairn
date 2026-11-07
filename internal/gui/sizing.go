@@ -15,9 +15,26 @@ func (w Window) ChoosingBox() Box {
 	most := max(1, (over.H-ChoosingFor(0, 0, 0, 0, searched).H)/apart)
 	rows := min(max(1, len(w.listed())), most)
 	wide := min(over.W, w.choosingWide())
+	if slot, ok := w.chosenSlot(); ok && w.pickingLabels {
+		return w.underTheCard(slot, wide, rows, searched)
+	}
 	high := ChoosingFor(0, 0, wide, rows, searched).H
 	at := w.hung(wide, high)
 	return ChoosingFor(at.X, at.Y, wide, rows, searched)
+}
+
+func (w Window) underTheCard(slot Box, wide, rows int, searched bool) Box {
+	below := w.height - margin - (slot.Y + slot.H + between)
+	above := slot.Y - between - margin
+	bare := ChoosingFor(0, 0, wide, 0, searched).H
+	room := max(below, above)
+	rows = max(1, min(rows, (room-bare)/apart))
+	high := ChoosingFor(0, 0, wide, rows, searched).H
+	x := max(margin, min(slot.X, w.width-margin-wide))
+	if below >= above {
+		return ChoosingFor(x, slot.Y+slot.H+between, wide, rows, searched)
+	}
+	return ChoosingFor(x, slot.Y-between-high, wide, rows, searched)
 }
 
 // Hung is where a panel opened from a field goes: a gap under it when it ends inside the panel there, a gap above it otherwise.
