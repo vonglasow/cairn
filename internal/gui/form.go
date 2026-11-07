@@ -199,6 +199,9 @@ func (w Window) writing(change func(Written) Written) Window {
 		w.renamed = change(w.renamed)
 		return w
 	}
+	if w.screen == OnLabels {
+		return w.seekingLabels(change)
+	}
 	if w.screen == OnChoosing {
 		if !w.ChoosingSearched() {
 			return w
@@ -574,6 +577,9 @@ func (w Window) Choose(name string) Window {
 			w.renaming, w.making = false, false
 			return w
 		}
+		if w.screen == OnLabels && w.seeking {
+			return w.leavingTheSearch()
+		}
 		if w.screen == OnLabels {
 			w.screen = OnTheBoard
 			return w
@@ -656,6 +662,8 @@ func (w Window) Choose(name string) Window {
 		return w.startingRename()
 	case "new label":
 		return w.makingLabel()
+	case "create":
+		return w.creatingSought()
 	case "colour":
 		return w.startingColour()
 	case "skip flagged":

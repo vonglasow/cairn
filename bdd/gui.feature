@@ -2020,7 +2020,7 @@ Feature: The desktop board
       When I open the window
       And I press "shift+l"
       And I click the label "doc"
-      Then the bar offers "Colour" under "c"
+      Then the row of the label "doc" offers "Rename", "Colour" and "Delete"
       When I press "c"
       Then the labels offer 14 colours
       When I click the colour "peach"
@@ -2042,6 +2042,54 @@ Feature: The desktop board
       And I press "right"
       And I press "enter"
       Then the label "doc" wears "maroon"
+
+    @gui-the-labels-are-sought
+    Scenario: the labels are narrowed by what is typed after a slash, and esc lets them all back
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "release"
+      And I made the label "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I press "/"
+      And I type "re"
+      Then the labels in sight are "release"
+      When I press "esc"
+      Then the labels in sight are "doc, release, sp26-20"
+      And the labels are listed
+
+    @gui-a-label-sought-and-missing-is-made
+    Scenario: a label sought that does not exist is offered to be made, and enter makes it
+      When I open the window
+      And I press "shift+l"
+      And I press "/"
+      And I type "Release Train"
+      Then the labels offer to create "Release Train"
+      When I press "enter"
+      Then the labels list "release-train" carried by 0 tasks and 0 objectives
+
+    @gui-the-chosen-label-carries-its-actions
+    Scenario: the label chosen carries its actions in its row, and the foot only makes one or closes
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the label "sp26-20"
+      Then the row of the label "sp26-20" offers "Rename", "Colour" and "Delete"
+      And the row of the label "doc" offers nothing
+      And the panel offers "New label" and "Close"
+      When I click "Colour" in the row of the label "sp26-20"
+      Then the labels offer 14 colours
+
+    @gui-a-label-is-coloured-from-its-dot
+    Scenario: the dot at the start of a label's row opens its colours
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I click the dot of the label "doc"
+      Then the labels offer 14 colours
+      When I click the colour "peach"
+      Then the label "doc" wears "peach"
 
   Rule: A new backup is made, and a backup restored, from the window
 

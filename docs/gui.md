@@ -1179,11 +1179,26 @@ which with two was a difference nothing could see.
 
 **Every label is seen, renamed and deleted from the window.** `⇧L`, or Labels
 in the File menu, lists them with what carries each, as `cairn label list`
-does (`labels.go`); `r` types a new name for the one the keyboard is on, `⏎`
-takes it, `esc` gives it up; `d` asks, then takes the label off every task and
-objective (`@gui-a-label-is-deleted-everywhere`). The list is the engine's
-answer, not the board's cards, so archived tasks count. It is drawn as the
-backups are, one list panel for both.
+does (`labels.go`). The list is the engine's answer, not the board's cards, so
+archived tasks count. A row is a dot in the label's colour, the label as the
+board draws it, and what carries it at its right; the row chosen also carries
+its actions as buttons, Rename `r`, Colour `c` and Delete `⌘⌫`
+(`LabelRows`, `@gui-the-chosen-label-carries-its-actions`), so the panel's
+foot only makes a label (`n`) or closes. They used to be five buttons at the
+foot, acting on a row they stood far from. `r` types a new name in the row,
+`⏎` takes it, `esc` gives it up; the dot, or `c`, opens the fourteen colours
+under the row (`@gui-a-label-is-coloured-from-its-dot`); `⌘⌫` asks, then
+takes the label off every task and objective
+(`@gui-a-label-is-deleted-everywhere`).
+
+**The labels are sought from the top of their panel.** Its first line is a
+search: `/`, or a click on it, types into it, and the list keeps the labels
+whose name holds what is typed (`LabelsShown`, `@gui-the-labels-are-sought`);
+the panel keeps its size, so the rows do not jump as letters are typed. `esc`
+leaves the search and lets every label back. A search no label holds offers
+to make it, `Create “Release Train”`, and `⏎` makes it, written the way a
+label is (`LabelCreating`, `@gui-a-label-sought-and-missing-is-made`) — the
+way GitHub's labels page and Trello's picker make one from what was looked for.
 
 **A new backup is made, and a backup restored, from the window.** Both were
 the command line's, so a person at the window went to a terminal for either.

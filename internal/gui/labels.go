@@ -4,6 +4,7 @@ import (
 	"cairn/internal/domain"
 	"slices"
 	"strconv"
+	"strings"
 
 	"cairn/internal/engine"
 )
@@ -17,6 +18,8 @@ type labelsState struct {
 	colouring  bool
 	colourPick int
 	renamed    Written
+	seeking    bool
+	sought     Written
 }
 
 // LabelsCarried is every label, as the engine listed them, with what carries each.
@@ -52,6 +55,7 @@ func (w Window) listingLabels() Window {
 		return w.failing(err)
 	}
 	w.carried, w.screen, w.renaming, w.making, w.colouring = []engine.LabelCarried{}, OnLabels, false, false, false
+	w.seeking, w.sought = false, Written{}
 	if listed.Labels != nil {
 		w.carried = *listed.Labels
 	}
@@ -60,7 +64,63 @@ func (w Window) listingLabels() Window {
 	return w
 }
 
-func (w Window) labelChosen() string { return w.carried[w.labelOn].Label }
+func (w Window) labelChosen() string { return w.LabelsShown()[w.labelOn].Label }
+
+// LabelsShown is the labels the list holds: every one, or those whose name holds what was typed after a slash.
+func (w Window) LabelsShown() []engine.LabelCarried {
+	sought := strings.ToLower(strings.TrimSpace(w.sought.Reads()))
+	if sought == "" {
+		return w.carried
+	}
+	var shown []engine.LabelCarried
+	for _, one := range w.carried {
+		if strings.Contains(one.Label, sought) {
+			shown = append(shown, one)
+		}
+	}
+	return shown
+}
+
+// Seeking says what is typed narrows the list of labels, and Sought is what has been typed of it.
+func (w Window) Seeking() bool { return w.seeking }
+
+// Sought is what was typed after a slash to narrow the list of labels.
+func (w Window) Sought() Written { return w.sought }
+
+// LabelCreating is the label the list offers to make, what was sought when no label holds it, and whether it offers one.
+func (w Window) LabelCreating() (string, bool) {
+	sought := strings.TrimSpace(w.sought.Reads())
+	return sought, sought != "" && len(w.LabelsShown()) == 0
+}
+
+func (w Window) seekingLabels(change func(Written) Written) Window {
+	next := change(w.sought)
+	if !w.seeking {
+		w.seeking = next.Reads() == "/"
+		return w
+	}
+	if w.sought.Empty() && next.Reads() == "/" {
+		return w
+	}
+	w.sought, w.labelOn, w.labelsFrom = next, 0, 0
+	return w
+}
+
+func (w Window) leavingTheSearch() Window {
+	w.seeking, w.sought, w.labelOn, w.labelsFrom = false, Written{}, 0, 0
+	return w
+}
+
+func (w Window) creatingSought() Window {
+	sought, ok := w.LabelCreating()
+	if !ok {
+		return w
+	}
+	if _, err := w.work.Ask(engine.LabelNew, engine.Input{Given: map[string]string{"label": sought}}); err != nil {
+		return w.failing(err)
+	}
+	return w.Look().listingLabels()
+}
 
 func (w Window) onLabels(name string) Window {
 	if w.colouring {
@@ -78,9 +138,32 @@ func (w Window) onLabels(name string) Window {
 		}
 		return w
 	}
+	if w.seeking {
+		switch name {
+		case "backspace":
+			w.sought, w.labelOn, w.labelsFrom = w.sought.Back(), 0, 0
+			return w
+		case "enter":
+			w.seeking = false
+			return w
+		case "down", "up":
+		default:
+			return w
+		}
+	}
 	switch name {
+	case "/":
+		w.seeking = true
+	case "r":
+		return w.startingRename()
+	case "c":
+		return w.startingColour()
+	case "cmd+backspace":
+		if len(w.LabelsShown()) > 0 {
+			return w.Choose("delete")
+		}
 	case "down", "j":
-		w.labelOn = min(len(w.carried)-1, w.labelOn+1)
+		w.labelOn = min(len(w.LabelsShown())-1, w.labelOn+1)
 		w.labelsFrom = max(w.labelsFrom, w.labelOn-w.LabelsRoom()+1)
 	case "up", "k":
 		w.labelOn = max(0, w.labelOn-1)
@@ -90,7 +173,7 @@ func (w Window) onLabels(name string) Window {
 }
 
 func (w Window) startingRename() Window {
-	if len(w.carried) == 0 {
+	if len(w.LabelsShown()) == 0 {
 		return w
 	}
 	w.renaming, w.making, w.renamed = true, false, Written{}.Types(w.labelChosen())
@@ -138,12 +221,12 @@ func (w Window) scrollingLabels(p Point, by int) Window {
 	}
 	lines, left := turning(w.spareChoosing, by)
 	w.spareChoosing = left
-	w.labelsFrom = max(0, min(w.labelsFrom+lines, len(w.carried)-w.LabelsRoom()))
+	w.labelsFrom = max(0, min(w.labelsFrom+lines, len(w.LabelsShown())-w.LabelsRoom()))
 	return w
 }
 
-// LabelsRoom is how many labels the list shows at once: the lines between its heading and its offers.
-func (w Window) LabelsRoom() int { return listRoom(w.LabelsBox()) }
+// LabelsRoom is how many labels the list shows at once: the lines between its search and its offers.
+func (w Window) LabelsRoom() int { return listRoom(w.LabelsBox()) - 1 }
 
 func (w Window) clickingLabels(p Point) Window {
 	if w.colouring {
@@ -156,12 +239,28 @@ func (w Window) clickingLabels(p Point) Window {
 		return w
 	}
 	box := w.LabelsBox()
+	if w.LabelSearchAt().In(p) && !w.renaming {
+		w.seeking = true
+		return w
+	}
+	if _, ok := w.LabelCreating(); ok && ListRowAt(box, 1).In(p) {
+		return w.creatingSought()
+	}
 	for _, row := range w.LabelRows() {
-		if row.At.In(p) && (!row.Typing || !w.making) {
-			w.labelOn = slices.IndexFunc(w.carried, func(one engine.LabelCarried) bool { return one.Label == row.Carried.Label })
-			w.renaming, w.making = false, false
-			return w
+		if !row.At.In(p) || (row.Typing && w.making) {
+			continue
 		}
+		for _, action := range row.Actions {
+			if action.At.In(p) {
+				return w.Choose(strings.ToLower(action.Offer))
+			}
+		}
+		w.labelOn = slices.IndexFunc(w.LabelsShown(), func(one engine.LabelCarried) bool { return one.Label == row.Carried.Label })
+		w.renaming, w.making = false, false
+		if row.Dot.In(p) {
+			return w.startingColour()
+		}
+		return w
 	}
 	if !box.In(p) {
 		w.screen, w.renaming, w.making = OnTheBoard, false, false
@@ -169,46 +268,118 @@ func (w Window) clickingLabels(p Point) Window {
 	return w
 }
 
-// LabelsBox is the panel of the list of labels: across the middle of the window, as long as the labels up to what the window has room for, a line more while a new one is named.
+// LabelsBox is the panel of the list of labels: across the middle of the window, its search first, then every label up to what the window has room for, wide enough for the actions of the one chosen; a search narrows the list, not the panel.
 func (w Window) LabelsBox() Box {
-	said := make([]string, 0, len(w.carried)+1)
+	m := w.measured()
+	said := []string{LabelSearchSays}
 	if w.making {
 		said = append(said, w.renamed.Reads())
 	}
+	least := 0
 	for _, one := range w.carried {
 		said = append(said, LabelSays(one))
+		least = max(least, w.labelLineWide(m, one))
 	}
-	if len(said) == 0 {
+	if creating, ok := w.LabelCreating(); ok {
+		said = append(said, CreatingSays(creating))
+	} else if len(w.carried) == 0 {
 		said = append(said, NoLabelSays)
 	}
-	return w.listBox(said)
+	box := w.listBox(said)
+	if wide := min(Over(w.width, w.height).W, least+2*padding); wide > box.W {
+		box.X, box.W = (w.width-wide)/2, wide
+	}
+	return box
+}
+
+func (w Window) labelLineWide(m Measure, one engine.LabelCarried) int {
+	actions := 0
+	for _, wide := range w.actionWidths(m) {
+		actions += wide + inset
+	}
+	return 2*inset + dotSide + inset*2 + ends(m, one.Label, small) + 2*pillPad + padding +
+		ends(m, carriedSays(one), small) + padding + actions
+}
+
+func carriedSays(one engine.LabelCarried) string {
+	return countOf(one.Tasks, "task") + " · " + countOf(one.Objectives, "objective")
 }
 
 // NoLabelSays is what the list of labels says when there is none.
 const NoLabelSays = "No label yet: n makes one"
 
-// LabelRow is one line of the list of labels where it is drawn: a label and what carries it, or the name being typed for one, and whether the keyboard is on it.
+// LabelSearchSays is what the search of the list of labels says while nothing is typed in it.
+const LabelSearchSays = "Find or name a new label"
+
+// CreatingSays is the line that offers to make the label sought when none holds it.
+func CreatingSays(sought string) string { return "Create “" + sought + "”" }
+
+// LabelSearchAt is where the search of the list of labels is: its first line.
+func (w Window) LabelSearchAt() Box { return ListRowAt(w.LabelsBox(), 0) }
+
+// LabelActions is what the row of the label chosen offers, in its order.
+var LabelActions = []string{"Rename", "Colour", "Delete"}
+
+// RowAction is one thing the row of the label chosen offers, and where its button is.
+type RowAction struct {
+	Offer string
+	At    Box
+}
+
+// LabelRow is one line of the list of labels where it is drawn: a label and what carries it, or the name being typed for one, whether the keyboard is on it, where its dot and its name are, and the actions it offers when it is the one chosen.
 type LabelRow struct {
 	At      Box
 	Carried engine.LabelCarried
 	Typing  bool
 	On      bool
+	Dot     Box
+	Name    Box
+	Actions []RowAction
 }
 
-// LabelRows is the lines of the list of labels in sight, the one being named first while a new label is.
+// LabelRows is the lines of the list of labels in sight, under its search, the one being named first while a new label is.
 func (w Window) LabelRows() []LabelRow {
 	box := w.LabelsBox()
+	m := w.measured()
 	var rows []LabelRow
 	if w.making {
-		rows = append(rows, LabelRow{At: ListRowAt(box, 0), Typing: true, On: true})
+		rows = append(rows, LabelRow{At: ListRowAt(box, 1), Typing: true, On: true})
 	}
+	shown := w.LabelsShown()
 	from := w.labelsFrom
-	last := min(len(w.carried), from+w.LabelsRoom()-len(rows))
+	last := min(len(shown), from+w.LabelsRoom()-len(rows))
 	for i := from; i < last; i++ {
 		on := i == w.labelOn && !w.making
-		rows = append(rows, LabelRow{At: ListRowAt(box, len(rows)), Carried: w.carried[i], On: on, Typing: on && w.renaming})
+		row := LabelRow{At: ListRowAt(box, 1+len(rows)), Carried: shown[i], On: on, Typing: on && w.renaming}
+		line := Inside(row.At)
+		row.Dot = Box{X: line.X, Y: row.At.Y + (row.At.H-dotSide)/2, W: dotSide, H: dotSide}
+		row.Name = Box{X: row.Dot.X + dotSide + 2*inset, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, shown[i].Label, small) + 2*pillPad, H: pillHigh}
+		if on && !row.Typing {
+			row.Actions = w.actionsIn(m, row.At)
+		}
+		rows = append(rows, row)
 	}
 	return rows
+}
+
+func (w Window) actionWidths(m Measure) []int {
+	widths := make([]int, 0, len(LabelActions))
+	for _, offer := range LabelActions {
+		widths = append(widths, buttonWordWide(m, offer)+KeyChipWide(w.OfferKey(offer))+hintSpace+padding)
+	}
+	return widths
+}
+
+func (w Window) actionsIn(m Measure, row Box) []RowAction {
+	widths := w.actionWidths(m)
+	x := row.X + row.W - inset
+	actions := make([]RowAction, len(LabelActions))
+	for i := len(LabelActions) - 1; i >= 0; i-- {
+		x -= widths[i]
+		actions[i] = RowAction{Offer: LabelActions[i], At: Box{X: x, Y: row.Y + 2, W: widths[i], H: row.H - 4}}
+		x -= inset
+	}
+	return actions
 }
 
 // LabelColour is the colour a label wears on this board: the one the engine read for it, or else the one read off its name.
@@ -220,11 +391,12 @@ func (w Window) LabelColour(label string) string {
 }
 
 func (w Window) startingColour() Window {
-	if len(w.carried) == 0 {
+	shown := w.LabelsShown()
+	if len(shown) == 0 {
 		return w
 	}
-	w.colouring = true
-	w.colourPick = max(0, slices.Index(domain.LabelColours, w.carried[w.labelOn].Colour))
+	w.colouring, w.seeking = true, false
+	w.colourPick = max(0, slices.Index(domain.LabelColours, shown[w.labelOn].Colour))
 	return w
 }
 
@@ -247,7 +419,12 @@ func (w Window) ColourSwatches() []ColourSwatch {
 	if !w.colouring || w.screen != OnLabels {
 		return nil
 	}
-	row := ListRowAt(w.LabelsBox(), w.labelOn-w.labelsFrom)
+	var row Box
+	for _, one := range w.LabelRows() {
+		if one.On {
+			row = one.At
+		}
+	}
 	wide := len(domain.LabelColours)*(swatchSide+swatchGap) - swatchGap
 	x := max(margin+inset, min(row.X+inset, w.width-margin-inset-wide))
 	y := row.Y + row.H + inset
@@ -264,4 +441,5 @@ func (w Window) ColourPick() int { return w.colourPick }
 const (
 	swatchSide = 18
 	swatchGap  = 6
+	dotSide    = 12
 )

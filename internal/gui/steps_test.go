@@ -1583,15 +1583,99 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^I click the label "([^"]*)"$`, func(label string) error {
-		for i, one := range w.w.LabelsCarried() {
-			if one.Label == label {
-				row := ListRowAt(w.w.LabelsBox(), i-w.w.LabelsFrom())
-				w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
-				return nil
+	labelRow := func(label string) (LabelRow, error) {
+		for _, row := range w.w.LabelRows() {
+			if !row.Typing && row.Carried.Label == label {
+				return row, nil
 			}
 		}
-		return fmt.Errorf("no label %q is listed", label)
+		return LabelRow{}, fmt.Errorf("no label %q is in sight", label)
+	}
+	clicking := func(b Box) { w.w = w.w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2}) }
+	sc.Step(`^I click the label "([^"]*)"$`, func(label string) error {
+		row, err := labelRow(label)
+		if err != nil {
+			return err
+		}
+		clicking(row.Name)
+		return nil
+	})
+	sc.Step(`^I click the dot of the label "([^"]*)"$`, func(label string) error {
+		row, err := labelRow(label)
+		if err != nil {
+			return err
+		}
+		clicking(row.Dot)
+		return nil
+	})
+	sc.Step(`^I click "([^"]*)" in the row of the label "([^"]*)"$`, func(offer, label string) error {
+		row, err := labelRow(label)
+		if err != nil {
+			return err
+		}
+		for _, one := range row.Actions {
+			if one.Offer == offer {
+				clicking(one.At)
+				return w.w.Wrong()
+			}
+		}
+		return fmt.Errorf("the row of %q offers no %q: %+v", label, offer, row.Actions)
+	})
+	rowOffers := func(label string) ([]string, error) {
+		row, err := labelRow(label)
+		if err != nil {
+			return nil, err
+		}
+		var offers []string
+		for _, one := range row.Actions {
+			offers = append(offers, one.Offer)
+		}
+		return offers, nil
+	}
+	sc.Then(`^the row of the label "([^"]*)" offers "([^"]*)", "([^"]*)" and "([^"]*)"$`, func(label, a, b, c string) error {
+		offers, err := rowOffers(label)
+		if err != nil {
+			return err
+		}
+		if !slices.Equal(offers, []string{a, b, c}) {
+			return fmt.Errorf("the row of %q offers %v", label, offers)
+		}
+		return nil
+	})
+	sc.Then(`^the row of the label "([^"]*)" offers nothing$`, func(label string) error {
+		offers, err := rowOffers(label)
+		if err != nil {
+			return err
+		}
+		if len(offers) > 0 {
+			return fmt.Errorf("the row of %q offers %v", label, offers)
+		}
+		return nil
+	})
+	sc.Then(`^the panel offers "([^"]*)" and "([^"]*)"$`, func(a, b string) error {
+		if got := w.w.Offers(); !slices.Equal(got, []string{a, b}) {
+			return fmt.Errorf("the panel offers %v", got)
+		}
+		return nil
+	})
+	sc.Then(`^the labels in sight are "([^"]*)"$`, func(want string) error {
+		var names []string
+		for _, row := range w.w.LabelRows() {
+			if !row.Typing {
+				names = append(names, row.Carried.Label)
+			}
+		}
+		if got := strings.Join(names, ", "); got != want {
+			return fmt.Errorf("the labels in sight are %q", got)
+		}
+		return nil
+	})
+	sc.Then(`^the labels offer to create "([^"]*)"$`, func(want string) error {
+		said, ok := w.w.LabelCreating()
+		if !ok || said != want {
+			return fmt.Errorf("the labels offer to create %q (%v)", said, ok)
+		}
+		return nil
 	})
 	sc.Then(`^the window asks "([^"]*)"$`, func(question string) error {
 		if w.w.Screen() != OnAsking || Heads(w.w) != question {

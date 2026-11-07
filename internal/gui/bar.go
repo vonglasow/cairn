@@ -258,10 +258,13 @@ func (w Window) Offers() []string {
 		if w.colouring {
 			return []string{"Choose", "Cancel"}
 		}
-		if len(w.carried) == 0 {
-			return []string{"New label", "Close"}
+		if _, ok := w.LabelCreating(); ok && w.seeking {
+			return []string{"Create", "Cancel"}
 		}
-		return []string{"New label", "Colour", "Rename", "Delete", "Close"}
+		if w.seeking {
+			return []string{"Cancel"}
+		}
+		return []string{"New label", "Close"}
 	case OnMenu:
 		return nil
 	case OnForm:
@@ -434,7 +437,7 @@ func (w Window) shortcut(offer string) string {
 	if w.screen == OnAsking && offer == w.agreeingVerb() {
 		return "enter"
 	}
-	if w.screen == OnLabels && w.renaming && offer == "Save" {
+	if w.screen == OnLabels && (w.renaming && offer == "Save" || offer == "Create") {
 		return "enter"
 	}
 	return Shortcut(offer)

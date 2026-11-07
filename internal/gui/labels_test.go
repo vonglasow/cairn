@@ -15,10 +15,18 @@ func TestALabelSaysWhatCarriesIt(t *testing.T) {
 
 func TestTheLabelsOfferWhatCanBeDoneToOne(t *testing.T) {
 	w := Window{screen: OnLabels, labelsState: labelsState{carried: []engine.LabelCarried{{Label: "doc", Tasks: 1}}}}
-	if offers := w.Offers(); !slices.Equal(offers, []string{"New label", "Colour", "Rename", "Delete", "Close"}) {
+	if offers := w.Offers(); !slices.Equal(offers, []string{"New label", "Close"}) {
 		t.Errorf("the labels offer %v", offers)
 	}
-	w.renaming = true
+	w.seeking = true
+	if offers := w.Offers(); !slices.Equal(offers, []string{"Cancel"}) {
+		t.Errorf("a search that finds labels offers %v", offers)
+	}
+	w.sought = Written{}.Types("release")
+	if offers := w.Offers(); !slices.Equal(offers, []string{"Create", "Cancel"}) {
+		t.Errorf("a search that finds none offers %v", offers)
+	}
+	w.seeking, w.renaming = false, true
 	if offers := w.Offers(); !slices.Equal(offers, []string{"Save", "Cancel"}) {
 		t.Errorf("a rename offers %v", offers)
 	}

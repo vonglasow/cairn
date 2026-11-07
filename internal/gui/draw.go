@@ -245,30 +245,66 @@ func drawBackups(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 func drawLabels(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.LabelsBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
-	rows := w.LabelRows()
-	if len(rows) == 0 {
-		say(gtx, th, skin.Faint, Inside(ListRowAt(box, 0)), NoLabelSays, reads)
-	}
 	m := w.measured()
+	drawLabelSearch(gtx, th, skin, w, m, w.LabelSearchAt())
+	rows := w.LabelRows()
+	if creating, ok := w.LabelCreating(); ok {
+		say(gtx, th, skin.Chosen, Inside(ListRowAt(box, 1)), CreatingSays(creating), reads)
+	} else if len(rows) == 0 {
+		say(gtx, th, skin.Faint, Inside(ListRowAt(box, 1)), NoLabelSays, reads)
+	}
 	for _, row := range rows {
-		if row.On {
-			rounded(gtx, row.At, rowRadius, skin.Pill)
-		}
-		line := Inside(row.At)
-		if row.Typing {
-			field := Box{X: line.X, Y: row.At.Y + 2, W: line.W / 2, H: row.At.H - 4}
-			rounded(gtx, field, buttonRadius, skin.Chosen)
-			rounded(gtx, Box{X: field.X + 1, Y: field.Y + 1, W: field.W - 2, H: field.H - 2}, buttonRadius-1, skin.Field)
-			writing(gtx, th, skin, m, Inside(field), w.Renamed(), true, reads, 1, Follow)
-		} else {
-			drawLabelPill(gtx, th, skin, w, Box{X: line.X, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, row.Carried.Label, small) + 2*pillPad, H: pillHigh}, row.Carried.Label)
-		}
-		if !row.Typing || !w.Making() {
-			sayIn(gtx, th, skin.Faint, line, countOf(row.Carried.Tasks, "task")+" · "+countOf(row.Carried.Objectives, "objective"), small, font.Font{}, text.End)
-		}
+		drawLabelRow(gtx, th, skin, w, m, row)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
 	drawSwatches(gtx, skin, w)
+}
+
+func drawLabelSearch(gtx layout.Context, th *material.Theme, skin Skin, w Window, m Measure, row Box) {
+	field := Box{X: row.X, Y: row.Y + 1, W: row.W, H: row.H - 2}
+	if w.Seeking() {
+		rounded(gtx, field, buttonRadius, skin.Chosen)
+	} else {
+		rounded(gtx, field, buttonRadius, skin.GroundEdge)
+	}
+	rounded(gtx, Box{X: field.X + 1, Y: field.Y + 1, W: field.W - 2, H: field.H - 2}, buttonRadius-1, skin.Field)
+	chip := Box{X: field.X + inset, Y: field.Y + (field.H-chipHigh)/2, W: KeyChipWide("/"), H: chipHigh}
+	rounded(gtx, chip, chipRadius, skin.Pill)
+	sayOnChip(gtx, th, skin.Faint, chip, "/")
+	line := Inside(Box{X: chip.X + chip.W, Y: field.Y, W: field.X + field.W - chip.X - chip.W, H: field.H})
+	if w.Sought().Empty() && !w.Seeking() {
+		say(gtx, th, skin.Faint, line, LabelSearchSays, reads)
+		return
+	}
+	writing(gtx, th, skin, m, line, w.Sought(), w.Seeking(), reads, 1, Follow)
+}
+
+func drawLabelRow(gtx layout.Context, th *material.Theme, skin Skin, w Window, m Measure, row LabelRow) {
+	if row.On {
+		rounded(gtx, row.At, rowRadius, skin.Pill)
+	}
+	line := Inside(row.At)
+	if row.Typing {
+		field := Box{X: line.X, Y: row.At.Y + 2, W: line.W / 2, H: row.At.H - 4}
+		rounded(gtx, field, buttonRadius, skin.Chosen)
+		rounded(gtx, Box{X: field.X + 1, Y: field.Y + 1, W: field.W - 2, H: field.H - 2}, buttonRadius-1, skin.Field)
+		writing(gtx, th, skin, m, Inside(field), w.Renamed(), true, reads, 1, Follow)
+		return
+	}
+	rounded(gtx, row.Dot, dotSide/2, skin.Labels[w.LabelColour(row.Carried.Label)])
+	drawLabelPill(gtx, th, skin, w, row.Name, row.Carried.Label)
+	counts := line
+	if len(row.Actions) > 0 {
+		counts.W = row.Actions[0].At.X - padding - counts.X
+	}
+	sayIn(gtx, th, skin.Faint, counts, carriedSays(row.Carried), small, font.Font{}, text.End)
+	for _, action := range row.Actions {
+		look := buttonLit
+		if action.Offer == "Delete" {
+			look = buttonDanger
+		}
+		drawKeyedButton(gtx, th, skin, action.At, m, action.Offer, w.OfferKey(action.Offer), look)
+	}
 }
 
 func drawSwatches(gtx layout.Context, skin Skin, w Window) {
