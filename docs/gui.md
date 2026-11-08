@@ -179,9 +179,9 @@ a panel 12. A raised panel casts a shadow (`raised`): Gio has no blur, so
 the shadow is three rounded boxes under it, wider and fainter as they go.
 
 **A panel is raised, and its offers are buttons at its foot.** Every panel
-— a form, the help, a question, the backups, the labels, the filters, the
+— a form, the help, a question, the backups, the labels, the
 configuration — is a rounded (12), shadowed ground over the veil, with no
-edge and no rule under its heading. Its heading is its name — Filters,
+edge and no rule under its heading. Its heading is its name — Backups,
 Labels, Configuration — and what its keys do is said by its buttons and the
 help: headings like "Labels — r renames one, d takes it off everything"
 said it a third time, longer than the panel was wide (`HeadsOn`). A panel that can be closed carries a
@@ -498,34 +498,47 @@ task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
 **The board is filtered by what a task carries**, and what filters it stands as
-pills after the tabs. Each filter in force is a pill, `priority high`, its
+pills at the right of the tabs. Each filter in force is a pill on the accent's
+tint, its name faint and its value bright, `priority high`, its
 cross taking it away; a search kept comes first, `/ spec`; then `+ Filter`
 and `Clear`, which takes every filter and the search away; and at the right
 of the row, how many tasks are kept of how many, `2 of 3 tasks` (`Pills`,
-`@gui-the-filters-stand-as-pills-after-the-tabs`,
-`@gui-a-kept-search-stands-first-among-the-pills`). The row starts after the
-last tab, so a page added pushes it along; when the pills no longer fit
-before the menu, they fold into one, `Filters · 3`, which opens the menu, and
+`@gui-the-filters-stand-as-pills-at-the-right-of-the-tabs`,
+`@gui-a-kept-search-stands-first-among-the-pills`). The row ends against the
+menu, where the search's pill and the filters' text always stood: started
+right after the last tab, as it was for a day, it sat where nothing had been,
+and away from where the eye looked for it. A page added takes room from its
+left; when the pills no longer fit between the last tab and the menu, they fold into one, `Filters · 3`, which opens the menu, and
 the count gives its room up first (`@gui-the-pills-fold-when-the-room-runs-out`).
 The filters had a panel of their own across the middle of the window, each
 value walked with `‹ any ›`, and what was in force was a line of text beside
 the tabs; Linear and GitHub show filters in force as pills.
 
-`⇧F`, `+ Filter`, or the menu bar's Filter opens the menu of filters under the
-pill: column, priority, label, objective, and a day the work is due by —
-today, in a week, in a month — each saying at its right what it is on. A
-line is chosen by the arrows, `←` `→` walk its value in place, and `⏎` or a
-click opens its values, a filter's pill opening them directly
+`⇧F`, `+ Filter`, or the menu bar's Filter drops the menu of filters under the
+pill, `FILTER BY` at its head: column, priority, label, objective, and a day
+the work is due by — today, in a week, in a month — each with what it is on
+after its name and, at its right, the letter that opens it. It is a menu, not
+a panel: no heading of a panel, no cross, no buttons, its keys said in a line
+at its foot (`FilterFoot`), as the mockup drew it. A line is chosen by the
+arrows, and `⏎`, a click or its letter opens its values
+(`@gui-a-filter-opens-by-its-letter`), a filter's pill opening them directly
 (`FilterList`, `@gui-a-filter-pill-opens-its-values`,
-`@gui-a-filter-opens-the-list-of-its-values`). Each value says how many tasks
-it would keep under the other filters as they stand (`FilterCounts`, counted
-by the engine). A value is taken by `⏎` or a click; labels are ticked, as
-many as wanted, a task kept when it carries every one
+`@gui-a-filter-opens-the-list-of-its-values`). The values are headed by the
+filter's name and how they are taken, a label by its colour's dot, and each
+says how many tasks it would keep under the other filters as they stand
+(`FilterCounts`, counted by the engine); `any` is not one of them, the filter
+taken off by its pill's cross or by choosing again the value it is on
+(`@gui-a-value-chosen-again-takes-its-filter-off`). **Nothing narrows until a
+value is chosen**: the arrows only move, over the filters as over their values
+(`@gui-moving-over-the-filters-narrows-nothing`). `←` `→` walked a filter's
+value in place, the board changing under the menu at every press, which is
+what the panel did and the mockup did not. A value is taken by `⏎` or a click;
+labels are ticked, as many as wanted, a task kept when it carries every one
 (`@gui-the-labels-are-filtered-together`), the others take one. `esc` goes
 back where the values were opened from — the menu, or the board for a pill
 (`@gui-a-filters-list-is-left-untouched`); `⌫`, or No filter, puts every one
 back on `any` (`@gui-every-filter-is-cleared-at-once`). The board narrows as
-they move (`@gui-a-filter-narrows-the-board`), two together keep what both
+they are chosen (`@gui-a-filter-narrows-the-board`), two together keep what both
 reach (`@gui-filters-narrow-together`), and the search narrows what they kept
 (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
 (`engine.Filters`): what each keeps is what `task list` keeps with the same flag.

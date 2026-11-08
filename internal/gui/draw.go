@@ -45,7 +45,8 @@ type Skin struct {
 	Card, Hover, Field color.NRGBA
 	Ink, Faint, Low    color.NRGBA
 	Chosen, Selected   color.NRGBA
-	Tint, Pill         color.NRGBA
+	Tint, TintInk      color.NRGBA
+	Pill               color.NRGBA
 	Wrong, Danger      color.NRGBA
 	Late, Done         color.NRGBA
 	Ghost              color.NRGBA
@@ -77,6 +78,7 @@ func Dark() Skin {
 		Chosen:     color.NRGBA{R: 123, G: 147, B: 255, A: 255},
 		Selected:   color.NRGBA{R: 141, G: 143, B: 156, A: 255},
 		Tint:       color.NRGBA{R: 30, G: 36, B: 60, A: 255},
+		TintInk:    color.NRGBA{R: 195, G: 206, B: 255, A: 255},
 		Pill:       color.NRGBA{R: 48, G: 50, B: 56, A: 255},
 		Wrong:      color.NRGBA{R: 255, G: 155, B: 152, A: 255},
 		Danger:     color.NRGBA{R: 58, G: 31, B: 34, A: 255},
@@ -334,48 +336,65 @@ func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Wind
 
 func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.FiltersBox()
-	drawPanel(gtx, th, skin, box, Heads(w))
+	raised(gtx, box, panelRadius, skin.Panel)
+	head := Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
+	foot := Box{X: box.X, Y: box.Y + box.H - dropFoot, W: box.W, H: dropFoot}
+	fill(gtx, Box{X: box.X, Y: foot.Y, W: box.W, H: 1}, skin.GroundEdge)
+	x := foot.X + padding
+	for _, key := range w.FilterFoot() {
+		chip := drawKeyChip(gtx, th, skin, Box{X: x, Y: foot.Y, H: foot.H}, key[0])
+		said := Box{X: chip.X + chip.W + hintSpace, Y: foot.Y + (foot.H-lineHigh)/2, W: ends(w.measured(), key[1], small), H: lineHigh}
+		sayIn(gtx, th, skin.Faint, said, key[1], small, font.Font{}, text.Start)
+		x = said.X + said.W + padding
+	}
 	if values, open := w.FilterList(); open {
 		f := w.Filters()[w.FilterOn()]
+		fill(gtx, Box{X: box.X, Y: box.Y + dropHead - 1, W: box.W, H: 1}, skin.GroundEdge)
+		say(gtx, th, skin.Ink, head, Titled(f.Name), reads)
+		sayIn(gtx, th, skin.Faint, head, w.FilterHint(), small, font.Font{}, text.End)
 		counts := w.FilterCounts()
 		for i, value := range values {
 			if value.H == 0 {
 				continue
 			}
+			taken := w.FilterTaken(i)
+			if taken {
+				rounded(gtx, value, rowRadius, skin.Tint)
+			}
 			if i == w.FilterPick() {
 				rounded(gtx, value, rowRadius, skin.Pill)
 			}
 			line := Inside(value)
-			if w.FilterTaken(i) {
+			if taken {
 				say(gtx, th, skin.Chosen, line, TickedMark, reads)
 			}
 			named := Box{X: line.X + tickRoom, Y: line.Y, W: line.W - tickRoom, H: line.H}
-			if f.Arg == "label" && i > 0 {
-				drawLabelPill(gtx, th, skin, w, LabelPillAt(named, ends(w.measured(), f.Shown[i], small)), f.Shown[i])
-			} else {
-				say(gtx, th, skin.Ink, named, f.Shown[i], reads)
+			if f.Arg == "label" {
+				dot := Box{X: named.X, Y: named.Y + (named.H-dotSide)/2, W: dotSide, H: dotSide}
+				rounded(gtx, dot, dotSide/2, skin.Labels[w.LabelColour(f.Shown[i])])
+				named.X, named.W = named.X+dotSide+between, named.W-dotSide-between
 			}
+			say(gtx, th, skin.Ink, named, f.Shown[i], reads)
 			if i < len(counts) {
 				sayIn(gtx, th, skin.Faint, line, strconv.Itoa(counts[i]), small, font.Font{Typeface: MonoFace}, text.End)
 			}
 		}
-		drawPanelOffers(gtx, th, skin, box, w)
 		return
 	}
+	sayIn(gtx, th, skin.Low, head, FilterMenuSays, small, font.Font{Typeface: MonoFace, Weight: font.SemiBold}, text.Start)
 	for i, f := range w.Filters() {
 		row := w.FilterRowAt(i)
 		if i == w.FilterOn() {
 			rounded(gtx, row, rowRadius, skin.Pill)
 		}
 		line := Inside(row)
-		say(gtx, th, skin.Ink, line, f.Name, reads)
-		ink, said := skin.Faint, engine.Any
+		say(gtx, th, skin.Ink, line, Titled(f.Name), reads)
 		if len(f.Taken()) > 0 {
-			ink, said = skin.Chosen, f.TakenSays()
+			at := ends(w.measured(), Titled(f.Name), reads) + between
+			sayIn(gtx, th, skin.Chosen, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, f.TakenSays(), small, font.Font{}, text.Start)
 		}
-		sayIn(gtx, th, ink, line, said, reads, font.Font{}, text.End)
+		sayIn(gtx, th, skin.Faint, line, FilterKey(f), small, font.Font{Typeface: MonoFace}, text.End)
 	}
-	drawPanelOffers(gtx, th, skin, box, w)
 }
 
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
@@ -1789,10 +1808,10 @@ func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		line := Box{X: pill.Box.X, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W, H: lineHigh}
 		switch pill.Kind {
 		case PillSearch, PillFilter:
-			drawClearingPill(gtx, th, skin, pill.Box, pill.Said, pill.Faint)
+			drawFilterPill(gtx, th, skin, w, pill)
 		case PillAdd:
-			outline(gtx, pill.Box, skin.Edge)
-			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{}, text.Middle)
+			dashed(gtx, pill.Box, skin.Edge)
+			sayIn(gtx, th, skin.Ink, line, pill.Said, small, font.Font{}, text.Middle)
 		case PillFolded:
 			rounded(gtx, pill.Box, pill.Box.H/2, skin.Tint)
 			sayIn(gtx, th, skin.Ink, line, pill.Said, small, font.Font{}, text.Middle)
@@ -1804,14 +1823,17 @@ func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 }
 
-func drawClearingPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string, faint bool) {
-	ink := skin.Faint
-	if faint {
-		ink = skin.Low
+func drawFilterPill(gtx layout.Context, th *material.Theme, skin Skin, w Window, pill Pill) {
+	name, value := skin.Faint, skin.TintInk
+	if pill.Faint {
+		name, value = skin.Low, skin.Faint
 	}
-	rounded(gtx, pill, pill.H/2, skin.Pill)
-	sayIn(gtx, th, ink, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, said, small, font.Font{}, text.Start)
-	drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
+	rounded(gtx, pill.Box, pill.Box.H/2, skin.Tint)
+	line := Box{X: pill.Box.X + pillPad, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W - pillPad - pillCross, H: lineHigh}
+	sayIn(gtx, th, name, line, pill.Name, small, font.Font{}, text.Start)
+	at := ends(w.measured(), pill.Name+" ", small)
+	sayIn(gtx, th, value, Box{X: line.X + at, Y: line.Y, W: line.W - at, H: line.H}, strings.TrimPrefix(pill.Said, pill.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)
+	drawCross(gtx, Box{X: pill.Box.X + pill.Box.W - pillCross, Y: pill.Box.Y + (pill.Box.H-pillCross)/2, W: pillCross - 4, H: pillCross}, name)
 }
 
 func drawListRow(gtx layout.Context, th *material.Theme, skin Skin, row Box, said string, on bool) {

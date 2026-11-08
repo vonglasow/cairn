@@ -434,13 +434,25 @@ Feature: The desktop board
       And I press "esc"
       Then the board says it is filtered by "priority high · label backend"
 
-    @gui-a-filter-walks-back-to-its-last-value
-    Scenario: a filter walked back from any comes to its last value
+    @gui-moving-over-the-filters-narrows-nothing
+    Scenario: moving over the filters and their values narrows nothing until a value is chosen
       When I open the window
       And I press "shift+f"
       And I press "down"
-      And I press "left"
-      Then the board says it is filtered by "priority critical"
+      And I press "right"
+      Then the board says it is filtered by ""
+      When I press "enter"
+      And I press "down"
+      Then the board says it is filtered by ""
+      And the window shows the filters
+
+    @gui-a-filter-opens-by-its-letter
+    Scenario: the menu of filters opens a filter by its first letter, its values listed without any
+      When I open the window
+      And I press "shift+f"
+      And I press "p"
+      Then the filter "priority" lists its values
+      And the filter "priority" lists "low, normal, high, critical"
 
     @gui-a-filter-opens-the-list-of-its-values
     Scenario: a filter clicked opens the list of its values, and one is chosen from it
@@ -449,7 +461,7 @@ Feature: The desktop board
       And I click the filter "priority"
       Then the filter "priority" lists its values
       And the board says it is filtered by ""
-      When I press "down" 3 times
+      When I press "down" 2 times
       And I press "enter"
       Then the board says it is filtered by "priority high"
       And the filter "priority" lists nothing
@@ -480,13 +492,23 @@ Feature: The desktop board
       Then "todo" carries "Write the spec"
       And "current" does not carry "Ship it"
 
-    @gui-the-filters-stand-as-pills-after-the-tabs
-    Scenario: the filters in force stand as pills after the tabs, with a pill to add one and how many tasks they keep
+    @gui-the-filters-stand-as-pills-at-the-right-of-the-tabs
+    Scenario: the filters in force stand as pills at the right of the tabs, against the menu, with a pill to add one and how many tasks they keep
       When I open the window
       And I set the filter "priority" to "high"
       And I press "esc"
       Then the pills after the tabs read "priority high, + Filter, Clear"
       And the board says it keeps "2 of 3 tasks"
+      And the pills end against the menu
+
+    @gui-a-value-chosen-again-takes-its-filter-off
+    Scenario: the value a filter is on, chosen again, takes the filter off
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I click the pill "priority high"
+      And I press "enter"
+      Then the board says it is filtered by ""
 
     @gui-a-filter-pill-opens-its-values
     Scenario: a filter's pill opens its values, each saying how many tasks it would keep

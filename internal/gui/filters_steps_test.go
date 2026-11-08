@@ -72,6 +72,39 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the pills end against the menu$`, func() error {
+		pills := w.w.Pills()
+		if len(pills) == 0 {
+			return fmt.Errorf("no pill is drawn")
+		}
+		for i := 1; i < len(pills); i++ {
+			if pills[i].Box.X != pills[i-1].Box.X+pills[i-1].Box.W+pillGap {
+				return fmt.Errorf("the pill %q at %+v does not follow %q at %+v", pills[i].Said, pills[i].Box, pills[i-1].Said, pills[i-1].Box)
+			}
+		}
+		last := pills[len(pills)-1].Box
+		if menu := MenuButton(w.w.Layout()); last.X+last.W != menu.X-between {
+			return fmt.Errorf("the pills end at %d, not against the menu at %d", last.X+last.W, menu.X)
+		}
+		return nil
+	})
+	sc.Then(`^the filter "([^"]*)" lists "([^"]*)"$`, func(name, want string) error {
+		f := w.w.Filters()[w.w.FilterOn()]
+		values, open := w.w.FilterList()
+		if !open || f.Name != name {
+			return fmt.Errorf("the filter %q lists nothing", name)
+		}
+		var got []string
+		for i, value := range values {
+			if value.H > 0 {
+				got = append(got, f.Shown[i])
+			}
+		}
+		if strings.Join(got, ", ") != want {
+			return fmt.Errorf("the filter %q lists %q", name, strings.Join(got, ", "))
+		}
+		return nil
+	})
 	sc.Then(`^the objectives shown read "([^"]*)"$`, func(want string) error {
 		var got []string
 		for _, g := range w.w.Showing().Goals {

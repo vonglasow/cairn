@@ -133,7 +133,7 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 	for w.Filters()[w.FilterOn()].Name != "priority" {
 		w = w.Key("down")
 	}
-	w = w.Key("right").Key("esc")
+	w = w.Key("enter").Key("enter").Key("esc")
 	var filters []Pill
 	for _, pill := range w.Pills() {
 		if pill.Kind == PillFilter {

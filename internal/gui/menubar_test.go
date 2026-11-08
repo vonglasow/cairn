@@ -2,7 +2,6 @@ package gui
 
 import (
 	"cairn/internal/engine"
-	"image/color"
 	"slices"
 	"testing"
 	"time"
@@ -83,9 +82,7 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 		t.Errorf("the menu %+v runs out of the window, or over its button %+v", box, button)
 	}
 	drawnOn := func(v Window) int {
-		shot := drawn(t, v)
-		at := shot.RGBAAt(button.X+1, button.Y+1)
-		return inked(shot, Inside(button), color.NRGBA{R: at.R, G: at.G, B: at.B, A: 255})
+		return painted(drawn(t, v), Inside(button), Dark().Chosen)
 	}
 	if drawnOn(w) == 0 {
 		t.Error("the button is not drawn")

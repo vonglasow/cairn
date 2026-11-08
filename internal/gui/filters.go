@@ -31,7 +31,7 @@ func (w Window) onFilters(name string) Window {
 		case "down", "j":
 			w.filterPick = min(len(w.filters[w.filterOn].Shown)-1, w.filterPick+1)
 		case "up", "k":
-			w.filterPick = max(0, w.filterPick-1)
+			w.filterPick = max(1, w.filterPick-1)
 		}
 		return w
 	}
@@ -40,18 +40,22 @@ func (w Window) onFilters(name string) Window {
 		w.filterOn = min(len(w.filters)-1, w.filterOn+1)
 	case "up", "k":
 		w.filterOn = max(0, w.filterOn-1)
-	case "right", "l":
-		w.filters = w.filters.Walked(w.filterOn, 1)
-	case "left", "h":
-		w.filters = w.filters.Walked(w.filterOn, -1)
 	case "enter", "space":
 		return w.openingFilter(w.filterOn)
+	}
+	for i, f := range w.filters {
+		if FilterKey(f) == name {
+			return w.openingFilter(i)
+		}
 	}
 	return w
 }
 
+// FilterKey is the key that opens a filter from the menu of filters: the first letter of its name.
+func FilterKey(f engine.Filter) string { return f.Name[:1] }
+
 func (w Window) openingFilter(at int) Window {
-	w.filterOn, w.filterOpen, w.filterPick = at, true, w.filters[at].At
+	w.filterOn, w.filterOpen, w.filterPick = at, true, max(1, w.filters[at].At)
 	return w
 }
 
@@ -63,9 +67,12 @@ func (w Window) openingFilterFromPill(at int) Window {
 
 func (w Window) pickingFilter(value int) Window {
 	f := w.filters[w.filterOn]
-	if f.Many && value > 0 {
+	if f.Many {
 		w.filters = w.filters.Toggled(w.filterOn, f.Values[value])
 		return w
+	}
+	if value == f.At {
+		value = 0
 	}
 	w.filters = w.filters.Walked(w.filterOn, value-f.At)
 	return w.closingFilter()
@@ -95,31 +102,70 @@ func (w Window) FilterCounts() []int {
 // FilterTaken says whether a value of the open filter is one it is on.
 func (w Window) FilterTaken(value int) bool {
 	f := w.filters[w.filterOn]
-	return slices.Contains(f.Taken(), f.Values[value]) || (value == 0 && len(f.Taken()) == 0)
+	return slices.Contains(f.Taken(), f.Values[value])
 }
 
 const (
-	filterMenuWide  = 260
-	filterValueWide = 280
+	filterMenuWide  = 240
+	filterValueWide = 300
+	dropHead        = 36
+	dropFoot        = 36
 )
 
-// FiltersBox is the menu of filters opened under the pill that adds one: a line a filter, what it is on at its right, its offers at its foot.
+// FilterMenuSays is what heads the menu of filters.
+const FilterMenuSays = "FILTER BY"
+
+// FilterHint says how the open filter's values are taken: several ticked together, or one at a time.
+func (w Window) FilterHint() string {
+	if w.filters[w.filterOn].Many {
+		return "ticked ones together"
+	}
+	return "one at a time"
+}
+
+// FilterFoot is the keys the foot of the open menu says, each with what it does.
+func (w Window) FilterFoot() [][2]string {
+	if !w.filterOpen {
+		return [][2]string{{"↑↓", "walk"}, {"⏎", "open"}, {"⌫", "no filter"}, {"esc", "close"}}
+	}
+	if w.filters[w.filterOn].Many {
+		return [][2]string{{"↑↓", "walk"}, {"⏎", "tick"}, {"esc", "close"}}
+	}
+	return [][2]string{{"↑↓", "walk"}, {"⏎", "choose"}, {"esc", "close"}}
+}
+
+func (w Window) footWide() int {
+	wide := 2 * padding
+	for _, key := range w.FilterFoot() {
+		wide += KeyChipWide(key[0]) + hintSpace + ends(w.measured(), key[1], small) + padding
+	}
+	return wide
+}
+
+// FiltersBox is the menu dropped under the pill it opened from: the filters, a line each with the key that opens it, or the open filter's values, each with how many tasks it would keep; its name at its head, its keys at its foot.
 func (w Window) FiltersBox() Box {
 	anchor := w.filterAnchor()
 	if w.filterOpen {
-		return w.droppedUnder(anchor, filterValueWide, len(w.filters[w.filterOn].Shown))
+		return w.droppedUnder(anchor, filterValueWide, len(w.filters[w.filterOn].Shown)-1)
 	}
 	return w.droppedUnder(anchor, filterMenuWide, len(w.filters))
 }
 
 func (w Window) droppedUnder(anchor Box, wide, rows int) Box {
-	fixed := FirstRow(Box{}) + between + padding + barHigh + padding
+	fixed := dropHead + dropFoot + inset
 	most := max(1, (w.height-margin-anchor.Y-anchor.H-between-fixed)/menuRow)
 	high := fixed + min(rows, most)*menuRow
-	wide = min(w.width-2*margin, max(wide, w.offersWide(), w.headWide()+padding+pillCross))
-	x := max(margin, min(anchor.X, w.width-margin-wide))
+	wide = min(w.width-2*margin, max(wide, w.footWide()))
+	x := max(margin, min(anchor.X+anchor.W-wide, w.width-margin-wide))
 	return Box{X: x, Y: anchor.Y + anchor.H + between, W: wide, H: high}
 }
+
+// DropRowAt is where the i-th line of a dropped menu is, under its head.
+func DropRowAt(box Box, i int) Box {
+	return Box{X: box.X + inset, Y: box.Y + dropHead + i*menuRow, W: box.W - 2*inset, H: menuRow}
+}
+
+func dropRoom(box Box) int { return max(1, (box.H-dropHead-dropFoot-inset)/menuRow) }
 
 func (w Window) filterAnchor() Box {
 	for _, pill := range w.Pills() {
@@ -137,7 +183,7 @@ func (w Window) filterAnchor() Box {
 }
 
 // FilterRowAt is where the i-th filter's line is in the menu of filters.
-func (w Window) FilterRowAt(i int) Box { return ListRowAt(w.FiltersBox(), i) }
+func (w Window) FilterRowAt(i int) Box { return DropRowAt(w.FiltersBox(), i) }
 
 // FilterList is the values of the filter whose list is open, where each is drawn, and whether one is open.
 func (w Window) FilterList() ([]Box, bool) {
@@ -145,14 +191,13 @@ func (w Window) FilterList() ([]Box, bool) {
 		return nil, false
 	}
 	box := w.FiltersBox()
-	room := listRoom(box)
+	room := dropRoom(box)
 	shown := w.filters[w.filterOn].Shown
-	from := max(0, min(w.filterPick-room+1, len(shown)-room))
+	from := 1 + max(0, min(w.filterPick-room, len(shown)-1-room))
 	boxes := make([]Box, len(shown))
 	for i := range shown {
-		boxes[i] = ListRowAt(box, i-from)
-		if i < from || i >= from+room {
-			boxes[i] = Box{}
+		if i >= from && i < from+room {
+			boxes[i] = DropRowAt(box, i-from)
 		}
 	}
 	return boxes, true
@@ -206,10 +251,11 @@ const (
 	PillCount
 )
 
-// Pill is one pill of the row after the tabs: where it is, what it says, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
+// Pill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
 type Pill struct {
 	Box   Box
 	Said  string
+	Name  string
 	Kind  PillKind
 	At    int
 	Faint bool
@@ -223,7 +269,7 @@ func (p Pill) Cross() (Box, bool) {
 	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
 }
 
-// Pills is the row after the tabs: the search kept, then every filter in force, a pill to add one and one to clear them, folded into one pill when they no longer fit before the menu; and at its end how many tasks are kept of how many.
+// Pills is the row at the right of the tabs, ending against the menu: the search kept, then every filter in force, a pill to add one and one to clear them, folded into one pill when they no longer fit between the tabs and the menu; and at its end how many tasks are kept of how many.
 func (w Window) Pills() []Pill {
 	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch {
 		return nil
@@ -238,20 +284,21 @@ func (w Window) Pills() []Pill {
 	}
 	m := w.measured()
 	var row []Pill
-	crossed := func(said string, kind PillKind, at int) {
-		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad + pillCross}, Said: said, Kind: kind, At: at})
+	crossed := func(name, value string, kind PillKind, at int) {
+		said := name + " " + value
+		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad + pillCross}, Said: said, Name: name, Kind: kind, At: at})
 	}
 	plain := func(said string, kind PillKind) {
 		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
 	taken := 0
 	if !w.looking.Empty() && w.screen != OnSearch {
-		crossed("/ "+w.looking.Reads(), PillSearch, -1)
+		crossed("/", w.looking.Reads(), PillSearch, -1)
 		taken++
 	}
 	for i, f := range w.filters {
 		if len(f.Taken()) > 0 {
-			crossed(f.Name+" "+f.TakenSays(), PillFilter, i)
+			crossed(f.Name, f.TakenSays(), PillFilter, i)
 			row[len(row)-1].Faint = w.tab == Objectives && !f.ReachesGoals()
 			taken++
 		}
@@ -279,12 +326,8 @@ func (w Window) Pills() []Pill {
 		count = nil
 	}
 	var pills []Pill
-	for _, pill := range count {
-		pill.Box.X, pill.Box.Y, pill.Box.H = end-pill.Box.W, y, high
-		pills = append(pills, pill)
-	}
-	x := start
-	for _, pill := range row {
+	x := max(start, end-widthOf(append(slices.Clone(row), count...)))
+	for _, pill := range append(row, count...) {
 		if x+pill.Box.W > end {
 			break
 		}
