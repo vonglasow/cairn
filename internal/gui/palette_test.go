@@ -158,18 +158,12 @@ func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
 
 func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
 	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"}, engine.Card{Number: 2, Title: "Ship it", State: "todo"}, engine.Card{Number: 3, Title: "Spec the bar", State: "todo"})
-	if _, ok := w.KeptCount(); ok {
-		t.Error("a board nobody searches counts what it keeps")
+	if got := w.TabCount(Tasks); got != "3" {
+		t.Errorf("a board nobody searches counts %q", got)
 	}
 	w = w.Key("/").Types("spec")
-	said, ok := w.KeptCount()
-	if !ok || said != "2 of 3 tasks" {
-		t.Errorf("searching spec counts %q, %v", said, ok)
-	}
-	for _, pill := range w.Pills() {
-		if pill.Kind == PillCount && pill.Said != said {
-			t.Errorf("the count's pill says %q", pill.Said)
-		}
+	if got := w.TabCount(Tasks); got != "2/3" {
+		t.Errorf("searching spec counts %q", got)
 	}
 }
 

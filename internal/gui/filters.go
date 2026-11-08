@@ -126,7 +126,7 @@ func (w Window) FilterHint() string {
 // FilterFoot is the keys the foot of the open menu says, each with what it does.
 func (w Window) FilterFoot() [][2]string {
 	if !w.filterOpen {
-		return [][2]string{{"↑↓", "walk"}, {"⏎", "open"}, {"⌫", "no filter"}, {"esc", "close"}}
+		return [][2]string{{"↑↓", "walk"}, {"⏎", "open"}, {"⌫", "take off"}, {"⌥⌫", "all"}, {"esc", "close"}}
 	}
 	if w.filters[w.filterOn].Many {
 		return [][2]string{{"↑↓", "walk"}, {"⏎", "tick"}, {"esc", "close"}}
@@ -247,8 +247,6 @@ const (
 	PillClear
 	// PillFolded stands for every filter and the search when they no longer fit.
 	PillFolded
-	// PillCount says how many tasks are kept of how many, at the end of the row.
-	PillCount
 )
 
 // Pill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
@@ -269,7 +267,7 @@ func (p Pill) Cross() (Box, bool) {
 	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
 }
 
-// Pills is the row at the right of the tabs, ending against the menu: the search kept, then every filter in force, a pill to add one and one to clear them, folded into one pill when they no longer fit between the tabs and the menu; and at its end how many tasks are kept of how many.
+// Pills is the row at the right of the tabs: the search kept, then every filter in force, the pill clearing them, and against the menu the pill adding one, which stands where it stood whatever is added; folded into one pill, in that pill's place, when they no longer fit between the tabs and the menu.
 func (w Window) Pills() []Pill {
 	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch {
 		return nil
@@ -285,8 +283,8 @@ func (w Window) Pills() []Pill {
 	m := w.measured()
 	var row []Pill
 	crossed := func(name, value string, kind PillKind, at int) {
-		said := name + " " + value
-		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad + pillCross}, Said: said, Name: name, Kind: kind, At: at})
+		wide := ends(m, name, small) + nameGap + ends(m, value, small) + 2*pillPad + pillCross
+		row = append(row, Pill{Box: Box{W: wide}, Said: name + " " + value, Name: name, Kind: kind, At: at})
 	}
 	plain := func(said string, kind PillKind) {
 		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
@@ -303,31 +301,18 @@ func (w Window) Pills() []Pill {
 			taken++
 		}
 	}
-	plain(AddFilterSays, PillAdd)
 	if taken > 0 {
 		plain(ClearSays, PillClear)
 	}
-	var count []Pill
-	if said, ok := w.KeptCount(); ok {
-		count = []Pill{{Box: Box{W: monoWide(said, small) + 2*pillPad}, Said: said, Kind: PillCount}}
-	}
-	room := func() int {
-		if len(count) > 0 {
-			return end - count[0].Box.W - pillGap - start
-		}
-		return end - start
-	}
-	if widthOf(row) > room() && taken > 0 {
+	plain(AddFilterSays, PillAdd)
+	if widthOf(row) > end-start && taken > 0 {
 		row = nil
-		plain(FoldedSays(taken), PillFolded)
 		plain(ClearSays, PillClear)
-	}
-	if widthOf(row) > room() {
-		count = nil
+		plain(FoldedSays(taken), PillFolded)
 	}
 	var pills []Pill
-	x := max(start, end-widthOf(append(slices.Clone(row), count...)))
-	for _, pill := range append(row, count...) {
+	x := max(start, end-widthOf(row))
+	for _, pill := range row {
 		if x+pill.Box.W > end {
 			break
 		}
@@ -346,6 +331,9 @@ func widthOf(row []Pill) int {
 	return wide - pillGap
 }
 
+// nameGap is the room between what a filter's pill is named and the value it is on.
+const nameGap = 5
+
 // AddFilterSays is what the pill that opens the menu of filters says.
 const AddFilterSays = "+ Filter"
 
@@ -355,15 +343,33 @@ const ClearSays = "Clear"
 // FoldedSays is what the pill standing for every filter and the search says once they no longer fit: how many there are.
 func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
 
-// KeptCount is how many tasks the search and the filters keep of how many the board holds — objectives on the objectives' page — and whether anything narrows it at all.
-func (w Window) KeptCount() (string, bool) {
-	if w.looking.Empty() && !w.filters.Narrows() {
-		return "", false
+// TabCount is what a page's tab counts: what it shows, and of how many when the search or the filters narrow it.
+func (w Window) TabCount(page Tab) string {
+	shown := strconv.Itoa(w.Holds(page))
+	if page == Time || (w.looking.Empty() && !w.filters.Narrows()) {
+		return shown
 	}
-	if w.tab == Objectives {
-		return strconv.Itoa(len(w.Showing().Goals)) + " of " + strconv.Itoa(len(w.Reading().Goals)) + " objectives", true
+	if page == Objectives {
+		return shown + "/" + strconv.Itoa(len(w.Reading().Goals))
 	}
-	return strconv.Itoa(len(w.Showing().Cards)) + " of " + strconv.Itoa(len(w.Reading().Cards)) + " tasks", true
+	return shown + "/" + strconv.Itoa(len(engine.OnTheBoard(w.Reading().Cards, w.archived)))
+}
+
+func (w Window) takingOffLast() Window {
+	for i := len(w.filters) - 1; i >= 0; i-- {
+		if len(w.filters[i].Taken()) > 0 {
+			return w.takingOff(i)
+		}
+	}
+	w.looking = Written{}
+	return w
+}
+
+func (w Window) takingOff(at int) Window {
+	cleared := slices.Clone(w.filters)
+	cleared[at].At, cleared[at].Ticked = 0, nil
+	w.filters = cleared
+	return w
 }
 
 func (w Window) clickingPill(pill Pill, p Point) Window {
@@ -372,10 +378,7 @@ func (w Window) clickingPill(pill Pill, p Point) Window {
 			w.looking = Written{}
 			return w
 		}
-		cleared := slices.Clone(w.filters)
-		cleared[pill.At].At, cleared[pill.At].Ticked = 0, nil
-		w.filters = cleared
-		return w
+		return w.takingOff(pill.At)
 	}
 	switch pill.Kind {
 	case PillFilter:
@@ -398,7 +401,7 @@ func (w Window) clickingPills(p Point) (Window, bool) {
 		return w, false
 	}
 	for _, pill := range w.Pills() {
-		if pill.Box.In(p) && pill.Kind != PillCount {
+		if pill.Box.In(p) {
 			return w.clickingPill(pill, p), true
 		}
 	}

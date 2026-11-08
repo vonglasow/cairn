@@ -109,6 +109,11 @@ func (w Window) onBoard(name string) Window {
 		return w.openingConfiguration()
 	case "shift+f":
 		return w.filteringBoard()
+	case "backspace":
+		return w.takingOffLast()
+	case "alt+backspace":
+		w.filters, w.looking = w.filters.Cleared(), Written{}
+		return w
 	case "cmd+e":
 		return w.exportingTasks()
 	case "cmd+o":

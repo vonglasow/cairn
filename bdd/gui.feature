@@ -493,13 +493,60 @@ Feature: The desktop board
       And "current" does not carry "Ship it"
 
     @gui-the-filters-stand-as-pills-at-the-right-of-the-tabs
-    Scenario: the filters in force stand as pills at the right of the tabs, against the menu, with a pill to add one and how many tasks they keep
+    Scenario: the filters in force stand as pills at the right of the tabs, the pill adding one against the menu, and the tab counts what they keep
       When I open the window
       And I set the filter "priority" to "high"
       And I press "esc"
-      Then the pills after the tabs read "priority high, + Filter, Clear"
-      And the board says it keeps "2 of 3 tasks"
+      Then the pills after the tabs read "priority high, Clear, + Filter"
+      And the tab "Tasks" counts "2/3"
       And the pills end against the menu
+
+    @gui-the-pill-adding-a-filter-stays-where-it-stands
+    Scenario: the pill that adds a filter stands where it stood, whatever filters are added
+      When I open the window
+      And I note where the pill "+ Filter" stands
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      Then the pill "+ Filter" stands where it stood
+
+    @gui-a-filter-is-taken-off-by-its-key
+    Scenario: backspace on a line of the menu of filters takes that filter off, and that one alone
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I press "up"
+      And I press "backspace"
+      Then the board says it is filtered by "label backend"
+      And the window shows the filters
+
+    @gui-backspace-takes-the-last-pill-off-the-board
+    Scenario: backspace on the board takes off the last filter in force, then the search, a pill at a time
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      And I press "/"
+      And I type "spec"
+      And I press "enter"
+      And I press "backspace"
+      Then the board says it is filtered by "priority high"
+      When I press "backspace"
+      And I press "backspace"
+      Then the board says it is filtered by ""
+      And no search is kept
+
+    @gui-alt-backspace-clears-every-filter-from-the-board
+    Scenario: alt and backspace on the board take every filter and the search away
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I press "/"
+      And I type "spec"
+      And I press "enter"
+      And I press "alt+backspace"
+      Then the board says it is filtered by ""
+      And no search is kept
 
     @gui-a-value-chosen-again-takes-its-filter-off
     Scenario: the value a filter is on, chosen again, takes the filter off
@@ -539,7 +586,7 @@ Feature: The desktop board
       And I press "/"
       And I type "spec"
       And I press "enter"
-      Then the pills after the tabs read "/ spec, priority high, + Filter, Clear"
+      Then the pills after the tabs read "/ spec, priority high, Clear, + Filter"
       When I click the pill "Clear"
       Then the board says it is filtered by ""
       And no search is kept
@@ -552,7 +599,7 @@ Feature: The desktop board
       And I set the filter "priority" to "high"
       And I set the filter "label" to "backend"
       And I press "esc"
-      Then the pills after the tabs read "Filters · 3, Clear"
+      Then the pills after the tabs read "Clear, Filters · 3"
       When I click the pill "Filters · 3"
       Then the window shows the filters
 

@@ -617,6 +617,8 @@ func (w Window) Choose(name string) Window {
 	case "no filter":
 		w.filters = w.filters.Cleared()
 		return w
+	case "take off":
+		return w.takingOff(w.filterOn)
 	case "help":
 		w.screen = OnHelp
 		return w

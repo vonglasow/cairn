@@ -59,9 +59,6 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		last := TabAt(l, len(w.w.Shown())-1)
 		var said []string
 		for _, pill := range w.w.Pills() {
-			if pill.Kind == PillCount {
-				continue
-			}
 			if pill.Box.X < last.X+last.W || pill.Box.Y < l.Tabs.Y || pill.Box.Y+pill.Box.H > l.Tabs.Y+l.Tabs.H {
 				return fmt.Errorf("the pill %q stands at %+v, not in the tabs' band right of the last tab %+v", pill.Said, pill.Box, last)
 			}
@@ -126,16 +123,37 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no pill reads %q", said)
 	})
-	sc.Then(`^the board says it keeps "([^"]*)"$`, func(want string) error {
-		for _, pill := range w.w.Pills() {
-			if pill.Kind == PillCount {
-				if pill.Said != want {
-					return fmt.Errorf("the board says it keeps %q", pill.Said)
+	sc.Then(`^the tab "([^"]*)" counts "([^"]*)"$`, func(name, want string) error {
+		for _, page := range w.w.Shown() {
+			if Titled(Pages[page]) == name {
+				if got := w.w.TabCount(page); got != want {
+					return fmt.Errorf("the tab %q counts %q", name, got)
 				}
 				return nil
 			}
 		}
-		return fmt.Errorf("the board says nothing of what it keeps")
+		return fmt.Errorf("no tab is called %q", name)
+	})
+	var noted Box
+	pillAt := func(said string) (Box, error) {
+		for _, pill := range w.w.Pills() {
+			if pill.Said == said {
+				return pill.Box, nil
+			}
+		}
+		return Box{}, fmt.Errorf("no pill reads %q", said)
+	}
+	sc.When(`^I note where the pill "([^"]*)" stands$`, func(said string) error {
+		at, err := pillAt(said)
+		noted = at
+		return err
+	})
+	sc.Then(`^the pill "([^"]*)" stands where it stood$`, func(said string) error {
+		at, err := pillAt(said)
+		if err == nil && at != noted {
+			return fmt.Errorf("the pill %q stands at %+v, not at %+v", said, at, noted)
+		}
+		return err
 	})
 	sc.When(`^I click the pill "([^"]*)"$`, func(said string) error {
 		for _, pill := range w.w.Pills() {
@@ -166,7 +184,7 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I clear every filter$`, func() error {
 		opening()
-		w.w = w.w.Key("backspace")
+		w.w = w.w.Key("alt+backspace")
 		return nil
 	})
 	sc.Step(`^the board says it is filtered by "([^"]*)"$`, func(want string) error {

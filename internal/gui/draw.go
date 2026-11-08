@@ -724,7 +724,7 @@ func drawTabs(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Win
 		room, name := TabName(tab), Titled(Pages[page])
 		sayStyled(gtx, th, ink, room, name, reads, font.Medium, 1, text.Start)
 		counted := ends(w.measured(), name, reads) + countGap
-		sayIn(gtx, th, skin.Low, Box{X: room.X + counted, Y: room.Y, W: max(0, room.W-counted), H: room.H}, strconv.Itoa(w.Holds(page)), small, font.Font{Typeface: MonoFace}, text.Start)
+		sayIn(gtx, th, skin.Low, Box{X: room.X + counted, Y: room.Y, W: max(0, room.W-counted), H: room.H}, w.TabCount(page), small, font.Font{Typeface: MonoFace}, text.Start)
 	}
 }
 
@@ -1611,6 +1611,20 @@ func dashed(gtx layout.Context, b Box, with color.NRGBA) {
 	}
 }
 
+func dashedPill(gtx layout.Context, b Box, with color.NRGBA) {
+	r := b.H / 2
+	for _, end := range []Box{{X: b.X, Y: b.Y, W: r, H: b.H}, {X: b.X + b.W - r, Y: b.Y, W: r, H: b.H}} {
+		cut := clip.Rect(rect(end)).Push(gtx.Ops)
+		paint.FillShape(gtx.Ops, with, clip.Stroke{Path: clip.UniformRRect(rect(Box{X: b.X, Y: b.Y, W: b.W, H: b.H}), r).Path(gtx.Ops), Width: 1}.Op())
+		cut.Pop()
+	}
+	for x := b.X + r + dashGap; x < b.X+b.W-r; x += dash + dashGap {
+		long := min(dash, b.X+b.W-r-x)
+		fill(gtx, Box{X: x, Y: b.Y, W: long, H: 1}, with)
+		fill(gtx, Box{X: x, Y: b.Y + b.H - 1, W: long, H: 1}, with)
+	}
+}
+
 func rounded(gtx layout.Context, b Box, radius int, with color.NRGBA) {
 	paint.FillShape(gtx.Ops, with, clip.UniformRRect(rect(b), radius).Op(gtx.Ops))
 }
@@ -1810,15 +1824,13 @@ func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		case PillSearch, PillFilter:
 			drawFilterPill(gtx, th, skin, w, pill)
 		case PillAdd:
-			dashed(gtx, pill.Box, skin.Edge)
+			dashedPill(gtx, pill.Box, skin.Edge)
 			sayIn(gtx, th, skin.Ink, line, pill.Said, small, font.Font{}, text.Middle)
 		case PillFolded:
 			rounded(gtx, pill.Box, pill.Box.H/2, skin.Tint)
 			sayIn(gtx, th, skin.Ink, line, pill.Said, small, font.Font{}, text.Middle)
 		case PillClear:
 			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{}, text.Middle)
-		case PillCount:
-			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{Typeface: MonoFace}, text.Middle)
 		}
 	}
 }
@@ -1831,7 +1843,7 @@ func drawFilterPill(gtx layout.Context, th *material.Theme, skin Skin, w Window,
 	rounded(gtx, pill.Box, pill.Box.H/2, skin.Tint)
 	line := Box{X: pill.Box.X + pillPad, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W - pillPad - pillCross, H: lineHigh}
 	sayIn(gtx, th, name, line, pill.Name, small, font.Font{}, text.Start)
-	at := ends(w.measured(), pill.Name+" ", small)
+	at := ends(w.measured(), pill.Name, small) + nameGap
 	sayIn(gtx, th, value, Box{X: line.X + at, Y: line.Y, W: line.W - at, H: line.H}, strings.TrimPrefix(pill.Said, pill.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)
 	drawCross(gtx, Box{X: pill.Box.X + pill.Box.W - pillCross, Y: pill.Box.Y + (pill.Box.H-pillCross)/2, W: pillCross - 4, H: pillCross}, name)
 }

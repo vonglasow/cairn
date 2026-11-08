@@ -500,16 +500,26 @@ grab, and two of them used to ignore a drag entirely.
 **The board is filtered by what a task carries**, and what filters it stands as
 pills at the right of the tabs. Each filter in force is a pill on the accent's
 tint, its name faint and its value bright, `priority high`, its
-cross taking it away; a search kept comes first, `/ spec`; then `+ Filter`
-and `Clear`, which takes every filter and the search away; and at the right
-of the row, how many tasks are kept of how many, `2 of 3 tasks` (`Pills`,
+cross taking it away; a search kept comes first, `/ spec`; then `Clear`,
+which takes every filter and the search away; and last, against the menu,
+`+ Filter`, a rounded pill drawn dashed (`Pills`,
 `@gui-the-filters-stand-as-pills-at-the-right-of-the-tabs`,
 `@gui-a-kept-search-stands-first-among-the-pills`). The row ends against the
 menu, where the search's pill and the filters' text always stood: started
 right after the last tab, as it was for a day, it sat where nothing had been,
 and away from where the eye looked for it. A page added takes room from its
-left; when the pills no longer fit between the last tab and the menu, they fold into one, `Filters · 3`, which opens the menu, and
-the count gives its room up first (`@gui-the-pills-fold-when-the-room-runs-out`).
+left; when the pills no longer fit between the last tab and the menu, they
+fold into one, `Filters · 3`, standing where `+ Filter` stood and opening the
+menu (`@gui-the-pills-fold-when-the-room-runs-out`).
+
+**The pill that adds a filter never moves**
+(`@gui-the-pill-adding-a-filter-stays-where-it-stands`): the row grows to its
+left. With it last and how many tasks were kept, `2 of 3 tasks`, at the end of
+the row, every filter added or taken off widened the count and pushed the pill
+from under the pointer that was going back to it. That count is the tab's now:
+a page narrowed by the search or the filters counts what it shows of how many,
+`2/3`, where it counted what it showed (`TabCount`), Time aside, whose count is
+the tasks worked in the period.
 The filters had a panel of their own across the middle of the window, each
 value walked with `‹ any ›`, and what was in force was a line of text beside
 the tabs; Linear and GitHub show filters in force as pills.
@@ -536,8 +546,15 @@ what the panel did and the mockup did not. A value is taken by `⏎` or a click;
 labels are ticked, as many as wanted, a task kept when it carries every one
 (`@gui-the-labels-are-filtered-together`), the others take one. `esc` goes
 back where the values were opened from — the menu, or the board for a pill
-(`@gui-a-filters-list-is-left-untouched`); `⌫`, or No filter, puts every one
-back on `any` (`@gui-every-filter-is-cleared-at-once`). The board narrows as
+(`@gui-a-filters-list-is-left-untouched`). On a line of the menu, `⌫` takes
+that filter off and that one alone (`@gui-a-filter-is-taken-off-by-its-key`);
+`⌥⌫`, or No filter, puts every one back on `any`
+(`@gui-every-filter-is-cleared-at-once`). On the board, with no menu open, `⌫`
+takes the last pill off — the last filter in force, then the search — the way
+a field of tokens loses its last one (`@gui-backspace-takes-the-last-pill-off-the-board`),
+and `⌥⌫` takes them all (`@gui-alt-backspace-clears-every-filter-from-the-board`).
+`⇧⌫` was the first thought and could not be: a backspace typed with shift held
+is a backspace, so typing in capitals still deletes (`Typed`). The board narrows as
 they are chosen (`@gui-a-filter-narrows-the-board`), two together keep what both
 reach (`@gui-filters-narrow-together`), and the search narrows what they kept
 (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's

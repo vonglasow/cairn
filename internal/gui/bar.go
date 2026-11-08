@@ -128,6 +128,8 @@ func Shortcut(offer string) string {
 	case "filter":
 		return "shift+f"
 	case "no filter":
+		return "alt+backspace"
+	case "take off":
 		return "backspace"
 	case "rename":
 		return "r"
@@ -251,7 +253,7 @@ func (w Window) Offers() []string {
 		if w.filterOpen {
 			return []string{"Choose", "Cancel"}
 		}
-		return []string{"No filter", "Close"}
+		return []string{"Take off", "No filter", "Close"}
 	case OnConfiguration:
 		if w.configHere {
 			return []string{"Open the file", "Close"}
