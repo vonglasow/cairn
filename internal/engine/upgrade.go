@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -77,10 +78,5 @@ func releaseOf(said string) ([3]int, bool) {
 }
 
 func newer(than, version [3]int) bool {
-	for i := range version {
-		if than[i] != version[i] {
-			return than[i] > version[i]
-		}
-	}
-	return false
+	return slices.Compare(than[:], version[:]) > 0
 }

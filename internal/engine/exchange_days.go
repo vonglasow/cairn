@@ -55,7 +55,7 @@ func (e *Engine) spentOnDays(number int, spent map[string]string) error {
 
 func (e *Engine) spentByDay() (map[int]map[string]string, error) {
 	acts, err := e.since(time.Time{})
-	if err != nil || len(acts) == 0 {
+	if err != nil {
 		return nil, err
 	}
 	now := time.Now()

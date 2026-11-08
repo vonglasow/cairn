@@ -17,7 +17,7 @@ func rowFields() []string {
 	var names []string
 	for _, field := range reflect.VisibleFields(reflect.TypeFor[Row]()) {
 		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
-		if field.Anonymous || !field.IsExported() || name == "" {
+		if name == "" {
 			continue
 		}
 		names = append(names, name)
@@ -30,7 +30,7 @@ var fieldsArgument = Argument{
 	Kind:    List,
 	OneOf:   rowFields(),
 	Outside: ErrNotAField,
-	Means:   "the fields each task's row carries in the JSON answer, among " + strings.Join(rowFields(), ", ") + "; every one when it is not named",
+	Means:   fmt.Sprintf("the fields each task's row carries in the JSON answer, among %s; every one when it is not named", strings.Join(rowFields(), ", ")),
 }
 
 func fieldsOf(in Input) ([]string, error) {

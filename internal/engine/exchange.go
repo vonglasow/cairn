@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -171,11 +172,8 @@ func writeNew(to string, out exchanged) error {
 	if err != nil {
 		return err
 	}
-	if _, err := file.Write(append(written, '\n')); err != nil {
-		_ = file.Close()
-		return err
-	}
-	return file.Close()
+	_, err = file.Write(append(written, '\n'))
+	return cmp.Or(err, file.Close())
 }
 
 func readExport(from string) (exchanged, error) {
@@ -248,10 +246,8 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	tasks := map[int]int{}
 	for _, t := range order {
 		c := fromFile(t)
-		if len(t.Objectives) > 0 {
-			serves := numbered(t.Objectives, objectives)
-			c.Objective = &serves
-		}
+		serves := numbered(t.Objectives, objectives)
+		c.Objective = &serves
 		made, err := e.add(t.Title, c)
 		if err != nil {
 			return domain.Held{}, err
@@ -294,7 +290,7 @@ func (e *Engine) standing(t filed, tasks map[int]int) error {
 		state := t.State
 		c.State = &state
 	}
-	if len(t.BlockedBy) > 0 {
+	if t.BlockedBy != nil {
 		blockers := numbered(t.BlockedBy, tasks)
 		c.Blocker = &blockers
 	}
@@ -393,29 +389,23 @@ func fromFile(f filed) Changes {
 	if len(f.Spent) == 0 && t.TimeSpent != "" {
 		c.Spent = &t.TimeSpent
 	}
-	if len(t.Labels) > 0 {
-		labels := slices.Clone(t.Labels)
-		c.Labels = &labels
-	}
+	labels := slices.Clone(t.Labels)
+	c.Labels = &labels
 	if t.Deadline != "" {
 		c.Deadline = &t.Deadline
 	}
 	if t.Estimate != "" {
 		c.Estimate = &t.Estimate
 	}
-	if len(t.Steps) > 0 {
-		steps := slices.Clone(t.Steps)
-		c.Steps = &steps
-	}
+	steps := slices.Clone(t.Steps)
+	c.Steps = &steps
 	return c
 }
 
 func objectiveChangesOf(o objective.Shape) ObjectiveChanges {
 	c := ObjectiveChanges{Description: &o.Description, State: &o.State, Priority: &o.Priority}
-	if len(o.Labels) > 0 {
-		labels := slices.Clone(o.Labels)
-		c.Labels = &labels
-	}
+	labels := slices.Clone(o.Labels)
+	c.Labels = &labels
 	if o.Deadline != "" {
 		c.Deadline = &o.Deadline
 	}

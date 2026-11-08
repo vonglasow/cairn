@@ -1,6 +1,10 @@
 package engine
 
-import "cairn/internal/domain"
+import (
+	"slices"
+
+	"cairn/internal/domain"
+)
 
 // Column is one of the four, named as the board writes it.
 type Column struct {
@@ -37,11 +41,8 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 			band = append(band, card)
 			continue
 		}
-		for i := range out {
-			if out[i].State == card.State {
-				out[i].Cards = append(out[i].Cards, card)
-				break
-			}
+		if at := slices.IndexFunc(out, func(c Column) bool { return c.State == card.State }); at >= 0 {
+			out[at].Cards = append(out[at].Cards, card)
 		}
 	}
 	return out, band

@@ -93,7 +93,7 @@ func (e *Engine) sessions() ([]FocusSession, error) {
 
 func (e *Engine) asked() ([]string, error) {
 	length, err := e.sessionLength()
-	if err != nil || length == 0 {
+	if err != nil {
 		return nil, err
 	}
 	held, err := e.places.Focus()
@@ -115,11 +115,11 @@ func (e *Engine) asked() ([]string, error) {
 
 func (e *Engine) renewed(number int) error {
 	length, err := e.sessionLength()
-	if err != nil || length == 0 {
+	if err != nil {
 		return err
 	}
 	sessions, err := e.sessionsOf([]int{number}, length)
-	if err != nil || slices.IndexFunc(sessions, func(s FocusSession) bool { return s.Ask != "" }) < 0 {
+	if err != nil || !slices.ContainsFunc(sessions, func(s FocusSession) bool { return s.Ask != "" }) {
 		return err
 	}
 	return e.record(number, trace.FocusRenewed, "", "", "")

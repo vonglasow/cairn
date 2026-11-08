@@ -15,12 +15,10 @@ func (c Card) InTheWay() string {
 
 // Cost is how long a task has taken against how long it was reckoned to take, and whether it has gone past.
 func (c Card) Cost() (said string, over bool) {
-	switch {
-	case c.Spent == "" && c.Estimate == "":
-		return "", false
-	case c.Estimate == "":
+	if c.Estimate == "" {
 		return c.Spent, false
-	case c.Spent == "":
+	}
+	if c.Spent == "" {
 		return c.Estimate, false
 	}
 	return c.Spent + "/" + c.Estimate, c.Overrun

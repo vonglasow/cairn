@@ -215,7 +215,7 @@ func (e *Engine) labelEvery(kept *domain.Narrowing, label string) (int, error) {
 		return 0, err
 	}
 	put := 0
-	adding := []string{"+" + label}
+	adding := []string{fmt.Sprintf("+%s", label)}
 	for _, one := range found {
 		if _, err := e.edit(factsOf(one).Number, Changes{Labels: &adding}); err != nil {
 			return put, err

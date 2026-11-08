@@ -146,11 +146,10 @@ func (fs Filters) Keeping(held Filters) Filters {
 					still = append(still, value)
 				}
 			}
-			switch {
-			case len(still) == 1:
-				out[i].At = slices.Index(out[i].Values, still[0])
-			case len(still) > 1:
+			if len(still) > 1 {
 				out[i].Ticked = still
+			} else if len(still) == 1 {
+				out[i].At = slices.Index(out[i].Values, still[0])
 			}
 		}
 	}

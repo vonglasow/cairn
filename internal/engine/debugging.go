@@ -90,12 +90,15 @@ func givenIn(l *debug.Log, op Operation, in Input) string {
 }
 
 func shown(l *debug.Log, a Argument, value string) string {
-	switch {
-	case a.Kind == Number || a.Kind == Day || a.Kind == Duration || a.Kind == Bool:
+	switch a.Kind {
+	case Number, Day, Duration, Bool:
 		return value
-	case slices.Contains(a.OneOf, value):
+	}
+	switch value {
+	case "true", "false":
 		return value
-	case value == "true" || value == "false":
+	}
+	if slices.Contains(a.OneOf, value) {
 		return value
 	}
 	if _, err := strconv.Atoi(value); err == nil {
@@ -148,9 +151,9 @@ func summary(a Answer) string {
 		case reflect.Pointer:
 			if field.Elem().Kind() == reflect.Int {
 				said = append(said, fmt.Sprintf("%s %d", named, field.Elem().Int()))
-				continue
+			} else {
+				said = append(said, named)
 			}
-			said = append(said, named)
 		default:
 			said = append(said, named)
 		}
@@ -177,7 +180,7 @@ func DebugHeader(at Places, command string) [][2]string {
 
 func configLines(h Home) []string {
 	answer, err := doAt(ConfigShow, Places{Home: h}, Input{}, Acting{})
-	if err != nil || answer.Config == nil {
+	if err != nil {
 		return []string{"cannot be read"}
 	}
 	said := configText(*answer.Config)
@@ -199,12 +202,12 @@ func storeInNumbers(at Places) [][2]string {
 	}
 	held, err := Open(at.Store)
 	if err != nil {
-		return [][2]string{{"store", "cannot be read: " + RefusalOf(err).Reason}}
+		return unreadable(err)
 	}
 	defer func() { _ = held.Close() }()
 	listed, err := held.run(TaskList, Input{Given: map[string]string{"with-archived": "true"}})
 	if err != nil {
-		return [][2]string{{"store", "cannot be read: " + RefusalOf(err).Reason}}
+		return unreadable(err)
 	}
 	goals, _ := held.run(ObjectiveList, Input{})
 	columns := map[string]int{}
@@ -245,6 +248,10 @@ func storeInNumbers(at Places) [][2]string {
 		facts = append(facts, [2]string{"schema", fmt.Sprintf("%d of %d changes applied", applied, len(changes.Changes))})
 	}
 	return facts
+}
+
+func unreadable(err error) [][2]string {
+	return [][2]string{{"store", "cannot be read: " + RefusalOf(err).Reason}}
 }
 
 // DebugReported says where debug report wrote its archive, and how many debug files it packed.
