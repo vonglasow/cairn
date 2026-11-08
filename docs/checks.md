@@ -242,6 +242,15 @@ said least exactly there. The surfaces keep them off: their conditions are
 about what is on screen, and measured, they gave more mutants no test could
 tell from the original than ones pointing at a weak test.
 
+**The surfaces are never mutated, and the core is judged in CI, not here.**
+The window, the terminal board, the command line and the MCP server decide
+what is on screen; their scenarios judge them. Estimated on 2026-11-08, one
+mutant at a time, a sweep over every package would take forty to fifty hours,
+four fifths of them the window's — each of its mutants rebuilds it and runs a
+suite of 35 seconds. The core, by hand, is two to four hours; check.yml judges
+the same on every push, side by side. So nothing waits on a sweep run here:
+`make mutation PKG=…` stays for one package somebody wants to look at.
+
 **A threshold is never lowered to get a commit through.** If a mutant survives,
 look at the mutant. When it is genuinely equivalent — a mutation that cannot
 change any observable behaviour, so no test can ever kill it — restructure the
@@ -331,8 +340,8 @@ make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make windows-check  # fail if cairn or its tests no longer build for Windows
 make quiet-check    # fail if building cairn or the window's tests prints anything
-make mutation          # the packages holding the rules: what check.yml runs, and the report it leaves
-make mutation PKG=./internal/gui  # one package, by hand: the window, the terminal and the CLI are judged so
+make mutation          # the packages holding the rules: what check.yml runs, two to four hours here
+make mutation PKG=./internal/engine  # one package, by hand
 make mutation-changed  # the lines changed since HEAD, by hand, before a push
 make check             # every hook, commit's and push's, on every file
 make release-check     # the same: what a release runs
@@ -411,8 +420,8 @@ Every mutant is a build, and builds land in the Go cache — one full sweep left
 50 to 150 GB in it. Gremlins gets a cache of its own, `$(go env
 GOCACHE)-gremlins`, wiped once it passes 10 GB.
 
-**Two mutants run at a time** (`workers: 2` in `.gremlins.yaml`), not one per
-core. Each one runs its package's whole suite, and the window's took 2.5 to
+**One mutant runs at a time** here (`workers: 1` in `.gremlins.yaml`), four
+in CI (`MUTATION_WORKERS`), not one per core. Each one runs its package's whole suite, and the window's took 2.5 to
 3.5 GB: measured on 2026-10-12, eight at once beside a container VM took a
 16 GB machine to 40, starved WindowServer, and macOS restarted the machine —
 twice. A sweep is slower for it; a machine that restarts mid-sweep finishes

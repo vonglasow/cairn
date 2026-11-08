@@ -202,7 +202,8 @@ harness-check:
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%. Bare, it
 ## judges the packages holding the rules, as check.yml does on every push and
-## pull request; `make mutation PKG=./internal/gui` judges that one instead.
+## pull request; `make mutation PKG=./internal/engine` judges that one instead.
+## The surfaces are not mutated: see docs/checks.md, on thresholds.
 ##
 ## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
 ## they are passed as flags. That is measured, not assumed — see the comment

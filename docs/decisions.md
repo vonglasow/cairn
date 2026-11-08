@@ -96,6 +96,7 @@ already said why not.
 | what the tools find stays current; what the tools are is pinned | a new rule found something already true; a tool changing its own behaviour found nothing | [checks.md](checks.md#getting-them) |
 | no threshold is lowered | a gate that bends is not a gate | [checks.md](checks.md#thresholds) |
 | `&&`/`||` and `continue`/`break` mutated in the core only | that is where the rules are; the surfaces gave mostly mutants no test can tell apart | [checks.md](checks.md#thresholds) |
+| the surfaces are never mutated; the core is mutated in CI, and no sweep is run by hand before a push or a version | the scenarios judge what is on screen, and a sweep of every package was estimated at forty to fifty hours, the window's for most of it | [checks.md](checks.md#thresholds) |
 | packages are mutated one after another | gremlins already uses every core inside a package; two at once only made timeouts | [checks.md](checks.md#running-them-by-hand) |
 | Linux is checked by hand, in a container, before a version | it needs Docker, which no hook may assume | [release.md](release.md) |
 | the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `.pre-commit-config.yaml` |
