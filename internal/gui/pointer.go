@@ -37,11 +37,8 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnTheBoard && CommandLine(w.Layout(), w.BarOffers()).In(p) {
 		return w.openingPalette()
 	}
-	if cleared, on := w.clickingSearchPill(p); on {
-		return cleared
-	}
-	if cleared, on := w.clickingFilterPill(p); on {
-		return cleared
+	if clicked, on := w.clickingPills(p); on {
+		return clicked
 	}
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())

@@ -22,6 +22,9 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnBackups:
 		return "Backups"
 	case OnFiltering:
+		if w.filterOpen {
+			return Titled(w.filters[w.filterOn].Name)
+		}
 		return "Filters"
 	case OnLabels:
 		return "Labels"

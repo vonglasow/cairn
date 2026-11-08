@@ -497,21 +497,37 @@ and the calendar walks its months, a notch a month
 task, and the list's: all four have a thumb sized never to be too small to
 grab, and two of them used to ignore a drag entirely.
 
-**The board is filtered by what a task carries**. `⇧F`, the bar's
-Filter or the menu bar's opens the filters: column, priority, label, objective,
-and a day the work is due by — today, in a week, in a month. A line is chosen
-by the arrows, its value walked by `←` `→`, each opening on `any` and
-written `‹ any ›` at the right of its line. A click on a line, or `⏎`, opens
-the list of its values under it, the one in force ticked: `↑↓` and *Choose*
-(`⏎`) or a click take one, *Cancel* (`esc`) leaves it as it was
-(`FilterList`, `@gui-a-filter-opens-the-list-of-its-values`,
-`@gui-a-filters-list-is-left-untouched`); a click used to change the value at
-once, where a list was expected; the board narrows as they move (`@gui-a-filter-narrows-the-board`),
-two together keep what both reach (`@gui-filters-narrow-together`), and `⌫`, or
-No filter, puts every one back on `any` (`@gui-every-filter-is-cleared-at-once`).
-Closed, they stay in force, written beside the tabs — `filtered by priority
-high · label backend` (`@gui-the-board-says-what-filters-it`) — and the search
-narrows what they kept (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
+**The board is filtered by what a task carries**, and what filters it stands as
+pills after the tabs. Each filter in force is a pill, `priority high`, its
+cross taking it away; a search kept comes first, `/ spec`; then `+ Filter`
+and `Clear`, which takes every filter and the search away; and at the right
+of the row, how many tasks are kept of how many, `2 of 3 tasks` (`Pills`,
+`@gui-the-filters-stand-as-pills-after-the-tabs`,
+`@gui-a-kept-search-stands-first-among-the-pills`). The row starts after the
+last tab, so a page added pushes it along; when the pills no longer fit
+before the menu, they fold into one, `Filters · 3`, which opens the menu, and
+the count gives its room up first (`@gui-the-pills-fold-when-the-room-runs-out`).
+The filters had a panel of their own across the middle of the window, each
+value walked with `‹ any ›`, and what was in force was a line of text beside
+the tabs; Linear and GitHub show filters in force as pills.
+
+`⇧F`, `+ Filter`, or the menu bar's Filter opens the menu of filters under the
+pill: column, priority, label, objective, and a day the work is due by —
+today, in a week, in a month — each saying at its right what it is on. A
+line is chosen by the arrows, `←` `→` walk its value in place, and `⏎` or a
+click opens its values, a filter's pill opening them directly
+(`FilterList`, `@gui-a-filter-pill-opens-its-values`,
+`@gui-a-filter-opens-the-list-of-its-values`). Each value says how many tasks
+it would keep under the other filters as they stand (`FilterCounts`, counted
+by the engine). A value is taken by `⏎` or a click; labels are ticked, as
+many as wanted, a task kept when it carries every one
+(`@gui-the-labels-are-filtered-together`), the others take one. `esc` goes
+back where the values were opened from — the menu, or the board for a pill
+(`@gui-a-filters-list-is-left-untouched`); `⌫`, or No filter, puts every one
+back on `any` (`@gui-every-filter-is-cleared-at-once`). The board narrows as
+they move (`@gui-a-filter-narrows-the-board`), two together keep what both
+reach (`@gui-filters-narrow-together`), and the search narrows what they kept
+(`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
 (`engine.Filters`): what each keeps is what `task list` keeps with the same flag.
 
 **A search does not take the window.** It narrows the board in place, so the

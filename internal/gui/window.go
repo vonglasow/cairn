@@ -140,6 +140,7 @@ type Window struct {
 	filterOn              int
 	filterOpen            bool
 	filterPick            int
+	filterFromPill        bool
 	looking               Written
 	searchFrom            Screen
 	archived              bool

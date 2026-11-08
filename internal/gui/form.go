@@ -542,8 +542,7 @@ func (w Window) Choose(name string) Window {
 		return w.dated(time.Time{})
 	case "cancel":
 		if w.screen == OnFiltering && w.filterOpen {
-			w.filterOpen = false
-			return w
+			return w.closingFilter()
 		}
 		if w.screen == OnLabels && w.colouring {
 			w.colouring = false

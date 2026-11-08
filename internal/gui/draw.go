@@ -169,17 +169,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		drawDragging(gtx, th, skin, w)
 	}
 	drawBar(gtx, th, skin, l, w)
-	for _, pill := range w.FilterPills() {
-		drawClearingPill(gtx, th, skin, pill.Box, pill.Said)
-	}
-	if pill, ok := w.SearchPill(); ok {
-		drawClearingPill(gtx, th, skin, pill, w.looking.Reads())
-	}
-	if pill, ok := w.SearchCountPill(); ok {
-		said, _ := w.SearchCount()
-		rounded(gtx, pill, pill.H/2, skin.Pill)
-		sayIn(gtx, th, skin.Faint, Box{X: pill.X, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W, H: lineHigh}, said, small, font.Font{Typeface: MonoFace}, text.Middle)
-	}
+	drawPills(gtx, th, skin, w)
 	if w.formUnder() {
 		drawForm(gtx, th, skin, w)
 	}
@@ -345,34 +335,47 @@ func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Wind
 func drawFilters(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	box := w.FiltersBox()
 	drawPanel(gtx, th, skin, box, Heads(w))
+	if values, open := w.FilterList(); open {
+		f := w.Filters()[w.FilterOn()]
+		counts := w.FilterCounts()
+		for i, value := range values {
+			if value.H == 0 {
+				continue
+			}
+			if i == w.FilterPick() {
+				rounded(gtx, value, rowRadius, skin.Pill)
+			}
+			line := Inside(value)
+			if w.FilterTaken(i) {
+				say(gtx, th, skin.Chosen, line, TickedMark, reads)
+			}
+			named := Box{X: line.X + tickRoom, Y: line.Y, W: line.W - tickRoom, H: line.H}
+			if f.Arg == "label" && i > 0 {
+				drawLabelPill(gtx, th, skin, w, LabelPillAt(named, ends(w.measured(), f.Shown[i], small)), f.Shown[i])
+			} else {
+				say(gtx, th, skin.Ink, named, f.Shown[i], reads)
+			}
+			if i < len(counts) {
+				sayIn(gtx, th, skin.Faint, line, strconv.Itoa(counts[i]), small, font.Font{Typeface: MonoFace}, text.End)
+			}
+		}
+		drawPanelOffers(gtx, th, skin, box, w)
+		return
+	}
 	for i, f := range w.Filters() {
-		row := ListRowAt(box, i)
+		row := w.FilterRowAt(i)
 		if i == w.FilterOn() {
 			rounded(gtx, row, rowRadius, skin.Pill)
 		}
 		line := Inside(row)
-		say(gtx, th, skin.Low, line, f.Name, reads)
-		ink := skin.Faint
-		if f.At != 0 {
-			ink = skin.Chosen
+		say(gtx, th, skin.Ink, line, f.Name, reads)
+		ink, said := skin.Faint, engine.Any
+		if len(f.Taken()) > 0 {
+			ink, said = skin.Chosen, f.TakenSays()
 		}
-		sayIn(gtx, th, ink, line, "‹ "+f.Says()+" ›", reads, font.Font{}, text.End)
+		sayIn(gtx, th, ink, line, said, reads, font.Font{}, text.End)
 	}
 	drawPanelOffers(gtx, th, skin, box, w)
-	if values, open := w.FilterList(); open {
-		f := w.Filters()[w.FilterOn()]
-		first, last := values[0], values[len(values)-1]
-		raised(gtx, Box{X: first.X - inset, Y: first.Y - inset, W: first.W + 2*inset, H: last.Y + last.H - first.Y + 2*inset}, bubbleRadius, skin.Panel)
-		for i, value := range values {
-			if i == w.filterPick {
-				rounded(gtx, value, rowRadius, skin.Pill)
-			}
-			if i == f.At {
-				say(gtx, th, skin.Chosen, Inside(value), TickedMark, reads)
-			}
-			say(gtx, th, skin.Ink, Box{X: value.X + tickRoom, Y: value.Y + inset, W: value.W - tickRoom - inset, H: value.H - 2*inset}, f.Shown[i], reads)
-		}
-	}
 }
 
 func drawWeek(gtx layout.Context, th *material.Theme, skin Skin, l Layout, w Window) {
@@ -1777,6 +1780,26 @@ func drawPalette(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		}
 		if ago := rows[line.Row].Ago(w.now); ago != "" {
 			sayIn(gtx, th, skin.Faint, Box{X: line.Box.X, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: end - line.Box.X, H: lineHigh}, ago, small, font.Font{}, text.End)
+		}
+	}
+}
+
+func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
+	for _, pill := range w.Pills() {
+		line := Box{X: pill.Box.X, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W, H: lineHigh}
+		switch pill.Kind {
+		case PillSearch, PillFilter:
+			drawClearingPill(gtx, th, skin, pill.Box, pill.Said)
+		case PillAdd:
+			outline(gtx, pill.Box, skin.Edge)
+			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{}, text.Middle)
+		case PillFolded:
+			rounded(gtx, pill.Box, pill.Box.H/2, skin.Tint)
+			sayIn(gtx, th, skin.Ink, line, pill.Said, small, font.Font{}, text.Middle)
+		case PillClear:
+			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{}, text.Middle)
+		case PillCount:
+			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{Typeface: MonoFace}, text.Middle)
 		}
 	}
 }

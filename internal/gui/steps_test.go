@@ -2021,7 +2021,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.When(`^I click the filter "([^"]*)"$`, func(name string) error {
 		for i, f := range w.w.Filters() {
 			if f.Name == name {
-				row := ListRowAt(w.w.FiltersBox(), i)
+				row := w.w.FilterRowAt(i)
 				w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
 				return nil
 			}

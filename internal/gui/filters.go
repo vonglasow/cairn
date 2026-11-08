@@ -1,30 +1,27 @@
 package gui
 
 import (
-	"strings"
+	"slices"
+	"strconv"
 
 	"cairn/internal/engine"
 )
 
-// Filters are the board's filters, as the panel walks them.
+// Filters are the board's filters, as the menus walk them.
 func (w Window) Filters() engine.Filters { return w.filters }
 
-// FilterOn is the line of the panel the keyboard is on.
+// FilterOn is the line of the menu of filters the keyboard is on.
 func (w Window) FilterOn() int { return w.filterOn }
+
+// FilterPick is the value of the open filter the keyboard is on.
+func (w Window) FilterPick() int { return w.filterPick }
 
 // FilteredBy is what the board is filtered by, written the way the bar says it: nothing when no filter narrows it.
 func (w Window) FilteredBy() string { return w.filters.Said() }
 
-// FilterSays is one line of the panel: what the filter is called, and what it is on.
-func FilterSays(f engine.Filter) string {
-	return f.Name + strings.Repeat(" ", max(1, filterNamed-len(f.Name))) + f.Says()
-}
-
-const filterNamed = 12
-
 func (w Window) filteringBoard() Window {
 	w.filters = engine.BoardFilters(w.snap, w.today()).Keeping(w.filters)
-	w.screen = OnFiltering
+	w.screen, w.filterOpen, w.filterFromPill = OnFiltering, false, false
 	return w
 }
 
@@ -58,48 +55,130 @@ func (w Window) openingFilter(at int) Window {
 	return w
 }
 
-func (w Window) pickingFilter(value int) Window {
-	w.filters = w.filters.Walked(w.filterOn, value-w.filters[w.filterOn].At)
-	w.filterOpen = false
+func (w Window) openingFilterFromPill(at int) Window {
+	w = w.filteringBoard().openingFilter(at)
+	w.filterFromPill = true
 	return w
 }
+
+func (w Window) pickingFilter(value int) Window {
+	f := w.filters[w.filterOn]
+	if f.Many && value > 0 {
+		w.filters = w.filters.Toggled(w.filterOn, f.Values[value])
+		return w
+	}
+	w.filters = w.filters.Walked(w.filterOn, value-f.At)
+	return w.closingFilter()
+}
+
+// closingFilter shuts the open filter's values: back to the menu of filters when they were opened from it, back to the board when from a pill.
+func (w Window) closingFilter() Window {
+	w.filterOpen = false
+	if w.filterFromPill {
+		w.screen, w.filterFromPill = OnTheBoard, false
+	}
+	return w
+}
+
+// FilterCounts is how many tasks each value of the open filter would keep under the other filters, in the order its values are listed.
+func (w Window) FilterCounts() []int {
+	if !w.filterOpen || w.screen != OnFiltering {
+		return nil
+	}
+	counts, err := w.filters.Counts(w.Reading().Cards, w.filterOn)
+	if err != nil {
+		return nil
+	}
+	return counts
+}
+
+// FilterTaken says whether a value of the open filter is one it is on.
+func (w Window) FilterTaken(value int) bool {
+	f := w.filters[w.filterOn]
+	return slices.Contains(f.Taken(), f.Values[value]) || (value == 0 && len(f.Taken()) == 0)
+}
+
+const (
+	filterMenuWide  = 260
+	filterValueWide = 280
+)
+
+// FiltersBox is the menu of filters opened under the pill that adds one: a line a filter, what it is on at its right, its offers at its foot.
+func (w Window) FiltersBox() Box {
+	anchor := w.filterAnchor()
+	if w.filterOpen {
+		return w.droppedUnder(anchor, filterValueWide, len(w.filters[w.filterOn].Shown))
+	}
+	return w.droppedUnder(anchor, filterMenuWide, len(w.filters))
+}
+
+func (w Window) droppedUnder(anchor Box, wide, rows int) Box {
+	fixed := FirstRow(Box{}) + between + padding + barHigh + padding
+	most := max(1, (w.height-margin-anchor.Y-anchor.H-between-fixed)/menuRow)
+	high := fixed + min(rows, most)*menuRow
+	wide = min(w.width-2*margin, max(wide, w.offersWide(), w.headWide()+padding+pillCross))
+	x := max(margin, min(anchor.X, w.width-margin-wide))
+	return Box{X: x, Y: anchor.Y + anchor.H + between, W: wide, H: high}
+}
+
+func (w Window) filterAnchor() Box {
+	for _, pill := range w.Pills() {
+		if w.filterFromPill && pill.Kind == PillFilter && pill.At == w.filterOn {
+			return pill.Box
+		}
+	}
+	for _, pill := range w.Pills() {
+		if pill.Kind == PillAdd || pill.Kind == PillFolded {
+			return pill.Box
+		}
+	}
+	l := w.Layout()
+	return Box{X: l.Tabs.X, Y: l.Tabs.Y, W: 0, H: l.Tabs.H}
+}
+
+// FilterRowAt is where the i-th filter's line is in the menu of filters.
+func (w Window) FilterRowAt(i int) Box { return ListRowAt(w.FiltersBox(), i) }
 
 // FilterList is the values of the filter whose list is open, where each is drawn, and whether one is open.
 func (w Window) FilterList() ([]Box, bool) {
 	if !w.filterOpen || w.screen != OnFiltering {
 		return nil, false
 	}
-	row := ListRowAt(w.FiltersBox(), w.filterOn)
-	f := w.filters[w.filterOn]
-	wide := listLeast / 2
-	for _, said := range f.Shown {
-		wide = max(wide, ends(w.measured(), said, reads)+4*padding)
-	}
-	x := row.X + row.W - wide
-	y := row.Y + row.H
-	if y+len(f.Shown)*menuRow+2*inset > w.height-margin {
-		y = max(margin, row.Y-len(f.Shown)*menuRow-2*inset)
-	}
-	boxes := make([]Box, len(f.Shown))
-	for i := range f.Shown {
-		boxes[i] = Box{X: x + inset, Y: y + inset + i*menuRow, W: wide - 2*inset, H: menuRow}
+	box := w.FiltersBox()
+	room := listRoom(box)
+	shown := w.filters[w.filterOn].Shown
+	from := max(0, min(w.filterPick-room+1, len(shown)-room))
+	boxes := make([]Box, len(shown))
+	for i := range shown {
+		boxes[i] = ListRowAt(box, i-from)
+		if i < from || i >= from+room {
+			boxes[i] = Box{}
+		}
 	}
 	return boxes, true
 }
 
 func (w Window) clickingFilters(p Point) Window {
+	for _, pill := range w.Pills() {
+		if pill.Box.In(p) {
+			return w.clickingPill(pill, p)
+		}
+	}
+	box := w.FiltersBox()
 	if values, open := w.FilterList(); open {
 		for i, value := range values {
 			if value.In(p) {
+				w.filterPick = i
 				return w.pickingFilter(i)
 			}
 		}
-		w.filterOpen = false
+		if !box.In(p) {
+			w.screen, w.filterOpen, w.filterFromPill = OnTheBoard, false, false
+		}
 		return w
 	}
-	box := w.FiltersBox()
 	for i := range w.filters {
-		if ListRowAt(box, i).In(p) {
+		if w.FilterRowAt(i).In(p) {
 			return w.openingFilter(i)
 		}
 	}
@@ -109,65 +188,171 @@ func (w Window) clickingFilters(p Point) Window {
 	return w
 }
 
-// FiltersBox is the panel of the board's filters: across the middle of the window, a line a filter.
-func (w Window) FiltersBox() Box {
-	said := make([]string, 0, len(w.filters))
-	for _, f := range w.filters {
-		said = append(said, FilterSays(f))
-	}
-	return w.listBox(said)
-}
+// PillKind says what a pill after the tabs stands for.
+type PillKind int
 
-// FilterPill is a filter in force as the pill it stands as at the right of the tabs: where, what it says, and which filter it is.
-type FilterPill struct {
+const (
+	// PillSearch is the search kept, its cross clearing it.
+	PillSearch PillKind = iota
+	// PillFilter is a filter in force, its cross clearing it.
+	PillFilter
+	// PillAdd opens the menu of filters.
+	PillAdd
+	// PillClear takes every filter and the search away.
+	PillClear
+	// PillFolded stands for every filter and the search when they no longer fit.
+	PillFolded
+	// PillCount says how many tasks are kept of how many, at the end of the row.
+	PillCount
+)
+
+// Pill is one pill of the row after the tabs: where it is, what it says, what it stands for, and for a filter's which one.
+type Pill struct {
 	Box  Box
 	Said string
+	Kind PillKind
 	At   int
 }
 
-// FilterPills is every filter in force as a pill, right to left from the search's pill, or from the end of the tabs when nothing is searched.
-func (w Window) FilterPills() []FilterPill {
-	if w.screen != OnTheBoard || w.tab == Objectives {
+// Cross is where a pill that clears what it stands for draws the cross that does it.
+func (p Pill) Cross() (Box, bool) {
+	if p.Kind != PillSearch && p.Kind != PillFilter {
+		return Box{}, false
+	}
+	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
+}
+
+// Pills is the row after the tabs: the search kept, then every filter in force, a pill to add one and one to clear them, folded into one pill when they no longer fit before the menu; and at its end how many tasks are kept of how many.
+func (w Window) Pills() []Pill {
+	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch {
 		return nil
 	}
 	l := w.Layout()
 	tab := TabAt(l, 0)
+	y, high := tab.Y+(tab.H-searchPillHigh)/2, searchPillHigh
+	start := TabAt(l, len(w.Shown())).X + between
 	end := l.Tabs.X + l.Tabs.W
 	if !w.native {
 		end = MenuButton(l).X - between
 	}
-	if search, ok := w.SearchPill(); ok {
-		end = search.X - pillGap
+	m := w.measured()
+	var row []Pill
+	crossed := func(said string, kind PillKind, at int) {
+		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad + pillCross}, Said: said, Kind: kind, At: at})
 	}
-	if count, ok := w.SearchCountPill(); ok {
-		end = count.X - pillGap
+	plain := func(said string, kind PillKind) {
+		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
-	var pills []FilterPill
-	for i := len(w.filters) - 1; i >= 0; i-- {
-		f := w.filters[i]
-		if f.At == 0 {
-			continue
+	taken := 0
+	if !w.looking.Empty() && w.screen != OnSearch {
+		crossed("/ "+w.looking.Reads(), PillSearch, -1)
+		taken++
+	}
+	for i, f := range w.filters {
+		if len(f.Taken()) > 0 {
+			crossed(f.Name+" "+f.TakenSays(), PillFilter, i)
+			taken++
 		}
-		said := f.Name + ": " + f.Says()
-		wide := ends(w.measured(), said, small) + 2*pillPad + pillCross
-		end -= wide
-		pills = append([]FilterPill{{Box: Box{X: end, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, Said: said, At: i}}, pills...)
-		end -= pillGap
+	}
+	plain(AddFilterSays, PillAdd)
+	if taken > 0 {
+		plain(ClearSays, PillClear)
+	}
+	var count []Pill
+	if said, ok := w.KeptCount(); ok {
+		count = []Pill{{Box: Box{W: monoWide(said, small) + 2*pillPad}, Said: said, Kind: PillCount}}
+	}
+	room := func() int {
+		if len(count) > 0 {
+			return end - count[0].Box.W - pillGap - start
+		}
+		return end - start
+	}
+	if widthOf(row) > room() && taken > 0 {
+		row = nil
+		plain(FoldedSays(taken), PillFolded)
+		plain(ClearSays, PillClear)
+	}
+	if widthOf(row) > room() {
+		count = nil
+	}
+	var pills []Pill
+	for _, pill := range count {
+		pill.Box.X, pill.Box.Y, pill.Box.H = end-pill.Box.W, y, high
+		pills = append(pills, pill)
+	}
+	x := start
+	for _, pill := range row {
+		if x+pill.Box.W > end {
+			break
+		}
+		pill.Box.X, pill.Box.Y, pill.Box.H = x, y, high
+		pills = append(pills, pill)
+		x += pill.Box.W + pillGap
 	}
 	return pills
 }
 
-func (w Window) clickingFilterPill(p Point) (Window, bool) {
-	for _, pill := range w.FilterPills() {
-		if !pill.Box.In(p) {
-			continue
+func widthOf(row []Pill) int {
+	wide := 0
+	for _, pill := range row {
+		wide += pill.Box.W + pillGap
+	}
+	return wide - pillGap
+}
+
+// AddFilterSays is what the pill that opens the menu of filters says.
+const AddFilterSays = "+ Filter"
+
+// ClearSays is what the pill that takes every filter and the search away says.
+const ClearSays = "Clear"
+
+// FoldedSays is what the pill standing for every filter and the search says once they no longer fit: how many there are.
+func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
+
+// KeptCount is how many tasks the search and the filters keep of how many the board holds, and whether anything narrows it at all.
+func (w Window) KeptCount() (string, bool) {
+	if w.looking.Empty() && !w.filters.Narrows() {
+		return "", false
+	}
+	return strconv.Itoa(len(w.Showing().Cards)) + " of " + strconv.Itoa(len(w.Reading().Cards)) + " tasks", true
+}
+
+func (w Window) clickingPill(pill Pill, p Point) Window {
+	if cross, ok := pill.Cross(); ok && cross.In(p) {
+		if pill.Kind == PillSearch {
+			w.looking = Written{}
+			return w
 		}
-		if p.X >= pill.Box.X+pill.Box.W-pillCross {
-			kept := append(engine.Filters{}, w.filters...)
-			kept[pill.At].At = 0
-			w.filters = kept
+		cleared := slices.Clone(w.filters)
+		cleared[pill.At].At, cleared[pill.At].Ticked = 0, nil
+		w.filters = cleared
+		return w
+	}
+	switch pill.Kind {
+	case PillFilter:
+		return w.openingFilterFromPill(pill.At)
+	case PillAdd, PillFolded:
+		return w.filteringBoard()
+	case PillClear:
+		w.filters, w.looking = w.filters.Cleared(), Written{}
+		w.screen = OnTheBoard
+		return w
+	case PillSearch:
+		w.screen, w.searchFrom = OnSearch, OnTheBoard
+		return w
+	}
+	return w
+}
+
+func (w Window) clickingPills(p Point) (Window, bool) {
+	if w.screen != OnTheBoard {
+		return w, false
+	}
+	for _, pill := range w.Pills() {
+		if pill.Box.In(p) && pill.Kind != PillCount {
+			return w.clickingPill(pill, p), true
 		}
-		return w, true
 	}
 	return w, false
 }

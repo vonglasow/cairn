@@ -134,13 +134,18 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 		w = w.Key("down")
 	}
 	w = w.Key("right").Key("esc")
-	pills := w.FilterPills()
-	if len(pills) != 1 || !strings.HasPrefix(pills[0].Said, "priority: ") {
-		t.Fatalf("the filters in force are %+v", pills)
+	var filters []Pill
+	for _, pill := range w.Pills() {
+		if pill.Kind == PillFilter {
+			filters = append(filters, pill)
+		}
 	}
-	cross := pills[0].Box
-	w = w.clicked(Point{X: cross.X + cross.W - pillCross/2, Y: cross.Y + cross.H/2})
-	if len(w.FilterPills()) != 0 || w.FilteredBy() != "" {
+	if len(filters) != 1 || !strings.HasPrefix(filters[0].Said, "priority ") {
+		t.Fatalf("the filters in force are %+v", filters)
+	}
+	cross, _ := filters[0].Cross()
+	w = w.clicked(Point{X: cross.X + cross.W/2, Y: cross.Y + cross.H/2})
+	if w.FilteredBy() != "" {
 		t.Errorf("the cross left the board filtered by %q", w.FilteredBy())
 	}
 }

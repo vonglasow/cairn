@@ -400,60 +400,17 @@ func (w Window) clickingPalette(p Point) Window {
 
 const pillCross = 18
 
-// SearchPill is the pill a search kept stands as, at the right of the tabs, its cross clearing it, and whether a search is kept at all.
+// SearchPill is the pill a search kept stands as, first in the row after the tabs, its cross clearing it, and whether a search is kept at all.
 func (w Window) SearchPill() (Box, bool) {
-	if w.screen != OnTheBoard || w.looking.Empty() {
-		return Box{}, false
+	for _, pill := range w.Pills() {
+		if pill.Kind == PillSearch {
+			return pill.Box, true
+		}
 	}
-	l := w.Layout()
-	tab := TabAt(l, 0)
-	wide := ends(w.measured(), w.looking.Reads(), small) + 2*pillPad + pillCross
-	end := l.Tabs.X + l.Tabs.W
-	if !w.native {
-		end = MenuButton(l).X - between
-	}
-	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
+	return Box{}, false
 }
 
 const searchPillHigh = 22
-
-func (w Window) clickingSearchPill(p Point) (Window, bool) {
-	pill, ok := w.SearchPill()
-	if !ok || !pill.In(p) {
-		return w, false
-	}
-	if p.X >= pill.X+pill.W-pillCross {
-		w.looking = Written{}
-	}
-	return w, true
-}
-
-// SearchCount is how many tasks a search keeps of how many the board holds, and whether anything is searched at all.
-func (w Window) SearchCount() (string, bool) {
-	if w.looking.Empty() {
-		return "", false
-	}
-	return strconv.Itoa(len(w.Showing().Cards)) + " of " + strconv.Itoa(len(w.Reading().Cards)), true
-}
-
-// SearchCountPill is where that count stands: left of the search's pill when the search is kept, at the right of the tabs while it is typed.
-func (w Window) SearchCountPill() (Box, bool) {
-	said, ok := w.SearchCount()
-	if !ok {
-		return Box{}, false
-	}
-	l := w.Layout()
-	tab := TabAt(l, 0)
-	end := l.Tabs.X + l.Tabs.W
-	if !w.native {
-		end = MenuButton(l).X - between
-	}
-	if pill, kept := w.SearchPill(); kept {
-		end = pill.X - pillGap
-	}
-	wide := monoWide(said, small) + 2*pillPad
-	return Box{X: end - wide, Y: tab.Y + (tab.H-searchPillHigh)/2, W: wide, H: searchPillHigh}, true
-}
 
 // paletteRises is how long the open command bar takes to drop into place.
 const paletteRises = 120 * time.Millisecond

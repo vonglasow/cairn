@@ -480,6 +480,60 @@ Feature: The desktop board
       Then "todo" carries "Write the spec"
       And "current" does not carry "Ship it"
 
+    @gui-the-filters-stand-as-pills-after-the-tabs
+    Scenario: the filters in force stand as pills after the tabs, with a pill to add one and how many tasks they keep
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      Then the pills after the tabs read "priority high, + Filter, Clear"
+      And the board says it keeps "2 of 3 tasks"
+
+    @gui-a-filter-pill-opens-its-values
+    Scenario: a filter's pill opens its values, each saying how many tasks it would keep
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I click the pill "priority high"
+      Then the filter "priority" lists its values
+      And the filter "priority" says "normal" keeps 1
+      And the filter "priority" says "high" keeps 2
+      When I press "esc"
+      Then the window is on the board
+
+    @gui-the-labels-are-filtered-together
+    Scenario: labels ticked together keep the tasks carrying every one
+      When I open the window
+      And I set the filter "label" to "backend"
+      And I set the filter "label" to "sprint"
+      Then the board says it is filtered by "label backend + sprint"
+      And "todo" does not carry "Write the spec"
+      And "current" does not carry "Ship it"
+
+    @gui-a-kept-search-stands-first-among-the-pills
+    Scenario: a search kept stands first among the filters' pills, and Clear takes both away
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I press "/"
+      And I type "spec"
+      And I press "enter"
+      Then the pills after the tabs read "/ spec, priority high, + Filter, Clear"
+      When I click the pill "Clear"
+      Then the board says it is filtered by ""
+      And no search is kept
+
+    @gui-the-pills-fold-when-the-room-runs-out
+    Scenario: the pills fold into one when they no longer fit between the tabs and the menu
+      Given a window of 720 by 560
+      When I open the window
+      And I set the filter "column" to "todo"
+      And I set the filter "priority" to "high"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      Then the pills after the tabs read "Filters · 3, Clear"
+      When I click the pill "Filters · 3"
+      Then the window shows the filters
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so
