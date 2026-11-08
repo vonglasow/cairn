@@ -29,10 +29,14 @@ var Running = func() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resolved, err := filepath.EvalSymlinks(running); err == nil {
-		running = resolved
+	return followed(running), nil
+}
+
+func followed(path string) string {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return resolved
 	}
-	return running, nil
+	return path
 }
 
 // Info is everything a build reports about itself.

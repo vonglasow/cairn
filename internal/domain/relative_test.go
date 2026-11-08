@@ -25,3 +25,14 @@ func TestFromToday_refusesACountItCannotRead(t *testing.T) {
 		}
 	}
 }
+
+func TestFromToday_readsEveryDigitOfACountOfSeveral(t *testing.T) {
+	today := time.Date(2026, 11, 3, 15, 0, 0, 0, time.Local)
+	for said, want := range map[string]string{
+		"+9d": "2026-11-12", "+12d": "2026-11-15", "-10d": "2026-10-24", "+10w": "2027-01-12",
+	} {
+		if got, err := FromToday(said, today); err != nil || got != want {
+			t.Errorf("FromToday(%q) = %q, %v; want %q", said, got, err, want)
+		}
+	}
+}

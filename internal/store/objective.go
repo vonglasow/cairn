@@ -133,7 +133,7 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 	where, args := readBy(kept).where(objectiveLabels)
 	labelled := func(n int) ([]string, error) { return labels[n], nil }
 	objectives, err := rowsOf(s, func(r scanner) (objective.Objective, error) { return s.scanObjective(r, labelled) },
-		`SELECT `+objectiveColumns+` FROM objectives`+where+` ORDER BY number`, args...)
+		fmt.Sprintf(`SELECT %s FROM objectives%s ORDER BY number`, objectiveColumns, where), args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the objectives: %w", err)
 	}
@@ -177,7 +177,7 @@ func (s *Store) TasksServing(number int) ([]task.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) }, `SELECT `+taskColumns+` `+servingOne+taskOrder, number)
+	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) }, fmt.Sprintf(`SELECT %s %s%s`, taskColumns, servingOne, taskOrder), number)
 	if err != nil {
 		return nil, fmt.Errorf("reading what serves objective %d: %w", number, err)
 	}

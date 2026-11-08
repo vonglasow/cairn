@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -14,7 +13,7 @@ var LabelColours = []string{
 }
 
 // ErrNoSuchColour is returned when a colour named is none of the label colours.
-var ErrNoSuchColour = errors.New("a label's colour is one of " + strings.Join(LabelColours, ", "))
+var ErrNoSuchColour = fmt.Errorf("a label's colour is one of %s", strings.Join(LabelColours, ", "))
 
 // ParseColour reads a colour's name the one way it is written.
 func ParseColour(given string) (string, error) {

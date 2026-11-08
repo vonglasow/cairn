@@ -133,10 +133,7 @@ func Spent(acts []Act, now time.Time) map[int]time.Duration {
 			focused[task] += length
 		}
 		for task, length := range focused {
-			if length > 0 {
-				length = minuteBegun(length)
-			}
-			took[task] += length
+			took[task] += min(length, 0) + minuteBegun(max(length, 0))
 		}
 	}
 	for task, length := range w.undated {
@@ -199,7 +196,7 @@ func shared(spans []span, from, to time.Time) (map[int]time.Duration, map[int]bo
 	sort.SliceStable(edges, func(i, j int) bool { return edges[i].at.Before(edges[j].at) })
 	in := map[int]int{}
 	for i, e := range edges {
-		if i > 0 && len(in) > 0 {
+		if len(in) > 0 {
 			length := e.at.Sub(edges[i-1].at) / time.Duration(len(in))
 			for task := range in {
 				took[task] += length

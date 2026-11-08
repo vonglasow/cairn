@@ -87,9 +87,9 @@ func (s *Store) closeTheGapLeftIn(state string, left int) error {
 }
 
 func (s *Store) makeRoom(state string, from, to int) error {
-	if _, err := s.on.Exec(
+	if _, err := s.on.Exec(fmt.Sprintf(
 		`UPDATE tasks SET position = position + CASE WHEN ? < ? THEN -1 ELSE 1 END
-		 WHERE `+sisters+` AND position BETWEEN ? AND ? AND position <> ?`,
+		 WHERE %s AND position BETWEEN ? AND ? AND position <> ?`, sisters),
 		from, to, state, min(from, to), max(from, to), from); err != nil {
 		return fmt.Errorf("making room: %w", err)
 	}

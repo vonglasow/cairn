@@ -76,6 +76,16 @@ func TestRead_archiveDaysWithoutAStartIsNoArchiving(t *testing.T) {
 	}
 }
 
+func TestRead_archiveDaysOfOneIsTheShortestPeriod(t *testing.T) {
+	read, err := readThis(t, "[archive]\ndays = 1\n")
+	if err != nil {
+		t.Fatalf("Read = %v, want a period of a single day accepted", err)
+	}
+	if _, days, _ := read.Archive(); days != 1 {
+		t.Errorf("Archive() days = %d, want 1", days)
+	}
+}
+
 func TestRead_archiveDaysAreSaidEvenWhenNothingIsArchived(t *testing.T) {
 	read, err := readThis(t, "[archive]\ndays = 7\n")
 	if err != nil {

@@ -310,3 +310,34 @@ func TestTitleWent_isTheTitleADeletionTookWithIt(t *testing.T) {
 		t.Errorf("TitleWent of a task never deleted = %q", got)
 	}
 }
+
+func TestTitleWent_readsNoTitleOffAnActThatWasNoDeletion(t *testing.T) {
+	retitled := Made(Carried{Task: 1, Did: Changed, Field: "title", Was: "title: Draft"})
+	if got := TitleWent([]Act{retitled}, 1); got != "" {
+		t.Errorf("TitleWent of a task only renamed = %q, want nothing", got)
+	}
+}
+
+func TestTitleWent_readsPastTheActsOfOtherTasks(t *testing.T) {
+	gone := Made(Carried{Task: 1, Did: Deleted, Was: "title: Write the spec; column: todo"})
+	if got := TitleWent([]Act{took(2, 9, 0), gone}, 1); got != "Write the spec" {
+		t.Errorf("TitleWent behind an act of task 2 = %q", got)
+	}
+}
+
+func TestSpent_leavesOutATaskThatComesToNothing(t *testing.T) {
+	spent := Spent([]Act{added(1, "2026-03-03", "30m", at(9, 0)), added(1, "2026-03-03", "-30m", at(9, 0))}, at(18, 0))
+	if length, there := spent[1]; there {
+		t.Errorf("a task whose time was all taken back spent %s, want it left out", length)
+	}
+}
+
+func TestTimed_writesWhatComesAfterATaskWithTimeTakenOff(t *testing.T) {
+	for _, off := range []string{"-30m", "-1h"} {
+		acts := []Act{took(1, 9, 0), stopped(1, 9, 30), added(1, "2026-03-03", off, at(12, 0)), took(2, 10, 0), stopped(2, 11, 0)}
+		s := Timed(acts, dayOf(3), dayOf(3), at(12, 0))
+		if took, _, there := worked(s, dayOf(3), 2); !there || took != time.Hour {
+			t.Errorf("with %s off task 1, task 2 took %s, want the hour", off, took)
+		}
+	}
+}

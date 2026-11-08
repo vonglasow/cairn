@@ -256,8 +256,7 @@ ALTER TABLE tasks DROP COLUMN parent;`,
 		undoes: `
 ALTER TABLE tasks ADD COLUMN parent INTEGER NOT NULL DEFAULT 0;
 DROP TABLE steps;`,
-		loses: "every step of every task, which the older shape cannot hold; " +
-			"the sub-tasks they were made from are not brought back",
+		loses: "every step of every task, which the older shape cannot hold; the sub-tasks they were made from are not brought back",
 	},
 	{
 		name: "every act says who did it",

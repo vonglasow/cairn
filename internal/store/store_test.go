@@ -635,3 +635,113 @@ func mustTask(t *testing.T, title string) task.Task {
 	}
 	return built
 }
+
+func TestFocus_saysNothingWhenNothingIsHeld(t *testing.T) {
+	s := openStore(t)
+	held, err := s.Focus()
+	if err != nil || held != nil {
+		t.Errorf("Focus = %v, %v, want nothing at all", held, err)
+	}
+}
+
+func TestFocus_holdsTasksOldestFirst(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "First")
+	keep(t, s, "Second")
+	for _, n := range []int{2, 1} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	held, err := s.Focus()
+	if err != nil || !slices.Equal(held, []int{2, 1}) {
+		t.Errorf("Focus = %v, %v, want [2 1]", held, err)
+	}
+}
+
+func TestDelete_letsGoOfTheTaskInFocus(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "First")
+	keep(t, s, "Second")
+	for _, n := range []int{1, 2} {
+		if err := s.AddFocus(n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.Delete(1); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	held, err := s.Focus()
+	if err != nil || !slices.Equal(held, []int{2}) {
+		t.Errorf("Focus = %v, %v, want [2]", held, err)
+	}
+}
+
+func TestStore_countsTheStepsOfATaskFromOne(t *testing.T) {
+	s := openStore(t)
+	kept := keep(t, s, "Write the spec")
+	if err := s.Update(changed(kept, func(a *task.AsTold) {
+		a.Step("draft", true)
+		a.Step("review", false)
+	})); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	rows, err := s.db.Query(`SELECT place FROM steps WHERE task_number = 1 ORDER BY place`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = rows.Close() }()
+	places := []int{}
+	for rows.Next() {
+		var place int
+		if err := rows.Scan(&place); err != nil {
+			t.Fatal(err)
+		}
+		places = append(places, place)
+	}
+	if !slices.Equal(places, []int{1, 2}) {
+		t.Errorf("the steps sit at %v, want [1 2], as the migration that made them counts", places)
+	}
+}
+
+func TestNothingBlocks_namesWhatWaitsOnTasksDone(t *testing.T) {
+	s := openStore(t)
+	blocker := keep(t, s, "Blocker")
+	keep(t, s, "Still blocking")
+	for on, title := range []string{"Freed", "Waiting"} {
+		if _, err := s.Keep(changed(mustTask(t, title), func(a *task.AsTold) {
+			a.InColumn(domain.Blocked)
+			a.BlockedBy(on + 1)
+		})); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.Update(changed(blocker, func(a *task.AsTold) { a.InColumn(domain.Done) })); err != nil {
+		t.Fatal(err)
+	}
+	free, err := s.NothingBlocks()
+	if err != nil || !slices.Equal(free, []int{3}) {
+		t.Errorf("NothingBlocks = %v, %v, want [3]", free, err)
+	}
+}
+
+func TestNarrowed_leavesWhatIsArchivedOffTheBoardUnlessAskedForBoth(t *testing.T) {
+	s := openStore(t)
+	kept := keep(t, s, "Archived")
+	keep(t, s, "On the board")
+	if err := s.Update(changed(kept, func(a *task.AsTold) { a.Archived() })); err != nil {
+		t.Fatal(err)
+	}
+	if got := titlesOf(t, s); !slices.Equal(got, []string{"On the board"}) {
+		t.Errorf("the board holds %v, want only what is on it", got)
+	}
+	both := &domain.Narrowing{}
+	both.WithArchived()
+	all, err := s.Narrowed(both)
+	if err != nil {
+		t.Fatalf("Narrowed: %v", err)
+	}
+	if len(all) != 2 {
+		t.Errorf("asked for both, read %d tasks, want 2", len(all))
+	}
+}

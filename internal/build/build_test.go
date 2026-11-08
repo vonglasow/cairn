@@ -125,3 +125,29 @@ func TestRunning_isAPathThatIsThere(t *testing.T) {
 		t.Errorf("Running = %s, %v", running, err)
 	}
 }
+
+func TestFollowed_landsOnTheFileALinkPointsTo(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "cairn")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link")
+	if err := os.Symlink(file, link); err != nil {
+		t.Fatal(err)
+	}
+	want, err := filepath.EvalSymlinks(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := followed(link); got != want {
+		t.Errorf("followed(%q) = %q, want %q", link, got, want)
+	}
+}
+
+func TestFollowed_keepsAPathThatLeadsNowhere(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "gone")
+	if got := followed(missing); got != missing {
+		t.Errorf("followed(%q) = %q, want the path as given", missing, got)
+	}
+}

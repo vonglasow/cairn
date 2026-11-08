@@ -73,7 +73,11 @@ func (n *narrowing) where(labels labelStore) (string, []any) {
 		clauses = append(clauses, labels.carrier)
 		args = append(args, label)
 	}
-	return ` WHERE ` + strings.Join(clauses, ` AND `), args
+	return whereAll(clauses), args
+}
+
+func whereAll(clauses []string) string {
+	return fmt.Sprintf(` WHERE %s`, strings.Join(clauses, ` AND `))
 }
 
 const offTheBoard = `archived`
@@ -93,7 +97,7 @@ func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
 	if len(clauses) == 0 {
 		return "", nil
 	}
-	return ` WHERE ` + strings.Join(clauses, ` AND `), args
+	return whereAll(clauses), args
 }
 
 // Narrowed hands back the tasks a narrowing keeps, in the one order there is.
@@ -104,7 +108,7 @@ func (s *Store) Narrowed(kept *domain.Narrowing) ([]task.Task, error) {
 	}
 	where, args := readBy(kept).whereTasks(taskLabels)
 	tasks, err := rowsOf(s, func(r scanner) (task.Task, error) { return s.scanTask(r, every) },
-		`SELECT `+taskColumns+` FROM tasks`+where+` `+taskOrder, args...)
+		fmt.Sprintf(`SELECT %s FROM tasks%s %s`, taskColumns, where, taskOrder), args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the store: %w", err)
 	}

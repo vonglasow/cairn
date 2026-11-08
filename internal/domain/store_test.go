@@ -47,3 +47,20 @@ func TestFormatSize_writesABackupsSizeTheWayAPersonReadsIt(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatSize_changesUnitAtTheKilobyteAndTheMegabyte(t *testing.T) {
+	for _, c := range []struct {
+		bytes int64
+		want  string
+	}{
+		{1023, "1023 B"},
+		{1024, "1 KB"},
+		{1024*1024 - 1, "1024 KB"},
+		{1024 * 1024, "1.0 MB"},
+		{3*1024*1024 + 300*1024, "3.3 MB"},
+	} {
+		if got := FormatSize(c.bytes); got != c.want {
+			t.Errorf("FormatSize(%d) = %q, want %q", c.bytes, got, c.want)
+		}
+	}
+}

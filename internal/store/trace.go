@@ -34,7 +34,7 @@ func (s *Store) ActsOn(number int) ([]trace.Act, error) {
 // ActsSince hands back everything done from a moment onward, across every task, oldest first.
 func (s *Store) ActsSince(from time.Time) ([]trace.Act, error) {
 	acts, err := rowsOf(s, scanAct,
-		`SELECT `+traceColumns+` FROM trace WHERE at >= ? ORDER BY id`,
+		fmt.Sprintf(`SELECT %s FROM trace WHERE at >= ? ORDER BY id`, traceColumns),
 		from.UTC().Format(time.RFC3339))
 	if err != nil {
 		return nil, fmt.Errorf("reading what happened since %s: %w", from, err)
