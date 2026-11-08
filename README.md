@@ -1,99 +1,127 @@
-# cairn
+<p align="center"><img src="internal/logo/cairn-128.png" alt="cairn" width="96"></p>
 
-A personal task and objective manager: a command line, a terminal board, a
-desktop window, and an MCP server for agents — one binary, one local store.
+<h1 align="center">cairn</h1>
+
+<p align="center">Your tasks, the objectives they serve and the time they took, in one local store.</p>
+
+<p align="center">
+<a href="https://github.com/vonglasow/cairn/actions/workflows/check.yml"><img src="https://github.com/vonglasow/cairn/actions/workflows/check.yml/badge.svg" alt="check"></a>
+<a href="https://github.com/vonglasow/cairn/releases/latest"><img src="https://img.shields.io/github/v/release/vonglasow/cairn" alt="latest release"></a>
+</p>
+
+cairn is a personal task manager for people who work at a terminal and with AI
+agents. One binary reaches one board four ways: the command line, a board in
+the terminal, a desktop window, and an MCP server for agents. Each surface
+calls the same engine, so each one behaves the same way.
+
+- **Tasks on a board**: backlog, todo, current, blocked, watching, paused,
+  done. Each task has a priority, labels, steps, links, a deadline and an
+  estimate.
+- **Objectives**: a task serves objectives, and an objective adds up the
+  progress and time of its tasks.
+- **Time from focus**: the task in focus counts its time. `timesheet` reads it
+  back by day, and you can add time spent away from the board.
+- **Built for agents**: an MCP server and a Claude Code plugin. An agent keeps
+  its work in the task's notes, never in the description.
+- **Local and yours**: one SQLite file and a folder of notes. There is no
+  account, no server and no telemetry. A full trace records every change.
+
+## Contents
+
+- [Install](#install)
+- [Quick start](#quick-start)
+- [With Claude Code](#with-claude-code)
+- [Upgrading](#upgrading)
+- [Configuration](#configuration)
+- [Reporting a bug](#reporting-a-bug)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Install
 
-### macOS and Linux, with Homebrew
+**macOS and Linux, with Homebrew**
 
 ```sh
 brew install vonglasow/tap/cairn
 ```
 
-### From a release
+**Windows, or without Homebrew**: download the archive for your system from
+the [latest release](https://github.com/vonglasow/cairn/releases/latest) and
+put `cairn` on your `PATH`. [INSTALL.md](INSTALL.md) covers each system,
+including how to check the archive and Gatekeeper on macOS.
 
-Download the archive for your system from the
-[latest release](https://github.com/vonglasow/cairn/releases/latest), check it
-against `SHA256SUMS`, and put `cairn` on your `PATH`.
-
-| System | Archive |
-|---|---|
-| macOS, Apple silicon | `cairn-vX.Y.Z-darwin-arm64.tar.gz` |
-| macOS, Intel | `cairn-vX.Y.Z-darwin-amd64.tar.gz` |
-| Linux, x86-64 | `cairn-vX.Y.Z-linux-amd64.tar.gz` |
-| Linux, ARM | `cairn-vX.Y.Z-linux-arm64.tar.gz` |
-| Windows | `cairn-vX.Y.Z-windows-amd64.zip` |
-
-**macOS and Linux**
+**From source** (needs Go and a C compiler, see [INSTALL.md](INSTALL.md)):
 
 ```sh
-tar -xzf cairn-vX.Y.Z-*.tar.gz cairn
-install -m 755 cairn ~/.local/bin/cairn
+git clone https://github.com/vonglasow/cairn.git && cd cairn
+make build          # writes bin/cairn
 ```
 
-On macOS, a binary downloaded with a browser is held by Gatekeeper; release
-it once with `xattr -d com.apple.quarantine ~/.local/bin/cairn`. Homebrew does
-not need this.
-
-**Windows** — unzip it and put `cairn.exe` in a folder on your `PATH`.
-
-**As an application** — once cairn is installed, `cairn app install` writes
-`cairn.app` in `~/Applications` on a Mac: Spotlight (`⌘ space`, cairn) and the
-Dock open the window. On a Linux desktop it writes `cairn.desktop` in
-`~/.local/share/applications` (or `$XDG_DATA_HOME/applications`) and the logo
-in the icon theme, then refreshes the menu: GNOME, KDE and the others list
-cairn among their applications. It runs the cairn that installed it, so
-installing a newer one in the same place updates it. Opened from the desktop it
-has no shell environment: it uses the store the configuration file names, or
-the default one.
-
-**Upgrading** — `cairn upgrade` takes the newest release from GitHub, checks
-its archive against `SHA256SUMS`, and puts the new binary in the place of the
-one you ran: the terminal, the application and a `cairn mcp serve` already
-running all run the new one from then on. A place it cannot write is refused
-before anything is downloaded, and `--json` answers `from`, `to` and `binary`.
-A cairn installed by Homebrew is upgraded with `brew upgrade cairn`, and one
-built from source is built again.
-
-### From source
-
-```sh
-git clone https://github.com/vonglasow/cairn.git
-cd cairn
-make build          # bin/cairn — needs Go and a C compiler, see INSTALL.md
-```
+**As an application**: `cairn app install` adds cairn to the Mac's
+Applications folder or to a Linux desktop's menu.
 
 ## Quick start
 
 ```sh
 cairn task new "Write the spec"      # task 1, in the backlog
 cairn task edit 1 --state todo       # move it
-cairn task focus 1                   # what you work on now — its time is counted
+cairn task focus 1                   # work on it: its time is counted
 cairn task list                      # the board, column by column
 cairn timesheet show                 # how long today's work took
 ```
 
-Then open the same board where you prefer:
+Then open the same board wherever you prefer:
 
-| | |
+| Command | Opens |
 |---|---|
-| `cairn tui` | in the terminal |
-| `cairn gui` | in a window |
-| `cairn mcp serve` | for an agent, over MCP |
-| `cairn plugin write` | the Claude Code plugin |
+| `cairn tui` | the board in the terminal |
+| `cairn gui` | the board in a window |
+| `cairn mcp serve` | the board for an agent, over MCP |
 
-`cairn <thing> <verb> --help` says the rest, with examples.
+`cairn --help` lists every command, and `cairn <thing> <verb> --help` shows
+examples.
+
+## With Claude Code
+
+```sh
+cairn plugin write
+```
+
+Then, in Claude Code, run the two commands it prints:
+`/plugin marketplace add <folder>` and `/plugin install cairn@cairn`. The
+plugin brings the MCP server, a skill and a hook that ties a session to the
+task in focus. cairn updates it itself after every upgrade. See
+[docs/claude-code.md](docs/claude-code.md).
+
+## Upgrading
+
+How you upgrade depends on how cairn was installed:
+
+| Installed with | Upgrade with |
+|---|---|
+| Homebrew | `brew upgrade cairn` |
+| a release archive | `cairn upgrade` (checks `SHA256SUMS`, replaces the binary in place) |
+| a build from source | `git pull && make build` |
+
+`cairn upgrade` refuses the other two cases on purpose. Replacing a Homebrew
+install behind Homebrew's back would be undone at the next `brew upgrade`.
+Replacing a build from source with a release could lose local work.
+
+A new version may change the shape of the store. cairn then refuses to open it
+until you run `cairn migration apply`, which saves a backup first.
 
 ## Configuration
 
-Nothing needs configuring: cairn keeps everything under `~/.cairn`. To choose
-otherwise, `cairn config init` writes `~/.config/cairn/config.toml` with every
-key, set to what is used now, to change from there — never over a file
-already there. Every table is written, and a key with no value of its own is
-commented under its table: take the comment off and it is read there. Every key
-is optional, and a key cairn does not know is refused rather than ignored — one
-written under the wrong table is told where it belongs. The whole file:
+Nothing needs configuring: cairn keeps everything under `~/.cairn`.
+`cairn config init` writes `~/.config/cairn/config.toml` with every key and
+its current value, and never overwrites an existing file. `cairn config show`
+prints the configuration in use and where each value came from.
+`CAIRN_STORE` and `CAIRN_NOTES` in the environment override `store` and
+`notes`. [docs/config.md](docs/config.md) explains why it works this way.
+
+<details>
+<summary>The whole file</summary>
 
 ```toml
 # Where cairn keeps your tasks: a file. Absolute, or under ~.
@@ -148,40 +176,42 @@ weekends = "shown"
 keep_sizes = false
 ```
 
-`CAIRN_STORE` and `CAIRN_NOTES`, in the environment, replace `store` and
-`notes` for as long as they are set. `CAIRN_AUTHOR` names who the acts are
-written down as in the trace, the one logged in otherwise. Beside the store, cairn also keeps its
-backups and the draft of a task being added in the window. `cairn config show` says the
-whole configuration in use, written as the file is, every key with its value
-and each place with what named it;
-[docs/config.md](docs/config.md) says why it works this way.
+</details>
 
 ## Reporting a bug
 
-When cairn does something wrong, run it again in debug mode, do the one thing
-that goes wrong, then pack what was written down:
+Run cairn again in debug mode, do the one thing that goes wrong, then pack what
+was recorded:
 
 ```sh
 cairn gui --debug            # or tui, or any command; CAIRN_DEBUG=1 does the same
 cairn debug report           # writes cairn-debug-….zip in the current folder
 ```
 
-Send the archive with the report. It says what the machine and the store are
-and what cairn did, and nothing anybody wrote: every title, description and
-text typed is replaced by a fingerprint and a length. Debug mode keeps its
-files in `debug/` beside the store, the last twenty, and stops with the
-command it was turned on for. [docs/debug.md](docs/debug.md) says more.
+Attach the archive to the
+[issue](https://github.com/vonglasow/cairn/issues). It describes the machine,
+the store and what cairn did, but none of the text you typed: every title and
+description is replaced by a fingerprint and a length. See
+[docs/debug.md](docs/debug.md).
 
 ## Documentation
 
-- [Using cairn](docs/usage.md) — tasks, objectives, focus and time, labels, backups
-- [Installing in detail](INSTALL.md) — what a build needs on each system
+- [Using cairn](docs/usage.md): tasks, objectives, focus and time, labels,
+  backups
+- [Installing in detail](INSTALL.md): each system, and what a build needs
 - [The MCP server](docs/mcp.md) and [the Claude Code plugin](docs/claude-code.md)
+- [Configuration](docs/config.md)
+- [Decisions](docs/decisions.md): what cairn leaves out on purpose, and why
 - [Making a release](docs/release.md)
-- [Debug mode](docs/debug.md) — what it writes down, and what it never does
 
 ## Contributing
 
-cairn is written scenario first, then test, then code; every commit passes
+cairn is written scenario first, then test, then code, and every commit passes
 the checks. Start with [docs/development.md](docs/development.md),
 [docs/workflow.md](docs/workflow.md) and [docs/checks.md](docs/checks.md).
+
+## License
+
+No license has been chosen yet. The licenses of what cairn is built from ship
+in every release archive, as `THIRD_PARTY_NOTICES`; `make notices` writes them
+from a clone.
