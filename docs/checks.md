@@ -131,8 +131,12 @@ come as one pull request per place, a major one alone. Nothing merges on its
 own.
 
 **`check.yml` runs every hook on every file of a pull request and of a push**,
-on Linux, and the mutation sweep over the packages holding the rules, two
-mutants at a time, its report kept as the run's artifact. A change Dependabot
+on Linux, and the mutation sweep over the packages holding the rules: a job
+a package, side by side, four mutants at a time and 45 minutes at most, each
+report kept as the run's artifact. One job for them all, end to end, lasted as
+long as their sum and needed a three hour bound a run could still meet by
+accident; the list the jobs are made from is `scripts/mutation.sh --list`, the
+one the bare sweep walks. A push that follows another cancels its run. A change Dependabot
 made was made on no machine, so no hook judged it before this.
 
 Left to a person: Go itself, the `toolchain` line of both `go.mod`, which

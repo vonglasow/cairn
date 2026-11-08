@@ -7,7 +7,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse HEAD 2>/dev/null || echo none)
 COMMIT_DATE ?= $(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD 2>/dev/null)
 BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-PKG      = cairn/internal/build
+STAMPED  = cairn/internal/build
 # Every tool the checks and the release run is a Go program named, at its
 # version, in tools/go.mod, and run from there: nothing installed by hand to
 # drift from it, and one file Dependabot moves (docs/checks.md). A module of its
@@ -21,7 +21,7 @@ GREMLINS ?= $(shell $(TOOL) -n gremlins)
 # Raise them deliberately; never lower them to get a commit through.
 COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
-LDFLAGS  = -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).built=$(BUILT) -X $(PKG).committed=$(COMMIT_DATE)
+LDFLAGS  = -X $(STAMPED).version=$(VERSION) -X $(STAMPED).commit=$(COMMIT) -X $(STAMPED).built=$(BUILT) -X $(STAMPED).committed=$(COMMIT_DATE)
 
 .PHONY: release release-check next-version changelog package stamps help build run dev red cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
 

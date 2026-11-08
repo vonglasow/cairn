@@ -4,6 +4,7 @@
 #   mutation.sh            the packages holding the rules: what check.yml runs on
 #                          every push and pull request
 #   mutation.sh PKG...     those packages instead, by hand
+#   mutation.sh --list     the packages holding the rules, as a JSON list
 #   mutation.sh --changed  only the lines changed since HEAD, in the packages they
 #                          are in, by hand
 #
@@ -34,6 +35,23 @@ since=${MUTATION_SINCE:-HEAD}
 changed=false
 [ "${1:-}" = "--changed" ] && changed=true && shift
 asked=("$@")
+
+# The packages judged with && and || swapped and continue turned into break as
+# well: the core, where the rules are. Those two are off in .gremlins.yaml for
+# the surfaces, whose conditions are about what is on screen and give more
+# mutants no test can tell from the original than ones pointing at a weak
+# test. Every rule of what blocks, orders and narrows is written in && and ||,
+# so the core is where a 100% without them meant least.
+logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
+
+# The gate, one package a line as a JSON list: check.yml's matrix reads it
+# here and gives each package a job of its own, so a sweep is as long as its
+# longest package rather than all of them end to end, and the list is written
+# once.
+if [ "${asked[0]:-}" = "--list" ]; then
+  for pkg in $logical; do echo "./$pkg"; done | jq -R . | jq -sc .
+  exit 0
+fi
 
 # Gremlins builds every mutant, and every build lands in the Go cache: one full
 # sweep left 50 to 150 GB in it, and a run that filled the disk froze the
@@ -153,14 +171,6 @@ receiptOf() { echo "$receipts/$(echo "${1#./}" | tr / _)"; }
 # Where a hang caught is written down: each one is either a loop a test did
 # notice, or a test so slow it looks like one, and only a person can tell.
 hanged=$(git rev-parse --git-dir)/mutation-hangs.log
-
-# The packages judged with && and || swapped and continue turned into break as
-# well: the core, where the rules are. Those two are off in .gremlins.yaml for
-# the surfaces, whose conditions are about what is on screen and give more
-# mutants no test can tell from the original than ones pointing at a weak
-# test. Every rule of what blocks, orders and narrows is written in && and ||,
-# so the core is where a 100% without them meant least.
-logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
 
 # What the full sweep found, kept where it can be read again: a sweep runs for
 # a long while, and a verdict that lived only in its terminal had to be run
