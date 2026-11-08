@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-24.04
     # Each mutant a build and a run of its package's tests: bounded so a hang
     # cannot hold a runner, and a package past it is one to split.
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:

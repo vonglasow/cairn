@@ -132,7 +132,7 @@ own.
 
 **`check.yml` runs every hook on every file of a pull request and of a push**,
 on Linux, and the mutation sweep over the packages holding the rules: a job
-a package, side by side, four mutants at a time and an hour at most — the engine took 38 minutes on its first sweep — each
+a package, side by side, four mutants at a time and an hour and a half at most — the engine took 57 minutes once its tests had grown to kill what its first sweep found — each
 report kept as the run's artifact. One job for them all, end to end, lasted as
 long as their sum and needed a three hour bound a run could still meet by
 accident; the list the jobs are made from is `scripts/mutation.sh --list`, the
