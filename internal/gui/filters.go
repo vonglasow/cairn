@@ -206,12 +206,13 @@ const (
 	PillCount
 )
 
-// Pill is one pill of the row after the tabs: where it is, what it says, what it stands for, and for a filter's which one.
+// Pill is one pill of the row after the tabs: where it is, what it says, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
 type Pill struct {
-	Box  Box
-	Said string
-	Kind PillKind
-	At   int
+	Box   Box
+	Said  string
+	Kind  PillKind
+	At    int
+	Faint bool
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
@@ -251,6 +252,7 @@ func (w Window) Pills() []Pill {
 	for i, f := range w.filters {
 		if len(f.Taken()) > 0 {
 			crossed(f.Name+" "+f.TakenSays(), PillFilter, i)
+			row[len(row)-1].Faint = w.tab == Objectives && !f.ReachesGoals()
 			taken++
 		}
 	}
@@ -310,10 +312,13 @@ const ClearSays = "Clear"
 // FoldedSays is what the pill standing for every filter and the search says once they no longer fit: how many there are.
 func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
 
-// KeptCount is how many tasks the search and the filters keep of how many the board holds, and whether anything narrows it at all.
+// KeptCount is how many tasks the search and the filters keep of how many the board holds — objectives on the objectives' page — and whether anything narrows it at all.
 func (w Window) KeptCount() (string, bool) {
 	if w.looking.Empty() && !w.filters.Narrows() {
 		return "", false
+	}
+	if w.tab == Objectives {
+		return strconv.Itoa(len(w.Showing().Goals)) + " of " + strconv.Itoa(len(w.Reading().Goals)) + " objectives", true
 	}
 	return strconv.Itoa(len(w.Showing().Cards)) + " of " + strconv.Itoa(len(w.Reading().Cards)) + " tasks", true
 }

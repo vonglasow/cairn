@@ -1789,7 +1789,7 @@ func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		line := Box{X: pill.Box.X, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W, H: lineHigh}
 		switch pill.Kind {
 		case PillSearch, PillFilter:
-			drawClearingPill(gtx, th, skin, pill.Box, pill.Said)
+			drawClearingPill(gtx, th, skin, pill.Box, pill.Said, pill.Faint)
 		case PillAdd:
 			outline(gtx, pill.Box, skin.Edge)
 			sayIn(gtx, th, skin.Faint, line, pill.Said, small, font.Font{}, text.Middle)
@@ -1804,9 +1804,13 @@ func drawPills(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 }
 
-func drawClearingPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string) {
+func drawClearingPill(gtx layout.Context, th *material.Theme, skin Skin, pill Box, said string, faint bool) {
+	ink := skin.Faint
+	if faint {
+		ink = skin.Low
+	}
 	rounded(gtx, pill, pill.H/2, skin.Pill)
-	sayIn(gtx, th, skin.Faint, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, said, small, font.Font{}, text.Start)
+	sayIn(gtx, th, ink, Box{X: pill.X + pillPad, Y: pill.Y + (pill.H-lineHigh)/2, W: pill.W - pillPad - pillCross, H: lineHigh}, said, small, font.Font{}, text.Start)
 	drawCross(gtx, Box{X: pill.X + pill.W - pillCross, Y: pill.Y + (pill.H-pillCross)/2, W: pillCross - 4, H: pillCross}, skin.Low)
 }
 

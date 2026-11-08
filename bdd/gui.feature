@@ -534,6 +534,32 @@ Feature: The desktop board
       When I click the pill "Filters · 3"
       Then the window shows the filters
 
+    @gui-the-filters-narrow-the-objectives
+    Scenario: the filters narrow the objectives by what an objective is, and a filter meaning nothing to one is drawn faint
+      Given I added an objective titled "Ship cairn"
+      And I added an objective titled "Plan the trip"
+      When I open the window
+      And I set the filter "objective" to "2"
+      And I set the filter "column" to "todo"
+      And I press "esc"
+      And I click the tab "OBJECTIVES"
+      Then the objectives shown read "Plan the trip"
+      And the pill "column todo" is drawn faint
+      And the pill "objective #2 Plan the trip" is not drawn faint
+
+    @gui-the-filters-narrow-the-time
+    Scenario: the filters narrow the time page to the tasks they keep, its totals with them
+      Given I spent "1h" on task 1 on "2026-09-29"
+      And I spent "2h" on task 2 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I click the tab "TIME"
+      Then the day "2026-09-29" shows "Write the spec"
+      And the day "2026-09-29" does not show "Review the plan"
+      And the day "2026-09-29" shows a total of "1h"
+
   Rule: A window too small says what it needs
 
     @gui-too-small-says-so

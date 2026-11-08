@@ -530,6 +530,17 @@ reach (`@gui-filters-narrow-together`), and the search narrows what they kept
 (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
 (`engine.Filters`): what each keeps is what `task list` keeps with the same flag.
 
+**The same filters narrow every page.** One set, shared by the pages, so the
+pills in force do not change with the tab: the question asked — the work on
+`bug` — is about the subject, not the page. The objectives' page keeps the
+objectives by what an objective is — its labels, its priority, which one it
+is — the rule `objective list` follows, and counts `n of m objectives`; a
+filter that means nothing to an objective, a column or a day due by, stays as
+a pill drawn faint (`Pill.Faint`, `@gui-the-filters-narrow-the-objectives`).
+What an objective's tasks carry is a view of its own, cairn#226. The time
+page keeps the time of the tasks kept, its totals with them, as a search
+already did (`TimeShown`, `@gui-the-filters-narrow-the-time`).
+
 **A search does not take the window.** It narrows the board in place, so the
 board keeps answering the mouse: a card is chosen by a click and opened by a
 double click while the box is still open and still being typed into. It used to

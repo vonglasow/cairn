@@ -33,11 +33,11 @@ func (w Window) Daily() bool { return w.daily }
 
 // TimeShown is the time spent as the page shows it: every task of the period, or only those the search reaches, each day's total counting only those.
 func (w Window) TimeShown() engine.Timesheet {
-	if w.looking.Empty() {
+	if w.looking.Empty() && !w.filters.Narrows() {
 		return w.sheet
 	}
 	reached := map[int]bool{}
-	for _, c := range engine.Found(w.snap.Cards, w.looking.Reads(), w.archived) {
+	for _, c := range w.Showing().Cards {
 		reached[c.Number] = true
 	}
 	shown := engine.Timesheet{}

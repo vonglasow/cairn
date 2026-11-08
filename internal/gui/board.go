@@ -18,7 +18,7 @@ func (w Window) Showing() engine.Snapshot {
 	}
 	found := engine.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
 	found.Cards = engine.Found(cards, w.looking.Reads(), w.archived)
-	found.Goals = engine.FoundGoals(w.snap.Goals, w.looking.Reads())
+	found.Goals = engine.FoundGoals(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
 	return found
 }
 

@@ -72,6 +72,27 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the objectives shown read "([^"]*)"$`, func(want string) error {
+		var got []string
+		for _, g := range w.w.Showing().Goals {
+			got = append(got, g.Title)
+		}
+		if strings.Join(got, ", ") != want {
+			return fmt.Errorf("the objectives shown read %q", strings.Join(got, ", "))
+		}
+		return nil
+	})
+	sc.Then(`^the pill "([^"]*)" is (not )?drawn faint$`, func(said, not string) error {
+		for _, pill := range w.w.Pills() {
+			if pill.Said == said {
+				if pill.Faint == (not != "") {
+					return fmt.Errorf("the pill %q is faint: %v", said, pill.Faint)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("no pill reads %q", said)
+	})
 	sc.Then(`^the board says it keeps "([^"]*)"$`, func(want string) error {
 		for _, pill := range w.w.Pills() {
 			if pill.Kind == PillCount {
