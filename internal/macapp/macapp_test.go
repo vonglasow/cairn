@@ -133,6 +133,18 @@ func TestSigning_signsAnApplicationForThisMachine(t *testing.T) {
 	}
 }
 
+func TestInstall_saysWhereItCouldNotMakeTheApplication(t *testing.T) {
+	home, _ := installedIn(t)
+	applications := filepath.Join(home, "Applications")
+	if err := os.Mkdir(applications, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(applications, 0o755) })
+	if _, err := Install(home, "/usr/local/bin/cairn", "v1"); err == nil {
+		t.Error("an application was made in a folder nobody may write")
+	}
+}
+
 func TestInstall_saysWhatItCouldNotWrite(t *testing.T) {
 	_, _ = installedIn(t)
 	home := filepath.Join(t.TempDir(), "a file")
