@@ -26,10 +26,10 @@ type Backup struct {
 
 // FormatSize writes a number of bytes the way a person reads one: whole bytes and kilobytes, megabytes to a tenth.
 func FormatSize(bytes int64) string {
-	switch {
-	case bytes < 1024:
+	if bytes < 1024 {
 		return fmt.Sprintf("%d B", bytes)
-	case bytes < 1024*1024:
+	}
+	if bytes < 1024*1024 {
 		return fmt.Sprintf("%d KB", (bytes+512)/1024)
 	}
 	return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
