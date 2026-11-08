@@ -19,7 +19,7 @@ func FoundGoals(goals []Goal, query string) []Goal {
 }
 
 func overrun(estimate, spent string) bool {
-	reckoned, oneErr := domain.ParseEstimate(estimate)
-	took, twoErr := domain.ParseEstimate(spent)
-	return oneErr == nil && twoErr == nil && reckoned > 0 && took > reckoned
+	reckoned, _ := domain.ParseEstimate(estimate)
+	took, _ := domain.ParseEstimate(spent)
+	return reckoned > 0 && took > reckoned
 }

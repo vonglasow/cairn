@@ -285,6 +285,19 @@ func TestMonthsOf_countsADayPastOneWhereNothingServedWasDone(t *testing.T) {
 	}
 }
 
+func TestFinishedIn_readsDoneOnlyOffAColumnMoved(t *testing.T) {
+	e := openEngine(t)
+	done, err := e.add("Ship", Changes{State: of("done")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := time.Date(2026, 10, 1, 0, 0, 0, 0, time.Local)
+	renamed := []trace.Act{act("changed", "title", "Ship", "done", "", first.AddDate(0, 0, 2))}
+	if got := finishedIn(renamed, []task.Task{done}, first, first.AddDate(0, 0, 9)); len(got) != 0 {
+		t.Errorf("a title that became done was read as the task finished: %+v", got)
+	}
+}
+
 func TestFinishedIn_leavesOutATaskPutInDoneBeforeThePeriod(t *testing.T) {
 	e := openEngine(t)
 	done, err := e.add("Ship", Changes{State: of("done")})

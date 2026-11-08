@@ -41,7 +41,8 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 			band = append(band, card)
 			continue
 		}
-		if at := slices.IndexFunc(out, func(c Column) bool { return c.State == card.State }); at >= 0 {
+		at := slices.IndexFunc(out, func(c Column) bool { return c.State == card.State })
+		if at >= 0 {
 			out[at].Cards = append(out[at].Cards, card)
 		}
 	}

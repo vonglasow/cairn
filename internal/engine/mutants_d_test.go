@@ -181,6 +181,17 @@ func TestFilters_keepOnlyWhatIsDueByTheDay(t *testing.T) {
 	}
 }
 
+func TestFilters_keepNothingDueByTheDayThatAnotherFilterLeftOut(t *testing.T) {
+	priority := offered("priority", "priority", []string{"high"}, nil)
+	priority.At = 1
+	due := offered("due by", "due-before", []string{"2026-06-14"}, nil)
+	due.At = 1
+	cards := []Card{{Number: 1, Priority: "high", Deadline: dayNamed("2026-06-10")}, {Number: 2, Priority: "low", Deadline: dayNamed("2026-06-10")}}
+	if got := keptNumbers(t, Filters{priority, due}, cards); !slices.Equal(got, []int{1}) {
+		t.Errorf("kept %v, want [1]", got)
+	}
+}
+
 func TestPartsIn_readsAMarkOnlyWhereItIsWhole(t *testing.T) {
 	for _, tc := range []struct {
 		said string
