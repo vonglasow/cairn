@@ -133,6 +133,8 @@ var reasons = []reason{
 	{config.ErrWeekends, KindRefused, "config-weekends"},
 	{config.ErrKeepSizes, KindRefused, "config-window"},
 	{config.ErrNotWritten, KindRefused, "config-not-written"},
+	{config.ErrMachineKey, KindRefused, "config-machine-key"},
+	{config.ErrEmpty, KindRefused, "config-empty"},
 	{ErrNoSuchWorkspace, KindRefused, "no-such-workspace"},
 	{ErrWorkspaceNotThere, KindRefused, "workspace-not-there"},
 	{ErrWorkspaceKnown, KindRefused, "workspace-known"},

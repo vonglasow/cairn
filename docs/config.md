@@ -100,7 +100,8 @@ otherwise start a new, empty board somewhere nobody looks.
   `@workspace-list-as-json`).
 - `cairn workspace add <name> <folder>` writes the workspace into the file
   and makes its folder, with an empty `notes` in it
-  (`@workspace-add-writes-it-and-makes-its-folder`). The rest of the file is
+  (`@workspace-add-writes-it-and-makes-its-folder`) and settings that say
+  nothing yet (see below). The rest of the file is
   left byte for byte as it was — the entry joins the end of `[workspaces]`,
   or a table of its own after everything else
   (`@workspace-add-joins-the-table-there`) — and with no file it writes one
@@ -138,6 +139,71 @@ becomes is `config.WithWorkspace` and `config.WithDefault`, which edit its text
 rather than encode it again — encoding it again would drop every comment a
 person wrote. A file that says its workspaces some other way, an inline table
 for one, is refused rather than broken, and left to be changed by hand.
+
+## Settings that belong to the store
+
+```toml
+# ~/cairn/home/settings.toml, beside ~/cairn/home/cairn.db
+[pages]
+objectives = false
+```
+
+A workspace's folder holds its store, its notes, and `settings.toml`. **What
+belongs to the store is said there and wins over the global configuration, key
+by key; what belongs to the machine stays in the global file.** One board is
+work with objectives and a weekly archive, another home without either, and
+switching workspace switches them with the store (`bdd/settings.feature`,
+`@settings-two-workspaces-answer-differently`).
+
+- **Which file**: `settings.toml` beside the store in use, in the same folder
+  as its `cairn.db` (`config.SettingsBeside`). It is not looked up through the
+  workspaces: a store named by `--store`, `CAIRN_STORE` or the file's `store`
+  reads the settings beside it as well (`@settings-beside-a-store-named`), so
+  a store moved by hand takes its settings with it.
+- **What it may say**: every table but the machine's — `[pages]`, `[archive]`,
+  `[focus]`, `[approach]`, `[time]`, `[window]`. A key it says wins
+  (`@settings-the-store-wins`); a key it leaves out is the global file's, or
+  the default (`@settings-a-key-not-said-comes-from-the-global-file`); each
+  page is said on its own, so `objectives = false` here leaves `time = false`
+  in the global file standing. `store`, `notes`, `plugin` and `[workspaces]`
+  say where things are, which is the machine's to know before any store is
+  open: written here, they are refused naming the global file they go in
+  (`@settings-a-machine-key-is-refused`).
+- **An empty string**: `label = ""` under `[approach]` means no approach label
+  for this store, whatever the global file says
+  (`@settings-an-empty-approach-label-is-none-here`). Any other key written
+  empty here is refused naming it (`@settings-another-empty-string-is-refused`):
+  in a file whose whole point is to replace a value, an empty one says nothing
+  and would hide what the global file says.
+- **What it does not know** is passed over and said, as the global file's is,
+  the settings named (`@settings-an-unknown-key-is-passed-over`); a value it
+  cannot read, or a file that is not TOML, is refused like the global file's.
+- **No file is the ordinary case**: everything comes from the global file, as
+  before there was one. `cairn workspace add` writes one that says nothing but
+  what it is for — everything comes from the global configuration until it says
+  otherwise — and leaves one already in the folder as it was
+  (`@settings-workspace-add-writes-empty-settings`,
+  `@settings-workspace-add-leaves-settings-there`).
+
+Both files are read by the same reader: `config.Places.WithSettings` decodes
+the settings exactly as the global file is decoded and lays each key it writes
+over the one the global file gave. The engine reads them wherever it reads the
+configuration — the places, the pages, the archive, the focus session, a
+deleted task's time, the window's sizes — for the store it found, so a
+command, a board and the MCP server all answer from the settings of their own
+store (`@settings-the-server-reads-the-settings-of-its-store`); the server
+reads them again at every call, as it reads the pages. The command line reads
+`--workspace` and `--store` before it builds its commands, so a page another
+workspace's settings turn off is not offered for that command.
+
+`config show` names the settings read, `# the store's settings: <path>`, and
+then says after each key of the store where its value comes from: `# set in
+the store's settings`, `# from the global configuration`, or `# by default`
+(`@settings-config-show-says-where-each-comes-from`). With no settings beside
+the store it says nothing of them, as before. Its JSON carries `settings`, the
+file read, and `written_here`, every key it writes, beside `written`, every key
+the global file writes (`@settings-config-show-as-json`); the window's panel
+says `settings` beside such a key.
 
 ## Two places, and their names
 
@@ -460,7 +526,8 @@ Cairn does not write this file on its own. Nothing has to exist for it to work �
 no file is the ordinary case — but nothing leaves one behind either: a person
 who wants one writes it, or asks for it: `config init` writes it whole, and
 `workspace add` and `workspace use` write `[workspaces]` into it, leaving the
-rest as it was.
+rest as it was. `workspace add` also writes the settings of the workspace's
+store, which say nothing yet.
 
 Posing it at the first run is specified in `bdd/config.feature` — once, never
 completed, never holding what the environment said, never by a server told to
@@ -523,5 +590,7 @@ agent needs when everything else has started saying no.
   belongs here. The pages were that decision, taken on its own on 2026-10-16: which of them somebody uses is a fact about the person, read the
   same way by every surface, so it lives where every surface already looks.
   Any other preference is still a decision of its own.
-- **A file per project.** One file, at the place configuration lives. A store
-  somewhere else is what a workspace, the environment or `--store` is for.
+- **A file per project.** One global file, at the place configuration lives,
+  and beside each store the settings that belong to it — never a file looked
+  for in the folder a command runs from. A store somewhere else is what a
+  workspace, the environment or `--store` is for.

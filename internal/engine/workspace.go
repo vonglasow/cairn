@@ -220,6 +220,21 @@ func withConfiguration(h Home, change func([]byte, config.Places) ([]byte, error
 	return os.WriteFile(path, said, 0o600)
 }
 
+func settingsSayingNothing(folder string) error {
+	file, err := os.OpenFile(filepath.Join(folder, config.SettingsFile), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if errors.Is(err, fs.ErrExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := file.WriteString(config.SettingsHeader); err != nil {
+		_ = file.Close()
+		return err
+	}
+	return file.Close()
+}
+
 // WorkspaceList lists every workspace the configuration names, the default marked.
 var WorkspaceList = Operation{
 	Thing:   "workspace",
@@ -244,7 +259,7 @@ var WorkspaceAdd = Operation{
 	Thing:   "workspace",
 	Verb:    "add",
 	Short:   "Name a workspace, a folder holding a store and its notes",
-	Does:    "Name a workspace in the configuration file, writing the file when there is none and leaving the rest of it as it was, and make its folder with an empty notes folder in it. Its store is cairn.db in the folder, its notes the notes folder; cairn workspace use makes it the default.",
+	Does:    "Name a workspace in the configuration file, writing the file when there is none and leaving the rest of it as it was, and make its folder with an empty notes folder in it and settings.toml saying nothing yet. Its store is cairn.db in the folder, its notes the notes folder; cairn workspace use makes it the default.",
 	Example: "cairn workspace add work ~/cairn/work",
 	Level:   Write,
 	Needs:   AConfiguration,
@@ -271,7 +286,10 @@ var WorkspaceAdd = Operation{
 			if err != nil {
 				return nil, err
 			}
-			return said, os.MkdirAll(filepath.Join(at, notesFolder), 0o700)
+			if err := os.MkdirAll(filepath.Join(at, notesFolder), 0o700); err != nil {
+				return nil, err
+			}
+			return said, settingsSayingNothing(at)
 		})
 		if err != nil {
 			return Answer{}, err

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"cairn/internal/config"
@@ -19,20 +20,22 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, each of its places alongside what named it, and every other key with the value cairn uses — what the file says, or what is used when it says nothing.
 type Config struct {
-	File       string          `json:"file"`
-	Store      Emplacement     `json:"store"`
-	Notes      Emplacement     `json:"notes"`
-	Plugin     Emplacement     `json:"plugin"`
-	Pages      *PagesConfig    `json:"pages,omitempty"`
-	Archive    *Archive        `json:"archive,omitempty"`
-	Focus      *FocusConfig    `json:"focus,omitempty"`
-	Approach   *ApproachConfig `json:"approach,omitempty"`
-	Time       *TimeConfig     `json:"time,omitempty"`
-	Window     *WindowConfig   `json:"window,omitempty"`
-	Workspaces []Workspace     `json:"workspaces,omitempty"`
-	Problem    string          `json:"problem,omitempty"`
-	Written    []string        `json:"written,omitempty"`
-	Ignored    []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
+	File        string          `json:"file"`
+	Store       Emplacement     `json:"store"`
+	Notes       Emplacement     `json:"notes"`
+	Plugin      Emplacement     `json:"plugin"`
+	Pages       *PagesConfig    `json:"pages,omitempty"`
+	Archive     *Archive        `json:"archive,omitempty"`
+	Focus       *FocusConfig    `json:"focus,omitempty"`
+	Approach    *ApproachConfig `json:"approach,omitempty"`
+	Time        *TimeConfig     `json:"time,omitempty"`
+	Window      *WindowConfig   `json:"window,omitempty"`
+	Workspaces  []Workspace     `json:"workspaces,omitempty"`
+	Problem     string          `json:"problem,omitempty"`
+	Settings    string          `json:"settings,omitempty" jsonschema:"the settings beside the store read over the file, when there are any"`
+	Written     []string        `json:"written,omitempty"`
+	WrittenHere []string        `json:"written_here,omitempty" jsonschema:"every key the settings beside the store write, dotted under its table: those win over the file"`
+	Ignored     []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
 }
 
 // PagesConfig is whether each page is on.
@@ -100,6 +103,11 @@ func (g *readingGate) Resolved(p config.Places) {
 		g.config.Problem = err.Error()
 		return
 	}
+	p, err = p.WithSettings(config.SettingsBeside(places.store.At))
+	if err != nil {
+		g.config.Problem = err.Error()
+		return
+	}
 	g.config.Store = places.store
 	g.config.Notes = places.notes
 	g.config.Workspaces = workspacesIn(p)
@@ -116,6 +124,8 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Approach = &ApproachConfig{Label: p.ApproachLabel()}
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
 	g.config.Written = p.Written()
+	g.config.Settings = p.Settings()
+	g.config.WrittenHere = p.WrittenHere()
 	g.config.Ignored = p.Ignored()
 }
 
@@ -161,7 +171,11 @@ func configText(c Config) string {
 		wide = max(wide, len(p[0]))
 	}
 	var said strings.Builder
-	fmt.Fprintf(&said, "# the configuration cairn uses, every key with the value in force\n# the file it reads: %s\n\n", c.File)
+	fmt.Fprintf(&said, "# the configuration cairn uses, every key with the value in force\n# the file it reads: %s\n", c.File)
+	if c.Settings != "" {
+		fmt.Fprintf(&said, "# the store's settings: %s\n", c.Settings)
+	}
+	said.WriteString("\n")
 	for _, p := range places {
 		fmt.Fprintf(&said, "%-*s   # named by %s\n", wide, p[0], p[1])
 	}
@@ -169,41 +183,57 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "# ignored: %s\n", ignored)
 	}
 	if c.Pages != nil {
-		fmt.Fprintf(&said, "\n[pages]\ntasks = %t\nobjectives = %t\ntime = %t\n", c.Pages.Tasks, c.Pages.Objectives, c.Pages.Time)
+		fmt.Fprintf(&said, "\n[pages]\ntasks = %t%s\nobjectives = %t%s\ntime = %t%s\n",
+			c.Pages.Tasks, c.from("pages.tasks"), c.Pages.Objectives, c.from("pages.objectives"), c.Pages.Time, c.from("pages.time"))
 	}
 	if c.Archive != nil {
 		said.WriteString("\n[archive]\n")
 		if c.Archive.Start == "" {
 			said.WriteString("# start is not said: nothing is archived on its own\n")
 		} else {
-			fmt.Fprintf(&said, "start = %s\n", c.Archive.Start)
+			fmt.Fprintf(&said, "start = %s%s\n", c.Archive.Start, c.from("archive.start"))
 		}
-		fmt.Fprintf(&said, "days = %d\n", c.Archive.Days)
+		fmt.Fprintf(&said, "days = %d%s\n", c.Archive.Days, c.from("archive.days"))
 	}
 	if c.Focus != nil {
 		said.WriteString("\n[focus]\n")
 		if c.Focus.Session == "" {
 			said.WriteString("# session is not said: a focus session is never asked to be renewed\n")
 		} else {
-			fmt.Fprintf(&said, "session = %q\n", c.Focus.Session)
+			fmt.Fprintf(&said, "session = %q%s\n", c.Focus.Session, c.from("focus.session"))
 		}
 	}
 	if c.Approach != nil {
 		said.WriteString("\n[approach]\n")
-		if c.Approach.Label == "" {
+		switch {
+		case c.Approach.Label != "":
+			fmt.Fprintf(&said, "label = %q%s\n", c.Approach.Label, c.from("approach.label"))
+		case slices.Contains(c.WrittenHere, "approach.label"):
+			said.WriteString("# label is said empty in the store's settings: no label asks for the approach to be agreed first\n")
+		default:
 			said.WriteString("# label is not said: no label asks for the approach to be agreed first\n")
-		} else {
-			fmt.Fprintf(&said, "label = %q\n", c.Approach.Label)
 		}
 	}
 	if c.Time != nil {
-		fmt.Fprintf(&said, "\n[time]\ndeleted = %q\nweekends = %q\n", c.Time.Deleted, c.Time.Weekends)
+		fmt.Fprintf(&said, "\n[time]\ndeleted = %q%s\nweekends = %q%s\n", c.Time.Deleted, c.from("time.deleted"), c.Time.Weekends, c.from("time.weekends"))
 	}
 	if c.Window != nil {
-		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t\n", c.Window.KeepSizes)
+		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"))
 	}
 	said.WriteString(workspacesTable(c.Workspaces))
 	return said.String()
+}
+
+func (c Config) from(key string) string {
+	switch {
+	case c.Settings == "":
+		return ""
+	case slices.Contains(c.WrittenHere, key):
+		return "   # set in the store's settings"
+	case slices.Contains(c.Written, key):
+		return "   # from the global configuration"
+	}
+	return "   # by default"
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

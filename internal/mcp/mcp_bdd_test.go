@@ -1206,6 +1206,12 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^a configuration that turns every page off$`, func() error {
 			return w.WriteConfig("[pages]\ntasks = false\nobjectives = false\ntime = false\n")
 		})
+		sc.Step(`^the settings beside the store turn the page "([^"]*)" off$`, func(page string) error {
+			if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+				return err
+			}
+			return os.WriteFile(filepath.Join(filepath.Dir(w.StorePath), "settings.toml"), fmt.Appendf(nil, "[pages]\n%s = false\n", page), 0o600)
+		})
 		sc.Step("^I ask it what it can do$", w.iAskItWhatItCanDo)
 		sc.Step("^every tool describes the shape of its answer$", w.everyToolDescribesItsAnswer)
 		sc.Step("^every tool says it answers one object$", w.everyToolAnswersAnObject)

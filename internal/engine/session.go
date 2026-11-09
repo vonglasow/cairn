@@ -51,7 +51,7 @@ func (e *Engine) sessionLength() (time.Duration, error) {
 	if e.home.Dir == "" {
 		return 0, nil
 	}
-	read, err := config.Read(e.home.Dir, e.home.lookup())
+	read, err := e.configured()
 	if err != nil {
 		return 0, nil
 	}

@@ -434,6 +434,10 @@ cairn task list --workspace home        # another, for this command alone
 
 `--workspace` or `--store` on any command replaces even the environment. See
 [config.md](config.md#workspaces-each-a-folder-holding-a-store-and-its-notes).
+The folder also holds `settings.toml`: the pages, the archive, the focus
+session, the approach label, the time and the window of that store, each
+winning over the global file when it is said
+([config.md](config.md#settings-that-belong-to-the-store)).
 
 `task show` says where a task's notes go: `context  ~/.cairn/notes/14`, a
 directory named for its number under `notes`. Cairn never makes it, reads it or

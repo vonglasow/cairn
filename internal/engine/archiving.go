@@ -3,7 +3,6 @@ package engine
 import (
 	"time"
 
-	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/store"
 	"cairn/internal/trace"
@@ -27,7 +26,7 @@ func (e *Engine) archivingSwept() error {
 	if e.home.Dir == "" {
 		return nil
 	}
-	read, err := config.Read(e.home.Dir, e.home.lookup())
+	read, err := e.configured()
 	if err != nil {
 		return nil
 	}

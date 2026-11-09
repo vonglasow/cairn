@@ -1303,8 +1303,9 @@ on a Mac — or Configuration… in the File menu opens a panel over the board
 (`configuration.go`) that says what `config show` says, asked of the engine
 (`engine.ConfigShow`): the file read, or that it is not written yet, then a line
 a key in three columns: the key in Go Mono, its value, and where it came from
-at the right — `file`, the environment variable that named it, or `default`
-(`ConfigLines`). A path — the store, the notes, the plugin, the file read —
+at the right — `file`, `settings` when the settings beside the store say it
+([config.md](config.md#settings-that-belong-to-the-store)), the environment
+variable that named it, or `default` (`ConfigLines`). A path — the store, the notes, the plugin, the file read —
 has a mark before it, two sheets one over the other, that copies it whole to
 the clipboard (`CopyMarks`, `copying.go`); so do where an open task's
 context lives and where cairn is kept, in About

@@ -55,8 +55,20 @@ func KeepsSizes(h Home) bool {
 	if h.Dir == "" {
 		return false
 	}
-	read, err := config.Read(h.Dir, h.lookup())
+	read, _, err := h.settled()
 	return err == nil && read.KeepSizes()
+}
+
+// Ignored says every key the configuration and the settings of the store in use hold that this cairn does not know and passed over; nothing when they cannot be read, which is said where they are read for the places.
+func Ignored(h Home) []string {
+	if h.Dir == "" {
+		return nil
+	}
+	read, _, err := h.settled()
+	if err != nil {
+		return nil
+	}
+	return read.Ignored()
 }
 
 // Locate works out where the store and the notes live: a flag, then the environment, then the default workspace, then the configuration file, then the default place under the home, in that order.
@@ -66,11 +78,7 @@ func Locate(h Home) (Places, error) {
 			return Places{}, fmt.Errorf("%w: %w", ErrStore, h.Missing)
 		}
 	}
-	found, err := h.configuration()
-	if err != nil {
-		return Places{}, err
-	}
-	answers, err := h.answering(found)
+	found, answers, err := h.settled()
 	if err != nil {
 		return Places{}, err
 	}
@@ -88,14 +96,34 @@ func Locate(h Home) (Places, error) {
 func (h Home) configuration() (config.Places, error) {
 	found, err := config.Read(h.Dir, h.lookup())
 	if err != nil {
-		for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
-			if errors.Is(err, theirs) {
-				return config.Places{}, err
-			}
-		}
-		return config.Places{}, fmt.Errorf("%w: %w", ErrStore, err)
+		return config.Places{}, refusedOrUnusable(err)
 	}
 	return found, nil
+}
+
+func (h Home) settled() (config.Places, answering, error) {
+	found, err := h.configuration()
+	if err != nil {
+		return config.Places{}, answering{}, err
+	}
+	answers, err := h.answering(found)
+	if err != nil {
+		return config.Places{}, answering{}, err
+	}
+	settled, err := found.WithSettings(config.SettingsBeside(answers.store.At))
+	if err != nil {
+		return config.Places{}, answering{}, refusedOrUnusable(err)
+	}
+	return settled, answers, nil
+}
+
+func refusedOrUnusable(err error) error {
+	for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute, config.ErrMachineKey, config.ErrEmpty} {
+		if errors.Is(err, theirs) {
+			return err
+		}
+	}
+	return fmt.Errorf("%w: %w", ErrStore, err)
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.

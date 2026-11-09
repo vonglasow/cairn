@@ -726,6 +726,14 @@ Feature: Answering a machine over MCP
       And it does not offer `timesheet_show`
       And it offers `config_show`
 
+    @settings-the-server-reads-the-settings-of-its-store
+    Scenario: the settings beside the store a server answers from turn a page off
+      Given the settings beside the store turn the page "time" off
+      And a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it does not offer `timesheet_show`
+      And it offers `task_list`
+
   Rule: A page turned on or off while the server runs is offered or taken away at the next call, with no reconnect
 
     @mcp-a-page-turned-back-on-is-offered-at-the-next-call

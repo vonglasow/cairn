@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strconv"
 
 	"cairn/internal/engine"
@@ -69,10 +70,11 @@ func (w Window) configKeys() []ConfigLine {
 	}
 	written := func(key, value string) ConfigLine {
 		from := "default"
-		for _, said := range c.Written {
-			if said == key {
-				from = "file"
-			}
+		switch {
+		case slices.Contains(c.WrittenHere, key):
+			from = "settings"
+		case slices.Contains(c.Written, key):
+			from = "file"
 		}
 		return ConfigLine{Key: key, Value: value, From: from}
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
 	"cairn/internal/debug"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
@@ -25,7 +24,9 @@ import (
 var stamps = build.Read
 
 // NewRootCmd builds the whole command tree.
-func NewRootCmd() *cobra.Command {
+func NewRootCmd() *cobra.Command { return newRootCmdFor(home()) }
+
+func newRootCmdFor(h engine.Home) *cobra.Command {
 	b := stamps()
 	root := &cobra.Command{
 		Use:           "cairn",
@@ -53,7 +54,7 @@ func NewRootCmd() *cobra.Command {
 	root.PersistentFlags().Bool(debugFlag, false, "write down what this run does, beside the store, as CAIRN_DEBUG=1 does")
 	root.PersistentFlags().String(workspaceFlag, "", "the workspace this command uses, whatever the environment says")
 	root.PersistentFlags().String(storeFlag, "", "the store this command uses, whatever the environment says")
-	root.AddCommand(newActionGroups(engine.PagesFrom(home()))...)
+	root.AddCommand(newActionGroups(engine.PagesFrom(h))...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())
@@ -143,14 +144,16 @@ func valueOf(flag string, args []string) string {
 
 // Main runs the command line and returns the code the process should exit with.
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	root := NewRootCmd()
+	h := home()
+	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
+	root := newRootCmdFor(h)
 	root.SetIn(stdin)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 	root.SetArgs(args)
 
 	asMachine := askedFor(jsonFlag, args)
-	sayIgnored(home(), stderr)
+	sayIgnored(h, stderr)
 	flagsRead := true
 	refusing := root.FlagErrorFunc()
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
@@ -158,7 +161,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		return refusing(c, err)
 	})
 
-	if written := debugging(root, args, stderr); written != nil {
+	if written := debugging(root, h, args, stderr); written != nil {
 		engine.NoteTo(written)
 		ctx = context.WithValue(ctx, notedKey{}, written)
 		defer func() {
@@ -188,14 +191,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 }
 
 func sayIgnored(h engine.Home, stderr io.Writer) {
-	if h.Dir == "" {
-		return
-	}
-	read, err := config.Read(h.Dir, h.Lookup)
-	if err != nil {
-		return
-	}
-	for _, ignored := range read.Ignored() {
+	for _, ignored := range engine.Ignored(h) {
 		_, _ = fmt.Fprintf(stderr, "config: %s\n", ignored)
 	}
 }
@@ -207,12 +203,10 @@ func notedIn(ctx context.Context) *debug.Log {
 	return written
 }
 
-func debugging(root *cobra.Command, args []string, stderr io.Writer) *debug.Log {
-	if !askedFor(debugFlag, args) && !engine.Debugging(home()) {
+func debugging(root *cobra.Command, h engine.Home, args []string, stderr io.Writer) *debug.Log {
+	if !askedFor(debugFlag, args) && !engine.Debugging(h) {
 		return nil
 	}
-	h := home()
-	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
 	at, err := engine.Locate(h)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "debug: cannot write down: %v\n", err)

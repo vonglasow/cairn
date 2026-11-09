@@ -94,6 +94,10 @@ type Places struct {
 	ignored          []string
 	workspaces       []Workspace
 	defaultWorkspace string
+	from             string
+	said             file
+	settings         string
+	writtenHere      []string
 }
 
 type file struct {
@@ -125,23 +129,23 @@ func (w *window) keepSizes() (bool, error) {
 }
 
 type timed struct {
-	Deleted  string `toml:"deleted"`
-	Weekends string `toml:"weekends"`
+	Deleted  *string `toml:"deleted"`
+	Weekends *string `toml:"weekends"`
 }
 
 type focus struct {
-	Session string `toml:"session"`
+	Session *string `toml:"session"`
 }
 
 type approach struct {
-	Label string `toml:"label"`
+	Label *string `toml:"label"`
 }
 
 func (a *approach) label() string {
-	if a == nil {
+	if a == nil || a.Label == nil {
 		return ""
 	}
-	return a.Label
+	return *a.Label
 }
 
 type archive struct {
@@ -342,60 +346,31 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	var f file
 	var ignored []string
 	if err == nil {
-		if err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&f); err != nil {
-			var strict *toml.StrictMissingError
-			if errors.As(err, &strict) {
-				ignored = passedOver(strict)
-				f = file{}
-				err = toml.NewDecoder(bytes.NewReader(data)).Decode(&f)
-			}
-			var decode *toml.DecodeError
-			if errors.As(err, &decode) {
-				return Reading{path: path, err: fmt.Errorf("%q: %w", path, ErrNotTOML)}, nil
-			}
-			if err != nil {
-				return Reading{}, err
-			}
+		f, ignored, err = decoded(data)
+		if errors.Is(err, ErrNotTOML) {
+			return Reading{path: path, err: fmt.Errorf("%q: %w", path, ErrNotTOML)}, nil
+		}
+		if err != nil {
+			return Reading{}, err
 		}
 	}
 
-	start, days, err := f.Archive.read()
-	if err != nil {
-		return Reading{path: path, err: err}, nil
-	}
-	deleted, err := f.Time.deleted()
-	if err != nil {
-		return Reading{path: path, err: err}, nil
-	}
-	weekends, err := f.Time.weekends()
-	if err != nil {
-		return Reading{path: path, err: err}, nil
-	}
-	keep, err := f.Window.keepSizes()
-	if err != nil {
-		return Reading{path: path, err: err}, nil
-	}
-	workspaces, chosen, err := workspacesOf(f.Workspaces, home)
-	if err != nil {
-		return Reading{path: path, err: err}, nil
-	}
 	answer := Places{
-		keepSizes:        keep,
-		workspaces:       workspaces,
-		defaultWorkspace: chosen,
-		timeDeleted:      deleted,
-		timeWeekends:     weekends,
-		focusSession:     f.Focus.session(),
-		approach:         f.Approach.label(),
-		archiveStart:     start,
-		archiveDays:      days,
-		store:            filepath.Join(home, DefaultFolder, defaultFile),
-		notes:            filepath.Join(home, DefaultFolder, defaultNotesFolder),
-		storeNamedBy:     byNothing,
-		notesNamedBy:     byNothing,
-		pagesOff:         f.Pages.off(),
-		written:          writtenIn(data),
-		ignored:          ignored,
+		from:         path,
+		said:         f,
+		store:        filepath.Join(home, DefaultFolder, defaultFile),
+		notes:        filepath.Join(home, DefaultFolder, defaultNotesFolder),
+		storeNamedBy: byNothing,
+		notesNamedBy: byNothing,
+		written:      writtenIn(data),
+		ignored:      ignored,
+	}
+	if err := answer.settle(f); err != nil {
+		return Reading{path: path, err: err}, nil
+	}
+	answer.workspaces, answer.defaultWorkspace, err = workspacesOf(f.Workspaces, home)
+	if err != nil {
+		return Reading{path: path, err: err}, nil
 	}
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},
@@ -414,6 +389,48 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		*c.place, *c.namedBy = expanded, c.by
 	}
 	return Reading{path: path, places: answer}, nil
+}
+
+func decoded(data []byte) (file, []string, error) {
+	var f file
+	err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&f)
+	if err == nil {
+		return f, nil, nil
+	}
+	var ignored []string
+	var strict *toml.StrictMissingError
+	if errors.As(err, &strict) {
+		ignored = passedOver(strict)
+		f = file{}
+		err = toml.NewDecoder(bytes.NewReader(data)).Decode(&f)
+	}
+	var decode *toml.DecodeError
+	if errors.As(err, &decode) {
+		return file{}, nil, ErrNotTOML
+	}
+	return f, ignored, err
+}
+
+func (p *Places) settle(f file) error {
+	start, days, err := f.Archive.read()
+	if err != nil {
+		return err
+	}
+	deleted, err := f.Time.deleted()
+	if err != nil {
+		return err
+	}
+	weekends, err := f.Time.weekends()
+	if err != nil {
+		return err
+	}
+	keep, err := f.Window.keepSizes()
+	if err != nil {
+		return err
+	}
+	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
+	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off()
+	return nil
 }
 
 type claim struct {
@@ -497,28 +514,28 @@ func expandTilde(value, home string) string {
 }
 
 func (f *focus) session() string {
-	if f == nil {
+	if f == nil || f.Session == nil {
 		return ""
 	}
-	return f.Session
+	return *f.Session
 }
 
 func (t *timed) deleted() (string, error) {
-	if t == nil || t.Deleted == "" {
+	if t == nil || t.Deleted == nil || *t.Deleted == "" {
 		return TimeKept, nil
 	}
-	if t.Deleted != TimeKept && t.Deleted != TimeTaken {
-		return "", fmt.Errorf("time.deleted %q: %w", t.Deleted, ErrTime)
+	if *t.Deleted != TimeKept && *t.Deleted != TimeTaken {
+		return "", fmt.Errorf("time.deleted %q: %w", *t.Deleted, ErrTime)
 	}
-	return t.Deleted, nil
+	return *t.Deleted, nil
 }
 
 func (t *timed) weekends() (string, error) {
-	if t == nil || t.Weekends == "" {
+	if t == nil || t.Weekends == nil || *t.Weekends == "" {
 		return WeekendsShown, nil
 	}
-	if t.Weekends != WeekendsShown && t.Weekends != WeekendsHidden {
-		return "", fmt.Errorf("time.weekends %q: %w", t.Weekends, ErrWeekends)
+	if *t.Weekends != WeekendsShown && *t.Weekends != WeekendsHidden {
+		return "", fmt.Errorf("time.weekends %q: %w", *t.Weekends, ErrWeekends)
 	}
-	return t.Weekends, nil
+	return *t.Weekends, nil
 }

@@ -35,7 +35,7 @@ func PagesFrom(h Home) Pages {
 	if h.Dir == "" {
 		return Pages{}
 	}
-	read, err := config.Read(h.Dir, h.lookup())
+	read, _, err := h.settled()
 	if err != nil {
 		return Pages{}
 	}

@@ -524,6 +524,10 @@
         "problem": {
           "type": "string"
         },
+        "settings": {
+          "type": "string",
+          "description": "the settings beside the store read over the file, when there are any"
+        },
         "written": {
           "type": [
             "null",
@@ -532,6 +536,16 @@
           "items": {
             "type": "string"
           }
+        },
+        "written_here": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "every key the settings beside the store write, dotted under its table: those win over the file"
         },
         "ignored": {
           "type": [

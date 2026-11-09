@@ -68,3 +68,17 @@ func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
 		t.Errorf("the context %+v is written over its mark %+v", said, marks[0].At)
 	}
 }
+
+func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
+	w := holding(newFake())
+	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
+		Pages: &engine.PagesConfig{}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{},
+		Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}}
+	from := map[string]string{}
+	for _, line := range w.ConfigLines() {
+		from[line.Key] = line.From
+	}
+	if from["time.weekends"] != "settings" || from["focus.session"] != "file" || from["time.deleted"] != "default" {
+		t.Errorf("the keys come from %v", from)
+	}
+}

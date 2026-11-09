@@ -256,8 +256,16 @@ func (e *Engine) timeGoesWithTasks() bool {
 	if e.home.Dir == "" {
 		return false
 	}
-	read, err := config.Read(e.home.Dir, e.home.lookup())
+	read, err := e.configured()
 	return err == nil && read.TimeDeleted() == config.TimeTaken
+}
+
+func (e *Engine) configured() (config.Places, error) {
+	read, err := config.Read(e.home.Dir, e.home.lookup())
+	if err != nil {
+		return config.Places{}, err
+	}
+	return read.WithSettings(config.SettingsBeside(e.path))
 }
 
 func (e *Engine) waitingOn(number int) ([]int, error) {
