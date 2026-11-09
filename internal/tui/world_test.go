@@ -36,6 +36,7 @@ type world struct {
 	formAt int
 	opened bool
 	left   bool
+	spaces spaces
 }
 
 func newWorld(t *testing.T) *world {
@@ -64,12 +65,19 @@ func (w *world) reset() {
 	w.asked = false
 	w.formAt = 0
 	w.left = false
+	w.spaces = spaces{}
+	w.pages = engine.Pages{}
 }
 
 func (w *world) open() {
 	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.pages)
 	w.opened = true
 	w.refresh()
+	if w.spaces.dir != "" {
+		held := w.held
+		w.b = w.b.Switching(func(name string) (engine.Pages, error) { return engine.Switch(held, name) })
+		w.settle(w.b.placing())
+	}
 }
 
 func (w *world) refresh() {
@@ -160,9 +168,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	w.givens().Register(sc)
+	w.registerWorkspaces(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
-	sc.When(`^I open the board$`, func() error { w.open(); return nil })
+	sc.When(`^I open the board$`, func() error {
+		if w.spaces.dir != "" {
+			if err := w.holdThroughHome(); err != nil {
+				return err
+			}
+		}
+		w.open()
+		return nil
+	})
 	sc.Then(`^no screen runs past the terminal$`, w.noScreenRunsPastTheTerminal)
 	sc.Step(`^I press (".*")$`, w.pressMany)
 	sc.Step(`^I press "([^"]*)" (\d+) times$`, func(name string, times int) error {

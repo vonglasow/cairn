@@ -109,6 +109,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 		}
 		return b, b.remove()
 	}
+	if b.screen == OnWorkspaces {
+		return b.inWorkspaces(key)
+	}
 	if b.screen != OnTheBoard {
 		return b.onScreen(key)
 	}
@@ -120,6 +123,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	}
 	if b.prompt != NoPrompt {
 		return b.typing(key)
+	}
+	if key == switcherKey && b.roams() {
+		return b, b.listing()
 	}
 	if b.mode == Insert {
 		return b.inInsert(key)

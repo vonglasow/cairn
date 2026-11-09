@@ -16,7 +16,7 @@ func (b Board) Noting(noted *debug.Log) Board {
 }
 
 var (
-	screenNames = map[Screen]string{OnTheBoard: "board", OnHelp: "help", OnDetail: "detail", OnForm: "form", OnSaid: "said"}
+	screenNames = map[Screen]string{OnTheBoard: "board", OnHelp: "help", OnDetail: "detail", OnForm: "form", OnSaid: "said", OnWorkspaces: "workspaces"}
 	tabNames    = map[Tab]string{Tasks: "tasks", Objectives: "objectives", Time: "time"}
 	modeNames   = map[Mode]string{Normal: "normal", Insert: "insert"}
 	promptNames = map[Prompt]string{NoPrompt: "none", Searching: "search", Commanding: "command"}

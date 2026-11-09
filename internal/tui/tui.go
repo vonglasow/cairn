@@ -41,6 +41,8 @@ const (
 	OnForm
 	// OnSaid is what a command answered, until esc.
 	OnSaid
+	// OnWorkspaces is the switcher, over the board, until a workspace is chosen or esc.
+	OnWorkspaces
 )
 
 // Prompt is what, if anything, is taking what is typed at the foot.
@@ -134,6 +136,13 @@ type Board struct {
 	saidAt int
 	timeAt int
 
+	place    Placed
+	switcher Switcher
+	spaces   []engine.Workspace
+	sought   string
+	spaceAt  int
+	opened   string
+
 	err   error
 	noted *debug.Log
 }
@@ -152,7 +161,7 @@ func New(w engine.Work, glyphs Glyphs, clock func() time.Time, width, height int
 
 // Init asks for the first reading and starts the beat.
 func (b Board) Init() tea.Cmd {
-	return tea.Batch(b.look(), tick())
+	return tea.Batch(b.look(), tick(), b.placing())
 }
 
 func (b Board) look() tea.Cmd {
@@ -208,6 +217,13 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Heard:
 		b.heard = m
 		return b, nil
+	case Placed:
+		b.place = m
+		return b, nil
+	case Listed:
+		return b.listedAll(m), nil
+	case Switched:
+		return b.switched(m)
 	case Sheeted:
 		b.sheet, b.err = m.Sheet, m.Err
 		return b, nil
@@ -225,7 +241,7 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return b, tea.Batch(b.wonder(aged), tick())
 	case tea.KeyPressMsg:
 		key := keyName(m)
-		b.err = nil
+		b.err, b.opened = nil, ""
 		if b.asking {
 			return b.pressed(key)
 		}

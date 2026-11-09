@@ -44,7 +44,7 @@ func (b Board) says(key, does string) string {
 
 func (b Board) helpKeys() []string {
 	if b.tab == Objectives {
-		return b.group("NORMAL — the cursor on an objective",
+		return b.group("NORMAL — the cursor on an objective", append([]string{
 			b.says("hjkl ←↓↑→", "change objective"),
 			b.says("gg / G", "first / last"),
 			b.says("⏎", "open it"),
@@ -55,9 +55,9 @@ func (b Board) helpKeys() []string {
 			b.says("⇥", "next tab"),
 			b.says(":", "command"),
 			b.says("?", "help"),
-		)
+		}, b.roamingSays()...)...)
 	}
-	out := b.group("NORMAL — the cursor on a column",
+	out := b.group("NORMAL — the cursor on a column", append([]string{
 		b.says("hjkl ←↓↑→", "columns, and the band"),
 		b.says("i", "insert mode"),
 		b.says("a", "a new task"),
@@ -70,8 +70,8 @@ func (b Board) helpKeys() []string {
 		b.says("b", "a new backup of the store"),
 		b.says("⇧B", "the backups"),
 		b.says("←→ t on time", "walk the weeks, back to today's"),
-	)
-	out = append(out, b.group("INSERT — the cursor on a task",
+	}, b.roamingSays()...)...)
+	out = append(out, b.group("INSERT — the cursor on a task", append([]string{
 		b.says("hjkl ←↓↑→", "tasks, and the band"),
 		b.says("gg / G", "first / last in the column"),
 		b.says("⇧hjkl", "move it: sideways changes column, up and down change place"),
@@ -84,7 +84,7 @@ func (b Board) helpKeys() []string {
 		b.says("D", "delete"),
 		b.says("x", "archive or unarchive"),
 		b.says("esc", "back to normal"),
-	)...)
+	}, b.roamingSays()...)...)...)
 	out = append(out, b.group("DETAIL — one task, open",
 		b.says("^D ^U", "walk its description, half a box at a time"),
 	)...)
@@ -95,6 +95,13 @@ func (b Board) helpKeys() []string {
 		b.says("^S", "save, from anywhere in it — ⏎ never does"),
 	)...)
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)
+}
+
+func (b Board) roamingSays() []string {
+	if !b.roams() {
+		return nil
+	}
+	return []string{b.says("^O", "another workspace, in place of this one")}
 }
 
 func (b Board) legend() []string {

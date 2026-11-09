@@ -34,6 +34,8 @@ func (b Board) Draw() string {
 		return b.drawForm()
 	case OnSaid:
 		return b.drawSaid()
+	case OnWorkspaces:
+		return b.drawSwitcher()
 	}
 	return b.drawBoard()
 }
@@ -61,14 +63,15 @@ func (b Board) drawBoard() string {
 
 func (b Board) tabs() string {
 	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Time: "time"}
-	left := ""
+	left := " " + b.placeMark()
 	for _, tab := range b.shown() {
 		name := b.skin.TabOff.Render(names[tab])
 		if tab == b.tab {
 			name = b.skin.TabOn.Render(strings.ToUpper(names[tab]))
 		}
-		left += " " + name
+		left += name + " "
 	}
+	left = strings.TrimSuffix(left, " ")
 	if b.inside != 0 {
 		left += "  " + b.skin.Crumb.Render("▸ "+strconv.Itoa(b.inside))
 	}
@@ -84,6 +87,9 @@ func (b Board) modeName() string {
 	}
 	if b.screen == OnForm {
 		return "EDIT"
+	}
+	if b.screen == OnWorkspaces {
+		return "WORKSPACES"
 	}
 	if b.filtering {
 		return "FILTER"
@@ -246,6 +252,9 @@ func (b Board) foot() string {
 	if b.asking {
 		return b.question()
 	}
+	if b.screen == OnWorkspaces {
+		return b.switcherBar()
+	}
 	if b.choosing {
 		return b.kindPopup()
 	}
@@ -271,14 +280,14 @@ func (b Board) offers() []string {
 		return []string{
 			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("/", "search"),
-			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"),
+			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"), b.roaming(),
 		}
 	}
 	if b.mode == Insert {
 		return []string{
 			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
 			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("D", "delete"),
-			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"), b.offer("o", "linked"),
+			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"), b.roaming(), b.offer("o", "linked"),
 		}
 	}
 	out := []string{
@@ -290,7 +299,14 @@ func (b Board) offers() []string {
 		return out
 	}
 	return append(out, b.offer("a", "new"), b.offer("/", "search"),
-		b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"))
+		b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"), b.roaming())
+}
+
+func (b Board) roaming() string {
+	if !b.roams() {
+		return ""
+	}
+	return b.offer("^O", "workspace")
 }
 
 func (b Board) promptLine() string {
@@ -348,6 +364,9 @@ func (b Board) kindPopup() string {
 }
 
 func (b Board) titleLine() string {
+	if b.opened != "" {
+		return " " + b.skin.Faint.Render(Clip(b.opened, b.width-margin-margin))
+	}
 	title := b.wholeTitle()
 	if title == "" && b.filters.Narrows() && !b.filtering {
 		return " " + b.skin.Faint.Render(Clip("filtered by "+b.filters.Said(), b.width-margin-margin))

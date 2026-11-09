@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -162,5 +163,35 @@ func TestTui_writesItsKeysDownInDebugMode(t *testing.T) {
 	}
 	if !bytes.Contains(read, []byte("board key ?")) {
 		t.Errorf("the key pressed is not written down:\n%s", read)
+	}
+}
+
+func TestTui_opensTheWorkspaceNamedAndOpensAnotherInItsPlace(t *testing.T) {
+	was := openTui
+	t.Cleanup(func() { openTui = was })
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	for _, name := range []string{"work", "home"} {
+		if r := run(t, "workspace", "add", name, filepath.Join(home, name)); r.Code != exitOK {
+			t.Fatalf("workspace add %s = %d (%s)", name, r.Code, r.Stderr)
+		}
+	}
+	var said string
+	openTui = func(_ *cobra.Command, model tea.Model) error {
+		batch, _ := model.Init()().(tea.BatchMsg)
+		model, _ = model.Update(batch[len(batch)-1]())
+		model, _ = model.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+		model, cmd := model.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+		model, _ = model.Update(cmd())
+		model, cmd = model.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
+		model, _ = model.Update(cmd())
+		said = model.View().Content
+		return nil
+	}
+	if r := run(t, "tui", "--workspace", "home"); r.Code != exitOK {
+		t.Fatalf("board exit = %d (%s)", r.Code, r.Stderr)
+	}
+	if !strings.Contains(said, "opened work in place of home") {
+		t.Errorf("the board says:\n%s", said)
 	}
 }

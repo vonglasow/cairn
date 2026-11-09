@@ -1019,6 +1019,116 @@ Feature: The board
       When I press "enter"
       Then the board says "this store comes from a newer cairn"
 
+  Rule: The board names the workspace it shows, and opens another in its place
+
+    @tui-workspace-the-header-names-it
+    Scenario: the header opens with the workspace the board shows
+      Given the workspace "work", the default
+      And the workspace "home"
+      When I open the board
+      Then the header opens with "● work"
+
+    @tui-workspace-a-loose-store-shows-its-folder
+    Scenario: a store no workspace names shows its folder instead
+      Given the workspace "work", the default
+      And a store no workspace names, in the folder "scratch"
+      When I open the board
+      Then the header opens with "◌ " and the folder "scratch"
+
+    @tui-workspace-ctrl-o-lists-them
+    Scenario: ctrl+o lists the workspaces, the one shown marked
+      Given the workspace "work", the default
+      And the workspace "home"
+      When I open the board
+      And I press "ctrl+o"
+      Then the board says "OPEN A WORKSPACE"
+      And the workspaces listed read "home", "work"
+      And the workspace "work" is marked "here · default"
+      And the workspace "home" is marked "1"
+
+    @tui-workspace-choosing-replaces-the-board
+    Scenario: choosing a workspace replaces the board in place, and says so
+      Given the workspace "work", the default
+      And the workspace "home"
+      And I added a task titled "Rotate the certificates"
+      And the workspace "home" holds a task titled "Fix the shed door"
+      When I open the board
+      And I press "ctrl+o"
+      And I press "down", "up"
+      And I press "enter"
+      Then the header opens with "● home"
+      And "BACKLOG" carries "Fix the shed door"
+      And the board says nothing of "Rotate the certificates"
+      And the board says "opened home in place of work"
+      And the default workspace is still "work"
+
+    @tui-workspace-chosen-by-its-place
+    Scenario: a digit opens the workspace at that place
+      Given the workspace "work", the default
+      And the workspace "home"
+      When I open the board
+      And I press "ctrl+o", "1"
+      Then the header opens with "● home"
+
+    @tui-workspace-the-focus-left-is-still-held
+    Scenario: a focus held in the workspace left is still held after switching
+      Given the workspace "work", the default
+      And the workspace "home"
+      And I added a task titled "Choose the month" with the state "current"
+      And I put task 1 in focus
+      When I open the board
+      And I press "ctrl+o", "1"
+      Then the board says "work's focus on #1 is still held"
+      And task 1 of the workspace "work" is still in focus
+
+    @tui-workspace-esc-leaves-the-board-as-it-was
+    Scenario: esc leaves the board as it was
+      Given the workspace "work", the default
+      And the workspace "home"
+      And I added a task titled "Rotate the certificates"
+      When I open the board
+      And I press "ctrl+o", "down", "esc"
+      Then the board does not say "OPEN A WORKSPACE"
+      And the header opens with "● work"
+      And "BACKLOG" carries "Rotate the certificates"
+
+    @tui-workspace-the-list-narrows-as-one-types
+    Scenario: the list narrows as one types
+      Given the workspace "work", the default
+      And the workspace "home"
+      And the workspace "client-a"
+      When I open the board
+      And I press "ctrl+o"
+      And I type "ho"
+      Then the workspaces listed read "home"
+      When I press "enter"
+      Then the header opens with "● home"
+
+    @tui-workspace-a-folder-gone-is-refused
+    Scenario: a workspace whose folder is gone is said not found, and refused when chosen
+      Given the workspace "work", the default
+      And the workspace "home"
+      And the folder of the workspace "home" is gone
+      When I open the board
+      And I press "ctrl+o"
+      Then the workspace "home" is marked "not found"
+      When I press "1"
+      Then the board says "the folder of this workspace is not there"
+      And the board says "OPEN A WORKSPACE"
+      When I press "esc"
+      Then the header opens with "● work"
+
+    @tui-workspace-time-off-there-takes-the-time-tab
+    Scenario: the time off in the settings of the workspace opened takes the time tab away
+      Given the workspace "work", the default
+      And the workspace "home"
+      And the settings of the workspace "home" turn the time off
+      When I open the board
+      Then the board says "time"
+      When I press "ctrl+o", "1"
+      Then the header opens with "● home"
+      And the board does not say "time"
+
   Rule: Every screen fits the terminal it is drawn in, whatever the store holds
 
     @tui-the-fixtures-fit

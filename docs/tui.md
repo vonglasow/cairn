@@ -47,6 +47,7 @@ afternoon to spend:
 - [Searching](#searching)
 - [Help, and the command line](#help-and-the-command-line)
 - [Objectives](#objectives)
+- [Another workspace, in place of this one](#another-workspace-in-place-of-this-one)
 - [Staying true while the store changes](#staying-true-while-the-store-changes)
 - [What it is built from](#what-it-is-built-from)
 - [How the form is laid out](#how-the-form-is-laid-out)
@@ -112,6 +113,15 @@ A gesture on the board says nothing: what it did is on the board.
 
  hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command
 ```
+
+**The header opens with the workspace the board shows**, `● work`, before the
+tabs (`@tui-workspace-the-header-names-it`). A store no workspace names — given by
+`--store`, `CAIRN_STORE` or the file — shows its folder instead, faint, after
+`◌`, cut at its start when it is long so that its end is kept
+(`@tui-workspace-a-loose-store-shows-its-folder`). Which workspace it is comes
+from `workspace show`, asked once when the board opens and once each time
+another is opened; nothing works it out a second time. A colour of its own per
+workspace is not there yet: every one is drawn in the accent.
 
 Four columns side by side, left to right: **backlog, todo, current, done**. The
 backlog runs the full height, because it is the heap everything lands in and it
@@ -355,6 +365,7 @@ from that mode's bar, and pressing it there does nothing.
 | `:` | ✓ | | ✓ | command |
 | `⇥` | ✓ | | ✓ | next tab |
 | `gg` `G` | | ✓ | ✓ | the first / the last of what you are in |
+| `^O` | ✓ | ✓ | ✓ | another workspace, in place of this one — see [below](#another-workspace-in-place-of-this-one) |
 | `esc` | ✓ | ✓ | | back one level |
 
 On the board itself `esc` widens a search that is still in force, and does
@@ -803,6 +814,62 @@ on the objectives list — so it is not on the bar there. `j` and `k` walk the
 list, and it scrolls to whichever the cursor is on; `h` and `l` do nothing,
 because the list is one column and a key that pointed sideways and moved
 something would be a key that looked broken.
+
+## Another workspace, in place of this one
+
+```
+ ● work  TASKS  objectives  time                                     ── WORKSPACES ──
+
+ BACKLOG ┌─ OPEN A WORKSPACE ─────────────────────────────────────────────────────┐
+ ┃ 160 R │ › ▏                                                                    │
+ ┃ 158 R │                                                                        │
+         │ WORKSPACES                                                             │
+         │ › ● client-a  /Users/me/cairn/client-a                               1 │
+         │   ● home      /Users/me/cairn/home                       not found · 2 │
+         │   ● work      /Users/me/cairn/work                      here · default │
+         └────────────────────────────────────────────────────────────────────────┘
+
+ ↑↓ choose   ⏎ open here   1-9 by place   esc back
+```
+
+`^O` opens the switcher over the board: every workspace the configuration
+names, in the order `workspace list` gives them, each with its folder; the one
+shown is marked `here`, the default `default`, one whose folder is not there
+`not found`, and every other one carries its place, `1` to `9`
+(`@tui-workspace-ctrl-o-lists-them`). The line at its head narrows the list as
+a name is typed (`@tui-workspace-the-list-narrows-as-one-types`). `↑↓` choose,
+`⏎` opens the one chosen, a digit opens the one at that place
+(`@tui-workspace-chosen-by-its-place`), and `esc` leaves the board as it was
+(`@tui-workspace-esc-leaves-the-board-as-it-was`).
+
+**Every letter is typed.** The switcher has a line to type into, so `j` and
+`k` are letters there, as they are at `/` and `:`; `↑↓` choose. A digit
+chooses by place rather than being typed: a name is narrowed by its letters.
+
+**Choosing replaces the board in place.** A terminal is one process and one
+screen, so the store held is closed and the other opened in the same process,
+through `engine.Switch`, and the board starts again on it — the cursor in the
+backlog, no search, no filter. The header says the new name, and the line above
+the bar says what happened until the next key: `opened home in place of work`
+(`@tui-workspace-choosing-replaces-the-board`). A focus held in the one left is
+not released by switching — the store keeps it — and the same line says so,
+`work's focus on #152 is still held`
+(`@tui-workspace-the-focus-left-is-still-held`). The pages are read again from
+the settings of the store opened, so a workspace whose time is off has no time
+tab once it is shown (`@tui-workspace-time-off-there-takes-the-time-tab`).
+
+**A workspace whose folder is gone is refused when chosen**, with the
+engine's reason, and the switcher stays open on the board as it was
+(`@tui-workspace-a-folder-gone-is-refused`): opening it would make an empty
+store where nobody looks.
+
+**The switcher changes what this board shows, and nothing else.** It does not
+write the configuration: the default stays what it was, and `workspace use` —
+which changes the default for every command — is not what `^O` does. `cairn tui
+--workspace home` starts the board on `home`.
+
+Not there yet: recent folders opened by path, opening a folder, making a
+workspace from the switcher, and a colour per workspace.
 
 ## Staying true while the store changes
 

@@ -126,6 +126,9 @@ otherwise start a new, empty board somewhere nobody looks.
   (`@workspace-show-says-the-time`).
 - `config show` lists `[workspaces]` too (`@workspace-config-show-lists-them`),
   and names a place a workspace gave as named by it.
+- The terminal board names the workspace it shows at the head of its header,
+  and `^O` opens another in its place without writing the file — see
+  [tui.md](tui.md#another-workspace-in-place-of-this-one).
 
 `workspace list` and `workspace show` are tools of the MCP server too:
 `workspace_show` says which workspace a server answers from — the one it
