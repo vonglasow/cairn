@@ -14,6 +14,7 @@ const (
 	aFolder
 	aName
 	itsFolder
+	keepingAs
 )
 
 type switcherState struct {
@@ -25,6 +26,7 @@ type switcherState struct {
 	on        int
 	asking    spaceAsking
 	newSpace  string
+	keeping   string
 	apart     *engine.Elsewhere
 	named     string
 	seeing    func(string) bool
@@ -35,25 +37,26 @@ const (
 	OpenFolderSays = "Open a folder…"
 	// NewWorkspaceSays is the line of the switcher making a workspace, then opening it in a window of its own.
 	NewWorkspaceSays = "New workspace…"
+	// KeepAsWorkspaceSays is the line of the switcher naming the recent folder the keyboard is on as a workspace.
+	KeepAsWorkspaceSays = "Keep as a workspace…"
 	// SwitcherSays is what the switcher's line says before anything is typed in it.
 	SwitcherSays = "Open a workspace or a folder…"
 	// WorkspacesHead and RecentHead head the two groups of the switcher.
 	WorkspacesHead = "WORKSPACES"
 	// RecentHead heads the stores opened by path that no workspace names.
-	RecentHead   = "RECENT FOLDERS"
-	maxPlace     = 9
-	placeWide    = 128
-	placeLeast   = 70
-	placeWords   = 24
-	placeSlack   = 4
-	placeDot     = 8
-	placeCaret   = 10
-	switchWide   = 520
-	switcherActs = 3
-	thisWindow   = "this window"
-	openHere     = "open · brings it forward"
-	openApart    = "opens a new window"
-	notFoundNow  = "not found"
+	RecentHead  = "RECENT FOLDERS"
+	maxPlace    = 9
+	placeWide   = 128
+	placeLeast  = 70
+	placeWords  = 24
+	placeSlack  = 4
+	placeDot    = 8
+	placeCaret  = 10
+	switchWide  = 520
+	thisWindow  = "this window"
+	openHere    = "open · brings it forward"
+	openApart   = "opens a new window"
+	notFoundNow = "not found"
 )
 
 // Seeing gives the window the way to know whether another window shows a store; without one, none does.
@@ -157,6 +160,7 @@ type SwitcherLine struct {
 	Recent, Here, Gone, On         bool
 	At                             Box
 	to                             engine.Elsewhere
+	keeps                          string
 }
 
 func (w Window) isHere(store string) bool { return store == w.switcher.place.Store }
@@ -191,6 +195,9 @@ func (w Window) spaceLine(place int, one engine.Workspace) SwitcherLine {
 
 func (w Window) recentLine(one engine.RecentFolder) SwitcherLine {
 	line := SwitcherLine{Name: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.now), to: engine.Elsewhere{Store: one.Store}}
+	if !one.NotFound {
+		line.keeps = one.Folder
+	}
 	if w.isHere(one.Store) {
 		line.Here, line.Tag = true, thisWindow+" · "+line.Tag
 	}
@@ -219,7 +226,7 @@ func (w Window) SwitcherBox() Box {
 	l := w.Layout()
 	pill := l.Place
 	lines := w.switcherChoices()
-	rows := 2 + len(lines) + 1 + switcherActs
+	rows := 2 + len(lines) + 1 + len(w.actsSaid())
 	if w.hasRecent(lines) {
 		rows++
 	}
@@ -264,7 +271,7 @@ func (w Window) switcherRoom() int {
 	if w.hasRecent(w.switcherChoices()) {
 		headed++
 	}
-	return max(1, (box.H-2*inset)/menuRow-headed-switcherActs)
+	return max(1, (box.H-2*inset)/menuRow-headed-len(w.actsSaid()))
 }
 
 // SwitcherLines is every line the switcher shows, under its heads, where each is drawn and which one the keyboard is on; those past its room are not drawn.
@@ -296,14 +303,30 @@ type SwitcherAct struct {
 	At        Box
 }
 
-// SwitcherActs is the switcher's foot: a folder opened, a workspace made, the settings of this one.
-func SwitcherActs(w Window) []SwitcherAct {
+func (w Window) chosenLine() (SwitcherLine, bool) {
+	lines := w.switcherChoices()
+	if w.switcher.on < 0 || w.switcher.on >= len(lines) {
+		return SwitcherLine{}, false
+	}
+	return lines[w.switcher.on], true
+}
+
+func (w Window) actsSaid() []SwitcherAct {
 	acts := []SwitcherAct{{Said: OpenFolderSays}, {Said: NewWorkspaceSays}}
+	if line, ok := w.chosenLine(); ok && line.keeps != "" {
+		acts = append(acts, SwitcherAct{Said: KeepAsWorkspaceSays})
+	}
 	if w.switcher.place.Workspace != "" {
 		acts = append(acts, SwitcherAct{Said: "Settings of " + w.switcher.place.Workspace + "…", Key: Pretty("cmd+,")})
 	} else {
 		acts = append(acts, SwitcherAct{Said: "Configuration…", Key: Pretty("cmd+,")})
 	}
+	return acts
+}
+
+// SwitcherActs is the switcher's foot: a folder opened, a workspace made, the recent folder the keyboard is on kept as one, the settings of this one.
+func SwitcherActs(w Window) []SwitcherAct {
+	acts := w.actsSaid()
 	box := w.SwitcherBox()
 	last := (box.H-2*inset)/menuRow - 1
 	for i := range acts {
@@ -321,6 +344,8 @@ func (w Window) SwitcherAsks() string {
 		return "Name"
 	case itsFolder:
 		return w.switcher.newSpace + "'s folder"
+	case keepingAs:
+		return "Keep " + w.switcher.keeping + " as"
 	}
 	return ""
 }
@@ -404,16 +429,30 @@ func (w Window) askingInSwitcher(name string) Window {
 			w.switcher.newSpace, w.switcher.asking, w.switcher.typed = typed, itsFolder, Written{}
 		case itsFolder:
 			return w.makingWorkspace(w.switcher.newSpace, typed)
+		case keepingAs:
+			return w.keepingFolder(typed, w.switcher.keeping)
 		}
 	}
 	return w
 }
 
+func (w Window) addingWorkspace(name, folder string) error {
+	_, err := w.work.Ask(engine.WorkspaceAdd, engine.Input{Given: map[string]string{"name": name, "folder": folder}})
+	return err
+}
+
 func (w Window) makingWorkspace(name, folder string) Window {
-	if _, err := w.work.Ask(engine.WorkspaceAdd, engine.Input{Given: map[string]string{"name": name, "folder": folder}}); err != nil {
+	if err := w.addingWorkspace(name, folder); err != nil {
 		return w.failing(err)
 	}
 	return w.askingApart(engine.Elsewhere{Workspace: name}, name)
+}
+
+func (w Window) keepingFolder(name, folder string) Window {
+	if err := w.addingWorkspace(name, folder); err != nil {
+		return w.failing(err)
+	}
+	return w.openingSwitcher()
 }
 
 func (w Window) actingInSwitcher(said string) Window {
@@ -422,6 +461,9 @@ func (w Window) actingInSwitcher(said string) Window {
 		w.switcher.asking, w.switcher.typed = aFolder, Written{}
 	case NewWorkspaceSays:
 		w.switcher.asking, w.switcher.typed = aName, Written{}
+	case KeepAsWorkspaceSays:
+		line, _ := w.chosenLine()
+		w.switcher.asking, w.switcher.typed, w.switcher.keeping = keepingAs, Written{}, line.keeps
 	default:
 		return w.openingConfiguration()
 	}

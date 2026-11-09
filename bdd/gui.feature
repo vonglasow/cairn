@@ -5245,6 +5245,41 @@ Feature: The desktop board
       And I click "Settings of work…" in the switcher
       Then the panel is headed "Settings of work"
 
+    @gui-workspace-a-recent-folder-is-kept-as-a-workspace
+    Scenario: a recent folder is kept as a workspace from the switcher, and listed among them
+      Given the workspace "work", the default
+      And the recent folder "scratch", opened yesterday
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      Then the switcher does not end on "Keep as a workspace…"
+      When I press "down"
+      And I click "Keep as a workspace…" in the switcher
+      And I type "scratch"
+      And I press "enter"
+      Then the configuration names the workspace "scratch"
+      And the switcher lists the workspaces "scratch", "work"
+      And no cairn is started
+
+    @gui-workspace-its-settings-say-the-label-and-the-colour
+    Scenario: the settings of a workspace say its approach label, and the colour it wears beside its swatch
+      Given the workspace "home", the default
+      And the settings of the workspace "home" say its colour is "teal"
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the configuration reads "workspace.colour" set here
+      And the colour of the workspace reads "teal", beside its swatch
+      And the configuration reads "approach.label" from its default
+
+    @gui-workspace-a-key-set-here-says-the-global-value
+    Scenario: beside a key set in the settings of the workspace, the panel says what the global configuration would give
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      And the global configuration says the archive lasts 30 days
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the configuration reads "pages.time" set here, "← global: on" beside it
+      And the configuration reads "archive.days" from the global configuration, nothing beside it
+
     @gui-workspace-time-off-leaves-the-card-without-time
     Scenario: with the time off, a card says nothing of its time and still says it is worked on
       Given the workspace "home", the default

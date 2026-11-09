@@ -258,6 +258,14 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the switcher does not end on "([^"]*)"$`, func(said string) error {
+		for _, act := range SwitcherActs(w.w) {
+			if act.Said == said {
+				return fmt.Errorf("the switcher ends on %q", said)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the switcher ends on (".*")$`, func(list string) error {
 		var got []string
 		for _, act := range SwitcherActs(w.w) {
@@ -327,6 +335,28 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the panel holds no %q", key)
+	})
+	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration), (?:"([^"]*)"|nothing) beside it$`, func(key, from, aside string) error {
+		for _, line := range w.w.ConfigLines() {
+			if line.Key == key {
+				if line.From != from || line.Aside() != aside {
+					return fmt.Errorf("%q reads %q %s, %q beside it; not %s, %q", key, line.Value, line.From, line.Aside(), from, aside)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the panel holds no %q", key)
+	})
+	sc.Then(`^the colour of the workspace reads "([^"]*)", beside its swatch$`, func(colour string) error {
+		for _, line := range w.w.ConfigLines() {
+			if line.Key == "workspace.colour" {
+				if line.Value != colour || line.Swatch != colour || line.SwatchAt.W == 0 || line.SwatchAt.X+line.SwatchAt.W > line.ValueAt.X {
+					return fmt.Errorf("the colour reads %q, its swatch %q at %+v, the value at %+v", line.Value, line.Swatch, line.SwatchAt, line.ValueAt)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the panel says no colour: %+v", w.w.ConfigLines())
 	})
 	sc.Then(`^the time reads "([^"]*)" of (".*")$`, func(on, list string) error {
 		segments, ok := w.w.TimeSegments()

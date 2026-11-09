@@ -313,3 +313,79 @@ func TestEveryWorkspaceIsListedWhenNoFolderIsRecent(t *testing.T) {
 		t.Errorf("the switcher lists %d of 3 workspaces: %+v", len(got), got)
 	}
 }
+
+func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
+	f := newFake()
+	w := switching(f, nil)
+	if acts := SwitcherActs(w); slices.ContainsFunc(acts, func(a SwitcherAct) bool { return a.Said == KeepAsWorkspaceSays }) {
+		t.Errorf("on a workspace, the switcher offers %+v", acts)
+	}
+	keeping := func(w Window) Window {
+		t.Helper()
+		w = w.Key("down").Key("down").Key("down")
+		for _, act := range SwitcherActs(w) {
+			if act.Said == KeepAsWorkspaceSays {
+				return w.clicked(Point{X: act.At.X + act.At.W/2, Y: act.At.Y + act.At.H/2})
+			}
+		}
+		t.Fatalf("on a recent folder, the switcher offers %+v", SwitcherActs(w))
+		return w
+	}
+	w = keeping(w)
+	if asks := w.SwitcherAsks(); asks != "Keep /s as" {
+		t.Errorf("the switcher asks %q", asks)
+	}
+	w = w.Types("scratch").Key("enter")
+	in, asked := f.gave("workspace", "add")
+	if !asked || in.Given["name"] != "scratch" || in.Given["folder"] != "/s" {
+		t.Fatalf("workspace add given %+v, %v", in, asked)
+	}
+	if w.Screen() != OnWorkspaces || w.SwitcherAsks() != "" {
+		t.Errorf("once kept, the window is on %v asking %q", w.Screen(), w.SwitcherAsks())
+	}
+	if _, apart := w.ApartAsked(); apart {
+		t.Error("keeping a folder asks for a window")
+	}
+	f.failOp = errRefuse
+	refused := keeping(switching(f, nil)).Types("x").Key("enter")
+	if !errors.Is(refused.Wrong(), errRefuse) {
+		t.Errorf("a refusal is said as %v", refused.Wrong())
+	}
+}
+
+func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHere(t *testing.T) {
+	f := newFake()
+	f.config = &engine.Config{
+		File: "/c/config.toml", Settings: "/h/settings.toml",
+		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &engine.Archive{Days: 30},
+		Focus: &engine.FocusConfig{}, Approach: &engine.ApproachConfig{Label: "discuss"}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &engine.WindowConfig{},
+		Workspace: &engine.WorkspaceConfig{Colour: "teal"},
+		Written:   []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time", "workspace.colour"},
+		Global: map[string]string{"pages.time": "on"},
+	}
+	w := atPlace(f, engine.WorkspaceShown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
+	lines := map[string]ConfigLine{}
+	for _, line := range w.ConfigLines() {
+		lines[line.Key] = line
+	}
+	if got := lines["pages.time"]; got.Aside() != "← global: on" || lines["archive.days"].Aside() != "" {
+		t.Errorf("pages.time says %q beside it, archive.days %q", got.Aside(), lines["archive.days"].Aside())
+	}
+	if got := lines["approach.label"]; got.Value != "discuss" || got.From != "default" {
+		t.Errorf("approach.label reads %+v", got)
+	}
+	colour := lines["workspace.colour"]
+	if colour.Value != "teal" || colour.Swatch != "teal" || colour.From != SetHere || colour.SwatchAt.W == 0 || colour.SwatchAt.X+colour.SwatchAt.W > colour.ValueAt.X {
+		t.Errorf("the colour reads %+v", colour)
+	}
+	if lines["pages.time"].Swatch != "" {
+		t.Error("a key that is no colour is drawn with a swatch")
+	}
+	f.config.Workspace, f.config.Approach.Label = nil, ""
+	w = atPlace(f, engine.WorkspaceShown{Store: "/s/cairn.db"}).Key("cmd+,")
+	for _, line := range w.ConfigLines() {
+		if line.Key == "workspace.colour" || (line.Key == "approach.label" && line.Value != engine.NotSaid) {
+			t.Errorf("a store wearing no colour, saying no label, reads %+v", line)
+		}
+	}
+}

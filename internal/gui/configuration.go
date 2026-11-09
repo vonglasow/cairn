@@ -61,15 +61,30 @@ func emplacedFrom(at engine.Emplacement) string {
 
 func notSaid(said string) string {
 	if said == "" {
-		return "not said"
+		return engine.NotSaid
 	}
 	return said
 }
 
-// ConfigLine is one key of the configuration as its panel lays it out: the key, the value in force, and where the value came from — the file, the environment, or the default — each in its column.
+// ConfigLine is one key of the configuration as its panel lays it out: the key, the value in force, and where the value came from — the file, the environment, or the default — each in its column; for a key set in the store's settings, the value the global configuration would give, and for a colour, the swatch drawn before it.
 type ConfigLine struct {
-	Key, Value, From       string
-	KeyAt, ValueAt, FromAt Box
+	Key, Value, From, Global, Swatch string
+	KeyAt, ValueAt, FromAt, SwatchAt Box
+}
+
+// Aside is what the panel says beside where a key comes from: for a key set in the store's settings, what the global configuration would give.
+func (l ConfigLine) Aside() string {
+	if l.Global == "" {
+		return ""
+	}
+	return "← global: " + l.Global
+}
+
+func (l ConfigLine) fromSaid() string {
+	if aside := l.Aside(); aside != "" {
+		return l.From + "   " + aside
+	}
+	return l.From
 }
 
 func (w Window) configKeys() []ConfigLine {
@@ -81,7 +96,7 @@ func (w Window) configKeys() []ConfigLine {
 		from := "default"
 		switch {
 		case slices.Contains(c.WrittenHere, key):
-			from = SetHere
+			return ConfigLine{Key: key, Value: value, From: SetHere, Global: c.Global[key]}
 		case slices.Contains(c.Written, key):
 			from = FromGlobal
 		}
@@ -95,7 +110,7 @@ func (w Window) configKeys() []ConfigLine {
 	if c.Pages == nil || c.Archive == nil || c.Focus == nil || c.Time == nil || c.Window == nil {
 		return lines
 	}
-	return append(lines,
+	lines = append(lines,
 		written("pages.tasks", strconv.FormatBool(c.Pages.Tasks)),
 		written("pages.objectives", strconv.FormatBool(c.Pages.Objectives)),
 		written("pages.time", c.Pages.Time),
@@ -106,6 +121,17 @@ func (w Window) configKeys() []ConfigLine {
 		written("time.weekends", c.Time.Weekends),
 		written("window.keep_sizes", strconv.FormatBool(c.Window.KeepSizes)),
 	)
+	if c.Approach != nil {
+		lines = append(lines, written("approach.label", notSaid(c.Approach.Label)))
+	}
+	if c.Workspace != nil {
+		from := "default"
+		if slices.Contains(c.WrittenHere, "workspace.colour") {
+			from = SetHere
+		}
+		lines = append(lines, ConfigLine{Key: "workspace.colour", Value: c.Workspace.Colour, From: from, Swatch: c.Workspace.Colour})
+	}
+	return lines
 }
 
 // ConfigLines is every key of the configuration where its panel lays it out: the keys down one column, their values down the next, where each came from at the right.
@@ -115,7 +141,7 @@ func (w Window) ConfigLines() []ConfigLine {
 	head := len(w.ConfigHead())
 	keys, froms := 0, 0
 	for _, line := range lines {
-		keys, froms = max(keys, monoWide(line.Key, small)), max(froms, monoWide(line.From, small))
+		keys, froms = max(keys, monoWide(line.Key, small)), max(froms, monoWide(line.fromSaid(), small))
 	}
 	for i := range lines {
 		row := Inside(ListRowAt(box, head+i))
@@ -123,6 +149,10 @@ func (w Window) ConfigLines() []ConfigLine {
 		lines[i].FromAt = Box{X: row.X + row.W - froms, Y: row.Y, W: froms, H: row.H}
 		from := row.X + keys + configGap + copyRoom
 		lines[i].ValueAt = Box{X: from, Y: row.Y, W: lines[i].FromAt.X - configGap - from, H: row.H}
+		if lines[i].Swatch != "" {
+			lines[i].SwatchAt = Box{X: from, Y: row.Y + (row.H-placeDot)/2, W: placeDot, H: placeDot}
+			lines[i].ValueAt.X, lines[i].ValueAt.W = from+placeDot+between, lines[i].ValueAt.W-placeDot-between
+		}
 	}
 	return lines
 }
@@ -175,7 +205,7 @@ func (w Window) ConfigurationBox() Box {
 	lines := w.configKeys()
 	said := append([]string{}, w.ConfigHead()...)
 	for _, line := range lines {
-		said = append(said, line.Key+"    "+line.Value+"        "+line.From)
+		said = append(said, line.Key+"    "+line.Value+"        "+line.fromSaid())
 	}
 	return w.listBox(append(said, w.ConfigFoot()...))
 }

@@ -2140,7 +2140,13 @@ their figure (`keyOf`). *Open a folder…* and *New workspace…* type into the
 same line, through the engine's `Switch` rules and `workspace add`; a folder
 that is not there is refused with the engine's reason and the line kept
 (`@gui-workspace-a-folder-opens-in-a-window-of-its-own`,
-`@gui-workspace-a-new-one-is-made-and-opened`).
+`@gui-workspace-a-new-one-is-made-and-opened`). With the keyboard on a recent
+folder that is still there, the foot offers *Keep as a workspace…* too: it
+asks for a name, gives it and the folder to `workspace add` — the path the
+terminal's `^K` and the command line take — and lists the switcher again,
+the folder now among the workspaces and gone from the recent ones; nothing
+is opened (`@gui-workspace-a-recent-folder-is-kept-as-a-workspace`). It is a
+line of the foot rather than a key: `⌘K` is the command palette.
 
 **Choosing opens it in a window of its own; this one stays.** A terminal has
 one screen and switches in place; a desktop has windows, and two boards side
@@ -2179,10 +2185,17 @@ home*, then the `settings.toml` read and `over` the global file. Each key
 says `set here`, `from the global configuration` or `default` — the
 engine's `written_here` and `written` — and the time is drawn as a choice of
 three, `on`, `hidden`, `off`, the one in force filled
-(`@gui-workspace-its-settings-say-where-each-comes-from`). The panel still
-only shows: it offers *Open settings.toml* beside *Open the file*, handed to
-the system's editor as the global file is. The global value a key set here
-hides is not said: `config show` does not answer it.
+(`@gui-workspace-its-settings-say-where-each-comes-from`). The approach label
+and the colour the workspace wears have a row each, the colour after a swatch
+of it (`@gui-workspace-its-settings-say-the-label-and-the-colour`). Beside a
+key set here the panel says what the global configuration would give,
+`← global: on` — `config show`'s `global` — so the way back is read before
+the line is taken out of the file
+(`@gui-workspace-a-key-set-here-says-the-global-value`). The study drew it
+`↺`; none of the faces the window carries has that glyph, and a character
+with no face is refused by a test, so it is the arrow they do have. The panel
+still only shows: it offers *Open settings.toml* beside *Open the file*,
+handed to the system's editor as the global file is.
 
 **A time hidden or off leaves the cards without time.** What a card cost
 against its estimate is shown only while the time is

@@ -329,10 +329,13 @@ func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Wind
 	}
 	for _, line := range lines {
 		sayIn(gtx, th, skin.Low, line.KeyAt, line.Key, small, mono, text.Start)
+		if line.Swatch != "" {
+			rounded(gtx, line.SwatchAt, line.SwatchAt.W/2, skin.Labels[line.Swatch])
+		}
 		if line.Key != "pages.time" {
 			say(gtx, th, skin.Ink, line.ValueAt, line.Value, reads)
 		}
-		sayIn(gtx, th, skin.Faint, line.FromAt, line.From, small, mono, text.End)
+		sayIn(gtx, th, skin.Faint, line.FromAt, line.fromSaid(), small, mono, text.End)
 	}
 	drawTimeSegments(gtx, th, skin, w)
 	for i, said := range w.ConfigFoot() {
