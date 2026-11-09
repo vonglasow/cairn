@@ -300,12 +300,55 @@ Three things follow, and each would otherwise be a problem of its own:
 - Nothing holds the file while `backup_restore` or `migration_rollback` swaps
   it underneath. Under a live handle that is corruption, not staleness.
 
-The places are found at each call too, not once when the server starts: the
-server is handed the home and the environment, and the engine works out where
-the store and the notes are each time it is asked. A configuration changed
-while the server runs is read by the next call, and a configuration every other
-call refuses still lets `config_show` say why — a server that refused to start
-over it would have left an agent nothing to ask.
+The configuration is read at each call too, not once when the server starts:
+the pages, the settings beside the store, everything but where the store is. A
+configuration changed while the server runs is read by the next call, and a
+configuration every other call refuses still lets `config_show` say why — a
+server that refused to start over it would have left an agent nothing to ask.
+Where the store and the notes are is the one thing settled at the start, and
+kept (below).
+
+## It keeps the store it started on
+
+A server answers from one workspace for as long as it runs: the one
+`--workspace` or `--store` names when it starts, or else the one the
+environment or the configuration named then. `cairn workspace use`, run by the
+person while it runs, changes where every later command goes and leaves the
+server where it was (`@workspace-a-server-keeps-the-default-it-started-on`,
+`@workspace-a-server-keeps-the-workspace-it-was-given`). An agent that wrote
+into one board at ten would otherwise write into another at eleven, with
+nothing in the conversation saying it moved.
+
+`engine.Keep` settles the places once, in `mcp.Serve`, and the server's home
+carries them (`Home.Kept`); every call then reads the configuration and the
+settings beside that store, as before. A cairn that takes the session over
+(above) is handed them with the session, so an upgrade does not move the
+server either. Places that cannot be settled at the start — a workspace named
+that the file does not name, a default whose folder is gone — are not kept:
+each call looks for them and is refused as a command would be, until they can
+be found.
+
+No tool switches: `workspace_add` and `workspace_use` are the person's (below).
+`workspace_show` says which workspace the server answers from and why, as it
+was when it started — `--workspace, given when this server started`, `it was
+the default of [workspaces] when this server started` — its store, its notes,
+whether time is kept and where that is said, and a `switch` line: not from
+here; another workspace is another server, which the person starts
+(`@workspace-the-server-says-the-workspace-it-was-given`,
+`@workspace-the-server-says-the-default-it-started-on`). Its structured answer
+carries the same, `switch` included. A repository names the workspace of the
+server it declares in its `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "cairn": { "command": "cairn", "args": ["mcp", "serve", "--access", "full", "--workspace", "cairn-dev"] }
+  }
+}
+```
+
+What that does beside the plugin's own server is in
+[claude-code.md](claude-code.md).
 
 ## A client that hangs up is not a failure
 
@@ -355,7 +398,8 @@ tools: they change which store every later command uses, the agent's own
 server included, and that is the person's to decide too
 (`@workspace-an-agent-cannot-add-or-switch`). They sit apart from the list,
 in `engine.ForAPersonOnly`, which the command line adds to its tree and the
-server never reads. `workspace_list` and `workspace_show` are tools.
+server never reads. `workspace_list` and `workspace_show` are tools; a server
+keeps the store it started on (above).
 
 ## Each tool says what shape its answer takes, and that shape is an object
 

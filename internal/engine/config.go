@@ -225,15 +225,24 @@ func configText(c Config) string {
 }
 
 func (c Config) from(key string) string {
-	switch {
-	case c.Settings == "":
+	if c.Settings == "" {
 		return ""
-	case slices.Contains(c.WrittenHere, key):
-		return "   # set in the store's settings"
-	case slices.Contains(c.Written, key):
-		return "   # from the global configuration"
 	}
-	return "   # by default"
+	return "   # " + saidWhere(c.Written, c.WrittenHere, key)
+}
+
+func whereSaid(p config.Places, key string) string {
+	return saidWhere(p.Written(), p.WrittenHere(), key)
+}
+
+func saidWhere(written, here []string, key string) string {
+	switch {
+	case slices.Contains(here, key):
+		return "set in the store's settings"
+	case slices.Contains(written, key):
+		return "from the global configuration"
+	}
+	return "by default"
 }
 
 // ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.

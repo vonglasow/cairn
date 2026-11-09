@@ -125,6 +125,8 @@ add work ~/cairn/work` names one, `cairn workspace use work` makes it the
 default, `cairn workspace list` and `cairn workspace show` say which there are
 and which one answers, and why. `--workspace <name>` or `--store <path>` on any
 command picks another for that command alone, whatever the environment says.
+An MCP server keeps the workspace it started on — `cairn mcp serve --workspace
+<name>` names it — and `workspace use` does not move it.
 Beside each store, `settings.toml` says what belongs to that store —
 `[pages]`, `[archive]`, `[focus]`, `[approach]`, `[time]`, `[window]` — and
 wins over the global file key by key; `cairn workspace add` writes one that

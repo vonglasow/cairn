@@ -120,12 +120,16 @@ otherwise start a new, empty board somewhere nobody looks.
   `@workspace-show-says-the-flag-answers`). A store that no workspace names,
   given by `--store`, the environment or the file, is said as such, with the
   `cairn workspace add` that would name it
-  (`@workspace-show-says-no-workspace-names-the-store`).
+  (`@workspace-show-says-no-workspace-names-the-store`). It says whether time
+  is kept, `on`, `hidden` or `off`, and where that is said — set in the
+  store's settings, from the global configuration, by default
+  (`@workspace-show-says-the-time`).
 - `config show` lists `[workspaces]` too (`@workspace-config-show-lists-them`),
   and names a place a workspace gave as named by it.
 
 `workspace list` and `workspace show` are tools of the MCP server too:
-`workspace_show` says which workspace a server answers from. `workspace add`
+`workspace_show` says which workspace a server answers from — the one it
+started on, which it keeps whatever the default becomes ([mcp.md](mcp.md)). `workspace add`
 and `workspace use` are not (`@workspace-an-agent-cannot-add-or-switch`):
 they change where every later command reads and writes, which is the
 person's to decide, like `cairn upgrade` ([mcp.md](mcp.md)). They are

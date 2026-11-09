@@ -7309,14 +7309,28 @@
         "notes": {
           "type": "string"
         },
+        "time": {
+          "type": "string",
+          "description": "on, recorded and shown; hidden, recorded and not shown; off, neither"
+        },
+        "time_from": {
+          "type": "string",
+          "description": "where the time is said: set in the store's settings, from the global configuration, or by default"
+        },
         "add": {
           "type": "string"
+        },
+        "switch": {
+          "type": "string",
+          "description": "said by a server, which keeps the store it started on: switching is not done through it"
         }
       },
       "required": [
         "because",
         "store",
-        "notes"
+        "notes",
+        "time",
+        "time_from"
       ],
       "additionalProperties": false
     }

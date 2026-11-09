@@ -98,15 +98,16 @@ outside the notes but the idle waits, in the temporary directory.
 
 ## The hook
 
-`plugin/claude/hooks/cairn-session.sh`, called by Claude Code on `PostToolUse`
-(matching any tool ending in `__task_focus` or `__task_unfocus`),
-`UserPromptSubmit`, `Stop` and `SessionEnd`:
+`plugin/claude/hooks/cairn-session.sh`, called by Claude Code on
+`SessionStart`, `PostToolUse` (matching any tool ending in `__task_focus` or
+`__task_unfocus`), `UserPromptSubmit`, `Stop` and `SessionEnd`:
 
 ```bash
 #!/usr/bin/env bash
 # Claude Code hook: tie this session to its cairn task through a session entry
 # in the task's notes, and hold or release that task's focus. It never blocks
-# Claude Code: it prints nothing and always exits 0. See docs/claude-code.md.
+# Claude Code: it prints nothing but, at a session's start, which workspace
+# cairn answers from, and always exits 0. See docs/claude-code.md.
 
 idle=${CAIRN_IDLE_SECONDS:-600}
 input=$(cat)
@@ -151,14 +152,22 @@ case $(field .hook_event_name) in
       wait=$(mktemp "$waits.XXXXXX")
       (sleep "$idle"; [ ! -e "$wait" ] || { let_go; rm -f "$wait"; }) </dev/null &>/dev/null &
     } ;;
+  SessionStart)
+    cairn workspace show --json 2>/dev/null | jq -r '
+      (if .workspace then "the workspace \(.workspace) (\(.folder))"
+       else "the store \(.store), which no workspace names" end) as $where
+      | "cairn: the cairn MCP server of this session answers from \($where), because \(.because). "
+      + "It keeps it while the session lasts; workspace_show says it again. "
+      + "Switching is for the person: another workspace is another server."' ;;
   SessionEnd)
     [ -z "$task" ] || { let_go; close_link; } ;;
 esac
 exit 0
 ```
 
-The hook never stands in Claude Code's way: it prints nothing — a hook's
-output on a message can reach the model's context — and exits 0 whatever cairn
+The hook never stands in Claude Code's way: it prints nothing but the
+workspace at a session's start (below) — a hook's output on a message can
+reach the model's context — and exits 0 whatever cairn
 answered, because a non-zero code on a message can block it, and the plugin is
 on in every project. Only the idle delay changes when tested:
 `CAIRN_IDLE_SECONDS`, six hundred when unset.
@@ -183,6 +192,20 @@ from the documentation, which is silent on most of it:
   in the same second as the answer went unseen.
 - **A resumed session keeps its id**, and `SessionStart` says `resume`: the
   link is found again.
+
+**A session's start names the workspace.** At `SessionStart` — and only
+there, since what `SessionStart` prints is what Claude Code hands the model as
+context — the hook prints one line: the workspace cairn answers from, its
+folder and why, or the store no workspace names; that the server keeps it
+while the session lasts; that `workspace_show` says it again; that switching
+is the person's (`@claude-session-start-says-the-workspace`,
+`@claude-session-start-says-a-store-no-workspace-names`). The agent knows
+where it writes before its first write. The hook asks `cairn workspace show`
+in the session's own environment, which is the plugin's server's: both are
+started by Claude Code from the same environment, at the same moment, and the
+server keeps what it found then ([mcp.md](mcp.md), "It keeps the store it
+started on"). Nothing on `cairn` failing: no line is printed, and the session
+starts as before.
 
 ## The skill
 
@@ -287,13 +310,43 @@ when the commands differ — tools twice over, harmless to the hook, noisy for
 the model. `INSTALL.md` says to declare it with the plugin's command, or to
 remove it.
 
+## A repository that names its workspace
+
+A server keeps the workspace it started on, and no tool switches it
+([mcp.md](mcp.md)). What a person does to point a repository at its
+workspace, as things stand:
+
+- **The environment, for the plugin's server and the hook together.** In the
+  repository's `.claude/settings.json`, `"env": {"CAIRN_STORE":
+  "<folder>/cairn.db", "CAIRN_NOTES": "<folder>/notes"}`. Claude Code starts
+  the plugin's server and runs the hook with it, so both reach that
+  workspace, and `workspace_show` names it when a workspace's folder holds
+  that store. It is the only way today that keeps one server and the hook on
+  the same board. Not tried with `claude -p` yet.
+- **The repository's `.mcp.json`**, `"args": ["mcp", "serve", "--access",
+  "full", "--workspace", "cairn-dev"]` ([mcp.md](mcp.md)). Its server is
+  `mcp__cairn__…`; the plugin's stays `mcp__plugin_cairn_cairn__…`, and since
+  their commands differ Claude Code loads both (above, "The plugin declares
+  the cairn MCP server"): two servers, on two workspaces, each tool twice. The
+  hook and the line said at the start follow the environment, not that
+  server: a focus taken through it is written in the notes of the
+  environment's workspace and let go there. Usable for an agent that is told
+  to use `mcp__cairn__…` alone; not yet whole.
+
+**Proposed, not built:** a `CAIRN_WORKSPACE` variable, between `CAIRN_STORE`
+and the default in the order ([config.md](config.md)), set in the
+repository's `.claude/settings.json` — one name instead of two paths, the
+plugin's server and the hook both following it, and no second server. It
+needs its scenarios first: the variable naming the workspace, `workspace show`
+saying so, the hook acting on that workspace's notes.
+
 ## How it is held
 
 - `bdd/claude-session.feature`: each scenario hands the hook the JSON Claude
   Code hands it, against the real cairn binary on a store and notes of its own,
   with the idle delay at one second. `test/claude` runs it, two levels under
   the root like every package holding scenarios, and in none of cairn's.
-- `test/claude/plugin_test.go` holds the wiring no scenario reaches: the four
+- `test/claude/plugin_test.go` holds the wiring no scenario reaches: the five
   events call a script that is there and runs, the matcher hears the focus
   from either server and nothing else, cairn answers to the server the plugin
   declares, and the marketplace points at the plugin.

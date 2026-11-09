@@ -68,14 +68,39 @@ type WorkspaceShown struct {
 	Because   string `json:"because"`
 	Store     string `json:"store"`
 	Notes     string `json:"notes"`
+	Time      string `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
+	TimeFrom  string `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
 	Add       string `json:"add,omitempty"`
+	Switch    string `json:"switch,omitempty" jsonschema:"said by a server, which keeps the store it started on: switching is not done through it"`
 }
+
+// Started is where a server answers from, settled when it started and kept whatever the configuration names afterwards.
+type Started struct {
+	Workspace string      `json:"workspace,omitempty"`
+	Folder    string      `json:"folder,omitempty"`
+	Because   string      `json:"because"`
+	Store     Emplacement `json:"store"`
+	Notes     Emplacement `json:"notes"`
+}
+
+const switchingIsNotHere = "not from here: this server keeps its store; another workspace is another server, which the person starts"
 
 type answering struct {
 	store, notes Emplacement
 	workspace    string
 	folder       string
 	because      string
+	then         string
+}
+
+// Keep settles where h answers from, once, so that a server started on it answers from there whatever the configuration names afterwards; what cannot be settled yet is left to be found at each call.
+func Keep(h Home) Home {
+	if _, err := Locate(h); err != nil {
+		return h
+	}
+	_, a, _ := h.settled()
+	h.Kept = &Started{Workspace: a.workspace, Folder: a.folder, Because: a.then, Store: a.store, Notes: a.notes}
+	return h
 }
 
 func (h Home) file() (string, error) {
@@ -124,12 +149,15 @@ func inWorkspace(one config.Workspace, by string) (Emplacement, Emplacement) {
 }
 
 func (h Home) answering(p config.Places) (answering, error) {
+	if k := h.Kept; k != nil {
+		return answering{store: k.Store, notes: k.Notes, workspace: k.Workspace, folder: k.Folder, because: k.Because, then: k.Because}, nil
+	}
 	if h.Workspace != "" && h.Store != "" {
 		return answering{}, Misread(fmt.Errorf("%s and %s both name the store: give one or the other", workspaceFlagName, storeFlagName))
 	}
 	gate := &placesGate{}
 	p.Tell(gate)
-	a := answering{store: gate.store, notes: gate.notes, because: "nothing names it: it is where cairn keeps a store by default"}
+	a := answering{store: gate.store, notes: gate.notes, because: "nothing names it: it is where cairn keeps a store by default", then: "nothing named it when this server started: it is where cairn keeps a store by default"}
 	switch {
 	case h.Workspace != "":
 		one, err := workspaceThere(p, h.Workspace)
@@ -137,20 +165,20 @@ func (h Home) answering(p config.Places) (answering, error) {
 			return a, err
 		}
 		a.store, a.notes = inWorkspace(one, workspaceFlagName)
-		a.workspace, a.because = one.Name, workspaceFlagName+" names it"
+		a.workspace, a.because, a.then = one.Name, workspaceFlagName+" names it", workspaceFlagName+", given when this server started"
 		return a.named(p), nil
 	case h.Store != "":
 		at, err := config.Absolute(h.Store, h.Dir)
 		if err != nil {
 			return a, fmt.Errorf("%s %w", storeFlagName, err)
 		}
-		a.store, a.because = Emplacement{At: at, By: storeFlagName}, storeFlagName+" names it"
+		a.store, a.because, a.then = Emplacement{At: at, By: storeFlagName}, storeFlagName+" names it", storeFlagName+", given when this server started"
 		return a.ownNotes(p), nil
 	case a.store.By == byTheEnvironment:
-		a.because = config.StoreVariable + " names it"
+		a.because, a.then = config.StoreVariable+" names it", config.StoreVariable+", set when this server started"
 		return a.ownNotes(p), nil
 	case a.store.By == "the file":
-		a.because = "the file names it"
+		a.because, a.then = "the file names it", "the file named it when this server started"
 	}
 	if name := p.DefaultWorkspace(); name != "" {
 		one, err := workspaceThere(p, name)
@@ -158,7 +186,7 @@ func (h Home) answering(p config.Places) (answering, error) {
 			return a, err
 		}
 		store, notes := inWorkspace(one, fmt.Sprintf("the default workspace, %q", name))
-		a.store, a.workspace, a.because = store, one.Name, "it is the default of [workspaces]"
+		a.store, a.workspace, a.because, a.then = store, one.Name, "it is the default of [workspaces]", "it was the default of [workspaces] when this server started"
 		if a.notes.By != byTheEnvironment {
 			a.notes = notes
 		}
@@ -341,15 +369,15 @@ var WorkspaceShow = Operation{
 	Needs:   AConfiguration,
 	Answers: WorkspaceShown{},
 	Run: func(on On, _ Input) (Answer, error) {
-		read, err := on.Home.configuration()
-		if err != nil {
-			return Answer{}, err
-		}
-		answers, err := on.Home.answering(read)
+		read, answers, err := on.Home.settled()
 		if err != nil {
 			return Answer{}, err
 		}
 		shown := answers.shown()
+		shown.Time, shown.TimeFrom = read.TimeMode(), whereSaid(read, "pages.time")
+		if on.Home.Kept != nil {
+			shown.Switch = switchingIsNotHere
+		}
 		return Answer{WorkspaceShown: &shown}, nil
 	},
 }
@@ -394,6 +422,12 @@ func workspaceShownText(shown WorkspaceShown) string {
 		fmt.Fprintf(&said, "workspace  %s\nfolder     %s\n", shown.Workspace, shown.Folder)
 	}
 	fmt.Fprintf(&said, "because    %s\nstore      %s\nnotes      %s\n", shown.Because, shown.Store, shown.Notes)
+	if shown.Time != "" {
+		fmt.Fprintf(&said, "time       %s, %s\n", shown.Time, shown.TimeFrom)
+	}
+	if shown.Switch != "" {
+		fmt.Fprintf(&said, "switch     %s\n", shown.Switch)
+	}
 	if shown.Add != "" {
 		fmt.Fprintf(&said, "\nto name it: %s\n", shown.Add)
 	}

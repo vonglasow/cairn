@@ -225,3 +225,52 @@ Feature: Workspaces, each a folder holding a store and its notes
         | workspaces | default = "work" |
         | workspaces | home =           |
         | workspaces | work =           |
+
+  Rule: An MCP server keeps the workspace it started on
+
+    @workspace-a-server-keeps-the-default-it-started-on
+    Scenario: a server started on the default keeps answering from it when the default changes
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And a cairn server started with `cairn mcp serve --access full`
+      When I run `cairn workspace use home`
+      And I ask the server to add a task titled "Write the spec"
+      Then `cairn task list --workspace work` says "Write the spec"
+      And no store was written to "~/cairn/home/cairn.db"
+
+    @workspace-a-server-keeps-the-workspace-it-was-given
+    Scenario: a server started with --workspace answers from it, whatever the default
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And a cairn server started with `cairn mcp serve --access full --workspace home`
+      When I ask the server to add a task titled "Buy bread"
+      Then `cairn task list --workspace home` says "Buy bread"
+      And no store was written to "~/cairn/work/cairn.db"
+
+    @workspace-the-server-says-the-workspace-it-was-given
+    Scenario: workspace_show through a server says its workspace, why, its time, and that switching is not done there
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And a cairn server started with `cairn mcp serve --workspace home`
+      When I ask the server for `workspace_show`
+      Then the server says the workspace "home" answers, because "--workspace, given when this server started"
+      And the server says "time       on, by default"
+      And the server says "switch     not from here: this server keeps its store"
+      And the server's structured answer says the workspace is "home"
+
+    @workspace-the-server-says-the-default-it-started-on
+    Scenario: a server started on the default says so, after the default changed
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And a cairn server started with `cairn mcp serve`
+      When I run `cairn workspace use home`
+      And I ask the server for `workspace_show`
+      Then the server says the workspace "work" answers, because "it was the default of [workspaces] when this server started"
+
+    @workspace-show-says-the-time
+    Scenario: workspace show says whether time is kept, and where that is said
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        time = "off"
+        """
+      When I run `cairn workspace show --workspace home`
+      Then it says "time       off, set in the store's settings"
+      And it does not say "switch"

@@ -209,6 +209,30 @@ func (w *sessionWorld) quietAndFine() error {
 	return nil
 }
 
+func (w *sessionWorld) theDefaultWorkspace(name string) error {
+	var home string
+	kept := w.env[:0:0]
+	for _, kv := range w.env {
+		if said, ok := strings.CutPrefix(kv, "HOME="); ok {
+			home = said
+		}
+		if !strings.HasPrefix(kv, "CAIRN_STORE=") && !strings.HasPrefix(kv, "CAIRN_NOTES=") {
+			kept = append(kept, kv)
+		}
+	}
+	w.env = kept
+	folder := filepath.Join(home, name)
+	w.notes = filepath.Join(folder, "notes")
+	if err := os.MkdirAll(w.notes, 0o700); err != nil {
+		return err
+	}
+	file := filepath.Join(home, ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(file, fmt.Appendf(nil, "[workspaces]\ndefault = %q\n%s = %q\n", name, name, folder), 0o600)
+}
+
 func initSession(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := &sessionWorld{t: t}
@@ -317,6 +341,23 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 		sc.Then(`^the hook said nothing and succeeded$`, w.quietAndFine)
+		sc.Given(`^the workspace "([^"]*)" is the default, and nothing names another store$`, w.theDefaultWorkspace)
+		sc.When(`^session "([^"]*)" starts$`, func(session string) error {
+			w.hook(map[string]any{"hook_event_name": "SessionStart", "session_id": session, "source": "startup"})
+			return nil
+		})
+		sc.Then(`^the hook says "([^"]*)"$`, func(want string) error {
+			if !strings.Contains(w.said, want) {
+				return fmt.Errorf("the hook said %q, want it to say %q", w.said, want)
+			}
+			return nil
+		})
+		sc.Then(`^the hook succeeded$`, func() error {
+			if w.failed != nil {
+				return fmt.Errorf("the hook failed: %w\n%s", w.failed, w.said)
+			}
+			return nil
+		})
 		sc.Then(`^the trace of task (\d+) says the focus was let go by "([^"]*)"$`, func(n int, by string) error {
 			said, err := w.cairn("trace", "show", strconv.Itoa(n))
 			if err != nil {

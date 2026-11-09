@@ -11,13 +11,14 @@ import (
 	"cairn/internal/debug"
 )
 
-// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, and the workspace or the store its command line named.
+// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, and where a server kept answering from since it started.
 type Home struct {
 	Dir       string
 	Missing   error
 	Lookup    func(string) (string, bool)
 	Workspace string
 	Store     string
+	Kept      *Started
 }
 
 func (h Home) lookup() func(string) (string, bool) {

@@ -100,3 +100,19 @@ Feature: A Claude Code session tied to a cairn task
     Given session "s1" holds task 1
     When session "s1" answers and no message follows within the idle delay
     Then the trace of task 1 says the focus was let go by "claude session s1"
+
+  Rule: A session's start says which workspace its cairn server answers from
+
+    @claude-session-start-says-the-workspace
+    Scenario: the start of a session names the workspace, before anything is written
+      Given the workspace "cairn-dev" is the default, and nothing names another store
+      When session "s1" starts
+      Then the hook says "the workspace cairn-dev"
+      And the hook says "workspace_show"
+      And the hook succeeded
+
+    @claude-session-start-says-a-store-no-workspace-names
+    Scenario: the start of a session names a store no workspace names
+      When session "s1" starts
+      Then the hook says "which no workspace names"
+      And the hook succeeded

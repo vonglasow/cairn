@@ -1,5 +1,5 @@
 {
-  "description": "Hold the focus of the cairn task this session is tied to, and let it go.",
+  "description": "Say which workspace cairn answers from, and hold the focus of the cairn task this session is tied to, and let it go.",
   "hooks": {
     "PostToolUse": [
       { "matcher": "^mcp__.*__task_(un)?focus$",
@@ -9,6 +9,9 @@
       { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-session.sh" }] }
     ],
     "Stop": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-session.sh" }] }
+    ],
+    "SessionStart": [
       { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-session.sh" }] }
     ],
     "SessionEnd": [

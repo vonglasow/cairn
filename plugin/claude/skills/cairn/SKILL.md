@@ -19,6 +19,11 @@ the task's notes when you take the focus, holds the focus while the person
 works, and lets it go when they stop. Do not write a session block in the
 task's description, and do not manage the focus by hand beyond what follows.
 
+The cairn server answers from one workspace, the one it started on; the hook
+names it at the session's start, and `workspace_show {}` says it again.
+Switching is the person's: another workspace is another server, which they
+start.
+
 ## Attaching — "on travaille sur cairn#123"
 
 1. `task_focus` with the number. The hook ties the session to the task, and

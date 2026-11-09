@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Claude Code hook: tie this session to its cairn task through a session entry
 # in the task's notes, and hold or release that task's focus. It never blocks
-# Claude Code: it prints nothing and always exits 0. See docs/claude-code.md.
+# Claude Code: it prints nothing but, at a session's start, which workspace
+# cairn answers from, and always exits 0. See docs/claude-code.md.
 
 idle=${CAIRN_IDLE_SECONDS:-600}
 input=$(cat)
@@ -48,6 +49,13 @@ case $(field .hook_event_name) in
       wait=$(mktemp "$waits.XXXXXX")
       (sleep "$idle"; [ ! -e "$wait" ] || { let_go; rm -f "$wait"; }) </dev/null &>/dev/null &
     } ;;
+  SessionStart)
+    cairn workspace show --json 2>/dev/null | jq -r '
+      (if .workspace then "the workspace \(.workspace) (\(.folder))"
+       else "the store \(.store), which no workspace names" end) as $where
+      | "cairn: the cairn MCP server of this session answers from \($where), because \(.because). "
+      + "It keeps it while the session lasts; workspace_show says it again. "
+      + "Switching is for the person: another workspace is another server."' ;;
   SessionEnd)
     [ -z "$task" ] || { let_go; close_link; } ;;
 esac

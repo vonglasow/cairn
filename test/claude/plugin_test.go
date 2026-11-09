@@ -36,7 +36,7 @@ type hookFile struct {
 func TestPlugin_wiresEveryEventToTheHook(t *testing.T) {
 	var file hookFile
 	readJSON(t, filepath.Join(plugin, "hooks", "hooks.json"), &file)
-	for _, event := range []string{"PostToolUse", "UserPromptSubmit", "Stop", "SessionEnd"} {
+	for _, event := range []string{"SessionStart", "PostToolUse", "UserPromptSubmit", "Stop", "SessionEnd"} {
 		groups := file.Hooks[event]
 		if len(groups) != 1 || len(groups[0].Hooks) != 1 {
 			t.Errorf("%s calls %d groups, want one hook", event, len(groups))

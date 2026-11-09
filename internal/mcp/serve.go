@@ -32,10 +32,18 @@ const whereTheWorkGoes = "A task's description says what the task is; what was d
 	"Its notes are the directory task_show names as its context: a dated entry, YYYY-MM-DD-<subject>.md, for each piece of work, " +
 	"and summary.md, rewritten whole, for where the task stands."
 
-// Serve builds an SDK server announcing s.Name and s.Version, and runs it over in and out, one message a line; between two requests, a cairn installed at s.Binary takes the session over, and the tools follow the pages the configuration turns on.
+// Serve builds an SDK server announcing s.Name and s.Version, and runs it over in and out, one message a line, answering from the store it started on; between two requests, a cairn installed at s.Binary takes the session over, store included, and the tools follow the pages the configuration turns on.
 func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
+	before, resumed, err := takenOver()
+	if err != nil {
+		return fmt.Errorf("the session handed over by the cairn this one replaced cannot be read: %w", err)
+	}
+	home := engine.Keep(s.Home)
+	if before.Kept != nil {
+		home.Kept = before.Kept
+	}
 	server := sdk.NewServer(&sdk.Implementation{Name: s.Name, Version: s.Version}, &sdk.ServerOptions{Instructions: whereTheWorkGoes})
-	offers := &offering{server: server, access: s.Access, home: s.Home}
+	offers := &offering{server: server, access: s.Access, home: home}
 	offers.refresh()
 	offers.heard()
 	greeted := &remembered{}
@@ -43,17 +51,13 @@ func Serve(ctx context.Context, s Server, in io.Reader, out io.Writer) error {
 	if s.Noted != nil {
 		server.AddReceivingMiddleware(noting(s.Noted))
 	}
-	before, resumed, err := takenOver()
-	if err != nil {
-		return fmt.Errorf("the session handed over by the cairn this one replaced cannot be read: %w", err)
-	}
 	if resumed {
 		offers.registered, offers.told = before.Tools, before.Tools
 	}
 	greeted.state = before.State
 	transport := &lines{in: bufio.NewReader(io.MultiReader(bytes.NewReader(before.Unread), in)), out: out, noted: s.Noted, between: offers.refresh, heard: offers.heard}
 	transport.carry = func(unread []byte) carried {
-		return carried{State: greeted.held(), Tools: offers.names(), Unread: unread}
+		return carried{State: greeted.held(), Tools: offers.names(), Unread: unread, Kept: home.Kept}
 	}
 	if running, err := identify(s.Binary); s.Binary != "" && err == nil {
 		transport.running = &running

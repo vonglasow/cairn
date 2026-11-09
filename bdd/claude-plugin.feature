@@ -84,3 +84,10 @@ Feature: The Claude Code plugin comes with the binary
     When I read the cairn skill
     Then the skill writes out at least one call whole
     And the MCP server answers every call the skill writes out whole
+
+  @plugin-the-skill-says-the-server-keeps-one-workspace
+  Scenario: the skill tells an agent its server answers from one workspace, and switching is the person's
+    When I read the cairn skill
+    Then the skill says "answers from one workspace"
+    And the skill says "`workspace_show {}`"
+    And the skill says "Switching is the person's"

@@ -432,7 +432,9 @@ cairn workspace show                    # which one answers, and why
 cairn task list --workspace home        # another, for this command alone
 ```
 
-`--workspace` or `--store` on any command replaces even the environment. See
+`--workspace` or `--store` on any command replaces even the environment. An
+MCP server keeps the workspace it started on, whatever the default becomes:
+`cairn mcp serve --workspace work`. See
 [config.md](config.md#workspaces-each-a-folder-holding-a-store-and-its-notes).
 The folder also holds `settings.toml`: the pages, the archive, the focus
 session, the approach label, the time and the window of that store, each
