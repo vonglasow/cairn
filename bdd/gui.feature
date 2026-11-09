@@ -4962,6 +4962,52 @@ Feature: The desktop board
       And I click "Help"
       Then the rule over what the panel offers stands out from the panel
 
+  Rule: One thing is drawn one way, wherever it stands
+
+    @gui-the-count-of-labels-is-a-plain-pill
+    Scenario: the count of the labels a card leaves out is a pill like any other, with no ring
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
+      When I open the window
+      Then the card "Write the spec" counts the labels it leaves out in a pill with no ring
+
+    @gui-every-key-of-the-command-bar-is-on-a-chip
+    Scenario: a key the command bar names sits on a chip on every line, not only on the one chosen
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+k"
+      Then every key the command bar names sits on a chip
+
+    @gui-an-empty-slot-is-rounded
+    Scenario: the slot saying a column holds nothing is rounded as the card it stands for
+      Given I added a task titled "Write the spec" with the state "todo"
+      When I open the window
+      Then the slot of the column "current" is rounded as a card is
+
+    @gui-a-dot-beside-a-name-is-one-size
+    Scenario: the dot beside a label's name is the size of the dot beside a workspace's
+      Given the workspace "work", the default
+      And I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window on the workspace "work"
+      And I press "shift+l"
+      Then the dot beside the label "doc" is as wide as the workspace's dot
+
+    @gui-the-switcher-is-a-popover
+    Scenario: the switcher drops from the pill as a popover, not as a panel
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I click the pill of the workspace
+      Then the switcher is drawn as a popover
+
+    @gui-the-labels-bubble-is-a-popover
+    Scenario: the bubble of a card's labels is a popover, rounded as a menu is
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
+      When I open the window
+      And I rest the pointer on the count of labels of "Write the spec"
+      Then the labels are shown in a popover
+
   Rule: Several cards are taken at once
 
     @gui-several-are-gathered-with-cmd

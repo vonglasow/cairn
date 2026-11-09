@@ -236,8 +236,8 @@ const segmentInset = 2
 // TimeChips is every chip of the strip, in the order they are drawn.
 var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
 
-// Button is what an offer is drawn as in the room it is given: as tall, and a gap short of the next one.
-func Button(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H} }
+// ButtonIn is what an offer is drawn as in the room it is given: as tall, and a gap short of the next one.
+func ButtonIn(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H} }
 
 // ButtonParts is where a button writes its word and draws its key's chip: the two side by side in its middle, the word first.
 func ButtonParts(button Box, m Measure, word, key string) (Box, Box) {

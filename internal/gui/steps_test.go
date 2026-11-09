@@ -1497,7 +1497,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Colour.Surface.Control, buttonOn: Dark().Colour.Accent.Base, buttonDanger: Dark().Colour.State.Danger}
 		for i, slot := range slots {
 			look := w.w.OfferLook(i, w.w.Offers()[i])
-			if err := buttonsDrawn(w.w, []Box{Button(slot)}, grounds[look]); err != nil {
+			if err := buttonsDrawn(w.w, []Box{ButtonIn(slot)}, grounds[look]); err != nil {
 				return err
 			}
 		}

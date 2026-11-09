@@ -441,5 +441,4 @@ func (w Window) ColourPick() int { return w.colourPick }
 const (
 	swatchSide = 18
 	swatchGap  = 6
-	dotSide    = 12
 )

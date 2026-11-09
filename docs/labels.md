@@ -166,7 +166,7 @@ says each label's colour, and the board reads them with the rest
 (`Snapshot.Colours`). The window draws every label pill — on a card, in its
 bubble, in a form, in a list and in the list of labels — in its colour, the
 name in the colour itself on a fifth of it over a card's ground
-(`Skin.LabelPill`, `drawLabelPill`). Its name is centred in the pill by
+(`Skin.LabelPill`, `LabelChip`). Its name is centred in the pill by
 the ink of letters that rise and stand on the line, measured by the shaper
 (`pillLine`): centred by its line, it stood a point high, and centred by its
 own ink, `gui` and `release` would not share a line. In the list of labels, `c` — or *Colour* — opens the

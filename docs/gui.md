@@ -202,6 +202,42 @@ the layer it draws on (board, bar, drag, panel, popover) and a record of
 what was drawn (`Drawn.Put`), which the overlap check of #225 will read
 once the drawing is made of components (#230).
 
+**What the window is drawn of is a set of components**, each a value
+carrying its look and drawn by `Draw(k Kit, at Box) Box` (`component_*.go`),
+the way Gio's `material.ButtonStyle` is: `Ground`, `Panel` with its
+`Heading`, `Popover`, `Veil`, `Rule`, `Card`, `Stripe`, `LabelChip`, `Pill`,
+`KeyChip`, `Button`, `Dot`, `Empty` and `Dashed`. A screen places them and
+spells no shape out; a component records its box, and a part drawn inside
+another is recorded as its child (`card/stripe`, `button/key`), so the
+overlap check can tell a chip in a card from a popover over one. They stay
+in this package: a component reads the `Kit`'s own fields and the layout's
+`Box`, and the token guard reads this package's files. Where two screens
+drew one element two ways, the component draws it the one way the design
+settled on (#230's sheet), and the window changed with it:
+
+- a popover — a menu, a bubble, the swatches, a field's tip, the switcher —
+  rounds at 10, a panel's corners at 12; the bubbles were at 8 and the
+  switcher at 12 (`@gui-the-switcher-is-a-popover`,
+  `@gui-the-labels-bubble-is-a-popover`);
+- a priority's stripe is square along the edge it is attached to and
+  rounded at 3 elsewhere, a free-standing one at 3 all round: a month's
+  line gains its rounding, a list's and the form's go from 2 to 3;
+- a label taken in a list is one chip with a stroked cross in its own ink,
+  no longer a glyph `×` on a circle of its own;
+- the count of the labels a card leaves out is a pill like any other, its
+  ring gone, and every pill, an objective's standing too, is centred by the
+  ink of `Hl` (`@gui-the-count-of-labels-is-a-plain-pill`);
+- a key always stands on a chip: on a control's chip (`ChipOnControl`) on
+  a button or on a picked line — the command bar's, the menu's, the
+  switcher's — on a control's ground elsewhere, and the command bar's
+  shortcuts gain theirs (`@gui-every-key-of-the-command-bar-is-on-a-chip`,
+  `TestAKeyOnAPickedRowStandsOutFromTheRow`);
+- a colour beside its name is a dot of 8 everywhere (`dotSide`); a label's
+  dot in the labels and in the label filter was 12
+  (`@gui-a-dot-beside-a-name-is-one-size`);
+- an empty slot's dashed line rounds at a card's 8, drawn by the same
+  `Dashed` as the dashed pill (`@gui-an-empty-slot-is-rounded`).
+
 The design's own mock-up was darker still; `skin_test.go` holds every
 shape to a contrast it can be told apart at (a panel 1.3 against the
 board, an edge 3), so the tones were raised to meet it rather than the
@@ -224,10 +260,10 @@ the panel's verb last, at the right: filled with the accent when it is what
 the panel is for, red when it destroys — Delete, Throw away, the yes of a
 question that deletes — and plain otherwise (`OfferLook`). An open task's
 context is written at the left of that foot, up to its first button. Every
-button is one shape (`drawButton`): a rounded (7) ground and its words in
+button is one shape (`Button`): a rounded (7) ground and its words in
 the middle, lighter under the pointer. A panel's button says its word, then
 its key on a chip a shade darker than the button, `Cancel esc`, `Save ⌘⏎`,
-as the command bar's hints show a key (`drawKeyedButton`, `ButtonParts`,
+as the command bar's hints show a key (`Button{Keyed}`, `ButtonParts`,
 `TestAPanelButtonWritesItsWordThenItsKeyOnAChip`); it wrote the
 key first, as plain text, where nothing told the key from the word. A key
 mark Go Mono has no glyph for (`⌘`, `⏎`, `⌫`) is given an em of room on its
@@ -379,7 +415,7 @@ Scenarios:
 are read the same way: resting on its `+n` opens a bubble under it holding
 every label it carries as pills, wrapped to 180 points
 (`LabelsBubbleBox`, `@gui-the-count-of-labels-opens-them-all`). Both bubbles
-are raised panels, rounded and shadowed, rather than boxes with an edge. The
+are popovers, rounded and shadowed, rather than boxes with an edge. The
 title's bubble used to open anywhere on the card, and hid the row a person
 was reaching for; it opens over the title alone now. The objective mark `◇1`
 opens the same bubble, a line to each objective it serves, `#1  Ship the
@@ -503,7 +539,7 @@ everything else here, so a scenario can ask.
 **Every offer is a button, and one kind of button.** The bar's offers, a
 panel's `Save` and `Cancel`, the calendar's month, year and arrows and the time
 strip's chips were words in one place, words lit on hover in another, chips in
-a third. They are now drawn by one function (`drawButton`, `Button`): a box as
+a third. They are now drawn by one function (`Button`, `ButtonIn`): a box as
 tall as the room given, a gap short of the next, edged, its words in its
 middle. Under the pointer its edge takes the chosen ink; the one in force (a
 range, an open grid) is filled; the board's offers behind an open panel are

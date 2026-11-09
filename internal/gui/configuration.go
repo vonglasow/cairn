@@ -150,8 +150,8 @@ func (w Window) ConfigLines() []ConfigLine {
 		from := row.X + keys + configGap + copyRoom
 		lines[i].ValueAt = Box{X: from, Y: row.Y, W: lines[i].FromAt.X - configGap - from, H: row.H}
 		if lines[i].Swatch != "" {
-			lines[i].SwatchAt = Box{X: from, Y: row.Y + (row.H-placeDot)/2, W: placeDot, H: placeDot}
-			lines[i].ValueAt.X, lines[i].ValueAt.W = from+placeDot+between, lines[i].ValueAt.W-placeDot-between
+			lines[i].SwatchAt = Box{X: from, Y: row.Y + (row.H-dotSide)/2, W: dotSide, H: dotSide}
+			lines[i].ValueAt.X, lines[i].ValueAt.W = from+dotSide+between, lines[i].ValueAt.W-dotSide-between
 		}
 	}
 	return lines

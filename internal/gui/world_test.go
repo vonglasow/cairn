@@ -1437,14 +1437,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I drag the form from its heading (\d+) to the right and (\d+) down$`, func(right, down int) error {
-		head := Heading(w.w.formPanel())
+		head := HeadingAt(w.w.formPanel())
 		return w.dragForm(Point{X: head.X + 4, Y: head.Y + head.H/2}, right, down)
 	})
 	sc.Step(`^the form stands (\d+) to the right and (\d+) lower than it opened$`, func(right, down int) error {
 		return w.formStandsBy(right, down)
 	})
 	sc.Step(`^I drag the form from its heading's line past its words (\d+) to the right and (\d+) down$`, func(right, down int) error {
-		head := Heading(w.w.formPanel())
+		head := HeadingAt(w.w.formPanel())
 		from := Point{X: head.X + ends(w.w.measured(), HeadsOn(w.w, OnForm), heading) + 20, Y: head.Y + head.H/2}
 		if _, on := w.w.offerAt(from); on {
 			return fmt.Errorf("the point %v past the heading is an offer", from)
@@ -1683,6 +1683,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.filtersSteps(sc)
 	w.configurationSteps(sc)
 	w.workspaceSteps(sc)
+	w.componentsSteps(sc)
 }
 
 func (w *world) workedOn(times int) error {

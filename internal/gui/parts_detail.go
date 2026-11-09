@@ -43,14 +43,14 @@ func Chip(name Box) Box {
 	return Box{X: name.X - chipAt, Y: name.Y - chipAt, W: name.W, H: name.H + chipAt + chipAt}
 }
 
-// Heading is where a panel says what it is, above everything it holds.
-func Heading(box Box) Box {
+// HeadingAt is where a panel says what it is, above everything it holds.
+func HeadingAt(box Box) Box {
 	return Box{X: box.X + padding, Y: box.Y + padding, W: box.W - padding - padding, H: titleHi}
 }
 
 // Ruled is the line under that heading, which is what makes it a heading rather than the first row.
 func Ruled(box Box) Box {
-	head := Heading(box)
+	head := HeadingAt(box)
 	return Box{X: head.X, Y: head.Y + head.H + chipAt, W: head.W, H: 1}
 }
 
@@ -123,12 +123,12 @@ const closeWide = 24
 
 // FormClose is the box at the right end of a form's heading that closes it, no smaller than a pointer can be sure of.
 func FormClose(box Box) Box {
-	head := Heading(box)
+	head := HeadingAt(box)
 	return Box{X: head.X + head.W - closeWide, Y: head.Y + (head.H-closeWide)/2, W: closeWide, H: closeWide}
 }
 
 // FormHeading is a form's heading less the box that closes it, so its words never run under the cross.
 func FormHeading(box Box) Box {
-	head := Heading(box)
+	head := HeadingAt(box)
 	return Box{X: head.X, Y: head.Y, W: head.W - closeWide - between, H: head.H}
 }

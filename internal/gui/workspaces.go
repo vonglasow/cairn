@@ -50,7 +50,6 @@ const (
 	placeLeast  = 70
 	placeWords  = 24
 	placeSlack  = 4
-	placeDot    = 8
 	placeCaret  = 10
 	switchWide  = 520
 	thisWindow  = "this window"
@@ -97,7 +96,7 @@ func (w Window) placeAt(l Layout) Box {
 	return Box{X: l.Tabs.X, Y: l.Tabs.Y + between, W: placeRoom + w.placeTextWide(), H: l.Tabs.H - between}
 }
 
-const placeRoom = 2*padding + placeDot + 2*between + placeCaret
+const placeRoom = 2*padding + dotSide + 2*between + placeCaret
 
 func (w Window) placeTextWide() int {
 	if w.Loose() {
@@ -133,7 +132,7 @@ func (w Window) PlaceShown() string {
 
 // PlaceParts is where the pill draws its dot, its name and its caret.
 func PlaceParts(pill Box) (dot, name, caret Box) {
-	dot = Box{X: pill.X + padding, Y: pill.Y + (pill.H-placeDot)/2, W: placeDot, H: placeDot}
+	dot = Box{X: pill.X + padding, Y: pill.Y + (pill.H-dotSide)/2, W: dotSide, H: dotSide}
 	caret = Box{X: pill.X + pill.W - padding - placeCaret, Y: pill.Y + (pill.H-placeCaret)/2, W: placeCaret, H: placeCaret}
 	x := dot.X + dot.W + between
 	name = Box{X: x, Y: pill.Y + (pill.H-lineHigh)/2, W: caret.X - between - x, H: lineHigh}

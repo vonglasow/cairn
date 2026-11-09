@@ -134,7 +134,7 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 		w = w.Key("down")
 	}
 	w = w.Key("enter").Key("enter").Key("esc")
-	var filters []Pill
+	var filters []FilterPill
 	for _, pill := range w.Pills() {
 		if pill.Kind == PillFilter {
 			filters = append(filters, pill)

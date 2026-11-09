@@ -12,6 +12,7 @@ type Kit struct {
 	skin  Skin
 	layer Layer
 	drawn *Drawn
+	in    string
 }
 
 // NewKit is a kit drawing on the board in that skin, recording into drawn.
@@ -22,6 +23,16 @@ func NewKit(gtx layout.Context, th *material.Theme, skin Skin, drawn *Drawn) Kit
 func (k Kit) on(layer Layer) Kit {
 	k.layer = layer
 	return k
+}
+
+func (k Kit) inside(part string) Kit {
+	k.in += part + "/"
+	return k
+}
+
+func (k Kit) put(part string, at Box) Box {
+	k.drawn.Put(k.in+part, at, k.layer)
+	return at
 }
 
 // Layer is one of the planes the window is drawn in, each over the one before.

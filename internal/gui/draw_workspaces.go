@@ -1,11 +1,8 @@
 package gui
 
 import (
-	"image/color"
-
 	"gioui.org/font"
 	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/text"
 )
 
@@ -16,22 +13,18 @@ func drawPlace(k Kit, l Layout, w Window) {
 	rounded(k.gtx, l.Place, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
 	dot, name, caret := PlaceParts(l.Place)
 	if w.Loose() {
-		drawRing(k, dot, k.skin.Colour.Ink.Faint)
+		Dot{Ring: true}.Draw(k, dot)
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.PlaceShown(), small, k.skin.Type.Mono, text.Start)
 	} else {
-		rounded(k.gtx, dot, k.skin.Radius.Full(dot), k.skin.Colour.Labels[w.Place().Colour])
+		Dot{Colour: w.Place().Colour}.Draw(k, dot)
 		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.PlaceShown(), reads, font.Medium, 1, text.Start)
 	}
 	drawChevron(k, caret, k.skin.Colour.Ink.Faint)
 }
 
-func drawRing(k Kit, b Box, ink color.NRGBA) {
-	paint.FillShape(k.gtx.Ops, ink, clip.Stroke{Path: clip.UniformRRect(rect(b), k.skin.Radius.Full(b)).Path(k.gtx.Ops), Width: k.skin.Size.Stroke}.Op())
-}
-
 func drawSwitcher(k Kit, w Window) {
 	box := w.SwitcherBox()
-	raised(k, box, k.skin.Radius.Panel, k.skin.Colour.Surface.Raised)
+	Popover{}.Draw(k, box)
 	clipped := clip.Rect(rect(box)).Push(k.gtx.Ops)
 	defer clipped.Pop()
 	m := w.measured()
@@ -58,13 +51,13 @@ func drawSwitcher(k Kit, w Window) {
 	}
 	acts := SwitcherActs(w)
 	if len(acts) > 0 {
-		fill(k.gtx, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W, H: 1}, k.skin.Colour.Line.Raised)
+		Rule{}.Draw(k, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
 	}
 	for _, act := range acts {
 		row := Inside(act.At)
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, row, act.Said, reads)
 		if act.Key != "" {
-			drawKeyChip(k, Box{X: row.X + row.W - KeyChipWide(w.keyboard.Spelled(act.Key)), Y: act.At.Y, H: act.At.H}, w.keyboard.Spelled(act.Key))
+			KeyChip{Key: w.keyboard.Spelled(act.Key)}.Draw(k, Box{X: row.X + row.W - KeyChipWide(w.keyboard.Spelled(act.Key)), Y: act.At.Y, H: act.At.H})
 		}
 	}
 }
@@ -74,14 +67,14 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 		rounded(k.gtx, one.At, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
 	}
 	row := Inside(one.At)
-	dot := Box{X: row.X, Y: row.Y + (row.H-placeDot)/2, W: placeDot, H: placeDot}
+	dot := Box{X: row.X, Y: row.Y + (row.H-dotSide)/2, W: dotSide, H: dotSide}
 	ink := k.skin.Colour.Ink.Text
 	if one.Gone {
 		ink = k.skin.Colour.Ink.Faint
 	}
 	right := row.X + row.W
 	if one.Key != "" {
-		chip := drawKeyChip(k, Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H}, one.Key)
+		chip := KeyChip{Key: one.Key, OnControl: one.On}.Draw(k, Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H})
 		right = chip.X - between
 	}
 	tag := ends(m, one.Tag, small)
@@ -89,15 +82,11 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 	right -= tag + padding
 	x := dot.X + dot.W + between
 	if one.Recent {
-		drawRing(k, dot, k.skin.Colour.Ink.Faint)
+		Dot{Ring: true}.Draw(k, dot)
 		sayIn(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: max(0, right-x), H: row.H}, one.Name, small, k.skin.Type.Mono, text.Start)
 		return
 	}
-	if one.Gone {
-		drawRing(k, dot, k.skin.Colour.Ink.Faint)
-	} else {
-		rounded(k.gtx, dot, k.skin.Radius.Full(dot), k.skin.Colour.Labels[one.Colour])
-	}
+	Dot{Colour: one.Colour, Ring: one.Gone}.Draw(k, dot)
 	named := min(ends(m, one.Name, reads)+placeSlack, max(0, right-x))
 	sayStyled(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: named, H: row.H}, one.Name, reads, font.Medium, 1, text.Start)
 	folder := x + named + padding

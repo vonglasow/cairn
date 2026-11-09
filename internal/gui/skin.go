@@ -198,10 +198,3 @@ func (s Skin) Writing(c engine.Card) color.NRGBA {
 }
 
 func (s Skin) stoneOf(i int) Shade { return s.Colour.Stones[i%len(s.Colour.Stones)] }
-
-func (s Skin) edgeOf(c engine.Card) color.NRGBA {
-	if edge, known := s.Colour.Priority[c.Priority]; known && !c.Archived {
-		return edge
-	}
-	return s.Colour.Line.Edge
-}

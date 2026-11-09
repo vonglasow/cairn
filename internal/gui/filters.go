@@ -249,8 +249,8 @@ const (
 	PillFolded
 )
 
-// Pill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
-type Pill struct {
+// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
+type FilterPill struct {
 	Box   Box
 	Said  string
 	Name  string
@@ -260,7 +260,7 @@ type Pill struct {
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
-func (p Pill) Cross() (Box, bool) {
+func (p FilterPill) Cross() (Box, bool) {
 	if p.Kind != PillSearch && p.Kind != PillFilter {
 		return Box{}, false
 	}
@@ -268,7 +268,7 @@ func (p Pill) Cross() (Box, bool) {
 }
 
 // Pills is the row at the right of the tabs: the search kept, then every filter in force, the pill clearing them, and against the menu the pill adding one, which stands where it stood whatever is added; folded into one pill, in that pill's place, when they no longer fit between the tabs and the menu.
-func (w Window) Pills() []Pill {
+func (w Window) Pills() []FilterPill {
 	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch {
 		return nil
 	}
@@ -281,13 +281,13 @@ func (w Window) Pills() []Pill {
 		end = MenuButton(l).X - between
 	}
 	m := w.measured()
-	var row []Pill
+	var row []FilterPill
 	crossed := func(name, value string, kind PillKind, at int) {
 		wide := ends(m, name, small) + nameGap + ends(m, value, small) + 2*pillPad + pillCross
-		row = append(row, Pill{Box: Box{W: wide}, Said: name + " " + value, Name: name, Kind: kind, At: at})
+		row = append(row, FilterPill{Box: Box{W: wide}, Said: name + " " + value, Name: name, Kind: kind, At: at})
 	}
 	plain := func(said string, kind PillKind) {
-		row = append(row, Pill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
+		row = append(row, FilterPill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
 	taken := 0
 	if !w.looking.Empty() && w.screen != OnSearch {
@@ -310,7 +310,7 @@ func (w Window) Pills() []Pill {
 		plain(ClearSays, PillClear)
 		plain(FoldedSays(taken), PillFolded)
 	}
-	var pills []Pill
+	var pills []FilterPill
 	x := max(start, end-widthOf(row))
 	for _, pill := range row {
 		if x+pill.Box.W > end {
@@ -323,7 +323,7 @@ func (w Window) Pills() []Pill {
 	return pills
 }
 
-func widthOf(row []Pill) int {
+func widthOf(row []FilterPill) int {
 	wide := 0
 	for _, pill := range row {
 		wide += pill.Box.W + pillGap
@@ -372,7 +372,7 @@ func (w Window) takingOff(at int) Window {
 	return w
 }
 
-func (w Window) clickingPill(pill Pill, p Point) Window {
+func (w Window) clickingPill(pill FilterPill, p Point) Window {
 	if cross, ok := pill.Cross(); ok && cross.In(p) {
 		if pill.Kind == PillSearch {
 			w.looking = Written{}

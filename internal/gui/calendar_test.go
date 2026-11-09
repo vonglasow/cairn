@@ -182,7 +182,7 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	foot := Button(w.PanelOffers()[0])
+	foot := ButtonIn(w.PanelOffers()[0])
 	skin := Dark()
 	if painted(drawn(t, w), foot, skin.Colour.Accent.Base) == 0 {
 		t.Fatal("the open form draws no offer at its foot")

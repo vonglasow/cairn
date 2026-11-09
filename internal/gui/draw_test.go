@@ -780,7 +780,7 @@ func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	help := w.Key("?")
 
 	shot := drawn(t, help)
-	if got := painted(shot, Heading(box), Dark().Colour.Ink.Text); got == 0 {
+	if got := painted(shot, HeadingAt(box), Dark().Colour.Ink.Text); got == 0 {
 		t.Error("the help does not say what it is")
 	}
 	name, _ := FieldRow(box, FirstRow(box))
@@ -820,14 +820,14 @@ func TestAPanelButtonWritesItsWordThenItsKeyOnAChip(t *testing.T) {
 	if at < 0 {
 		t.Fatalf("the help offers %v", offers)
 	}
-	word, chip := ButtonParts(Button(boxes[at]), w.measured(), "Close", w.OfferKey("Close"))
+	word, chip := ButtonParts(ButtonIn(boxes[at]), w.measured(), "Close", w.OfferKey("Close"))
 	if chip.W == 0 || chip.X < word.X+word.W {
 		t.Fatalf("the key's chip %+v does not come after the word %+v", chip, word)
 	}
-	if button := Button(boxes[at]); word.X < button.X || chip.X+chip.W > button.X+button.W {
+	if button := ButtonIn(boxes[at]); word.X < button.X || chip.X+chip.W > button.X+button.W {
 		t.Errorf("the word %+v and the chip %+v run out of the button %+v", word, chip, button)
 	}
-	back, _, under := buttonInks(Dark(), w.OfferLook(at, "Close"))
+	back, _, under := Dark().button(w.OfferLook(at, "Close"))
 	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, under) != 1 || painted(drawn(t, w), Box{X: word.X - 2, Y: chip.Y + 1, W: 1, H: 1}, back) != 1 {
 		t.Error("the key does not stand on a chip of its own inside the button")
 	}
@@ -1495,11 +1495,11 @@ func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
 		t.Errorf("the offers end at %d, the panel's room at %d", last.X+last.W, right)
 	}
 	shot := drawn(t, w)
-	verb := Button(along[0])
+	verb := ButtonIn(along[0])
 	if painted(shot, Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Colour.Accent.Base) != 3 {
 		t.Errorf("the panel's verb %q is not filled with the accent", w.Offers()[0])
 	}
-	other := Button(along[len(along)-1])
+	other := ButtonIn(along[len(along)-1])
 	if painted(shot, Box{X: other.X + 3, Y: other.Y + 2, W: 3, H: 1}, Dark().Colour.Surface.Control) != 3 {
 		t.Errorf("%q is not a plain button", w.Offers()[len(along)-1])
 	}
@@ -1511,7 +1511,7 @@ func TestAnAnswerThatDestroysIsRed(t *testing.T) {
 	if w.Screen() != OnAsking {
 		t.Fatalf("deleting asked nothing: %v", w.Screen())
 	}
-	verb := Button(w.offersAlong(w.panel())[0])
+	verb := ButtonIn(w.offersAlong(w.panel())[0])
 	if painted(drawn(t, w), Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Colour.State.Danger) != 3 {
 		t.Errorf("%q is not drawn red", w.Offers()[0])
 	}
@@ -1650,7 +1650,7 @@ func TestAKeyIsCentredOnItsChipWhateverItsGlyphs(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")
 	shot := drawn(t, w)
 	for i, offer := range w.Offers() {
-		_, chip := ButtonParts(Button(w.PanelOffers()[i]), w.measured(), offer, w.OfferKey(offer))
+		_, chip := ButtonParts(ButtonIn(w.PanelOffers()[i]), w.measured(), offer, w.OfferKey(offer))
 		if top, bottom := inkGaps(shot, chip); top-bottom > 1 || bottom-top > 1 {
 			t.Errorf("%q on its chip leaves %d above and %d under", w.OfferKey(offer), top, bottom)
 		}
