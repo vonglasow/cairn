@@ -662,6 +662,12 @@ A label's answer carries its `scope` — `tasks`, `objectives` or `both`;
 it. A label put where its scope leaves out is refused as
 `label-out-of-scope` (`@label-scope-mcp`).
 
+`objective_new` and `objective_edit` take `waits-on`, a list of objective
+numbers with the grammar of `blocker`; an objective's answer carries
+`waits_on` and `waited_on_by`. `task_move`, `task_edit`, `task_focus` and
+`task_new` answer `warnings` when they put a task in current while an
+objective it counts in waits on one not reached (`@objective-waits-on-mcp`).
+
 - **Strings stay.** `blocker` takes `"+3"`, `"-3"` and `"=3"`, which are no
   numbers, and every list was strings until now: taking them away would be a
   break.

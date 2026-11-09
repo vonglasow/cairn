@@ -194,7 +194,9 @@ consequence before its cause.
   waiting on task 3 — would fit the rule in [listing.md](listing.md), since a
   task number is something to match exactly. Nothing has asked for it.
 - **Blocked by an objective.** Nothing has asked for it, and an objective is not
-  work — it is what work is for.
+  work — it is what work is for. An objective may wait on another, and that
+  warns as work starts on it and shuts no column; see
+  [objectives.md](objectives.md#two-levels).
 - **Being told when a blocker finishes.** That is a notification, which cairn
   has none of. The mark is what stands in for it.
 - **Deleting a blocker unmarks, and says so once.** Delete task 3 and the link

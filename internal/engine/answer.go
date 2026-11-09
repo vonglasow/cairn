@@ -18,6 +18,7 @@ type Task struct {
 	StoodSince *time.Time            `json:"in_column_since,omitempty"`
 	Added      *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff   *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
+	Warnings   []string              `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
 }
 
 // OfTask turns a task and how far along it is into what crosses to a machine.
@@ -39,13 +40,14 @@ func rowOf(t task.Task, kept []string) Row {
 
 // Tasks is how a listing of tasks crosses: an object naming what it carries, never a bare list.
 type Tasks struct {
-	Tasks   []Row            `json:"tasks"`
-	InFocus []int            `json:"in_focus"`
-	Crossed *Crossed         `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
-	Matched map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked"`
-	Unknown []int            `json:"unknown,omitempty" jsonschema:"each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"`
-	Total   *int             `json:"total,omitempty" jsonschema:"how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
-	Counts  *map[string]int  `json:"counts,omitempty" jsonschema:"each column, or each label, as count asked, and how many of the tasks kept sit in it or carry it; one no task has is left out; left out unless count was asked"`
+	Tasks    []Row            `json:"tasks"`
+	InFocus  []int            `json:"in_focus"`
+	Crossed  *Crossed         `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
+	Matched  map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked"`
+	Unknown  []int            `json:"unknown,omitempty" jsonschema:"each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"`
+	Total    *int             `json:"total,omitempty" jsonschema:"how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
+	Counts   *map[string]int  `json:"counts,omitempty" jsonschema:"each column, or each label, as count asked, and how many of the tasks kept sit in it or carry it; one no task has is left out; left out unless count was asked"`
+	Warnings []string         `json:"warnings,omitempty" jsonschema:"what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"`
 }
 
 // Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — a minute begun counted whole — and the day's, the sum of those.
@@ -108,20 +110,23 @@ type Focus struct {
 	Tasks    []Task         `json:"tasks"`
 	InFocus  []int          `json:"in_focus"`
 	Sessions []FocusSession `json:"sessions"`
+	Warnings []string       `json:"warnings,omitempty" jsonschema:"what the focus did and should be known: each objective the task brought into current counts in, waiting on one not reached; left out when there is nothing to say"`
 }
 
 // Objective is how an objective crosses to a machine.
 type Objective struct {
 	objective.Shape
-	Tasks     []int                 `json:"tasks"`
-	Progress  *domain.ProgressShape `json:"progress"`
-	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
-	Left      []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
-	Parent    *int                  `json:"parent" jsonschema:"the number of the objective it sits under; null when it stands on its own"`
-	Children  []int                 `json:"children" jsonschema:"the numbers of its sub-objectives; empty when it holds none"`
-	Proposed  *int                  `json:"proposed_reached,omitempty" jsonschema:"the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"`
-	Added     *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
-	TakenOff  *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
+	Tasks      []int                 `json:"tasks"`
+	Progress   *domain.ProgressShape `json:"progress"`
+	TimeSpent  string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
+	Left       []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
+	Parent     *int                  `json:"parent" jsonschema:"the number of the objective it sits under; null when it stands on its own"`
+	Children   []int                 `json:"children" jsonschema:"the numbers of its sub-objectives; empty when it holds none"`
+	WaitsOn    []int                 `json:"waits_on" jsonschema:"the numbers of the objectives it waits on, which warn and never block; empty when it waits on none"`
+	WaitedOnBy []int                 `json:"waited_on_by" jsonschema:"the numbers of the objectives that wait on it; empty when none does"`
+	Proposed   *int                  `json:"proposed_reached,omitempty" jsonschema:"the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"`
+	Added      *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
+	TakenOff   *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 }
 
 // OfObjective turns an objective into what crosses.
@@ -131,21 +136,25 @@ func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Ob
 		numbers = append(numbers, factsOf(t).Number)
 	}
 	return Objective{
-		Shape:     objective.OfObjective(o),
-		Tasks:     numbers,
-		Progress:  domain.OfProgress(p),
-		TimeSpent: domain.FormatDuration(reviewOf(under).Spent),
-		Left:      leftOf(under),
-		Children:  []int{},
+		Shape:      objective.OfObjective(o),
+		Tasks:      numbers,
+		Progress:   domain.OfProgress(p),
+		TimeSpent:  domain.FormatDuration(reviewOf(under).Spent),
+		Left:       leftOf(under),
+		Children:   []int{},
+		WaitsOn:    []int{},
+		WaitedOnBy: []int{},
 	}
 }
 
-func seated(said Objective, o objective.Objective, tree map[int][]int) Objective {
+func seated(said Objective, o objective.Objective, a Answer) Objective {
 	c := o.Carried()
 	if c.Parent != 0 {
 		said.Parent = &c.Parent
 	}
-	said.Children = listed(tree[c.Number])
+	said.Children = listed(a.Tree[c.Number])
+	said.WaitsOn = listed(c.WaitsOn)
+	said.WaitedOnBy = listed(a.Waiters[c.Number])
 	return said
 }
 
@@ -212,14 +221,16 @@ func Of(op Operation, a Answer) any {
 		return ofSheet(*a.Sheet, a.Named, a.Gone)
 	case Review:
 		r := OfReview(*a.Objective, a.Under, a.Progress, *a.Period)
-		r.Objective = seated(r.Objective, *a.Objective, a.Tree)
+		r.Objective = seated(r.Objective, *a.Objective, a)
 		return r
 	case Focus:
 		held := a.Held
 		if a.Task != nil {
 			held = []task.Task{*a.Task}
 		}
-		return ofFocus(held, a.Progress, heldOr(a.InFocus), a.Sessions)
+		said := ofFocus(held, a.Progress, heldOr(a.InFocus), a.Sessions)
+		said.Warnings = a.Warnings
+		return said
 	case Task:
 		said := OfTask(*a.Task, a.Progress)
 		said.Context = a.Context
@@ -227,6 +238,7 @@ func Of(op Operation, a Answer) any {
 			said.StoodSince = &a.StoodSince
 		}
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
+		said.Warnings = a.Warnings
 		return said
 	case Swept:
 		swept := Swept{Archived: *a.Archived}
@@ -244,10 +256,10 @@ func Of(op Operation, a Answer) any {
 			said = ofTasks(a.Tasks, a.InFocus, a.Fields)
 			said.Crossed = a.Crossed
 		}
-		said.Total, said.Counts = a.Total, ofCounts(a.Counts)
+		said.Total, said.Counts, said.Warnings = a.Total, ofCounts(a.Counts), a.Warnings
 		return said
 	case Objective:
-		said := seated(OfObjective(*a.Objective, a.Under, a.Progress), *a.Objective, a.Tree)
+		said := seated(OfObjective(*a.Objective, a.Under, a.Progress), *a.Objective, a)
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		said.Proposed = proposedIn(a)
 		return said
@@ -351,7 +363,7 @@ func listed(numbers []int) []int {
 func ofObjectives(all []objective.Objective, a Answer) []Objective {
 	out := make([]Objective, 0, len(all))
 	for _, o := range all {
-		said := seated(OfObjective(o, nil, a.Along[o.Carried().Number]), o, a.Tree)
+		said := seated(OfObjective(o, nil, a.Along[o.Carried().Number]), o, a)
 		said.TimeSpent = domain.FormatDuration(a.Spent[o.Carried().Number])
 		out = append(out, said)
 	}

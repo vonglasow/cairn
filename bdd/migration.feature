@@ -338,3 +338,23 @@ Feature: Changes to the shape of the store
       When I run `cairn migration show 19`
       Then it succeeds
       And the answer says "the scope of each label"
+
+  Rule: An objective can wait on another, and rolling that back keeps every objective
+
+    @objective-waits-on-migration-rollback
+    Scenario: rolled back, an objective waits on nothing
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      And I rolled back the change named "an objective can wait on another"
+      When I run `cairn migration apply`
+      Then it succeeds
+      When I run `cairn objective show 1`
+      Then the answer says "Firmware"
+      And the answer does not say "waits on it"
+
+    @objective-waits-on-migration-says-what-rolling-back-loses
+    Scenario: what rolling the dependencies back loses is said before it is applied
+      When I run `cairn migration show 20`
+      Then it succeeds
+      And the answer says "which objective waits on which"

@@ -321,4 +321,16 @@ CREATE TABLE IF NOT EXISTS label_scopes (
 DROP TABLE IF EXISTS label_scopes;`,
 		loses: "the scope of each label; every label is for tasks and objectives both again",
 	},
+	{
+		name: "an objective can wait on another",
+		does: `
+CREATE TABLE IF NOT EXISTS objective_waits (
+	objective_number INTEGER NOT NULL,
+	waits_on         INTEGER NOT NULL,
+	PRIMARY KEY (objective_number, waits_on)
+);`,
+		undoes: `
+DROP TABLE IF EXISTS objective_waits;`,
+		loses: "which objective waits on which; every objective and every task stays as it was",
+	},
 }

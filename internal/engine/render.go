@@ -45,11 +45,11 @@ func rendered(op Operation, a Answer) string {
 		return objective.Report(*a.Objective, a.Progress, reviewOf(a.Under), *a.Period)
 	case Focus:
 		if a.Task != nil {
-			return cardText(a)
+			return cardText(a) + warningsText(a.Warnings)
 		}
 		return heldText(a.Held, a)
 	case Task:
-		return cardText(a) + movedText(a.Moved)
+		return cardText(a) + movedText(a.Moved) + warningsText(a.Warnings)
 	case Swept:
 		if a.Task != nil {
 			return cardText(a)
@@ -62,7 +62,7 @@ func rendered(op Operation, a Answer) string {
 		if a.Matched != nil {
 			return foundText(a.Matched, a) + pageText(a, len(a.Matched))
 		}
-		return crossedText(a.Crossed) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks))
+		return crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks))
 	case Objective:
 		return objectiveText(a) + movedText(a.Moved)
 	case Objectives:
@@ -218,7 +218,15 @@ func objectiveText(a Answer) string {
 	if a.Proposes != nil {
 		said += objective.Proposal(*a.Proposes, false)
 	}
-	return said
+	return said + objective.Awaited(f.Awaited)
+}
+
+func warningsText(said []string) string {
+	var out strings.Builder
+	for _, one := range said {
+		out.WriteString("warning: " + one + "\n")
+	}
+	return out.String()
 }
 
 func backupLine(b domain.Backup, holds domain.Held) string {

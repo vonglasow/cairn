@@ -45,7 +45,8 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &added, Progress: p}, nil
+		warnings, err := on.Engine.unmet(factsOf(added).Number, "")
+		return Answer{Task: &added, Progress: p, Warnings: warnings}, err
 	},
 }
 
@@ -297,7 +298,8 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &edited, Progress: p, Moved: movedOf(was, edited)}, nil
+		warnings, err := on.Engine.unmet(n, factsOf(was).State)
+		return Answer{Task: &edited, Progress: p, Moved: movedOf(was, edited), Warnings: warnings}, err
 	},
 }
 

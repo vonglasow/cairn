@@ -11,8 +11,8 @@ func factsOf(m Migration) Carried {
 }
 
 func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
-	if len(Known) != 19 {
-		t.Fatalf("len(Known) = %d, want 19", len(Known))
+	if len(Known) != 20 {
+		t.Fatalf("len(Known) = %d, want 20", len(Known))
 	}
 	for i, m := range Known {
 		f := factsOf(m)
@@ -65,6 +65,19 @@ func TestKnown_givesALabelAScope(t *testing.T) {
 		t.Errorf("the change does %q and undoes %q", f.Does, f.Undoes)
 	}
 	if !strings.Contains(f.Loses, "the scope of each label") {
+		t.Errorf("rolling it back loses %q", f.Loses)
+	}
+}
+
+func TestKnown_letsAnObjectiveWaitOnAnother(t *testing.T) {
+	f := factsOf(Known[19])
+	if f.Name != "an objective can wait on another" {
+		t.Fatalf("the change is %+v", f)
+	}
+	if !strings.Contains(f.Does, "CREATE TABLE IF NOT EXISTS objective_waits") || !strings.Contains(f.Undoes, "DROP TABLE IF EXISTS objective_waits") {
+		t.Errorf("the change does %q and undoes %q", f.Does, f.Undoes)
+	}
+	if !strings.Contains(f.Loses, "which objective waits on which") {
 		t.Errorf("rolling it back loses %q", f.Loses)
 	}
 }

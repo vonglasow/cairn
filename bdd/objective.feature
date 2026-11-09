@@ -945,6 +945,120 @@ Feature: Objectives
       Then it succeeds
       And `cairn task show 1` says it serves no objective
 
+  Rule: An objective may wait on another, which warns and never blocks
+
+    @objective-waits-on-is-said-on-both
+    Scenario: an objective that waits on another says so, and the other names who waits on it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Features" under objective 1
+      When I run `cairn objective edit 3 --waits-on 2`
+      Then it succeeds
+      And the objective waits on "#2 Firmware"
+      And `cairn objective show 2` says "#3 Features waits on it"
+
+    @objective-waits-on-taken-off
+    Scenario: what an objective waits on is taken off the way a blocker is
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      When I run `cairn objective edit 2 --waits-on -1`
+      Then it succeeds
+      And the objective waits on nothing
+
+    @objective-waits-on-any-level
+    Scenario: a level-one objective waits on a sub-objective of another tree
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden"
+      When I run `cairn objective edit 3 --waits-on 2`
+      Then it succeeds
+      And the objective waits on "#2 Firmware"
+
+    @objective-waits-on-warns-when-work-starts
+    Scenario: moving a task into current while what its objective waits on is not reached warns, and moves it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Features" under objective 1
+      And I ran `cairn objective edit 3 --waits-on 2`
+      And I added a task titled "Dimmer scenes" with the objective "3"
+      When I run `cairn task move 1 --state current`
+      Then it succeeds
+      And the answer says "#3 Features waits on #2 Firmware, not reached"
+      And task 1 is in the column "current"
+
+    @objective-waits-on-warns-on-edit-and-focus
+    Scenario: putting a task in current by an edit or by the focus warns the same way
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      And I added a task titled "Dimmer scenes" with the objective "2"
+      And I added a task titled "Presence" with the objective "2"
+      When I run `cairn task edit 1 --state current`
+      Then it succeeds
+      And the answer says "#2 Features waits on #1 Firmware, not reached"
+      When I run `cairn task focus 2`
+      Then it succeeds
+      And the answer says "#2 Features waits on #1 Firmware, not reached"
+
+    @objective-waits-on-silent-once-reached
+    Scenario: nothing is said once what it waits on is reached
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      And I edited objective 1 with the state "reached"
+      And I added a task titled "Dimmer scenes" with the objective "2"
+      When I run `cairn task move 1 --state current`
+      Then it succeeds
+      And the answer does not say "waits on"
+
+    @objective-waits-on-itself-refused
+    Scenario: an objective does not wait on itself
+      Given I added an objective titled "Firmware"
+      When I run `cairn objective edit 1 --waits-on 1`
+      Then it fails
+      And the refusal says "an objective does not wait on itself"
+
+    @objective-waits-on-in-a-circle-refused
+    Scenario: an objective does not wait on one that waits on it, even through another
+      Given I added an objective titled "Enclosure"
+      And I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      And I ran `cairn objective edit 3 --waits-on 2`
+      When I run `cairn objective edit 1 --waits-on 3`
+      Then it fails
+      And the refusal says "#3 Features already waits on #1 Enclosure, through #2 Firmware"
+      And `cairn objective show 1` says "#2 Firmware waits on it"
+
+    @objective-waits-on-nothing-there
+    Scenario: an objective does not wait on one that is not there
+      Given I added an objective titled "Features"
+      When I run `cairn objective edit 1 --waits-on 9`
+      Then it fails
+      And the refusal says "objective 9"
+
+    @objective-waits-on-goes-with-the-deleted
+    Scenario: deleting what an objective waits on takes the dependency with it
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      And I ran `cairn objective delete 1 --yes`
+      When I run `cairn objective show 1`
+      Then it fails
+      When I run `cairn objective show 2`
+      Then the objective waits on nothing
+
+    @objective-waits-on-json
+    Scenario: a machine reads what an objective waits on, and what waits on it
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I ran `cairn objective edit 2 --waits-on 1`
+      When I run `cairn objective show 1 --json`
+      Then the JSON objective waits on "" and is waited on by "2"
+      When I run `cairn objective show 2 --json`
+      Then the JSON objective waits on "1" and is waited on by ""
+
   Rule: An objective outlives the command that created it
 
     @objective-survives

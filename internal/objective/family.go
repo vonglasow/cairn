@@ -97,6 +97,8 @@ type Family struct {
 	Parent   Objective
 	Children []Child
 	Proposed bool
+	WaitsOn  []Objective
+	Awaited  []Objective
 }
 
 // Child is one sub-objective, with how far along it is and the time spent on its tasks.
@@ -104,6 +106,14 @@ type Child struct {
 	Objective Objective
 	Progress  domain.Progress
 	Spent     time.Duration
+}
+
+func (f Family) waitsLine() string {
+	names := make([]string, 0, len(f.WaitsOn))
+	for _, o := range f.WaitsOn {
+		names = append(names, refOf(o))
+	}
+	return strings.Join(names, ", ")
 }
 
 func (f Family) parentLine() string {

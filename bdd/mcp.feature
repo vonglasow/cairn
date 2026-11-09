@@ -710,6 +710,21 @@ Feature: Answering a machine over MCP
       When I call `label_list` with {"for": "tasks"}
       Then the answer says area
 
+    @objective-waits-on-mcp
+    Scenario: an agent says an objective waits on another, and is warned when work starts on it
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And I added a task titled "Dimmer scenes" with the objective "2"
+      And a cairn server started with `--access write`
+      When I call `objective_edit` with {"number": 2, "waits-on": [1]}
+      Then it answers without an error
+      And the answer says #1 Firmware
+      And its answer holds to the shape the tool described
+      When I call `task_move` with {"number": 1, "state": "current"}
+      Then it answers without an error
+      And the answer says #2 Features waits on #1 Firmware, not reached
+      And its answer holds to the shape the tool described
+
   Rule: A refusal is a refusal, not a broken tool
 
     @mcp-refusal-is-answered

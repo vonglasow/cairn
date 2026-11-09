@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -146,6 +147,12 @@ func (e *Engine) familyOf(n int) (objective.Family, error) {
 		f.Children = append(f.Children, objective.Child{Objective: c, Progress: along[c.Carried().Number], Spent: reviewOf(under).Spent})
 	}
 	f.Proposed = objective.ProposedReached(o, t.childrenOf(n))
+	for _, on := range o.Carried().WaitsOn {
+		f.WaitsOn = append(f.WaitsOn, t.by[on])
+	}
+	for _, by := range t.waiters()[n] {
+		f.Awaited = append(f.Awaited, t.by[by])
+	}
 	return f, nil
 }
 
@@ -186,12 +193,22 @@ func (e *Engine) spentEvery() (map[int]time.Duration, error) {
 	return spent, nil
 }
 
-func (e *Engine) treeMap() (map[int][]int, error) {
+func (e *Engine) seating() (children, waiters map[int][]int, err error) {
 	t, err := e.tree()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return t.children, nil
+	return t.children, t.waiters(), nil
+}
+
+func (t tree) waiters() map[int][]int {
+	out := map[int][]int{}
+	for _, n := range slices.Sorted(maps.Keys(t.by)) {
+		for _, on := range t.by[n].Carried().WaitsOn {
+			out[on] = append(out[on], n)
+		}
+	}
+	return out
 }
 
 // Went is what a deletion took with it: the sub-objectives kept, each standing on its own, those deleted, and the tasks detached or deleted.

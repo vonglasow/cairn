@@ -55,8 +55,8 @@ func TestNarrowedObjectives_readsTheirLabelsAllAtOnce(t *testing.T) {
 	if err != nil || len(all) != 4 {
 		t.Fatalf("read %d objectives, %v", len(all), err)
 	}
-	if asked.queries > 2 {
-		t.Errorf("reading four objectives asked %d questions, want at most 2", asked.queries)
+	if asked.queries > 3 {
+		t.Errorf("reading four objectives asked %d questions, want the objectives and the two things they carry — labels, what they wait on — at most 3", asked.queries)
 	}
 }
 

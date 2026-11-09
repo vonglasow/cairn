@@ -231,6 +231,10 @@ cairn task move 3 --state todo --after 1`,
 		if err != nil {
 			return Answer{}, err
 		}
+		states, err := on.Engine.statesOf(numbers)
+		if err != nil {
+			return Answer{}, err
+		}
 		if into == nil && at == Behind {
 			if into, err = on.Engine.columnOf(target); err != nil {
 				return Answer{}, err
@@ -253,7 +257,10 @@ cairn task move 3 --state todo --after 1`,
 		if err != nil {
 			return Answer{}, err
 		}
-		answer.Crossed, err = on.Engine.crossed(was)
+		if answer.Crossed, err = on.Engine.crossed(was); err != nil {
+			return Answer{}, err
+		}
+		answer.Warnings, err = on.Engine.unmetEach(states)
 		return answer, err
 	},
 }
@@ -320,7 +327,15 @@ cairn task focus`,
 		if !named {
 			return whatIsInFocus(on)
 		}
+		states, err := on.Engine.statesOf([]int{n})
+		if err != nil {
+			return Answer{}, err
+		}
 		t, err := on.Engine.putInFocus(n)
+		if err != nil {
+			return Answer{}, err
+		}
+		warnings, err := on.Engine.unmetEach(states)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -336,7 +351,7 @@ cairn task focus`,
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &t, Progress: p, InFocus: &held, Sessions: sessions}, nil
+		return Answer{Task: &t, Progress: p, InFocus: &held, Sessions: sessions, Warnings: warnings}, nil
 	},
 }
 

@@ -252,3 +252,40 @@ func TestNarrowed_keepsWhatServesAnyOfTheObjectivesNamedTogether(t *testing.T) {
 		t.Errorf("Narrowed serving 1 or 2 = %d tasks, %v, want 2", len(got), err)
 	}
 }
+
+func TestKeepObjective_keepsWhatItWaitsOn(t *testing.T) {
+	s := openStore(t)
+	keepObjective(t, s, "Enclosure")
+	keepObjective(t, s, "Firmware")
+	c := objective.Made(objective.Carried{Title: "Features", State: objective.Active, Priority: domain.Normal, WaitsOn: []int{2, 1}})
+	kept, err := s.KeepObjective(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := kept.Carried().Number
+	found, err := s.FindObjective(n)
+	if err != nil || !slices.Equal(found.Carried().WaitsOn, []int{1, 2}) {
+		t.Fatalf("found waits on %v, %v; want 1 and 2", found.Carried().WaitsOn, err)
+	}
+	changed := found.Carried()
+	changed.WaitsOn = []int{2}
+	if err := s.UpdateObjective(objective.Made(changed)); err != nil {
+		t.Fatal(err)
+	}
+	all, err := s.AllObjectives()
+	if err != nil || !slices.Equal(all[2].Carried().WaitsOn, []int{2}) || all[0].Carried().WaitsOn != nil {
+		t.Fatalf("all read %v, %v", all, err)
+	}
+	if err := s.DeleteObjective(2); err != nil {
+		t.Fatal(err)
+	}
+	if found, err := s.FindObjective(n); err != nil || len(found.Carried().WaitsOn) != 0 {
+		t.Errorf("once #2 is gone, #3 waits on %v, %v", found.Carried().WaitsOn, err)
+	}
+	if err := s.DeleteObjective(n); err != nil {
+		t.Fatal(err)
+	}
+	if left, err := pairs[int](s, `SELECT objective_number, waits_on FROM objective_waits`); err != nil || len(left) != 0 {
+		t.Errorf("waits left behind: %v, %v", left, err)
+	}
+}

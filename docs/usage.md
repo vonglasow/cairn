@@ -148,6 +148,7 @@ cairn objective edit 5 --parent none                # standing on its own again
 cairn task list --objective 1                       # 1 and its sub-objectives
 cairn task list --objective 1 --itself              # 1 alone
 cairn objective delete 1 --sub-objectives keep --tasks detach --yes
+cairn objective edit 7 --waits-on 6                 # warns when work starts on 7 before 6 is reached
 ```
 
 Three of the seven columns mean the work is stopped: `blocked` waits on somebody

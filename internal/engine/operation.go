@@ -318,6 +318,8 @@ type Answer struct {
 	Under             []task.Task
 	Family            *objective.Family
 	Tree              map[int][]int
+	Waiters           map[int][]int
+	Warnings          []string
 	Spent             map[int]time.Duration
 	Proposes          *objective.Objective
 	Went              *Went

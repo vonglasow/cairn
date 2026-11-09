@@ -44,6 +44,7 @@ type Objective struct {
 	deadline    time.Time
 	estimate    time.Duration
 	parent      int
+	waitsOn     []int
 }
 
 // Carried is everything an objective carries, as plain facts.
@@ -56,6 +57,7 @@ type Carried struct {
 	Deadline           time.Time
 	Estimate           time.Duration
 	Parent             int
+	WaitsOn            []int
 }
 
 // Carried hands over what the objective carries.
@@ -63,7 +65,7 @@ func (o Objective) Carried() Carried {
 	return Carried{
 		Number: o.number, Title: o.title, Description: o.description, State: o.state,
 		Priority: o.priority, Labels: slices.Clone(o.labels), Deadline: o.deadline, Estimate: o.estimate,
-		Parent: o.parent,
+		Parent: o.parent, WaitsOn: slices.Clone(o.waitsOn),
 	}
 }
 
@@ -72,7 +74,7 @@ func Made(c Carried) Objective {
 	return Objective{
 		number: c.Number, title: c.Title, description: c.Description, state: c.State,
 		priority: c.Priority, labels: c.Labels, deadline: c.Deadline, estimate: c.Estimate,
-		parent: c.Parent,
+		parent: c.Parent, waitsOn: c.WaitsOn,
 	}
 }
 

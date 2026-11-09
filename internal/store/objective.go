@@ -31,6 +31,7 @@ type boundObjective struct {
 	labels                    []string
 	estimate                  int64
 	parent                    sql.NullInt64
+	waitsOn                   []int
 }
 
 func bindObjective(o objective.Objective) *boundObjective {
@@ -39,7 +40,24 @@ func bindObjective(o objective.Objective) *boundObjective {
 		number: c.Number, title: c.Title, description: c.Description, state: string(c.State),
 		priority: string(c.Priority), deadline: domain.FormatDay(c.Deadline), labels: c.Labels,
 		estimate: int64(c.Estimate), parent: sql.NullInt64{Int64: int64(c.Parent), Valid: c.Parent != 0},
+		waitsOn: c.WaitsOn,
 	}
+}
+
+func (s *Store) keepWaits(number int, on []int) error {
+	if _, err := s.on.Exec(`DELETE FROM objective_waits WHERE objective_number = ?`, number); err != nil {
+		return fmt.Errorf("clearing what objective %d waits on: %w", number, err)
+	}
+	for _, n := range on {
+		if _, err := s.on.Exec(`INSERT OR IGNORE INTO objective_waits (objective_number, waits_on) VALUES (?, ?)`, number, n); err != nil {
+			return fmt.Errorf("keeping what objective %d waits on: %w", number, err)
+		}
+	}
+	return nil
+}
+
+func (s *Store) waitsOf(number int) ([]int, error) {
+	return rowsOf(s, one[int], `SELECT waits_on FROM objective_waits WHERE objective_number = ? ORDER BY waits_on`, number)
 }
 
 func renumberedObjective(o objective.Objective, number int) objective.Objective {
@@ -65,6 +83,9 @@ func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error
 	if err := s.keepLabels(objectiveLabels, int(number), b.labels); err != nil {
 		return objective.Objective{}, err
 	}
+	if err := s.keepWaits(int(number), b.waitsOn); err != nil {
+		return objective.Objective{}, err
+	}
 	return renumberedObjective(o, int(number)), nil
 }
 
@@ -88,6 +109,9 @@ func (s *Store) UpdateObjective(o objective.Objective) error {
 	if err := s.clearLabels(objectiveLabels, b.number); err != nil {
 		return err
 	}
+	if err := s.keepWaits(b.number, b.waitsOn); err != nil {
+		return err
+	}
 	return s.keepLabels(objectiveLabels, b.number, b.labels)
 }
 
@@ -104,6 +128,9 @@ func (s *Store) DeleteObjective(number int) error {
 	if changed == 0 {
 		return fmt.Errorf("objective %d: %w", number, ErrNoSuchObjective)
 	}
+	if _, err := s.on.Exec(`DELETE FROM objective_waits WHERE objective_number = ? OR waits_on = ?`, number, number); err != nil {
+		return fmt.Errorf("deleting what objective %d waits on: %w", number, err)
+	}
 	return s.clearLabels(objectiveLabels, number)
 }
 
@@ -111,7 +138,14 @@ func (s *Store) DeleteObjective(number int) error {
 func (s *Store) FindObjective(number int) (objective.Objective, error) {
 	row := s.on.QueryRow(
 		`SELECT `+objectiveColumns+` FROM objectives WHERE number = ?`, number)
-	o, err := s.scanObjective(row, func(n int) ([]string, error) { return s.labelsOf(objectiveLabels, n) })
+	o, err := s.scanObjective(row, func(n int) ([]string, []int, error) {
+		labels, err := s.labelsOf(objectiveLabels, n)
+		if err != nil {
+			return nil, nil, err
+		}
+		waits, err := s.waitsOf(n)
+		return labels, waits, err
+	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return objective.Objective{}, fmt.Errorf("objective %d: %w", number, ErrNoSuchObjective)
 	}
@@ -132,8 +166,12 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 	if err != nil {
 		return nil, fmt.Errorf("reading the labels: %w", err)
 	}
+	waits, err := pairs[int](s, `SELECT objective_number, waits_on FROM objective_waits ORDER BY objective_number, waits_on`)
+	if err != nil {
+		return nil, fmt.Errorf("reading what the objectives wait on: %w", err)
+	}
 	where, args := readBy(kept).where(objectiveLabels)
-	labelled := func(n int) ([]string, error) { return labels[n], nil }
+	labelled := func(n int) ([]string, []int, error) { return labels[n], waits[n], nil }
 	objectives, err := rowsOf(s, func(r scanner) (objective.Objective, error) { return s.scanObjective(r, labelled) },
 		fmt.Sprintf(`SELECT %s FROM objectives%s ORDER BY number`, objectiveColumns, where), args...)
 	if err != nil {
@@ -142,7 +180,7 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 	return objectives, nil
 }
 
-func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error)) (objective.Objective, error) {
+func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, []int, error)) (objective.Objective, error) {
 	var (
 		number             int
 		title, description string
@@ -159,7 +197,7 @@ func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error))
 	if err != nil {
 		return objective.Objective{}, err
 	}
-	labels, err := labelled(number)
+	labels, waits, err := labelled(number)
 	if err != nil {
 		return objective.Objective{}, err
 	}
@@ -167,7 +205,7 @@ func (s *Store) scanObjective(row scanner, labelled func(int) ([]string, error))
 	return objective.Made(objective.Carried{
 		Number: number, Title: title, Description: description, State: objective.State(state),
 		Priority: domain.Priority(priority), Labels: noneIsNil(labels), Deadline: day,
-		Estimate: time.Duration(estimate), Parent: int(parent.Int64),
+		Estimate: time.Duration(estimate), Parent: int(parent.Int64), WaitsOn: noneIsNil(waits),
 	}), nil
 }
 

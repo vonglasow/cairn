@@ -485,6 +485,28 @@ func (w *world) registerSubObjective(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Step(`^the objective waits on "([^"]*)"$`, func(want string) error {
+		return w.wantField("waits on", want)
+	})
+	sc.Step(`^the objective waits on nothing$`, func() error {
+		if !strings.Contains(w.Out.Stdout, "\nwaits on") {
+			return fmt.Errorf("the answer says nothing of what it waits on:\n%s", w.Out.Stdout)
+		}
+		return w.wantField("waits on", "")
+	})
+	sc.Step(`^the JSON objective waits on "([^"]*)" and is waited on by "([^"]*)"$`, func(on, by string) error {
+		var said struct {
+			WaitsOn    []int `json:"waits_on"`
+			WaitedOnBy []int `json:"waited_on_by"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
+			return err
+		}
+		if said.WaitsOn == nil || said.WaitedOnBy == nil || fmt.Sprint(said.WaitsOn) != "["+on+"]" || fmt.Sprint(said.WaitedOnBy) != "["+by+"]" {
+			return fmt.Errorf("the JSON says it waits on %v and is waited on by %v:\n%s", said.WaitsOn, said.WaitedOnBy, w.Out.Stdout)
+		}
+		return nil
+	})
 	sc.Step(`^the JSON objective sits under nothing and holds "([^"]*)"$`, func(holds string) error {
 		parent, children, err := w.jsonFamily()
 		if err != nil {

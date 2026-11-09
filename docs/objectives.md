@@ -278,20 +278,43 @@ scoped is for both, so every label already in a store is offered where it
 was. Migration #19, `a label has a scope`; see
 [labels.md](labels.md#a-label-is-for-tasks-for-objectives-or-for-both).
 
+**A dependency warns, never blocks.** An objective or a sub-objective may say
+it waits on another — `objective edit 7 --waits-on 6`, Features waits on
+Firmware — as a link stored between the two, with the grammar of `--blocker`:
+`+6` or `6` adds one, `-6` takes one away, `=6` says what the set becomes
+(`@objective-waits-on-taken-off`). Read off the tasks' blockers, it could not
+be seen at a glance; Linear puts the same link between projects and warns when
+it is not kept. `objective show` says it on both: `waits on  #6 Firmware`, and
+`#7 Features waits on it` under the other (`@objective-waits-on-is-said-on-both`);
+a machine reads `waits_on` and `waited_on_by` (`@objective-waits-on-json`).
+Levels do not matter: a level-one objective waits on a sub-objective of another
+tree as well (`@objective-waits-on-any-level`).
+
+It never shuts a column: an objective is not work but what work is for (see
+[blocking.md](blocking.md#deliberately-not-there-yet)), and blocking is added
+the day it proves needed. A task put in `current` — moved, edited, focused or
+made there — while an objective it counts in waits on one not reached is put
+there, and the answer warns, `#7 Features waits on #6 Firmware, not reached`
+(`@objective-waits-on-warns-when-work-starts`,
+`@objective-waits-on-warns-on-edit-and-focus`); a machine reads `warnings`.
+Once the other is reached nothing is said
+(`@objective-waits-on-silent-once-reached`). An objective waiting on itself,
+or on one that already waits on it however far through others, is refused —
+`#3 Features already waits on #1 Enclosure, through #2 Firmware` — since
+neither could ever be reached first (`@objective-waits-on-itself-refused`,
+`@objective-waits-on-in-a-circle-refused`); one that is not there is refused
+too (`@objective-waits-on-nothing-there`). Deleting an objective takes its
+dependencies with it, both ways (`@objective-waits-on-goes-with-the-deleted`).
+Migration #20, `an objective can wait on another`, adds a table of its own,
+`objective_waits`; rolling it back loses which waits on which and nothing
+else (`@objective-waits-on-migration-rollback`).
+
 **What is not traced.** The trace is what was done to a task, and an
 objective has none of its own: setting or changing a parent writes nothing
 there, as no change to an objective ever has. What a deletion does to a task —
 detached, deleted — is traced on the task, as any change to it is.
 
 ### Decided, not built yet
-
-**A dependency warns, never blocks.** An objective or a sub-objective may say
-it waits on another — "Firmware waits on Enclosure" — as a link stored between
-the two. Read off the tasks' blockers, it could not be seen at a glance; Linear
-puts the same link between projects and warns when it is not kept. It never
-shuts a column: an objective is not work but what work is for (see
-[blocking.md](blocking.md#deliberately-not-there-yet)), and blocking is added
-the day it proves needed. It will be a migration of its own.
 
 **On screen.** The window's Objectives tab becomes a tree on the left — each
 level-one objective with its sub-objectives indented under it — and the chosen

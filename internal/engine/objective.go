@@ -35,11 +35,13 @@ type ObjectiveChanges struct {
 	Deadline    *string
 	Estimate    *string
 	Parent      *string
+	WaitsOn     *[]string
 }
 
 func (c ObjectiveChanges) named() bool {
 	return c.Title != nil || c.Description != nil || c.Replace != nil || c.By != nil || c.State != nil ||
-		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil || c.Parent != nil
+		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil || c.Parent != nil ||
+		c.WaitsOn != nil
 }
 
 func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
@@ -54,6 +56,9 @@ func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objec
 		return objective.Objective{}, err
 	}
 	if err := e.mayHang(o); err != nil {
+		return objective.Objective{}, err
+	}
+	if err := e.mayWait(o); err != nil {
 		return objective.Objective{}, err
 	}
 	return e.objectives.KeepObjective(o)
@@ -89,6 +94,9 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	if err := e.mayHang(o); err != nil {
 		return objective.Objective{}, err
 	}
+	if err := e.mayWait(o); err != nil {
+		return objective.Objective{}, err
+	}
 	if err := e.objectives.UpdateObjective(o); err != nil {
 		return objective.Objective{}, err
 	}
@@ -118,6 +126,13 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 			return objective.Objective{}, err
 		}
 		a.Parent = parent
+	}
+	if c.WaitsOn != nil {
+		on, err := changedNumbers(*c.WaitsOn, a.WaitsOn, atCreation, ErrWaitsOnRequired, ErrWaitsOnBothWays, ErrWaitsOnSignAtBirth)
+		if err != nil {
+			return objective.Objective{}, err
+		}
+		a.WaitsOn = on
 	}
 	return objective.Made(a), nil
 }
@@ -223,6 +238,7 @@ var objectiveAttributes = []Argument{
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
 	{Name: "parent", Kind: Text, Of: "an objective", Means: "the number of the objective it sits under, two levels deep at most; none to stand on its own"},
+	{Name: "waits-on", Kind: List, Of: "an objective", Means: "the number of an objective it waits on, which warns when work starts on it and never blocks; when changing, 6 or +6 adds one, -6 takes one away, =6 replaces them all"},
 }
 
 func objectiveChanges(in Input) ObjectiveChanges {
@@ -234,6 +250,7 @@ func objectiveChanges(in Input) ObjectiveChanges {
 	c.Deadline = in.Change("deadline")
 	c.Estimate = in.Change("estimate")
 	c.Parent = in.Change("parent")
+	c.WaitsOn = in.Changed("waits-on")
 	return c
 }
 
@@ -254,11 +271,11 @@ func readObjective(eng *Engine, n int) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	tree, err := eng.treeMap()
+	tree, waiters, err := eng.seating()
 	if err != nil {
 		return Answer{}, err
 	}
-	return Answer{Objective: &o, Under: under, Progress: p, Family: &f, Tree: tree}, nil
+	return Answer{Objective: &o, Under: under, Progress: p, Family: &f, Tree: tree, Waiters: waiters}, nil
 }
 
 // ObjectiveNew records a new objective.
@@ -322,14 +339,14 @@ cairn objective list --state reached`,
 		if err != nil {
 			return Answer{}, err
 		}
-		tree, err := on.Engine.treeMap()
+		tree, waiters, err := on.Engine.seating()
 		if err != nil {
 			return Answer{}, err
 		}
 		if kept.Narrows() {
-			return Answer{MatchedObjectives: all, Along: along, Spent: spent, Tree: tree}, nil
+			return Answer{MatchedObjectives: all, Along: along, Spent: spent, Tree: tree, Waiters: waiters}, nil
 		}
-		return Answer{Objectives: all, Along: along, Spent: spent, Tree: tree}, nil
+		return Answer{Objectives: all, Along: along, Spent: spent, Tree: tree, Waiters: waiters}, nil
 	},
 }
 
@@ -423,8 +440,8 @@ var ObjectiveSearch = Operation{
 				found = append(found, o)
 			}
 		}
-		tree, err := on.Engine.treeMap()
-		return Answer{MatchedObjectives: found, Tree: tree}, err
+		tree, waiters, err := on.Engine.seating()
+		return Answer{MatchedObjectives: found, Tree: tree, Waiters: waiters}, err
 	},
 }
 

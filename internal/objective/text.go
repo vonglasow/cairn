@@ -43,6 +43,7 @@ func Text(o Objective, p domain.Progress, r Review, f Family) string {
 	return domain.Card(c.Number, c.Title, []domain.Fact{
 		{Key: "state", Value: string(c.State)},
 		{Key: "parent", Value: f.parentLine()},
+		{Key: "waits on", Value: f.waitsLine()},
 		{Key: "priority", Value: string(c.Priority)},
 		{Key: "description", Value: c.Description},
 		{Key: "labels", Value: strings.Join(c.Labels, ", ")},
