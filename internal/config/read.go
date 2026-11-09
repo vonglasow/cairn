@@ -77,33 +77,36 @@ const (
 
 // Places is what the configuration file says, exactly as it was written.
 type Places struct {
-	store        string
-	notes        string
-	storeNamedBy namedBy
-	notesNamedBy namedBy
-	pagesOff     []string
-	plugin       string
-	archiveStart string
-	archiveDays  int
-	focusSession string
-	approach     string
-	timeDeleted  string
-	timeWeekends string
-	keepSizes    bool
-	written      []string
-	ignored      []string
+	store            string
+	notes            string
+	storeNamedBy     namedBy
+	notesNamedBy     namedBy
+	pagesOff         []string
+	plugin           string
+	archiveStart     string
+	archiveDays      int
+	focusSession     string
+	approach         string
+	timeDeleted      string
+	timeWeekends     string
+	keepSizes        bool
+	written          []string
+	ignored          []string
+	workspaces       []Workspace
+	defaultWorkspace string
 }
 
 type file struct {
-	Store    *string   `toml:"store"`
-	Notes    *string   `toml:"notes"`
-	Plugin   *string   `toml:"plugin"`
-	Pages    *pages    `toml:"pages"`
-	Archive  *archive  `toml:"archive"`
-	Focus    *focus    `toml:"focus"`
-	Approach *approach `toml:"approach"`
-	Time     *timed    `toml:"time"`
-	Window   *window   `toml:"window"`
+	Store      *string           `toml:"store"`
+	Notes      *string           `toml:"notes"`
+	Plugin     *string           `toml:"plugin"`
+	Pages      *pages            `toml:"pages"`
+	Archive    *archive          `toml:"archive"`
+	Focus      *focus            `toml:"focus"`
+	Approach   *approach         `toml:"approach"`
+	Time       *timed            `toml:"time"`
+	Window     *window           `toml:"window"`
+	Workspaces map[string]string `toml:"workspaces"`
 }
 
 type window struct {
@@ -279,6 +282,12 @@ func belongs(key string) string {
 	t := reflect.TypeFor[file]()
 	for i := range t.NumField() {
 		field := t.Field(i)
+		if field.Tag.Get("toml") == key && field.Type.Kind() == reflect.Map {
+			return fmt.Sprintf("%s is a table of its own, [%s]", key, key)
+		}
+		if field.Type.Kind() == reflect.Map {
+			continue
+		}
 		if field.Tag.Get("toml") == key && field.Type.Elem().Kind() != reflect.Struct {
 			return key + " belongs before any table"
 		}
@@ -366,21 +375,27 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 	if err != nil {
 		return Reading{path: path, err: err}, nil
 	}
+	workspaces, chosen, err := workspacesOf(f.Workspaces, home)
+	if err != nil {
+		return Reading{path: path, err: err}, nil
+	}
 	answer := Places{
-		keepSizes:    keep,
-		timeDeleted:  deleted,
-		timeWeekends: weekends,
-		focusSession: f.Focus.session(),
-		approach:     f.Approach.label(),
-		archiveStart: start,
-		archiveDays:  days,
-		store:        filepath.Join(home, DefaultFolder, defaultFile),
-		notes:        filepath.Join(home, DefaultFolder, defaultNotesFolder),
-		storeNamedBy: byNothing,
-		notesNamedBy: byNothing,
-		pagesOff:     f.Pages.off(),
-		written:      writtenIn(data),
-		ignored:      ignored,
+		keepSizes:        keep,
+		workspaces:       workspaces,
+		defaultWorkspace: chosen,
+		timeDeleted:      deleted,
+		timeWeekends:     weekends,
+		focusSession:     f.Focus.session(),
+		approach:         f.Approach.label(),
+		archiveStart:     start,
+		archiveDays:      days,
+		store:            filepath.Join(home, DefaultFolder, defaultFile),
+		notes:            filepath.Join(home, DefaultFolder, defaultNotesFolder),
+		storeNamedBy:     byNothing,
+		notesNamedBy:     byNothing,
+		pagesOff:         f.Pages.off(),
+		written:          writtenIn(data),
+		ignored:          ignored,
 	}
 	for _, c := range []claim{
 		{f.Store, &answer.store, &answer.storeNamedBy, byTheFile, ""},
@@ -392,8 +407,8 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		if c.said == nil {
 			continue
 		}
-		expanded := expandTilde(*c.said, home)
-		if !filepath.IsAbs(expanded) {
+		expanded, err := Absolute(*c.said, home)
+		if err != nil {
 			return Reading{path: path, err: fmt.Errorf("%s: %w", c.quoted(), ErrNotAbsolute)}, nil
 		}
 		*c.place, *c.namedBy = expanded, c.by

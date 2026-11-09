@@ -38,7 +38,7 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 
 	wanted := map[string]map[string]bool{}
 
-	for _, op := range engine.All() {
+	for _, op := range append(engine.All(), engine.ForAPersonOnly()...) {
 		group, ok := groups[op.Thing]
 		if !ok {
 			t.Fatalf("%s: no %q group in the tree", op.Line(), op.Thing)

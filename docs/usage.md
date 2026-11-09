@@ -422,6 +422,19 @@ replaces the answer rather than queueing behind it, and writes nothing down.
 cairn config show                # which places cairn will use, and what named each
 ```
 
+A workspace keeps a store and its notes together in one folder, under a name:
+
+```sh
+cairn workspace add work ~/cairn/work   # names it in the file, makes the folder
+cairn workspace use work                # the one used when nothing else says
+cairn workspace list                    # each one, the default marked
+cairn workspace show                    # which one answers, and why
+cairn task list --workspace home        # another, for this command alone
+```
+
+`--workspace` or `--store` on any command replaces even the environment. See
+[config.md](config.md#workspaces-each-a-folder-holding-a-store-and-its-notes).
+
 `task show` says where a task's notes go: `context  ~/.cairn/notes/14`, a
 directory named for its number under `notes`. Cairn never makes it, reads it or
 looks into it — it says where, and a person or an agent writes there. An agent

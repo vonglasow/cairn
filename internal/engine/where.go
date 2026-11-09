@@ -11,11 +11,13 @@ import (
 	"cairn/internal/debug"
 )
 
-// Home is what a surface knows about where it runs: the home directory, or why there is none, and how to read the environment.
+// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, and the workspace or the store its command line named.
 type Home struct {
-	Dir     string
-	Missing error
-	Lookup  func(string) (string, bool)
+	Dir       string
+	Missing   error
+	Lookup    func(string) (string, bool)
+	Workspace string
+	Store     string
 }
 
 func (h Home) lookup() func(string) (string, bool) {
@@ -57,33 +59,43 @@ func KeepsSizes(h Home) bool {
 	return err == nil && read.KeepSizes()
 }
 
-// Locate works out where the store and the notes live: the environment, then the configuration file, then the default place under the home, in that order.
+// Locate works out where the store and the notes live: a flag, then the environment, then the default workspace, then the configuration file, then the default place under the home, in that order.
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {
 		if said, ok := h.lookup()(config.StoreVariable); !ok || said == "" {
 			return Places{}, fmt.Errorf("%w: %w", ErrStore, h.Missing)
 		}
 	}
-	found, err := config.Read(h.Dir, h.lookup())
+	found, err := h.configuration()
 	if err != nil {
-		for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
-			if errors.Is(err, theirs) {
-				return Places{}, err
-			}
-		}
-		return Places{}, fmt.Errorf("%w: %w", ErrStore, err)
+		return Places{}, err
 	}
-	gate := &placesGate{}
-	found.Tell(gate)
-	notes := gate.notes.At
+	answers, err := h.answering(found)
+	if err != nil {
+		return Places{}, err
+	}
+	notes := answers.notes.At
 	if !filepath.IsAbs(notes) {
 		notes = ""
 	}
 	plugin := found.Plugin()
 	if plugin == "" {
-		plugin = PluginBeside(gate.store.At)
+		plugin = PluginBeside(answers.store.At)
 	}
-	return Places{Store: gate.store.At, Notes: notes, Plugin: plugin, Home: h}, nil
+	return Places{Store: answers.store.At, Notes: notes, Plugin: plugin, Home: h}, nil
+}
+
+func (h Home) configuration() (config.Places, error) {
+	found, err := config.Read(h.Dir, h.lookup())
+	if err != nil {
+		for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute} {
+			if errors.Is(err, theirs) {
+				return config.Places{}, err
+			}
+		}
+		return config.Places{}, fmt.Errorf("%w: %w", ErrStore, err)
+	}
+	return found, nil
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.

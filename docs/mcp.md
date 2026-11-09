@@ -350,6 +350,13 @@ store (`@mcp-marks-what-it-never-reaches`). Replacing the binary an agent's
 own server runs from is for the person at the terminal to decide; once they
 have, the server takes the new one over on its own, above.
 
+`workspace add` and `workspace use` are operations of the engine and still not
+tools: they change which store every later command uses, the agent's own
+server included, and that is the person's to decide too
+(`@workspace-an-agent-cannot-add-or-switch`). They sit apart from the list,
+in `engine.ForAPersonOnly`, which the command line adds to its tree and the
+server never reads. `workspace_list` and `workspace_show` are tools.
+
 ## Each tool says what shape its answer takes, and that shape is an object
 
 A tool describes its arguments and used to say nothing about its answer, so a

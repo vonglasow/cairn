@@ -169,6 +169,14 @@ func Of(op Operation, a Answer) any {
 	switch op.Answers.(type) {
 	case Config:
 		return *a.Config
+	case Workspaces:
+		return *a.Workspaces
+	case WorkspaceAdded:
+		return *a.WorkspaceAdded
+	case WorkspaceUsed:
+		return *a.WorkspaceUsed
+	case WorkspaceShown:
+		return *a.WorkspaceShown
 	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named, a.Gone)
 	case Review:

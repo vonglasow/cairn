@@ -31,7 +31,7 @@ func newGuiCmd() *cobra.Command {
 		Short: "Open the board in a window",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return openWindow(cmd, home())
+			return openWindow(cmd, homeOf(cmd))
 		},
 	}
 }

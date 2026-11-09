@@ -19,6 +19,7 @@ var groupShort = map[string]string{
 	"backup":    "New, list, show, restore and delete backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
+	"workspace": "List, add, choose and show the workspaces, each a folder holding a store and its notes",
 	"debug":     "Pack what debug mode wrote down, to send with a bug",
 	"trace":     "Read what was done to a task, or over a period",
 	"label":     "List every label, and delete or rename one on everything carrying it",
@@ -30,6 +31,13 @@ var groupShort = map[string]string{
 func home() engine.Home {
 	dir, err := os.UserHomeDir()
 	return engine.Home{Dir: dir, Missing: err, Lookup: os.LookupEnv}
+}
+
+func homeOf(cmd *cobra.Command) engine.Home {
+	h := home()
+	h.Workspace, _ = cmd.Flags().GetString(workspaceFlag)
+	h.Store, _ = cmd.Flags().GetString(storeFlag)
+	return h
 }
 
 func exactly(n int) cobra.PositionalArgs {
@@ -63,7 +71,7 @@ func atLeastOne() cobra.PositionalArgs {
 func newActionGroups(pages engine.Pages) []*cobra.Command {
 	var groups []*cobra.Command
 	byThing := map[string]*cobra.Command{}
-	for _, op := range engine.All() {
+	for _, op := range append(engine.All(), engine.ForAPersonOnly()...) {
 		if !pages.Offers(op) {
 			continue
 		}
@@ -162,7 +170,8 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 			if err := readDash(op, in, cmd.InOrStdin()); err != nil {
 				return err
 			}
-			answer, err := engine.DoFrom(op, home(), in, engine.Through("cli", home()))
+			h := homeOf(cmd)
+			answer, err := engine.DoFrom(op, h, in, engine.Through("cli", h))
 			if err != nil {
 				return err
 			}

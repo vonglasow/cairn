@@ -19,19 +19,20 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, each of its places alongside what named it, and every other key with the value cairn uses — what the file says, or what is used when it says nothing.
 type Config struct {
-	File     string          `json:"file"`
-	Store    Emplacement     `json:"store"`
-	Notes    Emplacement     `json:"notes"`
-	Plugin   Emplacement     `json:"plugin"`
-	Pages    *PagesConfig    `json:"pages,omitempty"`
-	Archive  *Archive        `json:"archive,omitempty"`
-	Focus    *FocusConfig    `json:"focus,omitempty"`
-	Approach *ApproachConfig `json:"approach,omitempty"`
-	Time     *TimeConfig     `json:"time,omitempty"`
-	Window   *WindowConfig   `json:"window,omitempty"`
-	Problem  string          `json:"problem,omitempty"`
-	Written  []string        `json:"written,omitempty"`
-	Ignored  []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
+	File       string          `json:"file"`
+	Store      Emplacement     `json:"store"`
+	Notes      Emplacement     `json:"notes"`
+	Plugin     Emplacement     `json:"plugin"`
+	Pages      *PagesConfig    `json:"pages,omitempty"`
+	Archive    *Archive        `json:"archive,omitempty"`
+	Focus      *FocusConfig    `json:"focus,omitempty"`
+	Approach   *ApproachConfig `json:"approach,omitempty"`
+	Time       *TimeConfig     `json:"time,omitempty"`
+	Window     *WindowConfig   `json:"window,omitempty"`
+	Workspaces []Workspace     `json:"workspaces,omitempty"`
+	Problem    string          `json:"problem,omitempty"`
+	Written    []string        `json:"written,omitempty"`
+	Ignored    []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
 }
 
 // PagesConfig is whether each page is on.
@@ -85,6 +86,7 @@ func (g *placesGate) NotesNamedByTheEnvironment(at string) {
 func (g *placesGate) NotesNamedByNothing(at string) { g.notes = Emplacement{At: at, By: "nothing"} }
 
 type readingGate struct {
+	home   Home
 	config Config
 }
 
@@ -93,10 +95,14 @@ func (g *readingGate) ReadFrom(path string) {
 }
 
 func (g *readingGate) Resolved(p config.Places) {
-	places := &placesGate{}
-	p.Tell(places)
+	places, err := g.home.answering(p)
+	if err != nil {
+		g.config.Problem = err.Error()
+		return
+	}
 	g.config.Store = places.store
 	g.config.Notes = places.notes
+	g.config.Workspaces = workspacesIn(p)
 	g.config.Plugin = Emplacement{At: PluginBeside(places.store.At), By: "nothing"}
 	if told := p.Plugin(); told != "" {
 		g.config.Plugin = Emplacement{At: told, By: "the file"}
@@ -132,7 +138,7 @@ var ConfigShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		gate := &readingGate{}
+		gate := &readingGate{home: on.Home}
 		reading.Tell(gate)
 		return Answer{Config: &gate.config}, nil
 	},
@@ -196,6 +202,7 @@ func configText(c Config) string {
 	if c.Window != nil {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t\n", c.Window.KeepSizes)
 	}
+	said.WriteString(workspacesTable(c.Workspaces))
 	return said.String()
 }
 
@@ -219,10 +226,10 @@ var ConfigInit = Operation{
 	Again:   ChangesNothingMore,
 	Answers: ConfigWritten{},
 	Run: func(on On, _ Input) (Answer, error) {
-		if on.Home.Dir == "" {
-			return Answer{}, fmt.Errorf("%w: %w", ErrStore, on.Home.Missing)
+		path, err := on.Home.file()
+		if err != nil {
+			return Answer{}, err
 		}
-		path := config.FileIn(on.Home.Dir)
 		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			return Answer{}, err
 		}

@@ -51,6 +51,8 @@ func NewRootCmd() *cobra.Command {
 	})
 	root.PersistentFlags().Bool(jsonFlag, false, "answer as JSON, on standard output")
 	root.PersistentFlags().Bool(debugFlag, false, "write down what this run does, beside the store, as CAIRN_DEBUG=1 does")
+	root.PersistentFlags().String(workspaceFlag, "", "the workspace this command uses, whatever the environment says")
+	root.PersistentFlags().String(storeFlag, "", "the store this command uses, whatever the environment says")
 	root.AddCommand(newActionGroups(engine.PagesFrom(home()))...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
@@ -124,6 +126,21 @@ func askedFor(flag string, args []string) bool {
 	return false
 }
 
+func valueOf(flag string, args []string) string {
+	for i, arg := range args {
+		if arg == "--" {
+			return ""
+		}
+		if arg == "--"+flag && i+1 < len(args) {
+			return args[i+1]
+		}
+		if said, ok := strings.CutPrefix(arg, "--"+flag+"="); ok {
+			return said
+		}
+	}
+	return ""
+}
+
 // Main runs the command line and returns the code the process should exit with.
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	root := NewRootCmd()
@@ -194,7 +211,9 @@ func debugging(root *cobra.Command, args []string, stderr io.Writer) *debug.Log 
 	if !askedFor(debugFlag, args) && !engine.Debugging(home()) {
 		return nil
 	}
-	at, err := engine.Locate(home())
+	h := home()
+	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
+	at, err := engine.Locate(h)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "debug: cannot write down: %v\n", err)
 		return nil

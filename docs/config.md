@@ -12,11 +12,16 @@ same way, so there is one rule to know rather than two. The scenarios are in
 ## The order, and why the environment is not part of it
 
 ```
-the file            ~/.config/cairn/config.toml
+the file            ~/.config/cairn/config.toml: store, notes
    ↓ says nothing
 the default         ~/.cairn/cairn.db   ~/.cairn/notes
    ↑
-the environment     replaces the answer, whatever it was
+the default workspace   [workspaces] default, when it is said
+   ↑
+the environment     CAIRN_STORE, CAIRN_NOTES
+   ↑
+a flag              --workspace <name>, or --store <path>
+                    each replaces the answer below it, whatever it was
 ```
 
 The file is where a choice is made and kept. The default is what a choice
@@ -31,9 +36,108 @@ on disk, so the next command without it finds things exactly as they were.
 Saying it as a chain of three was tried and read wrong: it makes the environment
 look like a fallback, which is the one thing it is not.
 
+**The default workspace is a choice kept, made over the file's two keys.**
+Once `[workspaces]` names a default, the store and the notes are in its folder,
+and `store` and `notes` are not read for the places
+(`@workspace-the-default-answers`, `@workspace-its-notes-are-in-its-folder`).
+Without a default, a table of workspaces changes nothing
+(`@workspace-no-default-changes-nothing`), and a machine with no table
+answers exactly as it did before workspaces existed. The environment still
+replaces it, as it replaces the file (`@workspace-the-environment-replaces-the-default`).
+
+**A flag replaces even the environment.** `--workspace <name>` or `--store
+<path>`, on any command, is the most passing choice of all: one command, typed
+by whoever runs it, and it answers instead of everything below it, the
+environment included (`@workspace-the-flag-picks-another`,
+`@workspace-the-flag-replaces-the-environment`,
+`@workspace-the-store-flag-names-a-store`). It is a person's own hand on this
+one command, and a variable left in a shell would otherwise silently win over
+what was just typed. The two flags name the same thing twice, so they are
+not understood together (`@workspace-one-flag-or-the-other`).
+
+**The notes never come from another workspace than the store.**
+`--workspace` and the default workspace name both places at once, and
+`CAIRN_NOTES` still replaces the notes alone. A store named by `--store` or
+`CAIRN_STORE` keeps its own notes: `CAIRN_NOTES` when it is said; otherwise,
+when that store is a workspace's `<folder>/cairn.db`, that workspace's notes;
+otherwise the file's `notes` or the default, as before workspaces existed —
+never the default workspace's (`@workspace-a-store-named-keeps-its-own-notes`).
+Taking the default's notes beside a store from elsewhere would write one
+board's notes into another's folder.
+
 **This changes something that already worked.** Before, the store was the
 environment or the default, with nothing in between. The file is a new rung, and
 a machine with a file now answers differently than it did.
+
+## Workspaces, each a folder holding a store and its notes
+
+```toml
+[workspaces]
+default = "work"
+work = "~/cairn/work"
+home = "~/cairn/home"
+```
+
+A workspace is a name and a folder: its store is `<folder>/cairn.db`, its
+notes `<folder>/notes`. One store per piece of life — work and home, a client
+and another — each with its own board and its own notes, and switching is a
+word rather than two variables. `default` names the one used when nothing else
+says; every other key is a workspace. A folder is absolute or under `~`, like
+every place, and one that is not is refused naming its key
+(`@workspace-a-folder-that-is-not-absolute-is-refused`). It is not called
+"context", which is already the word for a task's notes folder
+([context.md](context.md)).
+
+A workspace named that the file does not name is refused, naming it and the
+ones there are (`@workspace-an-unknown-name-is-refused`), and so is a default
+that names none (`@workspace-a-default-nobody-named-is-refused`). A workspace
+whose folder is not there is refused naming the folder
+(`@workspace-a-folder-that-is-not-there-is-refused`): a typo in a folder would
+otherwise start a new, empty board somewhere nobody looks.
+
+- `cairn workspace list` names each workspace and its folder, the default
+  marked (`@workspace-list-names-each-and-the-default`, `--json` too:
+  `@workspace-list-as-json`).
+- `cairn workspace add <name> <folder>` writes the workspace into the file
+  and makes its folder, with an empty `notes` in it
+  (`@workspace-add-writes-it-and-makes-its-folder`). The rest of the file is
+  left byte for byte as it was — the entry joins the end of `[workspaces]`,
+  or a table of its own after everything else
+  (`@workspace-add-joins-the-table-there`) — and with no file it writes one
+  holding that table alone, not the whole example
+  (`@workspace-add-without-a-file-writes-only-the-table`). A name is lowercase
+  letters, digits and dashes, and `default` is taken
+  (`@workspace-add-refuses-a-name-that-is-not-plain`); a name already there is
+  refused (`@workspace-add-refuses-a-name-known`), and so is a folder that is
+  not absolute (`@workspace-add-refuses-a-folder-that-is-not-absolute`). The
+  folder is written as it was typed, so `~` stays `~`.
+- `cairn workspace use <name>` sets `default`, and says which one it was
+  (`@workspace-use-sets-the-default`, `@workspace-use-refuses-an-unknown-name`).
+- `cairn workspace show` says which workspace answers this command and why — a
+  flag, `CAIRN_STORE`, the default — and the store and notes it uses
+  (`@workspace-show-says-the-default-answers`,
+  `@workspace-show-says-the-flag-answers`). A store that no workspace names,
+  given by `--store`, the environment or the file, is said as such, with the
+  `cairn workspace add` that would name it
+  (`@workspace-show-says-no-workspace-names-the-store`).
+- `config show` lists `[workspaces]` too (`@workspace-config-show-lists-them`),
+  and names a place a workspace gave as named by it.
+
+`workspace list` and `workspace show` are tools of the MCP server too:
+`workspace_show` says which workspace a server answers from. `workspace add`
+and `workspace use` are not (`@workspace-an-agent-cannot-add-or-switch`):
+they change where every later command reads and writes, which is the
+person's to decide, like `cairn upgrade` ([mcp.md](mcp.md)). They are
+`engine.ForAPersonOnly`, which the command line offers and the server does not.
+
+The four commands read the file themselves rather than through the store they
+would find (`Needs: AConfiguration`), so a default whose folder is gone does not
+stop `workspace use` from choosing another. Writing the file is a change of
+state, so it is an operation of the engine like `config init`; what the file
+becomes is `config.WithWorkspace` and `config.WithDefault`, which edit its text
+rather than encode it again — encoding it again would drop every comment a
+person wrote. A file that says its workspaces some other way, an inline table
+for one, is refused rather than broken, and left to be changed by hand.
 
 ## Two places, and their names
 
@@ -287,7 +391,8 @@ opens the file from there ([gui.md](gui.md#the-window)).
 `CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the
 answer rather than taking a turn before it — see the order above — and what they
 name goes through the same expansion and the same absoluteness rule as what the
-file names. A place is read the same way wherever it was named.
+file names, and so does `--store`. A place is read the same way wherever it was
+named. Only a flag replaces them in turn.
 
 ## The store wants a disk of its own
 
@@ -351,9 +456,11 @@ not TOML: those are settings that would do something else than what was meant.
 
 ## Not posed yet
 
-Cairn does not write this file. Nothing has to exist for it to work — no file is
-the ordinary case — but nothing leaves one behind either: a person who wants one
-writes it.
+Cairn does not write this file on its own. Nothing has to exist for it to work —
+no file is the ordinary case — but nothing leaves one behind either: a person
+who wants one writes it, or asks for it: `config init` writes it whole, and
+`workspace add` and `workspace use` write `[workspaces]` into it, leaving the
+rest as it was.
 
 Posing it at the first run is specified in `bdd/config.feature` — once, never
 completed, never holding what the environment said, never by a server told to
@@ -417,4 +524,4 @@ agent needs when everything else has started saying no.
   same way by every surface, so it lives where every surface already looks.
   Any other preference is still a decision of its own.
 - **A file per project.** One file, at the place configuration lives. A store
-  somewhere else is what the environment is for.
+  somewhere else is what a workspace, the environment or `--store` is for.

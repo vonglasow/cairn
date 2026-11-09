@@ -496,6 +496,31 @@
           ],
           "additionalProperties": false
         },
+        "workspaces": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "folder"
+            ],
+            "additionalProperties": false
+          }
+        },
         "problem": {
           "type": "string"
         },
@@ -7182,6 +7207,101 @@
       },
       "required": [
         "acts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "workspace_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List the workspaces, the default marked"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "workspaces": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "folder"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "workspaces"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "workspace_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Say which workspace answers, and why"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "workspace": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "because": {
+          "type": "string"
+        },
+        "store": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "add": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "because",
+        "store",
+        "notes"
       ],
       "additionalProperties": false
     }

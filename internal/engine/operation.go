@@ -66,7 +66,7 @@ const (
 	AStoreBehind
 	// NoStore opens nothing at all, for what is reachable without the store — a backup is most needed exactly when the store cannot be opened.
 	NoStore
-	// AConfiguration opens no store and has no use for its path either: it asks for a tolerant reading of the configuration instead, config show alone.
+	// AConfiguration opens no store and has no use for its path either: it reads the configuration itself, as config show and the workspace commands do, so a store the configuration cannot find yet stops none of them.
 	AConfiguration
 )
 
@@ -236,8 +236,14 @@ func All() []Operation {
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,
+		WorkspaceList, WorkspaceShow,
 		PluginWrite, AppInstall,
 	}
+}
+
+// ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace and switching to another change where every later command reads and writes.
+func ForAPersonOnly() []Operation {
+	return []Operation{WorkspaceAdd, WorkspaceUse}
 }
 
 // Check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -350,6 +356,10 @@ type Answer struct {
 	Installed         *string
 	Runs              *string
 	OpenedFrom        *string
+	Workspaces        *Workspaces
+	WorkspaceAdded    *WorkspaceAdded
+	WorkspaceUsed     *WorkspaceUsed
+	WorkspaceShown    *WorkspaceShown
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.

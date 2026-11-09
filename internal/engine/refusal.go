@@ -132,6 +132,11 @@ var reasons = []reason{
 	{config.ErrTime, KindRefused, "config-time"},
 	{config.ErrWeekends, KindRefused, "config-weekends"},
 	{config.ErrKeepSizes, KindRefused, "config-window"},
+	{config.ErrNotWritten, KindRefused, "config-not-written"},
+	{ErrNoSuchWorkspace, KindRefused, "no-such-workspace"},
+	{ErrWorkspaceNotThere, KindRefused, "workspace-not-there"},
+	{ErrWorkspaceKnown, KindRefused, "workspace-known"},
+	{ErrNotAWorkspaceName, KindRefused, "not-a-workspace-name"},
 }
 
 // RefusalOf says what kind of answer a failure is, and which one when cairn foresaw it.

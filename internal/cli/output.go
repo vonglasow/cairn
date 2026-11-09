@@ -13,6 +13,11 @@ const jsonFlag = "json"
 
 const debugFlag = "debug"
 
+const (
+	workspaceFlag = "workspace"
+	storeFlag     = "store"
+)
+
 func wantsJSON(cmd *cobra.Command) bool {
 	asked, err := cmd.Root().PersistentFlags().GetBool(jsonFlag)
 	return err == nil && asked

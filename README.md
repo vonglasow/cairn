@@ -118,7 +118,14 @@ Nothing needs configuring: cairn keeps everything under `~/.cairn`.
 its current value, and never overwrites an existing file. `cairn config show`
 prints the configuration in use and where each value came from.
 `CAIRN_STORE` and `CAIRN_NOTES` in the environment override `store` and
-`notes`. [docs/config.md](docs/config.md) explains why it works this way.
+`notes`.
+
+A workspace is a named folder holding a store and its notes. `cairn workspace
+add work ~/cairn/work` names one, `cairn workspace use work` makes it the
+default, `cairn workspace list` and `cairn workspace show` say which there are
+and which one answers, and why. `--workspace <name>` or `--store <path>` on any
+command picks another for that command alone, whatever the environment says.
+[docs/config.md](docs/config.md) explains why it works this way.
 
 <details>
 <summary>The whole file</summary>
@@ -174,6 +181,16 @@ weekends = "shown"
 # beside the store.
 [window]
 keep_sizes = false
+
+# Workspaces: each a name, and the folder holding its own store and notes
+# (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
+# the one used when nothing else says; when it is said, it comes before store
+# and notes above, and CAIRN_STORE, --workspace and --store come before it.
+# cairn workspace add and cairn workspace use write here for you.
+[workspaces]
+# default = "work"
+# work = "~/cairn/work"
+# home = "~/cairn/home"
 ```
 
 </details>

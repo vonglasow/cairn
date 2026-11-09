@@ -28,6 +28,14 @@ func rendered(op Operation, a Answer) string {
 	switch op.Answers.(type) {
 	case Config:
 		return configText(*a.Config)
+	case Workspaces:
+		return workspacesText(a.Workspaces.Workspaces)
+	case WorkspaceAdded:
+		return workspaceAddedText(*a.WorkspaceAdded)
+	case WorkspaceUsed:
+		return workspaceUsedText(*a.WorkspaceUsed)
+	case WorkspaceShown:
+		return workspaceShownText(*a.WorkspaceShown)
 	case Timesheet:
 		return trace.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
 	case Review:

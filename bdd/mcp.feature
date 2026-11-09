@@ -91,6 +91,15 @@ Feature: Answering a machine over MCP
       When I ask it what it can do
       Then it does not offer `mcp_serve`
 
+    @workspace-an-agent-cannot-add-or-switch
+    Scenario: an agent can read the workspaces, and neither add one nor switch to another
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it offers `workspace_list`
+      And it offers `workspace_show`
+      And it does not offer `workspace_add`
+      And it does not offer `workspace_use`
+
   Rule: A tool says what calling it would cost
 
     @mcp-marks-what-loses-work

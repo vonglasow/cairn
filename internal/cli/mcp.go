@@ -35,8 +35,9 @@ func newMCPServeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			keepingThePluginCurrent(cmd.ErrOrStderr())
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: home(), Noted: notedIn(cmd.Context()), Binary: os.Args[0]}
+			h := homeOf(cmd)
+			keepingThePluginCurrent(h, cmd.ErrOrStderr())
+			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: h, Noted: notedIn(cmd.Context()), Binary: os.Args[0]}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}
@@ -44,8 +45,8 @@ func newMCPServeCmd() *cobra.Command {
 	return cmd
 }
 
-func keepingThePluginCurrent(said io.Writer) {
-	at, err := engine.Locate(home())
+func keepingThePluginCurrent(h engine.Home, said io.Writer) {
+	at, err := engine.Locate(h)
 	if err != nil {
 		return
 	}

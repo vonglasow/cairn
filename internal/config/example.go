@@ -51,4 +51,14 @@ weekends = "shown"
 # beside the store.
 [window]
 keep_sizes = false
+
+# Workspaces: each a name, and the folder holding its own store and notes
+# (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
+# the one used when nothing else says; when it is said, it comes before store
+# and notes above, and CAIRN_STORE, --workspace and --store come before it.
+# cairn workspace add and cairn workspace use write here for you.
+[workspaces]
+# default = "work"
+# work = "~/cairn/work"
+# home = "~/cairn/home"
 `

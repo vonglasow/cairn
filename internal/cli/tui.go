@@ -62,7 +62,7 @@ func newTuiCmd() *cobra.Command {
 		Short: "Open the board in the terminal",
 		Args:  noneAtAll(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return openTerminal(cmd, home(), icons)
+			return openTerminal(cmd, homeOf(cmd), icons)
 		},
 	}
 	cmd.Flags().StringVar(&icons, "icons", string(tui.NerdFont), "which glyphs to draw with: nerdfont or unicode")
