@@ -79,11 +79,11 @@ func TestTheBackupsAreDrawn(t *testing.T) {
 		row := ListRowAt(box, i)
 		return Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}
 	}
-	if ink(shot, corner(0), Dark().Pill) != 0 || ink(shot, corner(1), Dark().Panel) != 0 {
+	if ink(shot, corner(0), Dark().Colour.Surface.Control) != 0 || ink(shot, corner(1), Dark().Colour.Surface.Raised) != 0 {
 		t.Error("only the line the keyboard is on is lit")
 	}
 	told := Window{width: 1200, height: 800}.telling("backup 1 is here")
-	if got := ink(drawn(t, told), WrongBox(told.Layout()), Dark().Back); got == 0 {
+	if got := ink(drawn(t, told), WrongBox(told.Layout()), Dark().Colour.Surface.Back); got == 0 {
 		t.Error("what the window tells is not drawn")
 	}
 }
@@ -176,7 +176,7 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 		row := ListRowAt(w.BackupsBox(), i)
 		return Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}
 	}
-	if ink(shot, corner(1), Dark().Pill) != 0 || ink(shot, corner(0), Dark().Panel) != 0 {
+	if ink(shot, corner(1), Dark().Colour.Surface.Control) != 0 || ink(shot, corner(0), Dark().Colour.Surface.Raised) != 0 {
 		t.Error("the second line drawn, backup 6, is not the one lit")
 	}
 }

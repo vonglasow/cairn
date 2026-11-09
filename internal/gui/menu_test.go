@@ -54,13 +54,13 @@ func TestTheMenuIsDrawn(t *testing.T) {
 		row := MenuRowAt(w.MenuBox(), i)
 		return Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}
 	}
-	if got := ink(shot, corner(0), Dark().Pill); got != 0 {
+	if got := ink(shot, corner(0), Dark().Colour.Surface.Control); got != 0 {
 		t.Error("the line the keyboard is on is not lit")
 	}
-	if got := ink(shot, corner(1), Dark().Panel); got != 0 {
+	if got := ink(shot, corner(1), Dark().Colour.Surface.Raised); got != 0 {
 		t.Error("a line the keyboard is not on is lit")
 	}
-	if got := ink(shot, Edges(w.MenuBox())[0], Dark().Back); got == 0 {
+	if got := ink(shot, Edges(w.MenuBox())[0], Dark().Colour.Surface.Back); got == 0 {
 		t.Error("the menu has no edge")
 	}
 }
@@ -113,10 +113,10 @@ func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
 	box := w.MenuBox()
 	row := MenuRowAt(box, 0)
 	shot := drawn(t, w)
-	if painted(shot, Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+	if painted(shot, Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Control) != 1 {
 		t.Error("the menu's lit line does not stand on a pill")
 	}
-	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
 		t.Error("the menu's corner is not rounded")
 	}
 	if got := MenuKey("Edit"); got != "e" {

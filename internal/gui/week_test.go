@@ -65,7 +65,7 @@ func TestTheWeekCountsWhatWasWorkedOn(t *testing.T) {
 	}
 	shot := drawn(t, Window{tab: Time, width: 1200, height: 800, timeState: timeState{week: w.week, sheet: w.sheet}})
 	l := LayoutFor(1200, 800)
-	if got := ink(shot, WeekBar(WeekRowAt(WeekDayAt(l, 4), 0), 120, 120), Dark().Panel); got == 0 {
+	if got := ink(shot, WeekBar(WeekRowAt(WeekDayAt(l, 4), 0), 120, 120), Dark().Colour.Surface.Raised); got == 0 {
 		t.Error("Friday's bar is not drawn")
 	}
 }

@@ -237,7 +237,7 @@ func TestTicksStartFromTheFirstInSight(t *testing.T) {
 
 func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
-	lit := Dark().Chosen
+	lit := Dark().Colour.Accent.Base
 	tiles := w.partTiles()
 	shot := drawn(t, w)
 	if painted(shot, Edges(SubPanel(tiles[0]))[0], lit) == 0 || painted(shot, Edges(SubPanel(tiles[1]))[0], lit) != 0 {
@@ -248,7 +248,7 @@ func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 		t.Error("the line that adds is not lit while the keyboard is on it, and only then")
 	}
 	writing := adding.Key("enter").Types("New part")
-	if painted(drawn(t, writing), tiles[2], Dark().Ink) == 0 {
+	if painted(drawn(t, writing), tiles[2], Dark().Colour.Ink.Text) == 0 {
 		t.Error("what is being written on the line that adds is not drawn")
 	}
 	renaming := w.Key("down").Key("enter")
@@ -289,11 +289,11 @@ func TestAPartInHandSaysWhereItLands(t *testing.T) {
 		t.Error("held off the list, it says it would land somewhere")
 	}
 	shot := drawn(t, down)
-	if ghost, _ := down.PartGhost(); painted(shot, ghost, Dark().Ghost) == 0 {
+	if ghost, _ := down.PartGhost(); painted(shot, ghost, Dark().Colour.Surface.Ghost) == 0 {
 		t.Error("the part in hand is not drawn")
 	}
 	over := pressed.MoveTo(Point{X: middle(tiles[2]).X, Y: tiles[2].Y + tiles[2].H - 2})
-	if line, _ := over.PartLanding(); painted(drawn(t, over), line, Dark().Chosen) < line.W*line.H/2 {
+	if line, _ := over.PartLanding(); painted(drawn(t, over), line, Dark().Colour.Accent.Base) < line.W*line.H/2 {
 		t.Error("where it would land is hidden under the part in hand")
 	}
 }
@@ -520,10 +520,10 @@ func TestTheStepsTakenAreFilledAndTheOneTheKeyboardIsOnIsOutlined(t *testing.T) 
 	shot := drawn(t, w)
 	for i, want := range []struct{ filled, outlined bool }{{true, false}, {false, true}, {true, false}} {
 		middle := Box{X: tiles[i].X + tiles[i].W - 12, Y: tiles[i].Y + tiles[i].H/2, W: 4, H: 2}
-		if got := painted(shot, middle, Dark().Ghost) != 0; got != want.filled {
+		if got := painted(shot, middle, Dark().Colour.Surface.Ghost) != 0; got != want.filled {
 			t.Errorf("step %d is filled: %v, want %v", i, got, want.filled)
 		}
-		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], Dark().Chosen) != 0; got != want.outlined {
+		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], Dark().Colour.Accent.Base) != 0; got != want.outlined {
 			t.Errorf("step %d is outlined: %v, want %v", i, got, want.outlined)
 		}
 	}

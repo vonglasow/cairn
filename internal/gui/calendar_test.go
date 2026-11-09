@@ -131,7 +131,7 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 	shot := drawn(t, w)
 	for i, day := range engine.MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
-		outlined := ink(shot, edge, Dark().Panel) > 0
+		outlined := ink(shot, edge, Dark().Colour.Surface.Raised) > 0
 		if day.Equal(w.day) && !outlined {
 			t.Error("the day the keyboard is on is not outlined")
 		}
@@ -184,7 +184,7 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	foot := Button(w.PanelOffers()[0])
 	skin := Dark()
-	if painted(drawn(t, w), foot, skin.Chosen) == 0 {
+	if painted(drawn(t, w), foot, skin.Colour.Accent.Base) == 0 {
 		t.Fatal("the open form draws no offer at its foot")
 	}
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
@@ -197,7 +197,7 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 	} else {
 		foot = left
 	}
-	if foot.W > 0 && painted(drawn(t, got), foot, skin.Chosen) != 0 {
+	if foot.W > 0 && painted(drawn(t, got), foot, skin.Colour.Accent.Base) != 0 {
 		t.Error("the form under the calendar still draws offers at its foot")
 	}
 }
@@ -235,8 +235,8 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	shot, skin := drawn(t, w), Dark()
 	box := w.CalendarBox()
 	for _, chip := range []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
-		row := Box{X: chip.X + buttonRadius, Y: chip.Y + 2, W: chip.W - 2*buttonRadius, H: 1}
-		if got := painted(shot, row, skin.Pill) + painted(shot, row, skin.Chosen); got != row.W {
+		row := Box{X: chip.X + Dark().Radius.Control, Y: chip.Y + 2, W: chip.W - 2*Dark().Radius.Control, H: 1}
+		if got := painted(shot, row, skin.Colour.Surface.Control) + painted(shot, row, skin.Colour.Accent.Base); got != row.W {
 			t.Errorf("the chip at %+v is filled on %d of %d pixels", chip, got, row.W)
 		}
 	}

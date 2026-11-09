@@ -138,7 +138,7 @@ func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
 }
 
 func held(shot *image.RGBA, r Readable) int {
-	ghost, count := Dark().Ghost, 0
+	ghost, count := Dark().Colour.Surface.Ghost, 0
 	for y := r.Box.Y; y < r.Box.Y+lineHigh; y++ {
 		for x := r.Box.X; x < r.Box.X+r.Box.W; x++ {
 			if got := shot.RGBAAt(x, y); got.R == ghost.R && got.G == ghost.G && got.B == ghost.B {

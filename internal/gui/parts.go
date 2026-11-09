@@ -1,17 +1,16 @@
 package gui
 
 const (
-	edgeWide   = 5
-	edgeInset  = 6
-	cardRadius = 8
-	cardLeft   = 16
-	cardRight  = 11
-	titleAt    = 8
-	rowAt      = 50
-	stepsAt    = 74
-	stepsHigh  = 6
-	lineHigh   = 18
-	titleHi    = 22
+	edgeWide  = 5
+	edgeInset = 6
+	cardLeft  = 16
+	cardRight = 11
+	titleAt   = 8
+	rowAt     = 50
+	stepsAt   = 74
+	stepsHigh = 6
+	lineHigh  = 18
+	titleHi   = 22
 )
 
 const tabWide = 140

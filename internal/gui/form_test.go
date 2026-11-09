@@ -1108,15 +1108,15 @@ func TestAFieldIsARoundedInputAndTheOneTheKeyboardIsOnIsRinged(t *testing.T) {
 	shot := drawn(t, w)
 	_, value, rows := FormPlace(w.formBox(), fields, 1)
 	frame := Framed(value, rows)
-	if painted(shot, Box{X: frame.X, Y: frame.Y, W: 1, H: 1}, Dark().Field) != 0 {
+	if painted(shot, Box{X: frame.X, Y: frame.Y, W: 1, H: 1}, Dark().Colour.Surface.Field) != 0 {
 		t.Error("a field's corner is not rounded")
 	}
-	if painted(shot, Box{X: frame.X + frame.W - 4, Y: frame.Y + frame.H/2, W: 1, H: 1}, Dark().Field) != 1 {
+	if painted(shot, Box{X: frame.X + frame.W - 4, Y: frame.Y + frame.H/2, W: 1, H: 1}, Dark().Colour.Surface.Field) != 1 {
 		t.Error("a field does not stand on the field's ground")
 	}
 	_, on, onRows := FormPlace(w.formBox(), fields, w.Form().On())
 	ringed := Framed(on, onRows)
-	if painted(shot, Box{X: ringed.X + ringed.W/2, Y: ringed.Y, W: 1, H: 1}, Dark().Chosen) != 1 {
+	if painted(shot, Box{X: ringed.X + ringed.W/2, Y: ringed.Y, W: 1, H: 1}, Dark().Colour.Accent.Base) != 1 {
 		t.Error("the field the keyboard is on is not ringed in the accent")
 	}
 }
@@ -1135,7 +1135,7 @@ func TestThePrioritiesListShowsEachInItsStripesColour(t *testing.T) {
 	shot := drawn(t, w)
 	for i, one := range w.Choosing() {
 		line := ChoosingLine(box, ChoosingFrom(box)+i*apart)
-		if painted(shot, line, Dark().Priority[one.Title]) == 0 {
+		if painted(shot, line, Dark().Colour.Priority[one.Title]) == 0 {
 			t.Errorf("%q is listed without its stripe's colour", one.Title)
 		}
 	}
@@ -1171,7 +1171,7 @@ func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
 		frame := Framed(value, rows)
 		switch field.Arg {
 		case "priority":
-			if painted(shot, frame, Dark().Priority["high"]) == 0 {
+			if painted(shot, frame, Dark().Colour.Priority["high"]) == 0 {
 				t.Error("the priority's field shows no stripe of its colour")
 			}
 		case "label":
@@ -1196,9 +1196,9 @@ func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 		}
 		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
 		pill := Box{X: line.X + ends(w.measured(), "Create", reads) + pillGap*2 + 2, Y: line.Y + line.H/2, W: 2, H: 1}
-		ground := Dark().Pill
+		ground := Dark().Colour.Surface.Control
 		if i == w.ChoosingAt() {
-			ground = Dark().Panel
+			ground = Dark().Colour.Surface.Raised
 		}
 		if painted(drawn(t, w), pill, ground) == 0 {
 			t.Errorf("the row creating %q shows no pill", one.Creates)
@@ -1246,7 +1246,7 @@ func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
 	if last, first := ends(m, means[len(means)-1], small), ends(m, means[0], small); len(means) > 1 && last*3 < first {
 		t.Errorf("the explanation ends on a stub: %q", means)
 	}
-	if painted(drawn(t, w), Box{X: tip.X + tip.W/2, Y: tip.Y + 1, W: 1, H: 1}, Dark().Panel) != 1 {
+	if painted(drawn(t, w), Box{X: tip.X + tip.W/2, Y: tip.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the explanation is not drawn as the window's bubble")
 	}
 }
@@ -1274,7 +1274,7 @@ func TestAFieldChosenFromAListSaysSoWithAMark(t *testing.T) {
 	for i, field := range fields {
 		_, value, rows := FormPlace(w.formBox(), fields, i)
 		mark := FieldMark(Framed(value, rows))
-		drawnThere := painted(shot, mark, Dark().Low) > 0
+		drawnThere := painted(shot, mark, Dark().Colour.Ink.Low) > 0
 		chosen := chosenFromAList(field) || chosenOnACalendar(field)
 		if field.Long || i == w.Form().On() {
 			continue
@@ -1298,7 +1298,7 @@ func TestLabelsTooManyForTheirFieldSayHowManyAreLeft(t *testing.T) {
 			continue
 		}
 		_, value, rows := FormPlace(w.formBox(), fields, i)
-		if painted(drawn(t, w), Inside(Framed(value, rows)), Dark().Pill) == 0 {
+		if painted(drawn(t, w), Inside(Framed(value, rows)), Dark().Colour.Surface.Control) == 0 {
 			t.Error("labels too many for their field show nothing of how many they are")
 		}
 	}
@@ -1364,7 +1364,7 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 func TestTheFormDrawsItsGrip(t *testing.T) {
 	w := holding(newFake(), card(1, "A", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	if painted(drawn(t, w), FormGrip(w.formPanel()), Dark().Faint) == 0 {
+	if painted(drawn(t, w), FormGrip(w.formPanel()), Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the corner that resizes the form is not drawn")
 	}
 }

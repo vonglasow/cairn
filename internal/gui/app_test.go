@@ -110,7 +110,7 @@ func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	})
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if got := ink(drawn(t, w), Over(w.width, w.height), Dark().Back); got == 0 {
+	if got := ink(drawn(t, w), Over(w.width, w.height), Dark().Colour.Surface.Back); got == 0 {
 		t.Fatal("the detail is blank")
 	}
 }

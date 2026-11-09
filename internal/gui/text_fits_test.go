@@ -67,7 +67,7 @@ func textDrawn(w Window) []saidAt {
 	defer func() { noteSaid = was }()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(w.width, w.height)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	Draw(gtx, Theme(), Dark(), w)
+	Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), w)
 	return noted
 }
 

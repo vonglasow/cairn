@@ -203,10 +203,12 @@ func TestTheRangeShownIsFilledAndTodayOutlined(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	l := w.Layout()
 	outlined := func(v Window, b Box) bool {
-		top := Box{X: b.X + buttonRadius, Y: b.Y, W: b.W - 2*buttonRadius, H: 1}
-		return painted(drawn(t, v), top, Dark().Chosen) == top.W
+		top := Box{X: b.X + Dark().Radius.Control, Y: b.Y, W: b.W - 2*Dark().Radius.Control, H: 1}
+		return painted(drawn(t, v), top, Dark().Colour.Accent.Base) == top.W
 	}
-	filled := func(v Window, b Box) bool { return painted(drawn(t, v), b, lighter(Dark().Pill)) > b.W*b.H/2 }
+	filled := func(v Window, b Box) bool {
+		return painted(drawn(t, v), b, Dark().Colour.Surface.ControlLit) > b.W*b.H/2
+	}
 	if !filled(w, TimeChip(l, "Week")) || filled(w, TimeChip(l, "Month")) {
 		t.Error("a week shown does not fill Week alone")
 	}
@@ -290,12 +292,12 @@ func TestTheRangesOfTheTimePageAreButtons(t *testing.T) {
 	shot := drawn(t, w)
 	for _, chip := range []string{"Today", "Day", "Month"} {
 		box := TimeChip(l, chip)
-		if painted(shot, box, skin.Pill) < box.W*box.H/2 && painted(shot, box, skin.Chosen) < box.W*box.H/2 {
+		if painted(shot, box, skin.Colour.Surface.Control) < box.W*box.H/2 && painted(shot, box, skin.Colour.Accent.Base) < box.W*box.H/2 {
 			t.Errorf("%s is not drawn as a button: too little of it is filled", chip)
 		}
 	}
 	week := TimeChip(l, "Week")
-	if painted(shot, week, lighter(skin.Pill)) < week.W*week.H/2 {
+	if painted(shot, week, skin.Colour.Surface.ControlLit) < week.W*week.H/2 {
 		t.Errorf("the range shown is not filled as the one chosen")
 	}
 }
@@ -343,11 +345,11 @@ func TestTheRangesOfTheTimePageAreOneSegmentedControl(t *testing.T) {
 		t.Errorf("the control %+v does not hold the three ranges", control)
 	}
 	gapAt := TimeChip(l, "Day").X + TimeChip(l, "Day").W + 1
-	if painted(shot, Box{X: gapAt, Y: control.Y + control.H/2, W: 1, H: 1}, skin.Pill) != 1 {
+	if painted(shot, Box{X: gapAt, Y: control.Y + control.H/2, W: 1, H: 1}, skin.Colour.Surface.Control) != 1 {
 		t.Error("the ranges are not held on one ground")
 	}
 	week := TimeChip(l, "Week")
-	if painted(shot, Box{X: week.X + week.W/2, Y: week.Y + 2, W: 1, H: 1}, lighter(skin.Pill)) != 1 {
+	if painted(shot, Box{X: week.X + week.W/2, Y: week.Y + 2, W: 1, H: 1}, skin.Colour.Surface.ControlLit) != 1 {
 		t.Error("the range shown is not the segment lit")
 	}
 }
@@ -375,11 +377,11 @@ func TestTodayIsAnAccentPillAndTheWeeksDaysAreRounded(t *testing.T) {
 	l := w.Layout()
 	shot := drawn(t, w)
 	today := TodayPill(WeekHeadAt(WeekDayAt(l, 2)), w.measured())
-	if painted(shot, Box{X: today.X + today.W/2, Y: today.Y + 1, W: 1, H: 1}, Dark().Chosen) != 1 {
+	if painted(shot, Box{X: today.X + today.W/2, Y: today.Y + 1, W: 1, H: 1}, Dark().Colour.Accent.Base) != 1 {
 		t.Errorf("today's date at %+v is not on the accent", today)
 	}
 	day := WeekDayAt(l, 0)
-	if painted(shot, Box{X: day.X, Y: day.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+	if painted(shot, Box{X: day.X, Y: day.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
 		t.Error("a day's ground is not rounded")
 	}
 }

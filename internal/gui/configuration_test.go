@@ -43,7 +43,7 @@ func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
 			t.Errorf("the store's path %+v is written over its mark %+v", line.ValueAt, store.At)
 		}
 	}
-	if painted(drawn(t, w), store.At, Dark().Low) == 0 {
+	if painted(drawn(t, w), store.At, Dark().Colour.Ink.Low) == 0 {
 		t.Error("the mark to copy the store's path is not drawn")
 	}
 }

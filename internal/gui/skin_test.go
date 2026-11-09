@@ -16,16 +16,16 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			on   color.NRGBA
 			said color.NRGBA
 		}{
-			{"ink on a panel", skin.Panel, skin.Ink},
-			{"ink on the board", skin.Back, skin.Ink},
-			{"faint on a panel", skin.Panel, skin.Faint},
-			{"faint on the board", skin.Back, skin.Faint},
-			{"ink on a column", skin.Ground, skin.Ink},
-			{"faint on a column", skin.Ground, skin.Faint},
-			{"an offer on the board", skin.Back, skin.Chosen},
-			{"an error on the board", skin.Back, skin.Wrong},
-			{"a day gone by, on a panel", skin.Panel, skin.Late},
-			{"a day gone by, on the board", skin.Back, skin.Late},
+			{"ink on a panel", skin.Colour.Surface.Raised, skin.Colour.Ink.Text},
+			{"ink on the board", skin.Colour.Surface.Back, skin.Colour.Ink.Text},
+			{"faint on a panel", skin.Colour.Surface.Raised, skin.Colour.Ink.Faint},
+			{"faint on the board", skin.Colour.Surface.Back, skin.Colour.Ink.Faint},
+			{"ink on a column", skin.Colour.Surface.Ground, skin.Colour.Ink.Text},
+			{"faint on a column", skin.Colour.Surface.Ground, skin.Colour.Ink.Faint},
+			{"an offer on the board", skin.Colour.Surface.Back, skin.Colour.Accent.Base},
+			{"an error on the board", skin.Colour.Surface.Back, skin.Colour.State.Wrong},
+			{"a day gone by, on a panel", skin.Colour.Surface.Raised, skin.Colour.State.Late},
+			{"a day gone by, on the board", skin.Colour.Surface.Back, skin.Colour.State.Late},
 		}
 		for _, c := range ink {
 			if got := Contrast(c.said, c.on); got < 4.5 {
@@ -39,12 +39,13 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			said color.NRGBA
 			at   float64
 		}{
-			{"an edge against the board", skin.Back, skin.Edge, 3},
-			{"an edge against a panel", skin.Panel, skin.Edge, 2},
-			{"a panel against the board", skin.Back, skin.Panel, 1.3},
-			{"a column against the board", skin.Back, skin.Ground, 1.08},
-			{"a panel against a column", skin.Ground, skin.Panel, 1.15},
-			{"a column's edge against its ground", skin.Ground, skin.GroundEdge, 1.2},
+			{"an edge against the board", skin.Colour.Surface.Back, skin.Colour.Line.Edge, 3},
+			{"an edge against a panel", skin.Colour.Surface.Raised, skin.Colour.Line.Edge, 2},
+			{"a panel against the board", skin.Colour.Surface.Back, skin.Colour.Surface.Raised, 1.3},
+			{"a column against the board", skin.Colour.Surface.Back, skin.Colour.Surface.Ground, 1.08},
+			{"a panel against a column", skin.Colour.Surface.Ground, skin.Colour.Surface.Raised, 1.15},
+			{"a column's edge against its ground", skin.Colour.Surface.Ground, skin.Colour.Line.Rule, 1.2},
+			{"a rule against a panel", skin.Colour.Surface.Raised, skin.Colour.Line.Raised, 1.2},
 		}
 		for _, c := range shapes {
 			if got := Contrast(c.said, c.on); got < c.at {
@@ -52,20 +53,20 @@ func TestEverySkinCanBeRead(t *testing.T) {
 			}
 		}
 
-		for name, said := range skin.Priority {
-			if near(said, skin.Chosen) {
+		for name, said := range skin.Colour.Priority {
+			if near(said, skin.Colour.Accent.Base) {
 				t.Errorf("%s: priority %q is the colour of what is chosen", skin.what, name)
 			}
-			if alike(said, skin.Edge) {
+			if alike(said, skin.Colour.Line.Edge) {
 				t.Errorf("%s: priority %q is the colour of no priority at all", skin.what, name)
 			}
-			for other, also := range skin.Priority {
+			for other, also := range skin.Colour.Priority {
 				if other != name && alike(said, also) {
 					t.Errorf("%s: priority %q and %q are the same colour", skin.what, name, other)
 				}
 			}
 		}
-		if near(skin.Wrong, skin.Priority["critical"]) {
+		if near(skin.Colour.State.Wrong, skin.Colour.Priority["critical"]) {
 			t.Errorf("%s: an error is the colour of a critical task", skin.what)
 		}
 	}

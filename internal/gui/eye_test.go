@@ -41,10 +41,10 @@ func TestTheGlowingDotIsDrawn(t *testing.T) {
 	w := holding(newFake(), on, off)
 	shot := drawn(t, w)
 	l := w.Layout()
-	if got := painted(shot, PartsOf(l.CardAt(1, 0, 0)).Title, Dark().Chosen); got == 0 {
+	if got := painted(shot, PartsOf(l.CardAt(1, 0, 0)).Title, Dark().Colour.Accent.Base); got == 0 {
 		t.Error("the card in focus draws no glowing dot")
 	}
-	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Title, Dark().Chosen); got != 0 {
+	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Title, Dark().Colour.Accent.Base); got != 0 {
 		t.Errorf("the card nobody is on draws %d pixels of a glowing dot", got)
 	}
 }
@@ -53,8 +53,8 @@ func TestACardIsRoundedAndStripedByItsPriority(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
 	shot := drawn(t, w)
 	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
-	high := Dark().Priority["high"]
-	if painted(shot, Box{X: panel.X, Y: panel.Y, W: 1, H: 1}, Dark().Card) != 0 {
+	high := Dark().Colour.Priority["high"]
+	if painted(shot, Box{X: panel.X, Y: panel.Y, W: 1, H: 1}, Dark().Colour.Surface.Card) != 0 {
 		t.Error("the card's corner is not rounded")
 	}
 	if painted(shot, Box{X: panel.X, Y: panel.Y + panel.H/2, W: edgeWide, H: 1}, high) != edgeWide {
@@ -63,7 +63,7 @@ func TestACardIsRoundedAndStripedByItsPriority(t *testing.T) {
 	if painted(shot, Box{X: panel.X + edgeWide, Y: panel.Y + panel.H/2, W: 1, H: 1}, high) != 0 {
 		t.Error("the stripe runs wider than its width")
 	}
-	if painted(shot, Box{X: panel.X + panel.W/2, Y: panel.Y + 2, W: 1, H: 1}, Dark().Card) != 1 {
+	if painted(shot, Box{X: panel.X + panel.W/2, Y: panel.Y + 2, W: 1, H: 1}, Dark().Colour.Surface.Card) != 1 {
 		t.Error("the card does not stand on its own ground")
 	}
 }
@@ -71,7 +71,7 @@ func TestACardIsRoundedAndStripedByItsPriority(t *testing.T) {
 func TestACardInFocusStandsOnTheTint(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true})
 	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
-	if painted(drawn(t, w), Box{X: panel.X + panel.W/2, Y: panel.Y + 2, W: 1, H: 1}, Dark().Tint) != 1 {
+	if painted(drawn(t, w), Box{X: panel.X + panel.W/2, Y: panel.Y + 2, W: 1, H: 1}, Dark().Colour.Surface.Tint) != 1 {
 		t.Error("the card in focus does not stand on the tint")
 	}
 }
@@ -91,7 +91,7 @@ func TestTheCountOfLabelsOpensABubbleOfThemAll(t *testing.T) {
 			t.Errorf("a pill %+v runs out of its bubble %+v", pill, box)
 		}
 	}
-	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + box.H - 3, W: 1, H: 1}, Dark().Panel) != 1 {
+	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + box.H - 3, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the bubble is not drawn")
 	}
 }
@@ -102,10 +102,10 @@ func TestOnlyACardWithStepsDrawsItsBar(t *testing.T) {
 	w := holding(newFake(), with, without)
 	shot := drawn(t, w)
 	l := w.Layout()
-	if painted(shot, PartsOf(l.CardAt(1, 0, 0)).Steps, Dark().Done) == 0 {
+	if painted(shot, PartsOf(l.CardAt(1, 0, 0)).Steps, Dark().Colour.State.Done) == 0 {
 		t.Error("a card with a step done draws no bar")
 	}
-	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Steps, Dark().Pill); got != 0 {
+	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Steps, Dark().Colour.Surface.Control); got != 0 {
 		t.Errorf("a card with no step draws %d pixels of a track", got)
 	}
 }
@@ -122,8 +122,8 @@ func TestTheMarkOfACardInFocusIsADotInAFaintHaloOfItsOwnInk(t *testing.T) {
 	if small.Dot >= small.Halo {
 		t.Errorf("the dot %+v is no smaller than its halo", small)
 	}
-	ink := color.NRGBA{R: 10, G: 20, B: 30, A: 200}
-	if halo := HaloOf(ink); halo != (color.NRGBA{R: 10, G: 20, B: 30, A: 60}) {
-		t.Errorf("the halo of %+v is %+v, not the same ink at 30%%", ink, halo)
+	accent, glow := Dark().Colour.Accent.Base, Dark().Colour.Accent.Glow
+	if want := (color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: uint8(int(accent.A) * 3 / 10)}); glow != want {
+		t.Errorf("the glow is %+v, not the accent at 30%%: %+v", glow, want)
 	}
 }

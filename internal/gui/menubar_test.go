@@ -82,7 +82,7 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 		t.Errorf("the menu %+v runs out of the window, or over its button %+v", box, button)
 	}
 	drawnOn := func(v Window) int {
-		return painted(drawn(t, v), Inside(button), Dark().Chosen)
+		return painted(drawn(t, v), Inside(button), Dark().Colour.Accent.Base)
 	}
 	if drawnOn(w) == 0 {
 		t.Error("the button is not drawn")
@@ -172,7 +172,7 @@ func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	shot := drawn(t, w)
 	for _, stroke := range MenuStrokes(MenuButton(w.Layout())) {
-		if got := painted(shot, stroke, Dark().Chosen); got != stroke.W*stroke.H {
+		if got := painted(shot, stroke, Dark().Colour.Accent.Base); got != stroke.W*stroke.H {
 			t.Errorf("the stroke %+v has %d of its %d pixels", stroke, got, stroke.W*stroke.H)
 		}
 	}

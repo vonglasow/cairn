@@ -447,7 +447,6 @@ func sumOf(widths []int) int {
 
 const (
 	barInset   = 8
-	barRadius  = 10
 	chipInset  = 4
 	hintSpace  = 6
 	hintMargin = 14

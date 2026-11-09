@@ -159,25 +159,56 @@ full path, as the window's does (`Starter`, below).
 ## The look
 
 The window follows one design, settled on 2026-10-31 for v0.10.0: calm,
-told apart by tone rather than by lines. Its tokens are `Dark()`'s:
+told apart by tone rather than by lines. Its tokens are `Dark()`'s, grouped
+the way a design system groups them (`skin.go`): `Colour` (surface, line,
+ink, accent, state, and the maps a name picks from), `Space`, `Radius`,
+`Size`, `Type`, and the `Shadow` a raised thing casts.
 
 | token | is | value |
 |---|---|---|
-| `Back` | the window | `#0c0d0f` |
-| `Ground` | a column's or a lane's ground | `#17181b` |
-| `Card` / `Hover` / `Tint` | a card, under the pointer, in focus | `#1f2024` / `#25262b` / `#1e243c` |
-| `Panel` | anything raised: a panel, a menu, the command bar | `#26282d` |
-| `Field` / `Pill` | an input, a label or a button | `#131417` / `#303238` |
-| `Edge` | the edge of a control | `#60626a` |
-| `Ink` / `Faint` / `Low` | text, secondary text, numbers and counts | `#e7e7ea` / `#9a9ba2` / `#5f6067` |
-| `Chosen` / `Selected` | the accent (focus, primary button) / the keyboard's ring | `#7b93ff` / `#8d8f9c` |
+| `Surface.Back` | the window | `#0c0d0f` |
+| `Surface.Ground` | a column's or a lane's ground | `#17181b` |
+| `Surface.Card` / `Hover` / `Tint` | a card, under the pointer, in focus | `#1f2024` / `#25262b` / `#1e243c` |
+| `Surface.Raised` | anything raised: a panel, a menu, the command bar | `#26282d` |
+| `Surface.Field` / `Control` / `ControlLit` | an input, a label or a button, a button lit | `#131417` / `#303238` / `#42444a` |
+| `Line.Rule` / `Line.Raised` | a rule or a frame on the board, a rule on something raised | `#28292e` / `#34363c` |
+| `Line.Edge` | the edge of a control | `#60626a` |
+| `Ink.Text` / `Faint` / `Low` | text, secondary text, numbers and counts | `#e7e7ea` / `#9a9ba2` / `#5f6067` |
+| `Accent.Base` / `Line.Selected` | the accent (focus, primary button) / the keyboard's ring | `#7b93ff` / `#8d8f9c` |
+
+A colour that used to be worked out where it was drawn — a shade lighter
+under the pointer, a shade darker for a key's chip, the accent at a fraction
+of its opacity for a field's halo or a card's glow, half the veil behind the
+command bar — is a token of its own (`ControlLit`, `ChipOnControl`,
+`Accent.Halo`, `Accent.Glow`, `VeilLight`…), so a second skin is a second
+value and not a search through the drawing. Only a label's pill is still
+mixed, a fifth of its colour over a card (`Skin.LabelPill`): there are
+fourteen. **No drawing names a colour or a corner of its own**:
+`TestNoDrawingNamesAColourOrARadiusOfItsOwn` reads every file of the
+package but `skin.go` and fails on a `color.NRGBA{…}`, a number in a radius
+or a stroke's width, or a constant named for a radius. What a layout lays
+out — a gap, a height, a text's size — stays the layout's constant, since
+the layout measures with it.
+
+**A rule on a panel can be seen.** The line over a panel's offers, under
+the filters' head and foot, under the command bar's line and over the
+switcher's acts was drawn in `Line.Rule` on `Surface.Raised`, a contrast of
+1.02: it was there and nobody could see it. It is drawn in `Line.Raised`,
+held at 1.2 against a panel as a column's edge is against its ground
+(`@gui-a-panel-rule-can-be-seen`).
+
+**Every drawing is handed a `Kit`**: Gio's context, the theme, the skin,
+the layer it draws on (board, bar, drag, panel, popover) and a record of
+what was drawn (`Drawn.Put`), which the overlap check of #225 will read
+once the drawing is made of components (#230).
 
 The design's own mock-up was darker still; `skin_test.go` holds every
 shape to a contrast it can be told apart at (a panel 1.3 against the
 board, an edge 3), so the tones were raised to meet it rather than the
-thresholds lowered. Shapes are rounded (`rounded`): a card 8, a column 10,
-a panel 12. A raised panel casts a shadow (`raised`): Gio has no blur, so
-the shadow is three rounded boxes under it, wider and fainter as they go.
+thresholds lowered. Shapes are rounded (`rounded`, `Radius`): a card 8, a
+column 10, a panel 12. A raised panel casts a shadow (`raised`, `Shadow`):
+Gio has no blur, so the shadow is three rounded boxes under it, wider and
+fainter as they go.
 
 **A panel is raised, and its offers are buttons at its foot.** Every panel
 — a form, the help, a question, the backups, the labels, the
@@ -387,7 +418,7 @@ on it, and tinted when it is in focus.
 
 The right-hand end of that third line carries **what is due, what the work has
 cost against what it was reckoned to cost, and what it serves** — `2d  9h/2h
-◇4` — in the faint ink, or in `Skin.Late` when the day has passed or the
+◇4` — in the faint ink, or in `State.Late` when the day has passed or the
 estimate is spent. The window used to know nothing at all about time: no
 deadline, no notion of late, where the terminal has written it on the card all
 along, and deciding what to do without knowing what is due is not deciding. A
@@ -902,7 +933,7 @@ marks were left out of this window on purpose; this one earns its place
 because it cannot be worked out by looking: a card gives no sign that somebody
 — or some agent session — is on it. A glowing dot in the accent — a dot of
 3.4 in a halo of 6 of the same ink at three tenths, drawn in fourteen and
-scaled to its box (`GlowOf`, `HaloOf`) — stands at the right end of the
+scaled to its box (`GlowOf`, `Accent.Glow`) — stands at the right end of the
 title's first line, where the eye finds it in the same place on every card;
 the first line makes room for it and the second keeps the card's whole width
 (`FocusMark`, `TitleRoom`, `@gui-the-card-in-focus-carries-a-glowing-dot`).
@@ -1071,7 +1102,7 @@ A question is asked in a box as big as its sentences and its offers, not in
 the panel a form is drawn in: two lines and two words used to sit in a box
 nine tenths empty.
 **A question stands out from what is behind it**: everything under it is
-dimmed by a veil (`Skin.Veil`), and its box is outlined twice over in the
+dimmed by a veil (`Surface.Veil`), and its box is outlined twice over in the
 colour of what is chosen
 (`@gui-a-question-stands-out-from-what-is-behind-it`). It was drawn like a
 form, the same ground and the same edge, and over a form it blended into it.
@@ -1981,7 +2012,7 @@ task never had is taken out of the list alone
 a step out until the form was saved, which read as a delete that did not
 happen. Several steps are taken together the way cards
 are, and **what is taken is not what the keyboard is on**: a step taken is
-filled (`Skin.Ghost`), the one the keyboard is on is outlined, and a step can
+filled (`Surface.Ghost`), the one the keyboard is on is outlined, and a step can
 be either or both. A click takes that step alone and puts the keyboard on it;
 `⌘`-click adds one or lets it go, down to none, the keyboard following the
 click (`@gui-a-step-taken-is-let-go-alone`, `@gui-the-last-step-taken-can-be-let-go`);

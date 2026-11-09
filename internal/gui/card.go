@@ -6,7 +6,6 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"image/color"
 	"strconv"
 	"strings"
 	"time"
@@ -186,12 +185,6 @@ type Glow struct{ X, Y, Dot, Halo float32 }
 func GlowOf(mark Box) Glow {
 	scale := float32(mark.W) / 14
 	return Glow{X: float32(mark.X) + 7*scale, Y: float32(mark.Y) + 7*scale, Dot: 3.4 * scale, Halo: 6 * scale}
-}
-
-// HaloOf is the ink of a glow's halo: its dot's, at three tenths of its opacity.
-func HaloOf(ink color.NRGBA) color.NRGBA {
-	ink.A = uint8(int(ink.A) * 3 / 10)
-	return ink
 }
 
 // TitleRoom is how wide a card's title may run on its first line and on its second: the first less the glowing dot's room when the card is in focus.

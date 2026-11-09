@@ -1114,14 +1114,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		l := w.w.Layout()
 		head := l.Head[0]
-		column, ok := inkedIn(shot, Box{X: head.X + headClear, Y: head.Y + headClear, W: head.W - 2*headClear, H: head.H - headClear}, Dark().Ground)
+		column, ok := inkedIn(shot, Box{X: head.X + headClear, Y: head.Y + headClear, W: head.W - 2*headClear, H: head.H - headClear}, Dark().Colour.Surface.Ground)
 		if !ok {
 			return fmt.Errorf("a column's head carries no name")
 		}
 		want := column.Y - head.Y
 		for i, lane := range l.Lane {
 			top := Box{X: lane.X, Y: l.Band.Y, W: lane.W, H: lane.Y - l.Band.Y}
-			name, ok := inkedIn(shot, Box{X: top.X + headClear, Y: top.Y + headClear, W: top.W - 2*headClear, H: top.H - headClear}, Dark().Ground)
+			name, ok := inkedIn(shot, Box{X: top.X + headClear, Y: top.Y + headClear, W: top.W - 2*headClear, H: top.H - headClear}, Dark().Colour.Surface.Ground)
 			if !ok {
 				return fmt.Errorf("lane %d: carries no name", i)
 			}
@@ -1145,7 +1145,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if all, ground := w.w.width*w.w.height, painted(shot, Box{W: w.w.width, H: w.w.height}, Dark().Back); ground != all {
+		if all, ground := w.w.width*w.w.height, painted(shot, Box{W: w.w.width, H: w.w.height}, Dark().Colour.Surface.Back); ground != all {
 			return fmt.Errorf("%d of %d pixels are something other than the ground", all-ground, all)
 		}
 		return nil
@@ -1834,12 +1834,12 @@ func (w *world) standsApart(b Box) error {
 		at   Point
 		want color.NRGBA
 	}{
-		{"top, inside", Point{X: b.X + b.W - 6, Y: b.Y + 6}, skin.Ground},
-		{"bottom, inside", Point{X: b.X + b.W - 6, Y: b.Y + b.H - 6}, skin.Ground},
-		{"the left edge, inside", Point{X: b.X, Y: b.Y + b.H/2}, skin.Ground},
-		{"the top left corner, rounded off", Point{X: b.X, Y: b.Y}, skin.Back},
-		{"just outside on the left", Point{X: b.X - 1, Y: b.Y + b.H/2}, skin.Back},
-		{"just outside above", Point{X: b.X + b.W/2, Y: b.Y - 1}, skin.Back},
+		{"top, inside", Point{X: b.X + b.W - 6, Y: b.Y + 6}, skin.Colour.Surface.Ground},
+		{"bottom, inside", Point{X: b.X + b.W - 6, Y: b.Y + b.H - 6}, skin.Colour.Surface.Ground},
+		{"the left edge, inside", Point{X: b.X, Y: b.Y + b.H/2}, skin.Colour.Surface.Ground},
+		{"the top left corner, rounded off", Point{X: b.X, Y: b.Y}, skin.Colour.Surface.Back},
+		{"just outside on the left", Point{X: b.X - 1, Y: b.Y + b.H/2}, skin.Colour.Surface.Back},
+		{"just outside above", Point{X: b.X + b.W/2, Y: b.Y - 1}, skin.Colour.Surface.Back},
 	} {
 		got := shot.RGBAAt(c.at.X, c.at.Y)
 		if got.R != c.want.R || got.G != c.want.G || got.B != c.want.B {
@@ -1859,7 +1859,7 @@ func (w *world) everyColumnsName(holds func(head, name Box) error) error {
 	}
 	for i, head := range w.w.Layout().Head {
 		inside := Box{X: head.X + headClear, Y: head.Y + headClear, W: head.W - 2*headClear, H: head.H - headClear}
-		name, ok := inkedIn(shot, inside, Dark().Ground)
+		name, ok := inkedIn(shot, inside, Dark().Colour.Surface.Ground)
 		if !ok {
 			return fmt.Errorf("column %d: its head carries no name", i)
 		}

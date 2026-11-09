@@ -32,7 +32,7 @@ func TestTheHelpPutsEachKeyOnAChipBeforeWhatItDoes(t *testing.T) {
 		if line.KeyAt.W != KeyChipWide(line.Key) || line.MeansAt.X <= line.KeyAt.X+line.KeyAt.W {
 			t.Errorf("%q: its chip %+v and what it does %+v", line.Key, line.KeyAt, line.MeansAt)
 		}
-		if painted(shot, Box{X: line.KeyAt.X + line.KeyAt.W/2, Y: line.KeyAt.Y + 1, W: 1, H: 1}, Dark().Pill) != 1 {
+		if painted(shot, Box{X: line.KeyAt.X + line.KeyAt.W/2, Y: line.KeyAt.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Control) != 1 {
 			t.Errorf("%q is not on a chip", line.Key)
 		}
 	}

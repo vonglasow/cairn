@@ -593,7 +593,7 @@ func (w *world) cardDimmed(title string) error {
 		if c.Title != title {
 			continue
 		}
-		if ink := Dark().Writing(c); ink != Dark().Faint {
+		if ink := Dark().Writing(c); ink != Dark().Colour.Ink.Faint {
 			return fmt.Errorf("%q is written in %v, not the faint ink", title, ink)
 		}
 		return nil
@@ -606,7 +606,7 @@ func (w *world) cardNotDimmed(title string) error {
 		if c.Title != title {
 			continue
 		}
-		if ink := Dark().Writing(c); ink != Dark().Ink {
+		if ink := Dark().Writing(c); ink != Dark().Colour.Ink.Text {
 			return fmt.Errorf("%q is written in %v, not the ordinary ink", title, ink)
 		}
 		return nil
@@ -1158,7 +1158,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.TimeCells() {
 			cells = append(cells, TimeCellAt(w.w.Layout(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Pill, Dark().Chosen)
+		return buttonsDrawn(w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Step(`^I rest the pointer on the (count of labels|title) of "([^"]*)"$`, func(what, title string) error {
 		for _, placed := range w.w.Placed() {
@@ -1483,18 +1483,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if painted(shot, Box{X: box.X + 1, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Hover) != 1 {
+		if painted(shot, Box{X: box.X + 1, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Colour.Surface.Hover) != 1 {
 			return fmt.Errorf("the hint %q at %+v is not lit", offer, box)
 		}
 		chip := Box{X: box.X + hintSpace/2 + chipInset - 2, Y: box.Y + box.H/2 - chipHigh/2 + 2, W: 1, H: 1}
-		if painted(shot, chip, Dark().Pill) != 1 {
+		if painted(shot, chip, Dark().Colour.Surface.Control) != 1 {
 			return fmt.Errorf("the key of %q is not on a chip at %+v", offer, chip)
 		}
 		return nil
 	})
 	sc.Then(`^every offer of the panel is drawn as a button$`, func() error {
 		slots := w.w.offersAlong(w.w.panel())
-		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Pill, buttonOn: Dark().Chosen, buttonDanger: Dark().Danger}
+		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Colour.Surface.Control, buttonOn: Dark().Colour.Accent.Base, buttonDanger: Dark().Colour.State.Danger}
 		for i, slot := range slots {
 			look := w.w.OfferLook(i, w.w.Offers()[i])
 			if err := buttonsDrawn(w.w, []Box{Button(slot)}, grounds[look]); err != nil {
@@ -1509,8 +1509,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.day))
-		middle := Box{X: at.X + buttonRadius, Y: at.Y + 1, W: at.W - 2*buttonRadius, H: 2}
-		if got := painted(shot, middle, Dark().Chosen); got != middle.W*middle.H {
+		middle := Box{X: at.X + Dark().Radius.Control, Y: at.Y + 1, W: at.W - 2*Dark().Radius.Control, H: 2}
+		if got := painted(shot, middle, Dark().Colour.Accent.Base); got != middle.W*middle.H {
 			return fmt.Errorf("the day held, at %+v, is filled on %d of %d pixels", at, got, middle.W*middle.H)
 		}
 		return nil
@@ -1521,10 +1521,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if inside := (Box{X: at.X + buttonRadius, Y: at.Y + 3, W: at.W - 2*buttonRadius, H: 2}); painted(shot, inside, Dark().Panel) != inside.W*inside.H {
+		if inside := (Box{X: at.X + Dark().Radius.Control, Y: at.Y + 3, W: at.W - 2*Dark().Radius.Control, H: 2}); painted(shot, inside, Dark().Colour.Surface.Raised) != inside.W*inside.H {
 			return fmt.Errorf("today, at %+v, is filled", at)
 		}
-		if edge := (Box{X: at.X + buttonRadius, Y: at.Y, W: at.W - 2*buttonRadius, H: 1}); painted(shot, edge, Dark().Selected) != edge.W {
+		if edge := (Box{X: at.X + Dark().Radius.Control, Y: at.Y, W: at.W - 2*Dark().Radius.Control, H: 1}); painted(shot, edge, Dark().Colour.Line.Selected) != edge.W {
 			return fmt.Errorf("today, at %+v, is not ringed", at)
 		}
 		return nil
@@ -1538,7 +1538,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			if day.Equal(w.w.day) || day.Equal(w.w.today()) {
 				continue
 			}
-			if edge := Edges(DayAt(w.w.CalendarBox(), i))[0]; painted(shot, edge, Dark().Panel) != edge.W {
+			if edge := Edges(DayAt(w.w.CalendarBox(), i))[0]; painted(shot, edge, Dark().Colour.Surface.Raised) != edge.W {
 				return fmt.Errorf("%s is drawn in a box", day.Format(time.DateOnly))
 			}
 		}
@@ -1549,11 +1549,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.CalendarCells() {
 			cells = append(cells, CalendarCell(w.w.CalendarBox(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Pill, Dark().Chosen)
+		return buttonsDrawn(w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
 		box := w.w.CalendarBox()
-		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Pill, Dark().Chosen)
+		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
 		if w.w.Screen() != OnLabels {
@@ -1986,7 +1986,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if inked(shot, inside, Dark().Ghost) == 0 {
+		if inked(shot, inside, Dark().Colour.Surface.Ghost) == 0 {
 			return fmt.Errorf("nothing is written on what is in hand, at %+v", ghost)
 		}
 		return nil
@@ -2342,7 +2342,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		var reached int
 		for x := band.X; x < band.X+band.W; x++ {
-			if inked(shot, Box{X: x, Y: band.Y, W: 1, H: band.H}, Dark().Panel) > 0 {
+			if inked(shot, Box{X: x, Y: band.Y, W: 1, H: band.H}, Dark().Colour.Surface.Raised) > 0 {
 				reached = x - band.X
 			}
 		}
@@ -2359,7 +2359,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		for what, ink := range map[string]color.NRGBA{"faint": Dark().Faint, "ink": Dark().Ink} {
+		for what, ink := range map[string]color.NRGBA{"faint": Dark().Colour.Ink.Faint, "ink": Dark().Colour.Ink.Text} {
 			if got := painted(shot, edge, ink); got != 0 {
 				return fmt.Errorf("%d pixels of %s writing reach the tile's last %d", got, what, padding)
 			}
@@ -2387,7 +2387,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if paintedNear(shot, frame, dimmed(Dark().Edge), 6) == 0 {
+		if paintedNear(shot, frame, dimmed(Dark().Colour.Line.Edge), 6) == 0 {
 			return fmt.Errorf("the form's first field is gone behind the question")
 		}
 		return nil
@@ -2398,13 +2398,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		asked := w.w.QuestionBox()
-		if painted(shot, Box{X: asked.X, Y: asked.Y, W: 1, H: 1}, Dark().Panel) != 0 {
+		if painted(shot, Box{X: asked.X, Y: asked.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
 			return fmt.Errorf("the question's corner at %+v is not rounded", asked)
 		}
-		if painted(shot, Box{X: asked.X + asked.W/2, Y: asked.Y + 2, W: 1, H: 1}, Dark().Panel) != 1 {
+		if painted(shot, Box{X: asked.X + asked.W/2, Y: asked.Y + 2, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
 			return fmt.Errorf("the question at %+v does not stand on a panel's ground", asked)
 		}
-		if painted(shot, Edges(asked)[0], Dark().Chosen) != 0 {
+		if painted(shot, Edges(asked)[0], Dark().Colour.Accent.Base) != 0 {
 			return fmt.Errorf("the question is still edged in the accent")
 		}
 		return nil
@@ -2417,7 +2417,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		over := Over(w.w.width, w.w.height)
 		fields := w.w.Form().Fields()
 		frame := Framed(formValue(over, fields, 0), formRows(over, fields, 0))
-		if painted(shot, frame, Dark().Edge) != 0 || paintedNear(shot, frame, dimmed(Dark().Edge), 6) == 0 {
+		if painted(shot, frame, Dark().Colour.Line.Edge) != 0 || paintedNear(shot, frame, dimmed(Dark().Colour.Line.Edge), 6) == 0 {
 			return fmt.Errorf("the form behind the question is drawn as bright as without it")
 		}
 		return nil
@@ -2769,6 +2769,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the help is headed "([^"]*)"$`, w.helpHeaded)
 	sc.Then(`^the panel is headed "([^"]*)"$`, w.helpHeaded)
+	sc.Then(`^the rule over what the panel offers stands out from the panel$`, w.panelRuleSeen)
 	sc.Then(`^the search box is open$`, w.searchBoxOpen)
 	sc.Then(`^the search box is closed$`, w.searchBoxClosed)
 	sc.Then(`^the search is still in force$`, w.searchStillInForce)
@@ -3099,6 +3100,24 @@ func (w *world) helpHeaded(head string) error {
 	return nil
 }
 
+func (w *world) panelRuleSeen() error {
+	along := w.w.PanelOffers()
+	if len(along) == 0 {
+		return fmt.Errorf("the panel offers nothing, so it draws no rule")
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	box := w.w.panel()
+	at := shot.RGBAAt(box.X+box.W/2, along[0].Y-between)
+	rule := color.NRGBA{R: at.R, G: at.G, B: at.B, A: 255}
+	if got := Contrast(rule, Dark().Colour.Surface.Raised); got < 1.2 {
+		return fmt.Errorf("the rule %+v stands at %.2f from the panel, and a rule needs 1.2", rule, got)
+	}
+	return nil
+}
+
 func (w *world) wrapping(name string) (Lines, int, error) {
 	fields := w.w.Form().Fields()
 	for i, field := range fields {
@@ -3242,7 +3261,7 @@ func (w *world) formBehindTheList() error {
 	if err != nil {
 		return err
 	}
-	if painted(shot, frame, Dark().Field) == 0 {
+	if painted(shot, frame, Dark().Colour.Surface.Field) == 0 {
 		return fmt.Errorf("the form's first field is gone: the list covered it rather than sitting on it")
 	}
 	return nil
@@ -3269,7 +3288,7 @@ func (w *world) fieldDrawnByName(field string) error {
 		if err != nil {
 			return err
 		}
-		if inked(shot, far, Dark().Back) == 0 {
+		if inked(shot, far, Dark().Colour.Surface.Back) == 0 {
 			return fmt.Errorf("the field %q draws nothing past where %q would have ended", field, f.Value)
 		}
 		return nil
@@ -3613,8 +3632,8 @@ func (w *world) stripedWide(title string, wide int) error {
 		return err
 	}
 	at := PartsOf(w.w.Layout().CardAt(engine.IndexOf(card.State), 0, 0)).Edge
-	want := Dark().Priority[card.Priority]
-	stripe := Box{X: at.X, Y: at.Y + stripeRadius, W: wide, H: at.H - 2*stripeRadius}
+	want := Dark().Colour.Priority[card.Priority]
+	stripe := Box{X: at.X, Y: at.Y + Dark().Radius.Stripe, W: wide, H: at.H - 2*Dark().Radius.Stripe}
 	if got := painted(shot, stripe, want); got != stripe.W*stripe.H {
 		return fmt.Errorf("the stripe fills %d of %d pixels of its %d points", got, stripe.W*stripe.H, wide)
 	}
@@ -3631,7 +3650,7 @@ func buttonsDrawn(w Window, buttons []Box, grounds ...color.NRGBA) error {
 		return err
 	}
 	for _, button := range buttons {
-		row := Box{X: button.X + buttonRadius, Y: button.Y + 2, W: button.W - 2*buttonRadius, H: 1}
+		row := Box{X: button.X + Dark().Radius.Control, Y: button.Y + 2, W: button.W - 2*Dark().Radius.Control, H: 1}
 		got := 0
 		for _, ground := range grounds {
 			got += painted(shot, row, ground)

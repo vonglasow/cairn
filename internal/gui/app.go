@@ -375,7 +375,7 @@ func loop(window *app.Window, work engine.Work, pages engine.Pages, drafts Draft
 			}
 			board = board.Born(gtx.Now)
 			board.tellingTheBars()
-			Draw(gtx, theme, skin, board)
+			Draw(NewKit(gtx, theme, skin, &Drawn{}), board)
 			_, building := board.Intro()
 			if _, rising := board.PaletteRise(); building || rising {
 				gtx.Execute(op.InvalidateCmd{})

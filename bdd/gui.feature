@@ -4956,6 +4956,12 @@ Feature: The desktop board
       And I click "Help"
       Then the help is headed "What everything does"
 
+    @gui-a-panel-rule-can-be-seen
+    Scenario: the rule over what a panel offers can be told from the panel it is drawn on
+      When I open the window
+      And I click "Help"
+      Then the rule over what the panel offers stands out from the panel
+
   Rule: Several cards are taken at once
 
     @gui-several-are-gathered-with-cmd

@@ -255,7 +255,7 @@ func TestTheBubbleIsDrawnLastAndInsideTheWindow(t *testing.T) {
 	}
 	shot := drawn(t, w)
 	got := shot.RGBAAt(bubble.X+2, bubble.Y+bubble.H/2)
-	ground := Dark().Panel
+	ground := Dark().Colour.Surface.Raised
 	if got.R != ground.R || got.G != ground.G || got.B != ground.B {
 		t.Fatalf("the bubble's ground is %v where %v was drawn over the cards", got, ground)
 	}
@@ -272,11 +272,11 @@ func TestALabelPillWearsItsColour(t *testing.T) {
 	w := holding(newFake(), c)
 	w.snap.Colours = map[string]string{"release": "peach"}
 	skin := Dark()
-	if len(skin.Labels) != 14 {
-		t.Fatalf("the skin knows %d label colours", len(skin.Labels))
+	if len(skin.Colour.Labels) != 14 {
+		t.Fatalf("the skin knows %d label colours", len(skin.Colour.Labels))
 	}
 	ground, ink := skin.LabelPill("peach")
-	if ink != skin.Labels["peach"] || ground == skin.Pill {
+	if ink != skin.Colour.Labels["peach"] || ground == skin.Colour.Surface.Control {
 		t.Fatalf("a peach pill is %v on %v", ink, ground)
 	}
 	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{}).Pills[0]

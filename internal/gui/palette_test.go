@@ -135,7 +135,7 @@ func TestThePaletteIsDrawnUnderTheTabs(t *testing.T) {
 	if box.Y != l.Tabs.Y+l.Tabs.H || box.X+box.W/2 != w.width/2 || box.Y+box.H > l.Bar.Y {
 		t.Errorf("the palette at %+v is not under the tabs %+v, above the bar %+v", box, l.Tabs, l.Bar)
 	}
-	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + 4, W: 1, H: 1}, Dark().Panel) != 1 {
+	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + 4, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the palette is not drawn")
 	}
 }
@@ -196,7 +196,7 @@ func TestTheCommandBarsChosenRowSaysEnterOnAChip(t *testing.T) {
 	if chip.X+chip.W > chosen.Box.X+chosen.Box.W || chip.W == 0 {
 		t.Fatalf("the chip %+v is not inside the row %+v", chip, chosen.Box)
 	}
-	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, darker(Dark().Pill)) != 1 {
+	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.ChipOnControl) != 1 {
 		t.Error("the chosen row draws no chip for enter")
 	}
 }
