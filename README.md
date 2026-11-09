@@ -147,11 +147,13 @@ notes = "~/.cairn/notes"
 plugin = "~/.cairn/claude-plugin"
 
 # The pages every surface offers: the boards' tabs, the commands, the MCP
-# tools. Each is on unless it says false.
+# tools. Each is on unless it says false. The time is "on", recorded and
+# shown; "hidden", recorded and not shown, there again once it is on; or
+# "off", neither: a task in focus counts no time until it is on again.
 [pages]
 tasks = true
 objectives = true
-time = true
+time = "on"
 
 # Archiving on its own: days are counted from start, in periods of that many
 # days, and when a board opens or the tasks are listed, a task that went done

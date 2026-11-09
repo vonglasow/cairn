@@ -82,3 +82,14 @@ func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
 		t.Errorf("the keys come from %v", from)
 	}
 }
+
+func TestTheTimeIsSaidAsItsWord(t *testing.T) {
+	w := holding(newFake())
+	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
+		Pages: &engine.PagesConfig{Time: "hidden"}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{}}
+	for _, line := range w.ConfigLines() {
+		if line.Key == "pages.time" && line.Value != "hidden" {
+			t.Errorf("pages.time says %q, want hidden", line.Value)
+		}
+	}
+}

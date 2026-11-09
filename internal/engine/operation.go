@@ -429,6 +429,11 @@ func doWith(
 			return Answer{}, storeProblem(err)
 		}
 	}
+	if op.Needs == AStore {
+		if err := eng.timerKept(); err != nil {
+			return Answer{}, storeProblem(err)
+		}
+	}
 	answer, err = eng.run(op, in)
 	if err != nil || op.Needs != AStore {
 		return answer, err

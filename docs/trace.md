@@ -34,17 +34,20 @@ So every entry carries the field, the value before, the value after, and the
 moment. The two extra columns are the whole difference between a trace you can
 read and a trace you can rebuild from, and rebuilding is what was asked for.
 
-## Nineteen acts, and reading is not one of them
+## Twenty-one acts, and reading is not one of them
 
 Thirteen of them are the attributes a task carries, one act each: its title, its
 description, its column, its priority, its labels, what blocks it, the words
 beside them, the tasks it is linked to, its deadline, its estimate, its steps, the
 objectives it serves, and whether it was archived — archiving and
-bringing back are changes like any other, written `yes` and nothing. Six are not
-about a field: **created**, **moved**, **focus taken**, **focus released**,
-**focus renewed**, **deleted**, **time added**. A focus renewed restarts the
+bringing back are changes like any other, written `yes` and nothing. The others
+are not about a field: **created**, **moved**, **focus taken**, **focus released**,
+**focus renewed**, **timer stopped**, **timer started**, **deleted**, **time
+added**. A focus renewed restarts the
 focus's session and leaves its time running (see
-[config](config.md#a-focus-session-that-asks-to-be-renewed)).
+[config](config.md#a-focus-session-that-asks-to-be-renewed)); a timer stopped or
+started is the time turned off or back on under a task in focus (see
+[below](#time-turned-off-a-focus-without-a-timer)).
 
 **Steps are one attribute.** A step added, ticked, renamed or taken away is a
 *changed* act on its task with the field `steps`, the values before and after
@@ -229,6 +232,44 @@ day and sort them into development, fixes, meetings; cairn says the real time,
 every hour of it, and holds no category. Bringing a day down and sorting it out
 is done when the sheet is filled in, by whoever fills it in — the categories
 change, and a task does not know which one it was until it is over.
+
+## Time turned off: a focus without a timer
+
+`[pages] time` is `"on"`, `"hidden"` or `"off"` (see
+[config](config.md#the-pages-turned-off-one-by-one)). Hidden changes only what
+is shown: the focus is measured as ever, and turned back on, every minute spent
+meanwhile is there (`@time-hidden-records-what-it-does-not-show`). Off, no time
+is written down at all, and the focus stays: a task is still in focus, still
+says who is on what, but counts nothing (`@time-off-records-nothing`).
+
+**What is counted is said by acts, at the moment, like the rest.** Off, a focus
+taken is written `focus taken  without a timer`, and no span opens. A task
+already in focus when the time goes off gets a **timer stopped**; one in focus
+without a timer when it comes back on, a **timer started** — and the sheet
+counts from there, catching nothing up (`@time-on-from-off-starts-the-timer-then`).
+A span is a focus taken with a timer, or a timer started, up to a focus
+released or a timer stopped; `trace.TimerRuns` reads, for one task, whether its
+timer runs, and the sheet walks the same rule.
+
+Computing it at read time from the mode was weighed and left: the mode is a
+key in a file, and a file says what it is now, not what it was on Tuesday.
+Read that way, turning the time off would take back hours recorded while it
+was on, and turning it on would count hours spent while it was off — the past
+changing every time a key does, which is what the trace exists to prevent.
+Written as acts, a span recorded while on stays once the time is off
+(`@time-off-keeps-what-was-recorded`), and nothing recorded is ever taken away
+in any mode.
+
+**The moment is the first time cairn acts after the change.** A file edited by
+hand tells nobody; the engine compares the mode with each task in focus before
+every operation on the store — a command, a board's, the server's, the Claude
+hook's at each prompt — and writes what is owed then. The minutes between the
+edit and that moment go with the mode the task was in. A task whose history
+holds no focus at all, as in a store older than the trace, is left as it is.
+
+Off, no focus session asks to be renewed (`@time-off-asks-no-renewal`): a
+session is asked about because it counts time nobody may be spending, and
+nothing is counted.
 
 ## It says who acted, and through what
 

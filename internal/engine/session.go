@@ -56,7 +56,7 @@ func (e *Engine) sessionLength() (time.Duration, error) {
 		return 0, nil
 	}
 	said := read.FocusSession()
-	if said == "" {
+	if said == "" || read.TimeMode() == config.TimeOff {
 		return 0, nil
 	}
 	length, err := time.ParseDuration(said)

@@ -409,7 +409,8 @@
               "type": "boolean"
             },
             "time": {
-              "type": "boolean"
+              "type": "string",
+              "description": "on, recorded and shown; hidden, recorded and not shown; off, neither"
             }
           },
           "required": [

@@ -130,3 +130,16 @@ func TestTheExample_writesWeekendsShownUnderTime(t *testing.T) {
 		t.Errorf("the example does not write weekends = \"shown\" under [time]:\n%s", Example)
 	}
 }
+
+func TestTheExample_writesTheTimeAsAWordAndNamesTheThree(t *testing.T) {
+	_, under, _ := strings.Cut(Example, "\n[pages]\n")
+	under, _, _ = strings.Cut(under, "\n[archive]\n")
+	if !regexp.MustCompile(`(?m)^time = "on"$`).MatchString(under) {
+		t.Errorf("the example does not write time = \"on\" under [pages]:\n%s", Example)
+	}
+	for _, word := range []string{`"on"`, `"hidden"`, `"off"`} {
+		if !strings.Contains(Example, word) {
+			t.Errorf("the example does not name the time %s:\n%s", word, Example)
+		}
+	}
+}

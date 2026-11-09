@@ -56,6 +56,16 @@ const (
 	WeekendsHidden = "hidden"
 )
 
+// ErrTimeMode is returned when the file says the time is something other than one of its three words.
+var ErrTimeMode = errors.New(`the time is "on", "hidden" or "off"`)
+
+// TimeOn, TimeHidden and TimeOff are what the time may be: recorded and shown, recorded and not shown, or neither.
+const (
+	TimeOn     = "on"
+	TimeHidden = "hidden"
+	TimeOff    = "off"
+)
+
 // ErrKeepSizes is returned when the file says whether the window keeps its sizes with something that is neither true nor false.
 var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
 
@@ -82,6 +92,7 @@ type Places struct {
 	storeNamedBy     namedBy
 	notesNamedBy     namedBy
 	pagesOff         []string
+	timeMode         string
 	plugin           string
 	archiveStart     string
 	archiveDays      int
@@ -183,10 +194,28 @@ func (s *archive) read() (string, int, error) {
 type pages struct {
 	Tasks      *bool `toml:"tasks"`
 	Objectives *bool `toml:"objectives"`
-	Time       *bool `toml:"time"`
+	Time       any   `toml:"time"`
 }
 
-func (p *pages) off() []string {
+func (p *pages) time() (string, error) {
+	if p == nil || p.Time == nil {
+		return TimeOn, nil
+	}
+	switch said := p.Time.(type) {
+	case bool:
+		if said {
+			return TimeOn, nil
+		}
+		return TimeHidden, nil
+	case string:
+		if slices.Contains([]string{TimeOn, TimeHidden, TimeOff}, said) {
+			return said, nil
+		}
+	}
+	return "", fmt.Errorf("pages.time %#v: %w", p.Time, ErrTimeMode)
+}
+
+func (p *pages) off(timeOn bool) []string {
 	if p == nil {
 		return nil
 	}
@@ -194,7 +223,7 @@ func (p *pages) off() []string {
 	for _, page := range []struct {
 		name string
 		on   *bool
-	}{{"tasks", p.Tasks}, {"objectives", p.Objectives}, {"time", p.Time}} {
+	}{{"tasks", p.Tasks}, {"objectives", p.Objectives}, {"time", &timeOn}} {
 		if page.on != nil && !*page.on {
 			off = append(off, page.name)
 		}
@@ -218,6 +247,9 @@ func (p Places) Pages() [3]bool {
 	}
 	return on
 }
+
+// TimeMode is what the time is: TimeOn unless the file says TimeHidden or TimeOff, false read as TimeHidden.
+func (p Places) TimeMode() string { return p.timeMode }
 
 // TimeDeleted is what a deleted task does with its time: TimeKept, unless the file says TimeTaken.
 func (p Places) TimeDeleted() string { return p.timeDeleted }
@@ -428,8 +460,13 @@ func (p *Places) settle(f file) error {
 	if err != nil {
 		return err
 	}
+	mode, err := f.Pages.time()
+	if err != nil {
+		return err
+	}
+	p.timeMode = mode
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
-	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off()
+	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
 	return nil
 }
 

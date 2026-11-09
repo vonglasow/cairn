@@ -237,3 +237,13 @@ func TestSettingsHeader_saysNothingAndWhy(t *testing.T) {
 		t.Errorf("the header does not say everything comes from the global configuration until it says otherwise:\n%s", config.SettingsHeader)
 	}
 }
+
+func TestWithSettings_theStoreTurnsTheTimeOffWhileTheGlobalHasItOn(t *testing.T) {
+	read, _, err := settled(t, "[pages]\ntime = \"on\"\n", "[pages]\ntime = \"off\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.TimeMode(); got != config.TimeOff {
+		t.Errorf("TimeMode = %q, want off", got)
+	}
+}

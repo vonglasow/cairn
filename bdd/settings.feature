@@ -67,7 +67,7 @@ Feature: Settings that belong to a store, kept beside it
         time = false
         """
       When I run `cairn config show --store ~/loose/cairn.db`
-      Then it says "time" is "false"
+      Then it says "time" is "hidden"
 
   Rule: What belongs to the machine stays in the global configuration
 
@@ -195,4 +195,4 @@ Feature: Settings that belong to a store, kept beside it
       When I run `cairn workspace add play ~/cairn/play`
       Then it succeeds
       When I run `cairn config show --workspace play`
-      Then it says "time" is "false"
+      Then it says "time" is "hidden"

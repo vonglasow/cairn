@@ -15,6 +15,7 @@ func initPages(t *testing.T) func(*godog.ScenarioContext) {
 		w := newWorld(t)
 		w.register(sc)
 		w.registerConfig(sc)
+		w.registerHelp(sc)
 		sc.Step(`^a configuration that turns the page "([^"]*)" off$`, func(page string) error {
 			return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n", page))
 		})
@@ -24,28 +25,18 @@ func initPages(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^a configuration that turns every page off$`, func() error {
 			return w.WriteConfig("[pages]\ntasks = false\nobjectives = false\ntime = false\n")
 		})
-		offers := func(command string) bool {
-			return regexp.MustCompile(`(?m)^\s+` + regexp.QuoteMeta(command) + `\s`).MatchString(w.Out.Stdout)
-		}
-		sc.Step(`^the help offers "([^"]*)"$`, func(command string) error {
-			if !offers(command) {
-				return fmt.Errorf("the help does not offer %q:\n%s", command, w.Out.Stdout)
-			}
-			return nil
-		})
-		sc.Step(`^the help does not offer "([^"]*)"$`, func(command string) error {
-			if offers(command) {
-				return fmt.Errorf("the help offers %q:\n%s", command, w.Out.Stdout)
-			}
-			return nil
-		})
 		sc.Step(`^it says the pages turned off are "([^"]*)"$`, func(pages string) error {
 			off := strings.Split(pages, ", ")
 			for _, page := range []string{"tasks", "objectives", "time"} {
-				want := fmt.Sprintf("\n%s = %t\n", page, !slices.Contains(off, page))
+				wants := []string{fmt.Sprintf("\n%s = %t\n", page, !slices.Contains(off, page))}
+				if page == "time" && slices.Contains(off, page) {
+					wants = []string{"\ntime = \"hidden\"\n", "\ntime = \"off\"\n"}
+				} else if page == "time" {
+					wants = []string{"\ntime = \"on\"\n"}
+				}
 				_, under, _ := strings.Cut(w.Out.Stdout, "\n[pages]")
 				under, _, _ = strings.Cut(under+"\n[", "\n[")
-				if !strings.Contains(under+"\n", want) {
+				if !slices.ContainsFunc(wants, func(want string) bool { return strings.Contains(under+"\n", want) }) {
 					return fmt.Errorf("it does not say the pages %q are off:\n%s", pages, w.Out.Stdout)
 				}
 			}
@@ -56,4 +47,22 @@ func initPages(t *testing.T) func(*godog.ScenarioContext) {
 
 func TestAcceptance_Pages(t *testing.T) {
 	runAcceptance(t, "pages.feature", initPages(t), "")
+}
+
+func (w *world) registerHelp(sc *godog.ScenarioContext) {
+	offers := func(command string) bool {
+		return regexp.MustCompile(`(?m)^\s+` + regexp.QuoteMeta(command) + `\s`).MatchString(w.Out.Stdout)
+	}
+	sc.Step(`^the help offers "([^"]*)"$`, func(command string) error {
+		if !offers(command) {
+			return fmt.Errorf("the help does not offer %q:\n%s", command, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the help does not offer "([^"]*)"$`, func(command string) error {
+		if offers(command) {
+			return fmt.Errorf("the help offers %q:\n%s", command, w.Out.Stdout)
+		}
+		return nil
+	})
 }

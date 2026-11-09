@@ -164,11 +164,11 @@ switching workspace switches them with the store (`bdd/settings.feature`,
   `[focus]`, `[approach]`, `[time]`, `[window]`. A key it says wins
   (`@settings-the-store-wins`); a key it leaves out is the global file's, or
   the default (`@settings-a-key-not-said-comes-from-the-global-file`); each
-  page is said on its own, so `objectives = false` here leaves `time = false`
-  in the global file standing. `store`, `notes`, `plugin` and `[workspaces]`
-  say where things are, which is the machine's to know before any store is
-  open: written here, they are refused naming the global file they go in
-  (`@settings-a-machine-key-is-refused`).
+  page is said on its own, so `objectives = false` here leaves
+  `time = "hidden"` in the global file standing. `store`, `notes`, `plugin`
+  and `[workspaces]` say where things are, which is the machine's to know
+  before any store is open: written here, they are refused naming the global
+  file they go in (`@settings-a-machine-key-is-refused`).
 - **An empty string**: `label = ""` under `[approach]` means no approach label
   for this store, whatever the global file says
   (`@settings-an-empty-approach-label-is-none-here`). Any other key written
@@ -265,7 +265,8 @@ where it is and whether the file named it.
 
 ```toml
 [pages]
-time = false        # tasks, objectives and time; each is on unless it says false
+objectives = false  # tasks and objectives are on unless they say false
+time = "hidden"     # "on", "hidden" or "off"
 ```
 
 A page turned off is gone from every surface, and the engine is what says so
@@ -289,6 +290,24 @@ commands. Now each line of the menu bar names the acts it does,
 and is offered while one of them is (`@gui-a-page-off-takes-its-menus`,
 `@gui-the-tasks-off-take-their-menus`); a menu left with no line goes, and the
 `:` line runs only what is offered (`@tui-a-page-off-takes-its-commands`).
+
+**The time says one of three words.** `"on"`, the default, is recorded and
+shown. `"hidden"` is recorded and not shown: every surface treats the page as
+off — no tab, no time on a card, no timesheet command or tool — and the trace
+keeps counting, so turned back on, every minute spent meanwhile is there
+(`bdd/time.feature`, `@time-hidden-records-what-it-does-not-show`). `"off"` is
+neither: shown as hidden is, and a task in focus counts no time at all — the
+focus stays, without a timer, and turning the time back on starts the timer
+then, nothing before caught up (`@time-off-records-nothing`,
+`@time-on-from-off-starts-the-timer-then`); no focus session asks to be
+renewed while it is off (`@time-off-asks-no-renewal`). Nothing already
+recorded is taken away in any of the three (`@time-off-keeps-what-was-recorded`);
+how that holds is in [trace.md](trace.md#time-turned-off-a-focus-without-a-timer).
+`true` reads as `"on"` and `false` as `"hidden"`, so a file written before means
+what it meant; `config show` writes the word (`@time-config-show-writes-the-word`).
+Anything else is refused naming `pages.time` and the three words
+(`@time-a-word-it-does-not-know-is-refused`). A store's settings may say it as
+any page (`@time-off-in-the-store-settings`).
 
 With every page off a board opens with nothing in it, its menu bar with
 nothing either (`@gui-every-page-off-leaves-what-belongs-to-none`), and only
@@ -379,7 +398,8 @@ called (`@mcp-any-answer-asks-to-renew-a-focus-session`): an agent rarely calls
 `task_focus`. Focusing the task again renews the session, written `focus
 renewed` in the trace (`@focus-session-renewed`); within its length it writes
 nothing. The time runs on through a renewal: only a release stops it. Nothing
-said, nothing is asked. A length that is not a duration is refused, naming
+said, nothing is asked; nor while the time is off, since nothing is counted
+(`@time-off-asks-no-renewal`). A length that is not a duration is refused, naming
 `focus.session` (`@config-a-focus-session-that-cannot-be-read-is-refused`), and
 `config show` says it (`@config-show-says-how-long-a-focus-session-lasts`).
 

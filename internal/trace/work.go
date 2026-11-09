@@ -62,17 +62,17 @@ func workedFrom(acts []Act, loc *time.Location, now time.Time) work {
 	w := work{byHand: map[time.Time]map[int]time.Duration{}, undated: map[int]time.Duration{}}
 	open := map[int]time.Time{}
 	for _, f := range facts {
-		switch f.Did {
-		case FocusTaken:
+		switch {
+		case starts(f):
 			if _, already := open[f.Task]; !already {
 				open[f.Task] = f.At
 			}
-		case FocusReleased:
+		case f.Did == FocusReleased || f.Did == TimerStopped:
 			if from, was := open[f.Task]; was {
 				w.spans = append(w.spans, cutAtMidnight(f.Task, from, f.At, loc))
 				delete(open, f.Task)
 			}
-		case TimeAdded:
+		case f.Did == TimeAdded:
 			w.addedByHand(f, loc)
 		}
 	}
@@ -80,6 +80,27 @@ func workedFrom(acts []Act, loc *time.Location, now time.Time) work {
 		w.spans = append(w.spans, cutAtMidnight(task, from, now, loc))
 	}
 	return w
+}
+
+func starts(f Carried) bool {
+	return f.Did == TimerStarted || f.Did == FocusTaken && f.Became != WithoutATimer
+}
+
+// TimerRuns says whether the time of a task is being counted, by the last of its acts that started or stopped it, and whether any did.
+func TimerRuns(acts []Act, task int) (runs, known bool) {
+	for _, a := range acts {
+		f := a.Carried()
+		if f.Task != task {
+			continue
+		}
+		switch {
+		case starts(f):
+			runs, known = true, true
+		case f.Did == FocusTaken || f.Did == FocusReleased || f.Did == TimerStopped:
+			runs, known = false, true
+		}
+	}
+	return runs, known
 }
 
 func (w work) addedByHand(f Carried, loc *time.Location) {

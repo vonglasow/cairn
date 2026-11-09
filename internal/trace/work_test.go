@@ -341,3 +341,63 @@ func TestTimed_writesWhatComesAfterATaskWithTimeTakenOff(t *testing.T) {
 		}
 	}
 }
+
+func timer(task int, did string, hour, minute int) Act {
+	var a AsTold
+	a.On(task)
+	a.Did(did)
+	a.At(at(hour, minute))
+	return a.Act()
+}
+
+func tookWithoutATimer(task, hour, minute int) Act {
+	var a AsTold
+	a.On(task)
+	a.Did(FocusTaken)
+	a.Became(WithoutATimer)
+	a.At(at(hour, minute))
+	return a.Act()
+}
+
+func TestTimed_countsNothingOfAFocusTakenWithoutATimer(t *testing.T) {
+	s := Timed([]Act{tookWithoutATimer(1, 9, 0), stopped(1, 11, 0)}, dayOf(3), dayOf(3), at(18, 0))
+	if _, _, written := worked(s, dayOf(3), 1); written {
+		t.Errorf("a focus without a timer counted: %+v", s)
+	}
+}
+
+func TestTimed_countsFromTheTimerStartedAndToTheTimerStopped(t *testing.T) {
+	s := Timed([]Act{
+		tookWithoutATimer(1, 9, 0), timer(1, TimerStarted, 10, 0), stopped(1, 10, 30),
+		took(2, 9, 0), timer(2, TimerStopped, 9, 45), stopped(2, 12, 0),
+	}, dayOf(3), dayOf(3), at(18, 0))
+	one, _, _ := worked(s, dayOf(3), 1)
+	two, _, _ := worked(s, dayOf(3), 2)
+	if one != 30*time.Minute || two != 45*time.Minute {
+		t.Errorf("task 1 %s, task 2 %s; want 30m from the timer started, 45m to the timer stopped", one, two)
+	}
+	open := Timed([]Act{took(1, 9, 0), timer(1, TimerStarted, 9, 30)}, dayOf(3), dayOf(3), at(10, 0))
+	if took, _, _ := worked(open, dayOf(3), 1); took != time.Hour {
+		t.Errorf("a timer started while it runs counted %s, want the hour since the focus", took)
+	}
+}
+
+func TestTimerRuns_saysWhetherTheTimerOfATaskRuns(t *testing.T) {
+	for _, c := range []struct {
+		name        string
+		acts        []Act
+		runs, known bool
+	}{
+		{"nothing said", []Act{somethingElse(1, 9, 0)}, false, false},
+		{"focus taken", []Act{took(1, 9, 0)}, true, true},
+		{"focus taken without a timer", []Act{tookWithoutATimer(1, 9, 0)}, false, true},
+		{"timer stopped", []Act{took(1, 9, 0), timer(1, TimerStopped, 9, 30)}, false, true},
+		{"timer started", []Act{tookWithoutATimer(1, 9, 0), timer(1, TimerStarted, 9, 30)}, true, true},
+		{"focus released", []Act{took(1, 9, 0), stopped(1, 9, 30)}, false, true},
+		{"another task's", []Act{took(2, 9, 0)}, false, false},
+	} {
+		if runs, known := TimerRuns(c.acts, 1); runs != c.runs || known != c.known {
+			t.Errorf("%s: runs %v, known %v; want %v, %v", c.name, runs, known, c.runs, c.known)
+		}
+	}
+}

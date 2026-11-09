@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -779,5 +780,39 @@ func TestRead_passesOverANameItDoesNotKnowAndReadsTheRest(t *testing.T) {
 	}
 	if none, _ := config.Read(t.TempDir(), silentEnv); none.Ignored() != nil {
 		t.Errorf("with no file, Ignored = %q", none.Ignored())
+	}
+}
+
+func TestRead_saysTheTimeAsOneOfThreeWords(t *testing.T) {
+	for written, want := range map[string]string{
+		"":                    config.TimeOn,
+		"time = true\n":       config.TimeOn,
+		"time = false\n":      config.TimeHidden,
+		"time = \"on\"\n":     config.TimeOn,
+		"time = \"hidden\"\n": config.TimeHidden,
+		"time = \"off\"\n":    config.TimeOff,
+	} {
+		read, err := config.Read(writtenConfig(t, "[pages]\n"+written), silentEnv)
+		if err != nil {
+			t.Fatalf("%q: %v", written, err)
+		}
+		if got := read.TimeMode(); got != want {
+			t.Errorf("%q reads as %q, want %q", written, got, want)
+		}
+		if off := slices.Contains(read.PagesOff(), "time"); off != (want != config.TimeOn) {
+			t.Errorf("%q turns the time page off: %v", written, off)
+		}
+	}
+}
+
+func TestRead_refusesATimeThatIsNotOneOfTheThreeWords(t *testing.T) {
+	for _, written := range []string{`"paused"`, `""`, `1`} {
+		_, err := config.Read(writtenConfig(t, "[pages]\ntime = "+written+"\n"), silentEnv)
+		if !errors.Is(err, config.ErrTimeMode) || !strings.Contains(err.Error(), "pages.time") {
+			t.Errorf("time = %s: err = %v, want ErrTimeMode naming pages.time", written, err)
+		}
+	}
+	if !strings.Contains(config.ErrTimeMode.Error(), `"on", "hidden" or "off"`) {
+		t.Errorf("ErrTimeMode says %q, want the three words", config.ErrTimeMode)
 	}
 }

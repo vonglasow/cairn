@@ -29,6 +29,9 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 		if err := e.sweepIfOwed(); err != nil {
 			return Answer{}, Told(err)
 		}
+		if err := e.timerKept(); err != nil {
+			return Answer{}, Told(storeProblem(err))
+		}
 	}
 	return e.run(op, in)
 }

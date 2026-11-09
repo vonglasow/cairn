@@ -122,7 +122,11 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	if err := e.places.AddFocus(number); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.record(number, trace.FocusTaken, "", "", ""); err != nil {
+	became := ""
+	if !e.timeCounted() {
+		became = trace.WithoutATimer
+	}
+	if err := e.record(number, trace.FocusTaken, "", "", became); err != nil {
 		return task.Task{}, err
 	}
 	return e.broughtIntoCurrent(t)

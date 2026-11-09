@@ -38,11 +38,11 @@ type Config struct {
 	Ignored     []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
 }
 
-// PagesConfig is whether each page is on.
+// PagesConfig is whether each page is on, and what the time is: on, hidden or off.
 type PagesConfig struct {
-	Tasks      bool `json:"tasks"`
-	Objectives bool `json:"objectives"`
-	Time       bool `json:"time"`
+	Tasks      bool   `json:"tasks"`
+	Objectives bool   `json:"objectives"`
+	Time       string `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
 }
 
 // TimeConfig is what a deleted task does with its time, kept or taken, and whether a week is drawn with its weekend, shown or hidden.
@@ -116,7 +116,7 @@ func (g *readingGate) Resolved(p config.Places) {
 		g.config.Plugin = Emplacement{At: told, By: "the file"}
 	}
 	pages := p.Pages()
-	g.config.Pages = &PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: pages[2]}
+	g.config.Pages = &PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: p.TimeMode()}
 	start, days, _ := p.Archive()
 	g.config.Archive = &Archive{Start: start, Days: days}
 	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
@@ -183,7 +183,7 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "# ignored: %s\n", ignored)
 	}
 	if c.Pages != nil {
-		fmt.Fprintf(&said, "\n[pages]\ntasks = %t%s\nobjectives = %t%s\ntime = %t%s\n",
+		fmt.Fprintf(&said, "\n[pages]\ntasks = %t%s\nobjectives = %t%s\ntime = %q%s\n",
 			c.Pages.Tasks, c.from("pages.tasks"), c.Pages.Objectives, c.from("pages.objectives"), c.Pages.Time, c.from("pages.time"))
 	}
 	if c.Archive != nil {

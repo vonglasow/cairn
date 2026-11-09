@@ -15,6 +15,10 @@ const (
 	FocusReleased = "focus released"
 	// FocusRenewed is a focus said to go on past its session's length: the session starts again, the time runs on.
 	FocusRenewed = "focus renewed"
+	// TimerStopped is a task in focus that stops counting time, the time turned off: the focus stays.
+	TimerStopped = "timer stopped"
+	// TimerStarted is a task in focus that starts counting time again, the time turned back on: nothing before is caught up.
+	TimerStarted = "timer started"
 	// Deleted is a task being removed.
 	Deleted = "deleted"
 	// Changed is one attribute of a task taking another value.
@@ -22,6 +26,9 @@ const (
 	// TimeAdded is time spent on a task without it being in focus, added by hand: the day it was spent is what it was, the length what it became.
 	TimeAdded = "time added"
 )
+
+// WithoutATimer is what a focus taken while the time is off became: the focus is held, and no time is counted for it.
+const WithoutATimer = "without a timer"
 
 // Act is one thing that was done to a task.
 type Act struct {

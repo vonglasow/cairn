@@ -381,7 +381,7 @@ Feature: Where cairn looks for its own places
         |         | plugin = "          |
         | pages   | tasks = true        |
         | pages   | objectives = true   |
-        | pages   | time = true         |
+        | pages   | time = "on"         |
         | archive | days = 14           |
         | time    | deleted = "kept"    |
         | time    | weekends = "shown"  |

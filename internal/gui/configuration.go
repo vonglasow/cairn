@@ -89,7 +89,7 @@ func (w Window) configKeys() []ConfigLine {
 	return append(lines,
 		written("pages.tasks", strconv.FormatBool(c.Pages.Tasks)),
 		written("pages.objectives", strconv.FormatBool(c.Pages.Objectives)),
-		written("pages.time", strconv.FormatBool(c.Pages.Time)),
+		written("pages.time", c.Pages.Time),
 		written("archive.start", notSaid(c.Archive.Start)),
 		written("archive.days", strconv.Itoa(c.Archive.Days)),
 		written("focus.session", notSaid(c.Focus.Session)),

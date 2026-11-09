@@ -121,7 +121,7 @@ func shownWith(t *testing.T, content string) Config {
 
 func TestConfigShow_answersEveryTableWhenTheFileSaysNothing(t *testing.T) {
 	c := shownWith(t, "")
-	if c.Pages == nil || *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: true}) {
+	if c.Pages == nil || *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: "on"}) {
 		t.Errorf("Pages = %+v, want every page on", c.Pages)
 	}
 	if c.Archive == nil || *c.Archive != (Archive{Days: 14}) {
@@ -140,7 +140,7 @@ func TestConfigShow_answersEveryTableWhenTheFileSaysNothing(t *testing.T) {
 
 func TestConfigShow_answersWhatTheFileSays(t *testing.T) {
 	c := shownWith(t, "[pages]\ntime = false\n[archive]\nstart = 2026-10-21\ndays = 7\n[focus]\nsession = \"1h\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
-	if *c.Pages != (PagesConfig{Tasks: true, Objectives: true}) || *c.Archive != (Archive{Start: "2026-10-21", Days: 7}) ||
+	if *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: "hidden"}) || *c.Archive != (Archive{Start: "2026-10-21", Days: 7}) ||
 		c.Focus.Session != "1h" || c.Time.Deleted != "taken" || !c.Window.KeepSizes {
 		t.Errorf("config show answers %+v %+v %+v %+v %+v", c.Pages, c.Archive, c.Focus, c.Time, c.Window)
 	}
@@ -148,7 +148,7 @@ func TestConfigShow_answersWhatTheFileSays(t *testing.T) {
 
 func TestConfigText_saysEveryKeyUnderItsTable(t *testing.T) {
 	said := configText(shownWith(t, ""))
-	for _, line := range []string{"\n[pages]\ntasks = true\nobjectives = true\ntime = true\n", "\n[archive]\n", "days = 14", "\n[focus]\n", "\n[time]\ndeleted = \"kept\"\n", "\n[window]\nkeep_sizes = false\n", "store = \"", "notes = \"", "plugin = \""} {
+	for _, line := range []string{"\n[pages]\ntasks = true\nobjectives = true\ntime = \"on\"\n", "\n[archive]\n", "days = 14", "\n[focus]\n", "\n[time]\ndeleted = \"kept\"\n", "\n[window]\nkeep_sizes = false\n", "store = \"", "notes = \"", "plugin = \""} {
 		if !strings.Contains(said, line) {
 			t.Errorf("config show does not say %q:\n%s", line, said)
 		}
@@ -200,5 +200,11 @@ func TestConfigShow_answersWhichKeysTheFileWrote(t *testing.T) {
 	}
 	if c := shownWith(t, ""); c.Written != nil {
 		t.Errorf("with an empty file, config show says it wrote %v", c.Written)
+	}
+}
+
+func TestConfigText_writesTheTimeAsItsWord(t *testing.T) {
+	if said := configText(shownWith(t, "[pages]\ntime = \"off\"\n")); !strings.Contains(said, "\ntime = \"off\"\n") {
+		t.Errorf("config show does not write time = \"off\":\n%s", said)
 	}
 }
