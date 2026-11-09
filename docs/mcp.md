@@ -656,6 +656,12 @@ The same holds for one value naming an objective by its number: `parent` on
 choices the command line takes, and is refused with the list until they are
 given (`@objective-sub-mcp-delete-asks`).
 
+A label's answer carries its `scope` — `tasks`, `objectives` or `both`;
+`label_new` takes one, `label_scope` changes it, and `label_list` takes
+`for`, `tasks` or `objectives`, to answer only the labels that may be put on
+it. A label put where its scope leaves out is refused as
+`label-out-of-scope` (`@label-scope-mcp`).
+
 - **Strings stay.** `blocker` takes `"+3"`, `"-3"` and `"=3"`, which are no
   numbers, and every list was strings until now: taking them away would be a
   break.

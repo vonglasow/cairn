@@ -11,6 +11,10 @@ const (
 	colourLabel     = `INSERT INTO label_colours (label, colour) VALUES (?, ?) ON CONFLICT (label) DO UPDATE SET colour = excluded.colour`
 	forgetColour    = `DELETE FROM label_colours WHERE label = ?`
 	renameColour    = `UPDATE OR REPLACE label_colours SET label = ? WHERE label = ?`
+	labelScopes     = `SELECT label, scope FROM label_scopes`
+	scopeLabel      = `INSERT INTO label_scopes (label, scope) VALUES (?, ?) ON CONFLICT (label) DO UPDATE SET scope = excluded.scope`
+	unscopeLabel    = `DELETE FROM label_scopes WHERE label = ?`
+	renameScope     = `UPDATE OR REPLACE label_scopes SET label = ? WHERE label = ?`
 )
 
 // KeptLabels is every label made on its own, whatever carries it or not, in alphabetical order.
@@ -30,9 +34,9 @@ func (s *Store) KeepLabel(label string) error {
 	return nil
 }
 
-// ForgetLabel lets a kept label go, and the colour chosen for it; one never kept is let go of without a word.
+// ForgetLabel lets a kept label go, and the colour and scope chosen for it; one never kept is let go of without a word.
 func (s *Store) ForgetLabel(label string) error {
-	for _, forget := range []string{forgetLabel, forgetColour} {
+	for _, forget := range []string{forgetLabel, forgetColour, unscopeLabel} {
 		if _, err := s.on.Exec(forget, label); err != nil {
 			return fmt.Errorf("letting the label %q go: %w", label, err)
 		}
@@ -40,9 +44,9 @@ func (s *Store) ForgetLabel(label string) error {
 	return nil
 }
 
-// RenameKeptLabel writes another name for a kept label and for the colour chosen for it; renamed onto one already kept, the two are one.
+// RenameKeptLabel writes another name for a kept label and for the colour and scope chosen for it; renamed onto one already kept, the two are one.
 func (s *Store) RenameKeptLabel(from, to string) error {
-	for _, rename := range []string{renameKeptLabel, renameColour} {
+	for _, rename := range []string{renameKeptLabel, renameColour, renameScope} {
 		if _, err := s.on.Exec(rename, to, from); err != nil {
 			return fmt.Errorf("renaming the label %q: %w", from, err)
 		}
@@ -52,20 +56,41 @@ func (s *Store) RenameKeptLabel(from, to string) error {
 
 // LabelColours is the colour chosen for each label one was chosen for.
 func (s *Store) LabelColours() (map[string]string, error) {
-	rows, err := s.on.Query(labelColours)
+	return s.labelled(labelColours, "colour")
+}
+
+// LabelScopes is the scope of each label narrowed to tasks or to objectives; a label missing from it is for both.
+func (s *Store) LabelScopes() (map[string]string, error) {
+	return s.labelled(labelScopes, "scope")
+}
+
+func (s *Store) labelled(query, what string) (map[string]string, error) {
+	rows, err := s.on.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("reading the labels' colours: %w", err)
+		return nil, fmt.Errorf("reading the labels' %ss: %w", what, err)
 	}
 	defer func() { _ = rows.Close() }()
-	colours := map[string]string{}
+	said := map[string]string{}
 	for rows.Next() {
-		var label, colour string
-		if err := rows.Scan(&label, &colour); err != nil {
-			return nil, fmt.Errorf("reading a label's colour: %w", err)
+		var label, value string
+		if err := rows.Scan(&label, &value); err != nil {
+			return nil, fmt.Errorf("reading a label's %s: %w", what, err)
 		}
-		colours[label] = colour
+		said[label] = value
 	}
-	return colours, rows.Err()
+	return said, rows.Err()
+}
+
+// ScopeLabel gives a label its scope, in place of the one it had; both is kept as no scope at all.
+func (s *Store) ScopeLabel(label, scope string) error {
+	query, args := scopeLabel, []any{label, scope}
+	if scope == "both" {
+		query, args = unscopeLabel, []any{label}
+	}
+	if _, err := s.on.Exec(query, args...); err != nil {
+		return fmt.Errorf("scoping the label %q: %w", label, err)
+	}
+	return nil
 }
 
 // ColourLabel chooses a label's colour, in place of the one it had.

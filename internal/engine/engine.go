@@ -131,6 +131,9 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, creating); err != nil {
 		return task.Task{}, err
 	}
+	if err := e.inScope(nil, factsOf(t).Labels, domain.OnTasks); err != nil {
+		return task.Task{}, err
+	}
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
@@ -296,6 +299,9 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	}
 	t := was
 	if t, err = apply(t, c, changing); err != nil {
+		return task.Task{}, err
+	}
+	if err := e.inScope(factsOf(was).Labels, factsOf(t).Labels, domain.OnTasks); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.canServe(t); err != nil {

@@ -50,3 +50,34 @@ func TestLabelColours_areKeptRenamedAndLetGo(t *testing.T) {
 		t.Errorf("after a rename and a delete the colours are %v, %v", got, err)
 	}
 }
+
+func TestLabelScopes_areKeptRenamedAndLetGo(t *testing.T) {
+	s := openStore(t)
+	if err := s.ScopeLabel("area", "tasks"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ScopeLabel("area", "objectives"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ScopeLabel("chore", "tasks"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LabelScopes(); err != nil || got["area"] != "objectives" || got["chore"] != "tasks" {
+		t.Fatalf("the scopes are %v, %v", got, err)
+	}
+	if err := s.RenameKeptLabel("area", "domain"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ForgetLabel("chore"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LabelScopes(); err != nil || len(got) != 1 || got["domain"] != "objectives" {
+		t.Errorf("after a rename and a delete the scopes are %v, %v", got, err)
+	}
+	if err := s.ScopeLabel("domain", "both"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LabelScopes(); err != nil || len(got) != 0 {
+		t.Errorf("a label for both again keeps %v, %v", got, err)
+	}
+}

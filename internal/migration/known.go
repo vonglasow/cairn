@@ -310,4 +310,15 @@ ALTER TABLE objectives ADD COLUMN parent INTEGER REFERENCES objectives(number);`
 ALTER TABLE objectives DROP COLUMN parent;`,
 		loses: "which objective each sub-objective sat under; every objective stays, each one level one with its own tasks, so a parent counts only the tasks attached to it directly",
 	},
+	{
+		name: "a label has a scope",
+		does: `
+CREATE TABLE IF NOT EXISTS label_scopes (
+	label TEXT PRIMARY KEY,
+	scope TEXT NOT NULL
+);`,
+		undoes: `
+DROP TABLE IF EXISTS label_scopes;`,
+		loses: "the scope of each label; every label is for tasks and objectives both again",
+	},
 }

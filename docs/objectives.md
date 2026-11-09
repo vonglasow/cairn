@@ -266,20 +266,24 @@ loses which parent, and says so before it is applied
 becomes level one with its own tasks, and a parent counts only the tasks
 attached to it directly (`@objective-sub-migration-rollback-sets-every-one-loose`).
 
+**What kind of thing it is, as a label.** An area, a project, a key result: a
+type is a label the objective carries, as objectives already carry labels. A
+label has a scope — tasks, objectives or both — so what an objective is
+given is chosen among the labels meant for objectives (`label list --for
+objectives`), and a label for objectives only is refused on a task. `area`
+and `project` are the type labels suggested; nothing makes them for the
+person. A fixed set of types would be a second list beside the labels, with
+its own colours, rename and delete; nothing exists twice. A label nobody
+scoped is for both, so every label already in a store is offered where it
+was. Migration #19, `a label has a scope`; see
+[labels.md](labels.md#a-label-is-for-tasks-for-objectives-or-for-both).
+
 **What is not traced.** The trace is what was done to a task, and an
 objective has none of its own: setting or changing a parent writes nothing
 there, as no change to an objective ever has. What a deletion does to a task —
 detached, deleted — is traced on the task, as any change to it is.
 
 ### Decided, not built yet
-
-**What kind of thing it is, as a label.** An area, a project, a key result: a
-type is a label the objective carries, as objectives already carry labels. A
-label gains a scope — tasks, objectives or both — so an objective's form offers
-only the labels meant for objectives. A fixed set of types would be a second
-list beside the labels, with its own colours, rename and delete; nothing exists
-twice. A label nobody scoped is for both, so every label already in a store is
-offered where it was. It will be a migration of its own.
 
 **A dependency warns, never blocks.** An objective or a sub-objective may say
 it waits on another — "Firmware waits on Enclosure" — as a link stored between

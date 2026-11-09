@@ -50,6 +50,8 @@ var reasons = []reason{
 	{domain.ErrNotText, KindRefused, "not-text"},
 	{domain.ErrLabelRequired, KindRefused, "label-required"},
 	{domain.ErrNoSuchColour, KindRefused, "no-such-colour"},
+	{domain.ErrNoSuchScope, KindRefused, "no-such-scope"},
+	{domain.ErrOutOfScope, KindRefused, "label-out-of-scope"},
 	{domain.ErrLabelNotOneLine, KindRefused, "label-not-one-line"},
 	{domain.ErrLabelHasNoFamily, KindRefused, "label-has-no-family"},
 	{domain.ErrLabelHolds, KindRefused, "label-holds"},

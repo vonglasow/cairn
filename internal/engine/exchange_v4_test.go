@@ -96,7 +96,7 @@ func TestTaskImport_readsWhatVersion4Adds(t *testing.T) {
 		t.Errorf("objective deadline %v, want a week from today", factsOfObjective(o).Deadline)
 	}
 	labels, _ := e.labelsCarried()
-	if !slices.Contains(labels, LabelCarried{Label: "release", Colour: "teal"}) || !slices.ContainsFunc(labels, func(l LabelCarried) bool { return l.Label == "idle" }) {
+	if !slices.Contains(labels, LabelCarried{Label: "release", Colour: "teal", Scope: "both"}) || !slices.ContainsFunc(labels, func(l LabelCarried) bool { return l.Label == "idle" }) {
 		t.Errorf("labels %v, want release in teal and idle", labels)
 	}
 }

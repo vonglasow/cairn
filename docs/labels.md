@@ -176,6 +176,41 @@ ringed: `←→` walk them and `⏎` takes one, a click takes the one clicked,
 `@gui-a-label-is-coloured-from-the-labels`,
 `@gui-a-colour-is-walked-to-with-the-keys`).
 
+## A label is for tasks, for objectives, or for both
+
+A label has a scope: what it may be put on. `label new area --scope
+objectives` makes one for objectives only, `label scope chore tasks`
+narrows one to tasks, `label scope area both` widens it again
+(`@label-scope-made-with-the-label`, `@label-scope-is-changed`). A label
+nobody scoped is for both, so every label already in a store is offered where
+it was (`@label-scope-is-both-unless-said`). It is kept in a table of its own
+(`label_scopes`, migration 19), holding only the labels narrowed; a rename
+carries it, a delete lets it go, and rolling the migration back leaves every
+label for both (`@label-scope-migration-rollback-leaves-both`).
+
+Putting a label on what its scope leaves out is refused, naming the scope —
+`"area" is a label for objectives only, not for a task` — whichever surface
+asked (`@label-scope-refuses-a-task`, `@label-scope-refuses-an-objective`,
+`@label-scope-mcp`). Only a label joining is checked: what a task or an
+objective already carries never stops a change to it. Narrowing a label is
+refused while what it would leave out carries it — `"doc" is carried by 1
+task` — since a scope that its own carriers broke would mean nothing
+(`@label-scope-refused-while-carried-outside-it`).
+
+`label list` says each label's scope — `for objectives` — and a machine reads
+`scope`. `label list --for objectives` keeps the labels that may be put on
+objectives, those for both included (`@label-scope-narrows-what-is-offered`):
+it is what a list a label is chosen from asks, so that an objective's form
+offers only what is meant for objectives, and the engine, not a board, says
+which those are. The boards do not ask it yet.
+
+**Type labels.** What kind of thing an objective is — an area, a project, a
+key result — is a label it carries, scoped to objectives; see
+[objectives.md](objectives.md#two-levels). `area`
+and `project` are the ones suggested, and nothing makes them: `label new area
+--scope objectives` and `label new project --scope objectives` do, when they
+are wanted.
+
 ## The Claude Code plugin
 
 A task's Azure DevOps work items are its labels made only of digits, on a task

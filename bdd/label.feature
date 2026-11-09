@@ -138,3 +138,72 @@ Feature: Every label at once
       Given I added a task titled "Ship it" with the labels "release" and "doc"
       When I run `cairn label colour release brown`
       Then it fails
+
+  Rule: A label is for tasks, for objectives, or for both
+
+    @label-scope-is-both-unless-said
+    Scenario: a label nobody gave a scope is for tasks and objectives both
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      When I run `cairn label list --json`
+      Then the JSON gives the label "doc" the scope "both"
+
+    @label-scope-made-with-the-label
+    Scenario: a label made on its own is given its scope as it is made
+      When I run `cairn label new Area --scope objectives`
+      Then it succeeds
+      When I run `cairn label list`
+      Then the answer says "for objectives"
+      When I run `cairn label list --json`
+      Then the JSON gives the label "area" the scope "objectives"
+
+    @label-scope-is-changed
+    Scenario: a label's scope is changed, and a rename keeps it
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      When I run `cairn label scope sp26-20 tasks`
+      Then it succeeds
+      When I run `cairn label rename sp26-20 sprint-20`
+      And I run `cairn label list --json`
+      Then the JSON gives the label "sprint-20" the scope "tasks"
+
+    @label-scope-refuses-a-task
+    Scenario: a label for objectives only is not put on a task
+      Given I ran `cairn label new area --scope objectives`
+      And I added a task titled "Write the spec"
+      When I run `cairn task edit 1 --label area`
+      Then it fails
+      And it says the label "area" is for objectives only
+      And task 1 carries exactly the labels ""
+
+    @label-scope-refuses-an-objective
+    Scenario: a label for tasks only is not put on an objective
+      Given I ran `cairn label new chore --scope tasks`
+      When I run `cairn objective new "Ship cairn" --label chore`
+      Then it fails
+      And it says the label "chore" is for tasks only
+      And `cairn objective list` lists 0 objectives
+
+    @label-scope-refused-while-carried-outside-it
+    Scenario: a label is not narrowed to a scope something outside it already carries
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      When I run `cairn label scope doc objectives`
+      Then it fails
+      And it says the label "doc" is carried by 1 task
+      When I run `cairn label list --json`
+      Then the JSON gives the label "doc" the scope "both"
+
+    @label-scope-is-one-of-three
+    Scenario: a scope that is not tasks, objectives or both is refused
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      When I run `cairn label scope doc everything`
+      Then it fails
+
+    @label-scope-narrows-what-is-offered
+    Scenario: the labels offered for objectives are those for objectives and those for both
+      Given I ran `cairn label new area --scope objectives`
+      And I ran `cairn label new chore --scope tasks`
+      And I ran `cairn label new doc`
+      When I run `cairn label list --for objectives`
+      Then it succeeds
+      And the answer says "area"
+      And the answer says "doc"
+      And the answer does not say "chore"

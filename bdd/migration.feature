@@ -322,3 +322,19 @@ Feature: Changes to the shape of the store
       When I run `cairn migration show 18`
       Then it succeeds
       And the answer says "which objective each sub-objective sat under"
+
+  Rule: A label has a scope, and rolling that back leaves every label for both
+
+    @label-scope-migration-rollback-leaves-both
+    Scenario: rolled back, a label for objectives only is for both again
+      Given I ran `cairn label new area --scope objectives`
+      And I rolled back the change named "a label has a scope"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn label list` says "for both"
+
+    @label-scope-migration-says-what-rolling-back-loses
+    Scenario: what rolling the scope back loses is said before it is applied
+      When I run `cairn migration show 19`
+      Then it succeeds
+      And the answer says "the scope of each label"

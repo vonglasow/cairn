@@ -50,6 +50,9 @@ func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objec
 	if o, err = applyObjective(o, c, creating); err != nil {
 		return objective.Objective{}, err
 	}
+	if err := e.inScope(nil, o.Carried().Labels, domain.OnObjectives); err != nil {
+		return objective.Objective{}, err
+	}
 	if err := e.mayHang(o); err != nil {
 		return objective.Objective{}, err
 	}
@@ -72,11 +75,15 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	if !c.named() {
 		return objective.Objective{}, ErrNothingToChange
 	}
-	o, err := e.objectives.FindObjective(number)
+	was, err := e.objectives.FindObjective(number)
 	if err != nil {
 		return objective.Objective{}, err
 	}
-	if o, err = applyObjective(o, c, changing); err != nil {
+	o, err := applyObjective(was, c, changing)
+	if err != nil {
+		return objective.Objective{}, err
+	}
+	if err := e.inScope(was.Carried().Labels, o.Carried().Labels, domain.OnObjectives); err != nil {
 		return objective.Objective{}, err
 	}
 	if err := e.mayHang(o); err != nil {

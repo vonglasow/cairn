@@ -694,6 +694,22 @@ Feature: Answering a machine over MCP
       Then it answers without an error
       And `cairn objective list` lists 1 objective
 
+    @label-scope-mcp
+    Scenario: an agent makes a label for objectives only, and is refused putting it on a task
+      Given I added a task titled "Write the spec"
+      And a cairn server started with `--access write`
+      When I call `label_new` with {"label": "area", "scope": "objectives"}
+      Then it answers without an error
+      And the answer says for objectives
+      And its answer holds to the shape the tool described
+      When I call `task_edit` with the number 1 and the label "area"
+      Then it answers that it failed
+      And the answer says "area" is a label for objectives only
+      When I call `label_scope` with {"label": "area", "scope": "both"}
+      Then it answers without an error
+      When I call `label_list` with {"for": "tasks"}
+      Then the answer says area
+
   Rule: A refusal is a refusal, not a broken tool
 
     @mcp-refusal-is-answered

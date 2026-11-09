@@ -778,13 +778,18 @@
               },
               "colour": {
                 "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
               }
             },
             "required": [
               "label",
               "tasks",
               "objectives",
-              "colour"
+              "colour",
+              "scope"
             ],
             "additionalProperties": false
           }
@@ -840,13 +845,18 @@
               },
               "colour": {
                 "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
               }
             },
             "required": [
               "label",
               "tasks",
               "objectives",
-              "colour"
+              "colour",
+              "scope"
             ],
             "additionalProperties": false
           }
@@ -868,7 +878,16 @@
     },
     "input": {
       "additionalProperties": false,
-      "properties": {},
+      "properties": {
+        "for": {
+          "description": "keep only the labels that may be put on tasks, or on objectives",
+          "enum": [
+            "tasks",
+            "objectives"
+          ],
+          "type": "string"
+        }
+      },
       "required": [],
       "type": "object"
     },
@@ -895,13 +914,18 @@
               },
               "colour": {
                 "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
               }
             },
             "required": [
               "label",
               "tasks",
               "objectives",
-              "colour"
+              "colour",
+              "scope"
             ],
             "additionalProperties": false
           }
@@ -926,6 +950,15 @@
       "properties": {
         "label": {
           "description": "the label to make",
+          "type": "string"
+        },
+        "scope": {
+          "description": "what it may be put on: tasks, objectives, or both, which a label nobody scoped is for",
+          "enum": [
+            "tasks",
+            "objectives",
+            "both"
+          ],
           "type": "string"
         }
       },
@@ -957,13 +990,18 @@
               },
               "colour": {
                 "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
               }
             },
             "required": [
               "label",
               "tasks",
               "objectives",
-              "colour"
+              "colour",
+              "scope"
             ],
             "additionalProperties": false
           }
@@ -1024,13 +1062,95 @@
               },
               "colour": {
                 "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
               }
             },
             "required": [
               "label",
               "tasks",
               "objectives",
-              "colour"
+              "colour",
+              "scope"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "label_scope": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Say what a label may be put on"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "the label to scope",
+          "type": "string"
+        },
+        "scope": {
+          "description": "what it may be put on: tasks, objectives, or both, which a label nobody scoped is for",
+          "enum": [
+            "tasks",
+            "objectives",
+            "both"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "scope"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "integer"
+              },
+              "objectives": {
+                "type": "integer"
+              },
+              "colour": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "description": "what it may be put on: tasks, objectives or both"
+              }
+            },
+            "required": [
+              "label",
+              "tasks",
+              "objectives",
+              "colour",
+              "scope"
             ],
             "additionalProperties": false
           }
