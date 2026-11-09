@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"cairn/internal/gui"
 	"context"
 	"fmt"
 	"os"
@@ -63,7 +64,7 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	sc.Step(`^I make the fixtures in that folder again with --new$`, func() { made(" --new") })
 	sc.Step(`^I make the fixtures in a folder of my own from that file$`, func() { made(" --from " + from) })
 	sc.Step(`^I make the fixtures in a folder of my own with --gui$`, func() {
-		openGui = func(work engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int) error {
+		openGui = func(work engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 			openedOn = "opened"
 			_, err := work.Version()
 			return err

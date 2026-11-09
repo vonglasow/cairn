@@ -49,9 +49,13 @@ type world struct {
 	pointer      Point
 	theme        *material.Theme
 	keepSizes    bool
+	spaces       *test.Spaces
+	apart        elsewhere
 }
 
-func newWorld(t *testing.T) *world { return &world{t: t, width: 1200, high: 800} }
+func newWorld(t *testing.T) *world {
+	return &world{t: t, width: 1200, high: 800, spaces: &test.Spaces{}}
+}
 
 func (w *world) reset() {
 	if w.held != nil {
@@ -424,6 +428,7 @@ func (w *world) press(name string) error {
 }
 
 func (w *world) clipping() error {
+	w.handingApart()
 	if said, wants := w.w.Copying(); wants {
 		w.clipboard = said
 		w.w = w.w.Copied()
@@ -1677,6 +1682,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.gutters(sc)
 	w.filtersSteps(sc)
 	w.configurationSteps(sc)
+	w.workspaceSteps(sc)
 }
 
 func (w *world) workedOn(times int) error {

@@ -40,6 +40,8 @@ const (
 	OnConfiguration
 	// OnPalette is the command bar opened: a command, a number or a title typed, and what answers it.
 	OnPalette
+	// OnWorkspaces is the switcher dropped under the pill: the workspaces and the recent folders, one of them opened in a window of its own.
+	OnWorkspaces
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -99,9 +101,10 @@ type Window struct {
 	filesState
 	configurationState
 	timeState
-	palette paletteState
-	going   bool
-	goneAt  time.Time
+	palette  paletteState
+	switcher switcherState
+	going    bool
+	goneAt   time.Time
 
 	savedAt                         time.Time
 	born                            time.Time
@@ -212,6 +215,10 @@ func (w Window) sized() Window {
 func (w Window) Layout() Layout {
 	l := LaidOut(w.width, w.height, w.sizes)
 	l.Days = w.pages.WeekDays()
+	if w.PlaceSays() != "" {
+		l.Place = w.placeAt(l)
+		l.Tabs.X, l.Tabs.W = l.Tabs.X+l.Place.W+gap, l.Tabs.W-l.Place.W-gap
+	}
 	return l
 }
 
@@ -336,6 +343,7 @@ func (w Window) Look() Window {
 		}
 		return w.failing(err)
 	}
+	w = w.readingPlace()
 	w.snap, w.version, w.err, w.lookedAt = found, found.Version, nil, w.now
 	for i := range engine.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])

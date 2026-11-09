@@ -45,6 +45,7 @@ func (b Box) In(p Point) bool {
 
 // Layout is every size the window draws from.
 type Layout struct {
+	Place  Box
 	Tabs   Box
 	Head   [engine.Columns]Box
 	Column [engine.Columns]Box

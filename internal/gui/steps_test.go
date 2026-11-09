@@ -1168,7 +1168,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			parts := PartsOf(placed.Slot)
 			at := Point{X: parts.Title.X + 4, Y: parts.Title.Y + 4}
 			if what == "count of labels" {
-				more := CardRowOf(placed.Card, parts.Number, w.w.measured(), moment).More
+				more := CardRowOf(placed.Card, parts.Number, w.w.measured(), moment, engine.Pages{}).More
 				if more == (Box{}) {
 					return fmt.Errorf("the card for %q counts no labels", title)
 				}
@@ -1353,7 +1353,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			on := map[string]Box{
 				"title":          parts.Title,
 				"foot":           parts.Steps,
-				"objective mark": CardRowOf(placed.Card, parts.Number, w.w.measured(), w.w.now).ServesAt,
+				"objective mark": CardRowOf(placed.Card, parts.Number, w.w.measured(), w.w.now, engine.Pages{}).ServesAt,
 			}[part]
 			w.w = w.w.Hovering(Point{X: on.X + on.W/2, Y: on.Y + on.H/2})
 			return nil
@@ -3517,7 +3517,7 @@ func (w *world) cardSays(title, said string) error {
 	if err != nil {
 		return err
 	}
-	facts, _ := Facts(c, moment)
+	facts, _ := Facts(c, moment, w.w.pages)
 	m := w.w.measured()
 	shown, more := Pills(c.Labels, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W, func(said string) int { return ends(m, said, small) })
 	line := strings.Join(shown, "  ") + "  +" + strconv.Itoa(more) + "  " + facts

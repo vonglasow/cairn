@@ -1981,7 +1981,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Configuration…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Configuration…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -5104,3 +5104,153 @@ Feature: The desktop board
       And I pick "Configuration…" in the menu bar
       Then the panel is headed "Configuration"
       And the bar offers "Close" under "esc"
+
+  Rule: The window names its workspace, and opens another in a window of its own
+
+    @gui-workspace-the-title-and-the-pill-name-it
+    Scenario: the window's title and the pill opening the top bar name the workspace, in its colour
+      Given the workspace "work", the default
+      And the settings of the workspace "work" say its colour is "teal"
+      When I open the window on the workspace "work"
+      Then the window is titled "cairn — work"
+      And the top bar opens with the workspace "work", before the tabs
+      And the dot of the pill wears "teal"
+
+    @gui-workspace-a-loose-store-shows-its-folder
+    Scenario: a store no workspace names is shown by its folder
+      Given a store no workspace names, in the folder "scratch"
+      When I open the window on that store
+      Then the window is titled after the folder "scratch"
+      And the top bar opens with the folder "scratch", before the tabs
+
+    @gui-workspace-the-switcher-lists-them
+    Scenario: the pill drops the switcher: the workspaces, each saying what choosing it does, then the recent folders
+      Given the workspace "work", the default
+      And the workspace "home"
+      And the workspace "cairn-dev"
+      And the recent folder "scratch", opened yesterday
+      And the recent folder "trip", whose store is gone
+      And a window is already open on the workspace "cairn-dev"
+      When I open the window on the workspace "work"
+      And I click the pill of the workspace
+      Then the switcher lists the workspaces "cairn-dev", "home", "work"
+      And the workspace "cairn-dev" is tagged "open · brings it forward" and "⌘⇧1"
+      And the workspace "home" is tagged "opens a new window" and "⌘⇧2"
+      And the workspace "work" is tagged "this window · default" and "⌘⇧3"
+      And the recent folder "scratch" is tagged "opened yesterday"
+      And the recent folder "trip" is tagged "not found now"
+      And the switcher ends on "Open a folder…", "New workspace…", "Settings of work…"
+
+    @gui-workspace-the-switcher-narrows
+    Scenario: typing narrows the switcher
+      Given the workspace "work", the default
+      And the workspace "home"
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I type "ho"
+      Then the switcher lists the workspaces "home"
+      When I press "esc"
+      Then the window is on the board
+
+    @gui-workspace-another-opens-in-a-window-of-its-own
+    Scenario: choosing another workspace opens it in a window of its own, and this one stays
+      Given the workspace "work", the default
+      And the workspace "home"
+      When I open the window on the workspace "work"
+      And I click the pill of the workspace
+      And I click the workspace "home" in the switcher
+      Then a cairn is started with "gui --workspace home"
+      And the window says "home opens in a window of its own"
+      And the window is titled "cairn — work"
+
+    @gui-workspace-the-one-open-is-brought-forward
+    Scenario: choosing a workspace a window already shows brings that window forward, and starts nothing
+      Given the workspace "work", the default
+      And the workspace "cairn-dev"
+      And a window is already open on the workspace "cairn-dev"
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+1"
+      Then the window open on "cairn-dev" is brought forward
+      And no cairn is started
+      And the window says "cairn-dev is brought forward"
+
+    @gui-workspace-a-second-window-on-a-store-raises-the-first
+    Scenario: a window opened on a store another window shows brings that one forward instead
+      Given the workspace "work", the default
+      And a window is already open on the workspace "work"
+      When a second window is opened on the workspace "work"
+      Then the window open on "work" is brought forward
+      And the second window does not open
+
+    @gui-workspace-a-folder-opens-in-a-window-of-its-own
+    Scenario: a folder typed opens in a window of its own; a folder that is not there is refused
+      Given the workspace "work", the default
+      And a store no workspace names, in the folder "scratch"
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I click "Open a folder…" in the switcher
+      And I type the folder "elsewhere"
+      And I press "enter"
+      Then the window says "is not there"
+      And no cairn is started
+      When I press "esc"
+      And I click "Open a folder…" in the switcher
+      And I type the folder "scratch"
+      And I press "enter"
+      Then a cairn is started with "gui --store" and the store of the folder "scratch"
+
+    @gui-workspace-a-new-one-is-made-and-opened
+    Scenario: a new workspace is made, then opened in a window of its own
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I click "New workspace…" in the switcher
+      And I type "garden"
+      And I press "enter"
+      And I type the folder "cairn/garden"
+      And I press "enter"
+      Then the configuration names the workspace "garden"
+      And a cairn is started with "gui --workspace garden"
+
+    @gui-workspace-the-menu-offers-the-switcher
+    Scenario: Open a workspace… in the menu bar drops the switcher
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      Then the menu bar offers "Open a workspace…"
+      When I pick "Open a workspace…" in the menu bar
+      Then the switcher lists the workspaces "work"
+
+    @gui-workspace-its-settings-say-where-each-comes-from
+    Scenario: ⌘, says the settings of the workspace, each key set here or from the global configuration, the time as a choice of three
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      And the global configuration says the archive lasts 30 days
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the panel is headed "Settings of home"
+      And the panel reads the settings of "home" over the global configuration
+      And the configuration reads "pages.time" set here
+      And the configuration reads "archive.days" from the global configuration
+      And the configuration reads "time.weekends" from its default
+      And the time reads "off" of "on", "hidden", "off"
+      And the bar offers "Open settings.toml" under "⏎"
+      When I press "enter"
+      Then the window asks the system to open the settings of "home"
+
+    @gui-workspace-the-switcher-opens-the-settings
+    Scenario: the switcher's last line opens the settings of this workspace
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I click the pill of the workspace
+      And I click "Settings of work…" in the switcher
+      Then the panel is headed "Settings of work"
+
+    @gui-workspace-time-off-leaves-the-card-without-time
+    Scenario: with the time off, a card says nothing of its time and still says it is worked on
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      And I added a task titled "Plant the tulips" with the estimate "2h"
+      And I put task 1 in focus
+      When I open the window on the workspace "home"
+      Then the card "Plant the tulips" says nothing of "2h"
+      And the card "Plant the tulips" says it is being worked on

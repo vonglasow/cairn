@@ -195,6 +195,13 @@ func (w Window) writing(change func(Written) Written) Window {
 		w.looking = change(w.looking)
 		return w
 	}
+	if w.screen == OnWorkspaces {
+		w.switcher.typed = change(w.switcher.typed)
+		if w.switcher.asking == narrowing {
+			w.switcher.on = 0
+		}
+		return w
+	}
 	if w.screen == OnLabels && w.renaming {
 		w.renamed = change(w.renamed)
 		return w
@@ -656,6 +663,11 @@ func (w Window) Choose(name string) Window {
 		return w.listingLabels()
 	case "configuration…":
 		return w.openingConfiguration()
+	case "open a workspace…":
+		return w.openingSwitcher()
+	case strings.ToLower(OpenSettings):
+		w.opens = w.configured.Settings
+		return w
 	case "write the file":
 		return w.writingConfiguration()
 	case "open the file":

@@ -3,6 +3,7 @@ package cli
 import (
 	"cairn/internal/debug"
 	"cairn/internal/engine"
+	"cairn/internal/gui"
 	"errors"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, draft, sizes string, _ *debug.Log, width, height int) error {
+	openGui = func(work engine.Work, _ engine.Pages, draft, sizes string, _ *debug.Log, width, height int, _ gui.Here) error {
 		handed = true
 		if sizes != "" {
 			t.Errorf("with nothing configured, the window keeps its sizes at %q", sizes)
@@ -47,7 +48,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, string, string, *debug.Log, int, int) error {
+	openGui = func(engine.Work, engine.Pages, string, string, *debug.Log, int, int, gui.Here) error {
 		return errors.New("no display here")
 	}
 	t.Cleanup(func() { openGui = was })
@@ -76,7 +77,7 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", store)
 	t.Setenv("CAIRN_AUTHOR", "sam")
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int) error {
+	openGui = func(work engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
 		return err
 	}
@@ -104,7 +105,7 @@ func TestGuiKeepsTheSizesBesideTheStoreWhenTheConfigurationSaysSo(t *testing.T) 
 	}
 	var kept string
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _, sizes string, _ *debug.Log, _, _ int) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _, sizes string, _ *debug.Log, _, _ int, _ gui.Here) error {
 		kept = sizes
 		return nil
 	}
@@ -122,7 +123,7 @@ func TestGuiHandsTheWindowTheDebugFileInDebugMode(t *testing.T) {
 	t.Setenv("CAIRN_DEBUG", "1")
 	var handed *debug.Log
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _, _ string, noted *debug.Log, _, _ int) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _, _ string, noted *debug.Log, _, _ int, _ gui.Here) error {
 		handed = noted
 		return nil
 	}
@@ -132,5 +133,35 @@ func TestGuiHandsTheWindowTheDebugFileInDebugMode(t *testing.T) {
 	}
 	if handed == nil {
 		t.Error("in debug mode, the window was handed no file to write in")
+	}
+}
+
+func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
+	store := storeFor(t)
+	t.Setenv("CAIRN_STORE", store)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if got := run(t, "workspace", "add", "garden", filepath.Join(home, "garden")); got.Code != 0 {
+		t.Fatalf("workspace add exited %d: %s", got.Code, got.Stderr)
+	}
+	var here gui.Here
+	was := openGui
+	openGui = func(_ engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int, given gui.Here) error {
+		here = given
+		return nil
+	}
+	t.Cleanup(func() { openGui = was })
+	if got := run(t, "gui"); got.Code != 0 {
+		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
+	}
+	if here.Store != store {
+		t.Errorf("the window was told it shows %q, not %q", here.Store, store)
+	}
+	if here.Reach == nil {
+		t.Fatal("the window was given no way to reach another workspace")
+	}
+	apart, err := here.Reach(engine.Elsewhere{Workspace: "garden"})
+	if err != nil || apart.Store != filepath.Join(home, "garden", "cairn.db") {
+		t.Errorf("reaching garden = %+v, %v", apart, err)
 	}
 }

@@ -1,15 +1,12 @@
 package tui
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/cucumber/godog"
 
@@ -17,28 +14,10 @@ import (
 	"cairn/internal/engine"
 )
 
-type spaces struct {
-	dir   string
-	loose string
-}
-
 func (w *world) registerWorkspaces(sc *godog.ScenarioContext) {
-	sc.Given(`^the workspace "([^"]*)"(, the default)?$`, w.theWorkspace)
-	sc.Given(`^a store no workspace names, in the folder "([^"]*)"$`, w.aLooseStore)
-	sc.Given(`^the workspace "([^"]*)" holds a task titled "([^"]*)"$`, w.workspaceHolds)
-	sc.Given(`^the folder of the workspace "([^"]*)" is gone$`, func(name string) error {
-		return os.RemoveAll(w.folderOf(name))
-	})
-	sc.Given(`^the settings of the workspace "([^"]*)" turn the time off$`, func(name string) error {
-		return os.WriteFile(filepath.Join(w.folderOf(name), "settings.toml"), []byte("[pages]\ntime = \"off\"\n"), 0o600)
-	})
-	sc.Given(`^the settings of the workspace "([^"]*)" say its colour is "([^"]*)"$`, func(name, colour string) error {
-		return os.WriteFile(filepath.Join(w.folderOf(name), "settings.toml"), []byte("[workspace]\ncolour = \""+colour+"\"\n"), 0o600)
-	})
-	sc.Given(`^the recent folder "([^"]*)", (opened yesterday|whose store is gone)$`, w.aRecentFolder)
-	sc.Given(`^the folder "([^"]*)" holds a task titled "([^"]*)"$`, w.folderHolds)
+	w.spaces.Register(sc)
 	sc.When(`^I type the folder "([^"]*)"$`, func(folder string) error {
-		return w.typeIn(filepath.Join(w.spaces.dir, folder))
+		return w.typeIn(filepath.Join(w.spaces.Dir, folder))
 	})
 	sc.Then(`^the dot of the header wears "([^"]*)"$`, w.dotWears)
 	sc.Then(`^the recent folder "([^"]*)" is marked "([^"]*)"$`, w.recentMarked)
@@ -51,42 +30,7 @@ func (w *world) registerWorkspaces(sc *godog.ScenarioContext) {
 	sc.Then(`^task (\d+) of the workspace "([^"]*)" is still in focus$`, w.stillInFocus)
 }
 
-func (w *world) homeOf(workspace string) engine.Home {
-	return engine.Home{Dir: w.spaces.dir, Workspace: workspace, Store: w.spaces.loose}
-}
-
-func (w *world) folderOf(name string) string { return filepath.Join(w.spaces.dir, "cairn", name) }
-
-func (w *world) settingSpaces() {
-	if w.spaces.dir == "" {
-		w.spaces.dir = w.t.TempDir()
-	}
-}
-
-func (w *world) theWorkspace(name, isDefault string) error {
-	w.settingSpaces()
-	h := w.homeOf("")
-	if _, err := engine.DoFrom(engine.WorkspaceAdd, h, engine.Input{Given: map[string]string{"name": name, "folder": w.folderOf(name)}}, engine.Through("test", h)); err != nil {
-		return err
-	}
-	if isDefault == "" {
-		return nil
-	}
-	if _, err := engine.DoFrom(engine.WorkspaceUse, h, engine.Input{Given: map[string]string{"name": name}}, engine.Through("test", h)); err != nil {
-		return err
-	}
-	return w.storeAt(filepath.Join(w.folderOf(name), "cairn.db"))
-}
-
-func (w *world) aLooseStore(folder string) error {
-	w.settingSpaces()
-	at := filepath.Join(w.spaces.dir, folder, "cairn.db")
-	if err := os.MkdirAll(filepath.Dir(at), 0o700); err != nil {
-		return err
-	}
-	w.spaces.loose = at
-	return w.storeAt(at)
-}
+func (w *world) homeOf(workspace string) engine.Home { return w.spaces.Home(workspace) }
 
 func (w *world) storeAt(path string) error {
 	_ = w.other.Close()
@@ -107,12 +51,6 @@ func (w *world) holdThroughHome() error {
 	_ = w.held.Close()
 	w.held, w.pages = held, engine.PagesFrom(h)
 	return nil
-}
-
-func (w *world) workspaceHolds(name, title string) error {
-	h := w.homeOf(name)
-	_, err := engine.DoFrom(engine.TaskNew, h, engine.Input{Given: map[string]string{"title": title}}, engine.Through("test", h))
-	return err
 }
 
 func (w *world) header() string {
@@ -187,46 +125,6 @@ func (w *world) stillInFocus(number int, name string) error {
 		return errors.New("task " + strconv.Itoa(number) + " of " + name + " is no longer in focus")
 	}
 	return nil
-}
-
-func (w *world) aRecentFolder(folder, how string) error {
-	w.settingSpaces()
-	store := filepath.Join(w.spaces.dir, folder, "cairn.db")
-	if how == "opened yesterday" {
-		if err := os.MkdirAll(filepath.Dir(store), 0o700); err != nil {
-			return err
-		}
-		if _, err := os.Stat(store); errors.Is(err, os.ErrNotExist) {
-			if err := os.WriteFile(store, nil, 0o600); err != nil {
-				return err
-			}
-		}
-	}
-	path := filepath.Join(w.spaces.dir, ".local", "state", "cairn", "recent.json")
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-	var kept struct {
-		Recent []map[string]any `json:"recent"`
-	}
-	if read, err := os.ReadFile(path); err == nil {
-		if err := json.Unmarshal(read, &kept); err != nil {
-			return err
-		}
-	}
-	kept.Recent = append(kept.Recent, map[string]any{"store": store, "opened": stood.Add(-24 * time.Hour)})
-	said, err := json.Marshal(kept)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, said, 0o600)
-}
-
-func (w *world) folderHolds(folder, title string) error {
-	w.settingSpaces()
-	h := engine.Home{Dir: w.spaces.dir, Store: filepath.Join(w.spaces.dir, folder, "cairn.db")}
-	_, err := engine.DoFrom(engine.TaskNew, h, engine.Input{Given: map[string]string{"title": title}}, engine.Through("test", h))
-	return err
 }
 
 func (w *world) dotWears(colour string) error {

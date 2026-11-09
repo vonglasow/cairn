@@ -116,14 +116,14 @@ type CardRow struct {
 }
 
 // CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
-func CardRowOf(c engine.Card, row Box, m Measure, now time.Time) CardRow {
+func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pages) CardRow {
 	out := CardRow{Number: "#" + Numbered(c)}
 	if c.Described() {
 		out.Number += " " + Marks().Described
 	}
 	x := row.X + monoWide(out.Number, small) + 2*pillGap
 	end := row.X + row.W
-	out.Facts, out.Late = Facts(c, now)
+	out.Facts, out.Late = Facts(c, now, pages)
 	if out.Facts != "" {
 		out.FactsAt = FactsAt(row, mixedWide(m, out.Facts, small))
 		if serves := Serves(c); serves != "" {
@@ -270,8 +270,8 @@ func Standing(g engine.Goal) string {
 	return ""
 }
 
-// Facts is the right-hand end of a card's label row: when it is wanted, what it has cost against what it was reckoned to cost, and what it serves.
-func Facts(c engine.Card, now time.Time) (said string, warn bool) {
+// Facts is the right-hand end of a card's label row: when it is wanted, what it has cost against what it was reckoned to cost while the time is shown, and what it serves.
+func Facts(c engine.Card, now time.Time, pages engine.Pages) (said string, warn bool) {
 	if c.Freed {
 		return FreedMark, true
 	}
@@ -280,7 +280,7 @@ func Facts(c engine.Card, now time.Time) (said string, warn bool) {
 	if due != "" {
 		pieces = append(pieces, due)
 	}
-	spent, over := c.Cost()
+	spent, over := pages.Cost(c)
 	if spent != "" {
 		pieces = append(pieces, spent)
 	}
@@ -292,7 +292,7 @@ func Facts(c engine.Card, now time.Time) (said string, warn bool) {
 
 // StandingPill is where an objective's card draws its standing: the first pill of its row, where a task's first label stands.
 func StandingPill(face engine.Card, box Box, m Measure) Box {
-	if pills := CardRowOf(face, PartsOf(box).Number, m, time.Time{}).Pills; len(pills) > 0 {
+	if pills := CardRowOf(face, PartsOf(box).Number, m, time.Time{}, engine.Pages{}).Pills; len(pills) > 0 {
 		return pills[0]
 	}
 	return Box{}

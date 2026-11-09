@@ -36,11 +36,11 @@ type world struct {
 	formAt int
 	opened bool
 	left   bool
-	spaces spaces
+	spaces *test.Spaces
 }
 
 func newWorld(t *testing.T) *world {
-	return &world{t: t, width: 100, high: 44}
+	return &world{t: t, width: 100, high: 44, spaces: &test.Spaces{}}
 }
 
 func (w *world) reset() {
@@ -65,7 +65,7 @@ func (w *world) reset() {
 	w.asked = false
 	w.formAt = 0
 	w.left = false
-	w.spaces = spaces{}
+	*w.spaces = test.Spaces{Made: w.t.TempDir, Writing: w.storeAt, Now: func() time.Time { return stood }}
 	w.pages = engine.Pages{}
 }
 
@@ -73,7 +73,7 @@ func (w *world) open() {
 	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.pages)
 	w.opened = true
 	w.refresh()
-	if w.spaces.dir != "" {
+	if w.spaces.Dir != "" {
 		held := w.held
 		w.b = w.b.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) })
 		w.settle(w.b.placing())
@@ -172,7 +172,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.When(`^I open the board$`, func() error {
-		if w.spaces.dir != "" {
+		if w.spaces.Dir != "" {
 			if err := w.holdThroughHome(); err != nil {
 				return err
 			}

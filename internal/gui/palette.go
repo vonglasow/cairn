@@ -212,7 +212,7 @@ func (w Window) actionRows() []PaletteRow {
 	for _, general := range []struct{ says, key string }{
 		{"New task", "cmd+n"}, {"Search", "/"}, {"Filters", "shift+f"}, {"Labels", "shift+l"},
 		{"Archived", "shift+a"}, {"Backups", "shift+b"}, {"New backup", "cmd+b"}, {"Export", "cmd+e"},
-		{"Import", "cmd+o"}, {"Configuration", "cmd+,"}, {"Help", "?"},
+		{"Import", "cmd+o"}, {"Open a workspace", "cmd+shift+o"}, {"Configuration", "cmd+,"}, {"Help", "?"},
 	} {
 		action(general.says, general.key, pressing(general.key))
 	}

@@ -139,7 +139,9 @@ otherwise start a new, empty board somewhere nobody looks.
   and names a place a workspace gave as named by it.
 - The terminal board names the workspace it shows at the head of its header,
   and `^O` opens another in its place without writing the file — see
-  [tui.md](tui.md#another-workspace-in-place-of-this-one).
+  [tui.md](tui.md#another-workspace-in-place-of-this-one). The window names
+  it in its title and its top bar, and opens another in a window of its
+  own — see [gui.md](gui.md#workspaces-a-window-each).
 
 `workspace list` and `workspace show` are tools of the MCP server too:
 `workspace_show` says which workspace a server answers from — the one it
@@ -290,7 +292,9 @@ the store's settings`, `# from the global configuration`, or `# by default`
 the store it says nothing of them, as before. Its JSON carries `settings`, the
 file read, and `written_here`, every key it writes, beside `written`, every key
 the global file writes (`@settings-config-show-as-json`); the window's panel
-says `settings` beside such a key.
+says `set here` beside such a key, and `from the global configuration`
+beside one only the global file writes
+([gui.md](gui.md#workspaces-a-window-each)).
 
 ## Two places, and their names
 

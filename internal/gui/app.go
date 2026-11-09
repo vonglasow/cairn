@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"errors"
+
 	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"fmt"
@@ -122,25 +124,43 @@ func Twice(before, now time.Time, was, at Point) bool {
 // Typed says what a key does.
 func Typed(w Window, name string, with key.Modifiers) Window {
 	w = w.interrupted()
-	said, isNamed := naming(name)
-	if with.Contain(key.ModAlt) && !moving(said) && said != "backspace" {
+	said, ok := keyOf(name, with)
+	if !ok {
 		return w
-	}
-	if moving(said) {
-		return w.Key(modified(with, key.ModCommand|key.ModCtrl, "cmd+") +
-			modified(with, key.ModAlt, "alt+") + modified(with, key.ModShift, "shift+") + said)
-	}
-	if with.Contain(key.ModCommand) || with.Contain(key.ModCtrl) {
-		return w.Key("cmd+" + said)
-	}
-	if with.Contain(key.ModAlt) && said == "backspace" {
-		return w.Key("alt+backspace")
-	}
-	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) && !deleting(said) {
-		return w.Key("shift+" + said)
 	}
 	return w.Key(said)
 }
+
+var shiftedFigures = map[string]string{"!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7", "*": "8", "(": "9"}
+
+func keyOf(name string, with key.Modifiers) (string, bool) {
+	said, isNamed := naming(name)
+	if with.Contain(key.ModAlt) && !moving(said) && said != "backspace" {
+		return "", false
+	}
+	if moving(said) {
+		return modified(with, key.ModCommand|key.ModCtrl, "cmd+") +
+			modified(with, key.ModAlt, "alt+") + modified(with, key.ModShift, "shift+") + said, true
+	}
+	if with.Contain(key.ModCommand) || with.Contain(key.ModCtrl) {
+		if figure, ok := shiftedFigures[said]; ok && with.Contain(key.ModShift) {
+			said = figure
+		}
+		if with.Contain(key.ModShift) && (aLetter(said) || aFigure(said)) {
+			return "cmd+shift+" + said, true
+		}
+		return "cmd+" + said, true
+	}
+	if with.Contain(key.ModAlt) && said == "backspace" {
+		return "alt+backspace", true
+	}
+	if with.Contain(key.ModShift) && (isNamed || aLetter(said)) && !deleting(said) {
+		return "shift+" + said, true
+	}
+	return said, true
+}
+
+func aFigure(name string) bool { return len(name) == 1 && name[0] >= '0' && name[0] <= '9' }
 
 func deleting(said string) bool { return said == "backspace" || said == "delete-forward" }
 
@@ -196,8 +216,24 @@ const reach = 1 << 20
 
 var tag = new(int)
 
-// Run opens a window and keeps it until it is closed.
-func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int) {
+// Here is where a window stands among the others on this machine: the store it shows, and how it reaches another workspace, folder or store to show in a window of its own.
+type Here struct {
+	Store string
+	Reach Reach
+}
+
+// Run opens a window and keeps it until it is closed; a window already showing the store is brought forward instead, and none opened.
+func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int, here Here) {
+	window := new(app.Window)
+	windows := WindowsHere(os.LookupEnv)
+	claim, err := windows.Claim(here.Store, func() { window.Perform(system.ActionRaise) })
+	if errors.Is(err, ErrShownElsewhere) {
+		_, _ = fmt.Fprintf(os.Stderr, "cairn: %v\n", err)
+		return
+	}
+	if claim != nil {
+		defer func() { _ = claim.Close() }()
+	}
 	leaveConsole()
 	if address, kept := ibusKeptOut(runtime.GOOS, os.Getenv); kept {
 		_ = os.Setenv("IBUS_ADDRESS", address)
@@ -218,7 +254,7 @@ func Run(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, n
 				panic(stopped)
 			}
 		}()
-		ended(loop(work, pages, drafts, sizes, noted, width, height), os.Stderr, leaving)
+		ended(loop(window, work, pages, drafts, sizes, noted, width, height, apartFrom(here, windows)), os.Stderr, leaving)
 	}()
 	app.Main()
 }
@@ -232,23 +268,41 @@ func ended(err error, said io.Writer, exit func(int)) {
 	exit(1)
 }
 
-func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int) error {
-	window := new(app.Window)
-	window.Option(app.Title("cairn"), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
+type elsewhereOf struct {
+	reach   Reach
+	windows Windows
+}
+
+func apartFrom(here Here, windows Windows) elsewhereOf {
+	return elsewhereOf{reach: here.Reach, windows: windows}
+}
+
+func (a elsewhereOf) opening(to engine.Elsewhere) Went {
+	if a.reach == nil {
+		return Went{Err: errNoElsewhere}
+	}
+	return OpeningApart(to, a.reach, a.windows, StartCairn)
+}
+
+var errNoElsewhere = errors.New("this window cannot open another")
+
+func loop(window *app.Window, work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
 	seen := ""
 
 	theme, skin := Theme(), Dark()
-	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme))
+	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme)).Seeing(elsewhere.windows.Shows)
 	if sizes != nil {
 		board = board.KeepingSizes(sizes)
 	}
 	board = board.At(time.Now()).Look()
+	window.Option(app.Title(board.Title()), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
 	if data, starts, ok := desktopHome(); ok {
 		board = board.Settling(data, starts)
 	}
 
 	files, listen := systemFiles(window)
 	filed := make(chan Filed, 1)
+	went := make(chan Went, 1)
 	picks := make(chan string, 8)
 
 	var ops op.Ops
@@ -289,6 +343,8 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 				board = board.Filed(got)
 			case item := <-picks:
 				board = board.Picked(item)
+			case g := <-went:
+				board = board.Went(g)
 			default:
 			}
 			board = board.Resized(Sized(gtx.Constraints.Max, gtx.Metric.PxPerDp)).At(gtx.Now)
@@ -304,6 +360,13 @@ func loop(work engine.Work, pages engine.Pages, drafts Drafts, sizes SizesKept, 
 				board = board.FileTaken()
 				go func() {
 					filed <- Filing(ask, files)
+					window.Invalidate()
+				}()
+			}
+			if to, asked := board.ApartAsked(); asked {
+				board = board.ApartTaken()
+				go func() {
+					went <- elsewhere.opening(to)
 					window.Invalidate()
 				}()
 			}
@@ -463,5 +526,5 @@ func symbolTyped(text, named string) (string, bool) {
 }
 
 func takesTyping(s Screen) bool {
-	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels
+	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels || s == OnWorkspaces
 }

@@ -79,7 +79,7 @@ func TestTheCountOfLabelsOpensABubbleOfThemAll(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
 	w := holding(newFake(), c)
 	parts := PartsOf(w.Layout().CardAt(1, 0, 0))
-	more := CardRowOf(c, parts.Number, w.measured(), w.now).More
+	more := CardRowOf(c, parts.Number, w.measured(), w.now, engine.Pages{}).More
 	w = w.Hovering(Point{X: more.X + more.W/2, Y: more.Y + more.H/2})
 	box, pills, ok := w.LabelsBubbleBox()
 	if !ok || len(pills) != 3 {

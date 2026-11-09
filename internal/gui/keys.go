@@ -2,6 +2,7 @@ package gui
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"cairn/internal/engine"
@@ -57,6 +58,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnLabels:        Window.onLabels,
 	OnFiltering:     Window.onFilters,
 	OnConfiguration: Window.onConfiguration,
+	OnWorkspaces:    Window.onWorkspaces,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -85,6 +87,9 @@ func (w Window) onBoard(name string) Window {
 			return w.datingChosen()
 		}
 	}
+	if figure, ok := strings.CutPrefix(name, "cmd+shift+"); ok && aFigure(figure) {
+		return w.choosingByPlace(name)
+	}
 	switch name {
 	case "g":
 		w.going, w.goneAt = true, w.now
@@ -107,6 +112,8 @@ func (w Window) onBoard(name string) Window {
 		return w.openingPalette()
 	case "cmd+,":
 		return w.openingConfiguration()
+	case "cmd+shift+o":
+		return w.openingSwitcher()
 	case "shift+f":
 		return w.filteringBoard()
 	case "backspace":

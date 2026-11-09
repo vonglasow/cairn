@@ -26,6 +26,10 @@ type fake struct {
 
 	asked []asked
 	reads int
+
+	shown  *engine.WorkspaceShown
+	listed *engine.Workspaces
+	config *engine.Config
 }
 
 type asked struct {
@@ -62,6 +66,14 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		return engine.Answer{}, nil
 	case "trace show":
 		return engine.Answer{Acts: f.acts}, nil
+	case "workspace show":
+		return engine.Answer{WorkspaceShown: f.shown}, nil
+	case "workspace list":
+		return engine.Answer{Workspaces: f.listed}, nil
+	case "config show":
+		if f.config != nil {
+			return engine.Answer{Config: f.config}, nil
+		}
 	}
 	return engine.Answer{}, nil
 }

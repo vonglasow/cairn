@@ -44,6 +44,7 @@ afternoon to spend:
 - [The form](#the-form)
 - [An open task](#an-open-task)
 - [Several at once](#several-at-once)
+- [Workspaces, a window each](#workspaces-a-window-each)
 - [How it is tested](#how-it-is-tested)
 - [Deliberately not there yet](#deliberately-not-there-yet)
 
@@ -1303,9 +1304,12 @@ on a Mac — or Configuration… in the File menu opens a panel over the board
 (`configuration.go`) that says what `config show` says, asked of the engine
 (`engine.ConfigShow`): the file read, or that it is not written yet, then a line
 a key in three columns: the key in Go Mono, its value, and where it came from
-at the right — `file`, `settings` when the settings beside the store say it
-([config.md](config.md#settings-that-belong-to-the-store)), the environment
-variable that named it, or `default` (`ConfigLines`). A path — the store, the notes, the plugin, the file read —
+at the right — for a place, `file`, the environment variable or flag that
+named it, or `default`; for any other key, `set here` when the settings
+beside the store say it
+([config.md](config.md#settings-that-belong-to-the-store)), `from the global
+configuration`, or `default` (`ConfigLines`, see
+[Workspaces, a window each](#workspaces-a-window-each)). A path — the store, the notes, the plugin, the file read —
 has a mark before it, two sheets one over the other, that copies it whole to
 the clipboard (`CopyMarks`, `copying.go`); so do where an open task's
 context lives and where cairn is kept, in About
@@ -2096,6 +2100,94 @@ possible*, which named no act; *Skip flagged* (`s`) leaves out everything
 named; *Cancel* (`esc`) takes nothing.
 *Skip flagged* is offered only when something named could go all the same —
 otherwise it is the first answer again.
+
+## Workspaces, a window each
+
+**The window says which workspace it shows, always.** Its title is `cairn —
+work`, so the Dock, `⌘\``, Mission Control and a window manager tell two
+windows apart; a store no workspace names is titled by its folder
+(`Window.Title`, from `engine.WorkspaceShown.Name`, the rule the terminal's
+header follows too). The top bar opens with a pill before the tabs: a dot in
+the workspace's colour, its name and a caret; a loose store shows a ring and
+its folder in Go Mono, cut at its start (`PlaceShown`)
+(`@gui-workspace-the-title-and-the-pill-name-it`,
+`@gui-workspace-a-loose-store-shows-its-folder`). The place is read once, when
+the window first looks at its store (`engine.WorkspaceShow`): a window keeps
+its store, so `workspace use` afterwards does not rename it. The pill is as
+wide as its words, at most 128 points; at the narrowest window it gives way
+to the tabs and the filters' pills and keeps only its dot and caret, the
+title still naming it. Only a window that knows its place draws a pill, so
+`LayoutFor` and the frames pinned from it are as they were; `Window.Layout`
+moves the tabs right of the pill.
+
+**The switcher drops under the pill.** A click on the pill, `⌘⇧O`, or *Open
+a workspace…* in the File menu (`@gui-workspace-the-menu-offers-the-switcher`)
+opens it: a line to type in, which narrows it
+(`@gui-workspace-the-switcher-narrows`); WORKSPACES, in the order `workspace
+list` gives them, each with its folder and what choosing it does — `this
+window`, `open · brings it forward`, `opens a new window`, `not found`, and
+`default` — and `⌘⇧1`…`⌘⇧9` by its place in that list; RECENT FOLDERS, each
+with the day it was opened or `not found now`; and at its foot *Open a
+folder…*, *New workspace…* and *Settings of work…* (`⌘,`)
+(`@gui-workspace-the-switcher-lists-them`,
+`@gui-workspace-the-switcher-opens-the-settings`). `⌘O` was taken by Import,
+so the switcher is `⌘⇧O`. The places are the list's, the same in every
+window, where the terminal skips the one shown: there the digits only work
+inside its list; here `⌘⇧2` works from the board, and a key that meant
+another workspace in each window could not be learnt. A US Mac keyboard
+names `⌘⇧2` by the `@` shift makes, so the shifted figures are read back as
+their figure (`keyOf`). *Open a folder…* and *New workspace…* type into the
+same line, through the engine's `Switch` rules and `workspace add`; a folder
+that is not there is refused with the engine's reason and the line kept
+(`@gui-workspace-a-folder-opens-in-a-window-of-its-own`,
+`@gui-workspace-a-new-one-is-made-and-opened`).
+
+**Choosing opens it in a window of its own; this one stays.** A terminal has
+one screen and switches in place; a desktop has windows, and two boards side
+by side is the point. One window per store: the window asks for another
+(`ApartAsked`, as it asks for a file dialog), the engine says what that would
+hold and how to name it (`engine.OpenApart`, refusing what `Switch` refuses),
+and the loop either brings forward the window already showing that store, or
+starts `cairn gui --workspace home` — `--store <path>` for a folder — as a
+process of its own (`OpeningApart`), and says which it did
+(`@gui-workspace-another-opens-in-a-window-of-its-own`,
+`@gui-workspace-the-one-open-is-brought-forward`).
+
+**How a window knows another shows a store.** Each window, as it opens,
+listens on a Unix socket named after its store —
+`cairn-<16 hex of the store's path>.window` in `$XDG_RUNTIME_DIR` when it is
+absolute, the system's temporary folder otherwise (`Windows`, `windows.go`).
+Another cairn asking for that store connects, writes `raise`, and the window
+answers `ok` and asks the system to bring it forward (Gio's
+`system.ActionRaise`). The same happens when `cairn gui` is run on a store a
+window already shows: it brings that window forward, says so, and opens
+nothing (`@gui-workspace-a-second-window-on-a-store-raises-the-first`). A
+socket left by a window that died answers nothing and is claimed over. A
+socket was chosen over a lock or a pid file: it says a window is there and
+reaches it in one act, and a pid outlives its process. Its limits, said
+plainly: on Wayland a window cannot bring itself forward, so it is not; on
+Windows the system may only flash the window's button; two windows opened
+on one store in the same instant can both claim it; a socket cannot be made
+where the folder refuses one, and the window then opens unclaimed. The
+scenarios cannot see a second window of the system, so they observe what was
+asked: the arguments a cairn would be started with, and the window that took
+`raise`.
+
+**The settings of a workspace say where each key comes from.** `⌘,`, on a
+window showing a workspace, heads the configuration panel *Settings of
+home*, then the `settings.toml` read and `over` the global file. Each key
+says `set here`, `from the global configuration` or `default` — the
+engine's `written_here` and `written` — and the time is drawn as a choice of
+three, `on`, `hidden`, `off`, the one in force filled
+(`@gui-workspace-its-settings-say-where-each-comes-from`). The panel still
+only shows: it offers *Open settings.toml* beside *Open the file*, handed to
+the system's editor as the global file is. The global value a key set here
+hides is not said: `config show` does not answer it.
+
+**A time hidden or off leaves the cards without time.** What a card cost
+against its estimate is shown only while the time is
+(`engine.Pages.Cost`); the cairn of a card in focus stays, since the focus
+is kept under `off` (`@gui-workspace-time-off-leaves-the-card-without-time`).
 
 ## How it is tested
 

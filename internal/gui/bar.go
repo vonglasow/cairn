@@ -29,6 +29,9 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnLabels:
 		return "Labels"
 	case OnConfiguration:
+		if name := w.switcher.place.Workspace; name != "" {
+			return "Settings of " + name
+		}
 		return "Configuration"
 	case OnHelp:
 		return "What everything does"
@@ -125,6 +128,8 @@ func Shortcut(offer string) string {
 		return "shift+l"
 	case "configuration…":
 		return "cmd+,"
+	case "open a workspace…":
+		return "cmd+shift+o"
 	case "filter":
 		return "shift+f"
 	case "no filter":
@@ -149,7 +154,7 @@ func Shortcut(offer string) string {
 		return "cmd+backspace"
 	case "quit":
 		return "cmd+q"
-	case "agree", "apply", "restore", "open the file", "write the file":
+	case "agree", "apply", "restore", "open the file", "write the file", "open settings.toml":
 		return "enter"
 	case "choose":
 		return "enter"
@@ -178,6 +183,9 @@ func Pretty(key string) string {
 		return "⌘⌫"
 	case "enter":
 		return "⏎"
+	}
+	if letter, ok := strings.CutPrefix(key, "cmd+shift+"); ok {
+		return "⌘⇧" + strings.ToUpper(letter)
 	}
 	if letter, ok := strings.CutPrefix(key, "cmd+"); ok {
 		return "⌘" + strings.ToUpper(letter)
@@ -255,6 +263,9 @@ func (w Window) Offers() []string {
 		}
 		return []string{"Take off", "No filter", "Close"}
 	case OnConfiguration:
+		if w.configured.Settings != "" && w.switcher.place.Workspace != "" {
+			return []string{OpenSettings, "Open the file", "Close"}
+		}
 		if w.configHere {
 			return []string{"Open the file", "Close"}
 		}
@@ -273,7 +284,7 @@ func (w Window) Offers() []string {
 			return []string{"Cancel"}
 		}
 		return []string{"New label", "Close"}
-	case OnMenu:
+	case OnMenu, OnWorkspaces:
 		return nil
 	case OnForm:
 		offers := []string{"Save", "Cancel"}

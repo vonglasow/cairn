@@ -141,16 +141,16 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 
 func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	if said, warn := Facts(engine.Card{State: "blocked", Freed: true}, now); said != FreedMark || !warn {
+	if said, warn := Facts(engine.Card{State: "blocked", Freed: true}, now, engine.Pages{}); said != FreedMark || !warn {
 		t.Fatalf("a card waiting on nothing any more says %q %v", said, warn)
 	}
-	said, warn := Facts(engine.Card{}, now)
+	said, warn := Facts(engine.Card{}, now, engine.Pages{})
 	if said != "" || warn {
 		t.Fatalf("a card carrying nothing says %q %v", said, warn)
 	}
 	said, warn = Facts(engine.Card{
 		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4},
-	}, now)
+	}, now, engine.Pages{})
 	for _, word := range []string{"2d", "9h/2h", "◇4"} {
 		if !strings.Contains(said, word) {
 			t.Errorf("%q does not say %q", said, word)
@@ -223,7 +223,7 @@ func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}}
 	w := holding(newFake(), c)
 	w.snap.Goals = []engine.Goal{{Number: 1, Title: "Ship the desktop board"}, {Number: 2, Title: "Write the docs"}}
-	row := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now)
+	row := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{})
 	if row.ServesAt.W == 0 || row.ServesAt.X+row.ServesAt.W != row.FactsAt.X+row.FactsAt.W {
 		t.Fatalf("the objective mark is at %+v in the facts %+v", row.ServesAt, row.FactsAt)
 	}
@@ -236,7 +236,7 @@ func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
 func TestTheFactsMakeRoomForTheMarksGoMonoLacks(t *testing.T) {
 	c := engine.Card{Number: 1, Objectives: []int{1}}
 	m := holding(newFake()).measured()
-	row := CardRowOf(c, Box{W: 300, H: lineHigh}, m, time.Time{})
+	row := CardRowOf(c, Box{W: 300, H: lineHigh}, m, time.Time{}, engine.Pages{})
 	if want := monoWide("1", small) + ends(m, ServesMark, small); row.FactsAt.W < want {
 		t.Errorf("the facts %q are given %d wide, want %d at least", row.Facts, row.FactsAt.W, want)
 	}
@@ -279,7 +279,7 @@ func TestALabelPillWearsItsColour(t *testing.T) {
 	if ink != skin.Labels["peach"] || ground == skin.Pill {
 		t.Fatalf("a peach pill is %v on %v", ink, ground)
 	}
-	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now).Pills[0]
+	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{}).Pills[0]
 	if painted(drawn(t, w), Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
 		t.Error("the card's label is not drawn on its colour")
 	}
@@ -292,7 +292,7 @@ func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
 	c := engine.Card{Number: 1, Title: "A", State: "todo", Labels: []string{"release"}}
 	w := holding(newFake(), c)
 	shot := drawn(t, w)
-	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now).Pills[0]
+	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{}).Pills[0]
 	if above, under := inkGaps(shot, pill); above-under > 1 || under-above > 1 {
 		t.Errorf("release stands %d under its pill's top and %d over its foot", above, under)
 	}

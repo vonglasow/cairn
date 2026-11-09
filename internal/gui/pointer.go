@@ -31,6 +31,12 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnMenu {
 		return w.clickingMenu(p)
 	}
+	if w.screen == OnWorkspaces {
+		return w.clickingWorkspaces(p)
+	}
+	if w.screen == OnTheBoard && w.Layout().Place.In(p) {
+		return w.openingSwitcher()
+	}
 	if w.screen == OnPalette {
 		return w.clickingPalette(p)
 	}
@@ -183,7 +189,7 @@ func (w Window) servedAt(p Point) ([]string, Box, int) {
 		if !placed.Within.In(p) || !placed.Slot.In(p) {
 			continue
 		}
-		mark := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now).ServesAt
+		mark := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now, w.pages).ServesAt
 		if !mark.In(p) {
 			continue
 		}
@@ -215,7 +221,7 @@ func (w Window) countAt(p Point) ([]string, Box) {
 		if !placed.Within.In(p) || !placed.Slot.In(p) {
 			continue
 		}
-		if more := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now).More; more.In(p) {
+		if more := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now, w.pages).More; more.In(p) {
 			return placed.Card.Labels, more
 		}
 	}

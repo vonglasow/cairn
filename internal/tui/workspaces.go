@@ -150,7 +150,7 @@ func (b Board) switched(m Switched) (tea.Model, tea.Cmd) {
 	}
 	fresh := New(b.work, b.glyphs, b.clock, b.width, b.height).Paged(m.Pages).Noting(b.noted).Switching(b.switcher)
 	fresh.skin, fresh.place = b.skin, m.Placed
-	fresh.opened = openedOver(m.Placed.name(), b.place.name(), b.snap.Focus)
+	fresh.opened = openedOver(m.Placed.Shown.Name(), b.place.Shown.Name(), b.snap.Focus)
 	return fresh.update(m.Looked)
 }
 
@@ -168,16 +168,6 @@ func openedOver(now, was string, focus []int) string {
 		held = append(held, "#"+strconv.Itoa(n))
 	}
 	return said + " · " + was + "'s focus on " + strings.Join(held, ", ") + " is still held"
-}
-
-func (p Placed) name() string {
-	if p.Shown.Workspace != "" {
-		return p.Shown.Workspace
-	}
-	if p.Shown.Store == "" {
-		return ""
-	}
-	return filepath.Dir(p.Shown.Store)
 }
 
 func (b Board) isHere(one engine.Workspace) bool {

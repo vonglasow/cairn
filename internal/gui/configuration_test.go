@@ -78,7 +78,7 @@ func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
 	for _, line := range w.ConfigLines() {
 		from[line.Key] = line.From
 	}
-	if from["time.weekends"] != "settings" || from["focus.session"] != "file" || from["time.deleted"] != "default" {
+	if from["time.weekends"] != SetHere || from["focus.session"] != FromGlobal || from["time.deleted"] != "default" {
 		t.Errorf("the keys come from %v", from)
 	}
 }

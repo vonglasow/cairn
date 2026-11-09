@@ -155,6 +155,7 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 		return
 	}
 	l := w.Layout()
+	drawPlace(gtx, th, skin, l, w)
 	drawTabs(gtx, th, skin, l, w)
 	if !w.native {
 		for _, stroke := range MenuStrokes(MenuButton(l)) {
@@ -206,6 +207,9 @@ func Draw(gtx layout.Context, th *material.Theme, skin Skin, w Window) {
 	}
 	if w.Screen() == OnPalette {
 		drawPalette(gtx, th, skin, w)
+	}
+	if w.Screen() == OnWorkspaces {
+		drawSwitcher(gtx, th, skin, w)
 	}
 	for _, mark := range w.CopyMarks() {
 		drawCopyMark(gtx, skin, mark.At)
@@ -319,13 +323,20 @@ func drawConfiguration(gtx layout.Context, th *material.Theme, skin Skin, w Wind
 	drawPanel(gtx, th, skin, box, Heads(w))
 	mono := font.Font{Typeface: MonoFace}
 	lines := w.ConfigLines()
+	head := w.ConfigHead()
+	for i, said := range head {
+		sayIn(gtx, th, skin.Faint, Inside(ListRowAt(box, i)), said, small, mono, text.Start)
+	}
 	for _, line := range lines {
 		sayIn(gtx, th, skin.Low, line.KeyAt, line.Key, small, mono, text.Start)
-		say(gtx, th, skin.Ink, line.ValueAt, line.Value, reads)
+		if line.Key != "pages.time" {
+			say(gtx, th, skin.Ink, line.ValueAt, line.Value, reads)
+		}
 		sayIn(gtx, th, skin.Faint, line.FromAt, line.From, small, mono, text.End)
 	}
+	drawTimeSegments(gtx, th, skin, w)
 	for i, said := range w.ConfigFoot() {
-		row := Inside(ListRowAt(box, len(lines)+i))
+		row := Inside(ListRowAt(box, len(head)+len(lines)+i))
 		if i == 0 {
 			row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
 		}
@@ -921,7 +932,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, w Window, box B
 	}
 
 	mono := font.Font{Typeface: MonoFace}
-	laid := CardRowOf(c, parts.Number, m, gtx.Now)
+	laid := CardRowOf(c, parts.Number, m, gtx.Now, w.pages)
 	sayIn(gtx, th, skin.Low, parts.Number, laid.Number, small, mono, text.Start)
 	if laid.Facts != "" {
 		ink := skin.Low

@@ -28,7 +28,7 @@ func (w Window) CopyMarks() []CopyMark {
 				marks = append(marks, markBefore(Box{X: line.ValueAt.X - copyRoom, Y: line.ValueAt.Y, H: line.ValueAt.H}, line.Value))
 			}
 		}
-		return append(marks, markBefore(Inside(ListRowAt(w.ConfigurationBox(), len(lines))), w.configured.File))
+		return append(marks, markBefore(Inside(ListRowAt(w.ConfigurationBox(), len(w.ConfigHead())+len(lines))), w.configured.File))
 	case w.screen == OnAsking && w.question == aboutCairn:
 		said := AboutSays(build.Read())
 		box := w.QuestionBox()

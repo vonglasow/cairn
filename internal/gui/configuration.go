@@ -13,6 +13,15 @@ import (
 // ConfigurationFoot is what the panel of the configuration says last: what the window reads of the file, it reads when it opens.
 const ConfigurationFoot = "Changes take effect when cairn is opened again."
 
+// OpenSettings is the offer handing the settings of the workspace shown to the system, to open in its editor.
+const OpenSettings = "Open settings.toml"
+
+// SetHere and FromGlobal say where a key of the settings of a workspace comes from: its own settings, or the global configuration under them.
+const (
+	SetHere    = "set here"
+	FromGlobal = "from the global configuration"
+)
+
 type configurationState struct {
 	configured engine.Config
 	configHere bool
@@ -72,9 +81,9 @@ func (w Window) configKeys() []ConfigLine {
 		from := "default"
 		switch {
 		case slices.Contains(c.WrittenHere, key):
-			from = "settings"
+			from = SetHere
 		case slices.Contains(c.Written, key):
-			from = "file"
+			from = FromGlobal
 		}
 		return ConfigLine{Key: key, Value: value, From: from}
 	}
@@ -103,12 +112,13 @@ func (w Window) configKeys() []ConfigLine {
 func (w Window) ConfigLines() []ConfigLine {
 	box := w.ConfigurationBox()
 	lines := w.configKeys()
+	head := len(w.ConfigHead())
 	keys, froms := 0, 0
 	for _, line := range lines {
 		keys, froms = max(keys, monoWide(line.Key, small)), max(froms, monoWide(line.From, small))
 	}
 	for i := range lines {
-		row := Inside(ListRowAt(box, i))
+		row := Inside(ListRowAt(box, head+i))
 		lines[i].KeyAt = Box{X: row.X, Y: row.Y, W: keys, H: row.H}
 		lines[i].FromAt = Box{X: row.X + row.W - froms, Y: row.Y, W: froms, H: row.H}
 		from := row.X + keys + configGap + copyRoom
@@ -116,6 +126,40 @@ func (w Window) ConfigLines() []ConfigLine {
 	}
 	return lines
 }
+
+// ConfigHead is what the settings of a workspace say above their keys: the settings read, over the global file; nothing for a store no workspace names.
+func (w Window) ConfigHead() []string {
+	if w.configured.Settings == "" || w.switcher.place.Workspace == "" {
+		return nil
+	}
+	return []string{w.configured.Settings, "over " + w.configured.File}
+}
+
+// TimeSegment is one of the three ways the time is kept, as the settings draw them: on, hidden, off, the one in force filled.
+type TimeSegment struct {
+	Said string
+	On   bool
+	At   Box
+}
+
+// TimeSegments is the time as the panel draws it, three segments over the value of pages.time, and whether the panel shows that key.
+func (w Window) TimeSegments() ([]TimeSegment, bool) {
+	for _, line := range w.ConfigLines() {
+		if line.Key != "pages.time" {
+			continue
+		}
+		modes := []string{"on", "hidden", "off"}
+		wide := min(segmentWide, line.ValueAt.W/len(modes))
+		segments := make([]TimeSegment, len(modes))
+		for i, mode := range modes {
+			segments[i] = TimeSegment{Said: mode, On: mode == line.Value, At: Box{X: line.ValueAt.X + i*wide, Y: line.ValueAt.Y, W: wide, H: line.ValueAt.H}}
+		}
+		return segments, true
+	}
+	return nil, false
+}
+
+const segmentWide = 64
 
 // ConfigFoot is what the panel says under the keys: the file it reads, and when what is changed in it is read.
 func (w Window) ConfigFoot() []string {
@@ -129,7 +173,7 @@ func (w Window) ConfigFoot() []string {
 // ConfigurationBox is the panel of the configuration: across the middle of the window, a line a key and two for its foot.
 func (w Window) ConfigurationBox() Box {
 	lines := w.configKeys()
-	said := make([]string, 0, len(lines)+2)
+	said := append([]string{}, w.ConfigHead()...)
 	for _, line := range lines {
 		said = append(said, line.Key+"    "+line.Value+"        "+line.From)
 	}
