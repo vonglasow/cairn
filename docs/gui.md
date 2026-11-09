@@ -39,6 +39,7 @@ afternoon to spend:
 - [Why Gio](#why-gio)
 - [Where it lives](#where-it-lives)
 - [The look](#the-look)
+- [The design system](#the-design-system)
 - [The window](#the-window)
 - [The mouse](#the-mouse)
 - [The form](#the-form)
@@ -197,23 +198,10 @@ switcher's acts was drawn in `Line.Rule` on `Surface.Raised`, a contrast of
 held at 1.2 against a panel as a column's edge is against its ground
 (`@gui-a-panel-rule-can-be-seen`).
 
-**Every drawing is handed a `Kit`**: Gio's context, the theme, the skin,
-the layer it draws on (board, bar, drag, panel, popover) and a record of
-what was drawn (`Drawn.Put`), which the overlap check of #225 will read
-once the drawing is made of components (#230).
-
-**What the window is drawn of is a set of components**, each a value
-carrying its look and drawn by `Draw(k Kit, at Box) Box` (`component_*.go`),
-the way Gio's `material.ButtonStyle` is: `Ground`, `Panel` with its
-`Heading`, `Popover`, `Veil`, `Rule`, `Card`, `Stripe`, `LabelChip`, `Pill`,
-`KeyChip`, `Button`, `Dot`, `Empty` and `Dashed`. A screen places them and
-spells no shape out; a component records its box, and a part drawn inside
-another is recorded as its child (`card/stripe`, `button/key`), so the
-overlap check can tell a chip in a card from a popover over one. They stay
-in this package: a component reads the `Kit`'s own fields and the layout's
-`Box`, and the token guard reads this package's files. Where two screens
-drew one element two ways, the component draws it the one way the design
-settled on (#230's sheet), and the window changed with it:
+**The window is drawn of components**, each drawn one way: see
+[the design system](#the-design-system). Where two screens drew one
+element two ways, the component draws it the one way the design settled
+on (#230's sheet), and the window changed with it:
 
 - a popover — a menu, a bubble, the swatches, a field's tip, the switcher —
   rounds at 10, a panel's corners at 12; the bubbles were at 8 and the
@@ -238,19 +226,8 @@ settled on (#230's sheet), and the window changed with it:
 - an empty slot's dashed line rounds at a card's 8, drawn by the same
   `Dashed` as the dashed pill (`@gui-an-empty-slot-is-rounded`).
 
-The controls, the rows and the small parts are components too: `Tabs`,
-`Segmented`, `Row`, `Field`, `Check`, `Tile`, `Progress`, `Spent`, `Ring`,
-`TodayMark`, `DayCell`, `Swatch`, `Bar`, `Hint`, `Head`, `Scrollbar`,
-`WorkspacePill`, `FilterPill`, `InfoBox`, `Backdrop`, `Struck`, `Landing`,
-and the marks — `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`,
-`CopyMark`, `MenuMark`, `Stone`. **No drawing outside a component spells a
-shape out**: `TestNoDrawingOutsideAComponentSpellsAShapeOut` reads every
-function named `draw…` outside `component_*.go` and fails on a call to
-`fill`, `rounded`, `outline`, `framed`, `lining`, `raised`, `disc`,
-`ringed`, or anything of Gio's `clip` and `paint`; what clips, fades or
-lifts a part is the `Kit`'s (`within`, `faded`, `shifted`), and so is the
-window's measure (`measured`), which a component writing a count after a
-word reads. Where the screens disagreed, the sheet of #230 chose again:
+The controls, the rows and the small parts followed. Where the screens
+disagreed, the sheet of #230 chose again:
 
 - one segmented control (`Segmented`): its track rounds at a control's 7
   and a hair (`Space.Hair`, 2), its chosen segment inset a hair all round
@@ -337,6 +314,108 @@ test looking for words counts the pixels near it (`lettered`), and one
 looking for a shape still counts them exactly (`painted`). A line is laid
 out a little taller than its box and clipped to it (`textSlack`), Figtree
 standing a point taller than the line Go was given.
+
+## The design system
+
+The window is drawn of a small design system (#230): tokens a skin fills,
+components drawn from them, and screens that only place components. A new
+screen assembles what is here; it re-draws nothing.
+
+**Tokens** are `Skin`'s fields, grouped as a design system groups them
+(`skin.go`, the table in [the look](#the-look)): `Colour` — `Surface`,
+`Line`, `Ink`, `Accent`, `State`, and the maps a priority, a standing or a
+label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
+`Shadow` a raised thing casts. `Dark()` fills them; a component reads
+`k.skin` and nothing else for a colour or a corner.
+
+**Components** are values carrying their look, each drawn by
+`Draw(k Kit, at Box) Box` in a `component_*.go` file, as Gio's
+`material.ButtonStyle` is:
+
+| component | is |
+|---|---|
+| `Backdrop` | the window's own back, under everything |
+| `Ground` | what a column, a lane or a day stands on, raised for a day |
+| `Panel`, `Heading` | a raised box over the board, and its title |
+| `Popover` | a small raised box dropped over the rest: a menu, a bubble, a tip, the swatches, the switcher |
+| `Veil` | what dims the board under a question or the command bar |
+| `Rule` | a line between what something shows and what it offers |
+| `Card`, `Stripe` | a task's or an objective's card in each of its states, and its priority's edge |
+| `LabelChip`, `Pill`, `KeyChip`, `Dot` | a label, a word on a rounded ground, a key on its chip, a colour beside its name |
+| `Button`, `Tabs`, `Segmented` | a word to click, the window's tabs, one choice among a few |
+| `Row`, `Tile`, `Head` | a line of a list, a line inside a field, the line naming what follows |
+| `Field`, `Check`, `Swatch` | what is typed into, the box before a value, a colour to pick |
+| `Progress`, `Spent`, `Scrollbar` | how much is done, how long a day took, which lines are in sight |
+| `Ring`, `TodayMark`, `DayCell` | what the keyboard is on or a target, today, a day of a month |
+| `Bar`, `Hint` | the command bar and one of its offers |
+| `WorkspacePill`, `FilterPill`, `InfoBox` | the workspace, a filter in force, a box of facts |
+| `Empty`, `Dashed`, `Struck`, `Landing` | an empty slot, a dashed line, the line through what is done, where a drop lands |
+| `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone` | the marks |
+
+**The `Kit` is what every drawing is handed**: Gio's context, the theme,
+the skin, the layer it draws on, the clip it draws within, and the record
+of what was drawn. The layers are planes, each over the one before:
+`LayerBack` (the window's back), `LayerBoard`, `LayerBar`, `LayerDrag`,
+`LayerPanel`, `LayerPopover`. A component records its box (`Kit.put`) in
+the `Drawn` record, cut to the clip it is drawn within (`Kit.within`), so
+a card scrolled under its column's edge is recorded as far as it is seen.
+What is drawn on something is recorded inside it (`Kit.inside`): a stripe
+in a card is `card/stripe`, a card on a column's ground `ground/card`, a
+button on a panel `panel/button`, a panel on the veil `veil/panel`.
+
+**Two guards keep it a system.** `TestNoDrawingNamesAColourOrARadiusOfItsOwn`
+fails on a colour, a radius or a stroke's width written anywhere but
+`skin.go`. `TestNoDrawingOutsideAComponentSpellsAShapeOut` reads every
+function named `draw…` outside `component_*.go` and fails on a call to
+`fill`, `rounded`, `outline`, `framed`, `lining`, `raised`, `disc`,
+`ringed`, or anything of Gio's `clip` and `paint`; what clips, fades or
+lifts a part is the `Kit`'s (`within`, `faded`, `shifted`), and so is the
+window's measure (`measured`).
+
+**Nothing is drawn over its neighbour.** `Drawn.Overlaps` is every pair of
+parts on one layer, inside one parent, whose boxes cross. A part is never
+compared with its parent, nor with anything on another layer — a popover
+over a card is not a fault — and a part drawn over the whole of its parent
+(a ring, a dashed line) is its frame, compared with nothing.
+`TestTheFixturesDrawNoPartOverItsNeighbour` draws every screen on the
+fixtures — the board, a chosen card, a task's form and its trace, an
+objective's form, the help, a question, a menu, a calendar, a list, the
+labels, the backups, the filters, the configuration, the command bar, the
+switcher, the objectives, the week, the week before, a day, a month, its
+months and its years — at the two sizes the layout is pinned at, 720 by
+560 and 1200 by 800, and fails on any overlap. A card records where it
+writes its number and its facts, so what it writes is judged too. What it
+found when it was written, and what was done:
+
+- on a narrow card — the week's at 720, a blocked card of the band — the
+  facts ran over the number (`#10d≡`): they now give their last pieces up
+  (what it serves, then the time, then the deadline) until they fit beside
+  the number (`CardRowOf`,
+  `@gui-a-narrow-week-card-keeps-its-number-and-facts-apart`);
+- the form's grip lay over its last button by a few points: a form's
+  buttons now end where the grip begins
+  (`@gui-the-forms-grip-stays-clear-of-its-buttons`);
+- the calendar and a list chosen from are dropped over the form: they are
+  drawn on the popover layer, as what is dropped over the rest is; the
+  command bar's panel and a question stand on their veil.
+
+The text check found one more on the new screens: at 720 a day of the week
+had no room for its total beside its date, and now writes it on the line
+under it (`WeekTotalAt`,
+`@gui-a-narrow-day-writes-its-total-under-its-date`).
+
+**A new screen is assembled, not drawn.** Its sizes are worked out in a
+`parts*.go` function a test pins; its drawing function takes the `Kit`, puts
+itself on its layer (`k.on`), draws a container — a `Panel`, a `Popover`,
+a `Ground` — and places components inside it (`k.inside("panel")`), each
+at the box its parts gave. If it needs something no component draws, the
+component is added first, in a `component_*.go` file, with its test, and
+every screen that drew it by hand takes it.
+
+**A theme sets tokens.** A second look (#153) is a second `Skin` value, its
+colours derived from the theme's palette (`Line.Raised` as a mix of the
+ground and the ink, for one); no component and no screen changes, since
+none of them names a colour of its own.
 
 ## The window
 
@@ -1059,12 +1138,12 @@ past the window's left edge, over the `⌘K` chip, and the line was gone. What a
 hint no longer says is still its key, and still in the palette.
 
 **Every text is drawn where it fits.** `TestTheFixturesDrawEveryTextWhereItFits`
-draws eleven screens on the fixtures at 720 by 560 and 1200 by 800, through the
-one function every text goes through (`sayWith`, its `noteSaid` hook), and fails
-on a text drawn in an empty box or one taller than its box. A one-line text
-wider than its box is not a fault: it is cut with "…". Overlaps between
-neighbours are not checked yet: the hook knows neither the clip nor the layer a
-text is drawn in; they come with the drawing split into components (#230).
+draws every screen the overlap check draws, on the fixtures at 720 by 560 and
+1200 by 800, through the one function every text goes through (`sayWith`, its
+`noteSaid` hook), and fails on a text drawn in an empty box or one taller than
+its box. A one-line text wider than its box is not a fault: it is cut with "…".
+Overlaps between neighbours are the design system's to find
+([the design system](#the-design-system)).
 
 **`⌘K` opens the command bar into a palette.** A click on the bar's line does
 the same. It drops into place over the top of the window, under the tabs and
@@ -2346,6 +2425,12 @@ Three layers, each with its own gate:
 | the **geometry** — where each card is, which one is under the pointer, what is off screen | a pure function `(width, height, cards) → rectangles`, pinned as **numbers** in testdata | every layout sum, under mutation |
 | the **decisions** — what a click chooses, what a drop sets off, which operations go to the engine | state kept in one struct of ours, changed by a function a test can call without drawing, and read back off the `*fake` | dragging, the two operations, every refusal |
 | the **drawing** — that there is ink where there should be, in the right colour | a window with no screen, and assertions on one colour at a time: this rectangle holds some of the colour a chosen card is outlined in, that one holds none | having forgotten to draw something, and having drawn it in the wrong state |
+
+**A drawing test that needs only a board draws the fixtures**
+(`aFixturesBoard`, the store `cairn fixtures` makes), so every screen is
+drawn from one believable board and a case nobody thought of is drawn
+anyway; a test whose case needs a board of its own — an empty column, a
+card in one lane, an objective nothing serves — still seeds it.
 
 **Nothing in the drawing works anything out**, and that is not tidiness — it is
 what the mutation gate forced. Arithmetic inside a drawing is arithmetic no
