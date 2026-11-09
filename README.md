@@ -115,7 +115,8 @@ until you run `cairn migration apply`, which saves a backup first.
 
 Nothing needs configuring: cairn keeps everything under `~/.cairn`.
 `cairn config init` writes `~/.config/cairn/config.toml` with every key and
-its current value, and never overwrites an existing file. `cairn config show`
+its current value, and one workspace, `main`, on `~/.cairn`, the default — so
+nothing moves — and never overwrites an existing file. `cairn config show`
 prints the configuration in use and where each value came from.
 `CAIRN_STORE` and `CAIRN_NOTES` in the environment override `store` and
 `notes`.
@@ -124,7 +125,8 @@ A workspace is a named folder holding a store and its notes. `cairn workspace
 add work ~/cairn/work` names one, `cairn workspace use work` makes it the
 default, `cairn workspace remove work` forgets it and leaves its folder alone,
 `cairn workspace list` and `cairn workspace show` say which there are and which
-one answers, and why, each in its colour. `--workspace <name>` or `--store <path>` on any
+one answers, and why — the rung that named it and those it passed over — each
+in its colour, with its time when it is not on. `--workspace <name>` or `--store <path>` on any
 command picks another for that command alone, whatever the environment says.
 An MCP server keeps the workspace it started on — `cairn mcp serve --workspace
 <name>` names it — and `workspace use` does not move it.
@@ -140,12 +142,14 @@ way.
 <summary>The whole file</summary>
 
 ```toml
-# Where cairn keeps your tasks: a file. Absolute, or under ~.
-store = "~/.cairn/cairn.db"
+# Where cairn keeps your tasks when [workspaces] names no default: a file.
+# Absolute, or under ~. The default workspace, below, comes before it.
+# store = "~/.cairn/cairn.db"
 
-# Where cairn looks for the notes of each task: a folder, one per task inside
-# it (~/.cairn/notes/12 for task 12). Absolute, or under ~.
-notes = "~/.cairn/notes"
+# Where cairn looks for the notes of each task when [workspaces] names no
+# default: a folder, one per task inside it (~/.cairn/notes/12 for task 12).
+# Absolute, or under ~.
+# notes = "~/.cairn/notes"
 
 # Where cairn writes its Claude Code plugin, and keeps it at its own version:
 # a folder. Beside the store when it is not said. Absolute, or under ~.
@@ -195,12 +199,14 @@ keep_sizes = false
 
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
-# the one used when nothing else says; when it is said, it comes before store
-# and notes above, and CAIRN_STORE, --workspace and --store come before it.
-# cairn workspace add, use and remove write here for you. The colour a
-# workspace wears is its own settings.toml's to say, under [workspace].
+# the one used when nothing else says; it comes before store and notes above,
+# and CAIRN_STORE, --workspace and --store come before it. main is the folder
+# cairn has always used. cairn workspace add, use and remove write here for
+# you. The colour a workspace wears is its own settings.toml's to say, under
+# [workspace].
 [workspaces]
-# default = "work"
+default = "main"
+main = "~/.cairn"
 # work = "~/cairn/work"
 # home = "~/cairn/home"
 ```

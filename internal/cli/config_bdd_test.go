@@ -8,10 +8,11 @@ import (
 
 func initConfig(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
-		w := newWorld(t)
+		w := &workspaces{world: newWorld(t)}
 		w.register(sc)
 		w.registerConfig(sc)
 		w.registerContext(sc)
+		w.registerWorkspace(sc)
 	}
 }
 

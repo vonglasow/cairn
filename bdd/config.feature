@@ -75,8 +75,27 @@ Feature: Where cairn looks for its own places
       And it names the file it wrote
       And the file it wrote is the configuration the README shows
       When I run `cairn config show`
-      Then it says the store is at "~/.cairn/cairn.db", named by the file
+      Then it says the store is at "~/.cairn/cairn.db", named by the default workspace, "main"
       And it says the plugin is at "~/.cairn/claude-plugin", named by the file
+
+    @config-init-names-one-workspace-the-default
+    Scenario: config init names one workspace, the default, on the folder cairn has always used
+      When I run `cairn config init`
+      Then it succeeds
+      When I run `cairn workspace list`
+      Then it lists "main" at "~/.cairn" as the default
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/.cairn/cairn.db"
+      When I run `cairn task show 1`
+      Then it says the context lives at "~/.cairn/notes/1"
+
+    @config-a-file-without-workspaces-reads-as-before
+    Scenario: a configuration that names no workspace reads as it did before workspaces
+      Given a configuration that says the notes live at "~/vault"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/.cairn/cairn.db"
+      When I run `cairn task show 1`
+      Then it says the context lives at "~/vault/1"
 
     @config-init-a-key-uncommented-is-read-under-its-table
     Scenario Outline: any key of the file config init wrote, taken out of its comment, is read under its own table

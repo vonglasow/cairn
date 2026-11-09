@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -23,7 +24,7 @@ func TestKeep_aServerKeepsTheDefaultItStartedOn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shown := answer.WorkspaceShown; shown.Workspace != "work" || shown.Because != "it was the default of [workspaces] when this server started" || !strings.HasPrefix(shown.Switch, "not from here") {
+	if shown := answer.WorkspaceShown; shown.Workspace != "work" || shown.Why.Rung != rungDefault || !shown.Why.Started || !strings.HasPrefix(shown.Switch, "not from here") {
 		t.Errorf("shown %+v, want work, kept since the start, and how to switch", shown)
 	}
 }
@@ -34,19 +35,19 @@ func TestKeep_saysWhyAsItWasWhenTheServerStarted(t *testing.T) {
 		env              map[string]string
 		workspace, store string
 		said             string
-		because          string
+		rung             string
 	}{
-		{"the flag", nil, "home", "", twoWorkspaces, "--workspace, given when this server started"},
-		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, "--store, given when this server started"},
-		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, "CAIRN_STORE, set when this server started"},
-		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", "the file named it when this server started"},
-		{"nothing", nil, "", "", "", "nothing named it when this server started: it is where cairn keeps a store by default"},
+		{"the flag", nil, "home", "", twoWorkspaces, rungWorkspaceFlag},
+		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, rungStoreFlag},
+		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, config.StoreVariable},
+		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", rungFile},
+		{"nothing", nil, "", "", "", rungNothing},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
 		kept := Keep(h)
-		if kept.Kept == nil || kept.Kept.Because != c.because {
-			t.Errorf("%s: kept %+v, want because %q", c.name, kept.Kept, c.because)
+		if kept.Kept == nil || kept.Kept.Why.Rung != c.rung || !kept.Kept.Why.Started {
+			t.Errorf("%s: kept %+v, want why %q, as the server started", c.name, kept.Kept, c.rung)
 		}
 	}
 }
@@ -68,7 +69,7 @@ func TestKeep_isCarriedWhole(t *testing.T) {
 		t.Fatal(err)
 	}
 	var back Started
-	if err := json.Unmarshal(said, &back); err != nil || back != *h.Kept {
+	if err := json.Unmarshal(said, &back); err != nil || !reflect.DeepEqual(back, *h.Kept) {
 		t.Errorf("carried %s, read back %+v, %v", said, back, err)
 	}
 }
@@ -119,7 +120,7 @@ func TestWorkspaceShow_aServerSaysSwitchingIsNotDoneThere(t *testing.T) {
 		t.Fatal(err)
 	}
 	said := RenderText(WorkspaceShow, answer)
-	for _, want := range []string{"workspace  home\n", "because    --workspace, given when this server started\n", "switch     not from here: this server keeps its store; another workspace is another server, which the person starts\n"} {
+	for _, want := range []string{"workspace  home\n", "why        when this server started, --workspace — over the default, work\n", "switch     not from here: this server keeps its store; another workspace is another server, which the person starts\n"} {
 		if !strings.Contains(said, want) {
 			t.Errorf("it says\n%s\nwant %q", said, want)
 		}

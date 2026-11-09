@@ -175,6 +175,44 @@ Feature: Settings that belong to a store, kept beside it
       Then the structured answer says "time.weekends" is written in the store's settings
       And the structured answer says "focus.session" is written in the global configuration
 
+    @settings-config-show-says-the-global-value
+    Scenario: beside a key the store's settings set, config show says what the global configuration would give
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the global configuration also says:
+        """
+        [focus]
+        session = "1h"
+        """
+      And the settings in "~/cairn/work" say:
+        """
+        [focus]
+        session = "25m"
+
+        [time]
+        weekends = "hidden"
+        """
+      When I run `cairn config show`
+      Then it says "session" is "25m", set in the store's settings, the global configuration giving "1h"
+      And it says "weekends" is "hidden", set in the store's settings, the global configuration giving "shown"
+      When I run `cairn config show --json`
+      Then the structured answer says the global configuration gives "focus.session" as "1h"
+      And the structured answer says the global configuration gives "time.weekends" as "shown"
+
+    @settings-config-show-says-the-colour
+    Scenario: config show says the colour of the workspace, and where it comes from
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [workspace]
+        colour = "teal"
+        """
+      When I run `cairn config show --workspace home`
+      Then it says "colour" is "teal", set in the store's settings
+      When I run `cairn config show`
+      Then it says the colour is read off the workspace's name
+      When I run `cairn config show --workspace home --json`
+      Then the structured answer says the workspace wears "teal"
+
   Rule: A workspace added starts with settings that say nothing
 
     @settings-workspace-add-writes-empty-settings

@@ -52,9 +52,49 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 		return test.WantContains(w.Out.Stdout, "# the store's settings: "+w.expand(path)+"\n", "config show")
 	})
 	sc.Step(`^it says "([^"]*)" is "([^"]*)", (set in the store's settings|from the global configuration|by default)$`, func(key, value, from string) error {
-		line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(value) + `"?\s+# ` + regexp.QuoteMeta(from) + `$`)
+		line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(value) + `"?\s+# ` + regexp.QuoteMeta(from) + `(; global: .*)?$`)
 		if !line.MatchString(w.Out.Stdout) {
 			return fmt.Errorf("the answer does not say %s is %s, %s:\n%s", key, value, from, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^it says "([^"]*)" is "([^"]*)", set in the store's settings, the global configuration giving "([^"]*)"$`, func(key, value, global string) error {
+		line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(value) + `"?\s+# set in the store's settings; global: "?` + regexp.QuoteMeta(global) + `"?$`)
+		if !line.MatchString(w.Out.Stdout) {
+			return fmt.Errorf("the answer does not say %s is %s here and %s globally:\n%s", key, value, global, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the structured answer says the global configuration gives "([^"]*)" as "([^"]*)"$`, func(key, value string) error {
+		var doc struct {
+			Global map[string]string `json:"global"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
+			return fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
+		}
+		if doc.Global[key] != value {
+			return fmt.Errorf("the answer says the global configuration gives %q as %q, want %q:\n%s", key, doc.Global[key], value, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^it says the colour is read off the workspace's name$`, func() error {
+		line := regexp.MustCompile(`(?m)^colour = "[a-z]+"\s+# read off the workspace's name$`)
+		if !line.MatchString(w.Out.Stdout) {
+			return fmt.Errorf("the answer does not say the colour is read off the name:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the structured answer says the workspace wears "([^"]*)"$`, func(colour string) error {
+		var doc struct {
+			Workspace struct {
+				Colour string `json:"colour"`
+			} `json:"workspace"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
+			return fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
+		}
+		if doc.Workspace.Colour != colour {
+			return fmt.Errorf("the answer says the workspace wears %q, want %q:\n%s", doc.Workspace.Colour, colour, w.Out.Stdout)
 		}
 		return nil
 	})

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"cairn/internal/config"
@@ -19,7 +20,18 @@ const (
 	byTheEnvironment  = "the environment"
 	workspaceFlagName = "--workspace"
 	storeFlagName     = "--store"
+	rungDefault       = "the default"
+	rungFile          = "the file"
+	rungNothing       = "where cairn keeps a store by default"
 )
+
+const (
+	rungWorkspaceFlag = workspaceFlagName
+	rungStoreFlag     = storeFlagName
+	rungEnvironment   = config.StoreVariable
+)
+
+var rungs = []string{rungWorkspaceFlag, rungEnvironment, rungDefault, rungFile, rungNothing}
 
 // ErrNoSuchWorkspace is returned when a workspace is named that the configuration does not name.
 var ErrNoSuchWorkspace = errors.New("no workspace by that name")
@@ -45,6 +57,21 @@ type Workspace struct {
 	Default  bool   `json:"default,omitempty"`
 	Colour   string `json:"colour" jsonschema:"one of the label colours: the one its settings say, or one read off its name"`
 	NotFound bool   `json:"not_found,omitempty"`
+	Time     string `json:"time,omitempty" jsonschema:"hidden or off, as its own settings over the global configuration say; nothing when the time is on"`
+}
+
+// Rung is one of the places that may name the store, passed over, and what it named there: a workspace, or a path.
+type Rung struct {
+	Rung  string `json:"rung"`
+	Names string `json:"names"`
+}
+
+// Why is why a store answers: the rung that named it, the rungs under it that named another and were passed over, those over it that said nothing, and whether it was settled when a server started.
+type Why struct {
+	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"`
+	Over    []Rung   `json:"over,omitempty" jsonschema:"the rungs under it that named a store too, and were passed over"`
+	Unsaid  []string `json:"unsaid,omitempty" jsonschema:"the rungs over it that named nothing"`
+	Started bool     `json:"started,omitempty" jsonschema:"settled when this server started, and kept since"`
 }
 
 // Workspaces is how workspace list answers: every workspace the configuration names, by name, and the stores a board opened by path that none names, the newest first.
@@ -77,23 +104,25 @@ type WorkspaceUsed struct {
 
 // WorkspaceShown is how workspace show answers: which workspace answers, if one does, why, the places this command uses, and how to name them as a workspace when none does.
 type WorkspaceShown struct {
-	Workspace string `json:"workspace,omitempty"`
-	Folder    string `json:"folder,omitempty"`
-	Because   string `json:"because"`
-	Store     string `json:"store"`
-	Notes     string `json:"notes"`
-	Colour    string `json:"colour,omitempty" jsonschema:"one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"`
-	Time      string `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
-	TimeFrom  string `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
-	Add       string `json:"add,omitempty"`
-	Switch    string `json:"switch,omitempty" jsonschema:"said by a server, which keeps the store it started on: switching is not done through it"`
+	Workspace string   `json:"workspace,omitempty"`
+	Folder    string   `json:"folder,omitempty"`
+	Why       Why      `json:"why"`
+	Store     string   `json:"store"`
+	Notes     string   `json:"notes"`
+	Colour    string   `json:"colour,omitempty" jsonschema:"one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"`
+	Time      string   `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
+	TimeFrom  string   `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
+	Pages     []string `json:"pages" jsonschema:"the pages that are on: tasks, objectives, time"`
+	PagesFrom string   `json:"pages_from" jsonschema:"where the pages are said: set in the store's settings, from the global configuration, or by default"`
+	Add       string   `json:"add,omitempty"`
+	Switch    string   `json:"switch,omitempty" jsonschema:"said by a server, which keeps the store it started on: switching is not done through it"`
 }
 
 // Started is where a server answers from, settled when it started and kept whatever the configuration names afterwards.
 type Started struct {
 	Workspace string      `json:"workspace,omitempty"`
 	Folder    string      `json:"folder,omitempty"`
-	Because   string      `json:"because"`
+	Why       Why         `json:"why"`
 	Store     Emplacement `json:"store"`
 	Notes     Emplacement `json:"notes"`
 }
@@ -104,8 +133,7 @@ type answering struct {
 	store, notes Emplacement
 	workspace    string
 	folder       string
-	because      string
-	then         string
+	why          Why
 }
 
 // Keep settles where h answers from, once, so that a server started on it answers from there whatever the configuration names afterwards; what cannot be settled yet is left to be found at each call.
@@ -114,7 +142,8 @@ func Keep(h Home) Home {
 		return h
 	}
 	_, a, _ := h.settled()
-	h.Kept = &Started{Workspace: a.workspace, Folder: a.folder, Because: a.then, Store: a.store, Notes: a.notes}
+	a.why.Started = true
+	h.Kept = &Started{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store, Notes: a.notes}
 	return h
 }
 
@@ -128,8 +157,12 @@ func (h Home) file() (string, error) {
 func workspacesIn(p config.Places) []Workspace {
 	var listed []Workspace
 	for _, one := range p.Workspaces() {
-		w := Workspace{Name: one.Name, Folder: one.Folder, Default: one.Name == p.DefaultWorkspace(), Colour: colourOf(one.Name, filepath.Join(one.Folder, storeFile))}
+		store := filepath.Join(one.Folder, storeFile)
+		w := Workspace{Name: one.Name, Folder: one.Folder, Default: one.Name == p.DefaultWorkspace(), Colour: colourOf(one.Name, store)}
 		w.NotFound = !w.Found()
+		if own, err := p.WithSettings(config.SettingsBeside(store)); err == nil && own.TimeMode() != config.TimeOn {
+			w.Time = own.TimeMode()
+		}
 		listed = append(listed, w)
 	}
 	return listed
@@ -178,14 +211,14 @@ func inWorkspace(one config.Workspace, by string) (Emplacement, Emplacement) {
 
 func (h Home) answering(p config.Places) (answering, error) {
 	if k := h.Kept; k != nil {
-		return answering{store: k.Store, notes: k.Notes, workspace: k.Workspace, folder: k.Folder, because: k.Because, then: k.Because}, nil
+		return answering{store: k.Store, notes: k.Notes, workspace: k.Workspace, folder: k.Folder, why: k.Why}, nil
 	}
 	if h.Workspace != "" && h.Store != "" {
 		return answering{}, Misread(fmt.Errorf("%s and %s both name the store: give one or the other", workspaceFlagName, storeFlagName))
 	}
 	gate := &placesGate{}
 	p.Tell(gate)
-	a := answering{store: gate.store, notes: gate.notes, because: "nothing names it: it is where cairn keeps a store by default", then: "nothing named it when this server started: it is where cairn keeps a store by default"}
+	a := answering{store: gate.store, notes: gate.notes}
 	switch {
 	case h.Workspace != "":
 		one, err := workspaceThere(p, h.Workspace)
@@ -193,20 +226,23 @@ func (h Home) answering(p config.Places) (answering, error) {
 			return a, err
 		}
 		a.store, a.notes = inWorkspace(one, workspaceFlagName)
-		a.workspace, a.because, a.then = one.Name, workspaceFlagName+" names it", workspaceFlagName+", given when this server started"
+		a.workspace, a.why = one.Name, h.why(p, 0)
 		return a.named(p), nil
 	case h.Store != "":
 		at, err := config.Absolute(h.Store, h.Dir)
 		if err != nil {
 			return a, fmt.Errorf("%s %w", storeFlagName, err)
 		}
-		a.store, a.because, a.then = Emplacement{At: at, By: storeFlagName}, storeFlagName+" names it", storeFlagName+", given when this server started"
+		a.store, a.why = Emplacement{At: at, By: storeFlagName}, h.why(p, 0)
+		a.why.Rung = rungStoreFlag
 		return a.ownNotes(p), nil
 	case a.store.By == byTheEnvironment:
-		a.because, a.then = config.StoreVariable+" names it", config.StoreVariable+", set when this server started"
+		a.why = h.why(p, 1)
 		return a.ownNotes(p), nil
-	case a.store.By == "the file":
-		a.because, a.then = "the file names it", "the file named it when this server started"
+	}
+	a.why = h.why(p, 4)
+	if a.store.By == "the file" {
+		a.why = h.why(p, 3)
 	}
 	if name := p.DefaultWorkspace(); name != "" {
 		one, err := workspaceThere(p, name)
@@ -214,7 +250,7 @@ func (h Home) answering(p config.Places) (answering, error) {
 			return a, err
 		}
 		store, notes := inWorkspace(one, fmt.Sprintf("the default workspace, %q", name))
-		a.store, a.workspace, a.because, a.then = store, one.Name, "it is the default of [workspaces]", "it was the default of [workspaces] when this server started"
+		a.store, a.workspace, a.why = store, one.Name, h.why(p, 2)
 		if a.notes.By != byTheEnvironment {
 			a.notes = notes
 		}
@@ -231,10 +267,10 @@ func (a answering) ownNotes(p config.Places) answering {
 }
 
 func (a answering) named(p config.Places) answering {
+	if a.workspace == "" {
+		a.workspace = nameOf(p, a.store.At)
+	}
 	for _, one := range p.Workspaces() {
-		if a.workspace == "" && filepath.Join(one.Folder, storeFile) == a.store.At {
-			a.workspace = one.Name
-		}
 		if one.Name == a.workspace {
 			a.folder = one.Folder
 		}
@@ -242,8 +278,84 @@ func (a answering) named(p config.Places) answering {
 	return a
 }
 
+func nameOf(p config.Places, store string) string {
+	for _, one := range p.Workspaces() {
+		if filepath.Join(one.Folder, storeFile) == store {
+			return one.Name
+		}
+	}
+	return ""
+}
+
+func (h Home) why(p config.Places, from int) Why {
+	why := Why{Rung: rungs[from]}
+	if from >= 2 {
+		why.Unsaid = slices.Clone(rungs[:from])
+	}
+	if said, ok := h.lookup()(config.StoreVariable); from < 1 && ok && said != "" {
+		at, err := config.Absolute(said, h.Dir)
+		if err != nil {
+			at = said
+		}
+		named := nameOf(p, at)
+		if named == "" {
+			named = at
+		}
+		why.Over = append(why.Over, Rung{Rung: rungEnvironment, Names: named})
+	}
+	if name := p.DefaultWorkspace(); from < 2 && name != "" {
+		why.Over = append(why.Over, Rung{Rung: rungDefault, Names: name})
+	}
+	if store := p.FileStore(); from < 3 && store != "" {
+		why.Over = append(why.Over, Rung{Rung: rungFile, Names: store})
+	}
+	return why
+}
+
+func (w Why) said() string {
+	said := w.Rung
+	if len(w.Unsaid) > 0 {
+		no := make([]string, len(w.Unsaid))
+		for i, rung := range w.Unsaid {
+			no[i] = "no " + unsaidAs(rung)
+		}
+		said += " (" + strings.Join(no, ", ") + ")"
+	}
+	if len(w.Over) == 1 {
+		said += " — over " + w.Over[0].Rung + ", " + w.Over[0].Names
+	}
+	if len(w.Over) > 1 {
+		over := make([]string, len(w.Over))
+		for i, one := range w.Over {
+			over[i] = one.Rung + " (" + one.Names + ")"
+		}
+		said += " — over " + inWords(over)
+	}
+	if w.Started {
+		said = "when this server started, " + said
+	}
+	return said
+}
+
+func unsaidAs(rung string) string {
+	switch rung {
+	case rungDefault:
+		return "default"
+	case rungFile:
+		return "store in the file"
+	}
+	return rung
+}
+
+func inWords(items []string) string {
+	if len(items) < 2 {
+		return strings.Join(items, "")
+	}
+	return strings.Join(items[:len(items)-1], ", ") + " and " + items[len(items)-1]
+}
+
 func (a answering) shown() WorkspaceShown {
-	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Because: a.because, Store: a.store.At, Notes: a.notes.At, Colour: colourOf(a.workspace, a.store.At)}
+	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store.At, Notes: a.notes.At, Colour: colourOf(a.workspace, a.store.At)}
 	if a.workspace == "" {
 		shown.Add = "cairn workspace add <name> <folder>"
 		if filepath.Base(a.store.At) == storeFile {
@@ -274,6 +386,13 @@ func withConfiguration(h Home, change func([]byte, config.Places) ([]byte, error
 		return err
 	}
 	return os.WriteFile(path, said, 0o600)
+}
+
+func workspaceFolder(at string) error {
+	if err := os.MkdirAll(filepath.Join(at, notesFolder), 0o700); err != nil {
+		return err
+	}
+	return settingsSayingNothing(at)
 }
 
 func settingsSayingNothing(folder string) error {
@@ -342,10 +461,7 @@ var WorkspaceAdd = Operation{
 			if err != nil {
 				return nil, err
 			}
-			if err := os.MkdirAll(filepath.Join(at, notesFolder), 0o700); err != nil {
-				return nil, err
-			}
-			return said, settingsSayingNothing(at)
+			return said, workspaceFolder(at)
 		})
 		if err != nil {
 			return Answer{}, err
@@ -425,7 +541,7 @@ var WorkspaceShow = Operation{
 	Thing:   "workspace",
 	Verb:    "show",
 	Short:   "Say which workspace answers, and why",
-	Does:    "Say which workspace answers this command and why — a flag, the environment, the default — and the store and notes it uses; a store no workspace names is said, with how to name it.",
+	Does:    "Say which workspace answers this command and why — the rung that named its store, a flag, the environment, the default workspace, the file or cairn's own default, and the rungs under it it passed over — the store and notes it uses, its time and the pages that are on, each with where it is said; a store no workspace names is said, with how to name it.",
 	Example: "cairn workspace show\ncairn workspace show --workspace home",
 	Level:   Read,
 	Needs:   AConfiguration,
@@ -437,6 +553,12 @@ var WorkspaceShow = Operation{
 		}
 		shown := answers.shown()
 		shown.Time, shown.TimeFrom = read.TimeMode(), whereSaid(read, "pages.time")
+		shown.Pages, shown.PagesFrom = []string{}, whereSaid(read, "pages.tasks", "pages.objectives", "pages.time")
+		for i, on := range read.Pages() {
+			if on {
+				shown.Pages = append(shown.Pages, []string{PageTasks, PageObjectives, PageTime}[i])
+			}
+		}
 		if on.Home.Kept != nil {
 			shown.Switch = switchingIsNotHere
 		}
@@ -460,6 +582,9 @@ func workspacesText(listed []Workspace) string {
 		}
 		if one.NotFound {
 			line += "  not found"
+		}
+		if one.Time != "" {
+			line += "  time " + one.Time
 		}
 		said.WriteString(line + "  " + one.Colour + "\n")
 	}
@@ -490,12 +615,19 @@ func workspaceShownText(shown WorkspaceShown) string {
 	} else {
 		fmt.Fprintf(&said, "workspace  %s\nfolder     %s\n", shown.Workspace, shown.Folder)
 	}
-	fmt.Fprintf(&said, "because    %s\nstore      %s\nnotes      %s\n", shown.Because, shown.Store, shown.Notes)
+	fmt.Fprintf(&said, "why        %s\nstore      %s\nnotes      %s\n", shown.Why.said(), shown.Store, shown.Notes)
 	if shown.Colour != "" {
 		fmt.Fprintf(&said, "colour     %s\n", shown.Colour)
 	}
 	if shown.Time != "" {
 		fmt.Fprintf(&said, "time       %s, %s\n", shown.Time, shown.TimeFrom)
+	}
+	if shown.PagesFrom != "" {
+		pages := inWords(shown.Pages)
+		if pages == "" {
+			pages = "none"
+		}
+		fmt.Fprintf(&said, "pages      %s, %s\n", pages, shown.PagesFrom)
 	}
 	if shown.Switch != "" {
 		fmt.Fprintf(&said, "switch     %s\n", shown.Switch)

@@ -497,6 +497,22 @@
           ],
           "additionalProperties": false
         },
+        "workspace": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "colour": {
+              "type": "string"
+            }
+          },
+          "description": "what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour",
+          "required": [
+            "colour"
+          ],
+          "additionalProperties": false
+        },
         "workspaces": {
           "type": [
             "null",
@@ -520,6 +536,10 @@
               },
               "not_found": {
                 "type": "boolean"
+              },
+              "time": {
+                "type": "string",
+                "description": "hidden or off, as its own settings over the global configuration say; nothing when the time is on"
               }
             },
             "required": [
@@ -555,6 +575,13 @@
             "type": "string"
           },
           "description": "every key the settings beside the store write, dotted under its table: those win over the file"
+        },
+        "global": {
+          "type": "object",
+          "description": "for each key the settings beside the store write, the value the global configuration, or its default, would give",
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "ignored": {
           "type": [
@@ -7275,6 +7302,10 @@
               },
               "not_found": {
                 "type": "boolean"
+              },
+              "time": {
+                "type": "string",
+                "description": "hidden or off, as its own settings over the global configuration say; nothing when the time is on"
               }
             },
             "required": [
@@ -7345,8 +7376,55 @@
         "folder": {
           "type": "string"
         },
-        "because": {
-          "type": "string"
+        "why": {
+          "type": "object",
+          "properties": {
+            "rung": {
+              "type": "string",
+              "description": "--workspace, --store, CAIRN_STORE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"
+            },
+            "over": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "rung": {
+                    "type": "string"
+                  },
+                  "names": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "rung",
+                  "names"
+                ],
+                "additionalProperties": false
+              },
+              "description": "the rungs under it that named a store too, and were passed over"
+            },
+            "unsaid": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the rungs over it that named nothing"
+            },
+            "started": {
+              "type": "boolean",
+              "description": "settled when this server started, and kept since"
+            }
+          },
+          "required": [
+            "rung"
+          ],
+          "additionalProperties": false
         },
         "store": {
           "type": "string"
@@ -7366,6 +7444,20 @@
           "type": "string",
           "description": "where the time is said: set in the store's settings, from the global configuration, or by default"
         },
+        "pages": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the pages that are on: tasks, objectives, time"
+        },
+        "pages_from": {
+          "type": "string",
+          "description": "where the pages are said: set in the store's settings, from the global configuration, or by default"
+        },
         "add": {
           "type": "string"
         },
@@ -7375,11 +7467,13 @@
         }
       },
       "required": [
-        "because",
+        "why",
         "store",
         "notes",
         "time",
-        "time_from"
+        "time_from",
+        "pages",
+        "pages_from"
       ],
       "additionalProperties": false
     }

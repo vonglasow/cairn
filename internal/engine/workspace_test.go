@@ -171,13 +171,13 @@ func TestWorkspaceShow_saysWhichAnswersAndWhy(t *testing.T) {
 		answers, cause string
 		add            bool
 	}{
-		{"the default", nil, "", "", twoWorkspaces, "work", "it is the default", false},
-		{"the flag", nil, "home", "", twoWorkspaces, "home", "--workspace names it", false},
-		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, "", "--store names it", true},
-		{"the store flag on a workspace", nil, "", "~/h/cairn.db", twoWorkspaces, "home", "--store names it", false},
-		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, "", "CAIRN_STORE names it", true},
-		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", "", "the file names it", true},
-		{"nothing", nil, "", "", "", "", "nothing names it", true},
+		{"the default", nil, "", "", twoWorkspaces, "work", rungDefault, false},
+		{"the flag", nil, "home", "", twoWorkspaces, "home", rungWorkspaceFlag, false},
+		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, "", rungStoreFlag, true},
+		{"the store flag on a workspace", nil, "", "~/h/cairn.db", twoWorkspaces, "home", rungStoreFlag, false},
+		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, "", config.StoreVariable, true},
+		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", "", rungFile, true},
+		{"nothing", nil, "", "", "", "", rungNothing, true},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
@@ -187,11 +187,11 @@ func TestWorkspaceShow_saysWhichAnswersAndWhy(t *testing.T) {
 			continue
 		}
 		shown := *answer.WorkspaceShown
-		if shown.Workspace != c.answers || !strings.HasPrefix(shown.Because, c.cause) || (shown.Add != "") != c.add {
-			t.Errorf("%s: shown %+v, want %q answering because %q, suggesting to add it %v", c.name, shown, c.answers, c.cause, c.add)
+		if shown.Workspace != c.answers || shown.Why.Rung != c.cause || (shown.Add != "") != c.add {
+			t.Errorf("%s: shown %+v, want %q answering, named by %q, suggesting to add it %v", c.name, shown, c.answers, c.cause, c.add)
 		}
 		said := RenderText(WorkspaceShow, answer)
-		if !strings.Contains(said, "because    "+c.cause) || !strings.Contains(said, "store      "+shown.Store+"\n") || !strings.Contains(said, "notes      "+shown.Notes+"\n") {
+		if !strings.Contains(said, "why        "+c.cause) || !strings.Contains(said, "store      "+shown.Store+"\n") || !strings.Contains(said, "notes      "+shown.Notes+"\n") {
 			t.Errorf("%s: it says\n%s", c.name, said)
 		}
 	}

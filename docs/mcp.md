@@ -330,9 +330,12 @@ be found.
 
 No tool switches: `workspace_add` and `workspace_use` are the person's (below).
 `workspace_show` says which workspace the server answers from and why, as it
-was when it started — `--workspace, given when this server started`, `it was
-the default of [workspaces] when this server started` — its store, its notes,
-whether time is kept and where that is said, and a `switch` line: not from
+was when it started — `when this server started, --workspace — over the
+default, work`, `when this server started, the default (no --workspace, no
+CAIRN_STORE)`: the rung that answered and the rungs it passed over, as
+`workspace show` says them ([config.md](config.md#the-order-and-why-the-environment-is-not-part-of-it)),
+`started` in its structured `why` — its store, its notes, whether time is kept
+and which pages are on, each with where that is said, and a `switch` line: not from
 here; another workspace is another server, which the person starts
 (`@workspace-the-server-says-the-workspace-it-was-given`,
 `@workspace-the-server-says-the-default-it-started-on`). Its structured answer

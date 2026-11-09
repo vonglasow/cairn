@@ -1,12 +1,14 @@
 package config
 
 // Example is the whole configuration file, every table written and every key explained and set to what cairn uses when the file says nothing — a key with no such value is commented under its own table, so taking the comment off lands it there: what config init writes, and what the README shows.
-const Example = `# Where cairn keeps your tasks: a file. Absolute, or under ~.
-store = "~/.cairn/cairn.db"
+const Example = `# Where cairn keeps your tasks when [workspaces] names no default: a file.
+# Absolute, or under ~. The default workspace, below, comes before it.
+# store = "~/.cairn/cairn.db"
 
-# Where cairn looks for the notes of each task: a folder, one per task inside
-# it (~/.cairn/notes/12 for task 12). Absolute, or under ~.
-notes = "~/.cairn/notes"
+# Where cairn looks for the notes of each task when [workspaces] names no
+# default: a folder, one per task inside it (~/.cairn/notes/12 for task 12).
+# Absolute, or under ~.
+# notes = "~/.cairn/notes"
 
 # Where cairn writes its Claude Code plugin, and keeps it at its own version:
 # a folder. Beside the store when it is not said. Absolute, or under ~.
@@ -56,12 +58,14 @@ keep_sizes = false
 
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
-# the one used when nothing else says; when it is said, it comes before store
-# and notes above, and CAIRN_STORE, --workspace and --store come before it.
-# cairn workspace add, use and remove write here for you. The colour a
-# workspace wears is its own settings.toml's to say, under [workspace].
+# the one used when nothing else says; it comes before store and notes above,
+# and CAIRN_STORE, --workspace and --store come before it. main is the folder
+# cairn has always used. cairn workspace add, use and remove write here for
+# you. The colour a workspace wears is its own settings.toml's to say, under
+# [workspace].
 [workspaces]
-# default = "work"
+default = "main"
+main = "~/.cairn"
 # work = "~/cairn/work"
 # home = "~/cairn/home"
 `

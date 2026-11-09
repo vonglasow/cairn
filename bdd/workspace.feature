@@ -121,6 +121,25 @@ Feature: Workspaces, each a folder holding a store and its notes
       Then it succeeds
       And the structured answer holds "work" at "~/cairn/work" as the default
 
+    @workspace-list-marks-the-time
+    Scenario: workspace list marks a workspace whose time is not on, as its own settings say
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        time = "off"
+        """
+      And the global configuration also says:
+        """
+        [pages]
+        time = "hidden"
+        """
+      When I run `cairn workspace list`
+      Then it lists "home" at "~/cairn/home", marked "time off"
+      And it lists "work" at "~/cairn/work", marked "time hidden"
+      When I run `cairn workspace list --json`
+      Then the structured answer holds "home" with its time "off"
+
     @workspace-add-writes-it-and-makes-its-folder
     Scenario: workspace add writes the workspace into the file and makes its folder
       Given a configuration that says the notes live at "~/vault"
@@ -193,12 +212,20 @@ Feature: Workspaces, each a folder holding a store and its notes
       Then it refuses, and names "play"
       And the configuration still holds, unchanged, everything it held
 
+    @workspace-use-refuses-a-folder-gone
+    Scenario: workspace use refuses a workspace whose folder is gone, naming the folder
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the folder "~/cairn/home" is not there
+      When I run `cairn workspace use home`
+      Then it refuses, and names the folder "~/cairn/home"
+      And the configuration still holds, unchanged, everything it held
+
     @workspace-show-says-the-default-answers
     Scenario: workspace show says the default answers, and where its places are
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
       When I run `cairn workspace show`
       Then it succeeds
-      And it says the workspace "work" answers, because "it is the default"
+      And it says the workspace "work" answers, why "the default (no --workspace, no CAIRN_STORE)"
       And it says the store is at "~/cairn/work/cairn.db"
       And it says the notes are at "~/cairn/work/notes"
 
@@ -206,15 +233,48 @@ Feature: Workspaces, each a folder holding a store and its notes
     Scenario: workspace show says the flag chose the workspace
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
       When I run `cairn workspace show --workspace home`
-      Then it says the workspace "home" answers, because "--workspace names it"
+      Then it says the workspace "home" answers, why "--workspace — over the default, work"
 
     @workspace-show-says-no-workspace-names-the-store
     Scenario: a store the environment names and no workspace does is said, with how to name it
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
       And the environment says the store lives at "~/elsewhere/cairn.db"
       When I run `cairn workspace show`
-      Then it says no workspace names the store, because "CAIRN_STORE names it"
+      Then it says no workspace names the store, why "CAIRN_STORE — over the default, work"
       And it says "cairn workspace add"
+
+    @workspace-show-why-names-the-rungs-passed-over
+    Scenario Outline: workspace show says which rung answered, and the rungs it passed over
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the environment says the store lives at "~/cairn/work/cairn.db"
+      When I run `cairn workspace show <flag>`
+      Then it says "why        <why>"
+
+      Examples:
+        | flag                 | why                                                          |
+        |                      | CAIRN_STORE — over the default, home                         |
+        | --workspace home     | --workspace — over CAIRN_STORE (work) and the default (home) |
+        | --store ~/x/cairn.db | --store — over CAIRN_STORE (work) and the default (home)     |
+
+    @workspace-show-why-as-json
+    Scenario: workspace show tells a machine the rung that answered, and those it passed over
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the environment says the store lives at "~/cairn/work/cairn.db"
+      When I run `cairn workspace show --json`
+      Then the structured answer says why is "CAIRN_STORE", over the default "home"
+
+    @workspace-show-says-the-pages
+    Scenario: workspace show says the pages that are on, and where that is said
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        objectives = false
+        """
+      When I run `cairn workspace show --workspace home`
+      Then it says "pages      tasks and time, set in the store's settings"
+      When I run `cairn workspace show`
+      Then it says "pages      tasks, objectives and time, by default"
 
     @workspace-config-show-lists-them
     Scenario: config show lists the workspaces
@@ -250,7 +310,7 @@ Feature: Workspaces, each a folder holding a store and its notes
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
       And a cairn server started with `cairn mcp serve --workspace home`
       When I ask the server for `workspace_show`
-      Then the server says the workspace "home" answers, because "--workspace, given when this server started"
+      Then the server says the workspace "home" answers, why "when this server started, --workspace — over the default, work"
       And the server says "time       on, by default"
       And the server says "switch     not from here: this server keeps its store"
       And the server's structured answer says the workspace is "home"
@@ -261,7 +321,7 @@ Feature: Workspaces, each a folder holding a store and its notes
       And a cairn server started with `cairn mcp serve`
       When I run `cairn workspace use home`
       And I ask the server for `workspace_show`
-      Then the server says the workspace "work" answers, because "it was the default of [workspaces] when this server started"
+      Then the server says the workspace "work" answers, why "when this server started, the default (no --workspace, no CAIRN_STORE)"
 
     @workspace-show-says-the-time
     Scenario: workspace show says whether time is kept, and where that is said

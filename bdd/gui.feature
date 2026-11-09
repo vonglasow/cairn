@@ -5096,7 +5096,7 @@ Feature: The desktop board
       And I press "cmd+,"
       And I choose "Write the file"
       Then a configuration file exists
-      And the configuration reads "store" from the file
+      And the configuration reads "plugin" from the file
 
     @gui-the-menu-bar-opens-the-configuration
     Scenario: Configuration… in the menu bar shows the configuration

@@ -106,6 +106,7 @@ type Places struct {
 	ignored          []string
 	workspaces       []Workspace
 	defaultWorkspace string
+	fileStore        string
 	from             string
 	said             file
 	settings         string
@@ -437,6 +438,9 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 			return Reading{path: path, err: fmt.Errorf("%s: %w", c.quoted(), ErrNotAbsolute)}, nil
 		}
 		*c.place, *c.namedBy = expanded, c.by
+		if c.said == f.Store {
+			answer.fileStore = expanded
+		}
 	}
 	return Reading{path: path, places: answer}, nil
 }

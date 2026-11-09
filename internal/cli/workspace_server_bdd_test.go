@@ -33,12 +33,12 @@ func (w *workspaces) registerServer(sc *godog.ScenarioContext) {
 	sc.Step("^I ask the server for `([a-z_]+)`$", func(tool string) error {
 		return s.call(tool, map[string]any{})
 	})
-	sc.Step(`^the server says the workspace "([^"]*)" answers, because "([^"]*)"$`, func(name, because string) error {
+	sc.Step(`^the server says the workspace "([^"]*)" answers, why "([^"]*)"$`, func(name, why string) error {
 		said := s.text()
 		if err := test.WantContains(said, "workspace  "+name+"\n", "the server's answer"); err != nil {
 			return err
 		}
-		return test.WantContains(said, "because    "+because+"\n", "the server's answer")
+		return test.WantContains(said, "why        "+why+"\n", "the server's answer")
 	})
 	sc.Step(`^the server says "([^"]*)"$`, func(want string) error {
 		return test.WantContains(s.text(), want, "the server's answer")

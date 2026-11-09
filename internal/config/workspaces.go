@@ -26,6 +26,9 @@ type Workspace struct {
 // Workspaces is every workspace the file names, by name, the default key left out.
 func (p Places) Workspaces() []Workspace { return p.workspaces }
 
+// FileStore is the store the file names under store, ~ expanded, whatever answers over it; nothing when it names none.
+func (p Places) FileStore() string { return p.fileStore }
+
 // DefaultWorkspace is the name the file gives under default in [workspaces], exactly as written; nothing when it gives none.
 func (p Places) DefaultWorkspace() string { return p.defaultWorkspace }
 

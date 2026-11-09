@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -142,9 +143,33 @@ func TestWithDefault_refusesAFileWithNoTableToSayItIn(t *testing.T) {
 	}
 }
 
-func TestTheExample_namesNoWorkspaceUntilACommentIsTakenOff(t *testing.T) {
+func TestRead_theStoreTheFileNamesIsKeptWhateverAnswers(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Dir(FileIn(home))
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(FileIn(home), []byte("store = \"~/s/cairn.db\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	read, err := Read(home, func(string) (string, bool) { return "/elsewhere/cairn.db", true })
+	if err != nil || read.FileStore() != filepath.Join(home, "s", "cairn.db") {
+		t.Errorf("FileStore() = %q, %v; want the file's store under the environment's", read.FileStore(), err)
+	}
+	if read, _ := readThis(t, "notes = \"~/vault\"\n"); read.FileStore() != "" {
+		t.Errorf("FileStore() = %q for a file naming no store", read.FileStore())
+	}
+}
+
+func TestTheExampleNamesOneWorkspaceTheDefaultOnTheFolderCairnHasAlwaysUsed(t *testing.T) {
 	read, err := readThis(t, Example)
-	if err != nil || len(read.Workspaces()) != 0 || read.DefaultWorkspace() != "" {
-		t.Errorf("the example reads %v, %v, %q; want no workspace named", err, read.Workspaces(), read.DefaultWorkspace())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.Workspaces(); read.DefaultWorkspace() != "main" || len(got) != 1 || got[0].Name != "main" || filepath.Base(got[0].Folder) != DefaultFolder {
+		t.Errorf("the example names %v, the default %q; want main alone on ~/%s", got, read.DefaultWorkspace(), DefaultFolder)
+	}
+	if read.FileStore() != "" {
+		t.Errorf("the example names the store %q, which the default workspace would pass over", read.FileStore())
 	}
 }

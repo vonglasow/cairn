@@ -159,13 +159,13 @@ func TestConfigShow_saysWhereEachStoreKeyComesFrom(t *testing.T) {
 	said := configText(c)
 	for _, line := range []string{
 		"# the store's settings: " + settings + "\n",
-		"weekends = \"hidden\"   # set in the store's settings\n",
+		"weekends = \"hidden\"   # set in the store's settings; global: \"shown\"\n",
 		"session = \"1h\"   # from the global configuration\n",
 		"deleted = \"kept\"   # by default\n",
 		"tasks = true   # by default\n",
 		"days = 14   # by default\n",
 		"keep_sizes = false   # by default\n",
-		"# label is said empty in the store's settings: no label asks for the approach to be agreed first\n",
+		"# label is said empty in the store's settings: no label asks for the approach to be agreed first; global: \"discuss\"\n",
 	} {
 		if !strings.Contains(said, line) {
 			t.Errorf("config show does not say %q:\n%s", line, said)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"cairn/internal/config"
@@ -20,22 +21,51 @@ type Emplacement struct {
 
 // Config is how `config show` answers: the file cairn read, each of its places alongside what named it, and every other key with the value cairn uses — what the file says, or what is used when it says nothing.
 type Config struct {
-	File        string          `json:"file"`
-	Store       Emplacement     `json:"store"`
-	Notes       Emplacement     `json:"notes"`
-	Plugin      Emplacement     `json:"plugin"`
-	Pages       *PagesConfig    `json:"pages,omitempty"`
-	Archive     *Archive        `json:"archive,omitempty"`
-	Focus       *FocusConfig    `json:"focus,omitempty"`
-	Approach    *ApproachConfig `json:"approach,omitempty"`
-	Time        *TimeConfig     `json:"time,omitempty"`
-	Window      *WindowConfig   `json:"window,omitempty"`
-	Workspaces  []Workspace     `json:"workspaces,omitempty"`
-	Problem     string          `json:"problem,omitempty"`
-	Settings    string          `json:"settings,omitempty" jsonschema:"the settings beside the store read over the file, when there are any"`
-	Written     []string        `json:"written,omitempty"`
-	WrittenHere []string        `json:"written_here,omitempty" jsonschema:"every key the settings beside the store write, dotted under its table: those win over the file"`
-	Ignored     []string        `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
+	File        string            `json:"file"`
+	Store       Emplacement       `json:"store"`
+	Notes       Emplacement       `json:"notes"`
+	Plugin      Emplacement       `json:"plugin"`
+	Pages       *PagesConfig      `json:"pages,omitempty"`
+	Archive     *Archive          `json:"archive,omitempty"`
+	Focus       *FocusConfig      `json:"focus,omitempty"`
+	Approach    *ApproachConfig   `json:"approach,omitempty"`
+	Time        *TimeConfig       `json:"time,omitempty"`
+	Window      *WindowConfig     `json:"window,omitempty"`
+	Workspace   *WorkspaceConfig  `json:"workspace,omitempty" jsonschema:"what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour"`
+	Workspaces  []Workspace       `json:"workspaces,omitempty"`
+	Problem     string            `json:"problem,omitempty"`
+	Settings    string            `json:"settings,omitempty" jsonschema:"the settings beside the store read over the file, when there are any"`
+	Written     []string          `json:"written,omitempty"`
+	WrittenHere []string          `json:"written_here,omitempty" jsonschema:"every key the settings beside the store write, dotted under its table: those win over the file"`
+	Global      map[string]string `json:"global,omitempty" jsonschema:"for each key the settings beside the store write, the value the global configuration, or its default, would give"`
+	Ignored     []string          `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
+}
+
+// WorkspaceConfig is the colour the workspace wears: the one its settings say, or one read off its name.
+type WorkspaceConfig struct {
+	Colour string `json:"colour"`
+}
+
+// NotSaid is how a key with no value, and none by default, is told.
+const NotSaid = "not said"
+
+var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends"}
+
+func valuesOf(p config.Places) map[string]string {
+	pages := p.Pages()
+	start, days, _ := p.Archive()
+	unless := func(said string) string {
+		if said == "" {
+			return NotSaid
+		}
+		return said
+	}
+	return map[string]string{
+		"pages.tasks": strconv.FormatBool(pages[0]), "pages.objectives": strconv.FormatBool(pages[1]), "pages.time": p.TimeMode(),
+		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
+		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
+		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
+	}
 }
 
 // PagesConfig is whether each page is on, and what the time is: on, hidden or off.
@@ -103,10 +133,22 @@ func (g *readingGate) Resolved(p config.Places) {
 		g.config.Problem = err.Error()
 		return
 	}
+	global := valuesOf(p)
 	p, err = p.WithSettings(config.SettingsBeside(places.store.At))
 	if err != nil {
 		g.config.Problem = err.Error()
 		return
+	}
+	for _, key := range p.WrittenHere() {
+		if value, ok := global[key]; ok {
+			if g.config.Global == nil {
+				g.config.Global = map[string]string{}
+			}
+			g.config.Global[key] = value
+		}
+	}
+	if colour := colourOf(places.workspace, places.store.At); colour != "" {
+		g.config.Workspace = &WorkspaceConfig{Colour: colour}
 	}
 	g.config.Store = places.store
 	g.config.Notes = places.notes
@@ -209,7 +251,7 @@ func configText(c Config) string {
 		case c.Approach.Label != "":
 			fmt.Fprintf(&said, "label = %q%s\n", c.Approach.Label, c.from("approach.label"))
 		case slices.Contains(c.WrittenHere, "approach.label"):
-			said.WriteString("# label is said empty in the store's settings: no label asks for the approach to be agreed first\n")
+			said.WriteString("# label is said empty in the store's settings: no label asks for the approach to be agreed first" + c.global("approach.label") + "\n")
 		default:
 			said.WriteString("# label is not said: no label asks for the approach to be agreed first\n")
 		}
@@ -220,6 +262,13 @@ func configText(c Config) string {
 	if c.Window != nil {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"))
 	}
+	if c.Workspace != nil {
+		from := "read off the workspace's name"
+		if slices.Contains(c.WrittenHere, "workspace.colour") {
+			from = "set in the store's settings"
+		}
+		fmt.Fprintf(&said, "\n[workspace]\ncolour = %q   # %s\n", c.Workspace.Colour, from)
+	}
 	said.WriteString(workspacesTable(c.Workspaces))
 	return said.String()
 }
@@ -228,18 +277,32 @@ func (c Config) from(key string) string {
 	if c.Settings == "" {
 		return ""
 	}
-	return "   # " + saidWhere(c.Written, c.WrittenHere, key)
+	return "   # " + saidWhere(c.Written, c.WrittenHere, key) + c.global(key)
 }
 
-func whereSaid(p config.Places, key string) string {
-	return saidWhere(p.Written(), p.WrittenHere(), key)
+func (c Config) global(key string) string {
+	value, ok := c.Global[key]
+	if !ok {
+		return ""
+	}
+	if value != NotSaid && slices.Contains(quotedKeys, key) {
+		value = strconv.Quote(value)
+	}
+	return "; global: " + value
 }
 
-func saidWhere(written, here []string, key string) string {
+func whereSaid(p config.Places, keys ...string) string {
+	return saidWhere(p.Written(), p.WrittenHere(), keys...)
+}
+
+func saidWhere(written, here []string, keys ...string) string {
+	among := func(said []string) bool {
+		return slices.ContainsFunc(keys, func(key string) bool { return slices.Contains(said, key) })
+	}
 	switch {
-	case slices.Contains(here, key):
+	case among(here):
 		return "set in the store's settings"
-	case slices.Contains(written, key):
+	case among(written):
 		return "from the global configuration"
 	}
 	return "by default"
@@ -258,7 +321,7 @@ var ConfigInit = Operation{
 	Thing:   "config",
 	Verb:    "init",
 	Short:   "Write the configuration file, every key in it",
-	Does:    "Write the configuration file where cairn reads it, every key commented and set to what cairn uses when nothing is said, to change from there. A configuration already there is never written over.",
+	Does:    "Write the configuration file where cairn reads it, every key commented and set to what cairn uses when nothing is said, to change from there, with one workspace, main, on ~/.cairn, the default, its folder made. A configuration already there is never written over.",
 	Example: "cairn config init",
 	Level:   Write,
 	Needs:   AConfiguration,
@@ -285,6 +348,15 @@ var ConfigInit = Operation{
 		}
 		if err := file.Close(); err != nil {
 			return Answer{}, err
+		}
+		read, err := on.Home.configuration()
+		if err != nil {
+			return Answer{}, err
+		}
+		if one, err := workspaceNamed(read, read.DefaultWorkspace()); err == nil {
+			if err := workspaceFolder(one.Folder); err != nil {
+				return Answer{}, err
+			}
 		}
 		return Answer{Written: &path}, nil
 	},
