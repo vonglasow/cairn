@@ -202,3 +202,59 @@ Feature: Tasks carried from one store to another
       When I import the tasks of that file
       Then it succeeds
       And `cairn task show 1` says "1h30m"
+
+  Rule: A file carries which objective sits under which, what each waits on, and what each label is for
+
+    @exchange-objectives-come-with-their-tree-and-what-they-wait-on
+    Scenario: a sub-objective comes back under its parent, still waiting on what it waited on
+      Given I added an objective titled "Already here"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn objective new "Home automation"
+        cairn objective new "Firmware" --parent 1
+        cairn objective new "Features" --parent 1 --waits-on 2
+        cairn task new "Dimmer scenes" --objective 3
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn objective show 4` says "#2 Home automation"
+      And `cairn objective show 4` says "#3 Firmware"
+      And `cairn objective show 3` says "#4 Features waits on it"
+      And `cairn task show 1` says "#4"
+
+    @exchange-a-label-comes-with-its-scope
+    Scenario: a label comes with what it may be put on
+      Given a file of my own exported from a store where these were run:
+        """
+        cairn label new area --scope objectives
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And I run `cairn label list --json`
+      And the JSON gives the label "area" the scope "objectives"
+
+    @exchange-a-parent-outside-the-file
+    Scenario: a file whose objective sits under one it does not hold is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 5, "objectives": [
+          {"number": 1, "title": "Firmware", "state": "active", "priority": "normal", "parent": 9}],
+         "tasks": []}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And it says objective 9 is not in the file
+      And `cairn objective list` lists 0 objectives
+
+    @exchange-waiting-outside-the-file
+    Scenario: a file whose objective waits on one it does not hold is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 5, "objectives": [
+          {"number": 1, "title": "Features", "state": "active", "priority": "normal", "waits_on": [9]}],
+         "tasks": []}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And it says objective 9 is not in the file
+      And `cairn objective list` lists 0 objectives

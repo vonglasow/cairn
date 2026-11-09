@@ -51,6 +51,12 @@ Feature: A store full of believable work, from the binary alone
 
   Rule: The fixtures hold every case a board draws
 
+    @fixtures-a-tree-of-objectives
+    Scenario: an objective holds sub-objectives, one waiting on another
+      When I make the fixtures in a folder of my own
+      Then the store it made has an objective holding sub-objectives
+      And the store it made has an objective waiting on another
+
     @fixtures-every-column
     Scenario: every column and every lane holds work
       When I make the fixtures in a folder of my own

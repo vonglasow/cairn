@@ -25,8 +25,10 @@ emoji, long and empty descriptions, steps none, all, half and twenty, labels
 none, one, too many, chosen colours, colours read off the name and a label
 nothing carries, deadlines past, today, tomorrow, in a week and far off,
 estimates overrun and kept, time over several weeks, blockers by a task and by
-a reason and one freed, links, two tasks in focus, archived ones, and
-objectives in every standing, late, and served by nothing.
+a reason and one freed, links, two tasks in focus, archived ones, labels for
+objectives only, and objectives in every standing, late, served by nothing,
+and in a tree — Home automation › Enclosure, Firmware and Features, Features
+waiting on Firmware.
 `TestFixtures_holdEveryCaseABoardDraws` fails when a case goes missing; a case
 added to a board is added there.
 

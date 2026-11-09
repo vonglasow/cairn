@@ -89,11 +89,19 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 		}
 	}
 	standings := map[string]bool{}
+	under, waiting := 0, false
 	for _, o := range read.Objectives {
 		standings[o.State] = true
+		if o.Parent != 0 {
+			under++
+		}
+		waiting = waiting || len(o.WaitsOn) > 0
 	}
 	if len(standings) < 4 {
 		t.Errorf("objectives stand only %v", standings)
+	}
+	if under < 2 || !waiting {
+		t.Errorf("%d sub-objectives and one waiting on another %v; want a parent holding several, one of them waiting on another", under, waiting)
 	}
 	coloured, idle := false, false
 	carried := map[string]bool{}
@@ -102,12 +110,14 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 			carried[l] = true
 		}
 	}
+	scoped := false
 	for _, l := range read.Labels {
 		coloured = coloured || l.Colour != ""
 		idle = idle || !carried[l.Label]
+		scoped = scoped || l.Scope == "objectives"
 	}
-	if !coloured || !idle {
-		t.Errorf("labels: a colour chosen %v, one nothing carries %v", coloured, idle)
+	if !coloured || !idle || !scoped {
+		t.Errorf("labels: a colour chosen %v, one nothing carries %v, one for objectives only %v", coloured, idle, scoped)
 	}
 }
 

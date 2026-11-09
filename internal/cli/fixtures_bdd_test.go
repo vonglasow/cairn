@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"cairn/internal/gui"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -152,6 +154,34 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 			return fmt.Errorf("no task archived")
 		}
 		return nil
+	})
+	sc.Step(`^the store it made has an objective holding sub-objectives$`, func() error {
+		if err := inTheStore("cairn objective list"); err != nil {
+			return err
+		}
+		if !strings.Contains(w.Out.Stdout, "  └ #") {
+			return fmt.Errorf("no objective drawn under another:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the store it made has an objective waiting on another$`, func() error {
+		if err := inTheStore("cairn objective list --json"); err != nil {
+			return err
+		}
+		var listed struct {
+			Objectives []struct {
+				WaitsOn []int `json:"waits_on"`
+			} `json:"objectives"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &listed); err != nil {
+			return err
+		}
+		for _, o := range listed.Objectives {
+			if len(o.WaitsOn) > 0 {
+				return nil
+			}
+		}
+		return fmt.Errorf("no objective waits on another:\n%s", w.Out.Stdout)
 	})
 	sc.Step(`^the window was opened on the store it made$`, func() error {
 		if openedOn == "" {

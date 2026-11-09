@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -18,7 +19,7 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 4
+	exchangeVersion = 5
 	beforeSteps     = 1
 )
 
@@ -29,16 +30,23 @@ var ErrNotAnExport = errors.New("the file holds no tasks written by cairn task e
 var ErrExportPointsOutside = errors.New("the file points outside itself")
 
 type exchanged struct {
-	Cairn      string            `json:"cairn"`
-	Version    int               `json:"version"`
-	Objectives []objective.Shape `json:"objectives"`
-	Labels     []labelFiled      `json:"labels,omitempty"`
-	Tasks      []filed           `json:"tasks"`
+	Cairn      string           `json:"cairn"`
+	Version    int              `json:"version"`
+	Objectives []objectiveFiled `json:"objectives"`
+	Labels     []labelFiled     `json:"labels,omitempty"`
+	Tasks      []filed          `json:"tasks"`
 }
 
 type labelFiled struct {
 	Label  string `json:"label"`
 	Colour string `json:"colour,omitempty"`
+	Scope  string `json:"scope,omitempty"`
+}
+
+type objectiveFiled struct {
+	objective.Shape
+	Parent  int   `json:"parent,omitempty"`
+	WaitsOn []int `json:"waits_on,omitempty"`
 }
 
 type filed struct {
@@ -123,7 +131,7 @@ func (e *Engine) exporting() (exchanged, error) {
 	if err != nil {
 		return exchanged{}, err
 	}
-	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []filed{}, Objectives: []objective.Shape{}}
+	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []filed{}, Objectives: []objectiveFiled{}}
 	spent, err := e.spentByDay()
 	if err != nil {
 		return exchanged{}, err
@@ -137,7 +145,11 @@ func (e *Engine) exporting() (exchanged, error) {
 		return exchanged{}, err
 	}
 	for _, l := range labels {
-		out.Labels = append(out.Labels, labelFiled{Label: l.Label, Colour: l.Colour})
+		filed := labelFiled{Label: l.Label, Colour: l.Colour}
+		if l.Scope != string(domain.ForBoth) {
+			filed.Scope = l.Scope
+		}
+		out.Labels = append(out.Labels, filed)
 	}
 	served := map[int]bool{}
 	for _, t := range tasks {
@@ -148,16 +160,34 @@ func (e *Engine) exporting() (exchanged, error) {
 		}
 	}
 	slices.SortFunc(out.Tasks, func(a, b filed) int { return a.Number - b.Number })
-	objectives, err := e.listObjectives()
+	t, err := e.tree()
 	if err != nil {
 		return exchanged{}, err
 	}
-	for _, o := range objectives {
-		if shape := objective.OfObjective(o); served[shape.Number] {
-			out.Objectives = append(out.Objectives, shape)
-		}
+	for _, n := range slices.Sorted(maps.Keys(reachedFrom(served, t))) {
+		c := t.by[n].Carried()
+		out.Objectives = append(out.Objectives, objectiveFiled{Shape: objective.OfObjective(t.by[n]), Parent: c.Parent, WaitsOn: c.WaitsOn})
 	}
 	return out, nil
+}
+
+func reachedFrom(served map[int]bool, t tree) map[int]bool {
+	reached := map[int]bool{}
+	next := slices.Collect(maps.Keys(served))
+	for len(next) > 0 {
+		n := next[0]
+		next = next[1:]
+		if reached[n] {
+			continue
+		}
+		reached[n] = true
+		c := t.by[n].Carried()
+		if c.Parent != 0 {
+			next = append(next, c.Parent)
+		}
+		next = append(next, c.WaitsOn...)
+	}
+	return reached
 }
 
 func writeNew(to string, out exchanged) error {
@@ -235,13 +265,9 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	if err := e.labelsFiled(read.Labels); err != nil {
 		return domain.Held{}, err
 	}
-	objectives := map[int]int{}
-	for _, o := range read.Objectives {
-		made, err := e.addObjective(o.Title, objectiveChangesOf(o))
-		if err != nil {
-			return domain.Held{}, err
-		}
-		objectives[o.Number] = numberOf(made)
+	objectives, err := e.objectivesFiled(read.Objectives)
+	if err != nil {
+		return domain.Held{}, err
 	}
 	tasks := map[int]int{}
 	for _, t := range order {
@@ -279,6 +305,35 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
+func (e *Engine) objectivesFiled(filedAll []objectiveFiled) (map[int]int, error) {
+	objectives := map[int]int{}
+	for _, o := range filedAll {
+		made, err := e.addObjective(o.Title, objectiveChangesOf(o.Shape))
+		if err != nil {
+			return nil, err
+		}
+		objectives[o.Number] = numberOf(made)
+	}
+	for _, o := range filedAll {
+		var c ObjectiveChanges
+		if o.Parent != 0 {
+			parent := strconv.Itoa(objectives[o.Parent])
+			c.Parent = &parent
+		}
+		if len(o.WaitsOn) > 0 {
+			on := numbered(o.WaitsOn, objectives)
+			c.WaitsOn = &on
+		}
+		if !c.named() {
+			continue
+		}
+		if _, err := e.editObjective(objectives[o.Number], c); err != nil {
+			return nil, fmt.Errorf("objective %d: %w", o.Number, err)
+		}
+	}
+	return objectives, nil
+}
+
 func (e *Engine) standing(t filed, tasks map[int]int) error {
 	number := tasks[t.Number]
 	now, err := e.show(number)
@@ -313,6 +368,9 @@ func checked(read exchanged) ([]filed, error) {
 		if l.Colour != "" && !slices.Contains(domain.LabelColours, l.Colour) {
 			return nil, fmt.Errorf("label %q: %w", l.Label, domain.ErrNoSuchColour)
 		}
+		if _, err := domain.ParseScope(l.Scope); err != nil {
+			return nil, fmt.Errorf("label %q: %w", l.Label, err)
+		}
 	}
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
@@ -322,10 +380,17 @@ func checked(read exchanged) ([]filed, error) {
 		objectives[o.Number] = true
 		made, err := objective.NewObjective(o.Title)
 		if err == nil {
-			_, err = applyObjective(made, objectiveChangesOf(o), creating)
+			_, err = applyObjective(made, objectiveChangesOf(o.Shape), creating)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("objective %d: %w", o.Number, err)
+		}
+	}
+	for _, o := range read.Objectives {
+		for _, n := range append(slices.Clone(o.WaitsOn), o.Parent) {
+			if n != 0 && !objectives[n] {
+				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", ErrExportPointsOutside, o.Number, n, n)
+			}
 		}
 	}
 	byNumber := map[int]filed{}

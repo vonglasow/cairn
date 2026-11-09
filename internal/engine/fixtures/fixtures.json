@@ -1,6 +1,6 @@
 {
   "cairn": "tasks",
-  "version": 4,
+  "version": 5,
   "objectives": [
     {
       "number": 1,
@@ -53,6 +53,40 @@
       "title": "Objective: nothing serves it yet",
       "state": "active",
       "priority": "normal"
+    },
+    {
+      "number": 8,
+      "title": "Home automation",
+      "state": "active",
+      "priority": "normal",
+      "labels": [
+        "project"
+      ],
+      "description": "An enclosure, a firmware and the features on top, seen together."
+    },
+    {
+      "number": 9,
+      "title": "Enclosure",
+      "state": "reached",
+      "priority": "normal",
+      "parent": 8
+    },
+    {
+      "number": 10,
+      "title": "Firmware",
+      "state": "active",
+      "priority": "high",
+      "parent": 8
+    },
+    {
+      "number": 11,
+      "title": "Features",
+      "state": "active",
+      "priority": "normal",
+      "parent": 8,
+      "waits_on": [
+        10
+      ]
     }
   ],
   "labels": [
@@ -67,6 +101,16 @@
     {
       "label": "carried-by-nothing",
       "colour": "lavender"
+    },
+    {
+      "label": "project",
+      "colour": "mauve",
+      "scope": "objectives"
+    },
+    {
+      "label": "area",
+      "colour": "sapphire",
+      "scope": "objectives"
     }
   ],
   "tasks": [
@@ -702,6 +746,42 @@
       "priority": "normal",
       "objectives": [
         6
+      ]
+    },
+    {
+      "number": 59,
+      "title": "Print the case",
+      "state": "done",
+      "priority": "normal",
+      "objectives": [
+        9
+      ]
+    },
+    {
+      "number": 60,
+      "title": "Flash the bootloader",
+      "state": "current",
+      "priority": "high",
+      "objectives": [
+        10
+      ]
+    },
+    {
+      "number": 61,
+      "title": "Dimmer scenes",
+      "state": "todo",
+      "priority": "normal",
+      "objectives": [
+        11
+      ]
+    },
+    {
+      "number": 62,
+      "title": "Wiring diagram",
+      "state": "backlog",
+      "priority": "low",
+      "objectives": [
+        8
       ]
     }
   ]

@@ -93,6 +93,9 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		said := fmt.Sprintf("%d task(s) and %d objective(s) were added from %s", tasks, objectives, w.file)
 		return test.WantContains(w.Out.Stdout, said, "the answer")
 	})
+	sc.Step(`^it says objective (\d+) is not in the file$`, func(n int) error {
+		return test.WantContains(w.Out.Stderr, fmt.Sprintf("objective %d is not in the file", n), "the reason")
+	})
 	sc.Step(`^it says task (\d+) is not in the file$`, func(n int) error {
 		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d is not in the file", n), "the reason")
 	})

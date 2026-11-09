@@ -60,7 +60,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"cairn": "tasks"`, `"version": 4`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
+	for _, want := range []string{`"cairn": "tasks"`, `"version": 5`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
 		if !strings.Contains(string(written), want) {
 			t.Errorf("the file holds no %s:\n%s", want, written)
 		}
@@ -157,7 +157,7 @@ func TestTaskImport_refusesBeforeAddingAnything(t *testing.T) {
 	files := map[string]string{
 		"not json":       "not tasks\n",
 		"not an export":  `{"something": "else"}`,
-		"a later format": `{"cairn": "tasks", "version": 5, "tasks": []}`,
+		"a later format": `{"cairn": "tasks", "version": 6, "tasks": []}`,
 		"a broken parent": `{"cairn": "tasks", "version": 1, "objectives": [],
 			"tasks": [{"number": 1, "title": "Kept", "state": "todo", "priority": "normal"},
 			          {"number": 2, "parent": 9, "title": "Orphan", "state": "backlog", "priority": "normal"}]}`,

@@ -202,7 +202,9 @@ task` — since a scope that its own carriers broke would mean nothing
 objectives, those for both included (`@label-scope-narrows-what-is-offered`):
 it is what a list a label is chosen from asks, so that an objective's form
 offers only what is meant for objectives, and the engine, not a board, says
-which those are. The boards do not ask it yet.
+which those are. The boards do not ask it yet. An export carries a label's
+scope beside its colour, and an import brings it for a label the store does
+not hold yet (`@exchange-a-label-comes-with-its-scope`).
 
 **Type labels.** What kind of thing an objective is — an area, a project, a
 key result — is a label it carries, scoped to objectives; see

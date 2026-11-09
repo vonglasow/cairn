@@ -309,6 +309,18 @@ Migration #20, `an objective can wait on another`, adds a table of its own,
 `objective_waits`; rolling it back loses which waits on which and nothing
 else (`@objective-waits-on-migration-rollback`).
 
+**A task file carries the tree.** `task export` writes the objectives its
+tasks serve, the parents of those and what they wait on, each with its
+`parent` and its `waits_on`; `task import` brings them in under the same
+parents, waiting on the same objectives, at their new numbers
+(`@exchange-objectives-come-with-their-tree-and-what-they-wait-on`). A file
+whose objective sits under or waits on one it does not hold is refused before
+anything is added (`@exchange-a-parent-outside-the-file`,
+`@exchange-waiting-outside-the-file`). The file went to version 5: an older
+cairn would have read it and brought every objective in level one, waiting
+on nothing, without a word. `cairn fixtures` holds such a tree, so a board
+always has one to draw.
+
 **What is not traced.** The trace is what was done to a task, and an
 objective has none of its own: setting or changing a parent writes nothing
 there, as no change to an objective ever has. What a deletion does to a task —
@@ -326,7 +338,3 @@ too long for a card. "Show its tasks" narrows the board to an objective and its
 sub-objectives with the filter that exists. The mockup is the reference: every
 screen is checked against it at the end of #226. Until then the boards count
 over the union like the command line, and draw the objectives flat.
-
-**A task file carries no parent.** `task export` writes the objectives its
-tasks serve and not which sits under which, and `task import` brings them in
-level one.

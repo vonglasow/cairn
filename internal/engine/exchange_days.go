@@ -97,6 +97,11 @@ func (e *Engine) labelsFiled(labels []labelFiled) error {
 		if err := e.store.KeepLabel(name); err != nil {
 			return err
 		}
+		if l.Scope != "" {
+			if err := e.store.ScopeLabel(name, l.Scope); err != nil {
+				return err
+			}
+		}
 		if l.Colour == "" {
 			continue
 		}

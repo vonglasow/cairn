@@ -114,7 +114,8 @@ in [ordering.md](ordering.md#a-task-is-not-done-while-one-of-its-steps-is-open).
 - **Export and import**: the export file has carried each task's `steps`, and
   none a `parent`, since version 2 (version 3 adds its links, see
   [links.md](links.md); version 4 the time day by day, the focus and the
-  labels, see [usage.md](usage.md)). Import still reads a version 1 file, and its
+  labels, see [usage.md](usage.md); version 5 the objectives' tree and what
+  they wait on, and the labels' scope, see [objectives.md](objectives.md#two-levels)). Import still reads a version 1 file, and its
   sub-tasks come in as steps of their parent, those left first, then those done
   (`@exchange-import-reads-sub-tasks-as-steps`).
 - **The boards**: neither draws a step as a card
